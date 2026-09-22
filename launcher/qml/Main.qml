@@ -8,34 +8,45 @@ import QtQuick.Layouts
 import MeshMC.Theme
 import MeshMC.Components
 
-/*
- * Root of the QML user interface: sidebar, top bar, instance grid.
- *
- * Everything it shows arrives as a required property set by QmlShell, so a
- * missing model is a load error rather than an empty window. Nothing here
- * hard-codes a colour or a size; those come from MeshMC.Theme.
- */
 ApplicationWindow {
     id: root
 
-    /* The core's instances through InstanceFilterModel: naturally sorted,
-     * grouped, and filtered live by filterText. */
     required property var instanceModel
-
-    /* Selection by instance id (IdSelectionModel). Ids rather than rows,
-     * because rows move whenever the filter or the sort changes. */
     required property var selection
+    // QmlShell: actions (launchInstance, editInstance, ...), account summary
+    // and the extra instance models the library needs.
+    required property var shell
 
-    // Read by QmlModule_test to prove this component, and not some default,
-    // was instantiated.
     readonly property string moduleName: "MeshMC"
 
-    width: 1180
-    height: 740
-    minimumWidth: 760
-    minimumHeight: 480
+    width: 1240
+    height: 780
+    minimumWidth: 860
+    minimumHeight: 540
     title: "MeshMC"
     color: Theme.palette.canvas
+
+    property string selectedId: ""
+    onSelectedIdChanged: {
+        if (selectedId.length > 0)
+            root.selection.selectOnly(selectedId)
+        else
+            root.selection.clear()
+    }
+
+    function call(name, arg) {
+        if (root.shell && typeof root.shell[name] === "function")
+            arg === undefined ? root.shell[name]() : root.shell[name](arg)
+    }
+
+    Shortcut {
+        sequences: [StandardKey.Find]
+        onActivated: topBar.focusSearch()
+    }
+    Shortcut {
+        sequences: [StandardKey.New]
+        onActivated: root.call("createInstance")
+    }
 
     RowLayout {
         anchors.fill: parent
@@ -43,17 +54,28 @@ ApplicationWindow {
 
         SidebarNav {
             Layout.fillHeight: true
-            Layout.preferredWidth: 220
+            Layout.preferredWidth: implicitWidth
             items: [
-                { id: "instances", icon: "▦", label: qsTr("Instances") },
-                { id: "modpacks",  icon: "⬡", label: qsTr("Modpacks") },
-                { id: "settings",  icon: "⚙", label: qsTr("Settings") }
+                { id: "library", icon: "library", label: qsTr("Library") },
+                { id: "discover", icon: "compass", label: qsTr("Discover") }
             ]
-            currentId: "instances"
-            // Honest placeholders until accounts are wired in: with no
-            // account signed in, the launcher really is running as a guest.
-            accountName: qsTr("Guest")
-            accountStatus: qsTr("Not signed in")
+            footerItems: [
+                { id: "settings", icon: "settings", label: qsTr("Settings") }
+            ]
+            currentId: "library"
+            recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
+            accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
+            accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
+            onItemActivated: (id) => {
+                // Discover and Settings still open the existing dialogs.
+                if (id === "discover")
+                    root.call("createInstance")
+                else if (id === "settings")
+                    root.call("openSettings")
+            }
+            onRecentActivated: (id) => root.selectedId = id
+            onRecentPlayRequested: (id) => root.call("launchInstance", id)
+            onAccountClicked: root.call("manageAccounts")
         }
 
         ColumnLayout {
@@ -63,28 +85,41 @@ ApplicationWindow {
 
             TopBar {
                 id: topBar
-
                 Layout.fillWidth: true
-                title: qsTr("Instances")
+                title: qsTr("Library")
+                count: root.instanceModel && root.instanceModel.count !== undefined ? root.instanceModel.count : -1
                 searchPlaceholder: qsTr("Search instances")
                 onSearchTextChanged: root.instanceModel.filterText = searchText
 
                 Button {
                     text: qsTr("New instance")
                     highlighted: true
+                    icon.source: Icons.url("plus")
+                    onClicked: root.call("createInstance")
                 }
             }
 
-            InstanceGrid {
+            LibraryPage {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                model: root.instanceModel
-                onSelectedIdChanged: {
-                    if (selectedId.length > 0)
-                        root.selection.selectOnly(selectedId)
-                    else
-                        root.selection.clear()
+                focus: true
+                instanceModel: root.instanceModel
+                recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
+                heroModel: root.shell && root.shell.heroModel ? root.shell.heroModel : null
+                sectionModelFor: function (group) {
+                    return root.shell && typeof root.shell.sectionModel === "function"
+                            ? root.shell.sectionModel(group) : null
                 }
+                searchText: topBar.searchText
+                selectedId: root.selectedId
+
+                onSelectRequested: (id) => root.selectedId = id
+                onLaunchRequested: (id) => root.call("launchInstance", id)
+                onStopRequested: (id) => root.call("killInstance", id)
+                onEditRequested: (id) => root.call("editInstance", id)
+                onFolderRequested: (id) => root.call("openInstanceFolder", id)
+                onCreateRequested: root.call("createInstance")
+                onClearSearchRequested: topBar.searchText = ""
             }
         }
     }

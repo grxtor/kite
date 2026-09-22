@@ -3,108 +3,117 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
+import QtQuick.Controls
 import MeshMC.Theme
 
 /*
- * The account entry pinned to the bottom of SidebarNav. Falls back to
- * initials when there is no avatar image, so an account with no skin/avatar
- * fetched yet is never a blank circle.
+ * The signed-in account at the foot of the sidebar. With no account it
+ * turns into a sign-in prompt instead of showing a fake "Guest": playing
+ * online needs an account, so that is the one thing worth saying here.
  */
-Item {
-    id: root
+AbstractButton {
+    id: control
 
-    property string name: ""
-    property string status: ""
-    property string avatarSource: ""
-    // Mirrors SidebarNav's own collapsed state, so the chip shrinks to just
-    // the avatar at the same width threshold as the nav items above it.
-    property bool collapsed: false
+    property string name
+    // "Microsoft", "Offline" or "" when there is no account.
+    property string kind
+    property string avatarSource
 
-    signal clicked()
+    readonly property bool signedIn: name.length > 0
 
-    readonly property string initials: {
-        var parts = root.name.trim().split(/\s+/).filter(function (part) { return part.length > 0 })
-        if (parts.length === 0)
-            return "?"
-        if (parts.length === 1)
-            return parts[0].charAt(0).toUpperCase()
-        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
-    }
+    implicitHeight: Theme.control.heightLg + Theme.space.md
+    implicitWidth: 200
+    hoverEnabled: true
 
-    implicitHeight: Theme.control.height
-    implicitWidth: collapsed ? implicitHeight : 200
+    Accessible.name: signedIn ? qsTr("Account: %1").arg(name) : qsTr("Sign in")
 
-    Rectangle {
-        anchors.fill: parent
-        radius: Theme.radius.md
-        color: mouseArea.containsMouse ? Theme.palette.hoverOverlay : "transparent"
-
+    background: Rectangle {
+        radius: Theme.radius.lg
+        color: control.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
+        border.width: 1
+        border.color: Theme.palette.border
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
-    Row {
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.left: parent.left
-        anchors.leftMargin: Theme.space.sm
-        spacing: Theme.space.sm
-
+    contentItem: Item {
         Rectangle {
             id: avatar
-            width: Theme.control.heightSm
-            height: Theme.control.heightSm
-            radius: width / 2
-            color: Theme.palette.accentSubtle
-            clip: true
+            anchors.left: parent.left
+            anchors.leftMargin: Theme.space.sm + 2
+            anchors.verticalCenter: parent.verticalCenter
+            width: Theme.control.height - 4
+            height: width
+            radius: Theme.radius.md
+            color: control.signedIn ? Theme.palette.accentSubtle : Theme.palette.surfaceOverlay
 
             Image {
+                id: avatarImage
                 anchors.fill: parent
-                visible: root.avatarSource.length > 0
-                source: root.avatarSource
-                sourceSize: Qt.size(avatar.width, avatar.height)
-                fillMode: Image.PreserveAspectCrop
+                anchors.margins: 2
+                source: control.avatarSource
+                visible: status === Image.Ready
+                smooth: false
+                sourceSize: Qt.size(width, height)
             }
 
             Text {
                 anchors.centerIn: parent
-                visible: root.avatarSource.length === 0
-                text: root.initials
-                color: Theme.palette.accentText
+                visible: control.signedIn && !avatarImage.visible
+                text: control.name.charAt(0).toUpperCase()
+                color: Theme.palette.accent
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-                font.weight: Theme.type.bodyStrong.weight
+                font.pixelSize: Theme.type.title.pixelSize
+                font.weight: Font.Bold
+            }
+
+            MeshIcon {
+                anchors.centerIn: parent
+                visible: !control.signedIn
+                iconName: "user"
+                size: Theme.icon.md
+                color: Theme.palette.textSecondary
             }
         }
 
         Column {
+            anchors.left: avatar.right
+            anchors.leftMargin: Theme.space.sm + 2
+            anchors.right: chevron.left
+            anchors.rightMargin: Theme.space.xs
             anchors.verticalCenter: parent.verticalCenter
-            visible: !root.collapsed
-            spacing: 0
+            spacing: 1
 
             Text {
-                text: root.name
+                width: parent.width
+                text: control.signedIn ? control.name : qsTr("Sign in")
+                elide: Text.ElideRight
                 color: Theme.palette.textPrimary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.label.pixelSize
-                font.weight: Theme.type.label.weight
-                elide: Text.ElideRight
+                font.weight: Font.DemiBold
             }
 
             Text {
-                text: root.status
-                visible: text.length > 0
+                width: parent.width
+                text: !control.signedIn ? qsTr("Not signed in")
+                    : control.kind === "Microsoft" ? qsTr("Microsoft account")
+                    : control.kind === "Offline" ? qsTr("Offline account")
+                    : control.kind
+                elide: Text.ElideRight
                 color: Theme.palette.textTertiary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize
-                elide: Text.ElideRight
             }
         }
-    }
 
-    MouseArea {
-        id: mouseArea
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        onClicked: root.clicked()
+        MeshIcon {
+            id: chevron
+            anchors.right: parent.right
+            anchors.rightMargin: Theme.space.sm
+            anchors.verticalCenter: parent.verticalCenter
+            iconName: "chevron-right"
+            size: Theme.icon.sm
+            color: control.hovered ? Theme.palette.textSecondary : Theme.palette.textTertiary
+        }
     }
 }

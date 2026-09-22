@@ -23,19 +23,27 @@ T.Button {
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
                              implicitContentHeight + topPadding + bottomPadding)
 
-    horizontalPadding: Theme.space.md
-    spacing: Theme.space.xs
+    horizontalPadding: Theme.space.lg
+    // An icon-only button is square: the icon sits in a box as wide as the
+    // control is tall, not in a wide text-button slot.
+    leftPadding: display === T.AbstractButton.IconOnly ? Theme.space.sm : horizontalPadding
+    rightPadding: display === T.AbstractButton.IconOnly ? Theme.space.sm : horizontalPadding
+    spacing: Theme.space.sm
 
-    icon.width: Theme.icon.md
-    icon.height: Theme.icon.md
+    icon.width: Theme.icon.sm
+    icon.height: Theme.icon.sm
     icon.color: contentColor
 
-    // Qt.PlainText/RichText aside, the same colour drives the icon and the
-    // label so a disabled or accent button never ends up with mismatched
-    // icon/text tones.
-    readonly property color contentColor: !control.enabled
-        ? Theme.palette.textDisabled
-        : control.highlighted ? Theme.palette.textOnAccent : Theme.palette.textPrimary
+    // Fades as one piece, so a disabled accent button still reads as the
+    // same button rather than a grey one.
+    opacity: enabled ? 1.0 : Theme.opacity.disabled
+
+    // The same colour drives the icon and the label so an accent button never
+    // ends up with mismatched icon/text tones.
+    readonly property color contentColor: control.highlighted
+        ? Theme.palette.textOnAccent
+        : control.flat && !control.hovered ? Theme.palette.textSecondary
+                                           : Theme.palette.textPrimary
 
     // The accent-filled variant gets its own hover/press colours
     // (accentHover/accentPressed) instead of the generic overlay tokens:
@@ -58,13 +66,14 @@ T.Button {
         icon: control.icon
         text: control.text
         font.family: Theme.font.family
-        font.pixelSize: Theme.type.body.pixelSize
-        font.weight: Theme.type.body.weight
+        font.pixelSize: Theme.type.label.pixelSize + 1
+        font.weight: control.highlighted ? Font.DemiBold : Font.Medium
         color: control.contentColor
     }
 
     background: Rectangle {
         id: background
+        implicitWidth: Theme.control.height
         implicitHeight: Theme.control.height
         radius: Theme.radius.md
         color: control.restColor
@@ -72,8 +81,7 @@ T.Button {
         // stays off for them too -- a border would make "flat" look like a
         // fourth, unrequested variant.
         border.width: !control.highlighted && !control.flat ? 1 : 0
-        border.color: Theme.palette.border
-        opacity: control.enabled ? 1.0 : 0.45 // no disabled-opacity token in the contract; see report
+        border.color: control.hovered ? Theme.palette.borderStrong : Theme.palette.border
 
         Behavior on color {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
@@ -85,6 +93,18 @@ T.Button {
             color: control.overlayColor
             Behavior on color {
                 ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+            }
+        }
+
+        // A faint light from above on the accent fill: gives the primary
+        // action some depth without a drop shadow.
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            visible: control.highlighted && !control.down
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.22) }
+                GradientStop { position: 0.55; color: Qt.rgba(1, 1, 1, 0.0) }
             }
         }
 

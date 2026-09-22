@@ -3,67 +3,76 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
+import QtQuick.Controls
 import MeshMC.Theme
 
 /*
- * One entry in SidebarNav. icon is a short glyph string rather than an
- * image source: there is no icon asset pipeline yet, and a glyph lets
- * SidebarNav and Gallery supply sample data without one.
+ * One destination in the sidebar. Selected state is an accent bar at the
+ * leading edge plus a raised fill -- the bar alone carries the meaning, so
+ * it still reads when the fill is barely distinguishable from the rail.
  */
-Item {
-    id: root
+AbstractButton {
+    id: control
 
-    property string icon: ""
-    property string label: ""
+    property string iconName
+    property string label
     property bool selected: false
-    // Set by SidebarNav when the rail has collapsed below its width
-    // threshold; hides the label so only the glyph remains.
-    property bool iconOnly: false
 
-    signal clicked()
+    implicitHeight: Theme.control.height + Theme.space.xs
+    implicitWidth: 200
+    hoverEnabled: true
+    focusPolicy: Qt.TabFocus
 
-    implicitHeight: Theme.control.height
-    implicitWidth: iconOnly ? implicitHeight : 200
+    Accessible.role: Accessible.PageTab
+    Accessible.name: label
 
-    Rectangle {
-        anchors.fill: parent
-        radius: Theme.radius.pill
-        color: root.selected ? Theme.palette.accentSubtle
-                              : mouseArea.containsMouse ? Theme.palette.hoverOverlay
-                                                         : "transparent"
-
+    background: Rectangle {
+        radius: Theme.radius.md
+        color: control.selected ? Theme.palette.surfaceRaised
+             : control.down ? Theme.palette.pressedOverlay
+             : control.hovered ? Theme.palette.hoverOverlay : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+
+        Rectangle {
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            width: 3
+            height: control.selected ? parent.height - Theme.space.md * 2 + 4 : 0
+            radius: 2
+            color: Theme.palette.accent
+            Behavior on height { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -Theme.space.xxs
+            radius: parent.radius + Theme.space.xxs
+            color: "transparent"
+            border.width: 2
+            border.color: Theme.palette.focusRing
+            visible: control.visualFocus
+        }
     }
 
-    Row {
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.left: parent.left
-        anchors.leftMargin: Theme.space.md
-        spacing: Theme.space.sm
+    contentItem: Row {
+        leftPadding: Theme.space.md
+        spacing: Theme.space.md
 
-        Text {
+        MeshIcon {
             anchors.verticalCenter: parent.verticalCenter
-            text: root.icon
-            color: root.selected ? Theme.palette.accentText : Theme.palette.textSecondary
-            font.pixelSize: Theme.icon.md
+            iconName: control.iconName
+            size: Theme.icon.md
+            color: control.selected ? Theme.palette.accent
+                 : control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
         }
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: root.label
-            visible: !root.iconOnly
-            color: root.selected ? Theme.palette.accentText : Theme.palette.textPrimary
+            text: control.label
+            color: control.selected || control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
             font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
-            font.weight: Theme.type.label.weight
+            font.pixelSize: Theme.type.body.pixelSize
+            font.weight: control.selected ? Font.DemiBold : Font.Medium
         }
-    }
-
-    MouseArea {
-        id: mouseArea
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        onClicked: root.clicked()
     }
 }

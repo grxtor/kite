@@ -21,6 +21,7 @@ Item {
     property alias title: titleLabel.text
     property alias body: bodyLabel.text
     property string actionText: ""
+    property string actionIcon: ""
 
     signal actionTriggered()
 
@@ -68,6 +69,8 @@ Item {
         Button {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.actionText
+            highlighted: true
+            icon.source: root.actionIcon.length > 0 ? Icons.url(root.actionIcon) : ""
             visible: root.actionText.length > 0
             onClicked: root.actionTriggered()
         }

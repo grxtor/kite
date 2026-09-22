@@ -55,6 +55,12 @@ QtObject {
         readonly property int lg: 24
     }
 
+    readonly property QtObject opacity: QtObject {
+        // A disabled control keeps its shape and fades, rather than turning
+        // into a different-looking control.
+        readonly property real disabled: 0.45
+    }
+
     readonly property QtObject motion: QtObject {
         readonly property int fast: 120
         readonly property int normal: 180
@@ -74,6 +80,16 @@ QtObject {
             readonly property int pixelSize: 12
             readonly property int weight: Font.Normal
             readonly property real lineHeight: 1.33
+            // lineHeight is a multiplier for Text; this is the same line in pixels,
+            // for anything that has to reserve room for text before it exists.
+            readonly property real lineHeightPx: pixelSize * lineHeight
+        }
+        // Small uppercase section labels ("RECENT", "CONTINUE PLAYING").
+        readonly property QtObject overline: QtObject {
+            readonly property int pixelSize: 11
+            readonly property int weight: Font.DemiBold
+            readonly property real lineHeight: 1.30
+            readonly property real letterSpacing: 0.8
             // lineHeight is a multiplier for Text; this is the same line in pixels,
             // for anything that has to reserve room for text before it exists.
             readonly property real lineHeightPx: pixelSize * lineHeight

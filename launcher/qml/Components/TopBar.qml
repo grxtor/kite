@@ -8,41 +8,57 @@ import QtQuick.Layouts
 import MeshMC.Theme
 
 /*
- * Page header: title, search, trailing actions. Trailing actions are a
- * default-property slot (a Row) rather than a fixed "New instance" button,
- * since the brief only gives that button as an example of what can go there.
+ * Page header: title with an optional count, a search field, and whatever
+ * actions the page passes in as children. It sits on the page itself rather
+ * than on its own band, so the page reads as one surface.
  */
-Rectangle {
+Item {
     id: root
 
     property string title: ""
+    property int count: -1
     property string searchText: ""
     property string searchPlaceholder: qsTr("Search")
+    property bool searchVisible: true
 
     default property alias actions: actionsRow.data
 
-    implicitHeight: Theme.control.heightLg + Theme.space.md * 2
-    color: Theme.palette.surface
+    implicitHeight: Theme.control.heightLg + Theme.space.xl
+
+    function focusSearch() {
+        searchField.forceActiveFocus()
+        searchField.selectAll()
+    }
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: Theme.space.lg
-        anchors.rightMargin: Theme.space.lg
+        anchors.leftMargin: Theme.space.xl + Theme.space.xs
+        anchors.rightMargin: Theme.space.xl + Theme.space.xs
+        anchors.topMargin: Theme.space.sm
         spacing: Theme.space.md
 
         Text {
             text: root.title
             color: Theme.palette.textPrimary
             font.family: Theme.font.family
-            font.pixelSize: Theme.type.heading.pixelSize
-            font.weight: Theme.type.heading.weight
+            font.pixelSize: Theme.type.heading.pixelSize + 4
+            font.weight: Font.Bold
+            font.letterSpacing: -0.3
+        }
+
+        Tag {
+            visible: root.count >= 0
+            text: root.count
         }
 
         Item { Layout.fillWidth: true }
 
-        TextField {
+        SearchField {
             id: searchField
-            Layout.preferredWidth: 280
+            visible: root.searchVisible
+            Layout.preferredWidth: 300
+            Layout.minimumWidth: 160
+            Layout.fillWidth: false
             placeholderText: root.searchPlaceholder
 
             // TextField.text is a plain notifying property, not a

@@ -7,239 +7,234 @@ import QtQuick.Controls
 import MeshMC.Theme
 
 /*
- * One tile in InstanceGrid. Used directly as a GridView delegate: the
- * required properties below are populated from InstanceList's named roles by
- * Qt's automatic role-to-required-property matching, so this file never
- * mentions role indices or a model at all.
+ * One instance in the library grid: a cover tinted from the instance's own
+ * icon, the name, and what it runs. Used directly as a delegate -- the
+ * required properties are filled from InstanceList's named roles, so this
+ * file never mentions role numbers.
  *
- * totalTimePlayed is a role InstanceList exposes but this card does not
- * render, so it is intentionally not declared here -- the brief only asks
- * for the roles actually used.
+ * Play lives on the cover and appears on hover (always while running, as
+ * Stop); click selects, double-click plays, right-click or the "more"
+ * button asks the page for the instance menu.
  */
-Rectangle {
+Item {
     id: root
 
     required property string instanceId
     required property string name
     required property string iconKey
-    required property string group
     required property bool isRunning
     required property bool canLaunch
     required property var lastLaunch
+    required property string gameVersion
+    required property string loader
+    required property color iconTint
 
-    // Not a model role: InstanceGrid sets this by comparing instanceId
-    // against its own selectedId.
     property bool selected: false
-
-    // Demo-only escape hatch: hover is normally driven purely by the mouse,
-    // which a static review page (Gallery.qml) can never trigger. Letting a
-    // caller force it lets the gallery show what hover looks like without
-    // faking pointer events.
+    // Lets a static review page (Gallery.qml) show the hover state.
     property bool forceHovered: false
 
     signal clicked()
     signal doubleClicked()
     signal playRequested()
-    signal contextMenuRequested(point pos)
+    signal stopRequested()
+    signal menuRequested()
 
-    // There is no dedicated "instance thumbnail" size in the token contract
-    // (Theme.icon tops out at lg = 24, sized for inline UI glyphs, not a
-    // grid tile's headline icon), so this is derived from it rather than
-    // written as a bare number.
-    readonly property int iconExtent: Theme.icon.lg * 3
+    readonly property bool hovered: forceHovered || hoverHandler.hovered
+    readonly property int inset: Theme.space.sm - 2
+    readonly property int coverHeight: Math.round((width - inset * 2) * 0.6)
 
-    readonly property bool hovered: root.forceHovered || mouseArea.containsMouse
+    implicitWidth: 208
+    implicitHeight: inset + coverHeight + Theme.space.md + Theme.type.bodyStrong.lineHeightPx
+                    + Theme.space.xxs + Theme.type.caption.lineHeightPx + Theme.space.md
 
-    radius: Theme.radius.lg
-    color: root.selected ? Theme.palette.accentSubtle
-                          : root.hovered ? Theme.palette.surfaceRaised
-                                         : Theme.palette.surface
-    border.width: root.selected || root.hovered ? 1 : 0
-    border.color: root.selected ? Theme.palette.accent : Theme.palette.border
-
-    Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-    Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-
-    // Keyboard-navigable: the focus ring below is meaningless if the card
-    // can never actually receive focus via Tab.
     activeFocusOnTab: true
-    Keys.onReturnPressed: root.clicked()
+    Keys.onReturnPressed: root.playRequested()
+    Keys.onSpacePressed: root.clicked()
+    Keys.onMenuPressed: root.menuRequested()
 
-    // Content is centred rather than pinned to a computed height, so small
-    // drift between this file's natural size and InstanceGrid's cellHeight
-    // formula reads as harmless padding instead of a layout glitch.
-    Column {
-        anchors.centerIn: parent
-        width: parent.width - Theme.space.lg * 2
-        spacing: Theme.space.sm
+    Accessible.role: Accessible.ListItem
+    Accessible.name: root.name
+    Accessible.description: Format.versionLine(root.loader, root.gameVersion)
+
+    HoverHandler { id: hoverHandler }
+
+    Rectangle {
+        id: card
+        width: parent.width
+        height: parent.height
+        radius: Theme.radius.lg
+        color: root.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
+        border.width: root.selected ? 2 : 1
+        border.color: root.selected ? Theme.palette.accent
+                    : root.hovered ? Theme.palette.borderStrong : Theme.palette.border
+        // A small lift on hover; content moves with the card, so text never
+        // shifts relative to its own background.
+        y: root.hovered ? -2 : 0
+
+        Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+
+        // ReleaseWithinBounds grabs on press, so the page's "click empty
+        // space to deselect" handler underneath never sees a card click.
+        TapHandler {
+            acceptedButtons: Qt.LeftButton
+            gesturePolicy: TapHandler.ReleaseWithinBounds
+            onTapped: { root.forceActiveFocus(); root.clicked() }
+            onDoubleTapped: root.playRequested()
+        }
+        TapHandler {
+            acceptedButtons: Qt.RightButton
+            gesturePolicy: TapHandler.ReleaseWithinBounds
+            onTapped: { root.forceActiveFocus(); root.clicked(); root.menuRequested() }
+        }
 
         Rectangle {
-            id: iconFrame
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: root.iconExtent
-            height: root.iconExtent
-            radius: Theme.radius.md
-            color: Theme.palette.surfaceSunken
-            clip: true
+            id: cover
+            x: root.inset
+            y: root.inset
+            width: parent.width - root.inset * 2
+            height: root.coverHeight
+            radius: Theme.radius.md + 2
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Format.shade(root.iconTint, Theme.dark ? 0.30 : 0.86, 0.9) }
+                GradientStop { position: 1.0; color: Format.shade(root.iconTint, Theme.dark ? 0.15 : 0.74, 0.8) }
+            }
 
             Image {
-                anchors.fill: parent
-                source: "image://instanceicon/" + root.iconKey
-                // Requested in DIPs, at the size the icon is actually drawn.
-                sourceSize: Qt.size(iconFrame.width, iconFrame.height)
+                id: icon
+                anchors.centerIn: parent
+                readonly property int extent: Math.max(48, Math.min(96, Math.round(parent.height * 0.55)))
+                width: extent
+                height: extent
+                source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
+                sourceSize: Qt.size(extent, extent)
                 fillMode: Image.PreserveAspectFit
+                scale: root.hovered ? 1.06 : 1.0
+                Behavior on scale { NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
+            }
+
+            // Running: a pill in the corner, readable on any tint.
+            Rectangle {
+                visible: root.isRunning
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.margins: Theme.space.sm
+                radius: height / 2
+                height: Theme.control.heightSm - 6
+                width: runningRow.implicitWidth + Theme.space.sm * 2
+                color: Qt.rgba(0, 0, 0, 0.55)
+
+                Row {
+                    id: runningRow
+                    anchors.centerIn: parent
+                    spacing: Theme.space.xs + 1
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 7; height: 7; radius: 3.5
+                        color: Theme.palette.success
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Running")
+                        color: "white"
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.type.caption.pixelSize - 1
+                        font.weight: Font.DemiBold
+                    }
+                }
+            }
+
+            IconButton {
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.margins: Theme.space.xs
+                size: Theme.control.heightSm
+                iconName: "more"
+                tip: qsTr("More")
+                opacity: root.hovered ? 1 : 0
+                visible: opacity > 0
+                focusPolicy: Qt.NoFocus
+                Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
+                onClicked: root.menuRequested()
+            }
+
+            PlayButton {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: Theme.space.sm
+                running: root.isRunning
+                enabled: root.isRunning || root.canLaunch
+                opacity: root.hovered || root.isRunning ? 1 : 0
+                scale: root.hovered || root.isRunning ? 1 : 0.85
+                visible: opacity > 0
+                focusPolicy: Qt.NoFocus
+                Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
+                Behavior on scale { NumberAnimation { duration: Theme.motion.normal; easing.type: Easing.OutBack } }
+                onClicked: root.isRunning ? root.stopRequested() : root.playRequested()
             }
         }
 
         Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: parent.width
-            horizontalAlignment: Text.AlignHCenter
+            id: title
+            anchors.top: cover.bottom
+            anchors.topMargin: Theme.space.md - 2
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: Theme.space.md
+            anchors.rightMargin: Theme.space.md
             text: root.name
+            elide: Text.ElideRight
             color: Theme.palette.textPrimary
             font.family: Theme.font.family
             font.pixelSize: Theme.type.bodyStrong.pixelSize
             font.weight: Theme.type.bodyStrong.weight
-            lineHeight: Theme.type.bodyStrong.lineHeight
-            // Theme line heights are multipliers. Text.FixedHeight would read
-            // 1.45 as pixels and stack a wrapped second line on the first.
-            lineHeightMode: Text.ProportionalHeight
-            wrapMode: Text.Wrap
-            maximumLineCount: 2
-            elide: Text.ElideRight
         }
 
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: parent.width
-            horizontalAlignment: Text.AlignHCenter
-            text: root.secondaryLine
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
-            font.weight: Theme.type.caption.weight
-            elide: Text.ElideRight
-        }
-    }
+        Item {
+            anchors.top: title.bottom
+            anchors.topMargin: Theme.space.xxs
+            anchors.left: title.left
+            anchors.right: title.right
+            height: Theme.type.caption.lineHeightPx
 
-    // Declared before the running badge, Play button and focus ring below so
-    // those overlays stay on top of it in both paint and hit-test order --
-    // otherwise this full-size MouseArea would swallow the Play button's
-    // clicks before they ever reached it.
-    MouseArea {
-        id: mouseArea
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onClicked: (mouse) => {
-            root.forceActiveFocus()
-            if (mouse.button === Qt.RightButton)
-                root.contextMenuRequested(Qt.point(mouse.x, mouse.y))
-            else
-                root.clicked()
-        }
-        onDoubleClicked: (mouse) => {
-            if (mouse.button === Qt.LeftButton)
-                root.doubleClicked()
-        }
-    }
-
-    // Running state is a corner badge rather than another line in the
-    // Column above, so a running instance's card is not taller than every
-    // other card in the same row.
-    Rectangle {
-        id: runningBadge
-        visible: root.isRunning
-        anchors.top: parent.top
-        anchors.right: parent.right
-        anchors.margins: Theme.space.xs
-        radius: Theme.radius.pill
-        color: Theme.palette.successSubtle
-        implicitWidth: runningRow.implicitWidth + Theme.space.sm * 2
-        implicitHeight: runningRow.implicitHeight + Theme.space.xxs * 2
-
-        Row {
-            id: runningRow
-            anchors.centerIn: parent
-            spacing: Theme.space.xxs
-
-            Rectangle {
+            Text {
+                id: versionText
+                anchors.left: parent.left
+                anchors.right: timeText.left
+                anchors.rightMargin: Theme.space.sm
                 anchors.verticalCenter: parent.verticalCenter
-                width: Theme.space.xs
-                height: Theme.space.xs
-                radius: width / 2
-                color: Theme.palette.success
+                text: Format.versionLine(root.loader, root.gameVersion)
+                elide: Text.ElideRight
+                color: Theme.palette.textSecondary
+                font.family: Theme.font.family
+                font.pixelSize: Theme.type.caption.pixelSize
+                font.weight: Font.Medium
             }
 
             Text {
-                text: qsTr("Running")
-                color: Theme.palette.success
+                id: timeText
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                text: Format.lastPlayed(root.lastLaunch)
+                color: Theme.palette.textTertiary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize
-                font.weight: Theme.type.caption.weight
             }
         }
     }
 
-    // Standard Controls Button, unstyled here on purpose: a separate style
-    // component skins every Button project-wide, so hand-rolling chrome for
-    // this one would fight it. Only visible on hover/selection so the grid
-    // reads as icons+names at rest, per the "modern launcher" brief.
-    Button {
-        text: qsTr("Play")
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: Theme.space.sm
-        visible: root.hovered || root.selected
-        enabled: root.canLaunch
-        onClicked: root.playRequested()
-    }
-
     Rectangle {
-        // Focus ring: drawn as an outset outline rather than a border on the
-        // card itself, so it never competes with the selected/hover border.
-        anchors.fill: parent
-        anchors.margins: -3
-        radius: parent.radius + 3
+        // Keyboard focus ring, outset so it never competes with the
+        // selected border.
+        x: card.x - 3
+        y: card.y - 3
+        width: card.width + 6
+        height: card.height + 6
+        radius: card.radius + 3
         color: "transparent"
         border.width: 2
         border.color: Theme.palette.focusRing
-        visible: root.activeFocus
+        visible: root.activeFocus && !root.selected
     }
-
-    // "Today" / "N days ago" / "Never", per the brief. lastLaunch arrives as
-    // whatever the source model gives InstanceList's date/number role, so
-    // both a JS Date and a raw epoch number (seconds or milliseconds) are
-    // accepted rather than assuming one representation.
-    function lastLaunchDate() {
-        if (root.lastLaunch === undefined || root.lastLaunch === null)
-            return null
-        var date = (root.lastLaunch instanceof Date)
-                ? root.lastLaunch
-                : new Date(Number(root.lastLaunch) > 1e12
-                           ? Number(root.lastLaunch)
-                           : Number(root.lastLaunch) * 1000)
-        if (isNaN(date.getTime()) || date.getTime() <= 0)
-            return null
-        return date
-    }
-
-    function relativeLastLaunch() {
-        var date = root.lastLaunchDate()
-        if (date === null)
-            return qsTr("Never")
-        var now = new Date()
-        var startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-        var startOfThat = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-        var diffDays = Math.round((startOfToday - startOfThat) / 86400000)
-        if (diffDays <= 0)
-            return qsTr("Today")
-        if (diffDays === 1)
-            return qsTr("Yesterday")
-        return qsTr("%1 days ago").arg(diffDays)
-    }
-
-    readonly property string secondaryLine: root.group.length > 0
-            ? qsTr("%1 • %2").arg(root.group).arg(root.relativeLastLaunch())
-            : root.relativeLastLaunch()
 }

@@ -19,8 +19,8 @@ T.TextField {
                              contentHeight + topPadding + bottomPadding,
                              placeholder.implicitHeight + topPadding + bottomPadding)
 
-    leftPadding: Theme.space.sm
-    rightPadding: Theme.space.sm
+    leftPadding: Theme.space.md
+    rightPadding: Theme.space.md
     topPadding: Theme.space.xs
     bottomPadding: Theme.space.xs
 
@@ -53,13 +53,14 @@ T.TextField {
         implicitWidth: Theme.control.heightLg * 4
         implicitHeight: Theme.control.height
         radius: Theme.radius.md
-        color: Theme.palette.surfaceSunken
+        color: Theme.palette.surfaceRaised
         border.width: 1
-        // A stronger (but still non-accent) border on activeFocus tells a
-        // mouse user they landed in the field; the accent ring below is the
-        // separate, keyboard-only affordance the brief asks for.
-        border.color: control.activeFocus ? Theme.palette.borderStrong : Theme.palette.border
-        opacity: control.enabled ? 1.0 : 0.45
+        // An accent border on activeFocus tells a mouse user they landed in
+        // the field; the outset ring below is the separate, keyboard-only
+        // affordance the brief asks for.
+        border.color: control.activeFocus ? Theme.palette.accent
+                    : control.hovered ? Theme.palette.borderStrong : Theme.palette.border
+        opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         Behavior on border.color {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
