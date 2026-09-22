@@ -25,14 +25,7 @@
 #include <QPushButton>
 #include <QDialogButtonBox>
 #include <QVBoxLayout>
-
-struct BlockedMod {
-	int projectId;
-	int fileId;
-	QString fileName;
-	QString targetPath;
-	bool found = false;
-};
+#include "modplatform/BlockedMod.h"
 
 class BlockedModsDialog : public QDialog
 {

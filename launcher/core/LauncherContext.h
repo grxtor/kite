@@ -32,6 +32,7 @@ class IconList;
 class InstanceList;
 class QNetworkAccessManager;
 class SettingsObject;
+class UiHost;
 
 namespace Meta
 {
@@ -87,6 +88,11 @@ class LauncherContext
 	 * than reaching PluginManager directly, because PluginManager renders
 	 * plugin-supplied user interface and therefore pulls in QtWidgets. */
 	virtual AuthRequestDecorator* authRequestDecorator() const = 0;
+
+	/* Never null: a core task that has to ask the user a question cannot
+	 * meaningfully carry on without an answer, so the shell installs one
+	 * before anything that might ask is allowed to run. */
+	virtual UiHost* uiHost() const = 0;
 
   protected:
 	/* Called by the implementation's constructor/destructor. Registering is

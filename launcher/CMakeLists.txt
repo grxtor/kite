@@ -13,6 +13,8 @@ set(CORE_SOURCES
     core/LauncherContext.h
     core/LauncherContext.cpp
     core/AuthRequestDecorator.h
+    core/UiHost.h
+    modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
     BaseInstaller.h
@@ -810,6 +812,8 @@ SET(MESHMC_SOURCES
     ui/MainWindow.h
     ui/ShortcutUtils.cpp
     ui/ShortcutUtils.h
+    ui/WidgetUiHost.cpp
+    ui/WidgetUiHost.h
     ui/MainWindow.cpp
     ui/MacMenuBar.h
     ui/MacMenuBar.cpp

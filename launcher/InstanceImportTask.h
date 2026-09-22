@@ -110,11 +110,6 @@ class InstanceImportTask : public InstanceTask
 	/* Parent for the dialogs the task may need to raise (confirmations,
 	 * warnings). Null is allowed and simply means the dialog is
 	 * parentless; it is not a reason to skip asking. */
-	void setDialogParent(QWidget* parent)
-	{
-		m_dialogParent = parent;
-	}
-
 	/* Whether the archive came from somewhere we vouch for.
 	 *
 	 * A modpack is a list of code to execute. When the launcher itself
@@ -248,7 +243,6 @@ class InstanceImportTask : public InstanceTask
 	 * this is opened - two live settings objects over one instance.cfg
 	 * means whichever writes last wins. */
 	std::shared_ptr<MinecraftInstance> m_gameFilesInstance;
-	QWidget* m_dialogParent = nullptr;
 	bool m_trustedSource = false;
 
 	/* Helper: persist the pack source hint into the freshly created

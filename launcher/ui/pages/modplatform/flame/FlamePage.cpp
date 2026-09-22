@@ -236,7 +236,6 @@ void FlamePage::suggestCurrent()
 	 * to update an instance this pack is already installed in, most
 	 * likely - and a question about what the user is doing in this window
 	 * belongs to this window. */
-	task->setDialogParent(this);
 	task->setPackSourceHint(hint);
 	dialog->setSuggestedPack(current.name, task);
 

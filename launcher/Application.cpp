@@ -20,6 +20,7 @@
 #include "Application.h"
 #include "BuildConfig.h"
 #include "plugin/PluginAuthRequestDecorator.h"
+#include "ui/WidgetUiHost.h"
 #include "plugin/PluginManager.h"
 
 #include "ui/MainWindow.h"
@@ -334,6 +335,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 	 * already reach services through LAUNCHER->, and they would see a null
 	 * context otherwise. */
 	LauncherContext::setInstance(this);
+	m_uiHost = std::make_unique<WidgetUiHost>();
 
 	initPlatform();
 	if (m_status != StartingUp)
@@ -2310,4 +2312,9 @@ const QString Application::javaPath()
 AuthRequestDecorator* Application::authRequestDecorator() const
 {
 	return m_authRequestDecorator.get();
+}
+
+UiHost* Application::uiHost() const
+{
+	return m_uiHost.get();
 }

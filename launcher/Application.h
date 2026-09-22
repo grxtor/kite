@@ -186,6 +186,8 @@ class Application : public QApplication, public LauncherContext
 
 	AuthRequestDecorator* authRequestDecorator() const override;
 
+	UiHost* uiHost() const override;
+
 	/// this is the root of the 'installation'. Used for automatic updates
 	const QString& root()
 	{
@@ -331,6 +333,10 @@ class Application : public QApplication, public LauncherContext
 	/* Built alongside m_pluginManager, so it is null in builds without the
 	 * plugin host (MeshMC_PLUGINS is OFF by default). */
 	std::unique_ptr<AuthRequestDecorator> m_authRequestDecorator;
+
+	/* Built before anything that could ask the user a question, because
+	 * uiHost() promises never to return null. */
+	std::unique_ptr<UiHost> m_uiHost;
 
   public:
 	QString m_instanceIdToLaunch;

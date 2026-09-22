@@ -243,7 +243,6 @@ void ModrinthPage::suggestCurrent()
 	task->setTrustedSource(true);
 	/* Same as the CurseForge page: any question the task raises is a
 	 * question about what the user is doing here. */
-	task->setDialogParent(this);
 	task->setPackSourceHint(hint);
 	dialog->setSuggestedPack(current.name, task);
 	QString editedLogoName;

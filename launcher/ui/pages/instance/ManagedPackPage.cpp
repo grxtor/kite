@@ -792,7 +792,6 @@ void ManagedPackPage::updatePack(const QUrl& url, bool trusted,
 	target.versionId = versionId;
 	target.versionLabel = versionName;
 	task->setUpdateTarget(target);
-	task->setDialogParent(this);
 	task->setTrustedSource(trusted);
 
 	/* Carry the pack's identity across explicitly.
