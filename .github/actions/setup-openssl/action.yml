@@ -1,21 +1,9 @@
 name: Setup bundled OpenSSL
 
 inputs:
-  qt-major:
-    description: Major version of Qt being built against
-    required: true
   msystem:
     description: MSYS2 subsystem, when building with MinGW
     required: false
-  openssl-version:
-    description: >
-      OpenSSL release to build for Qt 5.
-    required: false
-    default: "1.1.1w"
-  openssl-sha256:
-    description: SHA-256 of the OpenSSL source tarball, checked before use
-    required: false
-    default: "cf3098950cb4d853ad95c0841f1f9c6d3dc102dccfcacd521d93925208b76ac8"
 
 runs:
   using: composite
@@ -24,10 +12,13 @@ runs:
     ##
     # MinGW / MSYS2 -- OpenSSL comes from pacman.
     #
-    # MSYS2 only packages OpenSSL 3 and patches its Qt 5 to match, so unlike
-    # the official Qt 5 builds this one wants 3.x. The files still have to be
-    # copied into the package: they live in the MSYS2 prefix, which does not
-    # exist on a user's machine.
+    # The only build that still needs OpenSSL bundled. Qt 6 on Windows falls
+    # back to Schannel, so the MSVC builds ship without it; MSYS2's Qt is
+    # linked against the OpenSSL in its own prefix, which does not exist on a
+    # user's machine, so those DLLs have to travel with the package.
+    #
+    # Everything else this action used to do existed for the Qt 5 builds
+    # (OpenSSL 1.1.1 from source for MSVC and Linux) and went away with them.
     ##
     - name: Locate MSYS2 OpenSSL (MinGW)
       if: ${{ inputs.msystem != '' }}
@@ -46,130 +37,3 @@ runs:
         # cygpath -m: Windows path with forward slashes, which is what CMake
         # wants. Backslashes would be eaten as escapes in the -D value.
         echo "MESHMC_BUNDLE_OPENSSL_LIBS=$(cygpath -m "$ssl");$(cygpath -m "$crypto")" >> "$GITHUB_ENV"
-
-    ##
-    # Windows / MSVC + Qt 5 -- build OpenSSL 1.1.1.
-    ##
-    - name: Retrieve OpenSSL cache (MSVC)
-      if: ${{ runner.os == 'Windows' && inputs.msystem == '' && inputs.qt-major == '5' }}
-      id: cache-openssl-msvc
-      uses: actions/cache@v6.1.0
-      with:
-        path: ${{ github.workspace }}/openssl-runtime
-        key: openssl-${{ inputs.openssl-version }}-msvc-${{ runner.arch }}
-
-    - name: Build OpenSSL (MSVC)
-      if: ${{ runner.os == 'Windows' && inputs.msystem == '' && inputs.qt-major == '5' && steps.cache-openssl-msvc.outputs.cache-hit != 'true' }}
-      shell: pwsh
-      env:
-        OPENSSL_VERSION: ${{ inputs.openssl-version }}
-        OPENSSL_SHA256: ${{ inputs.openssl-sha256 }}
-        OPENSSL_PREFIX: ${{ github.workspace }}/openssl-runtime
-      run: |
-        $ErrorActionPreference = 'Stop'
-
-        # Only the x64 target is wired up because that is the only architecture
-        # the Qt 5 MSVC job builds. Guessing a target for anything else would
-        # silently produce libraries Qt cannot load.
-        if ($env:RUNNER_ARCH -ne 'X64') {
-          throw "No OpenSSL 1.1.1 target configured for $env:RUNNER_ARCH"
-        }
-
-        $tarball = "openssl-$env:OPENSSL_VERSION.tar.gz"
-        Invoke-WebRequest "https://www.openssl.org/source/old/1.1.1/$tarball" -OutFile $tarball
-
-        $hash = (Get-FileHash $tarball -Algorithm SHA256).Hash.ToLower()
-        if ($hash -ne $env:OPENSSL_SHA256.ToLower()) {
-          throw "$tarball sha256 mismatch: got $hash, expected $env:OPENSSL_SHA256"
-        }
-
-        tar -xzf $tarball
-        Push-Location "openssl-$env:OPENSSL_VERSION"
-
-        # no-asm keeps NASM out of the dependency list; this library only has
-        # to terminate TLS for a launcher, not win benchmarks.
-        perl Configure VC-WIN64A no-asm no-tests `
-          --prefix="$env:OPENSSL_PREFIX" --openssldir="$env:OPENSSL_PREFIX/ssl"
-        if ($LASTEXITCODE -ne 0) { throw "OpenSSL Configure failed" }
-
-        nmake
-        if ($LASTEXITCODE -ne 0) { throw "OpenSSL build failed" }
-
-        nmake install_sw
-        if ($LASTEXITCODE -ne 0) { throw "OpenSSL install failed" }
-
-        Pop-Location
-
-    - name: Export OpenSSL paths (MSVC)
-      if: ${{ runner.os == 'Windows' && inputs.msystem == '' && inputs.qt-major == '5' }}
-      shell: pwsh
-      env:
-        OPENSSL_PREFIX: ${{ github.workspace }}/openssl-runtime
-      run: |
-        $ErrorActionPreference = 'Stop'
-
-        # These exact names are what Qt 5 looks for on 64-bit Windows; a
-        # differently named copy of the same library will not be picked up.
-        $libs = @('libssl-1_1-x64.dll', 'libcrypto-1_1-x64.dll') | ForEach-Object {
-          $path = Join-Path "$env:OPENSSL_PREFIX/bin" $_
-          if (-not (Test-Path -LiteralPath $path)) { throw "OpenSSL runtime is missing $path" }
-          $path.Replace('\', '/')
-        }
-
-        "MESHMC_BUNDLE_OPENSSL_LIBS=$($libs -join ';')" >> $env:GITHUB_ENV
-
-    ##
-    # Linux + Qt 5 -- build OpenSSL 1.1.1 for the AppImage and the portable
-    # tarball. Both bundle Qt itself, so they cannot lean on the host the way
-    # a distro package would.
-    ##
-    - name: Retrieve OpenSSL cache (Linux)
-      if: ${{ runner.os == 'Linux' && inputs.qt-major == '5' }}
-      id: cache-openssl-linux
-      uses: actions/cache@v6.1.0
-      with:
-        path: ${{ github.workspace }}/openssl-runtime
-        key: openssl-${{ inputs.openssl-version }}-linux-${{ runner.arch }}
-
-    - name: Build OpenSSL (Linux)
-      if: ${{ runner.os == 'Linux' && inputs.qt-major == '5' && steps.cache-openssl-linux.outputs.cache-hit != 'true' }}
-      shell: bash
-      env:
-        OPENSSL_VERSION: ${{ inputs.openssl-version }}
-        OPENSSL_SHA256: ${{ inputs.openssl-sha256 }}
-        OPENSSL_PREFIX: ${{ github.workspace }}/openssl-runtime
-      run: |
-        set -euo pipefail
-
-        tarball="openssl-${OPENSSL_VERSION}.tar.gz"
-        curl -fsSLO "https://www.openssl.org/source/old/1.1.1/${tarball}"
-        echo "${OPENSSL_SHA256}  ${tarball}" | sha256sum -c -
-
-        tar -xzf "${tarball}"
-        cd "openssl-${OPENSSL_VERSION}"
-
-        ./config shared no-tests \
-          --prefix="${OPENSSL_PREFIX}" --openssldir="${OPENSSL_PREFIX}/ssl"
-        make -j"$(nproc)"
-        make install_sw
-
-    - name: Export OpenSSL paths (Linux)
-      if: ${{ runner.os == 'Linux' && inputs.qt-major == '5' }}
-      shell: bash
-      env:
-        OPENSSL_PREFIX: ${{ github.workspace }}/openssl-runtime
-      run: |
-        set -euo pipefail
-
-        # install_sw picks lib/ or lib64/ depending on the platform, so find
-        # the sonames rather than assuming one of them.
-        lib_dir="$(dirname "$(find "${OPENSSL_PREFIX}" -name 'libssl.so.1.1' -print -quit)")"
-
-        for soname in libssl.so.1.1 libcrypto.so.1.1; do
-          if [[ ! -f "${lib_dir}/${soname}" ]]; then
-            echo "# 🚨 OpenSSL runtime is missing ${soname}" >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
-        done
-
-        echo "MESHMC_OPENSSL_LIB_DIR=${lib_dir}" >> "$GITHUB_ENV"

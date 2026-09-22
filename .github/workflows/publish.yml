@@ -21,9 +21,9 @@ jobs:
         with:
           identifier: ProjectTick.MeshMC
           version: ${{ github.event.release.tag_name }}
-          # Qt6 only, and deliberately: winget takes one installer per
-          # architecture for a package version, so matching the Qt5 build as
-          # well would offer two x64 installers for the same version.
+          # winget takes one installer per architecture for a package
+          # version. Qt 5 builds are gone, so there is only one x64 installer
+          # to match now -- but the pattern stays explicit anyway.
           #
           # The Qt part is not optional either. It used to be absent from the
           # release names, so a pattern anchored straight after "MSVC" matched

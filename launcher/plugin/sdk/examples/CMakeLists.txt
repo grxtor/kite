@@ -3,8 +3,7 @@
 # Prerequisites:
 #   1. Install MeshMC with SDK headers:
 #        cmake --install <build-dir> --prefix /usr/local
-#   2. Install Qt development packages (Core, Widgets, Gui) for the same Qt
-#      major version MeshMC itself was built against (Qt 5 or Qt 6)
+#   2. Install Qt 6 development packages (Core, Widgets, Gui)
 #
 # Build:
 #   cmake -B build -DCMAKE_PREFIX_PATH="/usr/local;/usr/lib/qt6"

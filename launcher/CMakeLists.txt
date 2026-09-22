@@ -1041,8 +1041,6 @@ SET(MESHMC_SOURCES
     ui/widgets/LabeledToolButton.h
     ui/widgets/LanguageSelectionWidget.cpp
     ui/widgets/LanguageSelectionWidget.h
-    ui/widgets/LineSeparator.cpp
-    ui/widgets/LineSeparator.h
     ui/widgets/LogView.cpp
     ui/widgets/LogView.h
     ui/widgets/MCModInfoFrame.cpp
@@ -1117,7 +1115,6 @@ set(MESHMC_UI_FILES
     ui/pages/modplatform/ImportPage.ui
     ui/pages/modplatform/ftb/FtbPage.ui
     ui/pages/modplatform/technic/TechnicPage.ui
-    ui/widgets/InstanceCardWidget.ui
     ui/widgets/CustomCommands.ui
     ui/widgets/MCModInfoFrame.ui
     ui/dialogs/CopyInstanceDialog.ui
@@ -1152,16 +1149,11 @@ set(MESHMC_SHARED_UI_FILES
     ui/widgets/TaskStepProgressBar.ui
 )
 
-# Dispatch explicitly on the major version instead of using the versionless
-# qt_wrap_ui: on Qt 5 that wrapper is a no-op unless QT_DEFAULT_MAJOR_VERSION
-# happens to be set, which would silently generate no ui_*.h headers at all.
-if(QT_VERSION_MAJOR EQUAL 6)
-    qt6_wrap_ui(MESHMC_UI ${MESHMC_UI_FILES})
-    qt6_wrap_ui(MESHMC_SHARED_UI ${MESHMC_SHARED_UI_FILES})
-else()
-    qt5_wrap_ui(MESHMC_UI ${MESHMC_UI_FILES})
-    qt5_wrap_ui(MESHMC_SHARED_UI ${MESHMC_SHARED_UI_FILES})
-endif()
+# qt6_wrap_ui explicitly rather than the versionless qt_wrap_ui: the latter is
+# a no-op unless QT_DEFAULT_MAJOR_VERSION happens to be set, which would
+# silently generate no ui_*.h headers at all.
+qt6_wrap_ui(MESHMC_UI ${MESHMC_UI_FILES})
+qt6_wrap_ui(MESHMC_SHARED_UI ${MESHMC_SHARED_UI_FILES})
 
 if(NOT MeshMC_DISABLE_JAVA_DOWNLOADER)
     list(APPEND MESHMC_SOURCES
@@ -1196,11 +1188,7 @@ set(MESHMC_QRC_FILES
 )
 
 # Same reasoning as MESHMC_UI above: never rely on the versionless wrapper.
-if(QT_VERSION_MAJOR EQUAL 6)
-    qt6_add_resources(MESHMC_RESOURCES ${MESHMC_QRC_FILES})
-else()
-    qt5_add_resources(MESHMC_RESOURCES ${MESHMC_QRC_FILES})
-endif()
+qt6_add_resources(MESHMC_RESOURCES ${MESHMC_QRC_FILES})
 
 ######## Windows resource files ########
 if(WIN32)
@@ -1264,9 +1252,7 @@ target_link_libraries(MeshMC_logic
     LocalPeer::LocalPeer
 )
 
-if(QT_VERSION_MAJOR EQUAL 6)
-    target_link_libraries(MeshMC_logic Qt6::OpenGL)
-endif()
+target_link_libraries(MeshMC_logic Qt6::OpenGL)
 
 # Plugin system needs dlopen/dlsym on Unix
 if(UNIX AND NOT APPLE)
@@ -1312,8 +1298,33 @@ if(MeshMC_SPARKLE_ENABLED)
         USE_SOURCE_PERMISSIONS)
 endif()
 
+######## QML user interface module ########
+
+# Defined in its own directory so the module's resource aliases stay clean; see
+# launcher/qml/CMakeLists.txt for why. Kept as a separate target rather than
+# being attached to the application so that QmlModule_test can link the same
+# module and instantiate it headlessly -- attaching it to the executable would
+# bury the compiled .qml inside the app binary, out of reach of any test.
+add_subdirectory(qml)
+
+# Proves the QML toolchain end to end: module built, resources at the expected
+# prefix, engine can instantiate the root component. All three fail silently
+# otherwise -- a green build and an application that renders nothing.
+add_unit_test(QmlModule
+    SOURCES qml/QmlModule_test.cpp
+    LIBS Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
+    )
+
+# qt_add_qml_module builds the module as a static library plus a separate QML
+# plugin, and the engine refuses the module without it. qt_add_executable would
+# emit the import automatically during finalization, but add_unit_test uses a
+# plain add_executable, so it has to be asked for by hand -- otherwise the test
+# links and then fails at runtime with 'plugin "MeshMC_qmlplugin" not found'.
+qt_import_qml_plugins(QmlModule_test)
+
 add_executable(${MeshMC_Name} MACOSX_BUNDLE WIN32 main.cpp ${MESHMC_RCS})
 target_link_libraries(${MeshMC_Name} MeshMC_logic)
+target_link_libraries(${MeshMC_Name} MeshMC_qml)
 
 # Export all symbols so dlopen()'ed .mmco plugins can resolve launcher symbols at runtime
 set_target_properties(${MeshMC_Name} PROPERTIES ENABLE_EXPORTS ON)
@@ -1409,11 +1420,7 @@ if(NOT APPLE)
     )
 
     # Never the versionless wrapper, for the same reason as MESHMC_UI above.
-    if(QT_VERSION_MAJOR EQUAL 6)
-        qt6_wrap_ui(MESHUPDATER_UI ${MESHUPDATER_UI_FILES})
-    else()
-        qt5_wrap_ui(MESHUPDATER_UI ${MESHUPDATER_UI_FILES})
-    endif()
+    qt6_wrap_ui(MESHUPDATER_UI ${MESHUPDATER_UI_FILES})
 
     set(MESHUPDATER_SOURCES
         updater/meshupdater/MeshUpdaterApp.h
@@ -1641,89 +1648,27 @@ if(WIN32 OR (UNIX AND APPLE))
     endif()
 
     if(UNIX AND APPLE)
-        # qt_generate_deploy_script/qt_deploy_runtime_dependencies are Qt 6.3+
-        # only. Qt 5 has no CMake equivalent, but it ships macdeployqt, which
-        # is the supported way to do the same job, so the Qt 5 branch below
-        # shells out to it.
-        if(QT_VERSION_MAJOR EQUAL 6)
-            qt_generate_deploy_script(
-                TARGET ${MeshMC_Name}
-                OUTPUT_SCRIPT QT_DEPLOY_SCRIPT
-                CONTENT "
-                qt_deploy_runtime_dependencies(
-                    EXECUTABLE ${BINARY_DEST_DIR}/$<TARGET_FILE_NAME:${MeshMC_Name}>
-                    BIN_DIR ${BINARY_DEST_DIR}
-                    LIBEXEC_DIR ${BINARY_DEST_DIR}
-                    LIB_DIR ${LIBRARY_DEST_DIR}
-                    PLUGINS_DIR ${PLUGIN_DEST_DIR}
-                    NO_OVERWRITE
-                    NO_TRANSLATIONS
-                    NO_COMPILER_RUNTIME
-                )"
-            )
-            install(
-                SCRIPT ${QT_DEPLOY_SCRIPT}
-            )
-        else()
-            # Qt 5: deploy with macdeployqt. Located the same way windeployqt
-            # is above, via the qmake target's directory.
-            #
-            # Deliberately not a configure-time hard error when the tool is
-            # missing: configuring and building a Qt 5 macOS tree has to keep
-            # working even where the deploy step will never run (a
-            # compile-only CI job, for instance). The tool is only genuinely
-            # required by `install`, so that is where it is enforced.
-            get_target_property(_qt_macdeploy_qmake
-                Qt${QT_VERSION_MAJOR}::qmake IMPORTED_LOCATION)
-            get_filename_component(_qt_macdeploy_bin_dir
-                "${_qt_macdeploy_qmake}" DIRECTORY)
-            find_program(MACDEPLOYQT_EXECUTABLE macdeployqt
-                HINTS "${_qt_macdeploy_bin_dir}")
-
-            if(NOT MACDEPLOYQT_EXECUTABLE)
-                message(WARNING
-                    "macdeployqt was not found next to qmake "
-                    "(${_qt_macdeploy_bin_dir}). Building will work, but "
-                    "installing will fail: the .app would be missing its Qt "
-                    "frameworks and plugins. It ships with Qt 5's qtbase.")
-            endif()
-
-            # Runs after the install(CODE) further up that merges the staged
-            # bundle into ${CMAKE_INSTALL_PREFIX}/${MeshMC_Name}.app, so the
-            # bundle macdeployqt is pointed at already exists. This sits at
-            # the same point in the install order as the Qt 6 branch's
-            # install(SCRIPT) above.
-            #
-            # Only the main executable is handed over, matching what the Qt 6
-            # branch passes as EXECUTABLE. Helper binaries in the bundle (the
-            # updater, the crash reporter) and the .mmco plugins are therefore
-            # not rewritten by macdeployqt on either branch.
-            install(CODE "
-                set(_meshmc_macdeployqt \"${MACDEPLOYQT_EXECUTABLE}\")
-                set(_meshmc_bundle \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${MeshMC_Name}.app\")
-
-                if(NOT _meshmc_macdeployqt)
-                    message(FATAL_ERROR
-                        \"macdeployqt was not found, so '\${_meshmc_bundle}' \"
-                        \"cannot be completed. It ships with Qt 5's qtbase; \"
-                        \"make sure Qt's bin directory is available.\")
-                endif()
-                if(NOT IS_DIRECTORY \"\${_meshmc_bundle}\")
-                    message(FATAL_ERROR
-                        \"App bundle '\${_meshmc_bundle}' is missing; \"
-                        \"cannot run macdeployqt on it.\")
-                endif()
-
-                message(STATUS \"Deploying Qt into \${_meshmc_bundle}\")
-                execute_process(
-                    COMMAND \"\${_meshmc_macdeployqt}\" \"\${_meshmc_bundle}\"
-                    RESULT_VARIABLE _deploy_result
-                )
-                if(NOT _deploy_result EQUAL 0)
-                    message(FATAL_ERROR \"macdeployqt failed with exit code: \${_deploy_result}\")
-                endif()
-            ")
-        endif()
+        # qt_generate_deploy_script/qt_deploy_runtime_dependencies need Qt 6.3+,
+        # which the 6.4 floor guarantees. This replaced a macdeployqt shell-out
+        # that only existed for the Qt 5 build.
+        qt_generate_deploy_script(
+            TARGET ${MeshMC_Name}
+            OUTPUT_SCRIPT QT_DEPLOY_SCRIPT
+            CONTENT "
+            qt_deploy_runtime_dependencies(
+                EXECUTABLE ${BINARY_DEST_DIR}/$<TARGET_FILE_NAME:${MeshMC_Name}>
+                BIN_DIR ${BINARY_DEST_DIR}
+                LIBEXEC_DIR ${BINARY_DEST_DIR}
+                LIB_DIR ${LIBRARY_DEST_DIR}
+                PLUGINS_DIR ${PLUGIN_DEST_DIR}
+                NO_OVERWRITE
+                NO_TRANSLATIONS
+                NO_COMPILER_RUNTIME
+            )"
+        )
+        install(
+            SCRIPT ${QT_DEPLOY_SCRIPT}
+        )
     endif()
 
     # Bundle our linked dependencies
@@ -1785,15 +1730,14 @@ if(WIN32 OR (UNIX AND APPLE))
         # Qt resolves OpenSSL with dlopen/LoadLibrary rather than linking it,
         # so neither windeployqt nor install(RUNTIME_DEPENDENCY_SET) ever sees
         # it and the package ships without a TLS backend. Qt 6 hides this on
-        # Windows by falling back to its Schannel plugin; Qt 5 has no such
-        # fallback, so every https:// request fails with
-        # QNetworkReply::SslHandshakeFailedError.
+        # Windows by falling back to its Schannel plugin, so a package without
+        # OpenSSL still works there -- but only over Schannel.
         #
         # The libraries are named rather than searched for on purpose: which
         # OpenSSL is correct depends on the *Qt build*, not on the machine
-        # (official Qt 5.15 wants the 1.1.1 ABI, MSYS2's Qt wants 3.x), and
-        # picking up whatever happens to sit in a bin directory is how you end
-        # up shipping a DLL Qt cannot use. CI passes the exact files.
+        # (MSYS2's Qt wants the 3.x ABI), and picking up whatever happens to sit
+        # in a bin directory is how you end up shipping a DLL Qt cannot use.
+        # CI passes the exact files.
         if(MeshMC_BUNDLE_OPENSSL_LIBS)
             foreach(_openssl_lib IN LISTS MeshMC_BUNDLE_OPENSSL_LIBS)
                 if(NOT EXISTS "${_openssl_lib}")
@@ -1806,17 +1750,6 @@ if(WIN32 OR (UNIX AND APPLE))
                 message(STATUS "Bundling OpenSSL runtime: ${_openssl_lib}")
             endforeach()
             install(FILES ${MeshMC_BUNDLE_OPENSSL_LIBS} DESTINATION ${BINARY_DEST_DIR})
-        elseif(QT_VERSION_MAJOR EQUAL 5)
-            # Warning, not an error: a developer build that is never packaged
-            # is perfectly usable as long as an OpenSSL 1.1 happens to be on
-            # PATH. It is the redistributable package that must not go out
-            # like this.
-            message(WARNING
-                "No OpenSSL runtime is being bundled (MeshMC_BUNDLE_OPENSSL_LIBS "
-                "is empty) and this is a Qt 5 build. Qt 5 on Windows has no "
-                "Schannel fallback, so the resulting package will fail every "
-                "HTTPS request unless a matching OpenSSL 1.1 is already on the "
-                "user's PATH.")
         endif()
     endif()
 

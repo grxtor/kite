@@ -142,28 +142,35 @@ endif()
 
 # Find the required Qt parts
 #
-# MeshMC supports building against either Qt 5 or Qt 6. Every subdirectory
-# refers to Qt through the ${QT_VERSION_MAJOR} indirection set up here rather
-# than hardcoding Qt5::/Qt6::, so this is the single place that decides which
-# major version the whole build uses.
-set(MeshMC_QT_VERSION_MAJOR "6" CACHE STRING "Major Qt version to build against (5 or 6)")
-set_property(CACHE MeshMC_QT_VERSION_MAJOR PROPERTY STRINGS "5" "6")
+# MeshMC builds against Qt 6 only. Qt 5 support was dropped with the move to a
+# QML user interface: Qt Quick Controls, qt_add_qml_module and the QML tooling
+# the UI relies on are Qt 6 APIs.
+#
+# Every subdirectory still reaches Qt through the ${QT_VERSION_MAJOR}
+# indirection rather than hardcoding Qt6::, so this stays the single place that
+# names the major version.
+set(QT_VERSION_MAJOR 6)
 
-if(NOT MeshMC_QT_VERSION_MAJOR STREQUAL "5" AND NOT MeshMC_QT_VERSION_MAJOR STREQUAL "6")
-    message(FATAL_ERROR "MeshMC_QT_VERSION_MAJOR must be either 5 or 6. Got: ${MeshMC_QT_VERSION_MAJOR}")
+# Still a cache variable so that scripts and CI invocations that pass
+# -DMeshMC_QT_VERSION_MAJOR=5 fail loudly instead of quietly building Qt 6 when
+# they asked for something else.
+set(MeshMC_QT_VERSION_MAJOR "6" CACHE STRING "Major Qt version to build against (6 only)")
+set_property(CACHE MeshMC_QT_VERSION_MAJOR PROPERTY STRINGS "6")
+
+if(NOT MeshMC_QT_VERSION_MAJOR STREQUAL "6")
+    message(FATAL_ERROR
+        "MeshMC requires Qt 6; Qt ${MeshMC_QT_VERSION_MAJOR} is no longer supported. "
+        "The QML user interface depends on Qt 6 modules.")
 endif()
-
-set(QT_VERSION_MAJOR "${MeshMC_QT_VERSION_MAJOR}")
 
 # OpenSSL libraries to copy into the package (Windows). Qt loads OpenSSL at
 # runtime instead of linking it, so nothing in the normal deployment chain
 # picks it up; see the "OpenSSL runtime (Windows)" block in
 # launcher/CMakeLists.txt for why this is spelled out by hand.
 #
-# Which files are correct depends on the Qt build: the official Qt 5.15
-# binaries need the 1.1.1 ABI (libssl-1_1-x64.dll, libcrypto-1_1-x64.dll),
-# MSYS2's Qt needs 3.x (libssl-3-x64.dll, libcrypto-3-x64.dll). CI fills this
-# in; leaving it empty only affects packaging, not the build.
+# Which files are correct depends on the Qt build: MSYS2's Qt needs the 3.x
+# ABI (libssl-3-x64.dll, libcrypto-3-x64.dll). CI fills this in; leaving it
+# empty only affects packaging, not the build.
 set(MeshMC_BUNDLE_OPENSSL_LIBS "" CACHE STRING
     "Semicolon-separated list of OpenSSL runtime libraries to ship inside the package")
 
@@ -176,18 +183,19 @@ set(MeshMC_QT_COMPONENTS
     Test
     Xml
     OpenGL
+    # Qt 6 split QOpenGLWidget out of QtWidgets into its own module.
+    OpenGLWidgets
+    # The QML user interface.
+    Qml
+    Quick
+    QuickControls2
 )
 
-if(QT_VERSION_MAJOR EQUAL 6)
-    # Qt 6 split QOpenGLWidget out of QtWidgets into its own module.
-    list(APPEND MeshMC_QT_COMPONENTS OpenGLWidgets)
-    set(MeshMC_QT_MINIMUM_VERSION "6.4.0")
-else()
-    # 5.15 is the final Qt 5 LTS and the oldest release we support: it provides
-    # QtNetworkAuth, versionless CMake commands and the string/container APIs
-    # the codebase already relies on.
-    set(MeshMC_QT_MINIMUM_VERSION "5.15.0")
-endif()
+# 6.4 is the floor because Debian 12 and Ubuntu 24.04 LTS ship Qt 6.4.2 and the
+# launcher should still build from source there. Everything the QML UI needs
+# exists in 6.4: qt_add_qml_module and QML_SINGLETON/QML_ELEMENT (6.2),
+# QQmlEngine::retranslate (5.10), IconImage's color property (6.0).
+set(MeshMC_QT_MINIMUM_VERSION "6.4.0")
 
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${MeshMC_QT_COMPONENTS})
 
