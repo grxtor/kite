@@ -126,6 +126,15 @@ class LaunchTask : public Task
   private: /*methods */
 	void finalizeSteps(bool successful, const QString& error);
 
+	/* Start @p step and, for as long as it runs, relay its status()/
+	 * progress() onto our own - the same way Update relays the update
+	 * task it wraps onto itself. This is what lets something outside the
+	 * step list (InstanceList's launch progress tracking, in particular)
+	 * watch the launch as a whole instead of having to know which step
+	 * is currently running.
+	 */
+	void startStep(const shared_qobject_ptr<LaunchStep>& step);
+
   protected: /* data */
 	InstancePtr m_instance;
 	shared_qobject_ptr<LogModel> m_logModel;
@@ -135,4 +144,8 @@ class LaunchTask : public Task
 	int currentStep = -1;
 	State state = NotStarted;
 	qint64 m_pid = -1;
+
+  private: /* data */
+	QMetaObject::Connection m_stepStatusConnection;
+	QMetaObject::Connection m_stepProgressConnection;
 };

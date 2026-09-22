@@ -48,6 +48,8 @@
 #include "WatchLock.h"
 #include "core/LauncherContext.h"
 #include "icons/IconList.h"
+#include "launch/LaunchProgressTracker.h"
+#include "launch/LaunchTask.h"
 
 const static int GROUP_FILE_FORMAT_VERSION = 1;
 
@@ -303,6 +305,14 @@ QVariant InstanceList::data(const QModelIndex& index, int role) const
 			return context ? context->icons()->tint(pdata->iconKey())
 						   : QColor();
 		}
+		case LaunchStatusRole: {
+			auto* tracker = m_launchTrackers.value(pdata, nullptr);
+			return tracker ? tracker->status() : QString();
+		}
+		case LaunchProgressRole: {
+			auto* tracker = m_launchTrackers.value(pdata, nullptr);
+			return tracker ? tracker->progress() : -1.0;
+		}
 		default:
 			break;
 	}
@@ -324,6 +334,8 @@ QHash<int, QByteArray> InstanceList::roleNames() const
 	roles.insert(GameVersionRole, "gameVersion");
 	roles.insert(LoaderRole, "loader");
 	roles.insert(IconTintRole, "iconTint");
+	roles.insert(LaunchStatusRole, "launchStatus");
+	roles.insert(LaunchProgressRole, "launchProgress");
 	return roles;
 }
 
@@ -780,8 +792,57 @@ void InstanceList::add(const QList<InstancePtr>& t)
 	for (auto& ptr : t) {
 		connect(ptr.get(), &BaseInstance::propertiesChanged, this,
 				&InstanceList::propertiesChanged);
+		trackLaunchProgress(ptr.get());
 	}
 	endInsertRows();
+}
+
+void InstanceList::trackLaunchProgress(BaseInstance* inst)
+{
+	/* Parented to the instance, so it is destroyed along with it rather
+	 * than needing its own removal logic here. */
+	auto* tracker = new LaunchProgressTracker(inst);
+	m_launchTrackers.insert(inst, tracker);
+	connect(inst, &QObject::destroyed, this,
+			[this, inst]() { m_launchTrackers.remove(inst); });
+
+	// A launch task appearing or changing is the tracker's whole job.
+	connect(inst, &BaseInstance::launchTaskChanged, this,
+			[tracker](shared_qobject_ptr<LaunchTask> task) {
+				tracker->watch(task.get());
+				/* The task keeps running for as long as the game does, but
+				 * once the game process is up there is nothing left to
+				 * report: from here on the instance is simply running. */
+				if (task) {
+					connect(task.get(), &LaunchTask::readyForLaunch, tracker,
+							&LaunchProgressTracker::clear);
+				}
+			});
+	connect(tracker, &LaunchProgressTracker::changed, this,
+			[this, inst]() { emitLaunchProgressChanged(inst); });
+
+	/* isRunning() does not come from the tracker - it is a property of
+	 * the instance itself - but its transitions are exactly the moments
+	 * a launch card needs to redraw, same as the two roles above. */
+	connect(inst, &BaseInstance::runningStatusChanged, this,
+			[this, inst](bool) { emitIsRunningChanged(inst); });
+}
+
+void InstanceList::emitLaunchProgressChanged(BaseInstance* inst)
+{
+	int i = getInstIndex(inst);
+	if (i != -1) {
+		emit dataChanged(index(i), index(i),
+						 {LaunchStatusRole, LaunchProgressRole});
+	}
+}
+
+void InstanceList::emitIsRunningChanged(BaseInstance* inst)
+{
+	int i = getInstIndex(inst);
+	if (i != -1) {
+		emit dataChanged(index(i), index(i), {IsRunningRole});
+	}
 }
 
 void InstanceList::resumeWatch()

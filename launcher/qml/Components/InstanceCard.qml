@@ -28,6 +28,10 @@ Item {
     required property string gameVersion
     required property string loader
     required property color iconTint
+    // Empty while nothing is being launched; progress is 0..1, or negative
+    // while the launch cannot say how far along it is.
+    required property string launchStatus
+    required property real launchProgress
 
     property bool selected: false
     // Lets a static review page (Gallery.qml) show the hover state.
@@ -40,6 +44,7 @@ Item {
     signal menuRequested()
 
     readonly property bool hovered: forceHovered || hoverHandler.hovered
+    readonly property bool launching: launchStatus.length > 0
     readonly property int inset: Theme.space.sm - 2
     readonly property int coverHeight: Math.round((width - inset * 2) * 0.6)
 
@@ -114,6 +119,26 @@ Item {
                 Behavior on scale { NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
             }
 
+            // While launching the cover dims and a bar runs along its foot.
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: Qt.rgba(0, 0, 0, 0.45)
+                opacity: root.launching ? 1 : 0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: Theme.motion.normal } }
+            }
+
+            LaunchProgressBar {
+                visible: root.launching
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: Theme.space.sm
+                onMedia: true
+                progress: root.launchProgress
+            }
+
             // Running: a pill in the corner, readable on any tint.
             Rectangle {
                 visible: root.isRunning
@@ -165,8 +190,8 @@ Item {
                 anchors.margins: Theme.space.sm
                 running: root.isRunning
                 enabled: root.isRunning || root.canLaunch
-                opacity: root.hovered || root.isRunning ? 1 : 0
-                scale: root.hovered || root.isRunning ? 1 : 0.85
+                opacity: !root.launching && (root.hovered || root.isRunning) ? 1 : 0
+                scale: !root.launching && (root.hovered || root.isRunning) ? 1 : 0.85
                 visible: opacity > 0
                 focusPolicy: Qt.NoFocus
                 Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
@@ -204,9 +229,9 @@ Item {
                 anchors.right: timeText.left
                 anchors.rightMargin: Theme.space.sm
                 anchors.verticalCenter: parent.verticalCenter
-                text: Format.versionLine(root.loader, root.gameVersion)
+                text: root.launching ? root.launchStatus : Format.versionLine(root.loader, root.gameVersion)
                 elide: Text.ElideRight
-                color: Theme.palette.textSecondary
+                color: root.launching ? Theme.palette.accent : Theme.palette.textSecondary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize
                 font.weight: Font.Medium
@@ -216,8 +241,9 @@ Item {
                 id: timeText
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: Format.lastPlayed(root.lastLaunch)
-                color: Theme.palette.textTertiary
+                text: root.launching ? (root.launchProgress >= 0 ? Math.round(root.launchProgress * 100) + "%" : "")
+                                     : Format.lastPlayed(root.lastLaunch)
+                color: root.launching ? Theme.palette.accent : Theme.palette.textTertiary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize
             }

@@ -33,6 +33,7 @@
 
 class QFileSystemWatcher;
 class InstanceTask;
+class LaunchProgressTracker;
 using InstanceId = QString;
 using GroupId = QString;
 using InstanceLocator = std::pair<InstancePtr, int>;
@@ -116,7 +117,7 @@ class InstanceList : public QAbstractListModel
 	/* Roles added for the QML instance list. instanceId, name, iconKey,
 	 * instanceRoot and group are named in roleNames() but reuse the
 	 * InstanceIDRole/Qt::DisplayRole/Qt::DecorationRole/Qt::ToolTipRole/
-	 * GroupRole cases already handled in data() - only the seven below are
+	 * GroupRole cases already handled in data() - only the nine below are
 	 * genuinely new. InstancePointerRole is deliberately left unnamed: it
 	 * is a raw void*, and QML has no way to dereference one; a QML
 	 * delegate reaches an instance by instanceId instead. */
@@ -127,7 +128,18 @@ class InstanceList : public QAbstractListModel
 		TotalTimePlayedRole,
 		GameVersionRole,
 		LoaderRole,
-		IconTintRole
+		IconTintRole,
+		/* Human-readable status/step text of the instance's active
+		 * launch task (e.g. "Downloading assets..."). Empty when no
+		 * launch is in progress, and empty again once the game is
+		 * running - pair it with LaunchProgressRole to tell those two
+		 * apart. */
+		LaunchStatusRole,
+		/* 0..1 while the active launch task reports determinate
+		 * progress; -1 while it is indeterminate; and -1 as well when
+		 * nothing is happening at all, in which case LaunchStatusRole
+		 * is also empty. */
+		LaunchProgressRole
 	};
 	/*!
 	 * \brief Error codes returned by functions in the InstanceList class.
@@ -369,6 +381,15 @@ class InstanceList : public QAbstractListModel
 	 * watcher onto them. */
 	void applyInstanceDirs(const QStringList& resolved);
 
+	/* Wire @p inst's launch-progress reporting for the QML roles:
+	 * a LaunchProgressTracker (parented to the instance, so it goes away
+	 * with it) watches whichever LaunchTask is current, and dataChanged
+	 * is emitted for this instance's row whenever that changes or
+	 * isRunning() does. Called once, from add(). */
+	void trackLaunchProgress(BaseInstance* inst);
+	void emitLaunchProgressChanged(BaseInstance* inst);
+	void emitIsRunningChanged(BaseInstance* inst);
+
   private:
 	int m_watchLevel = 0;
 	int totalPlayTime = 0;
@@ -397,4 +418,9 @@ class InstanceList : public QAbstractListModel
 	QList<TrashedInstance> m_trashHistory;
 	bool m_groupsLoaded = false;
 	bool m_instancesProbed = false;
+	/* One tracker per instance, for LaunchStatusRole/LaunchProgressRole -
+	 * see trackLaunchProgress(). The tracker itself is owned by the
+	 * instance (QObject parenting); this is only a lookup table for
+	 * data(), kept in sync with the instance's destroyed() signal. */
+	QHash<BaseInstance*, LaunchProgressTracker*> m_launchTrackers;
 };

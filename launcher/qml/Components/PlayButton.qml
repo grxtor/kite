@@ -15,14 +15,17 @@ AbstractButton {
     id: control
 
     property bool running: false
+    // A launch is being prepared: the button stays in place, says so, and
+    // does not fade like a disabled one.
+    property bool busy: false
     property bool round: true
     property int size: Theme.control.height + 4
 
-    text: running ? qsTr("Stop") : qsTr("Play")
+    text: busy ? qsTr("Starting…") : running ? qsTr("Stop") : qsTr("Play")
     hoverEnabled: true
     implicitHeight: size
     implicitWidth: round ? size : Math.max(size * 3, label.implicitWidth + Theme.icon.md + Theme.space.xl * 2 + Theme.space.sm)
-    opacity: enabled ? 1.0 : Theme.opacity.disabled
+    opacity: enabled || busy ? 1.0 : Theme.opacity.disabled
 
     Accessible.name: text
 
@@ -63,6 +66,7 @@ AbstractButton {
 
             MeshIcon {
                 anchors.verticalCenter: parent.verticalCenter
+                visible: !control.busy
                 iconName: control.running ? "stop" : "play"
                 size: control.round ? Math.round(control.size * 0.42) : Theme.icon.md - 2
                 color: Theme.palette.textOnAccent

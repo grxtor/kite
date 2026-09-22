@@ -29,6 +29,7 @@ qt_add_qml_module(MeshMC_qml_components
         LibraryPage.qml
         ContinueCard.qml
         PlayButton.qml
+        LaunchProgressBar.qml
         IconButton.qml
         Tag.qml
         SearchField.qml

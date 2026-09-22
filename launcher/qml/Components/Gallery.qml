@@ -61,16 +61,16 @@ Item {
 
     ListModel {
         id: vanillaModel
-        ListElement { instanceId: "vanilla-1"; name: "Vanilla 1.21.4"; iconKey: "grass"; isRunning: false; canLaunch: true; lastLaunch: 1726000000000; gameVersion: "1.21.4"; loader: ""; iconTint: "#6aa84f" }
-        ListElement { instanceId: "vanilla-2"; name: "Superflat Creative"; iconKey: "stone"; isRunning: false; canLaunch: true; lastLaunch: 0; gameVersion: "1.20.1"; loader: ""; iconTint: "#8a8a8a" }
-        ListElement { instanceId: "vanilla-3"; name: "Hardcore Survival"; iconKey: "tnt"; isRunning: false; canLaunch: true; lastLaunch: 1706000000000; gameVersion: "1.19.4"; loader: ""; iconTint: "#c0392b" }
+        ListElement { instanceId: "vanilla-1"; name: "Vanilla 1.21.4"; iconKey: "grass"; isRunning: false; canLaunch: true; lastLaunch: 1726000000000; gameVersion: "1.21.4"; loader: ""; iconTint: "#6aa84f"; launchStatus: ""; launchProgress: -1 }
+        ListElement { instanceId: "vanilla-2"; name: "Superflat Creative"; iconKey: "stone"; isRunning: false; canLaunch: true; lastLaunch: 0; gameVersion: "1.20.1"; loader: ""; iconTint: "#8a8a8a"; launchStatus: ""; launchProgress: -1 }
+        ListElement { instanceId: "vanilla-3"; name: "Hardcore Survival"; iconKey: "tnt"; isRunning: false; canLaunch: true; lastLaunch: 1706000000000; gameVersion: "1.19.4"; loader: ""; iconTint: "#c0392b"; launchStatus: ""; launchProgress: -1 }
     }
 
     ListModel {
         id: moddedModel
-        ListElement { instanceId: "modded-1"; name: "All the Mods 10"; iconKey: "iron"; isRunning: true; canLaunch: true; lastLaunch: 1726000000000; gameVersion: "1.20.1"; loader: "Fabric"; iconTint: "#b8b8b8" }
-        ListElement { instanceId: "modded-2"; name: "Create: Above and Beyond"; iconKey: "fabric"; isRunning: false; canLaunch: true; lastLaunch: 1706000000000; gameVersion: "1.18.2"; loader: "Fabric"; iconTint: "#d9773f" }
-        ListElement { instanceId: "modded-3"; name: "Enderman Challenge"; iconKey: "enderman"; isRunning: false; canLaunch: true; lastLaunch: 1706000000000; gameVersion: "1.21.1"; loader: "Forge"; iconTint: "#30203a" }
+        ListElement { instanceId: "modded-1"; name: "All the Mods 10"; iconKey: "iron"; isRunning: true; canLaunch: true; lastLaunch: 1726000000000; gameVersion: "1.20.1"; loader: "Fabric"; iconTint: "#b8b8b8"; launchStatus: ""; launchProgress: -1 }
+        ListElement { instanceId: "modded-2"; name: "Create: Above and Beyond"; iconKey: "fabric"; isRunning: false; canLaunch: true; lastLaunch: 1706000000000; gameVersion: "1.18.2"; loader: "Fabric"; iconTint: "#d9773f"; launchStatus: ""; launchProgress: -1 }
+        ListElement { instanceId: "modded-3"; name: "Enderman Challenge"; iconKey: "enderman"; isRunning: false; canLaunch: true; lastLaunch: 1706000000000; gameVersion: "1.21.1"; loader: "Forge"; iconTint: "#30203a"; launchStatus: ""; launchProgress: -1 }
     }
 
     ScrollView {
@@ -226,14 +226,15 @@ Item {
                 spacing: Theme.space.md
 
                 // Every state InstanceCard can be in: rest, forceHovered,
-                // selected, running, never played.
+                // selected, running, never played, launching.
                 Repeater {
                     model: [
                         { instanceId: "card-rest", name: qsTr("Vanilla 1.21.4"), iconKey: "grass", version: "1.21.4", loader: "", last: Date.now() - 2 * 86400000, running: false, hovered: false, selected: false },
                         { instanceId: "card-hovered", name: qsTr("Skyblock Extreme"), iconKey: "diamond", version: "1.20.1", loader: "Fabric", last: Date.now(), running: false, hovered: true, selected: false },
                         { instanceId: "card-selected", name: qsTr("A very long modpack name that needs to wrap"), iconKey: "gold", version: "1.20.1", loader: "Forge", last: Date.now() - 3 * 86400000, running: false, hovered: false, selected: true },
                         { instanceId: "card-running", name: qsTr("Create: Above and Beyond"), iconKey: "enderman", version: "1.18.2", loader: "Fabric", last: Date.now(), running: true, hovered: false, selected: false },
-                        { instanceId: "card-never-played", name: qsTr("Superflat Creative"), iconKey: "stone", version: "1.20.1", loader: "", last: 0, running: false, hovered: false, selected: false }
+                        { instanceId: "card-never-played", name: qsTr("Superflat Creative"), iconKey: "stone", version: "1.20.1", loader: "", last: 0, running: false, hovered: false, selected: false },
+                        { instanceId: "card-launching", name: qsTr("Better Minecraft"), iconKey: "tnt", version: "1.20.1", loader: "Forge", last: 0, running: false, hovered: false, selected: false, status: qsTr("Downloading assets"), progress: 0.45 }
                     ]
 
                     delegate: InstanceCard {
@@ -250,6 +251,8 @@ Item {
                         iconTint: root.iconTints[modelData.iconKey]
                         forceHovered: modelData.hovered
                         selected: modelData.selected
+                        launchStatus: modelData.status || ""
+                        launchProgress: modelData.progress !== undefined ? modelData.progress : -1
                     }
                 }
             }
@@ -274,6 +277,8 @@ Item {
                 gameVersion: "1.20.1"
                 loader: "Fabric"
                 iconTint: root.iconTints.iron
+                launchStatus: ""
+                launchProgress: -1
             }
 
             SectionHeader {

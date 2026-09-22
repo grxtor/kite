@@ -25,6 +25,9 @@ Rectangle {
     required property string gameVersion
     required property string loader
     required property color iconTint
+    required property string launchStatus
+    required property real launchProgress
+    readonly property bool launching: launchStatus.length > 0
 
     property string overline: qsTr("Continue playing")
 
@@ -34,7 +37,7 @@ Rectangle {
     signal folderRequested()
     signal menuRequested()
 
-    implicitHeight: 212
+    implicitHeight: Math.max(212, content.implicitHeight + Theme.space.xxl * 2)
     radius: Theme.radius.xl
     border.width: 1
     border.color: Theme.palette.border
@@ -46,6 +49,7 @@ Rectangle {
     }
 
     Row {
+        id: content
         anchors.left: parent.left
         anchors.leftMargin: Theme.space.xxl
         anchors.right: parent.right
@@ -132,7 +136,8 @@ Rectangle {
                     round: false
                     size: Theme.control.heightLg
                     running: root.isRunning
-                    enabled: root.isRunning || root.canLaunch
+                    busy: root.launching
+                    enabled: !root.launching && (root.isRunning || root.canLaunch)
                     onClicked: root.isRunning ? root.stopRequested() : root.playRequested()
                 }
 
@@ -157,6 +162,28 @@ Rectangle {
                     iconName: "more"
                     tip: qsTr("More")
                     onClicked: root.menuRequested()
+                }
+            }
+
+            Column {
+                visible: root.launching
+                width: Math.min(parent.width, 360)
+                spacing: Theme.space.xs
+
+                Text {
+                    width: parent.width
+                    text: root.launchProgress >= 0
+                          ? qsTr("%1 · %2%").arg(root.launchStatus).arg(Math.round(root.launchProgress * 100))
+                          : root.launchStatus
+                    elide: Text.ElideRight
+                    color: Theme.palette.textSecondary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.label.pixelSize
+                }
+
+                LaunchProgressBar {
+                    width: parent.width
+                    progress: root.launchProgress
                 }
             }
         }

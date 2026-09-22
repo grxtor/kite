@@ -209,6 +209,8 @@ set(LAUNCH_SOURCES
     launch/LaunchStep.h
     launch/LaunchTask.cpp
     launch/LaunchTask.h
+    launch/LaunchProgressTracker.cpp
+    launch/LaunchProgressTracker.h
     launch/LogModel.cpp
     launch/LogModel.h
 )
@@ -1271,6 +1273,11 @@ add_unit_test(ThemePalette
 
 add_unit_test(InstanceFilterModel
     SOURCES models/InstanceFilterModel_test.cpp
+    LIBS MeshMC_core
+    )
+
+add_unit_test(LaunchProgressTracker
+    SOURCES launch/LaunchProgressTracker_test.cpp
     LIBS MeshMC_core
     )
 
