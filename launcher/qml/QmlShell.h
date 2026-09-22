@@ -62,6 +62,9 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* recentModel READ recentModel CONSTANT)
 	/// At most one row: the instance whose id QML writes into instanceId.
 	Q_PROPERTY(QObject* heroModel READ heroModel CONSTANT)
+	/// Same, for the instance page -- separate, since the library's hero
+	/// keeps following its own choice underneath.
+	Q_PROPERTY(QObject* instancePageModel READ instancePageModel CONSTANT)
 
   public:
 	explicit QmlShell(QObject* parent = nullptr);
@@ -98,6 +101,7 @@ class QmlShell : public QObject
 										const QString& group);
 	QObject* recentModel() const;
 	QObject* heroModel() const;
+	QObject* instancePageModel() const;
 	/* The instances of one group (empty = ungrouped) that pass the search,
 	 * for one section of the library. Created on first use and kept, so
 	 * QML asking again from a rebuilt delegate gets the same model back. */
@@ -149,6 +153,7 @@ class QmlShell : public QObject
 	std::unique_ptr<InstanceFilterModel> m_instances;
 	std::unique_ptr<InstanceFilterModel> m_recent;
 	std::unique_ptr<InstanceFilterModel> m_hero;
+	std::unique_ptr<InstanceFilterModel> m_instancePage;
 	// Declared after m_instances, their source, so they are destroyed first.
 	std::map<QString, std::unique_ptr<InstanceFilterModel>> m_sections;
 	std::unique_ptr<IdSelectionModel> m_selection;

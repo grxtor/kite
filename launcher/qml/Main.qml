@@ -27,8 +27,20 @@ ApplicationWindow {
     color: Theme.palette.canvas
 
     property string selectedId: ""
-    // "library", "discover" or "settings".
+    // "library", "discover", "settings" or "instance".
     property string page: "library"
+    // The instance the instance page shows.
+    property string openedInstanceId: ""
+    property var openedDetails: null
+
+    function openInstance(id) {
+        if (!root.shell || typeof root.shell.instanceDetails !== "function")
+            return
+        root.openedDetails = root.shell.instanceDetails(id)
+        root.openedInstanceId = id
+        root.selectedId = id
+        root.page = "instance"
+    }
 
     Component.onCompleted: {
         if (root.shell && root.shell.settings) {
@@ -54,6 +66,13 @@ ApplicationWindow {
         sequences: [StandardKey.Find]
         onActivated: topBar.focusSearch()
     }
+    Binding {
+        target: root.shell && root.shell.instancePageModel ? root.shell.instancePageModel : null
+        property: "instanceId"
+        value: root.openedInstanceId.length > 0 ? root.openedInstanceId : "/"
+        when: !!root.shell && !!root.shell.instancePageModel
+    }
+
     Shortcut {
         sequences: [StandardKey.New]
         onActivated: root.call("createInstance")
@@ -73,7 +92,7 @@ ApplicationWindow {
             footerItems: [
                 { id: "settings", icon: "settings", label: qsTr("Settings") }
             ]
-            currentId: root.page
+            currentId: root.page === "instance" ? "library" : root.page
             recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
             accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
             accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
@@ -95,6 +114,8 @@ ApplicationWindow {
             TopBar {
                 id: topBar
                 Layout.fillWidth: true
+                // The instance page has its own banner and way back.
+                visible: root.page !== "instance"
                 title: root.page === "settings" ? qsTr("Settings")
                      : root.page === "discover" ? qsTr("Discover") : qsTr("Library")
                 count: root.page === "library" && root.instanceModel && root.instanceModel.count !== undefined
@@ -118,7 +139,7 @@ ApplicationWindow {
                 // A page's own minimum must never widen the window past
                 // what it is; pages lay themselves out in what they get.
                 Layout.minimumWidth: 0
-                currentIndex: root.page === "settings" ? 1 : root.page === "discover" ? 2 : 0
+                currentIndex: ["library", "settings", "discover", "instance"].indexOf(root.page)
 
                 LibraryPage {
                     focus: true
@@ -135,7 +156,7 @@ ApplicationWindow {
                     onSelectRequested: (id) => root.selectedId = id
                     onLaunchRequested: (id) => root.call("launchInstance", id)
                     onStopRequested: (id) => root.call("killInstance", id)
-                    onEditRequested: (id) => root.call("editInstance", id)
+                    onEditRequested: (id) => root.openInstance(id)
                     onFolderRequested: (id) => root.call("openInstanceFolder", id)
                     onCreateRequested: root.call("createInstance")
                     onClearSearchRequested: topBar.searchText = ""
@@ -158,6 +179,17 @@ ApplicationWindow {
                             root.selectedId = id
                     }
                     onOtherPlatformsRequested: root.call("createInstance")
+                }
+
+                InstancePage {
+                    headerModel: root.shell && root.shell.instancePageModel ? root.shell.instancePageModel : null
+                    details: root.openedDetails
+                    systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
+                    onBackRequested: root.page = "library"
+                    onLaunchRequested: (id) => root.call("launchInstance", id)
+                    onStopRequested: (id) => root.call("killInstance", id)
+                    onClassicEditorRequested: (id) => root.call("editInstance", id)
+                    onOpenPathRequested: (path) => root.call("openPath", path)
                 }
             }
         }

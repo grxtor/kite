@@ -9,15 +9,17 @@ SettingRow {
     id: root
 
     property string key
+    // Where the value lives; the launcher-wide settings unless told otherwise.
+    property var source: SettingsStore
     // [{ value, label }]
     property var options: []
     signal changed(var value)
 
     SegmentedControl {
         options: root.options
-        current: SettingsStore.string(root.key)
+        current: root.source.string(root.key)
         onActivated: (value) => {
-            SettingsStore.setValue(root.key, value)
+            root.source.setValue(root.key, value)
             root.changed(value)
         }
     }

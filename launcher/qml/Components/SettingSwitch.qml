@@ -11,18 +11,23 @@ SettingRow {
     id: root
 
     property string key
+    // Where the value lives; the launcher-wide settings unless told otherwise.
+    property var source: SettingsStore
     property bool invert: false
-    readonly property bool checked: root.invert !== SettingsStore.bool(root.key)
+    readonly property bool checked: root.invert !== root.source.bool(root.key)
+    // After the new value is stored; `on` is what the switch now shows.
+    signal switched(bool on)
 
     Switch {
         id: control
         checked: root.checked
         Accessible.name: root.label
         onToggled: {
-            SettingsStore.setValue(root.key, root.invert ? !checked : checked)
+            root.source.setValue(root.key, root.invert ? !checked : checked)
             // Toggling assigns `checked` and drops the binding; put it back
             // so a change made elsewhere still shows here.
             checked = Qt.binding(() => root.checked)
+            root.switched(checked)
         }
     }
 }

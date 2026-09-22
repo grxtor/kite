@@ -191,6 +191,11 @@ QObject* QmlShell::heroModel() const
 	return expose(m_hero.get());
 }
 
+QObject* QmlShell::instancePageModel() const
+{
+	return expose(m_instancePage.get());
+}
+
 QObject* QmlShell::sectionModel(const QString& group)
 {
 	if (!m_instances) {
@@ -267,6 +272,9 @@ bool QmlShell::show(bool minimized)
 	 * every instance as a hero. Ids are folder names; none contains '/'. */
 	m_hero->setInstanceId(QStringLiteral("/"));
 	m_hero->setSourceModel(LAUNCHER->instances().get());
+	m_instancePage = std::make_unique<InstanceFilterModel>();
+	m_instancePage->setInstanceId(QStringLiteral("/"));
+	m_instancePage->setSourceModel(LAUNCHER->instances().get());
 	m_selection = std::make_unique<IdSelectionModel>();
 	m_settings = std::make_unique<SettingsAdapter>(LAUNCHER->settings());
 	m_modpacks = std::make_unique<ModrinthModpackModel>();

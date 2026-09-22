@@ -14,6 +14,8 @@ SettingRow {
     id: root
 
     property string key
+    // Where the value lives; the launcher-wide settings unless told otherwise.
+    property var source: SettingsStore
     property string placeholder
     property bool monospace: false
     property bool secret: false
@@ -28,9 +30,9 @@ SettingRow {
         selectByMouse: true
         Accessible.name: root.label
 
-        readonly property string stored: SettingsStore.string(root.key)
+        readonly property string stored: root.source.string(root.key)
         onStoredChanged: if (!activeFocus) text = stored
         Component.onCompleted: text = stored
-        onEditingFinished: if (text !== stored) SettingsStore.setValue(root.key, text)
+        onEditingFinished: if (text !== stored) root.source.setValue(root.key, text)
     }
 }

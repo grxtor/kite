@@ -11,11 +11,13 @@ SettingRow {
     id: root
 
     property string key
+    // Where the value lives; the launcher-wide settings unless told otherwise.
+    property var source: SettingsStore
     property int from: 0
     property int to: 100
     property int stepSize: 1
     property string suffix
-    readonly property int current: SettingsStore.number(root.key)
+    readonly property int current: root.source.number(root.key)
     signal changed(int value)
 
     SpinBox {
@@ -34,7 +36,7 @@ SettingRow {
         }
         Accessible.name: root.label
         onValueModified: {
-            SettingsStore.setValue(root.key, value)
+            root.source.setValue(root.key, value)
             root.changed(value)
             value = Qt.binding(() => root.current)
         }

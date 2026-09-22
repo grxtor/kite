@@ -42,6 +42,18 @@ qt_add_qml_module(MeshMC_qml_components
         SettingsScroll.qml
         SettingsGroup.qml
         SettingsStore.qml
+        SettingsSource.qml
+        OverrideGroup.qml
+        InstanceSettingsTab.qml
+        InstanceOverviewTab.qml
+        InstancePage.qml
+        ModsTab.qml
+        WorldsTab.qml
+        ScreenshotsTab.qml
+        LogTab.qml
+        TabStrip.qml
+        StatTile.qml
+        ConfirmDialog.qml
         SettingRow.qml
         SettingSwitch.qml
         SettingChoice.qml

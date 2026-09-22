@@ -30,6 +30,7 @@ Rectangle {
     readonly property bool launching: launchStatus.length > 0
 
     property string overline: qsTr("Continue playing")
+    property string editText: qsTr("Edit")
 
     signal playRequested()
     signal stopRequested()
@@ -143,7 +144,7 @@ Rectangle {
 
                 Button {
                     height: Theme.control.heightLg
-                    text: qsTr("Edit")
+                    text: root.editText
                     icon.source: Icons.url("settings")
                     onClicked: root.editRequested()
                 }

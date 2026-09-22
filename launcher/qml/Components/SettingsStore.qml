@@ -6,59 +6,6 @@ pragma Singleton
 
 import QtQuick
 
-/*
- * The one place setting rows reach the launcher's settings through. The
- * shell hands in its SettingsAdapter once; `revision` moves on every
- * change, so a binding that reads value() through here re-evaluates when
- * anything -- this page, the widget dialog, a plugin -- changes a setting.
- */
-QtObject {
-    id: store
-
-    property var adapter: null
-    property int revision: 0
-
-    readonly property Connections watcher: Connections {
-        target: store.adapter
-        ignoreUnknownSignals: true
-        function onValueChanged() { store.revision++ }
-    }
-
-    function value(key) {
-        // Reading revision makes every caller's binding depend on it.
-        return store.revision >= 0 && store.adapter ? store.adapter.value(key) : undefined
-    }
-
-    // Settings read back from the config file can be strings ("false" is
-    // truthy in JS), so rows go through these instead of value() directly.
-    function bool(key) {
-        var v = store.value(key)
-        return v === true || v === "true" || v === 1 || v === "1"
-    }
-
-    function number(key) {
-        var n = Number(store.value(key))
-        return isNaN(n) ? 0 : n
-    }
-
-    function string(key) {
-        var v = store.value(key)
-        return v === undefined || v === null ? "" : String(v)
-    }
-
-    function setValue(key, value) {
-        if (store.adapter)
-            store.adapter.setValue(key, value)
-    }
-
-    function reset(key) {
-        if (store.adapter)
-            store.adapter.reset(key)
-    }
-
-    function isDefault(key) {
-        return store.revision >= 0 && store.adapter
-                ? String(store.adapter.value(key)) === String(store.adapter.defaultValue(key))
-                : true
-    }
-}
+// The launcher-wide settings; the shell sets `adapter` once at startup.
+// Setting rows use this unless they are given another `source`.
+SettingsSource {}

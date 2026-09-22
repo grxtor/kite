@@ -19,12 +19,14 @@ SettingRow {
     id: root
 
     property string key: "MaxMemAlloc"
+    // Where the value lives; the launcher-wide settings unless told otherwise.
+    property var source: SettingsStore
     property string minKey: "MinMemAlloc"
     property int systemMiB: 8192
     readonly property int step: 256
     readonly property int floor: 512
     readonly property int ceiling: Math.max(floor + step, Math.floor(systemMiB / step) * step)
-    readonly property int stored: SettingsStore.number(root.key)
+    readonly property int stored: root.source.number(root.key)
     // Past three quarters of the machine's RAM the game starts competing
     // with the OS and everything else that's open.
     readonly property bool tooMuch: slider.value > systemMiB * 0.75
@@ -55,9 +57,9 @@ SettingRow {
                 if (pressed)
                     return
                 var max = Math.round(value)
-                SettingsStore.setValue(root.key, max)
-                if (SettingsStore.number(root.minKey) > max)
-                    SettingsStore.setValue(root.minKey, max)
+                root.source.setValue(root.key, max)
+                if (root.source.number(root.minKey) > max)
+                    root.source.setValue(root.minKey, max)
                 value = Qt.binding(() => root.stored)
             }
         }
