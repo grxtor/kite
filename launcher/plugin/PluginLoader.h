@@ -25,6 +25,8 @@
 #include <QStringList>
 #include <QVector>
 
+#include <cstdint>
+
 /*
  * PluginLoader — scans known directories for .mmco module files and
  * performs the low-level dlopen / symbol resolution.
@@ -73,6 +75,26 @@ class PluginLoader
 	 * Close a previously loaded module.
 	 */
 	static void unloadModule(PluginMetadata& meta);
+
+	/*
+	 * Build the PluginDisableReason and human-readable, translated detail
+	 * for a module whose declared abi_version falls outside
+	 * [abiMin, abiMax]. Only called by loadModule() once it has already
+	 * decided the range check failed, but kept as its own static
+	 * function -- and public -- so the reason/message formatting can be
+	 * unit-tested without dlopen()'ing a real .mmco file: the wording
+	 * depends only on these plain values, never on anything read from
+	 * the module beyond the name loadModule() already captured.
+	 *
+	 * `moduleName` is the module's declared name, or empty if
+	 * mmco_module_info::name was null/blank; `fallbackLabel` (typically
+	 * the .mmco file path) is used in the message in that case so the
+	 * user still gets something to identify the module by.
+	 */
+	static PluginDisableReason
+	classifyAbiMismatch(const QString& moduleName, const QString& fallbackLabel,
+						uint32_t builtForAbi, uint32_t abiMin, uint32_t abiMax,
+						QString& outDetail);
 
 	/*
 	 * Return the ordered list of directories that will be scanned.

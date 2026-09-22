@@ -57,6 +57,12 @@ enum class PluginDisableReason {
 	DependencyCycle,   /* This module is part of a dependency cycle */
 	SupersededByCore,  /* Functionality moved into the launcher itself —
 						  see plugin/CoreSupersededPlugins.h */
+	AbiTooOld,		   /* Built against an ABI older than
+						  MMCO_ABI_VERSION_MIN -- the module predates a
+						  floor raise and needs the author to update it */
+	AbiTooNew,		   /* Built against an ABI newer than
+						  MMCO_ABI_VERSION -- built for a MeshMC newer
+						  than this one */
 };
 
 struct PluginDependencyRecord {

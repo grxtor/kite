@@ -1249,6 +1249,13 @@ add_unit_test(CustomTheme
     LIBS MeshMC_logic
     )
 
+# MeshMC_logic: the plugin host lives there until the declarative plugin ABI
+# lets it move out of the widget UI's target.
+add_unit_test(PluginLoader
+    SOURCES plugin/PluginLoader_test.cpp
+    LIBS MeshMC_logic
+    )
+
 add_unit_test(Contrast
     SOURCES theme/Contrast_test.cpp
     LIBS MeshMC_logic

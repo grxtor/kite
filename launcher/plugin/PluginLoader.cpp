@@ -268,6 +268,16 @@ PluginMetadata PluginLoader::loadModule(const QString& path) const
 		return meta;
 	}
 
+	// Capture identity fields before the ABI gate below. `name` and
+	// `version` sit in MMCOModuleInfo ahead of the "ABI 2 fields" block
+	// (see MMCOFormat.h) and have kept the same offsets since the
+	// format's first revision, so reading them here does not trust
+	// anything beyond what the magic check above already trusts. A
+	// module we are about to refuse for its ABI still deserves a name
+	// and version in the plugins dialog instead of just vanishing.
+	meta.name = QString::fromUtf8(info->name ? info->name : "");
+	meta.version = QString::fromUtf8(info->version ? info->version : "");
+
 	// Validate ABI version.
 	//
 	// Range-accept: any ABI from MMCO_ABI_VERSION_MIN through the
@@ -284,13 +294,23 @@ PluginMetadata PluginLoader::loadModule(const QString& path) const
 				   << "ABI version mismatch:" << info->abi_version
 				   << "(host supports" << MMCO_ABI_VERSION_MIN << ".."
 				   << MMCO_ABI_VERSION << ")";
-		unloadModule(meta);
+
+		// Unlike the magic/missing-symbol failures above, this file IS a
+		// real MMCO module — just one built for an ABI this launcher
+		// cannot safely initialise. Keep it "loaded" (the library handle
+		// stays open, same as the signature-policy disables further
+		// down) so the plugins dialog still shows its name/version and
+		// why it was refused, instead of the file silently disappearing.
+		meta.loaded = true;
+		meta.disabled = true;
+		meta.disableReason =
+			classifyAbiMismatch(meta.name, path, info->abi_version,
+								MMCO_ABI_VERSION_MIN, MMCO_ABI_VERSION,
+								meta.disableDetail);
 		return meta;
 	}
 
 	meta.moduleInfo = info;
-	meta.name = QString::fromUtf8(info->name ? info->name : "");
-	meta.version = QString::fromUtf8(info->version ? info->version : "");
 	meta.author = QString::fromUtf8(info->author ? info->author : "");
 	meta.description =
 		QString::fromUtf8(info->description ? info->description : "");
@@ -429,6 +449,31 @@ void PluginLoader::verifySignatureAndPolicy(PluginMetadata& meta)
 			// terminal states.
 			break;
 	}
+}
+
+PluginDisableReason
+PluginLoader::classifyAbiMismatch(const QString& moduleName,
+								  const QString& fallbackLabel,
+								  uint32_t builtForAbi, uint32_t abiMin,
+								  uint32_t abiMax, QString& outDetail)
+{
+	const QString label = moduleName.isEmpty() ? fallbackLabel : moduleName;
+
+	// QCoreApplication::translate() rather than tr(): PluginLoader is not
+	// a QObject, so it has no tr() of its own, but the message is still
+	// user-facing and needs to go through Qt's translation machinery.
+	outDetail = QCoreApplication::translate(
+					"PluginLoader",
+					"“%1” was built for plugin ABI %2; this MeshMC "
+					"supports %3–%4. It needs to be updated by its "
+					"author.")
+					.arg(label)
+					.arg(builtForAbi)
+					.arg(abiMin)
+					.arg(abiMax);
+
+	return builtForAbi < abiMin ? PluginDisableReason::AbiTooOld
+								 : PluginDisableReason::AbiTooNew;
 }
 
 void PluginLoader::unloadModule(PluginMetadata& meta)

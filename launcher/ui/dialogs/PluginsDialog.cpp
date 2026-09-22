@@ -55,6 +55,10 @@ namespace
 				return QObject::tr("Dependency cycle");
 			case PluginDisableReason::SupersededByCore:
 				return QObject::tr("Built into MeshMC");
+			case PluginDisableReason::AbiTooOld:
+				return QObject::tr("Plugin ABI too old");
+			case PluginDisableReason::AbiTooNew:
+				return QObject::tr("Plugin ABI too new");
 		}
 		return QString();
 	}
