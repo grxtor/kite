@@ -34,7 +34,7 @@
 #include "net/ChecksumValidator.h"
 #include "BuildConfig.h"
 
-#include "Application.h"
+#include "core/LauncherContext.h"
 
 namespace
 {
@@ -313,7 +313,7 @@ QString AssetObject::getRelPath()
 NetJob::Ptr AssetsIndex::getDownloadJob()
 {
 	auto job = new NetJob(QObject::tr("Assets for %1").arg(id),
-						  APPLICATION->network());
+						  LAUNCHER->network());
 	for (auto& object : objects.values()) {
 		auto dl = object.getDownloadAction();
 		if (dl) {

@@ -34,6 +34,7 @@
 #include "Logging.h"
 
 #include "minecraft/launch/MinecraftServerTarget.h"
+#include "core/LauncherContext.h"
 
 class LaunchController;
 class LocalPeer;
@@ -88,7 +89,7 @@ enum class LaunchMode
 #endif
 #define APPLICATION (static_cast<Application*>(QCoreApplication::instance()))
 
-class Application : public QApplication
+class Application : public QApplication, public LauncherContext
 {
 	// friends for the purpose of limiting access to deprecated stuff
 	Q_OBJECT
@@ -104,7 +105,7 @@ class Application : public QApplication
 		return m_pluginManager.get();
 	}
 
-	std::shared_ptr<SettingsObject> settings() const
+	std::shared_ptr<SettingsObject> settings() const override
 	{
 		return m_settings;
 	}
@@ -114,7 +115,7 @@ class Application : public QApplication
 		return startTime.msecsTo(QDateTime::currentDateTime());
 	}
 
-	QIcon getThemedIcon(const QString& name);
+	QIcon getThemedIcon(const QString& name) override;
 
 	void setIconTheme(const QString& name);
 
@@ -140,12 +141,12 @@ class Application : public QApplication
 
 	std::shared_ptr<JavaInstallList> javalist();
 
-	std::shared_ptr<InstanceList> instances() const
+	std::shared_ptr<InstanceList> instances() const override
 	{
 		return m_instances;
 	}
 
-	std::shared_ptr<IconList> icons() const
+	std::shared_ptr<IconList> icons() const override
 	{
 		return m_icons;
 	}
@@ -155,12 +156,12 @@ class Application : public QApplication
 		return m_mcedit.get();
 	}
 
-	shared_qobject_ptr<AccountList> accounts() const
+	shared_qobject_ptr<AccountList> accounts() const override
 	{
 		return m_accounts;
 	}
 
-	QString msaClientId() const;
+	QString msaClientId() const override;
 
 	Status status() const
 	{
@@ -175,13 +176,15 @@ class Application : public QApplication
 	void updateProxySettings(QString proxyTypeStr, QString addr, int port,
 							 QString user, QString password);
 
-	shared_qobject_ptr<QNetworkAccessManager> network();
+	shared_qobject_ptr<QNetworkAccessManager> network() override;
 
-	shared_qobject_ptr<HttpMetaCache> metacache();
+	shared_qobject_ptr<HttpMetaCache> metacache() override;
 
-	shared_qobject_ptr<Meta::Index> metadataIndex();
+	shared_qobject_ptr<Meta::Index> metadataIndex() override;
 
-	QString getJarsPath();
+	QString getJarsPath() override;
+
+	AuthRequestDecorator* authRequestDecorator() const override;
 
 	/// this is the root of the 'installation'. Used for automatic updates
 	const QString& root()
@@ -324,6 +327,10 @@ class Application : public QApplication
 
 	SetupWizard* m_setupWizard = nullptr;
 	std::unique_ptr<PluginManager> m_pluginManager;
+
+	/* Built alongside m_pluginManager, so it is null in builds without the
+	 * plugin host (MeshMC_PLUGINS is OFF by default). */
+	std::unique_ptr<AuthRequestDecorator> m_authRequestDecorator;
 
   public:
 	QString m_instanceIdToLaunch;

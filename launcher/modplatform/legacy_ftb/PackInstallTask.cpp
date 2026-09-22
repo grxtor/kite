@@ -30,7 +30,7 @@
 #include "minecraft/GradleSpecifier.h"
 
 #include "BuildConfig.h"
-#include "Application.h"
+#include "core/LauncherContext.h"
 
 namespace LegacyFTB
 {
@@ -57,7 +57,7 @@ namespace LegacyFTB
 			QString("%1/%2/%3")
 				.arg(m_pack.dir, m_version.replace(".", "_"), m_pack.file);
 		auto entry =
-			APPLICATION->metacache()->resolveEntry("FTBPacks", packoffset);
+			LAUNCHER->metacache()->resolveEntry("FTBPacks", packoffset);
 		netJobContainer = new NetJob("Download FTB Pack", m_network);
 
 		entry->setStale(true);

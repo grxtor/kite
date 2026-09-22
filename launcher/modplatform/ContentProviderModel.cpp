@@ -24,7 +24,7 @@
 #include <QUrl>
 #include <utility>
 
-#include "Application.h"
+#include "core/LauncherContext.h"
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "net/Download.h"
 #include "net/HttpMetaCache.h"
@@ -90,7 +90,7 @@ QVariant ContentProviderModel::data(const QModelIndex& index, int role) const
 			}
 			const_cast<ContentProviderModel*>(this)->requestLogo(
 				project.logoKey, project.logoUrl);
-			return APPLICATION->getThemedIcon("screenshot-placeholder");
+			return LAUNCHER->getThemedIcon("screenshot-placeholder");
 		}
 
 		case Qt::SizeHintRole:
@@ -195,7 +195,7 @@ void ContentProviderModel::loadCategories()
 
 	auto response = std::make_shared<QByteArray>();
 	auto* job = new NetJob(QString("%1::Categories").arg(m_api.id()),
-						   APPLICATION->network());
+						   LAUNCHER->network());
 	job->addNetAction(Net::Download::makeByteArray(
 		m_api.categoriesUrl(m_contentType), response.get()));
 
@@ -366,7 +366,7 @@ void ContentProviderModel::performPaginatedSearch()
 					  .arg(m_api.id(), m_projectLookupId);
 	}
 
-	auto* job = new NetJob(jobName, APPLICATION->network());
+	auto* job = new NetJob(jobName, LAUNCHER->network());
 	job->addNetAction(
 		Net::Download::makeByteArray(url, &m_searchResponse));
 
@@ -504,7 +504,7 @@ void ContentProviderModel::loadEntry(int viewRow)
 		auto response = std::make_shared<QByteArray>();
 		auto* job = new NetJob(QString("%1::Versions(%2)")
 								   .arg(m_api.id(), projectId),
-							   APPLICATION->network());
+							   LAUNCHER->network());
 		job->addNetAction(Net::Download::makeByteArray(
 			m_api.projectVersionsUrl(query), response.get()));
 
@@ -532,7 +532,7 @@ void ContentProviderModel::loadEntry(int viewRow)
 		auto response = std::make_shared<QByteArray>();
 		auto* job = new NetJob(
 			QString("%1::Description(%2)").arg(m_api.id(), projectId),
-			APPLICATION->network());
+			LAUNCHER->network());
 		job->addNetAction(Net::Download::makeByteArray(
 			m_api.projectBodyUrl(projectId), response.get()));
 
@@ -675,11 +675,11 @@ void ContentProviderModel::requestLogo(const QString& key, const QString& url)
 		return;
 	}
 
-	MetaEntryPtr entry = APPLICATION->metacache()->resolveEntry(
+	MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
 		iconCacheName(), QString("logos/%1").arg(key.section(".", 0, 0)));
 
 	auto* job = new NetJob(QString("%1 Icon %2").arg(m_api.id(), key),
-						   APPLICATION->network());
+						   LAUNCHER->network());
 	job->addNetAction(Net::Download::makeCached(QUrl(url), entry));
 
 	const QString fullPath = entry->getFullPath();

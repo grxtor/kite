@@ -7,6 +7,13 @@ project(application)
 include (UnitTest)
 
 set(CORE_SOURCES
+    # The services the core is allowed to reach for, and the interfaces it
+    # declares for things it needs but must not depend on. Nothing here may
+    # mention QtWidgets.
+    core/LauncherContext.h
+    core/LauncherContext.cpp
+    core/AuthRequestDecorator.h
+
     # LOGIC - Base classes and infrastructure
     BaseInstaller.h
     BaseInstaller.cpp
@@ -381,8 +388,6 @@ set(MINECRAFT_SOURCES
     minecraft/ParseUtils.h
     minecraft/ProfileUtils.cpp
     minecraft/ProfileUtils.h
-    minecraft/ShortcutUtils.cpp
-    minecraft/ShortcutUtils.h
     minecraft/Library.cpp
     minecraft/Library.h
     minecraft/MojangDownloadInfo.h
@@ -694,6 +699,10 @@ add_unit_test(PackContents
     )
 
 set(PLUGIN_SOURCES
+    # Supplies core-declared interfaces that need the plugin host to run.
+    plugin/PluginAuthRequestDecorator.h
+    plugin/PluginAuthRequestDecorator.cpp
+
     # MMCO Plugin System
     plugin/MMCOFormat.h
     plugin/PluginHooks.h
@@ -799,6 +808,8 @@ SET(MESHMC_SOURCES
     ui/ColorCache.h
     ui/ColorCache.cpp
     ui/MainWindow.h
+    ui/ShortcutUtils.cpp
+    ui/ShortcutUtils.h
     ui/MainWindow.cpp
     ui/MacMenuBar.h
     ui/MacMenuBar.cpp
@@ -848,8 +859,8 @@ SET(MESHMC_SOURCES
     InstancePageProvider.h
 
     # Common java checking UI
-    JavaCommon.h
-    JavaCommon.cpp
+    ui/JavaCommon.h
+    ui/JavaCommon.cpp
 
     # GUI - paged dialog base
     ui/pages/BasePage.h

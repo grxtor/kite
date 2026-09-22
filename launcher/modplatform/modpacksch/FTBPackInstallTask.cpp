@@ -29,7 +29,7 @@
 #include "settings/INISettingsObject.h"
 
 #include "BuildConfig.h"
-#include "Application.h"
+#include "core/LauncherContext.h"
 
 #include <QDateTime>
 
@@ -77,7 +77,7 @@ namespace ModpacksCH
 		}
 
 		auto* netJob =
-			new NetJob("ModpacksCH::VersionFetch", APPLICATION->network());
+			new NetJob("ModpacksCH::VersionFetch", LAUNCHER->network());
 		auto searchUrl = QString(BuildConfig.MODPACKSCH_API_BASE_URL +
 								 "public/modpack/%1/%2")
 							 .arg(m_pack.id)
@@ -130,7 +130,7 @@ namespace ModpacksCH
 	{
 		setStatus(tr("Downloading mods..."));
 
-		jobPtr = new NetJob(tr("Mod download"), APPLICATION->network());
+		jobPtr = new NetJob(tr("Mod download"), LAUNCHER->network());
 		for (auto file : m_version.files) {
 			if (file.serverOnly)
 				continue;
@@ -144,7 +144,7 @@ namespace ModpacksCH
 			auto cacheName = fileName.completeBaseName() + "-" + file.sha1 +
 							 "." + fileName.suffix();
 
-			auto entry = APPLICATION->metacache()->resolveEntry(
+			auto entry = LAUNCHER->metacache()->resolveEntry(
 				"ModpacksCHPacks", cacheName);
 			entry->setStale(true);
 

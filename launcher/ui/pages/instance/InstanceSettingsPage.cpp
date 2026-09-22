@@ -29,7 +29,7 @@
 #include "ui/dialogs/VersionSelectDialog.h"
 #include "ui/widgets/CustomCommands.h"
 
-#include "JavaCommon.h"
+#include "ui/JavaCommon.h"
 #include "Application.h"
 
 #include "java/JavaInstallList.h"

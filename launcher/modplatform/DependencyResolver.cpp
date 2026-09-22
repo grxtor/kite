@@ -18,8 +18,8 @@
  */
 
 #include "DependencyResolver.h"
-#include "Application.h"
 #include "Json.h"
+#include "core/LauncherContext.h"
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "modplatform/ContentType.h"
 #include "modplatform/VersionPicker.h"
@@ -222,7 +222,7 @@ void DependencyResolver::request(const QString& name, const QUrl& url,
 	 * of them runs, and if the job dies without either firing the buffer
 	 * goes with it instead of leaking. */
 	auto response = std::make_shared<QByteArray>();
-	auto* job = new NetJob(name, APPLICATION->network());
+	auto* job = new NetJob(name, LAUNCHER->network());
 	job->addNetAction(Net::Download::makeByteArray(url, response.get()));
 
 	m_pendingRequests++;

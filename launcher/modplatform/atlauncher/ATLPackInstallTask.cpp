@@ -39,7 +39,7 @@
 #include "meta/VersionList.h"
 
 #include "BuildConfig.h"
-#include "Application.h"
+#include "core/LauncherContext.h"
 
 namespace ATLauncher
 {
@@ -71,7 +71,7 @@ namespace ATLauncher
 		qDebug() << "PackInstallTask::executeTask: "
 				 << QThread::currentThreadId();
 		auto* netJob =
-			new NetJob("ATLauncher::VersionFetch", APPLICATION->network());
+			new NetJob("ATLauncher::VersionFetch", LAUNCHER->network());
 		auto searchUrl = QString(BuildConfig.ATL_DOWNLOAD_SERVER_URL +
 								 "packs/%1/versions/%2/Configs.json")
 							 .arg(m_pack)
@@ -114,7 +114,7 @@ namespace ATLauncher
 		}
 		m_version = version;
 
-		auto vlist = APPLICATION->metadataIndex()->get("net.minecraft");
+		auto vlist = LAUNCHER->metadataIndex()->get("net.minecraft");
 		if (!vlist) {
 			emitFailed(tr("Failed to get local metadata index for %1")
 						   .arg("net.minecraft"));
@@ -198,7 +198,7 @@ namespace ATLauncher
 	{
 		if (m_version.loader.recommended || m_version.loader.latest ||
 			m_version.loader.choose) {
-			auto vlist = APPLICATION->metadataIndex()->get(uid);
+			auto vlist = LAUNCHER->metadataIndex()->get(uid);
 			if (!vlist) {
 				emitFailed(
 					tr("Failed to get local metadata index for %1").arg(uid));
@@ -460,7 +460,7 @@ namespace ATLauncher
 		qDebug() << "PackInstallTask::installConfigs: "
 				 << QThread::currentThreadId();
 		setStatus(tr("Downloading configs..."));
-		jobPtr = new NetJob(tr("Config download"), APPLICATION->network());
+		jobPtr = new NetJob(tr("Config download"), LAUNCHER->network());
 
 		auto path =
 			QString("Configs/%1/%2.zip").arg(m_pack).arg(m_version_name);
@@ -469,7 +469,7 @@ namespace ATLauncher
 					   .arg(m_pack)
 					   .arg(m_version_name);
 		auto entry =
-			APPLICATION->metacache()->resolveEntry("ATLauncherPacks", path);
+			LAUNCHER->metacache()->resolveEntry("ATLauncherPacks", path);
 		entry->setStale(true);
 
 		auto dl = Net::Download::makeCached(url, entry);
@@ -546,7 +546,7 @@ namespace ATLauncher
 		setStatus(tr("Downloading mods..."));
 
 		jarmods.clear();
-		jobPtr = new NetJob(tr("Mod download"), APPLICATION->network());
+		jobPtr = new NetJob(tr("Mod download"), LAUNCHER->network());
 		for (const auto& mod : m_version.mods) {
 			// skip non-client mods
 			if (!mod.client)
@@ -581,7 +581,7 @@ namespace ATLauncher
 			if (mod.type == ModType::Extract ||
 				mod.type == ModType::TexturePackExtract ||
 				mod.type == ModType::ResourcePackExtract) {
-				auto entry = APPLICATION->metacache()->resolveEntry(
+				auto entry = LAUNCHER->metacache()->resolveEntry(
 					"ATLauncherPacks", cacheName);
 				entry->setStale(true);
 				modsToExtract.insert(entry->getFullPath(), mod);
@@ -594,7 +594,7 @@ namespace ATLauncher
 				}
 				jobPtr->addNetAction(dl);
 			} else if (mod.type == ModType::Decomp) {
-				auto entry = APPLICATION->metacache()->resolveEntry(
+				auto entry = LAUNCHER->metacache()->resolveEntry(
 					"ATLauncherPacks", cacheName);
 				entry->setStale(true);
 				modsToDecomp.insert(entry->getFullPath(), mod);
@@ -611,7 +611,7 @@ namespace ATLauncher
 				if (relpath == Q_NULLPTR)
 					continue;
 
-				auto entry = APPLICATION->metacache()->resolveEntry(
+				auto entry = LAUNCHER->metacache()->resolveEntry(
 					"ATLauncherPacks", cacheName);
 				entry->setStale(true);
 
@@ -630,7 +630,7 @@ namespace ATLauncher
 
 				if (mod.type == ModType::Forge) {
 					auto vlist =
-						APPLICATION->metadataIndex()->get("net.minecraftforge");
+						LAUNCHER->metadataIndex()->get("net.minecraftforge");
 					if (vlist) {
 						auto ver = vlist->getVersion(mod.version);
 						if (ver) {

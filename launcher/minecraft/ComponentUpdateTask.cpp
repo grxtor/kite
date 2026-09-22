@@ -31,7 +31,7 @@
 #include "net/Mode.h"
 #include "OneSixVersionFormat.h"
 
-#include "Application.h"
+#include "core/LauncherContext.h"
 
 /*
  * This is responsible for loading the components of a component list AND
@@ -115,7 +115,7 @@ namespace
 			component->m_loaded = true;
 			result = LoadResult::LoadedLocal;
 		} else {
-			auto metaVersion = APPLICATION->metadataIndex()->get(
+			auto metaVersion = LAUNCHER->metadataIndex()->get(
 				component->m_uid, component->m_version);
 			component->m_metaVersion = metaVersion;
 			if (metaVersion->isLoaded()) {
@@ -166,12 +166,12 @@ namespace
 	static LoadResult loadIndex(Task::Ptr& loadTask, Net::Mode netmode)
 	{
 		// FIXME: DECIDE. do we want to run the update task anyway?
-		if (APPLICATION->metadataIndex()->isLoaded()) {
+		if (LAUNCHER->metadataIndex()->isLoaded()) {
 			qDebug() << "Index is already loaded";
 			return LoadResult::LoadedLocal;
 		}
-		APPLICATION->metadataIndex()->load(netmode);
-		loadTask = APPLICATION->metadataIndex()->getCurrentTask();
+		LAUNCHER->metadataIndex()->load(netmode);
+		loadTask = LAUNCHER->metadataIndex()->getCurrentTask();
 		if (loadTask) {
 			return LoadResult::RequiresRemote;
 		}

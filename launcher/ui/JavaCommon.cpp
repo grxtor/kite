@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "JavaCommon.h"
+#include "ui/JavaCommon.h"
 #include "ui/dialogs/CustomMessageBox.h"
 #include <MMCStrings.h>
 #include <QRegularExpression>

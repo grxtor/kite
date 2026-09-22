@@ -24,9 +24,9 @@
 
 #include <utility>
 
-#include "Application.h"
 #include "BuildConfig.h"
 #include "modplatform/flame/FlameApi.h"
+#include "core/LauncherContext.h"
 
 namespace Net
 {
@@ -62,7 +62,7 @@ namespace Net
 								 BuildConfig.CURSEFORGE_API_KEY.toUtf8());
 		}
 
-		m_reply.reset(APPLICATION->network()->post(request, m_body));
+		m_reply.reset(LAUNCHER->network()->post(request, m_body));
 		connect(m_reply.get(), &QNetworkReply::finished, this,
 				&JsonPost::requestFinished);
 	}

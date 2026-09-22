@@ -24,7 +24,7 @@
 #include "net/ChecksumValidator.h"
 #include "minecraft/AssetsUtils.h"
 
-#include "Application.h"
+#include "core/LauncherContext.h"
 
 AssetUpdateTask::AssetUpdateTask(MinecraftInstance* inst)
 {
@@ -42,9 +42,9 @@ void AssetUpdateTask::executeTask()
 	QUrl indexUrl = assets->url;
 	QString localPath = assets->id + ".json";
 	auto job = new NetJob(tr("Asset index for %1").arg(m_inst->name()),
-						  APPLICATION->network());
+						  LAUNCHER->network());
 
-	auto metacache = APPLICATION->metacache();
+	auto metacache = LAUNCHER->metacache();
 	auto entry = metacache->resolveEntry("asset_indexes", localPath);
 	entry->setStale(true);
 	auto hexSha1 = assets->sha1.toLatin1();
@@ -87,7 +87,7 @@ void AssetUpdateTask::assetIndexFinished()
 	// FIXME: this looks like a job for a generic validator based on json
 	// schema?
 	if (!AssetsUtils::loadAssetsIndexJson(assets->id, asset_fname, index)) {
-		auto metacache = APPLICATION->metacache();
+		auto metacache = LAUNCHER->metacache();
 		auto entry =
 			metacache->resolveEntry("asset_indexes", assets->id + ".json");
 		metacache->evictEntry(entry);

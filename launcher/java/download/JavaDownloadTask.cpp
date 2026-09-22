@@ -26,12 +26,12 @@
 #include <QDirIterator>
 #include <QFileInfo>
 
-#include "Application.h"
 #include "FileSystem.h"
 #include "Json.h"
 #include "net/Download.h"
 #include "net/ChecksumValidator.h"
 #include "MMCZip.h"
+#include "core/LauncherContext.h"
 
 JavaDownloadTask::JavaDownloadTask(const JavaDownload::RuntimeEntry& runtime,
 								   const QString& targetDir, QObject* parent)
@@ -64,7 +64,7 @@ void JavaDownloadTask::downloadArchive()
 		return;
 	}
 
-	m_downloadJob = new NetJob(tr("Java download"), APPLICATION->network());
+	m_downloadJob = new NetJob(tr("Java download"), LAUNCHER->network());
 
 	auto dl = Net::Download::makeFile(m_runtime.url, m_archivePath);
 
@@ -188,7 +188,7 @@ void JavaDownloadTask::downloadManifest()
 	}
 
 	m_downloadJob =
-		new NetJob(tr("Java manifest download"), APPLICATION->network());
+		new NetJob(tr("Java manifest download"), LAUNCHER->network());
 	auto dl =
 		Net::Download::makeByteArray(QUrl(m_runtime.url), &m_manifestData);
 
@@ -242,7 +242,7 @@ void JavaDownloadTask::manifestDownloaded()
 	// Queue file downloads
 	setStatus(tr("Downloading %1 files...").arg(m_runtime.name));
 	m_downloadJob =
-		new NetJob(tr("Java runtime files"), APPLICATION->network());
+		new NetJob(tr("Java runtime files"), LAUNCHER->network());
 
 	for (auto it = files.begin(); it != files.end(); ++it) {
 		auto entry = it.value().toObject();

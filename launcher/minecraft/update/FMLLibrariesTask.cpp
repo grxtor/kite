@@ -25,7 +25,7 @@
 #include "minecraft/PackProfile.h"
 
 #include "BuildConfig.h"
-#include "Application.h"
+#include "core/LauncherContext.h"
 
 FMLLibrariesTask::FMLLibrariesTask(MinecraftInstance* inst)
 {
@@ -75,8 +75,8 @@ void FMLLibrariesTask::executeTask()
 
 	// download missing libs to our place
 	setStatus(tr("Downloading FML libraries..."));
-	auto dljob = new NetJob("FML libraries", APPLICATION->network());
-	auto metacache = APPLICATION->metacache();
+	auto dljob = new NetJob("FML libraries", LAUNCHER->network());
+	auto metacache = LAUNCHER->metacache();
 	for (auto& lib : fmlLibsToProcess) {
 		auto entry = metacache->resolveEntry("fmllibs", lib.filename);
 		QString urlString = BuildConfig.FMLLIBS_BASE_URL + lib.filename;
@@ -104,7 +104,7 @@ void FMLLibrariesTask::fmllibsFinished()
 	if (!fmlLibsToProcess.isEmpty()) {
 		setStatus(tr("Copying FML libraries into the instance..."));
 		MinecraftInstance* inst = (MinecraftInstance*)m_inst;
-		auto metacache = APPLICATION->metacache();
+		auto metacache = LAUNCHER->metacache();
 		int index = 0;
 		for (auto& lib : fmlLibsToProcess) {
 			progress(index, fmlLibsToProcess.size());

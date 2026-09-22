@@ -27,7 +27,7 @@
 #include "FileSystem.h"
 #include "icons/IconList.h"
 #include "minecraft/MinecraftInstance.h"
-#include "minecraft/ShortcutUtils.h"
+#include "ui/ShortcutUtils.h"
 #include "minecraft/World.h"
 #include "minecraft/WorldList.h"
 #include "minecraft/auth/AccountList.h"

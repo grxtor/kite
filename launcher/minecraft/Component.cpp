@@ -28,7 +28,7 @@
 #include "minecraft/PackProfile.h"
 #include "FileSystem.h"
 #include "OneSixVersionFormat.h"
-#include "Application.h"
+#include "core/LauncherContext.h"
 
 #include <assert.h>
 
@@ -172,8 +172,8 @@ std::shared_ptr<class VersionFile> Component::getVersionFile() const
 std::shared_ptr<class Meta::VersionList> Component::getVersionList() const
 {
 	// FIXME: what if the metadata index isn't loaded yet?
-	if (APPLICATION->metadataIndex()->hasUid(m_uid)) {
-		return APPLICATION->metadataIndex()->get(m_uid);
+	if (LAUNCHER->metadataIndex()->hasUid(m_uid)) {
+		return LAUNCHER->metadataIndex()->get(m_uid);
 	}
 	return nullptr;
 }
@@ -270,7 +270,7 @@ bool Component::isRemovable()
 bool Component::isRevertible()
 {
 	if (isCustom()) {
-		if (APPLICATION->metadataIndex()->hasUid(m_uid)) {
+		if (LAUNCHER->metadataIndex()->hasUid(m_uid)) {
 			return true;
 		}
 	}
@@ -336,7 +336,7 @@ void Component::setVersion(const QString& version)
 			m_cachedVersion = version;
 			// see if the meta version is loaded
 			auto metaVersion =
-				APPLICATION->metadataIndex()->get(m_uid, version);
+				LAUNCHER->metadataIndex()->get(m_uid, version);
 			if (metaVersion->isLoaded()) {
 				// if yes, we can continue with that.
 				m_metaVersion = metaVersion;
@@ -404,7 +404,7 @@ bool Component::revert()
 		m_file.reset();
 
 		// check local cache for metadata...
-		auto version = APPLICATION->metadataIndex()->get(m_uid, m_version);
+		auto version = LAUNCHER->metadataIndex()->get(m_uid, m_version);
 		if (version->isLoaded()) {
 			m_metaVersion = version;
 		} else {

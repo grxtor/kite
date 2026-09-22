@@ -25,8 +25,8 @@
 #include <QJsonObject>
 #include <QUrl>
 
-#include "Application.h"
 #include "Json.h"
+#include "core/LauncherContext.h"
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "modplatform/ContentType.h"
 #include "modplatform/VersionPicker.h"
@@ -255,7 +255,7 @@ void ModUpdateCheckTask::executeTask()
 		auto response = std::make_shared<QByteArray>();
 		NetJob* job = new NetJob(
 			QString("UpdateCheck(%1:%2)").arg(e.platform, e.projectId),
-			APPLICATION->network());
+			LAUNCHER->network());
 		job->addNetAction(
 			Net::Download::makeByteArray(QUrl(url), response.get()));
 

@@ -18,7 +18,7 @@
  */
 
 #include "VersionProxyModel.h"
-#include "Application.h"
+#include "core/LauncherContext.h"
 #include <QSortFilterProxyModel>
 #include <QPixmapCache>
 #include <Version.h>
@@ -214,15 +214,15 @@ QVariant VersionProxyModel::data(const QModelIndex& index, int role) const
 						auto value = sourceModel()->data(
 							parentIndex, BaseVersionList::RecommendedRole);
 						if (value.toBool()) {
-							return APPLICATION->getThemedIcon("star");
+							return LAUNCHER->getThemedIcon("star");
 						} else if (hasLatest) {
 							auto value = sourceModel()->data(
 								parentIndex, BaseVersionList::LatestRole);
 							if (value.toBool()) {
-								return APPLICATION->getThemedIcon("bug");
+								return LAUNCHER->getThemedIcon("bug");
 							}
 						} else if (index.row() == 0) {
-							return APPLICATION->getThemedIcon("bug");
+							return LAUNCHER->getThemedIcon("bug");
 						}
 						QPixmap pixmap;
 						if (!QPixmapCache::find("placeholder", &pixmap)) {

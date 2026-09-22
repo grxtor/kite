@@ -26,7 +26,7 @@
 #include "BaseInstance.h"
 #include <QObjectPtr.h>
 #include "ui/pages/BasePage.h"
-#include "JavaCommon.h"
+#include "ui/JavaCommon.h"
 #include "Application.h"
 
 class JavaChecker;

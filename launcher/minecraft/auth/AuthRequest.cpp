@@ -24,69 +24,33 @@
 #include <QBuffer>
 #include <QUrlQuery>
 
-#include "Application.h"
 #include "AuthRequest.h"
-#include "plugin/PluginHooks.h"
-#include "plugin/PluginManager.h"
+#include "core/AuthRequestDecorator.h"
+#include "core/LauncherContext.h"
 #include "katabasis/Globals.h"
 
 namespace
 {
 	/*
-	 * dispatchAuthRequestHook — run MMCO_HOOK_AUTH_REQUEST over the
-	 * in-flight request and apply any redirect/header mutations the
-	 * plugins request.
+	 * dispatchAuthRequestHook — hand the in-flight request to whatever the
+	 * plugin host hooked into outgoing authentication requests, if anything.
 	 *
-	 * Returns true if the hook chain *cancelled* the request — the
-	 * caller must abort and emit a network error in that case.
+	 * Returns true if the request was *cancelled* — the caller must abort and
+	 * emit a network error in that case. Header and redirect mutations are
+	 * applied to `request` in place.
+	 *
+	 * The hook body itself lives in the plugin layer: running it means
+	 * touching PluginManager, which builds plugin-supplied user interface and
+	 * so drags QtWidgets in behind it.
 	 */
 	bool dispatchAuthRequestHook(QNetworkRequest& request,
 								 const QByteArray& body, const char* method)
 	{
-		auto* pm = APPLICATION ? APPLICATION->pluginManager() : nullptr;
-		if (!pm)
+		auto* decorator = LAUNCHER ? LAUNCHER->authRequestDecorator() : nullptr;
+		if (!decorator)
 			return false;
 
-		/* The add_header callback closes over the request reference and
-		 * appends raw headers. We keep it as a thread-local C function
-		 * pointer with a sidecar state struct so the closure can survive
-		 * the C ABI boundary. */
-		struct HeaderCtx {
-			QNetworkRequest* req;
-		};
-		HeaderCtx hctx{&request};
-
-		auto add_header_fn = [](void* handle, const char* key,
-								const char* value) -> int {
-			if (!handle || !key || !value)
-				return -1;
-			auto* h = static_cast<HeaderCtx*>(handle);
-			h->req->setRawHeader(QByteArray(key), QByteArray(value));
-			return 0;
-		};
-
-		const QByteArray urlUtf8 = request.url().toString().toUtf8();
-
-		MMCOAuthRequestEvent ev{};
-		ev.url = urlUtf8.constData();
-		ev.method = method;
-		ev.body = body.isEmpty() ? nullptr : body.constData();
-		ev.body_size = body.size();
-		ev.redirect_url = nullptr;
-		ev.request_handle = &hctx;
-		ev.add_header = add_header_fn;
-
-		const bool cancelled = pm->dispatchHook(MMCO_HOOK_AUTH_REQUEST, &ev);
-		if (cancelled)
-			return true;
-
-		if (ev.redirect_url && *ev.redirect_url) {
-			const QUrl rewritten =
-				QUrl::fromUserInput(QString::fromUtf8(ev.redirect_url));
-			if (rewritten.isValid())
-				request.setUrl(rewritten);
-		}
-		return false;
+		return decorator->dispatchAuthRequest(request, body, method);
 	}
 } // namespace
 
@@ -109,7 +73,7 @@ void AuthRequest::get(const QNetworkRequest& req, int timeout /* = 60*1000*/)
 		return;
 	}
 
-	reply_ = APPLICATION->network()->get(request_);
+	reply_ = LAUNCHER->network()->get(request_);
 	status_ = Requesting;
 	timedReplies_.add(new Katabasis::Reply(reply_, timeout));
 	connect(reply_, &QNetworkReply::errorOccurred, this,
@@ -138,7 +102,7 @@ void AuthRequest::post(const QNetworkRequest& req, const QByteArray& data,
 	}
 
 	status_ = Requesting;
-	reply_ = APPLICATION->network()->post(request_, data_);
+	reply_ = LAUNCHER->network()->post(request_, data_);
 	timedReplies_.add(new Katabasis::Reply(reply_, timeout));
 	connect(reply_, &QNetworkReply::errorOccurred, this,
 			&AuthRequest::onRequestError);

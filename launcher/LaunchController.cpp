@@ -40,7 +40,7 @@
 #include <QPushButton>
 
 #include "BuildConfig.h"
-#include "JavaCommon.h"
+#include "ui/JavaCommon.h"
 #include "tasks/Task.h"
 #include "minecraft/auth/AccountTask.h"
 #include "launch/steps/CreateBackup.h"

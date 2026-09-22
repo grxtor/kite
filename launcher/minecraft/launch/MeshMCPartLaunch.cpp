@@ -27,7 +27,8 @@
 #include "minecraft/MinecraftInstance.h"
 #include "FileSystem.h"
 #include "Commandline.h"
-#include "Application.h"
+#include "Logging.h"
+#include "core/LauncherContext.h"
 
 MeshMCPartLaunch::MeshMCPartLaunch(LaunchTask* parent) : LaunchStep(parent)
 {
@@ -88,7 +89,7 @@ void MeshMCPartLaunch::executeTask()
 
 	auto classPath = minecraftInstance->getClassPath();
 	classPath.prepend(
-		FS::PathCombine(APPLICATION->getJarsPath(), "NewLaunch.jar"));
+		FS::PathCombine(LAUNCHER->getJarsPath(), "NewLaunch.jar"));
 
 	auto natPath = minecraftInstance->getNativePath();
 #ifdef Q_OS_WIN

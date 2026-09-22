@@ -26,7 +26,7 @@
 
 #include "net/Download.h"
 
-#include "Application.h"
+#include "core/LauncherContext.h"
 
 NotificationChecker::NotificationChecker(QObject* parent) : QObject(parent) {}
 
@@ -70,9 +70,9 @@ void NotificationChecker::checkForNotifications()
 		return;
 	}
 	m_checkJob =
-		new NetJob("Checking for notifications", APPLICATION->network());
+		new NetJob("Checking for notifications", LAUNCHER->network());
 	auto entry =
-		APPLICATION->metacache()->resolveEntry("root", "notifications.json");
+		LAUNCHER->metacache()->resolveEntry("root", "notifications.json");
 	entry->setStale(true);
 	m_checkJob->addNetAction(
 		m_download = Net::Download::makeCached(m_notificationsUrl, entry));

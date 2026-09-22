@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "ShortcutUtils.h"
+#include "ui/ShortcutUtils.h"
 
 #include <QApplication>
 #include <QDir>

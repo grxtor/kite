@@ -18,7 +18,7 @@
  */
 
 #include "ContentDownloadTask.h"
-#include "Application.h"
+#include "core/LauncherContext.h"
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "net/Download.h"
 #include "net/ChecksumValidator.h"
@@ -77,7 +77,7 @@ void ContentDownloadTask::executeTask()
 
 	setStatus(tr("Downloading %1 file(s)...").arg(m_items.size()));
 
-	m_netJob = new NetJob("ContentDownload", APPLICATION->network());
+	m_netJob = new NetJob("ContentDownload", LAUNCHER->network());
 
 	int skipped = 0;
 	// Last-resort safety net: even if an upstream stage (dependency

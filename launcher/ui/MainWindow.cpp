@@ -81,7 +81,7 @@
 #include <FileSystem.h>
 #include "InstanceWindow.h"
 #include "InstancePageProvider.h"
-#include "JavaCommon.h"
+#include "ui/JavaCommon.h"
 #include "LaunchController.h"
 
 #include "ui/instanceview/InstanceProxyModel.h"

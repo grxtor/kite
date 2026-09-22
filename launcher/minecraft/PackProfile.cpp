@@ -40,7 +40,7 @@
 #include "PackProfile_p.h"
 #include "ComponentUpdateTask.h"
 
-#include "Application.h"
+#include "core/LauncherContext.h"
 
 PackProfile::PackProfile(MinecraftInstance* instance) : QAbstractListModel()
 {
@@ -481,7 +481,7 @@ bool PackProfile::migratePreComponentConfig()
 				component->m_version = intendedVersion;
 			} else if (!intendedVersion.isEmpty()) {
 				auto metaVersion =
-					APPLICATION->metadataIndex()->get(uid, intendedVersion);
+					LAUNCHER->metadataIndex()->get(uid, intendedVersion);
 				component = new Component(this, metaVersion);
 			} else {
 				return;
@@ -543,7 +543,7 @@ bool PackProfile::migratePreComponentConfig()
 		auto patchVersion = d->getOldConfigVersion(uid);
 		if (!patchVersion.isEmpty() && !loadedComponents.contains(uid)) {
 			auto patch = new Component(
-				this, APPLICATION->metadataIndex()->get(uid, patchVersion));
+				this, LAUNCHER->metadataIndex()->get(uid, patchVersion));
 			patch->setOrder(order);
 			loadedComponents[uid] = patch;
 		}

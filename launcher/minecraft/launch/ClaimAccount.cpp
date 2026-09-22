@@ -20,7 +20,7 @@
 #include "ClaimAccount.h"
 #include <launch/LaunchTask.h>
 
-#include "Application.h"
+#include "core/LauncherContext.h"
 #include "minecraft/auth/AccountList.h"
 
 ClaimAccount::ClaimAccount(LaunchTask* parent, AuthSessionPtr session)
@@ -28,7 +28,7 @@ ClaimAccount::ClaimAccount(LaunchTask* parent, AuthSessionPtr session)
 {
 	if (session->status == AuthSession::Status::PlayableOnline &&
 		!session->demo) {
-		auto accounts = APPLICATION->accounts();
+		auto accounts = LAUNCHER->accounts();
 		m_account = accounts->getAccountByProfileName(session->player_name);
 	}
 }

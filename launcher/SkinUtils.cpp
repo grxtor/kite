@@ -20,7 +20,7 @@
 
 #include "SkinUtils.h"
 #include "net/HttpMetaCache.h"
-#include "Application.h"
+#include "core/LauncherContext.h"
 
 #include <QFile>
 #include <QPainter>
@@ -36,7 +36,7 @@ namespace SkinUtils
 	 */
 	QPixmap getFaceFromCache(QString username, int height, int width)
 	{
-		QFile fskin(APPLICATION->metacache()
+		QFile fskin(LAUNCHER->metacache()
 						->resolveEntry("skins", username + ".png")
 						->getFullPath());
 

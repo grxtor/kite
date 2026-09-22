@@ -23,7 +23,7 @@
 #include "minecraft/launch/PrintInstanceInfo.h"
 #include "settings/Setting.h"
 #include "settings/SettingsObject.h"
-#include "Application.h"
+#include "core/LauncherContext.h"
 #include <QRegularExpression>
 
 #include "MMCStrings.h"
@@ -992,7 +992,7 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 		std::dynamic_pointer_cast<MinecraftInstance>(shared_from_this()));
 	auto pptr = process.get();
 
-	APPLICATION->icons()->saveIcon(
+	LAUNCHER->icons()->saveIcon(
 		iconKey(), FS::PathCombine(gameRoot(), "icon.png"), "PNG");
 
 	// print a header

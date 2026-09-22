@@ -19,7 +19,7 @@
  */
 
 #include "JavaPage.h"
-#include "JavaCommon.h"
+#include "ui/JavaCommon.h"
 #include "ui_JavaPage.h"
 
 #include <QFileDialog>

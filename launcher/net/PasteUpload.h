@@ -27,7 +27,7 @@ class PasteUpload : public Task
 {
 	Q_OBJECT
   public:
-	PasteUpload(QWidget* window, QString text, QString key = "public");
+	PasteUpload(QString text, QString key = "public");
 	virtual ~PasteUpload();
 
 	QString pasteLink()
@@ -54,7 +54,6 @@ class PasteUpload : public Task
   private:
 	bool parseResult(QJsonDocument doc);
 	QString m_error;
-	QWidget* m_window;
 	QString m_pasteID;
 	QString m_pasteLink;
 	QString m_key;

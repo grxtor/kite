@@ -35,8 +35,8 @@
 #include <memory>
 #include <utility>
 
-#include "Application.h"
 #include "archive/ExportToZipTask.h"
+#include "core/LauncherContext.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 #include "minecraft/mod/ModMetadataIndex.h"
@@ -329,7 +329,7 @@ void ModrinthPackExportTask::lookUpPendingFiles()
 	for (const PendingFile& pending : m_pending) {
 		auto response = std::make_shared<QByteArray>();
 		auto* job = new NetJob(QString("MR::ExportLookup(%1)").arg(pending.path),
-							   APPLICATION->network());
+							   LAUNCHER->network());
 		job->addNetAction(Net::Download::makeByteArray(
 			ModrinthApi::versionByHashUrl(pending.sha1), response.get()));
 

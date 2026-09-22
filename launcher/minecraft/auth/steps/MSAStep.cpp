@@ -25,7 +25,7 @@
 #include "minecraft/auth/AuthRequest.h"
 #include "minecraft/auth/Parsers.h"
 
-#include "Application.h"
+#include "core/LauncherContext.h"
 
 MSAStep::MSAStep(AccountData* data, Action action)
 	: AuthStep(data), m_action(action)
@@ -35,7 +35,7 @@ MSAStep::MSAStep(AccountData* data, Action action)
 		tr("Login successful! You can close this page and return to MeshMC."));
 
 	m_oauth2 = new QOAuth2AuthorizationCodeFlow(this);
-	m_oauth2->setClientIdentifier(APPLICATION->msaClientId());
+	m_oauth2->setClientIdentifier(LAUNCHER->msaClientId());
 	m_oauth2->setAuthorizationUrl(QUrl(
 		"https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize"));
 #if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
@@ -45,7 +45,7 @@ MSAStep::MSAStep(AccountData* data, Action action)
 #endif
 	m_oauth2->setScope("XboxLive.signin offline_access");
 	m_oauth2->setReplyHandler(m_replyHandler);
-	m_oauth2->setNetworkAccessManager(APPLICATION->network().get());
+	m_oauth2->setNetworkAccessManager(LAUNCHER->network().get());
 
 	connect(m_oauth2, &QOAuth2AuthorizationCodeFlow::granted, this,
 			&MSAStep::onGranted);

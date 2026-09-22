@@ -23,7 +23,7 @@
 #include <memory>
 #include <QDialog>
 #include "ui/pages/BasePage.h"
-#include "JavaCommon.h"
+#include "ui/JavaCommon.h"
 #include <Application.h>
 #include <QObjectPtr.h>
 

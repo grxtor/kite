@@ -35,7 +35,7 @@
 #include "FileSystem.h"
 #include "java/JavaInstall.h"
 #include "java/JavaUtils.h"
-#include "JavaCommon.h"
+#include "ui/JavaCommon.h"
 #include "java/download/JavaRuntime.h"
 
 #include "ui/widgets/VersionSelectWidget.h"

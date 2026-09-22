@@ -21,7 +21,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include "FileSystem.h"
-#include "Application.h"
+#include "core/LauncherContext.h"
 
 namespace Net
 {
@@ -72,7 +72,7 @@ namespace Net
 		m_entry->setLocalChangedTimestamp(
 			output_file_info.lastModified().toUTC().toMSecsSinceEpoch());
 		m_entry->setStale(false);
-		APPLICATION->metacache()->updateEntry(m_entry);
+		LAUNCHER->metacache()->updateEntry(m_entry);
 		return Job_Finished;
 	}
 

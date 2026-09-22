@@ -27,7 +27,7 @@
 #include <QDebug>
 
 #include "BuildConfig.h"
-#include "Application.h"
+#include "core/LauncherContext.h"
 
 ImgurAlbumCreation::ImgurAlbumCreation(QList<ScreenShot::Ptr> screenshots)
 	: NetAction(), m_screenshots(screenshots)
@@ -58,7 +58,7 @@ void ImgurAlbumCreation::startImpl()
 	const QByteArray data = "deletehashes=" + hashes.join(',').toUtf8() +
 							"&title=Minecraft%20Screenshots&privacy=hidden";
 
-	QNetworkReply* rep = APPLICATION->network()->post(request, data);
+	QNetworkReply* rep = LAUNCHER->network()->post(request, data);
 
 	m_reply.reset(rep);
 	connect(rep, &QNetworkReply::uploadProgress, this,

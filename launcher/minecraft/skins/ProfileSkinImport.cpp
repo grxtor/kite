@@ -25,7 +25,7 @@
 #include <QJsonParseError>
 #include <QUrl>
 
-#include "Application.h"
+#include "core/LauncherContext.h"
 #include "minecraft/auth/AccountData.h"
 #include "minecraft/auth/Parsers.h"
 #include "net/Download.h"
@@ -65,7 +65,7 @@ void ProfileSkinImport::lookUpUuid()
 	setStatus(tr("Looking up %1").arg(m_username));
 
 	m_response.clear();
-	m_job = new NetJob(tr("Look up user"), APPLICATION->network());
+	m_job = new NetJob(tr("Look up user"), LAUNCHER->network());
 	/* Percent-encoded: Mojang names are restricted to word characters today,
 	 * but this string comes straight out of a text field. */
 	const QString endpoint =
@@ -110,7 +110,7 @@ void ProfileSkinImport::fetchProfile()
 	setStatus(tr("Fetching the profile of %1").arg(m_username));
 
 	m_response.clear();
-	m_job = new NetJob(tr("Download user profile"), APPLICATION->network());
+	m_job = new NetJob(tr("Download user profile"), LAUNCHER->network());
 	const QString endpoint =
 		QString::fromLatin1(kSessionProfileEndpoint) + m_uuid;
 	m_job->addNetAction(
@@ -151,7 +151,7 @@ void ProfileSkinImport::downloadTexture()
 {
 	setStatus(tr("Downloading the skin of %1").arg(m_username));
 
-	m_job = new NetJob(tr("Download user skin"), APPLICATION->network());
+	m_job = new NetJob(tr("Download user skin"), LAUNCHER->network());
 	m_job->addNetAction(
 		Net::Download::makeFile(QUrl(m_textureUrl), m_targetPath));
 

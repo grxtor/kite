@@ -22,7 +22,6 @@
 
 #include <QDomDocument>
 #include "BuildConfig.h"
-#include "Application.h"
 
 namespace LegacyFTB
 {

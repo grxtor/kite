@@ -19,6 +19,7 @@
 
 #include "Application.h"
 #include "BuildConfig.h"
+#include "plugin/PluginAuthRequestDecorator.h"
 #include "plugin/PluginManager.h"
 
 #include "ui/MainWindow.h"
@@ -329,6 +330,11 @@ namespace
 
 Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 {
+	/* Before anything else: things constructed further down this function
+	 * already reach services through LAUNCHER->, and they would see a null
+	 * context otherwise. */
+	LauncherContext::setInstance(this);
+
 	initPlatform();
 	if (m_status != StartingUp)
 		return;
@@ -421,6 +427,8 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 	// Do NOT pass `this` as QObject parent, or the PluginManager
 	// will be double-freed (once by unique_ptr, once by ~QObject).
 	m_pluginManager = std::make_unique<PluginManager>(this, nullptr);
+	m_authRequestDecorator =
+		std::make_unique<PluginAuthRequestDecorator>(m_pluginManager.get());
 	m_pluginManager->initializeAll();
 
 	if (createSetupWizard()) {
@@ -1559,6 +1567,11 @@ void Application::showFatalErrorMessage(const QString& title,
 
 Application::~Application()
 {
+	/* Stop handing out a context that is being torn down. Anything still
+	 * running past this point has to cope with LAUNCHER being null, which is
+	 * what the accessor documents. */
+	LauncherContext::setInstance(nullptr);
+
 	// Shut down plugin system before tearing down the rest.
 	// shutdownAll() was already called from aboutToQuit; this
 	// is a no-op guard for any other exit path.
@@ -2292,4 +2305,9 @@ QString Application::getJarsPath()
 const QString Application::javaPath()
 {
     return m_settings->get("JavaDir").toString();
+}
+
+AuthRequestDecorator* Application::authRequestDecorator() const
+{
+	return m_authRequestDecorator.get();
 }
