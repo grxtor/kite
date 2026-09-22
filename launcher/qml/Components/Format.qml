@@ -71,4 +71,20 @@ QtObject {
         var saturation = Math.min(0.75, tint.hslSaturation * saturationScale)
         return Qt.hsla(hue, saturation, lightness, 1)
     }
+
+    // 1234 -> "1.2K", 3456789 -> "3.5M": download counts in a card.
+    function compactNumber(value) {
+        var n = Number(value)
+        if (!(n >= 0))
+            return ""
+        if (n < 1000)
+            return String(n)
+        var units = ["K", "M", "B"]
+        var unit = -1
+        while (n >= 1000 && unit < units.length - 1) {
+            n /= 1000
+            unit++
+        }
+        return Number(n).toLocaleString(Qt.locale(), "f", n < 10 ? 1 : 0) + units[unit]
+    }
 }

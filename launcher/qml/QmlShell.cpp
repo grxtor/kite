@@ -30,14 +30,17 @@
 
 #include "InstanceList.h"
 #include "models/IdSelectionModel.h"
+#include "models/InstanceDetails.h"
 #include "models/InstanceFilterModel.h"
 #include "models/SettingsAdapter.h"
+#include "modplatform/modrinth/ModrinthModpackModel.h"
 #include "Sys.h"
 #include "DesktopServices.h"
 #include "settings/SettingsObject.h"
 #include <QDir>
 #include "qml/AccountFaceProvider.h"
 #include "qml/InstanceIconProvider.h"
+#include "qml/ScreenshotThumbnailProvider.h"
 #include "core/LauncherContext.h"
 #include "minecraft/auth/AccountList.h"
 #include "minecraft/auth/MinecraftAccount.h"
@@ -161,6 +164,23 @@ int QmlShell::systemMemoryMiB() const
 	return static_cast<int>(Sys::getSystemRam() / Sys::mebibyte);
 }
 
+QObject* QmlShell::modpackModel() const
+{
+	return expose(m_modpacks.get());
+}
+
+QObject* QmlShell::installModpack(const QString& projectId,
+								  const QString& versionId,
+								  const QString& instanceName,
+								  const QString& group)
+{
+	if (!m_modpacks) {
+		return nullptr;
+	}
+	return expose(
+		m_modpacks->install(projectId, versionId, instanceName, group));
+}
+
 QObject* QmlShell::recentModel() const
 {
 	return expose(m_recent.get());
@@ -184,6 +204,34 @@ QObject* QmlShell::sectionModel(const QString& group)
 		section->setSourceModel(m_instances.get());
 	}
 	return expose(section.get());
+}
+
+QObject* QmlShell::instanceDetails(const QString& id)
+{
+	if (m_instanceDetails && m_instanceDetails->instanceId() == id) {
+		return expose(m_instanceDetails.get());
+	}
+
+	auto instance = LAUNCHER->instances()->getInstanceById(id);
+	if (!instance) {
+		return nullptr;
+	}
+
+	// Replaces (and destroys, via unique_ptr assignment) whichever detail
+	// page was open before - only one is kept at a time.
+	m_instanceDetails = std::make_unique<InstanceDetails>(instance);
+
+	// Every QObject* the bridge hands to QML needs the same CppOwnership
+	// pinning as everything else exposed here, or the engine will try to
+	// delete a model the instance still owns.
+	expose(m_instanceDetails->settings());
+	expose(m_instanceDetails->mods());
+	expose(m_instanceDetails->worlds());
+	expose(m_instanceDetails->log());
+	expose(m_instanceDetails->components());
+	expose(m_instanceDetails->screenshots());
+
+	return expose(m_instanceDetails.get());
 }
 
 QVariantMap QmlShell::rootProperties()
@@ -221,6 +269,7 @@ bool QmlShell::show(bool minimized)
 	m_hero->setSourceModel(LAUNCHER->instances().get());
 	m_selection = std::make_unique<IdSelectionModel>();
 	m_settings = std::make_unique<SettingsAdapter>(LAUNCHER->settings());
+	m_modpacks = std::make_unique<ModrinthModpackModel>();
 
 	/* The sort order reads InstSortMode on every comparison, but a proxy
 	 * only compares when told to: re-sort when the setting moves. */
@@ -250,6 +299,8 @@ bool QmlShell::show(bool minimized)
 							   new InstanceIconProvider(LAUNCHER->icons()));
 	m_engine->addImageProvider(QStringLiteral("accountface"),
 							   new AccountFaceProvider());
+	m_engine->addImageProvider(QStringLiteral("screenshot"),
+							   new ScreenshotThumbnailProvider());
 	m_engine->setInitialProperties(rootProperties());
 	m_engine->load(kRootUrl);
 
@@ -289,7 +340,12 @@ void QmlShell::scheduleSnapshotIfRequested()
 	if (path.isEmpty())
 		return;
 
-	QTimer::singleShot(750, this, [this, path]() {
+	/* Long enough for the first frame; MESHMC_QML_SNAPSHOT_DELAY (ms) waits
+	 * longer, for pages that show network results. */
+	bool delayOk = false;
+	const int delay =
+		qEnvironmentVariableIntValue("MESHMC_QML_SNAPSHOT_DELAY", &delayOk);
+	QTimer::singleShot(delayOk ? delay : 750, this, [this, path]() {
 		const QImage image = m_window->grabWindow();
 		const bool saved = !image.isNull() && image.save(path);
 		if (saved)

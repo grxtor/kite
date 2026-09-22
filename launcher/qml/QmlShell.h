@@ -27,7 +27,9 @@
 
 class IdSelectionModel;
 class InstanceFilterModel;
+class InstanceDetails;
 class SettingsAdapter;
+class ModrinthModpackModel;
 class QQmlApplicationEngine;
 class QQuickWindow;
 
@@ -54,6 +56,8 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* settings READ settings CONSTANT)
 	/// Installed memory in MiB: the ceiling for the memory settings.
 	Q_PROPERTY(int systemMemoryMiB READ systemMemoryMiB CONSTANT)
+	/// Modrinth modpack search for the Discover page.
+	Q_PROPERTY(QObject* modpackModel READ modpackModel CONSTANT)
 	/// Every instance, most recently played first; never-played ones left out.
 	Q_PROPERTY(QObject* recentModel READ recentModel CONSTANT)
 	/// At most one row: the instance whose id QML writes into instanceId.
@@ -84,12 +88,25 @@ class QmlShell : public QObject
 
 	QObject* settings() const;
 	int systemMemoryMiB() const;
+	QObject* modpackModel() const;
+	/* Starts installing a Modrinth modpack version as a new instance and
+	 * returns its TaskWatcher, owned by C++: the install must outlive the
+	 * page that started it, whatever QML does with the reference. */
+	Q_INVOKABLE QObject* installModpack(const QString& projectId,
+										const QString& versionId,
+										const QString& instanceName,
+										const QString& group);
 	QObject* recentModel() const;
 	QObject* heroModel() const;
 	/* The instances of one group (empty = ungrouped) that pass the search,
 	 * for one section of the library. Created on first use and kept, so
 	 * QML asking again from a rebuilt delegate gets the same model back. */
 	Q_INVOKABLE QObject* sectionModel(const QString& group);
+	/* The InstanceDetails bridge for one instance's detail page. At most
+	 * one is kept at a time: asking for a different id replaces (and
+	 * destroys) whichever one was open before; asking again for the same
+	 * id returns the one already open. Null if @p id names no instance. */
+	Q_INVOKABLE QObject* instanceDetails(const QString& id);
 
 	/* Everything below just emits the matching *Requested() signal: QmlShell
 	 * sits in MeshMC_qml, which cannot see the widget code that actually
@@ -136,6 +153,9 @@ class QmlShell : public QObject
 	std::map<QString, std::unique_ptr<InstanceFilterModel>> m_sections;
 	std::unique_ptr<IdSelectionModel> m_selection;
 	std::unique_ptr<SettingsAdapter> m_settings;
+	std::unique_ptr<ModrinthModpackModel> m_modpacks;
+	/* The one open instance detail page, if any - see instanceDetails(). */
+	std::unique_ptr<InstanceDetails> m_instanceDetails;
 
 	std::unique_ptr<QQmlApplicationEngine> m_engine;
 	QQuickWindow* m_window = nullptr;

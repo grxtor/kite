@@ -36,6 +36,9 @@ qt_add_qml_module(MeshMC_qml_components
         RecentItem.qml
         Format.qml
         SettingsPage.qml
+        DiscoverPage.qml
+        ModpackRow.qml
+        ModpackDetail.qml
         SettingsScroll.qml
         SettingsGroup.qml
         SettingsStore.qml
@@ -61,6 +64,7 @@ qt_add_qml_module(MeshMC_qml_components
         icons/bell.svg
         icons/check.svg
         icons/chevron-down.svg
+        icons/chevron-left.svg
         icons/chevron-right.svg
         icons/clock.svg
         icons/compass.svg

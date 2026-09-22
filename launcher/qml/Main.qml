@@ -27,7 +27,7 @@ ApplicationWindow {
     color: Theme.palette.canvas
 
     property string selectedId: ""
-    // "library" or "settings"; Discover still opens the classic dialog.
+    // "library", "discover" or "settings".
     property string page: "library"
 
     Component.onCompleted: {
@@ -78,14 +78,7 @@ ApplicationWindow {
             accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
             accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
             accountAvatarSource: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
-            onItemActivated: (id) => {
-                // Discover still opens the classic new-instance dialog, where
-                // the modpack platforms live for now.
-                if (id === "discover")
-                    root.call("createInstance")
-                else
-                    root.page = id
-            }
+            onItemActivated: (id) => root.page = id
             onRecentActivated: (id) => {
                 root.page = "library"
                 root.selectedId = id
@@ -102,7 +95,8 @@ ApplicationWindow {
             TopBar {
                 id: topBar
                 Layout.fillWidth: true
-                title: root.page === "settings" ? qsTr("Settings") : qsTr("Library")
+                title: root.page === "settings" ? qsTr("Settings")
+                     : root.page === "discover" ? qsTr("Discover") : qsTr("Library")
                 count: root.page === "library" && root.instanceModel && root.instanceModel.count !== undefined
                        ? root.instanceModel.count : -1
                 searchVisible: root.page === "library"
@@ -121,7 +115,10 @@ ApplicationWindow {
             StackLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: root.page === "settings" ? 1 : 0
+                // A page's own minimum must never widen the window past
+                // what it is; pages lay themselves out in what they get.
+                Layout.minimumWidth: 0
+                currentIndex: root.page === "settings" ? 1 : root.page === "discover" ? 2 : 0
 
                 LibraryPage {
                     focus: true
@@ -148,6 +145,19 @@ ApplicationWindow {
                     systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
                     onOpenClassicRequested: (page) => root.call("openSettings", page)
                     onOpenPathRequested: (path) => root.call("openPath", path)
+                }
+
+                DiscoverPage {
+                    model: root.shell && root.shell.modpackModel ? root.shell.modpackModel : null
+                    installer: function (projectId, versionId, name, group) {
+                        return root.shell.installModpack(projectId, versionId, name, group)
+                    }
+                    onShowInstanceRequested: (id) => {
+                        root.page = "library"
+                        if (id.length > 0)
+                            root.selectedId = id
+                    }
+                    onOtherPlatformsRequested: root.call("createInstance")
                 }
             }
         }
