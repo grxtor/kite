@@ -25,6 +25,13 @@ set(CORE_SOURCES
     theme/Contrast.cpp
     theme/ThemePalette.h
     theme/ThemePalette.cpp
+
+    # What the QML instance grid needs in place of the widget proxy and
+    # QItemSelectionModel. Core, like the blocks above: no QtWidgets, no ui/.
+    models/InstanceFilterModel.h
+    models/InstanceFilterModel.cpp
+    models/IdSelectionModel.h
+    models/IdSelectionModel.cpp
     modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
@@ -1253,6 +1260,16 @@ add_unit_test(ThemePalette
     LIBS MeshMC_core
     )
 
+add_unit_test(InstanceFilterModel
+    SOURCES models/InstanceFilterModel_test.cpp
+    LIBS MeshMC_core
+    )
+
+add_unit_test(IdSelectionModel
+    SOURCES models/IdSelectionModel_test.cpp
+    LIBS MeshMC_core
+    )
+
 add_unit_test(IconTheme
     SOURCES ui/themes/IconTheme_test.cpp
     LIBS MeshMC_logic
@@ -1410,6 +1427,14 @@ add_unit_test(QmlModule
 # plain add_executable, so it has to be asked for by hand -- otherwise the test
 # links and then fails at runtime with 'plugin "MeshMC_qmlplugin" not found'.
 qt_import_qml_plugins(QmlModule_test)
+
+# MeshMC_logic rather than the core: the built-in icons are compiled from
+# multimc.qrc into MeshMC_logic, and a test where every key falls back to the
+# default icon would prove nothing.
+add_unit_test(InstanceIconProvider
+    SOURCES qml/InstanceIconProvider_test.cpp
+    LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
+    )
 
 add_executable(${MeshMC_Name} MACOSX_BUNDLE WIN32 main.cpp ${MESHMC_RCS})
 # Keyword signature: qt_import_qml_plugins below links with PRIVATE, and CMake

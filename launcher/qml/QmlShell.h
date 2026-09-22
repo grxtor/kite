@@ -24,6 +24,8 @@
 
 #include <memory>
 
+class IdSelectionModel;
+class InstanceFilterModel;
 class QQmlApplicationEngine;
 class QQuickWindow;
 
@@ -62,6 +64,11 @@ class QmlShell : public QObject
   private:
 	QVariantMap rootProperties() const;
 	void scheduleSnapshotIfRequested();
+
+	/* Declared before the engine so they are destroyed after it: QML holds
+	 * pointers to both until the engine is gone. */
+	std::unique_ptr<InstanceFilterModel> m_instances;
+	std::unique_ptr<IdSelectionModel> m_selection;
 
 	std::unique_ptr<QQmlApplicationEngine> m_engine;
 	QQuickWindow* m_window = nullptr;

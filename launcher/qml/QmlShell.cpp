@@ -28,6 +28,9 @@
 #include <QUrl>
 
 #include "InstanceList.h"
+#include "models/IdSelectionModel.h"
+#include "models/InstanceFilterModel.h"
+#include "qml/InstanceIconProvider.h"
 #include "core/LauncherContext.h"
 
 namespace
@@ -53,7 +56,9 @@ QVariantMap QmlShell::rootProperties() const
 {
 	QVariantMap props;
 	props.insert(QStringLiteral("instanceModel"),
-				 QVariant::fromValue(expose(LAUNCHER->instances().get())));
+				 QVariant::fromValue(expose(m_instances.get())));
+	props.insert(QStringLiteral("selection"),
+				 QVariant::fromValue(expose(m_selection.get())));
 	return props;
 }
 
@@ -66,8 +71,20 @@ bool QmlShell::show(bool minimized)
 		return true;
 	}
 
+	/* The grid shows the core's instance list through a filtering, naturally
+	 * sorted proxy -- the same ordering the widget grid used -- and keeps its
+	 * selection by instance id, since rows move under the proxy. */
+	m_instances = std::make_unique<InstanceFilterModel>();
+	m_instances->setSourceModel(LAUNCHER->instances().get());
+	m_selection = std::make_unique<IdSelectionModel>();
+
 	m_engine = std::make_unique<QQmlApplicationEngine>();
 	m_engine->addImportPath(QStringLiteral("qrc:/qt/qml"));
+
+	/* The engine takes ownership of image providers. Registered before load()
+	 * so the first frame already has icons rather than broken images. */
+	m_engine->addImageProvider(QStringLiteral("instanceicon"),
+							   new InstanceIconProvider(LAUNCHER->icons()));
 	m_engine->setInitialProperties(rootProperties());
 	m_engine->load(kRootUrl);
 

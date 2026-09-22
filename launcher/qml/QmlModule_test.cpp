@@ -63,9 +63,12 @@ class QmlModuleTest : public QObject
 		 * to prove the component loads, and a required property left unset
 		 * would itself be a load error worth catching here. */
 		QStandardItemModel instances;
+		QObject selection;
 		std::unique_ptr<QObject> root(component.createWithInitialProperties(
 			{{QStringLiteral("instanceModel"),
-			  QVariant::fromValue<QObject*>(&instances)}}));
+			  QVariant::fromValue<QObject*>(&instances)},
+			 {QStringLiteral("selection"),
+			  QVariant::fromValue<QObject*>(&selection)}}));
 		QVERIFY2(root != nullptr, qPrintable(component.errorString()));
 
 		/* Guards against the component resolving to something default

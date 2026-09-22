@@ -32,6 +32,8 @@ qt_add_qml_module(MeshMC_qml
 target_sources(MeshMC_qml PRIVATE
     QmlShell.h
     QmlShell.cpp
+    InstanceIconProvider.h
+    InstanceIconProvider.cpp
 )
 
 # The QML side reads the core's models. It does not see QtWidgets: MeshMC_core

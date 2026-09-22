@@ -21,6 +21,10 @@ ApplicationWindow {
      * delegate binds to. */
     required property var instanceModel
 
+    /* Selection by instance id (IdSelectionModel). Ids rather than rows,
+     * because rows move whenever the filter or the sort changes. */
+    required property var selection
+
     // Read by QmlModule_test to prove this component, and not some default,
     // was instantiated.
     readonly property string moduleName: "MeshMC"
@@ -38,7 +42,7 @@ ApplicationWindow {
         anchors.margins: 16
         model: root.instanceModel
         cellWidth: 168
-        cellHeight: 96
+        cellHeight: 128
         clip: true
 
         delegate: Item {
@@ -46,6 +50,7 @@ ApplicationWindow {
 
             required property string name
             required property string group
+            required property string iconKey
 
             width: grid.cellWidth - 8
             height: grid.cellHeight - 8
@@ -54,6 +59,13 @@ ApplicationWindow {
                 anchors.centerIn: parent
                 spacing: 4
 
+                Image {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 40
+                    height: 40
+                    sourceSize: Qt.size(40, 40)
+                    source: "image://instanceicon/" + tile.iconKey
+                }
                 Label {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: tile.width - 16
