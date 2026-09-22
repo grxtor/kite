@@ -154,6 +154,11 @@ set(QT_VERSION_MAJOR 6)
 # Still a cache variable so that scripts and CI invocations that pass
 # -DMeshMC_QT_VERSION_MAJOR=5 fail loudly instead of quietly building Qt 6 when
 # they asked for something else.
+# The QML user interface is always built; this only picks which interface the
+# launcher opens by default. MESHMC_QML_UI=1 or =0 in the environment overrides
+# it at run time.
+option(MeshMC_QML_UI "Open the QML user interface instead of the QtWidgets one by default (preview)" OFF)
+
 set(MeshMC_QT_VERSION_MAJOR "6" CACHE STRING "Major Qt version to build against (6 only)")
 set_property(CACHE MeshMC_QT_VERSION_MAJOR PROPERTY STRINGS "6")
 

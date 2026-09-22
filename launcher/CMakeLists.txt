@@ -1257,6 +1257,12 @@ set_tests_properties(IconTheme PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_PLATFORMTHEME="
     )
 
+# Core headers are included by their path under launcher/ ("core/UiHost.h",
+# "InstanceList.h"), so that directory is part of the core's interface. Stated
+# here rather than left to CMAKE_INCLUDE_CURRENT_DIR, which only covers targets
+# declared in this directory -- the QML module is declared in launcher/qml/.
+target_include_directories(MeshMC_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 target_link_libraries(MeshMC_core PUBLIC
     classparser
     nbt++
@@ -1295,6 +1301,13 @@ target_link_libraries(MeshMC_core PUBLIC
 # QtWidgets is linked here and only here. See MeshMC_core_link_check below for
 # how that is enforced rather than merely intended.
 target_link_libraries(MeshMC_logic Qt${QT_VERSION_MAJOR}::Widgets)
+
+# Application decides at startup whether to show MainWindow or the QML shell,
+# so it needs the shell compiled in either way. See useQmlShell().
+target_link_libraries(MeshMC_logic MeshMC_qml)
+if(MeshMC_QML_UI)
+    target_compile_definitions(MeshMC_logic PRIVATE MESHMC_QML_UI_DEFAULT)
+endif()
 
 target_link_libraries(MeshMC_logic Qt6::OpenGL)
 
@@ -1391,8 +1404,15 @@ add_unit_test(QmlModule
 qt_import_qml_plugins(QmlModule_test)
 
 add_executable(${MeshMC_Name} MACOSX_BUNDLE WIN32 main.cpp ${MESHMC_RCS})
-target_link_libraries(${MeshMC_Name} MeshMC_logic)
-target_link_libraries(${MeshMC_Name} MeshMC_qml)
+# Keyword signature: qt_import_qml_plugins below links with PRIVATE, and CMake
+# refuses to mix the two forms on one target.
+target_link_libraries(${MeshMC_Name} PRIVATE MeshMC_logic)
+
+# Same reason as QmlModule_test: MeshMC_qml is a static QML module with a
+# separate plugin, and a plain add_executable does not import it. Without this
+# the launcher links and then fails at runtime with 'plugin "MeshMC_qmlplugin"
+# not found' the moment the QML shell loads.
+qt_import_qml_plugins(${MeshMC_Name})
 
 # Export all symbols so dlopen()'ed .mmco plugins can resolve launcher symbols at runtime
 set_target_properties(${MeshMC_Name} PROPERTIES ENABLE_EXPORTS ON)

@@ -20,6 +20,7 @@
 #include <QtTest>
 #include <QGuiApplication>
 #include <QQmlComponent>
+#include <QStandardItemModel>
 #include <QQmlEngine>
 #include <QUrl>
 
@@ -58,7 +59,13 @@ class QmlModuleTest : public QObject
 				 qPrintable(QStringLiteral("component not ready: %1")
 								.arg(component.errorString())));
 
-		std::unique_ptr<QObject> root(component.create());
+		/* The root requires the instance model; an empty stand-in is enough
+		 * to prove the component loads, and a required property left unset
+		 * would itself be a load error worth catching here. */
+		QStandardItemModel instances;
+		std::unique_ptr<QObject> root(component.createWithInitialProperties(
+			{{QStringLiteral("instanceModel"),
+			  QVariant::fromValue<QObject*>(&instances)}}));
 		QVERIFY2(root != nullptr, qPrintable(component.errorString()));
 
 		/* Guards against the component resolving to something default

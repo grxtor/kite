@@ -21,6 +21,7 @@
 #include "BuildConfig.h"
 #include "plugin/PluginAuthRequestDecorator.h"
 #include "ui/WidgetUiHost.h"
+#include "qml/QmlShell.h"
 #include "plugin/PluginManager.h"
 
 #include "ui/MainWindow.h"
@@ -2094,8 +2095,50 @@ void Application::registerGlobalSettingsPage(std::function<BasePage*()> creator)
 	}
 }
 
+namespace
+{
+	/* The QML user interface is a preview. It is always compiled -- so it
+	 * cannot rot unnoticed -- but only shown when asked for. The build option
+	 * MeshMC_QML_UI picks the default; MESHMC_QML_UI in the environment
+	 * overrides it either way, so both interfaces can be compared from the
+	 * same binary. */
+	bool useQmlShell()
+	{
+#ifdef MESHMC_QML_UI_DEFAULT
+		bool fallback = true;
+#else
+		bool fallback = false;
+#endif
+		const QByteArray env = qgetenv("MESHMC_QML_UI");
+		if (env.isEmpty())
+			return fallback;
+		return env != "0";
+	}
+} // namespace
+
 MainWindow* Application::showMainWindow(bool minimized)
 {
+	if (useQmlShell()) {
+		if (!m_qmlShell) {
+			m_qmlShell = std::make_unique<QmlShell>();
+			/* Counted and closed through the same path as MainWindow, so the
+			 * launcher quits when its last window goes, as it always has. */
+			connect(m_qmlShell.get(), &QmlShell::closed, this,
+					&Application::on_windowClose);
+			if (m_qmlShell->show(minimized)) {
+				m_openWindows++;
+				return nullptr;
+			}
+			/* A QML load failure must not leave the user with nothing on
+			 * screen: fall through to the widget window instead. */
+			qWarning() << "QML shell failed to load; using the widget window";
+			m_qmlShell.reset();
+		} else {
+			m_qmlShell->show(minimized);
+			return nullptr;
+		}
+	}
+
 	if (m_mainWindow) {
 		m_mainWindow->setWindowState(m_mainWindow->windowState() &
 									 ~Qt::WindowMinimized);

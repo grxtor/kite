@@ -37,6 +37,7 @@
 #include "core/LauncherContext.h"
 
 class LaunchController;
+class QmlShell;
 class LocalPeer;
 class InstanceWindow;
 class InstanceSettingsPage;
@@ -337,6 +338,10 @@ class Application : public QApplication, public LauncherContext
 	/* Built before anything that could ask the user a question, because
 	 * uiHost() promises never to return null. */
 	std::unique_ptr<UiHost> m_uiHost;
+
+	/* The QML user interface, when it is the one in use instead of
+	 * MainWindow. See useQmlShell(). */
+	std::unique_ptr<QmlShell> m_qmlShell;
 
   public:
 	QString m_instanceIdToLaunch;

@@ -28,7 +28,16 @@ qt_add_qml_module(MeshMC_qml
         Main.qml
 )
 
+# The C++ that drives the QML: the engine owner and whatever it hands over.
+target_sources(MeshMC_qml PRIVATE
+    QmlShell.h
+    QmlShell.cpp
+)
+
+# The QML side reads the core's models. It does not see QtWidgets: MeshMC_core
+# cannot link them, and nothing here asks for them.
 target_link_libraries(MeshMC_qml PUBLIC
+    MeshMC_core
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::QuickControls2
 )
