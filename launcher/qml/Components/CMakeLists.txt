@@ -54,6 +54,9 @@ qt_add_qml_module(MeshMC_qml_components
         TabStrip.qml
         StatTile.qml
         ConfirmDialog.qml
+        AccountsPage.qml
+        AccountRow.qml
+        NewInstanceDialog.qml
         SettingRow.qml
         SettingSwitch.qml
         SettingChoice.qml

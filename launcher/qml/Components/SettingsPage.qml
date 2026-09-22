@@ -324,7 +324,6 @@ Item {
                     description: qsTr("These still open in the classic settings window.")
                     Repeater {
                         model: [
-                            { page: "accounts", label: qsTr("Accounts"), text: qsTr("Add, remove and switch Minecraft accounts; skins.") },
                             { page: "language-settings", label: qsTr("Language"), text: qsTr("The language MeshMC is shown in.") },
                             { page: "proxy-settings", label: qsTr("Proxy"), text: qsTr("How MeshMC reaches the internet.") },
                             { page: "external-tools", label: qsTr("External tools"), text: qsTr("Profilers, MCEdit and the JSON editor.") },
