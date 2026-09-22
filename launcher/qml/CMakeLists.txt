@@ -22,6 +22,8 @@
 # same resource-alias reason as this one. Declared first because the modules
 # below import them.
 add_subdirectory(Theme)
+add_subdirectory(Style)
+add_subdirectory(Components)
 
 qt_add_library(MeshMC_qml STATIC)
 
@@ -45,7 +47,20 @@ target_sources(MeshMC_qml PRIVATE
 # cannot link them, and nothing here asks for them.
 target_link_libraries(MeshMC_qml PUBLIC
     MeshMC_qml_theme
+    MeshMC_qml_style
+    MeshMC_qml_components
     MeshMC_core
+)
+
+# The plugin targets, and not just the modules' backing libraries, have to reach
+# the executable: qt_import_qml_plugins only imports plugins it finds in the
+# link closure, and a module whose plugin is missing fails at load time with
+# 'plugin "..." not found' -- after a perfectly green build. PUBLIC so they
+# propagate from here to whatever links MeshMC_qml.
+target_link_libraries(MeshMC_qml PUBLIC
+    MeshMC_qml_themeplugin
+    MeshMC_qml_styleplugin
+    MeshMC_qml_componentsplugin
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::QuickControls2
 )

@@ -24,6 +24,7 @@
 #include <QImage>
 #include <QTimer>
 #include <QQmlApplicationEngine>
+#include <QQuickStyle>
 #include <QQuickWindow>
 #include <QUrl>
 
@@ -77,6 +78,12 @@ bool QmlShell::show(bool minimized)
 	m_instances = std::make_unique<InstanceFilterModel>();
 	m_instances->setSourceModel(LAUNCHER->instances().get());
 	m_selection = std::make_unique<IdSelectionModel>();
+
+	/* Must be chosen before the first engine exists: Qt Quick Controls binds
+	 * its style when QtQuick.Controls is first imported, and cannot switch
+	 * afterwards. The style falls back to Basic for anything it does not
+	 * define itself. */
+	QQuickStyle::setStyle(QStringLiteral("MeshMC.Style"));
 
 	m_engine = std::make_unique<QQmlApplicationEngine>();
 	m_engine->addImportPath(QStringLiteral("qrc:/qt/qml"));

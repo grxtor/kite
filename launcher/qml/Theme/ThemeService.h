@@ -69,6 +69,8 @@ class ThemeService : public QObject
 	 * restart. No-op outside "system" mode, and outside a real value change. */
 	void applySystemPalette();
 
-	QString m_mode = QStringLiteral("system");
-	bool m_dark = false;
+	/* Dark by default: the launcher is designed dark-first. "system" follows
+	 * the OS instead, and is one setting away. */
+	QString m_mode = QStringLiteral("dark");
+	bool m_dark = true;
 };

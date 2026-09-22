@@ -36,7 +36,7 @@ namespace
 } // namespace
 
 ThemeService::ThemeService(QObject* parent)
-	: QObject(parent), m_dark(systemPrefersDark())
+	: QObject(parent)
 {
 	/* QGuiApplication::paletteChanged() has been deprecated in favour of
 	 * QEvent::ApplicationPaletteChange since Qt 6.0, but it is still emitted

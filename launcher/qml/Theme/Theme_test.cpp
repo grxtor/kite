@@ -84,13 +84,12 @@ class ThemeTest : public QObject
 		// The colour tokens: not merely "some colour", but the one
 		// ThemePalette hands out for whichever theme is active -- proving
 		// the token came from ThemePalette rather than a value made up here.
-		const bool systemDark = QGuiApplication::palette()
-									 .color(QPalette::Window)
-									 .lightnessF() < 0.5;
-		const ThemePalette systemPalette =
-			systemDark ? ThemePalette::meshDark() : ThemePalette::meshLight();
-		QCOMPARE(root->property("dark").toBool(), systemDark);
-		QCOMPARE(root->property("accent").value<QColor>(), systemPalette.accent);
+		//
+		// The launcher starts dark whatever the OS prefers -- that is the
+		// documented default -- so this holds on a light test runner too.
+		QCOMPARE(root->property("dark").toBool(), true);
+		QCOMPARE(root->property("accent").value<QColor>(),
+				 ThemePalette::meshDark().accent);
 
 		auto* service = qobject_cast<ThemeService*>(
 			root->property("serviceRef").value<QObject*>());

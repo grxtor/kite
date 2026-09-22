@@ -4,21 +4,22 @@
 
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
+import MeshMC.Theme
+import MeshMC.Components
 
 /*
- * Root of the QML user interface.
+ * Root of the QML user interface: sidebar, top bar, instance grid.
  *
- * Deliberately unstyled for now: it exists to prove the path from the core's
- * models to the screen with real data, before the design system is layered on.
  * Everything it shows arrives as a required property set by QmlShell, so a
- * missing model is a load error rather than an empty window.
+ * missing model is a load error rather than an empty window. Nothing here
+ * hard-codes a colour or a size; those come from MeshMC.Theme.
  */
 ApplicationWindow {
     id: root
 
-    /* The instance list, straight from the core (InstanceList). Its named
-     * roles -- name, iconKey, group, instanceId, isRunning... -- are what the
-     * delegate binds to. */
+    /* The core's instances through InstanceFilterModel: naturally sorted,
+     * grouped, and filtered live by filterText. */
     required property var instanceModel
 
     /* Selection by instance id (IdSelectionModel). Ids rather than rows,
@@ -29,65 +30,62 @@ ApplicationWindow {
     // was instantiated.
     readonly property string moduleName: "MeshMC"
 
-    width: 1100
-    height: 700
-    minimumWidth: 720
+    width: 1180
+    height: 740
+    minimumWidth: 760
     minimumHeight: 480
     title: "MeshMC"
+    color: Theme.palette.canvas
 
-    GridView {
-        id: grid
-
+    RowLayout {
         anchors.fill: parent
-        anchors.margins: 16
-        model: root.instanceModel
-        cellWidth: 168
-        cellHeight: 128
-        clip: true
+        spacing: 0
 
-        delegate: Item {
-            id: tile
-
-            required property string name
-            required property string group
-            required property string iconKey
-
-            width: grid.cellWidth - 8
-            height: grid.cellHeight - 8
-
-            Column {
-                anchors.centerIn: parent
-                spacing: 4
-
-                Image {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: 40
-                    height: 40
-                    sourceSize: Qt.size(40, 40)
-                    source: "image://instanceicon/" + tile.iconKey
-                }
-                Label {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: tile.width - 16
-                    horizontalAlignment: Text.AlignHCenter
-                    elide: Text.ElideRight
-                    text: tile.name
-                }
-                Label {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    opacity: 0.6
-                    font.pixelSize: 11
-                    text: tile.group
-                    visible: text.length > 0
-                }
-            }
+        SidebarNav {
+            Layout.fillHeight: true
+            Layout.preferredWidth: 220
+            items: [
+                { id: "instances", icon: "▦", label: qsTr("Instances") },
+                { id: "modpacks",  icon: "⬡", label: qsTr("Modpacks") },
+                { id: "settings",  icon: "⚙", label: qsTr("Settings") }
+            ]
+            currentId: "instances"
+            // Honest placeholders until accounts are wired in: with no
+            // account signed in, the launcher really is running as a guest.
+            accountName: qsTr("Guest")
+            accountStatus: qsTr("Not signed in")
         }
 
-        Label {
-            anchors.centerIn: parent
-            visible: grid.count === 0
-            opacity: 0.6
-            text: qsTr("No instances yet")
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 0
+
+            TopBar {
+                id: topBar
+
+                Layout.fillWidth: true
+                title: qsTr("Instances")
+                searchPlaceholder: qsTr("Search instances")
+                onSearchTextChanged: root.instanceModel.filterText = searchText
+
+                Button {
+                    text: qsTr("New instance")
+                    highlighted: true
+                }
+            }
+
+            InstanceGrid {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                model: root.instanceModel
+                onSelectedIdChanged: {
+                    if (selectedId.length > 0)
+                        root.selection.selectOnly(selectedId)
+                    else
+                        root.selection.clear()
+                }
+            }
         }
     }
 }

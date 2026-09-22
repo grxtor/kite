@@ -74,36 +74,57 @@ QtObject {
             readonly property int pixelSize: 12
             readonly property int weight: Font.Normal
             readonly property real lineHeight: 1.33
+            // lineHeight is a multiplier for Text; this is the same line in pixels,
+            // for anything that has to reserve room for text before it exists.
+            readonly property real lineHeightPx: pixelSize * lineHeight
         }
         readonly property QtObject label: QtObject {
             readonly property int pixelSize: 13
             readonly property int weight: Font.Medium
             readonly property real lineHeight: 1.30
+            // lineHeight is a multiplier for Text; this is the same line in pixels,
+            // for anything that has to reserve room for text before it exists.
+            readonly property real lineHeightPx: pixelSize * lineHeight
         }
         readonly property QtObject body: QtObject {
             readonly property int pixelSize: 14
             readonly property int weight: Font.Normal
             readonly property real lineHeight: 1.45
+            // lineHeight is a multiplier for Text; this is the same line in pixels,
+            // for anything that has to reserve room for text before it exists.
+            readonly property real lineHeightPx: pixelSize * lineHeight
         }
         readonly property QtObject bodyStrong: QtObject {
             readonly property int pixelSize: 14
             readonly property int weight: Font.DemiBold
             readonly property real lineHeight: 1.45
+            // lineHeight is a multiplier for Text; this is the same line in pixels,
+            // for anything that has to reserve room for text before it exists.
+            readonly property real lineHeightPx: pixelSize * lineHeight
         }
         readonly property QtObject title: QtObject {
             readonly property int pixelSize: 16
             readonly property int weight: Font.DemiBold
             readonly property real lineHeight: 1.35
+            // lineHeight is a multiplier for Text; this is the same line in pixels,
+            // for anything that has to reserve room for text before it exists.
+            readonly property real lineHeightPx: pixelSize * lineHeight
         }
         readonly property QtObject heading: QtObject {
             readonly property int pixelSize: 20
             readonly property int weight: Font.DemiBold
             readonly property real lineHeight: 1.25
+            // lineHeight is a multiplier for Text; this is the same line in pixels,
+            // for anything that has to reserve room for text before it exists.
+            readonly property real lineHeightPx: pixelSize * lineHeight
         }
         readonly property QtObject display: QtObject {
             readonly property int pixelSize: 28
             readonly property int weight: Font.Bold
             readonly property real lineHeight: 1.15
+            // lineHeight is a multiplier for Text; this is the same line in pixels,
+            // for anything that has to reserve room for text before it exists.
+            readonly property real lineHeightPx: pixelSize * lineHeight
         }
     }
 }
