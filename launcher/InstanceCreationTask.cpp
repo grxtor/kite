@@ -25,9 +25,13 @@
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 
-InstanceCreationTask::InstanceCreationTask(BaseVersionPtr version)
+InstanceCreationTask::InstanceCreationTask(BaseVersionPtr version,
+										   const QString& loaderUid,
+										   const QString& loaderVersion)
 {
 	m_version = version;
+	m_loaderUid = loaderUid;
+	m_loaderVersion = loaderVersion;
 }
 
 void InstanceCreationTask::executeTask()
@@ -53,6 +57,14 @@ void InstanceCreationTask::executeTask()
 		components->buildingFromScratch();
 		components->setComponentVersion("net.minecraft",
 										m_version->descriptor(), true);
+		if (!m_loaderUid.isEmpty()) {
+			/* Same call InstallLoaderDialog::applySelection() makes
+			 * (ui/dialogs/InstallLoaderDialog.cpp) - not marked
+			 * "important", so the component is exactly as removable and
+			 * disableable as one installed after the fact would be. */
+			components->setComponentVersion(m_loaderUid, m_loaderVersion);
+			components->resolve(Net::Mode::Online);
+		}
 		inst.setName(m_instName);
 		inst.setIconKey(m_instIcon);
 		instanceSettings->resumeSave();

@@ -48,7 +48,23 @@ class AccountList : public QAbstractListModel
 		NameRole = Qt::UserRole + 10,
 		ProfileNameRole,
 		TypeRole,
-		StatusRole
+		StatusRole,
+
+		/* Added for the QML Accounts page (AccountsController). TypeRole
+		 * above is a capitalized display string ("Msa"/"Offline"), not
+		 * meant for comparisons, so IsMSARole gives an unambiguous flag
+		 * instead. StateKeyRole is a stable, non-localized key parallel to
+		 * StatusRole's translated display string, for QML that wants to
+		 * branch on state (e.g. to pick a color) without matching
+		 * translated text. AccountIdRole is the id to hand
+		 * AccountFaceProvider (image://accountface/<accountId>): the
+		 * profile id, or the internalId for accounts that have none
+		 * (offline, or MSA before a profile is fetched) -- the same
+		 * fallback QmlShell::accountFace() uses for the default account. */
+		IsDefaultRole,
+		IsMSARole,
+		StateKeyRole,
+		AccountIdRole
 	};
 
 	enum VListColumns {

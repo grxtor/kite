@@ -29,9 +29,11 @@
 #include <QUrl>
 
 #include "InstanceList.h"
+#include "models/AccountsController.h"
 #include "models/IdSelectionModel.h"
 #include "models/InstanceDetails.h"
 #include "models/InstanceFilterModel.h"
+#include "models/NewInstanceController.h"
 #include "models/SettingsAdapter.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
 #include "Sys.h"
@@ -196,6 +198,29 @@ QObject* QmlShell::instancePageModel() const
 	return expose(m_instancePage.get());
 }
 
+QObject* QmlShell::accountsController() const
+{
+	return expose(m_accountsController.get());
+}
+
+QObject* QmlShell::newInstance() const
+{
+	/* Made on first use, not in show(): the controller starts loading the
+	 * Minecraft version list, and opening the launcher should not fetch
+	 * metadata nobody asked for. */
+	if (!m_newInstance && m_engine) {
+		m_newInstance = std::make_unique<NewInstanceController>();
+	}
+	// The version list proxies it hands out need the same CppOwnership
+	// pinning as the controller itself, or the engine will try to delete
+	// them out from under it the first time QML touches one.
+	if (m_newInstance) {
+		expose(m_newInstance->minecraftVersions());
+		expose(m_newInstance->loaderVersions());
+	}
+	return expose(m_newInstance.get());
+}
+
 QObject* QmlShell::sectionModel(const QString& group)
 {
 	if (!m_instances) {
@@ -278,6 +303,8 @@ bool QmlShell::show(bool minimized)
 	m_selection = std::make_unique<IdSelectionModel>();
 	m_settings = std::make_unique<SettingsAdapter>(LAUNCHER->settings());
 	m_modpacks = std::make_unique<ModrinthModpackModel>();
+	m_accountsController =
+		std::make_unique<AccountsController>(LAUNCHER->accounts());
 
 	/* The sort order reads InstSortMode on every comparison, but a proxy
 	 * only compares when told to: re-sort when the setting moves. */

@@ -30,6 +30,8 @@ class InstanceFilterModel;
 class InstanceDetails;
 class SettingsAdapter;
 class ModrinthModpackModel;
+class AccountsController;
+class NewInstanceController;
 class QQmlApplicationEngine;
 class QQuickWindow;
 
@@ -65,6 +67,10 @@ class QmlShell : public QObject
 	/// Same, for the instance page -- separate, since the library's hero
 	/// keeps following its own choice underneath.
 	Q_PROPERTY(QObject* instancePageModel READ instancePageModel CONSTANT)
+	/// Accounts page: the AccountList model plus add/remove/default/login.
+	Q_PROPERTY(QObject* accountsController READ accountsController CONSTANT)
+	/// The QML "New instance" flow: picks a Minecraft version and loader.
+	Q_PROPERTY(QObject* newInstance READ newInstance CONSTANT)
 
   public:
 	explicit QmlShell(QObject* parent = nullptr);
@@ -111,6 +117,12 @@ class QmlShell : public QObject
 	 * destroys) whichever one was open before; asking again for the same
 	 * id returns the one already open. Null if @p id names no instance. */
 	Q_INVOKABLE QObject* instanceDetails(const QString& id);
+	/// The Accounts page's model+actions object. Created in show(), like
+	/// the other CONSTANT properties above.
+	QObject* accountsController() const;
+	/// The "New instance" flow's controller. Created in show(), like the
+	/// other CONSTANT properties above.
+	QObject* newInstance() const;
 
 	/* Everything below just emits the matching *Requested() signal: QmlShell
 	 * sits in MeshMC_qml, which cannot see the widget code that actually
@@ -161,6 +173,8 @@ class QmlShell : public QObject
 	std::unique_ptr<ModrinthModpackModel> m_modpacks;
 	/* The one open instance detail page, if any - see instanceDetails(). */
 	std::unique_ptr<InstanceDetails> m_instanceDetails;
+	std::unique_ptr<AccountsController> m_accountsController;
+	mutable std::unique_ptr<NewInstanceController> m_newInstance;
 
 	std::unique_ptr<QQmlApplicationEngine> m_engine;
 	QQuickWindow* m_window = nullptr;

@@ -30,7 +30,15 @@ class InstanceCreationTask : public InstanceTask
 {
 	Q_OBJECT
   public:
-	explicit InstanceCreationTask(BaseVersionPtr version);
+	/* @p loaderUid/@p loaderVersion name a mod loader component to install
+	 * alongside net.minecraft, for a caller that lets someone pick a loader
+	 * at creation time (the widget's NewInstanceDialog + VanillaPage do
+	 * not; the QML "New instance" flow does - see
+	 * models/NewInstanceController.cpp). Leave both empty for a plain
+	 * vanilla instance. */
+	explicit InstanceCreationTask(BaseVersionPtr version,
+								  const QString& loaderUid = QString(),
+								  const QString& loaderVersion = QString());
 
   protected:
 	//! Entry point for tasks.
@@ -38,4 +46,6 @@ class InstanceCreationTask : public InstanceTask
 
   private: /* data */
 	BaseVersionPtr m_version;
+	QString m_loaderUid;
+	QString m_loaderVersion;
 };

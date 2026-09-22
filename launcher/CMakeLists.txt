@@ -36,6 +36,10 @@ set(CORE_SOURCES
     models/SettingsAdapter.cpp
     models/InstanceDetails.h
     models/InstanceDetails.cpp
+    models/AccountsController.h
+    models/AccountsController.cpp
+    models/NewInstanceController.h
+    models/NewInstanceController.cpp
     modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
@@ -1311,6 +1315,26 @@ add_unit_test(SettingsAdapter
 # hand.
 add_unit_test(InstanceLogBridge
     SOURCES models/InstanceDetails_test.cpp
+    LIBS MeshMC_core
+    )
+
+# Covers what is testable without a LauncherContext or network: AccountList's
+# QML roles (including the ones added for this page) and the parts of
+# AccountsController that only touch AccountList/MinecraftAccount --
+# add/remove/default and offline validation. loginMicrosoft() itself needs
+# LAUNCHER->network() (via MSAStep) and is not exercised here.
+add_unit_test(AccountsController
+    SOURCES models/AccountsController_test.cpp
+    LIBS MeshMC_core
+    )
+
+# Covers what is testable without a LauncherContext or network: the two
+# Meta version-list proxies (filtering, sorting, loading/error) against a
+# fake BaseVersionList, and the free-standing suggested-name helper.
+# NewInstanceController itself needs LAUNCHER->metadataIndex() and is not
+# exercised here.
+add_unit_test(NewInstanceController
+    SOURCES models/NewInstanceController_test.cpp
     LIBS MeshMC_core
     )
 

@@ -337,6 +337,30 @@ static QString accountStateDisplayString(AccountState state)
 	return QString();
 }
 
+/* Stable, non-localized counterpart to accountStateDisplayString() above,
+ * for QML's StateKeyRole -- code that wants to branch on the state (to pick
+ * a color, say) should not have to match translated text. */
+static QString accountStateKey(AccountState state)
+{
+	switch (state) {
+		case AccountState::Unchecked:
+			return QStringLiteral("unchecked");
+		case AccountState::Offline:
+			return QStringLiteral("offline");
+		case AccountState::Online:
+			return QStringLiteral("online");
+		case AccountState::Working:
+			return QStringLiteral("working");
+		case AccountState::Errored:
+			return QStringLiteral("errored");
+		case AccountState::Expired:
+			return QStringLiteral("expired");
+		case AccountState::Gone:
+			return QStringLiteral("gone");
+	}
+	return QString();
+}
+
 QVariant AccountList::data(const QModelIndex& index, int role) const
 {
 	if (!index.isValid())
@@ -404,6 +428,15 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
 		}
 		case StatusRole:
 			return accountStateDisplayString(account->accountState());
+		case IsDefaultRole:
+			return account == m_defaultAccount;
+		case IsMSARole:
+			return account->isMSA();
+		case StateKeyRole:
+			return accountStateKey(account->accountState());
+		case AccountIdRole:
+			return account->profileId().isEmpty() ? account->internalId()
+												   : account->profileId();
 
 		default:
 			return QVariant();
@@ -417,6 +450,10 @@ QHash<int, QByteArray> AccountList::roleNames() const
 	roles.insert(ProfileNameRole, "profileName");
 	roles.insert(TypeRole, "type");
 	roles.insert(StatusRole, "status");
+	roles.insert(IsDefaultRole, "isDefault");
+	roles.insert(IsMSARole, "isMSA");
+	roles.insert(StateKeyRole, "stateKey");
+	roles.insert(AccountIdRole, "accountId");
 	return roles;
 }
 
