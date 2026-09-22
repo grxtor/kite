@@ -304,6 +304,32 @@ class BaseInstance : public QObject,
 
 	virtual QString typeName() const = 0;
 
+	/**
+	 * The Minecraft version this instance runs, e.g. "1.21.4".
+	 *
+	 * Empty for an instance type that has no such concept, which is the
+	 * default here. MinecraftInstance overrides this; kept on the base
+	 * class so generic code (the QML instance list) can ask any instance
+	 * without a dynamic_cast.
+	 */
+	virtual QString gameVersion() const
+	{
+		return {};
+	}
+
+	/**
+	 * Human name of the mod loader this instance uses ("Fabric", "Forge",
+	 * ...), or empty when none is installed or this instance type has no
+	 * such concept.
+	 *
+	 * Overridden by MinecraftInstance, for the same reason as
+	 * gameVersion().
+	 */
+	virtual QString modLoaderName() const
+	{
+		return {};
+	}
+
 	bool hasVersionBroken() const
 	{
 		return m_hasBrokenVersion;

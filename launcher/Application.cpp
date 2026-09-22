@@ -2125,6 +2125,49 @@ MainWindow* Application::showMainWindow(bool minimized)
 			 * launcher quits when its last window goes, as it always has. */
 			connect(m_qmlShell.get(), &QmlShell::closed, this,
 					&Application::on_windowClose);
+
+			/* QmlShell cannot see widget code, so it only emits these
+			 * signals; the actual actions - the same ones the widget menus
+			 * already run - are wired up here. */
+			connect(m_qmlShell.get(), &QmlShell::launchRequested, this,
+					[this](const QString& id) {
+						if (auto inst = instances()->getInstanceById(id)) {
+							launch(inst);
+						}
+					});
+			connect(m_qmlShell.get(), &QmlShell::killRequested, this,
+					[this](const QString& id) {
+						if (auto inst = instances()->getInstanceById(id)) {
+							kill(inst);
+						}
+					});
+			connect(m_qmlShell.get(), &QmlShell::editRequested, this,
+					[this](const QString& id) {
+						if (auto inst = instances()->getInstanceById(id)) {
+							showInstanceWindow(inst);
+						}
+					});
+			connect(m_qmlShell.get(), &QmlShell::folderRequested, this,
+					[this](const QString& id) {
+						if (auto inst = instances()->getInstanceById(id)) {
+							DesktopServices::openDirectory(inst->instanceRoot(),
+														  true);
+						}
+					});
+			connect(m_qmlShell.get(), &QmlShell::settingsRequested, this,
+					[this]() { ShowGlobalSettings(nullptr); });
+			connect(m_qmlShell.get(), &QmlShell::accountsRequested, this,
+					[this]() { ShowGlobalSettings(nullptr, "accounts"); });
+			connect(m_qmlShell.get(), &QmlShell::createInstanceRequested, this,
+					[this]() {
+						const QString groupName =
+							settings()
+								->get("LastUsedGroupForNewInstance")
+								.toString();
+						MainWindow::createInstanceFromDialog(nullptr,
+															 groupName);
+					});
+
 			if (m_qmlShell->show(minimized)) {
 				m_openWindows++;
 				return nullptr;

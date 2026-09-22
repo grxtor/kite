@@ -116,7 +116,7 @@ class InstanceList : public QAbstractListModel
 	/* Roles added for the QML instance list. instanceId, name, iconKey,
 	 * instanceRoot and group are named in roleNames() but reuse the
 	 * InstanceIDRole/Qt::DisplayRole/Qt::DecorationRole/Qt::ToolTipRole/
-	 * GroupRole cases already handled in data() - only the four below are
+	 * GroupRole cases already handled in data() - only the seven below are
 	 * genuinely new. InstancePointerRole is deliberately left unnamed: it
 	 * is a raw void*, and QML has no way to dereference one; a QML
 	 * delegate reaches an instance by instanceId instead. */
@@ -124,7 +124,10 @@ class InstanceList : public QAbstractListModel
 		IsRunningRole = Qt::UserRole + 10,
 		CanLaunchRole,
 		LastLaunchRole,
-		TotalTimePlayedRole
+		TotalTimePlayedRole,
+		GameVersionRole,
+		LoaderRole,
+		IconTintRole
 	};
 	/*!
 	 * \brief Error codes returned by functions in the InstanceList class.

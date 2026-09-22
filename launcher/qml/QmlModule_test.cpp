@@ -59,16 +59,22 @@ class QmlModuleTest : public QObject
 				 qPrintable(QStringLiteral("component not ready: %1")
 								.arg(component.errorString())));
 
-		/* The root requires the instance model; an empty stand-in is enough
-		 * to prove the component loads, and a required property left unset
-		 * would itself be a load error worth catching here. */
+		/* The root requires the instance model, the selection and the shell;
+		 * an empty stand-in is enough to prove the component loads, and a
+		 * required property left unset would itself be a load error worth
+		 * catching here. The shell is a plain QObject: this test only proves
+		 * Main.qml accepts something for the property, not what QmlShell
+		 * itself does. */
 		QStandardItemModel instances;
 		QObject selection;
+		QObject shell;
 		std::unique_ptr<QObject> root(component.createWithInitialProperties(
 			{{QStringLiteral("instanceModel"),
 			  QVariant::fromValue<QObject*>(&instances)},
 			 {QStringLiteral("selection"),
-			  QVariant::fromValue<QObject*>(&selection)}}));
+			  QVariant::fromValue<QObject*>(&selection)},
+			 {QStringLiteral("shell"),
+			  QVariant::fromValue<QObject*>(&shell)}}));
 		QVERIFY2(root != nullptr, qPrintable(component.errorString()));
 
 		/* Guards against the component resolving to something default

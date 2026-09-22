@@ -22,6 +22,7 @@
 #include <QObject>
 #include <QVariantMap>
 
+#include <map>
 #include <memory>
 
 class IdSelectionModel;
@@ -43,6 +44,14 @@ class QmlShell : public QObject
 {
 	Q_OBJECT
 
+	Q_PROPERTY(QString accountName READ accountName NOTIFY accountChanged)
+	Q_PROPERTY(QString accountKind READ accountKind NOTIFY accountChanged)
+	Q_PROPERTY(int accountCount READ accountCount NOTIFY accountChanged)
+	/// Every instance, most recently played first; never-played ones left out.
+	Q_PROPERTY(QObject* recentModel READ recentModel CONSTANT)
+	/// At most one row: the instance whose id QML writes into instanceId.
+	Q_PROPERTY(QObject* heroModel READ heroModel CONSTANT)
+
   public:
 	explicit QmlShell(QObject* parent = nullptr);
 	~QmlShell() override;
@@ -57,17 +66,59 @@ class QmlShell : public QObject
 	 * core models out from under the rest of the launcher; this pins them. */
 	static QObject* expose(QObject* object);
 
+	/* Sidebar account summary, read from LAUNCHER->accounts() - QmlShell has
+	 * no reason to go through Application for this, and reaching it via the
+	 * core keeps QmlShell usable without one. */
+	QString accountName() const;
+	/// "Microsoft", "Offline", or empty when there is no default account.
+	QString accountKind() const;
+	int accountCount() const;
+
+	QObject* recentModel() const;
+	QObject* heroModel() const;
+	/* The instances of one group (empty = ungrouped) that pass the search,
+	 * for one section of the library. Created on first use and kept, so
+	 * QML asking again from a rebuilt delegate gets the same model back. */
+	Q_INVOKABLE QObject* sectionModel(const QString& group);
+
+	/* Everything below just emits the matching *Requested() signal: QmlShell
+	 * sits in MeshMC_qml, which cannot see the widget code that actually
+	 * launches an instance, opens a dialog or shows a folder. Application
+	 * connects these to the real actions. */
+	Q_INVOKABLE void launchInstance(const QString& id);
+	Q_INVOKABLE void killInstance(const QString& id);
+	Q_INVOKABLE void editInstance(const QString& id);
+	Q_INVOKABLE void openInstanceFolder(const QString& id);
+	Q_INVOKABLE void createInstance();
+	Q_INVOKABLE void openSettings();
+	Q_INVOKABLE void manageAccounts();
+
   signals:
 	/* Emitted when the user closes the root window. */
 	void closed();
 
+	/// accountName()/accountKind()/accountCount() moved.
+	void accountChanged();
+
+	void launchRequested(const QString& id);
+	void killRequested(const QString& id);
+	void editRequested(const QString& id);
+	void folderRequested(const QString& id);
+	void createInstanceRequested();
+	void settingsRequested();
+	void accountsRequested();
+
   private:
-	QVariantMap rootProperties() const;
+	QVariantMap rootProperties();
 	void scheduleSnapshotIfRequested();
 
 	/* Declared before the engine so they are destroyed after it: QML holds
 	 * pointers to both until the engine is gone. */
 	std::unique_ptr<InstanceFilterModel> m_instances;
+	std::unique_ptr<InstanceFilterModel> m_recent;
+	std::unique_ptr<InstanceFilterModel> m_hero;
+	// Declared after m_instances, their source, so they are destroyed first.
+	std::map<QString, std::unique_ptr<InstanceFilterModel>> m_sections;
 	std::unique_ptr<IdSelectionModel> m_selection;
 
 	std::unique_ptr<QQmlApplicationEngine> m_engine;

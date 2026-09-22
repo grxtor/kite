@@ -68,6 +68,19 @@ class MinecraftInstance : public BaseInstance
 	 */
 	QString minecraftVersion() const;
 
+	/// BaseInstance::gameVersion() override - same value as minecraftVersion().
+	QString gameVersion() const override
+	{
+		return minecraftVersion();
+	}
+
+	/**
+	 * Human name of this instance's mod loader ("Fabric", "Forge", ...),
+	 * or empty if none of the loaders this launcher knows about is
+	 * installed and enabled. See BaseInstance::modLoaderName().
+	 */
+	QString modLoaderName() const override;
+
 	/**
 	 * Whether this instance's Minecraft version understands --demo.
 	 *

@@ -242,6 +242,14 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 	m_components->setOldConfigVersion(
 		"com.mumfrey.liteloader",
 		m_settings->get("LiteloaderVersion").toString());
+
+	/* Refreshes anything reading gameVersion()/modLoaderName() - the QML
+	 * instance list, in particular - when the profile changes underneath
+	 * it. minecraftChanged() already exists for this (VersionPage listens
+	 * to the same signal to refresh itself); propertiesChanged() is what
+	 * InstanceList already listens to for every instance. */
+	connect(m_components.get(), &PackProfile::minecraftChanged, this,
+			[this] { emit propertiesChanged(this); });
 }
 
 void MinecraftInstance::saveNow()
@@ -291,6 +299,32 @@ QString MinecraftInstance::minecraftVersion() const
 	 * never wait on the network. */
 	components->reload(Net::Mode::Offline);
 	return components->getComponentVersion("net.minecraft");
+}
+
+QString MinecraftInstance::modLoaderName() const
+{
+	auto components = getPackProfile();
+	if (!components) {
+		return QString();
+	}
+
+	/* Piggybacks on minecraftVersion()'s lazy load instead of reloading a
+	 * second time: once it has run, the profile is either loaded or the
+	 * load failed, and either way there is nothing more a second attempt
+	 * here would achieve. */
+	minecraftVersion();
+
+	const int rows = components->rowCount();
+	for (int i = 0; i < rows; ++i) {
+		Component* component = components->getComponent(i);
+		if (!component || !component->isEnabled()) {
+			continue;
+		}
+		if (const ModLoaderInfo* loader = modLoaderForUid(component->getID())) {
+			return loader->brandName;
+		}
+	}
+	return QString();
 }
 
 bool MinecraftInstance::supportsDemo() const

@@ -33,6 +33,8 @@
 #include "models/InstanceFilterModel.h"
 #include "qml/InstanceIconProvider.h"
 #include "core/LauncherContext.h"
+#include "minecraft/auth/AccountList.h"
+#include "minecraft/auth/MinecraftAccount.h"
 
 namespace
 {
@@ -41,7 +43,18 @@ namespace
 	const QUrl kRootUrl(QStringLiteral("qrc:/qt/qml/MeshMC/Main.qml"));
 } // namespace
 
-QmlShell::QmlShell(QObject* parent) : QObject(parent) {}
+QmlShell::QmlShell(QObject* parent) : QObject(parent)
+{
+	/* Sidebar account summary. Both signals exist on AccountList already;
+	 * either one moving the default account or the list itself is reason
+	 * enough to re-read all three properties, so both are wired to the
+	 * same accountChanged() rather than tracked separately. */
+	auto accounts = LAUNCHER->accounts();
+	connect(accounts.get(), &AccountList::listChanged, this,
+			&QmlShell::accountChanged);
+	connect(accounts.get(), &AccountList::defaultAccountChanged, this,
+			&QmlShell::accountChanged);
+}
 
 QmlShell::~QmlShell() = default;
 
@@ -53,13 +66,95 @@ QObject* QmlShell::expose(QObject* object)
 	return object;
 }
 
-QVariantMap QmlShell::rootProperties() const
+QString QmlShell::accountName() const
+{
+	auto account = LAUNCHER->accounts()->defaultAccount();
+	return account ? account->profileName() : QString();
+}
+
+QString QmlShell::accountKind() const
+{
+	auto account = LAUNCHER->accounts()->defaultAccount();
+	if (!account) {
+		return QString();
+	}
+	return account->isMSA() ? QStringLiteral("Microsoft")
+							: QStringLiteral("Offline");
+}
+
+int QmlShell::accountCount() const
+{
+	return LAUNCHER->accounts()->count();
+}
+
+void QmlShell::launchInstance(const QString& id)
+{
+	emit launchRequested(id);
+}
+
+void QmlShell::killInstance(const QString& id)
+{
+	emit killRequested(id);
+}
+
+void QmlShell::editInstance(const QString& id)
+{
+	emit editRequested(id);
+}
+
+void QmlShell::openInstanceFolder(const QString& id)
+{
+	emit folderRequested(id);
+}
+
+void QmlShell::createInstance()
+{
+	emit createInstanceRequested();
+}
+
+void QmlShell::openSettings()
+{
+	emit settingsRequested();
+}
+
+void QmlShell::manageAccounts()
+{
+	emit accountsRequested();
+}
+
+QObject* QmlShell::recentModel() const
+{
+	return expose(m_recent.get());
+}
+
+QObject* QmlShell::heroModel() const
+{
+	return expose(m_hero.get());
+}
+
+QObject* QmlShell::sectionModel(const QString& group)
+{
+	if (!m_instances) {
+		return nullptr;
+	}
+	auto& section = m_sections[group];
+	if (!section) {
+		section = std::make_unique<InstanceFilterModel>();
+		section->setExactGroup(true);
+		section->setGroup(group);
+		section->setSourceModel(m_instances.get());
+	}
+	return expose(section.get());
+}
+
+QVariantMap QmlShell::rootProperties()
 {
 	QVariantMap props;
 	props.insert(QStringLiteral("instanceModel"),
 				 QVariant::fromValue(expose(m_instances.get())));
 	props.insert(QStringLiteral("selection"),
 				 QVariant::fromValue(expose(m_selection.get())));
+	props.insert(QStringLiteral("shell"), QVariant::fromValue(expose(this)));
 	return props;
 }
 
@@ -77,6 +172,14 @@ bool QmlShell::show(bool minimized)
 	 * selection by instance id, since rows move under the proxy. */
 	m_instances = std::make_unique<InstanceFilterModel>();
 	m_instances->setSourceModel(LAUNCHER->instances().get());
+	m_recent = std::make_unique<InstanceFilterModel>();
+	m_recent->setRecentFirst(true);
+	m_recent->setSourceModel(LAUNCHER->instances().get());
+	m_hero = std::make_unique<InstanceFilterModel>();
+	/* Nothing matches until QML names an instance, so there is no flash of
+	 * every instance as a hero. Ids are folder names; none contains '/'. */
+	m_hero->setInstanceId(QStringLiteral("/"));
+	m_hero->setSourceModel(LAUNCHER->instances().get());
 	m_selection = std::make_unique<IdSelectionModel>();
 
 	/* Must be chosen before the first engine exists: Qt Quick Controls binds

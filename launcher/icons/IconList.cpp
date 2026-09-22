@@ -28,6 +28,8 @@
 #include <QFileSystemWatcher>
 #include <QSet>
 #include <QDebug>
+#include <QImage>
+#include <QPixmap>
 
 #define MAX_SIZE 1024
 
@@ -35,6 +37,11 @@ IconList::IconList(const QStringList& builtinPaths, QString path,
 				   QObject* parent)
 	: QAbstractListModel(parent)
 {
+	// Connected first, so the stale colour is gone before anyone else
+	// hears about the change and asks for it again.
+	connect(this, &IconList::iconUpdated, this,
+			[this](const QString& key) { m_tintCache.remove(key); });
+
 	QSet<QString> builtinNames;
 
 	// add builtin icons
@@ -389,6 +396,39 @@ QIcon IconList::getIcon(const QString& key) const
 	if (icon_index != -1)
 		return icons[icon_index].icon();
 	return QIcon();
+}
+
+QColor IconList::tint(const QString& key) const
+{
+	const auto cached = m_tintCache.constFind(key);
+	if (cached != m_tintCache.constEnd()) {
+		return *cached;
+	}
+
+	const QImage image = getIcon(key)
+							 .pixmap(QSize(32, 32))
+							 .toImage()
+							 .convertToFormat(QImage::Format_ARGB32);
+	double red = 0, green = 0, blue = 0, total = 0;
+	for (int y = 0; y < image.height(); ++y) {
+		const auto* line = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+		for (int x = 0; x < image.width(); ++x) {
+			const QColor pixel = QColor::fromRgba(line[x]);
+			const double weight =
+				pixel.alphaF() * (0.25 + qMax(0.0f, pixel.hsvSaturationF()));
+			red += pixel.redF() * weight;
+			green += pixel.greenF() * weight;
+			blue += pixel.blueF() * weight;
+			total += weight;
+		}
+	}
+
+	const QColor result = total > 0
+							  ? QColor::fromRgbF(red / total, green / total,
+												 blue / total)
+							  : QColor();
+	m_tintCache.insert(key, result);
+	return result;
 }
 
 int IconList::getIconIndex(const QString& key) const

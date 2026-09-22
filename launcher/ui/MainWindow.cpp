@@ -1265,13 +1265,6 @@ void MainWindow::runModalTask(Task* task)
 	loadDialog.execWithTask(task);
 }
 
-void MainWindow::instanceFromInstanceTask(InstanceTask* rawTask)
-{
-	unique_qobject_ptr<Task> task(
-		APPLICATION->instances()->wrapInstanceTask(rawTask));
-	runModalTask(task.get());
-}
-
 void MainWindow::on_actionCopyInstance_triggered()
 {
 	if (!m_selectedInstance)
@@ -1343,7 +1336,14 @@ void MainWindow::addInstance(QString url)
 						.toString();
 	}
 
-	NewInstanceDialog newInstDlg(groupName, url, this);
+	createInstanceFromDialog(this, groupName, url);
+}
+
+void MainWindow::createInstanceFromDialog(QWidget* parent,
+										  const QString& groupName,
+										  const QString& url)
+{
+	NewInstanceDialog newInstDlg(groupName, url, parent);
 	if (!newInstDlg.exec())
 		return;
 
@@ -1357,9 +1357,29 @@ void MainWindow::addInstance(QString url)
 								 newInstDlg.instDir());
 
 	InstanceTask* creationTask = newInstDlg.extractTask();
-	if (creationTask) {
-		instanceFromInstanceTask(creationTask);
+	if (!creationTask) {
+		return;
 	}
+
+	unique_qobject_ptr<Task> task(
+		APPLICATION->instances()->wrapInstanceTask(creationTask));
+	connect(task.get(), &Task::failed, [parent](QString reason) {
+		CustomMessageBox::selectable(parent, tr("Error"), reason,
+									 QMessageBox::Critical)
+			->show();
+	});
+	connect(task.get(), &Task::succeeded, [parent, rawTask = task.get()]() {
+		QStringList warnings = rawTask->warnings();
+		if (warnings.count()) {
+			CustomMessageBox::selectable(parent, tr("Warnings"),
+										 warnings.join('\n'),
+										 QMessageBox::Warning)
+				->show();
+		}
+	});
+	ProgressDialog loadDialog(parent);
+	loadDialog.setSkipButton(true, tr("Abort"));
+	loadDialog.execWithTask(task.get());
 }
 
 void MainWindow::on_actionAddInstance_triggered()

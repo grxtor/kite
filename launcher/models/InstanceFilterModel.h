@@ -22,6 +22,7 @@
 #include <QCollator>
 #include <QSortFilterProxyModel>
 #include <QString>
+#include <QStringList>
 
 /*
  * QML replacement for the widget grid's proxy
@@ -56,6 +57,22 @@ class InstanceFilterModel : public QSortFilterProxyModel
 				   filterTextChanged)
 	Q_PROPERTY(QString group READ group WRITE setGroup NOTIFY groupChanged)
 	Q_PROPERTY(int count READ count NOTIFY countChanged)
+	/* When set, `group` is matched exactly -- including the empty string,
+	 * which then means "ungrouped only" instead of "every group". This is
+	 * what a per-group section of the library needs. */
+	Q_PROPERTY(bool exactGroup READ exactGroup WRITE setExactGroup NOTIFY
+				   exactGroupChanged)
+	/// When non-empty, only the instance with this id passes the filter.
+	Q_PROPERTY(QString instanceId READ instanceId WRITE setInstanceId NOTIFY
+				   instanceIdChanged)
+	/* Most recently launched first, ignoring groups and the InstSortMode
+	 * setting, and instances that were never launched are left out. */
+	Q_PROPERTY(bool recentFirst READ recentFirst WRITE setRecentFirst NOTIFY
+				   recentFirstChanged)
+	/// Distinct groups of the rows that pass the filter, in row order.
+	Q_PROPERTY(QStringList groups READ groups NOTIFY groupsChanged)
+	/// Id of the first row after filtering and sorting; empty when none.
+	Q_PROPERTY(QString firstId READ firstId NOTIFY firstIdChanged)
 
   public:
 	explicit InstanceFilterModel(QObject* parent = nullptr);
@@ -69,12 +86,29 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	/// Row count after filtering -- what QML needs to decide an empty state.
 	int count() const;
 
+	bool exactGroup() const;
+	void setExactGroup(bool exact);
+
+	QString instanceId() const;
+	void setInstanceId(const QString& id);
+
+	bool recentFirst() const;
+	void setRecentFirst(bool recentFirst);
+
+	QStringList groups() const;
+	QString firstId() const;
+
 	void setSourceModel(QAbstractItemModel* sourceModel) override;
 
   signals:
 	void filterTextChanged();
 	void groupChanged();
 	void countChanged();
+	void exactGroupChanged();
+	void instanceIdChanged();
+	void recentFirstChanged();
+	void groupsChanged();
+	void firstIdChanged();
 
   protected:
 	bool filterAcceptsRow(int sourceRow,
@@ -85,10 +119,17 @@ class InstanceFilterModel : public QSortFilterProxyModel
   private:
 	bool subSortLessThan(const QModelIndex& left,
 						  const QModelIndex& right) const;
+	/// Recomputes groups and firstId, emitting only what actually moved.
+	void refreshDerived();
 
 	QCollator m_naturalSort;
 	QString m_filterText;
 	QString m_group;
+	bool m_exactGroup = false;
+	QString m_instanceId;
+	bool m_recentFirst = false;
+	QStringList m_groups;
+	QString m_firstId;
 
 	/* Resolved in setSourceModel(). The fallbacks are the roles Qt itself
 	 * gives the same meaning by convention, so a source model that never
@@ -99,4 +140,5 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	int m_nameRole = Qt::DisplayRole;
 	int m_groupRole = Qt::UserRole;
 	int m_lastLaunchRole = -1;
+	int m_idRole = -1;
 };

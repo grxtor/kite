@@ -46,6 +46,8 @@
 #include "FileSystem.h"
 #include "ExponentialSeries.h"
 #include "WatchLock.h"
+#include "core/LauncherContext.h"
+#include "icons/IconList.h"
 
 const static int GROUP_FILE_FORMAT_VERSION = 1;
 
@@ -289,6 +291,18 @@ QVariant InstanceList::data(const QModelIndex& index, int role) const
 		case TotalTimePlayedRole: {
 			return pdata->totalTimePlayed();
 		}
+		case GameVersionRole: {
+			return pdata->gameVersion();
+		}
+		case LoaderRole:
+			// Empty for vanilla: the UI words that itself, so it can tell
+			// "no loader" apart from a loader's name in any language.
+			return pdata->modLoaderName();
+		case IconTintRole: {
+			auto* context = LauncherContext::instance();
+			return context ? context->icons()->tint(pdata->iconKey())
+						   : QColor();
+		}
 		default:
 			break;
 	}
@@ -307,6 +321,9 @@ QHash<int, QByteArray> InstanceList::roleNames() const
 	roles.insert(CanLaunchRole, "canLaunch");
 	roles.insert(LastLaunchRole, "lastLaunch");
 	roles.insert(TotalTimePlayedRole, "totalTimePlayed");
+	roles.insert(GameVersionRole, "gameVersion");
+	roles.insert(LoaderRole, "loader");
+	roles.insert(IconTintRole, "iconTint");
 	return roles;
 }
 

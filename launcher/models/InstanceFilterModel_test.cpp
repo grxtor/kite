@@ -186,6 +186,97 @@ class InstanceFilterModelTest : public QObject
 		QCOMPARE(filter.count(), 3);
 	}
 
+	/// exactGroup turns the empty group into "ungrouped only", which is
+	/// what one library section needs; groups lists what is left, in order.
+	void test_exactGroup_emptyMeansUngrouped_andGroupsFollowRows()
+	{
+		FakeInstanceModel source({
+			{ "a", "One", "Modpacks", 0 },
+			{ "b", "Two", "", 0 },
+			{ "c", "Three", "Vanilla", 0 },
+		});
+		InstanceFilterModel filter;
+		filter.setSourceModel(&source);
+		QCOMPARE(filter.groups(), QStringList({ "", "Modpacks", "Vanilla" }));
+
+		QSignalSpy groupsSpy(&filter, &InstanceFilterModel::groupsChanged);
+		filter.setExactGroup(true);
+		QCOMPARE(filter.count(), 1);
+		QCOMPARE(filter.firstId(), QString("b"));
+		QCOMPARE(filter.groups(), QStringList({ "" }));
+		QCOMPARE(groupsSpy.count(), 1);
+	}
+
+	/// recentFirst: newest launch first, never-launched instances left out,
+	/// groups ignored for ordering.
+	void test_recentFirst_ordersByLastLaunch_andDropsNeverLaunched()
+	{
+		FakeInstanceModel source({
+			{ "a", "One", "", 100 },
+			{ "b", "Two", "Vanilla", 0 },
+			{ "c", "Three", "Vanilla", 300 },
+			{ "d", "Four", "Modpacks", 200 },
+		});
+		InstanceFilterModel filter;
+		filter.setSourceModel(&source);
+		// Grouped order puts the ungrouped "a" first...
+		QCOMPARE(filter.firstId(), QString("a"));
+		QSignalSpy firstSpy(&filter, &InstanceFilterModel::firstIdChanged);
+		filter.setRecentFirst(true);
+
+		QCOMPARE(filter.count(), 3);
+		QCOMPARE(filter.index(0, 0).data(FakeInstanceModel::IdRole).toString(),
+				 QString("c"));
+		QCOMPARE(filter.index(1, 0).data(FakeInstanceModel::IdRole).toString(),
+				 QString("d"));
+		QCOMPARE(filter.index(2, 0).data(FakeInstanceModel::IdRole).toString(),
+				 QString("a"));
+		// ...and the switch has to be announced, or a binding on firstId
+		// keeps showing the old instance.
+		QCOMPARE(filter.firstId(), QString("c"));
+		QCOMPARE(firstSpy.count(), 1);
+	}
+
+	/// Filters set before the source arrives must already see its roles --
+	/// the shell configures its recent and hero proxies exactly this way.
+	void test_filtersSetBeforeSource_applyToFirstRows()
+	{
+		FakeInstanceModel source({
+			{ "a", "One", "", 100 },
+			{ "b", "Two", "", 0 },
+			{ "c", "Three", "", 300 },
+		});
+		InstanceFilterModel recent;
+		recent.setRecentFirst(true);
+		recent.setSourceModel(&source);
+		QCOMPARE(recent.count(), 2);
+		QCOMPARE(recent.firstId(), QString("c"));
+
+		InstanceFilterModel single;
+		single.setInstanceId("b");
+		single.setSourceModel(&source);
+		QCOMPARE(single.count(), 1);
+		QCOMPARE(single.firstId(), QString("b"));
+	}
+
+	/// instanceId narrows the proxy to one row -- a single-instance view.
+	void test_instanceId_keepsOnlyThatInstance()
+	{
+		FakeInstanceModel source({
+			{ "a", "One", "Modpacks", 0 },
+			{ "b", "Two", "Vanilla", 0 },
+		});
+		InstanceFilterModel filter;
+		filter.setSourceModel(&source);
+		filter.setInstanceId("b");
+		QCOMPARE(filter.count(), 1);
+		QCOMPARE(filter.firstId(), QString("b"));
+
+		filter.setInstanceId("missing");
+		QCOMPARE(filter.count(), 0);
+		QCOMPARE(filter.firstId(), QString());
+	}
+
 	/// QML delegates reach instanceId/name/group/lastLaunch through the
 	/// proxy by name, so the proxy's roleNames() has to be the source
 	/// model's, not QSortFilterProxyModel's own default.

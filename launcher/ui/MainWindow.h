@@ -80,6 +80,16 @@ class MainWindow : public QMainWindow
 
 	void droppedURLs(QList<QUrl> urls);
 
+	/**
+	 * Runs the "create a new instance" dialog and, if accepted, the task
+	 * that installs it - the same flow addInstance() runs for the widget
+	 * menu, extracted so the QML shell can start it without a MainWindow
+	 * to call it on. @p parent may be nullptr.
+	 */
+	static void createInstanceFromDialog(QWidget* parent,
+										 const QString& groupName,
+										 const QString& url = QString());
+
 	NewsChecker* newsChecker() const
 	{
 		return m_newsChecker.get();
@@ -295,7 +305,6 @@ class MainWindow : public QMainWindow
 	void updateStatusCenter();
 
 	void runModalTask(Task* task);
-	void instanceFromInstanceTask(InstanceTask* task);
 	void finalizeInstance(InstancePtr inst);
 
 	/* Opens (or raises) the news dialog. withSidebar picks between

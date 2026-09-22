@@ -25,6 +25,8 @@
 #include <QFile>
 #include <QDir>
 #include <QtGui/QIcon>
+#include <QColor>
+#include <QHash>
 #include <memory>
 
 #include "MMCIcon.h"
@@ -43,6 +45,11 @@ class IconList : public QAbstractListModel
 	virtual ~IconList() {};
 
 	QIcon getIcon(const QString& key) const;
+	/* The icon's characteristic colour, for tinting whatever surrounds it:
+	 * an average weighted by opacity and saturation, so a mostly grey icon
+	 * with a coloured accent is tinted by the accent. Cached per key until
+	 * the icon changes; invalid if the icon has no visible pixels. */
+	QColor tint(const QString& key) const;
 	int getIconIndex(const QString& key) const;
 	QString getDirectory() const;
 
@@ -97,4 +104,5 @@ class IconList : public QAbstractListModel
 	QMap<QString, int> name_index;
 	QVector<MMCIcon> icons;
 	QDir m_dir;
+	mutable QHash<QString, QColor> m_tintCache;
 };
