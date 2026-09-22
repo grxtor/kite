@@ -15,6 +15,10 @@ set(CORE_SOURCES
     core/AuthRequestDecorator.h
     core/UiHost.h
 
+    # WCAG 2.1 contrast math for the token-based theme. Confined to QtGui,
+    # same as the block above -- no QtWidgets, no ui/.
+    theme/Contrast.h
+    theme/Contrast.cpp
     modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
@@ -1220,6 +1224,10 @@ add_unit_test(CustomTheme
     LIBS MeshMC_logic
     )
 
+add_unit_test(Contrast
+    SOURCES theme/Contrast_test.cpp
+    LIBS MeshMC_logic
+    )
 
 add_unit_test(IconTheme
     SOURCES ui/themes/IconTheme_test.cpp
