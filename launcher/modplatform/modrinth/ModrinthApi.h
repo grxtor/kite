@@ -111,9 +111,16 @@ class ModrinthApi final : public ModPlatform::ContentApi
 
 	/* Modpack browsing. Separate from searchUrl() because modpacks are
 	 * not a ContentType - they create instances rather than being
-	 * installed into one - and take no version or loader facet. */
-	static QUrl modpackSearchUrl(const QString& term, int sortIndex,
-								 int offset);
+	 * installed into one, so this takes its own, narrower filter set
+	 * rather than the mod-oriented SearchFilters.
+	 *
+	 * @p gameVersion and @p loaders are optional (empty means "any") and
+	 * additive to the existing three-argument form: every call site that
+	 * predates them keeps compiling and keeps its old behaviour. */
+	static QUrl
+	modpackSearchUrl(const QString& term, int sortIndex, int offset,
+					 const QString& gameVersion = QString(),
+					 const QStringList& loaders = QStringList());
 
 	/* Narrow mod-name lookup, used when a dependency could not be
 	 * resolved on its own platform and we go looking for it here.

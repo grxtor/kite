@@ -34,6 +34,24 @@ void Modrinth::loadIndexedPack(Modrinth::IndexedPack& pack, QJsonObject& obj)
 	pack.downloads = Json::ensureInteger(obj, "downloads", 0);
 
 	pack.iconUrl = Json::ensureString(obj, "icon_url", "");
+
+	/* Only present on a search hit, which is the only reply this
+	 * function is fed today - see the header comment on IndexedPack. */
+	pack.follows = Json::ensureInteger(obj, "follows", 0);
+	pack.dateModified = Json::ensureString(obj, "date_modified", "");
+	pack.latestVersion = Json::ensureString(obj, "latest_version", "");
+
+	QStringList gameVersions;
+	for (const auto& version : Json::ensureArray(obj, "versions")) {
+		gameVersions.append(version.toString());
+	}
+	pack.gameVersions = gameVersions;
+
+	QStringList categories;
+	for (const auto& category : Json::ensureArray(obj, "categories")) {
+		categories.append(category.toString());
+	}
+	pack.categories = categories;
 }
 
 void Modrinth::loadIndexedPackVersions(Modrinth::IndexedPack& pack,
@@ -50,8 +68,13 @@ void Modrinth::loadIndexedPackVersions(Modrinth::IndexedPack& pack,
 		version.versionNumber = Json::requireString(obj, "version_number");
 
 		auto gameVersions = Json::ensureArray(obj, "game_versions");
-		if (!gameVersions.isEmpty()) {
-			version.mcVersion = gameVersions.first().toString();
+		QStringList gameVersionList;
+		for (auto gameVersion : gameVersions) {
+			gameVersionList.append(gameVersion.toString());
+		}
+		version.gameVersions = gameVersionList;
+		if (!gameVersionList.isEmpty()) {
+			version.mcVersion = gameVersionList.first();
 		}
 
 		auto loaders = Json::ensureArray(obj, "loaders");
@@ -59,7 +82,11 @@ void Modrinth::loadIndexedPackVersions(Modrinth::IndexedPack& pack,
 		for (auto loader : loaders) {
 			loaderList.append(loader.toString());
 		}
+		version.loaderList = loaderList;
 		version.loaders = loaderList.join(", ");
+
+		version.datePublished = Json::ensureString(obj, "date_published", "");
+		version.featured = Json::ensureBoolean(obj, "featured", false);
 
 		auto files = Json::ensureArray(obj, "files");
 		for (auto fileRaw : files) {

@@ -22,6 +22,7 @@
 #include <QList>
 #include <QMetaType>
 #include <QString>
+#include <QStringList>
 #include <QVector>
 
 namespace Modrinth
@@ -37,6 +38,14 @@ namespace Modrinth
 		int downloadSize = 0;
 		QString sha1;
 		QString loaders;
+
+		/* Full lists, for consumers that need more than the single
+		 * mcVersion / comma-joined loaders above (e.g. a QML detail
+		 * view) - see loadIndexedPackVersions(). */
+		QStringList gameVersions;
+		QStringList loaderList;
+		QString datePublished;
+		bool featured = false;
 	};
 
 	struct IndexedPack {
@@ -47,6 +56,16 @@ namespace Modrinth
 		QString author;
 		QString iconUrl;
 		int downloads = 0;
+
+		/* From the search hit only (see loadIndexedPack()) - cheap
+		 * extras a QML browse page can show without another round
+		 * trip. Left at their defaults when parsing anything other
+		 * than a search hit. */
+		int follows = 0;
+		QString dateModified;
+		QStringList gameVersions;
+		QString latestVersion;
+		QStringList categories;
 
 		bool versionsLoaded = false;
 		QVector<IndexedVersion> versions;

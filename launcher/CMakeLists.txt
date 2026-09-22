@@ -539,6 +539,8 @@ set(TASKS_SOURCES
     tasks/ConcurrentTask.h
     tasks/ConcurrentTask.cpp
     tasks/SequentialTask.h
+    tasks/TaskWatcher.h
+    tasks/TaskWatcher.cpp
     tasks/SequentialTask.cpp
 )
 
@@ -692,6 +694,8 @@ set(MODRINTH_SOURCES
     modplatform/modrinth/ModrinthApi.h
     modplatform/modrinth/ModrinthApi.cpp
     modplatform/modrinth/ModrinthPackExportTask.h
+    modplatform/modrinth/ModrinthModpackModel.h
+    modplatform/modrinth/ModrinthModpackModel.cpp
     modplatform/modrinth/ModrinthPackExportTask.cpp
 )
 
@@ -1288,6 +1292,21 @@ add_unit_test(IdSelectionModel
 
 add_unit_test(SettingsAdapter
     SOURCES models/SettingsAdapter_test.cpp
+    LIBS MeshMC_core
+    )
+
+# A trivial Task subclass drives status/progress/success/failure by hand;
+# no LauncherContext or network needed.
+add_unit_test(TaskWatcher
+    SOURCES tasks/TaskWatcher_test.cpp
+    LIBS MeshMC_core
+    )
+
+# Exercises only the static JSON parsing helpers (canned search/version
+# replies), not the model itself - see the class comment on
+# ModrinthModpackModel::parseSearchResults().
+add_unit_test(ModrinthModpackModel
+    SOURCES modplatform/modrinth/ModrinthModpackModel_test.cpp
     LIBS MeshMC_core
     )
 

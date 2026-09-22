@@ -58,18 +58,6 @@ namespace
 			   QStringLiteral("]");
 	}
 
-	/* The common case: every term stands alone and all of them must
-	 * match. */
-	QString facetList(const QStringList& terms)
-	{
-		QList<QStringList> groups;
-		groups.reserve(terms.size());
-		for (const QString& term : terms) {
-			groups.append(QStringList{term});
-		}
-		return facetGroups(groups);
-	}
-
 	/* Turn the environment choice into facet groups.
 	 *
 	 * Modrinth records how a project relates to each side separately, so
@@ -364,8 +352,30 @@ QUrl ModrinthApi::projectVersionsUrlForLoaders(const QString& projectId,
 }
 
 QUrl ModrinthApi::modpackSearchUrl(const QString& term, int sortIndex,
-								   int offset)
+								   int offset, const QString& gameVersion,
+								   const QStringList& loaders)
 {
+	QList<QStringList> facets;
+	facets.append(QStringList{QStringLiteral("project_type:modpack")});
+
+	if (!gameVersion.isEmpty()) {
+		facets.append(
+			QStringList{QStringLiteral("versions:") + gameVersion});
+	}
+
+	if (!loaders.isEmpty()) {
+		/* A modpack ships its own loader, but browsing "any Fabric
+		 * pack" is still a reasonable filter to offer - one group, so
+		 * several ticked loaders mean "any of these", same as the mod
+		 * search above. */
+		QStringList loaderFacets;
+		loaderFacets.reserve(loaders.size());
+		for (const QString& loader : loaders) {
+			loaderFacets.append(QStringLiteral("categories:") + loader);
+		}
+		facets.append(loaderFacets);
+	}
+
 	return QUrl(QString("%1/search?"
 						"query=%2&"
 						"facets=%3&"
@@ -373,7 +383,7 @@ QUrl ModrinthApi::modpackSearchUrl(const QString& term, int sortIndex,
 						"offset=%5&"
 						"limit=%6")
 					.arg(apiBase(), ModPlatform::encodeSearchTerm(term),
-						 facetList({QStringLiteral("project_type:modpack")}),
+						 facetGroups(facets),
 						 sortValueAt(get().sortingMethods(), sortIndex),
 						 QString::number(offset),
 						 QString::number(get().searchPageSize())));
