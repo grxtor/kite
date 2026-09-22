@@ -34,6 +34,8 @@ set(CORE_SOURCES
     models/IdSelectionModel.cpp
     models/SettingsAdapter.h
     models/SettingsAdapter.cpp
+    models/InstanceDetails.h
+    models/InstanceDetails.cpp
     modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
@@ -530,7 +532,14 @@ set(SCREENSHOTS_SOURCES
     screenshots/ImgurUpload.cpp
     screenshots/ImgurAlbumCreation.h
     screenshots/ImgurAlbumCreation.cpp
+    screenshots/ScreenshotListModel.h
+    screenshots/ScreenshotListModel.cpp
 )
+
+add_unit_test(ScreenshotListModel
+    SOURCES screenshots/ScreenshotListModel_test.cpp
+    LIBS MeshMC_core
+    )
 
 set(TASKS_SOURCES
     # Tasks
@@ -539,9 +548,9 @@ set(TASKS_SOURCES
     tasks/ConcurrentTask.h
     tasks/ConcurrentTask.cpp
     tasks/SequentialTask.h
+    tasks/SequentialTask.cpp
     tasks/TaskWatcher.h
     tasks/TaskWatcher.cpp
-    tasks/SequentialTask.cpp
 )
 
 set(SETTINGS_SOURCES
@@ -694,9 +703,9 @@ set(MODRINTH_SOURCES
     modplatform/modrinth/ModrinthApi.h
     modplatform/modrinth/ModrinthApi.cpp
     modplatform/modrinth/ModrinthPackExportTask.h
+    modplatform/modrinth/ModrinthPackExportTask.cpp
     modplatform/modrinth/ModrinthModpackModel.h
     modplatform/modrinth/ModrinthModpackModel.cpp
-    modplatform/modrinth/ModrinthPackExportTask.cpp
 )
 
 set(CONTENT_DOWNLOAD_SOURCES
@@ -1295,6 +1304,16 @@ add_unit_test(SettingsAdapter
     LIBS MeshMC_core
     )
 
+# Exercises only InstanceLogBridge: a full MinecraftInstance (needed for
+# InstanceDetails' mods/worlds/components) is impractical to construct here,
+# but InstanceLogBridge only needs a BaseInstance and a LaunchTask, and
+# NullInstance + LaunchTask::create() are both concrete enough to drive by
+# hand.
+add_unit_test(InstanceLogBridge
+    SOURCES models/InstanceDetails_test.cpp
+    LIBS MeshMC_core
+    )
+
 # A trivial Task subclass drives status/progress/success/failure by hand;
 # no LauncherContext or network needed.
 add_unit_test(TaskWatcher
@@ -1483,6 +1502,11 @@ add_unit_test(InstanceIconProvider
 # which MeshMC_logic links.
 add_unit_test(AccountFaceProvider
     SOURCES qml/AccountFaceProvider_test.cpp
+    LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
+    )
+
+add_unit_test(ScreenshotThumbnailProvider
+    SOURCES qml/ScreenshotThumbnailProvider_test.cpp
     LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 

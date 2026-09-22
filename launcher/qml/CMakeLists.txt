@@ -43,6 +43,8 @@ target_sources(MeshMC_qml PRIVATE
     InstanceIconProvider.cpp
     AccountFaceProvider.h
     AccountFaceProvider.cpp
+    ScreenshotThumbnailProvider.h
+    ScreenshotThumbnailProvider.cpp
 )
 
 # The QML side reads the core's models. It does not see QtWidgets: MeshMC_core
