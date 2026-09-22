@@ -31,6 +31,11 @@
 #include "InstanceList.h"
 #include "models/IdSelectionModel.h"
 #include "models/InstanceFilterModel.h"
+#include "models/SettingsAdapter.h"
+#include "Sys.h"
+#include "DesktopServices.h"
+#include "settings/SettingsObject.h"
+#include <QDir>
 #include "qml/AccountFaceProvider.h"
 #include "qml/InstanceIconProvider.h"
 #include "core/LauncherContext.h"
@@ -131,14 +136,29 @@ void QmlShell::createInstance()
 	emit createInstanceRequested();
 }
 
-void QmlShell::openSettings()
+void QmlShell::openSettings(const QString& page)
 {
-	emit settingsRequested();
+	emit settingsRequested(page);
+}
+
+void QmlShell::openPath(const QString& path)
+{
+	DesktopServices::openDirectory(QDir(path).absolutePath(), true);
 }
 
 void QmlShell::manageAccounts()
 {
 	emit accountsRequested();
+}
+
+QObject* QmlShell::settings() const
+{
+	return expose(m_settings.get());
+}
+
+int QmlShell::systemMemoryMiB() const
+{
+	return static_cast<int>(Sys::getSystemRam() / Sys::mebibyte);
 }
 
 QObject* QmlShell::recentModel() const
@@ -200,6 +220,20 @@ bool QmlShell::show(bool minimized)
 	m_hero->setInstanceId(QStringLiteral("/"));
 	m_hero->setSourceModel(LAUNCHER->instances().get());
 	m_selection = std::make_unique<IdSelectionModel>();
+	m_settings = std::make_unique<SettingsAdapter>(LAUNCHER->settings());
+
+	/* The sort order reads InstSortMode on every comparison, but a proxy
+	 * only compares when told to: re-sort when the setting moves. */
+	connect(LAUNCHER->settings().get(), &SettingsObject::SettingChanged, this,
+			[this](const Setting& setting, const QVariant&) {
+				if (setting.id() != QLatin1String("InstSortMode")) {
+					return;
+				}
+				m_instances->invalidate();
+				for (auto& section : m_sections) {
+					section.second->invalidate();
+				}
+			});
 
 	/* Must be chosen before the first engine exists: Qt Quick Controls binds
 	 * its style when QtQuick.Controls is first imported, and cannot switch

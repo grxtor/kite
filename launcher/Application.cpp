@@ -890,6 +890,9 @@ void Application::initSettings()
 	// Theming
 	m_settings->registerSetting("IconTheme", QString("pe_colored"));
 	m_settings->registerSetting("ApplicationTheme", QString("system"));
+	// The QML interface's own light/dark choice; the widget theme above
+	// keeps its separate list of themes.
+	m_settings->registerSetting("UiThemeMode", QString("dark"));
 
 	/* Screen-top menu bar. Only macOS has one; elsewhere the setting is
 	 * carried but never acted on. The second key is what this shipped as
@@ -2155,7 +2158,9 @@ MainWindow* Application::showMainWindow(bool minimized)
 						}
 					});
 			connect(m_qmlShell.get(), &QmlShell::settingsRequested, this,
-					[this]() { ShowGlobalSettings(nullptr); });
+					[this](const QString& page) {
+						ShowGlobalSettings(nullptr, page);
+					});
 			connect(m_qmlShell.get(), &QmlShell::accountsRequested, this,
 					[this]() { ShowGlobalSettings(nullptr, "accounts"); });
 			connect(m_qmlShell.get(), &QmlShell::createInstanceRequested, this,

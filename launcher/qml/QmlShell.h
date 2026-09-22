@@ -27,6 +27,7 @@
 
 class IdSelectionModel;
 class InstanceFilterModel;
+class SettingsAdapter;
 class QQmlApplicationEngine;
 class QQuickWindow;
 
@@ -49,6 +50,10 @@ class QmlShell : public QObject
 	/// Image url of the default account's skin face; empty without one.
 	Q_PROPERTY(QString accountFace READ accountFace NOTIFY accountChanged)
 	Q_PROPERTY(int accountCount READ accountCount NOTIFY accountChanged)
+	/// The launcher's settings, as a SettingsAdapter.
+	Q_PROPERTY(QObject* settings READ settings CONSTANT)
+	/// Installed memory in MiB: the ceiling for the memory settings.
+	Q_PROPERTY(int systemMemoryMiB READ systemMemoryMiB CONSTANT)
 	/// Every instance, most recently played first; never-played ones left out.
 	Q_PROPERTY(QObject* recentModel READ recentModel CONSTANT)
 	/// At most one row: the instance whose id QML writes into instanceId.
@@ -77,6 +82,8 @@ class QmlShell : public QObject
 	int accountCount() const;
 	QString accountFace() const;
 
+	QObject* settings() const;
+	int systemMemoryMiB() const;
 	QObject* recentModel() const;
 	QObject* heroModel() const;
 	/* The instances of one group (empty = ungrouped) that pass the search,
@@ -93,7 +100,12 @@ class QmlShell : public QObject
 	Q_INVOKABLE void editInstance(const QString& id);
 	Q_INVOKABLE void openInstanceFolder(const QString& id);
 	Q_INVOKABLE void createInstance();
-	Q_INVOKABLE void openSettings();
+	/// @p page: a classic settings page id ("accounts", "proxy-settings",
+	/// ...) to open on, or empty for the first one.
+	Q_INVOKABLE void openSettings(const QString& page = QString());
+	/// Opens a folder in the file manager; relative paths are resolved
+	/// against the data folder, which is the working directory.
+	Q_INVOKABLE void openPath(const QString& path);
 	Q_INVOKABLE void manageAccounts();
 
   signals:
@@ -108,7 +120,7 @@ class QmlShell : public QObject
 	void editRequested(const QString& id);
 	void folderRequested(const QString& id);
 	void createInstanceRequested();
-	void settingsRequested();
+	void settingsRequested(const QString& page);
 	void accountsRequested();
 
   private:
@@ -123,6 +135,7 @@ class QmlShell : public QObject
 	// Declared after m_instances, their source, so they are destroyed first.
 	std::map<QString, std::unique_ptr<InstanceFilterModel>> m_sections;
 	std::unique_ptr<IdSelectionModel> m_selection;
+	std::unique_ptr<SettingsAdapter> m_settings;
 
 	std::unique_ptr<QQmlApplicationEngine> m_engine;
 	QQuickWindow* m_window = nullptr;

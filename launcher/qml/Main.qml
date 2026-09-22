@@ -27,6 +27,17 @@ ApplicationWindow {
     color: Theme.palette.canvas
 
     property string selectedId: ""
+    // "library" or "settings"; Discover still opens the classic dialog.
+    property string page: "library"
+
+    Component.onCompleted: {
+        if (root.shell && root.shell.settings) {
+            SettingsStore.adapter = root.shell.settings
+            var mode = SettingsStore.string("UiThemeMode")
+            if (mode === "dark" || mode === "light")
+                Theme.mode = mode
+        }
+    }
     onSelectedIdChanged: {
         if (selectedId.length > 0)
             root.selection.selectOnly(selectedId)
@@ -62,19 +73,23 @@ ApplicationWindow {
             footerItems: [
                 { id: "settings", icon: "settings", label: qsTr("Settings") }
             ]
-            currentId: "library"
+            currentId: root.page
             recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
             accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
             accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
             accountAvatarSource: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
             onItemActivated: (id) => {
-                // Discover and Settings still open the existing dialogs.
+                // Discover still opens the classic new-instance dialog, where
+                // the modpack platforms live for now.
                 if (id === "discover")
                     root.call("createInstance")
-                else if (id === "settings")
-                    root.call("openSettings")
+                else
+                    root.page = id
             }
-            onRecentActivated: (id) => root.selectedId = id
+            onRecentActivated: (id) => {
+                root.page = "library"
+                root.selectedId = id
+            }
             onRecentPlayRequested: (id) => root.call("launchInstance", id)
             onAccountClicked: root.call("manageAccounts")
         }
@@ -87,12 +102,15 @@ ApplicationWindow {
             TopBar {
                 id: topBar
                 Layout.fillWidth: true
-                title: qsTr("Library")
-                count: root.instanceModel && root.instanceModel.count !== undefined ? root.instanceModel.count : -1
+                title: root.page === "settings" ? qsTr("Settings") : qsTr("Library")
+                count: root.page === "library" && root.instanceModel && root.instanceModel.count !== undefined
+                       ? root.instanceModel.count : -1
+                searchVisible: root.page === "library"
                 searchPlaceholder: qsTr("Search instances")
                 onSearchTextChanged: root.instanceModel.filterText = searchText
 
                 Button {
+                    visible: root.page === "library"
                     text: qsTr("New instance")
                     highlighted: true
                     icon.source: Icons.url("plus")
@@ -100,27 +118,37 @@ ApplicationWindow {
                 }
             }
 
-            LibraryPage {
+            StackLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                focus: true
-                instanceModel: root.instanceModel
-                recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
-                heroModel: root.shell && root.shell.heroModel ? root.shell.heroModel : null
-                sectionModelFor: function (group) {
-                    return root.shell && typeof root.shell.sectionModel === "function"
-                            ? root.shell.sectionModel(group) : null
-                }
-                searchText: topBar.searchText
-                selectedId: root.selectedId
+                currentIndex: root.page === "settings" ? 1 : 0
 
-                onSelectRequested: (id) => root.selectedId = id
-                onLaunchRequested: (id) => root.call("launchInstance", id)
-                onStopRequested: (id) => root.call("killInstance", id)
-                onEditRequested: (id) => root.call("editInstance", id)
-                onFolderRequested: (id) => root.call("openInstanceFolder", id)
-                onCreateRequested: root.call("createInstance")
-                onClearSearchRequested: topBar.searchText = ""
+                LibraryPage {
+                    focus: true
+                    instanceModel: root.instanceModel
+                    recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
+                    heroModel: root.shell && root.shell.heroModel ? root.shell.heroModel : null
+                    sectionModelFor: function (group) {
+                        return root.shell && typeof root.shell.sectionModel === "function"
+                                ? root.shell.sectionModel(group) : null
+                    }
+                    searchText: topBar.searchText
+                    selectedId: root.selectedId
+
+                    onSelectRequested: (id) => root.selectedId = id
+                    onLaunchRequested: (id) => root.call("launchInstance", id)
+                    onStopRequested: (id) => root.call("killInstance", id)
+                    onEditRequested: (id) => root.call("editInstance", id)
+                    onFolderRequested: (id) => root.call("openInstanceFolder", id)
+                    onCreateRequested: root.call("createInstance")
+                    onClearSearchRequested: topBar.searchText = ""
+                }
+
+                SettingsPage {
+                    systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
+                    onOpenClassicRequested: (page) => root.call("openSettings", page)
+                    onOpenPathRequested: (path) => root.call("openPath", path)
+                }
             }
         }
     }

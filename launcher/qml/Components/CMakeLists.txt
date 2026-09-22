@@ -17,7 +17,7 @@ qt_add_library(MeshMC_qml_components STATIC)
 # qt_add_qml_module, or Icons.qml registers as an ordinary re-instantiable
 # type and every "import MeshMC.Components" gets its own private instance
 # instead of the one Icons.url() is meant to be called on.
-set_source_files_properties(Icons.qml Format.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(Icons.qml Format.qml SettingsStore.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt_add_qml_module(MeshMC_qml_components
     URI MeshMC.Components
@@ -34,6 +34,17 @@ qt_add_qml_module(MeshMC_qml_components
         SearchField.qml
         RecentItem.qml
         Format.qml
+        SettingsPage.qml
+        SettingsScroll.qml
+        SettingsGroup.qml
+        SettingsStore.qml
+        SettingRow.qml
+        SettingSwitch.qml
+        SettingChoice.qml
+        SettingNumber.qml
+        SettingText.qml
+        MemorySetting.qml
+        SegmentedControl.qml
         EmptyState.qml
         SidebarNav.qml
         NavItem.qml

@@ -69,10 +69,16 @@ QtObject {
     }
 
     readonly property QtObject font: QtObject {
-        // Qt falls back to a system font when these are not installed; the
-        // actual font files are bundled in a later phase.
-        readonly property string family: "Inter"
-        readonly property string mono: "JetBrains Mono"
+        // The design fonts when installed; otherwise the platform's own UI
+        // and monospace fonts, never Qt's generic fallback (which on macOS
+        // turns "JetBrains Mono" into a proportional font).
+        readonly property string family: Qt.fontFamilies().indexOf("Inter") >= 0
+                                         ? "Inter" : Qt.application.font.family
+        readonly property string mono: Qt.fontFamilies().indexOf("JetBrains Mono") >= 0
+                                       ? "JetBrains Mono"
+                                       : Qt.platform.os === "osx" ? "Menlo"
+                                       : Qt.platform.os === "windows" ? "Consolas"
+                                       : "DejaVu Sans Mono"
     }
 
     readonly property QtObject type: QtObject {

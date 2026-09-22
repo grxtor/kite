@@ -29,10 +29,11 @@ T.Switch {
         radius: Theme.radius.pill
         color: control.checked
             ? (control.down ? Theme.palette.accentPressed : control.hovered ? Theme.palette.accentHover : Theme.palette.accent)
-            : Theme.palette.surfaceRaised
+            : Theme.palette.surfaceOverlay
         border.width: control.checked ? 0 : 1
-        border.color: Theme.palette.border
-        opacity: control.enabled ? 1.0 : 0.45
+        // Off has to read as a control, not as an empty slot.
+        border.color: control.hovered ? Theme.palette.borderStrong : Theme.palette.border
+        opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         Behavior on color {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
@@ -46,7 +47,7 @@ T.Switch {
             y: (track.height - height) / 2
             x: Math.max(Theme.space.xxs, Math.min(track.width - width - Theme.space.xxs,
                                                     control.visualPosition * (track.width - width)))
-            color: control.checked ? Theme.palette.textOnAccent : Theme.palette.surface
+            color: control.checked ? Theme.palette.textOnAccent : Theme.palette.textSecondary
 
             // No Behavior while the thumb is actively being dragged, so it
             // tracks the pointer 1:1; the animation is only for the
