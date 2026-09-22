@@ -18,6 +18,11 @@
 # which is Qt 6.5+; the floor here is 6.4 (Debian 12, Ubuntu 24.04 LTS). Setting
 # it by hand gives the same qrc:/qt/qml/<URI>/ layout on every supported Qt, so
 # these URLs do not move when the floor is eventually raised.
+# The design system, one module per concern, each in its own directory for the
+# same resource-alias reason as this one. Declared first because the modules
+# below import them.
+add_subdirectory(Theme)
+
 qt_add_library(MeshMC_qml STATIC)
 
 qt_add_qml_module(MeshMC_qml
@@ -39,6 +44,7 @@ target_sources(MeshMC_qml PRIVATE
 # The QML side reads the core's models. It does not see QtWidgets: MeshMC_core
 # cannot link them, and nothing here asks for them.
 target_link_libraries(MeshMC_qml PUBLIC
+    MeshMC_qml_theme
     MeshMC_core
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::QuickControls2
