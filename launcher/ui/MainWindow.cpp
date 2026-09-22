@@ -80,7 +80,7 @@
 #include <DesktopServices.h>
 #include <FileSystem.h>
 #include "InstanceWindow.h"
-#include "InstancePageProvider.h"
+#include "ui/InstancePageProvider.h"
 #include "ui/JavaCommon.h"
 #include "ui/LaunchController.h"
 

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "FastFileIconProvider.h"
+#include "ui/FastFileIconProvider.h"
 
 #include <QApplication>
 #include <QStyle>

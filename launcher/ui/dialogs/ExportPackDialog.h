@@ -24,7 +24,7 @@
 
 #include <memory>
 
-#include "FastFileIconProvider.h"
+#include "ui/FastFileIconProvider.h"
 #include "tasks/Task.h"
 
 class FileIgnoreProxy;

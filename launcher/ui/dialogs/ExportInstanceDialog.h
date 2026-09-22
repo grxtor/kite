@@ -24,7 +24,7 @@
 #include <QModelIndex>
 #include <memory>
 
-#include "FastFileIconProvider.h"
+#include "ui/FastFileIconProvider.h"
 
 class BaseInstance;
 class FileIgnoreProxy;

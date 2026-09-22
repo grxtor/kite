@@ -22,27 +22,10 @@
 #include <QStyleOptionViewItem>
 #include <QStyledItemDelegate>
 
-/* Extra data roles the project list models expose for the delegate below.
- *
- * Qt::UserRole itself is already taken: both search models return the
- * platform's project id there, and existing code reads it. These start
- * one past it.
- *
- * Qt::DisplayRole is deliberately not reused for the title. The default
- * delegate paints DisplayRole, so leaving it as the plain name keeps the
- * list readable if a view is ever shown without this delegate attached. */
-namespace ProjectItemRole
-{
-	enum Role {
-		/* QString - project name, drawn large on the first line. */
-		Title = Qt::UserRole + 1,
-		/* QString - short summary, wrapped over at most two lines. */
-		Description,
-		/* bool - already present in the target folder. Such rows are
-		 * dimmed and tagged, because installing them again is a no-op. */
-		Installed,
-	};
-}
+/* For ProjectItemRole: the data roles this delegate reads off the model's
+ * data() when painting a row. Declared with the model rather than here,
+ * since the model is what produces them. */
+#include "modplatform/ContentProviderModel.h"
 
 /* Draws one search result: optional checkbox, icon, title, description.
  *

@@ -32,7 +32,7 @@
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/widgets/PageContainer.h"
 
-#include "InstancePageProvider.h"
+#include "ui/InstancePageProvider.h"
 
 #include "icons/IconList.h"
 

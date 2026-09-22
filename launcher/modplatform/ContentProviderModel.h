@@ -94,6 +94,31 @@ namespace ModPlatform
 
 } // namespace ModPlatform
 
+/* Extra data roles this model exposes for ProjectItemDelegate
+ * (ui/widgets/ProjectItemDelegate.h) to paint a row. Declared here rather
+ * than on the delegate because these are roles the model's data()
+ * produces - a data model has no business depending on a view header.
+ *
+ * Qt::UserRole itself is already taken: both search models return the
+ * platform's project id there, and existing code reads it. These start
+ * one past it.
+ *
+ * Qt::DisplayRole is deliberately not reused for the title. The default
+ * delegate paints DisplayRole, so leaving it as the plain name keeps the
+ * list readable if a view is ever shown without this delegate attached. */
+namespace ProjectItemRole
+{
+	enum Role {
+		/* QString - project name, drawn large on the first line. */
+		Title = Qt::UserRole + 1,
+		/* QString - short summary, wrapped over at most two lines. */
+		Description,
+		/* bool - already present in the target folder. Such rows are
+		 * dimmed and tagged, because installing them again is a no-op. */
+		Installed,
+	};
+}
+
 /* Search results for one content provider.
  *
  * There used to be two of these, one per provider, ninety percent
@@ -111,9 +136,9 @@ class ContentProviderModel : public QAbstractListModel
 	Q_OBJECT
 
   public:
-	/* Continues past ProjectItemRole (Qt::UserRole+1..+3, defined in
-	 * ProjectItemDelegate.h), which the QtWidgets delegate already reads
-	 * from this model's data(). */
+	/* Continues past ProjectItemRole (Qt::UserRole+1..+3, declared
+	 * above), which ProjectItemDelegate already reads from this
+	 * model's data(). */
 	enum ModelRoles { LogoKeyRole = Qt::UserRole + 4 };
 
 	~ContentProviderModel() override;

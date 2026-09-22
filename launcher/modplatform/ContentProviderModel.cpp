@@ -28,7 +28,6 @@
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "net/Download.h"
 #include "net/HttpMetaCache.h"
-#include "ui/widgets/ProjectItemDelegate.h"
 
 ContentProviderModel::ContentProviderModel(const ModPlatform::ContentApi& api,
 										   ModPlatform::ContentType contentType,

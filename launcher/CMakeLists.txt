@@ -14,6 +14,7 @@ set(CORE_SOURCES
     core/LauncherContext.cpp
     core/AuthRequestDecorator.h
     core/UiHost.h
+
     modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
@@ -71,8 +72,6 @@ set(CORE_SOURCES
     # from costing a per-file platform lookup.
     FileIgnoreProxy.h
     FileIgnoreProxy.cpp
-    FastFileIconProvider.h
-    FastFileIconProvider.cpp
 
     # String filters
     Filter.h
@@ -812,6 +811,8 @@ SET(MESHMC_SOURCES
     ui/MainWindow.h
     ui/ShortcutUtils.cpp
     ui/ShortcutUtils.h
+    ui/FastFileIconProvider.cpp
+    ui/FastFileIconProvider.h
     ui/WidgetUiHost.cpp
     ui/WidgetUiHost.h
     ui/MainWindow.cpp
@@ -860,7 +861,7 @@ SET(MESHMC_SOURCES
     ui/LaunchController.cpp
 
     # page provider for instances
-    InstancePageProvider.h
+    ui/InstancePageProvider.h
 
     # Common java checking UI
     ui/JavaCommon.h
@@ -1218,6 +1219,7 @@ add_unit_test(CustomTheme
     SOURCES ui/themes/CustomTheme_test.cpp
     LIBS MeshMC_logic
     )
+
 
 add_unit_test(IconTheme
     SOURCES ui/themes/IconTheme_test.cpp
