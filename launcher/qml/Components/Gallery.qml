@@ -2,6 +2,8 @@
 // SPDX-FileContributor: Project Tick
 // SPDX-License-Identifier: Apache-2.0
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -11,26 +13,64 @@ import MeshMC.Theme
  * Every component, in every state it can be in, on one scrollable page.
  * This is the artifact design review happens against, so each section is
  * labelled and each state called out explicitly rather than left to be
- * inferred from a single "normal" example.
+ * inferred from a single "normal" example. All sample data is self
+ * contained -- nothing outside this file needs to feed it a model.
  */
 Item {
     id: root
 
-    // Real instance data comes from the core via InstanceList; this page is
-    // reviewed long before that wiring exists, so the caller hands it
-    // whatever stands in for a model (a ListModel, a plain JS array of role
-    // objects, ...) and InstanceGrid is none the wiser.
-    required property var sampleModel
+    readonly property var iconTints: ({
+        grass: "#6aa84f",
+        gold: "#e0b000",
+        diamond: "#3ec6d0",
+        enderman: "#30203a",
+        fabric: "#d9773f",
+        creeper: "#4b8f3e",
+        iron: "#b8b8b8",
+        stone: "#8a8a8a",
+        tnt: "#c0392b"
+    })
+
+    readonly property var iconNames: [
+        "home", "library", "compass", "package", "settings", "search", "plus", "play",
+        "stop", "folder", "more", "chevron-down", "chevron-right", "user", "users",
+        "log-out", "refresh", "sort", "clock", "cube", "x", "check", "sun", "moon",
+        "external-link", "trash", "copy", "edit", "download", "grid", "list", "bell",
+        "info", "alert-triangle", "layers", "terminal", "image", "globe"
+    ]
 
     readonly property var navItems: [
-        { id: "instances", icon: "▦", label: qsTr("Instances") },
-        { id: "modpacks", icon: "⚙", label: qsTr("Modpacks") },
-        { id: "settings", icon: "⚙", label: qsTr("Settings") }
+        { id: "library", icon: "library", label: qsTr("Library") },
+        { id: "modpacks", icon: "compass", label: qsTr("Discover") }
+    ]
+    readonly property var navFooterItems: [
+        { id: "settings", icon: "settings", label: qsTr("Settings") }
     ]
 
     Rectangle {
         anchors.fill: parent
         color: Theme.palette.canvas
+    }
+
+    ListModel {
+        id: recentModel
+        ListElement { instanceId: "recent-1"; name: "Vanilla 1.21.4"; iconKey: "grass"; isRunning: false }
+        ListElement { instanceId: "recent-2"; name: "All the Mods 10"; iconKey: "iron"; isRunning: true }
+        ListElement { instanceId: "recent-3"; name: "Skyblock Extreme"; iconKey: "diamond"; isRunning: false }
+    }
+
+    ListModel {
+        id: vanillaModel
+        ListElement { instanceId: "vanilla-1"; name: "Vanilla 1.21.4"; iconKey: "grass"; isRunning: false; canLaunch: true; lastLaunch: 1726000000000; gameVersion: "1.21.4"; loader: ""; iconTint: "#6aa84f" }
+        ListElement { instanceId: "vanilla-2"; name: "Superflat Creative"; iconKey: "stone"; isRunning: false; canLaunch: true; lastLaunch: 0; gameVersion: "1.20.1"; loader: ""; iconTint: "#8a8a8a" }
+        ListElement { instanceId: "vanilla-3"; name: "Hardcore Survival"; iconKey: "tnt"; isRunning: false; canLaunch: true; lastLaunch: 1706000000000; gameVersion: "1.19.4"; loader: ""; iconTint: "#c0392b" }
+    }
+
+    ListModel {
+        id: moddedModel
+        ListElement { instanceId: "modded-1"; name: "All the Mods 10"; iconKey: "iron"; isRunning: true; canLaunch: true; lastLaunch: 1726000000000; gameVersion: "1.20.1"; loader: "Fabric"; iconTint: "#b8b8b8" }
+        ListElement { instanceId: "modded-2"; name: "Create: Above and Beyond"; iconKey: "fabric"; isRunning: false; canLaunch: true; lastLaunch: 1706000000000; gameVersion: "1.18.2"; loader: "Fabric"; iconTint: "#d9773f" }
+        ListElement { instanceId: "modded-3"; name: "Enderman Challenge"; iconKey: "enderman"; isRunning: false; canLaunch: true; lastLaunch: 1706000000000; gameVersion: "1.21.1"; loader: "Forge"; iconTint: "#30203a" }
     }
 
     ScrollView {
@@ -54,6 +94,7 @@ Item {
                 Layout.leftMargin: Theme.space.lg
                 Layout.rightMargin: Theme.space.lg
                 title: qsTr("Instances")
+                count: 12
                 searchText: "vanilla"
 
                 Button {
@@ -70,57 +111,36 @@ Item {
 
             RowLayout {
                 Layout.leftMargin: Theme.space.lg
-                spacing: Theme.space.lg
 
                 SidebarNav {
-                    Layout.preferredWidth: 220
-                    Layout.preferredHeight: 360
+                    Layout.preferredWidth: 244
+                    Layout.preferredHeight: 420
                     items: root.navItems
-                    currentId: "instances"
+                    footerItems: root.navFooterItems
+                    currentId: "library"
+                    recentModel: recentModel
                     accountName: "Steve"
-                    accountStatus: qsTr("Online")
-                }
-
-                // Same rail, collapsed -- shows the icons-only threshold
-                // behaviour without needing an interactive resize.
-                SidebarNav {
-                    Layout.preferredWidth: 64
-                    Layout.preferredHeight: 360
-                    items: root.navItems
-                    currentId: "modpacks"
-                    accountName: "Steve"
-                    accountStatus: qsTr("Online")
+                    accountKind: "Microsoft"
                 }
             }
 
-            SectionHeader {
-                Layout.leftMargin: Theme.space.lg
-                title: qsTr("Nav Item")
-                collapsible: false
-            }
-
+            // Nav Item states: unselected, selected.
             RowLayout {
                 Layout.leftMargin: Theme.space.lg
                 spacing: Theme.space.sm
 
-                NavItem { icon: "▦"; label: qsTr("Unselected") }
-                NavItem { icon: "▦"; label: qsTr("Selected"); selected: true }
-                NavItem { icon: "▦"; label: qsTr("Icon only"); iconOnly: true }
+                NavItem { iconName: "library"; label: qsTr("Unselected") }
+                NavItem { iconName: "library"; label: qsTr("Selected"); selected: true }
             }
 
-            SectionHeader {
-                Layout.leftMargin: Theme.space.lg
-                title: qsTr("Account Chip")
-                collapsible: false
-            }
-
+            // Account Chip states: signed in (Microsoft), signed in (Offline), signed out.
             RowLayout {
                 Layout.leftMargin: Theme.space.lg
                 spacing: Theme.space.lg
 
-                AccountChip { name: "Steve"; status: qsTr("Online") }
-                AccountChip { name: "Guest"; status: "" }
-                AccountChip { name: "Steve"; status: qsTr("Online"); collapsed: true }
+                AccountChip { name: "Steve"; kind: "Microsoft" }
+                AccountChip { name: "Steve"; kind: "Offline" }
+                AccountChip { name: ""; kind: "" }
             }
 
             SectionHeader {
@@ -142,6 +162,60 @@ Item {
 
             SectionHeader {
                 Layout.leftMargin: Theme.space.lg
+                title: qsTr("Buttons")
+                collapsible: false
+            }
+
+            RowLayout {
+                Layout.leftMargin: Theme.space.lg
+                spacing: Theme.space.md
+
+                PlayButton { }
+                PlayButton { running: true }
+                PlayButton { size: Theme.control.height }
+                PlayButton { round: false }
+                PlayButton { round: false; running: true }
+                IconButton { iconName: "folder"; tip: qsTr("Open folder") }
+                IconButton { iconName: "more"; tip: qsTr("More"); flat: false }
+                IconButton { iconName: "refresh"; tip: qsTr("Refresh"); size: Theme.control.heightLg }
+            }
+
+            SectionHeader {
+                Layout.leftMargin: Theme.space.lg
+                title: qsTr("Tag & Search Field")
+                collapsible: false
+            }
+
+            RowLayout {
+                Layout.leftMargin: Theme.space.lg
+                spacing: Theme.space.sm
+
+                Tag { text: "Fabric"; iconName: "layers" }
+                Tag { text: "1.21.4"; iconName: "cube" }
+                Tag { text: qsTr("2 h ago"); iconName: "clock" }
+
+                Rectangle {
+                    Layout.preferredWidth: 150
+                    Layout.preferredHeight: Theme.control.heightLg
+                    radius: Theme.radius.md
+                    color: Theme.palette.textPrimary
+
+                    Tag {
+                        anchors.centerIn: parent
+                        text: qsTr("On media")
+                        iconName: "check"
+                        onMedia: true
+                    }
+                }
+
+                SearchField {
+                    Layout.preferredWidth: 220
+                    placeholderText: qsTr("Search")
+                }
+            }
+
+            SectionHeader {
+                Layout.leftMargin: Theme.space.lg
                 title: qsTr("Instance Card")
                 collapsible: false
             }
@@ -151,69 +225,81 @@ Item {
                 Layout.rightMargin: Theme.space.lg
                 spacing: Theme.space.md
 
-                InstanceCard {
-                    Layout.preferredWidth: 200
-                    Layout.preferredHeight: 220
-                    instanceId: "normal"
-                    name: qsTr("Vanilla 1.20.4")
-                    iconKey: "default"
-                    group: qsTr("Vanilla")
-                    isRunning: false
-                    canLaunch: true
-                    lastLaunch: 0
-                }
+                // Every state InstanceCard can be in: rest, forceHovered,
+                // selected, running, never played.
+                Repeater {
+                    model: [
+                        { instanceId: "card-rest", name: qsTr("Vanilla 1.21.4"), iconKey: "grass", version: "1.21.4", loader: "", last: Date.now() - 2 * 86400000, running: false, hovered: false, selected: false },
+                        { instanceId: "card-hovered", name: qsTr("Skyblock Extreme"), iconKey: "diamond", version: "1.20.1", loader: "Fabric", last: Date.now(), running: false, hovered: true, selected: false },
+                        { instanceId: "card-selected", name: qsTr("A very long modpack name that needs to wrap"), iconKey: "gold", version: "1.20.1", loader: "Forge", last: Date.now() - 3 * 86400000, running: false, hovered: false, selected: true },
+                        { instanceId: "card-running", name: qsTr("Create: Above and Beyond"), iconKey: "enderman", version: "1.18.2", loader: "Fabric", last: Date.now(), running: true, hovered: false, selected: false },
+                        { instanceId: "card-never-played", name: qsTr("Superflat Creative"), iconKey: "stone", version: "1.20.1", loader: "", last: 0, running: false, hovered: false, selected: false }
+                    ]
 
-                InstanceCard {
-                    Layout.preferredWidth: 200
-                    Layout.preferredHeight: 220
-                    instanceId: "hovered"
-                    name: qsTr("All the Mods 9")
-                    iconKey: "default"
-                    group: qsTr("Modded")
-                    isRunning: false
-                    canLaunch: true
-                    lastLaunch: Date.now()
-                    forceHovered: true
-                }
-
-                InstanceCard {
-                    Layout.preferredWidth: 200
-                    Layout.preferredHeight: 220
-                    instanceId: "selected"
-                    name: qsTr("A very long modpack name that needs to wrap")
-                    iconKey: "default"
-                    group: qsTr("Modded")
-                    isRunning: false
-                    canLaunch: true
-                    lastLaunch: Date.now() - 3 * 86400000
-                    selected: true
-                }
-
-                InstanceCard {
-                    Layout.preferredWidth: 200
-                    Layout.preferredHeight: 220
-                    instanceId: "running"
-                    name: qsTr("Create: Above and Beyond")
-                    iconKey: "default"
-                    group: qsTr("Modded")
-                    isRunning: true
-                    canLaunch: true
-                    lastLaunch: Date.now()
+                    delegate: InstanceCard {
+                        required property var modelData
+                        Layout.preferredWidth: 208
+                        instanceId: modelData.instanceId
+                        name: modelData.name
+                        iconKey: modelData.iconKey
+                        isRunning: modelData.running
+                        canLaunch: true
+                        lastLaunch: modelData.last
+                        gameVersion: modelData.version
+                        loader: modelData.loader
+                        iconTint: root.iconTints[modelData.iconKey]
+                        forceHovered: modelData.hovered
+                        selected: modelData.selected
+                    }
                 }
             }
 
             SectionHeader {
                 Layout.leftMargin: Theme.space.lg
-                title: qsTr("Instance Grid")
+                title: qsTr("Continue Card")
                 collapsible: false
             }
 
-            InstanceGrid {
+            ContinueCard {
                 Layout.fillWidth: true
                 Layout.leftMargin: Theme.space.lg
                 Layout.rightMargin: Theme.space.lg
-                Layout.preferredHeight: 480
-                model: root.sampleModel
+                instanceId: "continue-1"
+                name: qsTr("All the Mods 10")
+                iconKey: "iron"
+                isRunning: false
+                canLaunch: true
+                lastLaunch: Date.now() - 3600000
+                totalTimePlayed: 5 * 3600 + 20 * 60
+                gameVersion: "1.20.1"
+                loader: "Fabric"
+                iconTint: root.iconTints.iron
+            }
+
+            SectionHeader {
+                Layout.leftMargin: Theme.space.lg
+                title: qsTr("Instance Section")
+                collapsible: false
+            }
+
+            InstanceSection {
+                Layout.fillWidth: true
+                Layout.leftMargin: Theme.space.lg
+                Layout.rightMargin: Theme.space.lg
+                title: qsTr("Vanilla")
+                model: vanillaModel
+                columns: 3
+                cardWidth: 208
+            }
+
+            InstanceSection {
+                Layout.fillWidth: true
+                Layout.leftMargin: Theme.space.lg
+                Layout.rightMargin: Theme.space.lg
+                title: qsTr("Modded")
+                model: moddedModel
+                columns: 3
+                cardWidth: 208
             }
 
             SectionHeader {
@@ -229,10 +315,49 @@ Item {
                 body: qsTr("Create an instance to see it here.")
                 actionText: qsTr("Create instance")
 
-                Text {
-                    text: "▦"
+                MeshIcon {
+                    iconName: "package"
+                    size: Theme.icon.lg * 2
                     color: Theme.palette.textTertiary
-                    font.pixelSize: Theme.icon.lg * 2
+                }
+            }
+
+            SectionHeader {
+                Layout.leftMargin: Theme.space.lg
+                title: qsTr("Icons")
+                collapsible: false
+            }
+
+            Grid {
+                Layout.leftMargin: Theme.space.lg
+                Layout.rightMargin: Theme.space.lg
+                columns: 8
+                columnSpacing: Theme.space.lg
+                rowSpacing: Theme.space.lg
+
+                Repeater {
+                    model: root.iconNames
+
+                    delegate: Column {
+                        required property string modelData
+                        width: 64
+                        spacing: Theme.space.xs
+
+                        MeshIcon {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            iconName: parent.modelData
+                            size: Theme.icon.lg
+                        }
+
+                        Text {
+                            width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
+                            text: parent.modelData
+                            color: Theme.palette.textTertiary
+                            font.family: Theme.font.family
+                            font.pixelSize: Theme.type.caption.pixelSize
+                        }
+                    }
                 }
             }
 
