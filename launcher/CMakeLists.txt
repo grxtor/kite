@@ -23,6 +23,8 @@ set(CORE_SOURCES
     # same as the block above -- no QtWidgets, no ui/.
     theme/Contrast.h
     theme/Contrast.cpp
+    theme/ThemePalette.h
+    theme/ThemePalette.cpp
     modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
@@ -1243,6 +1245,12 @@ add_unit_test(CustomTheme
 add_unit_test(Contrast
     SOURCES theme/Contrast_test.cpp
     LIBS MeshMC_logic
+    )
+
+# Links the core alone, not MeshMC_logic: the palette is core and this proves it.
+add_unit_test(ThemePalette
+    SOURCES theme/ThemePalette_test.cpp
+    LIBS MeshMC_core
     )
 
 add_unit_test(IconTheme
