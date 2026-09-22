@@ -22,6 +22,7 @@
 #include <QApplication>
 #include <QAbstractButton>
 #include <QMessageBox>
+#include <QProgressDialog>
 #include <QVector>
 
 #include "ui/dialogs/BlockedModsDialog.h"
@@ -51,6 +52,34 @@ namespace
 		return QApplication::activeWindow();
 	}
 } // namespace
+
+namespace
+{
+	/* Indeterminate and uncancellable: the caller has nothing to report and
+	 * nothing it could abort. */
+	class ProgressDialogBusy final : public UiHost::BusyIndicator
+	{
+	  public:
+		explicit ProgressDialogBusy(const QString& text)
+			: m_dialog(text, QString(), 0, 0, QApplication::activeWindow())
+		{
+			m_dialog.setWindowTitle(text);
+			m_dialog.setMinimumDuration(0);
+			m_dialog.setCancelButton(nullptr);
+			m_dialog.adjustSize();
+			m_dialog.show();
+		}
+
+	  private:
+		QProgressDialog m_dialog;
+	};
+} // namespace
+
+std::unique_ptr<UiHost::BusyIndicator>
+WidgetUiHost::showBusy(const QString& text)
+{
+	return std::make_unique<ProgressDialogBusy>(text);
+}
 
 void WidgetUiHost::message(const QString& title, const QString& text,
 						   Severity severity)

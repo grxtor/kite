@@ -23,7 +23,6 @@
 #include <QDebug>
 #include <QProcess>
 #include <QProcessEnvironment>
-#include <QProgressDialog>
 #include <QSettings>
 
 #include <algorithm>
@@ -212,17 +211,12 @@ void MeshMCExternalUpdater::checkForUpdates(bool triggeredByUser)
 	m_checking = true;
 	emit canCheckForUpdatesChanged(false);
 
-	// The check blocks, so the progress dialog exists to prove the launcher
+	// The check blocks, so the busy indication exists to prove the launcher
 	// has not simply frozen. An automatic check gets none: nobody asked, and
 	// a window stealing focus during startup is worse than no feedback.
-	QProgressDialog progress(tr("Checking for updates..."), QString(), 0, 0,
-							 nullptr);
-	progress.setWindowTitle(tr("Checking for updates..."));
-	progress.setMinimumDuration(0);
-	progress.setCancelButton(nullptr);
-	progress.adjustSize();
+	std::unique_ptr<UiHost::BusyIndicator> busy;
 	if (triggeredByUser)
-		progress.show();
+		busy = LAUNCHER->uiHost()->showBusy(tr("Checking for updates..."));
 	QCoreApplication::processEvents();
 
 	QProcess proc;
@@ -247,7 +241,7 @@ void MeshMCExternalUpdater::checkForUpdates(bool triggeredByUser)
 		qWarning() << "Updater: the check did not start within"
 				   << kStartTimeoutMs / 1000 << "seconds:" << proc.error()
 				   << proc.errorString();
-		progress.cancel();
+		busy.reset();
 		LAUNCHER->uiHost()->message(
 			tr("Update Check Failed"),
 			tr("Failed to start after 5 seconds\nReason: %1.")
@@ -265,7 +259,7 @@ void MeshMCExternalUpdater::checkForUpdates(bool triggeredByUser)
 		qWarning() << "Updater: the check did not finish within"
 				   << kFinishTimeoutMs / 1000 << "seconds:" << proc.error()
 				   << proc.errorString();
-		progress.cancel();
+		busy.reset();
 		LAUNCHER->uiHost()->message(
 			tr("Update Check Failed"),
 			withDetails(tr("Updater failed to close 60 seconds\nReason: %1.")
@@ -280,7 +274,7 @@ void MeshMCExternalUpdater::checkForUpdates(bool triggeredByUser)
 	const QByteArray stdOutput = proc.readAllStandardOutput();
 	const QByteArray stdError = proc.readAllStandardError();
 
-	progress.cancel();
+	busy.reset();
 	QCoreApplication::processEvents();
 
 	switch (exitCode) {

@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include <QList>
 #include <QString>
 #include <QStringList>
@@ -51,9 +53,23 @@
 class UiHost
 {
   public:
+	/* Proof that the launcher has not frozen while the caller blocks on
+	 * something it cannot report progress for. The indication disappears when
+	 * this object is destroyed, so it cannot be left showing on an early
+	 * return. */
+	class BusyIndicator
+	{
+	  public:
+		virtual ~BusyIndicator() = default;
+	};
+
 	enum class Severity { Information, Question, Warning, Critical };
 
 	virtual ~UiHost() = default;
+
+	/* Not a question -- nothing to answer and nothing to cancel. For work that
+	 * blocks without being able to say how far along it is. */
+	virtual std::unique_ptr<BusyIndicator> showBusy(const QString& text) = 0;
 
 	/* Something the user only has to acknowledge. */
 	virtual void message(const QString& title, const QString& text,

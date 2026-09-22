@@ -26,8 +26,6 @@
 #include "AuthFlow.h"
 #include "katabasis/Globals.h"
 
-#include <Application.h>
-
 AuthFlow::AuthFlow(AccountData* data, QObject* parent)
 	: AccountTask(data, parent)
 {

@@ -32,6 +32,8 @@
 class WidgetUiHost final : public UiHost
 {
   public:
+	std::unique_ptr<BusyIndicator> showBusy(const QString& text) override;
+
 	void message(const QString& title, const QString& text,
 				 Severity severity) override;
 

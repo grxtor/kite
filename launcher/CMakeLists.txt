@@ -12,6 +12,10 @@ set(CORE_SOURCES
     # mention QtWidgets.
     core/LauncherContext.h
     core/LauncherContext.cpp
+
+    # QDesktopServices lives in QtGui; opening a URL or a folder is not UI.
+    DesktopServices.h
+    DesktopServices.cpp
     core/AuthRequestDecorator.h
     core/UiHost.h
 
@@ -282,6 +286,10 @@ set(ICONS_SOURCES
     # Icons System and related code
     icons/IconUtils.h
     icons/IconUtils.cpp
+    icons/MMCIcon.h
+    icons/MMCIcon.cpp
+    icons/IconList.h
+    icons/IconList.cpp
 )
 
 # Support for Minecraft instances and launch
@@ -763,7 +771,6 @@ set(LOGIC_SOURCES
     ${ATLAUNCHER_SOURCES}
     ${MODRINTH_SOURCES}
     ${CONTENT_DOWNLOAD_SOURCES}
-    ${PLUGIN_SOURCES}
 )
 
 SET(MESHMC_SOURCES
@@ -774,8 +781,6 @@ SET(MESHMC_SOURCES
     ApplicationMessage.cpp
 
     # GUI - general utilities
-    DesktopServices.h
-    DesktopServices.cpp
     VersionProxyModel.h
     VersionProxyModel.cpp
     HoeDown.h
@@ -802,10 +807,6 @@ SET(MESHMC_SOURCES
     ${CMAKE_BINARY_DIR}/${MeshMC_AppBinaryName}.qrc
 
     # Icons
-    icons/MMCIcon.h
-    icons/MMCIcon.cpp
-    icons/IconList.h
-    icons/IconList.cpp
 
     # GUI - windows
     ui/GuiUtil.h
@@ -1216,7 +1217,22 @@ if(WIN32)
 endif()
 
 # Add executable
-add_library(MeshMC_logic STATIC ${LOGIC_SOURCES} ${MESHMC_SOURCES} ${MESHMC_UI} ${MESHMC_SHARED_UI} ${MESHMC_RESOURCES})
+# The launcher is two libraries.
+#
+# MeshMC_core is everything that works without a user interface: instances,
+# downloads, authentication, mod platforms, settings. It must not link
+# QtWidgets -- that is what lets a QML shell reuse it -- and it is not allowed
+# to know the plugin host or anything under ui/ exists.
+#
+# MeshMC_logic is the plugin host and the widget user interface, built on top
+# of the core. It keeps its old name so the application and the unit tests that
+# link it need no change. The plugin host sits here rather than in the core for
+# now: PluginManager renders plugin-supplied widgets and includes MainWindow, so
+# it and the widget UI depend on each other until the declarative plugin ABI
+# replaces that.
+add_library(MeshMC_core STATIC ${LOGIC_SOURCES})
+add_library(MeshMC_logic STATIC ${PLUGIN_SOURCES} ${MESHMC_SOURCES} ${MESHMC_UI} ${MESHMC_SHARED_UI} ${MESHMC_RESOURCES})
+target_link_libraries(MeshMC_logic MeshMC_core)
 
 # Declared after MeshMC_logic because it links against it.
 add_unit_test(CustomTheme
@@ -1241,7 +1257,7 @@ set_tests_properties(IconTheme PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_PLATFORMTHEME="
     )
 
-target_link_libraries(MeshMC_logic
+target_link_libraries(MeshMC_core PUBLIC
     classparser
     nbt++
     ZLIB::ZLIB
@@ -1251,7 +1267,7 @@ target_link_libraries(MeshMC_logic
 )
 
 if(MeshMC_DISABLE_JAVA_DOWNLOADER)
-    target_compile_definitions(MeshMC_logic PUBLIC MeshMC_DISABLE_JAVA_DOWNLOADER)
+    target_compile_definitions(MeshMC_core PUBLIC MeshMC_DISABLE_JAVA_DOWNLOADER)
 endif()
 
 # Keep the function/line of every log message in *all* configurations. Qt only
@@ -1262,20 +1278,23 @@ endif()
 # ones in the application target.
 # Cost, knowingly accepted: __FILE__ is baked into the binary for each
 # translation unit that logs, so the binary grows and carries build paths.
-target_compile_definitions(MeshMC_logic PUBLIC QT_MESSAGELOGCONTEXT)
-target_link_libraries(MeshMC_logic
+target_compile_definitions(MeshMC_core PUBLIC QT_MESSAGELOGCONTEXT)
+target_link_libraries(MeshMC_core PUBLIC
     Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Xml
     Qt${QT_VERSION_MAJOR}::Network
     Qt${QT_VERSION_MAJOR}::NetworkAuth
     Qt${QT_VERSION_MAJOR}::Concurrent
     Qt${QT_VERSION_MAJOR}::Gui
-    Qt${QT_VERSION_MAJOR}::Widgets
     LibArchive::LibArchive
     cmark::cmark
     rainbow
     LocalPeer::LocalPeer
 )
+
+# QtWidgets is linked here and only here. See MeshMC_core_link_check below for
+# how that is enforced rather than merely intended.
+target_link_libraries(MeshMC_logic Qt${QT_VERSION_MAJOR}::Widgets)
 
 target_link_libraries(MeshMC_logic Qt6::OpenGL)
 
@@ -1299,7 +1318,9 @@ else()
 endif()
 
 if(APPLE)
-    target_link_libraries(MeshMC_logic
+    # PUBLIC on the core: MacSparkleUpdater.mm is core and imports Cocoa, and
+    # ThemeManager.mm in MeshMC_logic inherits it from there.
+    target_link_libraries(MeshMC_core PUBLIC
         "-framework AppKit"
         "-framework Foundation"
         objc
@@ -1312,9 +1333,9 @@ if(MeshMC_SPARKLE_ENABLED)
     # PUBLIC: Application.cpp decides which updater to construct on the
     # strength of this define, and it is compiled into the application target
     # as well as into the logic library.
-    target_compile_definitions(MeshMC_logic PUBLIC MESHMC_SPARKLE_ENABLED)
-    target_include_directories(MeshMC_logic PRIVATE "${MACOSX_SPARKLE_DIR}")
-    target_link_libraries(MeshMC_logic ${SPARKLE_FRAMEWORK})
+    target_compile_definitions(MeshMC_core PUBLIC MESHMC_SPARKLE_ENABLED)
+    target_include_directories(MeshMC_core PRIVATE "${MACOSX_SPARKLE_DIR}")
+    target_link_libraries(MeshMC_core PUBLIC ${SPARKLE_FRAMEWORK})
 
     # Sparkle has to ship inside the bundle: it is loaded at runtime, and it
     # is what checks the signature of the update it installs.
@@ -1322,6 +1343,28 @@ if(MeshMC_SPARKLE_ENABLED)
         DESTINATION "${FRAMEWORK_DEST_DIR}"
         USE_SOURCE_PERMISSIONS)
 endif()
+
+######## The core must link without QtWidgets ########
+
+# Not linking Qt::Widgets into MeshMC_core is not enough on its own to keep
+# widgets out of it. A static library is never linked by itself -- unresolved
+# symbols are left for the final executable, which does link QtWidgets through
+# MeshMC_logic -- and on macOS all Qt frameworks sit in one directory, so
+# #include <QtWidgets/QWidget> resolves through the framework search path even
+# without the target. Either way a widget dependency would slip in unnoticed.
+#
+# So link the core, whole, into a program that has nothing else. Every object
+# in the archive is pulled in whether or not anything calls it, and the program
+# is given nothing that could satisfy a QtWidgets symbol. If any core object
+# needs one, this target fails to link and the build breaks, on every platform,
+# in CI and locally alike. It is part of `all` on purpose.
+add_executable(MeshMC_core_link_check core/CoreLinkCheck.cpp)
+target_link_libraries(MeshMC_core_link_check PRIVATE
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,MeshMC_core>")
+
+# Listed as a test as well, so the invariant has a name in the ctest output
+# and is not only visible as a link step when it fails.
+add_test(NAME CoreLinksWithoutQtWidgets COMMAND MeshMC_core_link_check)
 
 ######## QML user interface module ########
 
