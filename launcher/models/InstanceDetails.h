@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <QModelIndex>
 #include <QObject>
 #include <QString>
 #include <memory>
@@ -28,6 +29,7 @@
 
 class MinecraftInstance;
 class ModFolderModel;
+class QSortFilterProxyModel;
 class WorldList;
 class SettingsAdapter;
 class ScreenshotListModel;
@@ -128,6 +130,10 @@ class InstanceDetails : public QObject
 	void onRunningStatusChanged(bool running);
 
   private:
+	/// Row @p row of the sorted mods, as an index into m_mods; invalid if
+	/// out of range.
+	QModelIndex sourceModIndex(int row) const;
+
 	InstancePtr m_instance;
 	/// Non-owning; valid for as long as m_instance is (which is for the
 	/// lifetime of this object). Null when the instance is not Minecraft.
@@ -136,6 +142,8 @@ class InstanceDetails : public QObject
 	/// Borrowed from the instance, not created here - see the class
 	/// comment.
 	std::shared_ptr<ModFolderModel> m_mods;
+	/// What QML sees of m_mods: sorted by name, rows mapped back on write.
+	std::unique_ptr<QSortFilterProxyModel> m_sortedMods;
 	std::shared_ptr<WorldList> m_worlds;
 
 	std::unique_ptr<SettingsAdapter> m_settings;

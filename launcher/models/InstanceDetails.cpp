@@ -19,6 +19,7 @@
 
 #include "InstanceDetails.h"
 
+#include <QSortFilterProxyModel>
 #include <QUrl>
 
 #include "launch/LaunchTask.h"
@@ -51,6 +52,14 @@ InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 	m_mc = dynamic_cast<MinecraftInstance*>(m_instance.get());
 	if (m_mc) {
 		m_mods = m_mc->loaderModList();
+		/* The folder model lists files in whatever order the directory
+		 * gives them; people look for a mod by name. */
+		m_sortedMods = std::make_unique<QSortFilterProxyModel>();
+		m_sortedMods->setSourceModel(m_mods.get());
+		m_sortedMods->setSortRole(m_mods->roleNames().key("name", Qt::DisplayRole));
+		m_sortedMods->setSortCaseSensitivity(Qt::CaseInsensitive);
+		m_sortedMods->setDynamicSortFilter(true);
+		m_sortedMods->sort(0);
 		m_worlds = m_mc->worldList();
 
 		// Mirrors ModFolderPage::openedImpl(): startWatching() runs an
@@ -131,7 +140,7 @@ void InstanceDetails::setNotes(const QString& notes)
 
 QObject* InstanceDetails::mods() const
 {
-	return m_mods.get();
+	return m_sortedMods.get();
 }
 
 QString InstanceDetails::modsDir() const
@@ -139,22 +148,32 @@ QString InstanceDetails::modsDir() const
 	return m_mods ? m_mods->dir().absolutePath() : QString();
 }
 
+QModelIndex InstanceDetails::sourceModIndex(int row) const
+{
+	if (!m_sortedMods || row < 0 || row >= m_sortedMods->rowCount()) {
+		return {};
+	}
+	return m_sortedMods->mapToSource(m_sortedMods->index(row, 0));
+}
+
 void InstanceDetails::setModEnabled(int row, bool enabled)
 {
-	if (!m_mods || row < 0 || static_cast<size_t>(row) >= m_mods->size()) {
+	const QModelIndex index = sourceModIndex(row);
+	if (!index.isValid()) {
 		return;
 	}
-	m_mods->setModStatus({ m_mods->index(row, 0) },
+	m_mods->setModStatus({ index },
 						 enabled ? ModFolderModel::Enable
 								 : ModFolderModel::Disable);
 }
 
 void InstanceDetails::deleteMod(int row)
 {
-	if (!m_mods || row < 0 || static_cast<size_t>(row) >= m_mods->size()) {
+	const QModelIndex index = sourceModIndex(row);
+	if (!index.isValid()) {
 		return;
 	}
-	m_mods->deleteMods({ m_mods->index(row, 0) });
+	m_mods->deleteMods({ index });
 }
 
 bool InstanceDetails::installMod(const QString& fileUrlOrPath)
