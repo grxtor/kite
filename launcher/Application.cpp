@@ -1166,8 +1166,8 @@ void Application::initSubsystems()
 
 	// The updater is created before the main window on purpose: MainWindow's
 	// constructor connects to it, so an updater made afterwards would be one
-	// nothing is listening to. Its dialogs therefore have no parent yet,
-	// which only matters for the "On Launch" check below.
+	// nothing is listening to. There is therefore no window to anchor its
+	// dialogs to yet, which only matters for the "On Launch" check below.
 	if (updaterEnabled()) {
 		qDebug() << "Initializing the updater";
 #if defined(Q_OS_MAC)
@@ -1176,7 +1176,7 @@ void Application::initSubsystems()
 #endif
 #else
 		m_updater.reset(new MeshMCExternalUpdater(
-			m_mainWindow, m_rootPath, m_dataPath,
+			m_rootPath, m_dataPath,
 			// Migrates the launcher's old "check on start" setting into the
 			// updater's config, once. See the constructor.
 			m_settings->get("AutoUpdate").toBool()));

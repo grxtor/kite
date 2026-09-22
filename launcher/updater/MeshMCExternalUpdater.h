@@ -30,7 +30,6 @@
 #include <memory>
 
 class QSettings;
-class QWidget;
 
 class MeshMCExternalUpdater : public ExternalUpdater
 {
@@ -38,7 +37,6 @@ class MeshMCExternalUpdater : public ExternalUpdater
 
   public:
 	/*!
-	 * \a parent   widget the dialogs are centred on; may be null.
 	 * \a appDir   installation root (Application::root()).
 	 * \a dataDir  where the config, the log and the markers live.
 	 * \a autoCheckDefault what "check automatically" means for an
@@ -52,8 +50,7 @@ class MeshMCExternalUpdater : public ExternalUpdater
 	 * Starts the automatic check schedule, and -- when the interval is set to
 	 * "On Launch" -- performs a silent check before returning.
 	 */
-	MeshMCExternalUpdater(QWidget* parent, const QString& appDir,
-						  const QString& dataDir,
+	MeshMCExternalUpdater(const QString& appDir, const QString& dataDir,
 						  bool autoCheckDefault = true);
 	~MeshMCExternalUpdater() override;
 
@@ -109,7 +106,6 @@ class MeshMCExternalUpdater : public ExternalUpdater
 
 	QDir m_appDir;
 	QDir m_dataDir;
-	QWidget* m_parent = nullptr;
 
 	std::unique_ptr<QSettings> m_settings;
 	QTimer m_updateTimer;

@@ -46,4 +46,8 @@ class WidgetUiHost final : public UiHost
 							QList<BlockedMod>& mods) override;
 
 	bool confirmUntrustedMods(const QStringList& suspectPaths) override;
+
+	UpdateChoice offerUpdate(const QString& currentVersion,
+							 const QString& availableVersion,
+							 const QString& releaseNotes) override;
 };

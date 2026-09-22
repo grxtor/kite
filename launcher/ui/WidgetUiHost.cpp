@@ -27,6 +27,7 @@
 #include "ui/dialogs/BlockedModsDialog.h"
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/dialogs/UntrustedModsDialog.h"
+#include "ui/dialogs/UpdateAvailableDialog.h"
 
 namespace
 {
@@ -116,4 +117,22 @@ bool WidgetUiHost::confirmUntrustedMods(const QStringList& suspectPaths)
 {
 	UntrustedModsDialog dialog(suspectPaths, activeWindow());
 	return dialog.exec() == QDialog::Accepted;
+}
+
+UiHost::UpdateChoice WidgetUiHost::offerUpdate(const QString& currentVersion,
+											   const QString& availableVersion,
+											   const QString& releaseNotes)
+{
+	UpdateAvailableDialog dialog(currentVersion, availableVersion,
+								 releaseNotes, activeWindow());
+	switch (dialog.exec()) {
+		case UpdateAvailableDialog::Install:
+			return UpdateChoice::Install;
+		case UpdateAvailableDialog::Skip:
+			return UpdateChoice::Skip;
+		default:
+			/* DontInstall, or the window was simply closed -- both leave
+			 * the offer standing for next time. */
+			return UpdateChoice::Later;
+	}
 }

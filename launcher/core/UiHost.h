@@ -83,4 +83,14 @@ class UiHost
 
 	/* Files that failed the trust check. True means install them anyway. */
 	virtual bool confirmUntrustedMods(const QStringList& suspectPaths) = 0;
+
+	enum class UpdateChoice { Install, Later, Skip };
+
+	/* A release being offered: the current version, the version on offer,
+	 * and its release notes. Kept separate from choose() because the notes
+	 * are formatted content -- Markdown today -- and a plain message-box
+	 * body would flatten that formatting. */
+	virtual UpdateChoice offerUpdate(const QString& currentVersion,
+									 const QString& availableVersion,
+									 const QString& releaseNotes) = 0;
 };
