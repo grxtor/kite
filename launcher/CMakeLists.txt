@@ -32,6 +32,8 @@ set(CORE_SOURCES
     models/InstanceFilterModel.cpp
     models/IdSelectionModel.h
     models/IdSelectionModel.cpp
+    models/SettingsAdapter.h
+    models/SettingsAdapter.cpp
     modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
@@ -1274,6 +1276,11 @@ add_unit_test(InstanceFilterModel
 
 add_unit_test(IdSelectionModel
     SOURCES models/IdSelectionModel_test.cpp
+    LIBS MeshMC_core
+    )
+
+add_unit_test(SettingsAdapter
+    SOURCES models/SettingsAdapter_test.cpp
     LIBS MeshMC_core
     )
 
