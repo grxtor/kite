@@ -66,6 +66,7 @@ ApplicationWindow {
             recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
             accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
             accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
+            accountAvatarSource: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
             onItemActivated: (id) => {
                 // Discover and Settings still open the existing dialogs.
                 if (id === "discover")

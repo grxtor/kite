@@ -1443,6 +1443,16 @@ add_unit_test(InstanceIconProvider
     LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 
+# Exercises only AccountFaceProvider::faceFromSkin(), the pure compositing
+# helper -- requestPixmap() itself needs a real LauncherContext/AccountList,
+# which is neither cheap nor hermetic to fake here. MeshMC_logic (rather than
+# just MeshMC_core) because AccountFaceProvider.cpp lives in MeshMC_qml,
+# which MeshMC_logic links.
+add_unit_test(AccountFaceProvider
+    SOURCES qml/AccountFaceProvider_test.cpp
+    LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
+    )
+
 add_executable(${MeshMC_Name} MACOSX_BUNDLE WIN32 main.cpp ${MESHMC_RCS})
 # Keyword signature: qt_import_qml_plugins below links with PRIVATE, and CMake
 # refuses to mix the two forms on one target.

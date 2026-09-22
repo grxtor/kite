@@ -31,6 +31,7 @@
 #include "InstanceList.h"
 #include "models/IdSelectionModel.h"
 #include "models/InstanceFilterModel.h"
+#include "qml/AccountFaceProvider.h"
 #include "qml/InstanceIconProvider.h"
 #include "core/LauncherContext.h"
 #include "minecraft/auth/AccountList.h"
@@ -50,10 +51,14 @@ QmlShell::QmlShell(QObject* parent) : QObject(parent)
 	 * enough to re-read all three properties, so both are wired to the
 	 * same accountChanged() rather than tracked separately. */
 	auto accounts = LAUNCHER->accounts();
-	connect(accounts.get(), &AccountList::listChanged, this,
-			&QmlShell::accountChanged);
-	connect(accounts.get(), &AccountList::defaultAccountChanged, this,
-			&QmlShell::accountChanged);
+	/* Any change may be a new skin under the same account id, and QML
+	 * caches images by url: the revision in the face url makes it refetch. */
+	const auto bump = [this] {
+		++m_accountRevision;
+		emit accountChanged();
+	};
+	connect(accounts.get(), &AccountList::listChanged, this, bump);
+	connect(accounts.get(), &AccountList::defaultAccountChanged, this, bump);
 }
 
 QmlShell::~QmlShell() = default;
@@ -70,6 +75,20 @@ QString QmlShell::accountName() const
 {
 	auto account = LAUNCHER->accounts()->defaultAccount();
 	return account ? account->profileName() : QString();
+}
+
+QString QmlShell::accountFace() const
+{
+	auto account = LAUNCHER->accounts()->defaultAccount();
+	if (!account) {
+		return QString();
+	}
+	// Offline accounts have no profile id; the provider accepts either.
+	const QString id = account->profileId().isEmpty() ? account->internalId()
+													   : account->profileId();
+	return QStringLiteral("image://accountface/%1?rev=%2")
+		.arg(id)
+		.arg(m_accountRevision);
 }
 
 QString QmlShell::accountKind() const
@@ -195,6 +214,8 @@ bool QmlShell::show(bool minimized)
 	 * so the first frame already has icons rather than broken images. */
 	m_engine->addImageProvider(QStringLiteral("instanceicon"),
 							   new InstanceIconProvider(LAUNCHER->icons()));
+	m_engine->addImageProvider(QStringLiteral("accountface"),
+							   new AccountFaceProvider());
 	m_engine->setInitialProperties(rootProperties());
 	m_engine->load(kRootUrl);
 

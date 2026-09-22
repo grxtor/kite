@@ -46,24 +46,26 @@ AbstractButton {
             radius: Theme.radius.md
             color: control.signedIn ? Theme.palette.accentSubtle : Theme.palette.surfaceOverlay
 
-            Image {
-                id: avatarImage
-                anchors.fill: parent
-                anchors.margins: 2
-                source: control.avatarSource
-                visible: status === Image.Ready
-                smooth: false
-                sourceSize: Qt.size(width, height)
-            }
-
             Text {
                 anchors.centerIn: parent
-                visible: control.signedIn && !avatarImage.visible
+                visible: control.signedIn
                 text: control.name.charAt(0).toUpperCase()
                 color: Theme.palette.accent
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.title.pixelSize
                 font.weight: Font.Bold
+            }
+
+            Image {
+                id: avatarImage
+                anchors.fill: parent
+                anchors.margins: 2
+                source: control.avatarSource
+                // Drawn over the initial: an account without a skin comes
+                // back transparent and the initial shows through.
+                visible: control.signedIn && control.avatarSource.length > 0
+                smooth: false
+                sourceSize: Qt.size(width, height)
             }
 
             MeshIcon {

@@ -46,6 +46,8 @@ class QmlShell : public QObject
 
 	Q_PROPERTY(QString accountName READ accountName NOTIFY accountChanged)
 	Q_PROPERTY(QString accountKind READ accountKind NOTIFY accountChanged)
+	/// Image url of the default account's skin face; empty without one.
+	Q_PROPERTY(QString accountFace READ accountFace NOTIFY accountChanged)
 	Q_PROPERTY(int accountCount READ accountCount NOTIFY accountChanged)
 	/// Every instance, most recently played first; never-played ones left out.
 	Q_PROPERTY(QObject* recentModel READ recentModel CONSTANT)
@@ -73,6 +75,7 @@ class QmlShell : public QObject
 	/// "Microsoft", "Offline", or empty when there is no default account.
 	QString accountKind() const;
 	int accountCount() const;
+	QString accountFace() const;
 
 	QObject* recentModel() const;
 	QObject* heroModel() const;
@@ -123,4 +126,5 @@ class QmlShell : public QObject
 
 	std::unique_ptr<QQmlApplicationEngine> m_engine;
 	QQuickWindow* m_window = nullptr;
+	int m_accountRevision = 0;
 };
