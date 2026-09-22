@@ -82,7 +82,7 @@
 #include "InstanceWindow.h"
 #include "InstancePageProvider.h"
 #include "ui/JavaCommon.h"
-#include "LaunchController.h"
+#include "ui/LaunchController.h"
 
 #include "ui/instanceview/InstanceProxyModel.h"
 #include "ui/instanceview/InstanceView.h"

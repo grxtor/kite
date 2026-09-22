@@ -23,7 +23,7 @@
 #include <QMainWindow>
 #include <QSystemTrayIcon>
 
-#include "LaunchController.h"
+#include "ui/LaunchController.h"
 #include "launch/LaunchTask.h"
 
 #include "ui/pages/BasePageContainer.h"

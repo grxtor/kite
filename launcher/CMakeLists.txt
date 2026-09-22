@@ -852,8 +852,8 @@ SET(MESHMC_SOURCES
     ui/themes/CatPack.h
 
     # Processes
-    LaunchController.h
-    LaunchController.cpp
+    ui/LaunchController.h
+    ui/LaunchController.cpp
 
     # page provider for instances
     InstancePageProvider.h

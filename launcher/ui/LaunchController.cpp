@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "LaunchController.h"
+#include "ui/LaunchController.h"
 #include "minecraft/auth/AccountList.h"
 #include "Application.h"
 #include "plugin/PluginManager.h"
