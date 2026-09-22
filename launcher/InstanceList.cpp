@@ -276,10 +276,38 @@ QVariant InstanceList::data(const QModelIndex& index, int role) const
 		case GroupRole: {
 			return getInstanceGroup(pdata->id());
 		}
+		// QML-only roles; the QtWidgets grid never asks for these.
+		case IsRunningRole: {
+			return pdata->isRunning();
+		}
+		case CanLaunchRole: {
+			return pdata->canLaunch();
+		}
+		case LastLaunchRole: {
+			return pdata->lastLaunch();
+		}
+		case TotalTimePlayedRole: {
+			return pdata->totalTimePlayed();
+		}
 		default:
 			break;
 	}
 	return QVariant();
+}
+
+QHash<int, QByteArray> InstanceList::roleNames() const
+{
+	QHash<int, QByteArray> roles = QAbstractListModel::roleNames();
+	roles.insert(InstanceIDRole, "instanceId");
+	roles.insert(Qt::DisplayRole, "name");
+	roles.insert(Qt::DecorationRole, "iconKey");
+	roles.insert(Qt::ToolTipRole, "instanceRoot");
+	roles.insert(GroupRole, "group");
+	roles.insert(IsRunningRole, "isRunning");
+	roles.insert(CanLaunchRole, "canLaunch");
+	roles.insert(LastLaunchRole, "lastLaunch");
+	roles.insert(TotalTimePlayedRole, "totalTimePlayed");
+	return roles;
 }
 
 bool InstanceList::setData(const QModelIndex& index, const QVariant& value,

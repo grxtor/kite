@@ -50,6 +50,9 @@ namespace Meta
 		int columnCount(const QModelIndex& parent) const override;
 		QVariant headerData(int section, Qt::Orientation orientation,
 							int role) const override;
+		// ListPtrRole is deliberately left unnamed - it carries a
+		// shared_ptr, which QML must never receive.
+		QHash<int, QByteArray> roleNames() const override;
 
 		QString localFilename() const override
 		{

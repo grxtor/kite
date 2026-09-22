@@ -123,11 +123,25 @@ QVariant ContentProviderModel::data(const QModelIndex& index, int role) const
 		case ProjectItemRole::Installed:
 			return project.installed;
 
+		case LogoKeyRole:
+			return project.logoKey;
+
 		default:
 			break;
 	}
 
 	return QVariant();
+}
+
+QHash<int, QByteArray> ContentProviderModel::roleNames() const
+{
+	QHash<int, QByteArray> roles = QAbstractListModel::roleNames();
+	roles.insert(Qt::UserRole, "projectId");
+	roles.insert(ProjectItemRole::Title, "title");
+	roles.insert(ProjectItemRole::Description, "description");
+	roles.insert(ProjectItemRole::Installed, "installed");
+	roles.insert(LogoKeyRole, "logoKey");
+	return roles;
 }
 
 Qt::ItemFlags ContentProviderModel::flags(const QModelIndex& index) const

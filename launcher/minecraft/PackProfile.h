@@ -46,6 +46,10 @@ class PackProfile : public QAbstractListModel
   public:
 	enum Columns { NameColumn = 0, VersionColumn, NUM_COLUMNS };
 
+	// Column-independent roles for QML consumers. Kept separate from
+	// Columns above, which the QtWidgets tree view still relies on.
+	enum ModelRoles { NameRole = Qt::UserRole, VersionRole, ProblemSeverityRole };
+
 	explicit PackProfile(MinecraftInstance* instance);
 	virtual ~PackProfile();
 
@@ -59,6 +63,7 @@ class PackProfile : public QAbstractListModel
 	rowCount(const QModelIndex& parent = QModelIndex()) const override;
 	virtual int columnCount(const QModelIndex& parent) const override;
 	virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
+	QHash<int, QByteArray> roleNames() const override;
 
 	/// call this to explicitly mark the component list as loaded - this is used
 	/// to build a new component list from scratch.

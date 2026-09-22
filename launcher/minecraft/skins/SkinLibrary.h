@@ -51,6 +51,13 @@ class SkinLibrary : public QAbstractListModel
 	Q_OBJECT
 
   public:
+	/* Named roles, so a QML ListView can get at the name and image without
+	 * relying on the generic "display"/"decoration" role names. */
+	enum ModelRoles {
+		NameRole = Qt::UserRole + 1,
+		ImageRole
+	};
+
 	/* `path` is the library directory; it is created if missing. */
 	SkinLibrary(QObject* parent, const QString& path,
 				MinecraftAccountPtr account);
@@ -108,6 +115,7 @@ class SkinLibrary : public QAbstractListModel
 	bool setData(const QModelIndex& index, const QVariant& value,
 				 int role) override;
 	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+	QHash<int, QByteArray> roleNames() const override;
 	Qt::ItemFlags flags(const QModelIndex& index) const override;
 	QStringList mimeTypes() const override;
 	Qt::DropActions supportedDropActions() const override;

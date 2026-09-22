@@ -145,6 +145,19 @@ int WorldList::columnCount(const QModelIndex& parent) const
 	return ColumnCount;
 }
 
+QHash<int, QByteArray> WorldList::roleNames() const
+{
+	QHash<int, QByteArray> roles = QAbstractListModel::roleNames();
+	roles.insert(FolderRole, "folder");
+	roles.insert(SeedRole, "seed");
+	roles.insert(NameRole, "name");
+	roles.insert(GameModeRole, "gameMode");
+	roles.insert(LastPlayedRole, "lastPlayed");
+	roles.insert(IconFileRole, "iconFile");
+	roles.insert(DayCountRole, "dayCount");
+	return roles;
+}
+
 namespace
 {
 	/* Returned as a number rather than a string so the view sorts the
@@ -213,6 +226,9 @@ QVariant WorldList::data(const QModelIndex& index, int role) const
 		}
 		case NameRole: {
 			return world.name();
+		}
+		case GameModeRole: {
+			return world.gameType().toTranslatedString();
 		}
 		case LastPlayedRole: {
 			return world.lastPlayed();

@@ -48,7 +48,11 @@ class LogModel : public QAbstractListModel
 	void setLineWrap(bool state);
 	bool wrapLines() const;
 
-	enum Roles { LevelRole = Qt::UserRole };
+	// LineRole is separate from the inherited "display"/"edit" role names
+	// so QML can name the text without colliding with them.
+	enum Roles { LevelRole = Qt::UserRole, LineRole };
+
+	QHash<int, QByteArray> roleNames() const;
 
   private /* types */:
 	struct entry {

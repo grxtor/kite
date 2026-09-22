@@ -341,6 +341,13 @@ QVariant TranslationsModel::data(const QModelIndex& index, int role) const
 		}
 		case Qt::UserRole:
 			return lang.key;
+		// Column-independent roles for QML consumers - same data as the
+		// column-based Qt::DisplayRole cases above, valid regardless of
+		// which column `index` happens to point at.
+		case NameRole:
+			return lang.languageName();
+		case CompletenessRole:
+			return QString::asprintf("%3.1f %%", lang.percentTranslated());
 		default:
 			return QVariant();
 	}
@@ -381,6 +388,15 @@ int TranslationsModel::rowCount(const QModelIndex& parent) const
 int TranslationsModel::columnCount(const QModelIndex& parent) const
 {
 	return 2;
+}
+
+QHash<int, QByteArray> TranslationsModel::roleNames() const
+{
+	QHash<int, QByteArray> roles = QAbstractListModel::roleNames();
+	roles.insert(Qt::UserRole, "languageKey");
+	roles.insert(NameRole, "name");
+	roles.insert(CompletenessRole, "completeness");
+	return roles;
 }
 
 Language* TranslationsModel::findLanguage(const QString& key)

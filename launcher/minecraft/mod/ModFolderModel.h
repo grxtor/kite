@@ -54,6 +54,14 @@ class ModFolderModel : public QAbstractListModel
 		DateColumn,
 		NUM_COLUMNS
 	};
+	/* Named roles, so a QML ListView (which only ever sees column 0) can
+	 * still get at what the widget views show as columns 1..3. */
+	enum ModelRoles {
+		NameRole = Qt::UserRole,
+		VersionRole,
+		DateRole,
+		EnabledRole
+	};
 	enum ModStatusAction { Disable, Enable, Toggle };
 	ModFolderModel(const QString& dir);
 
@@ -61,6 +69,7 @@ class ModFolderModel : public QAbstractListModel
 						  int role = Qt::DisplayRole) const override;
 	virtual bool setData(const QModelIndex& index, const QVariant& value,
 						 int role = Qt::EditRole) override;
+	QHash<int, QByteArray> roleNames() const override;
 	Qt::DropActions supportedDropActions() const override;
 
 	/// flags, mostly to support drag&drop
@@ -148,6 +157,11 @@ class ModFolderModel : public QAbstractListModel
 
   private:
 	bool setModStatus(int index, ModStatusAction action);
+
+	/* Shared by the Qt::DisplayRole VersionColumn case and the named
+	 * VersionRole, so QML gets the same "Folder"/"File" placeholder the
+	 * Version column shows for those mod types. */
+	QVariant versionData(int row) const;
 
   protected:
 	void resolveMod(Mod& m);

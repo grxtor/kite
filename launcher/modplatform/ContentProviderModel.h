@@ -111,11 +111,17 @@ class ContentProviderModel : public QAbstractListModel
 	Q_OBJECT
 
   public:
+	/* Continues past ProjectItemRole (Qt::UserRole+1..+3, defined in
+	 * ProjectItemDelegate.h), which the QtWidgets delegate already reads
+	 * from this model's data(). */
+	enum ModelRoles { LogoKeyRole = Qt::UserRole + 4 };
+
 	~ContentProviderModel() override;
 
 	int rowCount(const QModelIndex& parent) const override;
 	int columnCount(const QModelIndex& parent) const override;
 	QVariant data(const QModelIndex& index, int role) const override;
+	QHash<int, QByteArray> roleNames() const override;
 	Qt::ItemFlags flags(const QModelIndex& index) const override;
 	bool canFetchMore(const QModelIndex& parent) const override;
 	void fetchMore(const QModelIndex& parent) override;

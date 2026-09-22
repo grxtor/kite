@@ -64,6 +64,7 @@ class WorldList : public QAbstractListModel
 	virtual QVariant headerData(int section, Qt::Orientation orientation,
 								int role = Qt::DisplayRole) const;
 	virtual int columnCount(const QModelIndex& parent) const;
+	QHash<int, QByteArray> roleNames() const override;
 
 	size_t size() const
 	{

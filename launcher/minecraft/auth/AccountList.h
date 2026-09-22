@@ -37,6 +37,20 @@ class AccountList : public QAbstractListModel
   public:
 	enum ModelRoles { PointerRole = 0x34B1CB48 };
 
+	/* Roles for the QML account list. VListColumns below is a column index -
+	 * fine for the QtWidgets AccountListPage, which asks for a specific
+	 * column, but invisible to a QML ListView, which only ever binds to
+	 * column 0. These roles hand back whatever ProfileNameColumn,
+	 * TypeColumn and StatusColumn hold, for any column asked, so a QML
+	 * delegate reading column 0 still sees all of it. As with PointerRole
+	 * above, no role here hands QML a raw pointer. */
+	enum QmlRoles {
+		NameRole = Qt::UserRole + 10,
+		ProfileNameRole,
+		TypeRole,
+		StatusRole
+	};
+
 	enum VListColumns {
 		// TODO: Add icon column.
 		NameColumn = 0,
@@ -62,6 +76,7 @@ class AccountList : public QAbstractListModel
 	virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
 	virtual bool setData(const QModelIndex& index, const QVariant& value,
 						 int role) override;
+	QHash<int, QByteArray> roleNames() const override;
 
 	void addAccount(const MinecraftAccountPtr account);
 	void removeAccount(QModelIndex index);

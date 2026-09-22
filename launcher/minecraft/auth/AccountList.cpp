@@ -307,6 +307,36 @@ int AccountList::count() const
 	return m_accounts.count();
 }
 
+/* Shared by the StatusColumn case in data() below and the QML StatusRole,
+ * so a future AccountState only needs its translatable string added once. */
+static QString accountStateDisplayString(AccountState state)
+{
+	switch (state) {
+		case AccountState::Unchecked: {
+			return AccountList::tr("Unchecked", "Account status");
+		}
+		case AccountState::Offline: {
+			return AccountList::tr("Offline", "Account status");
+		}
+		case AccountState::Online: {
+			return AccountList::tr("Online", "Account status");
+		}
+		case AccountState::Working: {
+			return AccountList::tr("Working", "Account status");
+		}
+		case AccountState::Errored: {
+			return AccountList::tr("Errored", "Account status");
+		}
+		case AccountState::Expired: {
+			return AccountList::tr("Expired", "Account status");
+		}
+		case AccountState::Gone: {
+			return AccountList::tr("Gone", "Account status");
+		}
+	}
+	return QString();
+}
+
 QVariant AccountList::data(const QModelIndex& index, int role) const
 {
 	if (!index.isValid())
@@ -330,29 +360,7 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
 				}
 
 				case StatusColumn: {
-					switch (account->accountState()) {
-						case AccountState::Unchecked: {
-							return tr("Unchecked", "Account status");
-						}
-						case AccountState::Offline: {
-							return tr("Offline", "Account status");
-						}
-						case AccountState::Online: {
-							return tr("Online", "Account status");
-						}
-						case AccountState::Working: {
-							return tr("Working", "Account status");
-						}
-						case AccountState::Errored: {
-							return tr("Errored", "Account status");
-						}
-						case AccountState::Expired: {
-							return tr("Expired", "Account status");
-						}
-						case AccountState::Gone: {
-							return tr("Gone", "Account status");
-						}
-					}
+					return accountStateDisplayString(account->accountState());
 				}
 
 				case ProfileNameColumn: {
@@ -376,9 +384,40 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
 													   : Qt::Unchecked;
 			}
 
+			/* No case above matches outside NameColumn (there is no
+			 * default:), so this falls out of the inner switch on any other
+			 * column - make that explicit rather than let it fall through
+			 * into the named QML roles below. */
+			return QVariant();
+
+		// Named roles for QML: a ListView only ever binds to column 0, so
+		// these return the same data as the columns above regardless of
+		// index.column(), making it all reachable from a single delegate.
+		case NameRole:
+			return account->accountDisplayString();
+		case ProfileNameRole:
+			return account->profileName();
+		case TypeRole: {
+			auto typeStr = account->typeString();
+			typeStr[0] = typeStr[0].toUpper();
+			return typeStr;
+		}
+		case StatusRole:
+			return accountStateDisplayString(account->accountState());
+
 		default:
 			return QVariant();
 	}
+}
+
+QHash<int, QByteArray> AccountList::roleNames() const
+{
+	QHash<int, QByteArray> roles = QAbstractListModel::roleNames();
+	roles.insert(NameRole, "name");
+	roles.insert(ProfileNameRole, "profileName");
+	roles.insert(TypeRole, "type");
+	roles.insert(StatusRole, "status");
+	return roles;
 }
 
 QVariant AccountList::headerData(int section, Qt::Orientation, int role) const

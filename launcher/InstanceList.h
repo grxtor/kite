@@ -89,6 +89,7 @@ class InstanceList : public QAbstractListModel
 	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 	QVariant data(const QModelIndex& index, int role) const override;
 	Qt::ItemFlags flags(const QModelIndex& index) const override;
+	QHash<int, QByteArray> roleNames() const override;
 
 	bool setData(const QModelIndex& index, const QVariant& value,
 				 int role) override;
@@ -97,6 +98,33 @@ class InstanceList : public QAbstractListModel
 		GroupRole = Qt::UserRole,
 		InstancePointerRole = 0x34B1CB48, ///< Return pointer to real instance
 		InstanceIDRole = 0x34B1CB49		  ///< Return id if the instance
+	};
+
+	/* GroupRole is pinned to Qt::UserRole on purpose: InstanceView.h (the
+	 * still-shipping QtWidgets instance grid) independently declares
+	 * InstanceViewRoles::GroupRole = Qt::UserRole, ProgressValueRole =
+	 * Qt::UserRole + 1 and ProgressMaximumRole = Qt::UserRole + 2, and
+	 * reads those numerically rather than through this enum. Renumbering
+	 * GroupRole here would desync the two, and a new role at +1 or +2
+	 * would silently collide with the progress roles. QmlRoles below
+	 * therefore starts at Qt::UserRole + 10, leaving 257 and 258 reserved
+	 * for InstanceView.h until the widget grid is deleted. */
+	static_assert(int(GroupRole) == int(Qt::UserRole),
+				  "GroupRole is numerically pinned to InstanceViewRoles::GroupRole "
+				  "in InstanceView.h; do not renumber");
+
+	/* Roles added for the QML instance list. instanceId, name, iconKey,
+	 * instanceRoot and group are named in roleNames() but reuse the
+	 * InstanceIDRole/Qt::DisplayRole/Qt::DecorationRole/Qt::ToolTipRole/
+	 * GroupRole cases already handled in data() - only the four below are
+	 * genuinely new. InstancePointerRole is deliberately left unnamed: it
+	 * is a raw void*, and QML has no way to dereference one; a QML
+	 * delegate reaches an instance by instanceId instead. */
+	enum QmlRoles {
+		IsRunningRole = Qt::UserRole + 10,
+		CanLaunchRole,
+		LastLaunchRole,
+		TotalTimePlayedRole
 	};
 	/*!
 	 * \brief Error codes returned by functions in the InstanceList class.

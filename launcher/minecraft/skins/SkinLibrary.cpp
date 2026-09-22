@@ -467,16 +467,19 @@ QVariant SkinLibrary::data(const QModelIndex& index, int role) const
 
 	const SkinEntry& entry = m_entries[row];
 	switch (role) {
-		case Qt::DecorationRole: {
+		case Qt::DecorationRole:
+		case ImageRole: {
 			/* The flat sprite is what the list is meant to show; the raw
 			 * texture is only a fallback for the case where the sprite could
-			 * not be produced, so the row still shows *something*. */
+			 * not be produced, so the row still shows *something*. QImage is
+			 * consumable by QML as-is, so ImageRole needs no conversion. */
 			const QImage thumbnail = entry.thumbnail();
 			return thumbnail.isNull() ? entry.texture() : thumbnail;
 		}
 		case Qt::DisplayRole:
 		case Qt::EditRole:
 		case Qt::UserRole:
+		case NameRole:
 			return entry.name();
 		default:
 			return QVariant();
@@ -512,6 +515,14 @@ bool SkinLibrary::setData(const QModelIndex& index, const QVariant& value,
 int SkinLibrary::rowCount(const QModelIndex& parent) const
 {
 	return parent.isValid() ? 0 : m_entries.size();
+}
+
+QHash<int, QByteArray> SkinLibrary::roleNames() const
+{
+	QHash<int, QByteArray> roles = QAbstractListModel::roleNames();
+	roles.insert(NameRole, "name");
+	roles.insert(ImageRole, "image");
+	return roles;
 }
 
 Qt::ItemFlags SkinLibrary::flags(const QModelIndex& index) const

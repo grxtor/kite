@@ -422,6 +422,29 @@ int ModFolderModel::columnCount(const QModelIndex& parent) const
 	return NUM_COLUMNS;
 }
 
+QHash<int, QByteArray> ModFolderModel::roleNames() const
+{
+	QHash<int, QByteArray> roles = QAbstractListModel::roleNames();
+	roles.insert(NameRole, "name");
+	roles.insert(VersionRole, "version");
+	roles.insert(DateRole, "dateChanged");
+	roles.insert(EnabledRole, "enabled");
+	return roles;
+}
+
+QVariant ModFolderModel::versionData(int row) const
+{
+	switch (mods[row].type()) {
+		case Mod::MOD_FOLDER:
+			return tr("Folder");
+		case Mod::MOD_SINGLEFILE:
+			return tr("File");
+		default:
+			break;
+	}
+	return mods[row].version();
+}
+
 QVariant ModFolderModel::data(const QModelIndex& index, int role) const
 {
 	if (!index.isValid())
@@ -438,17 +461,8 @@ QVariant ModFolderModel::data(const QModelIndex& index, int role) const
 			switch (column) {
 				case NameColumn:
 					return mods[row].name();
-				case VersionColumn: {
-					switch (mods[row].type()) {
-						case Mod::MOD_FOLDER:
-							return tr("Folder");
-						case Mod::MOD_SINGLEFILE:
-							return tr("File");
-						default:
-							break;
-					}
-					return mods[row].version();
-				}
+				case VersionColumn:
+					return versionData(row);
 				case DateColumn:
 					return mods[row].dateTimeChanged();
 
@@ -466,6 +480,19 @@ QVariant ModFolderModel::data(const QModelIndex& index, int role) const
 				default:
 					return QVariant();
 			}
+
+		// Named roles for QML: a ListView only ever binds to column 0, so
+		// these return the same data as the columns above regardless of
+		// `column`, making it all reachable from a single delegate.
+		case NameRole:
+			return mods[row].name();
+		case VersionRole:
+			return versionData(row);
+		case DateRole:
+			return mods[row].dateTimeChanged();
+		case EnabledRole:
+			return mods[row].enabled();
+
 		default:
 			return QVariant();
 	}

@@ -29,6 +29,10 @@ class TranslationsModel : public QAbstractListModel
 {
 	Q_OBJECT
   public:
+	// Column-independent roles for QML consumers, additional to the
+	// Qt::UserRole language key already returned by data().
+	enum ModelRoles { NameRole = Qt::UserRole + 1, CompletenessRole };
+
 	explicit TranslationsModel(QString path, QObject* parent = 0);
 	virtual ~TranslationsModel();
 
@@ -38,6 +42,7 @@ class TranslationsModel : public QAbstractListModel
 						int role) const override;
 	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 	int columnCount(const QModelIndex& parent) const override;
+	QHash<int, QByteArray> roleNames() const override;
 
 	bool selectLanguage(QString key);
 	void updateLanguage(QString key);

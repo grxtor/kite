@@ -32,6 +32,13 @@ class GameOptions : public QAbstractListModel
 {
 	Q_OBJECT
   public:
+	/* Named roles, so a QML ListView (which only ever sees column 0) can
+	 * still get at what the widget view shows as column 1. */
+	enum ModelRoles {
+		KeyRole = Qt::UserRole,
+		ValueRole
+	};
+
 	explicit GameOptions(const QString& path);
 	virtual ~GameOptions() = default;
 
@@ -41,6 +48,7 @@ class GameOptions : public QAbstractListModel
 				  int role = Qt::DisplayRole) const override;
 	QVariant headerData(int section, Qt::Orientation orientation,
 						int role) const override;
+	QHash<int, QByteArray> roleNames() const override;
 
 	bool isLoaded() const;
 	bool reload();

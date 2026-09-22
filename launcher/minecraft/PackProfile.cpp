@@ -790,6 +790,28 @@ QVariant PackProfile::data(const QModelIndex& index, int role) const
 				}
 			}
 		}
+		// Column-independent roles for QML consumers - same data as the
+		// column-based cases above, valid regardless of which column
+		// `index` happens to point at.
+		case NameRole:
+			return patch->getName();
+		case VersionRole:
+			if (patch->isCustom()) {
+				return QString("%1 (Custom)").arg(patch->getVersion());
+			} else {
+				return patch->getVersion();
+			}
+		case ProblemSeverityRole: {
+			auto severity = patch->getProblemSeverity();
+			switch (severity) {
+				case ProblemSeverity::Warning:
+					return "warning";
+				case ProblemSeverity::Error:
+					return "error";
+				default:
+					return QVariant();
+			}
+		}
 	}
 	return QVariant();
 }
@@ -859,6 +881,15 @@ int PackProfile::rowCount(const QModelIndex& parent) const
 int PackProfile::columnCount(const QModelIndex& parent) const
 {
 	return NUM_COLUMNS;
+}
+
+QHash<int, QByteArray> PackProfile::roleNames() const
+{
+	QHash<int, QByteArray> roles = QAbstractListModel::roleNames();
+	roles.insert(NameRole, "name");
+	roles.insert(VersionRole, "version");
+	roles.insert(ProblemSeverityRole, "problemSeverity");
+	return roles;
 }
 
 void PackProfile::move(const int index, const MoveDirection direction)

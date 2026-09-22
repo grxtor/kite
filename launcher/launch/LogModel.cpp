@@ -45,8 +45,19 @@ QVariant LogModel::data(const QModelIndex& index, int role) const
 	if (role == LevelRole) {
 		return m_content[realRow].level;
 	}
+	if (role == LineRole) {
+		return m_content[realRow].line;
+	}
 
 	return QVariant();
+}
+
+QHash<int, QByteArray> LogModel::roleNames() const
+{
+	QHash<int, QByteArray> roles = QAbstractListModel::roleNames();
+	roles.insert(LineRole, "line");
+	roles.insert(LevelRole, "level");
+	return roles;
 }
 
 void LogModel::append(MessageLevel::Enum level, QString line)

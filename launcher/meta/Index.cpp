@@ -68,6 +68,13 @@ namespace Meta
 	{
 		return 1;
 	}
+	QHash<int, QByteArray> Index::roleNames() const
+	{
+		QHash<int, QByteArray> roles = QAbstractListModel::roleNames();
+		roles.insert(UidRole, "uid");
+		roles.insert(NameRole, "name");
+		return roles;
+	}
 	QVariant Index::headerData(int section, Qt::Orientation orientation,
 							   int role) const
 	{

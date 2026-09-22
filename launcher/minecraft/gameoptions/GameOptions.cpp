@@ -119,6 +119,15 @@ QVariant GameOptions::data(const QModelIndex& index, int role) const
 			} else {
 				return contents[row].value;
 			}
+
+		// Named roles for QML: a ListView only ever binds to column 0, so
+		// these return the key/value pair regardless of `column`, making
+		// both reachable from a single delegate.
+		case KeyRole:
+			return contents[row].key;
+		case ValueRole:
+			return contents[row].value;
+
 		default:
 			return QVariant();
 	}
@@ -133,6 +142,14 @@ int GameOptions::rowCount(const QModelIndex&) const
 int GameOptions::columnCount(const QModelIndex&) const
 {
 	return 2;
+}
+
+QHash<int, QByteArray> GameOptions::roleNames() const
+{
+	QHash<int, QByteArray> roles = QAbstractListModel::roleNames();
+	roles.insert(KeyRole, "key");
+	roles.insert(ValueRole, "value");
+	return roles;
 }
 
 bool GameOptions::isLoaded() const
