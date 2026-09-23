@@ -26,6 +26,7 @@
 #include <QDoubleSpinBox>
 #include <QFrame>
 #include <QGroupBox>
+#include <QJsonDocument>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
@@ -184,6 +185,24 @@ class PluginUiRendererTest : public QObject
 
 		/* Unknown node id fails cleanly. */
 		QVERIFY(!surface->setNodeProps("does-not-exist", patch));
+	}
+
+	/* The widget a surface is shown in may be torn down before the
+	 * surface itself -- PluginManager's RendererOwner is a sibling QObject
+	 * of the root inside a settings group box, and the group box deletes
+	 * its child widgets first. Destroying the surface afterwards must not
+	 * delete the root a second time, and updating it must fail cleanly. */
+	void test_surfaceOutlivesItsParentWidget()
+	{
+		auto surface = PluginUiRenderer::build(QString::fromUtf8(kFullDoc),
+											   PluginUiRenderer::EventSink());
+		auto* parent = new QWidget();
+		surface->rootWidget()->setParent(parent);
+		delete parent;
+
+		QVERIFY(!surface->rootWidget());
+		QVERIFY(!surface->setDocument(QJsonDocument::fromJson(kFullDoc).object()));
+		surface.reset();
 	}
 
 	/* ui_surface_set_rows (PluginUiRenderer::setRows) replaces a list's

@@ -79,16 +79,18 @@ PluginUiRenderer::RenderedSurface::RenderedSurface(EventSink sink)
 
 PluginUiRenderer::RenderedSurface::~RenderedSurface()
 {
-	/* QObject::~QObject() unlinks itself from its parent's children
-	 * list before this destructor returns, so this is safe whether or
-	 * not m_root has since been parented into a page/dialog that Qt
-	 * will also tear down. */
-	delete m_root;
+	/* m_root may already be gone: a parent it was placed under deletes
+	 * its children before sibling QObjects such as RendererOwner get to
+	 * delete this surface. QPointer is null by then, and deleting null
+	 * is a no-op. */
+	delete m_root.data();
 }
 
 void PluginUiRenderer::RenderedSurface::clearRoot()
 {
 	m_nodes.clear();
+	if (!m_root)
+		return;
 	if (QLayout* old = m_root->layout()) {
 		QLayoutItem* item;
 		while ((item = old->takeAt(0)) != nullptr) {
@@ -341,6 +343,10 @@ QWidget* PluginUiRenderer::RenderedSurface::renderNode(const QJsonObject& node)
 
 bool PluginUiRenderer::RenderedSurface::setDocument(const QJsonObject& doc)
 {
+	/* The page this surface was shown on is gone; a plugin updating it
+	 * afterwards has nothing left to draw into. */
+	if (!m_root)
+		return false;
 	clearRoot();
 	const QJsonObject root = doc.value(QStringLiteral("root")).toObject();
 	if (root.isEmpty()) {

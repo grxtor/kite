@@ -22,7 +22,9 @@
 #include <QHash>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QPointer>
 #include <QString>
+#include <QWidget>
 #include <functional>
 #include <memory>
 
@@ -76,7 +78,7 @@ class PluginUiRenderer
 		 * construction; never replaced by any of the calls below. */
 		QWidget* rootWidget() const
 		{
-			return m_root;
+			return m_root.data();
 		}
 
 		/* Parse and (re)build the whole tree from an "mmco-ui/1"
@@ -115,7 +117,12 @@ class PluginUiRenderer
 		void clearRoot();
 
 		EventSink m_sink;
-		QWidget* m_root; /* stable identity; content rebuilt in place */
+		/* Stable identity; content rebuilt in place. A QPointer because
+		 * whatever it gets parented under may delete it first: when a
+		 * settings group box is torn down it deletes its child widgets,
+		 * this root among them, before the RendererOwner sibling that
+		 * owns this surface. */
+		QPointer<QWidget> m_root;
 		QHash<QString, NodeEntry> m_nodes;
 	};
 
