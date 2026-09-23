@@ -23,9 +23,13 @@
 #include "plugin/PluginMetadata.h"
 #include "plugin/PluginHooks.h"
 #include "plugin/PluginAPI.h"
+#include "plugin/PluginUiRenderer.h"
 
 #include "news/NewsEntry.h"
 
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QList>
 #include <QObject>
 #include <QMutex>
 #include <QPointer>
@@ -41,6 +45,7 @@
 #include <vector>
 #include <functional>
 
+class BasePage;
 class NewsChecker;
 class QAction;
 class QEvent;
@@ -115,6 +120,69 @@ class PluginManager : public QObject
 	QSet<QString> disabledModuleNames() const;
 
 	/*
+	 * ─── ABI 5 — Declarative UI surfaces ──────────────────────────────
+	 *
+	 * Every ui_surface_create() call is recorded here as a SurfaceInfo
+	 * — anchor, optional instance-id context, title/icon, and the
+	 * current "mmco-ui/1" JSON document — independent of whether the
+	 * widget renderer currently has anything on screen for it. This is
+	 * the seam a future QML-based shell renders from instead of the
+	 * QWidget tree PluginUiRenderer builds today: read the snapshot,
+	 * watch surfacesChanged() for updates, and call deliverUiEvent()
+	 * to report clicks/changes back to the owning plugin exactly the
+	 * way a rendered QWidget does internally.
+	 */
+	struct SurfaceInfo {
+		void* handle = nullptr; /* opaque; same value ui_surface_create returned */
+		QString surfaceId;
+		int anchor = 0; /* MMCOUiAnchor */
+		QString anchorContext; /* instance id, or empty for GLOBAL_SETTINGS */
+		QString title;
+		QString iconName;
+		QString document; /* current "mmco-ui/1" JSON, as text */
+	};
+
+	/*
+	 * Snapshot of every live surface. `anchor` filters to one
+	 * MMCOUiAnchor value, or pass -1 for "any". `anchorContext`
+	 * filters to an exact instance id, or pass a default-constructed
+	 * (null) QString for "any context" — a real-but-empty QString("")
+	 * matches only GLOBAL_SETTINGS surfaces, which always have an
+	 * empty context.
+	 */
+	QList<SurfaceInfo> surfaces(int anchor = -1,
+							   const QString& anchorContext = QString()) const;
+
+	/*
+	 * Deliver a synthetic UI event to a surface's registered
+	 * MMCOUiEventCallback — what a future QML renderer calls instead
+	 * of relying on PluginUiRenderer's own Qt signal/slot wiring.
+	 * No-op if surfaceId names no live surface.
+	 */
+	void deliverUiEvent(const QString& surfaceId, const QString& nodeId,
+						const QString& event, const QString& valueJson);
+
+	/*
+	 * Host-internal widget builders — used by InstancePageProvider,
+	 * Application's global-settings page provider, and the
+	 * INSTANCE_SETTINGS_PAGE_CREATED bridge below to turn the surfaces
+	 * above into the current widget UI. Each call renders fresh
+	 * QWidgets from the surface's current document; every returned
+	 * page/widget is caller-owned.
+	 */
+
+	/* One BasePage per MMCO_UI_ANCHOR_INSTANCE_PAGE surface anchored to
+	 * `instanceId` — these become their own tabs in the instance
+	 * window, alongside GitVersioningPage-style plugin pages. */
+	QList<BasePage*> createInstancePages(const QString& instanceId);
+
+	/* A single "Plugins" BasePage stacking every
+	 * MMCO_UI_ANCHOR_GLOBAL_SETTINGS surface as a titled section, or
+	 * nullptr if there are none — inserted into the global Settings
+	 * dialog's page list. */
+	BasePage* createGlobalSettingsPluginsPage();
+
+	/*
 	 * ScratchString — the per-module scratch buffer that backs every
 	 * `const char*` getter in the plugin API.
 	 *
@@ -180,6 +248,9 @@ class PluginManager : public QObject
 	void moduleLoaded(const QString& name);
 	void moduleUnloaded(const QString& name);
 	void moduleError(const QString& name, const QString& error);
+	/* Any surface was created/updated/destroyed — a future QML shell
+	 * (or anything else watching surfaces()) re-reads on this. */
+	void surfacesChanged();
 
   private:
 	/* Build an MMCOContext for a specific module */
@@ -389,43 +460,24 @@ class PluginManager : public QObject
 										   const char* prompt, const char* def);
 	static int api_ui_confirm_dialog(void* mh, const char* title,
 									 const char* msg);
-	static int api_ui_register_instance_action(void* mh, const char* text,
-											   const char* tooltip,
-											   const char* icon_name,
-											   const char* page_id);
-	static int api_ui_register_instance_action_cb(void* mh, const char* text,
-												  const char* tooltip,
-												  const char* icon_name,
-												  void (*cb)(void* ud),
-												  void* ud);
 
-	/* Section 13: UI Page Builder */
-	static void* api_ui_page_create(void* mh, const char* id, const char* name,
-									const char* icon);
-	static int api_ui_page_add_to_list(void* mh, void* page, void* list);
-	static void* api_ui_layout_create(void* mh, void* parent, int type);
-	static int api_ui_layout_add_widget(void* mh, void* layout, void* widget);
-	static int api_ui_layout_add_layout(void* mh, void* parent, void* child);
-	static int api_ui_layout_add_spacer(void* mh, void* layout, int horizontal);
-	static int api_ui_page_set_layout(void* mh, void* page, void* layout);
-	static void* api_ui_button_create(void* mh, void* parent, const char* text,
-									  const char* icon, MMCOButtonCallback cb,
-									  void* ud);
-	static int api_ui_button_set_enabled(void* mh, void* btn, int enabled);
-	static int api_ui_button_set_text(void* mh, void* btn, const char* text);
-	static void* api_ui_label_create(void* mh, void* parent, const char* text);
-	static int api_ui_label_set_text(void* mh, void* label, const char* text);
-	static void* api_ui_tree_create(void* mh, void* parent, const char** cols,
-									int ncols, MMCOTreeSelectionCallback cb,
-									void* ud);
-	static int api_ui_tree_clear(void* mh, void* tree);
-	static int api_ui_tree_add_row(void* mh, void* tree, const char** vals,
-								   int ncols);
-	static int api_ui_tree_selected_row(void* mh, void* tree);
-	static int api_ui_tree_set_row_data(void* mh, void* tree, int row,
-										int64_t data);
-	static int64_t api_ui_tree_get_row_data(void* mh, void* tree, int row);
-	static int api_ui_tree_row_count(void* mh, void* tree);
+	/* Section 33: Declarative UI surfaces (ABI 5) */
+	static void* api_ui_surface_create(void* mh, int anchor,
+									   const char* anchor_context,
+									   const char* title, const char* icon_name,
+									   const char* json_doc,
+									   MMCOUiEventCallback cb, void* user_data);
+	static int api_ui_surface_update(void* mh, void* surface,
+									 const char* json_doc);
+	static int api_ui_surface_set(void* mh, void* surface, const char* node_id,
+								  const char* json_props);
+	static int api_ui_surface_set_rows(void* mh, void* surface,
+									   const char* node_id,
+									   const char* json_rows);
+	static int api_ui_surface_destroy(void* mh, void* surface);
+	static int api_ui_modal_run(void* mh, const char* title,
+								const char* json_doc, char* out_result_json,
+								int out_buf_size);
 
 	/* Section 14: Utility */
 	static const char* api_get_app_version(void* mh);
@@ -533,25 +585,11 @@ class PluginManager : public QObject
 									 const char* title, const char* message,
 									 int icon_type, int msecs);
 	static int api_tray_set_menu(void* mh, void* tray_handle,
-								 void* menu_handle);
+								 const char* json_menu_doc,
+								 MMCOUiEventCallback cb, void* user_data);
 	static int api_tray_set_activation_cb(void* mh, void* tray_handle,
 										  MMCOTrayActivationCallback cb,
 										  void* ud);
-	static void* api_tray_menu_create(void* mh);
-	static int api_tray_menu_destroy(void* mh, void* menu_handle);
-	static int api_tray_menu_clear(void* mh, void* menu_handle);
-	static int api_tray_menu_add_separator(void* mh, void* menu_handle);
-	static void* api_tray_menu_add_action(void* mh, void* menu_handle,
-										  const char* label,
-										  const char* icon_name,
-										  MMCOMenuActionCallback cb, void* ud);
-	static int api_tray_menu_action_set_enabled(void* mh, void* action_handle,
-												int enabled);
-	static int api_tray_menu_action_set_text(void* mh, void* action_handle,
-											 const char* text);
-	static void* api_tray_menu_add_submenu(void* mh, void* parent_menu,
-										   const char* label,
-										   const char* icon_name);
 
 	/* Section 20: Main window helpers */
 	static int api_main_window_install_close_filter(
@@ -592,8 +630,10 @@ class PluginManager : public QObject
 
   private:
 	/* NOTE: the instance toolbar actions a plugin could once register here
-	 * are gone along with the API that fed them; see the deprecation note
-	 * on api_ui_register_instance_action() in PluginManager.cpp. */
+	 * are gone along with the API that fed them (ui_register_instance_action
+	 * / _cb, deprecated no-ops in ABI 3-4, removed entirely in ABI 5). A
+	 * plugin's per-instance UI belongs on an instance-window page instead
+	 * — see ui_surface_create's MMCO_UI_ANCHOR_INSTANCE_PAGE in PluginAPI.h. */
 
 	/* Pending launch modifications (set by plugins during PRE_LAUNCH hooks).
 	 *
@@ -609,21 +649,19 @@ class PluginManager : public QObject
 	 * entries; see newsChecker() above. */
 
 	/* S19 / S20 — system-tray and main-window helpers state.
-	 * All tray icons, menus, actions and close filters are tracked per
-	 * owning module so PluginManager can release them en masse when a
-	 * module is unloaded — preventing leaks and dangling Qt parents. */
+	 * All tray icons and close filters are tracked per owning module so
+	 * PluginManager can release them en masse when a module is
+	 * unloaded — preventing leaks and dangling Qt parents. */
 	struct TrayRecord {
 		void* module_handle;
 		QSystemTrayIcon* icon;
 		QObject* guard; /* relay for activation signal */
-	};
-	struct MenuRecord {
-		void* module_handle;
-		QMenu* menu;
-	};
-	struct ActionRecord {
-		void* module_handle;
-		QAction* action;
+		/* ABI 5 — the one QMenu a tray's declarative menu doc is
+		 * rendered into by api_tray_set_menu(); rebuilt in place on
+		 * every call instead of the plugin creating/owning it via the
+		 * removed tray_menu_* family. nullptr until the first
+		 * tray_set_menu() call. */
+		QMenu* menu = nullptr;
 	};
 	struct CloseFilterRecord {
 		void* module_handle;
@@ -631,8 +669,6 @@ class PluginManager : public QObject
 		void* user_data;
 	};
 	QVector<TrayRecord> m_trayIcons;
-	QVector<MenuRecord> m_trayMenus;
-	QVector<ActionRecord> m_trayActions;
 	QVector<CloseFilterRecord> m_closeFilters;
 	bool m_closeFilterInstalled = false;
 	QPointer<QWidget> m_filteredMainWindow;
@@ -656,6 +692,55 @@ class PluginManager : public QObject
 		QObject* guard;
 	};
 	QVector<InstanceRunningRecord> m_instanceRunning;
+
+	/* ─── ABI 5 — Declarative UI surfaces ─────────────────────────────
+	 *
+	 * One record per ui_surface_create() call. `doc` is the canonical,
+	 * always-current parsed document — the single source of truth
+	 * every accessor (surfaces(), the widget builders below) reads
+	 * from. `mountedRoot`/`mountedRenderer` track whichever rendered
+	 * widget is *currently on screen* for this surface, if any: since
+	 * every page/dialog that displays a surface is rebuilt fresh each
+	 * time it is opened (same as the old per-plugin BasePage pattern),
+	 * ui_surface_update/_set/_set_rows always patch `doc` and — when a
+	 * view happens to be mounted right now — also patch that live
+	 * widget immediately, so e.g. GitVersioning's row-selection ->
+	 * button-enabled wiring stays instant while the instance page is
+	 * open. mountedRoot is a QPointer so it self-clears the moment
+	 * Qt tears down that view; mountedRenderer is only ever
+	 * dereferenced while mountedRoot is still non-null (they share the
+	 * same lifetime — see PluginManager.cpp's RendererOwner). */
+	struct SurfaceRecord {
+		void* module_handle = nullptr;
+		QString surfaceId;
+		int anchor = 0;
+		QString anchorContext;
+		QString title;
+		QString iconName;
+		QJsonObject doc;
+		MMCOUiEventCallback cb = nullptr;
+		void* userData = nullptr;
+		QPointer<QWidget> mountedRoot;
+		PluginUiRenderer::RenderedSurface* mountedRenderer = nullptr;
+	};
+	std::vector<std::unique_ptr<SurfaceRecord>> m_surfaces;
+	int m_nextSurfaceSeq = 0;
+
+	/* Find the SurfaceRecord a `void* surface` handle refers to (the
+	 * handle is that record's own stable heap address), or nullptr. */
+	SurfaceRecord* findSurface(void* module_handle, void* surface);
+	/* Build the EventSink that forwards PluginUiRenderer callbacks into
+	 * a surface's MMCOUiEventCallback. */
+	static PluginUiRenderer::EventSink makeSurfaceSink(SurfaceRecord* rec);
+	/* Render every surface at (anchor, anchorContext) into one
+	 * QWidget stacking a titled QGroupBox per surface, or nullptr if
+	 * there are none. Shared by createGlobalSettingsPluginsPage() and
+	 * the INSTANCE_SETTINGS_PAGE_CREATED bridge in connectAppSignals(). */
+	QWidget* buildPluginsSectionWidget(int anchor, const QString& anchorContext);
+	/* Release every SurfaceRecord owned by `module_handle` — called
+	 * from releaseTrayResourcesForModule() so ABI 5 surfaces get the
+	 * same per-module teardown as tray icons/menus. */
+	void releaseSurfacesForModule(void* module_handle);
 
 	/* Resolve the launcher's main window (objectName == "MainWindow"),
 	 * cached for the lifetime of the QPointer. Returns nullptr if the

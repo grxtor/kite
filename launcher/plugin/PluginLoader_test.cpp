@@ -50,13 +50,12 @@ class PluginLoaderTest : public QObject
 		QString detail;
 		const PluginDisableReason reason = PluginLoader::classifyAbiMismatch(
 			QStringLiteral("OldPlugin"), QStringLiteral("/plugins/OldPlugin.mmco"),
-			/*builtForAbi=*/1, /*abiMin=*/2, /*abiMax=*/4, detail);
+			/*builtForAbi=*/1, /*abiMin=*/5, /*abiMax=*/5, detail);
 
 		QCOMPARE(reason, PluginDisableReason::AbiTooOld);
 		QVERIFY(detail.contains(QStringLiteral("OldPlugin")));
 		QVERIFY(detail.contains(QStringLiteral("1")));
-		QVERIFY(detail.contains(QStringLiteral("2")));
-		QVERIFY(detail.contains(QStringLiteral("4")));
+		QVERIFY(detail.contains(QStringLiteral("5")));
 	}
 
 	/* Symmetric case: built for an ABI above what this launcher knows
@@ -68,7 +67,7 @@ class PluginLoaderTest : public QObject
 		const PluginDisableReason reason = PluginLoader::classifyAbiMismatch(
 			QStringLiteral("FuturePlugin"),
 			QStringLiteral("/plugins/FuturePlugin.mmco"),
-			/*builtForAbi=*/9, /*abiMin=*/2, /*abiMax=*/4, detail);
+			/*builtForAbi=*/9, /*abiMin=*/5, /*abiMax=*/5, detail);
 
 		QCOMPARE(reason, PluginDisableReason::AbiTooNew);
 		QVERIFY(detail.contains(QStringLiteral("FuturePlugin")));
@@ -83,7 +82,7 @@ class PluginLoaderTest : public QObject
 		QString detail;
 		PluginLoader::classifyAbiMismatch(QString(),
 										  QStringLiteral("/plugins/Nameless.mmco"),
-										  1, 2, 4, detail);
+										  1, 5, 5, detail);
 
 		QVERIFY(detail.contains(QStringLiteral("/plugins/Nameless.mmco")));
 	}

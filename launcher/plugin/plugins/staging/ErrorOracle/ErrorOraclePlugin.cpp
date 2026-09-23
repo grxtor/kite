@@ -199,11 +199,6 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_POST_LAUNCH,
 					   on_post_launch, nullptr);
 
-	ctx->ui_register_instance_action(ctx->module_handle, "Error Analysis",
-									 "Analyse the last crash with the "
-									 "ErrorOracle rule engine",
-									 "status-bad", "error-oracle");
-
 	MMCO_LOG(ctx, "ErrorOracle ready.");
 	return 0;
 }

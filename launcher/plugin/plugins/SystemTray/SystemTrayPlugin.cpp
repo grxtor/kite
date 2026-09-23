@@ -9,8 +9,8 @@
  *      (up to MAX_INSTANCE_ENTRIES recent instances)
  *    • Optional "minimize to tray" close-event filter
  *
- *  Everything is funnelled through the S19/S20 API surfaces exposed by
- *  PluginManager, so this plugin compiles cleanly against the public
+ *  Everything is funnelled through the S19/S20/S33 API surfaces exposed
+ *  by PluginManager, so this plugin compiles cleanly against the public
  *  SDK and does not poke at MainWindow internals.
  *
  *  Settings (all booleans, stored under the plugin's namespace):
@@ -20,6 +20,8 @@
  */
 
 #include "plugin/sdk/mmco_cxx_sdk.hpp"
+
+#include <cstring>
 
 /* ── dependencies ─────────────────────────────────────────────────── *
  *
@@ -57,42 +59,21 @@ MMCO_DEFINE_MODULE_EX(
 /* ── module-local state ───────────────────────────────────────────── */
 
 static MMCOContext* g_ctx = nullptr;
-static void* g_tray = nullptr;		 /* QSystemTrayIcon*           */
-static void* g_menu = nullptr;		 /* QMenu*                     */
-static void* g_launchMenu = nullptr; /* QMenu* (submenu)        */
-static void* g_showAction = nullptr;
-static void* g_hideAction = nullptr;
-static void* g_quitAction = nullptr;
+static void* g_tray = nullptr;			  /* QSystemTrayIcon*           */
+static void* g_settingsSurface = nullptr; /* ABI 5 GLOBAL_SETTINGS surface */
 static QObject* g_guard = nullptr; /* anchor for our Qt connections */
-static QCheckBox* g_enabledCheckbox = nullptr;
 
 /* The launcher-wide setting key we mirror our "enabled" plugin-local
  * setting onto. Lives in APPLICATION->settings() so it's visible in
  * Settings → MeshMC and can be toggled by the user without poking at
  * raw config files. The plugin still treats its own plugin-namespaced
  * "enabled" setting as the runtime source of truth — the global key
- * just drives the UI checkbox and is mirrored back into the plugin
+ * just drives the checkbox and is mirrored back into the plugin
  * namespace whenever the user flips it. */
 static constexpr const char SETTING_GLOBAL_ENABLED[] =
 	"plugin.system_tray.Enabled";
 
 static constexpr int MAX_INSTANCE_ENTRIES = 8;
-
-/* Stable copies of instance IDs (the API guarantees the returned C
- * string only until the next call on the same module — we have to copy
- * before stashing for callbacks). */
-struct InstanceEntry {
-	std::string id;
-	std::string name;
-};
-static QVector<InstanceEntry> g_launchEntries;
-
-/* Per-action user-data wrapper passed to the C-style callback. We allocate
- * one per entry and free them all when the submenu is rebuilt. */
-struct LaunchUserData {
-	int entryIndex;
-};
-static QVector<LaunchUserData*> g_launchUserData;
 
 static bool is_flatpak()
 {
@@ -121,37 +102,110 @@ static void settingSetBool(const char* key, bool value)
 	g_ctx->setting_set(g_ctx->module_handle, key, value ? "1" : "0");
 }
 
-/* ── action callbacks (C-linkage style) ───────────────────────────── */
+/* ── tray menu: build the declarative "mmco-tray-menu/1" doc ─────── *
+ *
+ * ABI 5 replaces the imperative tray_menu_create/add_action/
+ * add_submenu family with one JSON document per tray_set_menu() call.
+ * The whole menu — including the "Launch instance" submenu contents —
+ * is rebuilt from scratch here and handed to tray_set_menu() again on
+ * every INSTANCE_CREATED/REMOVED, exactly like the old
+ * rebuild_launch_submenu() did with the imperative API.
+ *
+ * Each per-instance entry's node id is "launch:<instance_id>", so the
+ * single event callback below can recover the instance id directly
+ * from node_id — no more separate LaunchUserData/g_launchEntries
+ * bookkeeping to keep in sync with the menu's contents. */
 
-static void on_show_clicked(void* /*ud*/)
+static QByteArray build_tray_menu_json()
 {
-	if (g_ctx)
+	QJsonObject openItem{{"type", "button"},
+						 {"id", "open"},
+						 {"props", QJsonObject{{"label", "Open MeshMC"}}}};
+	QJsonObject hideItem{{"type", "button"},
+						 {"id", "hide"},
+						 {"props", QJsonObject{{"label", "Hide window"}}}};
+	QJsonObject sep{{"type", "separator"}};
+
+	QJsonArray launchChildren;
+	if (g_ctx) {
+		const int total = g_ctx->instance_count(g_ctx->module_handle);
+		int shown = 0;
+		for (int i = 0; i < total && shown < MAX_INSTANCE_ENTRIES; ++i) {
+			const char* id = g_ctx->instance_get_id(g_ctx->module_handle, i);
+			if (!id)
+				continue;
+			const std::string idCopy = id;
+			const char* name =
+				g_ctx->instance_get_name(g_ctx->module_handle, idCopy.c_str());
+			const QString label = name ? QString::fromUtf8(name)
+									   : QString::fromStdString(idCopy);
+			launchChildren.append(QJsonObject{
+				{"type", "button"},
+				{"id", QStringLiteral("launch:%1")
+						  .arg(QString::fromStdString(idCopy))},
+				{"props", QJsonObject{{"label", label}}}});
+			++shown;
+		}
+	}
+	if (launchChildren.isEmpty()) {
+		launchChildren.append(QJsonObject{
+			{"type", "button"},
+			{"id", "launch:none"},
+			{"props",
+			 QJsonObject{{"label", "(no instances)"}, {"enabled", false}}}});
+	}
+	const QJsonObject launchSection{
+		{"type", "section"},
+		{"id", "launch"},
+		{"props", QJsonObject{{"title", "Launch instance"}}},
+		{"children", launchChildren}};
+
+	QJsonObject quitItem{{"type", "button"},
+						 {"id", "quit"},
+						 {"props", QJsonObject{{"label", "Quit MeshMC"}}}};
+
+	const QJsonArray items{openItem, hideItem, sep, launchSection, sep, quitItem};
+	const QJsonObject doc{{"type", "mmco-tray-menu/1"}, {"items", items}};
+	return QJsonDocument(doc).toJson(QJsonDocument::Compact);
+}
+
+static void rebuild_tray_menu();
+
+/* ── tray menu event callback ─────────────────────────────────────── */
+
+static void on_tray_menu_event(void* /*ud*/, const char* /*surface_id*/,
+							   const char* node_id, const char* event,
+							   const char* /*value_json*/)
+{
+	if (!g_ctx || !node_id || !event || std::strcmp(event, "click") != 0)
+		return;
+
+	const QString id = QString::fromUtf8(node_id);
+	if (id == QLatin1String("open")) {
 		g_ctx->main_window_show(g_ctx->module_handle);
-}
-
-static void on_hide_clicked(void* /*ud*/)
-{
-	if (g_ctx)
+	} else if (id == QLatin1String("hide")) {
 		g_ctx->main_window_hide(g_ctx->module_handle);
+	} else if (id == QLatin1String("quit")) {
+		/* QCoreApplication::quit() is the cleanest path — it tears down
+		 * the event loop which in turn unwinds MeshMC's Application
+		 * shutdown, giving PluginManager a chance to mmco_unload() us
+		 * properly. */
+		QMetaObject::invokeMethod(qApp, "quit", Qt::QueuedConnection);
+	} else if (id.startsWith(QLatin1String("launch:"))) {
+		const QByteArray instId = id.mid(7).toUtf8();
+		if (!instId.isEmpty())
+			g_ctx->instance_launch(g_ctx->module_handle, instId.constData(),
+								   /*online=*/1);
+	}
 }
 
-static void on_quit_clicked(void* /*ud*/)
+static void rebuild_tray_menu()
 {
-	/* QCoreApplication::quit() is the cleanest path — it tears down the
-	 * event loop which in turn unwinds MeshMC's Application shutdown,
-	 * giving PluginManager a chance to mmco_unload() us properly. */
-	QMetaObject::invokeMethod(qApp, "quit", Qt::QueuedConnection);
-}
-
-static void on_launch_entry(void* ud)
-{
-	if (!g_ctx || !ud)
+	if (!g_ctx || !g_tray)
 		return;
-	auto* data = static_cast<LaunchUserData*>(ud);
-	if (data->entryIndex < 0 || data->entryIndex >= g_launchEntries.size())
-		return;
-	const std::string& id = g_launchEntries[data->entryIndex].id;
-	g_ctx->instance_launch(g_ctx->module_handle, id.c_str(), /*online=*/1);
+	const QByteArray json = build_tray_menu_json();
+	g_ctx->tray_set_menu(g_ctx->module_handle, g_tray, json.constData(),
+						 on_tray_menu_event, nullptr);
 }
 
 /* ── tray activation: left-click toggles the main window ──────────── */
@@ -218,143 +272,62 @@ static int on_main_window_close(void* /*ud*/)
 	return 1; /* swallow → host will hide() the main window */
 }
 
-/* ── launch submenu rebuilding ────────────────────────────────────── */
-
-static void rebuild_launch_submenu()
-{
-	if (!g_ctx || !g_launchMenu)
-		return;
-
-	/* Free old per-entry user-data and clear the menu. */
-	for (auto* ud : g_launchUserData)
-		delete ud;
-	g_launchUserData.clear();
-	g_launchEntries.clear();
-	g_ctx->tray_menu_clear(g_ctx->module_handle, g_launchMenu);
-
-	int total = g_ctx->instance_count(g_ctx->module_handle);
-	int shown = 0;
-	for (int i = 0; i < total && shown < MAX_INSTANCE_ENTRIES; ++i) {
-		const char* id = g_ctx->instance_get_id(g_ctx->module_handle, i);
-		if (!id)
-			continue;
-		std::string idCopy = id;
-		const char* name =
-			g_ctx->instance_get_name(g_ctx->module_handle, idCopy.c_str());
-		std::string nameCopy = name ? name : idCopy;
-
-		InstanceEntry e;
-		e.id = idCopy;
-		e.name = nameCopy;
-		g_launchEntries.push_back(e);
-
-		auto* ud = new LaunchUserData{shown};
-		g_launchUserData.push_back(ud);
-
-		g_ctx->tray_menu_add_action(g_ctx->module_handle, g_launchMenu,
-									nameCopy.c_str(), /*icon=*/nullptr,
-									on_launch_entry, ud);
-		++shown;
-	}
-
-	if (shown == 0) {
-		/* Add a disabled placeholder so the submenu is never empty. */
-		void* placeholder = g_ctx->tray_menu_add_action(
-			g_ctx->module_handle, g_launchMenu, "(no instances)", nullptr,
-			nullptr, nullptr);
-		if (placeholder)
-			g_ctx->tray_menu_action_set_enabled(g_ctx->module_handle,
-												placeholder, 0);
-	}
-}
-
-/* ── Settings UI injection ────────────────────────────────────────── */
-
-/* Walk qApp->allWidgets() for the MeshMCPage (the first tab on the
- * global Settings dialog). Same pattern BackupSystem and GitVersioning
- * use — the page is rebuilt every time the dialog opens, so we have
- * to re-find it and re-inject after every globalSettingsAboutToOpen.
+/* ── Settings UI: one ABI 5 GLOBAL_SETTINGS surface ───────────────── *
  *
- * The injected checkbox is wired to APPLICATION->settings()
- * "plugin.system_tray.Enabled". Flipping it doesn't tear down or
- * re-initialise the plugin live (Qt has no graceful way to reverse
- * mmco_init mid-session) — instead we explain that the change takes
- * effect after restart, and on the next launcher startup mmco_init
- * sees the new value and either skips itself or comes up normally. */
-static void injectCheckboxIntoMeshMCPage()
+ * Replaces injectCheckboxIntoMeshMCPage()'s allWidgets()/findChild walk
+ * against MeshMCPage's "verticalLayout_9": the host now renders this
+ * document as a titled section inside its own "Plugins" page every
+ * time the global Settings dialog opens, from whatever document is
+ * currently stored for this surface — so, unlike the old pattern,
+ * this only needs to be created ONCE (here, from mmco_init()), not
+ * re-injected via MMCO_HOOK_GLOBAL_SETTINGS_ABOUT_TO_OPEN on every
+ * open. */
+
+static void on_settings_surface_event(void* /*ud*/, const char* /*surface_id*/,
+									  const char* node_id, const char* event,
+									  const char* value_json)
 {
-	QWidget* meshMCPage = nullptr;
-	for (auto* w : qApp->allWidgets()) {
-		if (w->objectName() == QStringLiteral("MeshMCPage")) {
-			meshMCPage = w;
-			break;
-		}
-	}
-	if (!meshMCPage)
+	if (!g_ctx || !node_id || !event)
+		return;
+	if (QString::fromUtf8(node_id) != QLatin1String("enabled"))
+		return;
+	if (std::strcmp(event, "change") != 0)
 		return;
 
-	auto* layout =
-		meshMCPage->findChild<QVBoxLayout*>(QStringLiteral("verticalLayout_9"));
-	if (!layout)
+	const bool checked = value_json && std::strcmp(value_json, "true") == 0;
+	g_ctx->app_setting_set(g_ctx->module_handle, SETTING_GLOBAL_ENABLED,
+						   checked ? "1" : "0");
+	settingSetBool("enabled", checked);
+}
+
+static void create_settings_surface(bool currentlyEnabled)
+{
+	if (!g_ctx)
 		return;
-
-	auto* groupBox = new QGroupBox(QObject::tr("System Tray"));
-	groupBox->setObjectName(QStringLiteral("systemTrayGroupBox"));
-	auto* gl = new QVBoxLayout(groupBox);
-
-	g_enabledCheckbox = new QCheckBox(
-		QObject::tr("Show MeshMC system tray icon (Restart required.)"),
-		groupBox);
-	g_enabledCheckbox->setObjectName(QStringLiteral("systemTrayEnabledCheck"));
-	g_enabledCheckbox->setToolTip(QObject::tr(
-		"When on, MeshMC keeps a persistent tray icon with quick-launch "
-		"shortcuts and an optional minimise-to-tray close handler.\n\n"
-		"Toggle takes effect after restarting MeshMC."));
-	gl->addWidget(g_enabledCheckbox);
-
-	int spacerIdx = layout->count() - 1;
-	layout->insertWidget(spacerIdx, groupBox);
-
-	bool current = false;
-	if (g_ctx) {
-		const char* v = g_ctx->app_setting_get(g_ctx->module_handle,
-											   SETTING_GLOBAL_ENABLED);
-		if (v) {
-			QString s = QString::fromUtf8(v).trimmed().toLower();
-			current = s == QLatin1String("1") || s == QLatin1String("true") ||
-					  s == QLatin1String("yes") || s == QLatin1String("on");
-		}
-	}
-	g_enabledCheckbox->setChecked(current);
-
-	QObject::connect(
-		g_enabledCheckbox, &QCheckBox::toggled, g_guard, [](bool checked) {
-			if (!g_ctx)
-				return;
-			g_ctx->app_setting_set(g_ctx->module_handle, SETTING_GLOBAL_ENABLED,
-								   checked ? "1" : "0");
-			settingSetBool("enabled", checked);
-		});
-}
-
-/* Hook handler for MMCO_HOOK_GLOBAL_SETTINGS_ABOUT_TO_OPEN — replaces
- * the legacy direct connect to Application::globalSettingsAboutToOpen. */
-static int on_global_settings_about_to_open(void*, uint32_t, void*, void*)
-{
-	g_enabledCheckbox = nullptr;
-	QTimer::singleShot(0, qApp, injectCheckboxIntoMeshMCPage);
-	return 0;
-}
-
-static int on_app_initialized(void*, uint32_t, void*, void*)
-{
-	/* Re-injection is now triggered via the hook above; this handler
-	 * stays around as a placeholder so we can wire it up next to the
-	 * other APP_INITIALIZED-dependent state if needed. */
-	return 0;
+	const QJsonObject doc{
+		{"type", "mmco-ui/1"},
+		{"root",
+		 QJsonObject{
+			 {"type", "toggle"},
+			 {"id", "enabled"},
+			 {"props",
+			  QJsonObject{
+				  {"label", "Show MeshMC system tray icon (Restart required.)"},
+				  {"value", currentlyEnabled},
+				  {"enabled", true}}}}}};
+	const QByteArray json = QJsonDocument(doc).toJson(QJsonDocument::Compact);
+	g_settingsSurface = g_ctx->ui_surface_create(
+		g_ctx->module_handle, MMCO_UI_ANCHOR_GLOBAL_SETTINGS, nullptr,
+		"System Tray", nullptr, json.constData(), on_settings_surface_event,
+		nullptr);
 }
 
 /* ── hooks ────────────────────────────────────────────────────────── */
+
+static int on_app_initialized(void*, uint32_t, void*, void*)
+{
+	return 0;
+}
 
 static int on_ui_main_ready(void* /*mh*/, uint32_t /*hook_id*/,
 							void* /*payload*/, void* /*ud*/)
@@ -368,22 +341,23 @@ static int on_ui_main_ready(void* /*mh*/, uint32_t /*hook_id*/,
 	g_ctx->main_window_install_close_filter(g_ctx->module_handle,
 											on_main_window_close, nullptr);
 
-	/* Refresh the submenu now that the UI is up — instance list is ready. */
-	rebuild_launch_submenu();
+	/* Refresh the tray menu now that the UI is up — instance list is
+	 * ready. */
+	rebuild_tray_menu();
 	return 0;
 }
 
 static int on_instance_created(void* /*mh*/, uint32_t /*hook_id*/,
 							   void* /*payload*/, void* /*ud*/)
 {
-	rebuild_launch_submenu();
+	rebuild_tray_menu();
 	return 0;
 }
 
 static int on_instance_removed(void* /*mh*/, uint32_t /*hook_id*/,
 							   void* /*payload*/, void* /*ud*/)
 {
-	rebuild_launch_submenu();
+	rebuild_tray_menu();
 	return 0;
 }
 
@@ -402,9 +376,9 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 		return 0;
 	}
 
-	/* Lifetime anchor for our Qt connections (settings-page injection,
-	 * checkbox toggled signal). We intentionally never delete this;
-	 * Qt may still have queued events targeting it at shutdown. */
+	/* Lifetime anchor for our Qt connections. We intentionally never
+	 * delete this; Qt may still have queued events targeting it at
+	 * shutdown. */
 	g_guard = new QObject();
 
 	/* Mirror the plugin-local "enabled" key onto a launcher-wide
@@ -432,16 +406,17 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 	/* Re-sync the plugin-local copy so existing call-sites see the
 	 * canonical answer. */
 	settingSetBool("enabled", globalEnabled);
+
+	/* The settings checkbox is offered regardless of whether the tray
+	 * itself is currently enabled — it is the only way for the user to
+	 * flip it back on. */
+	create_settings_surface(globalEnabled);
+	ctx->hook_register(ctx->module_handle, MMCO_HOOK_APP_INITIALIZED,
+					   on_app_initialized, nullptr);
+
 	if (!globalEnabled) {
 		MMCO_LOG(ctx, "SystemTray: disabled via global setting; idle "
 					  "(re-enable from Settings → MeshMC).");
-		/* Still wire up the hook so we can inject the checkbox — the
-		 * user needs a way to flip it back on. */
-		ctx->hook_register(ctx->module_handle, MMCO_HOOK_APP_INITIALIZED,
-						   on_app_initialized, nullptr);
-		ctx->hook_register(ctx->module_handle,
-						   MMCO_HOOK_GLOBAL_SETTINGS_ABOUT_TO_OPEN,
-						   on_global_settings_about_to_open, nullptr);
 		return 0;
 	}
 
@@ -484,9 +459,8 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 		return 0;
 	}
 
-	/* Build the menu.
-	 *
-	 * Layout (top → bottom, the way most launchers do it):
+	/*
+	 * Menu layout (top → bottom, the way most launchers do it):
 	 *   Open MeshMC               ← primary action, picks Show or Hide
 	 *   Hide window
 	 *   ─────────────────────
@@ -497,39 +471,15 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 	 *   ─────────────────────
 	 *   Quit MeshMC
 	 *
-	 * The instance list is its own submenu so refreshing it on
-	 * INSTANCE_CREATED/REMOVED never touches Show/Hide/Quit — and so
-	 * Wayland's StatusNotifierItem implementation doesn't have to
-	 * cope with a long flat menu of unknown length. */
-	g_menu = ctx->tray_menu_create(ctx->module_handle);
-
-	g_showAction =
-		ctx->tray_menu_add_action(ctx->module_handle, g_menu, "Open MeshMC",
-								  nullptr, on_show_clicked, nullptr);
-	g_hideAction =
-		ctx->tray_menu_add_action(ctx->module_handle, g_menu, "Hide window",
-								  nullptr, on_hide_clicked, nullptr);
-	ctx->tray_menu_add_separator(ctx->module_handle, g_menu);
-
-	g_launchMenu = ctx->tray_menu_add_submenu(ctx->module_handle, g_menu,
-											  "Launch instance", nullptr);
-
-	ctx->tray_menu_add_separator(ctx->module_handle, g_menu);
-	g_quitAction =
-		ctx->tray_menu_add_action(ctx->module_handle, g_menu, "Quit MeshMC",
-								  nullptr, on_quit_clicked, nullptr);
-
-	ctx->tray_set_menu(ctx->module_handle, g_tray, g_menu);
+	 * Built once as a JSON doc (build_tray_menu_json()) and re-issued
+	 * via tray_set_menu() on every INSTANCE_CREATED/REMOVED so the
+	 * "Launch instance" submenu never goes stale. */
+	rebuild_tray_menu();
 	ctx->tray_set_activation_cb(ctx->module_handle, g_tray, on_tray_activated,
 								nullptr);
 	ctx->tray_set_visible(ctx->module_handle, g_tray, 1);
 
 	/* Hooks. */
-	ctx->hook_register(ctx->module_handle, MMCO_HOOK_APP_INITIALIZED,
-					   on_app_initialized, nullptr);
-	ctx->hook_register(ctx->module_handle,
-					   MMCO_HOOK_GLOBAL_SETTINGS_ABOUT_TO_OPEN,
-					   on_global_settings_about_to_open, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_UI_MAIN_READY,
 					   on_ui_main_ready, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_CREATED,
@@ -546,20 +496,12 @@ MMCO_EXPORT void mmco_unload()
 	if (g_ctx)
 		MMCO_LOG(g_ctx, "SystemTray unloading.");
 
-	for (auto* ud : g_launchUserData)
-		delete ud;
-	g_launchUserData.clear();
-	g_launchEntries.clear();
-
-	/* PluginManager will sweep up the tray/menu/actions/close-filter on
-	 * its own — see releaseTrayResourcesForModule(). We just drop our
-	 * raw handles so we never touch them again. */
+	/* PluginManager will sweep up the tray/menu/surface/close-filter on
+	 * its own — see releaseTrayResourcesForModule() /
+	 * releaseSurfacesForModule(). We just drop our raw handles so we
+	 * never touch them again. */
 	g_tray = nullptr;
-	g_menu = nullptr;
-	g_launchMenu = nullptr;
-	g_showAction = nullptr;
-	g_hideAction = nullptr;
-	g_quitAction = nullptr;
+	g_settingsSurface = nullptr;
 	g_ctx = nullptr;
 }
 

@@ -287,7 +287,7 @@ PluginMetadata PluginLoader::loadModule(const QString& path) const
 	// those slots are appended to MMCOContext (never reordered), so a
 	// stale plugin reads the slots it knows about and ignores the
 	// rest. Reject anything newer than the launcher knows.
-	constexpr uint32_t MMCO_ABI_VERSION_MIN = 2;
+	constexpr uint32_t MMCO_ABI_VERSION_MIN = 5;
 	if (info->abi_version < MMCO_ABI_VERSION_MIN ||
 		info->abi_version > MMCO_ABI_VERSION) {
 		qWarning() << "[PluginLoader]" << path

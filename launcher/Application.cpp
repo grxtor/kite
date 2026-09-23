@@ -2062,6 +2062,14 @@ namespace
 				evt.page_list_handle = &pages;
 				APPLICATION->pluginManager()->dispatchHook(
 					MMCO_HOOK_UI_GLOBAL_SETTINGS_PAGES, &evt);
+
+				/* ABI 5 — every MMCO_UI_ANCHOR_GLOBAL_SETTINGS surface
+				 * (ui_surface_create) is stacked as a titled section
+				 * inside one host-built "Plugins" page, appended here
+				 * alongside whatever the raw hook above still added. */
+				if (BasePage* pluginsPage =
+						APPLICATION->pluginManager()->createGlobalSettingsPluginsPage())
+					pages.append(pluginsPage);
 			}
 			return pages;
 		}

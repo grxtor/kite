@@ -418,11 +418,6 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 					   MMCO_HOOK_INSTANCE_SETTINGS_PAGE_APPLYING,
 					   on_instance_settings_page_applying, nullptr);
 
-	ctx->ui_register_instance_action(
-		ctx->module_handle, "Version History",
-		"View and manage the instance's snapshot history", "version-control",
-		"git-versioning");
-
 	MMCO_LOG(ctx, "GitVersioning ready.");
 	return 0;
 }

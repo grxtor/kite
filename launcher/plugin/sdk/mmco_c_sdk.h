@@ -84,7 +84,7 @@ extern "C" {
 
 #define MMCO_MAGIC 0x4D4D434F
 #define MMCO_VERSION "10.0.0"
-#define MMCO_ABI_VERSION 4
+#define MMCO_ABI_VERSION 5
 #define MMCO_EXTENSION ".mmco"
 #define MMCO_FLAG_NONE 0x00000000
 #define MMCO_TRAILER_MAGIC 0x53434D4D /* ASCII "MMCS" — see MMCOFormat.h */
@@ -355,8 +355,43 @@ typedef void (*MMCOHttpCallback)(void* user_data, int status_code,
 typedef void (*MMCOMenuActionCallback)(void* user_data);
 typedef void (*MMCODirEntryCallback)(void* user_data, const char* entry_name,
 									 int is_dir);
-typedef void (*MMCOButtonCallback)(void* user_data);
-typedef void (*MMCOTreeSelectionCallback)(void* user_data, int row);
+/*
+ * MMCOUiEventCallback — ABI 5. Single event callback shape for every
+ * declarative UI surface (ui_surface_create) and for the declarative
+ * tray menu (tray_set_menu).
+ *
+ *   surface_id — stable string identifying which surface/menu this
+ *                event came from (a plugin with several surfaces
+ *                sharing one callback distinguishes them by this).
+ *                For tray-menu events this is always "tray".
+ *   node_id    — the plugin-assigned id of the node that fired.
+ *   event      — "click" (button/link/menu item), "change" (toggle/
+ *                text_field/number_field/choice — value_json is the
+ *                new value), or "select"/"activate" (list row —
+ *                value_json is the row id).
+ *   value_json — event-specific payload, or "" if not applicable.
+ */
+typedef void (*MMCOUiEventCallback)(void* user_data, const char* surface_id,
+									const char* node_id, const char* event,
+									const char* value_json);
+
+/*
+ * MMCOUiAnchor — ABI 5. Where a declarative UI surface (ui_surface_create)
+ * is displayed:
+ *
+ *   MMCO_UI_ANCHOR_GLOBAL_SETTINGS   — stacked as a titled section inside
+ *     the host's single "Plugins" page in the global Settings dialog.
+ *   MMCO_UI_ANCHOR_INSTANCE_PAGE     — its own page in the instance window
+ *     (anchor_context = instance id).
+ *   MMCO_UI_ANCHOR_INSTANCE_SETTINGS — stacked as a titled section inside
+ *     a "Plugins" group on that instance's Settings page
+ *     (anchor_context = instance id).
+ */
+enum MMCOUiAnchor {
+	MMCO_UI_ANCHOR_GLOBAL_SETTINGS = 0,
+	MMCO_UI_ANCHOR_INSTANCE_PAGE = 1,
+	MMCO_UI_ANCHOR_INSTANCE_SETTINGS = 2
+};
 
 /* S19 — System Tray activation reason.
  * Mirrors QSystemTrayIcon::ActivationReason exactly (Qt 6):
@@ -527,49 +562,6 @@ typedef struct MMCOContext {
 								   const char* prompt,
 								   const char* default_value);
 	int (*ui_confirm_dialog)(void* mh, const char* title, const char* message);
-	/* DEPRECATED, no-op since the instance sidebar was fixed to a set list
-	 * of instance-wide commands. Always returns 0 and registers nothing;
-	 * the slot is kept only so existing modules still link.
-	 * Use ui_register_instance_page() instead -- an instance window page is
-	 * where per-instance plugin UI belongs. */
-	int (*ui_register_instance_action)(void* mh, const char* text,
-									   const char* tooltip,
-									   const char* icon_name,
-									   const char* page_id);
-
-	/* DEPRECATED, no-op. See ui_register_instance_action above. */
-	int (*ui_register_instance_action_cb)(void* mh, const char* text,
-										  const char* tooltip,
-										  const char* icon_name,
-										  MMCOMenuActionCallback cb, void* ud);
-
-	/* S13 — UI: Page Builder */
-	void* (*ui_page_create)(void* mh, const char* page_id,
-							const char* display_name, const char* icon_name);
-	int (*ui_page_add_to_list)(void* mh, void* page, void* page_list_handle);
-	void* (*ui_layout_create)(void* mh, void* parent, int type);
-	int (*ui_layout_add_widget)(void* mh, void* layout, void* widget);
-	int (*ui_layout_add_layout)(void* mh, void* parent_layout,
-								void* child_layout);
-	int (*ui_layout_add_spacer)(void* mh, void* layout, int horizontal);
-	int (*ui_page_set_layout)(void* mh, void* page, void* layout);
-	void* (*ui_button_create)(void* mh, void* parent, const char* text,
-							  const char* icon_name, MMCOButtonCallback cb,
-							  void* ud);
-	int (*ui_button_set_enabled)(void* mh, void* button, int enabled);
-	int (*ui_button_set_text)(void* mh, void* button, const char* text);
-	void* (*ui_label_create)(void* mh, void* parent, const char* text);
-	int (*ui_label_set_text)(void* mh, void* label, const char* text);
-	void* (*ui_tree_create)(void* mh, void* parent, const char** column_names,
-							int column_count, MMCOTreeSelectionCallback cb,
-							void* ud);
-	int (*ui_tree_clear)(void* mh, void* tree);
-	int (*ui_tree_add_row)(void* mh, void* tree, const char** values,
-						   int col_count);
-	int (*ui_tree_selected_row)(void* mh, void* tree);
-	int (*ui_tree_set_row_data)(void* mh, void* tree, int row, int64_t data);
-	int64_t (*ui_tree_get_row_data)(void* mh, void* tree, int row);
-	int (*ui_tree_row_count)(void* mh, void* tree);
 
 	/* S14 — Utility */
 	const char* (*get_app_version)(void* mh);
@@ -616,26 +608,20 @@ typedef struct MMCOContext {
 	 * tray_handle may be nullptr — a transient hidden tray is used. */
 	int (*tray_show_message)(void* mh, void* tray_handle, const char* title,
 							 const char* message, int icon_type, int msecs);
-	int (*tray_set_menu)(void* mh, void* tray_handle, void* menu_handle);
+	/* Attach a declarative menu to the tray icon — the menu pops up on
+	 * right-click (ABI 5). `json_menu_doc` is a small "mmco-ui/1" tree
+	 * whose root's children are `button` (menu item), `separator`, or
+	 * `section` (submenu, itself containing more button/separator/
+	 * section children) nodes. Clicking an item fires `cb` with
+	 * event="click" and node_id = the item's id. Pass json_menu_doc =
+	 * nullptr to detach the menu. `cb`/`user_data` replace the previous
+	 * per-action MMCOMenuActionCallback plumbing — one callback serves
+	 * every item in the doc. Re-call with a freshly built document to
+	 * rebuild the menu (e.g. on MMCO_HOOK_INSTANCE_CREATED/REMOVED). */
+	int (*tray_set_menu)(void* mh, void* tray_handle, const char* json_menu_doc,
+						 MMCOUiEventCallback cb, void* user_data);
 	int (*tray_set_activation_cb)(void* mh, void* tray_handle,
 								  MMCOTrayActivationCallback cb, void* ud);
-	void* (*tray_menu_create)(void* mh);
-	int (*tray_menu_destroy)(void* mh, void* menu_handle);
-	int (*tray_menu_clear)(void* mh, void* menu_handle);
-	int (*tray_menu_add_separator)(void* mh, void* menu_handle);
-	void* (*tray_menu_add_action)(void* mh, void* menu_handle,
-								  const char* label, const char* icon_name,
-								  MMCOMenuActionCallback cb, void* ud);
-	int (*tray_menu_action_set_enabled)(void* mh, void* action_handle,
-										int enabled);
-	int (*tray_menu_action_set_text)(void* mh, void* action_handle,
-									 const char* text);
-	/* Create a nested submenu under `parent_menu`. The returned handle
-	 * is a QMenu* — pass it to the other tray_menu_* helpers. The
-	 * submenu is parented to the parent menu and freed automatically
-	 * when the parent menu is destroyed. */
-	void* (*tray_menu_add_submenu)(void* mh, void* parent_menu,
-								   const char* label, const char* icon_name);
 
 	/* S20 — Main window helpers (additive) */
 	int (*main_window_install_close_filter)(void* mh,
@@ -839,6 +825,61 @@ typedef struct MMCOContext {
 	int (*progress_report)(void* handle, const char* status,
 						   const char* details, int64_t current,
 						   int64_t total);
+
+	/* ───────────────────────────────────────────────────────────────
+	 * S33 — Declarative UI surfaces (ABI 5)
+	 *
+	 * Replaces the S13 imperative widget builder (ui_page_create /
+	 * ui_layout_* / ui_button_* / ui_label_* / ui_tree_*, all gone as
+	 * of ABI 5) and the allWidgets()/findChild() settings-injection
+	 * pattern. A plugin describes a small widget tree as a JSON
+	 * document (the "mmco-ui/1" format) and the host renders and owns
+	 * the real QWidget tree; no QWidget* is ever handed back to a
+	 * plugin.
+	 *
+	 *   ui_surface_create — build and display a surface at the given
+	 *     anchor. `anchor_context` is nullptr for GLOBAL_SETTINGS, or
+	 *     the instance id for INSTANCE_PAGE / INSTANCE_SETTINGS.
+	 *     `title`/`icon_name` label the surface (page title for
+	 *     INSTANCE_PAGE, section title otherwise). `cb`/`user_data`
+	 *     receive every click/change/select event from nodes in the
+	 *     doc (see MMCOUiEventCallback). Returns an opaque surface
+	 *     handle, or nullptr on failure (bad JSON, unknown anchor).
+	 *   ui_surface_update — replace the whole document.
+	 *   ui_surface_set    — patch one node's `props` (e.g. a toggle's
+	 *     value, a button's enabled state) without touching the rest
+	 *     of the tree.
+	 *   ui_surface_set_rows — replace a `list` node's `rows` only;
+	 *     the cheap refresh path, replacing the old
+	 *     ui_tree_clear + ui_tree_add_row loop.
+	 *   ui_surface_destroy — tear down a surface early. Every surface
+	 *     a module still owns is also torn down automatically when
+	 *     the module unloads.
+	 *
+	 * All four mutators return 0 on success, -1 on failure (unknown
+	 * surface handle, malformed JSON, or unknown node_id).
+	 * ─────────────────────────────────────────────────────────────── */
+	void* (*ui_surface_create)(void* mh, int anchor, const char* anchor_context,
+							   const char* title, const char* icon_name,
+							   const char* json_doc, MMCOUiEventCallback cb,
+							   void* user_data);
+	int (*ui_surface_update)(void* mh, void* surface, const char* json_doc);
+	int (*ui_surface_set)(void* mh, void* surface, const char* node_id,
+						  const char* json_props);
+	int (*ui_surface_set_rows)(void* mh, void* surface, const char* node_id,
+							   const char* json_rows);
+	int (*ui_surface_destroy)(void* mh, void* surface);
+
+	/* Blocking: shows a small transient doc (must contain at least one
+	 * `button`) parented to the active window, pumps a local event
+	 * loop (same pattern as S26's account_skin_upload), and returns
+	 * once a button fires. `out_result_json` receives
+	 * {"button":"<id>","fields":{"<id>":"<value>", ...}} — one entry
+	 * per interactive node's current value at the time the button was
+	 * clicked, truncated to fit `out_buf_size`. Returns 0 on a button
+	 * click, -1 on bad arguments / malformed JSON. */
+	int (*ui_modal_run)(void* mh, const char* title, const char* json_doc,
+						char* out_result_json, int out_buf_size);
 } MMCOContext;
 
 /*

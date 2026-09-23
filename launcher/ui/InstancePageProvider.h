@@ -126,6 +126,13 @@ class InstancePageProvider : public QObject, public BasePageProvider
 			evt.instance_handle = inst.get();
 			APPLICATION->pluginManager()->dispatchHook(
 				MMCO_HOOK_UI_INSTANCE_PAGES, &evt);
+
+			/* ABI 5 — declarative UI surfaces (ui_surface_create with
+			 * MMCO_UI_ANCHOR_INSTANCE_PAGE) anchored to this instance
+			 * become their own pages here too, alongside whatever the
+			 * raw hook above still adds the BasePage-subclassing way. */
+			values.append(
+				APPLICATION->pluginManager()->createInstancePages(inst->id()));
 		}
 
 		return values;

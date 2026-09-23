@@ -756,6 +756,8 @@ set(PLUGIN_SOURCES
     plugin/PluginLoader.cpp
     plugin/PluginManager.h
     plugin/PluginManager.cpp
+    plugin/PluginUiRenderer.h
+    plugin/PluginUiRenderer.cpp
     plugin/PluginHookTask.h
     plugin/PluginHookTask.cpp
     plugin/PluginSignature.h
@@ -1274,6 +1276,11 @@ add_unit_test(CustomTheme
 # lets it move out of the widget UI's target.
 add_unit_test(PluginLoader
     SOURCES plugin/PluginLoader_test.cpp
+    LIBS MeshMC_logic
+    )
+
+add_unit_test(PluginUiRenderer
+    SOURCES plugin/PluginUiRenderer_test.cpp
     LIBS MeshMC_logic
     )
 

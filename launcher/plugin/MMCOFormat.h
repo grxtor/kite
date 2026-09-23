@@ -64,7 +64,7 @@
 
 #define MMCO_MAGIC 0x4D4D434F
 #define MMCO_VERSION "10.0.0"
-#define MMCO_ABI_VERSION 4
+#define MMCO_ABI_VERSION 5
 #define MMCO_EXTENSION ".mmco"
 
 /* Magic value that identifies the GPG signature trailer at the end of a

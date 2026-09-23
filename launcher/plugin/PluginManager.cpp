@@ -84,6 +84,13 @@
 #include <QSystemTrayIcon>
 #include <QMutexLocker>
 #include <QProcess>
+#include <QDialog>
+#include <QFrame>
+#include <QGroupBox>
+#include <QJsonDocument>
+#include <QScrollArea>
+#include "plugin/PluginUiRenderer.h"
+#include <cstring>
 #include <unordered_map>
 #include <utility>
 
@@ -564,29 +571,6 @@ MMCOContext PluginManager::buildContext(PluginMetadata& meta)
 	ctx.ui_file_save_dialog = api_ui_file_save_dialog;
 	ctx.ui_input_dialog = api_ui_input_dialog;
 	ctx.ui_confirm_dialog = api_ui_confirm_dialog;
-	ctx.ui_register_instance_action = api_ui_register_instance_action;
-	ctx.ui_register_instance_action_cb = api_ui_register_instance_action_cb;
-
-	// S13 — UI Page Builder
-	ctx.ui_page_create = api_ui_page_create;
-	ctx.ui_page_add_to_list = api_ui_page_add_to_list;
-	ctx.ui_layout_create = api_ui_layout_create;
-	ctx.ui_layout_add_widget = api_ui_layout_add_widget;
-	ctx.ui_layout_add_layout = api_ui_layout_add_layout;
-	ctx.ui_layout_add_spacer = api_ui_layout_add_spacer;
-	ctx.ui_page_set_layout = api_ui_page_set_layout;
-	ctx.ui_button_create = api_ui_button_create;
-	ctx.ui_button_set_enabled = api_ui_button_set_enabled;
-	ctx.ui_button_set_text = api_ui_button_set_text;
-	ctx.ui_label_create = api_ui_label_create;
-	ctx.ui_label_set_text = api_ui_label_set_text;
-	ctx.ui_tree_create = api_ui_tree_create;
-	ctx.ui_tree_clear = api_ui_tree_clear;
-	ctx.ui_tree_add_row = api_ui_tree_add_row;
-	ctx.ui_tree_selected_row = api_ui_tree_selected_row;
-	ctx.ui_tree_set_row_data = api_ui_tree_set_row_data;
-	ctx.ui_tree_get_row_data = api_ui_tree_get_row_data;
-	ctx.ui_tree_row_count = api_ui_tree_row_count;
 
 	// S14 — Utility
 	ctx.get_app_version = api_get_app_version;
@@ -626,14 +610,6 @@ MMCOContext PluginManager::buildContext(PluginMetadata& meta)
 	ctx.tray_show_message = api_tray_show_message;
 	ctx.tray_set_menu = api_tray_set_menu;
 	ctx.tray_set_activation_cb = api_tray_set_activation_cb;
-	ctx.tray_menu_create = api_tray_menu_create;
-	ctx.tray_menu_destroy = api_tray_menu_destroy;
-	ctx.tray_menu_clear = api_tray_menu_clear;
-	ctx.tray_menu_add_separator = api_tray_menu_add_separator;
-	ctx.tray_menu_add_action = api_tray_menu_add_action;
-	ctx.tray_menu_action_set_enabled = api_tray_menu_action_set_enabled;
-	ctx.tray_menu_action_set_text = api_tray_menu_action_set_text;
-	ctx.tray_menu_add_submenu = api_tray_menu_add_submenu;
 
 	// S20 — Main window helpers
 	ctx.main_window_install_close_filter = api_main_window_install_close_filter;
@@ -691,6 +667,14 @@ MMCOContext PluginManager::buildContext(PluginMetadata& meta)
 
 	// S31 — Subprocess execution
 	ctx.process_run = api_process_run;
+
+	// S33 — Declarative UI surfaces (ABI 5)
+	ctx.ui_surface_create = api_ui_surface_create;
+	ctx.ui_surface_update = api_ui_surface_update;
+	ctx.ui_surface_set = api_ui_surface_set;
+	ctx.ui_surface_set_rows = api_ui_surface_set_rows;
+	ctx.ui_surface_destroy = api_ui_surface_destroy;
+	ctx.ui_modal_run = api_ui_modal_run;
 
 	return ctx;
 }
@@ -2193,71 +2177,121 @@ int PluginManager::api_ui_confirm_dialog(void* mh, const char* title,
 }
 
 /*
- * ─── Deprecated: instance sidebar injection ───────────────────────────
+ * ─── ABI 5 — Declarative UI surfaces ───────────────────────────────
  *
- * Both entry points below stay in the table so existing .mmco modules
- * keep loading and keep the rest of their features, but they no longer
- * register anything.
+ * Replaces the deleted S13 imperative widget builder (ui_page_create
+ * through ui_tree_row_count) and the deleted ui_register_instance_action
+ * / ui_register_instance_action_cb no-ops (both are gone from the ABI
+ * entirely as of ABI 5 -- MMCO_ABI_VERSION_MIN jumping to 5 means any
+ * module that still called them no longer links, so there is nothing
+ * to keep as a compatibility no-op the way there was for ABI 4).
  *
- * The instance sidebar was cut back to a fixed set of instance-wide
- * commands -- launch, edit, group, folder, export, copy, delete -- and
- * an open-ended list of plugin buttons is the surest way for it to
- * drift straight back out again. What a plugin wants to show for an
- * instance belongs in the instance window, where
- * ui_register_instance_page() already puts it alongside Mods, Worlds
- * and the rest, with room to breathe instead of one line in a column.
- *
- * They report 0, the same "not registered" a caller would get if the
- * launcher had run out of memory. Claiming success would leave a plugin
- * waiting on a button that is never going to appear.
+ * A plugin describes a small widget tree as an "mmco-ui/1" JSON
+ * document (see PluginUiRenderer.h) and the host renders and owns the
+ * real QWidget tree; no QWidget* is ever handed back to a plugin. Each
+ * SurfaceRecord's `doc` is the canonical, always-current document --
+ * ui_surface_update/_set/_set_rows mutate it whether or not a view is
+ * currently on screen, and additionally patch the live widget when one
+ * is mounted (see PluginManager.h's SurfaceRecord for the full
+ * rationale). The three anchors are realised at three different call
+ * sites, all reading from `m_surfaces` fresh every time:
+ *   - MMCO_UI_ANCHOR_INSTANCE_PAGE     -> createInstancePages(), called
+ *     from InstancePageProvider::getPages().
+ *   - MMCO_UI_ANCHOR_GLOBAL_SETTINGS   -> createGlobalSettingsPluginsPage(),
+ *     called from Application.cpp's PluginAugmentedPageProvider.
+ *   - MMCO_UI_ANCHOR_INSTANCE_SETTINGS -> buildPluginsSectionWidget(),
+ *     called from connectAppSignals()'s INSTANCE_SETTINGS_PAGE_CREATED
+ *     bridge below.
  */
-
-int PluginManager::api_ui_register_instance_action(void* mh, const char* text,
-												   const char* tooltip,
-												   const char* icon_name,
-												   const char* page_id)
-{
-	(void)mh;
-	(void)tooltip;
-	(void)icon_name;
-	qWarning() << "ui_register_instance_action() is deprecated and does "
-				  "nothing; ignoring instance action"
-			   << (text ? text : "(unnamed)") << "for page"
-			   << (page_id ? page_id : "(none)")
-			   << "- register an instance page instead.";
-	return 0;
-}
-
-int PluginManager::api_ui_register_instance_action_cb(
-	void* mh, const char* text, const char* tooltip, const char* icon_name,
-	void (*cb)(void* ud), void* ud)
-{
-	(void)mh;
-	(void)tooltip;
-	(void)icon_name;
-	(void)cb;
-	(void)ud;
-	qWarning() << "ui_register_instance_action_cb() is deprecated and does "
-				  "nothing; ignoring instance action"
-			   << (text ? text : "(unnamed)")
-			   << "- register an instance page instead.";
-	return 0;
-}
 
 #include "ui/pages/BasePage.h"
 
 namespace
 {
-
-	class PluginPage : public QWidget, public BasePage
+	/* Turn a SurfaceRecord's current document into JSON text for
+	 * PluginUiRenderer::build(). */
+	QString surfaceDocToText(const QJsonObject& doc)
 	{
-		Q_OBJECT
+		return QString::fromUtf8(QJsonDocument(doc).toJson(QJsonDocument::Compact));
+	}
+
+	/* Walks `node`'s subtree for the id `nodeId`; when found, merges
+	 * `patch` into its "props" object (creating one if absent) and
+	 * returns true. Shared by ui_surface_set (an arbitrary props
+	 * patch) and ui_surface_set_rows (a `{"rows": [...]}` patch is
+	 * just another props patch), so both ways of mutating the
+	 * canonical document go through the same tree walk. */
+	bool patchNodeProps(QJsonObject& node, const QString& nodeId,
+						const QJsonObject& patch)
+	{
+		if (node.value(QStringLiteral("id")).toString() == nodeId) {
+			QJsonObject props = node.value(QStringLiteral("props")).toObject();
+			for (auto it = patch.constBegin(); it != patch.constEnd(); ++it)
+				props.insert(it.key(), it.value());
+			node[QStringLiteral("props")] = props;
+			return true;
+		}
+		if (node.contains(QStringLiteral("children"))) {
+			QJsonArray children = node.value(QStringLiteral("children")).toArray();
+			for (int i = 0; i < children.size(); ++i) {
+				QJsonObject child = children.at(i).toObject();
+				if (patchNodeProps(child, nodeId, patch)) {
+					children[i] = child;
+					node[QStringLiteral("children")] = children;
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	bool patchDocumentNodeProps(QJsonObject& doc, const QString& nodeId,
+							   const QJsonObject& patch)
+	{
+		QJsonObject root = doc.value(QStringLiteral("root")).toObject();
+		if (root.isEmpty())
+			return false;
+		if (!patchNodeProps(root, nodeId, patch))
+			return false;
+		doc[QStringLiteral("root")] = root;
+		return true;
+	}
+
+	/* Ties a PluginUiRenderer::RenderedSurface's lifetime to whatever
+	 * QWidget it ends up parented under -- used when several surfaces
+	 * are stacked into one combined section widget (GLOBAL_SETTINGS /
+	 * INSTANCE_SETTINGS), where the natural container is a plain
+	 * QGroupBox we don't otherwise subclass. */
+	class RendererOwner : public QObject
+	{
 	  public:
-		PluginPage(const QString& pageId, const QString& displayName,
-				   const QString& iconName, QWidget* parent = nullptr)
-			: QWidget(parent), m_id(pageId), m_displayName(displayName),
-			  m_iconName(iconName)
+		RendererOwner(std::unique_ptr<PluginUiRenderer::RenderedSurface> renderer,
+					 QObject* parent)
+			: QObject(parent), m_renderer(std::move(renderer))
 		{
+		}
+
+	  private:
+		std::unique_ptr<PluginUiRenderer::RenderedSurface> m_renderer;
+	};
+
+	/* One MMCO_UI_ANCHOR_INSTANCE_PAGE surface, wrapped as its own
+	 * instance-window page -- the declarative replacement for
+	 * GitVersioningPage-style ad-hoc BasePage subclasses. Owns the
+	 * RenderedSurface directly since it never shares its content with
+	 * another page. */
+	class PluginSurfacePage : public QWidget, public BasePage
+	{
+	  public:
+		PluginSurfacePage(QString id, QString displayName, QString iconName,
+						  QWidget* content,
+						  std::unique_ptr<PluginUiRenderer::RenderedSurface> renderer)
+			: m_id(std::move(id)), m_displayName(std::move(displayName)),
+			  m_iconName(std::move(iconName)), m_renderer(std::move(renderer))
+		{
+			auto* layout = new QVBoxLayout(this);
+			layout->setContentsMargins(0, 0, 0, 0);
+			layout->addWidget(content);
 		}
 
 		QString id() const override
@@ -2270,11 +2304,10 @@ namespace
 		}
 		QIcon icon() const override
 		{
-			// Accept either a Qt resource path (":/...") or a themed
-			// icon name. Resource paths come from ui_plugin_icon().
 			if (m_iconName.startsWith(QLatin1Char(':')))
 				return QIcon(m_iconName);
-			return QIcon::fromTheme(m_iconName);
+			return QIcon::fromTheme(m_iconName.isEmpty() ? QStringLiteral("plugin")
+														 : m_iconName);
 		}
 		bool shouldDisplay() const override
 		{
@@ -2285,265 +2318,381 @@ namespace
 		QString m_id;
 		QString m_displayName;
 		QString m_iconName;
+		std::unique_ptr<PluginUiRenderer::RenderedSurface> m_renderer;
+	};
+
+	/* The single host-built page every MMCO_UI_ANCHOR_GLOBAL_SETTINGS
+	 * surface is stacked into -- see createGlobalSettingsPluginsPage()
+	 * for why one shared page beats one page per plugin. */
+	class PluginsGroupPage : public QWidget, public BasePage
+	{
+	  public:
+		explicit PluginsGroupPage(QWidget* content)
+		{
+			auto* scroll = new QScrollArea(this);
+			scroll->setWidgetResizable(true);
+			scroll->setFrameShape(QFrame::NoFrame);
+			scroll->setWidget(content);
+			auto* layout = new QVBoxLayout(this);
+			layout->setContentsMargins(0, 0, 0, 0);
+			layout->addWidget(scroll);
+		}
+		QString id() const override
+		{
+			return QStringLiteral("plugins");
+		}
+		QString displayName() const override
+		{
+			return PluginManager::tr("Plugins");
+		}
+		QIcon icon() const override
+		{
+			return QIcon::fromTheme(QStringLiteral("plugin"));
+		}
+		bool shouldDisplay() const override
+		{
+			return true;
+		}
 	};
 
 } // anonymous namespace
 
-void* PluginManager::api_ui_page_create(void* mh, const char* id,
-										const char* name, const char* iconName)
+PluginManager::SurfaceRecord* PluginManager::findSurface(void* module_handle,
+														 void* surface)
 {
-	(void)mh;
-	if (!id || !name)
+	for (auto& rec : m_surfaces) {
+		if (rec.get() == surface && rec->module_handle == module_handle)
+			return rec.get();
+	}
+	return nullptr;
+}
+
+PluginUiRenderer::EventSink PluginManager::makeSurfaceSink(SurfaceRecord* rec)
+{
+	MMCOUiEventCallback cb = rec->cb;
+	void* userData = rec->userData;
+	QString surfaceId = rec->surfaceId;
+	return [cb, userData, surfaceId](const QString& nodeId, const QString& event,
+									 const QString& valueJson) {
+		if (!cb)
+			return;
+		const QByteArray sid = surfaceId.toUtf8();
+		const QByteArray nid = nodeId.toUtf8();
+		const QByteArray ev = event.toUtf8();
+		const QByteArray val = valueJson.toUtf8();
+		cb(userData, sid.constData(), nid.constData(), ev.constData(),
+		  val.constData());
+	};
+}
+
+void* PluginManager::api_ui_surface_create(void* mh, int anchor,
+										   const char* anchor_context,
+										   const char* title, const char* icon_name,
+										   const char* json_doc,
+										   MMCOUiEventCallback cb, void* user_data)
+{
+	auto* r = rt(mh);
+	if (!r)
 		return nullptr;
-	auto* page = new PluginPage(QString::fromUtf8(id), QString::fromUtf8(name),
-								iconName ? QString::fromUtf8(iconName)
-										 : QStringLiteral("plugin"));
-	return static_cast<QWidget*>(page);
-}
+	if (anchor != MMCO_UI_ANCHOR_GLOBAL_SETTINGS &&
+		anchor != MMCO_UI_ANCHOR_INSTANCE_PAGE &&
+		anchor != MMCO_UI_ANCHOR_INSTANCE_SETTINGS)
+		return nullptr;
 
-int PluginManager::api_ui_page_add_to_list(void* mh, void* page, void* list)
-{
-	(void)mh;
-	if (!page || !list)
-		return -1;
-	auto* pageWidget = static_cast<QWidget*>(page);
-	auto* pageBase = dynamic_cast<BasePage*>(pageWidget);
-	if (!pageBase)
-		return -1;
-	auto* pages = static_cast<QList<BasePage*>*>(list);
-	pages->append(pageBase);
-	return 0;
-}
-
-void* PluginManager::api_ui_layout_create(void* mh, void* parent, int type)
-{
-	(void)mh;
-	QWidget* pw = parent ? static_cast<QWidget*>(parent) : nullptr;
-	QBoxLayout* layout;
-	if (type == 1)
-		layout = new QHBoxLayout();
-	else
-		layout = new QVBoxLayout();
-	// Don't set on parent yet — let page_set_layout do that
-	(void)pw;
-	return layout;
-}
-
-int PluginManager::api_ui_layout_add_widget(void* mh, void* layout,
-											void* widget)
-{
-	(void)mh;
-	if (!layout || !widget)
-		return -1;
-	auto* l = static_cast<QBoxLayout*>(layout);
-	l->addWidget(static_cast<QWidget*>(widget));
-	return 0;
-}
-
-int PluginManager::api_ui_layout_add_layout(void* mh, void* parent, void* child)
-{
-	(void)mh;
-	if (!parent || !child)
-		return -1;
-	auto* p = static_cast<QBoxLayout*>(parent);
-	p->addLayout(static_cast<QLayout*>(child));
-	return 0;
-}
-
-int PluginManager::api_ui_layout_add_spacer(void* mh, void* layout,
-											int horizontal)
-{
-	(void)mh;
-	if (!layout)
-		return -1;
-	auto* l = static_cast<QBoxLayout*>(layout);
-	if (horizontal)
-		l->addItem(new QSpacerItem(0, 0, QSizePolicy::Expanding,
-								   QSizePolicy::Minimum));
-	else
-		l->addItem(new QSpacerItem(0, 0, QSizePolicy::Minimum,
-								   QSizePolicy::Expanding));
-	return 0;
-}
-
-int PluginManager::api_ui_page_set_layout(void* mh, void* page, void* layout)
-{
-	(void)mh;
-	if (!page || !layout)
-		return -1;
-	auto* w = static_cast<QWidget*>(page);
-	w->setLayout(static_cast<QLayout*>(layout));
-	return 0;
-}
-
-void* PluginManager::api_ui_button_create(void* mh, void* parent,
-										  const char* text,
-										  const char* iconName,
-										  MMCOButtonCallback cb, void* ud)
-{
-	(void)mh;
-	auto* btn = new QPushButton(text ? QString::fromUtf8(text) : QString());
-	if (iconName && iconName[0] != '\0') {
-		const QString iname = QString::fromUtf8(iconName);
-		btn->setIcon(iname.startsWith(QLatin1Char(':'))
-						 ? QIcon(iname)
-						 : QIcon::fromTheme(iname));
-	}
-	if (parent)
-		btn->setParent(static_cast<QWidget*>(parent));
-	if (cb) {
-		QObject::connect(btn, &QPushButton::clicked, [cb, ud]() { cb(ud); });
-	}
-	return btn;
-}
-
-int PluginManager::api_ui_button_set_enabled(void* mh, void* btn, int enabled)
-{
-	(void)mh;
-	if (!btn)
-		return -1;
-	static_cast<QPushButton*>(btn)->setEnabled(enabled != 0);
-	return 0;
-}
-
-int PluginManager::api_ui_button_set_text(void* mh, void* btn, const char* text)
-{
-	(void)mh;
-	if (!btn)
-		return -1;
-	static_cast<QPushButton*>(btn)->setText(text ? QString::fromUtf8(text)
-												 : QString());
-	return 0;
-}
-
-void* PluginManager::api_ui_label_create(void* mh, void* parent,
-										 const char* text)
-{
-	(void)mh;
-	auto* lbl = new QLabel(text ? QString::fromUtf8(text) : QString());
-	if (parent)
-		lbl->setParent(static_cast<QWidget*>(parent));
-	return lbl;
-}
-
-int PluginManager::api_ui_label_set_text(void* mh, void* label,
-										 const char* text)
-{
-	(void)mh;
-	if (!label)
-		return -1;
-	static_cast<QLabel*>(label)->setText(text ? QString::fromUtf8(text)
-											  : QString());
-	return 0;
-}
-
-void* PluginManager::api_ui_tree_create(void* mh, void* parent,
-										const char** cols, int ncols,
-										MMCOTreeSelectionCallback cb, void* ud)
-{
-	(void)mh;
-	auto* tree = new QTreeWidget();
-	tree->setRootIsDecorated(false);
-	tree->setSortingEnabled(true);
-	tree->setAlternatingRowColors(true);
-	tree->setSelectionMode(QAbstractItemView::SingleSelection);
-
-	if (parent)
-		tree->setParent(static_cast<QWidget*>(parent));
-
-	QStringList headers;
-	for (int i = 0; i < ncols; ++i)
-		headers << (cols[i] ? QString::fromUtf8(cols[i]) : QString());
-	tree->setHeaderLabels(headers);
-
-	// First column stretches
-	if (ncols > 0) {
-		tree->header()->setStretchLastSection(false);
-		tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-		for (int i = 1; i < ncols; ++i)
-			tree->header()->setSectionResizeMode(i,
-												 QHeaderView::ResizeToContents);
+	QJsonParseError err{};
+	const QJsonDocument jd =
+		QJsonDocument::fromJson(QByteArray(json_doc ? json_doc : ""), &err);
+	if (err.error != QJsonParseError::NoError || !jd.isObject()) {
+		qWarning().noquote()
+			<< "[Plugin:" << r->manager->m_modules[r->moduleIndex].name
+			<< "] ui_surface_create: invalid JSON document:" << err.errorString();
+		return nullptr;
 	}
 
-	if (cb) {
-		QObject::connect(
-			tree, &QTreeWidget::itemSelectionChanged, [tree, cb, ud]() {
-				auto items = tree->selectedItems();
-				int row = items.isEmpty()
-							  ? -1
-							  : tree->indexOfTopLevelItem(items.first());
-				cb(ud, row);
-			});
-	}
-	return tree;
+	auto rec = std::make_unique<SurfaceRecord>();
+	rec->module_handle = mh;
+	rec->surfaceId = QStringLiteral("sf-%1").arg(++r->manager->m_nextSurfaceSeq);
+	rec->anchor = anchor;
+	rec->anchorContext =
+		anchor_context ? QString::fromUtf8(anchor_context) : QString();
+	rec->title = title ? QString::fromUtf8(title) : QString();
+	rec->iconName = icon_name ? QString::fromUtf8(icon_name) : QString();
+	rec->doc = jd.object();
+	rec->cb = cb;
+	rec->userData = user_data;
+
+	auto* handle = rec.get();
+	r->manager->m_surfaces.push_back(std::move(rec));
+	emit r->manager->surfacesChanged();
+	return handle;
 }
 
-int PluginManager::api_ui_tree_clear(void* mh, void* tree)
+int PluginManager::api_ui_surface_update(void* mh, void* surface,
+										 const char* json_doc)
 {
-	(void)mh;
-	if (!tree)
+	auto* r = rt(mh);
+	if (!r)
 		return -1;
-	static_cast<QTreeWidget*>(tree)->clear();
+	auto* rec = r->manager->findSurface(mh, surface);
+	if (!rec)
+		return -1;
+
+	QJsonParseError err{};
+	const QJsonDocument jd =
+		QJsonDocument::fromJson(QByteArray(json_doc ? json_doc : ""), &err);
+	if (err.error != QJsonParseError::NoError || !jd.isObject())
+		return -1;
+
+	rec->doc = jd.object();
+	if (rec->mountedRoot && rec->mountedRenderer)
+		rec->mountedRenderer->setDocument(rec->doc);
+	emit r->manager->surfacesChanged();
 	return 0;
 }
 
-int PluginManager::api_ui_tree_add_row(void* mh, void* tree, const char** vals,
-									   int ncols)
+int PluginManager::api_ui_surface_set(void* mh, void* surface, const char* node_id,
+									  const char* json_props)
 {
-	(void)mh;
-	if (!tree)
+	auto* r = rt(mh);
+	if (!r || !node_id)
 		return -1;
-	auto* tw = static_cast<QTreeWidget*>(tree);
-	auto* item = new QTreeWidgetItem(tw);
-	for (int i = 0; i < ncols; ++i)
-		item->setText(i, vals[i] ? QString::fromUtf8(vals[i]) : QString());
-	return tw->indexOfTopLevelItem(item);
+	auto* rec = r->manager->findSurface(mh, surface);
+	if (!rec)
+		return -1;
+
+	QJsonParseError err{};
+	const QJsonDocument jd =
+		QJsonDocument::fromJson(QByteArray(json_props ? json_props : "{}"), &err);
+	if (err.error != QJsonParseError::NoError || !jd.isObject())
+		return -1;
+
+	const QString nodeId = QString::fromUtf8(node_id);
+	const QJsonObject props = jd.object();
+	const bool foundInDoc = patchDocumentNodeProps(rec->doc, nodeId, props);
+	if (rec->mountedRoot && rec->mountedRenderer)
+		rec->mountedRenderer->setNodeProps(nodeId, props);
+	return foundInDoc ? 0 : -1;
 }
 
-int PluginManager::api_ui_tree_selected_row(void* mh, void* tree)
+int PluginManager::api_ui_surface_set_rows(void* mh, void* surface,
+										   const char* node_id,
+										   const char* json_rows)
 {
-	(void)mh;
-	if (!tree)
+	auto* r = rt(mh);
+	if (!r || !node_id)
 		return -1;
-	auto* tw = static_cast<QTreeWidget*>(tree);
-	auto items = tw->selectedItems();
-	if (items.isEmpty())
+	auto* rec = r->manager->findSurface(mh, surface);
+	if (!rec)
 		return -1;
-	return tw->indexOfTopLevelItem(items.first());
+
+	QJsonParseError err{};
+	const QJsonDocument jd =
+		QJsonDocument::fromJson(QByteArray(json_rows ? json_rows : "[]"), &err);
+	if (err.error != QJsonParseError::NoError || !jd.isArray())
+		return -1;
+
+	const QString nodeId = QString::fromUtf8(node_id);
+	const QJsonArray rows = jd.array();
+	QJsonObject rowsPatch;
+	rowsPatch[QStringLiteral("rows")] = rows;
+	const bool foundInDoc = patchDocumentNodeProps(rec->doc, nodeId, rowsPatch);
+	if (rec->mountedRoot && rec->mountedRenderer)
+		rec->mountedRenderer->setRows(nodeId, rows);
+	return foundInDoc ? 0 : -1;
 }
 
-int PluginManager::api_ui_tree_set_row_data(void* mh, void* tree, int row,
-											int64_t data)
+int PluginManager::api_ui_surface_destroy(void* mh, void* surface)
 {
-	(void)mh;
-	if (!tree)
+	auto* r = rt(mh);
+	if (!r)
 		return -1;
-	auto* tw = static_cast<QTreeWidget*>(tree);
-	auto* item = tw->topLevelItem(row);
-	if (!item)
-		return -1;
-	item->setData(0, Qt::UserRole, QVariant::fromValue(data));
-	return 0;
-}
-
-int64_t PluginManager::api_ui_tree_get_row_data(void* mh, void* tree, int row)
-{
-	(void)mh;
-	if (!tree)
+	auto& vec = r->manager->m_surfaces;
+	for (size_t i = 0; i < vec.size(); ++i) {
+		if (vec[i].get() != surface || vec[i]->module_handle != mh)
+			continue;
+		if (vec[i]->mountedRoot && !r->manager->m_shutdownDone)
+			vec[i]->mountedRoot->deleteLater();
+		vec.erase(vec.begin() + static_cast<std::ptrdiff_t>(i));
+		emit r->manager->surfacesChanged();
 		return 0;
-	auto* tw = static_cast<QTreeWidget*>(tree);
-	auto* item = tw->topLevelItem(row);
-	if (!item)
-		return 0;
-	return item->data(0, Qt::UserRole).toLongLong();
+	}
+	return -1;
 }
 
-int PluginManager::api_ui_tree_row_count(void* mh, void* tree)
+int PluginManager::api_ui_modal_run(void* mh, const char* title,
+									const char* json_doc, char* out_result_json,
+									int out_buf_size)
 {
 	(void)mh;
-	if (!tree)
-		return 0;
-	return static_cast<QTreeWidget*>(tree)->topLevelItemCount();
+	if (!json_doc)
+		return -1;
+
+	QJsonParseError err{};
+	const QJsonDocument jd = QJsonDocument::fromJson(QByteArray(json_doc), &err);
+	if (err.error != QJsonParseError::NoError || !jd.isObject())
+		return -1;
+
+	QDialog dlg(QApplication::activeWindow());
+	dlg.setWindowTitle(title ? QString::fromUtf8(title) : QString());
+	auto* layout = new QVBoxLayout(&dlg);
+
+	/* Any `click` event (button, or a `link` if a plugin puts one in a
+	 * modal doc) closes the dialog with that node's id -- ui_modal_run
+	 * is meant for small button-row prompts, not full pages. */
+	QString clickedId;
+	auto renderer = PluginUiRenderer::build(
+		surfaceDocToText(jd.object()),
+		[&clickedId, &dlg](const QString& nodeId, const QString& event,
+						  const QString& /*valueJson*/) {
+			if (event == QLatin1String("click")) {
+				clickedId = nodeId;
+				dlg.accept();
+			}
+		});
+	layout->addWidget(renderer->rootWidget());
+
+	const int code = dlg.exec();
+	if (code != QDialog::Accepted || clickedId.isEmpty())
+		return -1;
+
+	QJsonObject result;
+	result[QStringLiteral("button")] = clickedId;
+	result[QStringLiteral("fields")] = renderer->collectValues();
+	const QByteArray bytes = QJsonDocument(result).toJson(QJsonDocument::Compact);
+
+	if (out_result_json && out_buf_size > 0) {
+		const int n = qMin(static_cast<int>(bytes.size()), out_buf_size - 1);
+		memcpy(out_result_json, bytes.constData(), static_cast<size_t>(n));
+		out_result_json[n] = '\0';
+	}
+	return 0;
+}
+
+QList<BasePage*> PluginManager::createInstancePages(const QString& instanceId)
+{
+	QList<BasePage*> pages;
+	for (auto& rec : m_surfaces) {
+		if (rec->anchor != MMCO_UI_ANCHOR_INSTANCE_PAGE ||
+			rec->anchorContext != instanceId)
+			continue;
+		SurfaceRecord* recPtr = rec.get();
+		auto renderer = PluginUiRenderer::build(surfaceDocToText(recPtr->doc),
+												makeSurfaceSink(recPtr));
+		QWidget* root = renderer->rootWidget();
+		recPtr->mountedRoot = root;
+		recPtr->mountedRenderer = renderer.get();
+		pages.append(new PluginSurfacePage(recPtr->surfaceId, recPtr->title,
+										   recPtr->iconName, root,
+										   std::move(renderer)));
+	}
+	return pages;
+}
+
+QWidget* PluginManager::buildPluginsSectionWidget(int anchor,
+												  const QString& anchorContext)
+{
+	QWidget* container = nullptr;
+	QVBoxLayout* layout = nullptr;
+	for (auto& rec : m_surfaces) {
+		if (rec->anchor != anchor || rec->anchorContext != anchorContext)
+			continue;
+		if (!container) {
+			container = new QWidget();
+			layout = new QVBoxLayout(container);
+			layout->setContentsMargins(0, 0, 0, 0);
+		}
+		SurfaceRecord* recPtr = rec.get();
+		auto renderer = PluginUiRenderer::build(surfaceDocToText(recPtr->doc),
+												makeSurfaceSink(recPtr));
+		auto* group = new QGroupBox(recPtr->title);
+		auto* groupLayout = new QVBoxLayout(group);
+		groupLayout->addWidget(renderer->rootWidget());
+		recPtr->mountedRoot = renderer->rootWidget();
+		recPtr->mountedRenderer = renderer.get();
+		/* Ties the RenderedSurface's lifetime to `group` -- released
+		 * automatically when the enclosing page/dialog tears `group`
+		 * down (see RendererOwner above). */
+		new RendererOwner(std::move(renderer), group);
+		layout->addWidget(group);
+	}
+	if (layout)
+		layout->addStretch(1);
+	return container;
+}
+
+BasePage* PluginManager::createGlobalSettingsPluginsPage()
+{
+	/*
+	 * Design choice (per the migration spec's request to explain it):
+	 * one host-built "Plugins" page stacking every GLOBAL_SETTINGS
+	 * surface as a titled section, rather than one settings-dialog
+	 * page per plugin. A page per plugin would need a stable per-page
+	 * id/title/icon contract long before most plugins have any more
+	 * than a single checkbox to show (see the S18/S19/NVIDIAPrime/
+	 * LinuxPerf migrations -- all one section each), so it would mean
+	 * a Settings dialog sidebar cluttered with one-line pages. Stacking
+	 * sections in one page is exactly what the allWidgets()/findChild
+	 * pattern it replaces already produced visually (one GroupBox per
+	 * plugin inside MeshMCPage/MinecraftPage) -- same look, without the
+	 * plugin ever reaching into host internals to get there.
+	 */
+	QWidget* content =
+		buildPluginsSectionWidget(MMCO_UI_ANCHOR_GLOBAL_SETTINGS, QString());
+	if (!content)
+		return nullptr;
+	return new PluginsGroupPage(content);
+}
+
+void PluginManager::releaseSurfacesForModule(void* module_handle)
+{
+	for (int i = static_cast<int>(m_surfaces.size()) - 1; i >= 0; --i) {
+		auto& rec = m_surfaces[static_cast<size_t>(i)];
+		if (rec->module_handle != module_handle)
+			continue;
+		if (rec->mountedRoot && !m_shutdownDone)
+			rec->mountedRoot->deleteLater();
+		m_surfaces.erase(m_surfaces.begin() + i);
+	}
+}
+
+QList<PluginManager::SurfaceInfo>
+PluginManager::surfaces(int anchor, const QString& anchorContext) const
+{
+	QList<SurfaceInfo> out;
+	for (auto& rec : m_surfaces) {
+		if (anchor >= 0 && rec->anchor != anchor)
+			continue;
+		if (!anchorContext.isNull() && rec->anchorContext != anchorContext)
+			continue;
+		SurfaceInfo info;
+		info.handle = rec.get();
+		info.surfaceId = rec->surfaceId;
+		info.anchor = rec->anchor;
+		info.anchorContext = rec->anchorContext;
+		info.title = rec->title;
+		info.iconName = rec->iconName;
+		info.document = surfaceDocToText(rec->doc);
+		out.append(info);
+	}
+	return out;
+}
+
+void PluginManager::deliverUiEvent(const QString& surfaceId, const QString& nodeId,
+								   const QString& event, const QString& valueJson)
+{
+	for (auto& rec : m_surfaces) {
+		if (rec->surfaceId != surfaceId)
+			continue;
+		if (rec->cb) {
+			const QByteArray sid = surfaceId.toUtf8();
+			const QByteArray nid = nodeId.toUtf8();
+			const QByteArray ev = event.toUtf8();
+			const QByteArray val = valueJson.toUtf8();
+			rec->cb(rec->userData, sid.constData(), nid.constData(),
+					ev.constData(), val.constData());
+		}
+		return;
+	}
 }
 
 /* ── S15 — Launch Modifiers ───────────────────────────────────────── */
@@ -2933,11 +3082,6 @@ void PluginManager::releaseTrayResourcesForModule(void* module_handle)
 	 *     dlclose() would corrupt it (see the long comment in
 	 *     shutdownAll()) — the OS reclaims everything at process exit
 	 *     anyway.
-	 *
-	 * Also: when a single module owns both a QMenu *and* its child
-	 * QActions, deleting the menu auto-deletes the actions. To avoid
-	 * double-free we delete actions first **and let Qt sever the
-	 * parent-child link** before the menu's own deleteLater runs.
 	 */
 
 	const bool shuttingDown = m_shutdownDone;
@@ -2954,12 +3098,18 @@ void PluginManager::releaseTrayResourcesForModule(void* module_handle)
 	}
 
 	/* Tray icons — hide first so the platform plugin lets go of any
-	 * embedded popup menu reference before we touch the QMenu. */
+	 * embedded popup menu reference before we touch the QMenu. Each
+	 * tray now owns at most one QMenu directly (ABI 5's api_tray_set_menu
+	 * rebuilds it in place instead of the plugin creating/owning it via
+	 * the removed tray_menu_* family), so it is torn down right here
+	 * alongside the icon — no separate menu/action registries needed
+	 * any more. */
 	for (int i = m_trayIcons.size() - 1; i >= 0; --i) {
 		if (m_trayIcons[i].module_handle != module_handle)
 			continue;
 		auto* icon = m_trayIcons[i].icon;
 		auto* guard = m_trayIcons[i].guard;
+		auto* menu = m_trayIcons[i].menu;
 		if (icon) {
 			/* Detach the context menu *before* hiding; some Qt
 			 * platforms (XCB tray) re-enter the menu during hide
@@ -2969,71 +3119,15 @@ void PluginManager::releaseTrayResourcesForModule(void* module_handle)
 			if (!shuttingDown)
 				icon->deleteLater();
 		}
+		if (menu && !shuttingDown)
+			menu->deleteLater();
 		if (guard && !shuttingDown)
 			guard->deleteLater();
 		m_trayIcons.removeAt(i);
 	}
 
-	/* Tray-menu actions — only delete in normal mode, AND only if the
-	 * action's parent menu does NOT also belong to this module (the
-	 * QMenu's destructor will sweep its own children).  In shutdown
-	 * mode we just forget about them; the process is going away. */
-	if (!shuttingDown) {
-		/* Gather the menu handles owned by this module so we can skip
-		 * actions whose parent will be deleted anyway. */
-		QSet<QObject*> ownedMenus;
-		for (const auto& m : m_trayMenus) {
-			if (m.module_handle == module_handle && m.menu)
-				ownedMenus.insert(m.menu);
-		}
-		for (int i = m_trayActions.size() - 1; i >= 0; --i) {
-			if (m_trayActions[i].module_handle != module_handle)
-				continue;
-			QAction* a = m_trayActions[i].action;
-			if (a) {
-				if (!ownedMenus.contains(a->parent()))
-					a->deleteLater();
-				/* else: parent menu will deleteLater itself below
-				 * and Qt will free this action through QObject's
-				 * normal parent-child cascade. */
-			}
-			m_trayActions.removeAt(i);
-		}
-	} else {
-		/* Shutdown: just drop the records. */
-		for (int i = m_trayActions.size() - 1; i >= 0; --i) {
-			if (m_trayActions[i].module_handle == module_handle)
-				m_trayActions.removeAt(i);
-		}
-	}
-
-	/* Tray menus.
-	 *
-	 * Submenus are tracked in m_trayMenus too (added by
-	 * api_tray_menu_add_submenu) but their parent is another QMenu in
-	 * the same module. To avoid double-free we only call deleteLater
-	 * on menus whose parent is NOT one of our own menus — Qt's
-	 * parent-child cascade will sweep the rest. */
-	if (!shuttingDown) {
-		QSet<QObject*> ownedMenus;
-		for (const auto& m : m_trayMenus) {
-			if (m.module_handle == module_handle && m.menu)
-				ownedMenus.insert(m.menu);
-		}
-		for (int i = m_trayMenus.size() - 1; i >= 0; --i) {
-			if (m_trayMenus[i].module_handle != module_handle)
-				continue;
-			QMenu* menu = m_trayMenus[i].menu;
-			if (menu && !ownedMenus.contains(menu->parent()))
-				menu->deleteLater();
-			m_trayMenus.removeAt(i);
-		}
-	} else {
-		for (int i = m_trayMenus.size() - 1; i >= 0; --i) {
-			if (m_trayMenus[i].module_handle == module_handle)
-				m_trayMenus.removeAt(i);
-		}
-	}
+	/* ABI 5 — declarative UI surfaces owned by this module. */
+	releaseSurfacesForModule(module_handle);
 
 	/* S23 — instance running-state callbacks owned by this module.
 	 * Deleting each record's guard QObject severs the Qt connection
@@ -3101,6 +3195,29 @@ void PluginManager::connectAppSignals()
 			}
 			ev.page_handle = page;
 			this->dispatchHook(MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED, &ev);
+
+			/* ABI 5 — every MMCO_UI_ANCHOR_INSTANCE_SETTINGS surface
+			 * anchored to this instance is stacked as a titled section
+			 * inside one host "Plugins" group, inserted into the
+			 * existing "Workarounds" tab layout the same way
+			 * GitVersioning/LinuxPerf used to inject their own group
+			 * there directly (now done once, here, instead of by each
+			 * plugin walking qApp->allWidgets()/findChild itself). */
+			if (page && inst) {
+				if (QWidget* section = this->buildPluginsSectionWidget(
+						MMCO_UI_ANCHOR_INSTANCE_SETTINGS, inst->id())) {
+					if (auto* workaroundsLayout = page->findChild<QVBoxLayout*>(
+							QStringLiteral("verticalLayout_8"))) {
+						auto* group = new QGroupBox(tr("Plugins"));
+						auto* groupLayout = new QVBoxLayout(group);
+						groupLayout->addWidget(section);
+						const int insertAt = qMax(0, workaroundsLayout->count() - 1);
+						workaroundsLayout->insertWidget(insertAt, group);
+					} else {
+						delete section;
+					}
+				}
+			}
 
 			if (!page)
 				return;
@@ -3410,34 +3527,75 @@ int PluginManager::api_tray_show_message(void* mh, void* tray_handle,
 	return 0;
 }
 
-int PluginManager::api_tray_set_menu(void* /*mh*/, void* tray_handle,
-									 void* menu_handle)
+int PluginManager::api_tray_set_menu(void* mh, void* tray_handle,
+									 const char* json_menu_doc,
+									 MMCOUiEventCallback cb, void* user_data)
 {
-	if (!tray_handle)
+	auto* r = rt(mh);
+	if (!r || !tray_handle)
 		return -1;
 	auto* tray = static_cast<QSystemTrayIcon*>(tray_handle);
-	auto* menu = static_cast<QMenu*>(menu_handle);
 
+	TrayRecord* rec = nullptr;
+	for (auto& tr : r->manager->m_trayIcons) {
+		if (tr.icon == tray_handle && tr.module_handle == mh) {
+			rec = &tr;
+			break;
+		}
+	}
+	if (!rec)
+		return -1;
+
+	if (!json_menu_doc) {
+		/* Detach — the ABI 5 equivalent of the old "pass nullptr to
+		 * detach" contract. */
+		tray->setContextMenu(nullptr);
+		if (rec->menu) {
+			rec->menu->deleteLater();
+			rec->menu = nullptr;
+		}
+		return 0;
+	}
+
+	/* One QMenu per tray, owned by the host and rebuilt in place on
+	 * every call — replaces the plugin building/owning a QMenu itself
+	 * via the removed tray_menu_* family. */
+	if (!rec->menu)
+		rec->menu = new QMenu();
+
+	PluginUiRenderer::EventSink sink;
+	if (cb) {
+		sink = [cb, user_data](const QString& nodeId, const QString& event,
+							   const QString& valueJson) {
+			const QByteArray nid = nodeId.toUtf8();
+			const QByteArray ev = event.toUtf8();
+			const QByteArray val = valueJson.toUtf8();
+			cb(user_data, "tray", nid.constData(), ev.constData(),
+			  val.constData());
+		};
+	}
+	if (!PluginUiRenderer::buildTrayMenu(rec->menu, QString::fromUtf8(json_menu_doc),
+										sink))
+		return -1;
+
+	QMenu* menu = rec->menu;
 #ifdef Q_OS_WIN
 	tray->setContextMenu(nullptr);
-	if (menu) {
-		QObject::disconnect(tray, &QSystemTrayIcon::activated, menu, nullptr);
-		QObject::connect(
-			tray, &QSystemTrayIcon::activated, menu,
-			[menu](QSystemTrayIcon::ActivationReason reason) {
-				if (reason != QSystemTrayIcon::Context)
-					return;
-				menu->winId();
-				::SetForegroundWindow(
-					reinterpret_cast<HWND>(menu->winId()));
-				menu->popup(QCursor::pos());
-			});
-	}
-	return 0;
+	QObject::disconnect(tray, &QSystemTrayIcon::activated, menu, nullptr);
+	QObject::connect(
+		tray, &QSystemTrayIcon::activated, menu,
+		[menu](QSystemTrayIcon::ActivationReason reason) {
+			if (reason != QSystemTrayIcon::Context)
+				return;
+			menu->winId();
+			::SetForegroundWindow(
+				reinterpret_cast<HWND>(menu->winId()));
+			menu->popup(QCursor::pos());
+		});
 #else
 	tray->setContextMenu(menu);
-	return 0;
 #endif
+	return 0;
 }
 
 int PluginManager::api_tray_set_activation_cb(void* mh, void* tray_handle,
@@ -3466,118 +3624,6 @@ int PluginManager::api_tray_set_activation_cb(void* mh, void* tray_handle,
 		return 0;
 	}
 	return -1;
-}
-
-void* PluginManager::api_tray_menu_create(void* mh)
-{
-	auto* r = rt(mh);
-	if (!r)
-		return nullptr;
-	auto* menu = new QMenu();
-	r->manager->m_trayMenus.append({mh, menu});
-	return menu;
-}
-
-int PluginManager::api_tray_menu_destroy(void* mh, void* menu_handle)
-{
-	auto* r = rt(mh);
-	if (!r || !menu_handle)
-		return -1;
-	auto& vec = r->manager->m_trayMenus;
-	for (int i = 0; i < vec.size(); ++i) {
-		if (vec[i].menu == menu_handle && vec[i].module_handle == mh) {
-			/* Drop any actions registered against this menu first. */
-			auto& acts = r->manager->m_trayActions;
-			for (int j = acts.size() - 1; j >= 0; --j) {
-				if (acts[j].action && acts[j].action->parent() ==
-										  static_cast<QObject*>(menu_handle)) {
-					acts[j].action->deleteLater();
-					acts.removeAt(j);
-				}
-			}
-			vec[i].menu->deleteLater();
-			vec.removeAt(i);
-			return 0;
-		}
-	}
-	return -1;
-}
-
-int PluginManager::api_tray_menu_clear(void* /*mh*/, void* menu_handle)
-{
-	if (!menu_handle)
-		return -1;
-	static_cast<QMenu*>(menu_handle)->clear();
-	return 0;
-}
-
-int PluginManager::api_tray_menu_add_separator(void* /*mh*/, void* menu_handle)
-{
-	if (!menu_handle)
-		return -1;
-	static_cast<QMenu*>(menu_handle)->addSeparator();
-	return 0;
-}
-
-void* PluginManager::api_tray_menu_add_action(void* mh, void* menu_handle,
-											  const char* label,
-											  const char* icon_name,
-											  MMCOMenuActionCallback cb,
-											  void* ud)
-{
-	auto* r = rt(mh);
-	if (!r || !menu_handle || !label)
-		return nullptr;
-	auto* menu = static_cast<QMenu*>(menu_handle);
-	QAction* act = menu->addAction(QString::fromUtf8(label));
-	if (icon_name && *icon_name)
-		act->setIcon(mmco_resolve_icon(icon_name));
-	if (cb) {
-		QObject::connect(act, &QAction::triggered, act, [cb, ud]() { cb(ud); });
-	}
-	r->manager->m_trayActions.append({mh, act});
-	return act;
-}
-
-int PluginManager::api_tray_menu_action_set_enabled(void* /*mh*/,
-													void* action_handle,
-													int enabled)
-{
-	if (!action_handle)
-		return -1;
-	static_cast<QAction*>(action_handle)->setEnabled(enabled != 0);
-	return 0;
-}
-
-int PluginManager::api_tray_menu_action_set_text(void* /*mh*/,
-												 void* action_handle,
-												 const char* text)
-{
-	if (!action_handle)
-		return -1;
-	static_cast<QAction*>(action_handle)
-		->setText(QString::fromUtf8(text ? text : ""));
-	return 0;
-}
-
-void* PluginManager::api_tray_menu_add_submenu(void* mh, void* parent_menu,
-											   const char* label,
-											   const char* icon_name)
-{
-	auto* r = rt(mh);
-	if (!r || !parent_menu || !label)
-		return nullptr;
-	auto* parent = static_cast<QMenu*>(parent_menu);
-	auto* child = parent->addMenu(QString::fromUtf8(label));
-	if (!child)
-		return nullptr;
-	if (icon_name && *icon_name)
-		child->setIcon(mmco_resolve_icon(icon_name));
-	/* Track in the per-module registry so shutdown / unload finds it.
-	 * The QMenu is parented to `parent` so we don't deleteLater it
-	 * during unload — the parent menu's cascade will. */
-	r->manager->m_trayMenus.append({mh, child});
-	return child;
 }
 
 /* ── S20 trampolines ─────────────────────────────────────────────── */
