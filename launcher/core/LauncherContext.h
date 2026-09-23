@@ -92,6 +92,16 @@ class LauncherContext
 	virtual QString getJarsPath() = 0;
 	virtual QString msaClientId() const = 0;
 
+	/* Applies a proxy configuration to the whole application immediately
+	 * (QNetworkProxy::setApplicationProxy() and friends), the same way the
+	 * widget ProxyPage's apply button does. @p proxyTypeStr is one of
+	 * "None", "Default", "SOCKS5", "HTTP". Needed by QmlShell, which
+	 * cannot see Application/QNetworkProxy from MeshMC_qml -- see
+	 * QmlShell::applyProxySettings(). */
+	virtual void updateProxySettings(QString proxyTypeStr, QString addr,
+									 int port, QString user,
+									 QString password) = 0;
+
 	/* Null when no plugin host is present -- plugins are an optional build
 	 * (MeshMC_PLUGINS, OFF by default). Core code calls through this rather
 	 * than reaching PluginManager directly, because PluginManager renders

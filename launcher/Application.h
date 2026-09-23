@@ -176,7 +176,7 @@ class Application : public QApplication, public LauncherContext
 	}
 
 	void updateProxySettings(QString proxyTypeStr, QString addr, int port,
-							 QString user, QString password);
+							 QString user, QString password) override;
 
 	shared_qobject_ptr<QNetworkAccessManager> network() override;
 

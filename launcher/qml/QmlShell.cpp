@@ -469,6 +469,22 @@ QObject* QmlShell::settings() const
 	return expose(m_settings.get());
 }
 
+void QmlShell::applyProxySettings()
+{
+	// Same five settings, read the same way, as
+	// Application::initSubsystems()'s own proxy setup and the widget
+	// ProxyPage::applySettings() -- only the destination differs
+	// (LauncherContext rather than calling updateProxySettings() directly,
+	// since QmlShell cannot see Application from MeshMC_qml).
+	auto settings = LAUNCHER->settings();
+	const QString proxyTypeStr = settings->get("ProxyType").toString();
+	const QString addr = settings->get("ProxyAddr").toString();
+	const int port = settings->get("ProxyPort").value<qint16>();
+	const QString user = settings->get("ProxyUser").toString();
+	const QString pass = settings->get("ProxyPass").toString();
+	LAUNCHER->updateProxySettings(proxyTypeStr, addr, port, user, pass);
+}
+
 QObject* QmlShell::uiHost() const
 {
 	return expose(m_uiHost.get());
@@ -594,6 +610,9 @@ QObject* QmlShell::instanceDetails(const QString& id)
 	// delete a model the instance still owns.
 	expose(m_instanceDetails->settings());
 	expose(m_instanceDetails->mods());
+	expose(m_instanceDetails->resourcePacks());
+	expose(m_instanceDetails->shaderPacks());
+	expose(m_instanceDetails->texturePacks());
 	expose(m_instanceDetails->worlds());
 	expose(m_instanceDetails->log());
 	expose(m_instanceDetails->components());

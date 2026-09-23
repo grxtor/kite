@@ -71,6 +71,17 @@ class InstanceDetails : public QObject
 	/// Minecraft-backed.
 	Q_PROPERTY(QObject* mods READ mods CONSTANT)
 	Q_PROPERTY(QString modsDir READ modsDir CONSTANT)
+	/// Same shape as mods() above, over MinecraftInstance::resourcePackList()
+	/// / shaderPackList(). Null if this instance is not Minecraft-backed.
+	Q_PROPERTY(QObject* resourcePacks READ resourcePacks CONSTANT)
+	Q_PROPERTY(QString resourcePacksDir READ resourcePacksDir CONSTANT)
+	Q_PROPERTY(QObject* shaderPacks READ shaderPacks CONSTANT)
+	Q_PROPERTY(QString shaderPacksDir READ shaderPacksDir CONSTANT)
+	/// Null unless this instance predates resource packs and uses texture
+	/// packs instead (traits() has "texturepacks" - see TexturePackPage's
+	/// own shouldDisplay()); legacy Minecraft only.
+	Q_PROPERTY(QObject* texturePacks READ texturePacks CONSTANT)
+	Q_PROPERTY(QString texturePacksDir READ texturePacksDir CONSTANT)
 	/// False while the instance is running - same rule ModFolderPage
 	/// enforces for the Mods tab specifically (contentChangesAllowed()).
 	Q_PROPERTY(bool contentChangesAllowed READ contentChangesAllowed NOTIFY
@@ -116,6 +127,26 @@ class InstanceDetails : public QObject
 	/// @p fileUrlOrPath: a file:// URL (as a QML FileDialog hands out) or
 	/// a plain local path.
 	Q_INVOKABLE bool installMod(const QString& fileUrlOrPath);
+
+	QObject* resourcePacks() const;
+	QString resourcePacksDir() const;
+	QObject* shaderPacks() const;
+	QString shaderPacksDir() const;
+	QObject* texturePacks() const;
+	QString texturePacksDir() const;
+
+	/// Generalised form of setModEnabled()/deleteMod()/installMod() above
+	/// (which now just forward to these), covering every folder-backed
+	/// content type this bridge exposes. @p kind is one of "mods",
+	/// "resourcepacks", "shaderpacks", "texturepacks"; a call with any
+	/// other @p kind, or one this instance does not have, is a no-op
+	/// (install() returns false).
+	Q_INVOKABLE void setEnabled(const QString& kind, int row, bool enabled);
+	Q_INVOKABLE void remove(const QString& kind, int row);
+	/// @p fileUrlOrPath: a file:// URL (as a QML FileDialog hands out) or
+	/// a plain local path.
+	Q_INVOKABLE bool install(const QString& kind, const QString& fileUrlOrPath);
+
 	bool contentChangesAllowed() const;
 	QObject* contentBrowser() const;
 
@@ -139,9 +170,16 @@ class InstanceDetails : public QObject
 	void onRunningStatusChanged(bool running);
 
   private:
-	/// Row @p row of the sorted mods, as an index into m_mods; invalid if
-	/// out of range.
-	QModelIndex sourceModIndex(int row) const;
+	/// The source ModFolderModel behind @p kind ("mods", "resourcepacks",
+	/// "shaderpacks", "texturepacks"), or null if @p kind is unrecognised
+	/// or this instance does not have one (e.g. "texturepacks" on a
+	/// non-legacy instance, or any kind on a non-Minecraft instance).
+	ModFolderModel* folderModel(const QString& kind) const;
+	/// The sorted proxy QML sees for @p kind, or null - see folderModel().
+	QSortFilterProxyModel* sortedFolderModel(const QString& kind) const;
+	/// Row @p row of the sorted proxy for @p kind, as an index into its
+	/// source model; invalid if @p kind or @p row is out of range.
+	QModelIndex sourceIndexFor(const QString& kind, int row) const;
 
 	InstancePtr m_instance;
 	/// Non-owning; valid for as long as m_instance is (which is for the
@@ -153,6 +191,15 @@ class InstanceDetails : public QObject
 	std::shared_ptr<ModFolderModel> m_mods;
 	/// What QML sees of m_mods: sorted by name, rows mapped back on write.
 	std::unique_ptr<QSortFilterProxyModel> m_sortedMods;
+	/// Same borrowed/sorted-proxy shape as m_mods/m_sortedMods above.
+	std::shared_ptr<ModFolderModel> m_resourcePacks;
+	std::unique_ptr<QSortFilterProxyModel> m_sortedResourcePacks;
+	std::shared_ptr<ModFolderModel> m_shaderPacks;
+	std::unique_ptr<QSortFilterProxyModel> m_sortedShaderPacks;
+	/// Null unless the instance's traits() has "texturepacks" - see the
+	/// texturePacks Q_PROPERTY comment.
+	std::shared_ptr<ModFolderModel> m_texturePacks;
+	std::unique_ptr<QSortFilterProxyModel> m_sortedTexturePacks;
 	std::shared_ptr<WorldList> m_worlds;
 	/// Created on first contentBrowser() call, not here - see that
 	/// method and the Q_PROPERTY comment above.

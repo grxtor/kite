@@ -198,6 +198,14 @@ class QmlShell : public QObject
 	QString accountFace() const;
 
 	QObject* settings() const;
+	/* Applies the ProxyType/ProxyAddr/ProxyPort/ProxyUser/ProxyPass
+	 * settings immediately, the way the widget ProxyPage's apply button
+	 * does. The QML settings page (once it has a proxy page of its own)
+	 * writes those five settings through `settings` above like any other
+	 * setting, then calls this so the change takes effect without a
+	 * restart -- QmlShell cannot reach QNetworkProxy/Application itself,
+	 * so this goes through LauncherContext::updateProxySettings(). */
+	Q_INVOKABLE void applyProxySettings();
 	/// Bound to `shell.uiHost` in QML -- see the Q_PROPERTY comment above.
 	QObject* uiHost() const;
 	/* The same object as uiHost() above, typed for Application's own use

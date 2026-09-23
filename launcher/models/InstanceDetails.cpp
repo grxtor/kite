@@ -33,6 +33,38 @@
 #include "screenshots/ScreenshotListModel.h"
 #include "FileSystem.h"
 
+namespace
+{
+	/* Wraps @p source in the same by-name sorted proxy the mods list has
+	 * always used: the folder model lists files in whatever order the
+	 * directory gives them, but people look for content by name. */
+	std::unique_ptr<QSortFilterProxyModel> sortedByName(ModFolderModel* source)
+	{
+		auto proxy = std::make_unique<QSortFilterProxyModel>();
+		proxy->setSourceModel(source);
+		proxy->setSortRole(source->roleNames().key("name", Qt::DisplayRole));
+		proxy->setSortCaseSensitivity(Qt::CaseInsensitive);
+		proxy->setDynamicSortFilter(true);
+		proxy->sort(0);
+		return proxy;
+	}
+
+	/* Mirrors ModFolderPage::openedImpl(): startWatching() runs an
+	 * update() itself the first time it actually starts watching, but a
+	 * subsequent call (this bridge replacing a previous one, or a widget
+	 * page already showing the same folder) only re-arms the
+	 * QFileSystemWatcher. Force an update so @p model never hands QML
+	 * stale data. */
+	void startWatchingFresh(ModFolderModel* model)
+	{
+		const bool wasValid = model->isValid() && model->dir().exists();
+		model->startWatching();
+		if (wasValid) {
+			model->update();
+		}
+	}
+} // namespace
+
 InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 	: QObject(parent), m_instance(std::move(instance))
 {
@@ -53,26 +85,25 @@ InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 	m_mc = dynamic_cast<MinecraftInstance*>(m_instance.get());
 	if (m_mc) {
 		m_mods = m_mc->loaderModList();
-		/* The folder model lists files in whatever order the directory
-		 * gives them; people look for a mod by name. */
-		m_sortedMods = std::make_unique<QSortFilterProxyModel>();
-		m_sortedMods->setSourceModel(m_mods.get());
-		m_sortedMods->setSortRole(m_mods->roleNames().key("name", Qt::DisplayRole));
-		m_sortedMods->setSortCaseSensitivity(Qt::CaseInsensitive);
-		m_sortedMods->setDynamicSortFilter(true);
-		m_sortedMods->sort(0);
-		m_worlds = m_mc->worldList();
+		m_sortedMods = sortedByName(m_mods.get());
+		startWatchingFresh(m_mods.get());
 
-		// Mirrors ModFolderPage::openedImpl(): startWatching() runs an
-		// update() itself whenever it actually starts watching; force one
-		// here too in case the model was already watching (shared with
-		// another open view of it), so this bridge never shows stale data.
-		const bool wasValid = m_mods->isValid() && m_mods->dir().exists();
-		m_mods->startWatching();
-		if (wasValid) {
-			m_mods->update();
+		m_resourcePacks = m_mc->resourcePackList();
+		m_sortedResourcePacks = sortedByName(m_resourcePacks.get());
+		startWatchingFresh(m_resourcePacks.get());
+
+		m_shaderPacks = m_mc->shaderPackList();
+		m_sortedShaderPacks = sortedByName(m_shaderPacks.get());
+		startWatchingFresh(m_shaderPacks.get());
+
+		// Legacy-only: see the texturePacks Q_PROPERTY comment.
+		if (m_mc->traits().contains("texturepacks")) {
+			m_texturePacks = m_mc->texturePackList();
+			m_sortedTexturePacks = sortedByName(m_texturePacks.get());
+			startWatchingFresh(m_texturePacks.get());
 		}
 
+		m_worlds = m_mc->worldList();
 		// Mirrors WorldListPage::openedImpl().
 		m_worlds->startWatching();
 	}
@@ -92,6 +123,15 @@ InstanceDetails::~InstanceDetails()
 	// else stops watching them once this detail page closes.
 	if (m_mods) {
 		m_mods->stopWatching();
+	}
+	if (m_resourcePacks) {
+		m_resourcePacks->stopWatching();
+	}
+	if (m_shaderPacks) {
+		m_shaderPacks->stopWatching();
+	}
+	if (m_texturePacks) {
+		m_texturePacks->stopWatching();
 	}
 	if (m_worlds) {
 		m_worlds->stopWatching();
@@ -149,37 +189,120 @@ QString InstanceDetails::modsDir() const
 	return m_mods ? m_mods->dir().absolutePath() : QString();
 }
 
-QModelIndex InstanceDetails::sourceModIndex(int row) const
-{
-	if (!m_sortedMods || row < 0 || row >= m_sortedMods->rowCount()) {
-		return {};
-	}
-	return m_sortedMods->mapToSource(m_sortedMods->index(row, 0));
-}
-
 void InstanceDetails::setModEnabled(int row, bool enabled)
 {
-	const QModelIndex index = sourceModIndex(row);
-	if (!index.isValid()) {
-		return;
-	}
-	m_mods->setModStatus({ index },
-						 enabled ? ModFolderModel::Enable
-								 : ModFolderModel::Disable);
+	setEnabled(QStringLiteral("mods"), row, enabled);
 }
 
 void InstanceDetails::deleteMod(int row)
 {
-	const QModelIndex index = sourceModIndex(row);
-	if (!index.isValid()) {
-		return;
-	}
-	m_mods->deleteMods({ index });
+	remove(QStringLiteral("mods"), row);
 }
 
 bool InstanceDetails::installMod(const QString& fileUrlOrPath)
 {
-	if (!m_mods) {
+	return install(QStringLiteral("mods"), fileUrlOrPath);
+}
+
+QObject* InstanceDetails::resourcePacks() const
+{
+	return m_sortedResourcePacks.get();
+}
+
+QString InstanceDetails::resourcePacksDir() const
+{
+	return m_resourcePacks ? m_resourcePacks->dir().absolutePath() : QString();
+}
+
+QObject* InstanceDetails::shaderPacks() const
+{
+	return m_sortedShaderPacks.get();
+}
+
+QString InstanceDetails::shaderPacksDir() const
+{
+	return m_shaderPacks ? m_shaderPacks->dir().absolutePath() : QString();
+}
+
+QObject* InstanceDetails::texturePacks() const
+{
+	return m_sortedTexturePacks.get();
+}
+
+QString InstanceDetails::texturePacksDir() const
+{
+	return m_texturePacks ? m_texturePacks->dir().absolutePath() : QString();
+}
+
+ModFolderModel* InstanceDetails::folderModel(const QString& kind) const
+{
+	if (kind == QStringLiteral("mods")) {
+		return m_mods.get();
+	}
+	if (kind == QStringLiteral("resourcepacks")) {
+		return m_resourcePacks.get();
+	}
+	if (kind == QStringLiteral("shaderpacks")) {
+		return m_shaderPacks.get();
+	}
+	if (kind == QStringLiteral("texturepacks")) {
+		return m_texturePacks.get();
+	}
+	return nullptr;
+}
+
+QSortFilterProxyModel* InstanceDetails::sortedFolderModel(const QString& kind) const
+{
+	if (kind == QStringLiteral("mods")) {
+		return m_sortedMods.get();
+	}
+	if (kind == QStringLiteral("resourcepacks")) {
+		return m_sortedResourcePacks.get();
+	}
+	if (kind == QStringLiteral("shaderpacks")) {
+		return m_sortedShaderPacks.get();
+	}
+	if (kind == QStringLiteral("texturepacks")) {
+		return m_sortedTexturePacks.get();
+	}
+	return nullptr;
+}
+
+QModelIndex InstanceDetails::sourceIndexFor(const QString& kind, int row) const
+{
+	auto* sorted = sortedFolderModel(kind);
+	if (!sorted || row < 0 || row >= sorted->rowCount()) {
+		return {};
+	}
+	return sorted->mapToSource(sorted->index(row, 0));
+}
+
+void InstanceDetails::setEnabled(const QString& kind, int row, bool enabled)
+{
+	auto* model = folderModel(kind);
+	const QModelIndex index = sourceIndexFor(kind, row);
+	if (!model || !index.isValid()) {
+		return;
+	}
+	model->setModStatus({ index },
+						enabled ? ModFolderModel::Enable
+								: ModFolderModel::Disable);
+}
+
+void InstanceDetails::remove(const QString& kind, int row)
+{
+	auto* model = folderModel(kind);
+	const QModelIndex index = sourceIndexFor(kind, row);
+	if (!model || !index.isValid()) {
+		return;
+	}
+	model->deleteMods({ index });
+}
+
+bool InstanceDetails::install(const QString& kind, const QString& fileUrlOrPath)
+{
+	auto* model = folderModel(kind);
+	if (!model) {
 		return false;
 	}
 	// Same conversion ModFolderModel's own drop handling uses
@@ -187,7 +310,7 @@ bool InstanceDetails::installMod(const QString& fileUrlOrPath)
 	// file:// URLs, but accept a plain path too.
 	const QUrl url(fileUrlOrPath);
 	const QString path = url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
-	return m_mods->installMod(path);
+	return model->installMod(path);
 }
 
 bool InstanceDetails::contentChangesAllowed() const
