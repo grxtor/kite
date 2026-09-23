@@ -296,7 +296,12 @@ declare -a FORBIDDEN_LINK_TOKENS=(
 # `ninja -t targets all` is the most portable way to list every target;
 # we then filter to those ending in `.mmco` (or `.mmco.dll` on Windows
 # where CMake appends the platform suffix).
-mapfile -t MMCO_TARGETS < <(
+# A while-read loop, not mapfile: macOS runners ship bash 3.2, which has no
+# mapfile.
+MMCO_TARGETS=()
+while IFS= read -r target; do
+	[[ -n "$target" ]] && MMCO_TARGETS+=("$target")
+done < <(
 	ninja -C "$BUILD_DIR" -t targets all 2>/dev/null \
 		| awk -F: '{print $1}' \
 		| grep -E '\.mmco$|\.mmco\.dll$|\.mmco\.so$|\.mmco\.dylib$' \

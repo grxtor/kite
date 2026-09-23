@@ -291,7 +291,9 @@ QVariant InstanceList::data(const QModelIndex& index, int role) const
 			return pdata->lastLaunch();
 		}
 		case TotalTimePlayedRole: {
-			return pdata->totalTimePlayed();
+			// int64_t is long on LP64 Linux, which QVariant has no
+			// constructor for; qint64 (long long) it has.
+			return static_cast<qint64>(pdata->totalTimePlayed());
 		}
 		case GameVersionRole: {
 			return pdata->gameVersion();
