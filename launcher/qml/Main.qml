@@ -246,6 +246,9 @@ ApplicationWindow {
                     onLaunchRequested: (id) => root.launch(id)
                     onStopRequested: (id) => root.call("killInstance", id)
                     onClassicEditorRequested: (id) => root.call("editInstance", id)
+                    contentInstaller: function (row, versionId) {
+                        return root.shell.installContent(row, versionId)
+                    }
                     onOpenPathRequested: (path) => root.call("openPath", path)
                 }
 

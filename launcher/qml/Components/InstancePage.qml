@@ -22,6 +22,8 @@ Item {
     property var details: null
     property int systemMemoryMiB: 8192
     property string tab: "overview"
+    // (row, versionId) -> TaskWatcher for the content browser.
+    property var contentInstaller: null
 
     signal backRequested()
     signal launchRequested(string id)
@@ -54,6 +56,7 @@ Item {
             delegate: ContinueCard {
                 Layout.fillWidth: true
                 overline: qsTr("Instance")
+                compact: true
                 editText: qsTr("Classic editor")
                 onPlayRequested: root.launchRequested(instanceId)
                 onStopRequested: root.stopRequested(instanceId)
@@ -78,6 +81,7 @@ Item {
             tabs: [
                 { id: "overview", label: qsTr("Overview") },
                 { id: "mods", label: qsTr("Mods"), count: root.modsModel ? modsTab.count : -1 },
+                { id: "browse", label: qsTr("Add content") },
                 { id: "worlds", label: qsTr("Worlds"), count: root.worldsModel ? worldsTab.count : -1 },
                 { id: "screenshots", label: qsTr("Screenshots"), count: root.shotsModel ? root.shotsModel.count : -1 },
                 { id: "log", label: qsTr("Log") },
@@ -90,7 +94,7 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.topMargin: Theme.space.sm
-            currentIndex: ["overview", "mods", "worlds", "screenshots", "log", "settings"].indexOf(root.tab)
+            currentIndex: ["overview", "mods", "browse", "worlds", "screenshots", "log", "settings"].indexOf(root.tab)
 
             InstanceOverviewTab {
                 id: overview
@@ -111,6 +115,12 @@ Item {
                 id: modsTab
                 details: root.details
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
+                onBrowseRequested: root.tab = "browse"
+            }
+
+            ContentBrowserView {
+                browser: root.details ? root.details.contentBrowser : null
+                installer: root.contentInstaller
             }
 
             WorldsTab {

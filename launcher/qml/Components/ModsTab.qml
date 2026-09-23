@@ -22,6 +22,7 @@ Item {
     readonly property bool unlocked: !!details && details.contentChangesAllowed
     readonly property int count: list.count
     signal openFolderRequested(string path)
+    signal browseRequested()
 
     ColumnLayout {
         anchors.fill: parent
@@ -43,6 +44,13 @@ Item {
                 text: qsTr("Open folder")
                 icon.source: Icons.url("folder")
                 onClicked: root.openFolderRequested(root.details ? root.details.modsDir : "")
+            }
+            Button {
+                highlighted: true
+                visible: !!root.details && root.details.isMinecraft
+                text: qsTr("Add mods")
+                icon.source: Icons.url("plus")
+                onClicked: root.browseRequested()
             }
         }
 

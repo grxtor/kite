@@ -48,6 +48,7 @@ qt_add_qml_module(MeshMC_qml_components
         InstanceOverviewTab.qml
         InstancePage.qml
         ModsTab.qml
+        ContentBrowserView.qml
         WorldsTab.qml
         ScreenshotsTab.qml
         LogTab.qml

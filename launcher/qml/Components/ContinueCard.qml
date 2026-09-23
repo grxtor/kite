@@ -31,6 +31,8 @@ Rectangle {
 
     property string overline: qsTr("Continue playing")
     property string editText: qsTr("Edit")
+    // A shorter banner for pages where the content below matters more.
+    property bool compact: false
 
     signal playRequested()
     signal stopRequested()
@@ -38,7 +40,7 @@ Rectangle {
     signal folderRequested()
     signal menuRequested()
 
-    implicitHeight: Math.max(212, content.implicitHeight + Theme.space.xxl * 2)
+    implicitHeight: Math.max(compact ? 0 : 212, content.implicitHeight + (compact ? Theme.space.xl : Theme.space.xxl) * 2)
     radius: Theme.radius.xl
     border.width: 1
     border.color: Theme.palette.border
@@ -61,8 +63,8 @@ Rectangle {
         Rectangle {
             id: tile
             anchors.verticalCenter: parent.verticalCenter
-            width: 124
-            height: 124
+            width: root.compact ? 96 : 124
+            height: root.compact ? 96 : 124
             radius: Theme.radius.xl
             border.width: 1
             border.color: Qt.rgba(1, 1, 1, 0.08)
@@ -73,10 +75,10 @@ Rectangle {
 
             Image {
                 anchors.centerIn: parent
-                width: 88
-                height: 88
+                width: root.compact ? 68 : 88
+                height: width
                 source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
-                sourceSize: Qt.size(88, 88)
+                sourceSize: Qt.size(width, height)
                 fillMode: Image.PreserveAspectFit
             }
         }
@@ -87,6 +89,7 @@ Rectangle {
             spacing: Theme.space.sm
 
             Text {
+                visible: !root.compact
                 text: root.overline.toUpperCase()
                 color: Theme.palette.accent
                 font.family: Theme.font.family
@@ -101,7 +104,7 @@ Rectangle {
                 elide: Text.ElideRight
                 color: Theme.palette.textPrimary
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.display.pixelSize + 2
+                font.pixelSize: root.compact ? Theme.type.display.pixelSize - 4 : Theme.type.display.pixelSize + 2
                 font.weight: Font.Bold
                 font.letterSpacing: -0.5
             }
