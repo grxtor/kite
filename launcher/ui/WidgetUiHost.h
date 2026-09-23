@@ -44,6 +44,10 @@ class WidgetUiHost final : public UiHost
 	int choose(const QString& title, const QString& text, Severity severity,
 			   const QStringList& actions) override;
 
+	std::optional<QString> askText(
+		const QString& title, const QString& text,
+		const QString& defaultValue = QString()) override;
+
 	bool resolveBlockedMods(const QString& title, const QString& text,
 							QList<BlockedMod>& mods) override;
 

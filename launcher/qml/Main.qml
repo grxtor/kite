@@ -91,6 +91,17 @@ ApplicationWindow {
         sequences: [StandardKey.Find]
         onActivated: topBar.focusSearch()
     }
+    // The game's console, asked for by the launch flow (ShowConsole, or a
+    // crash): the instance page, on its Log tab.
+    Connections {
+        target: root.shell
+        ignoreUnknownSignals: true
+        function onOpenInstanceLog(id) {
+            root.openInstance(id)
+            instancePage.tab = "log"
+        }
+    }
+
     Binding {
         target: root.shell && root.shell.instancePageModel ? root.shell.instancePageModel : null
         property: "instanceId"
@@ -242,6 +253,7 @@ ApplicationWindow {
                 }
 
                 InstancePage {
+                    id: instancePage
                     headerModel: root.shell && root.shell.instancePageModel ? root.shell.instancePageModel : null
                     details: root.openedDetails
                     systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192

@@ -190,6 +190,13 @@ class Application : public QApplication, public LauncherContext
 
 	UiHost* uiHost() const override;
 
+	/* Whether the QML shell is up and ready to answer -- the same check
+	 * uiHost() makes before it will route a UiHost call to QmlUiHost (see
+	 * that method's comment). Callers that need to choose between a
+	 * widget window and a QML-side equivalent themselves (LaunchController's
+	 * account picker, for one) use this instead of duplicating the check. */
+	bool usingQmlShell() const;
+
 	/// this is the root of the 'installation'. Used for automatic updates
 	const QString& root()
 	{
@@ -206,6 +213,14 @@ class Application : public QApplication, public LauncherContext
 
 	InstanceWindow* showInstanceWindow(InstancePtr instance,
 									   QString page = QString());
+
+	/* What a launch reaches for instead of showInstanceWindow() when it
+	 * wants to show an instance's console: routes to the QML shell's own
+	 * instance-log signal while it is the active UI (usingQmlShell()), or
+	 * to the widget console window (showInstanceWindow(), selecting its
+	 * Log page) otherwise -- so a launch never raises a widget window
+	 * under the QML shell. */
+	void showInstanceLog(InstancePtr instance);
 	MainWindow* showMainWindow(bool minimized = false);
 	MainWindow* mainWindow() const
 	{

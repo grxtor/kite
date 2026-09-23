@@ -27,6 +27,15 @@ class QWidget;
  */
 namespace JavaCommon
 {
+	/* Non-UI half of checkJVMArgs() below: returns the warning text if
+	 * @p jvmargs sets a memory option through flags meant to be set via
+	 * the Memory group in Settings instead ("-Xmx", "-XX:PermSize=", ...),
+	 * or an empty string if the args are fine. Free-standing so a caller
+	 * that is not a QWidget -- LaunchController, which has to work under
+	 * either user interface -- can show the warning through UiHost instead
+	 * of the QMessageBox checkJVMArgs() below always shows. */
+	QString jvmArgsWarning(const QString& jvmargs);
+
 	bool checkJVMArgs(QString args, QWidget* parent);
 
 	// Show a dialog saying that the Java binary was not usable

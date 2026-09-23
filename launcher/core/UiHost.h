@@ -20,6 +20,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include <QList>
 #include <QString>
@@ -90,6 +91,17 @@ class UiHost
 	 * `actions`, or -1 when the user backed out. */
 	virtual int choose(const QString& title, const QString& text,
 					   Severity severity, const QStringList& actions) = 0;
+
+	/* A single line of free text, pre-filled with @p defaultValue --
+	 * "what should the demo player be called", "what name for offline
+	 * mode". Returns the entered text, or nullopt if the user backed out
+	 * (widget: cancelled/closed the dialog; QML: rejected the request). An
+	 * empty string is a real answer -- callers that want to fall back to
+	 * something else for it do so themselves, the way an empty offline
+	 * name used to fall back to the session's existing one. */
+	virtual std::optional<QString> askText(
+		const QString& title, const QString& text,
+		const QString& defaultValue = QString()) = 0;
 
 	/* Files the provider's API will not serve, which the user fetches by
 	 * hand while the host watches the download folder. `mods` is updated in

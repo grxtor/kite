@@ -21,6 +21,8 @@
 
 #include <QApplication>
 #include <QAbstractButton>
+#include <QInputDialog>
+#include <QLineEdit>
 #include <QMessageBox>
 #include <QProgressDialog>
 #include <QVector>
@@ -132,6 +134,20 @@ int WidgetUiHost::choose(const QString& title, const QString& text,
 
 	const int index = buttons.indexOf(box->clickedButton());
 	return index; /* -1 when Cancel or the window's close button was used */
+}
+
+std::optional<QString> WidgetUiHost::askText(const QString& title,
+											  const QString& text,
+											  const QString& defaultValue)
+{
+	bool ok = false;
+	QString result = QInputDialog::getText(activeWindow(), title, text,
+											QLineEdit::Normal, defaultValue,
+											&ok);
+	if (!ok) {
+		return std::nullopt;
+	}
+	return result;
 }
 
 bool WidgetUiHost::resolveBlockedMods(const QString& title,

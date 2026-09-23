@@ -2486,3 +2486,20 @@ UiHost* Application::uiHost() const
 	}
 	return m_uiHost.get();
 }
+
+bool Application::usingQmlShell() const
+{
+	return m_qmlShell && m_qmlShell->uiHostInterface() != nullptr;
+}
+
+void Application::showInstanceLog(InstancePtr instance)
+{
+	if (!instance) {
+		return;
+	}
+	if (usingQmlShell()) {
+		m_qmlShell->showInstanceLogRequested(instance->id());
+		return;
+	}
+	showInstanceWindow(instance, "console");
+}

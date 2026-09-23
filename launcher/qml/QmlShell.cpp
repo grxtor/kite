@@ -227,6 +227,11 @@ void QmlShell::manageAccounts()
 	emit accountsRequested();
 }
 
+void QmlShell::showInstanceLogRequested(const QString& id)
+{
+	emit openInstanceLog(id);
+}
+
 bool QmlShell::renameInstance(const QString& id, const QString& name)
 {
 	auto instance = LAUNCHER->instances()->getInstanceById(id);

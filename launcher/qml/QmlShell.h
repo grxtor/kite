@@ -256,6 +256,14 @@ class QmlShell : public QObject
 	Q_INVOKABLE void openPath(const QString& path);
 	Q_INVOKABLE void manageAccounts();
 
+	/* Called by Application (see Application::showInstanceLog()) instead
+	 * of raising a widget InstanceWindow when the QML shell is the active
+	 * UI: a launch that would have opened the console -- ShowConsole, or a
+	 * crash with ShowConsoleOnError -- relays the request into QML as
+	 * openInstanceLog() below, which opens instance @p id's page on its
+	 * Log tab. */
+	void showInstanceLogRequested(const QString& id);
+
 	/* Everything below replicates the core part of a MainWindow instance
 	 * action directly against LAUNCHER->instances()/icons() -- no widget
 	 * code, no dialogs (QML supplies its own and asks for confirmation
@@ -343,6 +351,10 @@ class QmlShell : public QObject
 	void createInstanceRequested();
 	void settingsRequested(const QString& page);
 	void accountsRequested();
+
+	/// Emitted by showInstanceLogRequested() above -- asks QML to open
+	/// instance @p id's page on its Log tab.
+	void openInstanceLog(const QString& id);
 
 	/// groups() moved.
 	void groupsChanged();

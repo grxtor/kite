@@ -99,6 +99,42 @@ class QmlUiHostTest : public QObject
 		QCOMPARE(chosen, 1);
 	}
 
+	void askTextReturnsTheEnteredValueWhenQmlAccepts()
+	{
+		QmlUiHost host;
+
+		QTimer::singleShot(0, [&host]() {
+			auto* request = qobject_cast<QmlUiRequest*>(host.current());
+			QVERIFY(request);
+			QCOMPARE(request->kind(), QStringLiteral("text"));
+			QCOMPARE(request->value(), QStringLiteral("User"));
+			request->accept(QStringLiteral("Steve"));
+		});
+
+		const auto answer =
+			host.askText(QStringLiteral("Title"), QStringLiteral("Text"),
+						 QStringLiteral("User"));
+
+		QVERIFY(answer.has_value());
+		QCOMPARE(*answer, QStringLiteral("Steve"));
+	}
+
+	void askTextReturnsNulloptWhenQmlRejects()
+	{
+		QmlUiHost host;
+
+		QTimer::singleShot(0, [&host]() {
+			auto* request = qobject_cast<QmlUiRequest*>(host.current());
+			QVERIFY(request);
+			request->reject();
+		});
+
+		const auto answer =
+			host.askText(QStringLiteral("Title"), QStringLiteral("Text"));
+
+		QVERIFY(!answer.has_value());
+	}
+
 	void confirmIsCancelledWhenTheApplicationQuits()
 	{
 		QmlUiHost host;

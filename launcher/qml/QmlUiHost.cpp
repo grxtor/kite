@@ -112,6 +112,8 @@ QString QmlUiRequest::kind() const
 			return QStringLiteral("confirm");
 		case Kind::Choose:
 			return QStringLiteral("choose");
+		case Kind::Text:
+			return QStringLiteral("text");
 		case Kind::BlockedMods:
 			return QStringLiteral("blockedMods");
 		case Kind::UntrustedMods:
@@ -136,6 +138,11 @@ void QmlUiRequest::setLabels(QString acceptLabel, QString rejectLabel)
 void QmlUiRequest::setActions(QStringList actions)
 {
 	m_actions = std::move(actions);
+}
+
+void QmlUiRequest::setValue(QString value)
+{
+	m_value = std::move(value);
 }
 
 void QmlUiRequest::setBlockedMods(const QList<BlockedMod>& mods)
@@ -184,6 +191,17 @@ void QmlUiRequest::accept()
 	}
 	m_answered = true;
 	m_accepted = true;
+	emit answered();
+}
+
+void QmlUiRequest::accept(const QString& text)
+{
+	if (m_answered) {
+		return;
+	}
+	m_answered = true;
+	m_accepted = true;
+	m_answeredText = text;
 	emit answered();
 }
 
@@ -385,6 +403,19 @@ int QmlUiHost::choose(const QString& title, const QString& text,
 	request.setActions(actions);
 	runRequest(request);
 	return request.chosenIndex();
+}
+
+std::optional<QString> QmlUiHost::askText(const QString& title,
+										   const QString& text,
+										   const QString& defaultValue)
+{
+	QmlUiRequest request(QmlUiRequest::Kind::Text, title, text);
+	request.setValue(defaultValue);
+	runRequest(request);
+	if (!request.accepted()) {
+		return std::nullopt;
+	}
+	return request.answeredText();
 }
 
 bool QmlUiHost::resolveBlockedMods(const QString& title, const QString& text,

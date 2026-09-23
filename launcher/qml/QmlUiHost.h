@@ -39,6 +39,8 @@
  *   message       -- accept() only (a plain acknowledgement)
  *   confirm       -- accept() / reject()
  *   choose        -- choose(index); actions holds the button labels
+ *   text          -- value holds the pre-filled default; accept(QString) /
+ *                    reject()
  *   blockedMods   -- blockedMods (live), openDownload(index),
  *                    rescanDownloads(), then accept() / reject()
  *   untrustedMods -- untrustedModsFiles, confirmDelayMs, then
@@ -64,6 +66,8 @@ class QmlUiRequest : public QObject
 	Q_PROPERTY(QString rejectLabel READ rejectLabel CONSTANT)
 	/// Button labels for kind == "choose"; empty otherwise.
 	Q_PROPERTY(QStringList actions READ actions CONSTANT)
+	/// kind == "text": the value to pre-fill the field with; empty otherwise.
+	Q_PROPERTY(QString value READ value CONSTANT)
 	/* kind == "blockedMods": one entry per mod, in the order
 	 * resolveBlockedMods() received them -- {fileName, targetPath,
 	 * downloadUrl, found}. NOTIFY rather than CONSTANT: QmlUiHost watches
@@ -89,6 +93,7 @@ class QmlUiRequest : public QObject
 		Message,
 		Confirm,
 		Choose,
+		Text,
 		BlockedMods,
 		UntrustedMods,
 		Update,
@@ -122,6 +127,10 @@ class QmlUiRequest : public QObject
 	{
 		return m_actions;
 	}
+	QString value() const
+	{
+		return m_value;
+	}
 	QVariantList blockedMods() const;
 	QStringList untrustedModsFiles() const
 	{
@@ -142,6 +151,7 @@ class QmlUiRequest : public QObject
 	void setSeverity(UiHost::Severity severity);
 	void setLabels(QString acceptLabel, QString rejectLabel);
 	void setActions(QStringList actions);
+	void setValue(QString value);
 	void setBlockedMods(const QList<BlockedMod>& mods);
 	void setUntrustedModsFiles(QStringList files);
 	void setUpdateInfo(QString currentVersion, QString availableVersion,
@@ -161,10 +171,20 @@ class QmlUiRequest : public QObject
 	{
 		return m_updateChoice;
 	}
+	/// kind == "text": the text accept(QString) was called with; meaningless
+	/// unless accepted() is true.
+	QString answeredText() const
+	{
+		return m_answeredText;
+	}
 
 	/// kind == "message": the acknowledgement. kind == "confirm" /
 	/// "blockedMods" / "untrustedMods": the positive answer.
 	Q_INVOKABLE void accept();
+	/// kind == "text": commits @p text as the answer -- the counterpart to
+	/// accept() above for the one kind that hands back a value rather than
+	/// a plain yes.
+	Q_INVOKABLE void accept(const QString& text);
 	/// The negative answer, or "back out" -- same as closing the widget
 	/// dialogs did. Valid for every kind except "choose" and "update",
 	/// which have their own invokables below.
@@ -201,6 +221,8 @@ class QmlUiRequest : public QObject
 	QString m_acceptLabel;
 	QString m_rejectLabel;
 	QStringList m_actions;
+	QString m_value;
+	QString m_answeredText;
 	QList<BlockedMod> m_blockedMods;
 	QStringList m_untrustedModsFiles;
 	int m_confirmDelayMs = 0;
@@ -296,6 +318,10 @@ class QmlUiHost : public QObject, public UiHost
 
 	int choose(const QString& title, const QString& text, Severity severity,
 			   const QStringList& actions) override;
+
+	std::optional<QString> askText(
+		const QString& title, const QString& text,
+		const QString& defaultValue = QString()) override;
 
 	bool resolveBlockedMods(const QString& title, const QString& text,
 							QList<BlockedMod>& mods) override;

@@ -105,6 +105,25 @@ Dialog {
             }
         }
 
+        // text: one line to type, prefilled with the suggested answer.
+        TextField {
+            id: textAnswer
+            Layout.fillWidth: true
+            visible: root.kind === "text"
+            selectByMouse: true
+            onAccepted: if (text.trim().length > 0) root.answer(() => root.request.accept(text.trim()))
+            Connections {
+                target: root
+                function onRequestChanged() {
+                    if (root.kind === "text") {
+                        textAnswer.text = root.request.value || ""
+                        textAnswer.forceActiveFocus()
+                        textAnswer.selectAll()
+                    }
+                }
+            }
+        }
+
         // Blocked mods: each file, whether it is already downloaded, and
         // a way to its download page. The folder is watched in C++.
         Column {
@@ -287,11 +306,13 @@ Dialog {
         Button {
             visible: root.kind !== "choose" && root.kind !== "update"
             enabled: root.kind === "blockedMods" ? root.allFound
-                   : root.kind === "untrustedMods" ? trustBox.checked : true
+                   : root.kind === "untrustedMods" ? trustBox.checked
+                   : root.kind === "text" ? textAnswer.text.trim().length > 0 : true
             highlighted: true
             text: root.request && root.request.acceptLabel.length > 0 ? root.request.acceptLabel
                 : root.kind === "message" ? qsTr("OK") : qsTr("Continue")
-            onClicked: root.answer(() => root.request.accept())
+            onClicked: root.answer(() => root.kind === "text" ? root.request.accept(textAnswer.text.trim())
+                                                              : root.request.accept())
         }
         Button {
             visible: root.kind !== "message" && root.kind !== "update"
