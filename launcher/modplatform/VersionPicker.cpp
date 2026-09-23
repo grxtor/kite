@@ -64,6 +64,11 @@ namespace
 
 } // namespace
 
+bool ModPlatform::isKnownLoaderName(const QString& tag)
+{
+	return knownLoaderNames().contains(tag.toLower());
+}
+
 QJsonObject ModPlatform::newestCurseForgeFile(const QJsonArray& files,
 											  const QString& loader)
 {

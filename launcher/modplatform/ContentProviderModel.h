@@ -44,6 +44,11 @@ namespace ModPlatform
 		QString versionId;
 		/* Human-readable version, without decorations. */
 		QString name;
+		/* The version as a person reads it - "1.2.3" - kept apart from
+		 * `name` above, which some providers (Modrinth) decorate with it
+		 * in parentheses. Empty when the provider does not give a bare
+		 * number of its own (CurseForge only has `name`). */
+		QString versionNumber;
 		/* "release" / "beta" / "alpha", empty when the provider does not
 		 * say. Shown in brackets after the name, like the reference
 		 * launcher does. */
@@ -57,6 +62,22 @@ namespace ModPlatform
 		 * so the review dialog can say so, and so the caller can offer
 		 * to fetch the file by hand if the download is refused. */
 		bool browserDownloadOnly = false;
+
+		/* Minecraft versions and mod loaders this version declares
+		 * support for. Populated from whatever the provider's version
+		 * reply states - CurseForge mixes both kinds of tag into one
+		 * "gameVersions" array (see ModPlatform::isKnownLoaderName()),
+		 * Modrinth states them as two separate fields. Used to flag a
+		 * version as compatible or not for a QML version picker; the
+		 * provider's own search/version query is already asked to filter
+		 * by these, but that filtering is not fully trusted elsewhere in
+		 * this codebase either (see VersionPicker.cpp), so it is checked
+		 * again on the client side. */
+		QStringList gameVersions;
+		QStringList loaders;
+		/* RFC 3339 publish date, exactly as the provider states it; empty
+		 * when unknown. */
+		QString datePublished;
 	};
 
 	/* One search result. Everything the list, the description pane and
@@ -139,7 +160,12 @@ class ContentProviderModel : public QAbstractListModel
 	/* Continues past ProjectItemRole (Qt::UserRole+1..+3, declared
 	 * above), which ProjectItemDelegate already reads from this
 	 * model's data(). */
-	enum ModelRoles { LogoKeyRole = Qt::UserRole + 4 };
+	enum ModelRoles {
+		LogoKeyRole = Qt::UserRole + 4,
+		// For QML delegates, which load the logo themselves.
+		LogoUrlRole,
+		AuthorRole
+	};
 
 	~ContentProviderModel() override;
 
@@ -214,6 +240,18 @@ class ContentProviderModel : public QAbstractListModel
 	Task* activeSearchJob() const
 	{
 		return m_searchJob.get();
+	}
+
+	/* Why the most recent search (or page fetch) failed, or empty on
+	 * success or while nothing has run yet. Cleared at the start of every
+	 * new search and by a page fetch that succeeds. Not consumed by
+	 * ProjectItemDelegate or ContentProviderPage today - both simply show
+	 * an empty list - but a QML caller with no progress widget of its own
+	 * to hang activeSearchJob() off needs something to show for a search
+	 * that came back with nothing. */
+	QString lastError() const
+	{
+		return m_lastError;
 	}
 
   signals:
@@ -346,6 +384,7 @@ class ContentProviderModel : public QAbstractListModel
 
 	NetJob::Ptr m_searchJob;
 	QByteArray m_searchResponse;
+	QString m_lastError;
 
 	/* Bumped on every reset. Replies tagged with an older generation
 	 * belong to a search whose results are already gone. */

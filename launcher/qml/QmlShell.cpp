@@ -39,6 +39,7 @@
 #include "models/InstanceFilterModel.h"
 #include "models/NewInstanceController.h"
 #include "models/SettingsAdapter.h"
+#include "models/ContentBrowser.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
 #include "tasks/TaskWatcher.h"
 #include "Sys.h"
@@ -331,6 +332,18 @@ QObject* QmlShell::installModpack(const QString& projectId,
 		m_modpacks->install(projectId, versionId, instanceName, group));
 }
 
+QObject* QmlShell::installContent(int row, const QString& versionId)
+{
+	auto* browser = m_instanceDetails
+						? qobject_cast<ContentBrowser*>(
+							  m_instanceDetails->contentBrowser())
+						: nullptr;
+	if (!browser) {
+		return nullptr;
+	}
+	return expose(browser->install(row, versionId));
+}
+
 QObject* QmlShell::recentModel() const
 {
 	return expose(m_recent.get());
@@ -408,6 +421,12 @@ QObject* QmlShell::instanceDetails(const QString& id)
 	expose(m_instanceDetails->log());
 	expose(m_instanceDetails->components());
 	expose(m_instanceDetails->screenshots());
+	// contentBrowser()'s own `results` is reachable straight off the
+	// pinned browser below without a separate expose() here: every
+	// ContentProviderModel it hands out is parented to it (see
+	// ContentBrowser::ensureModel()), and a parented QObject already keeps
+	// its C++ ownership once QML touches it, pin or no pin.
+	expose(m_instanceDetails->contentBrowser());
 
 	return expose(m_instanceDetails.get());
 }

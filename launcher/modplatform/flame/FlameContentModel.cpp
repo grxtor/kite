@@ -27,6 +27,7 @@
 
 #include "Json.h"
 #include "modplatform/ModDownloadTypes.h"
+#include "modplatform/VersionPicker.h"
 #include "modplatform/flame/FlameApi.h"
 
 namespace
@@ -226,6 +227,19 @@ QList<ModPlatform::ContentVersion> FlameContentModel::parseVersionsResponse(
 		version.fileSize = Json::ensureInteger(fileObj, "fileLength", 0);
 		version.versionType =
 			releaseTypeName(Json::ensureInteger(fileObj, "releaseType", 0));
+		version.datePublished = Json::ensureString(fileObj, "fileDate", "");
+
+		/* CurseForge mixes Minecraft versions and loader names into one
+		 * "gameVersions" array - see ModPlatform::newestCurseForgeFile(),
+		 * which has to untangle the same thing for the same reason. */
+		for (const auto& tagRaw : Json::ensureArray(fileObj, "gameVersions")) {
+			const QString tag = tagRaw.toString();
+			if (ModPlatform::isKnownLoaderName(tag)) {
+				version.loaders.append(tag);
+			} else {
+				version.gameVersions.append(tag);
+			}
+		}
 
 		/* Authors can forbid third-party downloads, in which case the
 		 * API hands out no URL at all. The site still serves the file,

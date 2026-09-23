@@ -36,6 +36,8 @@ set(CORE_SOURCES
     models/SettingsAdapter.cpp
     models/InstanceDetails.h
     models/InstanceDetails.cpp
+    models/ContentBrowser.h
+    models/ContentBrowser.cpp
     models/AccountsController.h
     models/AccountsController.cpp
     models/NewInstanceController.h
@@ -1357,6 +1359,16 @@ add_unit_test(TaskWatcher
 # ModrinthModpackModel::parseSearchResults().
 add_unit_test(ModrinthModpackModel
     SOURCES modplatform/modrinth/ModrinthModpackModel_test.cpp
+    LIBS MeshMC_core
+    )
+
+# Exercises only ContentBrowser's static, network-free helpers
+# (isVersionCompatible(), sortOptionsFor()) - constructing a full
+# MinecraftInstance to drive the browser itself is impractical here, the
+# same reason models/InstanceDetails_test.cpp only exercises
+# InstanceLogBridge.
+add_unit_test(ContentBrowser
+    SOURCES models/ContentBrowser_test.cpp
     LIBS MeshMC_core
     )
 

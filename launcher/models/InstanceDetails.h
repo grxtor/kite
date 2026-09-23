@@ -36,6 +36,7 @@ class ScreenshotListModel;
 class InstanceLogBridge;
 class LaunchTask;
 class LogModel;
+class ContentBrowser;
 
 /*
  * QML-facing bridge for one instance's detail page: notes, mods, worlds,
@@ -75,6 +76,13 @@ class InstanceDetails : public QObject
 	Q_PROPERTY(bool contentChangesAllowed READ contentChangesAllowed NOTIFY
 				   contentChangesAllowedChanged)
 
+	/// CurseForge/Modrinth search + install for this instance's mods (and
+	/// resource/shader/data packs), the QML-facing replacement for
+	/// DownloadContentDialog. Created lazily on first access, so opening
+	/// this page never touches the network by itself - see
+	/// ContentBrowser's own class comment.
+	Q_PROPERTY(QObject* contentBrowser READ contentBrowser CONSTANT)
+
 	Q_PROPERTY(QObject* worlds READ worlds CONSTANT)
 	Q_PROPERTY(QString worldsDir READ worldsDir CONSTANT)
 
@@ -109,6 +117,7 @@ class InstanceDetails : public QObject
 	/// a plain local path.
 	Q_INVOKABLE bool installMod(const QString& fileUrlOrPath);
 	bool contentChangesAllowed() const;
+	QObject* contentBrowser() const;
 
 	QObject* worlds() const;
 	QString worldsDir() const;
@@ -145,6 +154,9 @@ class InstanceDetails : public QObject
 	/// What QML sees of m_mods: sorted by name, rows mapped back on write.
 	std::unique_ptr<QSortFilterProxyModel> m_sortedMods;
 	std::shared_ptr<WorldList> m_worlds;
+	/// Created on first contentBrowser() call, not here - see that
+	/// method and the Q_PROPERTY comment above.
+	mutable std::unique_ptr<ContentBrowser> m_contentBrowser;
 
 	std::unique_ptr<SettingsAdapter> m_settings;
 	std::unique_ptr<ScreenshotListModel> m_screenshots;

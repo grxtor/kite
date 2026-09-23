@@ -28,6 +28,7 @@
 #include "minecraft/PackProfile.h"
 #include "minecraft/WorldList.h"
 #include "minecraft/mod/ModFolderModel.h"
+#include "models/ContentBrowser.h"
 #include "models/SettingsAdapter.h"
 #include "screenshots/ScreenshotListModel.h"
 #include "FileSystem.h"
@@ -195,6 +196,19 @@ bool InstanceDetails::contentChangesAllowed() const
 	// allowsChangesWhileRunning() is always false for ModPlatform::ContentType::Mod,
 	// so that page's rule reduces to exactly this.
 	return m_instance && !m_instance->isRunning();
+}
+
+QObject* InstanceDetails::contentBrowser() const
+{
+	// Lazy on purpose: instantiated the first time anything reads this
+	// property, not in the constructor above - opening this page must not
+	// start the network activity a search or an install would. Null for a
+	// non-Minecraft instance, matching mods()/components() etc. above.
+	if (!m_contentBrowser && m_mc) {
+		m_contentBrowser =
+			std::make_unique<ContentBrowser>(m_mc, const_cast<InstanceDetails*>(this));
+	}
+	return m_contentBrowser.get();
 }
 
 QObject* InstanceDetails::worlds() const

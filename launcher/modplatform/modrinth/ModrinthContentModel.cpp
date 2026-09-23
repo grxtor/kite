@@ -193,11 +193,22 @@ QList<ModPlatform::ContentVersion> ModrinthContentModel::parseVersionsResponse(
 		const QString name = Json::ensureString(versionObj, "name", "");
 		const QString number =
 			Json::ensureString(versionObj, "version_number", "");
+		version.versionNumber = number;
 		version.name =
 			name.isEmpty() ? number
 						   : (number.isEmpty()
 								  ? name
 								  : QString("%1 (%2)").arg(name, number));
+
+		for (const auto& tag :
+			 Json::ensureArray(versionObj, "game_versions")) {
+			version.gameVersions.append(tag.toString());
+		}
+		for (const auto& tag : Json::ensureArray(versionObj, "loaders")) {
+			version.loaders.append(tag.toString());
+		}
+		version.datePublished =
+			Json::ensureString(versionObj, "date_published", "");
 
 		const auto files = Json::ensureArray(versionObj, "files");
 		for (const auto& fileRaw : files) {

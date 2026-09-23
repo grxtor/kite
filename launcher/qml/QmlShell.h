@@ -126,6 +126,10 @@ class QmlShell : public QObject
 										const QString& versionId,
 										const QString& instanceName,
 										const QString& group);
+	/* Installs version @p versionId of result @p row of the open
+	 * instance's content browser; the TaskWatcher is C++-owned, like
+	 * installModpack()'s. */
+	Q_INVOKABLE QObject* installContent(int row, const QString& versionId);
 	QObject* recentModel() const;
 	QObject* heroModel() const;
 	QObject* instancePageModel() const;

@@ -125,6 +125,12 @@ QVariant ContentProviderModel::data(const QModelIndex& index, int role) const
 		case LogoKeyRole:
 			return project.logoKey;
 
+		case LogoUrlRole:
+			return project.logoUrl;
+
+		case AuthorRole:
+			return project.author;
+
 		default:
 			break;
 	}
@@ -140,6 +146,8 @@ QHash<int, QByteArray> ContentProviderModel::roleNames() const
 	roles.insert(ProjectItemRole::Description, "description");
 	roles.insert(ProjectItemRole::Installed, "installed");
 	roles.insert(LogoKeyRole, "logoKey");
+	roles.insert(LogoUrlRole, "logoUrl");
+	roles.insert(AuthorRole, "author");
 	return roles;
 }
 
@@ -340,6 +348,7 @@ void ContentProviderModel::restartSearch()
 	m_generation++;
 	m_searchState = None;
 	m_nextSearchOffset = 0;
+	m_lastError.clear();
 	performPaginatedSearch();
 }
 
@@ -372,8 +381,10 @@ void ContentProviderModel::performPaginatedSearch()
 	m_searchJob = job;
 	connect(job, &NetJob::succeeded, this,
 			&ContentProviderModel::searchRequestFinished);
-	connect(job, &NetJob::failed, this,
-			[this](QString) { searchRequestFailed(); });
+	connect(job, &NetJob::failed, this, [this](QString reason) {
+		m_lastError = reason;
+		searchRequestFailed();
+	});
 
 	job->start();
 	emit searchStateChanged();
@@ -389,6 +400,8 @@ void ContentProviderModel::searchRequestFinished()
 		searchRequestFailed();
 		return;
 	}
+
+	m_lastError.clear();
 
 	int totalHits = -1;
 	QList<ModPlatform::IndexedProject> newList;

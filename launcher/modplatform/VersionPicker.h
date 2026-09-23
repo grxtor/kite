@@ -55,4 +55,12 @@ namespace ModPlatform
 	QJsonObject newestModrinthVersion(const QJsonArray& versions,
 									  const QString& loader);
 
+	/* Whether `tag` (already lower-cased or not - compared case
+	 * insensitively) names a mod loader CurseForge might mix into a
+	 * file's "gameVersions" array alongside actual Minecraft versions.
+	 * Exported so that anything else parsing that same mixed array -
+	 * FlameContentModel::parseVersionsResponse(), namely - does not carry
+	 * a second copy of the list to keep in sync with this one. */
+	bool isKnownLoaderName(const QString& tag);
+
 } // namespace ModPlatform
