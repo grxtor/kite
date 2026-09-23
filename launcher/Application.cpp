@@ -1356,8 +1356,21 @@ void Application::initSubsystems()
 	}
 }
 
+namespace
+{
+	// Defined further down, next to showMainWindow() -- forward-declared
+	// here so createSetupWizard() can skip the widget wizard when the QML
+	// shell will handle onboarding itself (see QmlShell::recomputeSetupSteps(),
+	// which runs the same rules below).
+	bool useQmlShell();
+} // namespace
+
 bool Application::createSetupWizard()
 {
+	if (useQmlShell()) {
+		return false;
+	}
+
 	bool javaRequired = [&]() {
 		QString currentHostName = QHostInfo::localHostName();
 		QString oldHostName = settings()->get("LastHostname").toString();

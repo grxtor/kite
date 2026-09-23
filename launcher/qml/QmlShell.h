@@ -35,6 +35,8 @@ class SettingsAdapter;
 class ModrinthModpackModel;
 class AccountsController;
 class NewInstanceController;
+class JavaInstallList;
+class TranslationsModel;
 class QmlUiHost;
 class UiHost;
 class QQmlApplicationEngine;
@@ -51,6 +53,22 @@ class QEvent;
  * without a LauncherContext, the way NewInstanceController.h's
  * composeSuggestedInstanceName() is. */
 QString sanitizedInstanceName(const QString& name);
+
+/* The onboarding rules Application::createSetupWizard() used to gate the
+ * widget SetupWizard's pages (LanguageWizardPage/JavaWizardPage) -- now
+ * used by QmlShell::recomputeSetupSteps() instead, since the QML shell runs
+ * its own onboarding rather than showing that widget on top of itself (see
+ * the class comment below). Free-standing for the same reason as
+ * sanitizedInstanceName() above: testable without a LauncherContext. */
+bool languageSetupStepNeeded(const QString& language);
+/* @p hostnameChanged: the machine's hostname no longer matches the
+ * "LastHostname" setting recorded on a previous run -- same trigger the
+ * widget wizard used (a new machine, or a rename, may mean Java moved or
+ * vanished). @p javaPathResolves: FS::ResolveExecutable() on the "JavaPath"
+ * setting found something. Callers compute both against live state; this
+ * function only combines them, so it needs neither Qt network calls
+ * (QHostInfo) nor filesystem access to test. */
+bool javaSetupStepNeeded(bool hostnameChanged, bool javaPathResolves);
 
 /*
  * The QML user interface: owns the engine, hands the core's models to it and
@@ -103,6 +121,23 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* iconsModel READ iconsModel CONSTANT)
 	/// Where installed icons live, for a picker's "open folder" action.
 	Q_PROPERTY(QString iconsDir READ iconsDir CONSTANT)
+
+	/* Onboarding: the widget SetupWizard (LanguageWizardPage/JavaWizardPage)
+	 * used to run before the main window -- including under the QML shell,
+	 * which this replaces. See recomputeSetupSteps() for the rules, unchanged
+	 * from Application::createSetupWizard(). */
+	/// Ids of the wizard steps still needed, in the widget wizard's own
+	/// order: "language", then "java". Empty once nothing is needed.
+	Q_PROPERTY(QStringList setupSteps READ setupSteps NOTIFY setupStepsChanged)
+	/// The language picker's model; roles are `languageKey`, `name` (native
+	/// name), `completeness` (see TranslationsModel::roleNames()).
+	Q_PROPERTY(QObject* languages READ languages CONSTANT)
+	/// Detected Java installs; roles include `path`, `version`,
+	/// `architecture`, `recommended` (see BaseVersionList::roleNames(), which
+	/// JavaInstallList inherits).
+	Q_PROPERTY(QObject* javaInstalls READ javaInstalls CONSTANT)
+	/// Whether detectJava()'s task is still running.
+	Q_PROPERTY(bool javaDetecting READ javaDetecting NOTIFY javaDetectingChanged)
 
   public:
 	explicit QmlShell(QObject* parent = nullptr);
@@ -260,6 +295,36 @@ class QmlShell : public QObject
 	QObject* iconsModel() const;
 	QString iconsDir() const;
 
+	QStringList setupSteps() const;
+	/* Recomputes setupSteps() from live settings, exactly like
+	 * Application::createSetupWizard() did once at startup for the widget
+	 * wizard -- called once from the constructor, and again whenever QML
+	 * says a step is done (finishSetupStep()), since finishing one step
+	 * (e.g. picking a language) does not change whether another (Java) is
+	 * still needed, but the shell has no other way to notice that a step it
+	 * already reported is now satisfied. */
+	Q_INVOKABLE void finishSetupStep(const QString& id);
+	QObject* languages() const;
+	/* Applies @p key live the way LanguageSelectionWidget's row-changed
+	 * handler does (TranslationsModel::selectLanguage() +
+	 * updateLanguage()), retranslates the running QML engine so qsTr()
+	 * strings update immediately, and persists it as LanguageWizardPage's
+	 * validatePage() does. */
+	Q_INVOKABLE void selectLanguage(const QString& key);
+	QObject* javaInstalls() const;
+	bool javaDetecting() const;
+	/* Starts the same JavaInstallList detection task the widget wizard's
+	 * refresh button runs (JavaSettingsWidget::refresh() ->
+	 * VersionSelectWidget::loadList()) -- always a fresh run, not only when
+	 * nothing has been detected yet. */
+	Q_INVOKABLE void detectJava();
+	/* Writes JavaPath the way JavaWizardPage::validatePage() does for a
+	 * good result -- @p path is expected to already be a checked candidate
+	 * (one of javaInstalls()'s rows), so this does not re-run JavaChecker.
+	 * The wizard page never writes JavaVersion/JavaArchitecture itself
+	 * (CheckJava, the launch step, does that later), so neither does this. */
+	Q_INVOKABLE void useJava(const QString& path);
+
   signals:
 	/* Emitted when the root window really closes -- not merely when it
 	 * is hidden (see eventFilter()): a plugin's main_window_hide(), or a
@@ -284,9 +349,17 @@ class QmlShell : public QObject
 	/// importIcon() succeeded and the icon list now has @p key.
 	void iconImported(const QString& key);
 
+	/// setupSteps() moved.
+	void setupStepsChanged();
+	/// javaDetecting() moved.
+	void javaDetectingChanged();
+
   private:
 	QVariantMap rootProperties();
 	void scheduleSnapshotIfRequested();
+	/* The actual rule-running: see setupSteps()'s Q_PROPERTY comment and
+	 * finishSetupStep(). */
+	void recomputeSetupSteps();
 
 	/* Installed on m_window by show(). Watches for the window's own
 	 * QEvent::Close to emit closed() -- see the signal's doc comment
@@ -320,4 +393,12 @@ class QmlShell : public QObject
 	std::unique_ptr<QQmlApplicationEngine> m_engine;
 	QQuickWindow* m_window = nullptr;
 	int m_accountRevision = 0;
+
+	/* Onboarding -- see setupSteps()'s Q_PROPERTY comment. Not exposed as
+	 * shared_ptr members the way m_instances etc. are: TranslationsModel and
+	 * JavaInstallList are LauncherContext-owned singletons (LAUNCHER->
+	 * translations()/javalist()), shared with the rest of the launcher and
+	 * outliving any one QmlShell, so there is nothing here to own. */
+	QStringList m_setupSteps;
+	bool m_javaDetecting = false;
 };

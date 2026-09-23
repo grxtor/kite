@@ -22,11 +22,13 @@
 #include "qml/QmlShell.h"
 
 /*
- * Covers sanitizedInstanceName(), the free-standing helper
- * QmlShell::renameInstance() and duplicateInstance() build on. It is
- * free-standing rather than a QmlShell method precisely so this can run
- * without a LauncherContext, the way NewInstanceController_test.cpp exercises
- * composeSuggestedInstanceName() without a NewInstanceController.
+ * Covers sanitizedInstanceName() and the setup-step-needed rules
+ * (languageSetupStepNeeded()/javaSetupStepNeeded()), the free-standing
+ * helpers QmlShell::renameInstance()/duplicateInstance() and
+ * recomputeSetupSteps() build on. They are free-standing rather than QmlShell
+ * methods precisely so this can run without a LauncherContext, the way
+ * NewInstanceController_test.cpp exercises composeSuggestedInstanceName()
+ * without a NewInstanceController.
  */
 class QmlShellTest : public QObject
 {
@@ -61,6 +63,31 @@ class QmlShellTest : public QObject
 	void emptyNameStaysEmpty()
 	{
 		QVERIFY(sanitizedInstanceName(QString()).isEmpty());
+	}
+
+	void languageStepNeededOnlyWhenLanguageIsEmpty()
+	{
+		QVERIFY(languageSetupStepNeeded(QString()));
+		QVERIFY(!languageSetupStepNeeded(QStringLiteral("en_US")));
+	}
+
+	void javaStepNeededWhenHostnameChangedRegardlessOfJavaPath()
+	{
+		QVERIFY(javaSetupStepNeeded(/* hostnameChanged */ true,
+									/* javaPathResolves */ true));
+		QVERIFY(javaSetupStepNeeded(true, false));
+	}
+
+	void javaStepNeededWhenJavaPathDoesNotResolve()
+	{
+		QVERIFY(javaSetupStepNeeded(/* hostnameChanged */ false,
+									/* javaPathResolves */ false));
+	}
+
+	void javaStepNotNeededWhenHostnameSameAndJavaPathResolves()
+	{
+		QVERIFY(!javaSetupStepNeeded(/* hostnameChanged */ false,
+									 /* javaPathResolves */ true));
 	}
 };
 

@@ -49,6 +49,7 @@ ApplicationWindow {
             if (mode === "dark" || mode === "light")
                 Theme.mode = mode
         }
+        onboarding.start()
     }
     onSelectedIdChanged: {
         if (selectedId.length > 0)
@@ -259,6 +260,7 @@ ApplicationWindow {
                 }
 
                 AccountsPage {
+                    id: accountsPage
                     controller: root.shell && root.shell.accountsController ? root.shell.accountsController : null
                 }
             }
@@ -367,5 +369,15 @@ ApplicationWindow {
     BusyOverlay {
         busy: root.shell && root.shell.uiHost ? root.shell.uiHost.busy : false
         text: root.shell && root.shell.uiHost ? root.shell.uiHost.busyText : ""
+    }
+
+    // First run: language, Java, account -- over everything else.
+    OnboardingView {
+        id: onboarding
+        shell: root.shell
+        onSignInRequested: {
+            root.page = "accounts"
+            accountsPage.startMicrosoftLogin()
+        }
     }
 }

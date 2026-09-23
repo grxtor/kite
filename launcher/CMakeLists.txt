@@ -615,6 +615,13 @@ set(TRANSLATIONS_SOURCES
     translations/POTranslator.cpp
 )
 
+# Model bookkeeping only (roleNames(), the builtin default row) -- no
+# network, same reasoning as the IconList test below.
+add_unit_test(TranslationsModel
+    SOURCES translations/TranslationsModel_test.cpp
+    LIBS MeshMC_core
+    )
+
 set(TOOLS_SOURCES
     # Tools
     tools/BaseExternalTool.cpp

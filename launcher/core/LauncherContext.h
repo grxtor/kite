@@ -30,8 +30,10 @@ class AuthRequestDecorator;
 class HttpMetaCache;
 class IconList;
 class InstanceList;
+class JavaInstallList;
 class QNetworkAccessManager;
 class SettingsObject;
+class TranslationsModel;
 class UiHost;
 
 namespace Meta
@@ -74,6 +76,13 @@ class LauncherContext
 	virtual std::shared_ptr<InstanceList> instances() const = 0;
 	virtual std::shared_ptr<IconList> icons() const = 0;
 	virtual shared_qobject_ptr<AccountList> accounts() const = 0;
+	/* Not const: Application::translations() is loaded once during startup
+	 * and just returns it, but Application::javalist() builds its
+	 * JavaInstallList lazily on first call. Needed by QmlShell (MeshMC_qml,
+	 * which links this core and not Application/MeshMC_logic) for the QML
+	 * shell's own onboarding -- see QmlShell::languages()/javaInstalls(). */
+	virtual std::shared_ptr<TranslationsModel> translations() = 0;
+	virtual std::shared_ptr<JavaInstallList> javalist() = 0;
 
 	virtual shared_qobject_ptr<QNetworkAccessManager> network() = 0;
 	virtual shared_qobject_ptr<HttpMetaCache> metacache() = 0;

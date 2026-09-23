@@ -23,6 +23,7 @@
 #include <QDebug>
 #include <QEvent>
 #include <QFileInfo>
+#include <QHostInfo>
 #include <QImage>
 #include <QTimer>
 #include <QQmlApplicationEngine>
@@ -31,9 +32,11 @@
 #include <QUrl>
 
 #include "BaseInstance.h"
+#include "FileSystem.h"
 #include "InstanceCopyTask.h"
 #include "InstanceList.h"
 #include "icons/IconList.h"
+#include "java/JavaInstallList.h"
 #include "models/AccountsController.h"
 #include "models/IdSelectionModel.h"
 #include "models/InstanceDetails.h"
@@ -42,7 +45,9 @@
 #include "models/SettingsAdapter.h"
 #include "models/ContentBrowser.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
+#include "tasks/Task.h"
 #include "tasks/TaskWatcher.h"
+#include "translations/TranslationsModel.h"
 #include "Sys.h"
 #include "DesktopServices.h"
 #include "settings/SettingsObject.h"
@@ -81,6 +86,16 @@ QString sanitizedInstanceName(const QString& name)
 	return sanitized.trimmed();
 }
 
+bool languageSetupStepNeeded(const QString& language)
+{
+	return language.isEmpty();
+}
+
+bool javaSetupStepNeeded(bool hostnameChanged, bool javaPathResolves)
+{
+	return hostnameChanged || !javaPathResolves;
+}
+
 QmlShell::QmlShell(QObject* parent) : QObject(parent)
 {
 	/* Sidebar account summary. Both signals exist on AccountList already;
@@ -96,6 +111,10 @@ QmlShell::QmlShell(QObject* parent) : QObject(parent)
 	};
 	connect(accounts.get(), &AccountList::listChanged, this, bump);
 	connect(accounts.get(), &AccountList::defaultAccountChanged, this, bump);
+
+	// Once per run, like Application::createSetupWizard() used to compute
+	// this once before deciding whether to show the widget wizard.
+	recomputeSetupSteps();
 }
 
 QmlShell::~QmlShell() = default;
@@ -340,6 +359,104 @@ QObject* QmlShell::iconsModel() const
 QString QmlShell::iconsDir() const
 {
 	return LAUNCHER->icons()->getDirectory();
+}
+
+QStringList QmlShell::setupSteps() const
+{
+	return m_setupSteps;
+}
+
+void QmlShell::recomputeSetupSteps()
+{
+	auto settings = LAUNCHER->settings();
+
+	// Same hostname check as Application::createSetupWizard(): a machine
+	// change may mean the recorded JavaPath no longer applies, so this is
+	// re-armed by recording the new hostname once it is seen.
+	const QString currentHostName = QHostInfo::localHostName();
+	const QString oldHostName = settings->get("LastHostname").toString();
+	const bool hostnameChanged = currentHostName != oldHostName;
+	if (hostnameChanged) {
+		settings->set("LastHostname", currentHostName);
+	}
+	const QString javaPath = settings->get("JavaPath").toString();
+	const bool javaPathResolves = !FS::ResolveExecutable(javaPath).isNull();
+
+	QStringList steps;
+	if (languageSetupStepNeeded(settings->get("Language").toString())) {
+		steps << QStringLiteral("language");
+	}
+	if (javaSetupStepNeeded(hostnameChanged, javaPathResolves)) {
+		steps << QStringLiteral("java");
+	}
+
+	if (steps == m_setupSteps) {
+		return;
+	}
+	m_setupSteps = steps;
+	qDebug() << "QML shell: setup steps needed:" << m_setupSteps;
+	emit setupStepsChanged();
+}
+
+void QmlShell::finishSetupStep(const QString& id)
+{
+	Q_UNUSED(id);
+	recomputeSetupSteps();
+}
+
+QObject* QmlShell::languages() const
+{
+	return expose(LAUNCHER->translations().get());
+}
+
+void QmlShell::selectLanguage(const QString& key)
+{
+	auto translations = LAUNCHER->translations();
+	translations->selectLanguage(key);
+	translations->updateLanguage(key);
+	// selectedLanguage() rather than echoing back @p key: selectLanguage()
+	// falls back to the default language for an unrecognised key, and this
+	// should persist whatever it actually settled on, the way
+	// LanguageWizardPage::validatePage() persists the tree view's current
+	// selection rather than trusting an arbitrary string.
+	LAUNCHER->settings()->set("Language", translations->selectedLanguage());
+	if (m_engine) {
+		m_engine->retranslate();
+	}
+}
+
+QObject* QmlShell::javaInstalls() const
+{
+	return expose(LAUNCHER->javalist().get());
+}
+
+bool QmlShell::javaDetecting() const
+{
+	return m_javaDetecting;
+}
+
+void QmlShell::detectJava()
+{
+	auto task = LAUNCHER->javalist()->getLoadTask();
+	if (!task) {
+		return;
+	}
+	if (!m_javaDetecting) {
+		m_javaDetecting = true;
+		emit javaDetectingChanged();
+	}
+	connect(task.get(), &Task::finished, this, [this]() {
+		m_javaDetecting = false;
+		emit javaDetectingChanged();
+	});
+	if (!task->isRunning()) {
+		task->start();
+	}
+}
+
+void QmlShell::useJava(const QString& path)
+{
+	LAUNCHER->settings()->set("JavaPath", path);
 }
 
 QObject* QmlShell::settings() const

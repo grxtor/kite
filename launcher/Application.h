@@ -139,9 +139,9 @@ class Application : public QApplication, public LauncherContext
 
 	void triggerUpdateCheck();
 
-	std::shared_ptr<TranslationsModel> translations();
+	std::shared_ptr<TranslationsModel> translations() override;
 
-	std::shared_ptr<JavaInstallList> javalist();
+	std::shared_ptr<JavaInstallList> javalist() override;
 
 	std::shared_ptr<InstanceList> instances() const override
 	{
