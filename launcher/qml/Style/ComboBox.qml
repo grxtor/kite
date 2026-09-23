@@ -36,7 +36,14 @@ T.ComboBox {
     }
 
     indicator: Chevron {
-        x: control.mirrored ? control.padding : control.width - width - control.padding
+        // Theme.space.sm, not control.padding: leftPadding/rightPadding
+        // above are set explicitly (asymmetric, to leave room for this
+        // indicator), which leaves the generic `padding` itself at its
+        // unset default of 0 -- reading it here silently put the indicator
+        // flush against the control's own edge, right on top of its
+        // border, instead of inset by the margin rightPadding actually
+        // reserved for it.
+        x: control.mirrored ? Theme.space.sm : control.width - width - Theme.space.sm
         y: control.topPadding + (control.availableHeight - height) / 2
         width: Theme.icon.sm
         height: Theme.icon.sm

@@ -92,6 +92,12 @@ ApplicationWindow {
                 root.openNewInstance(value)
             else if (key === "gallery")
                 galleryLoader.active = true
+            else if (key === "profilemenu")
+                Qt.callLater(() => topBar.openProfileMenu())
+            else if (key === "picker")
+                Qt.callLater(() => playDock.openPicker())
+            else if (key === "sidebar")
+                SettingsStore.setValue("UiSidebarCollapsed", value === "collapsed")
         }
     }
     Timer {
@@ -130,6 +136,13 @@ ApplicationWindow {
         root.call("launchInstance", id)
     }
 
+    // Library/Discover/Instance keep the play bar; Settings/Accounts hide it
+    // -- no "instance to play" on either, and the extra chrome would just
+    // crowd two already form-heavy pages.
+    function dockVisibleFor(page) {
+        return page === "library" || page === "discover" || page === "instance"
+    }
+
     function instanceGroups() {
         var groups = root.shell && root.shell.groups ? root.shell.groups : []
         return [""].concat(groups.filter(g => g.length > 0))
@@ -162,6 +175,21 @@ ApplicationWindow {
         when: !!root.shell && !!root.shell.instancePageModel
     }
 
+    // The play bar's instance: the selection if there is one, otherwise the
+    // most recently played instance, otherwise just the first one -- the
+    // same fallback the library's old hero card used. heroModel is free for
+    // this now that the hero card itself is gone (see LibraryPage.qml).
+    readonly property string dockInstanceId: root.selectedId.length > 0 ? root.selectedId
+            : (root.shell && root.shell.recentModel && root.shell.recentModel.firstId ? root.shell.recentModel.firstId
+            : (root.instanceModel && root.instanceModel.firstId ? root.instanceModel.firstId : ""))
+
+    Binding {
+        target: root.shell && root.shell.heroModel ? root.shell.heroModel : null
+        property: "instanceId"
+        value: root.dockInstanceId
+        when: !!root.shell && !!root.shell.heroModel
+    }
+
     Shortcut {
         sequences: [StandardKey.New]
         onActivated: root.openNewInstance()
@@ -176,8 +204,11 @@ ApplicationWindow {
             Layout.preferredWidth: implicitWidth
             // An icon rail below this saves real width for the content
             // pages on the launcher's own minimum-width window, rather than
-            // squeezing the library grid down to one column behind it.
-            collapsed: root.width < 1000
+            // squeezing the library grid down to one column behind it. ORed
+            // with the persisted manual toggle (see SidebarNav's own
+            // collapseToggle), so a small window still forces the rail
+            // regardless of what was last chosen.
+            collapsed: root.width < 1000 || SettingsStore.bool("UiSidebarCollapsed")
             items: [
                 { id: "library", icon: "library", label: qsTr("Library") },
                 { id: "discover", icon: "compass", label: qsTr("Discover") }
@@ -187,16 +218,12 @@ ApplicationWindow {
             ]
             currentId: root.page === "instance" ? "library" : root.page === "accounts" ? "" : root.page
             recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
-            accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
-            accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
-            accountAvatarSource: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
             onItemActivated: (id) => root.page = id
             onRecentActivated: (id) => {
                 root.page = "library"
                 root.selectedId = id
             }
             onRecentPlayRequested: (id) => root.launch(id)
-            onAccountClicked: root.page = "accounts"
         }
 
         ColumnLayout {
@@ -217,6 +244,12 @@ ApplicationWindow {
                 searchVisible: root.page === "library"
                 searchPlaceholder: qsTr("Search instances")
                 onSearchTextChanged: root.instanceModel.filterText = searchText
+
+                accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
+                accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
+                accountAvatarSource: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
+                accountsController: root.shell && root.shell.accountsController ? root.shell.accountsController : null
+                onOpenAccountsRequested: root.page = "accounts"
 
                 ComboBox {
                     id: sortCombo
@@ -277,6 +310,12 @@ ApplicationWindow {
                 Layout.minimumWidth: 0
 
                 readonly property var pageOrder: ["library", "settings", "discover", "instance", "accounts"]
+                // Whether the play bar shows for the page currently on
+                // screen -- updated at the same invisible midpoint as
+                // pageStack's own currentIndex (see pageTransition below),
+                // never straight from root.page, so the bar never appears or
+                // disappears while the old page is still visibly fading.
+                property bool dockVisible: root.dockVisibleFor(root.page)
 
                 transform: Translate { id: pageSlide }
 
@@ -285,6 +324,7 @@ ApplicationWindow {
                     property int nextIndex: 0
                     NumberAnimation { target: pageHost; property: "opacity"; to: 0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
                     PropertyAction { target: pageStack; property: "currentIndex"; value: pageTransition.nextIndex }
+                    PropertyAction { target: pageHost; property: "dockVisible"; value: root.dockVisibleFor(pageHost.pageOrder[pageTransition.nextIndex]) }
                     ParallelAnimation {
                         NumberAnimation { target: pageHost; property: "opacity"; to: 1; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
                         NumberAnimation { target: pageSlide; property: "y"; from: Theme.space.sm; to: 0; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
@@ -308,8 +348,6 @@ ApplicationWindow {
                         id: libraryPage
                         focus: true
                         instanceModel: root.instanceModel
-                        recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
-                        heroModel: root.shell && root.shell.heroModel ? root.shell.heroModel : null
                         sectionModelFor: function (group) {
                             return root.shell && typeof root.shell.sectionModel === "function"
                                     ? root.shell.sectionModel(group) : null
@@ -388,9 +426,12 @@ ApplicationWindow {
                         headerModel: root.shell && root.shell.instancePageModel ? root.shell.instancePageModel : null
                         details: root.openedDetails
                         systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
+                        accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
+                        accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
+                        accountAvatarSource: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
+                        accountsController: root.shell && root.shell.accountsController ? root.shell.accountsController : null
+                        onOpenAccountsRequested: root.page = "accounts"
                         onBackRequested: root.page = "library"
-                        onLaunchRequested: (id) => root.launch(id)
-                        onStopRequested: (id) => root.call("killInstance", id)
                         onClassicEditorRequested: (id) => root.call("editInstance", id)
                         pluginSurfacesFor: function (anchor, instanceId) {
                             return root.shell && typeof root.shell.pluginSurfaces === "function"
@@ -407,6 +448,29 @@ ApplicationWindow {
                         controller: root.shell && root.shell.accountsController ? root.shell.accountsController : null
                     }
                 }
+            }
+
+            // A genuine row below the page area, not a floating overlay: the
+            // StackLayout above shrinks by exactly this bar's height
+            // whenever it is visible, so it can never cover a page's
+            // content -- including Discover's, whose QML this change does
+            // not own. visible follows pageHost.dockVisible rather than
+            // root.page directly, so it appears/disappears at the same
+            // invisible mid-fade instant the page itself swaps at, instead
+            // of jumping the layout while the outgoing page is still
+            // visible.
+            PlayDock {
+                id: playDock
+                Layout.fillWidth: true
+                visible: pageHost.dockVisible
+                rowModel: root.shell && root.shell.heroModel ? root.shell.heroModel : null
+                instanceModel: root.instanceModel
+                recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
+                selectedId: root.selectedId
+                onSelectRequested: (id) => root.selectedId = id
+                onLaunchRequested: (id) => root.launch(id)
+                onStopRequested: (id) => root.call("killInstance", id)
+                onCancelRequested: (id) => root.call("killInstance", id)
             }
         }
     }

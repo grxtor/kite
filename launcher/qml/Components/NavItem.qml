@@ -34,7 +34,17 @@ AbstractButton {
     ToolTip.delay: 400
     ToolTip.text: control.label
 
+    // Collapsed: a compact square hugging just the icon rather than the
+    // whole stretched row -- the same square SidebarNav's own activeIndicator
+    // uses for the selected item (see its own comment), so hover and
+    // selection read as the same shape in the rail.
+    readonly property int railSquare: 40
+
     background: Rectangle {
+        width: control.collapsed ? control.railSquare : control.width
+        height: control.collapsed ? control.railSquare : control.height
+        x: control.collapsed ? (control.width - width) / 2 : 0
+        y: control.collapsed ? (control.height - height) / 2 : 0
         radius: Theme.radius.md
         color: control.down ? Theme.palette.pressedOverlay
              : control.hovered ? Theme.palette.hoverOverlay : "transparent"

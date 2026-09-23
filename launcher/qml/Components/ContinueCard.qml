@@ -37,6 +37,10 @@ Rectangle {
     property string editText: qsTr("Edit")
     // A shorter banner for pages where the content below matters more.
     property bool compact: false
+    // False on the instance page: the persistent play bar plays and stops
+    // the opened instance now, so its own header no longer needs a second
+    // Play/Stop control.
+    property bool showPlay: true
     // A one-line strip: title and tags beside the icon, actions on the
     // right -- for tabs whose content needs the height (the instance page
     // outside its Overview).
@@ -222,6 +226,7 @@ Rectangle {
             spacing: Theme.space.sm
 
             PlayButton {
+                visible: root.showPlay
                 round: false
                 size: Theme.control.heightLg
                 running: root.isRunning

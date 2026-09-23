@@ -31,6 +31,11 @@ Rectangle {
     property var recentModel: null
     property int recentLimit: 4
 
+    // The account chip used to live at the foot of this rail; it is gone
+    // now that the top bar's ProfileButton covers every page (including the
+    // instance page, which had no chip to show it on). These three stay
+    // declared, unused, only because Gallery.qml -- outside this change --
+    // still binds them on its own SidebarNav preview.
     property string accountName: ""
     property string accountKind: ""
     property string accountAvatarSource: ""
@@ -82,27 +87,44 @@ Rectangle {
     // The selected destination's fill, as one pill that slides from the
     // previous item to the new one instead of each item owning its own
     // static highlight -- NavItem itself only ever paints hover/press.
+    //
+    // Collapsed: a compact square (the same size as NavItem's own rail
+    // square) centred in the item's row, not a rectangle stretched to the
+    // row's full width -- a wide highlight behind a small centred icon is
+    // what made it look like the icon and its highlight did not agree on a
+    // centre. The accent bar is a separate sibling, always pinned to the
+    // rail's own left edge, so it never has to share (or move with) this
+    // square's own left edge.
+    readonly property int railSquare: 40
+    readonly property real indicatorItemY: root.selectedNavItem ? root.selectedNavItem.y : 0
+    readonly property real indicatorItemH: root.selectedNavItem ? root.selectedNavItem.height : 0
+    readonly property real indicatorItemW: root.selectedNavItem ? root.selectedNavItem.width : 0
+
     Rectangle {
         id: activeIndicator
         visible: !!root.selectedNavItem
-        x: Theme.space.md
-        y: Theme.space.md + (root.selectedNavItem ? root.selectedNavItem.y : 0)
-        width: root.selectedNavItem ? root.selectedNavItem.width : 0
-        height: root.selectedNavItem ? root.selectedNavItem.height : 0
+        width: root.collapsed ? root.railSquare : root.indicatorItemW
+        height: root.collapsed ? root.railSquare : root.indicatorItemH
+        x: Theme.space.md + (root.collapsed ? (root.indicatorItemW - width) / 2 : 0)
+        y: Theme.space.md + root.indicatorItemY + (root.collapsed ? (root.indicatorItemH - height) / 2 : 0)
         radius: Theme.radius.md
         color: Theme.palette.surfaceRaised
 
+        Behavior on x { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on width { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+    }
 
-        Rectangle {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            width: 3
-            height: parent.height - Theme.space.md * 2 + 4
-            radius: 2
-            color: Theme.palette.accent
-        }
+    Rectangle {
+        visible: !!root.selectedNavItem
+        x: Theme.space.md
+        y: Theme.space.md + root.indicatorItemY + (root.indicatorItemH - height) / 2
+        width: 3
+        height: root.indicatorItemH - Theme.space.md * 2 + 4
+        radius: 2
+        color: Theme.palette.accent
+
+        Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
     }
 
     ColumnLayout {
@@ -222,71 +244,24 @@ Rectangle {
             }
         }
 
-        AccountChip {
-            visible: !root.collapsed
-            Layout.fillWidth: true
-            Layout.topMargin: Theme.space.sm
-            name: root.accountName
-            kind: root.accountKind
-            avatarSource: root.accountAvatarSource
-            onClicked: root.accountClicked()
-        }
+        // The collapse toggle, grouped with Settings at the sidebar's foot
+        // rather than floating in its own row up near the logo -- persisted,
+        // so a manual choice survives a restart; SidebarNav.collapsed itself
+        // still ORs this with the caller's own narrow-window check (see
+        // Main.qml), so a small window keeps auto-collapsing regardless of
+        // what was last chosen.
+        IconButton {
+            id: collapseToggle
+            Layout.topMargin: Theme.space.xxs
+            Layout.alignment: root.collapsed ? Qt.AlignHCenter : Qt.AlignRight
+            size: Theme.control.heightSm
+            iconName: "chevron-left"
+            tip: root.collapsed ? qsTr("Expand sidebar") : qsTr("Collapse sidebar")
+            rotation: root.collapsed ? 180 : 0
 
-        // The chip's own slot is the accounts agent's, left untouched above;
-        // the rail just needs *something* tappable in its place, so this is
-        // a second, independent control rather than a squeezed copy of it.
-        AbstractButton {
-            id: railAccountButton
-            visible: root.collapsed
-            Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: Theme.space.sm
-            implicitWidth: Theme.control.heightLg - 4
-            implicitHeight: implicitWidth
-            hoverEnabled: true
-            Accessible.name: root.accountName.length > 0 ? qsTr("Account: %1").arg(root.accountName) : qsTr("Sign in")
+            Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
 
-            ToolTip.visible: hovered
-            ToolTip.delay: 400
-            ToolTip.text: root.accountName.length > 0 ? root.accountName : qsTr("Sign in")
-
-            background: Rectangle {
-                radius: Theme.radius.md
-                color: root.accountName.length > 0 ? Theme.palette.accentSubtle : Theme.palette.surfaceOverlay
-                border.width: railAccountButton.hovered ? 1 : 0
-                border.color: Theme.palette.borderStrong
-            }
-
-            contentItem: Item {
-                Text {
-                    anchors.centerIn: parent
-                    visible: root.accountName.length > 0 && avatarImage.status !== Image.Ready
-                    text: root.accountName.charAt(0).toUpperCase()
-                    color: Theme.palette.accent
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Font.Bold
-                }
-
-                Image {
-                    id: avatarImage
-                    anchors.fill: parent
-                    anchors.margins: 2
-                    source: root.accountAvatarSource
-                    visible: root.accountName.length > 0 && root.accountAvatarSource.length > 0
-                    smooth: false
-                    sourceSize: Qt.size(width, height)
-                }
-
-                MeshIcon {
-                    anchors.centerIn: parent
-                    visible: root.accountName.length === 0
-                    iconName: "user"
-                    size: Theme.icon.md
-                    color: Theme.palette.textSecondary
-                }
-            }
-
-            onClicked: root.accountClicked()
+            onClicked: SettingsStore.setValue("UiSidebarCollapsed", !SettingsStore.bool("UiSidebarCollapsed"))
         }
     }
 }

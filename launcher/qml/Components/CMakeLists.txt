@@ -89,6 +89,9 @@ qt_add_qml_module(MeshMC_qml_components
         SidebarNav.qml
         NavItem.qml
         AccountChip.qml
+        ProfileButton.qml
+        ProfileMenu.qml
+        PlayDock.qml
         TopBar.qml
         SectionHeader.qml
         StatusBadge.qml

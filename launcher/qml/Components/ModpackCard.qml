@@ -53,6 +53,57 @@ Item {
         return word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word
     }
 
+    // Which of shownCategories actually fit the card's content width, plus
+    // how many were left out -- rather than always laying out all three and
+    // letting the card's own clip cut the last one off mid-word at the
+    // border. Category names vary a lot in length ("Magic" vs.
+    // "Optimization"), and the card grid's own column count changes the
+    // available width, so this is measured, not guessed at a fixed count.
+    //
+    // A plain property recomputed on the specific changes below, not a
+    // binding straight off computeTagFit(): that function both writes
+    // tagMetrics.text and reads the resulting tagMetrics.width, and a
+    // binding that reads a value it just wrote itself is exactly what
+    // "Binding loop detected" is warning about.
+    property var tagFit: ({ shown: [], hiddenCount: 0 })
+    onWidthChanged: tagFit = computeTagFit()
+    onShownCategoriesChanged: tagFit = computeTagFit()
+    Component.onCompleted: tagFit = computeTagFit()
+    function computeTagFit() {
+        var cats = root.shownCategories.map(titleCase)
+        var maxWidth = Math.max(0, root.width - Theme.space.md * 2)
+        var spacing = Theme.space.xs
+        if (cats.length === 0)
+            return { shown: [], hiddenCount: 0 }
+        function chipWidth(text) {
+            tagMetrics.text = text
+            return tagMetrics.width + Theme.space.sm * 2
+        }
+        var widths = cats.map(chipWidth)
+        var total = widths.reduce(function (a, b) { return a + b }, 0) + spacing * (cats.length - 1)
+        if (total <= maxWidth)
+            return { shown: cats, hiddenCount: 0 }
+        var shown = []
+        var used = 0
+        for (var i = 0; i < cats.length; ++i) {
+            var remaining = cats.length - i - 1
+            var overflowW = remaining > 0 ? chipWidth("+" + remaining) + spacing : 0
+            var withSpacing = shown.length > 0 ? spacing : 0
+            if (used + withSpacing + widths[i] + overflowW > maxWidth)
+                break
+            used += withSpacing + widths[i]
+            shown.push(cats[i])
+        }
+        return { shown: shown, hiddenCount: cats.length - shown.length }
+    }
+
+    TextMetrics {
+        id: tagMetrics
+        font.family: Theme.font.family
+        font.pixelSize: Theme.type.caption.pixelSize
+        font.weight: Font.Medium
+    }
+
     // Modrinth's ISO date -> "3 h ago" / "5 d ago", the same coarseness
     // Format.lastPlayed uses for an instance's last launch. Kept local
     // rather than added there: a pack's "date_modified" has no "never"
@@ -102,15 +153,11 @@ Item {
         height: bodyColumn.y + bodyColumn.height + Theme.space.md
         radius: Theme.radius.lg
         clip: true
+        // Hover changes only the border and fill -- no lift, no motion.
         color: root.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
         border.width: 1
         border.color: root.hovered ? Theme.palette.borderStrong : Theme.palette.border
-        // The lift is on the card, not the root, so the root's own
-        // reported size (what the page's Grid lays out against) never
-        // wobbles -- same trick InstanceCard uses.
-        y: root.hovered ? -3 : 0
 
-        Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
@@ -126,52 +173,51 @@ Item {
 
             Skeleton { anchors.fill: parent; radius: 0; visible: root.skeleton }
 
-            // Fallback backdrop when there is no gallery shot: a gradient
-            // cut from the project's own accent colour, the logo blown up
-            // and faded behind a crisp copy of itself -- the closest a
-            // shader-free build gets to a "blurred glow".
+            // A gallery shot that has not arrived yet (Modrinth's images
+            // routinely take several seconds) gets a quiet shimmer, not the
+            // permanent fallback plate below -- that plate is for a pack
+            // that has no gallery shot at all, or whose one failed outright.
+            Skeleton {
+                anchors.fill: parent
+                radius: 0
+                visible: !root.skeleton && root.galleryUrl.length > 0 && coverImage.status === Image.Loading
+            }
+
+            // Permanent fallback for a pack with no gallery shot (or a
+            // failed one): a gradient cut from the project's own accent
+            // colour with a subtle blocky pattern, the same idiom
+            // CoverArt.qml uses for an instance with no screenshot --
+            // never the pack's own small icon blown up, which just reads as
+            // blurry.
             Rectangle {
                 id: fallback
                 anchors.fill: parent
-                // Stays under the real cover until it is fully loaded (and
-                // reappears if it errors), so the crossfade below never
-                // exposes bare card colour for a frame.
-                visible: !root.skeleton && coverImage.status !== Image.Ready
+                visible: !root.skeleton
+                         && (root.galleryUrl.length === 0 || coverImage.status === Image.Error)
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: Format.shade(root.tint, Theme.dark ? 0.30 : 0.88, 0.9) }
                     GradientStop { position: 1.0; color: Format.shade(root.tint, Theme.dark ? 0.13 : 0.72, 0.85) }
                 }
 
-                Image {
-                    id: logoGlow
-                    anchors.centerIn: parent
-                    width: parent.height * 1.4
-                    height: width
-                    source: root.logoUrl
-                    sourceSize: Qt.size(96, 96)
-                    fillMode: Image.PreserveAspectFit
-                    asynchronous: true
-                    opacity: 0.20
-                    visible: status === Image.Ready
-                }
-                Image {
-                    id: logoCrisp
-                    anchors.centerIn: parent
-                    width: Math.round(parent.height * 0.46)
-                    height: width
-                    source: root.logoUrl
-                    sourceSize: Qt.size(160, 160)
-                    fillMode: Image.PreserveAspectFit
-                    asynchronous: true
-                    visible: status === Image.Ready
-                }
-                MeshIcon {
-                    anchors.centerIn: parent
-                    visible: logoGlow.status !== Image.Ready && logoCrisp.status !== Image.Ready
-                    iconName: "package"
-                    size: Theme.icon.lg
-                    color: Theme.palette.textOnAccent
-                    opacity: 0.55
+                Item {
+                    anchors.fill: parent
+                    anchors.margins: -parent.width * 0.15
+                    clip: true
+
+                    Repeater {
+                        model: 3
+                        delegate: Rectangle {
+                            required property int index
+                            readonly property real span: fallback.height * (1.35 - index * 0.3)
+                            x: fallback.width - span * 0.62 + index * span * 0.20
+                            y: fallback.height * 0.30 - span * 0.5 + index * span * 0.16
+                            width: span
+                            height: span
+                            rotation: 18
+                            radius: Theme.radius.sm
+                            color: Qt.rgba(1, 1, 1, Theme.dark ? 0.05 : 0.10)
+                        }
+                    }
                 }
             }
 
@@ -185,7 +231,7 @@ Item {
                 visible: !root.skeleton && root.galleryUrl.length > 0
                 opacity: status === Image.Ready ? 1 : 0
                 scale: root.hovered ? 1.06 : 1.0
-                Behavior on opacity { NumberAnimation { duration: Theme.motion.slow } }
+                Behavior on opacity { NumberAnimation { duration: Theme.motion.normal } }
                 Behavior on scale { NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
             }
 
@@ -282,6 +328,15 @@ Item {
                     clip: true
                     visible: !root.skeleton
 
+                    // A quiet shimmer while it loads, not the "no icon at
+                    // all" glyph -- that one is for a pack with no logo URL,
+                    // or one whose fetch failed outright.
+                    Skeleton {
+                        anchors.fill: parent
+                        radius: 0
+                        visible: root.logoUrl.length > 0 && logoImg.status === Image.Loading
+                    }
+
                     Image {
                         id: logoImg
                         anchors.fill: parent
@@ -289,11 +344,13 @@ Item {
                         sourceSize: Qt.size(112, 112)
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
-                        visible: status === Image.Ready
+                        visible: opacity > 0
+                        opacity: status === Image.Ready ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: Theme.motion.normal } }
                     }
                     MeshIcon {
                         anchors.centerIn: parent
-                        visible: logoImg.status !== Image.Ready
+                        visible: root.logoUrl.length === 0 || logoImg.status === Image.Error
                         iconName: "package"
                         size: Theme.icon.md
                         color: Theme.palette.textTertiary
@@ -311,11 +368,21 @@ Item {
                 y: root.logoOverlap + Theme.space.xs
                 spacing: Theme.space.xxs
 
+                // Wraps up to 2 lines rather than eliding a long title down
+                // to a handful of characters -- "Zombie Invade 100 Days"
+                // read as "Zombie Invade 100 D…" at this column's width.
+                // The height is fixed at exactly 2 lines regardless of how
+                // many the title actually needs, so a short title does not
+                // leave every other card in its grid row taller than it.
                 Text {
                     width: parent.width
+                    height: Theme.type.title.lineHeightPx * 2
                     visible: !root.skeleton
                     text: root.title
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 2
                     elide: Text.ElideRight
+                    verticalAlignment: Text.AlignTop
                     color: Theme.palette.textPrimary
                     font.family: Theme.font.family
                     font.pixelSize: Theme.type.title.pixelSize
@@ -323,7 +390,7 @@ Item {
                 }
                 Skeleton {
                     width: parent.width * 0.62
-                    height: Theme.type.title.pixelSize
+                    height: Theme.type.title.lineHeightPx * 2
                     radius: Theme.radius.sm
                     visible: root.skeleton
                 }
@@ -380,8 +447,12 @@ Item {
                 spacing: Theme.space.xs
                 visible: !root.skeleton && root.shownCategories.length > 0
                 Repeater {
-                    model: root.shownCategories
-                    delegate: Tag { text: root.titleCase(modelData) }
+                    model: root.tagFit.shown
+                    delegate: Tag { text: modelData }
+                }
+                Tag {
+                    visible: root.tagFit.hiddenCount > 0
+                    text: "+" + root.tagFit.hiddenCount
                 }
             }
             Row {

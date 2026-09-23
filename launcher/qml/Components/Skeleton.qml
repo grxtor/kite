@@ -20,6 +20,11 @@ Item {
 
     property int radius: Theme.radius.md
 
+    // Every decorative loop in the shell stops when the window is not the
+    // active one and when the user has asked for less motion.
+    readonly property bool motionEnabled: Qt.application.state === Qt.ApplicationActive
+                                          && !SettingsStore.bool("UiReduceMotion")
+
     clip: true
 
     Rectangle {

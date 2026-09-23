@@ -26,6 +26,13 @@ AbstractButton {
 
     property bool compact: false
 
+    // Every decorative loop in the shell stops when the window is not the
+    // active one and when the user has asked for less motion -- repeated
+    // per file rather than centralised, since SettingsStore/Theme are not
+    // this change's to extend.
+    readonly property bool motionEnabled: Qt.application.state === Qt.ApplicationActive
+                                          && !SettingsStore.bool("UiReduceMotion")
+
     signal playRequested()
 
     implicitHeight: Theme.control.height
@@ -38,7 +45,16 @@ AbstractButton {
     ToolTip.delay: 400
     ToolTip.text: control.name
 
+    // Compact (icon rail): a square hugging just the icon, the same shape
+    // and size as NavItem's own rail square, so hover reads the same way on
+    // every item in the rail.
+    readonly property int railSquare: 40
+
     background: Rectangle {
+        width: control.compact ? control.railSquare : control.width
+        height: control.compact ? control.railSquare : control.height
+        x: control.compact ? (control.width - width) / 2 : 0
+        y: control.compact ? (control.height - height) / 2 : 0
         radius: Theme.radius.md
         color: control.down ? Theme.palette.pressedOverlay
              : control.hovered ? Theme.palette.hoverOverlay : "transparent"
@@ -75,7 +91,7 @@ AbstractButton {
                 color: Theme.palette.success
 
                 SequentialAnimation on opacity {
-                    running: control.isRunning
+                    running: control.isRunning && control.motionEnabled
                     loops: Animation.Infinite
                     NumberAnimation { from: 1.0; to: 0.45; duration: 900; easing.type: Easing.InOutSine }
                     NumberAnimation { from: 0.45; to: 1.0; duration: 900; easing.type: Easing.InOutSine }

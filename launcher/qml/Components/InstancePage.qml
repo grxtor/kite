@@ -8,10 +8,10 @@ import QtQuick.Layouts
 import MeshMC.Theme
 
 /*
- * One instance, opened from the library: the same banner as the library's
- * hero -- Play, folder, what it runs -- over tabs for what is inside it.
- * Everything not here yet (versions, servers, backups...) is in the
- * classic editor, one click away on the banner.
+ * One instance, opened from the library: the same banner the library's old
+ * hero used -- folder, what it runs, the classic editor -- over tabs for
+ * what is inside it. Play/Stop no longer live on the banner; the persistent
+ * play bar plays and stops whatever instance this page has open instead.
  */
 Item {
     id: root
@@ -26,13 +26,20 @@ Item {
     property var contentInstaller: null
     // (anchor, instanceId) -> PluginSurfaceModel.
     property var pluginSurfacesFor: null
+    // The account, for the top-right ProfileButton -- this page has no
+    // TopBar of its own (see Main.qml), so it carries the same spot here.
+    property string accountName: ""
+    property string accountKind: ""
+    property string accountAvatarSource: ""
+    property var accountsController: null
+    signal openAccountsRequested()
     readonly property string instanceId: details ? details.instanceId : ""
     readonly property var pagePlugins: pluginSurfacesFor && instanceId.length > 0 ? pluginSurfacesFor(1, instanceId) : null
     readonly property var settingsPlugins: pluginSurfacesFor && instanceId.length > 0 ? pluginSurfacesFor(2, instanceId) : null
 
+    // Play/Stop no longer round-trip through this page: the persistent play
+    // bar plays and stops whatever instance is open (see Main.qml).
     signal backRequested()
-    signal launchRequested(string id)
-    signal stopRequested(string id)
     signal classicEditorRequested(string id)
     signal openPathRequested(string path)
 
@@ -44,16 +51,41 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: Theme.space.xl + Theme.space.xs
         anchors.rightMargin: Theme.space.xl + Theme.space.xs
-        anchors.topMargin: Theme.space.md
+        // Theme.space.sm, matching TopBar's own title-row top margin exactly
+        // (see TopBar.qml): this page has no TopBar of its own, but the
+        // account still has to land in the same pixel spot switching to and
+        // from a page that does.
+        anchors.topMargin: Theme.space.sm
         anchors.bottomMargin: Theme.space.lg
         spacing: Theme.space.md
 
-        Button {
-            flat: true
-            text: qsTr("Library")
-            icon.source: Icons.url("chevron-left")
-            leftPadding: Theme.space.sm
-            onClicked: root.backRequested()
+        RowLayout {
+            Layout.fillWidth: true
+            // Theme.control.height, matching TopBar.titleRowHeight -- see
+            // the topMargin comment above.
+            Layout.preferredHeight: Theme.control.height
+            spacing: Theme.space.sm
+
+            Button {
+                flat: true
+                text: qsTr("Library")
+                icon.source: Icons.url("chevron-left")
+                leftPadding: Theme.space.sm
+                onClicked: root.backRequested()
+            }
+
+            Item { Layout.fillWidth: true }
+
+            // No TopBar reaches this page (see Main.qml) -- the account
+            // still needs the same consistent top-right spot every other
+            // page gives it.
+            ProfileButton {
+                name: root.accountName
+                kind: root.accountKind
+                avatarSource: root.accountAvatarSource
+                controller: root.accountsController
+                onOpenAccountsRequested: root.openAccountsRequested()
+            }
         }
 
         Repeater {
@@ -69,8 +101,9 @@ Item {
                 // Outside the Overview the tab's own content needs the room.
                 slim: root.tab !== "overview"
                 editText: qsTr("Classic editor")
-                onPlayRequested: root.launchRequested(instanceId)
-                onStopRequested: root.stopRequested(instanceId)
+                // The persistent play bar plays/stops the opened instance
+                // now; this header no longer needs its own Play/Stop too.
+                showPlay: false
                 onEditRequested: root.classicEditorRequested(instanceId)
                 onFolderRequested: root.openPathRequested(root.details ? root.details.instanceRoot : "")
                 onMenuRequested: root.classicEditorRequested(instanceId)

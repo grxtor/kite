@@ -89,23 +89,25 @@ Item {
         ColumnLayout {
             spacing: Theme.space.lg
 
-            // Search, loader and sort in one toolbar; wraps onto a second
-            // line once a narrow window can no longer fit all four
-            // controls -- the search box gives up its width first, down to
-            // a floor, before anything is pushed to the next line.
-            Flow {
+            // Search, loader, sort and import in one toolbar row -- a
+            // RowLayout, not a wrapping Flow: a Flow that runs out of room
+            // wraps whichever control does not fit onto its own new line,
+            // which for the last item (the import button) meant a whole
+            // row spent on one small icon. The search field gives up its
+            // width first, down to a floor, so everything else always has
+            // room on the one row -- the same rule Library's own toolbar
+            // uses (see TopBar.qml).
+            RowLayout {
                 id: toolbar
                 Layout.fillWidth: true
                 Layout.leftMargin: Theme.space.xl + Theme.space.xs
                 Layout.rightMargin: Theme.space.xl + Theme.space.xs
                 spacing: Theme.space.md
 
-                readonly property int reserved: loaderControl.implicitWidth + sortBox.implicitWidth
-                                                + otherPlatformsButton.implicitWidth + spacing * 3
-
                 SearchBox {
                     id: searchField
-                    width: Math.max(220, toolbar.width - toolbar.reserved)
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 120
                     placeholderText: qsTr("Search modpacks on Modrinth")
                     onTextEdited: debounce.restart()
                     onTextChanged: if (text.length === 0) debounce.restart()
@@ -125,7 +127,7 @@ Item {
 
                 ComboBox {
                     id: sortBox
-                    width: 200
+                    Layout.preferredWidth: 200
                     visible: count > 0
                     model: root.model && root.model.sortOptions ? root.model.sortOptions : []
                     textRole: "label"

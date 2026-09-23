@@ -14,6 +14,9 @@ Rectangle {
 
     property real progress: -1
     property bool onMedia: false
+    // The play bar's XP-bar-like look: thin ticks over the whole track
+    // rather than one smooth fill, evoking a game's own experience bar.
+    property bool segmented: false
     readonly property bool indeterminate: progress < 0
 
     implicitHeight: 4
@@ -31,6 +34,29 @@ Rectangle {
         Behavior on width {
             enabled: !root.indeterminate
             NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing }
+        }
+    }
+
+    Row {
+        visible: root.segmented
+        anchors.fill: parent
+        spacing: 0
+
+        Repeater {
+            model: root.segmented ? 16 : 0
+            delegate: Item {
+                required property int index
+                width: root.width / 16
+                height: parent.height
+
+                Rectangle {
+                    visible: index < 15
+                    anchors.right: parent.right
+                    width: 1
+                    height: parent.height
+                    color: Qt.rgba(0, 0, 0, 0.25)
+                }
+            }
         }
     }
 

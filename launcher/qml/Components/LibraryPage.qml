@@ -7,21 +7,19 @@ import QtQuick.Controls
 import MeshMC.Theme
 
 /*
- * The instance library: a hero for the instance you are most likely to
- * play next, then every group as its own section. While searching, the hero
- * steps aside and only matching instances are listed.
+ * The instance library: every group as its own section. The instance most
+ * likely to play next no longer gets its own hero card here -- the
+ * persistent play bar (PlayDock, in Main.qml) replaces it, showing on every
+ * page rather than just this one.
  *
  * The page never builds models itself. It is handed the search-filtered
- * instance model, a recent-first model, a one-row hero model, and a
- * function that returns the model for one group -- all C++ proxies, owned
- * by the shell.
+ * instance model and a function that returns the model for one group -- all
+ * C++ proxies, owned by the shell.
  */
 Item {
     id: root
 
     property var instanceModel: null
-    property var recentModel: null
-    property var heroModel: null
     property var sectionModelFor: function (group) { return null }
     property string searchText: ""
     property string selectedId: ""
@@ -54,11 +52,6 @@ Item {
     readonly property var groups: instanceModel && instanceModel.groups ? instanceModel.groups : []
     readonly property int instanceCount: instanceModel && instanceModel.count !== undefined ? instanceModel.count : 0
 
-    readonly property string recentId: recentModel && recentModel.firstId ? recentModel.firstId : ""
-    readonly property string heroId: selectedId.length > 0 ? selectedId
-                                   : recentId.length > 0 ? recentId
-                                   : instanceModel && instanceModel.firstId ? instanceModel.firstId : ""
-
     // Session-only: which groups the user folded away.
     property var collapsedGroups: ({})
 
@@ -67,13 +60,6 @@ Item {
         while ((width - gutter * (columns - 1)) / columns > maxCardWidth)
             columns++
         return columns
-    }
-
-    Binding {
-        target: root.heroModel
-        property: "instanceId"
-        value: root.heroId
-        when: !!root.heroModel
     }
 
     Keys.onEscapePressed: root.selectRequested("")
@@ -101,22 +87,6 @@ Item {
             y: Theme.space.xs
             width: root.contentWidth
             spacing: Theme.space.xl + Theme.space.sm
-
-            Repeater {
-                model: root.searching ? null : root.heroModel
-                delegate: ContinueCard {
-                    required property string group
-                    width: content.width
-                    overline: root.selectedId.length > 0 ? qsTr("Selected")
-                            : instanceId === root.recentId ? qsTr("Continue playing")
-                            : qsTr("Ready to play")
-                    onPlayRequested: root.launchRequested(instanceId)
-                    onStopRequested: root.stopRequested(instanceId)
-                    onEditRequested: root.editRequested(instanceId)
-                    onFolderRequested: root.folderRequested(instanceId)
-                    onMenuRequested: instanceMenu.openFor(instanceId, isRunning, name, iconKey, group)
-                }
-            }
 
             Repeater {
                 model: root.groups
