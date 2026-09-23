@@ -208,7 +208,7 @@ Item {
                     }
                 }
 
-                SearchField {
+                SearchBox {
                     Layout.preferredWidth: 220
                     placeholderText: qsTr("Search")
                 }

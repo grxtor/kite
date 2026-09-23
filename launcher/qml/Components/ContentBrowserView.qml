@@ -105,7 +105,7 @@ Item {
             Layout.fillWidth: true
             spacing: Theme.space.md
 
-            SearchField {
+            SearchBox {
                 id: searchField
                 Layout.fillWidth: true
                 placeholderText: qsTr("Search")

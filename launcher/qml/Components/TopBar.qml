@@ -53,7 +53,7 @@ Item {
 
         Item { Layout.fillWidth: true }
 
-        SearchField {
+        SearchBox {
             id: searchField
             visible: root.searchVisible
             Layout.preferredWidth: 300

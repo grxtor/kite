@@ -32,7 +32,7 @@ qt_add_qml_module(MeshMC_qml_components
         LaunchProgressBar.qml
         IconButton.qml
         Tag.qml
-        SearchField.qml
+        SearchBox.qml
         RecentItem.qml
         Format.qml
         SettingsPage.qml

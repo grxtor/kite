@@ -86,7 +86,7 @@ Item {
                 Layout.rightMargin: Theme.space.xl + Theme.space.xs
                 spacing: Theme.space.md
 
-                SearchField {
+                SearchBox {
                     id: searchField
                     Layout.fillWidth: true
                     Layout.minimumWidth: 160

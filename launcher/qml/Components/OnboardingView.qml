@@ -215,7 +215,7 @@ Rectangle {
                     // Language
                     ColumnLayout {
                         spacing: Theme.space.md
-                        SearchField {
+                        SearchBox {
                             id: languageSearch
                             Layout.fillWidth: true
                             placeholderText: qsTr("Search languages")
