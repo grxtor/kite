@@ -58,7 +58,6 @@ target_include_directories(MeshMC_sdk INTERFACE
 
 target_link_libraries(MeshMC_sdk INTERFACE
     Qt${QT_VERSION_MAJOR}::Core
-    Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::Gui
     Qt${QT_VERSION_MAJOR}::Network
 )
@@ -92,7 +91,7 @@ set(SDK_LAUNCHER_HEADERS
     ${CMAKE_SOURCE_DIR}/launcher/DefaultVariable.h
     ${CMAKE_SOURCE_DIR}/launcher/Exception.h
     ${CMAKE_SOURCE_DIR}/launcher/InstanceList.h
-    ${CMAKE_SOURCE_DIR}/launcher/JavaCommon.h
+    ${CMAKE_SOURCE_DIR}/launcher/ui/JavaCommon.h
     ${CMAKE_SOURCE_DIR}/launcher/MMCZip.h
     ${CMAKE_SOURCE_DIR}/launcher/MessageLevel.h
     ${CMAKE_SOURCE_DIR}/launcher/ProblemProvider.h
@@ -283,21 +282,16 @@ install(FILES
     DESTINATION "${SDK_INSTALL_DIR}/tasks"
 )
 
-# ui/pages/
-install(FILES
-    ${CMAKE_SOURCE_DIR}/launcher/ui/pages/BasePage.h
-    ${CMAKE_SOURCE_DIR}/launcher/ui/pages/BasePageContainer.h
-    DESTINATION "${SDK_INSTALL_DIR}/ui/pages"
-)
-install(FILES
-    ${CMAKE_SOURCE_DIR}/launcher/ui/pages/instance/InstanceSettingsPage.h
-    DESTINATION "${SDK_INSTALL_DIR}/ui/pages/instance"
-)
-install(FILES
-    ${CMAKE_SOURCE_DIR}/launcher/ui/dialogs/CustomMessageBox.h
-    ${CMAKE_SOURCE_DIR}/launcher/ui/dialogs/ProgressDialog.h
-    DESTINATION "${SDK_INSTALL_DIR}/ui/dialogs"
-)
+# ui/pages/, ui/pages/instance/, ui/dialogs/ — NOT installed any more
+# (ABI 5 / plugin-abi5-spec.md §4 step 3). BasePage.h's declaration is
+# copied verbatim, header-only, into mmco_cxx_sdk.hpp so out-of-tree
+# plugins that still subclass the legacy BasePage pattern don't need
+# this file at all; BasePageContainer is only ever forward-declared
+# there (a plugin never derefs it). InstanceSettingsPage.h,
+# CustomMessageBox.h and ProgressDialog.h are not included by
+# mmco_cxx_sdk.hpp or by any in-tree plugin (grepped
+# launcher/plugin/plugins/ and launcher/plugin/sdk/ — no hits outside
+# comments), so nothing reachable from the SDK needs them installed.
 
 # updater/
 install(FILES

@@ -21,6 +21,14 @@
 
 #include "plugin/sdk/mmco_cxx_sdk.hpp"
 
+/* qApp (used below to invoke "quit" on the application object) is
+ * defined by whichever Q*Application header is included; the SDK
+ * header no longer pulls in <QApplication> (ABI 5 dropped Qt::Widgets
+ * from MeshMC::SDK), so this plugin includes the QtCore-only
+ * QCoreApplication header itself — QMetaObject::invokeMethod only
+ * needs a QObject*, which qApp still resolves to either way. */
+#include <QCoreApplication>
+
 #include <cstring>
 
 /* ── dependencies ─────────────────────────────────────────────────── *

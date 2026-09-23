@@ -64,7 +64,15 @@
 #include "mmco_c_sdk.h"
 
 /* ── Qt facilities available to C++ plugins ─────────────────────────── */
-#include <QApplication>
+/* ABI 5 dropped the Qt::Widgets link from MeshMC::SDK (see
+ * plugin-abi5-spec.md §4 step 3 and sdk/CMakeLists.txt): every ui_ and
+ * tray_menu_ call a plugin used to build QWidget/QMenu/QAction trees
+ * with by hand is gone, replaced by ui_surface_create's "mmco-ui/1"
+ * JSON documents (rendered host-side, MeshMC_logic-only, by
+ * PluginUiRenderer) and tray_set_menu's JSON menu doc. Only QtCore and
+ * QtGui headers are pulled in below; a plugin that still needs a
+ * genuine QWidget (e.g. to parent a native dialog some other way) must
+ * link Qt::Widgets itself and include the specific header it needs. */
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
@@ -77,26 +85,9 @@
 #include <QRegularExpression>
 #include <QString>
 #include <QStringList>
-#include <QFileDialog>
-#include <QHBoxLayout>
-#include <QHeaderView>
 #include <QIcon>
-#include <QInputDialog>
-#include <QLabel>
-#include <QCheckBox>
-#include <QGroupBox>
 #include <QPointer>
 #include <QTimer>
-#include <QLineEdit>
-#include <QMenu>
-#include <QMessageBox>
-#include <QPushButton>
-#include <QToolBar>
-#include <QAction>
-#include <QTreeWidget>
-#include <QTreeWidgetItem>
-#include <QVBoxLayout>
-#include <QWidget>
 #include <QJsonDocument>
 #include <QLocale>
 
