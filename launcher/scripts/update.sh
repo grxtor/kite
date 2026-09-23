@@ -50,7 +50,7 @@ echo "Writing lst file..."
 # Unquoted on purpose: SRC_DIRS is a whitespace separated list.
 # shellcheck disable=SC2086
 LC_ALL=C find $SRC_DIRS -type f \
-    \( -iname \*.h -o -iname \*.cpp -o -iname \*.ui \) > "$BASE_LST_FILE.raw"
+    \( -iname \*.h -o -iname \*.cpp -o -iname \*.ui -o -iname \*.qml \) > "$BASE_LST_FILE.raw"
 if [ -n "$EXCLUDE_RE" ]; then
     grep -Ev "$EXCLUDE_RE" "$BASE_LST_FILE.raw" | LC_ALL=C sort > "$BASE_LST_FILE"
 else
