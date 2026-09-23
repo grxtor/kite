@@ -96,11 +96,39 @@ runs:
           )
         fi
 
+        # Qt's own QML modules (QtQuick, QtQuick.Controls, ...) live in
+        # $QT_INSTALL_QML, a directory *sibling to* $QT_PLUGIN_PATH -- the
+        # "$QT_PLUGIN_PATH"/*/*.so glob below never reaches them, so the QML
+        # shell has nothing to import QtQuick from. Deploy only the modules
+        # launcher/qml/ actually imports (found with qmlimportscanner)
+        # rather than the whole Qt QML tree (Quick3D, WebEngine, etc.).
+        qt_root="$(dirname "${QT_PLUGIN_PATH%/}")"
+        QT_QML_PATH="$qt_root/qml"
+        qmlimportscanner_bin="$(find "$qt_root" -name qmlimportscanner -type f | head -1)"
+        if [[ -z "$qmlimportscanner_bin" ]]; then
+          echo "::error::qmlimportscanner not found under $qt_root; cannot determine which Qt QML modules to bundle."
+          exit 1
+        fi
+        mapfile -t qml_modules < <(
+          "$qmlimportscanner_bin" -rootPath launcher/qml -importPath "$QT_QML_PATH" \
+            | grep -o '"relativePath": *"[^"]*"' | sed -E 's/.*"([^"]*)"$/\1/' | sort -u
+        )
+        if [[ ${#qml_modules[@]} -eq 0 ]]; then
+          echo "::error::qmlimportscanner reported no Qt QML modules for launcher/qml"
+          exit 1
+        fi
+        qml_plugin_libs=()
+        for m in "${qml_modules[@]}"; do
+          mkdir -p "$INSTALL_APPIMAGE_DIR/qml/$(dirname "$m")"
+          cp -a "$QT_QML_PATH/$m" "$INSTALL_APPIMAGE_DIR/qml/$m"
+          while IFS= read -r -d '' so; do qml_plugin_libs+=("$so"); done < <(find "$QT_QML_PATH/$m" -maxdepth 1 -name '*.so' -print0)
+        done
+
         sharun lib4bin \
           --hard-links \
           --with-hooks \
           --dst-dir "$INSTALL_APPIMAGE_DIR" \
-          "$INSTALL_APPIMAGE_DIR"/bin/* "$QT_PLUGIN_PATH"/*/*.so "${openssl_libs[@]}"
+          "$INSTALL_APPIMAGE_DIR"/bin/* "$QT_PLUGIN_PATH"/*/*.so "${qml_plugin_libs[@]}" "${openssl_libs[@]}"
 
         cp ~/bin/AppImageUpdate.AppImage "$INSTALL_APPIMAGE_DIR"/bin/
         # FIXME(@YongDo-Hyun): gamemode doesn't seem to be very portable with DBus. Find a way to make it work!
@@ -109,7 +137,11 @@ runs:
         #disable OpenGL and Vulkan launcher features until https://github.com/VHSgunzo/sharun/issues/35
         echo "LAUNCHER_DISABLE_GLVULKAN=1" > "$INSTALL_APPIMAGE_DIR"/.env
         #makes the launcher use portals for file picking
-        echo "QT_QPA_PLATFORMTHEME=xdgdesktopportal" > "$INSTALL_APPIMAGE_DIR"/.env
+        echo "QT_QPA_PLATFORMTHEME=xdgdesktopportal" >> "$INSTALL_APPIMAGE_DIR"/.env
+        #points Qt at the QML modules copied in above (AppDir-relative; $APPDIR
+        #is exported by the AppImage runtime before AppRun/sharun ever runs)
+        echo "QML2_IMPORT_PATH=\$APPDIR/qml" >> "$INSTALL_APPIMAGE_DIR"/.env
+        echo "QML_IMPORT_PATH=\$APPDIR/qml" >> "$INSTALL_APPIMAGE_DIR"/.env
         ln -s org.projecttick.MeshMC.metainfo.xml "$INSTALL_APPIMAGE_DIR"/share/metainfo/org.projecttick.MeshMC.appdata.xml
         ln -s share/applications/org.projecttick.MeshMC.desktop "$INSTALL_APPIMAGE_DIR"
         ln -s share/icons/hicolor/256x256/apps/org.projecttick.MeshMC.png "$INSTALL_APPIMAGE_DIR"
@@ -147,11 +179,37 @@ runs:
           )
         fi
 
+        # See the QML deployment comment in the AppImage step above: Qt's own
+        # QML modules live beside $QT_PLUGIN_PATH, not under it, and the
+        # portable tarball needs them too (launcher/MeshMC.in points Qt at
+        # the copy made here via QML2_IMPORT_PATH/QML_IMPORT_PATH).
+        qt_root="$(dirname "${QT_PLUGIN_PATH%/}")"
+        QT_QML_PATH="$qt_root/qml"
+        qmlimportscanner_bin="$(find "$qt_root" -name qmlimportscanner -type f | head -1)"
+        if [[ -z "$qmlimportscanner_bin" ]]; then
+          echo "::error::qmlimportscanner not found under $qt_root; cannot determine which Qt QML modules to bundle."
+          exit 1
+        fi
+        mapfile -t qml_modules < <(
+          "$qmlimportscanner_bin" -rootPath launcher/qml -importPath "$QT_QML_PATH" \
+            | grep -o '"relativePath": *"[^"]*"' | sed -E 's/.*"([^"]*)"$/\1/' | sort -u
+        )
+        if [[ ${#qml_modules[@]} -eq 0 ]]; then
+          echo "::error::qmlimportscanner reported no Qt QML modules for launcher/qml"
+          exit 1
+        fi
+        qml_plugin_libs=()
+        for m in "${qml_modules[@]}"; do
+          mkdir -p "$INSTALL_PORTABLE_DIR/qml/$(dirname "$m")"
+          cp -a "$QT_QML_PATH/$m" "$INSTALL_PORTABLE_DIR/qml/$m"
+          while IFS= read -r -d '' so; do qml_plugin_libs+=("$so"); done < <(find "$QT_QML_PATH/$m" -maxdepth 1 -name '*.so' -print0)
+        done
+
         sharun lib4bin \
           --with-hooks \
           --hard-links \
           --dst-dir "$INSTALL_PORTABLE_DIR" \
-          "$INSTALL_PORTABLE_DIR"/bin/* "$QT_PLUGIN_PATH"/*/*.so "${openssl_libs[@]}"
+          "$INSTALL_PORTABLE_DIR"/bin/* "$QT_PLUGIN_PATH"/*/*.so "${qml_plugin_libs[@]}" "${openssl_libs[@]}"
 
         # FIXME(@YongDo-Hyun): gamemode doesn't seem to be very portable with DBus. Find a way to make it work!
         find "$INSTALL_PORTABLE_DIR" -name '*gamemode*' -exec rm {} +

@@ -231,6 +231,11 @@ include(QMakeQuery)
 QUERY_QMAKE(QT_INSTALL_PLUGINS QT_PLUGINS_DIR)
 QUERY_QMAKE(QT_INSTALL_LIBS QT_LIBS_DIR)
 QUERY_QMAKE(QT_INSTALL_LIBEXECS QT_LIBEXECS_DIR)
+# Where Qt's own QML modules (QtQuick, QtQuick.Controls, ...) live in the Qt
+# installation used for the build. Needed at packaging time: our own QML
+# modules are compiled into the launcher, but Qt's are not, and have to be
+# deployed and pointed at explicitly (see launcher/CMakeLists.txt).
+QUERY_QMAKE(QT_INSTALL_QML QT_QML_DIR)
 
 # Map missing multi-config configurations to available ones.
 # Monorepo libraries are built with single-config (Ninja), but MeshMC uses
@@ -514,6 +519,18 @@ if(UNIX AND APPLE)
     set(PLUGIN_DEST_DIR "${MeshMC_Name}.app/Contents/MacOS")
     set(RESOURCES_DEST_DIR "${MeshMC_Name}.app/Contents/Resources")
     set(JARS_DEST_DIR "${MeshMC_Name}.app/Contents/Resources/jars")
+    # Where Qt's own QML modules land inside the bundle. Contents/Resources
+    # (rather than next to PLUGIN_DEST_DIR in Contents/MacOS) so it matches
+    # what qt.conf's QmlImports key below is written relative to.
+    set(QML_DEST_DIR "${MeshMC_Name}.app/Contents/Resources/qml")
+    # qt.conf's [Paths] entries are, on macOS, resolved relative to the
+    # bundle's Contents/ directory (verified empirically: a value of
+    # "Foo.app/Contents/MacOS" written into Contents/Resources/qt.conf came
+    # out as Contents/Foo.app/Contents/MacOS, one "Contents/" too many) --
+    # not relative to CMAKE_INSTALL_PREFIX like PLUGIN_DEST_DIR/QML_DEST_DIR
+    # (used for actual install() DESTINATION arguments) have to be.
+    set(QT_CONF_PLUGINS_DEST "MacOS")
+    set(QT_CONF_QML_DEST "Resources/qml")
     set(BUNDLE_DEST_DIR ".")
     set(MMCO_MODULES_DEST_DIR
         "${MeshMC_Name}.app/Contents/Resources/mmcmodules")
@@ -627,6 +644,15 @@ elseif(WIN32)
     set(PLUGIN_DEST_DIR ".")
     set(FRAMEWORK_DEST_DIR ".")
     set(RESOURCES_DEST_DIR ".")
+    # windeployqt's own default destination for the Qt QML modules it deploys
+    # (see the --qmldir call in launcher/CMakeLists.txt); qt.conf's
+    # QmlImports key below points here too.
+    set(QML_DEST_DIR "qml")
+    # On Windows qt.conf's [Paths] entries are relative to qt.conf's own
+    # directory (RESOURCES_DEST_DIR, "."), same as PLUGIN_DEST_DIR/QML_DEST_DIR
+    # already are -- no bundle-style adjustment needed here.
+    set(QT_CONF_PLUGINS_DEST "${PLUGIN_DEST_DIR}")
+    set(QT_CONF_QML_DEST "${QML_DEST_DIR}")
     set(JARS_DEST_DIR "jars")
     # Windows keeps the flat layout it has always used: .mmco files
     # next to meshmc.exe under <install>/mmcmodules. Variable exists

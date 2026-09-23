@@ -25,6 +25,13 @@ echo "Launcher Dir: ${LAUNCHER_DIR}"
 # Makes the launcher use portals for file picking
 export QT_QPA_PLATFORMTHEME=xdgdesktopportal
 
+# Qt's own QML modules (QtQuick, QtQuick.Controls, ...) are packaged
+# alongside this script under qml/ -- see the QML deployment step in
+# .github/actions/package/linux/action.yml -- and are not found by Qt
+# otherwise, since qt.conf is not part of this portable layout.
+export QML2_IMPORT_PATH="${LAUNCHER_DIR}/qml"
+export QML_IMPORT_PATH="${LAUNCHER_DIR}/qml"
+
 # disable OpenGL and Vulkan launcher features on sharun until https://github.com/VHSgunzo/sharun/issues/35
 if [[ -f "${LAUNCHER_DIR}/sharun" ]]; then
     export ${LAUNCHER_ENVNAME}_DISABLE_GLVULKAN=1

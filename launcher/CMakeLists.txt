@@ -1878,10 +1878,19 @@ if(WIN32 OR (UNIX AND APPLE))
         # Understood by both Qt 5 and Qt 6 windeployqt.
         # install-qt-action and MSYS2 only provide release Qt, so always use
         # --release even when the app itself is built in Debug mode.
+        #
+        # --qmldir points windeployqt at our QML sources so qmlimportscanner
+        # can see what our own qt_add_qml_module() modules import (MeshMC,
+        # MeshMC.Theme, MeshMC.Style and MeshMC.Components are compiled into
+        # meshmc.exe as static QML modules, but the Qt-provided modules they
+        # import -- QtQuick, QtQuick.Controls, QtQml, ... -- are not, and
+        # still have to be deployed as plugins). --no-quick-import used to be
+        # passed here, which skipped QML deployment entirely and left the
+        # QML shell unable to find QtQuick.Controls at runtime.
         set(WINDEPLOYQT_OPTIONS
             --release
             --no-opengl-sw
-            --no-quick-import
+            --qmldir "${CMAKE_CURRENT_SOURCE_DIR}/qml"
             --no-system-d3d-compiler
             --no-translations
             --no-compiler-runtime
@@ -1927,9 +1936,157 @@ if(WIN32 OR (UNIX AND APPLE))
     endif()
 
     if(UNIX AND APPLE)
+        # qt_deploy_runtime_dependencies() below only follows *linked*
+        # libraries and Qt's regular (dlopen()'d-by-plugin-type) plugins; it
+        # does not know about QML modules, which are dlopen()'d by URI at
+        # run time. Our own modules (MeshMC, MeshMC.Theme, MeshMC.Style,
+        # MeshMC.Components) are compiled into meshmc itself via
+        # qt_import_qml_plugins() and need nothing here. The modules those
+        # import from Qt -- QtQuick, QtQuick.Controls, QtQml, ... -- are not
+        # compiled in and are otherwise entirely missing from the bundle.
+        #
+        # Deploy exactly the Qt QML modules launcher/qml/ imports, found with
+        # qmlimportscanner, rather than the whole of $QT_QML_DIR (which also
+        # contains Quick3D, WebEngine, positioning, etc. that this UI never
+        # touches). Done ahead of the qt_deploy_runtime_dependencies() call
+        # below so its ADDITIONAL_LIBRARIES can include these plugins: each
+        # one has its own dependencies (e.g. libqtquickcontrols2plugin.dylib
+        # needs QtQuickControls2Impl.framework) that nothing linked into
+        # meshmc itself pulls in, and qt_deploy_runtime_dependencies is the
+        # tool that already knows how to resolve and copy those correctly
+        # (whole .framework bundles, symlink chains and all) rather than
+        # reimplementing that here.
+        find_program(QMLIMPORTSCANNER_EXECUTABLE
+            NAMES qmlimportscanner
+            HINTS
+                "${QT_LIBEXECS_DIR}"
+                "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin"
+                "${Qt${QT_VERSION_MAJOR}_DIR}/../../../libexec"
+        )
+        if(NOT QMLIMPORTSCANNER_EXECUTABLE)
+            message(FATAL_ERROR
+                "qmlimportscanner not found (searched QT_LIBEXECS_DIR="
+                "${QT_LIBEXECS_DIR} and Qt${QT_VERSION_MAJOR}_DIR="
+                "${Qt${QT_VERSION_MAJOR}_DIR}/../..). It ships with Qt's "
+                "qtdeclarative tools and is required to know which Qt QML "
+                "modules to bundle into ${MeshMC_Name}.app.")
+        endif()
+
+        execute_process(
+            COMMAND "${QMLIMPORTSCANNER_EXECUTABLE}"
+                -rootPath "${CMAKE_CURRENT_SOURCE_DIR}/qml"
+                -importPath "${QT_QML_DIR}"
+            OUTPUT_VARIABLE _qml_scan_json
+            RESULT_VARIABLE _qml_scan_result
+        )
+        if(NOT _qml_scan_result EQUAL 0)
+            message(FATAL_ERROR
+                "qmlimportscanner failed while scanning launcher/qml "
+                "(exit code: ${_qml_scan_result})")
+        endif()
+
+        # Pull "relativePath" out of the scanner's JSON by hand rather than
+        # depending on CMake 3.19's string(JSON ...), which the floor here
+        # does not guarantee. Modules the scanner could not resolve on disk
+        # (our own MeshMC.* modules, looked up only via -importPath) have no
+        # "relativePath" key at all, so they never match and are correctly
+        # left out -- they are compiled in, not deployed.
+        string(REGEX MATCHALL "\"relativePath\": *\"[^\"]*\""
+            _qml_relpath_matches "${_qml_scan_json}")
+        set(MESHMC_QT_QML_MODULES "")
+        foreach(_qml_match IN LISTS _qml_relpath_matches)
+            string(REGEX REPLACE "\"relativePath\": *\"([^\"]*)\"" "\\1"
+                _qml_relpath "${_qml_match}")
+            list(APPEND MESHMC_QT_QML_MODULES "${_qml_relpath}")
+        endforeach()
+        list(REMOVE_DUPLICATES MESHMC_QT_QML_MODULES)
+
+        if(NOT MESHMC_QT_QML_MODULES)
+            message(FATAL_ERROR
+                "qmlimportscanner reported no deployable Qt QML modules for "
+                "launcher/qml. qt.conf's QmlImports would point at an empty "
+                "directory and the QML shell would fail to load QtQuick at "
+                "startup, so this is a hard error rather than a warning.")
+        endif()
+        message(STATUS "Qt QML modules to bundle into ${MeshMC_Name}.app: ${MESHMC_QT_QML_MODULES}")
+
+        # Destination-relative path of each module's plugin binary (if any),
+        # once copied below -- NOT the original file under $QT_QML_DIR.
+        # ADDITIONAL_LIBRARIES further down is resolved by
+        # file(GET_RUNTIME_DEPENDENCIES) against the *installed* copy (a
+        # relative path there is looked up under the deploy tool's own
+        # runtime install prefix, same as EXECUTABLE above); pointing it at
+        # $QT_QML_DIR instead would have it run install_name_tool/codesign
+        # machinery against files in the Qt installation itself -- rewriting
+        # a shared, developer-machine-wide Qt install as a side effect of
+        # packaging our own app is not something a build should ever do.
+        set(MESHMC_QT_QML_PLUGIN_FILES "")
+        foreach(_qml_module IN LISTS MESHMC_QT_QML_MODULES)
+            file(GLOB _qml_module_plugin_libs "${QT_QML_DIR}/${_qml_module}/*.dylib")
+            foreach(_qml_module_plugin_lib IN LISTS _qml_module_plugin_libs)
+                get_filename_component(_qml_plugin_name "${_qml_module_plugin_lib}" NAME)
+                list(APPEND MESHMC_QT_QML_PLUGIN_FILES "${QML_DEST_DIR}/${_qml_module}/${_qml_plugin_name}")
+            endforeach()
+        endforeach()
+
+        # Pre-render as one quoted argument per line, same reason as
+        # WINDEPLOYQT_OPTIONS_CODE above: splicing the list directly into the
+        # CONTENT string would paste it in semicolon-separated.
+        set(MESHMC_QT_QML_PLUGIN_FILES_CODE "")
+        foreach(_qml_plugin_file IN LISTS MESHMC_QT_QML_PLUGIN_FILES)
+            string(APPEND MESHMC_QT_QML_PLUGIN_FILES_CODE "\n                    \"${_qml_plugin_file}\"")
+        endforeach()
+
+        foreach(_qml_module IN LISTS MESHMC_QT_QML_MODULES)
+            # Copy only the files ${_qml_module} owns directly (its qmldir,
+            # plugin binary, any local .qml/.qmltypes) -- not recursively.
+            # $QT_QML_DIR nests *other*, unrelated QML modules as
+            # subdirectories of shared parents (QtQuick/ alone also holds
+            # WebEngine's Pdf/, Qt3D's Scene2D and Scene3D, VirtualKeyboard,
+            # Timeline, ...), and a plain recursive install(DIRECTORY) would
+            # have pulled all of that in too. Any subdirectory that genuinely
+            # is a module we need is already its own separate entry here
+            # (qmlimportscanner reports e.g. "QtQuick/Controls/Basic/impl"
+            # alongside "QtQuick/Controls/Basic"), so nothing needs to
+            # recurse by hand. FOLLOW_SYMLINK_CHAIN matters on installations
+            # (e.g. Homebrew's, where every file here is itself a symlink
+            # into a completely different keg directory) where a plain copy
+            # would reproduce a dangling symlink instead of the real file.
+            #
+            # Runs ahead of the qt_deploy_runtime_dependencies() script below
+            # (registered via install(SCRIPT), further down) so that by the
+            # time it inspects ${MESHMC_QT_QML_PLUGIN_FILES}, those files
+            # already exist at their *installed* location -- install rules
+            # run in registration order within a directory.
+            install(CODE "
+                file(GLOB _qml_module_files LIST_DIRECTORIES false
+                    \"${QT_QML_DIR}/${_qml_module}/*\")
+                if(_qml_module_files)
+                    file(INSTALL \${_qml_module_files}
+                        DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${QML_DEST_DIR}/${_qml_module}\"
+                        FOLLOW_SYMLINK_CHAIN
+                    )
+                endif()
+            ")
+        endforeach()
+
         # qt_generate_deploy_script/qt_deploy_runtime_dependencies need Qt 6.3+,
         # which the 6.4 floor guarantees. This replaced a macdeployqt shell-out
         # that only existed for the Qt 5 build.
+        #
+        # ADDITIONAL_LIBRARIES: qt_deploy_runtime_dependencies() above only
+        # follows *linked* libraries and Qt's regular
+        # (dlopen()'d-by-plugin-type) plugins; it does not know about QML
+        # modules, which are dlopen()'d by URI at run time. Our own modules
+        # (MeshMC, MeshMC.Theme, MeshMC.Style, MeshMC.Components) are
+        # compiled into meshmc itself via qt_import_qml_plugins() and need
+        # nothing here. The Qt QML plugins copied in just above are not
+        # compiled in, though, and have dependencies of their own (e.g.
+        # libqtquickcontrols2plugin.dylib needs QtQuickControls2Impl.framework)
+        # that nothing linked into meshmc itself pulls in -- ADDITIONAL_LIBRARIES
+        # is what makes qt_deploy_runtime_dependencies also resolve and copy
+        # those (whole .framework bundles, symlink chains and all) rather
+        # than reimplementing that here.
         qt_generate_deploy_script(
             TARGET ${MeshMC_Name}
             OUTPUT_SCRIPT QT_DEPLOY_SCRIPT
@@ -1940,6 +2097,7 @@ if(WIN32 OR (UNIX AND APPLE))
                 LIBEXEC_DIR ${BINARY_DEST_DIR}
                 LIB_DIR ${LIBRARY_DEST_DIR}
                 PLUGINS_DIR ${PLUGIN_DEST_DIR}
+                ADDITIONAL_LIBRARIES${MESHMC_QT_QML_PLUGIN_FILES_CODE}
                 NO_OVERWRITE
                 NO_TRANSLATIONS
                 NO_COMPILER_RUNTIME
@@ -1948,6 +2106,36 @@ if(WIN32 OR (UNIX AND APPLE))
         install(
             SCRIPT ${QT_DEPLOY_SCRIPT}
         )
+
+        foreach(_qml_module IN LISTS MESHMC_QT_QML_MODULES)
+            # Each plugin .dylib in ${_qml_module} carries an @loader_path
+            # (or @rpath) reference to sibling Qt frameworks, resolved
+            # relative to *its original location* inside the Qt install
+            # ($QT_QML_DIR/${_qml_module}, some fixed number of directories
+            # above $QT_LIBS_DIR). That relationship does not hold once the
+            # plugin is copied into Contents/Resources/qml/... -- Frameworks
+            # sits somewhere else entirely. install_name_tool -add_rpath
+            # points it at the real Frameworks directory too; this adds a
+            # working rpath rather than replacing the existing (now
+            # irrelevant) one, so it is harmless if the plugin also has some
+            # already-working entry, and safe to re-run against an existing
+            # install (a duplicate -add_rpath just fails and is ignored).
+            file(RELATIVE_PATH _qml_module_to_frameworks
+                "${CMAKE_INSTALL_PREFIX}/${QML_DEST_DIR}/${_qml_module}"
+                "${CMAKE_INSTALL_PREFIX}/${FRAMEWORK_DEST_DIR}")
+            install(CODE "
+                file(GLOB _qml_plugin_libs
+                    \"\${CMAKE_INSTALL_PREFIX}/${QML_DEST_DIR}/${_qml_module}/*.dylib\")
+                foreach(_qml_plugin_lib IN LISTS _qml_plugin_libs)
+                    execute_process(
+                        COMMAND install_name_tool
+                            -add_rpath \"@loader_path/${_qml_module_to_frameworks}\"
+                            \"\${_qml_plugin_lib}\"
+                        OUTPUT_QUIET ERROR_QUIET
+                    )
+                endforeach()
+            ")
+        endforeach()
     endif()
 
     # Bundle our linked dependencies
@@ -2072,8 +2260,18 @@ if(WIN32 OR (UNIX AND APPLE))
     endif()
 
     # Add qt.conf - tell Qt where to find plugins relative to the executable
+    #
+    # QmlImports is the Qt 6 key for this (Qt 6 ignores the older Qt 5
+    # Qml2Imports key); it has to be set explicitly here, same as Plugins,
+    # because nothing else on Windows/macOS writes a qt.conf for this install.
+    # QT_CONF_PLUGINS_DEST/QT_CONF_QML_DEST (set in the top-level
+    # CMakeLists.txt, next to PLUGIN_DEST_DIR/QML_DEST_DIR) are where
+    # windeployqt (Windows) / the QML deploy step above (macOS) actually put
+    # Qt's plugins and QML modules, expressed the way qt.conf expects them on
+    # each platform -- which is *not* the same as the install()-DESTINATION
+    # form PLUGIN_DEST_DIR/QML_DEST_DIR use elsewhere in this file.
     install(
-        CODE "file(WRITE \"\${CMAKE_INSTALL_PREFIX}/${RESOURCES_DEST_DIR}/qt.conf\" \"[Paths]\nPlugins = ${PLUGIN_DEST_DIR}\n\")"
+        CODE "file(WRITE \"\${CMAKE_INSTALL_PREFIX}/${RESOURCES_DEST_DIR}/qt.conf\" \"[Paths]\nPlugins = ${QT_CONF_PLUGINS_DEST}\nQmlImports = ${QT_CONF_QML_DEST}\n\")"
     )
     # Add qtlogging.ini as a config file
     install(
