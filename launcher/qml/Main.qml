@@ -64,6 +64,18 @@ ApplicationWindow {
         newInstanceDialog.open()
     }
 
+    // Play, everywhere in the shell. With no account at all the classic
+    // launch flow would pop a widget dialog; say what is missing instead
+    // and go where it is fixed.
+    function launch(id) {
+        if (root.shell && root.shell.accountCount === 0) {
+            root.page = "accounts"
+            toast.show(qsTr("Sign in with the Microsoft account that owns Minecraft to play."))
+            return
+        }
+        root.call("launchInstance", id)
+    }
+
     function instanceGroups() {
         var groups = root.shell && root.shell.groups ? root.shell.groups : []
         return [""].concat(groups.filter(g => g.length > 0))
@@ -114,7 +126,7 @@ ApplicationWindow {
                 root.page = "library"
                 root.selectedId = id
             }
-            onRecentPlayRequested: (id) => root.call("launchInstance", id)
+            onRecentPlayRequested: (id) => root.launch(id)
             onAccountClicked: root.page = "accounts"
         }
 
@@ -167,7 +179,7 @@ ApplicationWindow {
                     selectedId: root.selectedId
 
                     onSelectRequested: (id) => root.selectedId = id
-                    onLaunchRequested: (id) => root.call("launchInstance", id)
+                    onLaunchRequested: (id) => root.launch(id)
                     onStopRequested: (id) => root.call("killInstance", id)
                     onEditRequested: (id) => root.openInstance(id)
                     onFolderRequested: (id) => root.call("openInstanceFolder", id)
@@ -231,7 +243,7 @@ ApplicationWindow {
                     details: root.openedDetails
                     systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
                     onBackRequested: root.page = "library"
-                    onLaunchRequested: (id) => root.call("launchInstance", id)
+                    onLaunchRequested: (id) => root.launch(id)
                     onStopRequested: (id) => root.call("killInstance", id)
                     onClassicEditorRequested: (id) => root.call("editInstance", id)
                     onOpenPathRequested: (path) => root.call("openPath", path)
