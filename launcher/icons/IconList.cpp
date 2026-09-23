@@ -244,6 +244,8 @@ QVariant IconList::data(const QModelIndex& index, int role) const
 			return icons[row].name();
 		case Qt::UserRole:
 			return icons[row].m_key;
+		case IsBuiltinRole:
+			return icons[row].isBuiltIn();
 		default:
 			return QVariant();
 	}
@@ -252,6 +254,15 @@ QVariant IconList::data(const QModelIndex& index, int role) const
 int IconList::rowCount(const QModelIndex& parent) const
 {
 	return icons.size();
+}
+
+QHash<int, QByteArray> IconList::roleNames() const
+{
+	auto roles = QAbstractListModel::roleNames();
+	roles.insert(Qt::DisplayRole, "name");
+	roles.insert(Qt::UserRole, "key");
+	roles.insert(IsBuiltinRole, "isBuiltin");
+	return roles;
 }
 
 void IconList::installIcons(const QStringList& iconFiles)

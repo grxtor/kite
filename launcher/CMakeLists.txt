@@ -1358,6 +1358,14 @@ add_unit_test(IconTheme
     LIBS MeshMC_logic
     )
 
+# Model bookkeeping only (roleNames(), builtin vs. file-based) -- no
+# compiled icon theme resource needed, unlike IconTheme/InstanceIconProvider,
+# since addThemeIcon()/addIcon() never render anything.
+add_unit_test(IconList
+    SOURCES icons/IconList_test.cpp
+    LIBS MeshMC_core Qt${QT_VERSION_MAJOR}::Gui
+    )
+
 target_compile_definitions(IconTheme_test PRIVATE
     MESHMC_MAINWINDOW_UI_PATH="${CMAKE_CURRENT_SOURCE_DIR}/ui/MainWindow.ui")
 
@@ -1531,6 +1539,16 @@ add_unit_test(AccountFaceProvider
 
 add_unit_test(ScreenshotThumbnailProvider
     SOURCES qml/ScreenshotThumbnailProvider_test.cpp
+    LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
+    )
+
+# Exercises only sanitizedInstanceName(), the free-standing helper
+# renameInstance()/duplicateInstance() build on -- the rest of QmlShell needs
+# a real LauncherContext, same reason NewInstanceController_test.cpp only
+# covers composeSuggestedInstanceName(). MeshMC_logic because QmlShell.cpp
+# lives in MeshMC_qml, which MeshMC_logic links.
+add_unit_test(QmlShell
+    SOURCES qml/QmlShell_test.cpp
     LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 

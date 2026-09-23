@@ -20,6 +20,7 @@
 #pragma once
 
 #include <QObject>
+#include <QStringList>
 #include <QVariantMap>
 
 #include <map>
@@ -34,6 +35,16 @@ class AccountsController;
 class NewInstanceController;
 class QQmlApplicationEngine;
 class QQuickWindow;
+
+/* Same trim rule the widget's inline rename editor applies before
+ * committing (see ui/instanceview/InstanceDelegate.cpp's setModelData()):
+ * embedded newlines become spaces, then the whole string is trimmed. An
+ * empty result means "no usable name".
+ *
+ * Free-standing rather than a QmlShell member so it can be unit-tested
+ * without a LauncherContext, the way NewInstanceController.h's
+ * composeSuggestedInstanceName() is. */
+QString sanitizedInstanceName(const QString& name);
 
 /*
  * The QML user interface: owns the engine, hands the core's models to it and
@@ -71,6 +82,16 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* accountsController READ accountsController CONSTANT)
 	/// The QML "New instance" flow: picks a Minecraft version and loader.
 	Q_PROPERTY(QObject* newInstance READ newInstance CONSTANT)
+	/* Distinct groups currently in use, for a "move to group" picker's
+	 * suggestions -- the same list InstanceFilterModel derives for the
+	 * library's own section headers (see m_instances), so a group picker
+	 * never suggests something the library itself would not show. */
+	Q_PROPERTY(QStringList groups READ groups NOTIFY groupsChanged)
+	/// The icon grid model for an icon picker; roles are `key`, `name`,
+	/// `isBuiltin` (see IconList::roleNames()).
+	Q_PROPERTY(QObject* iconsModel READ iconsModel CONSTANT)
+	/// Where installed icons live, for a picker's "open folder" action.
+	Q_PROPERTY(QString iconsDir READ iconsDir CONSTANT)
 
   public:
 	explicit QmlShell(QObject* parent = nullptr);
@@ -141,6 +162,45 @@ class QmlShell : public QObject
 	Q_INVOKABLE void openPath(const QString& path);
 	Q_INVOKABLE void manageAccounts();
 
+	/* Everything below replicates the core part of a MainWindow instance
+	 * action directly against LAUNCHER->instances()/icons() -- no widget
+	 * code, no dialogs (QML supplies its own and asks for confirmation
+	 * itself where the widget would have). */
+
+	/// False (no change) for a name that trims to nothing, same rule the
+	/// widget's inline rename editor applies.
+	Q_INVOKABLE bool renameInstance(const QString& id, const QString& name);
+	/// "" ungroups; the same InstanceList API both the widget's
+	/// drag-to-group and its "Change group" dialog call.
+	Q_INVOKABLE void setInstanceGroup(const QString& id,
+									  const QString& group);
+	Q_INVOKABLE void setInstanceIcon(const QString& id,
+									 const QString& iconKey);
+	/* Installs a local image as a new icon, the way IconPickerDialog's
+	 * "Add icon" button does (IconList::installIcons()). Returns whether
+	 * the file looked installable (readable, a regular file); like the
+	 * widget's own button, a same-key collision or a rejected extension is
+	 * not detected here. On success, iconImported() follows once the icon
+	 * list actually picks the new file up. */
+	Q_INVOKABLE bool importIcon(const QString& fileUrlOrPath);
+	/* Starts the same InstanceCopyTask CopyInstanceDialog starts, with the
+	 * same defaults its checkboxes start with (copy saves and keep
+	 * playtime, both on) and the source instance's own icon. Returns a
+	 * C++-owned TaskWatcher for the running copy, or null if @p id names no
+	 * instance or @p newName trims to nothing. */
+	Q_INVOKABLE QObject* duplicateInstance(const QString& id,
+										   const QString& newName,
+										   const QString& group);
+	/* The same deletion MainWindow performs once its confirmation dialog
+	 * is accepted -- QML asks for confirmation itself before calling this.
+	 * Refuses (false) while the instance is running, like the widget does. */
+	Q_INVOKABLE bool deleteInstance(const QString& id);
+	Q_INVOKABLE bool isInstanceRunning(const QString& id) const;
+
+	QStringList groups() const;
+	QObject* iconsModel() const;
+	QString iconsDir() const;
+
   signals:
 	/* Emitted when the user closes the root window. */
 	void closed();
@@ -155,6 +215,11 @@ class QmlShell : public QObject
 	void createInstanceRequested();
 	void settingsRequested(const QString& page);
 	void accountsRequested();
+
+	/// groups() moved.
+	void groupsChanged();
+	/// importIcon() succeeded and the icon list now has @p key.
+	void iconImported(const QString& key);
 
   private:
 	QVariantMap rootProperties();

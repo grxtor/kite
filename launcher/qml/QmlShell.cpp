@@ -21,6 +21,7 @@
 
 #include <QCoreApplication>
 #include <QDebug>
+#include <QFileInfo>
 #include <QImage>
 #include <QTimer>
 #include <QQmlApplicationEngine>
@@ -28,7 +29,10 @@
 #include <QQuickWindow>
 #include <QUrl>
 
+#include "BaseInstance.h"
+#include "InstanceCopyTask.h"
 #include "InstanceList.h"
+#include "icons/IconList.h"
 #include "models/AccountsController.h"
 #include "models/IdSelectionModel.h"
 #include "models/InstanceDetails.h"
@@ -36,6 +40,7 @@
 #include "models/NewInstanceController.h"
 #include "models/SettingsAdapter.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
+#include "tasks/TaskWatcher.h"
 #include "Sys.h"
 #include "DesktopServices.h"
 #include "settings/SettingsObject.h"
@@ -53,6 +58,15 @@ namespace
 	 * 6.4. The module sets RESOURCE_PREFIX "/qt/qml" so this path is stable. */
 	const QUrl kRootUrl(QStringLiteral("qrc:/qt/qml/MeshMC/Main.qml"));
 } // namespace
+
+QString sanitizedInstanceName(const QString& name)
+{
+	QString sanitized = name;
+	// Same as NoReturnTextEdit's commit path (InstanceDelegate.cpp): a
+	// pasted multi-line name becomes one line rather than being rejected.
+	sanitized.replace(QLatin1Char('\n'), QLatin1Char(' '));
+	return sanitized.trimmed();
+}
 
 QmlShell::QmlShell(QObject* parent) : QObject(parent)
 {
@@ -154,6 +168,140 @@ void QmlShell::openPath(const QString& path)
 void QmlShell::manageAccounts()
 {
 	emit accountsRequested();
+}
+
+bool QmlShell::renameInstance(const QString& id, const QString& name)
+{
+	auto instance = LAUNCHER->instances()->getInstanceById(id);
+	if (!instance) {
+		return false;
+	}
+
+	const QString sanitized = sanitizedInstanceName(name);
+	if (sanitized.isEmpty()) {
+		return false;
+	}
+
+	// FIXME: if no change, do not set. setting involves saving a file.
+	// (Same shortcut InstanceList::setData() takes; BaseInstance::setName()
+	// does not bother checking on its own.)
+	if (instance->name() != sanitized) {
+		instance->setName(sanitized);
+	}
+	return true;
+}
+
+void QmlShell::setInstanceGroup(const QString& id, const QString& group)
+{
+	LAUNCHER->instances()->setInstanceGroup(id, group);
+}
+
+void QmlShell::setInstanceIcon(const QString& id, const QString& iconKey)
+{
+	auto instance = LAUNCHER->instances()->getInstanceById(id);
+	if (!instance) {
+		return;
+	}
+	instance->setIconKey(iconKey);
+}
+
+bool QmlShell::importIcon(const QString& fileUrlOrPath)
+{
+	const QUrl url(fileUrlOrPath);
+	const QString path = url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
+
+	const QFileInfo info(path);
+	if (!info.isReadable() || !info.isFile()) {
+		return false;
+	}
+
+	auto icons = LAUNCHER->icons();
+	icons->installIcons({ path });
+
+	/* Same key IconList itself derives for a dropped/installed file (see
+	 * IconList::directoryChanged()) - deterministic from the file name, so
+	 * this does not need to wait for the watcher to actually pick the copy
+	 * up before telling the caller what to expect. installIcons() silently
+	 * no-ops on a rejected extension or a same-key collision, same as
+	 * IconPickerDialog's own "Add Icon" button, so this is optimistic
+	 * rather than a confirmation the icon list now has it. */
+	emit iconImported(info.baseName());
+	return true;
+}
+
+QObject* QmlShell::duplicateInstance(const QString& id, const QString& newName,
+									 const QString& group)
+{
+	auto original = LAUNCHER->instances()->getInstanceById(id);
+	if (!original) {
+		return nullptr;
+	}
+
+	const QString name = sanitizedInstanceName(newName);
+	if (name.isEmpty()) {
+		return nullptr;
+	}
+
+	// Same defaults CopyInstanceDialog's checkboxes start with, and the
+	// same icon it starts the icon button showing (the original's).
+	auto* copyTask = new InstanceCopyTask(original, /* copySaves */ true,
+										  /* keepPlaytime */ true);
+	copyTask->setName(name);
+	copyTask->setGroup(group);
+	copyTask->setIcon(original->iconKey());
+
+	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(copyTask);
+	auto* watcher = new TaskWatcher(Task::Ptr(wrapped), this);
+	watcher->setTitle(name);
+	wrapped->start();
+	return expose(watcher);
+}
+
+bool QmlShell::deleteInstance(const QString& id)
+{
+	auto instance = LAUNCHER->instances()->getInstanceById(id);
+	if (!instance) {
+		return false;
+	}
+	// Trashing a folder Java still has open fails on Windows, and the
+	// fallback below would then start deleting a running game's files one
+	// by one -- same guard MainWindow::on_actionDeleteInstance_triggered()
+	// has before it ever gets to the confirmation dialog.
+	if (instance->isRunning()) {
+		return false;
+	}
+
+	auto instances = LAUNCHER->instances();
+	if (!instances->trashInstance(id)) {
+		instances->deleteInstance(id);
+	}
+
+	/* The widget grid persists its selection across restarts under this
+	 * key; clearing it here too means it never restarts pointed at an
+	 * instance that no longer exists, whichever UI is in use next time. */
+	LAUNCHER->settings()->set("SelectedInstance", QString());
+	return true;
+}
+
+bool QmlShell::isInstanceRunning(const QString& id) const
+{
+	auto instance = LAUNCHER->instances()->getInstanceById(id);
+	return instance && instance->isRunning();
+}
+
+QStringList QmlShell::groups() const
+{
+	return m_instances ? m_instances->groups() : QStringList();
+}
+
+QObject* QmlShell::iconsModel() const
+{
+	return expose(LAUNCHER->icons().get());
+}
+
+QString QmlShell::iconsDir() const
+{
+	return LAUNCHER->icons()->getDirectory();
 }
 
 QObject* QmlShell::settings() const
@@ -289,6 +437,10 @@ bool QmlShell::show(bool minimized)
 	 * selection by instance id, since rows move under the proxy. */
 	m_instances = std::make_unique<InstanceFilterModel>();
 	m_instances->setSourceModel(LAUNCHER->instances().get());
+	// groups() forwards to m_instances->groups(); its own signal already
+	// fires exactly when that list actually moves (see refreshDerived()).
+	connect(m_instances.get(), &InstanceFilterModel::groupsChanged, this,
+			&QmlShell::groupsChanged);
 	m_recent = std::make_unique<InstanceFilterModel>();
 	m_recent->setRecentFirst(true);
 	m_recent->setSourceModel(LAUNCHER->instances().get());
