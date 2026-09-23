@@ -57,6 +57,9 @@ qt_add_qml_module(MeshMC_qml_components
         AccountsPage.qml
         AccountRow.qml
         NewInstanceDialog.qml
+        PromptDialog.qml
+        Toast.qml
+        IconPickerDialog.qml
         SettingRow.qml
         SettingSwitch.qml
         SettingChoice.qml

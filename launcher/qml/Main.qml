@@ -64,6 +64,11 @@ ApplicationWindow {
         newInstanceDialog.open()
     }
 
+    function instanceGroups() {
+        var groups = root.shell && root.shell.groups ? root.shell.groups : []
+        return [""].concat(groups.filter(g => g.length > 0))
+    }
+
     function call(name, arg) {
         if (root.shell && typeof root.shell[name] === "function")
             arg === undefined ? root.shell[name]() : root.shell[name](arg)
@@ -167,6 +172,33 @@ ApplicationWindow {
                     onEditRequested: (id) => root.openInstance(id)
                     onFolderRequested: (id) => root.call("openInstanceFolder", id)
                     onCreateRequested: root.openNewInstance()
+                    onRenameRequested: (id, name) => {
+                        renameDialog.targetId = id
+                        renameDialog.value = name
+                        renameDialog.open()
+                    }
+                    onIconRequested: (id, iconKey) => {
+                        iconDialog.targetId = id
+                        iconDialog.current = iconKey
+                        iconDialog.open()
+                    }
+                    onGroupRequested: (id, group) => {
+                        groupDialog.targetId = id
+                        groupDialog.value = group
+                        groupDialog.suggestions = root.instanceGroups()
+                        groupDialog.open()
+                    }
+                    onDuplicateRequested: (id, name, group) => {
+                        duplicateDialog.targetId = id
+                        duplicateDialog.targetGroup = group
+                        duplicateDialog.value = qsTr("%1 (copy)").arg(name)
+                        duplicateDialog.open()
+                    }
+                    onDeleteRequested: (id, name) => {
+                        deleteDialog.targetId = id
+                        deleteDialog.text = qsTr("Delete \u201c%1\u201d? Its folder \u2014 worlds, mods, screenshots \u2014 is removed for good.").arg(name)
+                        deleteDialog.open()
+                    }
                     onClearSearchRequested: topBar.searchText = ""
                 }
 
@@ -216,5 +248,88 @@ ApplicationWindow {
         id: newInstanceDialog
         onMoreWaysRequested: root.call("createInstance")
         onCreated: root.page = "library"
+    }
+
+    // Instance management, from the library's menu.
+    PromptDialog {
+        id: renameDialog
+        property string targetId
+        title: qsTr("Rename instance")
+        confirmText: qsTr("Rename")
+        onSubmitted: (text) => {
+            if (root.shell.renameInstance(targetId, text))
+                close()
+            else
+                error = qsTr("That name cannot be used.")
+        }
+    }
+
+    PromptDialog {
+        id: groupDialog
+        property string targetId
+        title: qsTr("Move to group")
+        label: qsTr("Type a new group or pick an existing one.")
+        placeholder: qsTr("No group")
+        confirmText: qsTr("Move")
+        allowEmpty: true
+        onSubmitted: (text) => {
+            root.shell.setInstanceGroup(targetId, text)
+            close()
+        }
+    }
+
+    PromptDialog {
+        id: duplicateDialog
+        property string targetId
+        property string targetGroup
+        property var watcher: null
+        title: qsTr("Duplicate instance")
+        label: qsTr("A full copy, worlds included, under a new name.")
+        confirmText: qsTr("Duplicate")
+        onSubmitted: (text) => {
+            watcher = root.shell.duplicateInstance(targetId, text, targetGroup)
+            close()
+            if (watcher)
+                toast.show(qsTr("Copying \u201c%1\u201d\u2026").arg(text))
+            else
+                toast.show(qsTr("The instance could not be copied."), "danger")
+        }
+        Connections {
+            target: duplicateDialog.watcher
+            ignoreUnknownSignals: true
+            function onFinished(ok) {
+                toast.show(ok ? qsTr("Copy ready in your library.")
+                              : qsTr("Copy failed: %1").arg(duplicateDialog.watcher.error),
+                           ok ? "success" : "danger")
+            }
+        }
+    }
+
+    ConfirmDialog {
+        id: deleteDialog
+        property string targetId
+        title: qsTr("Delete instance")
+        confirmText: qsTr("Delete instance")
+        onConfirmed: {
+            if (root.shell.deleteInstance(targetId)) {
+                if (root.selectedId === targetId)
+                    root.selectedId = ""
+                toast.show(qsTr("Instance deleted."), "success")
+            } else {
+                toast.show(qsTr("The instance could not be deleted. Is it running?"), "danger")
+            }
+        }
+    }
+
+    IconPickerDialog {
+        id: iconDialog
+        property string targetId
+        iconsModel: root.shell && root.shell.iconsModel ? root.shell.iconsModel : null
+        onPicked: (key) => root.shell.setInstanceIcon(targetId, key)
+        onOpenFolderRequested: root.call("openPath", root.shell.iconsDir || "icons")
+    }
+
+    Toast {
+        id: toast
     }
 }

@@ -16,6 +16,8 @@ Column {
     id: root
 
     property string title
+    // The group these instances are in; "" for ungrouped.
+    property string group
     property bool showHeader: true
     property var model: null
     property int columns: 4
@@ -27,7 +29,7 @@ Column {
     signal selectRequested(string id)
     signal launchRequested(string id)
     signal stopRequested(string id)
-    signal menuRequested(string id, bool running)
+    signal menuRequested(string id, bool running, string name, string iconKey, string group)
     signal toggleRequested()
 
     spacing: Theme.space.md
@@ -107,7 +109,7 @@ Column {
                 onStopRequested: root.stopRequested(instanceId)
                 onMenuRequested: {
                     root.selectRequested(instanceId)
-                    root.menuRequested(instanceId, isRunning)
+                    root.menuRequested(instanceId, isRunning, name, iconKey, root.group)
                 }
             }
         }

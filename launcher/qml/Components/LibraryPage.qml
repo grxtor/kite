@@ -32,6 +32,11 @@ Item {
     signal editRequested(string id)
     signal folderRequested(string id)
     signal createRequested()
+    signal renameRequested(string id, string name)
+    signal iconRequested(string id, string iconKey)
+    signal groupRequested(string id, string group)
+    signal duplicateRequested(string id, string name, string group)
+    signal deleteRequested(string id, string name)
     signal clearSearchRequested()
 
     readonly property int pagePadding: Theme.space.xl + Theme.space.xs
@@ -97,6 +102,7 @@ Item {
             Repeater {
                 model: root.searching ? null : root.heroModel
                 delegate: ContinueCard {
+                    required property string group
                     width: content.width
                     overline: root.selectedId.length > 0 ? qsTr("Selected")
                             : instanceId === root.recentId ? qsTr("Continue playing")
@@ -105,7 +111,7 @@ Item {
                     onStopRequested: root.stopRequested(instanceId)
                     onEditRequested: root.editRequested(instanceId)
                     onFolderRequested: root.folderRequested(instanceId)
-                    onMenuRequested: instanceMenu.openFor(instanceId, isRunning)
+                    onMenuRequested: instanceMenu.openFor(instanceId, isRunning, name, iconKey, group)
                 }
             }
 
@@ -117,6 +123,7 @@ Item {
                     title: modelData.length > 0 ? modelData : qsTr("Ungrouped")
                     // A library that never used groups gets no header at all.
                     showHeader: root.groups.length > 1 || modelData.length > 0
+                    group: modelData
                     model: root.sectionModelFor(modelData)
                     columns: root.columns
                     cardWidth: root.cardWidth
@@ -131,7 +138,7 @@ Item {
                     onSelectRequested: (id) => root.selectRequested(id)
                     onLaunchRequested: (id) => root.launchRequested(id)
                     onStopRequested: (id) => root.stopRequested(id)
-                    onMenuRequested: (id, running) => instanceMenu.openFor(id, running)
+                    onMenuRequested: (id, running, name, iconKey, group) => instanceMenu.openFor(id, running, name, iconKey, group)
                 }
             }
         }
@@ -160,10 +167,16 @@ Item {
 
         property string targetId
         property bool targetRunning: false
+        property string targetName
+        property string targetIcon
+        property string targetGroup
 
-        function openFor(id, running) {
+        function openFor(id, running, name, iconKey, group) {
             targetId = id
             targetRunning = running
+            targetName = name || ""
+            targetIcon = iconKey || ""
+            targetGroup = group || ""
             popup()
         }
 
@@ -174,7 +187,7 @@ Item {
                                                     : root.launchRequested(instanceMenu.targetId)
         }
         MenuItem {
-            text: qsTr("Edit instance")
+            text: qsTr("Open")
             icon.source: Icons.url("settings")
             onTriggered: root.editRequested(instanceMenu.targetId)
         }
@@ -182,6 +195,34 @@ Item {
             text: qsTr("Open folder")
             icon.source: Icons.url("folder")
             onTriggered: root.folderRequested(instanceMenu.targetId)
+        }
+        MenuSeparator {}
+        MenuItem {
+            text: qsTr("Rename\u2026")
+            icon.source: Icons.url("edit")
+            onTriggered: root.renameRequested(instanceMenu.targetId, instanceMenu.targetName)
+        }
+        MenuItem {
+            text: qsTr("Change icon\u2026")
+            icon.source: Icons.url("image")
+            onTriggered: root.iconRequested(instanceMenu.targetId, instanceMenu.targetIcon)
+        }
+        MenuItem {
+            text: qsTr("Move to group\u2026")
+            icon.source: Icons.url("layers")
+            onTriggered: root.groupRequested(instanceMenu.targetId, instanceMenu.targetGroup)
+        }
+        MenuItem {
+            text: qsTr("Duplicate\u2026")
+            icon.source: Icons.url("copy")
+            onTriggered: root.duplicateRequested(instanceMenu.targetId, instanceMenu.targetName, instanceMenu.targetGroup)
+        }
+        MenuSeparator {}
+        MenuItem {
+            text: qsTr("Delete\u2026")
+            icon.source: Icons.url("trash")
+            enabled: !instanceMenu.targetRunning
+            onTriggered: root.deleteRequested(instanceMenu.targetId, instanceMenu.targetName)
         }
     }
 }
