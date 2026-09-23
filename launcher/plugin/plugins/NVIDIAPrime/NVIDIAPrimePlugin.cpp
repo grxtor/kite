@@ -12,11 +12,16 @@
  *       __VK_LAYER_NV_optimus=NVIDIA_only
  *       __GLX_VENDOR_LIBRARY_NAME=nvidia
  *
- * The checkbox is injected into the existing Minecraft settings page
- * at runtime.  The setting is stored as plugin.nvidia_prime.enabled.
+ * ABI 5: the toggle is a declarative GLOBAL_SETTINGS surface (one
+ * `toggle` node, same shape as SystemTray's settings surface) instead
+ * of a QCheckBox injected into the Minecraft settings page via
+ * qApp->allWidgets()/findChild(). The setting is stored under the same
+ * key as before: plugin.nvidia_prime.enabled.
  */
 
 #include "plugin/sdk/mmco_cxx_sdk.hpp"
+
+#include <cstring>
 
 MMCO_DEFINE_MODULE("NVIDIA Prime Module", "1.0.0", "Project Tick",
 				   "Discrete GPU offload via NVIDIA Prime Render Offload",
@@ -24,9 +29,7 @@ MMCO_DEFINE_MODULE("NVIDIA Prime Module", "1.0.0", "Project Tick",
 
 static MMCOContext* g_ctx = nullptr;
 static constexpr const char SETTING_KEY[] = "plugin.nvidia_prime.enabled";
-static QCheckBox* g_primeCheckbox =
-	nullptr; /* raw ptr — widget owned by dialog */
-static QObject* g_guard = nullptr;
+static void* g_settingsSurface = nullptr; /* ABI 5 GLOBAL_SETTINGS surface */
 
 static bool is_flatpak()
 {
@@ -55,71 +58,53 @@ static void ensureSettingRegistered()
 		g_ctx->app_setting_register(g_ctx->module_handle, SETTING_KEY, "0");
 }
 
-static void injectCheckboxIntoMinecraftPage()
+/* ── Settings UI: one ABI 5 GLOBAL_SETTINGS surface ───────────────── *
+ *
+ * Replaces injectCheckboxIntoMinecraftPage()'s allWidgets()/findChild
+ * walk against MinecraftPage's "verticalLayout_3": the host renders
+ * this document as a titled section inside its own "Plugins" page
+ * every time the global Settings dialog opens, from whatever document
+ * is currently stored for this surface — so, like SystemTray's
+ * settings surface, this only needs to be created ONCE (here, from
+ * mmco_init()), not re-injected on every dialog open. */
+
+static void on_settings_surface_event(void* /*ud*/, const char* /*surface_id*/,
+									  const char* node_id, const char* event,
+									  const char* value_json)
 {
-	/* Find the MinecraftPage widget (objectName set by .ui file) */
-	QWidget* mcPage = nullptr;
-	for (auto* w : qApp->allWidgets()) {
-		if (w->objectName() == QStringLiteral("MinecraftPage")) {
-			mcPage = w;
-			break;
-		}
-	}
-	if (!mcPage)
+	if (!g_ctx || !node_id || !event)
+		return;
+	if (QString::fromUtf8(node_id) != QLatin1String("enabled"))
+		return;
+	if (std::strcmp(event, "change") != 0)
 		return;
 
-	/* Find verticalLayout_3 inside the minecraftTab */
-	auto* layout =
-		mcPage->findChild<QVBoxLayout*>(QStringLiteral("verticalLayout_3"));
-	if (!layout)
-		return;
-
-	/* Build the Performance group box */
-	auto* groupBox = new QGroupBox(QObject::tr("Performance"));
-	groupBox->setObjectName(QStringLiteral("nvidiaPrimeGroupBox"));
-	auto* groupLayout = new QVBoxLayout(groupBox);
-
-	g_primeCheckbox = new QCheckBox(
-		QObject::tr("Use discrete GPU (NVIDIA Prime Render Offload)"),
-		groupBox);
-	g_primeCheckbox->setObjectName(QStringLiteral("useNVIDIAPrimeCheck"));
-	g_primeCheckbox->setToolTip(
-		QObject::tr("Forces Minecraft to use the NVIDIA discrete GPU on "
-					"Optimus laptops.\nUses prime-run on Flatpak, or sets "
-					"environment variables directly otherwise."));
-	groupLayout->addWidget(g_primeCheckbox);
-
-	/* Insert before the spacer (last item in the layout) */
-	int spacerIdx = layout->count() - 1;
-	layout->insertWidget(spacerIdx, groupBox);
-
-	/* Load current setting */
-	g_primeCheckbox->setChecked(is_enabled());
-
-	/* Save immediately when toggled — avoids relying on a
-	 * close-dialog hook that would fire after the checkbox (and the
-	 * page widget) is already destroyed. */
-	QObject::connect(
-		g_primeCheckbox, &QCheckBox::toggled, g_guard, [](bool checked) {
-			if (!g_ctx)
-				return;
-			g_ctx->app_setting_set(g_ctx->module_handle, SETTING_KEY,
-								   checked ? "1" : "0");
-		});
+	const bool checked = value_json && std::strcmp(value_json, "true") == 0;
+	g_ctx->app_setting_set(g_ctx->module_handle, SETTING_KEY,
+						   checked ? "1" : "0");
 }
 
-/* Hook handler for MMCO_HOOK_GLOBAL_SETTINGS_ABOUT_TO_OPEN — the C-ABI
- * replacement for the legacy
- *   QObject::connect(APPLICATION,
- *                    &Application::globalSettingsAboutToOpen, ...)
- * direct connection.  The hook fires before the dialog is built;
- * QTimer::singleShot(0, ...) defers the widget walk to the next
- * event-loop turn so the MinecraftPage already exists. */
-static int on_global_settings_about_to_open(void*, uint32_t, void*, void*)
+static void create_settings_surface()
 {
-	g_primeCheckbox = nullptr;
-	QTimer::singleShot(0, qApp, injectCheckboxIntoMinecraftPage);
-	return 0;
+	if (!g_ctx)
+		return;
+	const QJsonObject doc{
+		{"type", "mmco-ui/1"},
+		{"root",
+		 QJsonObject{
+			 {"type", "toggle"},
+			 {"id", "enabled"},
+			 {"props",
+			  QJsonObject{
+				  {"label",
+				   "Use discrete GPU (NVIDIA Prime Render Offload)"},
+				  {"value", is_enabled()},
+				  {"enabled", true}}}}}};
+	const QByteArray json = QJsonDocument(doc).toJson(QJsonDocument::Compact);
+	g_settingsSurface = g_ctx->ui_surface_create(
+		g_ctx->module_handle, MMCO_UI_ANCHOR_GLOBAL_SETTINGS, nullptr,
+		"NVIDIA Prime", nullptr, json.constData(), on_settings_surface_event,
+		nullptr);
 }
 
 static int on_app_initialized(void* /*mh*/, uint32_t /*hook_id*/,
@@ -130,12 +115,6 @@ static int on_app_initialized(void* /*mh*/, uint32_t /*hook_id*/,
 		buf, sizeof(buf), "NVIDIA Prime Render Offload is %s (Flatpak: %s)",
 		is_enabled() ? "ENABLED" : "disabled", is_flatpak() ? "yes" : "no");
 	MMCO_LOG(g_ctx, buf);
-
-	/* g_guard receives the QCheckBox::toggled connection later, when
-	 * the settings dialog opens.  Deleting (well, nulling) the guard
-	 * in mmco_unload() severs every connection that has been anchored
-	 * on it, so nothing dangles into unloaded .so memory. */
-	g_guard = new QObject();
 	return 0;
 }
 
@@ -178,13 +157,10 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 	MMCO_LOG(ctx, "NVIDIA Prime plugin initializing...");
 
 	ensureSettingRegistered();
+	create_settings_surface();
 
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_APP_INITIALIZED,
 					   on_app_initialized, nullptr);
-
-	ctx->hook_register(ctx->module_handle,
-					   MMCO_HOOK_GLOBAL_SETTINGS_ABOUT_TO_OPEN,
-					   on_global_settings_about_to_open, nullptr);
 
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_PRE_LAUNCH,
 					   on_instance_pre_launch, nullptr);
@@ -198,15 +174,11 @@ MMCO_EXPORT void mmco_unload()
 	if (g_ctx) {
 		MMCO_LOG(g_ctx, "NVIDIA Prime plugin unloading.");
 	}
+	/* PluginManager tears down every surface this module still owns
+	 * when it unloads (see SurfaceRecord teardown in PluginManager.cpp) —
+	 * we just drop our raw handle so we never touch it again. */
+	g_settingsSurface = nullptr;
 	g_ctx = nullptr;
-	g_primeCheckbox = nullptr;
-	/* g_guard is intentionally NOT deleted here.
-	 * Deleting a QObject during Application teardown triggers
-	 * Qt signal/slot doubly-linked-list surgery which can detect
-	 * heap corruption caused by teardown ordering.
-	 * Since dlclose() is skipped at shutdown, the code and data
-	 * remain mapped — the OS reclaims everything at process exit. */
-	g_guard = nullptr;
 }
 
 } /* extern "C" */
