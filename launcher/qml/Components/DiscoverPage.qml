@@ -9,8 +9,10 @@ import MeshMC.Theme
 
 /*
  * Browse modpacks and install them as new instances, without leaving the
- * main window. Modrinth for now -- no account or key needed; the other
- * platforms are still in the classic new-instance dialog, one click away.
+ * main window. Modrinth for now -- no account or key needed; a pack from
+ * another platform (CurseForge, FTB, ATLauncher, Technic) can be imported
+ * from its exported .zip via the New instance dialog's Import mode, one
+ * click away; browsing those catalogues here is not built yet.
  *
  * `model` is the shell's ModrinthModpackModel: query/loader/sort in,
  * search()/fetchMore() to run, rows out, plus a lazily loaded `detail`.
@@ -140,8 +142,8 @@ Item {
                 IconButton {
                     id: otherPlatformsButton
                     flat: false
-                    iconName: "external-link"
-                    tip: qsTr("CurseForge, FTB, ATLauncher and Technic, in the classic dialog")
+                    iconName: "download"
+                    tip: qsTr("Import a pack exported from CurseForge, FTB, ATLauncher or Technic")
                     onClicked: root.otherPlatformsRequested()
                 }
             }
@@ -182,7 +184,9 @@ Item {
                 Item {
                     id: content
                     x: flick.pagePadding
-                    y: Theme.space.xs
+                    // Room above the first row for a card's hover lift and
+                    // focus ring, which the flickable's clip would cut.
+                    y: Theme.space.sm
                     width: flick.gridWidth
                     height: grid.height
 

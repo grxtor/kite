@@ -17,7 +17,9 @@
  * limitations under the License.
  */
 
+#include <QFile>
 #include <QSignalSpy>
+#include <QTemporaryDir>
 #include <QTest>
 
 #include "BaseVersionList.h"
@@ -285,6 +287,69 @@ class NewInstanceControllerTest : public QObject
 		// crashing or guessing.
 		QCOMPARE(composeSuggestedInstanceName("1.21.1", "not-a-loader"),
 				 QString("1.21.1"));
+	}
+
+	void test_suggestedImportName()
+	{
+		QCOMPARE(suggestedImportName(""), QString());
+		QCOMPARE(suggestedImportName("   "), QString());
+
+		// A bare local path - the common case for a FileDialog pick or a
+		// drag-drop.
+		QCOMPARE(suggestedImportName("/home/user/Downloads/Cool Modpack.mrpack"),
+				 QString("Cool Modpack"));
+		// A "file://" URL, percent-encoded, is just as local.
+		QCOMPARE(
+			suggestedImportName("file:///home/user/Downloads/Cool%20Pack.zip"),
+			QString("Cool Pack"));
+
+		// A pasted direct-download link.
+		QCOMPARE(suggestedImportName(
+					 "https://cdn.modrinth.com/data/AAAA/versions/1.0/"
+					 "My-Pack-1.0.mrpack"),
+				 QString("My-Pack-1.0"));
+
+		// CurseForge's own "download" button links end this way; the real
+		// file name sits behind the same rewrite ImportPage::updateState()
+		// applies before reading it - see suggestedImportName()'s comment.
+		QCOMPARE(suggestedImportName("https://www.curseforge.com/api/v1/mods/1/"
+									 "files/2/download?client=y"),
+				 QString("file"));
+	}
+
+	/// The gate the QML Import button uses before it lets InstanceImportTask
+	/// even try - see importSourceLooksValid()'s comment.
+	void test_importSourceLooksValid()
+	{
+		QVERIFY(!importSourceLooksValid(""));
+		QVERIFY(!importSourceLooksValid("   "));
+
+		// A remote link can't be checked locally - only InstanceImportTask
+		// can tell whether it actually resolves to something importable.
+		QVERIFY(importSourceLooksValid(
+			"https://cdn.modrinth.com/data/AAAA/versions/1.0/"
+			"My-Pack-1.0.mrpack"));
+
+		// A local path that does not exist is always rejected, archive
+		// extension or not.
+		QVERIFY(!importSourceLooksValid("/no/such/path/Cool Modpack.mrpack"));
+
+		QTemporaryDir dir;
+		QVERIFY(dir.isValid());
+
+		// Exists, but not an archive extension.
+		const QString textPath = dir.filePath("notes.txt");
+		QFile textFile(textPath);
+		QVERIFY(textFile.open(QIODevice::WriteOnly));
+		textFile.close();
+		QVERIFY(!importSourceLooksValid(textPath));
+
+		// Exists and looks like a modpack archive.
+		const QString packPath = dir.filePath("Cool Modpack.mrpack");
+		QFile packFile(packPath);
+		QVERIFY(packFile.open(QIODevice::WriteOnly));
+		packFile.close();
+		QVERIFY(importSourceLooksValid(packPath));
 	}
 };
 

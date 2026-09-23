@@ -19,9 +19,13 @@
 
 #include "NewInstanceController.h"
 
+#include <QFileInfo>
+#include <QUrl>
+
 #include "BaseVersion.h"
 #include "BaseVersionList.h"
 #include "InstanceCreationTask.h"
+#include "InstanceImportTask.h"
 #include "InstanceList.h"
 #include "core/LauncherContext.h"
 #include "meta/Index.h"
@@ -296,6 +300,62 @@ QString composeSuggestedInstanceName(const QString& minecraftVersion,
 	return name;
 }
 
+// ---- suggestedImportName -----------------------------------------
+
+QString suggestedImportName(const QString& source)
+{
+	QString input = source.trimmed();
+	if (input.isEmpty()) {
+		return QString();
+	}
+
+	QUrl url = QUrl::fromUserInput(input);
+	if (url.isLocalFile()) {
+		return QFileInfo(url.toLocalFile()).completeBaseName();
+	}
+
+	/* CurseForge's own "download" button links end this way; the real
+	 * file name sits one path segment further in, at ".../file". Same
+	 * rewrite ImportPage::updateState() applies before reading the file
+	 * name (ui/pages/modplatform/ImportPage.cpp). */
+	if (input.endsWith(QLatin1String("?client=y"))) {
+		input.chop(9);
+		input.append(QLatin1String("/file"));
+		url = QUrl::fromUserInput(input);
+	}
+	return QFileInfo(url.fileName()).completeBaseName();
+}
+
+// ---- importSourceLooksValid -----------------------------------------
+
+bool importSourceLooksValid(const QString& source)
+{
+	const QString trimmed = source.trimmed();
+	if (trimmed.isEmpty()) {
+		return false;
+	}
+
+	const QUrl url = QUrl::fromUserInput(trimmed);
+	if (!url.isValid() || url.isEmpty()) {
+		return false;
+	}
+	if (!url.isLocalFile()) {
+		/* A remote link - InstanceImportTask is the only thing that can
+		 * actually tell whether it resolves to something importable. */
+		return true;
+	}
+
+	/* Same extension allow-list ImportPage::updateState() checks
+	 * (ui/pages/modplatform/ImportPage.cpp); the real format sniff happens
+	 * inside InstanceImportTask itself. */
+	const QFileInfo fi(url.toLocalFile());
+	const QString suffix = fi.suffix().toLower();
+	const bool looksLikeArchive = suffix == QLatin1String("zip") ||
+								  suffix == QLatin1String("mrpack") ||
+								  suffix == QLatin1String("jar");
+	return fi.exists() && looksLikeArchive;
+}
+
 // ---- NewInstanceController -----------------------------------------
 
 NewInstanceController::NewInstanceController(QObject* parent)
@@ -458,6 +518,48 @@ QObject* NewInstanceController::create(const QString& name,
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(creationTask);
 	auto* watcher = new TaskWatcher(Task::Ptr(wrapped), this);
 	watcher->setTitle(name);
+	wrapped->start();
+	return watcher;
+}
+
+QString NewInstanceController::suggestedNameForImportSource(
+	const QString& source) const
+{
+	return ::suggestedImportName(source);
+}
+
+bool NewInstanceController::isImportSourceValid(const QString& source) const
+{
+	return ::importSourceLooksValid(source);
+}
+
+QObject* NewInstanceController::importFrom(const QString& source,
+										   const QString& name,
+										   const QString& group,
+										   const QString& iconKey)
+{
+	const QString trimmed = source.trimmed();
+	if (trimmed.isEmpty()) {
+		return nullptr;
+	}
+
+	/* Same construction the widget's ImportPage::updateState() uses
+	 * (ui/pages/modplatform/ImportPage.cpp): accepts a bare local path, a
+	 * "file://" URL from a picker, or a typed http(s) address alike. */
+	const QUrl url = QUrl::fromUserInput(trimmed);
+	if (!url.isValid() || url.isEmpty()) {
+		return nullptr;
+	}
+
+	auto* importTask = new InstanceImportTask(url);
+	importTask->setName(name);
+	importTask->setGroup(group);
+	importTask->setIcon(iconKey);
+	importTask->setTargetDir(LAUNCHER->instances()->primaryDir());
+
+	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(importTask);
+	auto* watcher = new TaskWatcher(Task::Ptr(wrapped), this);
+	watcher->setTitle(name.isEmpty() ? trimmed : name);
 	wrapped->start();
 	return watcher;
 }

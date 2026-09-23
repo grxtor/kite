@@ -255,6 +255,14 @@ class QmlShell : public QObject
 	Q_INVOKABLE void killInstance(const QString& id);
 	Q_INVOKABLE void editInstance(const QString& id);
 	Q_INVOKABLE void openInstanceFolder(const QString& id);
+	/* No longer called from QML: the New instance dialog and Discover's
+	 * "other platforms" button both used to route here, into the widget
+	 * NewInstanceDialog with a null parent (see Application.cpp's
+	 * createInstanceRequested connection) - that crashed under the QML
+	 * shell. Both now go through NewInstanceController::create()/
+	 * importFrom() instead (see NewInstanceDialog.qml). Left in place
+	 * only because Application.cpp still connects createInstanceRequested
+	 * below; safe to delete both once that connection is removed too. */
 	Q_INVOKABLE void createInstance();
 	/// @p page: a classic settings page id ("accounts", "proxy-settings",
 	/// ...) to open on, or empty for the first one.

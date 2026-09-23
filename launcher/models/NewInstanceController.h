@@ -210,6 +210,29 @@ class LoaderVersionListProxy : public VersionListLoadingProxy
 QString composeSuggestedInstanceName(const QString& minecraftVersion,
 									 const QString& loader);
 
+/* Suggested display name for an import source: a local file path, a
+ * "file://" URL from a picker, or a pasted http(s) link - the same "file
+ * name minus extension" rule the widget's ImportPage::updateState() uses
+ * (ui/pages/modplatform/ImportPage.cpp), including its "?client=y"
+ * CurseForge download-link rewrite. Empty if @p source is empty or names
+ * no file name QUrl can find.
+ *
+ * Free-standing for the same reason as composeSuggestedInstanceName()
+ * above: testable without a LauncherContext. */
+QString suggestedImportName(const QString& source);
+
+/* True if @p source is something InstanceImportTask could plausibly import:
+ * a remote http(s)/ftp URL (existence can only be found out by trying), or
+ * a local path that exists and has a modpack-archive extension - the same
+ * gate the widget's ImportPage::updateState() applies before offering the
+ * pack (ui/pages/modplatform/ImportPage.cpp), so the QML Import button
+ * doesn't light up for a typo'd local path or a non-archive file only to
+ * fail later, after the task has already started. Empty or unparsable
+ * input is never valid.
+ *
+ * Free-standing for the same reason as suggestedImportName() above. */
+bool importSourceLooksValid(const QString& source);
+
 /*
  * QML-facing "New instance" flow: picks a Minecraft version and, optionally,
  * a mod loader and its version, and builds the same task the widget's
@@ -285,6 +308,25 @@ class NewInstanceController : public QObject
 	 * version the metadata index actually has. */
 	Q_INVOKABLE QObject* create(const QString& name, const QString& group,
 								const QString& iconKey);
+
+	/// Wraps suggestedImportName() above for QML - see its comment.
+	Q_INVOKABLE QString suggestedNameForImportSource(const QString& source) const;
+	/// Wraps importSourceLooksValid() above for QML - see its comment.
+	Q_INVOKABLE bool isImportSourceValid(const QString& source) const;
+	/* Builds and starts an import of a local archive/export or a modpack
+	 * download URL - the same InstanceImportTask the widget's ImportPage +
+	 * NewInstanceDialog build (ui/pages/modplatform/ImportPage.cpp,
+	 * ui/dialogs/NewInstanceDialog.cpp) - and returns a TaskWatcher for
+	 * it, same CppOwnership reasoning as create() above (parented to this
+	 * controller, so QML gets it as CppOwnership without needing its own
+	 * expose() call). Any question the import needs to ask (blocked or
+	 * untrusted mods, replacing an existing pack) goes through
+	 * LAUNCHER->uiHost(), already wired for both UIs - see
+	 * InstanceImportTask.cpp. Null if @p source is empty or
+	 * QUrl::fromUserInput() cannot make sense of it. */
+	Q_INVOKABLE QObject* importFrom(const QString& source, const QString& name,
+									const QString& group,
+									const QString& iconKey);
 
   signals:
 	void loaderChanged();

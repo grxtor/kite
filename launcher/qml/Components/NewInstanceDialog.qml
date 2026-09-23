@@ -4,16 +4,24 @@
 
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import MeshMC.Theme
 
 /*
- * A new, empty instance: pick a Minecraft version and, if wanted, a mod
- * loader; name it; create. Modpacks come from Discover, and importing a
- * zip or another launcher's pack is in the classic dialog ("More ways").
+ * A new instance, in one of two modes:
+ *  - "create": pick a Minecraft version and, if wanted, a mod loader; name
+ *    it; create.
+ *  - "import": a local .zip/.mrpack export (CurseForge, Modrinth, MultiMC,
+ *    Prism...) or a direct download URL, staged through the same
+ *    InstanceImportTask the widget dialog used.
+ * Modpacks browsed by project (Modrinth) come from Discover instead; other
+ * catalogue browsing (CurseForge/FTB/ATLauncher/Technic) is not built in
+ * QML yet -- see the note in the import pane.
  *
- * The name follows the chosen version ("1.21.4", "Fabric 1.21.4") until
- * the user types one of their own.
+ * In create mode the name follows the chosen version ("1.21.4", "Fabric
+ * 1.21.4") until the user types one of their own; in import mode it follows
+ * the picked file/URL the same way.
  */
 Dialog {
     id: root
@@ -21,7 +29,7 @@ Dialog {
     // NewInstanceController; set when the dialog opens, so the version list
     // is only fetched once someone actually wants a new instance.
     property var controller: null
-    // TaskWatcher of the creation in progress.
+    // TaskWatcher of the creation/import in progress.
     property var watcher: null
     property bool nameEdited: false
     // IconList model for the icon picker below, or null to hide it (the
@@ -30,7 +38,12 @@ Dialog {
     property var iconsModel: null
     property string selectedIcon: "default"
 
-    signal moreWaysRequested()
+    // "create" or "import" -- set by the integrator before open(), e.g.
+    // Main.qml's openNewInstance(mode).
+    property string mode: "create"
+    // Raw text of the chosen file/URL in import mode.
+    property string importSource: ""
+
     signal created()
 
     readonly property bool creating: !!watcher && watcher.running
@@ -61,6 +74,23 @@ Dialog {
             nameField.text = root.controller.suggestedName()
     }
 
+    function refreshImportName() {
+        if (root.nameEdited || !root.controller)
+            return
+        var suggested = root.controller.suggestedNameForImportSource(root.importSource)
+        if (suggested.length > 0)
+            nameField.text = suggested
+    }
+
+    // Called from the URL field, the file picker and the drop area alike,
+    // so all three keep the field, the property and the suggested name in
+    // sync with each other regardless of which one changed.
+    function setImportSource(source) {
+        root.importSource = source
+        sourceField.text = source
+        refreshImportName()
+    }
+
     function typeLabel(type) {
         switch (type) {
         case "release": return qsTr("Release")
@@ -77,13 +107,17 @@ Dialog {
     height: Math.min(640, parent ? parent.height - Theme.space.xxl * 2 : 640)
     modal: true
     closePolicy: root.creating ? Popup.NoAutoClose : Popup.CloseOnEscape
-    title: qsTr("New instance")
+    title: root.mode === "import" ? qsTr("Import instance") : qsTr("New instance")
 
+    // root.mode itself is left alone here -- the integrator sets it right
+    // before open(), e.g. Main.qml's openNewInstance(mode).
     onOpened: {
         root.watcher = null
         root.nameEdited = false
         root.selectedIcon = "default"
         groupField.text = ""
+        root.importSource = ""
+        sourceField.text = ""
         selectDefaultVersion()
         refreshSuggestedName()
     }
@@ -115,6 +149,17 @@ Dialog {
 
     contentItem: ColumnLayout {
         spacing: Theme.space.lg
+
+        SegmentedControl {
+            Layout.alignment: Qt.AlignLeft
+            enabled: !root.creating
+            options: [
+                { value: "create", label: qsTr("Create") },
+                { value: "import", label: qsTr("Import") }
+            ]
+            current: root.mode
+            onActivated: (value) => root.mode = value
+        }
 
         // Name and group
         RowLayout {
@@ -219,6 +264,15 @@ Dialog {
             current: root.selectedIcon
             onPicked: (key) => root.selectedIcon = key
         }
+
+        StackLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            currentIndex: root.mode === "import" ? 1 : 0
+
+        // Create: pick a Minecraft version and, optionally, a mod loader.
+        ColumnLayout {
+            spacing: Theme.space.lg
 
         // Minecraft version
         RowLayout {
@@ -448,23 +502,111 @@ Dialog {
                 }
             }
         }
+        } // create pane
+
+        // Import: a local archive/export, or a direct download URL.
+        ColumnLayout {
+            spacing: Theme.space.lg
+
+            Rectangle {
+                id: dropTarget
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                radius: Theme.radius.lg
+                color: Theme.palette.surfaceSunken
+                border.width: dropArea.containsDrag ? 2 : 1
+                border.color: dropArea.containsDrag ? Theme.palette.accent : Theme.palette.border
+                Behavior on border.color { ColorAnimation { duration: Theme.motion.fast } }
+
+                DropArea {
+                    id: dropArea
+                    anchors.fill: parent
+                    enabled: !root.creating
+                    onDropped: (drop) => {
+                        if (drop.urls && drop.urls.length > 0)
+                            root.setImportSource(drop.urls[0].toString())
+                    }
+                }
+
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    width: Math.min(460, dropTarget.width - Theme.space.xxl * 2)
+                    spacing: Theme.space.md
+
+                    MeshIcon {
+                        Layout.alignment: Qt.AlignHCenter
+                        iconName: "package"
+                        size: Theme.icon.lg + Theme.space.md
+                        color: Theme.palette.textTertiary
+                    }
+
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: qsTr("Drop a .zip or .mrpack file here")
+                        color: Theme.palette.textSecondary
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.type.body.pixelSize
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Theme.space.sm
+
+                        TextField {
+                            id: sourceField
+                            Layout.fillWidth: true
+                            enabled: !root.creating
+                            selectByMouse: true
+                            placeholderText: qsTr("Or paste a direct download link (https://…)")
+                            onTextEdited: {
+                                root.importSource = text
+                                root.refreshImportName()
+                            }
+                        }
+                        Button {
+                            flat: true
+                            enabled: !root.creating
+                            text: qsTr("Browse…")
+                            icon.source: Icons.url("folder")
+                            onClicked: importFileDialog.open()
+                        }
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                        visible: !root.creating && root.importSource.trim().length > 0
+                                 && !!root.controller
+                                 && !root.controller.isImportSourceValid(root.importSource.trim())
+                        text: qsTr("Doesn't look like a modpack file or link yet -- pick a .zip/.mrpack/.jar that exists, or paste a direct download URL.")
+                        color: Theme.palette.danger
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.type.caption.pixelSize
+                    }
+                }
+            }
+
+            Text {
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                text: qsTr("Packs from CurseForge, FTB, ATLauncher and Technic can be imported the same way, from their exported .zip file -- browsing those sites here is coming later.")
+                color: Theme.palette.textTertiary
+                font.family: Theme.font.family
+                font.pixelSize: Theme.type.caption.pixelSize
+            }
+        } // import pane
+        } // StackLayout
+
+        FileDialog {
+            id: importFileDialog
+            title: qsTr("Choose an instance to import")
+            nameFilters: [qsTr("Modpack archives (*.zip *.mrpack)"), qsTr("All files (*)")]
+            onAccepted: root.setImportSource(selectedFile.toString())
+        }
     }
 
     footer: RowLayout {
         spacing: Theme.space.sm
-
-        Button {
-            Layout.leftMargin: Theme.space.lg
-            Layout.bottomMargin: Theme.space.lg
-            flat: true
-            visible: !root.creating
-            text: qsTr("Import or more sources")
-            icon.source: Icons.url("external-link")
-            onClicked: {
-                root.close()
-                root.moreWaysRequested()
-            }
-        }
 
         Column {
             Layout.leftMargin: Theme.space.lg
@@ -474,8 +616,10 @@ Dialog {
             spacing: Theme.space.xs
             Text {
                 width: parent.width
-                text: root.watcher && root.watcher.failed ? (root.watcher.error || qsTr("Creating the instance failed."))
-                    : root.watcher ? (root.watcher.status || qsTr("Creating…")) : ""
+                text: root.watcher && root.watcher.failed ? (root.watcher.error ||
+                          (root.mode === "import" ? qsTr("Importing the instance failed.") : qsTr("Creating the instance failed.")))
+                    : root.watcher ? (root.watcher.status ||
+                          (root.mode === "import" ? qsTr("Importing…") : qsTr("Creating…"))) : ""
                 elide: Text.ElideRight
                 color: root.watcher && root.watcher.failed ? Theme.palette.danger : Theme.palette.textSecondary
                 font.family: Theme.font.family
@@ -488,7 +632,7 @@ Dialog {
             }
         }
 
-        Item { Layout.fillWidth: true; visible: !root.creating && !(root.watcher && root.watcher.failed) }
+        Item { Layout.fillWidth: true; Layout.leftMargin: Theme.space.lg; visible: !root.creating && !(root.watcher && root.watcher.failed) }
 
         Button {
             Layout.bottomMargin: Theme.space.lg
@@ -501,6 +645,7 @@ Dialog {
             Layout.rightMargin: Theme.space.lg
             Layout.bottomMargin: Theme.space.lg
             highlighted: true
+            visible: root.mode !== "import"
             text: root.creating ? qsTr("Creating…") : qsTr("Create")
             icon.source: Icons.url("plus")
             enabled: !root.creating && !!root.controller
@@ -508,6 +653,21 @@ Dialog {
                      && nameField.text.trim().length > 0
             onClicked: {
                 root.watcher = root.controller.create(nameField.text.trim(), groupField.text.trim(), root.selectedIcon)
+            }
+        }
+        Button {
+            Layout.rightMargin: Theme.space.lg
+            Layout.bottomMargin: Theme.space.lg
+            highlighted: true
+            visible: root.mode === "import"
+            text: root.creating ? qsTr("Importing…") : qsTr("Import")
+            icon.source: Icons.url("download")
+            enabled: !root.creating && !!root.controller
+                     && root.importSource.trim().length > 0
+                     && nameField.text.trim().length > 0
+                     && root.controller.isImportSourceValid(root.importSource.trim())
+            onClicked: {
+                root.watcher = root.controller.importFrom(root.importSource.trim(), nameField.text.trim(), groupField.text.trim(), root.selectedIcon)
             }
         }
     }

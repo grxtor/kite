@@ -1361,9 +1361,10 @@ add_unit_test(AccountsController
 
 # Covers what is testable without a LauncherContext or network: the two
 # Meta version-list proxies (filtering, sorting, loading/error) against a
-# fake BaseVersionList, and the free-standing suggested-name helper.
-# NewInstanceController itself needs LAUNCHER->metadataIndex() and is not
-# exercised here.
+# fake BaseVersionList, and the two free-standing suggested-name helpers
+# (create mode's composeSuggestedInstanceName(), import mode's
+# suggestedImportName()). NewInstanceController's own create()/importFrom()
+# need LAUNCHER->metadataIndex()/instances() and are not exercised here.
 add_unit_test(NewInstanceController
     SOURCES models/NewInstanceController_test.cpp
     LIBS MeshMC_core

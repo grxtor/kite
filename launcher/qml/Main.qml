@@ -84,7 +84,7 @@ ApplicationWindow {
             else if (key === "detail")
                 devDetail.start()
             else if (key === "newinstance")
-                root.openNewInstance()
+                root.openNewInstance(value)
             else if (key === "gallery")
                 galleryLoader.active = true
         }
@@ -104,10 +104,12 @@ ApplicationWindow {
             root.selection.clear()
     }
 
-    function openNewInstance() {
+    // mode is "create" (default) or "import" -- see NewInstanceDialog.qml.
+    function openNewInstance(mode) {
         if (!root.shell || !root.shell.newInstance)
-            return root.call("createInstance")
+            return
         newInstanceDialog.controller = root.shell.newInstance
+        newInstanceDialog.mode = mode === "import" ? "import" : "create"
         newInstanceDialog.open()
     }
 
@@ -373,7 +375,7 @@ ApplicationWindow {
                             if (id.length > 0)
                                 root.selectedId = id
                         }
-                        onOtherPlatformsRequested: root.call("createInstance")
+                        onOtherPlatformsRequested: root.openNewInstance("import")
                     }
 
                     InstancePage {
@@ -407,7 +409,6 @@ ApplicationWindow {
     NewInstanceDialog {
         id: newInstanceDialog
         iconsModel: root.shell && root.shell.iconsModel ? root.shell.iconsModel : null
-        onMoreWaysRequested: root.call("createInstance")
         onCreated: root.page = "library"
     }
 
