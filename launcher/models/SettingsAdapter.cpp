@@ -21,7 +21,11 @@
 
 #include <QDebug>
 
+#include "core/LauncherContext.h"
 #include "settings/Setting.h"
+#include "tools/JProfiler.h"
+#include "tools/JVisualVM.h"
+#include "tools/MCEditTool.h"
 
 SettingsAdapter::SettingsAdapter(SettingsObjectPtr settings, QObject* parent)
 	: QObject(parent), m_settings(std::move(settings))
@@ -97,4 +101,34 @@ void SettingsAdapter::reset(const QString& id)
 		return;
 	}
 	m_settings->reset(id);
+}
+
+void SettingsAdapter::applyProxySettings(const QString& proxyType,
+										 const QString& addr, int port,
+										 const QString& user,
+										 const QString& password)
+{
+	if (!LAUNCHER) {
+		return;
+	}
+	LAUNCHER->updateProxySettings(proxyType, addr, port, user, password);
+}
+
+QString SettingsAdapter::checkExternalTool(const QString& tool,
+										   const QString& path) const
+{
+	QString error;
+	bool ok = false;
+	if (tool == QLatin1String("jprofiler")) {
+		ok = JProfilerFactory().check(path, &error);
+	} else if (tool == QLatin1String("jvisualvm")) {
+		ok = JVisualVMFactory().check(path, &error);
+	} else if (tool == QLatin1String("mcedit")) {
+		ok = m_settings && MCEditTool(m_settings).check(path, error);
+	} else {
+		qWarning() << "SettingsAdapter::checkExternalTool: unknown tool"
+				   << tool;
+		return tr("Unknown tool.");
+	}
+	return ok ? QString() : error;
 }

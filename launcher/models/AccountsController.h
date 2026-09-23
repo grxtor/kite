@@ -22,6 +22,7 @@
 #include <QObject>
 #include <QString>
 #include <QUrl>
+#include <QVariantMap>
 
 #include "QObjectPtr.h"
 #include "minecraft/auth/AccountList.h"
@@ -51,6 +52,8 @@ class AccountsController : public QObject
 	Q_PROPERTY(bool hasDefault READ hasDefault NOTIFY defaultChanged)
 	/// profileName() of the default account, or empty if there is none.
 	Q_PROPERTY(QString defaultName READ defaultName NOTIFY defaultChanged)
+	/// See skinDemoRequested() below.
+	Q_PROPERTY(bool skinDemoRequested READ skinDemoRequested CONSTANT)
 
   public:
 	explicit AccountsController(shared_qobject_ptr<AccountList> accounts,
@@ -91,6 +94,66 @@ class AccountsController : public QObject
 	 * widget dialog's caller did.
 	 */
 	Q_INVOKABLE QObject* loginMicrosoft();
+
+	/*!
+	 * Skin and cape state for row @p row's Microsoft profile, for the QML
+	 * skin/cape editor (see AccountsPage.qml): { "valid": bool, "slim":
+	 * bool, "currentCapeId": string, "capes": [{ "id", "alias", "url" }] }.
+	 * "valid" is false -- and every other field is at its empty default --
+	 * for a row out of range, an offline account, or an MSA account with no
+	 * profile data yet; the caller is expected to check it before reading
+	 * the rest, the same way it already checks the row's own isMSA role
+	 * before offering skin controls at all.
+	 */
+	Q_INVOKABLE QVariantMap accountSkinInfo(int row) const;
+
+	/*!
+	 * Whether MESHMC_QML_ROUTE asks for the skin/cape editor to be
+	 * demoed (contains "accounts-demo") -- the qml-preview-tools snapshot
+	 * account file only ever has offline accounts, so no real row's isMSA
+	 * role would ever let AccountsPage.qml reach that editor otherwise.
+	 * When this is true, accountSkinInfo(-1) hands back canned demo data
+	 * instead of "invalid", for AccountsPage.qml to open the editor with.
+	 * False, and accountSkinInfo(-1) stays "invalid", the rest of the time.
+	 */
+	bool skinDemoRequested() const;
+
+	/*!
+	 * Whether @p path is a PNG MinecraftServices will accept as a skin (64
+	 * wide, 64 or 32 tall -- see SkinEntry::isUsable()). Returns an empty
+	 * string if it is fine to upload, or a user-facing reason it is not.
+	 * @p path may be a local path or a "file://" url, same as QML's
+	 * FileDialog hands out.
+	 */
+	Q_INVOKABLE QString validateSkinFile(const QString& path) const;
+
+	/*!
+	 * Uploads @p path (already checked with validateSkinFile()) as row @p
+	 * row's skin, @p slim choosing the arm width, and refreshes the account
+	 * afterwards -- the same SkinUpload + refresh sequence SkinManageDialog::
+	 * accept() runs. Returns a TaskWatcher (see loginMicrosoft() above for
+	 * the ownership reasoning); nullptr without starting anything if @p row
+	 * is out of range, is not a Microsoft account, or @p path could not be
+	 * opened.
+	 */
+	Q_INVOKABLE QObject* changeSkin(int row, const QString& path, bool slim);
+
+	/*!
+	 * Deletes row @p row's custom skin (back to the Mojang default) and
+	 * refreshes afterwards. Returns a TaskWatcher; nullptr as changeSkin()
+	 * above if @p row is out of range or is not a Microsoft account.
+	 */
+	Q_INVOKABLE QObject* resetSkin(int row);
+
+	/*!
+	 * Equips cape @p capeId on row @p row's account, or takes the current
+	 * cape off for an empty @p capeId, and refreshes afterwards. Does not
+	 * check that the account actually owns @p capeId first -- one it does
+	 * not own fails server-side, same as it would through the classic
+	 * dialog's combo box. Returns a TaskWatcher; nullptr as changeSkin()
+	 * above if @p row is out of range or is not a Microsoft account.
+	 */
+	Q_INVOKABLE QObject* changeCape(int row, const QString& capeId);
 
   signals:
 	/// hasDefault()/defaultName() moved.

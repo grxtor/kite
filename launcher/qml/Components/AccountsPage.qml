@@ -29,6 +29,35 @@ Item {
     property var login: null
 
     readonly property var accounts: controller ? controller.accounts : null
+
+    // Bumped whenever any account's data changes (a refresh landing, a skin
+    // upload finishing...), so the "image://accountface/..." urls below
+    // change and QML actually refetches them -- it caches by url, and
+    // nothing about the url itself would otherwise say a skin changed.
+    property int imageRevision: 0
+    Connections {
+        target: root.accounts
+        function onDataChanged() { root.imageRevision++ }
+    }
+
+    function openSkinEditor(row, accountId, accountName) {
+        if (!root.controller)
+            return
+        skinCapeEditor.row = row
+        skinCapeEditor.accountId = accountId
+        skinCapeEditor.accountName = accountName || ""
+        skinCapeEditor.open()
+    }
+
+    // qml-preview-tools has only offline accounts to snapshot with, so no
+    // real row's isMSA role ever lets the skin/cape editor open on its own;
+    // MESHMC_QML_ROUTE containing "accounts-demo" opens it anyway, filled
+    // with AccountsController::accountSkinInfo(-1)'s canned demo data. See
+    // AccountsController::skinDemoRequested()'s own comment for why -1.
+    Component.onCompleted: {
+        if (root.controller && root.controller.skinDemoRequested)
+            root.openSkinEditor(-1, "", qsTr("Demo"))
+    }
     function startMicrosoftLogin() {
         if (!root.controller)
             return
@@ -259,7 +288,7 @@ Item {
                         fillMode: Image.PreserveAspectFit
                         smooth: false
                         source: root.heroAccountId.length > 0
-                                ? "image://accountface/body/" + root.heroAccountId : ""
+                                ? "image://accountface/body/" + root.heroAccountId + "?rev=" + root.imageRevision : ""
                         sourceSize: Qt.size(176, 352)
                     }
                 }
@@ -318,6 +347,14 @@ Item {
                         IconButton {
                             size: Theme.control.heightLg
                             flat: false
+                            iconName: "image"
+                            tip: root.heroIsMSA ? qsTr("Manage skin & cape") : qsTr("Skins need a Microsoft account")
+                            onClicked: root.heroIsMSA ? root.openSkinEditor(root.heroRow, root.heroAccountId, root.heroName)
+                                                       : offlineSkinDialog.open()
+                        }
+                        IconButton {
+                            size: Theme.control.heightLg
+                            flat: false
                             visible: root.heroIsMSA
                             iconName: "refresh"
                             tip: qsTr("Sign in again")
@@ -363,8 +400,10 @@ Item {
             delegate: AccountRow {
                 width: list.width - Theme.space.md
                 hidden: index === root.heroIndex
+                rev: root.imageRevision
                 onMakeDefaultRequested: root.controller.setDefault(index)
                 onRefreshRequested: root.controller.refresh(index)
+                onManageSkinRequested: isMSA ? root.openSkinEditor(index, accountId, shownName) : offlineSkinDialog.open()
                 onRemoveRequested: {
                     removeDialog.row = index
                     removeDialog.text = qsTr("Remove “%1” from MeshMC? You can sign in again at any time.").arg(shownName)
@@ -577,6 +616,41 @@ Item {
                     loginDialog.close()
                     root.login = null
                 }
+            }
+        }
+    }
+
+    SkinCapeEditor {
+        id: skinCapeEditor
+        controller: root.controller
+        rev: root.imageRevision
+    }
+
+    Dialog {
+        id: offlineSkinDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: 380
+        modal: true
+        title: qsTr("Skin & cape")
+
+        contentItem: Text {
+            width: parent.width
+            wrapMode: Text.Wrap
+            text: qsTr("Skins and capes belong to a Microsoft account. Sign in with the Microsoft account that owns Minecraft to change how this character looks.")
+            color: Theme.palette.textSecondary
+            font.family: Theme.font.family
+            font.pixelSize: Theme.type.body.pixelSize
+        }
+
+        footer: Row {
+            layoutDirection: Qt.RightToLeft
+            spacing: Theme.space.sm
+            padding: Theme.space.lg
+            topPadding: 0
+            Button {
+                text: qsTr("Close")
+                onClicked: offlineSkinDialog.close()
             }
         }
     }

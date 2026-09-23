@@ -17,8 +17,12 @@
  * limitations under the License.
  */
 
+#include <QDir>
+#include <QImage>
 #include <QSignalSpy>
+#include <QTemporaryFile>
 #include <QTest>
+#include <QUrl>
 
 #include "minecraft/auth/AccountList.h"
 #include "minecraft/auth/MinecraftAccount.h"
@@ -230,6 +234,129 @@ class AccountsControllerTest : public QObject
 
 		QVERIFY(!controller.addOffline("steve"));
 		QCOMPARE(list->count(), 2);
+	}
+
+	void test_accountSkinInfo_outOfRangeOrOffline_isInvalid()
+	{
+		auto list = shared_qobject_ptr<AccountList>(new AccountList());
+		AccountsController controller(list);
+		list->addAccount(MinecraftAccount::createOffline("Steve"));
+
+		QVERIFY(!controller.accountSkinInfo(5).value("valid").toBool());
+		// Row 0 exists, but is offline, not a Microsoft account.
+		QVERIFY(!controller.accountSkinInfo(0).value("valid").toBool());
+		// -1 without the demo route set is just another out-of-range row.
+		qunsetenv("MESHMC_QML_ROUTE");
+		QVERIFY(!controller.skinDemoRequested());
+		QVERIFY(!controller.accountSkinInfo(-1).value("valid").toBool());
+	}
+
+	// qml-preview-tools' snapshot account file only ever has offline
+	// accounts, so this is the only way the skin/cape editor can be
+	// rendered for review -- see AccountsController::skinDemoRequested()'s
+	// own comment.
+	void test_accountSkinInfo_demoRoute_fillsRowMinusOne()
+	{
+		auto list = shared_qobject_ptr<AccountList>(new AccountList());
+		AccountsController controller(list);
+
+		qputenv("MESHMC_QML_ROUTE", "page=accounts;accounts-demo=msa");
+		QVERIFY(controller.skinDemoRequested());
+
+		const QVariantMap demo = controller.accountSkinInfo(-1);
+		QVERIFY(demo.value("valid").toBool());
+		QCOMPARE(demo.value("capes").toList().size(), 2);
+
+		qunsetenv("MESHMC_QML_ROUTE");
+	}
+
+	void test_accountSkinInfo_msaAccount_readsProfile()
+	{
+		auto list = shared_qobject_ptr<AccountList>(new AccountList());
+		AccountsController controller(list);
+		auto msa = MinecraftAccount::createBlankMSA();
+		msa->accountData()->minecraftProfile.skin.variant = "SLIM";
+		msa->accountData()->minecraftProfile.currentCape = "cape-1";
+		Cape cape;
+		cape.id = "cape-1";
+		cape.alias = "Cool Cape";
+		cape.url = "https://example.test/cape.png";
+		msa->accountData()->minecraftProfile.capes.append(cape);
+		list->addAccount(msa);
+
+		const QVariantMap info = controller.accountSkinInfo(0);
+		QVERIFY(info.value("valid").toBool());
+		QVERIFY(info.value("slim").toBool());
+		QCOMPARE(info.value("currentCapeId").toString(),
+				 QStringLiteral("cape-1"));
+
+		const QVariantList capes = info.value("capes").toList();
+		QCOMPARE(capes.size(), 1);
+		const QVariantMap firstCape = capes.first().toMap();
+		QCOMPARE(firstCape.value("id").toString(), QStringLiteral("cape-1"));
+		QCOMPARE(firstCape.value("alias").toString(),
+				 QStringLiteral("Cool Cape"));
+		QCOMPARE(firstCape.value("url").toString(),
+				 QStringLiteral("https://example.test/cape.png"));
+	}
+
+	void test_validateSkinFile_rejectsWrongSizedImage()
+	{
+		auto list = shared_qobject_ptr<AccountList>(new AccountList());
+		AccountsController controller(list);
+
+		QTemporaryFile file(QDir::tempPath() +
+							QStringLiteral("/AccountsControllerTest_XXXXXX.png"));
+		QVERIFY(file.open());
+		const QString path = file.fileName();
+		file.close();
+
+		QImage badImage(16, 16, QImage::Format_ARGB32);
+		badImage.fill(Qt::transparent);
+		QVERIFY(badImage.save(path, "PNG"));
+
+		QVERIFY(!controller.validateSkinFile(path).isEmpty());
+	}
+
+	void test_validateSkinFile_acceptsSkinSizedImage_andFileUrl()
+	{
+		auto list = shared_qobject_ptr<AccountList>(new AccountList());
+		AccountsController controller(list);
+
+		QTemporaryFile file(QDir::tempPath() +
+							QStringLiteral("/AccountsControllerTest_XXXXXX.png"));
+		QVERIFY(file.open());
+		const QString path = file.fileName();
+		file.close();
+
+		QImage goodImage(64, 32, QImage::Format_ARGB32);
+		goodImage.fill(Qt::transparent);
+		QVERIFY(goodImage.save(path, "PNG"));
+
+		QVERIFY(controller.validateSkinFile(path).isEmpty());
+		// A QML FileDialog hands out a "file://" url rather than a bare path.
+		QVERIFY(controller.validateSkinFile(QUrl::fromLocalFile(path).toString())
+					.isEmpty());
+	}
+
+	// changeSkin()/resetSkin()/changeCape() all start a real network task
+	// (SkinUpload/SkinDelete/CapeChange -> LAUNCHER->network()) once past
+	// their guard clauses - not safe without a LauncherContext, and not
+	// performed here per instructions not to make network calls in tests.
+	// Only the row-out-of-range and non-Microsoft-account guards, which
+	// return before starting anything, are exercised.
+	void test_changeSkin_resetSkin_changeCape_outOfRangeOrNonMSA_areNoOp()
+	{
+		auto list = shared_qobject_ptr<AccountList>(new AccountList());
+		AccountsController controller(list);
+		list->addAccount(MinecraftAccount::createOffline("Steve"));
+
+		QVERIFY(!controller.changeSkin(5, "/nonexistent.png", false));
+		QVERIFY(!controller.changeSkin(0, "/nonexistent.png", false));
+		QVERIFY(!controller.resetSkin(5));
+		QVERIFY(!controller.resetSkin(0));
+		QVERIFY(!controller.changeCape(5, "cape-1"));
+		QVERIFY(!controller.changeCape(0, "cape-1"));
 	}
 };
 

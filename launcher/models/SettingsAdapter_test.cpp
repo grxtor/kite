@@ -152,6 +152,44 @@ class SettingsAdapterTest : public QObject
 		QCOMPARE(spy.first().at(0).toString(), QString("IntSetting"));
 		QCOMPARE(spy.first().at(1).toInt(), 512);
 	}
+
+	// No LauncherContext exists in this guiless test (see
+	// AccountsController_test.cpp's own comment on the same limitation) --
+	// applyProxySettings() must not crash without one, it just has nothing
+	// to apply to.
+	void test_applyProxySettings_withoutLauncherContext_doesNotCrash()
+	{
+		QTemporaryDir dir;
+		SettingsAdapter adapter(makeSettings(dir));
+
+		adapter.applyProxySettings("SOCKS5", "127.0.0.1", 1080, "user", "pass");
+	}
+
+	void test_checkExternalTool_unknownTool_reportsAnError()
+	{
+		QTemporaryDir dir;
+		SettingsAdapter adapter(makeSettings(dir));
+
+		QVERIFY(!adapter.checkExternalTool("not-a-tool", "/some/path").isEmpty());
+	}
+
+	void test_checkExternalTool_emptyPath_reportsAnErrorPerTool()
+	{
+		QTemporaryDir dir;
+		SettingsAdapter adapter(makeSettings(dir));
+
+		QVERIFY(!adapter.checkExternalTool("jprofiler", "").isEmpty());
+		QVERIFY(!adapter.checkExternalTool("jvisualvm", "").isEmpty());
+		QVERIFY(!adapter.checkExternalTool("mcedit", "").isEmpty());
+	}
+
+	void test_checkExternalTool_mcedit_rejectsFolderWithoutMCEdit()
+	{
+		QTemporaryDir dir;
+		SettingsAdapter adapter(makeSettings(dir));
+
+		QVERIFY(!adapter.checkExternalTool("mcedit", dir.path()).isEmpty());
+	}
 };
 
 QTEST_GUILESS_MAIN(SettingsAdapterTest)

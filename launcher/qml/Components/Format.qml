@@ -97,4 +97,17 @@ QtObject {
         var p = String(path).replace(/\\/g, "/")
         return "file://" + (p.charAt(0) === "/" ? "" : "/") + p
     }
+
+    // The reverse of fileUrl() above: a "file://" url (from a FolderDialog/
+    // FileDialog's selectedFolder/selectedFile) as a plain local path --
+    // "file:///a/b" -> "/a/b", "file:///C:/a/b" -> "C:/a/b".
+    function localPath(url) {
+        var s = String(url)
+        if (s.indexOf("file://") !== 0)
+            return s
+        s = s.substring(7)
+        if (/^\/[A-Za-z]:/.test(s))
+            s = s.substring(1)
+        return decodeURIComponent(s)
+    }
 }

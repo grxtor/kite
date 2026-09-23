@@ -20,10 +20,31 @@
 #include "AccountsController.h"
 
 #include <QDesktopServices>
+#include <QFile>
+#include <QUrl>
 
 #include "core/LauncherContext.h"
 #include "minecraft/auth/AccountTask.h"
+#include "minecraft/services/CapeChange.h"
+#include "minecraft/services/SkinDelete.h"
+#include "minecraft/services/SkinUpload.h"
+#include "minecraft/skins/SkinEntry.h"
+#include "tasks/SequentialTask.h"
 #include "tasks/Task.h"
+#include "tasks/TaskWatcher.h"
+
+namespace
+{
+	/* A QML FileDialog hands out a "file://" url; validateSkinFile()/
+	 * changeSkin() also accept a plain path, so either can be passed
+	 * straight through from QML without the caller converting it first.
+	 * Same conversion InstanceDetails::install() uses for the same reason. */
+	QString toLocalPath(const QString& fileUrlOrPath)
+	{
+		const QUrl url(fileUrlOrPath);
+		return url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
+	}
+} // namespace
 
 AccountsController::AccountsController(shared_qobject_ptr<AccountList> accounts,
 										QObject* parent)
@@ -131,6 +152,151 @@ QObject* AccountsController::loginMicrosoft()
 	// sidesteps the question entirely - see ModrinthModpackModel::install(),
 	// which parents its returned TaskWatcher to itself for the same reason.
 	return new MicrosoftLoginController(m_accounts, this);
+}
+
+bool AccountsController::skinDemoRequested() const
+{
+	return qEnvironmentVariable("MESHMC_QML_ROUTE")
+		.contains(QStringLiteral("accounts-demo"));
+}
+
+QVariantMap AccountsController::accountSkinInfo(int row) const
+{
+	QVariantMap info;
+	info[QStringLiteral("valid")] = false;
+	info[QStringLiteral("slim")] = false;
+	info[QStringLiteral("currentCapeId")] = QString();
+	info[QStringLiteral("capes")] = QVariantList();
+
+	/* Row -1 is the qml-preview-tools demo sentinel (see
+	 * skinDemoRequested()/AccountsPage.qml): the preview's account file
+	 * only ever has offline accounts, so no real row's isMSA role would
+	 * let the page reach this editor otherwise. Canned data, not a faked
+	 * account file, and only handed back when actually asked for -- a
+	 * plain out-of-range -1 (what every other row here already gets)
+	 * still reads as invalid the rest of the time. */
+	if (row == -1 && skinDemoRequested()) {
+		info[QStringLiteral("valid")] = true;
+		info[QStringLiteral("currentCapeId")] = QStringLiteral("demo-ember");
+		QVariantMap ember;
+		ember[QStringLiteral("id")] = QStringLiteral("demo-ember");
+		ember[QStringLiteral("alias")] = QStringLiteral("Ember");
+		ember[QStringLiteral("url")] = QString();
+		QVariantMap vault;
+		vault[QStringLiteral("id")] = QStringLiteral("demo-vault");
+		vault[QStringLiteral("alias")] = QStringLiteral("Vault");
+		vault[QStringLiteral("url")] = QString();
+		info[QStringLiteral("capes")] = QVariantList{ ember, vault };
+		return info;
+	}
+
+	if (row < 0 || row >= m_accounts->count()) {
+		return info;
+	}
+	auto account = m_accounts->at(row);
+	if (!account || !account->isMSA() || !account->accountData()) {
+		return info;
+	}
+
+	const MinecraftProfile& profile = account->accountData()->minecraftProfile;
+	info[QStringLiteral("valid")] = true;
+	info[QStringLiteral("slim")] =
+		profile.skin.variant == QLatin1String("SLIM");
+	info[QStringLiteral("currentCapeId")] = profile.currentCape;
+
+	QVariantList capes;
+	for (const Cape& cape : profile.capes) {
+		QVariantMap c;
+		c[QStringLiteral("id")] = cape.id;
+		c[QStringLiteral("alias")] = cape.alias;
+		c[QStringLiteral("url")] = cape.url;
+		capes.append(c);
+	}
+	info[QStringLiteral("capes")] = capes;
+	return info;
+}
+
+QString AccountsController::validateSkinFile(const QString& path) const
+{
+	SkinEntry entry(toLocalPath(path));
+	if (!entry.isUsable()) {
+		return tr("Skin images must be 64x64 or 64x32 pixel PNG files.");
+	}
+	return QString();
+}
+
+QObject* AccountsController::changeSkin(int row, const QString& path, bool slim)
+{
+	if (row < 0 || row >= m_accounts->count()) {
+		return nullptr;
+	}
+	auto account = m_accounts->at(row);
+	if (!account || !account->isMSA()) {
+		return nullptr;
+	}
+
+	QFile file(toLocalPath(path));
+	if (!file.open(QIODevice::ReadOnly)) {
+		return nullptr;
+	}
+	const QByteArray texture = file.readAll();
+	file.close();
+
+	/* Same SkinUpload + refresh sequence SkinManageDialog::accept() runs,
+	 * minus the cape change: this uploads a picked file directly rather
+	 * than editing a local skin-library entry that already carries a cape
+	 * choice, so there is nothing here to carry over. */
+	auto* job = new SequentialTask(nullptr, tr("Change skin"));
+	job->addTask(Task::Ptr(new SkinUpload(
+		nullptr, account->accessToken(), texture,
+		slim ? SkinUpload::ALEX : SkinUpload::STEVE)));
+	job->addTask(account->refresh());
+
+	auto* watcher = new TaskWatcher(Task::Ptr(job), this);
+	watcher->setTitle(tr("Change skin"));
+	job->start();
+	return watcher;
+}
+
+QObject* AccountsController::resetSkin(int row)
+{
+	if (row < 0 || row >= m_accounts->count()) {
+		return nullptr;
+	}
+	auto account = m_accounts->at(row);
+	if (!account || !account->isMSA()) {
+		return nullptr;
+	}
+
+	auto* job = new SequentialTask(nullptr, tr("Reset skin"));
+	job->addTask(Task::Ptr(new SkinDelete(nullptr, account->accessToken())));
+	job->addTask(account->refresh());
+
+	auto* watcher = new TaskWatcher(Task::Ptr(job), this);
+	watcher->setTitle(tr("Reset skin"));
+	job->start();
+	return watcher;
+}
+
+QObject* AccountsController::changeCape(int row, const QString& capeId)
+{
+	if (row < 0 || row >= m_accounts->count()) {
+		return nullptr;
+	}
+	auto account = m_accounts->at(row);
+	if (!account || !account->isMSA()) {
+		return nullptr;
+	}
+
+	auto* job = new SequentialTask(nullptr, tr("Change cape"));
+	job->addTask(
+		Task::Ptr(new CapeChange(nullptr, account->accessToken(), capeId)));
+	job->addTask(account->refresh());
+
+	auto* watcher = new TaskWatcher(Task::Ptr(job), this);
+	watcher->setTitle(tr("Change cape"));
+	job->start();
+	return watcher;
 }
 
 MicrosoftLoginController::MicrosoftLoginController(

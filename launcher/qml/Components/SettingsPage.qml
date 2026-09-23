@@ -9,9 +9,7 @@ import MeshMC.Theme
 
 /*
  * Launcher settings. Every change is saved the moment it is made -- there
- * is no OK/Cancel, as in any current desktop app's preferences. Pages that
- * have not moved to QML yet (proxy, language, external tools, accounts,
- * log upload) are one click away in the classic dialog, under "More".
+ * is no OK/Cancel, as in any current desktop app's preferences.
  */
 Item {
     id: root
@@ -25,6 +23,11 @@ Item {
     property var selectLanguage: null
     property string section: "general"
 
+    // No longer emitted from within this file -- proxy/external-tools/
+    // log-upload all have QML sections of their own now (below) instead of
+    // a "More" escape hatch into the classic dialog. Left declared because
+    // Main.qml still binds a handler to it; removing the signal outright is
+    // for whoever next touches that file's own wiring.
     signal openClassicRequested(string page)
     signal openPathRequested(string path)
 
@@ -36,7 +39,9 @@ Item {
         { id: "appearance", icon: "image", label: qsTr("Appearance") },
         { id: "commands", icon: "edit", label: qsTr("Custom commands") },
         { id: "plugins", icon: "package", label: qsTr("Plugins") },
-        { id: "more", icon: "more", label: qsTr("More") }
+        { id: "proxy", icon: "globe", label: qsTr("Proxy") },
+        { id: "external-tools", icon: "settings", label: qsTr("External tools") },
+        { id: "log-upload", icon: "copy", label: qsTr("Log upload") }
     ]
     readonly property int sectionIndex: {
         for (var i = 0; i < sections.length; ++i)
@@ -378,32 +383,14 @@ Item {
                 }
             }
 
-            // More (classic pages)
-            SettingsScroll {
-                title: qsTr("More")
-                description: qsTr("Settings that haven't moved to this window yet.")
-                SettingsGroup {
-                    width: parent.width
-                    description: qsTr("These still open in the classic settings window.")
-                    Repeater {
-                        model: [
-                            { page: "proxy-settings", label: qsTr("Proxy"), text: qsTr("How MeshMC reaches the internet.") },
-                            { page: "external-tools", label: qsTr("External tools"), text: qsTr("Profilers, MCEdit and the JSON editor.") },
-                            { page: "log-upload", label: qsTr("Log upload"), text: qsTr("The paste.ee key used to share logs.") }
-                        ]
-                        delegate: SettingRow {
-                            required property var modelData
-                            label: modelData.label
-                            description: modelData.text
-                            Button {
-                                text: qsTr("Open")
-                                icon.source: Icons.url("external-link")
-                                onClicked: root.openClassicRequested(modelData.page)
-                            }
-                        }
-                    }
-                }
-            }
+            // Proxy
+            SettingsProxySection {}
+
+            // External tools
+            SettingsExternalToolsSection {}
+
+            // Log upload
+            SettingsLogUploadSection {}
         }
     }
 }

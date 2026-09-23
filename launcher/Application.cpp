@@ -2254,31 +2254,25 @@ MainWindow* Application::showMainWindow(bool minimized)
 						}
 					});
 			connect(m_qmlShell.get(), &QmlShell::settingsRequested, this,
-					[this](const QString& page) {
-						/* Reached only from the QML "More" escape-hatch rows
-						 * (proxy-settings/external-tools/log-upload) today --
-						 * every page with a QML equivalent (accounts,
-						 * language, ...) never sends one here. Still guard
-						 * defensively against a page id QML has since grown
-						 * its own version of (a plugin, or a future row),
-						 * since ShowGlobalSettings(nullptr, ...) is the same
-						 * null-parent defect class as createInstanceRequested
-						 * below. The three real escape-hatch pages are left
-						 * opening as they always have -- confirmed not to
-						 * crash (see the qml-preview-tools audit, §1.2) --
-						 * until they get QML sections of their own. */
-						static const QSet<QString> kAlreadyInQml{
-							QStringLiteral("accounts"),
-							QStringLiteral("language"),
-						};
-						if (kAlreadyInQml.contains(page)) {
-							qWarning()
-								<< "Application: settingsRequested(" << page
-								<< ") ignored under the QML shell -- already "
-								   "available there";
-							return;
-						}
-						ShowGlobalSettings(nullptr, page);
+					[](const QString& page) {
+						/* Every settings page has a QML section of its own
+						 * now -- proxy-settings/external-tools/log-upload
+						 * (the last rows that still opened the classic
+						 * dialog, under Settings' "More" section) moved to
+						 * SettingsPage.qml alongside accounts/language/...,
+						 * so nothing under the QML shell should ever reach
+						 * this signal any more. Refuse rather than open
+						 * ShowGlobalSettings(nullptr, ...) regardless: that
+						 * null parent is the same defect class as
+						 * createInstanceRequested below, and the hard rule
+						 * is no Qt Widgets dialog opens under the QML
+						 * shell, full stop -- not "only the ones without a
+						 * QML page yet". */
+						qWarning()
+							<< "Application: settingsRequested(" << page
+							<< ") ignored under the QML shell -- open the "
+							   "matching SettingsPage/AccountsPage section "
+							   "instead";
 					});
 			connect(m_qmlShell.get(), &QmlShell::accountsRequested, this,
 					[]() {

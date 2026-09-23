@@ -68,6 +68,8 @@ qt_add_qml_module(MeshMC_qml_components
         DialogHeader.qml
         AccountsPage.qml
         AccountRow.qml
+        SkinCapeEditor.qml
+        CapeTile.qml
         NewInstanceDialog.qml
         PromptDialog.qml
         Toast.qml
@@ -77,6 +79,10 @@ qt_add_qml_module(MeshMC_qml_components
         SettingChoice.qml
         SettingNumber.qml
         SettingText.qml
+        SettingPathField.qml
+        SettingsProxySection.qml
+        SettingsExternalToolsSection.qml
+        SettingsLogUploadSection.qml
         MemorySetting.qml
         SegmentedControl.qml
         EmptyState.qml

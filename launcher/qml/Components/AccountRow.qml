@@ -31,10 +31,15 @@ Item {
     // Set by the page for whichever row it is already showing in the hero
     // card, so the same account is never listed twice.
     property bool hidden: false
+    // Bumped by the page whenever an account's skin may have changed, so the
+    // face image's url changes and QML actually refetches it -- see
+    // AccountsPage.qml's imageRevision.
+    property int rev: 0
 
     signal makeDefaultRequested()
     signal refreshRequested()
     signal removeRequested()
+    signal manageSkinRequested()
 
     readonly property string shownName: profileName.length > 0 ? profileName : name
     readonly property bool hovered: !root.hidden && hoverHandler.hovered
@@ -102,7 +107,7 @@ Item {
                     anchors.fill: parent
                     anchors.margins: 1
                     source: !root.hidden && root.accountId.length > 0
-                            ? "image://accountface/" + root.accountId : ""
+                            ? "image://accountface/" + root.accountId + "?rev=" + root.rev : ""
                     sourceSize: Qt.size(80, 80)
                     smooth: false
                 }
@@ -142,6 +147,11 @@ Item {
                 visible: !root.isDefault
                 text: qsTr("Use this account")
                 onClicked: root.makeDefaultRequested()
+            }
+            IconButton {
+                iconName: "image"
+                tip: root.isMSA ? qsTr("Manage skin & cape") : qsTr("Skins need a Microsoft account")
+                onClicked: root.manageSkinRequested()
             }
             IconButton {
                 visible: root.isMSA

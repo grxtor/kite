@@ -39,6 +39,12 @@
  * handing it to SettingsObject, so the config file keeps the type it always
  * had.
  *
+ * Being the one object every QML settings page already binds against also
+ * makes it the natural place for the couple of settings-adjacent actions
+ * that are not plain config values -- applyProxySettings() and
+ * checkExternalTool() below -- rather than inventing a second QML-facing
+ * object solely to reach them.
+ *
  * Core, like the rest of models/: QtCore only, no QtWidgets, no ui/.
  */
 class SettingsAdapter : public QObject
@@ -63,6 +69,28 @@ class SettingsAdapter : public QObject
 	Q_INVOKABLE void setValue(const QString& id, const QVariant& value);
 	/// Reverts setting @p id to its registered default.
 	Q_INVOKABLE void reset(const QString& id);
+
+	/*!
+	 * Applies a proxy configuration to the whole application immediately --
+	 * the same effect ProxyPage::apply() has under the classic settings
+	 * dialog. Needed alongside plain setValue(): the QML Proxy section saves
+	 * each field as it is typed, with no separate "Apply" step, so the live
+	 * proxy has to be pushed explicitly whenever one of its fields changes.
+	 * @p proxyType is one of "None", "Default", "SOCKS5", "HTTP".
+	 */
+	Q_INVOKABLE void applyProxySettings(const QString& proxyType,
+										const QString& addr, int port,
+										const QString& user,
+										const QString& password);
+
+	/*!
+	 * Checks whether @p path looks like a working install of @p tool
+	 * ("jprofiler", "jvisualvm" or "mcedit") -- the same check the classic
+	 * External Tools page's "Check" buttons run. Returns an empty string if
+	 * it looks fine, or a user-facing reason it does not.
+	 */
+	Q_INVOKABLE QString checkExternalTool(const QString& tool,
+										  const QString& path) const;
 
   signals:
 	/// Emitted whenever a wrapped setting's effective value changes,
