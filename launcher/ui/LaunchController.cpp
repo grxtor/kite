@@ -103,7 +103,20 @@ void LaunchController::decideAccount()
 
 		if (wantsAccountManager) {
 			// Open the account manager.
-			APPLICATION->ShowGlobalSettings(m_parentWidget, "accounts");
+			if (APPLICATION->usingQmlShell()) {
+				/* ShowGlobalSettings(m_parentWidget, "accounts") would open
+				 * the classic PageDialog with a null parent under QML
+				 * (m_parentWidget defaults to null and QML never sets it) --
+				 * the same defect class as the createInstanceRequested
+				 * SIGSEGV. QML has its own Accounts page but nothing here
+				 * can switch it there, so just say where to go. */
+				LAUNCHER->uiHost()->message(
+					tr("No Accounts"),
+					tr("Use the Accounts page in the sidebar to sign in."),
+					UiHost::Severity::Information);
+			} else {
+				APPLICATION->ShowGlobalSettings(m_parentWidget, "accounts");
+			}
 		} else {
 			// Offer demo mode as an alternative
 			const bool wantsDemo = LAUNCHER->uiHost()->confirm(
@@ -306,6 +319,25 @@ void LaunchController::login()
 				if (m_accountToUse->ownsMinecraft()) {
 					if (!m_accountToUse->hasProfile()) {
 						// Now handle setting up a profile name here...
+						if (APPLICATION->usingQmlShell()) {
+							/* ProfileSetupDialog(m_accountToUse,
+							 * m_parentWidget) below would build with a null
+							 * parent under QML (m_parentWidget is unset on
+							 * this path) -- the same defect class as
+							 * createInstanceRequested's SIGSEGV. Ask through
+							 * UiHost instead, which shows a QML dialog doing
+							 * the same live name check and profile
+							 * creation. */
+							if (LAUNCHER->uiHost()->setupProfile(
+									m_accountToUse)) {
+								tryagain = true;
+								continue;
+							} else {
+								emitFailed(tr("Received undetermined session "
+											  "status during login."));
+								return;
+							}
+						}
 						ProfileSetupDialog dialog(m_accountToUse,
 												  m_parentWidget);
 						if (dialog.exec() == QDialog::Accepted) {

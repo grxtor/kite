@@ -5,6 +5,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs as NativeDialogs
 import MeshMC.Theme
 
 /*
@@ -13,12 +14,22 @@ import MeshMC.Theme
  * shell's own style instead of widget message boxes. `host` is the
  * shell's QmlUiHost; whenever it has a pending request, this opens on it,
  * and closing it any way other than a button counts as "no".
+ *
+ * The root is a plain Item, not the Dialog itself: kind == "filePicker"
+ * answers through a native QtQuick.Dialogs file dialog instead of this
+ * component's own chrome (there is no sensible way to draw an OS file
+ * picker inside a themed Dialog body), so the two live as siblings here,
+ * both reacting to the same `host`.
  */
-Dialog {
-    id: root
+Item {
+    id: wrapper
 
     property var host: null
-    readonly property var request: host ? host.current : null
+
+    Dialog {
+    id: root
+
+    readonly property var request: wrapper.host ? wrapper.host.current : null
     readonly property string kind: request ? request.kind : ""
 
     function severityIcon(severity) {
@@ -65,6 +76,11 @@ Dialog {
     }
 
     onRequestChanged: {
+        // filePicker answers through the native FileDialog below instead
+        // of this Dialog's own body -- see the file-level comment.
+        if (kind === "filePicker") {
+            return
+        }
         if (request) {
             answered = false
             open()
@@ -222,6 +238,59 @@ Dialog {
             }
         }
 
+        // Profile setup: a Microsoft account that owns Minecraft but has
+        // never picked a username -- checked live against Mojang's API,
+        // the way the widget ProfileSetupDialog does.
+        Column {
+            Layout.fillWidth: true
+            visible: root.kind === "profileSetup"
+            spacing: Theme.space.sm
+
+            TextField {
+                id: profileNameField
+                width: parent.width
+                placeholderText: qsTr("Username")
+                selectByMouse: true
+                enabled: !(root.request && root.request.profileSubmitting)
+                onTextChanged: profileCheckDelay.restart()
+                Timer {
+                    id: profileCheckDelay
+                    interval: 500
+                    onTriggered: if (root.kind === "profileSetup" && root.request)
+                                     root.request.checkProfileName(profileNameField.text.trim())
+                }
+                Connections {
+                    target: root
+                    function onRequestChanged() {
+                        if (root.kind === "profileSetup") {
+                            profileNameField.text = ""
+                            profileNameField.forceActiveFocus()
+                        }
+                    }
+                }
+            }
+
+            Row {
+                spacing: Theme.space.xs
+                visible: root.request && (root.request.profileNameStatus === "available"
+                                          || root.request.profileNameError.length > 0)
+                MeshIcon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    iconName: root.request && root.request.profileNameStatus === "available" ? "check" : "alert-triangle"
+                    size: Theme.icon.sm
+                    color: root.request && root.request.profileNameStatus === "available" ? Theme.palette.success : Theme.palette.danger
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.request ? (root.request.profileNameStatus === "available"
+                                          ? qsTr("Available") : root.request.profileNameError) : ""
+                    color: Theme.palette.textSecondary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.caption.pixelSize
+                }
+            }
+        }
+
         // Update: what changes, in the author's words.
         Column {
             Layout.fillWidth: true
@@ -300,8 +369,28 @@ Dialog {
             onClicked: root.answer(() => root.request.answerUpdate("later"))
         }
 
+        // profileSetup: Create submits and, unlike every other kind, may
+        // fail without answering the request at all (a taken name, a
+        // server error) -- so this does not go through root.answer(), which
+        // would mark it answered before the request is actually done; only
+        // Cancel (below) ends the request from this footer for this kind.
         Button {
-            visible: root.kind !== "choose" && root.kind !== "update"
+            visible: root.kind === "profileSetup"
+            highlighted: true
+            enabled: root.request && root.request.profileNameStatus === "available" && !root.request.profileSubmitting
+            text: root.request && root.request.profileSubmitting ? qsTr("Creating…") : qsTr("Create")
+            onClicked: root.request.submitProfileName(profileNameField.text.trim())
+        }
+        Button {
+            visible: root.kind === "profileSetup"
+            flat: true
+            enabled: !(root.request && root.request.profileSubmitting)
+            text: qsTr("Cancel")
+            onClicked: root.answer(() => root.request.reject())
+        }
+
+        Button {
+            visible: root.kind !== "choose" && root.kind !== "update" && root.kind !== "profileSetup" && root.kind !== "filePicker"
             enabled: root.kind === "blockedMods" ? root.allFound
                    : root.kind === "untrustedMods" ? trustBox.checked
                    : root.kind === "text" ? textAnswer.text.trim().length > 0 : true
@@ -312,10 +401,45 @@ Dialog {
                                                               : root.request.accept())
         }
         Button {
-            visible: root.kind !== "message" && root.kind !== "update"
+            visible: root.kind !== "message" && root.kind !== "update" && root.kind !== "profileSetup" && root.kind !== "filePicker"
             flat: true
             text: root.request && root.request.rejectLabel.length > 0 ? root.request.rejectLabel : qsTr("Cancel")
             onClicked: root.answer(() => root.request.reject())
+        }
+    }
+    }
+
+    // filePicker: a plugin's open/save dialog, shown natively rather than
+    // inside root's own themed body (see the file-level comment). Plain
+    // accept()/reject() -- the same generic answer mechanism "text" uses --
+    // so QmlUiHost needs no filePicker-specific invokables of its own.
+    NativeDialogs.FileDialog {
+        id: nativeFileDialog
+        readonly property var request: wrapper.host ? wrapper.host.current : null
+
+        fileMode: request && request.filePickerMode === "save" ? NativeDialogs.FileDialog.SaveFile
+                                                                : NativeDialogs.FileDialog.OpenFile
+        nameFilters: request && request.filePickerFilter.length > 0
+                     ? request.filePickerFilter.split(";;") : [qsTr("All files (*)")]
+
+        onAccepted: if (request) request.accept(selectedFile.toString())
+        onRejected: if (request) request.reject()
+
+        Connections {
+            target: wrapper.host
+            function onCurrentChanged() {
+                var req = wrapper.host ? wrapper.host.current : null
+                if (!req || req.kind !== "filePicker")
+                    return
+                // Set fresh before every open(), imperatively rather than as
+                // a binding: FileDialog owns selectedFile once shown (the
+                // user's pick lives there too), so a binding here would only
+                // ever apply once.
+                nativeFileDialog.selectedFile =
+                    req.filePickerMode === "save"
+                        ? Format.fileUrl(req.filePickerDefaultPath) : ""
+                nativeFileDialog.open()
+            }
         }
     }
 }

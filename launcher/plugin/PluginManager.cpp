@@ -21,6 +21,7 @@
 #include "plugin/PluginDependencyResolver.h"
 #include "plugin/PluginSignature.h"
 #include "Application.h"
+#include "core/UiHost.h"
 #include "BuildConfig.h"
 #include "InstanceList.h"
 #include "BaseInstance.h"
@@ -1554,6 +1555,30 @@ void PluginManager::api_ui_show_message(void* mh, int type, const char* title,
 		QString("[%1] %2").arg(meta.name, QString::fromUtf8(title));
 	QString qmsg = QString::fromUtf8(msg);
 
+	/* Under the QML shell there is no widget window to parent a QMessageBox
+	 * to (see the qml-preview-tools audit, plan item 2) -- route through
+	 * the same UiHost a plugin's message()/confirm() would already reach on
+	 * the core side, instead of a plugin popping a widget the QML shell
+	 * must never show. The classic UI is untouched: usingQmlShell() is
+	 * false there, so this falls through to the QMessageBox it always
+	 * used. */
+	auto* app = r->manager->m_app;
+	if (app && app->usingQmlShell()) {
+		UiHost::Severity severity = UiHost::Severity::Information;
+		switch (type) {
+			case 1:
+				severity = UiHost::Severity::Warning;
+				break;
+			case 2:
+				severity = UiHost::Severity::Critical;
+				break;
+			default:
+				break;
+		}
+		app->uiHost()->message(qtitle, qmsg, severity);
+		return;
+	}
+
 	switch (type) {
 		case 1:
 			QMessageBox::warning(nullptr, qtitle, qmsg);
@@ -2132,13 +2157,26 @@ const char* PluginManager::api_ui_file_open_dialog(void* mh, const char* title,
 												   const char* filter)
 {
 	auto* r = rt(mh);
-	QString result = QFileDialog::getOpenFileName(
-		QApplication::activeWindow(),
-		title ? QString::fromUtf8(title) : QString(), QString(),
-		filter ? QString::fromUtf8(filter) : QString());
-	if (result.isEmpty())
+	const QString qtitle = title ? QString::fromUtf8(title) : QString();
+	const QString qfilter = filter ? QString::fromUtf8(filter) : QString();
+
+	std::optional<QString> result;
+	auto* app = r->manager->m_app;
+	if (app && app->usingQmlShell()) {
+		/* QApplication::activeWindow() is always null under the QML shell
+		 * (see the audit) -- ask through UiHost instead, which shows a
+		 * QtQuick.Dialogs FileDialog rather than this QFileDialog. */
+		result = app->uiHost()->pickFile(UiHost::FilePickerMode::Open, qtitle,
+										 QString(), qfilter);
+	} else {
+		const QString path = QFileDialog::getOpenFileName(
+			QApplication::activeWindow(), qtitle, QString(), qfilter);
+		if (!path.isEmpty())
+			result = path;
+	}
+	if (!result)
 		return nullptr;
-	r->tempString = result.toStdString();
+	r->tempString = result->toStdString();
 	return r->tempString.c_str();
 }
 
@@ -2147,14 +2185,24 @@ const char* PluginManager::api_ui_file_save_dialog(void* mh, const char* title,
 												   const char* filter)
 {
 	auto* r = rt(mh);
-	QString result = QFileDialog::getSaveFileName(
-		QApplication::activeWindow(),
-		title ? QString::fromUtf8(title) : QString(),
-		def ? QString::fromUtf8(def) : QString(),
-		filter ? QString::fromUtf8(filter) : QString());
-	if (result.isEmpty())
+	const QString qtitle = title ? QString::fromUtf8(title) : QString();
+	const QString qdef = def ? QString::fromUtf8(def) : QString();
+	const QString qfilter = filter ? QString::fromUtf8(filter) : QString();
+
+	std::optional<QString> result;
+	auto* app = r->manager->m_app;
+	if (app && app->usingQmlShell()) {
+		result = app->uiHost()->pickFile(UiHost::FilePickerMode::Save, qtitle,
+										 qdef, qfilter);
+	} else {
+		const QString path = QFileDialog::getSaveFileName(
+			QApplication::activeWindow(), qtitle, qdef, qfilter);
+		if (!path.isEmpty())
+			result = path;
+	}
+	if (!result)
 		return nullptr;
-	r->tempString = result.toStdString();
+	r->tempString = result->toStdString();
 	return r->tempString.c_str();
 }
 
@@ -2163,11 +2211,22 @@ const char* PluginManager::api_ui_input_dialog(void* mh, const char* title,
 											   const char* def)
 {
 	auto* r = rt(mh);
+	const QString qtitle = title ? QString::fromUtf8(title) : QString();
+	const QString qprompt = prompt ? QString::fromUtf8(prompt) : QString();
+	const QString qdef = def ? QString::fromUtf8(def) : QString();
+
+	auto* app = r->manager->m_app;
+	if (app && app->usingQmlShell()) {
+		const auto answer = app->uiHost()->askText(qtitle, qprompt, qdef);
+		if (!answer)
+			return nullptr;
+		r->tempString = answer->toStdString();
+		return r->tempString.c_str();
+	}
+
 	bool ok = false;
-	QString result = QInputDialog::getText(
-		nullptr, title ? QString::fromUtf8(title) : QString(),
-		prompt ? QString::fromUtf8(prompt) : QString(), QLineEdit::Normal,
-		def ? QString::fromUtf8(def) : QString(), &ok);
+	QString result = QInputDialog::getText(nullptr, qtitle, qprompt,
+										   QLineEdit::Normal, qdef, &ok);
 	if (!ok)
 		return nullptr;
 	r->tempString = result.toStdString();
@@ -2177,11 +2236,20 @@ const char* PluginManager::api_ui_input_dialog(void* mh, const char* title,
 int PluginManager::api_ui_confirm_dialog(void* mh, const char* title,
 										 const char* msg)
 {
-	(void)mh;
-	auto ret = QMessageBox::question(
-		nullptr, title ? QString::fromUtf8(title) : QString(),
-		msg ? QString::fromUtf8(msg) : QString(),
-		QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+	auto* r = rt(mh);
+	const QString qtitle = title ? QString::fromUtf8(title) : QString();
+	const QString qmsg = msg ? QString::fromUtf8(msg) : QString();
+
+	auto* app = r->manager->m_app;
+	if (app && app->usingQmlShell()) {
+		return app->uiHost()->confirm(qtitle, qmsg, UiHost::Severity::Question)
+				  ? 1
+				  : 0;
+	}
+
+	auto ret = QMessageBox::question(nullptr, qtitle, qmsg,
+									 QMessageBox::Yes | QMessageBox::No,
+									 QMessageBox::No);
 	return ret == QMessageBox::Yes ? 1 : 0;
 }
 
@@ -2548,9 +2616,20 @@ int PluginManager::api_ui_modal_run(void* mh, const char* title,
 									const char* json_doc, char* out_result_json,
 									int out_buf_size)
 {
-	(void)mh;
 	if (!json_doc)
 		return -1;
+
+	/* No QML-native renderer for a one-off "mmco-ui/1" modal document yet --
+	 * PluginSurfaceModel only serves the anchored, persistent surfaces
+	 * (Settings/instance-page plugin sections), not this ad-hoc prompt
+	 * shape (see the qml-preview-tools audit, plan item 3). Rather than
+	 * fall back to the QDialog below -- which the QML shell must never
+	 * show -- refuse cleanly so a plugin author sees a real "unsupported"
+	 * result instead of a widget window appearing out of nowhere. */
+	if (auto* r = rt(mh); r && r->manager->m_app &&
+		r->manager->m_app->usingQmlShell()) {
+		return -1;
+	}
 
 	QJsonParseError err{};
 	const QJsonDocument jd = QJsonDocument::fromJson(QByteArray(json_doc), &err);

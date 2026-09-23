@@ -23,14 +23,19 @@
 #include <QDir>
 #include <QEventLoop>
 #include <QFileSystemWatcher>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QNetworkRequest>
 #include <QPointer>
 #include <QQmlEngine>
+#include <QRegularExpression>
 #include <QStandardPaths>
 #include <QUrl>
 #include <utility>
 
 #include "BuildConfig.h"
 #include "DesktopServices.h"
+#include "minecraft/auth/AuthRequest.h"
 #include "modplatform/flame/FlameApi.h"
 
 namespace
@@ -120,6 +125,10 @@ QString QmlUiRequest::kind() const
 			return QStringLiteral("untrustedMods");
 		case Kind::Update:
 			return QStringLiteral("update");
+		case Kind::ProfileSetup:
+			return QStringLiteral("profileSetup");
+		case Kind::FilePicker:
+			return QStringLiteral("filePicker");
 	}
 	return QString();
 }
@@ -165,6 +174,30 @@ void QmlUiRequest::setUpdateInfo(QString currentVersion,
 		{ QStringLiteral("availableVersion"), availableVersion },
 		{ QStringLiteral("releaseNotes"), releaseNotes },
 	};
+}
+
+void QmlUiRequest::setFilePicker(QString mode, QString defaultPath,
+								 QString filter)
+{
+	m_filePickerMode = std::move(mode);
+	m_filePickerDefaultPath = std::move(defaultPath);
+	m_filePickerFilter = std::move(filter);
+}
+
+void QmlUiRequest::setProfileNameStatus(QString status, QString error)
+{
+	m_profileNameStatus = std::move(status);
+	m_profileNameError = std::move(error);
+	emit profileNameStatusChanged();
+}
+
+void QmlUiRequest::setProfileSubmitting(bool submitting)
+{
+	if (m_profileSubmitting == submitting) {
+		return;
+	}
+	m_profileSubmitting = submitting;
+	emit profileSubmittingChanged();
 }
 
 QVariantList QmlUiRequest::blockedMods() const
@@ -258,6 +291,36 @@ void QmlUiRequest::openDownload(int index)
 void QmlUiRequest::rescanDownloads()
 {
 	emit rescanRequested();
+}
+
+void QmlUiRequest::checkProfileName(const QString& name)
+{
+	/* Same shape ("[a-zA-Z0-9_]{3,16}") ProfileSetupDialog.cpp validates
+	 * the field with before ever asking the network -- checked here,
+	 * locally, so a name that can never be valid does not cost a round
+	 * trip. */
+	static const QRegularExpression permittedName(
+		QStringLiteral("^[a-zA-Z0-9_]{3,16}$"));
+	if (!permittedName.match(name).hasMatch()) {
+		setProfileNameStatus(
+			QStringLiteral("unset"),
+			tr("Name must be 3-16 characters long: letters, numbers and "
+			   "underscores only."));
+		return;
+	}
+	setProfileNameStatus(QStringLiteral("pending"), QString());
+	++m_checkSequence;
+	emit checkNameRequested(name);
+}
+
+void QmlUiRequest::submitProfileName(const QString& name)
+{
+	if (m_profileNameStatus != QStringLiteral("available") ||
+		m_profileSubmitting) {
+		return;
+	}
+	setProfileSubmitting(true);
+	emit submitNameRequested(name);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -495,4 +558,173 @@ UiHost::UpdateChoice QmlUiHost::offerUpdate(const QString& currentVersion,
 	request.setUpdateInfo(currentVersion, availableVersion, releaseNotes);
 	runRequest(request);
 	return request.updateChoice();
+}
+
+namespace
+{
+	/* Mirrors ProfileSetupDialog.cpp's checkFinished()/setupProfileFinished()
+	 * -- kept as a separate copy rather than shared with the widget dialog
+	 * (which stays untouched, per the audit's "widget UI keeps its dialog")
+	 * the same way PluginSurfaceModel duplicates PluginUiRenderer's node
+	 * handling instead of sharing it (see PluginSurfaceModel.cpp). */
+	QString minecraftServicesBearer(const MinecraftAccountPtr& account)
+	{
+		return QStringLiteral("Bearer %1")
+			.arg(account ? account->accessToken() : QString());
+	}
+} // namespace
+
+bool QmlUiHost::setupProfile(MinecraftAccountPtr account)
+{
+	QmlUiRequest request(
+		QmlUiRequest::Kind::ProfileSetup, tr("Choose a Minecraft name"),
+		tr("This Microsoft account has never set up a Minecraft profile "
+		   "before. Pick a username to play with -- it can be changed "
+		   "again later at minecraft.net."));
+
+	connect(&request, &QmlUiRequest::checkNameRequested, &request,
+			[&request, account](const QString& name) {
+				auto* checkReq = new AuthRequest(&request);
+				QPointer<QmlUiRequest> guard(&request);
+				/* checkNameRequested is a direct connection (both objects
+				 * are on this thread), so checkSequence() here already
+				 * reflects the bump checkProfileName() just made for this
+				 * exact call -- capturing it now gives this network round
+				 * trip a fixed identity to compare against whatever the
+				 * latest check is once the response comes back, however
+				 * much later that is or however many newer checks have
+				 * started in between (see QmlUiRequest::checkSequence()'s
+				 * comment; mirrors ProfileSetupDialog's isChecking/
+				 * currentCheck guard). */
+				const int seq = request.checkSequence();
+				connect(
+					checkReq, &AuthRequest::finished, &request,
+					[guard, checkReq, name,
+					 seq](QNetworkReply::NetworkError error, QByteArray data,
+						  QList<QNetworkReply::RawHeaderPair>) {
+						checkReq->deleteLater();
+						if (!guard) {
+							return;
+						}
+						if (guard->checkSequence() != seq) {
+							/* A newer checkProfileName() call has started
+							 * (or already finished) since this one was
+							 * issued -- this response is for a name the UI
+							 * has moved on from; applying it now would
+							 * overwrite a newer, still-in-flight or already
+							 * -settled status with a stale one. */
+							return;
+						}
+						if (error != QNetworkReply::NoError) {
+							guard->setProfileNameStatus(
+								QStringLiteral("error"),
+								tr("Failed to check name availability."));
+							return;
+						}
+						const auto root =
+							QJsonDocument::fromJson(data).object();
+						const auto status = root.value("status").toString(
+							QStringLiteral("INVALID"));
+						if (status == QLatin1String("AVAILABLE")) {
+							guard->setProfileNameStatus(
+								QStringLiteral("available"), QString());
+						} else if (status == QLatin1String("DUPLICATE")) {
+							guard->setProfileNameStatus(
+								QStringLiteral("exists"),
+								tr("A Minecraft profile named %1 already "
+								   "exists.")
+									.arg(name));
+						} else if (status == QLatin1String("NOT_ALLOWED")) {
+							guard->setProfileNameStatus(
+								QStringLiteral("notAllowed"),
+								tr("The name %1 is not allowed.").arg(name));
+						} else {
+							guard->setProfileNameStatus(
+								QStringLiteral("error"),
+								tr("Unhandled profile name status: %1")
+									.arg(status));
+						}
+					});
+				QNetworkRequest netReq{ QUrl(
+					QStringLiteral("https://api.minecraftservices.com/"
+								  "minecraft/profile/name/%1/available")
+						.arg(name)) };
+				netReq.setHeader(QNetworkRequest::ContentTypeHeader,
+								 "application/json");
+				netReq.setRawHeader("Accept", "application/json");
+				netReq.setRawHeader(
+					"Authorization",
+					minecraftServicesBearer(account).toUtf8());
+				checkReq->get(netReq);
+			});
+
+	connect(
+		&request, &QmlUiRequest::submitNameRequested, &request,
+		[&request, account](const QString& name) {
+			auto* submitReq = new AuthRequest(&request);
+			QPointer<QmlUiRequest> guard(&request);
+			connect(submitReq, &AuthRequest::finished, &request,
+					[guard, submitReq](QNetworkReply::NetworkError error,
+									   QByteArray data,
+									   QList<QNetworkReply::RawHeaderPair>) {
+						submitReq->deleteLater();
+						if (!guard) {
+							return;
+						}
+						guard->setProfileSubmitting(false);
+						if (error == QNetworkReply::NoError) {
+							/* Same as ProfileSetupDialog::setupProfileFinished():
+							 * the response has the new profile in it, but
+							 * there is nothing here that needs it -- the
+							 * caller (LaunchController) just re-fills the
+							 * session and continues the normal login flow. */
+							guard->accept();
+							return;
+						}
+						const auto root =
+							QJsonDocument::fromJson(data).object();
+						const QString message =
+							root.value("errorMessage").toString();
+						guard->setProfileNameStatus(
+							QStringLiteral("error"),
+							message.isEmpty()
+								? tr("Failed to create the profile.")
+								: message);
+					});
+			QNetworkRequest netReq{ QUrl(QStringLiteral(
+				"https://api.minecraftservices.com/minecraft/profile")) };
+			netReq.setHeader(QNetworkRequest::ContentTypeHeader,
+							 "application/json");
+			netReq.setRawHeader("Accept", "application/json");
+			netReq.setRawHeader("Authorization",
+								minecraftServicesBearer(account).toUtf8());
+			const QByteArray body =
+				QStringLiteral("{\"profileName\":\"%1\"}").arg(name).toUtf8();
+			submitReq->post(netReq, body);
+		});
+
+	runRequest(request);
+	return request.accepted();
+}
+
+std::optional<QString> QmlUiHost::pickFile(FilePickerMode mode,
+										   const QString& title,
+										   const QString& defaultPath,
+										   const QString& filter)
+{
+	QmlUiRequest request(QmlUiRequest::Kind::FilePicker, title, QString());
+	request.setFilePicker(mode == FilePickerMode::Open
+							  ? QStringLiteral("open")
+							  : QStringLiteral("save"),
+						  defaultPath, filter);
+	runRequest(request);
+	if (!request.accepted()) {
+		return std::nullopt;
+	}
+	/* QML hands back whatever a QtQuick.Dialogs FileDialog's selectedFile
+	 * gives it -- a file:// URL string, the same convention
+	 * InstanceDetails::importIcon() and NewInstanceController already
+	 * unwrap this way for a QML FileDialog's result. */
+	const QUrl url(request.answeredText());
+	return url.isLocalFile() ? url.toLocalFile() : request.answeredText();
 }

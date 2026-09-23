@@ -46,6 +46,13 @@
  *   untrustedMods -- untrustedModsFiles, confirmDelayMs, then
  *                    accept() / reject()
  *   update        -- updateInfo, then answerUpdate("install"|"later"|"skip")
+ *   profileSetup  -- profileNameStatus (live), checkProfileName(name),
+ *                    submitProfileName(name); accept() fires itself once
+ *                    the profile is actually created, reject() cancels
+ *   filePicker    -- filePickerMode/filePickerFilter/filePickerDefaultPath,
+ *                    then accept(path) / reject() (QML shows a native
+ *                    QtQuick.Dialogs file dialog rather than this
+ *                    request's own UI for this kind)
  *
  * Ownership is C++'s throughout: QmlUiHost hands this to QML with
  * QQmlEngine::CppOwnership (see exposeToQml() in the .cpp) and deletes it
@@ -87,6 +94,29 @@ class QmlUiRequest : public QObject
 	/// (Markdown, exactly as published -- rendering it is QML's job, the
 	/// way HoeDown was the widget dialog's).
 	Q_PROPERTY(QVariantMap updateInfo READ updateInfo CONSTANT)
+	/* kind == "profileSetup": "unset" | "pending" | "available" | "exists" |
+	 * "notAllowed" | "error" -- see checkProfileName()/submitProfileName().
+	 * NOTIFY rather than CONSTANT: this is the one other property (besides
+	 * blockedMods) that changes live while the request is pending. */
+	Q_PROPERTY(QString profileNameStatus READ profileNameStatus NOTIFY
+			   profileNameStatusChanged)
+	/// kind == "profileSetup": human-readable detail for the status above
+	/// ("name too short", "already exists", a server error); empty when
+	/// there is nothing to show.
+	Q_PROPERTY(QString profileNameError READ profileNameError NOTIFY
+			   profileNameStatusChanged)
+	/// kind == "profileSetup": true while submitProfileName()'s network
+	/// call is in flight -- QML disables its form while this is true.
+	Q_PROPERTY(bool profileSubmitting READ profileSubmitting NOTIFY
+			   profileSubmittingChanged)
+	/// kind == "filePicker": "open" | "save".
+	Q_PROPERTY(QString filePickerMode READ filePickerMode CONSTANT)
+	/// kind == "filePicker": a Qt filter string, as the plugin gave it.
+	Q_PROPERTY(QString filePickerFilter READ filePickerFilter CONSTANT)
+	/// kind == "filePicker": FilePickerMode::Save's suggested filename;
+	/// empty otherwise.
+	Q_PROPERTY(QString filePickerDefaultPath READ filePickerDefaultPath
+			   CONSTANT)
 
   public:
 	enum class Kind {
@@ -97,6 +127,8 @@ class QmlUiRequest : public QObject
 		BlockedMods,
 		UntrustedMods,
 		Update,
+		ProfileSetup,
+		FilePicker,
 	};
 
 	QmlUiRequest(Kind kind, QString title, QString text,
@@ -144,6 +176,30 @@ class QmlUiRequest : public QObject
 	{
 		return m_updateInfo;
 	}
+	QString profileNameStatus() const
+	{
+		return m_profileNameStatus;
+	}
+	QString profileNameError() const
+	{
+		return m_profileNameError;
+	}
+	bool profileSubmitting() const
+	{
+		return m_profileSubmitting;
+	}
+	QString filePickerMode() const
+	{
+		return m_filePickerMode;
+	}
+	QString filePickerFilter() const
+	{
+		return m_filePickerFilter;
+	}
+	QString filePickerDefaultPath() const
+	{
+		return m_filePickerDefaultPath;
+	}
 
 	/* Filled in by QmlUiHost before the request is published (from
 	 * runRequest()'s caller, never after) -- not reachable from QML, which
@@ -156,6 +212,27 @@ class QmlUiRequest : public QObject
 	void setUntrustedModsFiles(QStringList files);
 	void setUpdateInfo(QString currentVersion, QString availableVersion,
 						QString releaseNotes);
+	void setFilePicker(QString mode, QString defaultPath, QString filter);
+	/* Read by QmlUiHost's checkNameRequested/submitNameRequested handlers
+	 * (which do the actual network work -- see QmlUiHost::setupProfile())
+	 * to update what QML sees; not reachable from QML itself, which only
+	 * ever sees the getters above. */
+	void setProfileNameStatus(QString status, QString error);
+	void setProfileSubmitting(bool submitting);
+	/* Bumped by checkProfileName() every time it actually starts a network
+	 * check (not on the local-validation-only path), before it emits
+	 * checkNameRequested(). QmlUiHost::setupProfile()'s connected slot reads
+	 * this synchronously -- the connection is direct, so the read happens
+	 * inside the same call stack as the increment -- and captures it as the
+	 * check's identity; a result that comes back once a newer check has
+	 * started is discarded by comparing against this again. Mirrors
+	 * ProfileSetupDialog's isChecking/currentCheck guard (see
+	 * QmlUiHost::setupProfile()'s comment) without serializing the checks
+	 * themselves. */
+	int checkSequence() const
+	{
+		return m_checkSequence;
+	}
 
 	/* Read by QmlUiHost once answered() has fired; meaningless before
 	 * then. */
@@ -203,6 +280,18 @@ class QmlUiRequest : public QObject
 	/// kind == "blockedMods": forces an immediate re-check of the
 	/// Downloads folder instead of waiting for the next filesystem event.
 	Q_INVOKABLE void rescanDownloads();
+	/// kind == "profileSetup": checks whether @p name is a valid, available
+	/// Minecraft profile name -- validates the shape locally (3-16
+	/// letters/digits/underscores, the same rule the widget dialog's field
+	/// validator enforces) before asking QmlUiHost to check availability
+	/// over the network; updates profileNameStatus either way.
+	Q_INVOKABLE void checkProfileName(const QString& name);
+	/// kind == "profileSetup": creates the profile with @p name, the way
+	/// the widget dialog's OK button does. No-op unless profileNameStatus
+	/// is currently "available". Answers the request with accept() on
+	/// success; on failure, sets profileNameStatus to "error" and leaves
+	/// the request open so the user can try another name.
+	Q_INVOKABLE void submitProfileName(const QString& name);
 
   signals:
 	/// One of the answer invokables above ran; QmlUiHost::runRequest() is
@@ -212,6 +301,14 @@ class QmlUiRequest : public QObject
 	/// rescanDownloads() was called; QmlUiHost::resolveBlockedMods()
 	/// connects this to the scan it already has running.
 	void rescanRequested();
+	void profileNameStatusChanged();
+	void profileSubmittingChanged();
+	/// checkProfileName() passed local validation; QmlUiHost::setupProfile()
+	/// connects this to the actual network check.
+	void checkNameRequested(const QString& name);
+	/// submitProfileName() was called while available; QmlUiHost::setupProfile()
+	/// connects this to the actual profile-creation call.
+	void submitNameRequested(const QString& name);
 
   private:
 	Kind m_kind;
@@ -227,6 +324,13 @@ class QmlUiRequest : public QObject
 	QStringList m_untrustedModsFiles;
 	int m_confirmDelayMs = 0;
 	QVariantMap m_updateInfo;
+	QString m_profileNameStatus = QStringLiteral("unset");
+	QString m_profileNameError;
+	bool m_profileSubmitting = false;
+	QString m_filePickerMode;
+	QString m_filePickerFilter;
+	QString m_filePickerDefaultPath;
+	int m_checkSequence = 0;
 
 	bool m_answered = false;
 	bool m_accepted = false;
@@ -331,6 +435,12 @@ class QmlUiHost : public QObject, public UiHost
 	UpdateChoice offerUpdate(const QString& currentVersion,
 							 const QString& availableVersion,
 							 const QString& releaseNotes) override;
+
+	bool setupProfile(MinecraftAccountPtr account) override;
+
+	std::optional<QString> pickFile(FilePickerMode mode, const QString& title,
+									const QString& defaultPath,
+									const QString& filter) override;
 
 	QObject* current() const;
 	bool busy() const;

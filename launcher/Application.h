@@ -28,6 +28,7 @@
 #include <QDateTime>
 #include <QUrl>
 #include <QHash>
+#include <QList>
 
 #include <BaseInstance.h>
 
@@ -366,6 +367,17 @@ class Application : public QApplication, public LauncherContext
 	/* The QML user interface, when it is the one in use instead of
 	 * MainWindow. See useQmlShell(). */
 	std::unique_ptr<QmlShell> m_qmlShell;
+
+	/* Set by reportUpdateMarkers() when init() (before useQmlShell() is
+	 * even consulted) finds an update lock/fail/success marker and the QML
+	 * shell is about to be used: there is no QML window yet to answer
+	 * through uiHost() at that point (see QmlUiHost's PRESENTER READINESS),
+	 * so showing the classic QMessageBox there instead would be exactly
+	 * the widget-under-QML leak the whole audit is about. Queued here and
+	 * run once showMainWindow()'s QmlUiHost reports presenterReady(); run
+	 * through the widget host instead if the QML shell then fails to load
+	 * (see showMainWindow()). Empty when there is nothing to report. */
+	QList<std::function<void()>> m_pendingQmlUpdateReports;
 
   public:
 	QString m_instanceIdToLaunch;

@@ -194,6 +194,116 @@ class QmlUiHostTest : public QObject
 		QCOMPARE(spy.count(), 1);
 	}
 
+	void checkProfileNameRejectsAnInvalidShapeWithoutAskingTheNetwork()
+	{
+		QmlUiRequest request(QmlUiRequest::Kind::ProfileSetup,
+							 QStringLiteral("Title"), QStringLiteral("Text"));
+		QSignalSpy checkSpy(&request, &QmlUiRequest::checkNameRequested);
+
+		request.checkProfileName(QStringLiteral("ab")); // too short
+
+		QCOMPARE(request.profileNameStatus(), QStringLiteral("unset"));
+		QVERIFY(!request.profileNameError().isEmpty());
+		QCOMPARE(checkSpy.count(), 0);
+	}
+
+	void checkProfileNameAsksTheNetworkForAValidShape()
+	{
+		QmlUiRequest request(QmlUiRequest::Kind::ProfileSetup,
+							 QStringLiteral("Title"), QStringLiteral("Text"));
+		QSignalSpy checkSpy(&request, &QmlUiRequest::checkNameRequested);
+
+		request.checkProfileName(QStringLiteral("Steve"));
+
+		QCOMPARE(request.profileNameStatus(), QStringLiteral("pending"));
+		QCOMPARE(checkSpy.count(), 1);
+		QCOMPARE(checkSpy.at(0).at(0).toString(), QStringLiteral("Steve"));
+	}
+
+	void submitProfileNameDoesNothingUntilTheNameIsAvailable()
+	{
+		QmlUiRequest request(QmlUiRequest::Kind::ProfileSetup,
+							 QStringLiteral("Title"), QStringLiteral("Text"));
+		QSignalSpy submitSpy(&request, &QmlUiRequest::submitNameRequested);
+
+		request.submitProfileName(QStringLiteral("Steve")); // still "unset"
+
+		QCOMPARE(submitSpy.count(), 0);
+		QVERIFY(!request.profileSubmitting());
+	}
+
+	void submitProfileNameAsksTheNetworkOnceAvailable()
+	{
+		QmlUiRequest request(QmlUiRequest::Kind::ProfileSetup,
+							 QStringLiteral("Title"), QStringLiteral("Text"));
+		request.setProfileNameStatus(QStringLiteral("available"), QString());
+		QSignalSpy submitSpy(&request, &QmlUiRequest::submitNameRequested);
+
+		request.submitProfileName(QStringLiteral("Steve"));
+
+		QCOMPARE(submitSpy.count(), 1);
+		QVERIFY(request.profileSubmitting());
+
+		// Re-entrant clicks while a submission is already in flight are
+		// ignored rather than starting a second one.
+		request.submitProfileName(QStringLiteral("Steve"));
+		QCOMPARE(submitSpy.count(), 1);
+	}
+
+	void setupProfileReturnsFalseWhenQmlRejects()
+	{
+		QmlUiHost host;
+
+		QTimer::singleShot(0, [&host]() {
+			auto* request = qobject_cast<QmlUiRequest*>(host.current());
+			QVERIFY(request);
+			QCOMPARE(request->kind(), QStringLiteral("profileSetup"));
+			request->reject();
+		});
+
+		const bool created = host.setupProfile(nullptr);
+
+		QVERIFY(!created);
+		QVERIFY(!host.current());
+	}
+
+	void pickFileReturnsNulloptWhenQmlRejects()
+	{
+		QmlUiHost host;
+
+		QTimer::singleShot(0, [&host]() {
+			auto* request = qobject_cast<QmlUiRequest*>(host.current());
+			QVERIFY(request);
+			QCOMPARE(request->kind(), QStringLiteral("filePicker"));
+			request->reject();
+		});
+
+		const auto result =
+			host.pickFile(UiHost::FilePickerMode::Open, QStringLiteral("Title"),
+						  QString(), QStringLiteral("*.txt"));
+
+		QVERIFY(!result.has_value());
+	}
+
+	void pickFileUnwrapsAFileUrlToALocalPath()
+	{
+		QmlUiHost host;
+
+		QTimer::singleShot(0, [&host]() {
+			auto* request = qobject_cast<QmlUiRequest*>(host.current());
+			QVERIFY(request);
+			QCOMPARE(request->filePickerMode(), QStringLiteral("save"));
+			request->accept(QStringLiteral("file:///tmp/example.txt"));
+		});
+
+		const auto result =
+			host.pickFile(UiHost::FilePickerMode::Save, QStringLiteral("Title"),
+						  QStringLiteral("example.txt"), QString());
+
+		QVERIFY(result.has_value());
+		QCOMPARE(*result, QStringLiteral("/tmp/example.txt"));
+	}
+
 	void busyNestsAndReportsTheInnermostText()
 	{
 		QmlUiHost host;

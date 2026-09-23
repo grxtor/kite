@@ -22,6 +22,7 @@
 #include "plugin/PluginAuthRequestDecorator.h"
 #include "ui/WidgetUiHost.h"
 #include "qml/QmlShell.h"
+#include "qml/QmlUiHost.h"
 #include "plugin/PluginManager.h"
 #include "plugin/PluginSurfaceModel.h"
 
@@ -1892,7 +1893,7 @@ bool Application::reportUpdateMarkers()
 {
 	const QString updateLog = UpdateLockFile::updateLogPath(m_dataPath);
 
-	const auto logContents = [&updateLog]() -> QString {
+	const auto logContents = [updateLog]() -> QString {
 		QFile file(updateLog);
 		if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
 			return {};
@@ -1900,6 +1901,15 @@ bool Application::reportUpdateMarkers()
 		file.close();
 		return contents;
 	};
+
+	/* This runs from init(), before useQmlShell()/showMainWindow() has
+	 * chosen a UI -- so under the QML shell there is no window yet to
+	 * answer a UiHost call either (see QmlUiHost's PRESENTER READINESS
+	 * comment). Queue what would have been a QMessageBox instead of
+	 * showing one, and let showMainWindow() run the queue once its
+	 * QmlUiHost reports presenterReady() -- see m_pendingQmlUpdateReports.
+	 * The classic path below is entirely unchanged when this is false. */
+	const bool qml = useQmlShell();
 
 	// A lock left behind means an update started and never finished, so this
 	// installation may be a mix of two versions. That is not something to
@@ -1909,91 +1919,130 @@ bool Application::reportUpdateMarkers()
 		UpdateLockFile::Contents lock;
 		UpdateLockFile::read(lockPath, &lock);
 
-		QMessageBox box(QMessageBox::Warning, tr("Update In Progress"),
-						tr("This installation has an update lock file at: %1\n"
-						   "\n"
-						   "Timestamp: %2\n"
-						   "Updating from version %3 to %4\n"
-						   "Target install path: %5\n"
-						   "Data path: %6\n"
-						   "\n"
-						   "This usually means an update attempt failed. "
-						   "Please make sure your installation still works "
-						   "before continuing.\n"
-						   "The updater log at:\n"
-						   "%7\n"
-						   "has the details of the last attempt.\n"
-						   "\n"
-						   "To delete this lock and continue, choose "
-						   "\"Ignore\".")
-							.arg(QDir::toNativeSeparators(lockPath),
-								 lock.timestamp.toString(Qt::ISODate),
-								 lock.from, lock.to, lock.target,
-								 lock.dataPath,
-								 QDir::toNativeSeparators(updateLog)),
-						QMessageBox::Ignore | QMessageBox::Abort);
-		box.setDefaultButton(QMessageBox::Abort);
-		box.setModal(true);
-		box.setDetailedText(logContents());
-		box.setMinimumWidth(460);
-		box.adjustSize();
+		const QString text =
+			tr("This installation has an update lock file at: %1\n"
+			   "\n"
+			   "Timestamp: %2\n"
+			   "Updating from version %3 to %4\n"
+			   "Target install path: %5\n"
+			   "Data path: %6\n"
+			   "\n"
+			   "This usually means an update attempt failed. "
+			   "Please make sure your installation still works "
+			   "before continuing.\n"
+			   "The updater log at:\n"
+			   "%7\n"
+			   "has the details of the last attempt.\n"
+			   "\n"
+			   "To delete this lock and continue, choose "
+			   "\"Ignore\".")
+				.arg(QDir::toNativeSeparators(lockPath),
+					 lock.timestamp.toString(Qt::ISODate),
+					 lock.from, lock.to, lock.target,
+					 lock.dataPath,
+					 QDir::toNativeSeparators(updateLog));
 
-		if (box.exec() != QMessageBox::Ignore) {
-			qDebug() << "Exiting because an update lock file is present.";
-			return false;
+		if (qml) {
+			m_pendingQmlUpdateReports.append([this, lockPath, text]() {
+				const bool ignore = uiHost()->confirm(
+					tr("Update In Progress"), text, UiHost::Severity::Warning,
+					tr("Ignore"), tr("Quit"));
+				if (!ignore) {
+					qDebug()
+						<< "Quitting because an update lock file is present.";
+					quit();
+					return;
+				}
+				QFile::remove(lockPath);
+			});
+		} else {
+			QMessageBox box(QMessageBox::Warning, tr("Update In Progress"),
+							text, QMessageBox::Ignore | QMessageBox::Abort);
+			box.setDefaultButton(QMessageBox::Abort);
+			box.setModal(true);
+			box.setDetailedText(logContents());
+			box.setMinimumWidth(460);
+			box.adjustSize();
+
+			if (box.exec() != QMessageBox::Ignore) {
+				qDebug() << "Exiting because an update lock file is present.";
+				return false;
+			}
+			QFile::remove(lockPath);
 		}
-		QFile::remove(lockPath);
 	}
 
 	const QString failMarker = UpdateLockFile::markerPath(
 		m_dataPath, QLatin1String(UpdateLockFile::kFailMarkerName));
 	if (QFileInfo::exists(failMarker)) {
-		QMessageBox box(QMessageBox::Warning, tr("Update Failed"),
-						tr("An update attempt failed.\n"
-						   "\n"
-						   "Please make sure your installation still works "
-						   "before continuing.\n"
-						   "The updater log at:\n"
-						   "%1\n"
-						   "has the details of the last attempt.")
-							.arg(QDir::toNativeSeparators(updateLog)),
-						QMessageBox::Ignore | QMessageBox::Abort);
-		box.setDefaultButton(QMessageBox::Abort);
-		box.setModal(true);
-		box.setDetailedText(logContents());
-		box.setMinimumWidth(460);
-		box.adjustSize();
+		const QString text = tr("An update attempt failed.\n"
+								"\n"
+								"Please make sure your installation still "
+								"works before continuing.\n"
+								"The updater log at:\n"
+								"%1\n"
+								"has the details of the last attempt.")
+								 .arg(QDir::toNativeSeparators(updateLog));
 
-		if (box.exec() != QMessageBox::Ignore) {
-			qDebug() << "Exiting because the last update failed.";
-			return false;
+		if (qml) {
+			m_pendingQmlUpdateReports.append([this, failMarker, text]() {
+				const bool ignore = uiHost()->confirm(
+					tr("Update Failed"), text, UiHost::Severity::Warning,
+					tr("Ignore"), tr("Quit"));
+				if (!ignore) {
+					qDebug() << "Quitting because the last update failed.";
+					quit();
+					return;
+				}
+				QFile::remove(failMarker);
+			});
+		} else {
+			QMessageBox box(QMessageBox::Warning, tr("Update Failed"), text,
+							QMessageBox::Ignore | QMessageBox::Abort);
+			box.setDefaultButton(QMessageBox::Abort);
+			box.setModal(true);
+			box.setDetailedText(logContents());
+			box.setMinimumWidth(460);
+			box.adjustSize();
+
+			if (box.exec() != QMessageBox::Ignore) {
+				qDebug() << "Exiting because the last update failed.";
+				return false;
+			}
+			QFile::remove(failMarker);
 		}
-		QFile::remove(failMarker);
 	}
 
 	const QString successMarker = UpdateLockFile::markerPath(
 		m_dataPath, QLatin1String(UpdateLockFile::kSuccessMarkerName));
 	if (QFileInfo::exists(successMarker)) {
-		// Shown without blocking startup: the news is good, and the details
-		// are there for anyone who wants them.
-		auto* box = new QMessageBox(
-			QMessageBox::Information, tr("Update Succeeded"),
-			tr("The update succeeded.\n"
-			   "\n"
-			   "You are now running %1.\n"
-			   "The updater log at:\n"
-			   "%2\n"
-			   "has the details.")
-				.arg(BuildConfig.printableVersionString(),
-					 QDir::toNativeSeparators(updateLog)),
-			QMessageBox::Ok);
-		box->setDefaultButton(QMessageBox::Ok);
-		box->setDetailedText(logContents());
-		box->setAttribute(Qt::WA_DeleteOnClose);
-		box->setMinimumWidth(460);
-		box->adjustSize();
-		box->open();
+		const QString text = tr("The update succeeded.\n"
+								"\n"
+								"You are now running %1.\n"
+								"The updater log at:\n"
+								"%2\n"
+								"has the details.")
+								 .arg(BuildConfig.printableVersionString(),
+									  QDir::toNativeSeparators(updateLog));
 
+		if (qml) {
+			m_pendingQmlUpdateReports.append([this, text]() {
+				uiHost()->message(tr("Update Succeeded"), text,
+								  UiHost::Severity::Information);
+			});
+		} else {
+			// Shown without blocking startup: the news is good, and the
+			// details are there for anyone who wants them.
+			auto* box = new QMessageBox(QMessageBox::Information,
+										tr("Update Succeeded"), text,
+										QMessageBox::Ok);
+			box->setDefaultButton(QMessageBox::Ok);
+			box->setDetailedText(logContents());
+			box->setAttribute(Qt::WA_DeleteOnClose);
+			box->setMinimumWidth(460);
+			box->adjustSize();
+			box->open();
+		}
 		QFile::remove(successMarker);
 	}
 
@@ -2198,22 +2247,106 @@ MainWindow* Application::showMainWindow(bool minimized)
 					});
 			connect(m_qmlShell.get(), &QmlShell::settingsRequested, this,
 					[this](const QString& page) {
+						/* Reached only from the QML "More" escape-hatch rows
+						 * (proxy-settings/external-tools/log-upload) today --
+						 * every page with a QML equivalent (accounts,
+						 * language, ...) never sends one here. Still guard
+						 * defensively against a page id QML has since grown
+						 * its own version of (a plugin, or a future row),
+						 * since ShowGlobalSettings(nullptr, ...) is the same
+						 * null-parent defect class as createInstanceRequested
+						 * below. The three real escape-hatch pages are left
+						 * opening as they always have -- confirmed not to
+						 * crash (see the qml-preview-tools audit, §1.2) --
+						 * until they get QML sections of their own. */
+						static const QSet<QString> kAlreadyInQml{
+							QStringLiteral("accounts"),
+							QStringLiteral("language"),
+						};
+						if (kAlreadyInQml.contains(page)) {
+							qWarning()
+								<< "Application: settingsRequested(" << page
+								<< ") ignored under the QML shell -- already "
+								   "available there";
+							return;
+						}
 						ShowGlobalSettings(nullptr, page);
 					});
 			connect(m_qmlShell.get(), &QmlShell::accountsRequested, this,
-					[this]() { ShowGlobalSettings(nullptr, "accounts"); });
+					[]() {
+						/* Full parity in QML already (see AccountsPage.qml);
+						 * nothing currently emits this signal, but refuse it
+						 * rather than open ShowGlobalSettings(nullptr, ...)
+						 * if something someday does. */
+						qWarning() << "Application: accountsRequested ignored "
+									  "under the QML shell -- use the Accounts "
+									  "page instead";
+					});
 			connect(m_qmlShell.get(), &QmlShell::createInstanceRequested, this,
 					[this]() {
-						const QString groupName =
-							settings()
-								->get("LastUsedGroupForNewInstance")
-								.toString();
-						MainWindow::createInstanceFromDialog(nullptr,
-															 groupName);
+						/* This is the reported SIGSEGV: with no MainWindow
+						 * under the QML shell (see this method's own doc
+						 * comment), MainWindow::createInstanceFromDialog()
+						 * used to be called with a null parent, constructing
+						 * NewInstanceDialog's whole ~15-file widget stack
+						 * that was never built or tested that way. The
+						 * import lane is building a QML replacement for the
+						 * button that emits this; until it ships, refuse
+						 * instead of ever reaching that dialog under QML. */
+						qWarning() << "Application: createInstanceRequested "
+									  "ignored under the QML shell (no QML "
+									  "import screen yet)";
+						uiHost()->message(
+							tr("Not available yet"),
+							tr("Importing a modpack from a file, or browsing "
+							   "other platforms, isn't available in this "
+							   "preview interface yet."),
+							UiHost::Severity::Information);
 					});
 
 			if (m_qmlShell->show(minimized)) {
 				m_openWindows++;
+
+				/* Runs whatever reportUpdateMarkers() queued at init() (see
+				 * m_pendingQmlUpdateReports) the moment QmlUiHost can
+				 * actually show a request. Wired here rather than right
+				 * after QmlShell's construction above: QmlShell only builds
+				 * its QmlUiHost inside show() (called just above), so
+				 * m_qmlShell->uiHost() is null before this point and the
+				 * qobject_cast below would always fail silently. show()
+				 * having just returned true guarantees the host now
+				 * exists. */
+				if (auto* host = qobject_cast<QmlUiHost*>(m_qmlShell->uiHost())) {
+					connect(host, &QmlUiHost::presenterReadyChanged, this,
+							[this, host]() {
+								if (!host->presenterReady() ||
+									m_pendingQmlUpdateReports.isEmpty()) {
+									return;
+								}
+								const auto pending =
+									std::move(m_pendingQmlUpdateReports);
+								m_pendingQmlUpdateReports.clear();
+								for (const auto& report : pending) {
+									report();
+								}
+							});
+					/* presenterReady() may already be true by the time this
+					 * connection is made (e.g. the QML window finished its
+					 * Component.onCompleted during the load() call above) --
+					 * presenterReadyChanged() would then never fire again to
+					 * trigger the flush. Run the queue once here too; the
+					 * lambda above is a no-op if it later fires with nothing
+					 * left queued. */
+					if (host->presenterReady() &&
+						!m_pendingQmlUpdateReports.isEmpty()) {
+						const auto pending =
+							std::move(m_pendingQmlUpdateReports);
+						m_pendingQmlUpdateReports.clear();
+						for (const auto& report : pending) {
+							report();
+						}
+					}
+				}
 
 				/* The widget MainWindow fires MMCO_HOOK_UI_MAIN_READY
 				 * itself, from its own constructor (see
@@ -2239,6 +2372,18 @@ MainWindow* Application::showMainWindow(bool minimized)
 			 * screen: fall through to the widget window instead. */
 			qWarning() << "QML shell failed to load; using the widget window";
 			m_qmlShell.reset();
+
+			if (!m_pendingQmlUpdateReports.isEmpty()) {
+				/* Never ran above -- the QmlUiHost that would have shown
+				 * them never came up. uiHost() now falls back to the widget
+				 * host since m_qmlShell is gone, so these still reach the
+				 * user instead of being silently dropped. */
+				const auto pending = std::move(m_pendingQmlUpdateReports);
+				m_pendingQmlUpdateReports.clear();
+				for (const auto& report : pending) {
+					report();
+				}
+			}
 		} else {
 			m_qmlShell->show(minimized);
 			return nullptr;

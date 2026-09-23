@@ -56,4 +56,10 @@ class WidgetUiHost final : public UiHost
 	UpdateChoice offerUpdate(const QString& currentVersion,
 							 const QString& availableVersion,
 							 const QString& releaseNotes) override;
+
+	bool setupProfile(MinecraftAccountPtr account) override;
+
+	std::optional<QString> pickFile(FilePickerMode mode, const QString& title,
+									const QString& defaultPath,
+									const QString& filter) override;
 };

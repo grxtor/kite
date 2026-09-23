@@ -26,6 +26,7 @@
 #include <QString>
 #include <QStringList>
 
+#include "minecraft/auth/MinecraftAccount.h"
 #include "modplatform/BlockedMod.h"
 
 /*
@@ -121,4 +122,23 @@ class UiHost
 	virtual UpdateChoice offerUpdate(const QString& currentVersion,
 									 const QString& availableVersion,
 									 const QString& releaseNotes) = 0;
+
+	/* A Microsoft account that owns Minecraft but has never set up a
+	 * profile (username) yet -- checks name availability live as the user
+	 * types and creates the profile once they accept, the way the widget
+	 * ProfileSetupDialog does. Returns true once the profile has actually
+	 * been created; false if the user backed out. */
+	virtual bool setupProfile(MinecraftAccountPtr account) = 0;
+
+	enum class FilePickerMode { Open, Save };
+
+	/* A file to open, or a location/name to save to -- what the plugin
+	 * SDK's file dialogs need. @p filter is a Qt filter string ("Images
+	 * (*.png *.jpg)", several groups separated by ";;"); @p defaultPath is
+	 * only meaningful for FilePickerMode::Save (a suggested filename).
+	 * Returns the chosen path, or nullopt if the user cancelled. */
+	virtual std::optional<QString> pickFile(FilePickerMode mode,
+											const QString& title,
+											const QString& defaultPath,
+											const QString& filter) = 0;
 };

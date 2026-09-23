@@ -21,6 +21,7 @@
 
 #include <QApplication>
 #include <QAbstractButton>
+#include <QFileDialog>
 #include <QInputDialog>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -29,6 +30,7 @@
 
 #include "ui/dialogs/BlockedModsDialog.h"
 #include "ui/dialogs/CustomMessageBox.h"
+#include "ui/dialogs/ProfileSetupDialog.h"
 #include "ui/dialogs/UntrustedModsDialog.h"
 #include "ui/dialogs/UpdateAvailableDialog.h"
 
@@ -180,4 +182,27 @@ UiHost::UpdateChoice WidgetUiHost::offerUpdate(const QString& currentVersion,
 			 * the offer standing for next time. */
 			return UpdateChoice::Later;
 	}
+}
+
+bool WidgetUiHost::setupProfile(MinecraftAccountPtr account)
+{
+	ProfileSetupDialog dialog(account, activeWindow());
+	return dialog.exec() == QDialog::Accepted;
+}
+
+std::optional<QString> WidgetUiHost::pickFile(FilePickerMode mode,
+											  const QString& title,
+											  const QString& defaultPath,
+											  const QString& filter)
+{
+	const QString result =
+		mode == FilePickerMode::Open
+			? QFileDialog::getOpenFileName(activeWindow(), title, QString(),
+										   filter)
+			: QFileDialog::getSaveFileName(activeWindow(), title, defaultPath,
+										   filter);
+	if (result.isEmpty()) {
+		return std::nullopt;
+	}
+	return result;
 }
