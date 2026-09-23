@@ -114,9 +114,8 @@ Item {
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
-        // Cover -- edge to edge, so the card's own clip rounds its top
-        // corners for us; QtQuick 6.4 has no per-corner radius to ask
-        // for one directly.
+        // Cover -- edge to edge; see the corner mask at its end for how the
+        // top corners get rounded without a per-corner radius (Qt 6.7+).
         Item {
             id: cover
             x: 0
@@ -229,6 +228,23 @@ Item {
                         font.weight: Font.DemiBold
                     }
                 }
+            }
+
+            // Rectangle `clip` is square, so the cover would poke out past
+            // the card's rounded top corners (more so while it zooms on
+            // hover). A ring in the page colour covers exactly those two
+            // corners: its inner edge is the card's rounded outline, and it
+            // runs on below the cover so its lower corners are clipped away.
+            Rectangle {
+                readonly property int ring: card.radius + 2
+                x: -ring
+                y: -ring
+                width: parent.width + ring * 2
+                height: parent.height + ring * 2 + card.radius * 2
+                radius: card.radius + ring
+                color: "transparent"
+                border.width: ring
+                border.color: Theme.palette.canvas
             }
         }
 
@@ -425,6 +441,16 @@ Item {
                 Skeleton { anchors.left: parent.left; width: 44; height: parent.height; radius: Theme.radius.sm }
                 Skeleton { anchors.right: parent.right; width: 60; height: parent.height; radius: Theme.radius.sm }
             }
+        }
+
+        // The card's border again, on top: the edge-to-edge cover paints
+        // over the card's own one along the top and sides.
+        Rectangle {
+            anchors.fill: parent
+            radius: card.radius
+            color: "transparent"
+            border.width: card.border.width
+            border.color: card.border.color
         }
     }
 

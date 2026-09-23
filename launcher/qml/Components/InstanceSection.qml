@@ -97,9 +97,12 @@ Column {
     // so a fold/unfold reflows the sections below it instead of jumping.
     Item {
         id: body
+        readonly property real fullHeight: contentLoader.item ? contentLoader.item.implicitHeight : 0
         width: parent.width
-        height: root.collapsed ? 0 : (contentLoader.item ? contentLoader.item.implicitHeight : 0)
-        clip: true
+        height: root.collapsed ? 0 : fullHeight
+        // Only while folded or folding: a permanent clip would also cut off
+        // a card's hover lift and focus ring along the top row.
+        clip: height < fullHeight - 0.5
 
         Behavior on height { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
 

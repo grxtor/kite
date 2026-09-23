@@ -37,6 +37,10 @@ Rectangle {
     property string editText: qsTr("Edit")
     // A shorter banner for pages where the content below matters more.
     property bool compact: false
+    // A one-line strip: title and tags beside the icon, actions on the
+    // right -- for tabs whose content needs the height (the instance page
+    // outside its Overview).
+    property bool slim: false
 
     signal playRequested()
     signal stopRequested()
@@ -44,7 +48,9 @@ Rectangle {
     signal folderRequested()
     signal menuRequested()
 
-    implicitHeight: Math.max(compact ? 184 : 240, content.implicitHeight + (compact ? Theme.space.xl : Theme.space.xxl) * 2)
+    implicitHeight: slim ? content.implicitHeight + Theme.space.lg * 2
+                         : Math.max(compact ? 184 : 240, content.implicitHeight + (compact ? Theme.space.xl : Theme.space.xxl) * 2)
+    Behavior on implicitHeight { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
     radius: Theme.radius.xl
     border.width: 1
     border.color: Theme.palette.border
@@ -71,17 +77,17 @@ Rectangle {
     Row {
         id: content
         anchors.left: parent.left
-        anchors.leftMargin: Theme.space.xxl
+        anchors.leftMargin: root.slim ? Theme.space.lg : Theme.space.xxl
         anchors.right: parent.right
-        anchors.rightMargin: Theme.space.xxl
+        anchors.rightMargin: root.slim ? slimActions.width + Theme.space.lg * 2 : Theme.space.xxl
         anchors.verticalCenter: parent.verticalCenter
-        spacing: Theme.space.xl
+        spacing: root.slim ? Theme.space.md : Theme.space.xl
 
         Item {
             id: tile
             anchors.verticalCenter: parent.verticalCenter
-            width: root.compact ? 96 : 124
-            height: root.compact ? 96 : 124
+            width: root.slim ? 56 : root.compact ? 96 : 124
+            height: width
 
             // A soft shadow: a larger, blurred-by-opacity copy of the tile
             // offset below it -- the layered-rectangle trick this codebase
@@ -108,7 +114,7 @@ Rectangle {
 
                 Image {
                     anchors.centerIn: parent
-                    width: root.compact ? 68 : 88
+                    width: root.slim ? 40 : root.compact ? 68 : 88
                     height: width
                     source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
                     sourceSize: Qt.size(width, height)
@@ -120,13 +126,13 @@ Rectangle {
         Column {
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width - tile.width - parent.spacing
-            spacing: Theme.space.sm
+            spacing: root.slim ? Theme.space.xs : Theme.space.sm
 
             Text {
                 // Compact no longer blanks this outright: the page decides
                 // what, if anything, `overline` says (see the file
                 // comment), and an empty string already renders as nothing.
-                visible: root.overline.length > 0
+                visible: root.overline.length > 0 && !root.slim
                 text: root.overline.toUpperCase()
                 color: Theme.palette.accent
                 font.family: Theme.font.family
@@ -143,7 +149,8 @@ Rectangle {
                 // themes; see Theme.media.
                 color: root.hasPhoto ? Theme.media.text : Theme.palette.textPrimary
                 font.family: Theme.font.family
-                font.pixelSize: root.compact ? Theme.type.display.pixelSize - 4 : Theme.type.display.pixelSize + 2
+                font.pixelSize: root.slim ? Theme.type.heading.pixelSize + 2
+                              : root.compact ? Theme.type.display.pixelSize - 4 : Theme.type.display.pixelSize + 2
                 font.weight: Font.Bold
                 font.letterSpacing: -0.5
             }
@@ -175,41 +182,13 @@ Rectangle {
                 }
             }
 
-            Row {
-                topPadding: Theme.space.sm
-                spacing: Theme.space.sm
-
-                PlayButton {
-                    round: false
-                    size: Theme.control.heightLg
-                    running: root.isRunning
-                    busy: root.launching
-                    enabled: !root.launching && (root.isRunning || root.canLaunch)
-                    onClicked: root.isRunning ? root.stopRequested() : root.playRequested()
-                }
-
-                Button {
-                    height: Theme.control.heightLg
-                    text: root.editText
-                    icon.source: Icons.url("settings")
-                    onClicked: root.editRequested()
-                }
-
-                IconButton {
-                    size: Theme.control.heightLg
-                    flat: false
-                    iconName: "folder"
-                    tip: qsTr("Open folder")
-                    onClicked: root.folderRequested()
-                }
-
-                IconButton {
-                    size: Theme.control.heightLg
-                    flat: false
-                    iconName: "more"
-                    tip: qsTr("More")
-                    onClicked: root.menuRequested()
-                }
+            // Zero height, but the column's spacing around it doubles the
+            // gap between the tags and the buttons.
+            Item { width: 1; height: 0; visible: !root.slim }
+            Loader {
+                active: !root.slim
+                visible: active
+                sourceComponent: actionsComponent
             }
 
             Column {
@@ -234,6 +213,56 @@ Rectangle {
                 }
             }
         }
+    }
+
+    // The actions, below the title normally and on the right when slim.
+    Component {
+        id: actionsComponent
+        Row {
+            spacing: Theme.space.sm
+
+            PlayButton {
+                round: false
+                size: Theme.control.heightLg
+                running: root.isRunning
+                busy: root.launching
+                enabled: !root.launching && (root.isRunning || root.canLaunch)
+                onClicked: root.isRunning ? root.stopRequested() : root.playRequested()
+            }
+
+            Button {
+                height: Theme.control.heightLg
+                text: root.editText
+                icon.source: Icons.url("settings")
+                onClicked: root.editRequested()
+            }
+
+            IconButton {
+                size: Theme.control.heightLg
+                flat: false
+                iconName: "folder"
+                tip: qsTr("Open folder")
+                onClicked: root.folderRequested()
+            }
+
+            IconButton {
+                size: Theme.control.heightLg
+                flat: false
+                iconName: "more"
+                tip: qsTr("More")
+                onClicked: root.menuRequested()
+            }
+        }
+    }
+
+    Loader {
+        id: slimActions
+        active: root.slim
+        visible: active
+        anchors.right: parent.right
+        anchors.rightMargin: Theme.space.lg
+        anchors.verticalCenter: parent.verticalCenter
+        sourceComponent: actionsComponent
     }
 
     // Drawn last: children paint over the root's own border, and the art

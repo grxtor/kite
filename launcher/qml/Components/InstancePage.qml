@@ -66,6 +66,8 @@ Item {
                 // instance" -- and an ungrouped instance shows nothing.
                 overline: group.length > 0 ? group : ""
                 compact: true
+                // Outside the Overview the tab's own content needs the room.
+                slim: root.tab !== "overview"
                 editText: qsTr("Classic editor")
                 onPlayRequested: root.launchRequested(instanceId)
                 onStopRequested: root.stopRequested(instanceId)
