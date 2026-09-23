@@ -150,6 +150,22 @@ class ThemePaletteTest : public QObject
 		checkTheme(ThemePalette::meshLight(), "meshLight");
 	}
 
+	/// Every scheme, in both modes, clears the same bars as the default.
+	void test_everyScheme()
+	{
+		using S = ThemePalette::Scheme;
+		for (S scheme : {S::Amethyst, S::Ember, S::Diamond}) {
+			const QString name = ThemePalette::schemeName(scheme);
+			checkTheme(ThemePalette::forScheme(scheme, true),
+					   qPrintable(name + QStringLiteral(" dark")));
+			checkTheme(ThemePalette::forScheme(scheme, false),
+					   qPrintable(name + QStringLiteral(" light")));
+			QCOMPARE(ThemePalette::schemeFromName(name), scheme);
+		}
+		QCOMPARE(ThemePalette::schemeFromName(QStringLiteral("nonsense")),
+				 S::Amethyst);
+	}
+
 	/// The two themes have to disagree somewhere, and a palette has to
 	/// agree with an identical copy of itself -- the two ends of what
 	/// operator==/operator!= are for.

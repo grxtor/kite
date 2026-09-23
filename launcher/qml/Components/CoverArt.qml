@@ -54,8 +54,8 @@ Item {
         anchors.fill: parent
         radius: root.radius
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Format.shade(root.tint, Theme.dark ? 0.28 : 0.88, 0.9) }
-            GradientStop { position: 1.0; color: Format.shade(root.tint, Theme.dark ? 0.13 : 0.72, 0.85) }
+            GradientStop { position: 0.0; color: Format.shade(root.tint, Theme.dark ? 0.28 : 0.88, 0.55) }
+            GradientStop { position: 1.0; color: Format.shade(root.tint, Theme.dark ? 0.13 : 0.72, 0.55) }
         }
 
         // A few large, rotated, near-invisible squares -- a blocky hint

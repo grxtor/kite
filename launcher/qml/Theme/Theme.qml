@@ -24,6 +24,10 @@ QtObject {
     readonly property bool dark: ThemeService.dark
     property string mode: ThemeService.mode
     onModeChanged: ThemeService.mode = mode
+    // "amethyst", "ember" or "diamond".
+    property string scheme: ThemeService.scheme
+    onSchemeChanged: ThemeService.scheme = scheme
+    function previewPalette(name) { return ThemeService.previewPalette(name) }
 
     readonly property QtObject space: QtObject {
         readonly property int xxs: 2

@@ -113,6 +113,22 @@ class ThemeTest : public QObject
 		QCOMPARE(root->property("dark").toBool(), true);
 		QCOMPARE(root->property("canvasColor").value<QColor>(),
 				 ThemePalette::meshDark().canvas);
+
+		// The colour scheme swaps independently of the mode, also as one
+		// announced unit; an unknown name changes nothing.
+		QSignalSpy toEmber(service, &ThemeService::changed);
+		themeRef->setProperty("scheme", QStringLiteral("ember"));
+		QCOMPARE(toEmber.count(), 1);
+		QCOMPARE(root->property("accent").value<QColor>(),
+				 ThemePalette::forScheme(ThemePalette::Scheme::Ember, true).accent);
+		QCOMPARE(root->property("dark").toBool(), true);
+
+		QSignalSpy ignored(service, &ThemeService::changed);
+		service->setScheme(QStringLiteral("nonsense"));
+		QCOMPARE(ignored.count(), 0);
+		QCOMPARE(service->scheme(), QStringLiteral("ember"));
+		QCOMPARE(service->previewPalette(QStringLiteral("diamond")).accent,
+				 ThemePalette::forScheme(ThemePalette::Scheme::Diamond, true).accent);
 	}
 };
 

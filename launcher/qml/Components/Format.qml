@@ -68,7 +68,9 @@ QtObject {
      */
     function shade(tint, lightness, saturationScale) {
         var hue = tint.hslHue < 0 ? 0 : tint.hslHue
-        var saturation = Math.min(0.75, tint.hslSaturation * saturationScale)
+        // Capped low: a fully saturated plate at low lightness turns into
+        // the murky teal/olive the launcher used to be full of.
+        var saturation = Math.min(0.5, tint.hslSaturation * saturationScale)
         return Qt.hsla(hue, saturation, lightness, 1)
     }
 

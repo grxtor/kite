@@ -48,6 +48,8 @@ class ThemeService : public QObject
 	Q_PROPERTY(ThemePalette palette READ palette NOTIFY changed)
 	Q_PROPERTY(bool dark READ dark NOTIFY changed)
 	Q_PROPERTY(QString mode READ mode WRITE setMode NOTIFY changed)
+	/* "amethyst", "ember" or "diamond" -- see ThemePalette::Scheme. */
+	Q_PROPERTY(QString scheme READ scheme WRITE setScheme NOTIFY changed)
 
   public:
 	explicit ThemeService(QObject* parent = nullptr);
@@ -59,6 +61,14 @@ class ThemeService : public QObject
 	/* Accepts "system", "dark" or "light"; anything else is rejected with a
 	 * warning and leaves the current mode untouched. */
 	void setMode(const QString& mode);
+
+	QString scheme() const { return ThemePalette::schemeName(m_scheme); }
+	/* Unknown names are rejected with a warning, like setMode(). */
+	void setScheme(const QString& scheme);
+
+	/* @p scheme's palette in the current mode, for a picker that shows
+	 * every scheme side by side without switching to it. */
+	Q_INVOKABLE ThemePalette previewPalette(const QString& scheme) const;
 
   signals:
 	void changed();
@@ -73,4 +83,5 @@ class ThemeService : public QObject
 	 * the OS instead, and is one setting away. */
 	QString m_mode = QStringLiteral("dark");
 	bool m_dark = true;
+	ThemePalette::Scheme m_scheme = ThemePalette::Scheme::Amethyst;
 };

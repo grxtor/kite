@@ -22,6 +22,7 @@
 #include <QColor>
 #include <QMetaType>
 #include <QObject>
+#include <QString>
 
 /*
  * The semantic colour tokens for the token-based QML theme -- "modern
@@ -172,6 +173,23 @@ class ThemePalette
 	QColor tooltipBackground;
 	QColor tooltipText;
 
+	/* The launcher's colour schemes. Each is one accent over its own set
+	 * of neutrals, in a dark and a light variant; the user picks the
+	 * scheme and the mode independently. Amethyst is the default. */
+	enum class Scheme
+	{
+		Amethyst, // hue-less graphite, electric violet
+		Ember,	  // warm charcoal, lava orange
+		Diamond	  // cool navy, diamond blue
+	};
+
+	static ThemePalette forScheme(Scheme scheme, bool dark);
+	/* "amethyst", "ember" or "diamond" -- the stored setting value. An
+	 * unknown name falls back to Amethyst. */
+	static Scheme schemeFromName(const QString& name);
+	static QString schemeName(Scheme scheme);
+
+	/* The default scheme's two variants. */
 	static ThemePalette meshDark();
 	static ThemePalette meshLight();
 

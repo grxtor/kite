@@ -52,6 +52,7 @@ qt_add_qml_module(MeshMC_qml_components
         InstancePage.qml
         ContentTab.qml
         PackList.qml
+        PalettePicker.qml
         ContentBrowserView.qml
         PluginNode.qml
         PluginSurfaces.qml

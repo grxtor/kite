@@ -316,9 +316,22 @@ Item {
                 SettingsGroup {
                     width: parent.width
                     title: qsTr("Theme")
+                    SettingRow {
+                        wide: true
+                        label: qsTr("Palette")
+                        description: qsTr("The launcher's colours. Each palette has a dark and a light variant.")
+                        PalettePicker {
+                            current: Theme.scheme
+                            onPicked: (scheme) => {
+                                Theme.scheme = scheme
+                                SettingsStore.setValue("UiPalette", scheme)
+                            }
+                        }
+                    }
                     SettingChoice {
                         key: "UiThemeMode"
-                        label: qsTr("Colour scheme")
+                        label: qsTr("Mode")
+                        showDivider: true
                         options: [
                             { value: "dark", label: qsTr("Dark") },
                             { value: "light", label: qsTr("Light") }

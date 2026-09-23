@@ -60,117 +60,200 @@ bool ThemePalette::operator!=(const ThemePalette& other) const
 	return !(*this == other);
 }
 
+namespace
+{
+	/* What differs between schemes. Everything else -- status colours,
+	 * overlays, scrims -- is shared per mode, so switching scheme never
+	 * changes what "danger" or "success" looks like. */
+	struct SchemeColors
+	{
+		QColor canvas, surface, surfaceRaised, surfaceOverlay, surfaceSunken;
+		QColor textPrimary, textSecondary, textTertiary, textDisabled;
+		QColor accent, accentHover, accentPressed, accentText, textOnAccent;
+		QColor borderStrong, selection, selectionText, tooltipBackground;
+	};
+
+	QColor withAlpha(QColor color, int alpha)
+	{
+		color.setAlpha(alpha);
+		return color;
+	}
+
+	ThemePalette build(const SchemeColors& c, bool dark)
+	{
+		ThemePalette p;
+
+		p.canvas = c.canvas;
+		p.surface = c.surface;
+		p.surfaceRaised = c.surfaceRaised;
+		p.surfaceOverlay = c.surfaceOverlay;
+		p.surfaceSunken = c.surfaceSunken;
+
+		p.textPrimary = c.textPrimary;
+		p.textSecondary = c.textSecondary;
+		p.textTertiary = c.textTertiary;
+		p.textDisabled = c.textDisabled;
+		p.textOnAccent = c.textOnAccent;
+
+		p.accent = c.accent;
+		p.accentHover = c.accentHover;
+		p.accentPressed = c.accentPressed;
+		p.accentSubtle = withAlpha(c.accent, dark ? 41 : 31); // ~16% / ~12%
+		p.accentText = c.accentText;
+
+		// Hairlines are translucent so they read the same over every
+		// surface; see the header comment for why they sit under 3:1.
+		p.border = dark ? QColor(0xFF, 0xFF, 0xFF, 20) : QColor(0x00, 0x00, 0x00, 20);
+		p.borderStrong = c.borderStrong;
+		p.divider = p.border;
+		// A light theme's bright accent (Ember's orange) can sit under the
+		// 3:1 a focus indicator needs; its darker text shade never does.
+		p.focusRing = dark ? c.accent : c.accentText;
+
+		if (dark) {
+			p.success = QColor(0x4A, 0xDE, 0x80);
+			p.warning = QColor(0xFB, 0xBF, 0x24);
+			p.danger = QColor(0xFB, 0x71, 0x85);
+			p.info = QColor(0x60, 0xA5, 0xFA);
+		} else {
+			p.success = QColor(0x15, 0x6B, 0x35);
+			p.warning = QColor(0x8A, 0x4B, 0x06);
+			p.danger = QColor(0xB0, 0x10, 0x3A);
+			p.info = QColor(0x1D, 0x4E, 0xD8);
+		}
+		const int subtle = dark ? 41 : 31;
+		p.successSubtle = withAlpha(p.success, subtle);
+		p.warningSubtle = withAlpha(p.warning, subtle);
+		p.dangerSubtle = withAlpha(p.danger, subtle);
+		p.infoSubtle = withAlpha(p.info, subtle);
+
+		p.hoverOverlay = dark ? QColor(0xFF, 0xFF, 0xFF, 15) : QColor(0x00, 0x00, 0x00, 13);
+		p.pressedOverlay = dark ? QColor(0xFF, 0xFF, 0xFF, 31) : QColor(0x00, 0x00, 0x00, 26);
+		p.selection = c.selection;
+		p.selectionText = c.selectionText;
+
+		p.scrim = QColor(0x00, 0x00, 0x00, dark ? 140 : 115);
+		p.shadow = QColor(0x00, 0x00, 0x00, dark ? 102 : 51);
+		p.tooltipBackground = c.tooltipBackground;
+		p.tooltipText = dark ? c.textPrimary : QColor(0xF6, 0xF6, 0xF9);
+
+		return p;
+	}
+
+	/* Neutrals carry no hue at all, so nothing but the accent is coloured
+	 * -- the fix for the earlier teal-grey that read as washed out. The
+	 * violet filled surface is deep enough for white labels; lighter
+	 * accentText is what reads as text on the dark surfaces. */
+	SchemeColors amethyst(bool dark)
+	{
+		if (dark)
+			return {QColor(0x0D, 0x0D, 0x11), QColor(0x15, 0x15, 0x1A), QColor(0x1D, 0x1D, 0x24),
+					QColor(0x26, 0x26, 0x2F), QColor(0x08, 0x08, 0x0B),
+					QColor(0xF4, 0xF4, 0xF7), QColor(0xB9, 0xB9, 0xC6), QColor(0x8B, 0x8B, 0x9A),
+					QColor(0x5C, 0x5C, 0x69),
+					QColor(0x76, 0x57, 0xF7), QColor(0x86, 0x6A, 0xFF), QColor(0x62, 0x44, 0xE0),
+					QColor(0xA9, 0x93, 0xFF), QColor(0xFF, 0xFF, 0xFF),
+					QColor(0x70, 0x70, 0x82), QColor(0x2B, 0x22, 0x4A), QColor(0xF4, 0xF4, 0xF7),
+					QColor(0x2A, 0x2A, 0x33)};
+		return {QColor(0xF3, 0xF3, 0xF6), QColor(0xFA, 0xFA, 0xFC), QColor(0xFF, 0xFF, 0xFF),
+				QColor(0xFF, 0xFF, 0xFF), QColor(0xE8, 0xE8, 0xEE),
+				QColor(0x13, 0x13, 0x18), QColor(0x48, 0x48, 0x56), QColor(0x60, 0x60, 0x70),
+				QColor(0xA0, 0xA0, 0xAE),
+				QColor(0x6A, 0x4A, 0xEE), QColor(0x5B, 0x3C, 0xDC), QColor(0x4C, 0x30, 0xC2),
+				QColor(0x56, 0x36, 0xD6), QColor(0xFF, 0xFF, 0xFF),
+				QColor(0x6E, 0x6E, 0x7E), QColor(0xE6, 0xE0, 0xFF), QColor(0x2C, 0x1C, 0x7A),
+				QColor(0x13, 0x13, 0x18)};
+	}
+
+	/* Warm, but only just: neutrals with a trace of warmth so the orange
+	 * belongs, without drifting into brown. Dark text on the orange --
+	 * white on a lava orange cannot reach 4.5:1. */
+	SchemeColors ember(bool dark)
+	{
+		if (dark)
+			return {QColor(0x10, 0x0E, 0x0D), QColor(0x18, 0x15, 0x14), QColor(0x21, 0x1D, 0x1B),
+					QColor(0x2B, 0x26, 0x23), QColor(0x0A, 0x09, 0x08),
+					QColor(0xF7, 0xF3, 0xF0), QColor(0xC6, 0xBC, 0xB5), QColor(0x96, 0x8B, 0x85),
+					QColor(0x63, 0x5A, 0x55),
+					QColor(0xFF, 0x7A, 0x1A), QColor(0xFF, 0x8F, 0x3D), QColor(0xE8, 0x68, 0x0C),
+					QColor(0xFF, 0x9A, 0x52), QColor(0x1F, 0x0E, 0x02),
+					QColor(0x7A, 0x70, 0x6A), QColor(0x3D, 0x26, 0x16), QColor(0xF7, 0xF3, 0xF0),
+					QColor(0x2D, 0x28, 0x25)};
+		return {QColor(0xF6, 0xF3, 0xF1), QColor(0xFC, 0xFA, 0xF9), QColor(0xFF, 0xFF, 0xFF),
+				QColor(0xFF, 0xFF, 0xFF), QColor(0xEC, 0xE7, 0xE3),
+				QColor(0x1A, 0x15, 0x12), QColor(0x54, 0x49, 0x41), QColor(0x6C, 0x60, 0x58),
+				QColor(0xAA, 0xA0, 0x99),
+				QColor(0xF2, 0x6B, 0x0F), QColor(0xFF, 0x7E, 0x24), QColor(0xD9, 0x5C, 0x06),
+				QColor(0xA8, 0x45, 0x00), QColor(0x1F, 0x0E, 0x02),
+				QColor(0x74, 0x69, 0x62), QColor(0xFF, 0xE3, 0xCC), QColor(0x5C, 0x28, 0x00),
+				QColor(0x1A, 0x15, 0x12)};
+	}
+
+	/* Cool navy with a bright diamond blue; like Ember, the bright filled
+	 * surface takes dark text in the dark variant. */
+	SchemeColors diamond(bool dark)
+	{
+		if (dark)
+			return {QColor(0x0A, 0x0D, 0x14), QColor(0x10, 0x15, 0x1F), QColor(0x17, 0x1E, 0x2B),
+					QColor(0x20, 0x29, 0x39), QColor(0x06, 0x09, 0x0F),
+					QColor(0xEE, 0xF3, 0xFF), QColor(0xAF, 0xBA, 0xCF), QColor(0x80, 0x8C, 0xA4),
+					QColor(0x53, 0x5D, 0x71),
+					QColor(0x3D, 0x9B, 0xFF), QColor(0x5C, 0xAC, 0xFF), QColor(0x26, 0x84, 0xEA),
+					QColor(0x6D, 0xB4, 0xFF), QColor(0x03, 0x14, 0x29),
+					QColor(0x68, 0x74, 0x8C), QColor(0x14, 0x2F, 0x52), QColor(0xEE, 0xF3, 0xFF),
+					QColor(0x22, 0x2B, 0x3B)};
+		return {QColor(0xF1, 0xF4, 0xF9), QColor(0xF9, 0xFB, 0xFE), QColor(0xFF, 0xFF, 0xFF),
+				QColor(0xFF, 0xFF, 0xFF), QColor(0xE5, 0xEA, 0xF2),
+				QColor(0x0F, 0x15, 0x22), QColor(0x45, 0x4F, 0x64), QColor(0x5C, 0x67, 0x7D),
+				QColor(0x9C, 0xA5, 0xB6),
+				QColor(0x1D, 0x6C, 0xE3), QColor(0x17, 0x5D, 0xCC), QColor(0x13, 0x4F, 0xB0),
+				QColor(0x16, 0x5A, 0xC4), QColor(0xFF, 0xFF, 0xFF),
+				QColor(0x67, 0x71, 0x84), QColor(0xDA, 0xE8, 0xFF), QColor(0x0B, 0x33, 0x75),
+				QColor(0x0F, 0x15, 0x22)};
+	}
+} // namespace
+
+ThemePalette ThemePalette::forScheme(Scheme scheme, bool dark)
+{
+	switch (scheme) {
+		case Scheme::Ember:
+			return build(ember(dark), dark);
+		case Scheme::Diamond:
+			return build(diamond(dark), dark);
+		case Scheme::Amethyst:
+			break;
+	}
+	return build(amethyst(dark), dark);
+}
+
+ThemePalette::Scheme ThemePalette::schemeFromName(const QString& name)
+{
+	if (name == QStringLiteral("ember"))
+		return Scheme::Ember;
+	if (name == QStringLiteral("diamond"))
+		return Scheme::Diamond;
+	return Scheme::Amethyst;
+}
+
+QString ThemePalette::schemeName(Scheme scheme)
+{
+	switch (scheme) {
+		case Scheme::Ember:
+			return QStringLiteral("ember");
+		case Scheme::Diamond:
+			return QStringLiteral("diamond");
+		case Scheme::Amethyst:
+			break;
+	}
+	return QStringLiteral("amethyst");
+}
+
 ThemePalette ThemePalette::meshDark()
 {
-	ThemePalette p;
-
-	p.canvas = QColor(0x0B, 0x0E, 0x13);
-	p.surface = QColor(0x12, 0x16, 0x1E);
-	p.surfaceRaised = QColor(0x1B, 0x21, 0x2C);
-	p.surfaceOverlay = QColor(0x24, 0x2C, 0x39);
-	p.surfaceSunken = QColor(0x07, 0x09, 0x11);
-
-	p.textPrimary = QColor(0xF3, 0xF5, 0xF8);
-	p.textSecondary = QColor(0xB7, 0xC0, 0xCC);
-	p.textTertiary = QColor(0x87, 0x91, 0xA1);
-	p.textDisabled = QColor(0x5A, 0x64, 0x72);
-	p.textOnAccent = QColor(0x00, 0x23, 0x2A);
-
-	// The logo's cyan, used as-is: it is already bright enough to carry
-	// 4.5:1 as text/icon colour on this theme's dark surfaces.
-	p.accent = QColor(0x00, 0xE5, 0xFF);
-	p.accentHover = QColor(0x3E, 0xEB, 0xFF);
-	p.accentPressed = QColor(0x00, 0xB3, 0xC9);
-	p.accentSubtle = QColor(0x00, 0xE5, 0xFF, 41); // ~16% opacity
-	p.accentText = p.accent;
-
-	p.border = QColor(0xFF, 0xFF, 0xFF, 20); // ~8% opacity, see header comment
-	p.borderStrong = QColor(0x69, 0x74, 0x8A);
-	p.divider = QColor(0xFF, 0xFF, 0xFF, 20); // ~8% opacity
-	p.focusRing = p.accent;
-
-	// success keeps the legacy theme's green close to as-is -- against a
-	// dark surface it already clears the ratio below with room to spare.
-	p.success = QColor(0x96, 0xDB, 0x59);
-	p.successSubtle = QColor(0x96, 0xDB, 0x59, 41); // ~16% opacity
-	p.warning = QColor(0xFF, 0xB4, 0x54);
-	p.warningSubtle = QColor(0xFF, 0xB4, 0x54, 41); // ~16% opacity
-	// danger is the logo's rose, lightened from #FF003C: the raw brand hue
-	// (relative luminance 0.216) falls just short (4.42:1, see the report)
-	// against its own subtle background over a dark surface, so it is
-	// pushed lighter until it clears 4.5:1.
-	p.danger = QColor(0xFF, 0x5C, 0x79);
-	p.dangerSubtle = QColor(0xFF, 0x5C, 0x79, 41); // ~16% opacity
-	p.info = QColor(0x5A, 0xB8, 0xFF);
-	p.infoSubtle = QColor(0x5A, 0xB8, 0xFF, 41); // ~16% opacity
-
-	p.hoverOverlay = QColor(0xFF, 0xFF, 0xFF, 15); // ~6% opacity
-	p.pressedOverlay = QColor(0xFF, 0xFF, 0xFF, 31); // ~12% opacity
-	p.selection = QColor(0x0F, 0x46, 0x50);
-	p.selectionText = p.textPrimary;
-
-	p.scrim = QColor(0x00, 0x00, 0x00, 140); // ~55% opacity
-	p.shadow = QColor(0x00, 0x00, 0x00, 89); // ~35% opacity
-	p.tooltipBackground = QColor(0x20, 0x26, 0x32);
-	p.tooltipText = p.textPrimary;
-
-	return p;
+	return forScheme(Scheme::Amethyst, true);
 }
 
 ThemePalette ThemePalette::meshLight()
 {
-	ThemePalette p;
-
-	p.canvas = QColor(0xEE, 0xF1, 0xF5);
-	p.surface = QColor(0xF7, 0xF9, 0xFC);
-	p.surfaceRaised = QColor(0xFB, 0xFC, 0xFE);
-	p.surfaceOverlay = QColor(0xFF, 0xFF, 0xFF);
-	p.surfaceSunken = QColor(0xE3, 0xE7, 0xED);
-
-	p.textPrimary = QColor(0x12, 0x16, 0x1D);
-	p.textSecondary = QColor(0x45, 0x4C, 0x58);
-	p.textTertiary = QColor(0x5C, 0x64, 0x72);
-	p.textDisabled = QColor(0x9A, 0xA2, 0xAF);
-	p.textOnAccent = QColor(0xFF, 0xFF, 0xFF);
-
-	// The logo's cyan, darkened for a light surface (as specified).
-	p.accent = QColor(0x00, 0x79, 0x8F);
-	p.accentHover = QColor(0x00, 0x63, 0x7A);
-	p.accentPressed = QColor(0x00, 0x4E, 0x61);
-	p.accentSubtle = QColor(0x00, 0x79, 0x8F, 31); // ~12% opacity
-	// Darkened further than the surface `accent`: #00798F on its own is
-	// 4.49:1 against canvas, just under the 4.5:1 bar (see the report), so
-	// accentText goes one step darker along the same hue.
-	p.accentText = QColor(0x00, 0x5F, 0x73);
-
-	p.border = QColor(0x00, 0x00, 0x00, 20); // ~8% opacity, see header comment
-	p.borderStrong = QColor(0x6B, 0x72, 0x80);
-	p.divider = QColor(0x00, 0x00, 0x00, 20); // ~8% opacity
-	p.focusRing = p.accent;
-
-	// Every status colour below is the brand/legacy hue driven dark enough
-	// to clear 4.5:1 against its own subtle tint over a near-white surface
-	// -- the light-theme mirror of what dark theme needed brightened.
-	p.success = QColor(0x1E, 0x68, 0x23); // hue of the legacy #96DB59, darkened
-	p.successSubtle = QColor(0x1E, 0x68, 0x23, 31); // ~12% opacity
-	p.warning = QColor(0x8A, 0x53, 0x00);
-	p.warningSubtle = QColor(0x8A, 0x53, 0x00, 31); // ~12% opacity
-	p.danger = QColor(0xB8, 0x00, 0x35); // hue of the logo's #FF003C, darkened
-	p.dangerSubtle = QColor(0xB8, 0x00, 0x35, 31); // ~12% opacity
-	p.info = QColor(0x0A, 0x58, 0xAF);
-	p.infoSubtle = QColor(0x0A, 0x58, 0xAF, 31); // ~12% opacity
-
-	p.hoverOverlay = QColor(0x00, 0x00, 0x00, 13); // ~5% opacity
-	p.pressedOverlay = QColor(0x00, 0x00, 0x00, 26); // ~10% opacity
-	p.selection = QColor(0xD6, 0xEE, 0xF2);
-	p.selectionText = QColor(0x00, 0x40, 0x4D);
-
-	p.scrim = QColor(0x00, 0x00, 0x00, 115); // ~45% opacity
-	p.shadow = QColor(0x00, 0x00, 0x00, 51); // ~20% opacity
-	// Inverted relative to the theme, like most tooltips: a dark chip reads
-	// clearly no matter which surface it floats over.
-	p.tooltipBackground = p.textPrimary;
-	p.tooltipText = QColor(0xF5, 0xF7, 0xFA);
-
-	return p;
+	return forScheme(Scheme::Amethyst, false);
 }

@@ -102,8 +102,8 @@ Rectangle {
                 border.width: 1
                 border.color: Qt.rgba(1, 1, 1, 0.08)
                 gradient: Gradient {
-                    GradientStop { position: 0.0; color: Format.shade(root.iconTint, Theme.dark ? 0.34 : 0.84, 0.9) }
-                    GradientStop { position: 1.0; color: Format.shade(root.iconTint, Theme.dark ? 0.18 : 0.72, 0.8) }
+                    GradientStop { position: 0.0; color: Format.shade(root.iconTint, Theme.dark ? 0.34 : 0.84, 0.55) }
+                    GradientStop { position: 1.0; color: Format.shade(root.iconTint, Theme.dark ? 0.18 : 0.72, 0.55) }
                 }
 
                 Image {

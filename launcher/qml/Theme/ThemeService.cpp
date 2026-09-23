@@ -51,7 +51,25 @@ ThemeService::ThemeService(QObject* parent)
 
 ThemePalette ThemeService::palette() const
 {
-	return m_dark ? ThemePalette::meshDark() : ThemePalette::meshLight();
+	return ThemePalette::forScheme(m_scheme, m_dark);
+}
+
+void ThemeService::setScheme(const QString& scheme)
+{
+	const ThemePalette::Scheme parsed = ThemePalette::schemeFromName(scheme);
+	if (ThemePalette::schemeName(parsed) != scheme) {
+		qWarning() << "ThemeService: ignoring unknown colour scheme" << scheme;
+		return;
+	}
+	if (parsed == m_scheme)
+		return;
+	m_scheme = parsed;
+	emit changed();
+}
+
+ThemePalette ThemeService::previewPalette(const QString& scheme) const
+{
+	return ThemePalette::forScheme(ThemePalette::schemeFromName(scheme), m_dark);
 }
 
 void ThemeService::setMode(const QString& mode)
