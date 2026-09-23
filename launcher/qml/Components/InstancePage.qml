@@ -24,6 +24,11 @@ Item {
     property string tab: "overview"
     // (row, versionId) -> TaskWatcher for the content browser.
     property var contentInstaller: null
+    // (anchor, instanceId) -> PluginSurfaceModel.
+    property var pluginSurfacesFor: null
+    readonly property string instanceId: details ? details.instanceId : ""
+    readonly property var pagePlugins: pluginSurfacesFor && instanceId.length > 0 ? pluginSurfacesFor(1, instanceId) : null
+    readonly property var settingsPlugins: pluginSurfacesFor && instanceId.length > 0 ? pluginSurfacesFor(2, instanceId) : null
 
     signal backRequested()
     signal launchRequested(string id)
@@ -86,7 +91,9 @@ Item {
                 { id: "screenshots", label: qsTr("Screenshots"), count: root.shotsModel ? root.shotsModel.count : -1 },
                 { id: "log", label: qsTr("Log") },
                 { id: "settings", label: qsTr("Settings") }
-            ]
+            ].concat(pluginPages.count === 0 ? []
+                     : [{ id: "plugins", label: pluginPages.count === 1 && pluginPages.firstTitle.length > 0
+                                                ? pluginPages.firstTitle : qsTr("Plugins") }])
             onActivated: (id) => root.tab = id
         }
 
@@ -94,7 +101,7 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.topMargin: Theme.space.sm
-            currentIndex: ["overview", "mods", "browse", "worlds", "screenshots", "log", "settings"].indexOf(root.tab)
+            currentIndex: ["overview", "mods", "browse", "worlds", "screenshots", "log", "settings", "plugins"].indexOf(root.tab)
 
             InstanceOverviewTab {
                 id: overview
@@ -140,9 +147,21 @@ Item {
             }
 
             InstanceSettingsTab {
+                pluginSurfaces: root.settingsPlugins
                 adapter: root.details ? root.details.settings : null
                 systemMemoryMiB: root.systemMemoryMiB
                 running: overview.running
+            }
+
+            SettingsScroll {
+                title: qsTr("Plugins")
+                PluginSurfaces {
+                    id: pluginPages
+                    width: parent.width
+                    model: root.pagePlugins
+                    // A single plugin page is already named by its tab.
+                    showTitles: count > 1
+                }
             }
         }
     }

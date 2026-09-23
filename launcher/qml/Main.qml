@@ -215,6 +215,8 @@ ApplicationWindow {
                 }
 
                 SettingsPage {
+                    pluginSurfaces: root.shell && typeof root.shell.pluginSurfaces === "function"
+                                    ? root.shell.pluginSurfaces(0, "") : null
                     systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
                     onOpenClassicRequested: (page) => {
                         if (page === "accounts")
@@ -246,6 +248,10 @@ ApplicationWindow {
                     onLaunchRequested: (id) => root.launch(id)
                     onStopRequested: (id) => root.call("killInstance", id)
                     onClassicEditorRequested: (id) => root.call("editInstance", id)
+                    pluginSurfacesFor: function (anchor, instanceId) {
+                        return root.shell && typeof root.shell.pluginSurfaces === "function"
+                               ? root.shell.pluginSurfaces(anchor, instanceId) : null
+                    }
                     contentInstaller: function (row, versionId) {
                         return root.shell.installContent(row, versionId)
                     }

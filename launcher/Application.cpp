@@ -23,6 +23,7 @@
 #include "ui/WidgetUiHost.h"
 #include "qml/QmlShell.h"
 #include "plugin/PluginManager.h"
+#include "plugin/PluginSurfaceModel.h"
 
 #include "ui/MainWindow.h"
 #include "ui/InstanceWindow.h"
@@ -2132,6 +2133,23 @@ MainWindow* Application::showMainWindow(bool minimized)
 	if (useQmlShell()) {
 		if (!m_qmlShell) {
 			m_qmlShell = std::make_unique<QmlShell>();
+
+			/* QmlShell cannot see PluginManager (MeshMC_qml does not link
+			 * MeshMC_logic, which is where the plugin host lives) -- this
+			 * factory is the bridge, installed once here the same way the
+			 * signal connections below wire up the widget-side actions
+			 * QmlShell itself cannot reach. Harmless to install again on a
+			 * second showMainWindow() call: it is process-wide state, and
+			 * this whole block already only runs once per m_qmlShell. */
+			QmlShell::setPluginSurfaceFactory(
+				[this](int anchor, const QString& anchorContext) -> QObject* {
+					if (!m_pluginManager) {
+						return nullptr;
+					}
+					return QmlShell::expose(new PluginSurfaceModel(
+						m_pluginManager.get(), anchor, anchorContext));
+				});
+
 			/* Counted and closed through the same path as MainWindow, so the
 			 * launcher quits when its last window goes, as it always has. */
 			connect(m_qmlShell.get(), &QmlShell::closed, this,

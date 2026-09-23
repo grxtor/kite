@@ -766,6 +766,8 @@ set(PLUGIN_SOURCES
     plugin/PluginSignature.cpp
     plugin/PluginDependencyResolver.h
     plugin/PluginDependencyResolver.cpp
+    plugin/PluginSurfaceModel.h
+    plugin/PluginSurfaceModel.cpp
 )
 
 add_unit_test(Index
@@ -1283,6 +1285,11 @@ add_unit_test(PluginLoader
 
 add_unit_test(PluginUiRenderer
     SOURCES plugin/PluginUiRenderer_test.cpp
+    LIBS MeshMC_logic
+    )
+
+add_unit_test(PluginSurfaceModel
+    SOURCES plugin/PluginSurfaceModel_test.cpp
     LIBS MeshMC_logic
     )
 

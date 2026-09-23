@@ -19,6 +19,8 @@ SettingsScroll {
     property var adapter: null
     property int systemMemoryMiB: 8192
     property bool running: false
+    // PluginSurfaceModel for this instance's settings anchor, or null.
+    property var pluginSurfaces: null
 
     title: qsTr("Instance settings")
 
@@ -201,6 +203,11 @@ SettingsScroll {
                 label: qsTr("After exit")
                 monospace: true
             }
+        }
+
+        PluginSurfaces {
+            width: parent.width
+            model: root.pluginSurfaces
         }
 
         SettingsGroup {

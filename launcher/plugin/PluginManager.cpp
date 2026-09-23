@@ -2471,6 +2471,14 @@ int PluginManager::api_ui_surface_set(void* mh, void* surface, const char* node_
 	const bool foundInDoc = patchDocumentNodeProps(rec->doc, nodeId, props);
 	if (rec->mountedRoot && rec->mountedRenderer)
 		rec->mountedRenderer->setNodeProps(nodeId, props);
+	/* The widget renderer already reflects this patch live via
+	 * mountedRenderer above; surfacesChanged() is the same notification
+	 * for anything reading `doc` instead (a future QML surface model — see
+	 * PluginSurfaceModel), which otherwise never learns a mounted-or-not
+	 * toggle/list/etc. just changed value. Only when the document actually
+	 * moved, same condition ui_surface_update/_create/_destroy already use. */
+	if (foundInDoc)
+		emit r->manager->surfacesChanged();
 	return foundInDoc ? 0 : -1;
 }
 
@@ -2498,6 +2506,9 @@ int PluginManager::api_ui_surface_set_rows(void* mh, void* surface,
 	const bool foundInDoc = patchDocumentNodeProps(rec->doc, nodeId, rowsPatch);
 	if (rec->mountedRoot && rec->mountedRenderer)
 		rec->mountedRenderer->setRows(nodeId, rows);
+	/* See api_ui_surface_set() above — same reasoning, same condition. */
+	if (foundInDoc)
+		emit r->manager->surfacesChanged();
 	return foundInDoc ? 0 : -1;
 }
 

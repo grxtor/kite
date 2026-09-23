@@ -58,6 +58,16 @@ namespace
 	/* Spelled out rather than loadFromModule(), which is Qt 6.5+; the floor is
 	 * 6.4. The module sets RESOURCE_PREFIX "/qt/qml" so this path is stable. */
 	const QUrl kRootUrl(QStringLiteral("qrc:/qt/qml/MeshMC/Main.qml"));
+
+	/* Function-local static rather than a plain namespace-scope QmlShell
+	 * member: this is a process-wide seam Application installs once, not
+	 * per-instance state, and a Meyer's singleton sidesteps static
+	 * initialisation order between translation units. */
+	QmlShell::PluginSurfaceFactory& pluginSurfaceFactory()
+	{
+		static QmlShell::PluginSurfaceFactory factory;
+		return factory;
+	}
 } // namespace
 
 QString sanitizedInstanceName(const QString& name)
@@ -94,6 +104,31 @@ QObject* QmlShell::expose(QObject* object)
 		QQmlEngine::setObjectOwnership(object, QQmlEngine::CppOwnership);
 	}
 	return object;
+}
+
+void QmlShell::setPluginSurfaceFactory(PluginSurfaceFactory factory)
+{
+	pluginSurfaceFactory() = std::move(factory);
+}
+
+QObject* QmlShell::pluginSurfaces(int anchor, const QString& anchorContext)
+{
+	const auto key = std::make_pair(anchor, anchorContext);
+	auto it = m_pluginSurfaceModels.find(key);
+	if (it != m_pluginSurfaceModels.end()) {
+		return expose(it->second.get());
+	}
+
+	auto& factory = pluginSurfaceFactory();
+	if (!factory) {
+		return nullptr;
+	}
+	QObject* model = factory(anchor, anchorContext);
+	if (!model) {
+		return nullptr;
+	}
+	m_pluginSurfaceModels.emplace(key, std::unique_ptr<QObject>(model));
+	return expose(model);
 }
 
 QString QmlShell::accountName() const

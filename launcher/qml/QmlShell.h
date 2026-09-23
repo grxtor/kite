@@ -23,8 +23,10 @@
 #include <QStringList>
 #include <QVariantMap>
 
+#include <functional>
 #include <map>
 #include <memory>
+#include <utility>
 
 class IdSelectionModel;
 class InstanceFilterModel;
@@ -106,6 +108,33 @@ class QmlShell : public QObject
 	 * QObject without a parent that crosses into JavaScript, and would delete
 	 * core models out from under the rest of the launcher; this pins them. */
 	static QObject* expose(QObject* object);
+
+	/*
+	 * QmlShell sits in MeshMC_qml, which links MeshMC_core only -- it
+	 * cannot see PluginManager or PluginSurfaceModel, both of which live in
+	 * MeshMC_logic (the plugin host), a target that links MeshMC_qml and
+	 * not the other way around. Application installs the real factory once
+	 * at startup (see Application::showMainWindow()), the same indirection
+	 * launchInstance()/killInstance()/etc. use via *Requested() signals --
+	 * except pluginSurfaces() needs to *return* a model built from a
+	 * PluginManager, where a signal handing back a value has no natural
+	 * fit, hence a factory instead. Returns a C++-owned QObject* (a
+	 * PluginSurfaceModel) for the given (anchor, anchorContext), or nullptr
+	 * if no factory has been installed (e.g. a test/tool binary that never
+	 * wires one up).
+	 */
+	using PluginSurfaceFactory =
+		std::function<QObject*(int anchor, const QString& anchorContext)>;
+	static void setPluginSurfaceFactory(PluginSurfaceFactory factory);
+
+	/* One C++-owned model per (anchor, anchorContext) pair asked for,
+	 * reused across calls the same way sectionModel() reuses one
+	 * InstanceFilterModel per group. `anchor` is an MMCOUiAnchor value, or
+	 * -1 for "every anchor"; `anchorContext` is an instance id, or empty
+	 * for GLOBAL_SETTINGS / "every context" (see
+	 * PluginManager::surfaces()). */
+	Q_INVOKABLE QObject* pluginSurfaces(int anchor,
+										const QString& anchorContext = QString());
 
 	/* Sidebar account summary, read from LAUNCHER->accounts() - QmlShell has
 	 * no reason to go through Application for this, and reaching it via the
@@ -244,6 +273,11 @@ class QmlShell : public QObject
 	std::unique_ptr<InstanceDetails> m_instanceDetails;
 	std::unique_ptr<AccountsController> m_accountsController;
 	mutable std::unique_ptr<NewInstanceController> m_newInstance;
+	/* Keyed by (anchor, anchorContext) -- see pluginSurfaces(). Declared
+	 * alongside the other cached models, for the same reason: destroyed
+	 * before the engine is torn down. */
+	std::map<std::pair<int, QString>, std::unique_ptr<QObject>>
+		m_pluginSurfaceModels;
 
 	std::unique_ptr<QQmlApplicationEngine> m_engine;
 	QQuickWindow* m_window = nullptr;

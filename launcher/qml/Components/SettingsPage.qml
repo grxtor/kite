@@ -17,6 +17,8 @@ Item {
     id: root
 
     property int systemMemoryMiB: 8192
+    // PluginSurfaceModel for the global settings anchor, or null.
+    property var pluginSurfaces: null
     property string section: "general"
 
     signal openClassicRequested(string page)
@@ -29,6 +31,7 @@ Item {
         { id: "console", icon: "terminal", label: qsTr("Console") },
         { id: "appearance", icon: "image", label: qsTr("Appearance") },
         { id: "commands", icon: "edit", label: qsTr("Custom commands") },
+        { id: "plugins", icon: "package", label: qsTr("Plugins") },
         { id: "more", icon: "more", label: qsTr("More") }
     ]
     readonly property int sectionIndex: {
@@ -55,6 +58,8 @@ Item {
                 delegate: NavItem {
                     required property var modelData
                     width: parent.width
+                    // Only offered when some plugin put something there.
+                    visible: modelData.id !== "plugins" || pluginsView.count > 0
                     iconName: modelData.icon
                     label: modelData.label
                     selected: root.section === modelData.id
@@ -313,6 +318,16 @@ Item {
                         label: qsTr("After exit")
                         monospace: true
                     }
+                }
+            }
+
+            // Plugins
+            SettingsScroll {
+                title: qsTr("Plugins")
+                PluginSurfaces {
+                    id: pluginsView
+                    width: parent.width
+                    model: root.pluginSurfaces
                 }
             }
 
