@@ -227,6 +227,8 @@ ApplicationWindow {
                 }
 
                 SettingsPage {
+                    languages: root.shell && root.shell.languages ? root.shell.languages : null
+                    selectLanguage: function (key) { root.shell.selectLanguage(key) }
                     pluginSurfaces: root.shell && typeof root.shell.pluginSurfaces === "function"
                                     ? root.shell.pluginSurfaces(0, "") : null
                     systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192

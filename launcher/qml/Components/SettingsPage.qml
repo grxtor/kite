@@ -19,6 +19,10 @@ Item {
     property int systemMemoryMiB: 8192
     // PluginSurfaceModel for the global settings anchor, or null.
     property var pluginSurfaces: null
+    // TranslationsModel (languageKey, name, completeness) and the function
+    // that switches to one of its keys, live.
+    property var languages: null
+    property var selectLanguage: null
     property string section: "general"
 
     signal openClassicRequested(string page)
@@ -283,6 +287,29 @@ Item {
                 title: qsTr("Appearance")
                 SettingsGroup {
                     width: parent.width
+                    title: qsTr("Language")
+                    SettingRow {
+                        label: qsTr("Display language")
+                        description: qsTr("Applied immediately.")
+                        ComboBox {
+                            id: languageBox
+                            width: 260
+                            model: root.languages
+                            textRole: "name"
+                            valueRole: "languageKey"
+                            enabled: !!root.languages && !!root.selectLanguage
+                            function syncToSetting() {
+                                currentIndex = indexOfValue(SettingsStore.string("Language"))
+                            }
+                            onCountChanged: syncToSetting()
+                            Component.onCompleted: syncToSetting()
+                            onActivated: root.selectLanguage(currentValue)
+                            Accessible.name: qsTr("Display language")
+                        }
+                    }
+                }
+                SettingsGroup {
+                    width: parent.width
                     title: qsTr("Theme")
                     SettingChoice {
                         key: "UiThemeMode"
@@ -339,7 +366,6 @@ Item {
                     description: qsTr("These still open in the classic settings window.")
                     Repeater {
                         model: [
-                            { page: "language-settings", label: qsTr("Language"), text: qsTr("The language MeshMC is shown in.") },
                             { page: "proxy-settings", label: qsTr("Proxy"), text: qsTr("How MeshMC reaches the internet.") },
                             { page: "external-tools", label: qsTr("External tools"), text: qsTr("Profilers, MCEdit and the JSON editor.") },
                             { page: "log-upload", label: qsTr("Log upload"), text: qsTr("The paste.ee key used to share logs.") }
