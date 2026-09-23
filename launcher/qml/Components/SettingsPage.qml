@@ -80,6 +80,7 @@ Item {
             // General
             SettingsScroll {
                 title: qsTr("General")
+                description: qsTr("How the library sorts and where new instances start out.")
                 SettingsGroup {
                     width: parent.width
                     title: qsTr("Library")
@@ -143,6 +144,7 @@ Item {
             // Java & memory
             SettingsScroll {
                 title: qsTr("Java & memory")
+                description: qsTr("How much memory Minecraft gets, and which Java runtime runs it.")
                 SettingsGroup {
                     width: parent.width
                     title: qsTr("Memory")
@@ -189,6 +191,7 @@ Item {
             // Minecraft
             SettingsScroll {
                 title: qsTr("Minecraft")
+                description: qsTr("The game window, play time tracking, and native library overrides.")
                 SettingsGroup {
                     width: parent.width
                     title: qsTr("Game window")
@@ -248,6 +251,7 @@ Item {
             // Console
             SettingsScroll {
                 title: qsTr("Console")
+                description: qsTr("What the game's log window does while you play, and how much of it is kept.")
                 SettingsGroup {
                     width: parent.width
                     title: qsTr("Game console")
@@ -285,6 +289,7 @@ Item {
             // Appearance
             SettingsScroll {
                 title: qsTr("Appearance")
+                description: qsTr("The launcher's own language and colour scheme.")
                 SettingsGroup {
                     width: parent.width
                     title: qsTr("Language")
@@ -326,6 +331,7 @@ Item {
             // Custom commands
             SettingsScroll {
                 title: qsTr("Custom commands")
+                description: qsTr("Shell commands run around every launch, launcher-wide.")
                 SettingsGroup {
                     width: parent.width
                     description: qsTr("Run around every launch. Available variables: $INST_NAME, $INST_ID, $INST_DIR, $INST_MC_DIR, $INST_JAVA and $INST_JAVA_ARGS.")
@@ -351,6 +357,7 @@ Item {
             // Plugins
             SettingsScroll {
                 title: qsTr("Plugins")
+                description: qsTr("Settings the installed plugins have added.")
                 PluginSurfaces {
                     id: pluginsView
                     width: parent.width
@@ -361,6 +368,7 @@ Item {
             // More (classic pages)
             SettingsScroll {
                 title: qsTr("More")
+                description: qsTr("Settings that haven't moved to this window yet.")
                 SettingsGroup {
                     width: parent.width
                     description: qsTr("These still open in the classic settings window.")

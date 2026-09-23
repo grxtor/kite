@@ -25,9 +25,13 @@ Rectangle {
     required property string gameVersion
     required property string loader
     required property color iconTint
+    // Newest screenshot url (InstanceList's coverImage role), or "" -- the
+    // hero's own full-bleed backdrop, same source as InstanceCard's cover.
+    required property string coverImage
     required property string launchStatus
     required property real launchProgress
     readonly property bool launching: launchStatus.length > 0
+    readonly property bool hasPhoto: coverImage.length > 0
 
     property string overline: qsTr("Continue playing")
     property string editText: qsTr("Edit")
@@ -40,15 +44,28 @@ Rectangle {
     signal folderRequested()
     signal menuRequested()
 
-    implicitHeight: Math.max(compact ? 0 : 212, content.implicitHeight + (compact ? Theme.space.xl : Theme.space.xxl) * 2)
+    implicitHeight: Math.max(compact ? 184 : 240, content.implicitHeight + (compact ? Theme.space.xl : Theme.space.xxl) * 2)
     radius: Theme.radius.xl
     border.width: 1
     border.color: Theme.palette.border
-    gradient: Gradient {
-        orientation: Gradient.Horizontal
-        GradientStop { position: 0.0; color: Format.shade(root.iconTint, Theme.dark ? 0.22 : 0.88, 0.9) }
-        GradientStop { position: 0.62; color: Theme.palette.surface }
-        GradientStop { position: 1.0; color: Theme.palette.surface }
+    // Hidden behind the full-bleed CoverArt below, which also covers this
+    // rectangle's own border -- see `outline` for the one that shows.
+    color: Theme.palette.surface
+    // CoverArt's hover zoom would otherwise poke past the rounded corner.
+    clip: true
+
+    CoverArt {
+        id: art
+        anchors.fill: parent
+        radius: root.radius
+        // The hero sits straight on the page.
+        matte: Theme.palette.canvas
+        source: root.coverImage
+        tint: root.iconTint
+        // The tile to the right already carries the icon; showing it again,
+        // huge, in the backdrop would just be clutter.
+        iconKey: ""
+        scrim: "horizontal"
     }
 
     Row {
@@ -60,26 +77,43 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         spacing: Theme.space.xl
 
-        Rectangle {
+        Item {
             id: tile
             anchors.verticalCenter: parent.verticalCenter
             width: root.compact ? 96 : 124
             height: root.compact ? 96 : 124
-            radius: Theme.radius.xl
-            border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.08)
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Format.shade(root.iconTint, Theme.dark ? 0.34 : 0.84, 0.9) }
-                GradientStop { position: 1.0; color: Format.shade(root.iconTint, Theme.dark ? 0.18 : 0.72, 0.8) }
+
+            // A soft shadow: a larger, blurred-by-opacity copy of the tile
+            // offset below it -- the layered-rectangle trick this codebase
+            // uses in place of a drop-shadow effect. Needed now that the
+            // tile can sit over a photo instead of always the flat surface
+            // colour, so it still reads as raised.
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: -3
+                anchors.topMargin: 1
+                radius: Theme.radius.xl + 3
+                color: Qt.rgba(0, 0, 0, Theme.dark ? 0.35 : 0.22)
             }
 
-            Image {
-                anchors.centerIn: parent
-                width: root.compact ? 68 : 88
-                height: width
-                source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
-                sourceSize: Qt.size(width, height)
-                fillMode: Image.PreserveAspectFit
+            Rectangle {
+                anchors.fill: parent
+                radius: Theme.radius.xl
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.08)
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: Format.shade(root.iconTint, Theme.dark ? 0.34 : 0.84, 0.9) }
+                    GradientStop { position: 1.0; color: Format.shade(root.iconTint, Theme.dark ? 0.18 : 0.72, 0.8) }
+                }
+
+                Image {
+                    anchors.centerIn: parent
+                    width: root.compact ? 68 : 88
+                    height: width
+                    source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
+                    sourceSize: Qt.size(width, height)
+                    fillMode: Image.PreserveAspectFit
+                }
             }
         }
 
@@ -89,7 +123,10 @@ Rectangle {
             spacing: Theme.space.sm
 
             Text {
-                visible: !root.compact
+                // Compact no longer blanks this outright: the page decides
+                // what, if anything, `overline` says (see the file
+                // comment), and an empty string already renders as nothing.
+                visible: root.overline.length > 0
                 text: root.overline.toUpperCase()
                 color: Theme.palette.accent
                 font.family: Theme.font.family
@@ -102,7 +139,9 @@ Rectangle {
                 width: parent.width
                 text: root.name
                 elide: Text.ElideRight
-                color: Theme.palette.textPrimary
+                // Over the photo's dark fade the text is light in both
+                // themes; see Theme.media.
+                color: root.hasPhoto ? Theme.media.text : Theme.palette.textPrimary
                 font.family: Theme.font.family
                 font.pixelSize: root.compact ? Theme.type.display.pixelSize - 4 : Theme.type.display.pixelSize + 2
                 font.weight: Font.Bold
@@ -115,20 +154,24 @@ Rectangle {
                 Tag {
                     text: root.loader.length > 0 ? root.loader : qsTr("Vanilla")
                     iconName: "layers"
+                    onMedia: root.hasPhoto
                 }
                 Tag {
                     visible: root.gameVersion.length > 0
                     text: root.gameVersion
                     iconName: "cube"
+                    onMedia: root.hasPhoto
                 }
                 Tag {
                     text: Format.lastPlayed(root.lastLaunch)
                     iconName: "clock"
+                    onMedia: root.hasPhoto
                 }
                 Tag {
                     readonly property string played: Format.playTime(root.totalTimePlayed)
                     visible: played.length > 0
                     text: qsTr("%1 played").arg(played)
+                    onMedia: root.hasPhoto
                 }
             }
 
@@ -180,7 +223,7 @@ Rectangle {
                           ? qsTr("%1 · %2%").arg(root.launchStatus).arg(Math.round(root.launchProgress * 100))
                           : root.launchStatus
                     elide: Text.ElideRight
-                    color: Theme.palette.textSecondary
+                    color: root.hasPhoto ? Theme.media.textSecondary : Theme.palette.textSecondary
                     font.family: Theme.font.family
                     font.pixelSize: Theme.type.label.pixelSize
                 }
@@ -191,5 +234,16 @@ Rectangle {
                 }
             }
         }
+    }
+
+    // Drawn last: children paint over the root's own border, and the art
+    // fills the whole card.
+    Rectangle {
+        id: outline
+        anchors.fill: parent
+        radius: root.radius
+        color: "transparent"
+        border.width: 1
+        border.color: root.hasPhoto ? Theme.media.chipBorder : Theme.palette.border
     }
 }

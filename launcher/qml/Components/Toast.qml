@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
+import QtQuick.Controls
 import MeshMC.Theme
 
 /*
@@ -15,12 +16,27 @@ Rectangle {
 
     property string tone: "neutral" // neutral | success | danger
     property alias text: label.text
+    property string actionText: ""
+    property var actionCallback: null
 
-    function show(message, messageTone) {
+    // Drives every animated property below; show()/hide() only ever flip
+    // this, so the slide+fade always run the same way in both directions.
+    property bool shown: false
+
+    // @p actionLabel/@p callback are optional -- most calls just say
+    // something happened and are left with no button at all.
+    function show(message, messageTone, actionLabel, callback) {
         label.text = message
         root.tone = messageTone || "neutral"
-        root.opacity = 1
+        root.actionText = actionLabel || ""
+        root.actionCallback = callback || null
+        root.shown = true
         hideTimer.restart()
+    }
+
+    function hide() {
+        hideTimer.stop()
+        root.shown = false
     }
 
     anchors.horizontalCenter: parent.horizontalCenter
@@ -32,11 +48,20 @@ Rectangle {
     color: Theme.palette.surfaceOverlay
     border.width: 1
     border.color: Theme.palette.borderStrong
-    opacity: 0
+    // Without this the accent bar's square corners would poke out past
+    // root's own rounded ones.
+    clip: true
+    opacity: shown ? 1 : 0
     visible: opacity > 0
     z: 1000
 
-    Behavior on opacity { NumberAnimation { duration: Theme.motion.normal } }
+    // Slides up out of the bottom margin as it fades in, and back down as
+    // it fades out.
+    transform: Translate {
+        y: root.shown ? 0 : Theme.space.md + root.height * 0.15
+        Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+    }
+    Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
 
     Accessible.role: Accessible.AlertMessage
     Accessible.name: label.text
@@ -44,20 +69,31 @@ Rectangle {
     Timer {
         id: hideTimer
         interval: root.tone === "danger" ? 6000 : 3000
-        onTriggered: root.opacity = 0
+        onTriggered: root.shown = false
+    }
+
+    readonly property color toneColor: tone === "danger" ? Theme.palette.danger
+                                       : tone === "success" ? Theme.palette.success : Theme.palette.accent
+
+    Rectangle {
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: 4
+        color: root.toneColor
     }
 
     Row {
         id: row
         anchors.centerIn: parent
+        anchors.horizontalCenterOffset: Theme.space.xs
         spacing: Theme.space.sm
 
         MeshIcon {
             anchors.verticalCenter: parent.verticalCenter
             iconName: root.tone === "danger" ? "alert-triangle" : root.tone === "success" ? "check" : "info"
             size: Theme.icon.sm + 2
-            color: root.tone === "danger" ? Theme.palette.danger
-                 : root.tone === "success" ? Theme.palette.success : Theme.palette.accent
+            color: root.toneColor
         }
         Text {
             id: label
@@ -67,6 +103,31 @@ Rectangle {
             font.pixelSize: Theme.type.body.pixelSize
             font.weight: Font.Medium
             elide: Text.ElideRight
+        }
+
+        AbstractButton {
+            id: actionButton
+            visible: root.actionText.length > 0
+            anchors.verticalCenter: parent.verticalCenter
+            hoverEnabled: true
+            leftPadding: Theme.space.sm
+            implicitHeight: label.implicitHeight
+
+            contentItem: Text {
+                text: root.actionText
+                color: actionButton.hovered ? Theme.palette.accentHover : Theme.palette.accent
+                font.family: Theme.font.family
+                font.pixelSize: Theme.type.body.pixelSize
+                font.weight: Font.DemiBold
+            }
+            background: Item {}
+
+            onClicked: {
+                var callback = root.actionCallback
+                root.hide()
+                if (callback)
+                    callback()
+            }
         }
     }
 }

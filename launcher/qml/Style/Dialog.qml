@@ -35,10 +35,12 @@ T.Dialog {
     }
 
     background: Rectangle {
-        radius: Theme.radius.lg
+        radius: Theme.radius.xl
         color: Theme.palette.surfaceOverlay
         border.width: 1
         border.color: Theme.palette.border
+
+        PopupShadow { radius: parent.radius }
     }
 
     header: Label {

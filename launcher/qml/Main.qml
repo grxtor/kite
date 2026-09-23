@@ -167,6 +167,10 @@ ApplicationWindow {
         SidebarNav {
             Layout.fillHeight: true
             Layout.preferredWidth: implicitWidth
+            // An icon rail below this saves real width for the content
+            // pages on the launcher's own minimum-width window, rather than
+            // squeezing the library grid down to one column behind it.
+            collapsed: root.width < 1000
             items: [
                 { id: "library", icon: "library", label: qsTr("Library") },
                 { id: "discover", icon: "compass", label: qsTr("Discover") }
@@ -207,6 +211,42 @@ ApplicationWindow {
                 searchPlaceholder: qsTr("Search instances")
                 onSearchTextChanged: root.instanceModel.filterText = searchText
 
+                ComboBox {
+                    id: sortCombo
+                    visible: root.page === "library"
+                    implicitWidth: 152
+                    model: [
+                        { value: "Name", label: qsTr("Name") },
+                        { value: "LastLaunch", label: qsTr("Last played") },
+                        { value: "TotalTimePlayed", label: qsTr("Time played") }
+                    ]
+                    textRole: "label"
+                    valueRole: "value"
+                    // InstSortMode is the same launcher-wide setting the
+                    // classic Settings page's "Sort instances by" choice
+                    // writes -- QmlShell already re-sorts every instance
+                    // proxy when it changes, so this needs no plumbing of
+                    // its own beyond reading and writing it. Deferred with
+                    // callLater: this control completes before root's own
+                    // Component.onCompleted has pointed SettingsStore at a
+                    // live adapter, so reading the setting here directly
+                    // would always see it empty.
+                    Component.onCompleted: Qt.callLater(() => sortCombo.currentIndex = Math.max(0, sortCombo.indexOfValue(SettingsStore.string("InstSortMode") || "Name")))
+                    onActivated: SettingsStore.setValue("InstSortMode", currentValue)
+
+                    Accessible.name: qsTr("Sort instances by")
+                }
+
+                SegmentedControl {
+                    visible: root.page === "library"
+                    options: [
+                        { value: "grid", label: qsTr("Grid") },
+                        { value: "list", label: qsTr("List") }
+                    ]
+                    current: libraryPage.viewMode
+                    onActivated: (value) => libraryPage.viewMode = value
+                }
+
                 Button {
                     visible: root.page === "library"
                     text: qsTr("New instance")
@@ -216,114 +256,149 @@ ApplicationWindow {
                 }
             }
 
-            StackLayout {
+            // A page change fades the outgoing page out, swaps
+            // StackLayout's currentIndex at the (invisible) midpoint, then
+            // fades the incoming one back in with a small upward slide --
+            // StackLayout still flips each page's own `visible` at exactly
+            // that swap instant, same as a plain binding would, so
+            // DiscoverPage's visible-based lazy search is untouched and
+            // Layout sizing still comes from the StackLayout underneath.
+            Item {
+                id: pageHost
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                // A page's own minimum must never widen the window past
-                // what it is; pages lay themselves out in what they get.
                 Layout.minimumWidth: 0
-                currentIndex: ["library", "settings", "discover", "instance", "accounts"].indexOf(root.page)
 
-                LibraryPage {
-                    focus: true
-                    instanceModel: root.instanceModel
-                    recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
-                    heroModel: root.shell && root.shell.heroModel ? root.shell.heroModel : null
-                    sectionModelFor: function (group) {
-                        return root.shell && typeof root.shell.sectionModel === "function"
-                                ? root.shell.sectionModel(group) : null
-                    }
-                    searchText: topBar.searchText
-                    selectedId: root.selectedId
+                readonly property var pageOrder: ["library", "settings", "discover", "instance", "accounts"]
 
-                    onSelectRequested: (id) => root.selectedId = id
-                    onLaunchRequested: (id) => root.launch(id)
-                    onStopRequested: (id) => root.call("killInstance", id)
-                    onEditRequested: (id) => root.openInstance(id)
-                    onFolderRequested: (id) => root.call("openInstanceFolder", id)
-                    onCreateRequested: root.openNewInstance()
-                    onRenameRequested: (id, name) => {
-                        renameDialog.targetId = id
-                        renameDialog.value = name
-                        renameDialog.open()
+                transform: Translate { id: pageSlide }
+
+                SequentialAnimation {
+                    id: pageTransition
+                    property int nextIndex: 0
+                    NumberAnimation { target: pageHost; property: "opacity"; to: 0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+                    PropertyAction { target: pageStack; property: "currentIndex"; value: pageTransition.nextIndex }
+                    ParallelAnimation {
+                        NumberAnimation { target: pageHost; property: "opacity"; to: 1; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
+                        NumberAnimation { target: pageSlide; property: "y"; from: Theme.space.sm; to: 0; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
                     }
-                    onIconRequested: (id, iconKey) => {
-                        iconDialog.targetId = id
-                        iconDialog.current = iconKey
-                        iconDialog.open()
-                    }
-                    onGroupRequested: (id, group) => {
-                        groupDialog.targetId = id
-                        groupDialog.value = group
-                        groupDialog.suggestions = root.instanceGroups()
-                        groupDialog.open()
-                    }
-                    onDuplicateRequested: (id, name, group) => {
-                        duplicateDialog.targetId = id
-                        duplicateDialog.targetGroup = group
-                        duplicateDialog.value = qsTr("%1 (copy)").arg(name)
-                        duplicateDialog.open()
-                    }
-                    onDeleteRequested: (id, name) => {
-                        deleteDialog.targetId = id
-                        deleteDialog.text = qsTr("Delete \u201c%1\u201d? Its folder \u2014 worlds, mods, screenshots \u2014 is removed for good.").arg(name)
-                        deleteDialog.open()
-                    }
-                    onClearSearchRequested: topBar.searchText = ""
                 }
 
-                SettingsPage {
-                    id: settingsPage
-                    languages: root.shell && root.shell.languages ? root.shell.languages : null
-                    selectLanguage: function (key) { root.shell.selectLanguage(key) }
-                    pluginSurfaces: root.shell && typeof root.shell.pluginSurfaces === "function"
-                                    ? root.shell.pluginSurfaces(0, "") : null
-                    systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
-                    onOpenClassicRequested: (page) => {
-                        if (page === "accounts")
-                            root.page = "accounts"
-                        else
-                            root.call("openSettings", page)
+                Connections {
+                    target: root
+                    function onPageChanged() {
+                        pageTransition.nextIndex = pageHost.pageOrder.indexOf(root.page)
+                        pageTransition.restart()
                     }
-                    onOpenPathRequested: (path) => root.call("openPath", path)
                 }
 
-                DiscoverPage {
-                    id: discoverPage
-                    model: root.shell && root.shell.modpackModel ? root.shell.modpackModel : null
-                    installer: function (projectId, versionId, name, group) {
-                        return root.shell.installModpack(projectId, versionId, name, group)
-                    }
-                    onShowInstanceRequested: (id) => {
-                        root.page = "library"
-                        if (id.length > 0)
-                            root.selectedId = id
-                    }
-                    onOtherPlatformsRequested: root.call("createInstance")
-                }
+                StackLayout {
+                    id: pageStack
+                    anchors.fill: parent
+                    Component.onCompleted: currentIndex = pageHost.pageOrder.indexOf(root.page)
 
-                InstancePage {
-                    id: instancePage
-                    headerModel: root.shell && root.shell.instancePageModel ? root.shell.instancePageModel : null
-                    details: root.openedDetails
-                    systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
-                    onBackRequested: root.page = "library"
-                    onLaunchRequested: (id) => root.launch(id)
-                    onStopRequested: (id) => root.call("killInstance", id)
-                    onClassicEditorRequested: (id) => root.call("editInstance", id)
-                    pluginSurfacesFor: function (anchor, instanceId) {
-                        return root.shell && typeof root.shell.pluginSurfaces === "function"
-                               ? root.shell.pluginSurfaces(anchor, instanceId) : null
-                    }
-                    contentInstaller: function (row, versionId) {
-                        return root.shell.installContent(row, versionId)
-                    }
-                    onOpenPathRequested: (path) => root.call("openPath", path)
-                }
+                    LibraryPage {
+                        id: libraryPage
+                        focus: true
+                        instanceModel: root.instanceModel
+                        recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
+                        heroModel: root.shell && root.shell.heroModel ? root.shell.heroModel : null
+                        sectionModelFor: function (group) {
+                            return root.shell && typeof root.shell.sectionModel === "function"
+                                    ? root.shell.sectionModel(group) : null
+                        }
+                        searchText: topBar.searchText
+                        selectedId: root.selectedId
 
-                AccountsPage {
-                    id: accountsPage
-                    controller: root.shell && root.shell.accountsController ? root.shell.accountsController : null
+                        onSelectRequested: (id) => root.selectedId = id
+                        onLaunchRequested: (id) => root.launch(id)
+                        onStopRequested: (id) => root.call("killInstance", id)
+                        onEditRequested: (id) => root.openInstance(id)
+                        onFolderRequested: (id) => root.call("openInstanceFolder", id)
+                        onCreateRequested: root.openNewInstance()
+                        onRenameRequested: (id, name) => {
+                            renameDialog.targetId = id
+                            renameDialog.value = name
+                            renameDialog.open()
+                        }
+                        onIconRequested: (id, iconKey) => {
+                            iconDialog.targetId = id
+                            iconDialog.current = iconKey
+                            iconDialog.open()
+                        }
+                        onGroupRequested: (id, group) => {
+                            groupDialog.targetId = id
+                            groupDialog.value = group
+                            groupDialog.suggestions = root.instanceGroups()
+                            groupDialog.open()
+                        }
+                        onDuplicateRequested: (id, name, group) => {
+                            duplicateDialog.targetId = id
+                            duplicateDialog.targetGroup = group
+                            duplicateDialog.value = qsTr("%1 (copy)").arg(name)
+                            duplicateDialog.open()
+                        }
+                        onDeleteRequested: (id, name) => {
+                            deleteDialog.targetId = id
+                            deleteDialog.text = qsTr("Delete \u201c%1\u201d? Its folder \u2014 worlds, mods, screenshots \u2014 is removed for good.").arg(name)
+                            deleteDialog.open()
+                        }
+                        onClearSearchRequested: topBar.searchText = ""
+                    }
+
+                    SettingsPage {
+                        id: settingsPage
+                        languages: root.shell && root.shell.languages ? root.shell.languages : null
+                        selectLanguage: function (key) { root.shell.selectLanguage(key) }
+                        pluginSurfaces: root.shell && typeof root.shell.pluginSurfaces === "function"
+                                        ? root.shell.pluginSurfaces(0, "") : null
+                        systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
+                        onOpenClassicRequested: (page) => {
+                            if (page === "accounts")
+                                root.page = "accounts"
+                            else
+                                root.call("openSettings", page)
+                        }
+                        onOpenPathRequested: (path) => root.call("openPath", path)
+                    }
+
+                    DiscoverPage {
+                        id: discoverPage
+                        model: root.shell && root.shell.modpackModel ? root.shell.modpackModel : null
+                        installer: function (projectId, versionId, name, group) {
+                            return root.shell.installModpack(projectId, versionId, name, group)
+                        }
+                        onShowInstanceRequested: (id) => {
+                            root.page = "library"
+                            if (id.length > 0)
+                                root.selectedId = id
+                        }
+                        onOtherPlatformsRequested: root.call("createInstance")
+                    }
+
+                    InstancePage {
+                        id: instancePage
+                        headerModel: root.shell && root.shell.instancePageModel ? root.shell.instancePageModel : null
+                        details: root.openedDetails
+                        systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
+                        onBackRequested: root.page = "library"
+                        onLaunchRequested: (id) => root.launch(id)
+                        onStopRequested: (id) => root.call("killInstance", id)
+                        onClassicEditorRequested: (id) => root.call("editInstance", id)
+                        pluginSurfacesFor: function (anchor, instanceId) {
+                            return root.shell && typeof root.shell.pluginSurfaces === "function"
+                                   ? root.shell.pluginSurfaces(anchor, instanceId) : null
+                        }
+                        contentInstaller: function (row, versionId) {
+                            return root.shell.installContent(row, versionId)
+                        }
+                        onOpenPathRequested: (path) => root.call("openPath", path)
+                    }
+
+                    AccountsPage {
+                        id: accountsPage
+                        controller: root.shell && root.shell.accountsController ? root.shell.accountsController : null
+                    }
                 }
             }
         }
@@ -331,6 +406,7 @@ ApplicationWindow {
 
     NewInstanceDialog {
         id: newInstanceDialog
+        iconsModel: root.shell && root.shell.iconsModel ? root.shell.iconsModel : null
         onMoreWaysRequested: root.call("createInstance")
         onCreated: root.page = "library"
     }

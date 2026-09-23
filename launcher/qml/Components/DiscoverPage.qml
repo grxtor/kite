@@ -35,7 +35,7 @@ Item {
 
     // Opens the index-th result as if it were clicked.
     function openResult(index) {
-        var item = results.itemAtIndex(index)
+        var item = resultsRepeater.itemAt(index)
         if (item)
             item.clicked()
     }
@@ -87,24 +87,43 @@ Item {
         ColumnLayout {
             spacing: Theme.space.lg
 
-            RowLayout {
+            // Search, loader and sort in one toolbar; wraps onto a second
+            // line once a narrow window can no longer fit all four
+            // controls -- the search box gives up its width first, down to
+            // a floor, before anything is pushed to the next line.
+            Flow {
+                id: toolbar
                 Layout.fillWidth: true
                 Layout.leftMargin: Theme.space.xl + Theme.space.xs
                 Layout.rightMargin: Theme.space.xl + Theme.space.xs
                 spacing: Theme.space.md
 
+                readonly property int reserved: loaderControl.implicitWidth + sortBox.implicitWidth
+                                                + otherPlatformsButton.implicitWidth + spacing * 3
+
                 SearchBox {
                     id: searchField
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 160
+                    width: Math.max(220, toolbar.width - toolbar.reserved)
                     placeholderText: qsTr("Search modpacks on Modrinth")
                     onTextEdited: debounce.restart()
                     onTextChanged: if (text.length === 0) debounce.restart()
                 }
 
+                SegmentedControl {
+                    id: loaderControl
+                    options: root.loaders
+                    current: root.model ? root.model.loader : ""
+                    onActivated: (value) => {
+                        if (!root.model)
+                            return
+                        root.model.loader = value
+                        root.runSearch()
+                    }
+                }
+
                 ComboBox {
                     id: sortBox
-                    Layout.preferredWidth: 200
+                    width: 200
                     visible: count > 0
                     model: root.model && root.model.sortOptions ? root.model.sortOptions : []
                     textRole: "label"
@@ -119,6 +138,7 @@ Item {
                 }
 
                 IconButton {
+                    id: otherPlatformsButton
                     flat: false
                     iconName: "external-link"
                     tip: qsTr("CurseForge, FTB, ATLauncher and Technic, in the classic dialog")
@@ -126,50 +146,89 @@ Item {
                 }
             }
 
-            SegmentedControl {
-                Layout.leftMargin: Theme.space.xl + Theme.space.xs
-                Layout.topMargin: -Theme.space.xs
-                options: root.loaders
-                current: root.model ? root.model.loader : ""
-                onActivated: (value) => {
-                    if (!root.model)
-                        return
-                    root.model.loader = value
-                    root.runSearch()
-                }
-            }
-
-            ListView {
-                id: results
+            // Results, as a responsive card grid -- 2 to 4 columns
+            // depending on width, same breakpoint math LibraryPage uses
+            // for the instance grid.
+            Flickable {
+                id: flick
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                leftMargin: Theme.space.xl + Theme.space.xs
-                rightMargin: Theme.space.xl + Theme.space.xs
-                bottomMargin: Theme.space.xl
-                spacing: Theme.space.md
-                clip: true
+                contentWidth: width
+                contentHeight: content.y + content.height + Theme.space.xl
                 boundsBehavior: Flickable.StopAtBounds
-                model: root.model
+                clip: true
                 ScrollBar.vertical: ScrollBar {}
 
-                // QML views never ask for more on their own; ask as the end
-                // comes into view.
+                // QML views never ask for more on their own; ask as the
+                // end comes into view.
                 onAtYEndChanged: if (atYEnd && root.model && root.model.canFetchMore && !root.model.searching)
                                      root.model.fetchMore()
 
-                delegate: ModpackRow {
-                    width: results.width - results.leftMargin - results.rightMargin
-                    onClicked: root.open({ projectId: projectId, title: title, author: author,
-                                           description: description, logoUrl: logoUrl, downloads: downloads })
+                readonly property int pagePadding: Theme.space.xl + Theme.space.xs
+                readonly property int gutter: Theme.space.lg
+                readonly property int minCardWidth: 260
+                readonly property int maxCardWidth: 340
+                readonly property int gridWidth: Math.max(0, width - pagePadding * 2)
+                readonly property int columns: Math.max(2, Math.min(4, columnsFor(gridWidth)))
+                readonly property real cardWidth: Math.floor((gridWidth - gutter * (columns - 1)) / columns)
+
+                function columnsFor(w) {
+                    var columns = Math.max(1, Math.floor((w + gutter) / (minCardWidth + gutter)))
+                    while ((w - gutter * (columns - 1)) / columns > maxCardWidth)
+                        columns++
+                    return columns
                 }
 
-                footer: Item {
-                    width: results.width - results.leftMargin - results.rightMargin
-                    height: root.model && root.model.searching ? 72 : Theme.space.md
-                    BusyIndicator {
-                        anchors.centerIn: parent
-                        running: !!root.model && root.model.searching
-                        visible: running
+                Item {
+                    id: content
+                    x: flick.pagePadding
+                    y: Theme.space.xs
+                    width: flick.gridWidth
+                    height: grid.height
+
+                    Grid {
+                        id: grid
+                        width: parent.width
+                        columns: flick.columns
+                        columnSpacing: flick.gutter
+                        rowSpacing: flick.gutter
+
+                        Repeater {
+                            id: resultsRepeater
+                            model: root.model
+                            delegate: ModpackCard {
+                                width: flick.cardWidth
+                                projectId: model.projectId
+                                title: model.title
+                                author: model.author
+                                description: model.description
+                                logoUrl: model.logoUrl
+                                downloads: model.downloads
+                                updated: model.updated
+                                categories: model.categories
+                                galleryUrl: model.galleryUrl
+                                accentColor: model.accentColor
+                                onClicked: root.open({ projectId: projectId, title: title, author: author,
+                                                       description: description, logoUrl: logoUrl,
+                                                       downloads: downloads, updated: updated,
+                                                       categories: categories, galleryUrl: galleryUrl,
+                                                       accentColor: accentColor })
+                            }
+                        }
+
+                        // A couple of rows of shimmering placeholders while
+                        // the first page is still loading, or one trailing
+                        // row while a further page is being fetched --
+                        // never a bare spinner.
+                        Repeater {
+                            model: root.model && root.model.searching
+                                   ? (root.model.count === 0 ? flick.columns * 2 : flick.columns)
+                                   : 0
+                            delegate: ModpackCard {
+                                width: flick.cardWidth
+                                skeleton: true
+                            }
+                        }
                     }
                 }
             }

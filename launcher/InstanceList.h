@@ -117,7 +117,7 @@ class InstanceList : public QAbstractListModel
 	/* Roles added for the QML instance list. instanceId, name, iconKey,
 	 * instanceRoot and group are named in roleNames() but reuse the
 	 * InstanceIDRole/Qt::DisplayRole/Qt::DecorationRole/Qt::ToolTipRole/
-	 * GroupRole cases already handled in data() - only the nine below are
+	 * GroupRole cases already handled in data() - only the ten below are
 	 * genuinely new. InstancePointerRole is deliberately left unnamed: it
 	 * is a raw void*, and QML has no way to dereference one; a QML
 	 * delegate reaches an instance by instanceId instead. */
@@ -139,7 +139,17 @@ class InstanceList : public QAbstractListModel
 		 * progress; -1 while it is indeterminate; and -1 as well when
 		 * nothing is happening at all, in which case LaunchStatusRole
 		 * is also empty. */
-		LaunchProgressRole
+		LaunchProgressRole,
+		/* file:// URL of the newest image in the instance's screenshots
+		 * folder (the same folder InstanceDetails::screenshotsDir()
+		 * resolves for the Screenshots tab), or an empty string when it
+		 * has none. Looked up with newestScreenshotUrl() and cached per
+		 * instance id in m_coverImageCache rather than rescanned on every
+		 * data() call; the cache entry is dropped and dataChanged is
+		 * emitted for the row when the instance stops running, since a
+		 * play session commonly leaves new screenshots behind - see
+		 * emitIsRunningChanged(). */
+		CoverImageRole
 	};
 	/*!
 	 * \brief Error codes returned by functions in the InstanceList class.
@@ -314,6 +324,26 @@ class InstanceList : public QAbstractListModel
 
 	int getTotalPlayTime();
 
+	/* Newest-modified png/jpg/jpeg directly inside @p screenshotsDir, as a
+	 * file:// URL Image.source can load, or an empty string if the
+	 * directory has none (including if it does not exist). A one-shot
+	 * scan with no watcher of its own - CoverImageRole's cache in data()
+	 * is what keeps this from running on every paint.
+	 *
+	 * Mirrors ScreenshotListModel::listEntries()'s newest-first ordering
+	 * (mtime descending, file name as a tiebreak) so the cover always
+	 * agrees with what the Screenshots tab shows as its first entry, but
+	 * does not call into it: that model's directory scan is private, and
+	 * building a full ScreenshotListModel (with its own QFileSystemWatcher)
+	 * just to read one path back out would be a heavier and stranger tool
+	 * than a plain directory listing needs.
+	 *
+	 * Exposed as a static, pure function - rather than folded straight
+	 * into data() - so this lookup can be unit-tested on its own, without
+	 * constructing a full InstanceList plus a BaseInstance.
+	 */
+	static QString newestScreenshotUrl(const QString& screenshotsDir);
+
 	Qt::DropActions supportedDragActions() const override;
 
 	Qt::DropActions supportedDropActions() const override;
@@ -388,6 +418,10 @@ class InstanceList : public QAbstractListModel
 	 * isRunning() does. Called once, from add(). */
 	void trackLaunchProgress(BaseInstance* inst);
 	void emitLaunchProgressChanged(BaseInstance* inst);
+	/* Emits IsRunningRole's dataChanged, and - when @p inst just stopped -
+	 * also drops its m_coverImageCache entry and emits dataChanged for
+	 * CoverImageRole, since a session that just ended is exactly when a
+	 * new screenshot is likely to have appeared. */
 	void emitIsRunningChanged(BaseInstance* inst);
 
   private:
@@ -423,4 +457,11 @@ class InstanceList : public QAbstractListModel
 	 * instance (QObject parenting); this is only a lookup table for
 	 * data(), kept in sync with the instance's destroyed() signal. */
 	QHash<BaseInstance*, LaunchProgressTracker*> m_launchTrackers;
+	/* Newest-screenshot URL per instance id, for CoverImageRole - filled
+	 * lazily by data() rather than scanned for every row on every paint,
+	 * and dropped for a row when its instance stops running (see
+	 * emitIsRunningChanged()). Mutable because data() is const; an id
+	 * absent from this map simply has not been looked up yet, and a
+	 * present empty string means "looked up, no screenshot found". */
+	mutable QHash<InstanceId, QString> m_coverImageCache;
 };

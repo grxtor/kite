@@ -102,6 +102,16 @@ T.ComboBox {
         bottomMargin: Theme.space.sm
         padding: Theme.space.xxs
 
+        // This popup is built inline rather than reused from Popup.qml (the
+        // ListView content needs control.delegateModel wired in), so it
+        // repeats that style's open/close fade instead of inheriting it.
+        enter: Transition {
+            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+        }
+        exit: Transition {
+            NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+        }
+
         contentItem: ListView {
             clip: true
             implicitHeight: contentHeight
@@ -117,6 +127,8 @@ T.ComboBox {
             color: Theme.palette.surfaceOverlay
             border.width: 1
             border.color: Theme.palette.border
+
+            PopupShadow { radius: parent.radius }
         }
     }
 }

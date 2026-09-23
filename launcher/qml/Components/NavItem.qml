@@ -7,9 +7,10 @@ import QtQuick.Controls
 import MeshMC.Theme
 
 /*
- * One destination in the sidebar. Selected state is an accent bar at the
- * leading edge plus a raised fill -- the bar alone carries the meaning, so
- * it still reads when the fill is barely distinguishable from the rail.
+ * One destination in the sidebar. The selected fill itself is a single
+ * shared pill SidebarNav slides between items (see its activeIndicator) --
+ * this control only ever draws its own transient hover/press state, so the
+ * pill shows through untouched wherever it sits.
  */
 AbstractButton {
     id: control
@@ -17,6 +18,9 @@ AbstractButton {
     property string iconName
     property string label
     property bool selected: false
+    // Icon rail mode: centers the icon and drops the label, which shows as
+    // a tooltip instead.
+    property bool collapsed: false
 
     implicitHeight: Theme.control.height + Theme.space.xs
     implicitWidth: 200
@@ -26,22 +30,15 @@ AbstractButton {
     Accessible.role: Accessible.PageTab
     Accessible.name: label
 
+    ToolTip.visible: control.collapsed && control.hovered
+    ToolTip.delay: 400
+    ToolTip.text: control.label
+
     background: Rectangle {
         radius: Theme.radius.md
-        color: control.selected ? Theme.palette.surfaceRaised
-             : control.down ? Theme.palette.pressedOverlay
+        color: control.down ? Theme.palette.pressedOverlay
              : control.hovered ? Theme.palette.hoverOverlay : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-
-        Rectangle {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            width: 3
-            height: control.selected ? parent.height - Theme.space.md * 2 + 4 : 0
-            radius: 2
-            color: Theme.palette.accent
-            Behavior on height { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-        }
 
         Rectangle {
             anchors.fill: parent
@@ -54,25 +51,32 @@ AbstractButton {
         }
     }
 
-    contentItem: Row {
-        leftPadding: Theme.space.md
-        spacing: Theme.space.md
-
-        MeshIcon {
+    contentItem: Item {
+        Row {
+            id: iconRow
             anchors.verticalCenter: parent.verticalCenter
-            iconName: control.iconName
-            size: Theme.icon.md
-            color: control.selected ? Theme.palette.accent
-                 : control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
-        }
+            anchors.left: control.collapsed ? undefined : parent.left
+            anchors.horizontalCenter: control.collapsed ? parent.horizontalCenter : undefined
+            leftPadding: control.collapsed ? 0 : Theme.space.md
+            spacing: Theme.space.md
 
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: control.label
-            color: control.selected || control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
-            font.weight: control.selected ? Font.DemiBold : Font.Medium
+            MeshIcon {
+                anchors.verticalCenter: parent.verticalCenter
+                iconName: control.iconName
+                size: Theme.icon.md
+                color: control.selected ? Theme.palette.accent
+                     : control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: !control.collapsed
+                text: control.label
+                color: control.selected || control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
+                font.family: Theme.font.family
+                font.pixelSize: Theme.type.body.pixelSize
+                font.weight: control.selected ? Font.DemiBold : Font.Medium
+            }
         }
     }
 }

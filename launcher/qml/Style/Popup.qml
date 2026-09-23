@@ -28,6 +28,8 @@ T.Popup {
         color: Theme.palette.surfaceOverlay
         border.width: 1
         border.color: Theme.palette.border
+
+        PopupShadow { radius: parent.radius }
     }
 
     T.Overlay.modal: Rectangle {

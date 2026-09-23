@@ -25,6 +25,9 @@ Item {
     property var sectionModelFor: function (group) { return null }
     property string searchText: ""
     property string selectedId: ""
+    // "grid" (InstanceCard tiles) or "list" (dense InstanceListRow rows);
+    // session-only -- there is no persisted setting for it yet.
+    property string viewMode: "grid"
 
     signal selectRequested(string id)
     signal launchRequested(string id)
@@ -129,6 +132,7 @@ Item {
                     cardWidth: root.cardWidth
                     gutter: root.gutter
                     selectedId: root.selectedId
+                    viewMode: root.viewMode
                     collapsed: !root.searching && root.collapsedGroups[modelData] === true
                     onToggleRequested: {
                         var next = Object.assign({}, root.collapsedGroups)

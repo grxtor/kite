@@ -182,6 +182,102 @@ Item {
 
             SectionHeader {
                 Layout.leftMargin: Theme.space.lg
+                title: qsTr("Controls")
+                collapsible: false
+            }
+
+            GridLayout {
+                Layout.leftMargin: Theme.space.lg
+                Layout.rightMargin: Theme.space.lg
+                Layout.fillWidth: true
+                columns: 3
+                columnSpacing: Theme.space.xl
+                rowSpacing: Theme.space.lg
+
+                TextField {
+                    Layout.preferredWidth: 220
+                    placeholderText: qsTr("Text field")
+                }
+                ComboBox {
+                    Layout.preferredWidth: 220
+                    model: [qsTr("First option"), qsTr("Second option"), qsTr("Third option")]
+                }
+                SpinBox {
+                    Layout.preferredWidth: 140
+                    from: 0
+                    to: 100
+                    value: 42
+                }
+
+                RowLayout {
+                    spacing: Theme.space.lg
+                    CheckBox { text: qsTr("Unchecked") }
+                    CheckBox { text: qsTr("Checked"); checked: true }
+                }
+                RowLayout {
+                    spacing: Theme.space.lg
+                    RadioButton { text: qsTr("Off") }
+                    RadioButton { text: qsTr("On"); checked: true }
+                }
+                RowLayout {
+                    spacing: Theme.space.lg
+                    Switch { text: qsTr("Off") }
+                    Switch { text: qsTr("On"); checked: true }
+                }
+
+                Slider {
+                    Layout.preferredWidth: 220
+                    value: 0.6
+                }
+                SegmentedControl {
+                    options: [ { value: "a", label: qsTr("Day") }, { value: "b", label: qsTr("Week") }, { value: "c", label: qsTr("Month") } ]
+                    current: "b"
+                }
+                TabStrip {
+                    tabs: [ { id: "one", label: qsTr("Mods"), count: 6 }, { id: "two", label: qsTr("Worlds") }, { id: "three", label: qsTr("Log") } ]
+                    current: "one"
+                }
+            }
+
+            SectionHeader {
+                Layout.leftMargin: Theme.space.lg
+                title: qsTr("Dialog Header")
+                collapsible: false
+            }
+
+            RowLayout {
+                Layout.leftMargin: Theme.space.lg
+                Layout.rightMargin: Theme.space.lg
+                spacing: Theme.space.md
+
+                Repeater {
+                    model: [
+                        { title: qsTr("Delete world"), icon: "alert-triangle", tint: Theme.palette.danger },
+                        { title: qsTr("Update available"), icon: "download", tint: Theme.palette.accent },
+                        { title: qsTr("Choose an icon"), icon: "image", tint: Theme.palette.accent }
+                    ]
+
+                    delegate: Rectangle {
+                        required property var modelData
+                        Layout.preferredWidth: 280
+                        Layout.preferredHeight: 64
+                        radius: Theme.radius.xl
+                        color: Theme.palette.surfaceOverlay
+                        border.width: 1
+                        border.color: Theme.palette.border
+
+                        DialogHeader {
+                            anchors.fill: parent
+                            title: modelData.title
+                            icon: modelData.icon
+                            iconColor: modelData.tint
+                        }
+                    }
+                }
+            }
+
+            SectionHeader {
+                Layout.leftMargin: Theme.space.lg
                 title: qsTr("Tag & Search Field")
                 collapsible: false
             }

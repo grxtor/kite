@@ -53,6 +53,10 @@ class ModrinthModpackDetail : public QObject
 	/* QVariantList of maps: id, name, versionNumber, gameVersions
 	 * (list), loaders (list), datePublished, downloadUrl, featured. */
 	Q_PROPERTY(QVariantList versions READ versions NOTIFY versionsChanged)
+	/* QVariantList of maps: url, featured, title - the project's own
+	 * gallery, straight from the same project fetch body() comes from
+	 * (see fetchDetailBody()). Empty when the project has no gallery. */
+	Q_PROPERTY(QVariantList gallery READ gallery NOTIFY galleryChanged)
 	Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
 	Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 
@@ -75,6 +79,10 @@ class ModrinthModpackDetail : public QObject
 	{
 		return m_versions;
 	}
+	QVariantList gallery() const
+	{
+		return m_gallery;
+	}
 	bool loading() const
 	{
 		return m_loading;
@@ -91,6 +99,7 @@ class ModrinthModpackDetail : public QObject
 	void setTitle(const QString& title);
 	void setBody(const QString& body);
 	void setVersions(const QVariantList& versions);
+	void setGallery(const QVariantList& gallery);
 	void setLoading(bool loading);
 	void setError(const QString& error);
 
@@ -99,6 +108,7 @@ class ModrinthModpackDetail : public QObject
 	void titleChanged();
 	void bodyChanged();
 	void versionsChanged();
+	void galleryChanged();
 	void loadingChanged();
 	void errorChanged();
 
@@ -107,6 +117,7 @@ class ModrinthModpackDetail : public QObject
 	QString m_title;
 	QString m_body;
 	QVariantList m_versions;
+	QVariantList m_gallery;
 	bool m_loading = false;
 	QString m_error;
 };
@@ -163,6 +174,8 @@ class ModrinthModpackModel : public QAbstractListModel
 		LatestVersionRole,
 		GameVersionsRole,
 		CategoriesRole,
+		GalleryUrlRole,
+		AccentColorRole,
 	};
 	Q_ENUM(Roles)
 

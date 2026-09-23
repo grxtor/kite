@@ -43,8 +43,10 @@ AbstractButton {
             anchors.verticalCenter: parent.verticalCenter
             width: Theme.control.height - 4
             height: width
-            radius: Theme.radius.md
+            radius: width / 2
             color: control.signedIn ? Theme.palette.accentSubtle : Theme.palette.surfaceOverlay
+            border.width: 1
+            border.color: Theme.palette.border
 
             Text {
                 anchors.centerIn: parent
@@ -59,13 +61,17 @@ AbstractButton {
             Image {
                 id: avatarImage
                 anchors.fill: parent
-                anchors.margins: 2
-                source: control.avatarSource
+                anchors.margins: 1
                 // Drawn over the initial: an account without a skin comes
-                // back transparent and the initial shows through.
+                // back transparent and the initial shows through. Sampled
+                // well above display size and downscaled by the GPU
+                // (smooth: false keeps that downscale a crisp nearest-
+                // neighbour one) so the face stays sharp regardless of the
+                // chip's own size or the display's pixel ratio.
+                source: control.avatarSource
                 visible: control.signedIn && control.avatarSource.length > 0
                 smooth: false
-                sourceSize: Qt.size(width, height)
+                sourceSize: Qt.size(64, 64)
             }
 
             MeshIcon {

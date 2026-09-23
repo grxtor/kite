@@ -22,9 +22,9 @@ Rectangle {
     implicitWidth: row.implicitWidth + Theme.space.sm * 2
     implicitHeight: Theme.control.heightSm - Theme.space.xs
     radius: Theme.radius.sm + 2
-    color: root.onMedia ? Qt.rgba(0, 0, 0, 0.35) : Theme.palette.surfaceOverlay
+    color: root.onMedia ? Theme.media.chip : Theme.palette.surfaceOverlay
     border.width: 1
-    border.color: root.onMedia ? Qt.rgba(1, 1, 1, 0.10) : Theme.palette.border
+    border.color: root.onMedia ? Theme.media.chipBorder : Theme.palette.border
 
     Row {
         id: row
@@ -43,7 +43,7 @@ Rectangle {
             id: label
             anchors.verticalCenter: parent.verticalCenter
             text: root.text
-            color: root.onMedia ? "#E6FFFFFF" : Theme.palette.textSecondary
+            color: root.onMedia ? Theme.media.text : Theme.palette.textSecondary
             font.family: Theme.font.family
             font.pixelSize: Theme.type.caption.pixelSize
             font.weight: Font.Medium

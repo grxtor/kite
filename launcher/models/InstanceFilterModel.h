@@ -31,7 +31,11 @@
  * shared one -- but it reproduces that proxy's ordering exactly (grouped,
  * locale-sorted groups, natural-sort names within a group, with the same
  * "InstSortMode" last-launch override) so that switching between the widget
- * grid and the QML one never reorders anyone's instances.
+ * grid and the QML one never reorders anyone's instances. The Library
+ * toolbar's own "Time played" sort is a QML-only third value
+ * ("TotalTimePlayed") on that same setting -- the classic widget page never
+ * writes it, but it re-sorts both UIs' proxies the same way "LastLaunch"
+ * already does.
  *
  * QtCore/QtGui only, same rule as the rest of the core: no QtWidgets, nothing
  * from ui/. In particular this cannot resolve icons the way the old proxy did
@@ -40,8 +44,8 @@
  * string InstanceList already exposes it as; whatever turns that into a
  * picture is the QML delegate's problem, not this proxy's.
  *
- * The name, group and last-launch roles are looked up by NAME from the
- * source model's roleNames() rather than assumed to be
+ * The name, group, last-launch and total-time-played roles are looked up by
+ * NAME from the source model's roleNames() rather than assumed to be
  * Qt::DisplayRole/GroupRole/LastLaunchRole, so this works against
  * InstanceList's real role numbers (see InstanceList.h -- GroupRole is
  * pinned to Qt::UserRole, the QML-only roles start at Qt::UserRole + 10) and
@@ -116,6 +120,13 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	bool lessThan(const QModelIndex& left,
 				  const QModelIndex& right) const override;
 
+	/* The "InstSortMode" setting's current value ("Name", "LastLaunch" or
+	 * the QML library's own "TotalTimePlayed"), read from the live
+	 * LauncherContext. A seam purely for tests: subSortLessThan() cannot
+	 * otherwise be exercised without constructing a whole LauncherContext,
+	 * so a test subclass overrides this instead. */
+	virtual QString sortModeSetting() const;
+
   private:
 	bool subSortLessThan(const QModelIndex& left,
 						  const QModelIndex& right) const;
@@ -141,4 +152,8 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	int m_groupRole = Qt::UserRole;
 	int m_lastLaunchRole = -1;
 	int m_idRole = -1;
+	/// -1 when the source has no such role, same convention as
+	/// m_lastLaunchRole -- the "Time played" InstSortMode value then falls
+	/// back to name sorting instead of comparing garbage.
+	int m_totalTimePlayedRole = -1;
 };

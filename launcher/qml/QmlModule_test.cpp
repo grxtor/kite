@@ -22,6 +22,7 @@
 #include <QQmlComponent>
 #include <QStandardItemModel>
 #include <QQmlEngine>
+#include <QQuickStyle>
 #include <QUrl>
 
 #include <memory>
@@ -46,6 +47,15 @@ class QmlModuleTest : public QObject
 	Q_OBJECT
 
   private slots:
+	/* The same controls style QmlShell::show() selects: components use its
+	 * extra properties (Button.danger, ...), which Qt's default style lacks,
+	 * so without it Main.qml would not load here although it does in the
+	 * application. */
+	void initTestCase()
+	{
+		QQuickStyle::setStyle(QStringLiteral("MeshMC.Style"));
+	}
+
 	void rootComponentInstantiates()
 	{
 		QQmlEngine engine;

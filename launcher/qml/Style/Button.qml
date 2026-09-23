@@ -18,6 +18,11 @@ import MeshMC.Theme
 T.Button {
     id: control
 
+    // A highlighted button whose action is destructive (delete, remove)
+    // reads as danger-red instead of accent-cyan; it has no effect unless
+    // `highlighted` is also set, same as `flat` only matters unhighlighted.
+    property bool danger: false
+
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
                             implicitContentWidth + leftPadding + rightPadding)
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
@@ -52,7 +57,9 @@ T.Button {
     // are tuned to stay on-brand. Neutral surfaces (default/flat) have no
     // such dedicated variant, so they use the overlay tokens instead.
     readonly property color restColor: control.highlighted
-        ? (control.down ? Theme.palette.accentPressed : control.hovered ? Theme.palette.accentHover : Theme.palette.accent)
+        ? (control.danger
+            ? (control.down ? Qt.darker(Theme.palette.danger, 1.2) : control.hovered ? Qt.lighter(Theme.palette.danger, 1.12) : Theme.palette.danger)
+            : (control.down ? Theme.palette.accentPressed : control.hovered ? Theme.palette.accentHover : Theme.palette.accent))
         : (control.flat ? "transparent" : Theme.palette.surfaceRaised)
     readonly property color overlayColor: control.highlighted
         ? "transparent"

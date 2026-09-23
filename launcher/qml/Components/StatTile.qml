@@ -6,7 +6,7 @@ import QtQuick
 import MeshMC.Theme
 
 // One number worth seeing at a glance: a label over a big value.
-Rectangle {
+Item {
     id: root
 
     property string label
@@ -14,11 +14,28 @@ Rectangle {
     property string iconName
 
     implicitWidth: 180
-    implicitHeight: 84
-    radius: Theme.radius.lg
-    color: Theme.palette.surface
-    border.width: 1
-    border.color: Theme.palette.border
+    implicitHeight: 88
+
+    // A faint duplicate a few pixels below the card reads as a soft drop
+    // shadow without a real blur (none of the effect modules are available
+    // at this Qt floor).
+    Rectangle {
+        x: 0
+        y: 3
+        width: parent.width
+        height: parent.height
+        radius: Theme.radius.lg
+        color: Theme.palette.scrim
+        opacity: 0.08
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        radius: Theme.radius.lg
+        color: Theme.palette.surface
+        border.width: 1
+        border.color: Theme.palette.border
+    }
 
     Column {
         anchors.left: parent.left
@@ -26,17 +43,26 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         anchors.leftMargin: Theme.space.lg
         anchors.rightMargin: Theme.space.lg
-        spacing: Theme.space.xs
+        spacing: Theme.space.sm
 
         Row {
             spacing: Theme.space.xs + 2
-            MeshIcon {
+
+            Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.iconName.length > 0
-                iconName: root.iconName
-                size: Theme.icon.sm
-                color: Theme.palette.textTertiary
+                width: Theme.icon.md + Theme.space.xs
+                height: width
+                radius: Theme.radius.sm + 2
+                color: Theme.palette.accentSubtle
+                MeshIcon {
+                    anchors.centerIn: parent
+                    iconName: root.iconName
+                    size: Theme.icon.sm
+                    color: Theme.palette.accentText
+                }
             }
+
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.label

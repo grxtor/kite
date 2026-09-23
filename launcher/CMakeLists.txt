@@ -1316,6 +1316,14 @@ add_unit_test(InstanceFilterModel
     LIBS MeshMC_core
     )
 
+# Exercises InstanceList::newestScreenshotUrl() only (see InstanceList_test.cpp) -
+# a full InstanceList needs a SettingsObjectPtr and real BaseInstance
+# subclasses, which is more than this one lookup needs to be tested.
+add_unit_test(InstanceList
+    SOURCES InstanceList_test.cpp
+    LIBS MeshMC_core
+    )
+
 add_unit_test(LaunchProgressTracker
     SOURCES launch/LaunchProgressTracker_test.cpp
     LIBS MeshMC_core
@@ -1540,9 +1548,14 @@ add_subdirectory(qml)
 # Proves the QML toolchain end to end: module built, resources at the expected
 # prefix, engine can instantiate the root component. All three fail silently
 # otherwise -- a green build and an application that renders nothing.
+# MeshMC_qml is linked explicitly: it carries the compiled .qml resources and
+# puts the module plugins in the link closure, which is where
+# qt_import_qml_plugins looks for them. Relying on qmlimportscanner to find
+# them from the test's sources alone worked on macOS but left Main.qml out of
+# the resources on Linux.
 add_unit_test(QmlModule
     SOURCES qml/QmlModule_test.cpp
-    LIBS Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
+    LIBS MeshMC_qml Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
     )
 
 # qt_add_qml_module builds the module as a static library plus a separate QML

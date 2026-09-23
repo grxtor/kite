@@ -52,83 +52,114 @@ Item {
             model: root.details ? root.details.worlds : null
             ScrollBar.vertical: ScrollBar {}
 
-            delegate: Rectangle {
-                id: row
+            delegate: Item {
+                id: cell
                 required property int index
                 required property string name
                 required property string folder
                 required property var gameMode
                 required property var lastPlayed
                 required property var iconFile
+                required property var dayCount
 
                 width: list.width - Theme.space.md
-                height: 72
-                radius: Theme.radius.lg
-                color: hover.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
-                border.width: 1
-                border.color: Theme.palette.border
+                height: 76
 
                 HoverHandler { id: hover }
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: Theme.space.md
-                    anchors.rightMargin: Theme.space.md
-                    spacing: Theme.space.md
+                // A faint duplicate a few pixels below the card reads as a
+                // soft drop shadow without a real blur (none of the effect
+                // modules are available at this Qt floor).
+                Rectangle {
+                    x: 0; y: 3
+                    width: parent.width
+                    height: parent.height
+                    radius: Theme.radius.lg
+                    color: Theme.palette.scrim
+                    opacity: hover.hovered ? 0.16 : 0.08
+                    Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
+                }
 
-                    Rectangle {
-                        Layout.preferredWidth: 48
-                        Layout.preferredHeight: 48
-                        radius: Theme.radius.md
-                        color: Theme.palette.surfaceSunken
-                        Image {
-                            id: worldIcon
-                            anchors.fill: parent
-                            source: Format.fileUrl(row.iconFile)
-                            sourceSize: Qt.size(96, 96)
-                            smooth: false
-                            visible: status === Image.Ready
-                        }
-                        MeshIcon {
-                            anchors.centerIn: parent
-                            visible: !worldIcon.visible
-                            iconName: "globe"
-                            color: Theme.palette.textTertiary
-                        }
-                    }
+                Rectangle {
+                    id: card
+                    width: parent.width
+                    height: parent.height
+                    y: hover.hovered ? -1 : 0
+                    radius: Theme.radius.lg
+                    color: hover.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
+                    border.width: 1
+                    border.color: hover.hovered ? Theme.palette.borderStrong : Theme.palette.border
 
-                    Column {
-                        Layout.fillWidth: true
-                        spacing: 2
-                        Text {
-                            width: parent.width
-                            text: row.name.length > 0 ? row.name : row.folder
-                            elide: Text.ElideRight
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.body.pixelSize
-                            font.weight: Font.DemiBold
-                        }
-                        Text {
-                            width: parent.width
-                            text: [String(row.gameMode || ""),
-                                   Format.lastPlayed(row.lastPlayed ? Number(row.lastPlayed) : 0)]
-                                  .filter(t => t.length > 0).join("  \u00b7  ")
-                            elide: Text.ElideRight
-                            color: Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
-                        }
-                    }
+                    Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+                    Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
 
-                    IconButton {
-                        visible: hover.hovered && root.unlocked
-                        iconName: "trash"
-                        tip: qsTr("Delete world")
-                        onClicked: {
-                            confirm.row = row.index
-                            confirm.text = qsTr("Delete the world \u201c%1\u201d? It cannot be recovered from the launcher.").arg(row.name.length > 0 ? row.name : row.folder)
-                            confirm.open()
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: Theme.space.md
+                        anchors.rightMargin: Theme.space.md
+                        spacing: Theme.space.md
+
+                        Rectangle {
+                            Layout.preferredWidth: 52
+                            Layout.preferredHeight: 52
+                            radius: Theme.radius.md
+                            color: Theme.palette.surfaceSunken
+                            Image {
+                                id: worldIcon
+                                anchors.fill: parent
+                                anchors.margins: 2
+                                source: Format.fileUrl(cell.iconFile)
+                                sourceSize: Qt.size(96, 96)
+                                smooth: false
+                                visible: status === Image.Ready
+                            }
+                            MeshIcon {
+                                anchors.centerIn: parent
+                                visible: !worldIcon.visible
+                                iconName: "globe"
+                                color: Theme.palette.textTertiary
+                            }
+                        }
+
+                        Column {
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            spacing: Theme.space.xs
+                            Text {
+                                width: parent.width
+                                text: cell.name.length > 0 ? cell.name : cell.folder
+                                elide: Text.ElideRight
+                                color: Theme.palette.textPrimary
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.type.bodyStrong.pixelSize
+                                font.weight: Theme.type.bodyStrong.weight
+                            }
+                            Row {
+                                spacing: Theme.space.xs
+                                Tag {
+                                    visible: text.length > 0
+                                    text: String(cell.gameMode || "")
+                                }
+                                Tag {
+                                    visible: cell.dayCount !== undefined && cell.dayCount !== null
+                                    text: qsTr("Day %1").arg(cell.dayCount)
+                                }
+                                Tag {
+                                    iconName: "clock"
+                                    text: Format.lastPlayed(cell.lastPlayed ? Number(cell.lastPlayed) : 0)
+                                }
+                            }
+                        }
+
+                        IconButton {
+                            visible: hover.hovered && root.unlocked
+                            iconName: "trash"
+                            tip: qsTr("Delete world")
+                            onClicked: {
+                                confirm.row = cell.index
+                                confirm.text = qsTr("Delete the world “%1”? It cannot be recovered from the launcher.").arg(cell.name.length > 0 ? cell.name : cell.folder)
+                                confirm.open()
+                            }
                         }
                     }
                 }

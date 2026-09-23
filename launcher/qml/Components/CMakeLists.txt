@@ -24,7 +24,9 @@ qt_add_qml_module(MeshMC_qml_components
     VERSION 1.0
     RESOURCE_PREFIX "/qt/qml"
     QML_FILES
+        CoverArt.qml
         InstanceCard.qml
+        InstanceListRow.qml
         InstanceSection.qml
         LibraryPage.qml
         ContinueCard.qml
@@ -37,8 +39,9 @@ qt_add_qml_module(MeshMC_qml_components
         Format.qml
         SettingsPage.qml
         DiscoverPage.qml
-        ModpackRow.qml
+        ModpackCard.qml
         ModpackDetail.qml
+        Skeleton.qml
         SettingsScroll.qml
         SettingsGroup.qml
         SettingsStore.qml
@@ -47,7 +50,8 @@ qt_add_qml_module(MeshMC_qml_components
         InstanceSettingsTab.qml
         InstanceOverviewTab.qml
         InstancePage.qml
-        ModsTab.qml
+        ContentTab.qml
+        PackList.qml
         ContentBrowserView.qml
         PluginNode.qml
         PluginSurfaces.qml
@@ -60,6 +64,7 @@ qt_add_qml_module(MeshMC_qml_components
         TabStrip.qml
         StatTile.qml
         ConfirmDialog.qml
+        DialogHeader.qml
         AccountsPage.qml
         AccountRow.qml
         NewInstanceDialog.qml

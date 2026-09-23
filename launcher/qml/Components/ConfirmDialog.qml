@@ -16,6 +16,10 @@ Dialog {
 
     property string text
     property string confirmText: qsTr("Delete")
+    // Every confirm dialog in this codebase guards a destructive action
+    // (delete, remove); a caller that ever needs the plain accent-coloured
+    // button back can set this to false.
+    property bool danger: true
     signal confirmed()
 
     parent: Overlay.overlay
@@ -23,6 +27,12 @@ Dialog {
     width: Math.min(440, parent ? parent.width - Theme.space.xxl * 2 : 440)
     modal: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+    header: DialogHeader {
+        title: root.title
+        icon: root.danger ? "alert-triangle" : ""
+        iconColor: Theme.palette.danger
+    }
 
     contentItem: Text {
         text: root.text
@@ -42,6 +52,7 @@ Dialog {
         Button {
             text: root.confirmText
             highlighted: true
+            danger: root.danger
             onClicked: {
                 root.close()
                 root.confirmed()

@@ -53,7 +53,12 @@ class ModrinthModpackModelTest : public QObject
 			"      \"date_modified\": \"2026-01-01T00:00:00Z\","
 			"      \"latest_version\": \"ver1\","
 			"      \"versions\": [\"1.20.1\", \"1.20.2\"],"
-			"      \"categories\": [\"adventure\", \"fabric\"]"
+			"      \"categories\": [\"adventure\", \"fabric\"],"
+			"      \"display_categories\": [\"adventure\"],"
+			"      \"featured_gallery\": \"https://cdn.modrinth.com/data/abc12345/gallery/hero.png\","
+			"      \"gallery\": [\"https://cdn.modrinth.com/data/abc12345/gallery/hero.png\","
+			"                    \"https://cdn.modrinth.com/data/abc12345/gallery/second.png\"],"
+			"      \"color\": 8383968"
 			"    },"
 			"    {"
 			"      \"project_id\": \"def67890\","
@@ -95,6 +100,16 @@ class ModrinthModpackModelTest : public QObject
 				 QStringList({"1.20.1", "1.20.2"}));
 		QCOMPARE(full.categories,
 				 QStringList({"adventure", "fabric"}));
+		QCOMPARE(full.displayCategories, QStringList({"adventure"}));
+		QCOMPARE(full.featuredGalleryUrl,
+				 QString("https://cdn.modrinth.com/data/abc12345/gallery/"
+						 "hero.png"));
+		QCOMPARE(full.galleryUrls,
+				 QStringList({"https://cdn.modrinth.com/data/abc12345/"
+							  "gallery/hero.png",
+							  "https://cdn.modrinth.com/data/abc12345/"
+							  "gallery/second.png"}));
+		QCOMPARE(full.color, 8383968);
 
 		const Modrinth::IndexedPack& minimal = packs.at(1);
 		QCOMPARE(minimal.projectId, QString("def67890"));
@@ -104,6 +119,13 @@ class ModrinthModpackModelTest : public QObject
 		QCOMPARE(minimal.follows, 0);
 		QVERIFY(minimal.gameVersions.isEmpty());
 		QVERIFY(minimal.categories.isEmpty());
+		/* No "display_categories", "featured_gallery", "gallery" or
+		 * "color" at all - every addition above must default cleanly
+		 * rather than require the field to be present. */
+		QVERIFY(minimal.displayCategories.isEmpty());
+		QVERIFY(minimal.featuredGalleryUrl.isEmpty());
+		QVERIFY(minimal.galleryUrls.isEmpty());
+		QCOMPARE(minimal.color, -1);
 	}
 
 	void test_ParseSearchResultsOnGarbageIsEmpty()

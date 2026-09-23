@@ -40,9 +40,10 @@ class FakeInstanceModel : public QAbstractListModel
 		QString name;
 		QString group;
 		qint64 lastLaunch = 0;
+		qint64 totalTimePlayed = 0;
 	};
 
-	enum Roles { IdRole = Qt::UserRole + 1, NameRole, GroupRole, LastLaunchRole };
+	enum Roles { IdRole = Qt::UserRole + 1, NameRole, GroupRole, LastLaunchRole, TotalTimePlayedRole };
 
 	explicit FakeInstanceModel(QList<Row> rows, QObject* parent = nullptr)
 		: QAbstractListModel(parent), m_rows(std::move(rows))
@@ -69,6 +70,8 @@ class FakeInstanceModel : public QAbstractListModel
 				return row.group;
 			case LastLaunchRole:
 				return row.lastLaunch;
+			case TotalTimePlayedRole:
+				return row.totalTimePlayed;
 			default:
 				return QVariant();
 		}
@@ -81,11 +84,27 @@ class FakeInstanceModel : public QAbstractListModel
 			{ NameRole, "name" },
 			{ GroupRole, "group" },
 			{ LastLaunchRole, "lastLaunch" },
+			{ TotalTimePlayedRole, "totalTimePlayed" },
 		};
 	}
 
   private:
 	QList<Row> m_rows;
+};
+
+/*
+ * subSortLessThan() reads its sort mode off the live LauncherContext, which
+ * nothing in this test binary constructs -- see sortModeSetting()'s own
+ * comment. This override stands in for it so the comparator itself (name
+ * sort, "LastLaunch" and "TotalTimePlayed") can be exercised directly.
+ */
+class SortModeInstanceFilterModel : public InstanceFilterModel
+{
+  public:
+	QString mode;
+
+  protected:
+	QString sortModeSetting() const override { return mode; }
 };
 
 } // namespace
@@ -112,6 +131,34 @@ class InstanceFilterModelTest : public QObject
 				 QString("Pack 2"));
 		QCOMPARE(filter.index(1, 0).data(FakeInstanceModel::NameRole).toString(),
 				 QString("Pack 10"));
+	}
+
+	/// Numbers compare by value whatever the collator backend supports:
+	/// leading zeros, numbers longer than any integer type, and case
+	/// differences in the text between them.
+	void test_naturalSort_doesNotRelyOnCollatorNumericMode()
+	{
+		FakeInstanceModel source({
+			{ "a", "pack 100000000000000000000", "", 0 },
+			{ "b", "Pack 10", "", 0 },
+			{ "c", "Pack 9", "", 0 },
+			{ "d", "Pack 010b", "", 0 },
+			{ "e", "Pack 10a", "", 0 },
+			{ "f", "Pack", "", 0 },
+		});
+		InstanceFilterModel filter;
+		filter.setSourceModel(&source);
+		filter.sort(0);
+
+		const QStringList expected = { "Pack", "Pack 9", "Pack 10",
+									   "Pack 10a", "Pack 010b",
+									   "pack 100000000000000000000" };
+		QStringList actual;
+		for (int row = 0; row < filter.rowCount(); ++row)
+			actual << filter.index(row, 0)
+						  .data(FakeInstanceModel::NameRole)
+						  .toString();
+		QCOMPARE(actual, expected);
 	}
 
 	/// Same-group rows fall through to natural sort; different-group rows
@@ -287,6 +334,63 @@ class InstanceFilterModelTest : public QObject
 		filter.setSourceModel(&source);
 
 		QCOMPARE(filter.roleNames(), source.roleNames());
+	}
+
+	/// Within a group, "InstSortMode" == "TotalTimePlayed" (the Library
+	/// toolbar's "Time played" option) orders most-played first.
+	void test_subSort_totalTimePlayed_ordersMostPlayedFirst()
+	{
+		FakeInstanceModel source({
+			{ "a", "Alpha", "", 100 },
+			{ "b", "Beta", "", 0, 500 },
+			{ "c", "Gamma", "", 0, 200 },
+		});
+		SortModeInstanceFilterModel filter;
+		filter.mode = "TotalTimePlayed";
+		filter.setSourceModel(&source);
+		filter.sort(0);
+
+		QCOMPARE(filter.index(0, 0).data(FakeInstanceModel::IdRole).toString(), QString("b"));
+		QCOMPARE(filter.index(1, 0).data(FakeInstanceModel::IdRole).toString(), QString("c"));
+		QCOMPARE(filter.index(2, 0).data(FakeInstanceModel::IdRole).toString(), QString("a"));
+	}
+
+	/// Same "InstSortMode" seam, exercising the pre-existing "LastLaunch"
+	/// value: most recently played first, same as recentFirst's ordering
+	/// but as the in-group tie-break rather than a top-level filter.
+	void test_subSort_lastLaunch_ordersMostRecentFirst()
+	{
+		FakeInstanceModel source({
+			{ "a", "Alpha", "", 100 },
+			{ "b", "Beta", "", 300 },
+			{ "c", "Gamma", "", 200 },
+		});
+		SortModeInstanceFilterModel filter;
+		filter.mode = "LastLaunch";
+		filter.setSourceModel(&source);
+		filter.sort(0);
+
+		QCOMPARE(filter.index(0, 0).data(FakeInstanceModel::IdRole).toString(), QString("b"));
+		QCOMPARE(filter.index(1, 0).data(FakeInstanceModel::IdRole).toString(), QString("c"));
+		QCOMPARE(filter.index(2, 0).data(FakeInstanceModel::IdRole).toString(), QString("a"));
+	}
+
+	/// An unrecognised (or empty, i.e. "Name") sort mode always falls back
+	/// to natural name order, even once totalTimePlayed/lastLaunch roles
+	/// exist and carry data -- "Time played" must never leak in silently.
+	void test_subSort_unknownSortMode_fallsBackToNaturalNameOrder()
+	{
+		FakeInstanceModel source({
+			{ "a", "Pack 10", "", 300, 300 },
+			{ "b", "Pack 2", "", 100, 900 },
+		});
+		SortModeInstanceFilterModel filter;
+		filter.mode = "Name";
+		filter.setSourceModel(&source);
+		filter.sort(0);
+
+		QCOMPARE(filter.index(0, 0).data(FakeInstanceModel::NameRole).toString(), QString("Pack 2"));
+		QCOMPARE(filter.index(1, 0).data(FakeInstanceModel::NameRole).toString(), QString("Pack 10"));
 	}
 };
 

@@ -23,12 +23,14 @@
 #include <QSet>
 #include <QFile>
 #include <QFileInfo>
+#include <QDateTime>
 #include <QThread>
 #include <QTextStream>
 #include <QXmlStreamReader>
 #include <QTimer>
 #include <QDebug>
 #include <QFileSystemWatcher>
+#include <QUrl>
 #include <QUuid>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -315,6 +317,17 @@ QVariant InstanceList::data(const QModelIndex& index, int role) const
 			auto* tracker = m_launchTrackers.value(pdata, nullptr);
 			return tracker ? tracker->progress() : -1.0;
 		}
+		case CoverImageRole: {
+			const InstanceId id = pdata->id();
+			auto it = m_coverImageCache.constFind(id);
+			if (it != m_coverImageCache.constEnd()) {
+				return it.value();
+			}
+			const QString url = newestScreenshotUrl(
+				FS::PathCombine(pdata->gameRoot(), "screenshots"));
+			m_coverImageCache.insert(id, url);
+			return url;
+		}
 		default:
 			break;
 	}
@@ -338,6 +351,7 @@ QHash<int, QByteArray> InstanceList::roleNames() const
 	roles.insert(IconTintRole, "iconTint");
 	roles.insert(LaunchStatusRole, "launchStatus");
 	roles.insert(LaunchProgressRole, "launchProgress");
+	roles.insert(CoverImageRole, "coverImage");
 	return roles;
 }
 
@@ -842,9 +856,72 @@ void InstanceList::emitLaunchProgressChanged(BaseInstance* inst)
 void InstanceList::emitIsRunningChanged(BaseInstance* inst)
 {
 	int i = getInstIndex(inst);
-	if (i != -1) {
-		emit dataChanged(index(i), index(i), {IsRunningRole});
+	if (i == -1) {
+		return;
 	}
+	QList<int> roles{IsRunningRole};
+	// The instance just stopped, not started: a play session is exactly
+	// when new screenshots tend to appear, so the cached cover - if any -
+	// may now be stale. Dropped rather than refreshed eagerly, since
+	// CoverImageRole's data() case fills it back in lazily on next ask.
+	if (!inst->isRunning() && m_coverImageCache.remove(inst->id()) > 0) {
+		roles.append(CoverImageRole);
+	}
+	emit dataChanged(index(i), index(i), roles);
+}
+
+QString InstanceList::newestScreenshotUrl(const QString& screenshotsDir)
+{
+	if (screenshotsDir.isEmpty()) {
+		return QString();
+	}
+	QDir dir(screenshotsDir);
+	if (!dir.exists()) {
+		return QString();
+	}
+
+	// Same three extensions ScreenshotListModel::isImageFile() accepts,
+	// checked the same case-insensitive way - QDir name filters are
+	// case-sensitive on some platforms and not others, which would make
+	// this list agree with the Screenshots tab on some machines and not
+	// others.
+	static const QStringList kExtensions = {
+		QStringLiteral("png"),
+		QStringLiteral("jpg"),
+		QStringLiteral("jpeg"),
+	};
+
+	QString newestPath;
+	QString newestName;
+	QDateTime newestModified;
+	const QFileInfoList files =
+		dir.entryInfoList(QDir::Files | QDir::Readable, QDir::NoSort);
+	for (const QFileInfo& info : files) {
+		bool isImage = false;
+		for (const QString& ext : kExtensions) {
+			if (info.suffix().compare(ext, Qt::CaseInsensitive) == 0) {
+				isImage = true;
+				break;
+			}
+		}
+		if (!isImage) {
+			continue;
+		}
+
+		const QDateTime modified = info.lastModified();
+		// Newest-modified first, file name as a tiebreak - mirrors
+		// ScreenshotListModel::listEntries()'s sort so this always agrees
+		// with what the Screenshots tab shows as its top entry.
+		if (newestPath.isEmpty() || modified > newestModified ||
+			(modified == newestModified && info.fileName() > newestName)) {
+			newestPath = info.absoluteFilePath();
+			newestName = info.fileName();
+			newestModified = modified;
+		}
+	}
+
+	return newestPath.isEmpty() ? QString()
+								 : QUrl::fromLocalFile(newestPath).toString();
 }
 
 void InstanceList::resumeWatch()

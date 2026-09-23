@@ -27,6 +27,11 @@ Dialog {
     modal: true
     title: qsTr("Choose an icon")
 
+    header: DialogHeader {
+        title: root.title
+        icon: "image"
+    }
+
     contentItem: GridView {
         id: grid
         clip: true

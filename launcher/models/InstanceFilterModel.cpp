@@ -42,11 +42,62 @@ namespace
 		}
 		return fallback;
 	}
+
+	/* Natural order that does not depend on QCollator::setNumericMode(),
+	 * which some backends silently ignore (Qt without ICU on Linux sorted
+	 * "Pack 10" before "Pack 2"). Runs of digits compare by value -- first
+	 * by length once leading zeros are dropped, then digit by digit, so any
+	 * length works -- and everything between them goes through @p collator.
+	 */
+	int naturalCompare(const QCollator& collator, const QString& a,
+					   const QString& b)
+	{
+		int i = 0;
+		int j = 0;
+		while (i < a.size() && j < b.size()) {
+			const bool digitA = a.at(i).isDigit();
+			const bool digitB = b.at(j).isDigit();
+			int endA = i;
+			while (endA < a.size() && a.at(endA).isDigit() == digitA)
+				++endA;
+			int endB = j;
+			while (endB < b.size() && b.at(endB).isDigit() == digitB)
+				++endB;
+			const QStringView runA = QStringView(a).mid(i, endA - i);
+			const QStringView runB = QStringView(b).mid(j, endB - j);
+
+			int result = 0;
+			if (digitA && digitB) {
+				QStringView numA = runA;
+				QStringView numB = runB;
+				while (numA.size() > 1 && numA.front() == u'0')
+					numA = numA.mid(1);
+				while (numB.size() > 1 && numB.front() == u'0')
+					numB = numB.mid(1);
+				result = numA.size() == numB.size()
+							 ? numA.compare(numB)
+							 : (numA.size() < numB.size() ? -1 : 1);
+			} else {
+				result = collator.compare(runA, runB);
+			}
+			if (result != 0)
+				return result < 0 ? -1 : 1;
+			i = endA;
+			j = endB;
+		}
+		if (i < a.size())
+			return 1;
+		if (j < b.size())
+			return -1;
+		return collator.compare(a, b);
+	}
 } // namespace
 
 InstanceFilterModel::InstanceFilterModel(QObject* parent)
 	: QSortFilterProxyModel(parent)
 {
+	// Numbers are handled by naturalCompare(); numeric mode stays on for
+	// backends that honour it, so a tie between runs orders the same way.
 	m_naturalSort.setNumericMode(true);
 	m_naturalSort.setCaseSensitivity(Qt::CaseInsensitive);
 	// FIXME: same as the widget proxy -- use loaded translation as source of
@@ -203,6 +254,7 @@ void InstanceFilterModel::setSourceModel(QAbstractItemModel* sourceModel)
 	m_groupRole = roleByName(sourceModel, "group", Qt::UserRole);
 	m_lastLaunchRole = roleByName(sourceModel, "lastLaunch", -1);
 	m_idRole = roleByName(sourceModel, "instanceId", -1);
+	m_totalTimePlayedRole = roleByName(sourceModel, "totalTimePlayed", -1);
 	QSortFilterProxyModel::setSourceModel(sourceModel);
 
 	/* A QSortFilterProxyModel does not sort until something asks it to, and a
@@ -266,16 +318,28 @@ bool InstanceFilterModel::lessThan(const QModelIndex& left,
 	}
 }
 
+QString InstanceFilterModel::sortModeSetting() const
+{
+	auto* context = LauncherContext::instance();
+	return context ? context->settings()->get("InstSortMode").toString()
+				   : QString();
+}
+
 bool InstanceFilterModel::subSortLessThan(const QModelIndex& left,
 										   const QModelIndex& right) const
 {
-	auto* context = LauncherContext::instance();
-	if (m_lastLaunchRole >= 0 && context &&
-		context->settings()->get("InstSortMode").toString() ==
-			"LastLaunch") {
+	const QString sortMode = sortModeSetting();
+	if (m_lastLaunchRole >= 0 && sortMode == "LastLaunch") {
 		return left.data(m_lastLaunchRole).toLongLong() >
 			   right.data(m_lastLaunchRole).toLongLong();
 	}
-	return m_naturalSort.compare(left.data(m_nameRole).toString(),
-								  right.data(m_nameRole).toString()) < 0;
+	// "Time played" is a QML-library-only addition to InstSortMode (the
+	// classic widget page only ever writes "Name"/"LastLaunch"), so it
+	// falls back to name sorting the same way an unresolved role does.
+	if (m_totalTimePlayedRole >= 0 && sortMode == "TotalTimePlayed") {
+		return left.data(m_totalTimePlayedRole).toLongLong() >
+			   right.data(m_totalTimePlayedRole).toLongLong();
+	}
+	return naturalCompare(m_naturalSort, left.data(m_nameRole).toString(),
+						  right.data(m_nameRole).toString()) < 0;
 }

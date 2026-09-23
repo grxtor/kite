@@ -52,6 +52,22 @@ void Modrinth::loadIndexedPack(Modrinth::IndexedPack& pack, QJsonObject& obj)
 		categories.append(category.toString());
 	}
 	pack.categories = categories;
+
+	QStringList displayCategories;
+	for (const auto& category : Json::ensureArray(obj, "display_categories")) {
+		displayCategories.append(category.toString());
+	}
+	pack.displayCategories = displayCategories;
+
+	pack.featuredGalleryUrl =
+		Json::ensureString(obj, "featured_gallery", QString());
+	QStringList galleryUrls;
+	for (const auto& image : Json::ensureArray(obj, "gallery")) {
+		galleryUrls.append(image.toString());
+	}
+	pack.galleryUrls = galleryUrls;
+
+	pack.color = Json::ensureInteger(obj, "color", -1);
 }
 
 void Modrinth::loadIndexedPackVersions(Modrinth::IndexedPack& pack,

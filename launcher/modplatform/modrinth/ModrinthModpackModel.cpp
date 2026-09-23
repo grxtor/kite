@@ -19,6 +19,9 @@
 
 #include "ModrinthModpackModel.h"
 
+#include <algorithm>
+
+#include <QColor>
 #include <QDebug>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -52,6 +55,7 @@ void ModrinthModpackDetail::reset(const QString& projectId)
 	setTitle(QString());
 	setBody(QString());
 	setVersions(QVariantList());
+	setGallery(QVariantList());
 	setError(QString());
 	setLoading(true);
 }
@@ -78,6 +82,12 @@ void ModrinthModpackDetail::setVersions(const QVariantList& versions)
 {
 	m_versions = versions;
 	emit versionsChanged();
+}
+
+void ModrinthModpackDetail::setGallery(const QVariantList& gallery)
+{
+	m_gallery = gallery;
+	emit galleryChanged();
 }
 
 void ModrinthModpackDetail::setLoading(bool loading)
@@ -167,7 +177,25 @@ QVariant ModrinthModpackModel::data(const QModelIndex& index, int role) const
 		case GameVersionsRole:
 			return QVariant::fromValue(pack.gameVersions);
 		case CategoriesRole:
-			return QVariant::fromValue(pack.categories);
+			/* display_categories when the hit had it - the curated
+			 * set Modrinth means for a card - falling back to the
+			 * full technical list otherwise. */
+			return QVariant::fromValue(pack.displayCategories.isEmpty()
+										   ? pack.categories
+										   : pack.displayCategories);
+		case GalleryUrlRole:
+			if (!pack.featuredGalleryUrl.isEmpty()) {
+				return pack.featuredGalleryUrl;
+			}
+			return pack.galleryUrls.isEmpty() ? QString()
+											  : pack.galleryUrls.first();
+		case AccentColorRole:
+			if (pack.color < 0) {
+				return QVariant();
+			}
+			return QVariant::fromValue(
+				QColor::fromRgb((pack.color >> 16) & 0xFF,
+								(pack.color >> 8) & 0xFF, pack.color & 0xFF));
 		default:
 			return QVariant();
 	}
@@ -188,6 +216,8 @@ QHash<int, QByteArray> ModrinthModpackModel::roleNames() const
 		{LatestVersionRole, "latestVersion"},
 		{GameVersionsRole, "gameVersions"},
 		{CategoriesRole, "categories"},
+		{GalleryUrlRole, "galleryUrl"},
+		{AccentColorRole, "accentColor"},
 	};
 }
 
@@ -483,6 +513,39 @@ void ModrinthModpackModel::fetchDetailBody(const QString& projectId,
 						if (!title.isEmpty()) {
 							m_detail->setTitle(title);
 						}
+
+						/* The full project object carries a richer
+						 * "gallery" than a search hit does: objects
+						 * with their own title/featured flag rather
+						 * than bare URLs (see loadIndexedPack() for
+						 * the search-hit shape). Only entries with a
+						 * URL are kept; featured images are sorted
+						 * first so the detail header always prefers
+						 * one, same as Modrinth's own project page. */
+						QVariantList gallery;
+						for (const auto& imageRaw :
+							 Json::ensureArray(obj, "gallery")) {
+							const QJsonObject imageObj = imageRaw.toObject();
+							const QString url =
+								Json::ensureString(imageObj, "url", QString());
+							if (url.isEmpty()) {
+								continue;
+							}
+							QVariantMap entry;
+							entry[QStringLiteral("url")] = url;
+							entry[QStringLiteral("featured")] =
+								Json::ensureBoolean(imageObj, "featured", false);
+							entry[QStringLiteral("title")] =
+								Json::ensureString(imageObj, "title", QString());
+							gallery.append(entry);
+						}
+						std::stable_sort(
+							gallery.begin(), gallery.end(),
+							[](const QVariant& a, const QVariant& b) {
+								return a.toMap().value(QStringLiteral("featured")).toBool() &&
+									   !b.toMap().value(QStringLiteral("featured")).toBool();
+							});
+						m_detail->setGallery(gallery);
 					}
 				}
 				markDetailPartDone(generation, true);

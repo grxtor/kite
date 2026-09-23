@@ -61,6 +61,17 @@ QtObject {
         readonly property real disabled: 0.45
     }
 
+    // Text and shading laid over a screenshot or other artwork. The art is
+    // what it is in either theme, so these do not follow the palette: light
+    // text over a dark fade reads on any picture, in dark and light mode.
+    readonly property QtObject media: QtObject {
+        readonly property color text: "#FFFFFF"
+        readonly property color textSecondary: Qt.rgba(1, 1, 1, 0.80)
+        readonly property color scrim: Qt.rgba(0.02, 0.03, 0.05, 0.86)
+        readonly property color chip: Qt.rgba(0, 0, 0, 0.38)
+        readonly property color chipBorder: Qt.rgba(1, 1, 1, 0.12)
+    }
+
     readonly property QtObject motion: QtObject {
         readonly property int fast: 120
         readonly property int normal: 180

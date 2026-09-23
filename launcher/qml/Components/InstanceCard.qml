@@ -28,6 +28,9 @@ Item {
     required property string gameVersion
     required property string loader
     required property color iconTint
+    // Newest screenshot url (InstanceList's coverImage role), or "" when
+    // the instance has none yet -- the cover's own art, see CoverArt.qml.
+    required property string coverImage
     // Empty while nothing is being launched; progress is 0..1, or negative
     // while the launch cannot say how far along it is.
     required property string launchStatus
@@ -47,6 +50,7 @@ Item {
     readonly property bool launching: launchStatus.length > 0
     readonly property int inset: Theme.space.sm - 2
     readonly property int coverHeight: Math.round((width - inset * 2) * 0.6)
+    readonly property int coverRadius: Theme.radius.md + 2
 
     implicitWidth: 208
     implicitHeight: inset + coverHeight + Theme.space.md + Theme.type.bodyStrong.lineHeightPx
@@ -94,35 +98,32 @@ Item {
             onTapped: { root.forceActiveFocus(); root.clicked(); root.menuRequested() }
         }
 
-        Rectangle {
+        Item {
             id: cover
             x: root.inset
             y: root.inset
             width: parent.width - root.inset * 2
             height: root.coverHeight
-            radius: Theme.radius.md + 2
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Format.shade(root.iconTint, Theme.dark ? 0.30 : 0.86, 0.9) }
-                GradientStop { position: 1.0; color: Format.shade(root.iconTint, Theme.dark ? 0.15 : 0.74, 0.8) }
-            }
 
-            Image {
-                id: icon
-                anchors.centerIn: parent
-                readonly property int extent: Math.max(48, Math.min(96, Math.round(parent.height * 0.55)))
-                width: extent
-                height: extent
-                source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
-                sourceSize: Qt.size(extent, extent)
-                fillMode: Image.PreserveAspectFit
-                scale: root.hovered ? 1.06 : 1.0
-                Behavior on scale { NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
+            CoverArt {
+                id: art
+                anchors.fill: parent
+                radius: root.coverRadius
+                source: root.coverImage
+                tint: root.iconTint
+                iconKey: root.iconKey
+                iconSize: Math.max(48, Math.min(96, Math.round(root.coverHeight * 0.55)))
+                // Protects the running pill/more button up top and the
+                // play button/icon badge down below from a bright photo.
+                scrim: "bottom"
+                hovered: root.hovered
+                matte: card.color
             }
 
             // While launching the cover dims and a bar runs along its foot.
             Rectangle {
                 anchors.fill: parent
-                radius: parent.radius
+                radius: root.coverRadius
                 color: Qt.rgba(0, 0, 0, 0.45)
                 opacity: root.launching ? 1 : 0
                 visible: opacity > 0
@@ -197,6 +198,44 @@ Item {
                 Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
                 Behavior on scale { NumberAnimation { duration: Theme.motion.normal; easing.type: Easing.OutBack } }
                 onClicked: root.isRunning ? root.stopRequested() : root.playRequested()
+            }
+        }
+
+        // A small badge for the instance icon, peeking over the cover's
+        // bottom-left edge -- only shown once there is a real screenshot
+        // to badge; the fallback cover already *is* the icon, large and
+        // centred, and a second copy of it would just be clutter.
+        Item {
+            id: iconBadge
+            readonly property int size: 36
+            visible: art.hasPhoto
+            x: cover.x + Theme.space.sm
+            y: cover.y + cover.height - size * 0.8
+            width: size
+            height: size
+
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: -2
+                radius: Theme.radius.md + 2
+                color: Qt.rgba(0, 0, 0, Theme.dark ? 0.4 : 0.18)
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: Theme.radius.md
+                color: Theme.palette.surface
+                border.width: 1
+                border.color: Theme.palette.border
+
+                Image {
+                    anchors.fill: parent
+                    anchors.margins: 5
+                    source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
+                    sourceSize: Qt.size(width, height)
+                    fillMode: Image.PreserveAspectFit
+                    smooth: false
+                }
             }
         }
 

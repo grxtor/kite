@@ -24,17 +24,26 @@ Dialog {
     // TaskWatcher of the creation in progress.
     property var watcher: null
     property bool nameEdited: false
+    // IconList model for the icon picker below, or null to hide it (the
+    // integrator wires the shell's iconsModel in; without it the button
+    // still shows the default icon, just with nothing to pick from).
+    property var iconsModel: null
+    property string selectedIcon: "default"
 
     signal moreWaysRequested()
     signal created()
 
     readonly property bool creating: !!watcher && watcher.running
+    // No trademarked logos, so each loader gets a plain shape instead: a
+    // block for the unmodified game, a woven grid for Fabric's own name and
+    // its fork Quilt, a gear for Forge and its fork NeoForge -- tinted
+    // apart so the four modded options don't read as one another.
     readonly property var loaders: [
-        { value: "", label: qsTr("None") },
-        { value: "fabric", label: "Fabric" },
-        { value: "quilt", label: "Quilt" },
-        { value: "forge", label: "Forge" },
-        { value: "neoforge", label: "NeoForge" }
+        { value: "", label: qsTr("Vanilla"), icon: "cube", tint: Theme.palette.textSecondary },
+        { value: "fabric", label: "Fabric", icon: "grid", tint: Theme.palette.accent },
+        { value: "quilt", label: "Quilt", icon: "copy", tint: Theme.palette.info },
+        { value: "forge", label: "Forge", icon: "settings", tint: Theme.palette.warning },
+        { value: "neoforge", label: "NeoForge", icon: "refresh", tint: Theme.palette.danger }
     ]
 
     // Start on the newest version of the list shown, so Create works
@@ -73,6 +82,7 @@ Dialog {
     onOpened: {
         root.watcher = null
         root.nameEdited = false
+        root.selectedIcon = "default"
         groupField.text = ""
         selectDefaultVersion()
         refreshSuggestedName()
@@ -111,8 +121,58 @@ Dialog {
             Layout.fillWidth: true
             spacing: Theme.space.md
 
+            // A tile as tall as the labelled name field beside it.
+            AbstractButton {
+                id: iconButton
+                Layout.alignment: Qt.AlignBottom
+                Layout.preferredWidth: nameColumn.height
+                Layout.preferredHeight: nameColumn.height
+                enabled: !root.creating
+                hoverEnabled: true
+                Accessible.name: qsTr("Instance icon")
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Change icon")
+                onClicked: iconPicker.open()
+
+                background: Rectangle {
+                    radius: Theme.radius.lg
+                    color: iconButton.hovered ? Theme.palette.hoverOverlay : Theme.palette.surfaceRaised
+                    border.width: 1
+                    border.color: iconButton.hovered ? Theme.palette.borderStrong : Theme.palette.border
+                }
+                contentItem: Item {
+                    Image {
+                        anchors.centerIn: parent
+                        width: Math.round(iconButton.height * 0.62)
+                        height: width
+                        source: "image://instanceicon/" + root.selectedIcon
+                        sourceSize: Qt.size(width, height)
+                        fillMode: Image.PreserveAspectFit
+                    }
+                    Rectangle {
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        anchors.margins: Theme.space.xxs
+                        width: Theme.icon.md
+                        height: width
+                        radius: width / 2
+                        color: Theme.palette.surfaceOverlay
+                        border.width: 1
+                        border.color: Theme.palette.border
+                        MeshIcon {
+                            anchors.centerIn: parent
+                            iconName: "edit"
+                            size: Theme.icon.sm - 4
+                            color: Theme.palette.textSecondary
+                        }
+                    }
+                }
+            }
+
             Column {
+                id: nameColumn
                 Layout.fillWidth: true
+                Layout.alignment: Qt.AlignBottom
                 spacing: Theme.space.xs
                 Text {
                     text: qsTr("Name")
@@ -132,6 +192,7 @@ Dialog {
 
             Column {
                 Layout.preferredWidth: 220
+                Layout.alignment: Qt.AlignBottom
                 spacing: Theme.space.xs
                 Text {
                     text: qsTr("Group")
@@ -149,6 +210,14 @@ Dialog {
                     text: ""
                 }
             }
+
+        }
+
+        IconPickerDialog {
+            id: iconPicker
+            iconsModel: root.iconsModel
+            current: root.selectedIcon
+            onPicked: (key) => root.selectedIcon = key
         }
 
         // Minecraft version
@@ -267,49 +336,115 @@ Dialog {
         }
 
         // Mod loader
-        RowLayout {
+        ColumnLayout {
             Layout.fillWidth: true
-            spacing: Theme.space.md
+            spacing: Theme.space.sm
 
-            Text {
-                text: qsTr("Mod loader")
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.title.pixelSize
-                font.weight: Font.Bold
-            }
-            SegmentedControl {
-                enabled: !root.creating
-                options: root.loaders
-                current: root.controller ? root.controller.loader : ""
-                onActivated: (value) => root.controller.loader = value
-            }
-            Item { Layout.fillWidth: true }
-            ComboBox {
-                id: loaderVersionBox
-                Layout.preferredWidth: 220
-                visible: !!root.controller && root.controller.loader.length > 0
-                enabled: !root.creating && count > 0
-                model: root.controller ? root.controller.loaderVersions : null
-                textRole: "version"
-                valueRole: "versionId"
-                displayText: root.controller && root.controller.loaderLoading ? qsTr("Loading\u2026")
-                           : count === 0 ? qsTr("None for this version")
-                           : currentIndex >= 0 ? currentText
-                           : root.controller ? root.controller.selectedLoaderVersion : ""
-                // The controller may have picked a version before the rows
-                // reached this box; line the two up whenever either moves.
-                function syncToController() {
-                    if (root.controller)
-                        currentIndex = indexOfValue(root.controller.selectedLoaderVersion)
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.space.md
+
+                Text {
+                    text: qsTr("Mod loader")
+                    color: Theme.palette.textPrimary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.title.pixelSize
+                    font.weight: Font.Bold
                 }
-                onCountChanged: syncToController()
-                onActivated: root.controller.selectLoaderVersion(currentValue)
-                // Follow the controller's pick (it defaults to the newest).
-                Connections {
-                    target: root.controller
-                    ignoreUnknownSignals: true
-                    function onSelectedLoaderVersionChanged() { loaderVersionBox.syncToController() }
+                Item { Layout.fillWidth: true }
+                ComboBox {
+                    id: loaderVersionBox
+                    Layout.preferredWidth: 220
+                    visible: !!root.controller && root.controller.loader.length > 0
+                    enabled: !root.creating && count > 0
+                    model: root.controller ? root.controller.loaderVersions : null
+                    textRole: "version"
+                    valueRole: "versionId"
+                    displayText: root.controller && root.controller.loaderLoading ? qsTr("Loading\u2026")
+                               : count === 0 ? qsTr("None for this version")
+                               : currentIndex >= 0 ? currentText
+                               : root.controller ? root.controller.selectedLoaderVersion : ""
+                    // The controller may have picked a version before the rows
+                    // reached this box; line the two up whenever either moves.
+                    function syncToController() {
+                        if (root.controller)
+                            currentIndex = indexOfValue(root.controller.selectedLoaderVersion)
+                    }
+                    onCountChanged: syncToController()
+                    onActivated: root.controller.selectLoaderVersion(currentValue)
+                    // Follow the controller's pick (it defaults to the newest).
+                    Connections {
+                        target: root.controller
+                        ignoreUnknownSignals: true
+                        function onSelectedLoaderVersionChanged() { loaderVersionBox.syncToController() }
+                    }
+                }
+            }
+
+            // One selectable card per loader instead of a segmented control,
+            // so the showpiece dialog leads with imagery here too.
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.space.sm
+
+                Repeater {
+                    model: root.loaders
+
+                    delegate: AbstractButton {
+                        id: loaderCard
+                        required property var modelData
+                        readonly property bool selected: (root.controller ? root.controller.loader : "") === modelData.value
+
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 92
+                        enabled: !root.creating
+                        hoverEnabled: true
+                        checkable: true
+                        checked: selected
+                        Accessible.name: modelData.label
+                        onClicked: if (root.controller) root.controller.loader = modelData.value
+
+                        background: Rectangle {
+                            radius: Theme.radius.lg
+                            color: loaderCard.selected ? Theme.palette.accentSubtle
+                                 : loaderCard.hovered ? Theme.palette.hoverOverlay : Theme.palette.surfaceRaised
+                            border.width: loaderCard.selected ? 2 : 1
+                            border.color: loaderCard.selected ? Theme.palette.accent : Theme.palette.border
+                            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                        }
+
+                        contentItem: Item {
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: Theme.space.xs
+
+                                Rectangle {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    width: Theme.icon.lg + Theme.space.md
+                                    height: width
+                                    radius: Theme.radius.md
+                                    color: Qt.rgba(loaderCard.modelData.tint.r, loaderCard.modelData.tint.g,
+                                                   loaderCard.modelData.tint.b, loaderCard.selected ? 0.24 : 0.14)
+
+                                    MeshIcon {
+                                        anchors.centerIn: parent
+                                        iconName: loaderCard.modelData.icon
+                                        size: Theme.icon.lg
+                                        color: loaderCard.modelData.tint
+                                    }
+                                }
+
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: loaderCard.modelData.label
+                                    color: loaderCard.selected ? Theme.palette.textPrimary : Theme.palette.textSecondary
+                                    font.family: Theme.font.family
+                                    font.pixelSize: Theme.type.label.pixelSize
+                                    font.weight: loaderCard.selected ? Font.DemiBold : Font.Medium
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -372,7 +507,7 @@ Dialog {
                      && root.controller.selectedMinecraftVersion.length > 0
                      && nameField.text.trim().length > 0
             onClicked: {
-                root.watcher = root.controller.create(nameField.text.trim(), groupField.text.trim(), "default")
+                root.watcher = root.controller.create(nameField.text.trim(), groupField.text.trim(), root.selectedIcon)
             }
         }
     }

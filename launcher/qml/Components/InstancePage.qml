@@ -59,8 +59,12 @@ Item {
         Repeater {
             model: root.headerModel
             delegate: ContinueCard {
+                required property string group
                 Layout.fillWidth: true
-                overline: qsTr("Instance")
+                // The group this instance lives in is more useful here than
+                // a label that just repeats "you are looking at an
+                // instance" -- and an ungrouped instance shows nothing.
+                overline: group.length > 0 ? group : ""
                 compact: true
                 editText: qsTr("Classic editor")
                 onPlayRequested: root.launchRequested(instanceId)
@@ -85,7 +89,7 @@ Item {
             current: root.tab
             tabs: [
                 { id: "overview", label: qsTr("Overview") },
-                { id: "mods", label: qsTr("Mods"), count: root.modsModel ? modsTab.count : -1 },
+                { id: "content", label: qsTr("Content"), count: root.modsModel ? contentTab.count : -1 },
                 { id: "browse", label: qsTr("Add content") },
                 { id: "worlds", label: qsTr("Worlds"), count: root.worldsModel ? worldsTab.count : -1 },
                 { id: "screenshots", label: qsTr("Screenshots"), count: root.shotsModel ? root.shotsModel.count : -1 },
@@ -101,7 +105,7 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.topMargin: Theme.space.sm
-            currentIndex: ["overview", "mods", "browse", "worlds", "screenshots", "log", "settings", "plugins"].indexOf(root.tab)
+            currentIndex: ["overview", "content", "browse", "worlds", "screenshots", "log", "settings", "plugins"].indexOf(root.tab)
 
             InstanceOverviewTab {
                 id: overview
@@ -112,14 +116,15 @@ Item {
                     lastLaunch = card.lastLaunch
                     totalTimePlayed = card.totalTimePlayed
                 }
-                modCount: root.modsModel ? modsTab.count : -1
-                worldCount: root.worldsModel ? worldsTab.count : -1
+                details: root.details
                 notes: root.details ? root.details.notes : ""
                 onNotesEdited: (text) => { if (root.details) root.details.notes = text }
+                onScreenshotsRequested: root.tab = "screenshots"
+                onManageContentRequested: root.tab = "content"
             }
 
-            ModsTab {
-                id: modsTab
+            ContentTab {
+                id: contentTab
                 details: root.details
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
                 onBrowseRequested: root.tab = "browse"

@@ -66,6 +66,24 @@ namespace Modrinth
 		QStringList gameVersions;
 		QString latestVersion;
 		QStringList categories;
+		/* The subset of `categories` Modrinth marks for display on a
+		 * card ("display_categories") - shorter and curated, unlike
+		 * `categories` which also carries filter-only tags. Empty when
+		 * the hit did not say, in which case a caller should fall back
+		 * to `categories` itself. */
+		QStringList displayCategories;
+		/* A cover image for the card grid: the search hit's own
+		 * "featured_gallery" (one URL, or empty if the project marked
+		 * none as featured) falling back to the first of "gallery"
+		 * (plain URLs on a search hit - richer objects only come back
+		 * from the project endpoint, see fetchDetailBody()). Empty
+		 * when the project has no gallery at all. */
+		QString featuredGalleryUrl;
+		QStringList galleryUrls;
+		/* Modrinth's automatically generated accent colour for the
+		 * project, as 0xRRGGBB; -1 when the hit had none (JSON
+		 * null or missing, e.g. a project with no icon yet). */
+		int color = -1;
 
 		bool versionsLoaded = false;
 		QVector<IndexedVersion> versions;

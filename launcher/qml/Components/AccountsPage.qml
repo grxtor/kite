@@ -12,6 +12,11 @@ import MeshMC.Theme
  * browser; this page says so while it waits, and can reopen the page if
  * the browser tab was lost. Offline accounts need a Microsoft account that
  * owns the game first -- the same rule the classic page enforced.
+ *
+ * A hero at the top shows the account games actually launch with -- full
+ * body, standing on a small "stage" -- the same way the library's
+ * ContinueCard/InstancePage hero leads with the instance that matters most.
+ * Every other account is a compact row below it.
  */
 Item {
     id: root
@@ -31,6 +36,82 @@ Item {
         loginDialog.open()
     }
 
+    /*
+     * Which row is the default account, found by watching every row's own
+     * isDefault role rather than asking AccountList for one directly: it
+     * exposes the flag per row (for the list delegate below) but not as a
+     * "here is the default index" query of its own. A Repeater is the
+     * cheapest way to look at every row without paging through count()/
+     * data() by hand -- each probe is a zero-size Item, never drawn.
+     */
+    property int defaultIndex: -1
+    Repeater {
+        model: root.accounts
+        delegate: Item {
+            id: probe
+            required property int index
+            required property bool isDefault
+            // Everything the hero card shows, so it can read this probe
+            // instead of the list's currentItem -- which ListView does not
+            // reliably create for a row it lays out collapsed.
+            required property string profileName
+            required property string name
+            required property bool isMSA
+            required property string stateKey
+            required property string status
+            required property string accountId
+            readonly property bool isHero: index === root.heroIndex
+            onIsHeroChanged: claimHero()
+            function claimHero() {
+                if (isHero)
+                    root.heroItem = probe
+                else if (root.heroItem === probe)
+                    root.heroItem = null
+            }
+            Component.onDestruction: if (root.heroItem === probe) root.heroItem = null
+            visible: false
+            width: 0
+            height: 0
+            // Re-asserts on either role change (isDefault flips, e.g. the
+            // previous default was just removed) or a plain row-index shift
+            // (an unrelated row above this one was removed/inserted) --
+            // either can leave a stale index behind otherwise.
+            function report() {
+                if (isDefault)
+                    root.defaultIndex = index
+                else if (root.defaultIndex === index)
+                    root.defaultIndex = -1
+            }
+            onIsDefaultChanged: report()
+            onIndexChanged: report()
+            Component.onCompleted: { report(); claimHero() }
+        }
+    }
+    // Falls back to the first row so the hero still has someone to show
+    // right after the very first account is added, before it is flagged
+    // default.
+    readonly property int heroIndex: root.defaultIndex >= 0 ? root.defaultIndex
+                                    : list.count > 0 ? 0 : -1
+    // The probe above for the hero's row (see its claimHero()).
+    property var heroItem: null
+    function stateTone(key) {
+        switch (key) {
+        case "online": return "success"
+        case "working": return "info"
+        case "errored": case "gone": return "danger"
+        case "expired": return "warning"
+        default: return "neutral"
+        }
+    }
+    readonly property bool heroIsMSA: !!heroItem && heroItem.isMSA
+    readonly property bool heroIsDefault: !!heroItem && heroItem.isDefault
+    readonly property string heroName: heroItem
+        ? (heroItem.profileName.length > 0 ? heroItem.profileName : heroItem.name) : ""
+    readonly property string heroAccountId: heroItem ? heroItem.accountId : ""
+    readonly property string heroStatus: heroItem ? heroItem.status : ""
+    readonly property string heroStateKey: heroItem ? heroItem.stateKey : ""
+    readonly property int heroRow: heroItem ? heroItem.index : -1
+
     ColumnLayout {
         anchors.fill: parent
         anchors.leftMargin: Theme.space.xl + Theme.space.xs
@@ -41,6 +122,9 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             Layout.maximumWidth: 860
+            // Redundant with the empty state's own actions below once there
+            // is nothing to manage yet.
+            visible: list.count > 0
             spacing: Theme.space.sm
 
             Text {
@@ -63,6 +147,207 @@ Item {
             }
         }
 
+        // The account games actually launch with, big -- see heroIndex.
+        Rectangle {
+            id: hero
+            Layout.fillWidth: true
+            Layout.maximumWidth: 860
+            visible: !!root.heroItem
+            implicitHeight: 248
+            radius: Theme.radius.xl
+            border.width: 1
+            border.color: Theme.palette.border
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: Format.shade(Theme.palette.accent, Theme.dark ? 0.20 : 0.90, 0.7) }
+                GradientStop { position: 0.55; color: Theme.palette.surface }
+                GradientStop { position: 1.0; color: Theme.palette.surface }
+            }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: Theme.space.xl
+                spacing: Theme.space.xl
+
+                // The stage: an accent glow, a floor ellipse, and either the
+                // account's real skin or a neutral silhouette standing on it.
+                Item {
+                    id: stage
+                    Layout.preferredWidth: 168
+                    Layout.preferredHeight: 200
+                    Layout.alignment: Qt.AlignVCenter
+
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        y: -6
+                        width: 168; height: 168
+                        radius: width / 2
+                        color: Theme.palette.accent
+                        opacity: 0.10
+                    }
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        y: 18
+                        width: 120; height: 120
+                        radius: width / 2
+                        color: Theme.palette.accent
+                        opacity: 0.16
+                    }
+
+                    // Soft floor shadow the figure appears to stand on. A
+                    // flattened pill rather than a true ellipse -- Rectangle
+                    // has no radial shape, but a wide, short rounded rect
+                    // reads the same way at this size.
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.bottom
+                        width: 116; height: 20
+                        radius: height / 2
+                        color: Theme.palette.accent
+                        opacity: 0.22
+                    }
+
+                    // Neutral placeholder, shown underneath the body render:
+                    // an offline account (or one whose texture has not
+                    // loaded yet) gets a transparent image back from the
+                    // provider, and this shows through -- same idiom as the
+                    // face avatars' initial letter elsewhere on this page.
+                    Item {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: 12
+                        width: 64
+                        height: 170
+                        opacity: 0.55
+
+                        Rectangle {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            y: 0
+                            width: 30; height: 30
+                            radius: width / 2
+                            color: Theme.palette.textTertiary
+                        }
+                        Rectangle {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            y: 34
+                            width: 42; height: 58
+                            radius: Theme.radius.lg
+                            color: Theme.palette.textTertiary
+                        }
+                        Rectangle {
+                            x: parent.width / 2 - 19
+                            y: 94
+                            width: 16; height: 68
+                            radius: Theme.radius.sm
+                            color: Theme.palette.textTertiary
+                        }
+                        Rectangle {
+                            x: parent.width / 2 + 3
+                            y: 94
+                            width: 16; height: 68
+                            radius: Theme.radius.sm
+                            color: Theme.palette.textTertiary
+                        }
+                    }
+
+                    Image {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: 12
+                        width: 88
+                        height: 176
+                        fillMode: Image.PreserveAspectFit
+                        smooth: false
+                        source: root.heroAccountId.length > 0
+                                ? "image://accountface/body/" + root.heroAccountId : ""
+                        sourceSize: Qt.size(176, 352)
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    spacing: Theme.space.sm
+
+                    Text {
+                        text: (root.heroIsDefault ? qsTr("ACTIVE ACCOUNT") : qsTr("SUGGESTED DEFAULT")).toUpperCase()
+                        color: Theme.palette.accent
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.type.overline.pixelSize
+                        font.weight: Font.Bold
+                        font.letterSpacing: Theme.type.overline.letterSpacing * 1.5
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        text: root.heroName
+                        elide: Text.ElideRight
+                        color: Theme.palette.textPrimary
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.type.display.pixelSize
+                        font.weight: Font.Bold
+                        font.letterSpacing: -0.5
+                    }
+
+                    Row {
+                        spacing: Theme.space.sm
+                        Tag {
+                            iconName: root.heroIsMSA ? "user" : "users"
+                            text: root.heroIsMSA ? qsTr("Microsoft") : qsTr("Offline")
+                        }
+                        StatusBadge {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: root.heroIsMSA && root.heroStatus.length > 0
+                            tone: root.stateTone(root.heroStateKey)
+                            text: root.heroStatus
+                        }
+                    }
+
+                    Row {
+                        topPadding: Theme.space.sm
+                        spacing: Theme.space.sm
+
+                        Button {
+                            height: Theme.control.heightLg
+                            visible: !root.heroIsDefault
+                            highlighted: true
+                            text: qsTr("Use this account")
+                            onClicked: root.controller.setDefault(root.heroRow)
+                        }
+                        IconButton {
+                            size: Theme.control.heightLg
+                            flat: false
+                            visible: root.heroIsMSA
+                            iconName: "refresh"
+                            tip: qsTr("Sign in again")
+                            onClicked: root.controller.refresh(root.heroRow)
+                        }
+                        IconButton {
+                            size: Theme.control.heightLg
+                            flat: false
+                            iconName: "trash"
+                            tip: qsTr("Remove account")
+                            onClicked: {
+                                removeDialog.row = root.heroRow
+                                removeDialog.text = qsTr("Remove “%1” from MeshMC? You can sign in again at any time.").arg(root.heroName)
+                                removeDialog.open()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        SectionHeader {
+            Layout.fillWidth: true
+            Layout.maximumWidth: 860
+            visible: list.count > 1
+            collapsible: false
+            title: qsTr("Other accounts")
+            count: list.count - 1
+        }
+
         ListView {
             id: list
             Layout.fillWidth: true
@@ -72,10 +357,12 @@ Item {
             spacing: Theme.space.sm
             boundsBehavior: Flickable.StopAtBounds
             model: root.accounts
+            currentIndex: root.heroIndex
             ScrollBar.vertical: ScrollBar {}
 
             delegate: AccountRow {
                 width: list.width - Theme.space.md
+                hidden: index === root.heroIndex
                 onMakeDefaultRequested: root.controller.setDefault(index)
                 onRefreshRequested: root.controller.refresh(index)
                 onRemoveRequested: {
@@ -87,15 +374,44 @@ Item {
         }
     }
 
-    EmptyState {
+    Column {
         anchors.centerIn: parent
         visible: list.count === 0
-        title: qsTr("No accounts yet")
-        body: qsTr("Sign in with the Microsoft account that owns Minecraft to start playing online.")
-        actionText: qsTr("Sign in with Microsoft")
-        actionIcon: "user"
-        onActionTriggered: root.startMicrosoftLogin()
-        MeshIcon { iconName: "user"; size: 40; color: Theme.palette.textTertiary }
+        spacing: Theme.space.sm
+
+        EmptyState {
+            anchors.horizontalCenter: parent.horizontalCenter
+            title: qsTr("No accounts yet")
+            body: qsTr("Sign in with the Microsoft account that owns Minecraft to start playing online.")
+            actionText: qsTr("Sign in with Microsoft")
+            actionIcon: "user"
+            onActionTriggered: root.startMicrosoftLogin()
+
+            Item {
+                width: 96; height: 96
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: 96; height: 96
+                    radius: width / 2
+                    color: Theme.palette.accent
+                    opacity: 0.10
+                }
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: 72; height: 72
+                    radius: width / 2
+                    color: Theme.palette.accentSubtle
+                }
+                MeshIcon { anchors.centerIn: parent; iconName: "user"; size: 32; color: Theme.palette.accent }
+            }
+        }
+
+        Button {
+            anchors.horizontalCenter: parent.horizontalCenter
+            flat: true
+            text: qsTr("Add offline account")
+            onClicked: offlineDialog.open()
+        }
     }
 
     ConfirmDialog {

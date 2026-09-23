@@ -62,6 +62,46 @@ QImage makeSkin(const QColor& faceColor, const QColor& hatColor,
 
 	return skin;
 }
+
+// Same front-view body layout AccountFaceProvider.cpp composites from,
+// restated here for the same reason kSkinExtent etc. above are.
+constexpr int kLimbHeight = 12;
+constexpr int kTorsoWidth = 8;
+constexpr int kLegWidth = 4;
+constexpr int kClassicArmWidth = 4;
+constexpr int kSlimArmWidth = 3;
+
+// A synthetic full skin texture: head, torso, right arm and right leg each
+// filled with their own flat colour, so a region landing in the wrong place
+// in the composited body is obvious. @p height is 64 for the modern format
+// (which also gets a distinctly-coloured left arm/leg) or 32 for the legacy
+// one (which has neither, and relies on bodyFromSkin() mirroring the right
+// side instead).
+QImage makeBodySkin(int height)
+{
+	QImage skin(kSkinExtent, height, QImage::Format_ARGB32_Premultiplied);
+	skin.fill(Qt::transparent);
+
+	auto fill = [&](int x, int y, int w, int h, const QColor& color) {
+		for (int yy = 0; yy < h; ++yy) {
+			for (int xx = 0; xx < w; ++xx) {
+				skin.setPixelColor(x + xx, y + yy, color);
+			}
+		}
+	};
+
+	fill(kFaceX, kFaceY, kFaceExtent, kFaceExtent, Qt::red);      // head
+	fill(20, 20, kTorsoWidth, kLimbHeight, Qt::blue);              // torso
+	fill(44, 20, kClassicArmWidth, kLimbHeight, Qt::green);        // right arm
+	fill(4, 20, kLegWidth, kLimbHeight, Qt::yellow);               // right leg
+
+	if (height >= 64) {
+		fill(36, 52, kClassicArmWidth, kLimbHeight, Qt::cyan);     // left arm
+		fill(20, 52, kLegWidth, kLimbHeight, Qt::magenta);         // left leg
+	}
+
+	return skin;
+}
 } // namespace
 
 /*
@@ -146,6 +186,104 @@ class AccountFaceProviderTest : public QObject
 	void nullSkinReturnsNullImage()
 	{
 		QVERIFY(AccountFaceProvider::faceFromSkin(QImage()).isNull());
+	}
+
+	// --- AccountFaceProvider::bodyFromSkin() ---
+
+	void bodyIsClassicAspectByDefault()
+	{
+		const QImage skin = makeBodySkin(64);
+
+		const QImage body = AccountFaceProvider::bodyFromSkin(skin, /*slim=*/false);
+
+		QVERIFY(!body.isNull());
+		QCOMPARE(body.size(),
+				 QSize(kClassicArmWidth * 2 + kTorsoWidth,
+					   kFaceExtent + kLimbHeight * 2));
+	}
+
+	void slimBodyIsNarrower()
+	{
+		const QImage skin = makeBodySkin(64);
+
+		const QImage body = AccountFaceProvider::bodyFromSkin(skin, /*slim=*/true);
+
+		QVERIFY(!body.isNull());
+		QCOMPARE(body.width(), kSlimArmWidth * 2 + kTorsoWidth);
+		QCOMPARE(body.height(), kFaceExtent + kLimbHeight * 2);
+	}
+
+	// The character faces the viewer, so its right arm/leg -- the ones a
+	// skin texture always carries, legacy or modern -- render on the left
+	// of the composited image, and the torso sits right after them.
+	void rightArmAndLegLandLeftOfTorso()
+	{
+		const QImage skin = makeBodySkin(64);
+
+		const QImage body = AccountFaceProvider::bodyFromSkin(skin, /*slim=*/false);
+
+		QCOMPARE(body.pixelColor(0, kFaceExtent), QColor(Qt::green)); // arm
+		QCOMPARE(body.pixelColor(kClassicArmWidth, kFaceExtent),
+				 QColor(Qt::blue)); // torso starts right after it
+		QCOMPARE(body.pixelColor(kClassicArmWidth, kFaceExtent + kLimbHeight),
+				 QColor(Qt::yellow)); // leg, under the torso's left half
+	}
+
+	void modernSkinUsesItsOwnLeftArmAndLeg()
+	{
+		const QImage skin = makeBodySkin(64);
+
+		const QImage body = AccountFaceProvider::bodyFromSkin(skin, /*slim=*/false);
+
+		const int leftArmX = kClassicArmWidth + kTorsoWidth;
+		const int leftLegX = kClassicArmWidth + kLegWidth;
+		QCOMPARE(body.pixelColor(leftArmX, kFaceExtent), QColor(Qt::cyan));
+		QCOMPARE(body.pixelColor(leftLegX, kFaceExtent + kLimbHeight),
+				 QColor(Qt::magenta));
+	}
+
+	// The legacy 64x32 format has no separate left arm/leg texture at all,
+	// so bodyFromSkin() must synthesise the left side by mirroring the
+	// right -- checked here with an asymmetric arm so a mirror and a plain
+	// copy cannot be confused for each other.
+	void legacySkinMirrorsRightArmAndLegForLeft()
+	{
+		QImage skin = makeBodySkin(32);
+		skin.setPixelColor(44, 20, Qt::red);                    // leftmost column
+		skin.setPixelColor(44 + kClassicArmWidth - 1, 20, Qt::blue); // rightmost
+
+		const QImage body = AccountFaceProvider::bodyFromSkin(skin, /*slim=*/false);
+
+		QVERIFY(!body.isNull());
+		const int leftArmX = kClassicArmWidth + kTorsoWidth;
+		// Mirrored: the arm's rightmost column becomes the leftmost here,
+		// and vice versa.
+		QCOMPARE(body.pixelColor(leftArmX, kFaceExtent), QColor(Qt::blue));
+		QCOMPARE(body.pixelColor(leftArmX + kClassicArmWidth - 1, kFaceExtent),
+				 QColor(Qt::red));
+	}
+
+	void bodyHeadIncludesHatOverlay()
+	{
+		QImage skin = makeBodySkin(64);
+		skin.setPixelColor(kHatX, kHatY, QColor(0, 0, 0, 255));
+
+		const QImage body = AccountFaceProvider::bodyFromSkin(skin, /*slim=*/false);
+
+		QCOMPARE(body.pixelColor(kClassicArmWidth, 0), QColor(0, 0, 0, 255));
+	}
+
+	void tooSmallSkinReturnsNullBody()
+	{
+		QImage tiny(16, 16, QImage::Format_ARGB32_Premultiplied);
+		tiny.fill(Qt::transparent);
+
+		QVERIFY(AccountFaceProvider::bodyFromSkin(tiny, false).isNull());
+	}
+
+	void nullSkinReturnsNullBody()
+	{
+		QVERIFY(AccountFaceProvider::bodyFromSkin(QImage(), false).isNull());
 	}
 };
 

@@ -45,6 +45,7 @@ qt_add_qml_module(MeshMC_qml_style
         MenuSeparator.qml
         Pane.qml
         Popup.qml
+        PopupShadow.qml
         ProgressBar.qml
         RadioButton.qml
         ScrollBar.qml

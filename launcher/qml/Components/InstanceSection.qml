@@ -25,6 +25,8 @@ Column {
     property int gutter: Theme.space.lg
     property string selectedId
     property bool collapsed: false
+    // "grid" (InstanceCard tiles) or "list" (dense InstanceListRow rows).
+    property string viewMode: "grid"
 
     signal selectRequested(string id)
     signal launchRequested(string id)
@@ -67,17 +69,15 @@ Column {
                     text: root.title
                     color: Theme.palette.textPrimary
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.title.pixelSize
+                    font.pixelSize: Theme.type.title.pixelSize + 1
                     font.weight: Font.Bold
+                    font.letterSpacing: -0.1
                 }
 
-                Text {
+                Tag {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: root.model ? root.model.count : ""
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
-                    font.weight: Font.Medium
+                    visible: !!root.model
+                    text: root.model ? String(root.model.count) : ""
                 }
             }
             background: Item {}
@@ -93,23 +93,68 @@ Column {
         }
     }
 
-    Grid {
-        visible: !root.collapsed
-        columns: root.columns
-        columnSpacing: root.gutter
-        rowSpacing: root.gutter
+    // Clipped to an animated height rather than toggling `visible` outright,
+    // so a fold/unfold reflows the sections below it instead of jumping.
+    Item {
+        id: body
+        width: parent.width
+        height: root.collapsed ? 0 : (contentLoader.item ? contentLoader.item.implicitHeight : 0)
+        clip: true
 
-        Repeater {
-            model: root.model
-            delegate: InstanceCard {
-                width: root.cardWidth
-                selected: root.selectedId === instanceId
-                onClicked: root.selectRequested(instanceId)
-                onPlayRequested: root.launchRequested(instanceId)
-                onStopRequested: root.stopRequested(instanceId)
-                onMenuRequested: {
-                    root.selectRequested(instanceId)
-                    root.menuRequested(instanceId, isRunning, name, iconKey, root.group)
+        Behavior on height { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+
+        Loader {
+            id: contentLoader
+            // No explicit width: each Component below sizes its own root
+            // item (the grid packs to its own columns*cardWidth, the list
+            // binds to `body.width` itself), so the Loader is left free to
+            // just take whichever one it is showing rather than fight it.
+            sourceComponent: root.viewMode === "list" ? listComponent : gridComponent
+        }
+    }
+
+    Component {
+        id: gridComponent
+        Grid {
+            columns: root.columns
+            columnSpacing: root.gutter
+            rowSpacing: root.gutter
+
+            Repeater {
+                model: root.model
+                delegate: InstanceCard {
+                    width: root.cardWidth
+                    selected: root.selectedId === instanceId
+                    onClicked: root.selectRequested(instanceId)
+                    onPlayRequested: root.launchRequested(instanceId)
+                    onStopRequested: root.stopRequested(instanceId)
+                    onMenuRequested: {
+                        root.selectRequested(instanceId)
+                        root.menuRequested(instanceId, isRunning, name, iconKey, root.group)
+                    }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: listComponent
+        Column {
+            width: body.width
+            spacing: Theme.space.xs
+
+            Repeater {
+                model: root.model
+                delegate: InstanceListRow {
+                    width: body.width
+                    selected: root.selectedId === instanceId
+                    onClicked: root.selectRequested(instanceId)
+                    onPlayRequested: root.launchRequested(instanceId)
+                    onStopRequested: root.stopRequested(instanceId)
+                    onMenuRequested: {
+                        root.selectRequested(instanceId)
+                        root.menuRequested(instanceId, isRunning, name, iconKey, root.group)
+                    }
                 }
             }
         }

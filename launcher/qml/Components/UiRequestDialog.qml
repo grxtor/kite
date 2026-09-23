@@ -58,6 +58,12 @@ Dialog {
     closePolicy: Popup.CloseOnEscape
     title: request ? request.title : ""
 
+    header: DialogHeader {
+        title: root.title
+        icon: root.request ? root.severityIcon(root.request.severity) : ""
+        iconColor: root.request ? root.severityColor(root.request.severity) : Theme.palette.accent
+    }
+
     onRequestChanged: {
         if (request) {
             answered = false
@@ -81,28 +87,19 @@ Dialog {
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
-        RowLayout {
+        // The severity icon now leads the header badge instead of sitting
+        // beside the body text, so this is just the text at full width.
+        Text {
             Layout.fillWidth: true
-            spacing: Theme.space.md
-
-            MeshIcon {
-                Layout.alignment: Qt.AlignTop
-                iconName: root.request ? root.severityIcon(root.request.severity) : "info"
-                size: Theme.icon.lg
-                color: root.request ? root.severityColor(root.request.severity) : Theme.palette.accent
-            }
-            Text {
-                Layout.fillWidth: true
-                text: root.request ? root.request.text : ""
-                textFormat: Text.AutoText
-                wrapMode: Text.Wrap
-                color: Theme.palette.textSecondary
-                linkColor: Theme.palette.accent
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
-                lineHeight: 1.3
-                onLinkActivated: (link) => Qt.openUrlExternally(link)
-            }
+            text: root.request ? root.request.text : ""
+            textFormat: Text.AutoText
+            wrapMode: Text.Wrap
+            color: Theme.palette.textSecondary
+            linkColor: Theme.palette.accent
+            font.family: Theme.font.family
+            font.pixelSize: Theme.type.body.pixelSize
+            lineHeight: 1.3
+            onLinkActivated: (link) => Qt.openUrlExternally(link)
         }
 
         // text: one line to type, prefilled with the suggested answer.

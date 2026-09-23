@@ -40,6 +40,32 @@ constexpr int kHatX = 40;
 constexpr int kHatY = 8;
 constexpr int kFaceExtent = 8;
 
+// Prefix an id is checked for (after the "?rev=N" cache-buster is already
+// stripped) to ask for the full body instead of the face.
+const QString kBodyPrefix = QStringLiteral("body/");
+
+// Front-view body layout, all still the standard Minecraft skin UV: torso
+// and legs are always this wide, only the arms narrow for the slim variant.
+constexpr int kLimbHeight = 12;
+constexpr int kTorsoWidth = 8;
+constexpr int kLegWidth = 4;
+constexpr int kClassicArmWidth = 4;
+constexpr int kSlimArmWidth = 3;
+constexpr int kHeadSize = 8;
+// A body render's default box, at the classic (non-slim) aspect ratio;
+// only hit for a caller that asks for a body without a requestedSize.
+constexpr int kDefaultBodyWidth = kClassicArmWidth * 2 + kTorsoWidth;
+constexpr int kDefaultBodyHeight = kHeadSize + kLimbHeight * 2;
+
+// Every real Minecraft skin texture is this wide, legacy or modern alike.
+constexpr int kSkinWidth = 64;
+// Skin texture height that carries the modern jacket/sleeves/pants overlay
+// layer and a distinct left arm/leg. Anything shorter (down to
+// kLegacySkinHeight) is the legacy format, which has neither -- the left
+// side is mirrored from the right instead.
+constexpr int kModernSkinHeight = 64;
+constexpr int kLegacySkinHeight = 32;
+
 QPixmap transparentPixmap(const QSize& size)
 {
 	QImage image(size, QImage::Format_ARGB32_Premultiplied);
@@ -96,19 +122,105 @@ QImage AccountFaceProvider::faceFromSkin(const QImage& skin)
 	return face;
 }
 
+QImage AccountFaceProvider::bodyFromSkin(const QImage& skin, bool slim)
+{
+	if (skin.isNull() || skin.width() < kSkinWidth ||
+		skin.height() < kLegacySkinHeight) {
+		return QImage();
+	}
+
+	// The legacy 64x32 format has no overlay layer (jacket/sleeves/pants)
+	// and no distinct left arm/left leg region -- both are synthesised
+	// below by mirroring the right side.
+	const bool legacy = skin.height() < kModernSkinHeight;
+
+	const int armWidth = slim ? kSlimArmWidth : kClassicArmWidth;
+	const int bodyWidth = armWidth * 2 + kTorsoWidth;
+	const int bodyHeight = kHeadSize + kLimbHeight * 2;
+	const int limbY = kHeadSize;
+	const int legY = limbY + kLimbHeight;
+	// The torso sits between the two arms; both leg columns sit directly
+	// under it, together spanning the same width.
+	const int torsoX = armWidth;
+	const int rightLegX = armWidth;
+	const int leftLegX = rightLegX + kLegWidth;
+	const int leftArmX = armWidth + kTorsoWidth;
+
+	QImage body(bodyWidth, bodyHeight, QImage::Format_ARGB32_Premultiplied);
+	body.fill(Qt::transparent);
+
+	QPainter painter(&body);
+
+	// Head, centred above the torso, hat overlay included -- present in
+	// both skin formats.
+	painter.drawImage(torsoX, 0, skin.copy(kFaceX, kFaceY, kHeadSize, kHeadSize));
+	painter.drawImage(torsoX, 0, skin.copy(kHatX, kHatY, kHeadSize, kHeadSize));
+
+	// Torso, with its jacket overlay (modern format only).
+	painter.drawImage(torsoX, limbY, skin.copy(20, 20, kTorsoWidth, kLimbHeight));
+	if (!legacy) {
+		painter.drawImage(
+			torsoX, limbY, skin.copy(20, 36, kTorsoWidth, kLimbHeight));
+	}
+
+	// The character faces the viewer, so -- as in a mirror -- its right
+	// arm/leg render on the left of the image and its left arm/leg on the
+	// right. Only armWidth columns of each region are sampled: for the slim
+	// variant that is 3 of the texture's 4, leaving the same blank 4th
+	// column the game itself never draws.
+	const QImage rightArm = skin.copy(44, 20, armWidth, kLimbHeight);
+	painter.drawImage(0, limbY, rightArm);
+	if (!legacy) {
+		painter.drawImage(0, limbY, skin.copy(44, 36, armWidth, kLimbHeight));
+	}
+	if (legacy) {
+		// No separate left arm texture to draw -- the right one already
+		// includes its (only) layer, so just mirror the composited result.
+		painter.drawImage(leftArmX, limbY, rightArm.mirrored(true, false));
+	} else {
+		painter.drawImage(
+			leftArmX, limbY, skin.copy(36, 52, armWidth, kLimbHeight));
+		painter.drawImage(
+			leftArmX, limbY, skin.copy(52, 52, armWidth, kLimbHeight));
+	}
+
+	const QImage rightLeg = skin.copy(4, 20, kLegWidth, kLimbHeight);
+	painter.drawImage(rightLegX, legY, rightLeg);
+	if (!legacy) {
+		painter.drawImage(
+			rightLegX, legY, skin.copy(4, 36, kLegWidth, kLimbHeight));
+	}
+	if (legacy) {
+		painter.drawImage(leftLegX, legY, rightLeg.mirrored(true, false));
+	} else {
+		painter.drawImage(
+			leftLegX, legY, skin.copy(20, 52, kLegWidth, kLimbHeight));
+		painter.drawImage(
+			leftLegX, legY, skin.copy(4, 52, kLegWidth, kLimbHeight));
+	}
+
+	painter.end();
+	return body;
+}
+
 QPixmap AccountFaceProvider::requestPixmap(const QString& id, QSize* size,
 										   const QSize& requestedSize)
 {
 	// Cache-busting query ("<key>?rev=N") plays no part in the lookup -- see
 	// the header for why it exists at all.
 	const int queryStart = id.indexOf(QLatin1Char('?'));
-	const QString key = queryStart < 0 ? id : id.left(queryStart);
+	const QString withoutQuery = queryStart < 0 ? id : id.left(queryStart);
+
+	const bool wantsBody = withoutQuery.startsWith(kBodyPrefix);
+	const QString key =
+		wantsBody ? withoutQuery.mid(kBodyPrefix.length()) : withoutQuery;
 
 	// requestedSize is already in device pixels -- QML applied the device
 	// pixel ratio before calling here -- so it is used as-is.
-	const QSize wanted = requestedSize.isEmpty()
-							 ? QSize(kDefaultFaceExtent, kDefaultFaceExtent)
-							 : requestedSize;
+	const QSize defaultSize = wantsBody
+								  ? QSize(kDefaultBodyWidth, kDefaultBodyHeight)
+								  : QSize(kDefaultFaceExtent, kDefaultFaceExtent);
+	const QSize wanted = requestedSize.isEmpty() ? defaultSize : requestedSize;
 
 	QPixmap pixmap;
 	if (auto* context = LauncherContext::instance()) {
@@ -119,9 +231,14 @@ QPixmap AccountFaceProvider::requestPixmap(const QString& id, QSize* size,
 			if (skin.loadFromData(
 					account->accountData()->minecraftProfile.skin.data,
 					"PNG")) {
-				const QImage face = faceFromSkin(skin);
-				if (!face.isNull()) {
-					pixmap = QPixmap::fromImage(face).scaled(
+				const bool slim = account->accountData()
+									   ->minecraftProfile.skin.variant.compare(
+										   QLatin1String("SLIM"),
+										   Qt::CaseInsensitive) == 0;
+				const QImage composited =
+					wantsBody ? bodyFromSkin(skin, slim) : faceFromSkin(skin);
+				if (!composited.isNull()) {
+					pixmap = QPixmap::fromImage(composited).scaled(
 						wanted, Qt::KeepAspectRatio, Qt::FastTransformation);
 				}
 			}

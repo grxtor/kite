@@ -38,6 +38,8 @@ T.Menu {
         color: Theme.palette.surfaceOverlay
         border.width: 1
         border.color: Theme.palette.border
+
+        PopupShadow { radius: parent.radius }
     }
 
     enter: Transition {
