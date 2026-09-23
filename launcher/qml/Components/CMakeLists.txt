@@ -51,6 +51,8 @@ qt_add_qml_module(MeshMC_qml_components
         ContentBrowserView.qml
         PluginNode.qml
         PluginSurfaces.qml
+        UiRequestDialog.qml
+        BusyOverlay.qml
         WorldsTab.qml
         ScreenshotsTab.qml
         LogTab.qml

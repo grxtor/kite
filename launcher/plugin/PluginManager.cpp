@@ -79,6 +79,7 @@
 #include <QHeaderView>
 #include <QAction>
 #include <QCloseEvent>
+#include <QWindow>
 #include <QCursor>
 #include <QIcon>
 #include <QSystemTrayIcon>
@@ -307,11 +308,15 @@ void PluginManager::shutdownAll()
 		meta.initialized = false;
 	}
 
-	/* Belt-and-braces: if the main window outlives PluginManager (Application
-	 * teardown is awkward), unhook our event filter so it doesn't fire into
-	 * a dead `this`. */
-	if (m_closeFilterInstalled && m_filteredMainWindow) {
-		m_filteredMainWindow->removeEventFilter(this);
+	/* Belt-and-braces: if the main window (or, under the QML shell, its
+	 * root QWindow) outlives PluginManager (Application teardown is
+	 * awkward), unhook our event filter so it doesn't fire into a dead
+	 * `this`. */
+	if (m_closeFilterInstalled) {
+		if (m_filteredMainWindow)
+			m_filteredMainWindow->removeEventFilter(this);
+		if (m_filteredShellWindow)
+			m_filteredShellWindow->removeEventFilter(this);
 		m_closeFilterInstalled = false;
 	}
 
@@ -378,7 +383,11 @@ bool PluginManager::runBackgroundHooks(uint32_t hook_id, void* payload,
 	/* activeWindow() is null whenever the launcher is not the focused
 	 * application, so it answers "where do I parent this dialog", not
 	 * "is there a UI at all". The main window answers the second one:
-	 * it does not exist yet during startup and is gone by shutdown. */
+	 * it does not exist yet during startup and is gone by shutdown.
+	 * ProgressDialog below needs an actual QWidget parent, which the
+	 * QML shell has none of -- resolveMainWindow() stays widget-only
+	 * and simply returns nullptr under the QML shell, same as during
+	 * startup/shutdown, so the dialog falls back to no parent there. */
 	QWidget* owner = QApplication::activeWindow();
 	if (!owner) {
 		owner = resolveMainWindow();
@@ -2422,6 +2431,11 @@ void* PluginManager::api_ui_surface_create(void* mh, int anchor,
 	rec->userData = user_data;
 
 	auto* handle = rec.get();
+	qCDebug(pluginsLog).noquote()
+		<< "[Plugin:" << r->manager->m_modules[r->moduleIndex].name
+		<< "] ui_surface_create: anchor" << anchor << "context"
+		<< (anchor_context ? QString::fromUtf8(anchor_context) : QString())
+		<< "->" << handle->surfaceId;
 	r->manager->m_surfaces.push_back(std::move(rec));
 	emit r->manager->surfacesChanged();
 	return handle;
@@ -3039,22 +3053,50 @@ QWidget* PluginManager::resolveMainWindow()
 	return nullptr;
 }
 
+QWindow* PluginManager::resolveShellWindow()
+{
+	if (m_filteredShellWindow)
+		return m_filteredShellWindow.data();
+	if (!m_app)
+		return nullptr;
+
+	/* Application only ever has a QML shell window when the widget
+	 * MainWindow does not exist (see useQmlShell() in Application.cpp),
+	 * so callers that try resolveMainWindow() first never get both. */
+	QWindow* window = m_app->qmlShellWindow();
+	if (window)
+		m_filteredShellWindow = window;
+	return window;
+}
+
 void PluginManager::ensureCloseFilterInstalled()
 {
 	if (m_closeFilterInstalled)
 		return;
-	QWidget* mw = resolveMainWindow();
-	if (!mw)
+	if (QWidget* mw = resolveMainWindow()) {
+		mw->installEventFilter(this);
+		m_closeFilterInstalled = true;
 		return;
-	mw->installEventFilter(this);
-	m_closeFilterInstalled = true;
+	}
+	if (QWindow* window = resolveShellWindow()) {
+		window->installEventFilter(this);
+		m_closeFilterInstalled = true;
+	}
 }
 
 bool PluginManager::eventFilter(QObject* watched, QEvent* event)
 {
-	/* Only filter close events on the main window. */
-	if (event && event->type() == QEvent::Close && watched &&
-		watched == m_filteredMainWindow.data() && !m_closeFilters.isEmpty()) {
+	/* Only filter close events on the main window -- the widget
+	 * MainWindow, or (generalised for the QML shell, which has no such
+	 * widget) its top-level QQuickWindow. QmlShell installs its own
+	 * event filter on the same window to notice a real, un-vetoed close
+	 * (see QmlShell::eventFilter()); being installed later, this filter
+	 * runs first and can stop a vetoed close right here, the same way a
+	 * vetoed close never reaches MainWindow::closeEvent(). */
+	const bool isMainWindow = watched && watched == m_filteredMainWindow.data();
+	const bool isShellWindow = watched && watched == m_filteredShellWindow.data();
+	if (event && event->type() == QEvent::Close &&
+		(isMainWindow || isShellWindow) && !m_closeFilters.isEmpty()) {
 		bool swallow = false;
 		/* Iterate over a copy: callbacks may install/remove filters. */
 		const auto filters = m_closeFilters;
@@ -3068,9 +3110,14 @@ bool PluginManager::eventFilter(QObject* watched, QEvent* event)
 		if (swallow) {
 			auto* ce = static_cast<QCloseEvent*>(event);
 			ce->ignore();
-			/* Hide rather than close — mirrors what tray-aware apps do. */
-			if (auto* mw = qobject_cast<QWidget*>(watched))
-				mw->hide();
+			/* Hide rather than close — mirrors what tray-aware apps do,
+			 * under either UI. */
+			if (isMainWindow) {
+				if (auto* mw = qobject_cast<QWidget*>(watched))
+					mw->hide();
+			} else if (auto* window = qobject_cast<QWindow*>(watched)) {
+				window->hide();
+			}
 			return true;
 		}
 	}
@@ -3102,9 +3149,11 @@ void PluginManager::releaseTrayResourcesForModule(void* module_handle)
 		if (m_closeFilters[i].module_handle == module_handle)
 			m_closeFilters.removeAt(i);
 	}
-	if (m_closeFilters.isEmpty() && m_closeFilterInstalled &&
-		m_filteredMainWindow && !shuttingDown) {
-		m_filteredMainWindow->removeEventFilter(this);
+	if (m_closeFilters.isEmpty() && m_closeFilterInstalled && !shuttingDown) {
+		if (m_filteredMainWindow)
+			m_filteredMainWindow->removeEventFilter(this);
+		if (m_filteredShellWindow)
+			m_filteredShellWindow->removeEventFilter(this);
 		m_closeFilterInstalled = false;
 	}
 
@@ -3653,15 +3702,17 @@ int PluginManager::api_main_window_install_close_filter(
 			if (self->m_closeFilters[i].module_handle == mh)
 				self->m_closeFilters.removeAt(i);
 		}
-		if (self->m_closeFilters.isEmpty() && self->m_closeFilterInstalled &&
-			self->m_filteredMainWindow) {
-			self->m_filteredMainWindow->removeEventFilter(self);
+		if (self->m_closeFilters.isEmpty() && self->m_closeFilterInstalled) {
+			if (self->m_filteredMainWindow)
+				self->m_filteredMainWindow->removeEventFilter(self);
+			if (self->m_filteredShellWindow)
+				self->m_filteredShellWindow->removeEventFilter(self);
 			self->m_closeFilterInstalled = false;
 		}
 		return 0;
 	}
 
-	if (!self->resolveMainWindow())
+	if (!self->resolveMainWindow() && !self->resolveShellWindow())
 		return -1;
 
 	self->m_closeFilters.append({mh, cb, user_data});
@@ -3674,13 +3725,20 @@ int PluginManager::api_main_window_show(void* mh)
 	auto* r = rt(mh);
 	if (!r)
 		return -1;
-	QWidget* mw = r->manager->resolveMainWindow();
-	if (!mw)
-		return -1;
-	mw->show();
-	mw->raise();
-	mw->activateWindow();
-	return 0;
+	auto* self = r->manager;
+	if (QWidget* mw = self->resolveMainWindow()) {
+		mw->show();
+		mw->raise();
+		mw->activateWindow();
+		return 0;
+	}
+	if (QWindow* window = self->resolveShellWindow()) {
+		window->show();
+		window->raise();
+		window->requestActivate();
+		return 0;
+	}
+	return -1;
 }
 
 int PluginManager::api_main_window_hide(void* mh)
@@ -3688,11 +3746,16 @@ int PluginManager::api_main_window_hide(void* mh)
 	auto* r = rt(mh);
 	if (!r)
 		return -1;
-	QWidget* mw = r->manager->resolveMainWindow();
-	if (!mw)
-		return -1;
-	mw->hide();
-	return 0;
+	auto* self = r->manager;
+	if (QWidget* mw = self->resolveMainWindow()) {
+		mw->hide();
+		return 0;
+	}
+	if (QWindow* window = self->resolveShellWindow()) {
+		window->hide();
+		return 0;
+	}
+	return -1;
 }
 
 int PluginManager::api_main_window_is_visible(void* mh)
@@ -3700,8 +3763,12 @@ int PluginManager::api_main_window_is_visible(void* mh)
 	auto* r = rt(mh);
 	if (!r)
 		return 0;
-	QWidget* mw = r->manager->resolveMainWindow();
-	return (mw && mw->isVisible()) ? 1 : 0;
+	auto* self = r->manager;
+	if (QWidget* mw = self->resolveMainWindow())
+		return mw->isVisible() ? 1 : 0;
+	if (QWindow* window = self->resolveShellWindow())
+		return window->isVisible() ? 1 : 0;
+	return 0;
 }
 
 /* ── S24 — Per-instance settings (ABI 3+) ────────────────────────── */

@@ -2201,6 +2201,25 @@ MainWindow* Application::showMainWindow(bool minimized)
 
 			if (m_qmlShell->show(minimized)) {
 				m_openWindows++;
+
+				/* The widget MainWindow fires MMCO_HOOK_UI_MAIN_READY
+				 * itself, from its own constructor (see
+				 * ui/MainWindow.cpp) -- the QML shell has no equivalent
+				 * place to hang that off of, so this is it: once, right
+				 * after the shell's root window is up, with every
+				 * widget handle in the payload null (see
+				 * PluginHooks.h). Plugins are already initialised by
+				 * this point -- initializeAll() runs during
+				 * Application::init(), well before showMainWindow() is
+				 * ever reachable -- so every hook registration this
+				 * dispatch could reach is already in place. This whole
+				 * branch only runs the first time m_qmlShell is
+				 * created, so the hook fires at most once per shell. */
+				if (m_pluginManager) {
+					MMCOUiMainReadyPayload mainReady{};
+					m_pluginManager->dispatchHook(MMCO_HOOK_UI_MAIN_READY,
+												  &mainReady);
+				}
 				return nullptr;
 			}
 			/* A QML load failure must not leave the user with nothing on
@@ -2241,6 +2260,11 @@ MainWindow* Application::showMainWindow(bool minimized)
 		m_openWindows++;
 	}
 	return m_mainWindow;
+}
+
+QWindow* Application::qmlShellWindow() const
+{
+	return m_qmlShell ? m_qmlShell->window() : nullptr;
 }
 
 InstanceWindow* Application::showInstanceWindow(InstancePtr instance,
@@ -2433,5 +2457,19 @@ AuthRequestDecorator* Application::authRequestDecorator() const
 
 UiHost* Application::uiHost() const
 {
+	/* Prefer the QML shell's own UiHost while it is the active UI (see
+	 * useQmlShell() and showMainWindow()): m_qmlShell is only non-null
+	 * once its show() has succeeded, and uiHostInterface() on it is only
+	 * non-null once show() has created it *and* some QML item has called
+	 * setPresenterReady(true) on it (see QmlUiHost's class comment) --
+	 * both conditions this checks implicitly by falling through to the
+	 * widget host otherwise. Every call site reaches this fresh
+	 * (LAUNCHER->uiHost()->...) rather than caching the pointer, so
+	 * switching which one answers from one call to the next is safe. */
+	if (m_qmlShell) {
+		if (auto* host = m_qmlShell->uiHostInterface()) {
+			return host;
+		}
+	}
 	return m_uiHost.get();
 }

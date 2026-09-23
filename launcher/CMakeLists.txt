@@ -1578,6 +1578,15 @@ add_unit_test(QmlShell
     LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 
+# Drives QmlUiHost headlessly: answers a pending request from a queued
+# QTimer the way QML would, and checks cancellation (quit and this object's
+# own destruction) and busy nesting. MeshMC_logic because QmlUiHost.cpp
+# lives in MeshMC_qml, which MeshMC_logic links.
+add_unit_test(QmlUiHost
+    SOURCES qml/QmlUiHost_test.cpp
+    LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
+    )
+
 add_executable(${MeshMC_Name} MACOSX_BUNDLE WIN32 main.cpp ${MESHMC_RCS})
 # Keyword signature: qt_import_qml_plugins below links with PRIVATE, and CMake
 # refuses to mix the two forms on one target.

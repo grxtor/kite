@@ -35,8 +35,12 @@ class SettingsAdapter;
 class ModrinthModpackModel;
 class AccountsController;
 class NewInstanceController;
+class QmlUiHost;
+class UiHost;
 class QQmlApplicationEngine;
 class QQuickWindow;
+class QWindow;
+class QEvent;
 
 /* Same trim rule the widget's inline rename editor applies before
  * committing (see ui/instanceview/InstanceDelegate.cpp's setModelData()):
@@ -69,6 +73,11 @@ class QmlShell : public QObject
 	Q_PROPERTY(int accountCount READ accountCount NOTIFY accountChanged)
 	/// The launcher's settings, as a SettingsAdapter.
 	Q_PROPERTY(QObject* settings READ settings CONSTANT)
+	/* The core's UiHost, when it is this shell's QmlUiHost -- see
+	 * Application::uiHost(), which prefers this over the widget host for
+	 * as long as it is non-null. QML binds to `current`/`busy`/`busyText`
+	 * on it (see QmlUiHost's class comment). Null until show() has run. */
+	Q_PROPERTY(QObject* uiHost READ uiHost CONSTANT)
 	/// Installed memory in MiB: the ceiling for the memory settings.
 	Q_PROPERTY(int systemMemoryMiB READ systemMemoryMiB CONSTANT)
 	/// Modrinth modpack search for the Discover page.
@@ -103,6 +112,14 @@ class QmlShell : public QObject
 	 * false if the QML failed to load, in which case the reasons have already
 	 * been logged. */
 	bool show(bool minimized = false);
+
+	/* The root window show() created, or nullptr before it has
+	 * succeeded. PluginManager (MeshMC_logic, which links MeshMC_qml --
+	 * see setPluginSurfaceFactory()'s comment) uses this through
+	 * Application::qmlShellWindow() to generalise main-window handling
+	 * (show/hide/close-filter) to the QML shell the same way it already
+	 * does for the widget MainWindow. */
+	QWindow* window() const;
 
 	/* Hands a C++-owned object to QML. The engine takes ownership of any
 	 * QObject without a parent that crosses into JavaScript, and would delete
@@ -146,6 +163,15 @@ class QmlShell : public QObject
 	QString accountFace() const;
 
 	QObject* settings() const;
+	/// Bound to `shell.uiHost` in QML -- see the Q_PROPERTY comment above.
+	QObject* uiHost() const;
+	/* The same object as uiHost() above, typed for Application's own use
+	 * (Application::uiHost() prefers this over the widget UiHost while
+	 * this is non-null) instead of QML's property binding. Null until
+	 * show() has run *and* QmlUiHost::presenterReady() is true -- see
+	 * QmlUiHost's class comment's PRESENTER READINESS section for why a
+	 * call must not reach this object before some QML item can answer it. */
+	UiHost* uiHostInterface() const;
 	int systemMemoryMiB() const;
 	QObject* modpackModel() const;
 	/* Starts installing a Modrinth modpack version as a new instance and
@@ -235,7 +261,11 @@ class QmlShell : public QObject
 	QString iconsDir() const;
 
   signals:
-	/* Emitted when the user closes the root window. */
+	/* Emitted when the root window really closes -- not merely when it
+	 * is hidden (see eventFilter()): a plugin's main_window_hide(), or a
+	 * plugin close-filter vetoing the close (main_window_install_close_filter()),
+	 * both hide the window without this firing, the same way neither
+	 * triggers MainWindow::isClosing() on the widget path. */
 	void closed();
 
 	/// accountName()/accountKind()/accountCount() moved.
@@ -258,6 +288,11 @@ class QmlShell : public QObject
 	QVariantMap rootProperties();
 	void scheduleSnapshotIfRequested();
 
+	/* Installed on m_window by show(). Watches for the window's own
+	 * QEvent::Close to emit closed() -- see the signal's doc comment
+	 * above and the longer comment on the definition. */
+	bool eventFilter(QObject* watched, QEvent* event) override;
+
 	/* Declared before the engine so they are destroyed after it: QML holds
 	 * pointers to both until the engine is gone. */
 	std::unique_ptr<InstanceFilterModel> m_instances;
@@ -268,6 +303,9 @@ class QmlShell : public QObject
 	std::map<QString, std::unique_ptr<InstanceFilterModel>> m_sections;
 	std::unique_ptr<IdSelectionModel> m_selection;
 	std::unique_ptr<SettingsAdapter> m_settings;
+	/* Created in show(), like m_settings above -- see uiHost()'s Q_PROPERTY
+	 * comment for how Application reaches this. */
+	std::unique_ptr<QmlUiHost> m_uiHost;
 	std::unique_ptr<ModrinthModpackModel> m_modpacks;
 	/* The one open instance detail page, if any - see instanceDetails(). */
 	std::unique_ptr<InstanceDetails> m_instanceDetails;

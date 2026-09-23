@@ -21,6 +21,7 @@
 
 #include <QCoreApplication>
 #include <QDebug>
+#include <QEvent>
 #include <QFileInfo>
 #include <QImage>
 #include <QTimer>
@@ -48,6 +49,7 @@
 #include <QDir>
 #include "qml/AccountFaceProvider.h"
 #include "qml/InstanceIconProvider.h"
+#include "qml/QmlUiHost.h"
 #include "qml/ScreenshotThumbnailProvider.h"
 #include "core/LauncherContext.h"
 #include "minecraft/auth/AccountList.h"
@@ -345,6 +347,24 @@ QObject* QmlShell::settings() const
 	return expose(m_settings.get());
 }
 
+QObject* QmlShell::uiHost() const
+{
+	return expose(m_uiHost.get());
+}
+
+UiHost* QmlShell::uiHostInterface() const
+{
+	// Not ready until some QML item has called setPresenterReady(true) --
+	// see QmlUiHost's class comment. Application::uiHost() falls back to
+	// the widget host while this is null, so a call reached before then
+	// (an automatic startup update check finding no updater binary, say)
+	// gets a real dialog instead of hanging on a request nothing shows.
+	if (m_uiHost && m_uiHost->presenterReady()) {
+		return m_uiHost.get();
+	}
+	return nullptr;
+}
+
 int QmlShell::systemMemoryMiB() const
 {
 	return static_cast<int>(Sys::getSystemRam() / Sys::mebibyte);
@@ -508,6 +528,7 @@ bool QmlShell::show(bool minimized)
 	m_instancePage->setSourceModel(LAUNCHER->instances().get());
 	m_selection = std::make_unique<IdSelectionModel>();
 	m_settings = std::make_unique<SettingsAdapter>(LAUNCHER->settings());
+	m_uiHost = std::make_unique<QmlUiHost>();
 	m_modpacks = std::make_unique<ModrinthModpackModel>();
 	m_accountsController =
 		std::make_unique<AccountsController>(LAUNCHER->accounts());
@@ -554,10 +575,9 @@ bool QmlShell::show(bool minimized)
 		return false;
 	}
 
-	connect(m_window, &QWindow::visibleChanged, this, [this](bool visible) {
-		if (!visible)
-			emit closed();
-	});
+	/* Tells whether the window is really closing, not merely hidden --
+	 * see eventFilter() and closed()'s doc comment. */
+	m_window->installEventFilter(this);
 
 	if (minimized)
 		m_window->showMinimized();
@@ -595,4 +615,30 @@ void QmlShell::scheduleSnapshotIfRequested()
 			qCritical() << "QML shell: could not write snapshot to" << path;
 		QCoreApplication::exit(saved ? 0 : 1);
 	});
+}
+
+QWindow* QmlShell::window() const
+{
+	return m_window;
+}
+
+bool QmlShell::eventFilter(QObject* watched, QEvent* event)
+{
+	/* PluginManager installs its own close filter on this same window
+	 * once a plugin registers one (main_window_install_close_filter(),
+	 * see PluginManager::ensureCloseFilterInstalled()) -- always after
+	 * this one, since that only happens once a plugin's
+	 * MMCO_HOOK_UI_MAIN_READY handler runs, which is dispatched only
+	 * after show() (and this installEventFilter() call) has already
+	 * returned. Qt calls the most-recently-installed filter first, so a
+	 * plugin veto (ce->ignore(), then stopping the event by returning
+	 * true) never reaches here -- the same way a vetoed close never
+	 * reaches MainWindow::closeEvent() on the widget path. Seeing the
+	 * event here therefore means nothing vetoed it: the window is
+	 * really closing, not merely being hidden (main_window_hide(), or a
+	 * veto's own hide(), both go straight to QWindow::hide() and raise
+	 * no QEvent::Close at all). */
+	if (watched == m_window && event->type() == QEvent::Close)
+		emit closed();
+	return QObject::eventFilter(watched, event);
 }

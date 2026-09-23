@@ -52,6 +52,7 @@ class QEvent;
 class QMenu;
 class QSystemTrayIcon;
 class QWidget;
+class QWindow;
 
 /*
  * PluginManager — owns the plugin lifecycle and provides the bridge
@@ -672,6 +673,11 @@ class PluginManager : public QObject
 	QVector<CloseFilterRecord> m_closeFilters;
 	bool m_closeFilterInstalled = false;
 	QPointer<QWidget> m_filteredMainWindow;
+	/* The QML shell's root QWindow, cached the same way
+	 * m_filteredMainWindow is -- see resolveShellWindow(). Only ever set
+	 * when there is no widget MainWindow (the QML shell is the active
+	 * UI); both can't be non-null at once. */
+	QPointer<QWindow> m_filteredShellWindow;
 
 	/* S23 (ABI 3+) — per-module per-instance running-state callbacks.
 	 *
@@ -744,10 +750,19 @@ class PluginManager : public QObject
 
 	/* Resolve the launcher's main window (objectName == "MainWindow"),
 	 * cached for the lifetime of the QPointer. Returns nullptr if the
-	 * window has not been built yet. */
+	 * window has not been built yet, or when the QML shell is the
+	 * active UI instead (see resolveShellWindow()). */
 	QWidget* resolveMainWindow();
-	/* Make sure our QObject::eventFilter is installed on the main
-	 * window. Safe to call multiple times — installs at most once. */
+	/* Resolve the QML shell's top-level QWindow via Application, cached
+	 * for the lifetime of the QPointer — the generalised counterpart to
+	 * resolveMainWindow() for main_window_show/hide/is_visible and the
+	 * close filter when the widget MainWindow does not exist. Returns
+	 * nullptr before the shell has been shown, or when the widget
+	 * MainWindow is the active UI instead. */
+	QWindow* resolveShellWindow();
+	/* Make sure our QObject::eventFilter is installed on whichever
+	 * top-level window is active (widget MainWindow or the QML shell's
+	 * window). Safe to call multiple times — installs at most once. */
 	void ensureCloseFilterInstalled();
 	/* Release all S19/S20/S23 resources owned by the given module
 	 * handle.  Called from shutdownAll() right before mmco_unload(). */

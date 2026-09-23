@@ -38,6 +38,7 @@
 
 class LaunchController;
 class QmlShell;
+class QWindow;
 class LocalPeer;
 class InstanceWindow;
 class InstanceSettingsPage;
@@ -210,6 +211,14 @@ class Application : public QApplication, public LauncherContext
 	{
 		return m_mainWindow;
 	}
+
+	/* The QML shell's top-level window when it is the active UI (see
+	 * useQmlShell() in Application.cpp) and has been shown; null when
+	 * the widget MainWindow is in use instead, or before either has
+	 * been shown. PluginManager uses this to generalise main-window
+	 * handling (show/hide/close-filter) to whichever UI is actually on
+	 * screen -- see PluginManager::resolveShellWindow(). */
+	QWindow* qmlShellWindow() const;
 
 	void updateIsRunning(bool running);
 	bool updatesAreAllowed();

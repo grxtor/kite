@@ -39,6 +39,8 @@ qt_add_qml_module(MeshMC_qml
 target_sources(MeshMC_qml PRIVATE
     QmlShell.h
     QmlShell.cpp
+    QmlUiHost.h
+    QmlUiHost.cpp
     InstanceIconProvider.h
     InstanceIconProvider.cpp
     AccountFaceProvider.h

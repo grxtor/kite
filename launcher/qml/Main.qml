@@ -353,4 +353,19 @@ ApplicationWindow {
     Toast {
         id: toast
     }
+
+    // Questions the core asks while it works, and its "please wait".
+    UiRequestDialog {
+        id: uiRequests
+        host: root.shell && root.shell.uiHost ? root.shell.uiHost : null
+        // Until this exists, the core keeps asking through the classic
+        // dialogs rather than waiting on a question nobody can see.
+        Component.onCompleted: if (host) host.setPresenterReady(true)
+        Component.onDestruction: if (host) host.setPresenterReady(false)
+    }
+
+    BusyOverlay {
+        busy: root.shell && root.shell.uiHost ? root.shell.uiHost.busy : false
+        text: root.shell && root.shell.uiHost ? root.shell.uiHost.busyText : ""
+    }
 }
