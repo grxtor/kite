@@ -359,10 +359,14 @@ static int on_ui_main_ready(void*, uint32_t, void*, void*)
 		return 0;
 	const int total = g_ctx->instance_count(g_ctx->module_handle);
 	for (int i = 0; i < total; ++i) {
-		const char* id = g_ctx->instance_get_id(g_ctx->module_handle, i);
-		if (!id)
+		/* Copy before the next call: the host returns strings in one
+		 * per-module buffer, which instance_get_path() overwrites. */
+		const char* rawId = g_ctx->instance_get_id(g_ctx->module_handle, i);
+		if (!rawId)
 			continue;
-		const char* path = g_ctx->instance_get_path(g_ctx->module_handle, id);
+		const QByteArray id(rawId);
+		const char* path =
+			g_ctx->instance_get_path(g_ctx->module_handle, id.constData());
 		createInstanceUi(QString::fromUtf8(id),
 						 path ? QString::fromUtf8(path) : QString());
 	}
