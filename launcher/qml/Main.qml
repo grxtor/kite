@@ -48,6 +48,9 @@ ApplicationWindow {
             var mode = SettingsStore.string("UiThemeMode")
             if (mode === "dark" || mode === "light")
                 Theme.mode = mode
+            var scheme = SettingsStore.string("UiPalette")
+            if (scheme === "amethyst" || scheme === "ember" || scheme === "diamond")
+                Theme.scheme = scheme
         }
         onboarding.start()
         if (root.devRoute.length > 0)
@@ -55,7 +58,7 @@ ApplicationWindow {
     }
 
     // Startup route for review snapshots (MESHMC_QML_ROUTE): ";"-separated
-    // steps such as "theme=light;size=1400x900;page=settings;section=java",
+    // steps such as "theme=light;scheme=ember;size=1400x900;page=settings;section=java",
     // "instance=<id>;tab=mods", "page=discover;detail=0", "newinstance" or
     // "gallery".
     property string devRoute: ""
@@ -67,6 +70,8 @@ ApplicationWindow {
             var value = eq < 0 ? "" : steps[i].slice(eq + 1).trim()
             if (key === "theme")
                 Theme.mode = value
+            else if (key === "scheme")
+                Theme.scheme = value
             else if (key === "size") {
                 var wh = value.split("x")
                 root.width = parseInt(wh[0])

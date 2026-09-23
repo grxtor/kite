@@ -895,6 +895,14 @@ void Application::initSettings()
 	// The QML interface's own light/dark choice; the widget theme above
 	// keeps its separate list of themes.
 	m_settings->registerSetting("UiThemeMode", QString("dark"));
+	// Colour scheme of the QML interface: amethyst, ember or diamond.
+	m_settings->registerSetting("UiPalette", QString("amethyst"));
+	m_settings->registerSetting("UiSidebarCollapsed", false);
+	// Stops decorative loops (Play sheen, the cat's idle moves) for people
+	// who find motion distracting.
+	m_settings->registerSetting("UiReduceMotion", false);
+	m_settings->registerSetting("CatEnabled", true);
+	m_settings->registerSetting("CatVariant", QString("tabby"));
 
 	/* Screen-top menu bar. Only macOS has one; elsewhere the setting is
 	 * carried but never acted on. The second key is what this shipped as
