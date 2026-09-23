@@ -14,14 +14,17 @@
  *   <root>/images/…             — media referenced with relative paths.
  *
  * The page list is discovered by scanning *.md. It also rewrites the
- * two wiki link styles into an internal "wiki:" URL scheme so the
- * viewer can navigate between pages:
+ * two wiki link styles into an internal "wiki:" URL scheme, still as
+ * Markdown, so the declarative UI's markdown text node can navigate
+ * between pages via ordinary link-click events:
  *
- *   [[Page Name]]      -> <a href="wiki:Page-Name">Page Name</a>
- *   [text](Page-Name)  -> <a href="wiki:Page-Name">text</a>
+ *   [[Page Name]]      -> [Page Name](wiki:Page-Name)
+ *   [text](Page-Name)  -> [text](wiki:Page-Name)
  *
  * (links that are already absolute — http(s):, mailto:, #anchors,
- * or existing files — are left untouched.)
+ * or existing files — are left untouched.) Relative image references
+ * (![alt](images/foo.png)) are rewritten to absolute file:// URLs so
+ * they resolve without the renderer knowing the bundle root.
  */
 
 #pragma once
@@ -60,9 +63,11 @@ class WikiRepoBundle
 	/* Navigation list: Home first (if present), then alphabetical. */
 	QList<Entry> nav() const;
 
-	/* Resolve a slug to fully-rendered HTML (internal links rewritten to
-	 * the wiki: scheme, relative images resolved). Empty if not found. */
-	QString renderArticleHtml(const QString& slug) const;
+	/* Resolve a slug to the article's rewritten Markdown source (internal
+	 * links rewritten to the wiki: scheme, relative images resolved to
+	 * absolute file:// URLs) — fed directly into a "text" UI node with
+	 * format "markdown". Empty if not found. */
+	QString renderArticleMarkdown(const QString& slug) const;
 
 	/* Pages whose title contains `query` (case-insensitive substring). */
 	QList<Entry> searchTitles(const QString& query, int limit = 200) const;
@@ -79,6 +84,7 @@ class WikiRepoBundle
 	};
 
 	QString rewriteLinks(const QString& markdown) const;
+	QString rewriteImagePaths(const QString& markdown) const;
 
 	QString m_name;
 	QString m_root;

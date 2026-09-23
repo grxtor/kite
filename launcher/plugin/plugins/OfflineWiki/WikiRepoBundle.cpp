@@ -3,7 +3,6 @@
 
 #include "WikiRepoBundle.h"
 
-#include <QTextDocument>
 #include <QUrl>
 
 QString WikiRepoBundle::slugFromFileName(const QString& fileName)
@@ -155,7 +154,38 @@ QString WikiRepoBundle::rewriteLinks(const QString& markdown) const
 	return out;
 }
 
-QString WikiRepoBundle::renderArticleHtml(const QString& slug) const
+QString WikiRepoBundle::rewriteImagePaths(const QString& markdown) const
+{
+	// Resolve relative Markdown image targets (![alt](images/foo.png))
+	// against the bundle root so the renderer can load bundled media
+	// without knowing the wiki's on-disk location. Absolute (http/https/
+	// data:) targets are left alone.
+	const QString baseUrl =
+		QUrl::fromLocalFile(QDir(m_root).absolutePath() + QLatin1Char('/'))
+			.toString();
+	static const QRegularExpression imgRef(
+		QStringLiteral(R"(!\[([^\]]*)\]\(([^)\s]+)\))"));
+	QString out;
+	int last = 0;
+	auto it = imgRef.globalMatch(markdown);
+	while (it.hasNext()) {
+		auto m = it.next();
+		out += markdown.mid(last, m.capturedStart() - last);
+		const QString alt = m.captured(1);
+		const QString src = m.captured(2);
+		const bool absolute = src.contains(QStringLiteral("://")) ||
+							  src.startsWith(QStringLiteral("data:"));
+		if (absolute)
+			out += m.captured(0);
+		else
+			out += QStringLiteral("![%1](%2%3)").arg(alt, baseUrl, src);
+		last = m.capturedEnd();
+	}
+	out += markdown.mid(last);
+	return out;
+}
+
+QString WikiRepoBundle::renderArticleMarkdown(const QString& slug) const
 {
 	auto it = m_articles.constFind(slug);
 	if (it == m_articles.constEnd())
@@ -177,37 +207,8 @@ QString WikiRepoBundle::renderArticleHtml(const QString& slug) const
 	}
 
 	body = rewriteLinks(body);
-
-	QTextDocument doc;
-	doc.setMarkdown(body);
-	QString html = doc.toHtml();
-
-	// Resolve relative image/src paths against the bundle root so the
-	// QTextBrowser can load bundled media. Absolute (http/https/data/
-	// file/wiki) sources are left alone.
-	const QString baseUrl =
-		QUrl::fromLocalFile(QDir(m_root).absolutePath() + QLatin1Char('/'))
-			.toString();
-	static const QRegularExpression srcAttr(
-		QStringLiteral(R"(src=\"([^\"]+)\")"));
-	QString rebuilt;
-	int last = 0;
-	auto sit = srcAttr.globalMatch(html);
-	while (sit.hasNext()) {
-		auto m = sit.next();
-		rebuilt += html.mid(last, m.capturedStart() - last);
-		QString src = m.captured(1);
-		const bool absolute = src.contains(QStringLiteral("://")) ||
-							  src.startsWith(QStringLiteral("data:")) ||
-							  src.startsWith(QLatin1Char('/'));
-		if (absolute)
-			rebuilt += m.captured(0);
-		else
-			rebuilt += QStringLiteral("src=\"%1%2\"").arg(baseUrl, src);
-		last = m.capturedEnd();
-	}
-	rebuilt += html.mid(last);
-	return rebuilt;
+	body = rewriteImagePaths(body);
+	return body;
 }
 
 QList<WikiRepoBundle::Entry> WikiRepoBundle::searchTitles(const QString& query,
