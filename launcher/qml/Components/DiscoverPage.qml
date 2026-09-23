@@ -33,6 +33,13 @@ Item {
         { value: "quilt", label: "Quilt" }
     ]
 
+    // Opens the index-th result as if it were clicked.
+    function openResult(index) {
+        var item = results.itemAtIndex(index)
+        if (item)
+            item.clicked()
+    }
+
     function open(pack) {
         root.openedPack = pack
         if (root.model)

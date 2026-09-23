@@ -50,6 +50,52 @@ ApplicationWindow {
                 Theme.mode = mode
         }
         onboarding.start()
+        if (root.devRoute.length > 0)
+            Qt.callLater(root.applyDevRoute)
+    }
+
+    // Startup route for review snapshots (MESHMC_QML_ROUTE): ";"-separated
+    // steps such as "theme=light;size=1400x900;page=settings;section=java",
+    // "instance=<id>;tab=mods", "page=discover;detail=0", "newinstance" or
+    // "gallery".
+    property string devRoute: ""
+    function applyDevRoute() {
+        var steps = root.devRoute.split(";")
+        for (var i = 0; i < steps.length; ++i) {
+            var eq = steps[i].indexOf("=")
+            var key = (eq < 0 ? steps[i] : steps[i].slice(0, eq)).trim()
+            var value = eq < 0 ? "" : steps[i].slice(eq + 1).trim()
+            if (key === "theme")
+                Theme.mode = value
+            else if (key === "size") {
+                var wh = value.split("x")
+                root.width = parseInt(wh[0])
+                root.height = parseInt(wh[1])
+            } else if (key === "page")
+                root.page = value
+            else if (key === "instance")
+                root.openInstance(value)
+            else if (key === "tab")
+                instancePage.tab = value
+            else if (key === "section")
+                settingsPage.section = value
+            else if (key === "select")
+                root.selectedId = value
+            else if (key === "detail")
+                devDetail.start()
+            else if (key === "newinstance")
+                root.openNewInstance()
+            else if (key === "gallery")
+                galleryLoader.active = true
+        }
+    }
+    Timer {
+        id: devDetail
+        interval: 3500
+        onTriggered: {
+            var parts = root.devRoute.match(/detail=(\d+)/)
+            discoverPage.openResult(parts ? parseInt(parts[1]) : 0)
+        }
     }
     onSelectedIdChanged: {
         if (selectedId.length > 0)
@@ -227,6 +273,7 @@ ApplicationWindow {
                 }
 
                 SettingsPage {
+                    id: settingsPage
                     languages: root.shell && root.shell.languages ? root.shell.languages : null
                     selectLanguage: function (key) { root.shell.selectLanguage(key) }
                     pluginSurfaces: root.shell && typeof root.shell.pluginSurfaces === "function"
@@ -242,6 +289,7 @@ ApplicationWindow {
                 }
 
                 DiscoverPage {
+                    id: discoverPage
                     model: root.shell && root.shell.modpackModel ? root.shell.modpackModel : null
                     installer: function (projectId, versionId, name, group) {
                         return root.shell.installModpack(projectId, versionId, name, group)
@@ -393,5 +441,13 @@ ApplicationWindow {
             root.page = "accounts"
             accountsPage.startMicrosoftLogin()
         }
+    }
+
+    Loader {
+        id: galleryLoader
+        anchors.fill: parent
+        z: 100
+        active: false
+        sourceComponent: Gallery {}
     }
 }

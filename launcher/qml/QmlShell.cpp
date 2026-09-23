@@ -635,6 +635,11 @@ QVariantMap QmlShell::rootProperties()
 	props.insert(QStringLiteral("selection"),
 				 QVariant::fromValue(expose(m_selection.get())));
 	props.insert(QStringLiteral("shell"), QVariant::fromValue(expose(this)));
+	/* MESHMC_QML_ROUTE opens a given screen at startup -- see
+	 * Main.qml's applyDevRoute(). With MESHMC_QML_SNAPSHOT it lets a
+	 * review script picture any page without editing the QML. */
+	props.insert(QStringLiteral("devRoute"),
+				 qEnvironmentVariable("MESHMC_QML_ROUTE"));
 	return props;
 }
 
