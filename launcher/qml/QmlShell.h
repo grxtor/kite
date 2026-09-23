@@ -35,6 +35,7 @@ class SettingsAdapter;
 class ModrinthModpackModel;
 class AccountsController;
 class NewInstanceController;
+class RecentWorldsModel;
 class JavaInstallList;
 class TranslationsModel;
 class QmlUiHost;
@@ -107,6 +108,9 @@ class QmlShell : public QObject
 	/// Same, for the instance page -- separate, since the library's hero
 	/// keeps following its own choice underneath.
 	Q_PROPERTY(QObject* instancePageModel READ instancePageModel CONSTANT)
+	/// The Home page's "Recent worlds" row -- most recently played worlds
+	/// across every instance (see RecentWorldsModel's class comment).
+	Q_PROPERTY(QObject* recentWorlds READ recentWorlds CONSTANT)
 	/// Accounts page: the AccountList model plus add/remove/default/login.
 	Q_PROPERTY(QObject* accountsController READ accountsController CONSTANT)
 	/// The QML "New instance" flow: picks a Minecraft version and loader.
@@ -231,6 +235,7 @@ class QmlShell : public QObject
 	QObject* recentModel() const;
 	QObject* heroModel() const;
 	QObject* instancePageModel() const;
+	QObject* recentWorlds() const;
 	/* The instances of one group (empty = ungrouped) that pass the search,
 	 * for one section of the library. Created on first use and kept, so
 	 * QML asking again from a rebuilt delegate gets the same model back. */
@@ -400,6 +405,7 @@ class QmlShell : public QObject
 	std::unique_ptr<InstanceFilterModel> m_recent;
 	std::unique_ptr<InstanceFilterModel> m_hero;
 	std::unique_ptr<InstanceFilterModel> m_instancePage;
+	std::unique_ptr<RecentWorldsModel> m_recentWorlds;
 	// Declared after m_instances, their source, so they are destroyed first.
 	std::map<QString, std::unique_ptr<InstanceFilterModel>> m_sections;
 	std::unique_ptr<IdSelectionModel> m_selection;

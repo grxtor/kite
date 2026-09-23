@@ -143,13 +143,24 @@ class InstanceList : public QAbstractListModel
 		/* file:// URL of the newest image in the instance's screenshots
 		 * folder (the same folder InstanceDetails::screenshotsDir()
 		 * resolves for the Screenshots tab), or an empty string when it
-		 * has none. Looked up with newestScreenshotUrl() and cached per
-		 * instance id in m_coverImageCache rather than rescanned on every
-		 * data() call; the cache entry is dropped and dataChanged is
-		 * emitted for the row when the instance stops running, since a
-		 * play session commonly leaves new screenshots behind - see
+		 * has none or has not been looked up yet. The lookup
+		 * (newestScreenshotUrl(), a directory scan) runs on a QThreadPool
+		 * worker thread rather than inside data() itself - see
+		 * scheduleCoverImageScan() - so data() always returns immediately:
+		 * the cached value from m_coverImageCache if there is one, or an
+		 * empty string while the first scan for that row is still in
+		 * flight. The cache entry is dropped and dataChanged is emitted for
+		 * the row when the instance stops running, since a play session
+		 * commonly leaves new screenshots behind - see
 		 * emitIsRunningChanged(). */
-		CoverImageRole
+		CoverImageRole,
+		/* Whether the instance's last launch crashed - BaseInstance::
+		 * hasCrashed(), set by LaunchTask around the game process exit.
+		 * setCrashed() already emits BaseInstance::propertiesChanged(),
+		 * which InstanceList::propertiesChanged() (connected for every
+		 * instance in add()) turns into a row-wide dataChanged(); no
+		 * separate notification wiring is needed here. */
+		HasCrashedRole
 	};
 	/*!
 	 * \brief Error codes returned by functions in the InstanceList class.
@@ -328,7 +339,10 @@ class InstanceList : public QAbstractListModel
 	 * file:// URL Image.source can load, or an empty string if the
 	 * directory has none (including if it does not exist). A one-shot
 	 * scan with no watcher of its own - CoverImageRole's cache in data()
-	 * is what keeps this from running on every paint.
+	 * is what keeps this from running on every paint. Pure (no access to
+	 * this InstanceList or any QObject), so scheduleCoverImageScan() can
+	 * also run it on a QThreadPool worker thread instead of calling it
+	 * straight from data().
 	 *
 	 * Mirrors ScreenshotListModel::listEntries()'s newest-first ordering
 	 * (mtime descending, file name as a tiebreak) so the cover always
@@ -423,6 +437,16 @@ class InstanceList : public QAbstractListModel
 	 * CoverImageRole, since a session that just ended is exactly when a
 	 * new screenshot is likely to have appeared. */
 	void emitIsRunningChanged(BaseInstance* inst);
+	/* Starts a background scan of @p screenshotsDir for CoverImageRole's
+	 * data() case, unless one for @p id is already running. Runs
+	 * newestScreenshotUrl() on a QThreadPool worker thread; when it
+	 * finishes, the result is stored in m_coverImageCache and dataChanged
+	 * is emitted for that row's CoverImageRole - unless m_coverImageGeneration
+	 * moved on for @p id while the scan was in flight (the instance stopped
+	 * running - see emitIsRunningChanged()), in which case the result is
+	 * discarded as stale and a fresh scan is started in its place. */
+	void scheduleCoverImageScan(const InstanceId& id,
+								const QString& screenshotsDir);
 
   private:
 	int m_watchLevel = 0;
@@ -464,4 +488,12 @@ class InstanceList : public QAbstractListModel
 	 * absent from this map simply has not been looked up yet, and a
 	 * present empty string means "looked up, no screenshot found". */
 	mutable QHash<InstanceId, QString> m_coverImageCache;
+	/* Ids with a CoverImageRole scan currently running on a worker thread -
+	 * see scheduleCoverImageScan(). Guards against data() queuing a second
+	 * QtConcurrent::run() for the same id while the first has not returned;
+	 * mutable for the same reason m_coverImageCache is. */
+	mutable QSet<InstanceId> m_coverImageScansPending;
+	/* Bumped for an id whenever emitIsRunningChanged() invalidates its
+	 * cached cover - see scheduleCoverImageScan()'s doc comment for why. */
+	QHash<InstanceId, int> m_coverImageGeneration;
 };

@@ -42,6 +42,8 @@ set(CORE_SOURCES
     models/AccountsController.cpp
     models/NewInstanceController.h
     models/NewInstanceController.cpp
+    models/RecentWorldsModel.h
+    models/RecentWorldsModel.cpp
     modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
@@ -1316,9 +1318,11 @@ add_unit_test(InstanceFilterModel
     LIBS MeshMC_core
     )
 
-# Exercises InstanceList::newestScreenshotUrl() only (see InstanceList_test.cpp) -
-# a full InstanceList needs a SettingsObjectPtr and real BaseInstance
-# subclasses, which is more than this one lookup needs to be tested.
+# Mostly exercises InstanceList::newestScreenshotUrl() directly (see
+# InstanceList_test.cpp) - a full InstanceList needs a SettingsObjectPtr and
+# real BaseInstance subclasses, which is more than that one lookup needs to
+# be tested. HasCrashedRole has no such helper, so one test builds that
+# fixture (InstanceList + NullInstance) instead.
 add_unit_test(InstanceList
     SOURCES InstanceList_test.cpp
     LIBS MeshMC_core
@@ -1367,6 +1371,16 @@ add_unit_test(AccountsController
 # need LAUNCHER->metadataIndex()/instances() and are not exercised here.
 add_unit_test(NewInstanceController
     SOURCES models/NewInstanceController_test.cpp
+    LIBS MeshMC_core
+    )
+
+# Exercises RecentWorldsModel::scan() - the static, pure worker a rescan
+# hands to QtConcurrent::run() - directly against a temporary directory, plus
+# the async rescan-trigger/debounce orchestration around it against a real
+# InstanceList (NullInstance fixture, same as InstanceList_test.cpp's
+# HasCrashedRole tests) - that needs no real MinecraftInstance either.
+add_unit_test(RecentWorldsModel
+    SOURCES models/RecentWorldsModel_test.cpp
     LIBS MeshMC_core
     )
 

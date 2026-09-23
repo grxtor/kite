@@ -2082,7 +2082,10 @@ void Application::controllerSucceeded()
 	// quit when there are no more windows.
 	if (shouldExitNow()) {
 		m_status = Status::Succeeded;
-		exit(0);
+		// Qualified explicitly so a future refactor of this class cannot
+		// silently turn this into ::exit() (libc, no Qt shutdown) by adding
+		// a member or free function named exit() that shadows this call.
+		QCoreApplication::exit(0);
 	}
 }
 
@@ -2102,7 +2105,8 @@ void Application::controllerFailed(const QString& error)
 	// quit when there are no more windows.
 	if (shouldExitNow()) {
 		m_status = Status::Failed;
-		exit(1);
+		// See controllerSucceeded()'s exit(0) for why this is qualified.
+		QCoreApplication::exit(1);
 	}
 }
 
@@ -2485,7 +2489,8 @@ void Application::on_windowClose()
 	}
 	// quit when there are no more windows.
 	if (shouldExitNow()) {
-		exit(0);
+		// See controllerSucceeded()'s exit(0) for why this is qualified.
+		QCoreApplication::exit(0);
 	}
 }
 

@@ -42,6 +42,7 @@
 #include "models/InstanceDetails.h"
 #include "models/InstanceFilterModel.h"
 #include "models/NewInstanceController.h"
+#include "models/RecentWorldsModel.h"
 #include "models/SettingsAdapter.h"
 #include "models/ContentBrowser.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
@@ -552,6 +553,11 @@ QObject* QmlShell::instancePageModel() const
 	return expose(m_instancePage.get());
 }
 
+QObject* QmlShell::recentWorlds() const
+{
+	return expose(m_recentWorlds.get());
+}
+
 QObject* QmlShell::accountsController() const
 {
 	return expose(m_accountsController.get());
@@ -672,6 +678,8 @@ bool QmlShell::show(bool minimized)
 	m_instancePage = std::make_unique<InstanceFilterModel>();
 	m_instancePage->setInstanceId(QStringLiteral("/"));
 	m_instancePage->setSourceModel(LAUNCHER->instances().get());
+	m_recentWorlds =
+		std::make_unique<RecentWorldsModel>(LAUNCHER->instances().get());
 	m_selection = std::make_unique<IdSelectionModel>();
 	m_settings = std::make_unique<SettingsAdapter>(LAUNCHER->settings());
 	m_uiHost = std::make_unique<QmlUiHost>();
