@@ -51,6 +51,10 @@ qt_add_qml_module(MeshMC_qml_components
         InstanceOverviewTab.qml
         InstancePage.qml
         ContentTab.qml
+        VersionTab.qml
+        LoaderInstallDialog.qml
+        MinecraftVersionDialog.qml
+        GameOptionsTab.qml
         PackList.qml
         PalettePicker.qml
         ContentBrowserView.qml
@@ -108,6 +112,8 @@ qt_add_qml_module(MeshMC_qml_components
         SkinSilhouette.qml
     RESOURCES
         icons/alert-triangle.svg
+        icons/arrow-down.svg
+        icons/arrow-up.svg
         icons/bell.svg
         icons/check.svg
         icons/chevron-down.svg

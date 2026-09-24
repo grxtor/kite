@@ -39,6 +39,7 @@
 #include "PackProfile.h"
 #include "PackProfile_p.h"
 #include "ComponentUpdateTask.h"
+#include "tasks/TaskWatcher.h"
 
 #include "core/LauncherContext.h"
 
@@ -355,6 +356,14 @@ void PackProfile::resolve(Net::Mode netmode)
 			&PackProfile::updateSucceeded);
 	connect(updateTask, &ComponentUpdateTask::failed, this,
 			&PackProfile::updateFailed);
+
+	/* QML-facing progress for whichever action just called resolve() -
+	 * change/install a loader, remove a conflicting one, reload. Not
+	 * deleted: see the `task` Q_PROPERTY comment in the header. */
+	m_taskWatcher = new TaskWatcher(d->m_updateTask, this);
+	m_taskWatcher->setTitle(tr("Updating %1").arg(d->m_instance->name()));
+	emit taskChanged();
+
 	d->m_updateTask->start();
 }
 
@@ -372,6 +381,7 @@ void PackProfile::updateFailed(const QString& error)
 			 << d->m_instance->name() << "Reason:" << error;
 	d->m_updateTask.reset();
 	invalidateLaunchProfile();
+	setLastError(error);
 }
 
 // NOTE this is really old stuff, and only needs to be used when loading the old
@@ -717,6 +727,65 @@ bool PackProfile::revertToBase(int index)
 	return true;
 }
 
+bool PackProfile::removeComponent(int row)
+{
+	auto* patch = getComponent(row);
+	if (!patch) {
+		setLastError(tr("No such component."));
+		return false;
+	}
+	if (!remove(row)) {
+		setLastError(tr("Couldn't remove %1.").arg(patch->getName()));
+		return false;
+	}
+	setLastError(QString());
+	return true;
+}
+
+bool PackProfile::moveComponentUp(int row)
+{
+	auto* patch = getComponent(row);
+	if (!patch || !patch->isMoveable()) {
+		setLastError(tr("Can't move this component."));
+		return false;
+	}
+	move(row, MoveUp);
+	setLastError(QString());
+	return true;
+}
+
+bool PackProfile::moveComponentDown(int row)
+{
+	auto* patch = getComponent(row);
+	if (!patch || !patch->isMoveable()) {
+		setLastError(tr("Can't move this component."));
+		return false;
+	}
+	move(row, MoveDown);
+	setLastError(QString());
+	return true;
+}
+
+bool PackProfile::customizeComponent(int row)
+{
+	if (!customize(row)) {
+		setLastError(tr("Couldn't customize this component."));
+		return false;
+	}
+	setLastError(QString());
+	return true;
+}
+
+bool PackProfile::revertComponent(int row)
+{
+	if (!revertToBase(row)) {
+		setLastError(tr("Couldn't revert this component."));
+		return false;
+	}
+	setLastError(QString());
+	return true;
+}
+
 Component* PackProfile::getComponent(const QString& id)
 {
 	auto iter = d->componentIndex.find(id);
@@ -812,6 +881,28 @@ QVariant PackProfile::data(const QModelIndex& index, int role) const
 					return QVariant();
 			}
 		}
+		// Everything below is for VersionTab.qml - one role per question
+		// VersionPage's updateButtons()/on_action..._triggered() handlers
+		// ask about the selected row, so the QML tab can enable/disable
+		// its own per-row actions without a round trip to C++.
+		case UidRole:
+			return patch->getID();
+		case IsCustomRole:
+			return patch->isCustom();
+		case IsEnabledRole:
+			return patch->isEnabled();
+		case CanDisableRole:
+			return patch->canBeDisabled();
+		case IsRemovableRole:
+			return patch->isRemovable();
+		case IsMoveableRole:
+			return patch->isMoveable();
+		case IsCustomizableRole:
+			return patch->isCustomizable();
+		case IsRevertibleRole:
+			return patch->isRevertible();
+		case HasVersionListRole:
+			return patch->getVersionList() != nullptr;
 	}
 	return QVariant();
 }
@@ -889,6 +980,15 @@ QHash<int, QByteArray> PackProfile::roleNames() const
 	roles.insert(NameRole, "name");
 	roles.insert(VersionRole, "version");
 	roles.insert(ProblemSeverityRole, "problemSeverity");
+	roles.insert(UidRole, "uid");
+	roles.insert(IsCustomRole, "isCustom");
+	roles.insert(IsEnabledRole, "isEnabled");
+	roles.insert(CanDisableRole, "canDisable");
+	roles.insert(IsRemovableRole, "isRemovable");
+	roles.insert(IsMoveableRole, "isMoveable");
+	roles.insert(IsCustomizableRole, "isCustomizable");
+	roles.insert(IsRevertibleRole, "isRevertible");
+	roles.insert(HasVersionListRole, "hasVersionList");
 	return roles;
 }
 
@@ -1190,6 +1290,86 @@ QString PackProfile::getComponentVersion(const QString& uid) const
 		return (*iter)->getVersion();
 	}
 	return QString();
+}
+
+bool PackProfile::changeComponentVersion(const QString& uid,
+										 const QString& version)
+{
+	if (uid.isEmpty() || version.isEmpty()) {
+		setLastError(tr("No version selected."));
+		return false;
+	}
+	if (d->m_updateTask) {
+		setLastError(tr("Already updating - wait for that to finish first."));
+		return false;
+	}
+	// Mirrors VersionPage::on_actionChange_version_triggered(): only the
+	// Minecraft component's version is ever `important`.
+	const bool important = uid == QStringLiteral("net.minecraft");
+	if (!setComponentVersion(uid, version, important)) {
+		setLastError(tr("Couldn't set %1 to that version.").arg(uid));
+		return false;
+	}
+	setLastError(QString());
+	resolve(Net::Mode::Online);
+	return true;
+}
+
+bool PackProfile::setComponentEnabled(const QString& uid, bool enabled)
+{
+	Component* component = getComponent(uid);
+	if (!component) {
+		setLastError(tr("%1 isn't installed.").arg(uid));
+		return false;
+	}
+	if (component->isEnabled() == enabled) {
+		return true;
+	}
+	if (!component->canBeDisabled()) {
+		setLastError(tr("%1 can't be turned off.").arg(component->getName()));
+		return false;
+	}
+	component->setEnabled(enabled);
+	setLastError(QString());
+	return true;
+}
+
+bool PackProfile::reloadProfile()
+{
+	if (d->m_updateTask) {
+		// Mirrors reload()'s own guard: an update is already in control.
+		return false;
+	}
+	try {
+		reload(Net::Mode::Online);
+	} catch (const Exception& e) {
+		setLastError(e.cause());
+		return false;
+	} catch (...) {
+		setLastError(tr("Couldn't reload the instance profile."));
+		return false;
+	}
+	setLastError(QString());
+	return true;
+}
+
+QObject* PackProfile::task() const
+{
+	return m_taskWatcher;
+}
+
+bool PackProfile::busy() const
+{
+	return d->m_updateTask != nullptr;
+}
+
+void PackProfile::setLastError(const QString& error)
+{
+	if (m_lastError == error) {
+		return;
+	}
+	m_lastError = error;
+	emit lastErrorChanged();
 }
 
 QStringList PackProfile::getModLoaders()

@@ -38,6 +38,12 @@ set(CORE_SOURCES
     models/InstanceDetails.cpp
     models/ContentBrowser.h
     models/ContentBrowser.cpp
+    models/LoaderInstaller.h
+    models/LoaderInstaller.cpp
+    models/OtherLogsModel.h
+    models/OtherLogsModel.cpp
+    models/KeyValueFilterModel.h
+    models/KeyValueFilterModel.cpp
     models/AccountsController.h
     models/AccountsController.cpp
     models/NewInstanceController.h
@@ -1406,6 +1412,33 @@ add_unit_test(ModrinthModpackModel
 # InstanceLogBridge.
 add_unit_test(ContentBrowser
     SOURCES models/ContentBrowser_test.cpp
+    LIBS MeshMC_core
+    )
+
+# install() itself needs a PackProfile, which needs a MinecraftInstance -
+# impractical to construct here, the same reason ContentBrowser_test.cpp
+# above only exercises its static helpers. installSequence() is the one
+# static helper LoaderInstaller has: the pure ordering install() drives
+# itself by - see its own comment for why that order is worth a test on
+# its own. OtherLogsModel needs neither a profile nor an instance - just a
+# path and a filter - so it gets a full test against a temp directory
+# instead.
+add_unit_test(LoaderInstaller
+    SOURCES models/LoaderInstaller_test.cpp
+    LIBS MeshMC_core
+    )
+
+add_unit_test(OtherLogsModel
+    SOURCES models/OtherLogsModel_test.cpp
+    LIBS MeshMC_core
+    )
+
+# Exercised against a real GameOptions (a temp options.txt, no instance
+# needed - see GameOptions' own constructor) rather than a fake model:
+# nothing here is specific to GameOptions, but it is the one real source
+# this filter is built for.
+add_unit_test(KeyValueFilterModel
+    SOURCES models/KeyValueFilterModel_test.cpp
     LIBS MeshMC_core
     )
 

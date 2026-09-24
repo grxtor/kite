@@ -37,6 +37,11 @@ class InstanceLogBridge;
 class LaunchTask;
 class LogModel;
 class ContentBrowser;
+class OtherLogsModel;
+class LoaderInstaller;
+class GameOptions;
+class KeyValueFilterModel;
+class MinecraftVersionListProxy;
 
 /*
  * QML-facing bridge for one instance's detail page: notes, mods, worlds,
@@ -103,8 +108,31 @@ class InstanceDetails : public QObject
 
 	/// InstanceLogBridge for the current (or most recent) launch.
 	Q_PROPERTY(QObject* log READ log CONSTANT)
+	/// Every other log file this instance has (logs/*.log*,
+	/// crash-reports/*.txt) - the QML-facing replacement for
+	/// OtherLogsPage. Null if the instance names no log filter at all
+	/// (see BaseInstance::getLogFileMatcher()).
+	Q_PROPERTY(QObject* otherLogs READ otherLogs CONSTANT)
 	/// This instance's PackProfile, read-only version list, or null.
 	Q_PROPERTY(QObject* components READ components CONSTANT)
+	/// "net.minecraft"'s version list (MinecraftVersionListProxy - see
+	/// models/NewInstanceController.h, the same proxy the "New instance"
+	/// dialog's own Minecraft version picker uses), for VersionTab.qml's
+	/// "Change Minecraft version" action. Created lazily on first access;
+	/// null if this instance is not Minecraft-backed.
+	Q_PROPERTY(QObject* minecraftVersions READ minecraftVersions CONSTANT)
+	/// Installs a mod loader into this instance's components - the
+	/// QML-facing replacement for InstallLoaderDialog. Created lazily on
+	/// first access, same reason as contentBrowser() above. Null if this
+	/// instance is not Minecraft-backed.
+	Q_PROPERTY(QObject* loaderInstaller READ loaderInstaller CONSTANT)
+	/// This instance's options.txt as a flat key/value list (GameOptions'
+	/// own `key`/`value` roles, through a KeyValueFilterModel for
+	/// GameOptionsTab.qml's search box) - the QML-facing replacement for
+	/// GameOptionsPage, which is read-only for the same reason this is:
+	/// see that class's own header comment. Null if this instance is not
+	/// Minecraft-backed.
+	Q_PROPERTY(QObject* gameOptions READ gameOptions CONSTANT)
 	Q_PROPERTY(bool isMinecraft READ isMinecraft CONSTANT)
 
   public:
@@ -158,7 +186,11 @@ class InstanceDetails : public QObject
 	QString screenshotsDir() const;
 
 	QObject* log() const;
+	QObject* otherLogs() const;
 	QObject* components() const;
+	QObject* minecraftVersions() const;
+	QObject* loaderInstaller() const;
+	QObject* gameOptions() const;
 	bool isMinecraft() const;
 
   signals:
@@ -209,6 +241,27 @@ class InstanceDetails : public QObject
 	std::unique_ptr<ScreenshotListModel> m_screenshots;
 	/// Owned via QObject parentage (parent is `this`).
 	InstanceLogBridge* m_log = nullptr;
+	/// Owned via QObject parentage (parent is `this`); null if the
+	/// instance names no log filter at all - see the otherLogs
+	/// Q_PROPERTY comment.
+	OtherLogsModel* m_otherLogs = nullptr;
+	/// Created on first minecraftVersions() call, not here - mirrors
+	/// m_contentBrowser above. Parented to `this` in that getter (like
+	/// LoaderInstaller's own m_versions - see its constructor comment),
+	/// so it needs no separate expose() call from QmlShell either.
+	mutable std::unique_ptr<MinecraftVersionListProxy> m_minecraftVersions;
+	/// Created on first loaderInstaller() call, not here - mirrors
+	/// m_contentBrowser above.
+	mutable std::unique_ptr<LoaderInstaller> m_loaderInstaller;
+	/// Borrowed from the instance, not created here - see the class
+	/// comment. Null when the instance is not Minecraft.
+	std::shared_ptr<GameOptions> m_gameOptions;
+	/// Wraps m_gameOptions for gameOptions() above; created together with
+	/// it (both null, or both set, for a non-Minecraft instance) rather
+	/// than lazily, since building it touches no disk or network beyond
+	/// what m_gameOptions itself already did. Parented to `this` - same
+	/// reasoning as LoaderInstaller::m_versions.
+	KeyValueFilterModel* m_gameOptionsFilter = nullptr;
 };
 
 /*

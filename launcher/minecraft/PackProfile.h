@@ -37,18 +37,65 @@
 class MinecraftInstance;
 struct PackProfileData;
 class ComponentUpdateTask;
+class TaskWatcher;
 
 class PackProfile : public QAbstractListModel
 {
 	Q_OBJECT
 	friend ComponentUpdateTask;
 
+	/// The ComponentUpdateTask behind the last reload()/resolve() call
+	/// (see those and changeComponentVersion()/setComponentEnabled()
+	/// below, which route through resolve()), wrapped for QML - see
+	/// TaskWatcher's own class comment. Null until the first one runs;
+	/// past that, always the most recent one, whether it is still
+	/// running or has already finished. Parented to `this`, like
+	/// ContentBrowser::install()'s own watcher, so QML need not manage
+	/// its lifetime.
+	Q_PROPERTY(QObject* task READ task NOTIFY taskChanged)
+	/// Whether a ComponentUpdateTask is currently running - QML's cue to
+	/// disable the Version tab's actions the same way VersionPage's
+	/// `controlsEnabled` did while running.
+	Q_PROPERTY(bool busy READ busy NOTIFY taskChanged)
+	/// The reason the last mutating call below failed, or empty. Cleared
+	/// on the next attempt, successful or not.
+	Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
+
   public:
 	enum Columns { NameColumn = 0, VersionColumn, NUM_COLUMNS };
 
 	// Column-independent roles for QML consumers. Kept separate from
 	// Columns above, which the QtWidgets tree view still relies on.
-	enum ModelRoles { NameRole = Qt::UserRole, VersionRole, ProblemSeverityRole };
+	//
+	// Appended after ProblemSeverityRole, not interleaved, so the three
+	// original values never change - see VersionTab.qml for the QML
+	// Version tab these back.
+	enum ModelRoles {
+		NameRole = Qt::UserRole,
+		VersionRole,
+		ProblemSeverityRole,
+		UidRole,
+		IsCustomRole,
+		IsEnabledRole,
+		CanDisableRole,
+		IsRemovableRole,
+		IsMoveableRole,
+		IsCustomizableRole,
+		IsRevertibleRole,
+		/// Whether the metadata index knows a version list for this
+		/// component's uid at all - the QML "Change version" action is
+		/// gated on this rather than on Component::isVersionChangeable(),
+		/// which would have to call Meta::VersionList::load() to answer
+		/// precisely (list loaded and non-empty) and
+		/// Meta::BaseEntity::load() starts a fresh download on every call
+		/// that is not already in flight (see LoaderVersionPage::reload()'s
+		/// own comment on this) - doing that from data(), read once per
+		/// visible row on every relayout, would hammer the metadata
+		/// server. A uid with a list that turns out empty once the picker
+		/// actually loads it shows that picker's own empty state instead
+		/// (see VersionTab.qml).
+		HasVersionListRole
+	};
 
 	explicit PackProfile(MinecraftInstance* instance);
 	virtual ~PackProfile();
@@ -104,10 +151,59 @@ class PackProfile : public QAbstractListModel
 	// from instance config
 	void setOldConfigVersion(const QString& uid, const QString& version);
 
-	QString getComponentVersion(const QString& uid) const;
+	Q_INVOKABLE QString getComponentVersion(const QString& uid) const;
 
 	bool setComponentVersion(const QString& uid, const QString& version,
 							 bool important = false);
+
+	/// QML entry point for VersionPage's "change version"/"install loader"
+	/// actions: setComponentVersion() (uid == "net.minecraft" is always
+	/// `important`, matching VersionPage::on_actionChange_version_triggered())
+	/// followed by resolve(Net::Mode::Online), the same two steps the
+	/// widget dialogs perform on accept. Returns false, and sets
+	/// lastError(), when @p uid or @p version is empty; resolve() itself
+	/// reports its own failure asynchronously through task()/lastError().
+	Q_INVOKABLE bool changeComponentVersion(const QString& uid,
+											const QString& version);
+
+	/// QML entry point for a component's on/off switch, and for
+	/// LoaderInstaller's conflict handling (turning an existing, clashing
+	/// loader off before installing a new one) - Component::setEnabled()
+	/// itself is not QML-reachable (Component is not exposed to QML on
+	/// its own). Returns false if @p uid names no component or the
+	/// component refuses (canBeDisabled() is false).
+	Q_INVOKABLE bool setComponentEnabled(const QString& uid, bool enabled);
+
+	/// QML entry point for VersionPage's remove/move/customize/revert
+	/// toolbar actions, by row rather than by the model index QML would
+	/// otherwise have to build. Each mirrors the matching VersionPage
+	/// `on_action..._triggered()` handler, including the
+	/// invalidateLaunchProfile()/scheduleSave() those already do
+	/// internally; unlike the widget page, reloadPackProfile() is not
+	/// re-run afterwards - remove()/move()/customize()/revertToBase()
+	/// already update this model's rows in place. Each returns false
+	/// (and sets lastError()) when @p row is out of range or the
+	/// component refuses the operation (not removable/moveable/etc).
+	Q_INVOKABLE bool removeComponent(int row);
+	Q_INVOKABLE bool moveComponentUp(int row);
+	Q_INVOKABLE bool moveComponentDown(int row);
+	Q_INVOKABLE bool customizeComponent(int row);
+	Q_INVOKABLE bool revertComponent(int row);
+
+	/// Re-reads mmc-pack.json/patches from disk and resolves the result,
+	/// the same as VersionPage's "Reload" action - see reload() above,
+	/// which this simply calls with Net::Mode::Online and reports
+	/// failure from through lastError().
+	Q_INVOKABLE bool reloadProfile();
+
+	/// Defined in the .cpp, where TaskWatcher (forward-declared above) is
+	/// a complete type.
+	QObject* task() const;
+	bool busy() const;
+	QString lastError() const
+	{
+		return m_lastError;
+	}
 
 	bool installEmpty(const QString& uid, const QString& name);
 
@@ -142,6 +238,8 @@ class PackProfile : public QAbstractListModel
 
   signals:
 	void minecraftChanged();
+	void taskChanged();
+	void lastErrorChanged();
 
   public:
 	/// get the profile component by id
@@ -184,6 +282,17 @@ class PackProfile : public QAbstractListModel
 
 	bool migratePreComponentConfig();
 
+	/// Sets m_lastError and emits lastErrorChanged() - the one place every
+	/// QML-facing wrapper above reports a failure through, so lastError()
+	/// is never left holding a stale reason from an unrelated call.
+	void setLastError(const QString& error);
+
   private: /* data */
 	std::unique_ptr<PackProfileData> d;
+
+	/// See the `task` Q_PROPERTY above. Parented to `this`; not deleted
+	/// on replacement (ContentBrowser::install()'s watchers are kept the
+	/// same way) - only PackProfile's own destruction cleans it up.
+	TaskWatcher* m_taskWatcher = nullptr;
+	QString m_lastError;
 };

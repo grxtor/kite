@@ -630,14 +630,19 @@ QObject* QmlShell::instanceDetails(const QString& id)
 	expose(m_instanceDetails->texturePacks());
 	expose(m_instanceDetails->worlds());
 	expose(m_instanceDetails->log());
+	expose(m_instanceDetails->otherLogs());
 	expose(m_instanceDetails->components());
 	expose(m_instanceDetails->screenshots());
+	expose(m_instanceDetails->gameOptions());
 	// contentBrowser()'s own `results` is reachable straight off the
 	// pinned browser below without a separate expose() here: every
 	// ContentProviderModel it hands out is parented to it (see
 	// ContentBrowser::ensureModel()), and a parented QObject already keeps
 	// its C++ ownership once QML touches it, pin or no pin.
 	expose(m_instanceDetails->contentBrowser());
+	// Same reasoning for loaderInstaller()'s own `versions` proxy - see
+	// LoaderInstaller's constructor comment.
+	expose(m_instanceDetails->loaderInstaller());
 
 	return expose(m_instanceDetails.get());
 }

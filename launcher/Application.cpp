@@ -1796,10 +1796,25 @@ bool Application::launch(InstancePtr instance, LaunchMode mode,
 		controller->start();
 		return true;
 	} else if (instance->isRunning()) {
-		showInstanceWindow(instance, "console");
+		// Same widget behaviour as before (showInstanceWindow(instance,
+		// "console")) when the QML shell is off - see showInstanceLog()'s
+		// own doc comment; under it, this raises the QML window on the
+		// instance's Log tab instead of a widget InstanceWindow.
+		showInstanceLog(instance);
 		return true;
 	} else if (instance->canEdit()) {
-		showInstanceWindow(instance);
+		// Same reasoning as the isRunning() branch above, but not through
+		// showInstanceLog(): its widget fallback is always
+		// showInstanceWindow(instance, "console"), while this branch's
+		// own widget behaviour opens on the window's own default page
+		// instead (showInstanceWindow(instance), no explicit page) - kept
+		// exactly as it was when the QML shell is off.
+		if (usingQmlShell()) {
+			m_qmlShell->show();
+			m_qmlShell->showInstanceLogRequested(instance->id());
+		} else {
+			showInstanceWindow(instance);
+		}
 		return true;
 	}
 	return false;
@@ -2650,6 +2665,12 @@ void Application::showInstanceLog(InstancePtr instance)
 		return;
 	}
 	if (usingQmlShell()) {
+		// The request can arrive with the QML window minimized or behind
+		// others (a background crash, or - see launch()'s own
+		// isRunning()/canEdit() branches - a second Play click while
+		// nothing new needs launching): raise it the same way clicking
+		// the dock/taskbar icon would, so the log actually gets seen.
+		m_qmlShell->show();
 		m_qmlShell->showInstanceLogRequested(instance->id());
 		return;
 	}

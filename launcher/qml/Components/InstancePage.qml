@@ -125,12 +125,15 @@ Item {
             tabs: [
                 { id: "overview", label: qsTr("Overview") },
                 { id: "content", label: qsTr("Content"), count: root.modsModel ? contentTab.count : -1 },
+                { id: "version", label: qsTr("Version") },
                 { id: "browse", label: qsTr("Add content") },
                 { id: "worlds", label: qsTr("Worlds"), count: root.worldsModel ? worldsTab.count : -1 },
                 { id: "screenshots", label: qsTr("Screenshots"), count: root.shotsModel ? root.shotsModel.count : -1 },
                 { id: "log", label: qsTr("Log") },
                 { id: "settings", label: qsTr("Settings") }
-            ].concat(pluginPages.count === 0 ? []
+            ].concat(root.details && root.details.isMinecraft
+                     ? [{ id: "gameoptions", label: qsTr("Game options") }] : [])
+             .concat(pluginPages.count === 0 ? []
                      : [{ id: "plugins", label: pluginPages.count === 1 && pluginPages.firstTitle.length > 0
                                                 ? pluginPages.firstTitle : qsTr("Plugins") }])
             onActivated: (id) => root.tab = id
@@ -140,7 +143,7 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.topMargin: Theme.space.sm
-            currentIndex: ["overview", "content", "browse", "worlds", "screenshots", "log", "settings", "plugins"].indexOf(root.tab)
+            currentIndex: ["overview", "content", "version", "browse", "worlds", "screenshots", "log", "settings", "gameoptions", "plugins"].indexOf(root.tab)
 
             InstanceOverviewTab {
                 id: overview
@@ -165,6 +168,10 @@ Item {
                 onBrowseRequested: root.tab = "browse"
             }
 
+            VersionTab {
+                details: root.details
+            }
+
             ContentBrowserView {
                 browser: root.details ? root.details.contentBrowser : null
                 installer: root.contentInstaller
@@ -184,6 +191,8 @@ Item {
 
             LogTab {
                 log: root.details ? root.details.log : null
+                otherLogs: root.details ? root.details.otherLogs : null
+                onOpenFolderRequested: (path) => root.openPathRequested(path)
             }
 
             InstanceSettingsTab {
@@ -191,6 +200,10 @@ Item {
                 adapter: root.details ? root.details.settings : null
                 systemMemoryMiB: root.systemMemoryMiB
                 running: overview.running
+            }
+
+            GameOptionsTab {
+                model: root.details ? root.details.gameOptions : null
             }
 
             SettingsScroll {

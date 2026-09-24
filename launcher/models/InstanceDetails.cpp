@@ -22,13 +22,21 @@
 #include <QSortFilterProxyModel>
 #include <QUrl>
 
+#include "core/LauncherContext.h"
 #include "launch/LaunchTask.h"
 #include "launch/LogModel.h"
+#include "meta/Index.h"
+#include "meta/VersionList.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 #include "minecraft/WorldList.h"
+#include "minecraft/gameoptions/GameOptions.h"
 #include "minecraft/mod/ModFolderModel.h"
 #include "models/ContentBrowser.h"
+#include "models/KeyValueFilterModel.h"
+#include "models/LoaderInstaller.h"
+#include "models/NewInstanceController.h"
+#include "models/OtherLogsModel.h"
 #include "models/SettingsAdapter.h"
 #include "screenshots/ScreenshotListModel.h"
 #include "FileSystem.h"
@@ -106,6 +114,12 @@ InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 		m_worlds = m_mc->worldList();
 		// Mirrors WorldListPage::openedImpl().
 		m_worlds->startWatching();
+
+		// Borrowed from the instance, like m_mods/m_worlds above - see the
+		// gameOptions Q_PROPERTY comment.
+		m_gameOptions = m_mc->gameOptionsModel();
+		m_gameOptionsFilter = new KeyValueFilterModel(this);
+		m_gameOptionsFilter->setSourceModel(m_gameOptions.get());
 	}
 
 	/* An instance that never took a screenshot has no folder yet; the
@@ -114,6 +128,16 @@ InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 	m_screenshots->setDirectory(screenshotsDir());
 
 	m_log = new InstanceLogBridge(m_instance, this);
+
+	/* Unlike contentBrowser()/loaderInstaller(), this touches only the
+	 * filesystem (a QFileSystemWatcher on the instance's log root), not
+	 * the network, so there is no reason to delay creating it - mirrors
+	 * m_mods/m_worlds above. Pure-virtual on BaseInstance, but not every
+	 * instance type necessarily has a filter to offer. */
+	if (auto matcher = m_instance->getLogFileMatcher()) {
+		m_otherLogs =
+			new OtherLogsModel(m_instance->getLogFileRoot(), matcher, this);
+	}
 }
 
 InstanceDetails::~InstanceDetails()
@@ -367,9 +391,47 @@ QObject* InstanceDetails::log() const
 	return m_log;
 }
 
+QObject* InstanceDetails::otherLogs() const
+{
+	return m_otherLogs;
+}
+
 QObject* InstanceDetails::components() const
 {
 	return m_mc ? m_mc->getPackProfile().get() : nullptr;
+}
+
+QObject* InstanceDetails::minecraftVersions() const
+{
+	// Lazy for the same reason as contentBrowser()/loaderInstaller() -
+	// nothing here downloads anything until QML actually reads this
+	// property (see VersionListLoadingProxy::startLoadIfNeeded(), run by
+	// setSourceModel() below).
+	if (!m_minecraftVersions && m_mc) {
+		m_minecraftVersions = std::make_unique<MinecraftVersionListProxy>(
+			const_cast<InstanceDetails*>(this));
+		auto list =
+			LAUNCHER->metadataIndex()->get(QStringLiteral("net.minecraft"));
+		m_minecraftVersions->setSourceModel(list.get());
+	}
+	return m_minecraftVersions.get();
+}
+
+QObject* InstanceDetails::loaderInstaller() const
+{
+	// Lazy for the same reason as contentBrowser() above: nothing here
+	// downloads anything until a loader is actually selected, but there is
+	// no reason to build the object at all for a non-Minecraft instance.
+	if (!m_loaderInstaller && m_mc) {
+		m_loaderInstaller = std::make_unique<LoaderInstaller>(
+			m_mc->getPackProfile().get(), const_cast<InstanceDetails*>(this));
+	}
+	return m_loaderInstaller.get();
+}
+
+QObject* InstanceDetails::gameOptions() const
+{
+	return m_gameOptionsFilter;
 }
 
 bool InstanceDetails::isMinecraft() const
