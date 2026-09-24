@@ -90,6 +90,20 @@ Item {
         }
     }
 
+    // A chrome-only header region (design-plan.md §5): before any result has
+    // come back, or once a search truly has none, there is no cover art of
+    // the page's own to bleed behind the toolbar the way Library/PlayDock
+    // do -- the same quiet wash Settings uses instead. Sits behind the
+    // StackLayout below, not inside its flow.
+    AmbientPattern {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        height: 220
+        fadeBottom: true
+        visible: !root.openedPack && (!root.model || root.model.count === 0)
+    }
+
     StackLayout {
         anchors.fill: parent
         currentIndex: root.openedPack ? 1 : 0
@@ -220,13 +234,19 @@ Item {
                                 logoUrl: model.logoUrl
                                 downloads: model.downloads
                                 updated: model.updated
-                                categories: model.categories
+                                // One chip per grid card (design-plan.md
+                                // §5/§6); the full list is on the detail
+                                // view instead (see ModpackDetail.qml).
+                                categories: (model.categories || []).slice(0, 1)
                                 galleryUrl: model.galleryUrl
                                 accentColor: model.accentColor
                                 onClicked: root.open({ projectId: projectId, title: title, author: author,
                                                        description: description, logoUrl: logoUrl,
                                                        downloads: downloads, updated: updated,
-                                                       categories: categories, galleryUrl: galleryUrl,
+                                                       // The card's own `categories` is already
+                                                       // capped to one chip above -- the detail
+                                                       // view wants the model's full list.
+                                                       categories: model.categories, galleryUrl: galleryUrl,
                                                        accentColor: accentColor })
                             }
                         }
@@ -271,10 +291,23 @@ Item {
         actionIcon: "refresh"
         onActionTriggered: root.runSearch()
 
-        MeshIcon {
-            iconName: root.model && root.model.error.length > 0 ? "alert-triangle" : "search"
-            size: 40
-            color: Theme.palette.textTertiary
+        Column {
+            spacing: Theme.space.sm
+
+            // MeshMC's own mark, small and quiet, above the state icon --
+            // one of the two places design-plan.md §1 reuses it as a
+            // recurring tell rather than a sidebar-only appearance.
+            BrandMark {
+                anchors.horizontalCenter: parent.horizontalCenter
+                size: 18
+                opacity: 0.55
+            }
+            MeshIcon {
+                anchors.horizontalCenter: parent.horizontalCenter
+                iconName: root.model && root.model.error.length > 0 ? "alert-triangle" : "search"
+                size: 40
+                color: Theme.palette.textTertiary
+            }
         }
     }
 }

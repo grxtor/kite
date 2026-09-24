@@ -50,6 +50,19 @@ Item {
         return 0
     }
 
+    // A chrome-only screen (design-plan.md §5): no instance/pack art of its
+    // own to bleed behind the header, unlike Library/PlayDock/Discover's
+    // detail hero. The same quiet block-grid wash as Discover's own empty
+    // state, behind this page's header region; every SettingsGroup panel
+    // further down is a fully opaque surface and simply paints over it.
+    AmbientPattern {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        height: 260
+        fadeBottom: true
+    }
+
     RowLayout {
         anchors.fill: parent
         anchors.leftMargin: Theme.space.xl + Theme.space.xs

@@ -64,6 +64,66 @@ Item {
 
     Keys.onEscapePressed: root.selectRequested("")
 
+    // -- Backdrop: the most recently played instance's own cover art -------
+    // "arka planlarda hiçbir şey yok" (nothing behind the content) -- the
+    // page was flat Theme.palette.canvas below the header. A full-bleed,
+    // heavily scrimmed crop of the same art the instance's own card already
+    // shows (CoverArt's fallback plate when it has no screenshot yet) reads
+    // as MeshMC's own content, never stock art (design-plan.md §5/§6).
+    // instanceModel has no "most recent" query of its own (that is
+    // recentModel's job, not given to this page) -- found here the same way
+    // AccountsPage finds its hero row: a zero-size probe per instance,
+    // reduced down to the newest lastLaunch.
+    property string backdropCover: ""
+    property color backdropTint: Theme.palette.textTertiary
+
+    function _recomputeBackdrop() {
+        var bestMs = -1
+        var cover = ""
+        var tint = Theme.palette.textTertiary
+        for (var i = 0; i < backdropProbe.count; ++i) {
+            var item = backdropProbe.itemAt(i)
+            if (!item)
+                continue
+            var ms = Number(item.lastLaunch) || 0
+            if (ms > bestMs) {
+                bestMs = ms
+                cover = item.coverImage
+                tint = item.iconTint
+            }
+        }
+        root.backdropCover = cover
+        root.backdropTint = tint
+    }
+
+    Repeater {
+        id: backdropProbe
+        model: root.instanceModel
+        // Cover art is scanned off the GUI thread and lastLaunch moves on
+        // every launch, so a row's roles change after it was counted --
+        // recompute on those too, coalesced into one pass per frame.
+        delegate: Item {
+            required property string coverImage
+            required property color iconTint
+            required property var lastLaunch
+            visible: false
+            width: 0
+            height: 0
+            onCoverImageChanged: Qt.callLater(root._recomputeBackdrop)
+            onLastLaunchChanged: Qt.callLater(root._recomputeBackdrop)
+        }
+        onCountChanged: Qt.callLater(root._recomputeBackdrop)
+    }
+
+    // CoverArt's generated fallback plate is worth showing even without a
+    // real screenshot yet, so this is gated on having any instance at all.
+    PageBackdrop {
+        anchors.fill: parent
+        visible: root.instanceCount > 0
+        cover: root.backdropCover
+        tint: root.backdropTint
+    }
+
     Flickable {
         id: flick
         anchors.fill: parent

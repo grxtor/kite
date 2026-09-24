@@ -22,17 +22,33 @@ Item {
     property alias body: bodyLabel.text
     property string actionText: ""
     property string actionIcon: ""
+    // Opt-in: true makes this fill its own visual parent and settle its
+    // content near the top third of it instead of dead centre -- for a host
+    // whose empty state sits in an otherwise-empty, very tall scrolling
+    // column (a list that would hold a handful of rows' worth of real
+    // content were it not empty), where centering wastes most of that
+    // height (design-plan.md §4 "Empty states"/§5). Every existing centred
+    // call site (`anchors.centerIn: parent` and similar) is unaffected:
+    // this only changes anything once a caller opts in, since a plain Item
+    // still just takes its content's own implicit size otherwise.
+    property bool upperThird: false
 
     signal actionTriggered()
 
     default property alias illustration: illustrationSlot.data
 
-    implicitWidth: column.implicitWidth
-    implicitHeight: column.implicitHeight
+    implicitWidth: root.upperThird && root.parent ? root.parent.width : column.implicitWidth
+    implicitHeight: root.upperThird && root.parent ? root.parent.height : column.implicitHeight
 
     Column {
         id: column
-        anchors.centerIn: parent
+        anchors.horizontalCenter: parent.horizontalCenter
+        // In the default (non-upperThird) mode this Item is always exactly
+        // column's own size, so this is 0 regardless of how a caller
+        // anchors the Item itself -- the same effective position
+        // `anchors.centerIn: parent` gave before.
+        y: root.upperThird ? Math.max(0, Math.round(parent.height * 0.30 - height / 2))
+                            : Math.round((parent.height - height) / 2)
         spacing: Theme.space.md
         width: Math.min(320, root.width)
 

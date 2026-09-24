@@ -177,6 +177,7 @@ Item {
 
     EmptyState {
         anchors.centerIn: parent
+        upperThird: true
         visible: list.count === 0
         title: qsTr("No worlds yet")
         body: qsTr("Worlds you create in single player show up here.")

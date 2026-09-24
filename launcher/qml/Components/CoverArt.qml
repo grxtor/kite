@@ -39,6 +39,13 @@ Item {
     // Sets on the caller's own hover state -- true nudges the photo into
     // its subtle zoom.
     property bool hovered: false
+    // 1 decodes the photo near its displayed size (sharp, for a card/hero).
+    // A caller compositing it as a faint background wash (PageBackdrop) can
+    // pass something smaller: decoding at a fraction of the size and then
+    // stretching that small bitmap back up (Image's own bilinear filtering)
+    // softens hard photo edges -- roofs, tree lines -- into a wash instead
+    // of a blotchy low-opacity smudge, with no blur shader (Qt 6.4 floor).
+    property real photoSoftness: 1.0
     // What is painted behind this item's corners: the card or page colour.
     // Covers the photo's square corners; see the file comment.
     property color matte: Theme.palette.canvas
@@ -109,8 +116,10 @@ Item {
         cache: true
         // A fixed 2x cap rather than the raw item size: sharp on a retina
         // display without ever decoding a screenshot at its full
-        // resolution for what is, at most, a hero-sized crop.
-        sourceSize: Qt.size(width * 2, height * 2)
+        // resolution for what is, at most, a hero-sized crop. Scaled down
+        // further by photoSoftness for a caller that wants a soft wash
+        // rather than a sharp photo.
+        sourceSize: Qt.size(Math.max(8, width * 2 * root.photoSoftness), Math.max(8, height * 2 * root.photoSoftness))
         scale: root.hovered ? 1.04 : 1.0
         transformOrigin: Item.Center
 

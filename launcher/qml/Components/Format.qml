@@ -90,6 +90,22 @@ QtObject {
         return Number(n).toLocaleString(Qt.locale(), "f", n < 10 ? 1 : 0) + units[unit]
     }
 
+    /*
+     * A stable colour derived from an id/name string, for a designed
+     * fallback that still tells two accounts (or anything else keyed by an
+     * id rather than an icon) apart -- the same purpose an instance's own
+     * randomly-assigned iconTint role serves, for something that has no
+     * icon of its own to carry one. Feed the result through shade() above
+     * for the actual fill/tint, same as any other tint this file hands out.
+     */
+    function hashTint(seed) {
+        var s = String(seed || "")
+        var hash = 0
+        for (var i = 0; i < s.length; ++i)
+            hash = (hash * 31 + s.charCodeAt(i)) >>> 0
+        return Qt.hsla((hash % 360) / 360, 0.55, 0.55, 1)
+    }
+
     // A local path as a url QML can load: "/a/b" and "C:/a/b" alike.
     function fileUrl(path) {
         if (!path || path.length === 0)

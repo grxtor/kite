@@ -102,6 +102,10 @@ qt_add_qml_module(MeshMC_qml_components
         HomePage.qml
         HomeJumpCard.qml
         HomeWorldTile.qml
+        AmbientPattern.qml
+        PageBackdrop.qml
+        BrandMark.qml
+        SkinSilhouette.qml
     RESOURCES
         icons/alert-triangle.svg
         icons/bell.svg

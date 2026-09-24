@@ -298,7 +298,6 @@ ApplicationWindow {
                 Button {
                     visible: root.page === "library"
                     text: qsTr("New instance")
-                    highlighted: true
                     icon.source: Icons.url("plus")
                     onClicked: root.openNewInstance()
                 }

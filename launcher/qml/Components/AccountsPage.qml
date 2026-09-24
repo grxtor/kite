@@ -140,6 +140,10 @@ Item {
     readonly property string heroStatus: heroItem ? heroItem.status : ""
     readonly property string heroStateKey: heroItem ? heroItem.stateKey : ""
     readonly property int heroRow: heroItem ? heroItem.index : -1
+    // A stable colour for the hero's stage -- carries a bounded, designed
+    // fallback (design-plan.md §5/§9) for an offline account that has no
+    // skin, and no icon of its own the way an instance does, to tint one.
+    readonly property color heroTint: Format.hashTint(root.heroAccountId)
 
     ColumnLayout {
         anchors.fill: parent
@@ -169,7 +173,11 @@ Item {
                 onClicked: offlineDialog.open()
             }
             Button {
-                highlighted: true
+                // The hero below already carries its own accent-filled
+                // "Use this account" when it isn't the default -- both
+                // showing together broke the one-accent-fill-per-screen
+                // rule (design-plan.md Principle 1). Adding another account
+                // is the secondary action once any account already exists.
                 text: qsTr("Sign in with Microsoft")
                 icon.source: Icons.url("plus")
                 onClicked: root.startMicrosoftLogin()
@@ -184,13 +192,24 @@ Item {
             visible: !!root.heroItem
             implicitHeight: 248
             radius: Theme.radius.xl
+            // A flat, bordered surface rather than an ornamental accent
+            // gradient (design-plan.md §5/§8/§9) -- the account's own
+            // rendered skin (or its designed silhouette fallback) is the
+            // hero's visual anchor now, not a decorative wash.
+            color: Theme.palette.surfaceRaised
             border.width: 1
             border.color: Theme.palette.border
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: Format.shade(Theme.palette.accent, Theme.dark ? 0.20 : 0.90, 0.7) }
-                GradientStop { position: 0.55; color: Theme.palette.surface }
-                GradientStop { position: 1.0; color: Theme.palette.surface }
+            // Left-aligned content leaves the card's right side flat once
+            // the ornamental gradient is gone; the same quiet block-grid
+            // wash the other chrome-only screens use (see AmbientPattern.qml)
+            // fills that space instead of a second decorative gradient.
+            // clip: true respects hero's own rounded corners for it.
+            clip: true
+
+            AmbientPattern {
+                anchors.fill: parent
+                tint: root.heroTint
+                strength: 0.06
             }
 
             RowLayout {
@@ -198,30 +217,15 @@ Item {
                 anchors.margins: Theme.space.xl
                 spacing: Theme.space.xl
 
-                // The stage: an accent glow, a floor ellipse, and either the
-                // account's real skin or a neutral silhouette standing on it.
+                // The stage: a floor shadow and either the account's real
+                // skin or a neutral, per-account-tinted silhouette standing
+                // on it -- the account's own rendered skin is the visual
+                // anchor here, not an ornamental glow (design-plan.md §5).
                 Item {
                     id: stage
                     Layout.preferredWidth: 168
                     Layout.preferredHeight: 200
                     Layout.alignment: Qt.AlignVCenter
-
-                    Rectangle {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        y: -6
-                        width: 168; height: 168
-                        radius: width / 2
-                        color: Theme.palette.accent
-                        opacity: 0.10
-                    }
-                    Rectangle {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        y: 18
-                        width: 120; height: 120
-                        radius: width / 2
-                        color: Theme.palette.accent
-                        opacity: 0.16
-                    }
 
                     // Soft floor shadow the figure appears to stand on. A
                     // flattened pill rather than a true ellipse -- Rectangle
@@ -232,51 +236,23 @@ Item {
                         anchors.bottom: parent.bottom
                         width: 116; height: 20
                         radius: height / 2
-                        color: Theme.palette.accent
-                        opacity: 0.22
+                        color: Format.shade(root.heroTint, Theme.dark ? 0.45 : 0.55, 0.6)
+                        opacity: 0.30
                     }
 
                     // Neutral placeholder, shown underneath the body render:
                     // an offline account (or one whose texture has not
                     // loaded yet) gets a transparent image back from the
-                    // provider, and this shows through -- same idiom as the
-                    // face avatars' initial letter elsewhere on this page.
-                    Item {
+                    // provider, and this shows through -- same idea as the
+                    // face avatars' initial letter elsewhere on this page,
+                    // tinted per-account (Format.shade) rather than one flat
+                    // neutral grey for every account (design-plan.md §9).
+                    SkinSilhouette {
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.bottom: parent.bottom
                         anchors.bottomMargin: 12
-                        width: 64
-                        height: 170
-                        opacity: 0.55
-
-                        Rectangle {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            y: 0
-                            width: 30; height: 30
-                            radius: width / 2
-                            color: Theme.palette.textTertiary
-                        }
-                        Rectangle {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            y: 34
-                            width: 42; height: 58
-                            radius: Theme.radius.lg
-                            color: Theme.palette.textTertiary
-                        }
-                        Rectangle {
-                            x: parent.width / 2 - 19
-                            y: 94
-                            width: 16; height: 68
-                            radius: Theme.radius.sm
-                            color: Theme.palette.textTertiary
-                        }
-                        Rectangle {
-                            x: parent.width / 2 + 3
-                            y: 94
-                            width: 16; height: 68
-                            radius: Theme.radius.sm
-                            color: Theme.palette.textTertiary
-                        }
+                        opacity: 0.7
+                        color: Format.shade(root.heroTint, Theme.dark ? 0.62 : 0.42, 0.5)
                     }
 
                     Image {

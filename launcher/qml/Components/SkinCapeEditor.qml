@@ -67,6 +67,10 @@ Dialog {
     property var watcher: null
     readonly property bool busy: !!root.watcher && root.watcher.running
     property string pickError: ""
+    // Same per-account fallback tint as AccountsPage's own hero stage
+    // (design-plan.md §5/§9) -- this stage duplicates that idiom
+    // independently, so it needs the same fix, not just the hero card.
+    readonly property color stageTint: Format.hashTint(root.accountId)
 
     onOpened: {
         reload()
@@ -94,59 +98,35 @@ Dialog {
             Layout.fillWidth: true
             spacing: Theme.space.lg
 
-            // The stage: an accent glow and either the account's real skin
-            // body or a neutral silhouette standing on it -- the same idiom
-            // AccountsPage's own hero card uses, scaled down to fit here.
+            // The stage: a floor shadow and either the account's real
+            // skin body or a neutral, per-account-tinted silhouette
+            // standing on it -- the same idiom AccountsPage's own hero card
+            // uses, scaled down to fit here (design-plan.md §5/§9).
             Item {
                 id: stage
                 Layout.preferredWidth: 132
                 Layout.preferredHeight: 208
                 Layout.alignment: Qt.AlignTop
 
+                // Soft floor shadow the figure appears to stand on, matching
+                // AccountsPage's hero exactly -- a flattened pill, not a
+                // glow behind the figure (design-plan.md "no glows").
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    y: 4
-                    width: 116; height: 116
-                    radius: width / 2
-                    color: Theme.palette.accent
-                    opacity: 0.12
+                    anchors.bottom: parent.bottom
+                    width: 96; height: 16
+                    radius: height / 2
+                    color: Format.shade(root.stageTint, Theme.dark ? 0.45 : 0.55, 0.6)
+                    opacity: 0.30
                 }
 
-                Item {
+                SkinSilhouette {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottom: parent.bottom
-                    width: 52
-                    height: 176
-                    opacity: 0.5
-
-                    Rectangle {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        y: 0
-                        width: 26; height: 26
-                        radius: width / 2
-                        color: Theme.palette.textTertiary
-                    }
-                    Rectangle {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        y: 30
-                        width: 36; height: 52
-                        radius: Theme.radius.lg
-                        color: Theme.palette.textTertiary
-                    }
-                    Rectangle {
-                        x: parent.width / 2 - 17
-                        y: 82
-                        width: 14; height: 60
-                        radius: Theme.radius.sm
-                        color: Theme.palette.textTertiary
-                    }
-                    Rectangle {
-                        x: parent.width / 2 + 3
-                        y: 82
-                        width: 14; height: 60
-                        radius: Theme.radius.sm
-                        color: Theme.palette.textTertiary
-                    }
+                    anchors.bottomMargin: 10
+                    unit: 0.87
+                    opacity: 0.65
+                    color: Format.shade(root.stageTint, Theme.dark ? 0.62 : 0.42, 0.5)
                 }
 
                 Image {

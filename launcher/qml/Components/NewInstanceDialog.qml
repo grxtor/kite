@@ -109,6 +109,38 @@ Dialog {
     closePolicy: root.creating ? Popup.NoAutoClose : Popup.CloseOnEscape
     title: root.mode === "import" ? qsTr("Import instance") : qsTr("New instance")
 
+    // A custom header rather than Style/Dialog.qml's plain title-only one
+    // (see DialogHeader.qml's own doc comment on when that is worth it):
+    // MeshMC's own mark, small and quiet, leading the title -- the second
+    // of the two places design-plan.md §1 reuses it as a recurring tell.
+    // No AmbientPattern here, unlike Settings/Discover: at a header's
+    // height the dot field is only one or two rows, which reads as a dotted
+    // rule trailing the title rather than a wash, and the dialog already
+    // floats over a page carrying its own backdrop.
+    header: Item {
+        implicitHeight: Theme.space.lg + Math.max(Theme.control.height, headerLabel.implicitHeight)
+
+        BrandMark {
+            id: headerMark
+            x: Theme.space.lg
+            anchors.verticalCenter: headerLabel.verticalCenter
+            size: Theme.control.height - 10
+        }
+
+        Label {
+            id: headerLabel
+            y: Theme.space.lg
+            anchors.left: headerMark.right
+            anchors.leftMargin: Theme.space.sm
+            anchors.right: parent.right
+            anchors.rightMargin: Theme.space.lg
+            text: root.title
+            elide: Label.ElideRight
+            font.pixelSize: Theme.type.title.pixelSize
+            font.weight: Theme.type.title.weight
+        }
+    }
+
     // root.mode itself is left alone here -- the integrator sets it right
     // before open(), e.g. Main.qml's openNewInstance(mode).
     onOpened: {

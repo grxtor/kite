@@ -57,6 +57,54 @@ Item {
     readonly property int recentCount: root.recentModel && root.recentModel.count !== undefined ? root.recentModel.count : 0
     readonly property bool hasLibrary: root.libraryCount > 0
 
+    // -- Backdrop: the most recently played instance's own cover art -------
+    // Bounded to the page's own top region (design-plan.md §5's "visible
+    // tonal variation... within the first ~320px"), behind "Welcome back"/
+    // "Jump back in" -- recentModel is already most-recent-first, so the
+    // one this page needs is just its own first row.
+    // Visible whenever there is a most-recent instance at all, not only once
+    // it has a real screenshot -- CoverArt's fallback plate is worth showing.
+    PageBackdrop {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        height: 320
+        fadeBottom: true
+        visible: root.recentCount > 0
+        cover: firstRecent.coverImage
+        tint: firstRecent.iconTint
+    }
+
+    // A zero-size probe on recentModel's row 0 -- already most-recent-first,
+    // so no reduction like LibraryPage's backdrop probe is needed here.
+    Repeater {
+        model: root.recentModel
+        delegate: Item {
+            required property int index
+            required property string coverImage
+            required property color iconTint
+            visible: false
+            width: 0
+            height: 0
+            function sync() {
+                if (index === 0) {
+                    firstRecent.coverImage = coverImage
+                    firstRecent.iconTint = iconTint
+                }
+            }
+            onIndexChanged: sync()
+            onCoverImageChanged: sync()
+            onIconTintChanged: sync()
+            Component.onCompleted: sync()
+        }
+    }
+
+    QtObject {
+        id: firstRecent
+        property string coverImage: ""
+        property color iconTint: Theme.palette.textTertiary
+    }
+
     Flickable {
         id: flick
         anchors.fill: parent

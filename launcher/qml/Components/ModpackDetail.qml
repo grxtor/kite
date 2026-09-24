@@ -304,6 +304,18 @@ Item {
                 lineHeight: 1.35
             }
 
+            // The grid card only ever shows one chip; the full list lives
+            // here (design-plan.md §5/§6).
+            Flow {
+                width: parent.width
+                spacing: Theme.space.xs
+                visible: (root.pack.categories || []).length > 0
+                Repeater {
+                    model: root.pack.categories || []
+                    delegate: Tag { text: modelData.length > 0 ? modelData.charAt(0).toUpperCase() + modelData.slice(1) : modelData }
+                }
+            }
+
             // Install
             SettingsGroup {
                 width: parent.width
