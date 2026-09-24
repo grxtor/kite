@@ -75,7 +75,7 @@ Row {
                         Rectangle {
                             x: 6; y: 10
                             width: 22; height: 6
-                            radius: 2
+                            radius: Theme.radius.xs
                             color: card.colors.accentSubtle
                             Rectangle { width: 2; height: parent.height; color: card.colors.accent }
                         }
@@ -85,7 +85,7 @@ Row {
                                 required property int index
                                 x: 6; y: 22 + index * 10
                                 width: 18; height: 4
-                                radius: 2
+                                radius: Theme.radius.xs
                                 color: card.colors.textTertiary
                                 opacity: 0.6
                             }
@@ -99,7 +99,7 @@ Row {
                             model: 3
                             delegate: Rectangle {
                                 width: 36; height: 30
-                                radius: 4
+                                radius: Theme.radius.sm
                                 color: card.colors.surfaceRaised
                                 border.width: 1
                                 border.color: card.colors.border
@@ -112,7 +112,7 @@ Row {
                         anchors.bottom: parent.bottom
                         anchors.bottomMargin: 8
                         width: 64; height: 18
-                        radius: 4
+                        radius: Theme.radius.sm
                         color: card.colors.accent
                         Text {
                             anchors.centerIn: parent

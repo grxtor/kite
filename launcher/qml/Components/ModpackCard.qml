@@ -246,14 +246,13 @@ Item {
             Rectangle {
                 visible: !root.skeleton
                 anchors.centerIn: parent
+                // A plain fade, no overshoot scale-in (design-plan.md §4/§2.4).
                 opacity: root.hovered ? 1 : 0
-                scale: root.hovered ? 1 : 0.92
                 radius: Theme.radius.pill
                 color: Theme.palette.surfaceOverlay
                 width: viewRow.implicitWidth + Theme.space.lg * 2
                 height: Theme.control.height
                 Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
-                Behavior on scale { NumberAnimation { duration: Theme.motion.normal; easing.type: Easing.OutBack } }
 
                 Row {
                     id: viewRow

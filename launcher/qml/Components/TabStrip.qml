@@ -78,7 +78,9 @@ Item {
                         anchors.right: parent.right
                         anchors.bottom: parent.bottom
                         height: 2
-                        radius: 1
+                        // xs (2) fully rounds a 2px-tall bar the same as the
+                        // old literal 1 did; token, not a magic number.
+                        radius: Theme.radius.xs
                         color: Theme.palette.accent
                         visible: tab.selected
                     }

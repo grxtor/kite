@@ -60,10 +60,15 @@ void checkTheme(const ThemePalette& p, const QString& themeName)
 {
 	qInfo().noquote() << "----" << themeName << "----";
 
+	// surfaceOverlay included alongside canvas/surface/surfaceRaised: the
+	// widened Wave 0 ramp (design-plan.md §3) moves every layer, and the
+	// overlay -- popovers and modals, the layer furthest off canvas -- is the
+	// one a popup's own text most often sits directly on.
 	const QList<QPair<QString, QColor>> textSurfaces = {
 		{ "canvas", p.canvas },
 		{ "surface", p.surface },
 		{ "surfaceRaised", p.surfaceRaised },
+		{ "surfaceOverlay", p.surfaceOverlay },
 	};
 
 	for (const auto& s : textSurfaces) {
@@ -75,6 +80,24 @@ void checkTheme(const ThemePalette& p, const QString& themeName)
 		// ThemePalette.h -- so 3.0 rather than the 4.5 used just above.
 		expectRatio(p.textTertiary, s.second, 3.0,
 					themeName + " textTertiary on " + s.first);
+	}
+
+	// The surface ladder has to actually read as a ladder, not just clear
+	// text-contrast minimums: surfaceRaised must be a perceptibly different
+	// luminance from canvas, not a copy the eye rounds off. 0.012 is chosen
+	// to fail the pre-Wave-0 ramp (~0.0083-0.0088 across all three schemes'
+	// dark variants) and pass the widened one (~0.013-0.0142 dark, ~0.10
+	// light -- see design-plan.md §3's ramp table).
+	{
+		const qreal step =
+			Contrast::relativeLuminance(p.surfaceRaised) -
+			Contrast::relativeLuminance(p.canvas);
+		const QString label = themeName + " surfaceRaised vs canvas luminance step";
+		qInfo("%-52s %6.4f  (>= 0.0120)", qPrintable(label), step);
+		QVERIFY2(step >= 0.012,
+				 qPrintable(QString("%1: measured %2, need >= 0.012")
+								.arg(label)
+								.arg(step)));
 	}
 
 	expectRatio(p.textOnAccent, p.accent, 4.5,
@@ -124,15 +147,23 @@ void checkTheme(const ThemePalette& p, const QString& themeName)
 		expectRatio(p.focusRing, s.second, 3.0,
 					themeName + " focusRing on " + s.first);
 
-		// border is decorative and explicitly allowed to fall under 3:1
-		// (see ThemePalette.h) -- measured and printed for visibility, but
-		// not asserted on.
+		// border is decorative and explicitly allowed to fall under the 3:1
+		// WCAG non-text minimum (see ThemePalette.h) -- borderStrong above is
+		// what carries that bar. But Wave 0's own fix was raising border's
+		// alpha because the old 20/255 (~1.19-1.24:1 composited) was too
+		// faint to read as an edge at all; 1.28 is a much lower bar than 3:1,
+		// chosen only to hold that fix in place and fail the old alpha.
 		const QColor borderOverSurface =
 			Contrast::compositeOver(p.border, s.second);
 		const qreal borderRatio =
 			Contrast::ratio(borderOverSurface, s.second);
-		qInfo("%-52s %6.3f  (decorative, no minimum)",
-			  qPrintable(themeName + " border on " + s.first), borderRatio);
+		const QString borderLabel = themeName + " border visible over " + s.first;
+		qInfo("%-52s %6.3f  (>= 1.28, decorative, not WCAG 3:1)",
+			  qPrintable(borderLabel), borderRatio);
+		QVERIFY2(borderRatio >= 1.28,
+				 qPrintable(QString("%1: measured %2, need >= 1.28")
+								.arg(borderLabel)
+								.arg(borderRatio)));
 	}
 }
 

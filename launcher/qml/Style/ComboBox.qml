@@ -90,8 +90,16 @@ T.ComboBox {
         radius: Theme.radius.md
         color: control.down ? Theme.palette.pressedOverlay : Theme.palette.surfaceRaised
         border.width: 1
-        border.color: control.activeFocus ? Theme.palette.borderStrong : Theme.palette.border
+        // The one control in the style with no hover feedback at all --
+        // single property (border colour only, matching TextField.qml's
+        // idiom), not also brightening the fill, per Theme.motion's
+        // one-property hover contract.
+        border.color: (control.activeFocus || control.hovered) ? Theme.palette.borderStrong : Theme.palette.border
         opacity: control.enabled ? 1.0 : 0.45
+
+        Behavior on border.color {
+            ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+        }
 
         FocusRing {
             anchors.fill: parent

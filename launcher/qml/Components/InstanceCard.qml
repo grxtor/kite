@@ -76,11 +76,7 @@ Item {
         border.width: root.selected ? 2 : 1
         border.color: root.selected ? Theme.palette.accent
                     : root.hovered ? Theme.palette.borderStrong : Theme.palette.border
-        // A small lift on hover; content moves with the card, so text never
-        // shifts relative to its own background.
-        y: root.hovered ? -2 : 0
 
-        Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
@@ -157,7 +153,9 @@ Item {
                     spacing: Theme.space.xs + 1
                     Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 7; height: 7; radius: 3.5
+                        // A perfect circle, like Switch/Slider's own round
+                        // parts: computed half-width, not a radius token.
+                        width: 7; height: 7; radius: width / 2
                         color: Theme.palette.success
                     }
                     Text {
@@ -191,12 +189,11 @@ Item {
                 anchors.margins: Theme.space.sm
                 running: root.isRunning
                 enabled: root.isRunning || root.canLaunch
+                // A plain fade, no overshoot scale-in (design-plan.md §4/§2.4).
                 opacity: !root.launching && (root.hovered || root.isRunning) ? 1 : 0
-                scale: !root.launching && (root.hovered || root.isRunning) ? 1 : 0.85
                 visible: opacity > 0
                 focusPolicy: Qt.NoFocus
                 Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
-                Behavior on scale { NumberAnimation { duration: Theme.motion.normal; easing.type: Easing.OutBack } }
                 onClicked: root.isRunning ? root.stopRequested() : root.playRequested()
             }
         }

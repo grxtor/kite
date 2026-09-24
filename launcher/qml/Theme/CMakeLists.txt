@@ -29,6 +29,18 @@ qt_add_qml_module(MeshMC_qml_theme
     SOURCES
         ThemeService.h
         ThemeService.cpp
+    # Inter 4.1 static TTFs (+ their OFL.txt), bundled here rather than as a
+    # loose file on disk: Theme.qml's own FontLoader instances load them by
+    # qrc path so Theme.font.family is real on every machine, not only one
+    # that happens to already have Inter installed system-wide. Living next
+    # to Theme.qml keeps the module and the asset it needs to function in one
+    # place -- see the comment on Theme.qml's font.family.
+    RESOURCES
+        fonts/inter/Inter-Regular.ttf
+        fonts/inter/Inter-Medium.ttf
+        fonts/inter/Inter-SemiBold.ttf
+        fonts/inter/Inter-Bold.ttf
+        fonts/inter/OFL.txt
 )
 
 # ThemeService only reads ThemePalette (theme/ThemePalette.h, part of the

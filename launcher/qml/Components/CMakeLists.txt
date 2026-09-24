@@ -88,6 +88,7 @@ qt_add_qml_module(MeshMC_qml_components
         EmptyState.qml
         SidebarNav.qml
         NavItem.qml
+        NavSelectionIndicator.qml
         AccountChip.qml
         ProfileButton.qml
         ProfileMenu.qml

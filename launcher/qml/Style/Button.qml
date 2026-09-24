@@ -15,6 +15,15 @@ import MeshMC.Theme
 //   neither (the default) -> a raised neutral surface
 // `highlighted` wins if both are set, since "primary" and "quiet" is a
 // contradiction a design system should resolve rather than render.
+//
+// Contract: at most one `highlighted` button per screen (design-plan.md
+// Principle 1) -- it is the one full accent fill a page is allowed. Every
+// other actionable control on that screen uses the default (raised neutral
+// surface + hairline border) or `flat` variant instead. This is a call-site
+// discipline, not something this file can enforce by itself; the default
+// variant already reads as a real control (surfaceRaised fill, border,
+// hover/press overlay below) precisely so call sites have a non-accent option
+// that still looks pressable.
 T.Button {
     id: control
 

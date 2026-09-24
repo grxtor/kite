@@ -87,44 +87,17 @@ Rectangle {
     // The selected destination's fill, as one pill that slides from the
     // previous item to the new one instead of each item owning its own
     // static highlight -- NavItem itself only ever paints hover/press.
-    //
-    // Collapsed: a compact square (the same size as NavItem's own rail
-    // square) centred in the item's row, not a rectangle stretched to the
-    // row's full width -- a wide highlight behind a small centred icon is
-    // what made it look like the icon and its highlight did not agree on a
-    // centre. The accent bar is a separate sibling, always pinned to the
-    // rail's own left edge, so it never has to share (or move with) this
-    // square's own left edge.
+    // The shared mechanism (also used by Settings' own section list) lives
+    // in NavSelectionIndicator.qml; collapsed mode's centred square instead
+    // of a full-width bar is documented there.
     readonly property int railSquare: 40
-    readonly property real indicatorItemY: root.selectedNavItem ? root.selectedNavItem.y : 0
-    readonly property real indicatorItemH: root.selectedNavItem ? root.selectedNavItem.height : 0
-    readonly property real indicatorItemW: root.selectedNavItem ? root.selectedNavItem.width : 0
 
-    Rectangle {
-        id: activeIndicator
-        visible: !!root.selectedNavItem
-        width: root.collapsed ? root.railSquare : root.indicatorItemW
-        height: root.collapsed ? root.railSquare : root.indicatorItemH
-        x: Theme.space.md + (root.collapsed ? (root.indicatorItemW - width) / 2 : 0)
-        y: Theme.space.md + root.indicatorItemY + (root.collapsed ? (root.indicatorItemH - height) / 2 : 0)
-        radius: Theme.radius.md
-        color: Theme.palette.surfaceRaised
-
-        Behavior on x { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-        Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-        Behavior on width { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-    }
-
-    Rectangle {
-        visible: !!root.selectedNavItem
-        x: Theme.space.md
-        y: Theme.space.md + root.indicatorItemY + (root.indicatorItemH - height) / 2
-        width: 3
-        height: root.indicatorItemH - Theme.space.md * 2 + 4
-        radius: 2
-        color: Theme.palette.accent
-
-        Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+    NavSelectionIndicator {
+        target: root.selectedNavItem
+        collapsed: root.collapsed
+        railSquare: root.railSquare
+        insetX: Theme.space.md
+        insetY: Theme.space.md
     }
 
     ColumnLayout {

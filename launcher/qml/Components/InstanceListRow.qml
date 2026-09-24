@@ -95,7 +95,7 @@ Item {
             anchors.bottom: parent.bottom
             anchors.margins: 1
             width: 3
-            radius: 1.5
+            radius: Theme.radius.xs
             color: Theme.palette.accent
         }
 
@@ -126,7 +126,7 @@ Item {
                     anchors.margins: -1
                     width: 9
                     height: 9
-                    radius: 4.5
+                    radius: width / 2
                     color: Theme.palette.success
                     border.width: 2
                     border.color: Theme.palette.canvas
@@ -209,12 +209,11 @@ Item {
                     size: Theme.control.heightSm + 4
                     running: root.isRunning
                     enabled: root.isRunning || root.canLaunch
+                    // A plain fade, no overshoot scale-in (design-plan.md §4/§2.4).
                     opacity: !root.launching && (root.hovered || root.isRunning) ? 1 : 0
-                    scale: !root.launching && (root.hovered || root.isRunning) ? 1 : 0.85
                     visible: opacity > 0
                     focusPolicy: Qt.NoFocus
                     Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
-                    Behavior on scale { NumberAnimation { duration: Theme.motion.normal; easing.type: Easing.OutBack } }
                     onClicked: root.isRunning ? root.stopRequested() : root.playRequested()
                 }
             }

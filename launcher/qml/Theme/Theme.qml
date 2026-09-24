@@ -17,6 +17,8 @@ import QtQuick
  * a plain constant this file alone owns.
  */
 QtObject {
+    id: root
+
     // ThemeService is this module's own C++ singleton; referring to it by
     // name is enough; the module makes it visible without an import, same as
     // any other type declared in it.
@@ -39,7 +41,14 @@ QtObject {
         readonly property int xxl: 32
     }
 
+    // Contract: `pill` is reserved for genuine toggle/chip affordances
+    // (a switch track, a filter chip) -- never for the Play verb or an
+    // instance's own identity (cover corners, the icon picker, PlayButton's
+    // wide hero shape), which are capped at `md`/`lg` instead. A blocky game
+    // launcher asking to look professional doesn't have to be as rounded as
+    // a fintech app; see design-plan.md §1/§2.7.
     readonly property QtObject radius: QtObject {
+        readonly property int xs: 2
         readonly property int sm: 4
         readonly property int md: 8
         readonly property int lg: 12
@@ -76,6 +85,30 @@ QtObject {
         readonly property color chipBorder: Qt.rgba(1, 1, 1, 0.12)
     }
 
+    /* Motion contract: a hover/press transition changes exactly one visual
+     * property over `fast` -- colour, or a single small scale/translate,
+     * never both, and never an overshoot easing (Easing.OutBack) on a
+     * hover-triggered transform. An idle animation loop (Animation.Infinite)
+     * is only ever gated on a real busy/live state property -- the way
+     * RecentItem.qml/InstanceListRow.qml gate their pulse on `isRunning`,
+     * PlayDock.qml on `dockRunning`, and Skeleton.qml on its own visibility
+     * while loading -- never bound to "the page happens to be idle" alone.
+     * See design-plan.md §2.2-2.4.
+     *
+     * Selection grammar: one documented look per control class, not one
+     * grammar total and not accidental variety --
+     *   - rail/list nav (SidebarNav, and anything reusing its mechanism,
+     *     e.g. Settings' section list): a sliding surfaceRaised pill plus a
+     *     3px accent bar pinned to the leading edge.
+     *   - tab strip (TabStrip): an accent underline beneath the active tab.
+     *   - swatch/tile picker (PalettePicker and similar): an accent ring
+     *     around the selected tile.
+     *   - segmented control (SegmentedControl): a raised fill on the
+     *     selected segment, no accent.
+     * Every instance of a class uses its class's grammar; a control never
+     * falls back to a bare colour-only "selected" look. See design-plan.md
+     * §2.6.
+     */
     readonly property QtObject motion: QtObject {
         readonly property int fast: 120
         readonly property int normal: 180
@@ -83,11 +116,40 @@ QtObject {
         readonly property int easing: Easing.OutCubic
     }
 
+    // Inter 4.1 static TTFs, bundled as MeshMC.Theme module resources
+    // (Theme/CMakeLists.txt) rather than probed for as a system font: the
+    // whole type scale below is only true on a machine that happens to
+    // already have Inter installed, unless the app ships its own copy.
+    // Loaded once, here, since every consumer reaches Inter through
+    // Theme.font.family rather than importing a FontLoader of its own.
+    readonly property bool _interReady: _interRegular.status === FontLoader.Ready
+                                        && _interMedium.status === FontLoader.Ready
+                                        && _interSemiBold.status === FontLoader.Ready
+                                        && _interBold.status === FontLoader.Ready
+    property FontLoader _interRegular: FontLoader {
+        source: "qrc:/qt/qml/MeshMC/Theme/fonts/inter/Inter-Regular.ttf"
+    }
+    property FontLoader _interMedium: FontLoader {
+        source: "qrc:/qt/qml/MeshMC/Theme/fonts/inter/Inter-Medium.ttf"
+    }
+    property FontLoader _interSemiBold: FontLoader {
+        source: "qrc:/qt/qml/MeshMC/Theme/fonts/inter/Inter-SemiBold.ttf"
+    }
+    property FontLoader _interBold: FontLoader {
+        source: "qrc:/qt/qml/MeshMC/Theme/fonts/inter/Inter-Bold.ttf"
+    }
+    Component.onCompleted: {
+        if (!root._interReady)
+            console.warn("Theme: bundled Inter failed to load, falling back to",
+                          Qt.application.font.family)
+    }
+
     readonly property QtObject font: QtObject {
-        // The design fonts when installed; otherwise the platform's own UI
-        // and monospace fonts, never Qt's generic fallback (which on macOS
-        // turns "JetBrains Mono" into a proportional font).
-        readonly property string family: Qt.fontFamilies().indexOf("Inter") >= 0
+        // Unconditional now that Inter is bundled (see the FontLoaders
+        // above) -- the platform font is only ever used if loading the
+        // bundled resource itself failed, not merely because Inter isn't
+        // separately installed system-wide.
+        readonly property string family: root._interReady
                                          ? "Inter" : Qt.application.font.family
         readonly property string mono: Qt.fontFamilies().indexOf("JetBrains Mono") >= 0
                                        ? "JetBrains Mono"
@@ -96,6 +158,11 @@ QtObject {
                                        : "DejaVu Sans Mono"
     }
 
+    // Contract: heading (20) and display (28) are page-header ceilings, not
+    // hero sizes -- a page that reads as "huge header, tiny work area" is a
+    // per-page layout bug to fix at the call site, never a reason to raise
+    // these numbers further. Caps + letter-spacing stay allowed only on
+    // `overline`.
     readonly property QtObject type: QtObject {
         readonly property QtObject caption: QtObject {
             readonly property int pixelSize: 12

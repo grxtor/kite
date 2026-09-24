@@ -56,23 +56,49 @@ Item {
         anchors.rightMargin: Theme.space.xl + Theme.space.xs
         spacing: Theme.space.xl
 
-        Column {
+        // Same rail selection grammar as the main sidebar (design-plan.md
+        // Principle 6/§4): a sliding pill + left accent bar behind the row,
+        // not just NavItem's own bare accent-icon/bold-text fallback. Shares
+        // SidebarNav's own mechanism via NavSelectionIndicator rather than
+        // re-deriving the geometry here.
+        Item {
+            id: sectionNavHost
             Layout.alignment: Qt.AlignTop
             Layout.preferredWidth: 208
             Layout.topMargin: Theme.space.xs
-            spacing: Theme.space.xxs
+            implicitHeight: sectionColumn.implicitHeight
 
-            Repeater {
-                model: root.sections
-                delegate: NavItem {
-                    required property var modelData
-                    width: parent.width
-                    // Only offered when some plugin put something there.
-                    visible: modelData.id !== "plugins" || pluginsView.count > 0
-                    iconName: modelData.icon
-                    label: modelData.label
-                    selected: root.section === modelData.id
-                    onClicked: root.section = modelData.id
+            readonly property Item selectedItem: {
+                for (var i = 0; i < sectionRepeater.count; ++i) {
+                    var item = sectionRepeater.itemAt(i)
+                    if (item && item.modelData.id === root.section)
+                        return item
+                }
+                return null
+            }
+
+            NavSelectionIndicator {
+                target: sectionNavHost.selectedItem
+            }
+
+            Column {
+                id: sectionColumn
+                width: parent.width
+                spacing: Theme.space.xxs
+
+                Repeater {
+                    id: sectionRepeater
+                    model: root.sections
+                    delegate: NavItem {
+                        required property var modelData
+                        width: parent.width
+                        // Only offered when some plugin put something there.
+                        visible: modelData.id !== "plugins" || pluginsView.count > 0
+                        iconName: modelData.icon
+                        label: modelData.label
+                        selected: root.section === modelData.id
+                        onClicked: root.section = modelData.id
+                    }
                 }
             }
         }
