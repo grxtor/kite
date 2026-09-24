@@ -104,7 +104,20 @@ Column {
         // a card's hover lift and focus ring along the top row.
         clip: height < fullHeight - 0.5
 
-        Behavior on height { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        // Off for the section's own initial layout -- height jumps straight
+        // from 0 to the grid/list's real height as soon as the Loader below
+        // first produces content, and animating that first jump (rather
+        // than a later, real fold/unfold click) is exactly the kind of
+        // startup work that made the app hang on Windows. Qt.callLater runs
+        // after that first layout pass has settled, so a genuine click a
+        // moment later still gets the fold animation.
+        property bool settled: false
+        Component.onCompleted: Qt.callLater(function () { body.settled = true })
+
+        Behavior on height {
+            enabled: body.settled
+            NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing }
+        }
 
         Loader {
             id: contentLoader

@@ -268,6 +268,15 @@ void QmlShell::setInstanceIcon(const QString& id, const QString& iconKey)
 	instance->setIconKey(iconKey);
 }
 
+void QmlShell::debugMarkInstanceCrashed(const QString& id)
+{
+	auto instance = LAUNCHER->instances()->getInstanceById(id);
+	if (!instance) {
+		return;
+	}
+	instance->setCrashed(true);
+}
+
 bool QmlShell::importIcon(const QString& fileUrlOrPath)
 {
 	const QUrl url(fileUrlOrPath);

@@ -319,6 +319,16 @@ class QmlShell : public QObject
 	 * Refuses (false) while the instance is running, like the widget does. */
 	Q_INVOKABLE bool deleteInstance(const QString& id);
 	Q_INVOKABLE bool isInstanceRunning(const QString& id) const;
+	/* Preview/dev-only: sets the same runtime flag LaunchTask sets around a
+	 * real game process's exit (BaseInstance::setCrashed()), so a
+	 * MESHMC_QML_ROUTE devRoute step (Main.qml's applyDevRoute(), "crashed=
+	 * <id>") can exercise the Home page's "Crashed last time" chip. Unlike
+	 * every other instance property, hasCrashed is never written to
+	 * instance.cfg, so gen_preview.py's static preview data cannot fake it
+	 * on disk -- this reaches the exact same in-memory flag production
+	 * does instead of inventing a parallel on-disk one. No-op for an
+	 * unknown id. */
+	Q_INVOKABLE void debugMarkInstanceCrashed(const QString& id);
 
 	QStringList groups() const;
 	QObject* iconsModel() const;

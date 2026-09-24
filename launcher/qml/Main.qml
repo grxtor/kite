@@ -27,8 +27,8 @@ ApplicationWindow {
     color: Theme.palette.canvas
 
     property string selectedId: ""
-    // "library", "discover", "settings", "instance" or "accounts".
-    property string page: "library"
+    // "home", "library", "discover", "settings", "instance" or "accounts".
+    property string page: "home"
     // The instance the instance page shows.
     property string openedInstanceId: ""
     property var openedDetails: null
@@ -59,8 +59,10 @@ ApplicationWindow {
 
     // Startup route for review snapshots (MESHMC_QML_ROUTE): ";"-separated
     // steps such as "theme=light;scheme=ember;size=1400x900;page=settings;section=java",
-    // "instance=<id>;tab=mods", "page=discover;detail=0", "newinstance" or
-    // "gallery".
+    // "instance=<id>;tab=mods", "page=discover;detail=0", "newinstance",
+    // "gallery" or "page=home;crashed=<id>" (marks that instance as having
+    // crashed last time, for the Home page's chip -- see QmlShell's
+    // debugMarkInstanceCrashed()).
     property string devRoute: ""
     function applyDevRoute() {
         var steps = root.devRoute.split(";")
@@ -98,6 +100,8 @@ ApplicationWindow {
                 Qt.callLater(() => playDock.openPicker())
             else if (key === "sidebar")
                 SettingsStore.setValue("UiSidebarCollapsed", value === "collapsed")
+            else if (key === "crashed")
+                root.call("debugMarkInstanceCrashed", value)
         }
     }
     Timer {
@@ -136,11 +140,13 @@ ApplicationWindow {
         root.call("launchInstance", id)
     }
 
-    // Library/Discover/Instance keep the play bar; Settings/Accounts hide it
-    // -- no "instance to play" on either, and the extra chrome would just
-    // crowd two already form-heavy pages.
+    // Home/Library/Discover/Instance keep the play bar; Settings/Accounts
+    // hide it -- no "instance to play" on either, and the extra chrome would
+    // just crowd two already form-heavy pages. Home needs it too: its own
+    // "Jump back in" cards deliberately use a secondary Play, and the dock's
+    // Play is what keeps that page down to one accent-filled control.
     function dockVisibleFor(page) {
-        return page === "library" || page === "discover" || page === "instance"
+        return page === "home" || page === "library" || page === "discover" || page === "instance"
     }
 
     function instanceGroups() {
@@ -210,6 +216,7 @@ ApplicationWindow {
             // regardless of what was last chosen.
             collapsed: root.width < 1000 || SettingsStore.bool("UiSidebarCollapsed")
             items: [
+                { id: "home", icon: "home", label: qsTr("Home") },
                 { id: "library", icon: "library", label: qsTr("Library") },
                 { id: "discover", icon: "compass", label: qsTr("Discover") }
             ]
@@ -236,7 +243,8 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 // The instance page has its own banner and way back.
                 visible: root.page !== "instance"
-                title: root.page === "settings" ? qsTr("Settings")
+                title: root.page === "home" ? qsTr("Home")
+                     : root.page === "settings" ? qsTr("Settings")
                      : root.page === "discover" ? qsTr("Discover")
                      : root.page === "accounts" ? qsTr("Accounts") : qsTr("Library")
                 count: root.page === "library" && root.instanceModel && root.instanceModel.count !== undefined
@@ -309,7 +317,7 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 Layout.minimumWidth: 0
 
-                readonly property var pageOrder: ["library", "settings", "discover", "instance", "accounts"]
+                readonly property var pageOrder: ["home", "library", "settings", "discover", "instance", "accounts"]
                 // Whether the play bar shows for the page currently on
                 // screen -- updated at the same invisible midpoint as
                 // pageStack's own currentIndex (see pageTransition below),
@@ -343,6 +351,25 @@ ApplicationWindow {
                     id: pageStack
                     anchors.fill: parent
                     Component.onCompleted: currentIndex = pageHost.pageOrder.indexOf(root.page)
+
+                    HomePage {
+                        id: homePage
+                        recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
+                        instanceModel: root.instanceModel
+                        recentWorldsModel: root.shell && root.shell.recentWorlds ? root.shell.recentWorlds : null
+                        accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
+
+                        onLaunchRequested: (id) => root.launch(id)
+                        onStopRequested: (id) => root.call("killInstance", id)
+                        onOpenInstanceRequested: (id) => root.openInstance(id)
+                        onOpenInstanceWorldsRequested: (id) => {
+                            root.openInstance(id)
+                            instancePage.tab = "worlds"
+                        }
+                        onCreateRequested: root.openNewInstance()
+                        onDiscoverRequested: root.page = "discover"
+                        onLibraryRequested: root.page = "library"
+                    }
 
                     LibraryPage {
                         id: libraryPage

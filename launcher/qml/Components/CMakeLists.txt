@@ -98,6 +98,9 @@ qt_add_qml_module(MeshMC_qml_components
         Gallery.qml
         MeshIcon.qml
         Icons.qml
+        HomePage.qml
+        HomeJumpCard.qml
+        HomeWorldTile.qml
     RESOURCES
         icons/alert-triangle.svg
         icons/bell.svg

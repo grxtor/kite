@@ -60,12 +60,21 @@ Item {
     }
 
     // First search when the page is first shown -- not at startup, so
-    // opening the launcher never talks to Modrinth on its own.
+    // opening the launcher never talks to Modrinth on its own. Gated on
+    // StackLayout's own isCurrentItem (Qt 6.4+), not `visible`: `visible`
+    // is still true at Component.onCompleted (StackLayout only flips the
+    // non-current pages' visible off on its next polish, after every page's
+    // own onCompleted has already run), so checking it here fired a search
+    // on every startup regardless of which page was actually shown. Falls
+    // back to `visible` if a future QtQuick.Layouts build ever drops the
+    // attached property.
     function searchIfFirstShown() {
-        if (visible && !root.searched)
+        var current = root.StackLayout && root.StackLayout.isCurrentItem !== undefined
+                    ? root.StackLayout.isCurrentItem : root.visible
+        if (current && !root.searched)
             runSearch()
     }
-    onVisibleChanged: searchIfFirstShown()
+    StackLayout.onIsCurrentItemChanged: searchIfFirstShown()
     onModelChanged: searchIfFirstShown()
     Component.onCompleted: searchIfFirstShown()
 
