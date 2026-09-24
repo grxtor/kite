@@ -47,16 +47,16 @@ Dialog {
     signal created()
 
     readonly property bool creating: !!watcher && watcher.running
-    // No trademarked logos, so each loader gets a plain shape instead: a
-    // block for the unmodified game, a woven grid for Fabric's own name and
-    // its fork Quilt, a gear for Forge and its fork NeoForge -- tinted
-    // apart so the four modded options don't read as one another.
+    // Each loader wears the logo the launcher already ships for it (the
+    // iconName column of knownModLoaders(), served by the instanceicon
+    // provider); the unmodified game gets the grass block, the default
+    // instance icon.
     readonly property var loaders: [
-        { value: "", label: qsTr("Vanilla"), icon: "cube", tint: Theme.palette.textSecondary },
-        { value: "fabric", label: "Fabric", icon: "grid", tint: Theme.palette.accent },
-        { value: "quilt", label: "Quilt", icon: "copy", tint: Theme.palette.info },
-        { value: "forge", label: "Forge", icon: "settings", tint: Theme.palette.warning },
-        { value: "neoforge", label: "NeoForge", icon: "refresh", tint: Theme.palette.danger }
+        { value: "", label: qsTr("Vanilla"), iconKey: "grass" },
+        { value: "fabric", label: "Fabric", iconKey: "fabricmc" },
+        { value: "quilt", label: "Quilt", iconKey: "quiltmc" },
+        { value: "forge", label: "Forge", iconKey: "forge" },
+        { value: "neoforge", label: "NeoForge", iconKey: "neoforged" }
     ]
 
     // Start on the newest version of the list shown, so Create works
@@ -113,12 +113,23 @@ Dialog {
     // (see DialogHeader.qml's own doc comment on when that is worth it):
     // MeshMC's own mark, small and quiet, leading the title -- the second
     // of the two places design-plan.md §1 reuses it as a recurring tell.
-    // No AmbientPattern here, unlike Settings/Discover: at a header's
-    // height the dot field is only one or two rows, which reads as a dotted
-    // rule trailing the title rather than a wash, and the dialog already
-    // floats over a page carrying its own backdrop.
+    // The same quiet block-texture wash Settings/Discover carry (see
+    // AmbientPattern.qml), scaled down to a header: inset by the dialog's
+    // own corner radius and faded out at its sides and foot, so it never
+    // pokes past the rounded outline or ends on a hard edge.
     header: Item {
         implicitHeight: Theme.space.lg + Math.max(Theme.control.height, headerLabel.implicitHeight)
+
+        AmbientPattern {
+            anchors.fill: parent
+            anchors.topMargin: 1
+            anchors.leftMargin: Theme.radius.xl
+            anchors.rightMargin: Theme.radius.xl
+            fadeBottom: true
+            fadeStart: 0.25
+            fadeSides: Theme.space.xl
+            fadeColor: Theme.palette.surfaceOverlay
+        }
 
         BrandMark {
             id: headerMark
@@ -504,20 +515,16 @@ Dialog {
                                 anchors.centerIn: parent
                                 spacing: Theme.space.xs
 
-                                Rectangle {
+                                Image {
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    width: Theme.icon.lg + Theme.space.md
+                                    width: 40
                                     height: width
-                                    radius: Theme.radius.md
-                                    color: Qt.rgba(loaderCard.modelData.tint.r, loaderCard.modelData.tint.g,
-                                                   loaderCard.modelData.tint.b, loaderCard.selected ? 0.24 : 0.14)
-
-                                    MeshIcon {
-                                        anchors.centerIn: parent
-                                        iconName: loaderCard.modelData.icon
-                                        size: Theme.icon.lg
-                                        color: loaderCard.modelData.tint
-                                    }
+                                    source: "image://instanceicon/" + loaderCard.modelData.iconKey
+                                    sourceSize: Qt.size(width, height)
+                                    fillMode: Image.PreserveAspectFit
+                                    smooth: true
+                                    mipmap: true
+                                    opacity: loaderCard.selected || loaderCard.hovered ? 1 : 0.85
                                 }
 
                                 Text {

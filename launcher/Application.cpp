@@ -896,13 +896,13 @@ void Application::initSettings()
 	// keeps its separate list of themes.
 	m_settings->registerSetting("UiThemeMode", QString("dark"));
 	// Colour scheme of the QML interface: amethyst, ember or diamond.
-	m_settings->registerSetting("UiPalette", QString("amethyst"));
+	m_settings->registerSetting("UiPalette", QString("grass"));
 	m_settings->registerSetting("UiSidebarCollapsed", false);
 	// Stops decorative loops (Play sheen, the cat's idle moves) for people
 	// who find motion distracting.
 	m_settings->registerSetting("UiReduceMotion", false);
 	m_settings->registerSetting("CatEnabled", true);
-	m_settings->registerSetting("CatVariant", QString("tabby"));
+	m_settings->registerSetting("CatVariant", QString("calico"));
 
 	/* Screen-top menu bar. Only macOS has one; elsewhere the setting is
 	 * carried but never acted on. The second key is what this shipped as
@@ -2261,8 +2261,28 @@ MainWindow* Application::showMainWindow(bool minimized)
 					});
 			connect(m_qmlShell.get(), &QmlShell::editRequested, this,
 					[this](const QString& id) {
+						/* The instance page's "Classic editor" button that
+						 * used to reach here is gone (see InstancePage.qml)
+						 * now that the page covers servers, backups, data
+						 * packs, worlds and the managed-pack section
+						 * directly. Refuse rather than open a widget
+						 * InstanceWindow regardless -- same reasoning as
+						 * settingsRequested/accountsRequested below: the
+						 * hard rule is no Qt Widgets window opens under the
+						 * QML shell, full stop. */
+						qWarning()
+							<< "Application: editRequested(" << id
+							<< ") ignored under the QML shell -- the "
+							   "instance page covers this instance's "
+							   "content directly now";
+					});
+			connect(m_qmlShell.get(), &QmlShell::joinServerRequested, this,
+					[this](const QString& id, const QString& address) {
 						if (auto inst = instances()->getInstanceById(id)) {
-							showInstanceWindow(inst);
+							launch(inst, LaunchMode::Normal,
+								   std::make_shared<MinecraftServerTarget>(
+									   MinecraftServerTarget::parse(address,
+																	false)));
 						}
 					});
 			connect(m_qmlShell.get(), &QmlShell::folderRequested, this,

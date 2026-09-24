@@ -50,6 +50,14 @@ set(CORE_SOURCES
     models/NewInstanceController.cpp
     models/RecentWorldsModel.h
     models/RecentWorldsModel.cpp
+    models/ServersListModel.h
+    models/ServersListModel.cpp
+    models/BackupController.h
+    models/BackupController.cpp
+    models/WorldDataPacksController.h
+    models/WorldDataPacksController.cpp
+    models/ManagedPackController.h
+    models/ManagedPackController.cpp
     modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
@@ -1377,6 +1385,27 @@ add_unit_test(AccountsController
 # need LAUNCHER->metadataIndex()/instances() and are not exercised here.
 add_unit_test(NewInstanceController
     SOURCES models/NewInstanceController_test.cpp
+    LIBS MeshMC_core
+    )
+
+# Needs neither a BaseInstance nor a LauncherContext - only a directory to
+# read/write servers.dat under, the same reason OtherLogsModel_test.cpp
+# drives that model directly against a temp directory. BackupController and
+# WorldDataPacksController (the other new InstanceDetails-owned models this
+# phase added) both need a real MinecraftInstance/BaseInstance and are not
+# exercised here, the same reason models/InstanceDetails_test.cpp only
+# exercises InstanceLogBridge.
+add_unit_test(ServersListModel
+    SOURCES models/ServersListModel_test.cpp
+    LIBS MeshMC_core
+    )
+
+# Exercises only providerFromString() - the one static, instance-free helper
+# ManagedPackController has. isSupported()/fetchVersions()/updateToVersion()
+# all need a real BaseInstance and are not exercised here, the same reason
+# models/ContentBrowser_test.cpp only exercises its own static helpers.
+add_unit_test(ManagedPackController
+    SOURCES models/ManagedPackController_test.cpp
     LIBS MeshMC_core
     )
 

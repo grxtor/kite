@@ -175,21 +175,26 @@ class ThemePalette
 
 	/* The launcher's colour schemes. Each is one accent over its own set
 	 * of neutrals, in a dark and a light variant; the user picks the
-	 * scheme and the mode independently. Amethyst is the default. */
+	 * scheme and the mode independently. Grass is the default (Amethyst
+	 * was, until the purple read as the app's whole identity rather than
+	 * one choice among several -- see ThemeService's own default). */
 	enum class Scheme
 	{
 		Amethyst, // hue-less graphite, electric violet
 		Ember,	  // warm charcoal, lava orange
-		Diamond	  // cool navy, diamond blue
+		Diamond,  // cool navy, diamond blue
+		Grass	  // hue-less graphite, Minecraft-grass green
 	};
 
 	static ThemePalette forScheme(Scheme scheme, bool dark);
-	/* "amethyst", "ember" or "diamond" -- the stored setting value. An
-	 * unknown name falls back to Amethyst. */
+	/* "amethyst", "ember", "diamond" or "grass" -- the stored setting
+	 * value. An unknown name falls back to Amethyst. */
 	static Scheme schemeFromName(const QString& name);
 	static QString schemeName(Scheme scheme);
 
-	/* The default scheme's two variants. */
+	/* Amethyst's two variants -- kept named "mesh" for the callers (mostly
+	 * tests) that want a fixed, scheme-independent palette rather than
+	 * whatever the user has picked; see forScheme() for that. */
 	static ThemePalette meshDark();
 	static ThemePalette meshLight();
 

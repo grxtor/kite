@@ -87,9 +87,14 @@ class ThemeTest : public QObject
 		//
 		// The launcher starts dark whatever the OS prefers -- that is the
 		// documented default -- so this holds on a light test runner too.
+		// A fresh ThemeService also starts on the Grass scheme (see its own
+		// m_scheme default), not Amethyst/meshDark() -- this deliberately
+		// does not use meshDark() here, unlike the same check further down
+		// for "ember", so a future default-scheme change fails loudly here
+		// instead of this assertion silently checking the wrong palette.
 		QCOMPARE(root->property("dark").toBool(), true);
 		QCOMPARE(root->property("accent").value<QColor>(),
-				 ThemePalette::meshDark().accent);
+				 ThemePalette::forScheme(ThemePalette::Scheme::Grass, true).accent);
 
 		auto* service = qobject_cast<ThemeService*>(
 			root->property("serviceRef").value<QObject*>());
@@ -105,14 +110,14 @@ class ThemeTest : public QObject
 		QCOMPARE(toLight.count(), 1);
 		QCOMPARE(root->property("dark").toBool(), false);
 		QCOMPARE(root->property("canvasColor").value<QColor>(),
-				 ThemePalette::meshLight().canvas);
+				 ThemePalette::forScheme(ThemePalette::Scheme::Grass, false).canvas);
 
 		QSignalSpy toDark(service, &ThemeService::changed);
 		themeRef->setProperty("mode", QStringLiteral("dark"));
 		QCOMPARE(toDark.count(), 1);
 		QCOMPARE(root->property("dark").toBool(), true);
 		QCOMPARE(root->property("canvasColor").value<QColor>(),
-				 ThemePalette::meshDark().canvas);
+				 ThemePalette::forScheme(ThemePalette::Scheme::Grass, true).canvas);
 
 		// The colour scheme swaps independently of the mode, also as one
 		// announced unit; an unknown name changes nothing.

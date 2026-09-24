@@ -17,7 +17,13 @@ qt_add_library(MeshMC_qml_components STATIC)
 # qt_add_qml_module, or Icons.qml registers as an ordinary re-instantiable
 # type and every "import MeshMC.Components" gets its own private instance
 # instead of the one Icons.url() is meant to be called on.
-set_source_files_properties(Icons.qml Format.qml SettingsStore.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(Icons.qml Format.qml SettingsStore.qml PixelArt.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+
+# The landscape fallbacks: 24 scenes at three shapes (card/band/strip, see
+# art/scenes.py). Globbed rather than listed line by line -- 72 checked-in
+# PNGs -- with CONFIGURE_DEPENDS so regenerating the set is picked up.
+file(GLOB MESHMC_ART_LANDSCAPES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
+    art/landscapes/card/*.png art/landscapes/band/*.png art/landscapes/strip/*.png)
 
 qt_add_qml_module(MeshMC_qml_components
     URI MeshMC.Components
@@ -103,6 +109,7 @@ qt_add_qml_module(MeshMC_qml_components
         Gallery.qml
         MeshIcon.qml
         Icons.qml
+        PixelArt.qml
         HomePage.qml
         HomeJumpCard.qml
         HomeWorldTile.qml
@@ -110,8 +117,13 @@ qt_add_qml_module(MeshMC_qml_components
         PageBackdrop.qml
         BrandMark.qml
         SkinSilhouette.qml
+        ServersTab.qml
+        BackupsTab.qml
+        DataPacksTab.qml
+        ManagedPackTab.qml
     RESOURCES
         icons/alert-triangle.svg
+        icons/archive.svg
         icons/arrow-down.svg
         icons/arrow-up.svg
         icons/bell.svg
@@ -143,6 +155,7 @@ qt_add_qml_module(MeshMC_qml_components
         icons/plus.svg
         icons/refresh.svg
         icons/search.svg
+        icons/server.svg
         icons/settings.svg
         icons/sort.svg
         icons/stop.svg
@@ -152,6 +165,23 @@ qt_add_qml_module(MeshMC_qml_components
         icons/user.svg
         icons/users.svg
         icons/x.svg
+        # Original pixel art (see art/generate.py) -- checked-in PNGs, never
+        # generated at build or run time.
+        art/blocks/cobblestone.png
+        art/blocks/deepslate.png
+        art/blocks/dirt.png
+        art/blocks/grass_side.png
+        art/blocks/grass_top.png
+        art/blocks/gravel.png
+        art/blocks/oak_planks.png
+        art/blocks/sand.png
+        art/blocks/stone.png
+        art/ambient/blocks_mask.png
+        ${MESHMC_ART_LANDSCAPES}
+        art/hero/home_hero.png
+        art/empty/no_instances.png
+        art/empty/no_worlds.png
+        art/empty/not_found.png
     IMPORTS
         MeshMC.Theme
 )

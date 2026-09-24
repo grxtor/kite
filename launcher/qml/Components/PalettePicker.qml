@@ -10,20 +10,31 @@ import MeshMC.Theme
  * The colour schemes side by side, each drawn as a miniature launcher in its
  * own colours (sidebar, two cards, a Play button) for the current light or
  * dark mode, so the choice is made by looking rather than by name.
+ *
+ * Flow rather than Row: a fourth card (Grass) made the plain Row wider than
+ * Settings' own panel at the window's default width, so it wraps onto a
+ * second line instead of overflowing once its host layout constrains this
+ * item's own width (SettingRow's `wide` mode gives it Layout.fillWidth).
  */
-Row {
+Flow {
     id: root
 
-    // The scheme shown as chosen; "amethyst", "ember" or "diamond".
+    // The scheme shown as chosen; "amethyst", "ember", "diamond" or "grass".
     property string current: Theme.scheme
     signal picked(string scheme)
 
     readonly property var schemes: [
+        { id: "grass", label: qsTr("Grass"), note: qsTr("Graphite and grass green") },
         { id: "amethyst", label: qsTr("Obsidian"), note: qsTr("Graphite and amethyst") },
         { id: "ember", label: qsTr("Ember"), note: qsTr("Charcoal and lava") },
         { id: "diamond", label: qsTr("Diamond"), note: qsTr("Navy and diamond blue") }
     ]
 
+    // Bound to the host's width (SettingRow's `wide` slot resizes to the
+    // panel) rather than left at Flow's own unconstrained implicit width --
+    // otherwise Flow has nothing to wrap against and behaves exactly like
+    // the Row it replaced.
+    width: parent ? parent.width : implicitWidth
     spacing: Theme.space.md
 
     Repeater {

@@ -208,6 +208,11 @@ void QmlShell::openInstanceFolder(const QString& id)
 	emit folderRequested(id);
 }
 
+void QmlShell::joinServer(const QString& id, const QString& address)
+{
+	emit joinServerRequested(id, address);
+}
+
 void QmlShell::createInstance()
 {
 	emit createInstanceRequested();
@@ -660,6 +665,18 @@ QVariantMap QmlShell::rootProperties()
 	 * review script picture any page without editing the QML. */
 	props.insert(QStringLiteral("devRoute"),
 				 qEnvironmentVariable("MESHMC_QML_ROUTE"));
+	/* Whether launcher/qml/Cat (the roaming cat companion) was built at
+	 * all -- a compile-time fact, not a setting, so it is a plain bool
+	 * handed over once here rather than a Q_PROPERTY. Main.qml's catLoader
+	 * and SettingsPage's Cat group both gate on this: MESHMC_HAS_CAT is
+	 * only ever defined when launcher/qml/CMakeLists.txt actually linked
+	 * MeshMC_qml_cat in (see its MeshMC_ENABLE_CAT guard), which itself
+	 * only happens when Qt Quick3D was found. */
+#ifdef MESHMC_HAS_CAT
+	props.insert(QStringLiteral("catAvailable"), true);
+#else
+	props.insert(QStringLiteral("catAvailable"), false);
+#endif
 	return props;
 }
 

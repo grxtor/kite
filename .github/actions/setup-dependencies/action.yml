@@ -121,7 +121,12 @@ runs:
       with:
         aqtversion: "==3.1.*"
         version: ${{ inputs.qt-version }}
-        modules: qtimageformats qtnetworkauth
+        # qtquick3d is the optional 3D cat companion's only extra Qt
+        # dependency (see launcher/qml/Cat/CMakeLists.txt); qtshadertools is
+        # listed alongside it because Quick3D bakes its shader variants
+        # through it at runtime, not only at build time, so it has to be
+        # present even though nothing here compiles a shader directly.
+        modules: qtimageformats qtnetworkauth qtquick3d qtshadertools
         cache: ${{ inputs.build-type == 'Debug' }}
 
     - name: Setup bundled OpenSSL

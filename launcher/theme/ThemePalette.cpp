@@ -226,6 +226,51 @@ namespace
 				QColor(0x67, 0x71, 0x84), QColor(0xDA, 0xE8, 0xFF), QColor(0x0B, 0x33, 0x75),
 				QColor(0x0F, 0x15, 0x22)};
 	}
+	/* Hue-less graphite neutrals -- literally so (R == G == B at every
+	 * step), not merely low-saturation like the other three schemes' own
+	 * "neutrals" (Amethyst's carry a cool violet cast, Ember's a warm one,
+	 * Diamond's a cool navy one). The user rejected an earlier attempt at
+	 * this scheme for tinting its *surfaces* green -- a wash of "faded
+	 * greenish tints" over every panel read as sickly, not Minecraft-like.
+	 * Green here lives only in the accent family (accent/Hover/Pressed/
+	 * Subtle/Text) and the selection tint, the same place every other
+	 * scheme keeps its own hue -- never in canvas/surface/surfaceRaised/
+	 * surfaceOverlay/surfaceSunken. Values re-derived and contrast-checked
+	 * directly against Contrast::ratio()/relativeLuminance() (not
+	 * hand-typed) before landing here; see ThemePalette_test.cpp. */
+	SchemeColors grass(bool dark)
+	{
+		if (dark)
+			// A saturated Minecraft-grass green (the official launcher's own
+			// PLAY button and a grass block's top face both sit in this
+			// range) -- bright enough that near-black text clears 4.5:1
+			// (measured 5.64:1), the same "dark text on a bright accent"
+			// shape Ember/Diamond's dark variants already use.
+			return {QColor(0x0D, 0x0D, 0x0D), QColor(0x19, 0x19, 0x19), QColor(0x23, 0x23, 0x23),
+					QColor(0x2E, 0x2E, 0x2E), QColor(0x08, 0x08, 0x08),
+					QColor(0xF4, 0xF4, 0xF4), QColor(0xB9, 0xB9, 0xB9), QColor(0x8B, 0x8B, 0x8B),
+					QColor(0x5C, 0x5C, 0x5C),
+					QColor(0x56, 0x9C, 0x3D), QColor(0x64, 0xAC, 0x48), QColor(0x3D, 0x7A, 0x28),
+					QColor(0x7E, 0xD9, 0x57), QColor(0x0A, 0x12, 0x06),
+					QColor(0x70, 0x70, 0x70), QColor(0x1E, 0x2E, 0x17), QColor(0xF4, 0xF4, 0xF4),
+					QColor(0x24, 0x24, 0x24)};
+		// A deep enough forest green that white text clears 4.5:1 (measured
+		// 6.49:1) -- the light variant's own fill needs a darker green than
+		// the dark variant's, the same shape Amethyst/Diamond's light
+		// variants already use with white-on-accent.
+		return {QColor(0xF3, 0xF3, 0xF3), QColor(0xFA, 0xFA, 0xFA), QColor(0xFF, 0xFF, 0xFF),
+				QColor(0xFF, 0xFF, 0xFF), QColor(0xE8, 0xE8, 0xE8),
+				QColor(0x13, 0x13, 0x13), QColor(0x48, 0x48, 0x48), QColor(0x60, 0x60, 0x60),
+				QColor(0xA0, 0xA0, 0xA0),
+				// accentText a distinct, darker shade of accent rather than a
+				// verbatim copy -- the margin pattern Amethyst/Ember/Diamond's
+				// own light variants each use for their own accentText, even
+				// though accent alone already clears 4.5:1 as text (~6.5:1).
+				QColor(0x2E, 0x6B, 0x1B), QColor(0x25, 0x58, 0x16), QColor(0x1D, 0x47, 0x11),
+				QColor(0x24, 0x57, 0x14), QColor(0xFF, 0xFF, 0xFF),
+				QColor(0x60, 0x60, 0x60), QColor(0xDC, 0xED, 0xCB), QColor(0x17, 0x31, 0x10),
+				QColor(0x13, 0x13, 0x13)};
+	}
 } // namespace
 
 ThemePalette ThemePalette::forScheme(Scheme scheme, bool dark)
@@ -235,6 +280,8 @@ ThemePalette ThemePalette::forScheme(Scheme scheme, bool dark)
 			return build(ember(dark), dark);
 		case Scheme::Diamond:
 			return build(diamond(dark), dark);
+		case Scheme::Grass:
+			return build(grass(dark), dark);
 		case Scheme::Amethyst:
 			break;
 	}
@@ -247,6 +294,8 @@ ThemePalette::Scheme ThemePalette::schemeFromName(const QString& name)
 		return Scheme::Ember;
 	if (name == QStringLiteral("diamond"))
 		return Scheme::Diamond;
+	if (name == QStringLiteral("grass"))
+		return Scheme::Grass;
 	return Scheme::Amethyst;
 }
 
@@ -257,6 +306,8 @@ QString ThemePalette::schemeName(Scheme scheme)
 			return QStringLiteral("ember");
 		case Scheme::Diamond:
 			return QStringLiteral("diamond");
+		case Scheme::Grass:
+			return QStringLiteral("grass");
 		case Scheme::Amethyst:
 			break;
 	}

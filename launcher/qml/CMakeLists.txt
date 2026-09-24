@@ -25,6 +25,14 @@ add_subdirectory(Theme)
 add_subdirectory(Style)
 add_subdirectory(Components)
 
+# The roaming 3D cat, only when Qt Quick3D was found (see the top-level
+# CMakeLists.txt's find_package(... OPTIONAL_COMPONENTS Quick3D) and the
+# MeshMC_ENABLE_CAT option next to it). Kept out of the unconditional list
+# above so a Quick3D-less build never even sees Cat/'s CMakeLists.txt.
+if(MeshMC_ENABLE_CAT)
+    add_subdirectory(Cat)
+endif()
+
 qt_add_library(MeshMC_qml STATIC)
 
 qt_add_qml_module(MeshMC_qml
@@ -70,3 +78,15 @@ target_link_libraries(MeshMC_qml PUBLIC
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::QuickControls2
 )
+
+# The cat's module and plugin, linked the same way as the three above, plus
+# the compile-time flag QmlShell.cpp reads to tell QML whether Main.qml's
+# catLoader has anything to load at all -- see QmlShell::rootProperties().
+# Both stay entirely out of a build with MeshMC_ENABLE_CAT off.
+if(MeshMC_ENABLE_CAT)
+    target_link_libraries(MeshMC_qml PUBLIC
+        MeshMC_qml_cat
+        MeshMC_qml_catplugin
+    )
+    target_compile_definitions(MeshMC_qml PRIVATE MESHMC_HAS_CAT=1)
+endif()

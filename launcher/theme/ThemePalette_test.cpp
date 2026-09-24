@@ -185,7 +185,7 @@ class ThemePaletteTest : public QObject
 	void test_everyScheme()
 	{
 		using S = ThemePalette::Scheme;
-		for (S scheme : {S::Amethyst, S::Ember, S::Diamond}) {
+		for (S scheme : {S::Amethyst, S::Ember, S::Diamond, S::Grass}) {
 			const QString name = ThemePalette::schemeName(scheme);
 			checkTheme(ThemePalette::forScheme(scheme, true),
 					   qPrintable(name + QStringLiteral(" dark")));

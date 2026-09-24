@@ -48,7 +48,7 @@ class ThemeService : public QObject
 	Q_PROPERTY(ThemePalette palette READ palette NOTIFY changed)
 	Q_PROPERTY(bool dark READ dark NOTIFY changed)
 	Q_PROPERTY(QString mode READ mode WRITE setMode NOTIFY changed)
-	/* "amethyst", "ember" or "diamond" -- see ThemePalette::Scheme. */
+	/* "amethyst", "ember", "diamond" or "grass" -- see ThemePalette::Scheme. */
 	Q_PROPERTY(QString scheme READ scheme WRITE setScheme NOTIFY changed)
 
   public:
@@ -83,5 +83,9 @@ class ThemeService : public QObject
 	 * the OS instead, and is one setting away. */
 	QString m_mode = QStringLiteral("dark");
 	bool m_dark = true;
-	ThemePalette::Scheme m_scheme = ThemePalette::Scheme::Amethyst;
+	// Grass is the app's default scheme (see ThemePalette.h); this fallback
+	// only matters before Main.qml's own Component.onCompleted applies the
+	// persisted "UiPalette" setting (or for a consumer that never does, e.g.
+	// a unit test constructing ThemeService directly).
+	ThemePalette::Scheme m_scheme = ThemePalette::Scheme::Grass;
 };

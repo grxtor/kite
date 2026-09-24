@@ -42,10 +42,19 @@ Item {
     signal backRequested()
     signal classicEditorRequested(string id)
     signal openPathRequested(string path)
+    // Bubbles up from the Servers tab's "Join" button - see Main.qml.
+    signal joinServerRequested(string id, string address)
 
     readonly property var modsModel: details ? details.mods : null
     readonly property var worldsModel: details ? details.worlds : null
     readonly property var shotsModel: details ? details.screenshots : null
+    readonly property var managedPackModel: details ? details.managedPack : null
+    // Set from WorldsTab's per-row "Data packs" action, and read by
+    // DataPacksTab's own selectedWorldRow - see both. Reset whenever a
+    // different instance opens, so a row picked in a previous instance
+    // never carries over onto one that may not even have that many worlds.
+    property int pendingDataPackWorld: -1
+    onDetailsChanged: root.pendingDataPackWorld = -1
 
     ColumnLayout {
         anchors.fill: parent
@@ -100,13 +109,19 @@ Item {
                 compact: true
                 // Outside the Overview the tab's own content needs the room.
                 slim: root.tab !== "overview"
-                editText: qsTr("Classic editor")
                 // The persistent play bar plays/stops the opened instance
                 // now; this header no longer needs its own Play/Stop too.
                 showPlay: false
-                onEditRequested: root.classicEditorRequested(instanceId)
+                // The "Classic editor" button that used to sit here opened
+                // a widget InstanceWindow, which the QML shell must never
+                // do -- this page's own tabs (Servers, Backups, Worlds,
+                // Managed pack, ...) now cover everything it did instead.
+                // classicEditorRequested is kept below only because Main.qml
+                // still has a handler for it; nothing emits it any more.
+                showEdit: false
+                // Nothing under the QML shell answers this yet either.
+                showMenu: false
                 onFolderRequested: root.openPathRequested(root.details ? root.details.instanceRoot : "")
-                onMenuRequested: root.classicEditorRequested(instanceId)
 
                 // The overview needs these too, and this delegate is the
                 // only place the header model's roles are at hand.
@@ -123,15 +138,24 @@ Item {
             Layout.fillWidth: true
             current: root.tab
             tabs: [
-                { id: "overview", label: qsTr("Overview") },
+                { id: "overview", label: qsTr("Overview") }
+            ].concat(root.managedPackModel ? [{ id: "managedpack", label: qsTr("Modpack") }] : [])
+             .concat([
                 { id: "content", label: qsTr("Content"), count: root.modsModel ? contentTab.count : -1 },
                 { id: "version", label: qsTr("Version") },
                 { id: "browse", label: qsTr("Add content") },
-                { id: "worlds", label: qsTr("Worlds"), count: root.worldsModel ? worldsTab.count : -1 },
+                { id: "worlds", label: qsTr("Worlds"), count: root.worldsModel ? worldsTab.count : -1 }
+             ])
+             .concat(root.details && root.details.isMinecraft
+                     ? [{ id: "datapacks", label: qsTr("Data packs") },
+                        { id: "servers", label: qsTr("Servers") }] : [])
+             .concat([
+                { id: "backups", label: qsTr("Backups") },
                 { id: "screenshots", label: qsTr("Screenshots"), count: root.shotsModel ? root.shotsModel.count : -1 },
                 { id: "log", label: qsTr("Log") },
                 { id: "settings", label: qsTr("Settings") }
-            ].concat(root.details && root.details.isMinecraft
+             ])
+             .concat(root.details && root.details.isMinecraft
                      ? [{ id: "gameoptions", label: qsTr("Game options") }] : [])
              .concat(pluginPages.count === 0 ? []
                      : [{ id: "plugins", label: pluginPages.count === 1 && pluginPages.firstTitle.length > 0
@@ -143,7 +167,7 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.topMargin: Theme.space.sm
-            currentIndex: ["overview", "content", "version", "browse", "worlds", "screenshots", "log", "settings", "gameoptions", "plugins"].indexOf(root.tab)
+            currentIndex: ["overview", "managedpack", "content", "version", "browse", "worlds", "datapacks", "servers", "backups", "screenshots", "log", "settings", "gameoptions", "plugins"].indexOf(root.tab)
 
             InstanceOverviewTab {
                 id: overview
@@ -159,6 +183,11 @@ Item {
                 onNotesEdited: (text) => { if (root.details) root.details.notes = text }
                 onScreenshotsRequested: root.tab = "screenshots"
                 onManageContentRequested: root.tab = "content"
+            }
+
+            ManagedPackTab {
+                controller: root.managedPackModel
+                onUpdated: root.backRequested()
             }
 
             ContentTab {
@@ -181,6 +210,27 @@ Item {
                 id: worldsTab
                 details: root.details
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
+                onDataPacksRequested: (row) => {
+                    root.pendingDataPackWorld = row
+                    root.tab = "datapacks"
+                }
+            }
+
+            DataPacksTab {
+                details: root.details
+                selectedWorldRow: root.pendingDataPackWorld
+                onOpenFolderRequested: (path) => root.openPathRequested(path)
+            }
+
+            ServersTab {
+                model: root.details ? root.details.servers : null
+                serversDir: root.details ? root.details.serversDir : ""
+                onOpenFolderRequested: (path) => root.openPathRequested(path)
+                onJoinRequested: (address) => root.joinServerRequested(root.instanceId, address)
+            }
+
+            BackupsTab {
+                controller: root.details ? root.details.backups : null
             }
 
             ScreenshotsTab {

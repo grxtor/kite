@@ -6,10 +6,15 @@ import QtQuick
 import MeshMC.Theme
 
 /*
- * Art behind one instance: its own newest screenshot when it has one, or a
- * generated plate derived from its icon tint when it does not. Used as the
- * whole cover of an InstanceCard and, full-bleed, behind ContinueCard and
- * InstancePage's hero.
+ * Art behind one instance: its own newest screenshot when it has one, or --
+ * when it does not -- one of PixelArt's original pixel-art landscapes,
+ * picked deterministically from `seed` (an instance/world id) so a given
+ * item always draws the same scene rather than a new one on every repaint.
+ * Used as the whole cover of an InstanceCard and, full-bleed, behind
+ * ContinueCard, InstancePage's hero and PlayDock's bar. Every scene exists
+ * at three shapes (see `artShape`): cropping the 16:9 one into a bar far
+ * wider than it only ever samples a sliver of plain sky, so a wide host is
+ * given the scene drawn for its own shape instead.
  *
  * ROUNDED CORNERS. Rectangle's `clip` only clips to the bounding box, and
  * below Qt 6.5 there is no MultiEffect/ShaderEffect-free way to mask an
@@ -29,12 +34,16 @@ Item {
     // image://instanceicon/<iconKey>, for the fallback's centred icon.
     property string iconKey: ""
     property int iconSize: 64
+    // The instance/world id driving which fallback landscape is picked;
+    // falls back to iconKey (still deterministic, just coarser-grained) when
+    // a caller has not been updated to pass its own id.
+    property string seed: ""
     property int radius: Theme.radius.md + 2
     // "none" | "bottom" | "horizontal" -- a dark fade so text/controls laid
-    // over a photo stay legible. Only drawn when there is a photo: the
-    // fallback plate is already tuned for its own contrast. "bottom" suits
-    // a card (controls sit at the cover's foot); "horizontal" suits a hero
-    // (the fade favours the leading edge, where its text sits).
+    // over the art stay legible, whether that art is a real screenshot or
+    // the generated pixel-art fallback. "bottom" suits a card (controls sit
+    // at the cover's foot); "horizontal" suits a hero (the fade favours the
+    // leading edge, where its text sits).
     property string scrim: "none"
     // Sets on the caller's own hover state -- true nudges the photo into
     // its subtle zoom.
@@ -51,6 +60,13 @@ Item {
     property color matte: Theme.palette.canvas
 
     readonly property bool hasPhoto: root.source.toString().length > 0
+    // Which of PixelArt's three drawn shapes fits this item: "card" for a
+    // grid card or tile, "band" for the instance page's hero, "strip" for the
+    // dock bar.
+    readonly property real aspect: root.height > 0 ? root.width / root.height : 1
+    readonly property string artShape: PixelArt.shapeForAspect(root.aspect)
+    readonly property string fallbackKey: root.seed.length > 0 ? root.seed : root.iconKey
+    readonly property url fallbackArt: PixelArt.landscapeUrl(root.fallbackKey, root.artShape)
     // The zoomed photo would otherwise overshoot these bounds slightly.
     clip: true
 
@@ -60,48 +76,60 @@ Item {
         id: backdrop
         anchors.fill: parent
         radius: root.radius
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Format.shade(root.tint, Theme.dark ? 0.28 : 0.88, 0.55) }
-            GradientStop { position: 1.0; color: Format.shade(root.tint, Theme.dark ? 0.13 : 0.72, 0.55) }
-        }
+        color: Format.shade(root.tint, Theme.dark ? 0.20 : 0.85, 0.5)
+        clip: true
 
-        // A few large, rotated, near-invisible squares -- a blocky hint
-        // rather than a literal texture, and cheap enough for a grid of
-        // these (a tiled Canvas inside each delegate would not be).
-        Item {
-            anchors.fill: parent
-            anchors.margins: -root.width * 0.15
-            visible: !root.hasPhoto
-            clip: true
-
-            Repeater {
-                model: 3
-                delegate: Rectangle {
-                    id: block
-                    required property int index
-                    readonly property real span: backdrop.height * (1.05 - index * 0.24)
-                    x: backdrop.width - span * 0.62 + index * span * 0.20
-                    y: backdrop.height * 0.30 - span * 0.5 + index * span * 0.16
-                    width: span
-                    height: span
-                    rotation: 18
-                    radius: Theme.radius.sm
-                    color: Qt.rgba(1, 1, 1, Theme.dark ? 0.045 : 0.10)
-                }
-            }
-        }
-
+        // One of PixelArt's 24 generated scenes, deterministic per `seed`
+        // (and mirrored for about half of them) -- see the file comment.
+        // Nearest-neighbour (smooth: false) keeps its native pixels crisp
+        // instead of letting the scene graph blur them on the upscale.
         Image {
-            anchors.centerIn: parent
-            visible: !root.hasPhoto && root.iconKey.length > 0
-            width: root.iconSize
-            height: root.iconSize
-            source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
-            sourceSize: Qt.size(root.iconSize, root.iconSize)
-            fillMode: Image.PreserveAspectFit
-            asynchronous: true
-            // Pixel art: never let the scene graph filter it into a blur.
+            anchors.fill: parent
+            visible: !root.hasPhoto
+            source: root.hasPhoto ? "" : root.fallbackArt
+            fillMode: Image.PreserveAspectCrop
+            mirror: PixelArt.landscapeMirror(root.fallbackKey)
             smooth: false
+            asynchronous: true
+            cache: true
+        }
+
+        // Dark theme: the pastel day scenes would otherwise glare against
+        // the graphite surfaces around them. Static, and only over the
+        // generated art -- a real screenshot is left as it was taken.
+        Rectangle {
+            anchors.fill: parent
+            visible: !root.hasPhoto && Theme.dark
+            color: Qt.rgba(0, 0, 0, 0.22)
+        }
+
+        // A small corner badge for the instance icon rather than a giant
+        // centred medallion -- same corner-anchored, icon-sized idiom
+        // ModpackCard's own logoFrame uses, so the scene behind stays the
+        // dominant visual and the icon reads as a badge over it.
+        readonly property int badgeSize: Math.min(root.iconSize, 44)
+
+        Rectangle {
+            id: iconChip
+            visible: !root.hasPhoto && root.iconKey.length > 0
+            anchors.left: parent.left
+            anchors.bottom: parent.bottom
+            anchors.margins: Theme.space.sm
+            width: backdrop.badgeSize
+            height: width
+            radius: Theme.radius.md
+            color: Qt.rgba(0, 0, 0, Theme.dark ? 0.34 : 0.22)
+
+            Image {
+                anchors.fill: parent
+                anchors.margins: 6
+                source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
+                sourceSize: Qt.size(width, height)
+                fillMode: Image.PreserveAspectFit
+                asynchronous: true
+                // Pixel art: never let the scene graph filter it into a blur.
+                smooth: false
+            }
         }
     }
 
@@ -136,7 +164,10 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        visible: root.hasPhoto && root.scrim === "bottom"
+        // Not gated on hasPhoto: the fallback landscape is real imagery too
+        // and wants the same legibility fade a caller asks for over a
+        // real screenshot.
+        visible: root.scrim === "bottom"
         gradient: Gradient {
             GradientStop { position: 0.0; color: Qt.rgba(root.scrimOpaque.r, root.scrimOpaque.g, root.scrimOpaque.b, 0.18) }
             GradientStop { position: 0.45; color: root.scrimClear }
@@ -146,7 +177,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        visible: root.hasPhoto && root.scrim === "horizontal"
+        visible: root.scrim === "horizontal"
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0.0; color: root.scrimOpaque }

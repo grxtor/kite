@@ -62,15 +62,17 @@ Item {
     // tonal variation... within the first ~320px"), behind "Welcome back"/
     // "Jump back in" -- recentModel is already most-recent-first, so the
     // one this page needs is just its own first row.
-    // Visible whenever there is a most-recent instance at all, not only once
-    // it has a real screenshot -- CoverArt's fallback plate is worth showing.
+    // Always visible, even with zero recents: a real screenshot wins when
+    // there is one, otherwise `wideHero` draws Home's own pixel-art
+    // panorama rather than nothing (or, previously, a per-instance plate
+    // stretched across a much wider band than it was designed for).
     PageBackdrop {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
         height: 320
         fadeBottom: true
-        visible: root.recentCount > 0
+        wideHero: true
         cover: firstRecent.coverImage
         tint: firstRecent.iconTint
     }
@@ -360,10 +362,12 @@ Item {
         actionIcon: "plus"
         onActionTriggered: root.createRequested()
 
-        MeshIcon {
-            iconName: "cube"
-            size: 40
-            color: Theme.palette.textTertiary
+        Image {
+            source: PixelArt.emptyUrl("no_instances")
+            sourceSize: Qt.size(64, 64)
+            width: 64
+            height: 64
+            smooth: false
         }
     }
 }

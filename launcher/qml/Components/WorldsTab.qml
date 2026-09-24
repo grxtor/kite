@@ -16,11 +16,24 @@ Item {
     id: root
 
     // InstanceDetails: worlds (WorldList: folder, seed, name, gameMode,
-    // lastPlayed, iconFile, dayCount), worldsDir, deleteWorld.
+    // lastPlayed, iconFile, dayCount), worldsDir, deleteWorld, renameWorld,
+    // copyWorld, resetWorldIcon.
     property var details: null
     readonly property bool unlocked: !!details && details.contentChangesAllowed
     readonly property int count: list.count
     signal openFolderRequested(string path)
+    // Asks the instance page to switch to the Data packs tab pointed at
+    // world `row` - see InstancePage.qml.
+    signal dataPacksRequested(int row)
+
+    // The TaskWatcher of a copy in progress, if any - copyWorld() runs off
+    // the GUI thread (a world can run into gigabytes), see InstanceDetails.
+    property var watcher: null
+    readonly property bool busy: !!root.watcher && root.watcher.running
+
+    // A different instance's details: whatever this tab was doing belonged
+    // to the previous one.
+    onDetailsChanged: root.watcher = null
 
     ColumnLayout {
         anchors.fill: parent
@@ -39,6 +52,29 @@ Item {
                 text: qsTr("Open folder")
                 icon.source: Icons.url("folder")
                 onClicked: root.openFolderRequested(root.details ? root.details.worldsDir : "")
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            visible: root.busy || (!!root.watcher && root.watcher.failed)
+            spacing: Theme.space.md
+
+            Text {
+                Layout.fillWidth: true
+                text: root.watcher
+                      ? (root.watcher.failed ? (root.watcher.error || qsTr("Copy failed."))
+                                             : (root.watcher.status || qsTr("Copying world…")))
+                      : ""
+                color: root.watcher && root.watcher.failed ? Theme.palette.danger : Theme.palette.textSecondary
+                elide: Text.ElideRight
+                font.family: Theme.font.family
+                font.pixelSize: Theme.type.label.pixelSize
+            }
+            LaunchProgressBar {
+                Layout.preferredWidth: 160
+                visible: root.busy
+                progress: root.watcher ? root.watcher.progress : -1
             }
         }
 
@@ -153,12 +189,54 @@ Item {
 
                         IconButton {
                             visible: hover.hovered && root.unlocked
-                            iconName: "trash"
-                            tip: qsTr("Delete world")
-                            onClicked: {
-                                confirm.row = cell.index
-                                confirm.text = qsTr("Delete the world “%1”? It cannot be recovered from the launcher.").arg(cell.name.length > 0 ? cell.name : cell.folder)
-                                confirm.open()
+                            iconName: "package"
+                            tip: qsTr("Data packs")
+                            onClicked: root.dataPacksRequested(cell.index)
+                        }
+
+                        IconButton {
+                            visible: hover.hovered && root.unlocked
+                            enabled: !root.busy
+                            iconName: "more"
+                            tip: qsTr("More")
+                            onClicked: rowMenu.popup()
+
+                            Menu {
+                                id: rowMenu
+                                MenuItem {
+                                    text: qsTr("Rename…")
+                                    icon.source: Icons.url("edit")
+                                    onTriggered: {
+                                        renamePrompt.row = cell.index
+                                        renamePrompt.value = cell.name.length > 0 ? cell.name : cell.folder
+                                        renamePrompt.open()
+                                    }
+                                }
+                                MenuItem {
+                                    text: qsTr("Copy…")
+                                    icon.source: Icons.url("copy")
+                                    onTriggered: {
+                                        copyPrompt.row = cell.index
+                                        copyPrompt.value = qsTr("%1 (copy)").arg(cell.name.length > 0 ? cell.name : cell.folder)
+                                        copyPrompt.open()
+                                    }
+                                }
+                                MenuItem {
+                                    text: qsTr("Reset icon")
+                                    icon.source: Icons.url("image")
+                                    enabled: !!cell.iconFile
+                                    onTriggered: if (root.details) root.details.resetWorldIcon(cell.index)
+                                }
+                                MenuSeparator {}
+                                MenuItem {
+                                    text: qsTr("Delete…")
+                                    icon.source: Icons.url("trash")
+                                    onTriggered: {
+                                        confirm.row = cell.index
+                                        confirm.text = qsTr("Delete the world “%1”? It cannot be recovered from the launcher.").arg(cell.name.length > 0 ? cell.name : cell.folder)
+                                        confirm.open()
+                                    }
+                                }
                             }
                         }
                     }
@@ -173,6 +251,35 @@ Item {
         title: qsTr("Delete world")
         confirmText: qsTr("Delete world")
         onConfirmed: if (root.details) root.details.deleteWorld(row)
+    }
+
+    PromptDialog {
+        id: renamePrompt
+        property int row: -1
+        title: qsTr("Rename world")
+        confirmText: qsTr("Rename")
+        onSubmitted: (text) => {
+            if (!root.details || root.details.renameWorld(row, text))
+                close()
+            else
+                error = qsTr("That name cannot be used.")
+        }
+    }
+
+    PromptDialog {
+        id: copyPrompt
+        property int row: -1
+        title: qsTr("Copy world")
+        confirmText: qsTr("Copy")
+        onSubmitted: (text) => {
+            var watcher = root.details ? root.details.copyWorld(row, text) : null
+            if (watcher) {
+                root.watcher = watcher
+                close()
+            } else {
+                error = qsTr("That name cannot be used.")
+            }
+        }
     }
 
     EmptyState {

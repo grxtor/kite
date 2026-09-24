@@ -141,8 +141,8 @@ Item {
     onRowModelChanged: if (!rowModel) { dockInstanceId = ""; dockName = "" }
 
     // -- Backdrop: the selected instance's own screenshot, darkened --------
-    // The art itself spans the whole bar (CoverArt's own tinted plate
-    // fallback covers an instance with no screenshot yet); scrim: "none"
+    // The art itself spans the whole bar (CoverArt's own pixel-art "strip"
+    // landscape covers an instance with no screenshot yet); scrim: "none"
     // here because CoverArt's own horizontal scrim jumps to 62% opacity by
     // the 45% mark, which read as one flat dark block on the left and a
     // separate bright picture on the right rather than one continuous
@@ -159,6 +159,7 @@ Item {
         source: root.dockCoverImage
         tint: root.dockIconTint
         iconKey: ""
+        seed: root.dockInstanceId
         scrim: "none"
     }
     Rectangle {
@@ -169,32 +170,17 @@ Item {
         // GradientStop child actually needs to reach a property declared
         // out here.
         readonly property color scrimBase: Theme.media.scrim
-        // Light-mode's photo-less plate is intentionally pale (CoverArt's
-        // own recipe), and this bar's text is always light regardless of
-        // theme -- easing the scrim back there would break that contrast.
-        // Only dark mode's plate is already dark enough on its own that the
-        // full-strength scrim on top reads as flat black.
-        readonly property real strength: (!backdrop.hasPhoto && Theme.dark) ? 0.5 : 1.0
+        // This bar's text is always light regardless of theme, and the
+        // generated landscape behind it can be a pale day sky in either
+        // theme (CoverArt dims it a little in dark mode only) -- so the
+        // same scrim runs over a photo or not.
         gradient: Gradient {
             orientation: Gradient.Horizontal
-            GradientStop { position: 0.0; color: Qt.rgba(scrimRect.scrimBase.r, scrimRect.scrimBase.g, scrimRect.scrimBase.b, 0.80 * scrimRect.strength) }
-            GradientStop { position: 0.35; color: Qt.rgba(scrimRect.scrimBase.r, scrimRect.scrimBase.g, scrimRect.scrimBase.b, 0.55 * scrimRect.strength) }
-            GradientStop { position: 0.7; color: Qt.rgba(scrimRect.scrimBase.r, scrimRect.scrimBase.g, scrimRect.scrimBase.b, 0.28 * scrimRect.strength) }
-            GradientStop { position: 1.0; color: Qt.rgba(scrimRect.scrimBase.r, scrimRect.scrimBase.g, scrimRect.scrimBase.b, 0.14 * scrimRect.strength) }
+            GradientStop { position: 0.0; color: Qt.rgba(scrimRect.scrimBase.r, scrimRect.scrimBase.g, scrimRect.scrimBase.b, 0.80) }
+            GradientStop { position: 0.35; color: Qt.rgba(scrimRect.scrimBase.r, scrimRect.scrimBase.g, scrimRect.scrimBase.b, 0.55) }
+            GradientStop { position: 0.7; color: Qt.rgba(scrimRect.scrimBase.r, scrimRect.scrimBase.g, scrimRect.scrimBase.b, 0.28) }
+            GradientStop { position: 1.0; color: Qt.rgba(scrimRect.scrimBase.r, scrimRect.scrimBase.g, scrimRect.scrimBase.b, 0.14) }
         }
-    }
-    // With no screenshot, CoverArt's own fallback plate is already dark in
-    // dark mode (design-plan.md's tint recipe) -- the full-strength scrim
-    // above piled on top of it is what read as flat black rather than a
-    // designed plate. The same block-grid wash the other chrome-only
-    // screens use (see AmbientPattern.qml) gives it a little texture
-    // instead. Declared after scrimRect (not before) so its dots paint on
-    // top of the scrim rather than being buried under it.
-    AmbientPattern {
-        anchors.fill: parent
-        visible: !backdrop.hasPhoto
-        tint: Theme.media.text
-        strength: 0.08
     }
     // A thin highlight along the top edge instead of a plain divider --
     // the bar reads as one raised surface rather than a hairline-separated

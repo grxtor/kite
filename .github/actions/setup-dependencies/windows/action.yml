@@ -57,6 +57,8 @@ runs:
           ninja:p
           qt${{ inputs.qt-major }}-base:p
           qt${{ inputs.qt-major }}-declarative:p
+          qt${{ inputs.qt-major }}-quick3d:p
+          qt${{ inputs.qt-major }}-shadertools:p
           qt${{ inputs.qt-major }}-svg:p
           qt${{ inputs.qt-major }}-imageformats:p
           qt${{ inputs.qt-major }}-networkauth:p

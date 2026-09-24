@@ -108,6 +108,7 @@ Item {
                 source: root.coverImage
                 tint: root.iconTint
                 iconKey: root.iconKey
+                seed: root.instanceId
                 iconSize: Math.max(48, Math.min(96, Math.round(root.coverHeight * 0.55)))
                 // Protects the running pill/more button up top and the
                 // play button/icon badge down below from a bright photo.

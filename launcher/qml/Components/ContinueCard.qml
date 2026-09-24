@@ -41,6 +41,14 @@ Rectangle {
     // the opened instance now, so its own header no longer needs a second
     // Play/Stop control.
     property bool showPlay: true
+    // False on the instance page: its own tabs (Servers, Backups, Worlds,
+    // Managed pack, ...) now cover everything the widget "Classic editor"
+    // opened, so that button is gone there -- see InstancePage.qml.
+    property bool showEdit: true
+    // False on the instance page: nothing under the QML shell answers the
+    // "more" menu yet (see InstancePage.qml), and a button that opens
+    // nothing is worse than no button.
+    property bool showMenu: true
     // A one-line strip: title and tags beside the icon, actions on the
     // right -- for tabs whose content needs the height (the instance page
     // outside its Overview).
@@ -236,6 +244,7 @@ Rectangle {
             }
 
             Button {
+                visible: root.showEdit
                 height: Theme.control.heightLg
                 text: root.editText
                 icon.source: Icons.url("settings")
@@ -251,6 +260,7 @@ Rectangle {
             }
 
             IconButton {
+                visible: root.showMenu
                 size: Theme.control.heightLg
                 flat: false
                 iconName: "more"

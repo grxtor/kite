@@ -260,6 +260,10 @@ class QmlShell : public QObject
 	Q_INVOKABLE void killInstance(const QString& id);
 	Q_INVOKABLE void editInstance(const QString& id);
 	Q_INVOKABLE void openInstanceFolder(const QString& id);
+	/* Launches instance @p id straight into server @p address (host[:port]),
+	 * the QML-facing replacement for ServersPage's "Join" action
+	 * (ServersPage::on_actionJoin_triggered()). */
+	Q_INVOKABLE void joinServer(const QString& id, const QString& address);
 	/* No longer called from QML: the New instance dialog and Discover's
 	 * "other platforms" button both used to route here, into the widget
 	 * NewInstanceDialog with a null parent (see Application.cpp's
@@ -379,6 +383,7 @@ class QmlShell : public QObject
 	void killRequested(const QString& id);
 	void editRequested(const QString& id);
 	void folderRequested(const QString& id);
+	void joinServerRequested(const QString& id, const QString& address);
 	void createInstanceRequested();
 	void settingsRequested(const QString& page);
 	void accountsRequested();

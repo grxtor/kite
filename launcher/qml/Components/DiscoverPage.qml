@@ -294,17 +294,30 @@ Item {
         Column {
             spacing: Theme.space.sm
 
-            // MeshMC's own mark, small and quiet, above the state icon --
-            // one of the two places design-plan.md §1 reuses it as a
-            // recurring tell rather than a sidebar-only appearance.
+            // MeshMC's own mark, small and quiet, above the state
+            // illustration -- one of the two places design-plan.md §1
+            // reuses it as a recurring tell rather than a sidebar-only
+            // appearance.
             BrandMark {
                 anchors.horizontalCenter: parent.horizontalCenter
                 size: 18
                 opacity: 0.55
             }
-            MeshIcon {
+            // Nothing matched: the cracked-stone illustration. A failed
+            // request keeps the warning glyph -- that is a fault, not an
+            // empty result.
+            Image {
+                visible: !(root.model && root.model.error.length > 0)
                 anchors.horizontalCenter: parent.horizontalCenter
-                iconName: root.model && root.model.error.length > 0 ? "alert-triangle" : "search"
+                source: PixelArt.emptyUrl("not_found")
+                width: 64
+                height: 64
+                smooth: false
+            }
+            MeshIcon {
+                visible: !!(root.model && root.model.error.length > 0)
+                anchors.horizontalCenter: parent.horizontalCenter
+                iconName: "alert-triangle"
                 size: 40
                 color: Theme.palette.textTertiary
             }

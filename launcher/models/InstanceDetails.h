@@ -42,6 +42,10 @@ class LoaderInstaller;
 class GameOptions;
 class KeyValueFilterModel;
 class MinecraftVersionListProxy;
+class ServersListModel;
+class BackupController;
+class WorldDataPacksController;
+class ManagedPackController;
 
 /*
  * QML-facing bridge for one instance's detail page: notes, mods, worlds,
@@ -101,6 +105,25 @@ class InstanceDetails : public QObject
 
 	Q_PROPERTY(QObject* worlds READ worlds CONSTANT)
 	Q_PROPERTY(QString worldsDir READ worldsDir CONSTANT)
+	/// Per-world data packs (saves/&lt;world&gt;/datapacks) - the QML-facing
+	/// replacement for the dialog WorldListPage's "Data packs" action used
+	/// to open. Null if this instance is not Minecraft-backed.
+	Q_PROPERTY(QObject* worldDataPacks READ worldDataPacks CONSTANT)
+
+	/// This instance's servers.dat - the QML-facing replacement for
+	/// ServersPage. Null if this instance is not Minecraft-backed.
+	Q_PROPERTY(QObject* servers READ servers CONSTANT)
+	/// Where servers.dat lives, for an "open folder" action.
+	Q_PROPERTY(QString serversDir READ serversDir CONSTANT)
+
+	/// Backup snapshots of this instance - the QML-facing replacement for
+	/// BackupPage. Always available, regardless of instance type.
+	Q_PROPERTY(QObject* backups READ backups CONSTANT)
+
+	/// This instance's Modrinth/CurseForge provenance - the QML-facing
+	/// replacement for ManagedPackPage. Null unless the instance actually
+	/// qualifies (see ManagedPackController::isSupported()).
+	Q_PROPERTY(QObject* managedPack READ managedPack CONSTANT)
 
 	/// ScreenshotListModel over the game's screenshots folder.
 	Q_PROPERTY(QObject* screenshots READ screenshots CONSTANT)
@@ -181,6 +204,25 @@ class InstanceDetails : public QObject
 	QObject* worlds() const;
 	QString worldsDir() const;
 	Q_INVOKABLE void deleteWorld(int row);
+	/// False (no change) for a name that trims to nothing, same rule
+	/// renameInstance() uses.
+	Q_INVOKABLE bool renameWorld(int row, const QString& name);
+	/// Installs a copy of world @p row under a new name in the same
+	/// worlds folder - the QML-facing replacement for WorldListPage's
+	/// "Copy" action. Copies off the GUI thread (a world can run into
+	/// gigabytes) behind a TaskWatcher, the same BackupController shape;
+	/// returns null immediately for an out-of-range row or a name that
+	/// trims to nothing.
+	Q_INVOKABLE QObject* copyWorld(int row, const QString& name);
+	Q_INVOKABLE bool resetWorldIcon(int row);
+	QObject* worldDataPacks() const;
+
+	QObject* servers() const;
+	QString serversDir() const;
+
+	QObject* backups() const;
+
+	QObject* managedPack() const;
 
 	QObject* screenshots() const;
 	QString screenshotsDir() const;
@@ -233,6 +275,9 @@ class InstanceDetails : public QObject
 	std::shared_ptr<ModFolderModel> m_texturePacks;
 	std::unique_ptr<QSortFilterProxyModel> m_sortedTexturePacks;
 	std::shared_ptr<WorldList> m_worlds;
+	/// Created on first worldDataPacks() call, not here - mirrors
+	/// m_contentBrowser below.
+	mutable std::unique_ptr<WorldDataPacksController> m_worldDataPacks;
 	/// Created on first contentBrowser() call, not here - see that
 	/// method and the Q_PROPERTY comment above.
 	mutable std::unique_ptr<ContentBrowser> m_contentBrowser;
@@ -262,6 +307,23 @@ class InstanceDetails : public QObject
 	/// what m_gameOptions itself already did. Parented to `this` - same
 	/// reasoning as LoaderInstaller::m_versions.
 	KeyValueFilterModel* m_gameOptionsFilter = nullptr;
+
+	/// Null when the instance is not Minecraft - see the servers
+	/// Q_PROPERTY comment.
+	std::unique_ptr<ServersListModel> m_servers;
+	/// Always created - see the backups Q_PROPERTY comment. Owned via
+	/// QObject parentage (parent is `this`).
+	BackupController* m_backups = nullptr;
+	/// Created on first managedPack() call, not here - mirrors
+	/// m_contentBrowser above: isSupported() is cheap, but there is no
+	/// reason to build the object at all for the overwhelming majority of
+	/// instances that are not managed packs.
+	mutable std::unique_ptr<ManagedPackController> m_managedPack;
+	/// Set once managedPack() has run isSupported() the first time, so a
+	/// later call does not keep re-checking it (the answer cannot change
+	/// during this bridge's lifetime - it depends only on instance.cfg
+	/// fields and the CurseForge API key).
+	mutable bool m_managedPackChecked = false;
 };
 
 /*

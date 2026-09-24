@@ -19,8 +19,12 @@
 
 #include "InstanceDetails.h"
 
+#include <QFutureWatcher>
 #include <QSortFilterProxyModel>
+#include <QThreadPool>
 #include <QUrl>
+#include <QtConcurrentRun>
+#include <functional>
 
 #include "core/LauncherContext.h"
 #include "launch/LaunchTask.h"
@@ -32,13 +36,19 @@
 #include "minecraft/WorldList.h"
 #include "minecraft/gameoptions/GameOptions.h"
 #include "minecraft/mod/ModFolderModel.h"
+#include "models/BackupController.h"
 #include "models/ContentBrowser.h"
 #include "models/KeyValueFilterModel.h"
 #include "models/LoaderInstaller.h"
+#include "models/ManagedPackController.h"
 #include "models/NewInstanceController.h"
 #include "models/OtherLogsModel.h"
+#include "models/ServersListModel.h"
 #include "models/SettingsAdapter.h"
+#include "models/WorldDataPacksController.h"
 #include "screenshots/ScreenshotListModel.h"
+#include "tasks/Task.h"
+#include "tasks/TaskWatcher.h"
 #include "FileSystem.h"
 
 namespace
@@ -72,6 +82,57 @@ namespace
 		}
 	}
 } // namespace
+
+/* Runs one World::install() copy off the GUI thread, the same
+ * QtConcurrent::run()+QFutureWatcher shape BackupController's BackupJobTask
+ * uses for its own long-running, plain succeeded/failed operations: a
+ * world's region files can run into gigabytes, and copyWorld() must not
+ * block the GUI thread doing that copy synchronously. Kept local rather
+ * than shared with BackupController.cpp for the same reason BackupJobTask
+ * itself is local there - nothing here needs progress reporting. */
+class WorldCopyTask : public Task
+{
+	Q_OBJECT
+  public:
+	using Fn = std::function<bool()>;
+
+	WorldCopyTask(QString status, Fn fn, QObject* parent = nullptr)
+		: Task(parent), m_fn(std::move(fn))
+	{
+		setObjectName(QStringLiteral("WorldCopyTask"));
+		setStatus(status);
+		setProgress(0, 0);
+	}
+
+	~WorldCopyTask() override
+	{
+		disconnect(&m_watcher, nullptr, this, nullptr);
+		if (m_future.isRunning()) {
+			m_future.waitForFinished();
+		}
+	}
+
+  protected:
+	void executeTask() override
+	{
+		connect(&m_watcher, &QFutureWatcher<bool>::finished, this, [this] {
+			if (m_future.result()) {
+				setProgress(1, 1);
+				emitSucceeded();
+			} else {
+				emitFailed(tr("The operation failed. See the launcher log "
+							  "for details."));
+			}
+		});
+		m_future = QtConcurrent::run(QThreadPool::globalInstance(), m_fn);
+		m_watcher.setFuture(m_future);
+	}
+
+  private:
+	Fn m_fn;
+	QFuture<bool> m_future;
+	QFutureWatcher<bool> m_watcher;
+};
 
 InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 	: QObject(parent), m_instance(std::move(instance))
@@ -120,7 +181,17 @@ InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 		m_gameOptions = m_mc->gameOptionsModel();
 		m_gameOptionsFilter = new KeyValueFilterModel(this);
 		m_gameOptionsFilter->setSourceModel(m_gameOptions.get());
+
+		// Mirrors ServersPage's own ServersModel lifetime: watched for as
+		// long as the page (here, this bridge) is open, locked exactly
+		// while the instance is running.
+		m_servers = std::make_unique<ServersListModel>(m_instance->gameRoot());
+		m_servers->setLocked(m_instance->isRunning());
+		m_servers->startWatching();
 	}
+
+	// Every instance can be backed up, Minecraft-backed or not.
+	m_backups = new BackupController(m_instance, this);
 
 	/* An instance that never took a screenshot has no folder yet; the
 	 * model then simply lists nothing until the page is opened again. */
@@ -159,6 +230,9 @@ InstanceDetails::~InstanceDetails()
 	}
 	if (m_worlds) {
 		m_worlds->stopWatching();
+	}
+	if (m_servers) {
+		m_servers->stopWatching();
 	}
 }
 
@@ -386,6 +460,86 @@ void InstanceDetails::deleteWorld(int row)
 	m_worlds->deleteWorld(row);
 }
 
+bool InstanceDetails::renameWorld(int row, const QString& name)
+{
+	// Same trim rule sanitizedInstanceName() applies - a world name with
+	// only whitespace is not a usable name.
+	const QString trimmed = name.trimmed();
+	if (!m_worlds || trimmed.isEmpty() || row < 0 ||
+		static_cast<size_t>(row) >= m_worlds->size()) {
+		return false;
+	}
+	return (*m_worlds)[static_cast<size_t>(row)].rename(trimmed);
+}
+
+QObject* InstanceDetails::copyWorld(int row, const QString& name)
+{
+	const QString trimmed = name.trimmed();
+	if (!m_worlds || trimmed.isEmpty() || row < 0 ||
+		static_cast<size_t>(row) >= m_worlds->size()) {
+		return nullptr;
+	}
+
+	// World is a plain value type (no pointers, no QObject) - safe to copy
+	// and install() from a worker thread the same way BackupController
+	// captures its BackupManager by value.
+	World world = (*m_worlds)[static_cast<size_t>(row)];
+	const QString to = m_worlds->dir().absolutePath();
+
+	auto* task = new WorldCopyTask(
+		tr("Copying world…"),
+		[world, to, trimmed]() mutable { return world.install(to, trimmed); });
+
+	auto* watcher = new TaskWatcher(Task::Ptr(task), this);
+	watcher->setTitle(tr("Copy world"));
+	task->start();
+	return watcher;
+}
+
+bool InstanceDetails::resetWorldIcon(int row)
+{
+	if (!m_worlds) {
+		return false;
+	}
+	return m_worlds->resetIcon(row);
+}
+
+QObject* InstanceDetails::worldDataPacks() const
+{
+	if (!m_worldDataPacks && m_mc) {
+		m_worldDataPacks = std::make_unique<WorldDataPacksController>(
+			m_mc, m_worlds.get(), const_cast<InstanceDetails*>(this));
+	}
+	return m_worldDataPacks.get();
+}
+
+QObject* InstanceDetails::servers() const
+{
+	return m_servers.get();
+}
+
+QString InstanceDetails::serversDir() const
+{
+	return m_instance ? m_instance->gameRoot() : QString();
+}
+
+QObject* InstanceDetails::backups() const
+{
+	return m_backups;
+}
+
+QObject* InstanceDetails::managedPack() const
+{
+	if (!m_managedPackChecked) {
+		m_managedPackChecked = true;
+		if (m_instance && ManagedPackController::isSupported(m_instance.get())) {
+			m_managedPack = std::make_unique<ManagedPackController>(
+				m_instance.get(), const_cast<InstanceDetails*>(this));
+		}
+	}
+	return m_managedPack.get();
+}
+
 QObject* InstanceDetails::log() const
 {
 	return m_log;
@@ -439,9 +593,12 @@ bool InstanceDetails::isMinecraft() const
 	return m_mc != nullptr;
 }
 
-void InstanceDetails::onRunningStatusChanged(bool)
+void InstanceDetails::onRunningStatusChanged(bool running)
 {
 	emit contentChangesAllowedChanged();
+	if (m_servers) {
+		m_servers->setLocked(running);
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -500,3 +657,5 @@ void InstanceLogBridge::onLaunchTaskChanged(shared_qobject_ptr<LaunchTask> task)
 	m_model = m_task ? m_task->getLogModel() : shared_qobject_ptr<LogModel>();
 	emit modelChanged();
 }
+
+#include "InstanceDetails.moc"

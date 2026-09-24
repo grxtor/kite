@@ -8,10 +8,10 @@ import MeshMC.Theme
 
 /*
  * One tile in the Home page's "Recent worlds" row: a world's own icon (or,
- * lacking one, a neutral block tile with its instance's icon), the world's
- * name, which instance it belongs to, and when it was last played. Used
- * directly as a Repeater delegate against the shell's recentWorlds model,
- * so the required properties are filled from RecentWorldsModel's roles.
+ * lacking one, one of PixelArt's 16x16 block textures), the world's name,
+ * which instance it belongs to, and when it was last played. Used directly
+ * as a Repeater delegate against the shell's recentWorlds model, so the
+ * required properties are filled from RecentWorldsModel's roles.
  */
 AbstractButton {
     id: control
@@ -22,7 +22,6 @@ AbstractButton {
     required property var lastPlayed
     required property string instanceId
     required property string instanceName
-    required property string instanceIconKey
 
     readonly property bool hasIcon: control.iconUrl.length > 0
 
@@ -51,14 +50,11 @@ AbstractButton {
             anchors.left: parent.left
             anchors.leftMargin: Theme.space.sm
             anchors.verticalCenter: parent.verticalCenter
-            width: 44
-            height: 44
+            // 48 = three whole pixels per texel of a 16x16 block texture,
+            // so the fallback below stays crisp rather than unevenly scaled.
+            width: 48
+            height: 48
             radius: Theme.radius.sm
-            // A neutral plate, not a per-world tint: this is a small
-            // fallback tile, not the cover art treatment CoverArt gives a
-            // whole card (design-plan.md §2.9/§6 -- a bounded, designed
-            // colour, never a giant centred glyph on a random hue).
-            color: control.hasIcon ? "transparent" : Theme.palette.surfaceOverlay
             border.width: 1
             border.color: Theme.palette.border
             clip: true
@@ -73,15 +69,21 @@ AbstractButton {
                 asynchronous: true
             }
 
+            // No world icon: one of PixelArt's block textures, picked
+            // deterministically by this world's own folder name -- a
+            // bounded, designed fallback in place of the old flat
+            // surfaceOverlay square (design-plan.md G3). A whole 96x54
+            // landscape scene would only be an unreadable smear at this
+            // size; a single block reads at a glance. No sourceSize: the
+            // texture is 16x16 and must scale by nearest neighbour, not be
+            // pre-filtered.
             Image {
-                anchors.centerIn: parent
+                anchors.fill: parent
                 visible: !control.hasIcon
-                width: 26
-                height: 26
-                source: control.instanceIconKey.length > 0 ? "image://instanceicon/" + control.instanceIconKey : ""
-                sourceSize: Qt.size(width, height)
-                fillMode: Image.PreserveAspectFit
+                source: control.hasIcon ? "" : PixelArt.blockUrlFor(control.folderName)
+                fillMode: Image.Stretch
                 smooth: false
+                asynchronous: true
             }
         }
 

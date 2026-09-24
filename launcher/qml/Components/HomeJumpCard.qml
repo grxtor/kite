@@ -86,6 +86,7 @@ Item {
             tint: root.iconTint
             iconKey: root.iconKey
             iconSize: 48
+            seed: root.instanceId
             scrim: "horizontal"
             hovered: root.hovered
             matte: card.color
