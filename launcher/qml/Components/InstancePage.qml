@@ -329,9 +329,6 @@ Item {
     // functions above) -- the library's own instance actions.
     Menu {
         id: instanceMenu
-        // The style's menu is a fixed width; "Open .minecraft folder" needs
-        // a step more.
-        width: Math.max(implicitWidth, Theme.control.heightLg * 5)
         readonly property bool isMinecraft: !!root.details && root.details.isMinecraft
         readonly property string name: root.headerCard ? root.headerCard.name : ""
         readonly property string iconKey: root.headerCard ? root.headerCard.iconKey : ""

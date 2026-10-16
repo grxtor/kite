@@ -83,6 +83,10 @@ class LibraryController : public QObject
 	/// restored (the instance may then still be in the trash).
 	Q_INVOKABLE bool undoDelete();
 
+	/// {name, group, iconKey} of instance @p id, for an action that starts
+	/// from nothing but an id. Empty for an unknown id.
+	Q_INVOKABLE QVariantMap describe(const QString& id) const;
+
 	/// The instance's folders: {instance, game, mods}. `mods` is empty for
 	/// an instance that is not Minecraft. Empty for an unknown id.
 	Q_INVOKABLE QVariantMap folders(const QString& id) const;

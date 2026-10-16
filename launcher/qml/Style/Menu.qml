@@ -9,8 +9,27 @@ import MeshMC.Theme
 T.Menu {
     id: control
 
-    implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
-                            implicitContentWidth + leftPadding + rightPadding)
+    // As wide as its widest shown entry: never narrower than a menu always
+    // was, so a short one does not shrink to a tooltip, and never wider than
+    // the ceiling, past which an entry elides rather than the menu running
+    // across the window. A `width` set on a menu still wins.
+    readonly property real minimumWidth: Theme.control.heightLg * 4
+    readonly property real maximumWidth: Theme.control.heightLg * 8
+    // Hidden entries (an item zeroed out with visible: false) do not count.
+    readonly property real widestEntry: {
+        var widest = 0
+        for (var i = 0; i < control.count; ++i) {
+            var item = control.itemAt(i)
+            if (item && item.visible)
+                widest = Math.max(widest, item.implicitWidth)
+        }
+        return widest
+    }
+
+    implicitWidth: Math.min(control.maximumWidth,
+                            Math.max(control.minimumWidth,
+                                     implicitBackgroundWidth + leftInset + rightInset,
+                                     control.widestEntry + leftPadding + rightPadding))
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
                              implicitContentHeight + topPadding + bottomPadding)
 
@@ -33,7 +52,6 @@ T.Menu {
     }
 
     background: Rectangle {
-        implicitWidth: Theme.control.heightLg * 4
         radius: Theme.radius.lg
         color: Theme.palette.surfaceOverlay
         border.width: 1

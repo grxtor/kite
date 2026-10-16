@@ -193,7 +193,7 @@ class LibraryControllerTest : public QObject
 		QVERIFY(m_controller->collapsedGroups().isEmpty());
 	}
 
-	void foldersAndNothingToUndo()
+	void describeFoldersAndNothingToUndo()
 	{
 		const QVariantMap folders = m_controller->folders("alpha");
 		QCOMPARE(QDir(folders.value("instance").toString()).dirName(),
@@ -202,6 +202,13 @@ class LibraryControllerTest : public QObject
 		// Not Minecraft: no mods folder to offer.
 		QVERIFY(folders.value("mods").toString().isEmpty());
 		QVERIFY(m_controller->folders("nope").isEmpty());
+
+		m_controller->moveToGroup("alpha", "Modded");
+		const QVariantMap alpha = m_controller->describe("alpha");
+		QCOMPARE(alpha.value("name").toString(), QStringLiteral("Alpha"));
+		QCOMPARE(alpha.value("group").toString(), QStringLiteral("Modded"));
+		QVERIFY(alpha.contains("iconKey"));
+		QVERIFY(m_controller->describe("nope").isEmpty());
 
 		QVERIFY(!m_controller->canUndoDelete());
 		QVERIFY(m_controller->lastDeletedName().isEmpty());

@@ -17,9 +17,7 @@ SettingsScroll {
 
     readonly property var updates: LauncherStore.updates
     // Read by SettingsPage.qml's section list.
-    property bool dbgFlag: false
-    Timer { interval: 800; running: true; onTriggered: root.dbgFlag = true } // DBGTMP
-    readonly property bool shown: dbgFlag || (!!updates && updates.available)
+    readonly property bool shown: !!updates && updates.available
 
     title: qsTr("Updates")
     description: qsTr("Whether MeshMC looks for new versions by itself.")
@@ -41,7 +39,7 @@ SettingsScroll {
         }
         SettingRow {
             label: qsTr("How often")
-            description: qsTr("Zero checks only when MeshMC starts.")
+            description: qsTr("0 means only when MeshMC starts.")
             enabled: !!root.updates && root.updates.autoCheck
             SpinBox {
                 id: interval

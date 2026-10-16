@@ -189,15 +189,14 @@ Dialog {
         Item { Layout.fillWidth: true }
         Button {
             Layout.bottomMargin: Theme.space.lg
-            visible: root.done
-            text: qsTr("Use this Java")
-            onClicked: {
-                root.useRequested(root.download.installedPath)
-                root.close()
-            }
+            visible: !root.done
+            text: qsTr("Cancel")
+            flat: true
+            onClicked: root.close()
         }
         Button {
             Layout.bottomMargin: Theme.space.lg
+            Layout.rightMargin: Theme.space.lg
             visible: !root.done
             highlighted: true
             text: !!root.download && root.download.alreadyInstalled ? qsTr("Download again") : qsTr("Download")
@@ -205,10 +204,22 @@ Dialog {
             onClicked: root.download.download()
         }
         Button {
-            Layout.rightMargin: Theme.space.lg
             Layout.bottomMargin: Theme.space.lg
-            text: root.done ? qsTr("Close") : qsTr("Cancel")
+            visible: root.done
+            text: qsTr("Close")
+            flat: true
             onClicked: root.close()
+        }
+        Button {
+            Layout.bottomMargin: Theme.space.lg
+            Layout.rightMargin: Theme.space.lg
+            visible: root.done
+            highlighted: true
+            text: qsTr("Use this Java")
+            onClicked: {
+                root.useRequested(root.download.installedPath)
+                root.close()
+            }
         }
     }
 }

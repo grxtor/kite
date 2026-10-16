@@ -61,8 +61,9 @@ T.MenuItem {
         visible: control.subMenu
     }
 
+    // No width of its own: an entry is as wide as what it says, and the
+    // Menu sets the floor (see Menu.qml's minimumWidth).
     background: Rectangle {
-        implicitWidth: Theme.control.heightLg * 4
         implicitHeight: Theme.control.height
         x: Theme.space.xxs
         y: Theme.space.xxs / 2

@@ -67,9 +67,13 @@ Item {
         { id: "about", icon: "info", label: qsTr("About") }
     ]
     readonly property int sectionIndex: {
+        // A section that keeps itself out of the list (no updater in this
+        // build, nothing to show yet) is not opened either: the list and the
+        // page must agree, so this falls back to the first section instead
+        // of showing a page the list does not highlight.
         for (var i = 0; i < sections.length; ++i)
             if (sections[i].id === section)
-                return i
+                return sectionShown(i) ? i : 0
         return 0
     }
 

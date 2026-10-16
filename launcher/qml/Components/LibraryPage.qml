@@ -68,7 +68,7 @@ Item {
     }
     // For review snapshots (Main.qml's "groupmenu=<name>" and
     // "duplicate=<id>" dev routes): a group's ⋯ menu, and the duplicate
-    // dialog (named after the id; a snapshot does not need the real name).
+    // dialog.
     function openGroupMenu(group) {
         for (var i = 0; i < sections.count; ++i) {
             var section = sections.itemAt(i)
@@ -77,13 +77,15 @@ Item {
         }
     }
     function duplicateInstance(id) {
-        exportFlows.duplicateInstance(id, id, "", "")
+        var info = root.library ? root.library.describe(id) : ({})
+        exportFlows.duplicateInstance(id, info.name || id, info.group || "", info.iconKey || "")
     }
     // The card ⋯ menu for instance @p id, for review snapshots (Main.qml's
     // "librarymenu=<id>" dev route). A snapshot has no mouse to open it at,
     // so it goes to the top-left of the cards instead of the window corner.
     function openInstanceMenu(id) {
-        instanceMenu.openFor(id, false, "", "", "")
+        var info = root.library ? root.library.describe(id) : ({})
+        instanceMenu.openFor(id, false, info.name || "", info.iconKey || "", info.group || "")
         instanceMenu.x = root.contentX
         instanceMenu.y = Theme.space.xl
     }
@@ -209,6 +211,11 @@ Item {
                     onMenuRequested: (id, running, name, iconKey, group) => instanceMenu.openFor(id, running, name, iconKey, group)
                 }
             }
+
+            // The classic window's status-bar total, as the library's quiet
+            // last line. It hides itself while the setting is off or
+            // nothing has been played.
+            TotalPlayTime {}
         }
     }
 
@@ -240,9 +247,6 @@ Item {
 
     Menu {
         id: instanceMenu
-        // The style's menu is a fixed width; "Open .minecraft folder" needs
-        // a step more.
-        width: Math.max(implicitWidth, Theme.control.heightLg * 5)
 
         property string targetId
         property bool targetRunning: false

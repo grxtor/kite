@@ -130,6 +130,19 @@ bool LibraryController::undoDelete()
 	return restored;
 }
 
+QVariantMap LibraryController::describe(const QString& id) const
+{
+	auto instance = m_instances->getInstanceById(id);
+	if (!instance) {
+		return {};
+	}
+	return {
+		{QStringLiteral("name"), instance->name()},
+		{QStringLiteral("group"), m_instances->getInstanceGroup(id)},
+		{QStringLiteral("iconKey"), instance->iconKey()},
+	};
+}
+
 QVariantMap LibraryController::folders(const QString& id) const
 {
 	auto instance = m_instances->getInstanceById(id);

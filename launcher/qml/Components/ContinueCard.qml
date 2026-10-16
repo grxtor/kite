@@ -206,7 +206,9 @@ Rectangle {
                     onMedia: root.hasPhoto
                 }
                 Tag {
-                    readonly property string played: Format.playTime(root.totalTimePlayed)
+                    // Hidden while "Show play time per instance" is off.
+                    readonly property string played: SettingsStore.bool("ShowGameTime")
+                                                     ? Format.playTime(root.totalTimePlayed) : ""
                     visible: played.length > 0
                     text: qsTr("%1 played").arg(played)
                     iconName: "play"
