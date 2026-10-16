@@ -4,6 +4,7 @@
 
 import QtQuick
 import QtQuick.Controls
+import QtQml.Models
 import MeshMC.Theme
 
 /*
@@ -32,16 +33,53 @@ Dialog {
         icon: "image"
     }
 
+    // The built-in *_legacy icons are the old pixel-art set, kept on disk
+    // for instances that still name them; offered here next to the rendered
+    // set they would only make the grid look mismatched. The *_mark icons are
+    // the loader marks the New instance dialog's loader row uses, duplicates
+    // of the forge/quilt icons already listed. Both stay out of the picker;
+    // an instance already using one keeps it.
+    DelegateModel {
+        id: shownIcons
+        model: root.iconsModel
+        groups: [ DelegateModelGroup { id: shownGroup; name: "shown" } ]
+        filterOnGroup: "shown"
+        delegate: iconCell
+
+        function refilter() {
+            for (var i = 0; i < items.count; ++i) {
+                var item = items.get(i)
+                var key = String(item.model.key)
+                item.inShown = (!key.endsWith("_legacy") && !key.endsWith("_mark")) || key === root.current
+            }
+        }
+        items.onChanged: refilter()
+        Component.onCompleted: refilter()
+    }
+
     contentItem: GridView {
         id: grid
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        model: root.iconsModel
-        cellWidth: 88
-        cellHeight: 96
+        model: shownIcons
+        // As many 88px columns as fit, then stretched to fill the row, so
+        // the grid has no empty strip on its right.
+        readonly property int minCell: 88
+        readonly property int columns: Math.max(1, Math.floor(width / minCell))
+        cellWidth: Math.floor(width / columns)
+        // Rows likewise: as many 96px rows as the view shows, stretched so
+        // they fill it exactly -- at rest the view never ends on half a row.
+        readonly property int minRow: 96
+        readonly property int rows: Math.max(1, Math.floor(height / minRow))
+        cellHeight: Math.floor(height / rows)
         ScrollBar.vertical: ScrollBar {}
 
-        delegate: AbstractButton {
+    }
+
+    Component {
+        id: iconCell
+
+        AbstractButton {
             id: cell
             required property string key
             required property string name
@@ -64,16 +102,21 @@ Dialog {
                 border.color: Theme.palette.accent
             }
 
-            contentItem: Column {
+            // Centred in the cell, which grows to fill whole rows.
+            contentItem: Item {
+                Column {
+                anchors.centerIn: parent
+                width: cell.width
                 spacing: Theme.space.xs
-                topPadding: Theme.space.sm
                 Image {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: 48
                     height: 48
                     source: "image://instanceicon/" + cell.key
-                    sourceSize: Qt.size(48, 48)
+                    sourceSize: Qt.size(96, 96)
                     fillMode: Image.PreserveAspectFit
+                    smooth: true
+                    mipmap: true
                 }
                 Text {
                     width: cell.width - Theme.space.sm * 2
@@ -84,6 +127,7 @@ Dialog {
                     color: cell.selected ? Theme.palette.textPrimary : Theme.palette.textTertiary
                     font.family: Theme.font.family
                     font.pixelSize: Theme.type.caption.pixelSize
+                }
                 }
             }
         }

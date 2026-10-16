@@ -61,19 +61,22 @@ AbstractButton {
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
+    // Icon and name on the same columns as NavItem's icon and label above
+    // (an icon.md glyph at space.md, the label space.md after it), so the
+    // Recent list reads as part of the same sidebar.
     contentItem: Item {
         Item {
             id: icon
             anchors.left: control.compact ? undefined : parent.left
-            anchors.leftMargin: Theme.space.sm
+            anchors.leftMargin: Theme.space.md
             anchors.horizontalCenter: control.compact ? parent.horizontalCenter : undefined
             anchors.verticalCenter: parent.verticalCenter
-            width: Theme.icon.lg
-            height: Theme.icon.lg
+            width: Theme.icon.md
+            height: Theme.icon.md
 
             Image {
                 anchors.fill: parent
-                source: control.iconKey.length > 0 ? "image://instanceicon/" + control.iconKey : ""
+                source: "image://instanceicon/" + (control.iconKey.length > 0 ? control.iconKey : "default")
                 sourceSize: Qt.size(width, height)
                 fillMode: Image.PreserveAspectFit
             }
@@ -86,8 +89,8 @@ AbstractButton {
                 anchors.bottom: parent.bottom
                 anchors.margins: -2
                 width: 8
-                height: 8
-                radius: 4
+                height: width
+                radius: width / 2
                 color: Theme.palette.success
 
                 SequentialAnimation on opacity {
@@ -102,7 +105,7 @@ AbstractButton {
         Text {
             visible: !control.compact
             anchors.left: icon.right
-            anchors.leftMargin: Theme.space.sm + 2
+            anchors.leftMargin: Theme.space.md
             anchors.right: trailing.left
             anchors.rightMargin: Theme.space.xs
             anchors.verticalCenter: parent.verticalCenter

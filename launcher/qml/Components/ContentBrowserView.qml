@@ -30,6 +30,8 @@ Item {
     property int pickedVersion: -1
 
     readonly property var versions: browser && browser.versions ? browser.versions : []
+    // The sort box beside the search field.
+    readonly property int sortWidth: 200
 
     // Every install started from here, by project key. A plain JS object
     // does not notify, so `downloadsRevision` is bumped on every change and
@@ -140,7 +142,8 @@ Item {
                 visible: root.activeDownloads > 0
                 implicitWidth: downloadsRow.implicitWidth + Theme.space.md * 2
                 implicitHeight: Theme.control.heightSm
-                radius: Theme.radius.pill
+                // A status chip, not a toggle: control corners, not a pill.
+                radius: Theme.radius.sm
                 color: Theme.palette.accentSubtle
                 Row {
                     id: downloadsRow
@@ -171,149 +174,173 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: Theme.space.md
-
-            SearchBox {
-                id: searchField
-                Layout.fillWidth: true
-                placeholderText: qsTr("Search")
-                onTextEdited: debounce.restart()
-                onTextChanged: if (text.length === 0) debounce.restart()
-            }
-            ComboBox {
-                Layout.preferredWidth: 200
-                visible: count > 0
-                model: root.browser && root.browser.sortOptions ? root.browser.sortOptions : []
-                textRole: "label"
-                valueRole: "id"
-                onActivated: { root.browser.sortIndex = currentValue; root.runSearch() }
-            }
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: Theme.space.lg
 
-            // Results
-            ListView {
-                id: results
+            // Results, with the search that drives them over them: the
+            // field spans exactly the list, and its top lines up with the
+            // project panel's.
+            ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.preferredWidth: 3
                 Layout.minimumWidth: 0
-                clip: true
-                spacing: Theme.space.xs
-                boundsBehavior: Flickable.StopAtBounds
-                model: root.browser ? root.browser.results : null
-                ScrollBar.vertical: ScrollBar {}
-                onAtYEndChanged: if (atYEnd && root.browser && root.browser.canFetchMore && !root.browser.searching)
-                                     root.browser.fetchMore()
+                spacing: Theme.space.md
 
-                delegate: AbstractButton {
-                    id: row
-                    required property int index
-                    required property string title
-                    required property string description
-                    required property string author
-                    required property string logoUrl
-                    required property bool installed
-                    readonly property bool selected: root.selectedRow === index
-                    readonly property var download: root.downloadFor(root.projectKey(title, author))
-                    readonly property bool downloading: !!download && download.running
-                    readonly property bool justInstalled: !!download && download.succeeded
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.space.md
 
-                    width: results.width - Theme.space.md
-                    height: 60
-                    hoverEnabled: true
-                    onClicked: root.select(index, { title: title, author: author, description: description, logoUrl: logoUrl, installed: installed })
-
-                    background: Rectangle {
-                        radius: Theme.radius.md
-                        color: row.selected ? Theme.palette.accentSubtle
-                             : row.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
-                        border.width: 1
-                        border.color: row.selected ? Theme.palette.accent : Theme.palette.border
-                        Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
-
-                        // The download's progress along the row's foot.
-                        LaunchProgressBar {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.bottom: parent.bottom
-                            anchors.margins: Theme.space.xs
-                            height: 3
-                            visible: row.downloading
-                            progress: row.download ? row.download.progress : -1
-                        }
+                    SearchBox {
+                        id: searchField
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        placeholderText: qsTr("Search")
+                        onTextEdited: debounce.restart()
+                        onTextChanged: if (text.length === 0) debounce.restart()
                     }
+                    ComboBox {
+                        Layout.preferredWidth: root.sortWidth
+                        visible: count > 0
+                        model: root.browser && root.browser.sortOptions ? root.browser.sortOptions : []
+                        textRole: "label"
+                        valueRole: "id"
+                        onActivated: { root.browser.sortIndex = currentValue; root.runSearch() }
+                    }
+                }
 
-                    contentItem: RowLayout {
-                        spacing: Theme.space.md
-                        Rectangle {
-                            Layout.leftMargin: Theme.space.sm
-                            Layout.preferredWidth: 40
-                            Layout.preferredHeight: 40
+                ListView {
+                    id: results
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+
+                    // Parented to the view itself, not its scrolling
+                    // content, so it stays on the bottom edge.
+                    ScrollFade {
+                        parent: results
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        flickable: results
+                    }
+                    // The same row rhythm as every list tab (see PackList).
+                    spacing: Theme.space.sm
+                    boundsBehavior: Flickable.StopAtBounds
+                    model: root.browser ? root.browser.results : null
+                    ScrollBar.vertical: ScrollBar {}
+                    onAtYEndChanged: if (atYEnd && root.browser && root.browser.canFetchMore && !root.browser.searching)
+                                         root.browser.fetchMore()
+
+                    delegate: AbstractButton {
+                        id: row
+                        required property int index
+                        required property string title
+                        required property string description
+                        required property string author
+                        required property string logoUrl
+                        required property bool installed
+                        readonly property bool selected: root.selectedRow === index
+                        readonly property var download: root.downloadFor(root.projectKey(title, author))
+                        readonly property bool downloading: !!download && download.running
+                        readonly property bool justInstalled: !!download && download.succeeded
+
+                        // Full width: the ScrollBar overlays the rows' right
+                        // edge rather than reserving a gutter beside them.
+                        width: results.width
+                        height: 60
+                        // The icon sits as far in as on Content's rows, and
+                        // the text stops as far from the right border.
+                        leftPadding: Theme.space.md
+                        rightPadding: Theme.space.md
+                        hoverEnabled: true
+                        onClicked: root.select(index, { title: title, author: author, description: description, logoUrl: logoUrl, installed: installed })
+
+                        background: Rectangle {
                             radius: Theme.radius.md
-                            color: Theme.palette.surfaceSunken
-                            clip: true
-                            Image {
-                                anchors.fill: parent
-                                anchors.margins: 1
-                                source: row.logoUrl
-                                sourceSize: Qt.size(80, 80)
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
+                            color: row.selected ? Theme.palette.accentSubtle
+                                 : row.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
+                            border.width: 1
+                            border.color: row.selected ? Theme.palette.accent : Theme.palette.border
+                            Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
+
+                            // The download's progress along the row's foot.
+                            LaunchProgressBar {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                anchors.margins: Theme.space.xs
+                                height: 3
+                                visible: row.downloading
+                                progress: row.download ? row.download.progress : -1
                             }
                         }
-                        Column {
-                            Layout.fillWidth: true
-                            Layout.minimumWidth: 0
-                            spacing: 2
-                            Text {
-                                width: parent.width
-                                text: row.title
-                                elide: Text.ElideRight
-                                color: Theme.palette.textPrimary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.body.pixelSize
-                                font.weight: Font.DemiBold
+
+                        contentItem: RowLayout {
+                            spacing: Theme.space.md
+                            Rectangle {
+                                Layout.preferredWidth: 40
+                                Layout.preferredHeight: 40
+                                radius: Theme.radius.md
+                                color: Theme.palette.surfaceSunken
+                                clip: true
+                                Image {
+                                    anchors.fill: parent
+                                    anchors.margins: 1
+                                    source: row.logoUrl
+                                    sourceSize: Qt.size(80, 80)
+                                    fillMode: Image.PreserveAspectCrop
+                                    asynchronous: true
+                                }
                             }
-                            Text {
-                                width: parent.width
-                                text: row.downloading ? (row.download.status || qsTr("Installing…")) : row.description
-                                elide: Text.ElideRight
-                                color: row.downloading ? Theme.palette.accentText : Theme.palette.textTertiary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.caption.pixelSize
+                            Column {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                spacing: 2
+                                Text {
+                                    width: parent.width
+                                    text: row.title
+                                    elide: Text.ElideRight
+                                    color: Theme.palette.textPrimary
+                                    font.family: Theme.font.family
+                                    font.pixelSize: Theme.type.body.pixelSize
+                                    font.weight: Font.DemiBold
+                                }
+                                Text {
+                                    width: parent.width
+                                    text: row.downloading ? (row.download.status || qsTr("Installing…")) : row.description
+                                    elide: Text.ElideRight
+                                    color: row.downloading ? Theme.palette.accentText : Theme.palette.textTertiary
+                                    font.family: Theme.font.family
+                                    font.pixelSize: Theme.type.caption.pixelSize
+                                }
                             }
-                        }
-                        StatusBadge {
-                            Layout.rightMargin: Theme.space.sm
-                            visible: row.installed || row.justInstalled || (!!row.download && row.download.failed)
-                            tone: row.download && row.download.failed ? "danger" : "success"
-                            text: row.download && row.download.failed ? qsTr("Failed") : qsTr("Installed")
+                            StatusBadge {
+                                visible: row.installed || row.justInstalled || (!!row.download && row.download.failed)
+                                tone: row.download && row.download.failed ? "danger" : "success"
+                                text: row.download && row.download.failed ? qsTr("Failed") : qsTr("Installed")
+                            }
                         }
                     }
-                }
 
-                footer: Item {
-                    width: results.width
-                    height: root.browser && root.browser.searching ? 64 : Theme.space.md
-                    BusyIndicator {
+                    footer: Item {
+                        width: results.width
+                        height: root.browser && root.browser.searching ? 64 : Theme.space.md
+                        BusyIndicator {
+                            anchors.centerIn: parent
+                            running: !!root.browser && root.browser.searching
+                            visible: running
+                        }
+                    }
+
+                    EmptyState {
                         anchors.centerIn: parent
-                        running: !!root.browser && root.browser.searching
-                        visible: running
+                        visible: root.searched && !!root.browser && !root.browser.searching && results.count === 0
+                        title: root.browser && root.browser.error.length > 0 ? qsTr("Search failed") : qsTr("Nothing found")
+                        body: root.browser && root.browser.error.length > 0 ? root.browser.error
+                                                                             : qsTr("Try other words, or the other platform.")
+                        MeshIcon { iconName: "search"; size: 40; color: Theme.palette.textTertiary }
                     }
-                }
-
-                EmptyState {
-                    anchors.centerIn: parent
-                    visible: root.searched && !!root.browser && !root.browser.searching && results.count === 0
-                    title: root.browser && root.browser.error.length > 0 ? qsTr("Search failed") : qsTr("Nothing found")
-                    body: root.browser && root.browser.error.length > 0 ? root.browser.error
-                                                                         : qsTr("Try other words, or the other platform.")
-                    MeshIcon { iconName: "search"; size: 40; color: Theme.palette.textTertiary }
                 }
             }
 
@@ -451,7 +478,7 @@ Item {
                                 onClicked: root.pickedVersion = index
 
                                 background: Rectangle {
-                                    radius: Theme.radius.sm + 2
+                                    radius: Theme.radius.sm
                                     color: versionRow.picked ? Theme.palette.accentSubtle
                                          : versionRow.hovered ? Theme.palette.hoverOverlay : "transparent"
                                     border.width: versionRow.picked ? 1 : 0
@@ -474,11 +501,17 @@ Item {
                                             font.weight: versionRow.picked ? Font.Bold : Font.Medium
                                         }
                                         Text {
+                                            // "Fabric, Quilt for 1.21.4, 1.21.3", and why it is
+                                            // greyed out when it does not fit this instance.
+                                            readonly property string games: (versionRow.modelData.gameVersions || []).slice(0, 3).join(", ")
+                                            readonly property string loaders: (versionRow.modelData.loaders || []).join(", ")
+                                            readonly property string fits: loaders.length > 0 && games.length > 0
+                                                                           ? qsTr("%1 for %2").arg(loaders).arg(games)
+                                                                           : loaders + games
                                             width: parent.width
-                                            text: [ (versionRow.modelData.gameVersions || []).slice(0, 3).join(", "),
-                                                    (versionRow.modelData.loaders || []).join(", "),
-                                                    versionRow.modelData.isCompatible ? "" : qsTr("not for this instance") ]
-                                                  .filter(t => t.length > 0).join("  ·  ")
+                                            text: versionRow.modelData.isCompatible ? fits
+                                                  : fits.length > 0 ? qsTr("Not for this instance (%1)").arg(fits)
+                                                  : qsTr("Not for this instance")
                                             elide: Text.ElideRight
                                             color: versionRow.modelData.isCompatible ? Theme.palette.textTertiary : Theme.palette.warning
                                             font.family: Theme.font.family

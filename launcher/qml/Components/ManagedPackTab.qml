@@ -18,6 +18,10 @@ Item {
 
     // InstanceDetails.managedPack (ManagedPackController), or null.
     property var controller: null
+    // The instance's icon key, so the header shows the same icon as the
+    // banner above it.
+    property string iconKey: ""
+    readonly property int iconTileSize: 40
     // The TaskWatcher of an update in progress, if any.
     property var watcher: null
     readonly property bool updating: !!root.watcher && root.watcher.running
@@ -113,17 +117,35 @@ Item {
             spacing: Theme.space.md
 
             Rectangle {
-                Layout.preferredWidth: 40
-                Layout.preferredHeight: 40
+                Layout.preferredWidth: root.iconTileSize
+                Layout.preferredHeight: root.iconTileSize
                 radius: Theme.radius.md
                 color: Theme.palette.surfaceSunken
-                MeshIcon { anchors.centerIn: parent; iconName: "package"; size: Theme.icon.sm; color: Theme.palette.textTertiary }
+                Image {
+                    id: packIcon
+                    anchors.fill: parent
+                    source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
+                    sourceSize: Qt.size(width, height)
+                    fillMode: Image.PreserveAspectFit
+                }
+                MeshIcon {
+                    anchors.centerIn: parent
+                    visible: packIcon.status !== Image.Ready
+                    iconName: "package"
+                    size: Theme.icon.sm
+                    color: Theme.palette.textTertiary
+                }
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 2
+                // Filling, so the column (and not just its own content
+                // width) takes the row and "Website" sits at the right edge,
+                // over Reload.
                 Text {
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
                     text: root.controller ? root.controller.packName : ""
                     color: Theme.palette.textPrimary
                     font.family: Theme.font.family
@@ -192,28 +214,15 @@ Item {
             Layout.fillWidth: true
             visible: root.controller && root.controller.hasPackId && root.controller.error.length > 0
             spacing: Theme.space.sm
-            // What went wrong in plain words first, then the catalogue's own
-            // message (a raw job string, useful for a bug report) underneath.
-            ColumnLayout {
+            // What went wrong in plain words only: the catalogue's own
+            // message is a raw job string meant for the log, not the user.
+            Text {
                 Layout.fillWidth: true
-                Layout.minimumWidth: 0
-                spacing: 2
-                Text {
-                    Layout.fillWidth: true
-                    text: qsTr("Could not load the versions of this pack. Check your connection, then reload.")
-                    color: Theme.palette.danger
-                    elide: Text.ElideRight
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
-                }
-                Text {
-                    Layout.fillWidth: true
-                    text: root.controller ? root.controller.error : ""
-                    color: Theme.palette.textTertiary
-                    elide: Text.ElideMiddle
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
-                }
+                text: qsTr("Could not load the versions of this pack. Check your connection, then reload.")
+                color: Theme.palette.danger
+                elide: Text.ElideRight
+                font.family: Theme.font.family
+                font.pixelSize: Theme.type.label.pixelSize
             }
             Button {
                 text: qsTr("Reload")
@@ -306,7 +315,9 @@ Item {
                         Text {
                             id: changelog
                             width: parent.width
-                            text: changelogHost.selected && changelogHost.selected.changelog.length > 0
+                            text: !changelogHost.selected
+                                  ? qsTr("The changelog of the version you pick shows up here.")
+                                  : changelogHost.selected.changelog.length > 0
                                   ? changelogHost.selected.changelog
                                   : qsTr("No changelog available for this version.")
                             textFormat: Text.MarkdownText
@@ -339,6 +350,20 @@ Item {
         anchors.centerIn: parent
         visible: root.controller && root.controller.loading
         running: visible
+    }
+
+    // Nothing to list (the catalogue could not be reached, or has no
+    // versions): said where the versions would be, over the list itself
+    // rather than its scrolling content.
+    EmptyState {
+        parent: list
+        upperThird: true
+        visible: list.visible && list.count === 0 && !!root.controller && !root.controller.loading
+        title: qsTr("No versions")
+        body: root.controller && root.controller.error.length > 0
+              ? qsTr("The versions show up here once they load.")
+              : qsTr("The catalogue lists no versions of this pack.")
+        MeshIcon { iconName: "layers"; size: 40; color: Theme.palette.textTertiary }
     }
 
     EmptyState {

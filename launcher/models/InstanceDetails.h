@@ -152,8 +152,10 @@ class InstanceDetails : public QObject
 	/// This instance's options.txt as a flat key/value list (GameOptions'
 	/// own `key`/`value` roles, through a KeyValueFilterModel for
 	/// GameOptionsTab.qml's search box) - the QML-facing replacement for
-	/// GameOptionsPage, which is read-only for the same reason this is:
-	/// see that class's own header comment. Null if this instance is not
+	/// GameOptionsPage. Unlike that page it can change values: QML calls
+	/// GameOptions::setValue() through the proxy's sourceModel, and only
+	/// while the game is not running (it rewrites the file as it quits;
+	/// the model is reloaded then). Null if this instance is not
 	/// Minecraft-backed.
 	Q_PROPERTY(QObject* gameOptions READ gameOptions CONSTANT)
 	Q_PROPERTY(bool isMinecraft READ isMinecraft CONSTANT)

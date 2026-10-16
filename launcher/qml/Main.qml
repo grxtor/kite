@@ -112,6 +112,15 @@ ApplicationWindow {
                 root.call("debugMarkInstanceCrashed", value)
             // Deterministic cat pose for review snapshots -- see
             // CatOverlay.qml's own `demo` property.
+            // The icon picker, as the library's "Change icon" opens it.
+            else if (key === "iconpicker") {
+                iconDialog.targetId = root.dockInstanceId
+                iconDialog.current = value.length > 0 ? value : "grass"
+                iconDialog.open()
+            }
+            // Pins Home's header scene to "day", "golden" or "night".
+            else if (key === "mood")
+                homePage.moodOverride = value
             else if (key === "cat" && catLoader.item)
                 catLoader.item.demo = value
         }
@@ -208,6 +217,36 @@ ApplicationWindow {
         when: !!root.shell && !!root.shell.heroModel
     }
 
+    // Instance management, shared by the library's card menu and the
+    // instance page's own ⋯ menu.
+    function askRename(id, name) {
+        renameDialog.targetId = id
+        renameDialog.value = name
+        renameDialog.open()
+    }
+    function askIcon(id, iconKey) {
+        iconDialog.targetId = id
+        iconDialog.current = iconKey
+        iconDialog.open()
+    }
+    function askGroup(id, group) {
+        groupDialog.targetId = id
+        groupDialog.value = group
+        groupDialog.suggestions = root.instanceGroups()
+        groupDialog.open()
+    }
+    function askDuplicate(id, name, group) {
+        duplicateDialog.targetId = id
+        duplicateDialog.targetGroup = group
+        duplicateDialog.value = qsTr("%1 (copy)").arg(name)
+        duplicateDialog.open()
+    }
+    function askDelete(id, name) {
+        deleteDialog.targetId = id
+        deleteDialog.text = qsTr("Delete \u201c%1\u201d? Its folder \u2014 worlds, mods, screenshots \u2014 is removed for good.").arg(name)
+        deleteDialog.open()
+    }
+
     Shortcut {
         sequences: [StandardKey.New]
         onActivated: root.openNewInstance()
@@ -236,6 +275,7 @@ ApplicationWindow {
                 { id: "settings", icon: "settings", label: qsTr("Settings") }
             ]
             currentId: root.page === "instance" ? "library" : root.page === "accounts" ? "" : root.page
+            barBeside: pageHost.dockVisible
             recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
             onItemActivated: (id) => root.page = id
             onRecentActivated: (id) => {
@@ -399,33 +439,11 @@ ApplicationWindow {
                         onEditRequested: (id) => root.openInstance(id)
                         onFolderRequested: (id) => root.call("openInstanceFolder", id)
                         onCreateRequested: root.openNewInstance()
-                        onRenameRequested: (id, name) => {
-                            renameDialog.targetId = id
-                            renameDialog.value = name
-                            renameDialog.open()
-                        }
-                        onIconRequested: (id, iconKey) => {
-                            iconDialog.targetId = id
-                            iconDialog.current = iconKey
-                            iconDialog.open()
-                        }
-                        onGroupRequested: (id, group) => {
-                            groupDialog.targetId = id
-                            groupDialog.value = group
-                            groupDialog.suggestions = root.instanceGroups()
-                            groupDialog.open()
-                        }
-                        onDuplicateRequested: (id, name, group) => {
-                            duplicateDialog.targetId = id
-                            duplicateDialog.targetGroup = group
-                            duplicateDialog.value = qsTr("%1 (copy)").arg(name)
-                            duplicateDialog.open()
-                        }
-                        onDeleteRequested: (id, name) => {
-                            deleteDialog.targetId = id
-                            deleteDialog.text = qsTr("Delete \u201c%1\u201d? Its folder \u2014 worlds, mods, screenshots \u2014 is removed for good.").arg(name)
-                            deleteDialog.open()
-                        }
+                        onRenameRequested: (id, name) => root.askRename(id, name)
+                        onIconRequested: (id, iconKey) => root.askIcon(id, iconKey)
+                        onGroupRequested: (id, group) => root.askGroup(id, group)
+                        onDuplicateRequested: (id, name, group) => root.askDuplicate(id, name, group)
+                        onDeleteRequested: (id, name) => root.askDelete(id, name)
                         onClearSearchRequested: topBar.searchText = ""
                     }
 
@@ -473,6 +491,14 @@ ApplicationWindow {
                         accountsController: root.shell && root.shell.accountsController ? root.shell.accountsController : null
                         onOpenAccountsRequested: root.page = "accounts"
                         onBackRequested: root.page = "library"
+                        // The header's ⋯ menu manages the instance with the
+                        // same dialogs as the library's own card menu.
+                        manageable: true
+                        onRenameRequested: (id, name) => root.askRename(id, name)
+                        onIconRequested: (id, iconKey) => root.askIcon(id, iconKey)
+                        onGroupRequested: (id, group) => root.askGroup(id, group)
+                        onDuplicateRequested: (id, name, group) => root.askDuplicate(id, name, group)
+                        onDeleteRequested: (id, name) => root.askDelete(id, name)
                         onClassicEditorRequested: (id) => root.call("editInstance", id)
                         // Two arguments -- root.call() only ever forwards
                         // one -- so this goes straight to the shell instead.
@@ -606,6 +632,9 @@ ApplicationWindow {
             if (root.shell.deleteInstance(targetId)) {
                 if (root.selectedId === targetId)
                     root.selectedId = ""
+                // Deleted from its own page: there is no page left to show.
+                if (root.page === "instance" && root.openedInstanceId === targetId)
+                    root.page = "library"
                 toast.show(qsTr("Instance deleted."), "success")
             } else {
                 toast.show(qsTr("The instance could not be deleted. Is it running?"), "danger")

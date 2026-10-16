@@ -55,10 +55,12 @@
 #include <QDir>
 #include "qml/AccountFaceProvider.h"
 #include "qml/InstanceIconProvider.h"
+#include "qml/ModIconProvider.h"
 #include "qml/QmlUiHost.h"
 #include "qml/ScreenshotThumbnailProvider.h"
 #include "core/LauncherContext.h"
 #include "minecraft/auth/AccountList.h"
+#include "minecraft/mod/ModIconCache.h"
 #include "minecraft/auth/MinecraftAccount.h"
 
 namespace
@@ -748,6 +750,10 @@ bool QmlShell::show(bool minimized)
 							   new AccountFaceProvider());
 	m_engine->addImageProvider(QStringLiteral("screenshot"),
 							   new ScreenshotThumbnailProvider());
+	// The same directory every ModFolderModel's parse tasks write to.
+	m_engine->addImageProvider(
+		QStringLiteral("modicon"),
+		new ModIconProvider(ModIconCache::directory()));
 	m_engine->setInitialProperties(rootProperties());
 	m_engine->load(kRootUrl);
 

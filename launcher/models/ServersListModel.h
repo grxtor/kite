@@ -24,7 +24,14 @@
 #include <QString>
 #include <QTimer>
 
+#include <memory>
+
 class QFileSystemWatcher;
+
+namespace nbt
+{
+	class tag_compound;
+}
 
 /*
  * QML-facing list of one instance's servers.dat - the widget-free
@@ -37,10 +44,12 @@ class QFileSystemWatcher;
  * running). Locked (edits refused) while the instance is running, the same
  * rule ServersPage applied - the game already has the file open.
  *
- * No icon decoding: servers.dat carries a base64 favicon the server itself
- * sent on ping, but nothing here lets the user set one by hand (the widget
- * page did not either - only "accept textures" was ever user-editable), so
- * this model does not expose it. Every row shows the same generic glyph.
+ * Favicons: servers.dat carries the base64 PNG the server itself sent the
+ * last time the game pinged it. The iconUrl role hands that to QML as a
+ * data: URL (or "" for a server never pinged); nothing here pings or lets
+ * the user set one. Each entry is written back over the compound it was
+ * read from, so the favicon -- and any other tag this model does not edit
+ * -- survives an edit made here.
  */
 class ServersListModel : public QAbstractListModel
 {
@@ -56,6 +65,8 @@ class ServersListModel : public QAbstractListModel
 		/// Server::AcceptsTextures enum, so a QML combo box can index
 		/// straight into it.
 		AcceptTexturesRole,
+		/// "data:image/png;base64,..." for the stored favicon, else "".
+		IconUrlRole,
 	};
 
 	/// @p gameRoot: the instance's gameRoot() - servers.dat lives directly
@@ -106,6 +117,10 @@ class ServersListModel : public QAbstractListModel
 		QString name;
 		QString address;
 		int acceptTextures = 0;
+		QString iconUrl;
+		/// The entry as read, null for one added here; what saveNow()
+		/// writes the edited fields over.
+		std::shared_ptr<const nbt::tag_compound> original;
 	};
 
 	void load();

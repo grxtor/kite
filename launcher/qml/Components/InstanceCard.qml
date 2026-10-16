@@ -7,8 +7,9 @@ import QtQuick.Controls
 import MeshMC.Theme
 
 /*
- * One instance in the library grid: a cover tinted from the instance's own
- * icon, the name, and what it runs. Used directly as a delegate -- the
+ * One instance in the library grid: a cover (its newest screenshot, or a
+ * rendered scene -- see CoverArt.qml) with the instance's icon chip on it,
+ * the name, and what it runs. Used directly as a delegate -- the
  * required properties are filled from InstanceList's named roles, so this
  * file never mentions role numbers.
  *
@@ -48,12 +49,25 @@ Item {
 
     readonly property bool hovered: forceHovered || hoverHandler.hovered
     readonly property bool launching: launchStatus.length > 0
-    readonly property int inset: Theme.space.sm - 2
-    readonly property int coverHeight: Math.round((width - inset * 2) * 0.6)
-    readonly property int coverRadius: Theme.radius.md + 2
+    // One frame width for everything: the cover's inset from the card edge
+    // and the text's, so the name lines up with the picture above it.
+    readonly property int inset: Theme.space.sm
+    // The scenes' own "card" crop is 16:9 (PixelArt.qml); a screenshot is
+    // cropped to the same shape.
+    readonly property real coverRatio: 9 / 16
+    readonly property int coverHeight: Math.round((width - inset * 2) * coverRatio)
+    readonly property int coverRadius: Theme.radius.sm
+    // The icon chip: 32px of icon (the instance icons' native size) on a
+    // 4px frame -- the same chip InstanceListRow shows.
+    readonly property int badgeSize: 40
+    readonly property int badgeInset: Theme.space.xs
+    readonly property int runningDotSize: 7
+    // A key the instanceicon provider resolves to its generic icon, so the
+    // chip is never empty.
+    readonly property string iconSource: "image://instanceicon/" + (root.iconKey.length > 0 ? root.iconKey : "default")
 
-    implicitWidth: 208
-    implicitHeight: inset + coverHeight + Theme.space.md + Theme.type.bodyStrong.lineHeightPx
+    implicitWidth: 240
+    implicitHeight: inset + coverHeight + Theme.space.sm + Theme.type.bodyStrong.lineHeightPx
                     + Theme.space.xxs + Theme.type.caption.lineHeightPx + Theme.space.md
 
     activeFocusOnTab: true
@@ -72,12 +86,12 @@ Item {
         width: parent.width
         height: parent.height
         radius: Theme.radius.lg
-        color: root.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
+        color: Theme.palette.surface
+        // Hover changes this one property -- no fill change, no zoom, no lift.
         border.width: root.selected ? 2 : 1
         border.color: root.selected ? Theme.palette.accent
                     : root.hovered ? Theme.palette.borderStrong : Theme.palette.border
 
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
         // ReleaseWithinBounds grabs on press, so the page's "click empty
@@ -107,13 +121,12 @@ Item {
                 radius: root.coverRadius
                 source: root.coverImage
                 tint: root.iconTint
-                iconKey: root.iconKey
+                // No iconKey: the card draws its own icon chip below, the
+                // same one whether the cover is a screenshot or a scene.
                 seed: root.instanceId
-                iconSize: Math.max(48, Math.min(96, Math.round(root.coverHeight * 0.55)))
-                // Protects the running pill/more button up top and the
-                // play button/icon badge down below from a bright photo.
+                // Protects the running chip/more button up top and the
+                // play button/icon chip down below from a bright photo.
                 scrim: "bottom"
-                hovered: root.hovered
                 matte: card.color
             }
 
@@ -137,34 +150,37 @@ Item {
                 progress: root.launchProgress
             }
 
-            // Running: a pill in the corner, readable on any tint.
+            // Running: a chip in the corner, readable on any picture --
+            // Tag's on-media look, with a status dot.
             Rectangle {
                 visible: root.isRunning
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.margins: Theme.space.sm
-                radius: height / 2
-                height: Theme.control.heightSm - 6
+                radius: Theme.radius.sm
+                height: Theme.control.heightSm - Theme.space.xs
                 width: runningRow.implicitWidth + Theme.space.sm * 2
-                color: Qt.rgba(0, 0, 0, 0.55)
+                color: Theme.media.chip
+                border.width: 1
+                border.color: Theme.media.chipBorder
 
                 Row {
                     id: runningRow
                     anchors.centerIn: parent
-                    spacing: Theme.space.xs + 1
+                    spacing: Theme.space.xs
                     Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
                         // A perfect circle, like Switch/Slider's own round
                         // parts: computed half-width, not a radius token.
-                        width: 7; height: 7; radius: width / 2
+                        width: root.runningDotSize; height: width; radius: width / 2
                         color: Theme.palette.success
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: qsTr("Running")
-                        color: "white"
+                        color: Theme.media.text
                         font.family: Theme.font.family
-                        font.pixelSize: Theme.type.caption.pixelSize - 1
+                        font.pixelSize: Theme.type.caption.pixelSize
                         font.weight: Font.DemiBold
                     }
                 }
@@ -184,10 +200,39 @@ Item {
                 onClicked: root.menuRequested()
             }
 
+            // The instance icon, on every card in the same spot and on the
+            // same chip -- screenshot or fallback scene, custom icon or the
+            // generic one.
+            Rectangle {
+                id: iconBadge
+                anchors.left: parent.left
+                anchors.bottom: parent.bottom
+                anchors.margins: Theme.space.sm
+                width: root.badgeSize
+                height: root.badgeSize
+                radius: Theme.radius.sm
+                color: Theme.palette.surface
+                border.width: 1
+                border.color: Theme.palette.border
+
+                Image {
+                    anchors.fill: parent
+                    anchors.margins: root.badgeInset
+                    source: root.iconSource
+                    sourceSize: Qt.size(width, height)
+                    fillMode: Image.PreserveAspectFit
+                    // Rendered artwork: filtered and mipmapped, so any
+                    // scaling the scene graph does stays clean.
+                    smooth: true
+                    mipmap: true
+                }
+            }
+
             PlayButton {
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
                 anchors.margins: Theme.space.sm
+                size: root.badgeSize
                 running: root.isRunning
                 enabled: root.isRunning || root.canLaunch
                 // A plain fade, no overshoot scale-in (design-plan.md §4/§2.4).
@@ -199,52 +244,14 @@ Item {
             }
         }
 
-        // A small badge for the instance icon, peeking over the cover's
-        // bottom-left edge -- only shown once there is a real screenshot
-        // to badge; the fallback cover already *is* the icon, large and
-        // centred, and a second copy of it would just be clutter.
-        Item {
-            id: iconBadge
-            readonly property int size: 36
-            visible: art.hasPhoto
-            x: cover.x + Theme.space.sm
-            y: cover.y + cover.height - size * 0.8
-            width: size
-            height: size
-
-            Rectangle {
-                anchors.fill: parent
-                anchors.margins: -2
-                radius: Theme.radius.md + 2
-                color: Qt.rgba(0, 0, 0, Theme.dark ? 0.4 : 0.18)
-            }
-
-            Rectangle {
-                anchors.fill: parent
-                radius: Theme.radius.md
-                color: Theme.palette.surface
-                border.width: 1
-                border.color: Theme.palette.border
-
-                Image {
-                    anchors.fill: parent
-                    anchors.margins: 5
-                    source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
-                    sourceSize: Qt.size(width, height)
-                    fillMode: Image.PreserveAspectFit
-                    smooth: false
-                }
-            }
-        }
-
         Text {
             id: title
             anchors.top: cover.bottom
-            anchors.topMargin: Theme.space.md - 2
+            anchors.topMargin: Theme.space.sm
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.leftMargin: Theme.space.md
-            anchors.rightMargin: Theme.space.md
+            anchors.leftMargin: root.inset
+            anchors.rightMargin: root.inset
             text: root.name
             elide: Text.ElideRight
             color: Theme.palette.textPrimary
@@ -253,7 +260,13 @@ Item {
             font.weight: Theme.type.bodyStrong.weight
         }
 
+        // What it runs on the left, when it was last played on the right.
+        // The version always gets its full width; the date is the part
+        // that gives way -- dropped outright rather than squeezing the
+        // version down to "NeoForge 1.2…" (it is still in the list view
+        // and on the instance page).
         Item {
+            id: meta
             anchors.top: title.bottom
             anchors.topMargin: Theme.space.xxs
             anchors.left: title.left
@@ -263,9 +276,8 @@ Item {
             Text {
                 id: versionText
                 anchors.left: parent.left
-                anchors.right: timeText.left
-                anchors.rightMargin: Theme.space.sm
                 anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(implicitWidth, parent.width)
                 text: root.launching ? root.launchStatus : Format.versionLine(root.loader, root.gameVersion)
                 elide: Text.ElideRight
                 color: root.launching ? Theme.palette.accent : Theme.palette.textSecondary
@@ -278,6 +290,7 @@ Item {
                 id: timeText
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
+                visible: text.length > 0 && versionText.implicitWidth + Theme.space.sm + implicitWidth <= parent.width
                 text: root.launching ? (root.launchProgress >= 0 ? Math.round(root.launchProgress * 100) + "%" : "")
                                      : Format.lastPlayed(root.lastLaunch)
                 color: root.launching ? Theme.palette.accent : Theme.palette.textTertiary
@@ -289,12 +302,10 @@ Item {
 
     Rectangle {
         // Keyboard focus ring, outset so it never competes with the
-        // selected border.
-        x: card.x - 3
-        y: card.y - 3
-        width: card.width + 6
-        height: card.height + 6
-        radius: card.radius + 3
+        // selected border: 4px out from a 12px corner is a 16px corner.
+        anchors.fill: card
+        anchors.margins: -Theme.space.xs
+        radius: Theme.radius.xl
         color: "transparent"
         border.width: 2
         border.color: Theme.palette.focusRing

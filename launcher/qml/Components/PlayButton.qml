@@ -7,7 +7,7 @@ import QtQuick.Controls
 import MeshMC.Theme
 
 /*
- * The launcher's one most important button. Round and icon-only on a card,
+ * The launcher's one most important button. Square and icon-only on a card,
  * wide with a label in the hero; turns into Stop while the game runs, in
  * the danger colour, so the two can never be confused at a glance.
  *
@@ -19,13 +19,12 @@ import MeshMC.Theme
  * which read as exactly the kind of "flat-and-purple, gradient-happy,
  * hovers-do-something-weird" look this app is deliberately not going for.
  *
- * The wide (non-round) shape does keep one static block bevel -- a fixed,
- * un-animated darker strip along the bottom edge, plus a blockier
- * `Theme.radius.sm` corner -- so it reads as a Minecraft-style block button
- * rather than a flat web pill. This is not the earlier hover-driven bevel
- * hairlines above: it never changes on hover/press beyond following the
- * same fill colour they already do (see `bevel`), and the round icon-only
- * variant keeps its plain circular shape.
+ * Flat, like every primary button (Style/Button.qml): one fill, a white
+ * label, a lighter fill on hover and a darker one when pressed. The
+ * block bevel and top gloss an earlier pass gave it read as dated next to
+ * the rendered artwork. Corners are Theme.radius.md in both shapes; the
+ * icon-only (`round`) variant is a rounded square, not a circle -- like the
+ * rest of an instance's identity it stays off the pill radius.
  */
 AbstractButton {
     id: control
@@ -61,67 +60,16 @@ AbstractButton {
         ? (down ? Qt.darker(Theme.palette.danger, 1.15) : hovered ? Qt.lighter(Theme.palette.danger, 1.08) : Theme.palette.danger)
         : (down ? Theme.palette.accentPressed : hovered ? Theme.palette.accentHover : Theme.palette.accent)
 
-    // A block/button bevel: a static 3px darker strip along the bottom
-    // edge, the way a Minecraft-style button reads as a physical block
-    // rather than a flat web pill -- never animated (see the file comment's
-    // one-property-only rule), and skipped on the round icon-only variant,
-    // which was never meant to look blocky. `bg` itself is this darker
-    // colour at full height; `fillTop` -- the actual button face -- sits on
-    // top of it, 3px shorter, exposing the strip along the bottom. Darker
-    // (1.5x, was 1.35x) and one row taller than an earlier pass, which read
-    // as an almost invisible shadow rather than a crisp step next to the
-    // static top-gloss gradient below.
-    readonly property color bevel: Qt.darker(control.fill, 1.5)
-
     background: Rectangle {
-        id: bg
-        radius: control.round ? height / 2 : Theme.radius.sm
-        color: control.bevel
+        radius: Theme.radius.md
+        color: control.fill
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
-        Rectangle {
-            id: fillTop
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: control.round ? parent.height : parent.height - 3
-            // Square, not `parent.radius`: a rounded bottom edge here would
-            // recede at the corners by the same radius as `bg`, leaving the
-            // exposed bevel strip below as a thin curved sliver instead of
-            // a flat step across the width. The overlay just below re-rounds
-            // only the top two corners, in the same fill colour, so the
-            // square base is invisible except at the true bottom edge.
-            radius: control.round ? height / 2 : 0
-            color: control.fill
-            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-
-            Rectangle {
-                visible: !control.round
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: Theme.radius.sm
-                radius: Theme.radius.sm
-                color: control.fill
-            }
-        }
-
-        // Static top gloss -- not hover-driven, just a fixed hint of light
-        // from above.
+        // Keyboard focus ring, outset so it never competes with the fill.
         Rectangle {
             anchors.fill: parent
-            radius: parent.radius
-            visible: !control.down
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.25) }
-                GradientStop { position: 0.6; color: Qt.rgba(1, 1, 1, 0.0) }
-            }
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: -3
-            radius: parent.radius + 3
+            anchors.margins: -Theme.space.xxs
+            radius: parent.radius + Theme.space.xxs
             color: "transparent"
             border.width: 2
             border.color: Theme.palette.focusRing

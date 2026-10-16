@@ -87,36 +87,29 @@ Item {
     signal openClassicRequested(string page)
     signal openPathRequested(string path)
 
+    // Each icon says what its section is about ("layers" is a mod loader
+    // elsewhere in the app, so Java does not wear it): the gear for the
+    // general preferences, a server rack for the runtime and its memory, a
+    // list of lines for the log window, a sun for the launcher's look, the
+    // ">_" prompt for the shell commands, an arrow out of a box for programs
+    // outside the launcher, an up arrow for sending a log away.
     readonly property var sections: [
-        { id: "general", icon: "home", label: qsTr("General") },
-        { id: "java", icon: "layers", label: qsTr("Java & memory") },
+        { id: "general", icon: "settings", label: qsTr("General") },
+        { id: "java", icon: "server", label: qsTr("Java & memory") },
         { id: "minecraft", icon: "cube", label: qsTr("Minecraft") },
-        { id: "console", icon: "terminal", label: qsTr("Console") },
-        { id: "appearance", icon: "image", label: qsTr("Appearance") },
-        { id: "commands", icon: "edit", label: qsTr("Custom commands") },
+        { id: "console", icon: "list", label: qsTr("Console") },
+        { id: "appearance", icon: "sun", label: qsTr("Appearance") },
+        { id: "commands", icon: "terminal", label: qsTr("Custom commands") },
         { id: "plugins", icon: "package", label: qsTr("Plugins") },
         { id: "proxy", icon: "globe", label: qsTr("Proxy") },
-        { id: "external-tools", icon: "settings", label: qsTr("External tools") },
-        { id: "log-upload", icon: "copy", label: qsTr("Log upload") }
+        { id: "external-tools", icon: "external-link", label: qsTr("External tools") },
+        { id: "log-upload", icon: "arrow-up", label: qsTr("Log upload") }
     ]
     readonly property int sectionIndex: {
         for (var i = 0; i < sections.length; ++i)
             if (sections[i].id === section)
                 return i
         return 0
-    }
-
-    // A chrome-only screen (design-plan.md §5): no instance/pack art of its
-    // own to bleed behind the header, unlike Library/PlayDock/Discover's
-    // detail hero. The same quiet block-grid wash as Discover's own empty
-    // state, behind this page's header region; every SettingsGroup panel
-    // further down is a fully opaque surface and simply paints over it.
-    AmbientPattern {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        height: 260
-        fadeBottom: true
     }
 
     RowLayout {

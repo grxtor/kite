@@ -17,12 +17,72 @@
  * limitations under the License.
  */
 
+#include <QBuffer>
 #include <QFile>
+#include <QImage>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
 
+#include <sstream>
+
+#include <io/stream_reader.h>
+#include <io/stream_writer.h>
+#include <tag_compound.h>
+#include <tag_list.h>
+#include <tag_primitive.h>
+#include <tag_string.h>
+
 #include "models/ServersListModel.h"
+
+namespace
+{
+QByteArray pngBytes()
+{
+	QImage image(64, 64, QImage::Format_ARGB32);
+	image.fill(Qt::darkGreen);
+	QByteArray bytes;
+	QBuffer buffer(&bytes);
+	buffer.open(QIODevice::WriteOnly);
+	image.save(&buffer, "PNG");
+	return bytes;
+}
+
+// One servers.dat entry the way the game writes it, plus a tag this model
+// knows nothing about.
+void writeServersDat(const QString& path, const std::string& icon)
+{
+	nbt::tag_compound entry;
+	entry.insert("name", std::string("Hypixel"));
+	entry.insert("ip", std::string("mc.hypixel.net"));
+	entry.insert("icon", icon);
+	entry.insert("acceptTextures", nbt::tag_byte(1));
+	entry.insert("hidden", nbt::tag_byte(0));
+	nbt::tag_list list;
+	list.push_back(std::move(entry));
+	nbt::tag_compound root;
+	root.insert("servers", nbt::value(std::move(list)));
+	std::ostringstream out;
+	nbt::io::write_tag("", root, out);
+	QFile file(path);
+	QVERIFY(file.open(QIODevice::WriteOnly));
+	file.write(out.str().data(), static_cast<qint64>(out.str().size()));
+}
+
+std::unique_ptr<nbt::tag_compound> readFirstServer(const QString& path)
+{
+	QFile file(path);
+	if (!file.open(QIODevice::ReadOnly)) {
+		return nullptr;
+	}
+	const QByteArray bytes = file.readAll();
+	std::istringstream in(std::string(bytes.constData(), bytes.size()));
+	auto root = nbt::io::read_compound(in).second;
+	auto& list = root->at("servers").as<nbt::tag_list>();
+	return std::make_unique<nbt::tag_compound>(
+		list.at(0).as<nbt::tag_compound>());
+}
+} // namespace
 
 /* Needs neither a BaseInstance nor a LauncherContext - only a directory to
  * read/write servers.dat under, same reason OtherLogsModel_test.cpp drives
@@ -38,6 +98,10 @@ class ServersListModelTest : public QObject
 	void lockedRefusesEdits();
 	void watchesDirectoryOnlyWhileLocked();
 	void addressOfOutOfRange();
+	void exposesStoredFavicon();
+	void acceptsPrefixedFavicon();
+	void ignoresFaviconThatIsNotPng();
+	void editsKeepTagsItDoesNotEdit();
 };
 
 void ServersListModelTest::addEditMoveRemove()
@@ -219,6 +283,92 @@ void ServersListModelTest::addressOfOutOfRange()
 	model.startWatching();
 	QCOMPARE(model.addressOf(-1), QString());
 	QCOMPARE(model.addressOf(0), QString());
+}
+
+void ServersListModelTest::exposesStoredFavicon()
+{
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+	writeServersDat(dir.filePath("servers.dat"),
+					pngBytes().toBase64().toStdString());
+
+	ServersListModel model(dir.path());
+	model.startWatching();
+	QCOMPARE(model.rowCount(), 1);
+	const QString url =
+		model.data(model.index(0), ServersListModel::IconUrlRole).toString();
+	QVERIFY(url.startsWith(QStringLiteral("data:image/png;base64,")));
+	const QImage decoded = QImage::fromData(
+		QByteArray::fromBase64(url.section(QLatin1Char(','), 1).toLatin1()));
+	QCOMPARE(decoded.size(), QSize(64, 64));
+	QCOMPARE(model.roleNames().value(ServersListModel::IconUrlRole),
+			 QByteArray("iconUrl"));
+
+	// A server added here has never been pinged.
+	model.addServer();
+	QVERIFY(model.data(model.index(1), ServersListModel::IconUrlRole)
+				.toString()
+				.isEmpty());
+}
+
+void ServersListModelTest::acceptsPrefixedFavicon()
+{
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+	writeServersDat(dir.filePath("servers.dat"),
+					"data:image/png;base64," +
+						pngBytes().toBase64().toStdString());
+
+	ServersListModel model(dir.path());
+	model.startWatching();
+	const QString url =
+		model.data(model.index(0), ServersListModel::IconUrlRole).toString();
+	QCOMPARE(url, QStringLiteral("data:image/png;base64,") +
+					  QString::fromLatin1(pngBytes().toBase64()));
+}
+
+void ServersListModelTest::ignoresFaviconThatIsNotPng()
+{
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+	writeServersDat(dir.filePath("servers.dat"),
+					QByteArray("not an image").toBase64().toStdString());
+
+	ServersListModel model(dir.path());
+	model.startWatching();
+	QCOMPARE(model.rowCount(), 1);
+	QVERIFY(model.data(model.index(0), ServersListModel::IconUrlRole)
+				.toString()
+				.isEmpty());
+}
+
+void ServersListModelTest::editsKeepTagsItDoesNotEdit()
+{
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+	const QString path = dir.filePath("servers.dat");
+	const std::string icon = pngBytes().toBase64().toStdString();
+	writeServersDat(path, icon);
+
+	{
+		ServersListModel model(dir.path());
+		model.startWatching();
+		model.setName(0, QStringLiteral("Renamed"));
+		model.setAcceptTextures(0, 0);
+		model.stopWatching();
+	}
+
+	const auto saved = readFirstServer(path);
+	QVERIFY(saved);
+	QCOMPARE(QString::fromStdString(
+				 saved->at("name").as<nbt::tag_string>().get()),
+			 QStringLiteral("Renamed"));
+	QCOMPARE(QString::fromStdString(
+				 saved->at("icon").as<nbt::tag_string>().get()),
+			 QString::fromStdString(icon));
+	QVERIFY(saved->has_key("hidden", nbt::tag_type::Byte));
+	// "Ask" is the absence of the tag, as the game writes it.
+	QVERIFY(!saved->has_key("acceptTextures"));
 }
 
 QTEST_GUILESS_MAIN(ServersListModelTest)

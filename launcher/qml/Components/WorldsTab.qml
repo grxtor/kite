@@ -9,8 +9,9 @@ import MeshMC.Theme
 
 /*
  * The instance's single-player worlds, most useful facts first: name,
- * game mode, when it was last played. Deleting one asks first -- a world
- * is hours of someone's play and there is no undo.
+ * game mode, when it was last played. Every row's actions sit behind its
+ * ⋯ menu (also on right-click). Deleting one asks first -- a world is hours
+ * of someone's play and there is no undo.
  */
 Item {
     id: root
@@ -30,6 +31,14 @@ Item {
     // the GUI thread (a world can run into gigabytes), see InstanceDetails.
     property var watcher: null
     readonly property bool busy: !!root.watcher && root.watcher.running
+
+    readonly property int rowHeight: 76
+    readonly property int thumbSize: 52
+    // The game modes worth a tag. WorldList reports a level.dat without one
+    // as "Undefined" (or "Unknown (n)"), which says nothing to a player, so
+    // anything else is simply left out.
+    readonly property var knownModes: [qsTranslate("GameType", "Survival"), qsTranslate("GameType", "Creative"),
+                                       qsTranslate("GameType", "Adventure"), qsTranslate("GameType", "Spectator")]
 
     // A different instance's details: whatever this tab was doing belonged
     // to the previous one.
@@ -86,6 +95,7 @@ Item {
             spacing: Theme.space.sm
             boundsBehavior: Flickable.StopAtBounds
             model: root.details ? root.details.worlds : null
+            // Overlays the rows' right edge rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
             delegate: Item {
@@ -98,62 +108,73 @@ Item {
                 required property var iconFile
                 required property var dayCount
 
-                width: list.width - Theme.space.md
-                height: 76
+                readonly property string displayName: cell.name.length > 0 ? cell.name : cell.folderName
+                // The folder's own name: the seed Home's world tiles and the
+                // overview use too, so a world without an icon shows the
+                // same scene everywhere. `folder` is the full path.
+                readonly property string folderName: String(cell.folder).split(/[\\/]/).pop()
+                readonly property string mode: String(cell.gameMode || "")
+
+                width: list.width
+                height: root.rowHeight
 
                 HoverHandler { id: hover }
-
-                // A faint duplicate a few pixels below the card reads as a
-                // soft drop shadow without a real blur (none of the effect
-                // modules are available at this Qt floor).
-                Rectangle {
-                    x: 0; y: 3
-                    width: parent.width
-                    height: parent.height
-                    radius: Theme.radius.lg
-                    color: Theme.palette.scrim
-                    opacity: hover.hovered ? 0.16 : 0.08
-                    Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
+                TapHandler {
+                    acceptedButtons: Qt.RightButton
+                    onTapped: if (root.unlocked && !root.busy) rowMenu.popup()
                 }
 
                 Rectangle {
                     id: card
-                    width: parent.width
-                    height: parent.height
-                    y: hover.hovered ? -1 : 0
+                    anchors.fill: parent
                     radius: Theme.radius.lg
                     color: hover.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
                     border.width: 1
-                    border.color: hover.hovered ? Theme.palette.borderStrong : Theme.palette.border
+                    border.color: Theme.palette.border
 
-                    Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
                     Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
 
                     RowLayout {
                         anchors.fill: parent
                         anchors.leftMargin: Theme.space.md
-                        anchors.rightMargin: Theme.space.md
+                        anchors.rightMargin: Theme.space.sm
                         spacing: Theme.space.md
 
                         Rectangle {
-                            Layout.preferredWidth: 52
-                            Layout.preferredHeight: 52
-                            radius: Theme.radius.md
+                            id: thumb
+                            Layout.preferredWidth: root.thumbSize
+                            Layout.preferredHeight: root.thumbSize
+                            radius: Theme.radius.sm
                             color: Theme.palette.surfaceSunken
+                            clip: true
+
+                            // The world's own icon.png, kept crisp like the
+                            // pixel picture it is.
                             Image {
                                 id: worldIcon
                                 anchors.fill: parent
-                                anchors.margins: 2
                                 source: Format.fileUrl(cell.iconFile)
-                                sourceSize: Qt.size(96, 96)
+                                sourceSize: Qt.size(width * 2, height * 2)
+                                fillMode: Image.PreserveAspectCrop
                                 smooth: false
+                                asynchronous: true
                                 visible: status === Image.Ready
                             }
-                            MeshIcon {
-                                anchors.centerIn: parent
+                            // No icon: one of PixelArt's rendered scenes,
+                            // picked by the folder name (see folderName).
+                            Image {
+                                anchors.fill: parent
                                 visible: !worldIcon.visible
-                                iconName: "globe"
-                                color: Theme.palette.textTertiary
+                                source: worldIcon.visible ? "" : PixelArt.worldUrlFor(cell.folderName)
+                                sourceSize: Qt.size(width * 2, height * 2)
+                                fillMode: Image.PreserveAspectCrop
+                                smooth: true
+                                mipmap: true
+                                asynchronous: true
+                            }
+                            CornerMatte {
+                                cornerRadius: thumb.radius
+                                matte: card.color
                             }
                         }
 
@@ -163,7 +184,7 @@ Item {
                             spacing: Theme.space.xs
                             Text {
                                 width: parent.width
-                                text: cell.name.length > 0 ? cell.name : cell.folder
+                                text: cell.displayName
                                 elide: Text.ElideRight
                                 color: Theme.palette.textPrimary
                                 font.family: Theme.font.family
@@ -173,8 +194,8 @@ Item {
                             Row {
                                 spacing: Theme.space.xs
                                 Tag {
-                                    visible: text.length > 0
-                                    text: String(cell.gameMode || "")
+                                    visible: root.knownModes.indexOf(cell.mode) >= 0
+                                    text: cell.mode
                                 }
                                 Tag {
                                     visible: cell.dayCount !== undefined && cell.dayCount !== null
@@ -188,27 +209,26 @@ Item {
                         }
 
                         IconButton {
-                            visible: hover.hovered && root.unlocked
-                            iconName: "package"
-                            tip: qsTr("Data packs")
-                            onClicked: root.dataPacksRequested(cell.index)
-                        }
-
-                        IconButton {
-                            visible: hover.hovered && root.unlocked
-                            enabled: !root.busy
+                            id: moreButton
+                            enabled: root.unlocked && !root.busy
                             iconName: "more"
                             tip: qsTr("More")
-                            onClicked: rowMenu.popup()
+                            onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
 
                             Menu {
                                 id: rowMenu
+                                MenuItem {
+                                    text: qsTr("Data packs")
+                                    icon.source: Icons.url("package")
+                                    onTriggered: root.dataPacksRequested(cell.index)
+                                }
+                                MenuSeparator {}
                                 MenuItem {
                                     text: qsTr("Rename…")
                                     icon.source: Icons.url("edit")
                                     onTriggered: {
                                         renamePrompt.row = cell.index
-                                        renamePrompt.value = cell.name.length > 0 ? cell.name : cell.folder
+                                        renamePrompt.value = cell.displayName
                                         renamePrompt.open()
                                     }
                                 }
@@ -217,7 +237,7 @@ Item {
                                     icon.source: Icons.url("copy")
                                     onTriggered: {
                                         copyPrompt.row = cell.index
-                                        copyPrompt.value = qsTr("%1 (copy)").arg(cell.name.length > 0 ? cell.name : cell.folder)
+                                        copyPrompt.value = qsTr("%1 (copy)").arg(cell.displayName)
                                         copyPrompt.open()
                                     }
                                 }
@@ -233,7 +253,7 @@ Item {
                                     icon.source: Icons.url("trash")
                                     onTriggered: {
                                         confirm.row = cell.index
-                                        confirm.text = qsTr("Delete the world “%1”? It cannot be recovered from the launcher.").arg(cell.name.length > 0 ? cell.name : cell.folder)
+                                        confirm.text = qsTr("Delete the world “%1”? It cannot be recovered from the launcher.").arg(cell.displayName)
                                         confirm.open()
                                     }
                                 }
@@ -243,6 +263,14 @@ Item {
                 }
             }
         }
+    }
+
+    // Rows fade out at the fold instead of being sliced by the play bar.
+    ScrollFade {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        flickable: list
     }
 
     ConfirmDialog {

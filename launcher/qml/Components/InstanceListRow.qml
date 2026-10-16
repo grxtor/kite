@@ -44,12 +44,20 @@ Item {
 
     readonly property bool hovered: forceHovered || hoverHandler.hovered
     readonly property bool launching: launchStatus.length > 0
-    readonly property int iconExtent: Theme.control.height
+    // The same icon chip InstanceCard puts on its cover: 32px of icon on a
+    // 4px frame.
+    readonly property int badgeSize: 40
+    readonly property int badgeInset: Theme.space.xs
+    readonly property int runningDotSize: 9
+    readonly property string iconSource: "image://instanceicon/" + (root.iconKey.length > 0 ? root.iconKey : "default")
+    readonly property int versionColumnWidth: 150
+    readonly property int lastPlayedColumnWidth: 92
+    readonly property int playTimeColumnWidth: 72
     readonly property bool showVersionColumn: width > 460
     readonly property bool showStatsColumns: width > 620
 
     implicitWidth: 400
-    implicitHeight: iconExtent + Theme.space.sm * 2
+    implicitHeight: badgeSize + Theme.space.sm * 2
 
     activeFocusOnTab: true
     Keys.onReturnPressed: root.playRequested()
@@ -62,16 +70,20 @@ Item {
 
     HoverHandler { id: hoverHandler }
 
+    // A card like InstanceCard, only flat: the same surface, border and
+    // selected/hover grammar, so switching Grid/List changes the layout and
+    // nothing else.
     Rectangle {
         id: surface
         anchors.fill: parent
-        radius: Theme.radius.md
-        color: root.selected ? Theme.palette.accentSubtle
-             : root.hovered ? Theme.palette.surfaceRaised : "transparent"
-        border.width: root.selected ? 1 : 0
-        border.color: Theme.palette.accent
+        radius: Theme.radius.lg
+        color: Theme.palette.surface
+        // Hover changes this one property, as on the grid card.
+        border.width: root.selected ? 2 : 1
+        border.color: root.selected ? Theme.palette.accent
+                    : root.hovered ? Theme.palette.borderStrong : Theme.palette.border
 
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
         TapHandler {
             acceptedButtons: Qt.LeftButton
@@ -85,36 +97,31 @@ Item {
             onTapped: { root.forceActiveFocus(); root.clicked(); root.menuRequested() }
         }
 
-        // The accent bar a selected InstanceCard shows as a border reads as
-        // a stripe here instead -- a full card border on a thin row would
-        // squeeze the content next to it.
-        Rectangle {
-            visible: root.selected
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            anchors.margins: 1
-            width: 3
-            radius: Theme.radius.xs
-            color: Theme.palette.accent
-        }
-
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: Theme.space.md
+            anchors.leftMargin: Theme.space.sm
             anchors.rightMargin: Theme.space.sm
             spacing: Theme.space.md
 
-            Item {
-                Layout.preferredWidth: root.iconExtent
-                Layout.preferredHeight: root.iconExtent
+            Rectangle {
+                Layout.preferredWidth: root.badgeSize
+                Layout.preferredHeight: root.badgeSize
+                radius: Theme.radius.sm
+                color: Theme.palette.surfaceRaised
+                border.width: 1
+                border.color: Theme.palette.border
 
                 Image {
                     id: icon
                     anchors.fill: parent
-                    source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
+                    anchors.margins: root.badgeInset
+                    source: root.iconSource
                     sourceSize: Qt.size(width, height)
                     fillMode: Image.PreserveAspectFit
+                    // Rendered artwork: filtered and mipmapped, so any
+                    // scaling the scene graph does stays clean.
+                    smooth: true
+                    mipmap: true
                 }
 
                 // Pulsing while running, same treatment as the sidebar's
@@ -123,13 +130,13 @@ Item {
                     visible: root.isRunning
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
-                    anchors.margins: -1
-                    width: 9
-                    height: 9
+                    anchors.margins: -Theme.space.xxs
+                    width: root.runningDotSize
+                    height: width
                     radius: width / 2
                     color: Theme.palette.success
                     border.width: 2
-                    border.color: Theme.palette.canvas
+                    border.color: surface.color
 
                     SequentialAnimation on opacity {
                         running: root.isRunning
@@ -153,7 +160,7 @@ Item {
 
             Text {
                 visible: root.showVersionColumn
-                Layout.preferredWidth: 150
+                Layout.preferredWidth: root.versionColumnWidth
                 Layout.minimumWidth: 0
                 text: root.launching ? root.launchStatus : Format.versionLine(root.loader, root.gameVersion)
                 elide: Text.ElideRight
@@ -165,7 +172,7 @@ Item {
 
             Text {
                 visible: root.showStatsColumns
-                Layout.preferredWidth: 92
+                Layout.preferredWidth: root.lastPlayedColumnWidth
                 horizontalAlignment: Text.AlignRight
                 text: Format.lastPlayed(root.lastLaunch)
                 elide: Text.ElideRight
@@ -176,7 +183,7 @@ Item {
 
             Text {
                 visible: root.showStatsColumns
-                Layout.preferredWidth: 72
+                Layout.preferredWidth: root.playTimeColumnWidth
                 horizontalAlignment: Text.AlignRight
                 text: Format.playTime(root.totalTimePlayed)
                 color: Theme.palette.textTertiary
@@ -185,14 +192,14 @@ Item {
             }
 
             Item {
-                Layout.preferredWidth: Theme.control.heightSm * 2 + Theme.space.xs
-                Layout.preferredHeight: root.iconExtent
+                Layout.preferredWidth: Theme.control.height * 2 + Theme.space.xs
+                Layout.preferredHeight: root.badgeSize
 
                 IconButton {
                     anchors.right: playButton.left
                     anchors.rightMargin: Theme.space.xs
                     anchors.verticalCenter: parent.verticalCenter
-                    size: Theme.control.heightSm
+                    size: Theme.control.height
                     iconName: "more"
                     tip: qsTr("More")
                     opacity: root.hovered ? 1 : 0
@@ -206,7 +213,7 @@ Item {
                     id: playButton
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    size: Theme.control.heightSm + 4
+                    size: Theme.control.height
                     running: root.isRunning
                     enabled: root.isRunning || root.canLaunch
                     // A plain fade, no overshoot scale-in (design-plan.md §4/§2.4).
@@ -221,14 +228,14 @@ Item {
     }
 
     Rectangle {
-        x: surface.x - 2
-        y: surface.y - 2
-        width: surface.width + 4
-        height: surface.height + 4
-        radius: surface.radius + 2
+        // Keyboard focus ring, outset like InstanceCard's: 4px out from a
+        // 12px corner is a 16px corner.
+        anchors.fill: surface
+        anchors.margins: -Theme.space.xs
+        radius: Theme.radius.xl
         color: "transparent"
         border.width: 2
         border.color: Theme.palette.focusRing
-        visible: root.activeFocus
+        visible: root.activeFocus && !root.selected
     }
 }

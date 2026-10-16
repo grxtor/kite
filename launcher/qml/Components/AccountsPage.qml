@@ -16,7 +16,7 @@ import MeshMC.Theme
  * A hero at the top shows the account games actually launch with -- full
  * body, standing on a small "stage" -- the same way the library's
  * ContinueCard/InstancePage hero leads with the instance that matters most.
- * Every other account is a compact row below it.
+ * Every other account is a compact row below it, as wide as the hero.
  */
 Item {
     id: root
@@ -140,10 +140,15 @@ Item {
     readonly property string heroStatus: heroItem ? heroItem.status : ""
     readonly property string heroStateKey: heroItem ? heroItem.stateKey : ""
     readonly property int heroRow: heroItem ? heroItem.index : -1
-    // A stable colour for the hero's stage -- carries a bounded, designed
-    // fallback (design-plan.md §5/§9) for an offline account that has no
-    // skin, and no icon of its own the way an instance does, to tint one.
-    readonly property color heroTint: Format.hashTint(root.heroAccountId)
+    // The hero's figure box: 1:2, the skin's own 16x32 frame (see
+    // AccountFaceProvider::bodyFromSkin), so the default figure under the
+    // render lines up with it exactly.
+    readonly property int figureWidth: 88
+    readonly property int figureHeight: 176
+    readonly property int floorWidth: 116
+    readonly property int floorHeight: 20
+    readonly property int floorGap: 12
+    readonly property int heroHeight: 248
 
     ColumnLayout {
         anchors.fill: parent
@@ -152,35 +157,43 @@ Item {
         anchors.bottomMargin: Theme.space.lg
         spacing: Theme.space.lg
 
+        // Every block below spans the same width as the header above the
+        // page (its title on the left, the account button on the right),
+        // up to Theme.layout.maxContentWidth on a wide window.
         RowLayout {
             Layout.fillWidth: true
-            Layout.maximumWidth: 860
+            Layout.maximumWidth: Theme.layout.maxContentWidth
+            Layout.alignment: Qt.AlignHCenter
             // Redundant with the empty state's own actions below once there
             // is nothing to manage yet.
             visible: list.count > 0
             spacing: Theme.space.sm
 
+            // One short line, so it never wraps into a stray last word
+            // beside the buttons; what a Microsoft account is needed for is
+            // said where it matters (the offline hero's note, the empty
+            // state, the offline dialog).
             Text {
                 Layout.fillWidth: true
-                text: qsTr("Games launch with the default account. Sign in with the Microsoft account that owns Minecraft.")
+                text: qsTr("Games launch with the default account.")
                 wrapMode: Text.Wrap
                 color: Theme.palette.textTertiary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.label.pixelSize
             }
+            // Signing in with Microsoft is what this page is for, so it is
+            // the one accent-filled action and comes first -- except while
+            // the hero offers "Use this account" (no default chosen yet),
+            // which is then the screen's one primary action instead.
+            Button {
+                highlighted: !root.heroItem || root.heroIsDefault
+                text: qsTr("Sign in with Microsoft")
+                icon.source: Icons.url("user")
+                onClicked: root.startMicrosoftLogin()
+            }
             Button {
                 text: qsTr("Add offline account")
                 onClicked: offlineDialog.open()
-            }
-            Button {
-                // The hero below already carries its own accent-filled
-                // "Use this account" when it isn't the default -- both
-                // showing together broke the one-accent-fill-per-screen
-                // rule (design-plan.md Principle 1). Adding another account
-                // is the secondary action once any account already exists.
-                text: qsTr("Sign in with Microsoft")
-                icon.source: Icons.url("plus")
-                onClicked: root.startMicrosoftLogin()
             }
         }
 
@@ -188,29 +201,17 @@ Item {
         Rectangle {
             id: hero
             Layout.fillWidth: true
-            Layout.maximumWidth: 860
+            Layout.maximumWidth: Theme.layout.maxContentWidth
+            Layout.alignment: Qt.AlignHCenter
             visible: !!root.heroItem
-            implicitHeight: 248
+            implicitHeight: root.heroHeight
             radius: Theme.radius.xl
-            // A flat, bordered surface rather than an ornamental accent
-            // gradient (design-plan.md §5/§8/§9) -- the account's own
-            // rendered skin (or its designed silhouette fallback) is the
-            // hero's visual anchor now, not a decorative wash.
+            // A flat, bordered surface: the account's own rendered skin (or
+            // the default figure) is the hero's visual anchor, not a
+            // decorative wash or gradient.
             color: Theme.palette.surfaceRaised
             border.width: 1
             border.color: Theme.palette.border
-            // Left-aligned content leaves the card's right side flat once
-            // the ornamental gradient is gone; the same quiet block-grid
-            // wash the other chrome-only screens use (see AmbientPattern.qml)
-            // fills that space instead of a second decorative gradient.
-            // clip: true respects hero's own rounded corners for it.
-            clip: true
-
-            AmbientPattern {
-                anchors.fill: parent
-                tint: root.heroTint
-                strength: 0.06
-            }
 
             RowLayout {
                 anchors.fill: parent
@@ -218,9 +219,7 @@ Item {
                 spacing: Theme.space.xl
 
                 // The stage: a floor shadow and either the account's real
-                // skin or a neutral, per-account-tinted silhouette standing
-                // on it -- the account's own rendered skin is the visual
-                // anchor here, not an ornamental glow (design-plan.md §5).
+                // skin or the neutral default figure standing on it.
                 Item {
                     id: stage
                     Layout.preferredWidth: 168
@@ -234,38 +233,38 @@ Item {
                     Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.bottom: parent.bottom
-                        width: 116; height: 20
+                        width: root.floorWidth
+                        height: root.floorHeight
                         radius: height / 2
-                        color: Format.shade(root.heroTint, Theme.dark ? 0.45 : 0.55, 0.6)
-                        opacity: 0.30
+                        color: Theme.palette.shadow
                     }
 
-                    // Neutral placeholder, shown underneath the body render:
-                    // an offline account (or one whose texture has not
-                    // loaded yet) gets a transparent image back from the
-                    // provider, and this shows through -- same idea as the
-                    // face avatars' initial letter elsewhere on this page,
-                    // tinted per-account (Format.shade) rather than one flat
-                    // neutral grey for every account (design-plan.md §9).
+                    // An offline account has no skin to render (the
+                    // provider hands back a transparent image), and a
+                    // Microsoft one has none until its render is ready:
+                    // both get the default figure, in the render's own box.
                     SkinSilhouette {
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.bottom: parent.bottom
-                        anchors.bottomMargin: 12
-                        opacity: 0.7
-                        color: Format.shade(root.heroTint, Theme.dark ? 0.62 : 0.42, 0.5)
+                        anchors.bottomMargin: root.floorGap
+                        width: root.figureWidth
+                        height: root.figureHeight
+                        visible: !root.heroIsMSA || heroBody.status !== Image.Ready
                     }
 
                     Image {
+                        id: heroBody
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.bottom: parent.bottom
-                        anchors.bottomMargin: 12
-                        width: 88
-                        height: 176
+                        anchors.bottomMargin: root.floorGap
+                        width: root.figureWidth
+                        height: root.figureHeight
+                        visible: root.heroIsMSA
                         fillMode: Image.PreserveAspectFit
                         smooth: false
                         source: root.heroAccountId.length > 0
                                 ? "image://accountface/body/" + root.heroAccountId + "?rev=" + root.imageRevision : ""
-                        sourceSize: Qt.size(176, 352)
+                        sourceSize: Qt.size(root.figureWidth * 2, root.figureHeight * 2)
                     }
                 }
 
@@ -275,15 +274,6 @@ Item {
                     spacing: Theme.space.sm
 
                     Text {
-                        text: (root.heroIsDefault ? qsTr("ACTIVE ACCOUNT") : qsTr("SUGGESTED DEFAULT")).toUpperCase()
-                        color: Theme.palette.accent
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.overline.pixelSize
-                        font.weight: Font.Bold
-                        font.letterSpacing: Theme.type.overline.letterSpacing * 1.5
-                    }
-
-                    Text {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
                         text: root.heroName
@@ -291,12 +281,18 @@ Item {
                         color: Theme.palette.textPrimary
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.display.pixelSize
-                        font.weight: Font.Bold
-                        font.letterSpacing: -0.5
+                        font.weight: Theme.type.display.weight
                     }
 
+                    // Which account games launch with is a fact about the
+                    // account, so it sits with its other facts as a tag --
+                    // not as a shouted label above the name.
                     Row {
                         spacing: Theme.space.sm
+                        Tag {
+                            iconName: root.heroIsDefault ? "check" : "user"
+                            text: root.heroIsDefault ? qsTr("Default account") : qsTr("Suggested default")
+                        }
                         Tag {
                             iconName: root.heroIsMSA ? "user" : "users"
                             text: root.heroIsMSA ? qsTr("Microsoft") : qsTr("Offline")
@@ -309,27 +305,38 @@ Item {
                         }
                     }
 
+                    Text {
+                        Layout.fillWidth: true
+                        visible: !root.heroIsMSA
+                        text: qsTr("Plays offline only: online-mode servers and skins need a Microsoft account.")
+                        wrapMode: Text.Wrap
+                        color: Theme.palette.textTertiary
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.type.label.pixelSize
+                    }
+
+                    // Theme.control.height like every other button on the
+                    // page; icon actions are the same bordered square as in
+                    // the rows below (AccountRow.qml).
                     Row {
                         topPadding: Theme.space.sm
                         spacing: Theme.space.sm
 
                         Button {
-                            height: Theme.control.heightLg
                             visible: !root.heroIsDefault
                             highlighted: true
                             text: qsTr("Use this account")
                             onClicked: root.controller.setDefault(root.heroRow)
                         }
-                        IconButton {
-                            size: Theme.control.heightLg
-                            flat: false
-                            iconName: "image"
-                            tip: root.heroIsMSA ? qsTr("Manage skin & cape") : qsTr("Skins need a Microsoft account")
+                        Button {
+                            // "and", not "&": a Button reads "&" as a
+                            // keyboard mnemonic and underlines the next letter.
+                            text: qsTr("Skin and cape")
+                            icon.source: Icons.url("image")
                             onClicked: root.heroIsMSA ? root.openSkinEditor(root.heroRow, root.heroAccountId, root.heroName)
                                                        : offlineSkinDialog.open()
                         }
                         IconButton {
-                            size: Theme.control.heightLg
                             flat: false
                             visible: root.heroIsMSA
                             iconName: "refresh"
@@ -337,7 +344,6 @@ Item {
                             onClicked: root.controller.refresh(root.heroRow)
                         }
                         IconButton {
-                            size: Theme.control.heightLg
                             flat: false
                             iconName: "trash"
                             tip: qsTr("Remove account")
@@ -354,37 +360,52 @@ Item {
 
         SectionHeader {
             Layout.fillWidth: true
-            Layout.maximumWidth: 860
+            Layout.maximumWidth: Theme.layout.maxContentWidth
+            Layout.alignment: Qt.AlignHCenter
             visible: list.count > 1
             collapsible: false
             title: qsTr("Other accounts")
             count: list.count - 1
         }
 
-        ListView {
-            id: list
+        Item {
             Layout.fillWidth: true
-            Layout.maximumWidth: 860
+            Layout.maximumWidth: Theme.layout.maxContentWidth
+            Layout.alignment: Qt.AlignHCenter
             Layout.fillHeight: true
-            clip: true
-            spacing: Theme.space.sm
-            boundsBehavior: Flickable.StopAtBounds
-            model: root.accounts
-            currentIndex: root.heroIndex
-            ScrollBar.vertical: ScrollBar {}
 
-            delegate: AccountRow {
-                width: list.width - Theme.space.md
-                hidden: index === root.heroIndex
-                rev: root.imageRevision
-                onMakeDefaultRequested: root.controller.setDefault(index)
-                onRefreshRequested: root.controller.refresh(index)
-                onManageSkinRequested: isMSA ? root.openSkinEditor(index, accountId, shownName) : offlineSkinDialog.open()
-                onRemoveRequested: {
-                    removeDialog.row = index
-                    removeDialog.text = qsTr("Remove “%1” from MeshMC? You can sign in again at any time.").arg(shownName)
-                    removeDialog.open()
+            // Rows run the full width, the hero card's own: the scroll bar
+            // overlays them rather than keeping a gutter of its own.
+            ListView {
+                id: list
+                anchors.fill: parent
+                clip: true
+                spacing: Theme.space.sm
+                boundsBehavior: Flickable.StopAtBounds
+                model: root.accounts
+                currentIndex: root.heroIndex
+                ScrollBar.vertical: ScrollBar {}
+
+                delegate: AccountRow {
+                    width: list.width
+                    hidden: index === root.heroIndex
+                    rev: root.imageRevision
+                    onMakeDefaultRequested: root.controller.setDefault(index)
+                    onRefreshRequested: root.controller.refresh(index)
+                    onManageSkinRequested: isMSA ? root.openSkinEditor(index, accountId, shownName) : offlineSkinDialog.open()
+                    onRemoveRequested: {
+                        removeDialog.row = index
+                        removeDialog.text = qsTr("Remove “%1” from MeshMC? You can sign in again at any time.").arg(shownName)
+                        removeDialog.open()
+                    }
                 }
+            }
+
+            ScrollFade {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                flickable: list
             }
         }
     }

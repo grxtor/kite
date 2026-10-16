@@ -42,6 +42,8 @@ Item {
     signal manageSkinRequested()
 
     readonly property string shownName: profileName.length > 0 ? profileName : name
+    readonly property int faceSize: 40
+    readonly property int rowHeight: 72
     readonly property bool hovered: !root.hidden && hoverHandler.hovered
 
     function stateTone(key) {
@@ -56,7 +58,7 @@ Item {
 
     // A hidden row collapses out of the ListView entirely rather than just
     // turning invisible, so it leaves no gap where it used to be.
-    implicitHeight: root.hidden ? 0 : 72
+    implicitHeight: root.hidden ? 0 : root.rowHeight
     visible: !root.hidden
 
     HoverHandler { id: hoverHandler; enabled: !root.hidden }
@@ -66,16 +68,12 @@ Item {
         width: parent.width
         height: parent.height
         radius: Theme.radius.lg
-        color: root.isDefault ? Theme.palette.surfaceRaised
-             : root.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
+        color: root.isDefault ? Theme.palette.surfaceRaised : Theme.palette.surface
         border.width: root.isDefault ? 2 : 1
+        // Hover changes the border alone -- no lift, no second property.
         border.color: root.isDefault ? Theme.palette.accent
                     : root.hovered ? Theme.palette.borderStrong : Theme.palette.border
-        // A small lift on hover, same idiom as the library's InstanceCard.
-        y: root.hovered ? -2 : 0
 
-        Behavior on y { NumberAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
         RowLayout {
@@ -86,9 +84,12 @@ Item {
 
             Rectangle {
                 id: face
-                Layout.preferredWidth: 40
-                Layout.preferredHeight: 40
-                radius: width / 2
+                Layout.preferredWidth: root.faceSize
+                Layout.preferredHeight: root.faceSize
+                // A Minecraft face is square; a circle would crop its
+                // corners. Same rounded square as the header's account
+                // button.
+                radius: Theme.radius.sm
                 color: Theme.palette.accentSubtle
                 border.width: 1
                 border.color: Theme.palette.border
@@ -108,7 +109,7 @@ Item {
                     anchors.margins: 1
                     source: !root.hidden && root.accountId.length > 0
                             ? "image://accountface/" + root.accountId + "?rev=" + root.rev : ""
-                    sourceSize: Qt.size(80, 80)
+                    sourceSize: Qt.size(root.faceSize * 2, root.faceSize * 2)
                     smooth: false
                 }
             }
@@ -143,23 +144,29 @@ Item {
                 }
             }
 
+            // Icon actions are bordered squares, the same style and height
+            // as the hero card's (AccountsPage.qml) and as the text button
+            // beside them.
             Button {
                 visible: !root.isDefault
                 text: qsTr("Use this account")
                 onClicked: root.makeDefaultRequested()
             }
             IconButton {
+                flat: false
                 iconName: "image"
                 tip: root.isMSA ? qsTr("Manage skin & cape") : qsTr("Skins need a Microsoft account")
                 onClicked: root.manageSkinRequested()
             }
             IconButton {
+                flat: false
                 visible: root.isMSA
                 iconName: "refresh"
                 tip: qsTr("Sign in again")
                 onClicked: root.refreshRequested()
             }
             IconButton {
+                flat: false
                 iconName: "trash"
                 tip: qsTr("Remove account")
                 onClicked: root.removeRequested()

@@ -17,8 +17,10 @@ T.ComboBox {
                              implicitContentHeight + topPadding + bottomPadding,
                              implicitIndicatorHeight + topPadding + bottomPadding)
 
-    leftPadding: Theme.space.sm + (!control.mirrored || !indicator || !indicator.visible ? 0 : indicator.width + spacing)
-    rightPadding: Theme.space.sm + (control.mirrored || !indicator || !indicator.visible ? 0 : indicator.width + spacing)
+    // The same text inset as TextField, so a combo stacked above or below a
+    // text field starts its text on the same column.
+    leftPadding: Theme.space.md + (!control.mirrored || !indicator || !indicator.visible ? 0 : indicator.width + spacing)
+    rightPadding: Theme.space.md + (control.mirrored || !indicator || !indicator.visible ? 0 : indicator.width + spacing)
     spacing: Theme.space.xs
 
     // This ComboBox uses our own ItemDelegate.qml (same directory, so no

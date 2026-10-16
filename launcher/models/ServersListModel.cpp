@@ -34,6 +34,28 @@
 
 namespace
 {
+const QLatin1String kPngDataUrl("data:image/png;base64,");
+
+/* The game stores the favicon as bare base64 (older versions kept the
+ * "data:image/png;base64," prefix the ping reply has). Decoded and
+ * re-encoded so QML gets a clean URL, and only if it really is a PNG. */
+QString faviconUrl(const nbt::tag_compound& compound)
+{
+	if (!compound.has_key("icon", nbt::tag_type::String)) {
+		return {};
+	}
+	const std::string& stored = compound.at("icon").as<nbt::tag_string>().get();
+	QByteArray encoded = QByteArray::fromStdString(stored);
+	if (encoded.startsWith(QByteArray(kPngDataUrl.data(), kPngDataUrl.size()))) {
+		encoded.remove(0, kPngDataUrl.size());
+	}
+	const QByteArray png = QByteArray::fromBase64(encoded);
+	if (!png.startsWith("\x89PNG\r\n\x1a\n")) {
+		return {};
+	}
+	return kPngDataUrl + QString::fromLatin1(png.toBase64());
+}
+
 /* Same shape as ServersPage.cpp's file-local parseServersDat()/
  * serializeServerDat(): duplicated rather than shared, because the widget
  * version is a static function private to that .cpp, and the whole point
@@ -123,6 +145,9 @@ void ServersListModel::load()
 						compound["acceptTextures"].as<nbt::tag_byte>().get();
 					server.acceptTextures = always ? 1 : 2;
 				}
+				server.iconUrl = faviconUrl(compound);
+				server.original =
+					std::make_shared<const nbt::tag_compound>(compound);
 				servers.append(server);
 			}
 		}
@@ -142,12 +167,15 @@ void ServersListModel::saveNow()
 	nbt::tag_compound root;
 	nbt::tag_list list;
 	for (const auto& server : m_servers) {
-		nbt::tag_compound entry;
-		entry.insert("name", server.name.trimmed().toUtf8().toStdString());
-		entry.insert("ip", server.address.trimmed().toUtf8().toStdString());
+		nbt::tag_compound entry =
+			server.original ? *server.original : nbt::tag_compound();
+		entry.put("name", server.name.trimmed().toUtf8().toStdString());
+		entry.put("ip", server.address.trimmed().toUtf8().toStdString());
 		if (server.acceptTextures != 0) {
-			entry.insert("acceptTextures",
-						nbt::tag_byte(server.acceptTextures == 1));
+			entry.put("acceptTextures",
+					  nbt::tag_byte(server.acceptTextures == 1));
+		} else {
+			entry.erase("acceptTextures");
 		}
 		list.push_back(std::move(entry));
 	}
@@ -246,6 +274,8 @@ QVariant ServersListModel::data(const QModelIndex& index, int role) const
 			return server.address;
 		case AcceptTexturesRole:
 			return server.acceptTextures;
+		case IconUrlRole:
+			return server.iconUrl;
 		default:
 			return {};
 	}
@@ -265,6 +295,7 @@ QHash<int, QByteArray> ServersListModel::roleNames() const
 		{ NameRole, "name" },
 		{ AddressRole, "address" },
 		{ AcceptTexturesRole, "acceptTextures" },
+		{ IconUrlRole, "iconUrl" },
 	};
 }
 

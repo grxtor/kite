@@ -599,6 +599,11 @@ void InstanceDetails::onRunningStatusChanged(bool running)
 	if (m_servers) {
 		m_servers->setLocked(running);
 	}
+	// The game rewrites options.txt as it quits; show what it saved, not
+	// what was there when this page opened.
+	if (!running && m_gameOptions) {
+		m_gameOptions->reload();
+	}
 }
 
 // ---------------------------------------------------------------------------

@@ -3,15 +3,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
+import QtQuick.Controls
 import MeshMC.Theme
 
 /*
- * One modpack in Discover's card grid: a cover image (or a tinted gradient
- * with the project's own logo when it has no gallery shot), the logo
- * overlapping the cover's foot, title/author, a two-line pitch, up to
- * three categories and a downloads/updated footer. The whole card opens
- * the pack's detail page -- nothing on it installs directly, since
- * installing means picking a version first (see ModpackDetail.qml).
+ * One modpack in Discover's card grid: a cover image (or, when the pack has
+ * no gallery shot, one of PixelArt's rendered scenes picked by its project
+ * id), the logo overlapping the cover's foot, title/author, a two-line
+ * pitch, up to three categories and a downloads/updated footer. The whole
+ * card opens the pack's detail page -- nothing on it installs directly,
+ * since installing means picking a version first (see ModpackDetail.qml).
+ *
+ * EQUAL HEIGHTS. Every text slot has a fixed height -- one title line
+ * (elided, the full title in a tooltip) plus the author, two lines of pitch,
+ * the tag row always reserved -- and every line is a fixed pixel height
+ * (Text.FixedHeight), so a long title, a missing author or a CJK pitch
+ * (whose fallback font has taller natural lines) never makes one card in a
+ * grid row taller than the rest, nor moves its author or pitch.
  *
  * `skeleton: true` swaps every field for a shimmering Skeleton block in
  * the same geometry, for the loading grid DiscoverPage shows before a
@@ -31,7 +39,7 @@ Item {
     // Modrinth's "date_modified", ISO 8601 -- may be empty.
     property string updated: ""
     property var categories: []
-    // Cover image URL; empty falls back to a tinted gradient.
+    // Cover image URL; empty falls back to a rendered scene.
     property string galleryUrl: ""
     // A colour, or undefined/null when Modrinth has none for this project
     // -- see ModrinthModpackModel's accentColor role.
@@ -41,13 +49,37 @@ Item {
     signal clicked()
 
     readonly property bool hovered: !root.skeleton && hoverHandler.hovered
-    readonly property color tint: root.accentColor ? root.accentColor : Theme.palette.accent
-    readonly property int coverHeight: Math.round(root.width * 0.56)
+    readonly property real coverRatio: 9 / 16
+    // A grid sets this from its common card width, so a column a pixel or
+    // two wider (the one taking the row's leftover pixels) keeps the same
+    // cover -- and so the same title, pitch and footer lines -- as its row.
+    property int coverHeight: Math.round(root.width * coverRatio)
     readonly property int logoSize: 56
+    // The logo's frame, in the card's own colour, around the picture.
+    readonly property int logoFrame: Theme.space.xxs
     // How far the logo sinks into the cover; the rest of it hangs below,
     // into the content area -- the "overlapping the cover's edge" look.
     readonly property int logoOverlap: Math.round(root.logoSize * 0.5)
     readonly property var shownCategories: (root.categories || []).slice(0, 3)
+    readonly property bool hasGallery: root.galleryUrl.length > 0 && coverImage.status !== Image.Error
+    // What a cover or logo shows until its picture arrives: one neutral
+    // step off the card's own surface in either theme. surfaceSunken alone
+    // is near-black in the dark theme and read as a broken image there.
+    readonly property color placeholderColor: Theme.dark ? Theme.palette.surfaceRaised
+                                                         : Theme.palette.surfaceSunken
+
+    // The fixed slot heights (see EQUAL HEIGHTS in the file comment).
+    readonly property real titleLine: Theme.type.title.lineHeightPx
+    readonly property real authorLine: Theme.type.label.lineHeightPx
+    readonly property real pitchLine: Theme.type.body.lineHeightPx
+    readonly property int tagRowHeight: Theme.control.heightSm - Theme.space.xs
+
+    // Modrinth's ISO "date_modified" as Format.lastPlayed() words it
+    // ("3 h ago", "22 days ago", "Sep 15"), or "" when there is none.
+    readonly property string updatedText: {
+        var ms = Date.parse(root.updated || "")
+        return ms > 0 ? Format.lastPlayed(ms) : ""
+    }
 
     function titleCase(word) {
         return word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word
@@ -104,31 +136,6 @@ Item {
         font.weight: Font.Medium
     }
 
-    // Modrinth's ISO date -> "3 h ago" / "5 d ago", the same coarseness
-    // Format.lastPlayed uses for an instance's last launch. Kept local
-    // rather than added there: a pack's "date_modified" has no "never"
-    // state to special-case, and Format.qml belongs to a different area.
-    function timeAgo(iso) {
-        if (!iso)
-            return ""
-        var ms = Date.parse(iso)
-        if (isNaN(ms))
-            return ""
-        var minutes = Math.max(0, Math.floor((Date.now() - ms) / 60000))
-        if (minutes < 60)
-            return qsTr("Updated just now")
-        var hours = Math.floor(minutes / 60)
-        if (hours < 24)
-            return qsTr("Updated %1 h ago").arg(hours)
-        var days = Math.floor(hours / 24)
-        if (days < 30)
-            return qsTr("Updated %1 d ago").arg(days)
-        var months = Math.floor(days / 30)
-        if (months < 12)
-            return qsTr("Updated %1 mo ago").arg(months)
-        return qsTr("Updated %1 y ago").arg(Math.floor(months / 12))
-    }
-
     implicitWidth: 280
     implicitHeight: card.height
 
@@ -153,12 +160,11 @@ Item {
         height: bodyColumn.y + bodyColumn.height + Theme.space.md
         radius: Theme.radius.lg
         clip: true
-        // Hover changes only the border and fill -- no lift, no motion.
-        color: root.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
+        color: Theme.palette.surface
+        // Hover changes this one property -- no fill change, no zoom, no lift.
         border.width: 1
         border.color: root.hovered ? Theme.palette.borderStrong : Theme.palette.border
 
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
         // Cover -- edge to edge; see the corner mask at its end for how the
@@ -173,115 +179,52 @@ Item {
 
             Skeleton { anchors.fill: parent; radius: 0; visible: root.skeleton }
 
-            // A gallery shot that has not arrived yet (Modrinth's images
-            // routinely take several seconds) gets a quiet shimmer, not the
-            // permanent fallback plate below -- that plate is for a pack
-            // that has no gallery shot at all, or whose one failed outright.
-            Skeleton {
-                anchors.fill: parent
-                radius: 0
-                visible: !root.skeleton && root.galleryUrl.length > 0 && coverImage.status === Image.Loading
-            }
-
-            // Permanent fallback for a pack with no gallery shot (or a
-            // failed one): a gradient cut from the project's own accent
-            // colour with a subtle blocky pattern, the same idiom
-            // CoverArt.qml uses for an instance with no screenshot --
-            // never the pack's own small icon blown up, which just reads as
-            // blurry.
+            // Under whichever picture is on its way: a gallery shot that has
+            // not arrived yet (Modrinth's images routinely take several
+            // seconds) shows this flat neutral fill, not the fallback scene
+            // below -- that is for a pack that has no gallery shot at all,
+            // or whose one failed outright.
             Rectangle {
-                id: fallback
                 anchors.fill: parent
                 visible: !root.skeleton
-                         && (root.galleryUrl.length === 0 || coverImage.status === Image.Error)
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: Format.shade(root.tint, Theme.dark ? 0.30 : 0.88, 0.9) }
-                    GradientStop { position: 1.0; color: Format.shade(root.tint, Theme.dark ? 0.13 : 0.72, 0.85) }
-                }
+                color: root.placeholderColor
+            }
 
-                Item {
-                    anchors.fill: parent
-                    anchors.margins: -parent.width * 0.15
-                    clip: true
-
-                    Repeater {
-                        model: 3
-                        delegate: Rectangle {
-                            required property int index
-                            readonly property real span: fallback.height * (1.35 - index * 0.3)
-                            x: fallback.width - span * 0.62 + index * span * 0.20
-                            y: fallback.height * 0.30 - span * 0.5 + index * span * 0.16
-                            width: span
-                            height: span
-                            rotation: 18
-                            radius: Theme.radius.sm
-                            color: Qt.rgba(1, 1, 1, Theme.dark ? 0.05 : 0.10)
-                        }
-                    }
-                }
+            // No gallery shot: one of the launcher's generic rendered modpack
+            // covers (PixelArt.packCoverUrl), picked by project id so a pack
+            // always gets the same one.
+            Image {
+                anchors.fill: parent
+                visible: !root.skeleton && !root.hasGallery
+                source: visible ? PixelArt.packCoverUrl(root.projectId) : ""
+                sourceSize: Qt.size(width * 2, height * 2)
+                fillMode: Image.PreserveAspectCrop
+                smooth: true
+                mipmap: true
+                asynchronous: true
             }
 
             Image {
                 id: coverImage
                 anchors.fill: parent
                 source: root.skeleton ? "" : root.galleryUrl
-                sourceSize: Qt.size(640, 360)
+                sourceSize: Qt.size(width * 2, height * 2)
                 fillMode: Image.PreserveAspectCrop
+                smooth: true
+                mipmap: true
                 asynchronous: true
                 visible: !root.skeleton && root.galleryUrl.length > 0
                 opacity: status === Image.Ready ? 1 : 0
-                scale: root.hovered ? 1.06 : 1.0
                 Behavior on opacity { NumberAnimation { duration: Theme.motion.normal } }
-                Behavior on scale { NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
-            }
-
-            // Scrim + "view" affordance, on hover only.
-            Rectangle {
-                anchors.fill: parent
-                visible: !root.skeleton
-                color: Theme.palette.scrim
-                opacity: root.hovered ? 0.35 : 0
-                Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
-            }
-            Rectangle {
-                visible: !root.skeleton
-                anchors.centerIn: parent
-                // A plain fade, no overshoot scale-in (design-plan.md §4/§2.4).
-                opacity: root.hovered ? 1 : 0
-                radius: Theme.radius.pill
-                color: Theme.palette.surfaceOverlay
-                width: viewRow.implicitWidth + Theme.space.lg * 2
-                height: Theme.control.height
-                Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
-
-                Row {
-                    id: viewRow
-                    anchors.centerIn: parent
-                    spacing: Theme.space.xs
-                    MeshIcon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: "chevron-right"
-                        size: Theme.icon.sm
-                        color: Theme.palette.textPrimary
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: qsTr("View pack")
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
-                        font.weight: Font.DemiBold
-                    }
-                }
             }
 
             // Rectangle `clip` is square, so the cover would poke out past
-            // the card's rounded top corners (more so while it zooms on
-            // hover). A ring in the page colour covers exactly those two
-            // corners: its inner edge is the card's rounded outline, and it
-            // runs on below the cover so its lower corners are clipped away.
+            // the card's rounded top corners. A ring in the page colour
+            // covers exactly those two corners: its inner edge is the card's
+            // rounded outline, and it runs on below the cover so its lower
+            // corners are clipped away.
             Rectangle {
-                readonly property int ring: card.radius + 2
+                readonly property int ring: card.radius + Theme.space.xxs
                 x: -ring
                 y: -ring
                 width: parent.width + ring * 2
@@ -304,108 +247,125 @@ Item {
             anchors.leftMargin: Theme.space.md
             anchors.rightMargin: Theme.space.md
             // Tall enough for whichever reaches lower: the logo, or the
-            // title/author, which start below the cover's edge.
-            height: Math.max(root.logoSize, titleColumn.y + titleColumn.implicitHeight)
+            // title/author, which start below the cover's edge. Both are
+            // fixed, so every card's header is the same height.
+            height: Math.max(root.logoSize, titleColumn.y + titleColumn.height)
 
-            Rectangle {
+            Item {
                 id: logoFrame
                 width: root.logoSize
                 height: root.logoSize
-                radius: Theme.radius.md
-                color: Theme.palette.surface
-                border.width: 2
-                border.color: Theme.palette.surface
                 z: 2
 
-                Skeleton { anchors.fill: parent; anchors.margins: 2; radius: Theme.radius.md - 2; visible: root.skeleton }
-
+                // The same neutral fill as the cover's, until the logo
+                // arrives (and behind the fallback package glyph).
                 Rectangle {
                     anchors.fill: parent
-                    anchors.margins: 2
-                    radius: Theme.radius.md - 2
-                    color: Theme.palette.surfaceSunken
-                    clip: true
-                    visible: !root.skeleton
+                    radius: Theme.radius.sm
+                    color: root.placeholderColor
+                }
 
-                    // A quiet shimmer while it loads, not the "no icon at
-                    // all" glyph -- that one is for a pack with no logo URL,
-                    // or one whose fetch failed outright.
-                    Skeleton {
-                        anchors.fill: parent
-                        radius: 0
-                        visible: root.logoUrl.length > 0 && logoImg.status === Image.Loading
-                    }
+                Skeleton {
+                    anchors.fill: parent
+                    anchors.margins: root.logoFrame
+                    radius: Theme.radius.sm
+                    visible: root.skeleton
+                }
 
-                    Image {
-                        id: logoImg
-                        anchors.fill: parent
-                        source: root.logoUrl
-                        sourceSize: Qt.size(112, 112)
-                        fillMode: Image.PreserveAspectCrop
-                        asynchronous: true
-                        visible: opacity > 0
-                        opacity: status === Image.Ready ? 1 : 0
-                        Behavior on opacity { NumberAnimation { duration: Theme.motion.normal } }
-                    }
-                    MeshIcon {
-                        anchors.centerIn: parent
-                        visible: root.logoUrl.length === 0 || logoImg.status === Image.Error
-                        iconName: "package"
-                        size: Theme.icon.md
-                        color: Theme.palette.textTertiary
-                    }
+                Image {
+                    id: logoImg
+                    anchors.fill: parent
+                    anchors.margins: root.logoFrame
+                    visible: !root.skeleton && opacity > 0
+                    source: root.skeleton ? "" : root.logoUrl
+                    sourceSize: Qt.size(width * 2, height * 2)
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    mipmap: true
+                    asynchronous: true
+                    opacity: status === Image.Ready ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: Theme.motion.normal } }
+                }
+                MeshIcon {
+                    anchors.centerIn: parent
+                    visible: !root.skeleton && (root.logoUrl.length === 0 || logoImg.status === Image.Error)
+                    iconName: "package"
+                    size: Theme.icon.md
+                    color: Theme.palette.textTertiary
+                }
+
+                // The frame, drawn over the picture: Rectangle's clip is
+                // square, and this ring in the card's colour is what gives
+                // the logo its rounded corners.
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Theme.radius.sm
+                    color: "transparent"
+                    border.width: root.logoFrame
+                    border.color: card.color
                 }
             }
 
             // Below the cover, never over the picture: a bright gallery
-            // shot would swallow the title.
-            Column {
+            // shot would swallow the title. A fixed block -- one title line
+            // and the author in a fixed slot under it -- so every card in a
+            // row has the same title-author-pitch rhythm. A two-line title
+            // pushed its author down onto the pitch while one-line cards
+            // kept a spare line, so the gap above the pitch varied per card.
+            Item {
                 id: titleColumn
                 anchors.left: logoFrame.right
                 anchors.leftMargin: Theme.space.sm
                 anchors.right: parent.right
                 y: root.logoOverlap + Theme.space.xs
-                spacing: Theme.space.xxs
+                height: root.titleLine + Theme.space.xxs + root.authorLine
 
-                // Wraps up to 2 lines rather than eliding a long title down
-                // to a handful of characters -- "Zombie Invade 100 Days"
-                // read as "Zombie Invade 100 D…" at this column's width.
-                // The height is fixed at exactly 2 lines regardless of how
-                // many the title actually needs, so a short title does not
-                // leave every other card in its grid row taller than it.
+                // One line, elided; the whole title is a hover away in the
+                // tooltip, and on the detail page the card opens.
                 Text {
+                    id: titleText
                     width: parent.width
-                    height: Theme.type.title.lineHeightPx * 2
+                    height: root.titleLine
                     visible: !root.skeleton
                     text: root.title
-                    wrapMode: Text.Wrap
-                    maximumLineCount: 2
+                    maximumLineCount: 1
                     elide: Text.ElideRight
-                    verticalAlignment: Text.AlignTop
+                    lineHeightMode: Text.FixedHeight
+                    lineHeight: root.titleLine
                     color: Theme.palette.textPrimary
                     font.family: Theme.font.family
                     font.pixelSize: Theme.type.title.pixelSize
                     font.weight: Font.Bold
+
+                    HoverHandler { id: titleHover; enabled: titleText.truncated }
+                    ToolTip.visible: titleText.truncated && titleHover.hovered
+                    ToolTip.delay: 500
+                    ToolTip.text: root.title
                 }
                 Skeleton {
                     width: parent.width * 0.62
-                    height: Theme.type.title.lineHeightPx * 2
+                    height: root.titleLine
                     radius: Theme.radius.sm
                     visible: root.skeleton
                 }
 
                 Text {
+                    y: root.titleLine + Theme.space.xxs
                     width: parent.width
-                    visible: !root.skeleton && root.author.length > 0
-                    text: qsTr("by %1").arg(root.author)
+                    height: root.authorLine
+                    visible: !root.skeleton
+                    text: root.author.length > 0 ? qsTr("by %1").arg(root.author) : ""
                     elide: Text.ElideRight
+                    lineHeightMode: Text.FixedHeight
+                    lineHeight: root.authorLine
                     color: Theme.palette.textTertiary
                     font.family: Theme.font.family
                     font.pixelSize: Theme.type.label.pixelSize
                 }
                 Skeleton {
+                    y: root.titleLine + Theme.space.xxs
                     width: parent.width * 0.4
-                    height: Theme.type.label.pixelSize
+                    height: root.authorLine
                     radius: Theme.radius.sm
                     visible: root.skeleton
                 }
@@ -422,44 +382,58 @@ Item {
             anchors.rightMargin: Theme.space.md
             spacing: Theme.space.sm
 
-            Text {
+            Item {
                 width: parent.width
-                visible: !root.skeleton
-                text: root.description
-                wrapMode: Text.Wrap
-                maximumLineCount: 2
-                elide: Text.ElideRight
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
-                lineHeight: 1.3
-            }
-            Column {
-                width: parent.width
-                spacing: 3
-                visible: root.skeleton
-                Skeleton { width: parent.width; height: Theme.type.body.pixelSize; radius: Theme.radius.sm }
-                Skeleton { width: parent.width * 0.72; height: Theme.type.body.pixelSize; radius: Theme.radius.sm }
+                height: root.pitchLine * 2
+
+                Text {
+                    anchors.fill: parent
+                    visible: !root.skeleton
+                    text: root.description
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
+                    lineHeightMode: Text.FixedHeight
+                    lineHeight: root.pitchLine
+                    verticalAlignment: Text.AlignTop
+                    color: Theme.palette.textSecondary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.body.pixelSize
+                }
+                Column {
+                    width: parent.width
+                    spacing: Theme.space.xs
+                    visible: root.skeleton
+                    Skeleton { width: parent.width; height: Theme.type.body.pixelSize; radius: Theme.radius.sm }
+                    Skeleton { width: parent.width * 0.72; height: Theme.type.body.pixelSize; radius: Theme.radius.sm }
+                }
             }
 
-            Row {
-                spacing: Theme.space.xs
-                visible: !root.skeleton && root.shownCategories.length > 0
-                Repeater {
-                    model: root.tagFit.shown
-                    delegate: Tag { text: modelData }
+            // Always reserved, so a pack without categories keeps the same
+            // height as its neighbours.
+            Item {
+                width: parent.width
+                height: root.tagRowHeight
+
+                Row {
+                    spacing: Theme.space.xs
+                    visible: !root.skeleton
+                    Repeater {
+                        model: root.tagFit.shown
+                        delegate: Tag { text: modelData }
+                    }
+                    Tag {
+                        visible: root.tagFit.hiddenCount > 0
+                        text: "+" + root.tagFit.hiddenCount
+                    }
                 }
-                Tag {
-                    visible: root.tagFit.hiddenCount > 0
-                    text: "+" + root.tagFit.hiddenCount
-                }
-            }
-            Row {
-                spacing: Theme.space.xs
-                visible: root.skeleton
-                Repeater {
-                    model: 3
-                    delegate: Skeleton { width: 52; height: Theme.control.heightSm - Theme.space.xs; radius: Theme.radius.sm + 2 }
+                Row {
+                    spacing: Theme.space.xs
+                    visible: root.skeleton
+                    Repeater {
+                        model: 3
+                        delegate: Skeleton { width: 52; height: root.tagRowHeight; radius: Theme.radius.sm }
+                    }
                 }
             }
 
@@ -467,18 +441,17 @@ Item {
                 width: parent.width
                 height: 1
                 color: Theme.palette.divider
-                visible: !root.skeleton
             }
 
             Item {
                 width: parent.width
                 height: Theme.icon.sm
-                visible: !root.skeleton
 
                 Row {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: Theme.space.xxs
+                    visible: !root.skeleton
+                    spacing: Theme.space.xs
                     MeshIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: "download"
@@ -494,22 +467,30 @@ Item {
                         font.weight: Font.Medium
                     }
                 }
-                Text {
+                // When the pack last changed, as a clock and Format's own
+                // wording -- the same words an instance's "last played" uses.
+                Row {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: root.updated.length > 0
-                    text: root.timeAgo(root.updated)
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
+                    visible: !root.skeleton && root.updatedText.length > 0
+                    spacing: Theme.space.xs
+                    Accessible.name: qsTr("Updated %1").arg(root.updatedText)
+                    MeshIcon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        iconName: "clock"
+                        size: Theme.icon.sm
+                        color: Theme.palette.textTertiary
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.updatedText
+                        color: Theme.palette.textTertiary
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.type.caption.pixelSize
+                    }
                 }
-            }
-            Item {
-                width: parent.width
-                height: Theme.type.caption.pixelSize
-                visible: root.skeleton
-                Skeleton { anchors.left: parent.left; width: 44; height: parent.height; radius: Theme.radius.sm }
-                Skeleton { anchors.right: parent.right; width: 60; height: parent.height; radius: Theme.radius.sm }
+                Skeleton { visible: root.skeleton; anchors.left: parent.left; width: 44; height: parent.height; radius: Theme.radius.sm }
+                Skeleton { visible: root.skeleton; anchors.right: parent.right; width: 60; height: parent.height; radius: Theme.radius.sm }
             }
         }
 
@@ -526,12 +507,10 @@ Item {
 
     Rectangle {
         // Keyboard focus ring, outset so it never competes with the card's
-        // own border.
-        x: card.x - 3
-        y: card.y - 3
-        width: card.width + 6
-        height: card.height + 6
-        radius: card.radius + 3
+        // own border: 4px out from a 12px corner is a 16px corner.
+        anchors.fill: card
+        anchors.margins: -Theme.space.xs
+        radius: Theme.radius.xl
         color: "transparent"
         border.width: 2
         border.color: Theme.palette.focusRing

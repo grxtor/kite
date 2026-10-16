@@ -32,4 +32,7 @@ struct ModDetails {
 	QString description;
 	QStringList authors;
 	QString credits;
+	/// Archive-relative path of the logo the metadata declares
+	/// (fabric/quilt "icon", mods.toml/mcmod.info "logoFile"), or empty.
+	QString icon;
 };

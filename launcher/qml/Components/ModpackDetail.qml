@@ -13,6 +13,10 @@ import MeshMC.Theme
  * instance. `pack` is the row that was opened (title, author, logo,
  * galleryUrl, accentColor...); `detail` is the model's lazily loaded body,
  * gallery and version list.
+ *
+ * Install is the page's one primary button and sits in the header, where a
+ * launcher's project page puts it; the Install card below only holds what
+ * it installs (version, instance name) and how it is going.
  */
 Item {
     id: root
@@ -25,6 +29,11 @@ Item {
     property var installer: null
     // TaskWatcher of the install started from here, if any.
     property var watcher: null
+    // DiscoverPage's page frame, so the detail lines up with its title.
+    property int contentX: Theme.space.xl + Theme.space.xs
+    property int contentWidth: width - contentX * 2
+    // A reading page: narrower than the results grid on a wide window.
+    readonly property int maxReadingWidth: 960
 
     signal backRequested()
     signal showInstanceRequested(string id)
@@ -34,13 +43,18 @@ Item {
     readonly property bool installing: !!watcher && watcher.running
     readonly property bool installed: !!watcher && watcher.succeeded
 
-    readonly property color tint: root.pack.accentColor ? root.pack.accentColor : Theme.palette.accent
     // The best backdrop available right now: the detail's own gallery once
     // it has loaded (its featured image first, see ModrinthModpackModel),
     // falling back to the card's cover so the header is never bare while
     // that request is still in flight.
     readonly property string backdropUrl: root.gallery.length > 0 ? root.gallery[0].url
                                          : (root.pack.galleryUrl || "")
+    // Modrinth's ISO "date_modified" as Format.lastPlayed() words it, or ""
+    // when there is none.
+    readonly property string updatedText: {
+        var ms = Date.parse(root.pack.updated || "")
+        return ms > 0 ? Format.lastPlayed(ms) : ""
+    }
 
     function versionLabel(v) {
         var parts = []
@@ -48,31 +62,7 @@ Item {
             parts.push(v.gameVersions[0])
         if (v.loaders && v.loaders.length > 0)
             parts.push(v.loaders.map(l => l.charAt(0).toUpperCase() + l.slice(1)).join(", "))
-        return (v.versionNumber || v.name) + (parts.length > 0 ? "  ·  " + parts.join(" · ") : "")
-    }
-
-    // Modrinth's ISO date -> "3 h ago" / "5 d ago". Duplicated from
-    // ModpackCard rather than shared: both are a handful of lines, and
-    // Format.qml (the natural shared home) belongs to a different area.
-    function timeAgo(iso) {
-        if (!iso)
-            return ""
-        var ms = Date.parse(iso)
-        if (isNaN(ms))
-            return ""
-        var minutes = Math.max(0, Math.floor((Date.now() - ms) / 60000))
-        if (minutes < 60)
-            return qsTr("just now")
-        var hours = Math.floor(minutes / 60)
-        if (hours < 24)
-            return qsTr("%1 h ago").arg(hours)
-        var days = Math.floor(hours / 24)
-        if (days < 30)
-            return qsTr("%1 d ago").arg(days)
-        var months = Math.floor(days / 30)
-        if (months < 12)
-            return qsTr("%1 mo ago").arg(months)
-        return qsTr("%1 y ago").arg(Math.floor(months / 12))
+        return (v.versionNumber || v.name) + (parts.length > 0 ? " (" + parts.join(", ") + ")" : "")
     }
 
     function install() {
@@ -89,6 +79,7 @@ Item {
     }
 
     Flickable {
+        id: flick
         anchors.fill: parent
         contentWidth: width
         contentHeight: column.height + Theme.space.xxl
@@ -98,11 +89,19 @@ Item {
 
         Column {
             id: column
-            x: Theme.space.xl + Theme.space.xs
-            width: Math.min(parent.width - x * 2, 960)
+            x: root.contentX
+            width: Math.min(root.contentWidth, root.maxReadingWidth)
             spacing: Theme.space.xl
 
+            // Pulled left by its own padding plus the chevron's side
+            // bearing, so the chevron's ink -- not the button's hover
+            // plate, nor the empty left third of the glyph's box -- starts
+            // exactly on the page's left edge, like the hero below it.
             Button {
+                // The chevron-left glyph's stroke starts 8 of its 24 units
+                // in; rounded so the label stays on whole pixels.
+                readonly property int chevronBearing: Math.round(Theme.icon.sm / 3)
+                x: -(leftPadding + chevronBearing)
                 flat: true
                 text: qsTr("Back to results")
                 icon.source: Icons.url("chevron-left")
@@ -110,9 +109,9 @@ Item {
                 onClicked: root.backRequested()
             }
 
-            // Cinematic header: the gallery's own hero shot (or a fallback
-            // gradient cut from the project's accent colour) behind a
-            // bottom scrim, the logo, title/author and the headline stats.
+            // Header: the gallery's own hero shot (or, without one, a
+            // rendered scene picked by project id) behind a bottom scrim,
+            // the logo, title/author, the headline stats and Install.
             Rectangle {
                 id: hero
                 width: parent.width
@@ -121,46 +120,55 @@ Item {
                 clip: true
                 color: Theme.palette.surfaceSunken
 
-                Rectangle {
+                Image {
                     id: heroFallback
                     anchors.fill: parent
                     visible: backdrop.status !== Image.Ready
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: Format.shade(root.tint, Theme.dark ? 0.30 : 0.88, 0.9) }
-                        GradientStop { position: 1.0; color: Format.shade(root.tint, Theme.dark ? 0.12 : 0.70, 0.85) }
-                    }
-                    Image {
-                        anchors.centerIn: parent
-                        width: parent.height * 1.3
-                        height: width
-                        source: root.pack.logoUrl || ""
-                        sourceSize: Qt.size(120, 120)
-                        fillMode: Image.PreserveAspectFit
-                        asynchronous: true
-                        opacity: 0.18
-                        visible: status === Image.Ready
-                    }
+                    source: visible ? PixelArt.landscapeUrl(root.pack.projectId || "",
+                                                            PixelArt.shapeForAspect(hero.width / Math.max(1, hero.height)))
+                                    : ""
+                    sourceSize: Qt.size(width * 2, height * 2)
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    mipmap: true
+                    asynchronous: true
                 }
 
                 Image {
                     id: backdrop
                     anchors.fill: parent
                     source: root.backdropUrl
-                    sourceSize: Qt.size(1024, 480)
+                    sourceSize: Qt.size(width * 2, height * 2)
                     fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    mipmap: true
                     asynchronous: true
                     opacity: status === Image.Ready ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: Theme.motion.slow } }
                 }
 
                 // Bottom scrim so title/stats stay legible over any image.
+                // Theme.media.scrim: the text on top is white in both
+                // themes, so the fade is dark in both.
                 Rectangle {
                     anchors.fill: parent
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0) }
-                        GradientStop { position: 0.55; color: Qt.rgba(0, 0, 0, 0.15) }
-                        GradientStop { position: 1.0; color: Theme.palette.scrim }
+                        GradientStop { position: 0.0; color: Qt.rgba(Theme.media.scrim.r, Theme.media.scrim.g, Theme.media.scrim.b, 0) }
+                        GradientStop { position: 0.55; color: Qt.rgba(Theme.media.scrim.r, Theme.media.scrim.g, Theme.media.scrim.b, 0.15) }
+                        GradientStop { position: 1.0; color: Theme.media.scrim }
                     }
+                }
+
+                // The rounded mask: Rectangle's clip is square, so a ring in
+                // the page colour covers the photo's four corners.
+                Rectangle {
+                    readonly property int ring: hero.radius + Theme.space.xxs
+                    anchors.fill: parent
+                    anchors.margins: -ring
+                    radius: hero.radius + ring
+                    color: "transparent"
+                    border.width: ring
+                    border.color: Theme.palette.canvas
                 }
 
                 RowLayout {
@@ -170,56 +178,59 @@ Item {
                     anchors.margins: Theme.space.lg
                     spacing: Theme.space.lg
 
-                    // A slightly larger, translucent copy sitting behind
-                    // the logo as a soft drop shadow -- layered rectangles
-                    // standing in for a shader-based blur this Qt floor
-                    // does not have.
                     Item {
-                        Layout.preferredWidth: 88
-                        Layout.preferredHeight: 88
+                        id: logoTile
+                        readonly property int size: 88
+                        readonly property int frame: Theme.space.xs
+                        Layout.preferredWidth: size
+                        Layout.preferredHeight: size
+                        Layout.alignment: Qt.AlignBottom
 
                         Rectangle {
-                            x: 3; y: 4
-                            width: parent.width; height: parent.height
-                            radius: Theme.radius.xl
-                            color: Qt.rgba(0, 0, 0, 0.35)
+                            anchors.fill: parent
+                            radius: Theme.radius.lg
+                            color: Theme.palette.surfaceSunken
                         }
+                        Image {
+                            id: logoImg
+                            anchors.fill: parent
+                            anchors.margins: logoTile.frame
+                            source: root.pack.logoUrl || ""
+                            sourceSize: Qt.size(width * 2, height * 2)
+                            fillMode: Image.PreserveAspectCrop
+                            smooth: true
+                            mipmap: true
+                            asynchronous: true
+                            visible: status === Image.Ready
+                        }
+                        MeshIcon {
+                            anchors.centerIn: parent
+                            visible: logoImg.status !== Image.Ready
+                            iconName: "package"
+                            size: Theme.icon.lg
+                            color: Theme.palette.textTertiary
+                        }
+                        // The frame over the picture, which is also what
+                        // rounds its corners (Rectangle's clip is square).
                         Rectangle {
-                            width: 88; height: 88
-                            radius: Theme.radius.xl
-                            color: Theme.palette.surface
-                            border.width: 3
+                            anchors.fill: parent
+                            radius: Theme.radius.lg
+                            color: "transparent"
+                            border.width: logoTile.frame
                             border.color: Theme.palette.surface
-
-                            Image {
-                                id: logoImg
-                                anchors.fill: parent
-                                anchors.margins: 3
-                                source: root.pack.logoUrl || ""
-                                sourceSize: Qt.size(176, 176)
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                                visible: status === Image.Ready
-                            }
-                            MeshIcon {
-                                anchors.centerIn: parent
-                                visible: logoImg.status !== Image.Ready
-                                iconName: "package"
-                                size: Theme.icon.lg
-                                color: Theme.palette.textTertiary
-                            }
                         }
                     }
 
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignBottom
                         spacing: Theme.space.xs
 
                         Text {
                             Layout.fillWidth: true
                             text: root.pack.title || ""
                             elide: Text.ElideRight
-                            color: Qt.rgba(1, 1, 1, 1)
+                            color: Theme.media.text
                             font.family: Theme.font.family
                             font.pixelSize: Theme.type.display.pixelSize
                             font.weight: Font.Bold
@@ -230,11 +241,12 @@ Item {
                             visible: !!root.pack.author
                             text: qsTr("by %1").arg(root.pack.author || "")
                             elide: Text.ElideRight
-                            color: Qt.rgba(1, 1, 1, 0.78)
+                            color: Theme.media.textSecondary
                             font.family: Theme.font.family
                             font.pixelSize: Theme.type.body.pixelSize
                         }
-                        Row {
+                        Flow {
+                            Layout.fillWidth: true
                             Layout.topMargin: Theme.space.xxs
                             spacing: Theme.space.sm
                             Tag {
@@ -248,47 +260,39 @@ Item {
                                 iconName: "users"
                                 text: qsTr("%1 followers").arg(Format.compactNumber(root.pack.follows))
                             }
+                            // Format's own wording, the same an instance's
+                            // "last played" uses, behind a clock.
                             Tag {
                                 onMedia: true
-                                visible: (root.pack.updated || "").length > 0
+                                visible: root.updatedText.length > 0
                                 iconName: "clock"
-                                text: qsTr("Updated %1").arg(root.timeAgo(root.pack.updated))
+                                text: root.updatedText
+                                Accessible.name: qsTr("Updated %1").arg(root.updatedText)
                             }
                         }
                     }
-                }
-            }
 
-            // Gallery strip -- only once the detail fetch actually has one.
-            Flickable {
-                width: parent.width
-                height: root.gallery.length > 0 ? 96 : 0
-                visible: root.gallery.length > 0
-                contentWidth: galleryRow.width
-                contentHeight: height
-                boundsBehavior: Flickable.StopAtBounds
-                clip: true
-
-                Row {
-                    id: galleryRow
-                    spacing: Theme.space.sm
-                    Repeater {
-                        model: root.gallery
-                        delegate: Rectangle {
-                            required property var modelData
-                            width: 152
-                            height: 86
-                            radius: Theme.radius.md
-                            color: Theme.palette.surfaceSunken
-                            clip: true
-                            Image {
-                                anchors.fill: parent
-                                source: modelData.url || ""
-                                sourceSize: Qt.size(304, 172)
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                            }
-                        }
+                    // The page's one primary action. Installs the version
+                    // and name chosen in the Install card below -- the
+                    // featured version and the pack's own name until changed.
+                    Button {
+                        Layout.alignment: Qt.AlignBottom
+                        visible: !root.installed
+                        enabled: !root.installing && versionBox.currentIndex >= 0
+                        highlighted: true
+                        implicitHeight: Theme.control.heightLg
+                        text: root.installing ? qsTr("Installing…") : qsTr("Install")
+                        icon.source: Icons.url("download")
+                        onClicked: root.install()
+                    }
+                    Button {
+                        Layout.alignment: Qt.AlignBottom
+                        visible: root.installed
+                        highlighted: true
+                        implicitHeight: Theme.control.heightLg
+                        text: qsTr("Show in library")
+                        icon.source: Icons.url("library")
+                        onClicked: root.showInstanceRequested(root.watcher.instanceId || "")
                     }
                 }
             }
@@ -300,15 +304,15 @@ Item {
                 wrapMode: Text.Wrap
                 color: Theme.palette.textSecondary
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize + 1
-                lineHeight: 1.35
+                font.pixelSize: Theme.type.title.pixelSize
+                lineHeight: Theme.type.body.lineHeight
             }
 
             // The grid card only ever shows one chip; the full list lives
-            // here (design-plan.md §5/§6).
+            // here (design-plan.md §5/§6), spaced like the hero's meta chips.
             Flow {
                 width: parent.width
-                spacing: Theme.space.xs
+                spacing: Theme.space.sm
                 visible: (root.pack.categories || []).length > 0
                 Repeater {
                     model: root.pack.categories || []
@@ -316,8 +320,9 @@ Item {
                 }
             }
 
-            // Install
+            // Install: what the header's button installs, and its progress.
             SettingsGroup {
+                id: installGroup
                 width: parent.width
                 title: qsTr("Install")
 
@@ -330,6 +335,7 @@ Item {
                         width: 320
                         enabled: root.versions.length > 0 && !root.installing
                         model: root.versions.map(v => root.versionLabel(v))
+                        Accessible.name: qsTr("Version")
                         // Newest first from Modrinth, alphas included: start on
                         // the version the author features, if there is one.
                         onModelChanged: {
@@ -346,44 +352,91 @@ Item {
                         width: 320
                         enabled: !root.installing
                         selectByMouse: true
+                        Accessible.name: qsTr("Instance name")
                     }
                 }
 
+                // Only once an install has started: progress, then the
+                // outcome. Before that the header's button says it all.
                 SettingRow {
+                    visible: !!root.watcher
+                    // The group draws its hairlines once, from which rows
+                    // are visible then; this one appears later.
+                    onVisibleChanged: installGroup.markRows()
                     label: root.installed ? qsTr("Installed")
                          : root.installing ? (root.watcher.status || qsTr("Installing…"))
                          : root.watcher && root.watcher.failed ? qsTr("Install failed")
-                         : qsTr("Ready to install")
+                         : ""
                     description: root.watcher && root.watcher.failed ? root.watcher.error
                                : root.installed ? qsTr("“%1” is in your library.").arg(nameField.text) : ""
 
+                    LaunchProgressBar {
+                        width: 180
+                        visible: root.installing
+                        progress: root.watcher ? root.watcher.progress : -1
+                    }
+                }
+            }
+
+            // Gallery strip -- only once the detail fetch actually has one.
+            Column {
+                width: parent.width
+                spacing: Theme.space.sm
+                visible: root.gallery.length > 0
+
+                Text {
+                    text: qsTr("Gallery")
+                    color: Theme.palette.textPrimary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.title.pixelSize
+                    font.weight: Font.Bold
+                }
+
+                Flickable {
+                    width: parent.width
+                    height: galleryRow.height
+                    contentWidth: galleryRow.width
+                    contentHeight: height
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+
                     Row {
-                        spacing: Theme.space.md
+                        id: galleryRow
+                        spacing: Theme.space.sm
+                        Repeater {
+                            model: root.gallery
+                            delegate: Item {
+                                id: shot
+                                required property var modelData
+                                readonly property int ring: Theme.radius.sm + Theme.space.xxs
+                                width: 152
+                                height: Math.round(width * 9 / 16)
+                                clip: true
 
-                        LaunchProgressBar {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 180
-                            visible: root.installing
-                            progress: root.watcher ? root.watcher.progress : -1
-                        }
-
-                        Button {
-                            visible: !root.installed
-                            enabled: !root.installing && versionBox.currentIndex >= 0
-                            highlighted: true
-                            implicitHeight: Theme.control.heightLg
-                            text: root.installing ? qsTr("Installing…") : qsTr("Install")
-                            icon.source: Icons.url("download")
-                            onClicked: root.install()
-                        }
-
-                        Button {
-                            visible: root.installed
-                            highlighted: true
-                            implicitHeight: Theme.control.heightLg
-                            text: qsTr("Show in library")
-                            icon.source: Icons.url("library")
-                            onClicked: root.showInstanceRequested(root.watcher.instanceId || "")
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: Theme.palette.surfaceSunken
+                                }
+                                Image {
+                                    anchors.fill: parent
+                                    source: shot.modelData.url || ""
+                                    sourceSize: Qt.size(width * 2, height * 2)
+                                    fillMode: Image.PreserveAspectCrop
+                                    smooth: true
+                                    mipmap: true
+                                    asynchronous: true
+                                }
+                                // Rounded corners, the same page-colour ring
+                                // the header uses.
+                                Rectangle {
+                                    anchors.fill: parent
+                                    anchors.margins: -shot.ring
+                                    radius: Theme.radius.sm + shot.ring
+                                    color: "transparent"
+                                    border.width: shot.ring
+                                    border.color: Theme.palette.canvas
+                                }
+                            }
                         }
                     }
                 }
@@ -392,11 +445,12 @@ Item {
             // About
             Column {
                 width: parent.width
-                spacing: Theme.space.md
+                spacing: Theme.space.sm
                 visible: !!root.detail && ((root.detail.body || "").length > 0 || root.detail.loading)
 
+                // Same heading as the Install card's title, on the same
+                // left edge.
                 Text {
-                    leftPadding: Theme.space.xs
                     text: qsTr("About")
                     color: Theme.palette.textPrimary
                     font.family: Theme.font.family
@@ -422,5 +476,12 @@ Item {
                 }
             }
         }
+    }
+
+    ScrollFade {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        flickable: flick
     }
 }

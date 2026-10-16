@@ -33,6 +33,20 @@ Item {
     // user why nothing happened.
     property string actionError: ""
 
+    readonly property int thumbSize: 36
+
+    // BackupController's timestampText is "yyyy-MM-dd HH:mm:ss" local time;
+    // read back into a date so it reads like every other date in the app.
+    function backupAge(timestampText) {
+        var ms = new Date(String(timestampText).replace(" ", "T")).getTime()
+        return isNaN(ms) ? timestampText : Format.lastPlayed(ms)
+    }
+    function confirmRestore(row, name) {
+        restoreConfirm.row = row
+        restoreConfirm.text = qsTr("Replace this instance's current contents with the backup “%1”? This cannot be undone.").arg(name)
+        restoreConfirm.open()
+    }
+
     // A different instance's controller: whatever this tab was doing
     // belonged to the previous one.
     onControllerChanged: {
@@ -64,6 +78,7 @@ Item {
                 icon.source: Icons.url("download")
                 onClicked: importDialog.open()
             }
+            // Secondary: the play bar's Play is this page's primary action.
             Button {
                 enabled: !root.busy
                 text: qsTr("Create backup")
@@ -113,6 +128,7 @@ Item {
             spacing: Theme.space.sm
             boundsBehavior: Flickable.StopAtBounds
             model: root.model
+            // Overlays the rows' right edge rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
             delegate: Rectangle {
@@ -122,23 +138,30 @@ Item {
                 required property string timestampText
                 required property string sizeText
 
-                width: list.width - Theme.space.md
+                width: list.width
                 height: Theme.control.heightLg + Theme.space.md
                 radius: Theme.radius.lg
-                color: Theme.palette.surface
+                color: hover.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
                 border.width: 1
                 border.color: Theme.palette.border
+                Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
+
+                HoverHandler { id: hover }
+                TapHandler {
+                    acceptedButtons: Qt.RightButton
+                    onTapped: if (!root.busy) rowMenu.popup()
+                }
 
                 RowLayout {
                     anchors.fill: parent
                     anchors.leftMargin: Theme.space.md
-                    anchors.rightMargin: Theme.space.md
+                    anchors.rightMargin: Theme.space.sm
                     spacing: Theme.space.md
 
                     Rectangle {
-                        Layout.preferredWidth: 36
-                        Layout.preferredHeight: 36
-                        radius: Theme.radius.md
+                        Layout.preferredWidth: root.thumbSize
+                        Layout.preferredHeight: root.thumbSize
+                        radius: Theme.radius.sm
                         color: Theme.palette.surfaceSunken
                         MeshIcon { anchors.centerIn: parent; iconName: "archive"; size: Theme.icon.sm; color: Theme.palette.textTertiary }
                     }
@@ -158,7 +181,7 @@ Item {
                         }
                         Text {
                             width: parent.width
-                            text: qsTr("%1 · %2").arg(row.timestampText).arg(row.sizeText)
+                            text: qsTr("%1, %2").arg(root.backupAge(row.timestampText)).arg(row.sizeText)
                             elide: Text.ElideRight
                             color: Theme.palette.textTertiary
                             font.family: Theme.font.family
@@ -166,30 +189,37 @@ Item {
                         }
                     }
 
+                    Button {
+                        text: qsTr("Restore")
+                        enabled: !root.busy && !root.running
+                        ToolTip.visible: hovered && root.running
+                        ToolTip.text: qsTr("Close the game before restoring a backup.")
+                        onClicked: root.confirmRestore(row.index, row.name)
+                    }
                     IconButton {
-                        iconName: "download"
-                        tip: qsTr("Export…")
+                        id: moreButton
                         enabled: !root.busy
-                        onClicked: {
+                        iconName: "more"
+                        tip: qsTr("More")
+                        onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
+                    }
+                }
+
+                Menu {
+                    id: rowMenu
+                    MenuItem {
+                        text: qsTr("Export…")
+                        icon.source: Icons.url("download")
+                        onTriggered: {
                             exportDialog.row = row.index
                             exportDialog.open()
                         }
                     }
-                    IconButton {
-                        iconName: "refresh"
-                        tip: root.running ? qsTr("Close the game before restoring a backup.") : qsTr("Restore")
-                        enabled: !root.busy && !root.running
-                        onClicked: {
-                            restoreConfirm.row = row.index
-                            restoreConfirm.text = qsTr("Replace this instance's current contents with the backup “%1”? This cannot be undone.").arg(row.name)
-                            restoreConfirm.open()
-                        }
-                    }
-                    IconButton {
-                        iconName: "trash"
-                        tip: qsTr("Delete")
-                        enabled: !root.busy
-                        onClicked: {
+                    MenuSeparator {}
+                    MenuItem {
+                        text: qsTr("Delete…")
+                        icon.source: Icons.url("trash")
+                        onTriggered: {
                             deleteConfirm.row = row.index
                             deleteConfirm.text = qsTr("Delete the backup “%1”? This cannot be undone.").arg(row.name)
                             deleteConfirm.open()
@@ -200,14 +230,20 @@ Item {
         }
     }
 
+    // Rows fade out at the fold instead of being sliced by the play bar.
+    ScrollFade {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        flickable: list
+    }
+
     EmptyState {
         anchors.centerIn: parent
         upperThird: true
         visible: list.count === 0
         title: qsTr("No backups yet")
         body: qsTr("A backup is a zip of this whole instance, including its worlds and mods, that you can restore later.")
-        actionText: qsTr("Create backup")
-        onActionTriggered: labelPrompt.open()
         MeshIcon { iconName: "archive"; size: 40; color: Theme.palette.textTertiary }
     }
 

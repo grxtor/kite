@@ -23,15 +23,63 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QJsonValue>
+#include <QDir>
+#include <QFile>
 #include <toml++/toml.hpp>
 
 #include "MMCZip.h"
+#include "ModIconCache.h"
 
 #include "settings/INIFile.h"
 #include "FileSystem.h"
 
 namespace
 {
+
+	/* Metadata names its logo relative to the archive root, but not always
+	 * the way the archive spells it: mcmod.info in particular often writes
+	 * "/assets/x/logo.png" or "./logo.png". */
+	QString archivePath(QString path)
+	{
+		path = path.trimmed().replace(QLatin1Char('\\'), QLatin1Char('/'));
+		while (path.startsWith(QLatin1Char('/')) ||
+			   path.startsWith(QLatin1String("./"))) {
+			path.remove(0, path.startsWith(QLatin1Char('/')) ? 1 : 2);
+		}
+		return path;
+	}
+
+	/* fabric.mod.json / quilt.mod.json "icon": one path, or a map of pixel
+	 * size -> path. Takes the largest no bigger than what the cache keeps,
+	 * or failing that the smallest one there is. */
+	QString pickIcon(const QJsonValue& value)
+	{
+		if (value.isString()) {
+			return value.toString();
+		}
+		const QJsonObject sizes = value.toObject();
+		QString best;
+		int bestSize = 0;
+		QString smallest;
+		int smallestSize = 0;
+		for (auto it = sizes.constBegin(); it != sizes.constEnd(); ++it) {
+			bool ok = false;
+			const int size = it.key().toInt(&ok);
+			const QString path = it.value().toString();
+			if (!ok || size <= 0 || path.isEmpty()) {
+				continue;
+			}
+			if (size <= ModIconCache::kMaxExtent && size > bestSize) {
+				best = path;
+				bestSize = size;
+			}
+			if (smallestSize == 0 || size < smallestSize) {
+				smallest = path;
+				smallestSize = size;
+			}
+		}
+		return best.isEmpty() ? smallest : best;
+	}
 
 	// NEW format
 	// https://github.com/MinecraftForge/FML/wiki/FML-mod-information-file/6f62b37cea040daf350dc253eae6326dd9c822c3
@@ -78,6 +126,7 @@ namespace
 				details->authors.append(author.toString());
 			}
 			details->credits = firstObj.value("credits").toString();
+			details->icon = firstObj.value("logoFile").toString();
 			return details;
 		};
 		QJsonParseError jsonError;
@@ -189,6 +238,14 @@ namespace
 		}
 		details->homeurl = homeurl;
 
+		// Per mod in [[mods]]; some older mods.toml files set it once at
+		// the root instead.
+		if (auto val = (*tomlModsTable0)["logoFile"].value<std::string>()) {
+			details->icon = QString::fromStdString(*val);
+		} else if (auto val = tomlData["logoFile"].value<std::string>()) {
+			details->icon = QString::fromStdString(*val);
+		}
+
 		return details;
 	}
 
@@ -211,6 +268,7 @@ namespace
 							? object.value("name").toString()
 							: details->mod_id;
 		details->description = object.value("description").toString();
+		details->icon = pickIcon(object.value("icon"));
 
 		if (schemaVersion >= 1) {
 			QJsonArray authors = object.value("authors").toArray();
@@ -231,6 +289,26 @@ namespace
 				}
 			}
 		}
+		return details;
+	}
+
+	// https://github.com/QuiltMC/rfcs/blob/main/specification/0002-quilt.mod.json.md
+	std::shared_ptr<ModDetails> ReadQuiltModInfo(QByteArray contents)
+	{
+		const QJsonObject loader = QJsonDocument::fromJson(contents)
+									   .object()
+									   .value("quilt_loader")
+									   .toObject();
+		std::shared_ptr<ModDetails> details = std::make_shared<ModDetails>();
+		details->mod_id = loader.value("id").toString();
+		details->version = loader.value("version").toString();
+
+		const QJsonObject metadata = loader.value("metadata").toObject();
+		details->name = metadata.contains("name")
+							? metadata.value("name").toString()
+							: details->mod_id;
+		details->description = metadata.value("description").toString();
+		details->icon = pickIcon(metadata.value("icon"));
 		return details;
 	}
 
@@ -281,8 +359,10 @@ namespace
 } // namespace
 
 LocalModParseTask::LocalModParseTask(int token, Mod::ModType type,
-									 const QFileInfo& modFile)
-	: m_token(token), m_type(type), m_modFile(modFile), m_result(new Result())
+									 const QFileInfo& modFile,
+									 const QString& iconCacheDir)
+	: m_token(token), m_type(type), m_modFile(modFile), m_result(new Result()),
+	  m_iconCacheDir(iconCacheDir)
 {
 }
 
@@ -341,6 +421,13 @@ void LocalModParseTask::processAsZip()
 		return;
 	}
 
+	QByteArray quiltModJson =
+		MMCZip::readFileFromZip(zipPath, "quilt.mod.json");
+	if (!quiltModJson.isEmpty()) {
+		m_result->details = ReadQuiltModInfo(quiltModJson);
+		return;
+	}
+
 	QByteArray forgeVersionProps =
 		MMCZip::readFileFromZip(zipPath, "forgeversion.properties");
 	if (!forgeVersionProps.isEmpty()) {
@@ -372,14 +459,65 @@ void LocalModParseTask::processAsLitemod()
 	}
 }
 
+void LocalModParseTask::cacheIcon(
+	const std::function<QByteArray(const QString&)>& read)
+{
+	if (m_iconCacheDir.isEmpty()) {
+		return;
+	}
+	const QString key = ModIconCache::keyFor(m_modFile);
+	if (ModIconCache::contains(m_iconCacheDir, key)) {
+		m_result->iconKey = key;
+		return;
+	}
+
+	// The logo the metadata declares, then pack.png: what Minecraft itself
+	// shows for a resource or data pack, and what a jar that ships its own
+	// resources usually carries as well.
+	QStringList candidates;
+	if (m_result->details && !m_result->details->icon.isEmpty()) {
+		candidates << archivePath(m_result->details->icon);
+	}
+	candidates << QStringLiteral("pack.png");
+	for (const QString& entry : candidates) {
+		if (entry.isEmpty()) {
+			continue;
+		}
+		if (ModIconCache::store(m_iconCacheDir, key, read(entry))) {
+			m_result->iconKey = key;
+			return;
+		}
+	}
+}
+
 void LocalModParseTask::run()
 {
 	switch (m_type) {
 		case Mod::MOD_ZIPFILE:
 			processAsZip();
+			cacheIcon([this](const QString& entry) {
+				return MMCZip::readFileFromZip(m_modFile.filePath(), entry);
+			});
 			break;
 		case Mod::MOD_FOLDER:
 			processAsFolder();
+			cacheIcon([this](const QString& entry) -> QByteArray {
+				// Metadata is the mod author's text: keep "../" from
+				// reaching outside the mod's own folder.
+				const QString root = m_modFile.canonicalFilePath();
+				const QString path =
+					QFileInfo(QDir(root).filePath(entry)).canonicalFilePath();
+				if (root.isEmpty() ||
+					!path.startsWith(root + QLatin1Char('/'))) {
+					return {};
+				}
+				QFile file(path);
+				if (file.size() > ModIconCache::kMaxEncodedBytes ||
+					!file.open(QIODevice::ReadOnly)) {
+					return {};
+				}
+				return file.readAll();
+			});
 			break;
 		case Mod::MOD_LITEMOD:
 			processAsLitemod();

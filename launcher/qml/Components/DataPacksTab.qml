@@ -29,6 +29,8 @@ Item {
     readonly property var controller: root.details ? root.details.worldDataPacks : null
     readonly property bool unlocked: !!root.controller && root.controller.unlocked
     readonly property int count: list.count
+    readonly property int thumbSize: 36
+    readonly property int pickerWidth: 220
 
     function openWorld(row) {
         if (!root.controller || row < 0)
@@ -66,10 +68,14 @@ Item {
             }
             ComboBox {
                 id: picker
-                Layout.preferredWidth: 220
+                Layout.preferredWidth: root.pickerWidth
                 model: root.worldsModel
                 textRole: "name"
                 onActivated: (index) => root.openWorld(index)
+                // The world list may still be loading when the controller
+                // arrives; open the default world as soon as there is one,
+                // or the toolbar would stay disabled with nothing to act on.
+                onCountChanged: if (root.controller && !root.controller.ready) root.openDefault()
             }
             Text {
                 Layout.fillWidth: true
@@ -85,6 +91,7 @@ Item {
                 enabled: root.controller && root.controller.ready
                 onClicked: root.openFolderRequested(root.controller ? root.controller.directory : "")
             }
+            // Secondary: the play bar's Play is this page's primary action.
             Button {
                 enabled: root.unlocked && root.controller && root.controller.ready
                 text: qsTr("Add from file…")
@@ -98,9 +105,11 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            spacing: Theme.space.xs
+            // The same row rhythm as every list tab (see PackList).
+            spacing: Theme.space.sm
             boundsBehavior: Flickable.StopAtBounds
             model: root.controller ? root.controller.model : null
+            // Overlays the rows' right edge rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
             delegate: Rectangle {
@@ -111,36 +120,32 @@ Item {
                 readonly property var version: model.version
                 readonly property bool itemEnabled: model.enabled
 
-                width: list.width - Theme.space.md
+                width: list.width
                 height: Theme.control.heightLg + Theme.space.md
-                radius: Theme.radius.md
+                radius: Theme.radius.lg
                 color: hover.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
                 border.width: 1
                 border.color: Theme.palette.border
 
                 Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
                 HoverHandler { id: hover }
+                TapHandler {
+                    acceptedButtons: Qt.RightButton
+                    onTapped: rowMenu.popup()
+                }
 
+                // Same row as Content's (PackList): what it is on the left,
+                // its switch and ⋯ menu on the right.
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: Theme.space.sm
+                    anchors.leftMargin: Theme.space.md
                     anchors.rightMargin: Theme.space.sm
                     spacing: Theme.space.md
 
-                    Switch {
-                        checked: row.itemEnabled
-                        enabled: root.unlocked
-                        Accessible.name: qsTr("Enable %1").arg(row.name)
-                        onToggled: {
-                            root.controller.setEnabled(row.index, checked)
-                            checked = Qt.binding(() => row.itemEnabled)
-                        }
-                    }
-
                     Rectangle {
-                        Layout.preferredWidth: 36
-                        Layout.preferredHeight: 36
-                        radius: Theme.radius.md
+                        Layout.preferredWidth: root.thumbSize
+                        Layout.preferredHeight: root.thumbSize
+                        radius: Theme.radius.sm
                         color: Theme.palette.surfaceSunken
                         opacity: row.itemEnabled ? 1 : Theme.opacity.disabled
                         MeshIcon { anchors.centerIn: parent; iconName: "package"; size: Theme.icon.sm; color: Theme.palette.textTertiary }
@@ -170,11 +175,37 @@ Item {
                         }
                     }
 
+                    Switch {
+                        checked: row.itemEnabled
+                        enabled: root.unlocked
+                        Accessible.name: qsTr("Enable %1").arg(row.name)
+                        onToggled: {
+                            root.controller.setEnabled(row.index, checked)
+                            checked = Qt.binding(() => row.itemEnabled)
+                        }
+                    }
+
                     IconButton {
-                        visible: hover.hovered && root.unlocked
-                        iconName: "trash"
-                        tip: qsTr("Remove")
-                        onClicked: {
+                        id: moreButton
+                        iconName: "more"
+                        tip: qsTr("More")
+                        onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
+                    }
+                }
+
+                Menu {
+                    id: rowMenu
+                    MenuItem {
+                        enabled: root.unlocked
+                        text: row.itemEnabled ? qsTr("Disable") : qsTr("Enable")
+                        onTriggered: root.controller.setEnabled(row.index, !row.itemEnabled)
+                    }
+                    MenuSeparator {}
+                    MenuItem {
+                        enabled: root.unlocked
+                        text: qsTr("Remove…")
+                        icon.source: Icons.url("trash")
+                        onTriggered: {
                             confirm.row = row.index
                             confirm.text = qsTr("Remove “%1” from this world? The file is deleted.").arg(row.name)
                             confirm.open()
@@ -183,6 +214,14 @@ Item {
                 }
             }
         }
+    }
+
+    // Rows fade out at the fold instead of being sliced by the play bar.
+    ScrollFade {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        flickable: list
     }
 
     ConfirmDialog {
@@ -207,9 +246,7 @@ Item {
         upperThird: true
         visible: picker.count > 0 && list.count === 0
         title: qsTr("No data packs")
-        body: qsTr("Add one from a file to enable it for this world.")
-        actionText: qsTr("Add from file…")
-        onActionTriggered: fileDialog.open()
+        body: qsTr("Data packs change this world's recipes, loot and more. Add one with Add from file.")
         MeshIcon { iconName: "package"; size: 40; color: Theme.palette.textTertiary }
     }
 

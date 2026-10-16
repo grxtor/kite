@@ -13,6 +13,8 @@ import QtQuick
  * "hour(s)".
  */
 QtObject {
+    id: root
+
     // lastLaunch: milliseconds since the epoch, 0 when never launched.
     function lastPlayed(lastLaunchMs) {
         var ms = Number(lastLaunchMs)
@@ -31,7 +33,16 @@ QtObject {
             return qsTr("Yesterday")
         if (days < 30)
             return qsTr("%1 days ago").arg(days)
-        return Qt.formatDate(new Date(ms), Qt.locale().dateFormat(Locale.ShortFormat))
+        return root.calendarDate(new Date(ms))
+    }
+
+    // Older than a month: the month spelled out ("Sep 15"), plus the year
+    // once it is not this year ("Sep 15, 2025") -- never the locale's
+    // numeric short form, which reads "9/15/26" in one place and "15.09.26"
+    // in another, next to "22 days ago" on the same screen.
+    function calendarDate(date) {
+        var sameYear = date.getFullYear() === new Date().getFullYear()
+        return date.toLocaleDateString(Qt.locale(), sameYear ? "MMM d" : "MMM d, yyyy")
     }
 
     // totalTimePlayed: seconds.

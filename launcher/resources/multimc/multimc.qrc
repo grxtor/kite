@@ -269,6 +269,35 @@
         <file>scalable/instances/fox.svg</file>
         <file>scalable/instances/bee.svg</file>
 
+        <!-- rendered instance icons: 256 px, transparent, same keys as the
+             flat set above. Deliberately not a directory of index.theme:
+             IconList::addThemeIcon() picks these up directly (see the
+             comment in launcher/icons/IconList.cpp). -->
+        <file>256x256/instances/bee.png</file>
+        <file>256x256/instances/brick.png</file>
+        <file>256x256/instances/chicken.png</file>
+        <file>256x256/instances/creeper.png</file>
+        <file>256x256/instances/diamond.png</file>
+        <file>256x256/instances/dirt.png</file>
+        <file>256x256/instances/enderman.png</file>
+        <file>256x256/instances/enderpearl.png</file>
+        <file>256x256/instances/flame.png</file>
+        <file>256x256/instances/fox.png</file>
+        <file>256x256/instances/gear.png</file>
+        <file>256x256/instances/gold.png</file>
+        <file>256x256/instances/grass.png</file>
+        <file>256x256/instances/herobrine.png</file>
+        <file>256x256/instances/iron.png</file>
+        <file>256x256/instances/magitech.png</file>
+        <file>256x256/instances/meat.png</file>
+        <file>256x256/instances/netherstar.png</file>
+        <file>256x256/instances/planks.png</file>
+        <file>256x256/instances/skeleton.png</file>
+        <file>256x256/instances/squarecreeper.png</file>
+        <file>256x256/instances/steve.png</file>
+        <file>256x256/instances/stone.png</file>
+        <file>256x256/instances/tnt.png</file>
+
 
         <!-- instance icons -->
         <file>32x32/instances/chicken_legacy.png</file>
@@ -343,6 +372,8 @@
         <file>scalable/checkupdate.svg</file>  
 
         <file>scalable/instances/quiltmc.svg</file>  <!-- CC0 QuiltMC -->
+        <file>scalable/instances/quilt_mark.svg</file>  <!-- CC0 QuiltMC art repo, transparent -->
+        <file>scalable/instances/forge_mark.svg</file>  <!-- Forge anvil, transparent, Forge Development LLC -->
         <file>scalable/instances/fabricmc.svg</file>  <!-- CC0 unascribed, https://github.com/FabricMC/community/blob/main/media/unascribed/README.md -->
         <file>scalable/instances/neoforged.svg</file>
         <file>128x128/instances/forge.png</file>  <!-- LGPL3 Forge Development LLC -->

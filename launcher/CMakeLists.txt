@@ -459,6 +459,8 @@ set(MINECRAFT_SOURCES
     minecraft/mod/ModFolderLoadTask.cpp
     minecraft/mod/LocalModParseTask.h
     minecraft/mod/LocalModParseTask.cpp
+    minecraft/mod/ModIconCache.h
+    minecraft/mod/ModIconCache.cpp
     minecraft/mod/ModMetadataIndex.h
     minecraft/mod/ModMetadataIndex.cpp
     minecraft/mod/PackwizSidecar.h
@@ -535,6 +537,21 @@ add_unit_test(ModFolderModel
     SOURCES minecraft/mod/ModFolderModel_test.cpp
     DATA testdata
     LIBS MeshMC_logic
+    )
+
+# Builds its jars and pack folders in a temp directory, so it needs no
+# testdata: logo lookup per metadata format, the on-disk icon cache, and the
+# iconUrl role ModFolderModel derives from it.
+add_unit_test(LocalModParseTask
+    SOURCES minecraft/mod/LocalModParseTask_test.cpp
+    LIBS MeshMC_logic
+    )
+
+# options.txt editing against a temp file: one line changed in place, the
+# rest (unknown keys, order, the game's own later writes) left alone.
+add_unit_test(GameOptions
+    SOURCES minecraft/gameoptions/GameOptions_test.cpp
+    LIBS MeshMC_core
     )
 
 add_unit_test(ParseUtils
@@ -1662,6 +1679,11 @@ add_unit_test(AccountFaceProvider
 
 add_unit_test(ScreenshotThumbnailProvider
     SOURCES qml/ScreenshotThumbnailProvider_test.cpp
+    LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
+    )
+
+add_unit_test(ModIconProvider
+    SOURCES qml/ModIconProvider_test.cpp
     LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 

@@ -18,6 +18,8 @@
  */
 
 #pragma once
+#include <functional>
+
 #include <QRunnable>
 #include <QDebug>
 #include <QObject>
@@ -31,6 +33,9 @@ class LocalModParseTask : public QObject, public QRunnable
 	struct Result {
 		QString id;
 		std::shared_ptr<ModDetails> details;
+		/// ModIconCache key of this file's logo once it is in the cache;
+		/// empty when it has none (or no cache directory was given).
+		QString iconKey;
 	};
 	using ResultPtr = std::shared_ptr<Result>;
 	ResultPtr result() const
@@ -38,7 +43,10 @@ class LocalModParseTask : public QObject, public QRunnable
 		return m_result;
 	}
 
-	LocalModParseTask(int token, Mod::ModType type, const QFileInfo& modFile);
+	/// @p iconCacheDir is where the file's logo is cached (see
+	/// ModIconCache); empty skips looking for one.
+	LocalModParseTask(int token, Mod::ModType type, const QFileInfo& modFile,
+					  const QString& iconCacheDir = QString());
 	void run();
 
   signals:
@@ -48,10 +56,14 @@ class LocalModParseTask : public QObject, public QRunnable
 	void processAsZip();
 	void processAsFolder();
 	void processAsLitemod();
+	/// @p read returns the bytes of a file inside the mod, by its
+	/// archive-relative path (empty if there is none).
+	void cacheIcon(const std::function<QByteArray(const QString&)>& read);
 
   private:
 	int m_token;
 	Mod::ModType m_type;
 	QFileInfo m_modFile;
 	ResultPtr m_result;
+	QString m_iconCacheDir;
 };

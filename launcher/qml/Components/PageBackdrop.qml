@@ -8,8 +8,9 @@ import MeshMC.Theme
 /*
  * A page-level wash of one instance's own cover art -- what Library and Home
  * put behind their content so the canvas is not flat (design-plan.md §5/§6).
- * Uses CoverArt's own generated fallback plate when there is no screenshot
- * yet, so it reads as MeshMC's own content, never stock art.
+ * Uses CoverArt's own rendered fallback scene when there is no screenshot
+ * yet, washed in exactly the same way, so the page reads the same with or
+ * without one.
  *
  * The caller positions and sizes it and decides when it is visible; this
  * only owns how strong the wash is, and -- when it does not reach the page's
@@ -23,23 +24,23 @@ Item {
     // Set when the backdrop is a band (Home's top region) rather than the
     // whole page, so its lower edge dissolves into the canvas.
     property bool fadeBottom: false
-    // Home's own wide pixel-art hero panorama in place of CoverArt's small
-    // per-instance fallback plate whenever there is no real screenshot to
-    // show (design-plan.md G3d) -- a 480x90 scene fits this band's own wide,
-    // short shape far better than a 96x54 landscape stretched to match it.
-    // Library keeps the default (false): its backdrop is always one real
-    // instance's own art or that instance's own small fallback plate.
+    // Home's own wide pixel-art hero panorama in place of CoverArt's
+    // per-instance fallback scene whenever there is no real screenshot to
+    // show (design-plan.md G3d). Library keeps the default (false): its
+    // backdrop is always one real instance's own art or CoverArt's fallback
+    // scene for it.
     property bool wideHero: false
     readonly property bool showHero: root.wideHero && root.cover.length === 0
 
-    // A real screenshot stays inside the 6-10% design-plan.md §6 sets for a
-    // background wash, biased to the top of that budget: at the low end it
+    // Cover art -- a real screenshot or CoverArt's rendered fallback scene,
+    // both photographic -- stays inside the 6-10% design-plan.md §6 sets for
+    // a background wash, biased to the top of that budget: at the low end it
     // was confirmed to sit at the edge of visible in an actual screenshot,
-    // barely distinguishable from noise. CoverArt's fallback plate is a
-    // smoother, lower-contrast gradient, so it needs a little more still to
-    // read as tonal variation at all. Cover art is mostly dark, so on the
+    // barely distinguishable from noise. Cover art is mostly dark, so on the
     // light canvas the same amount reads as a grey cast rather than a wash
-    // -- scaled down there.
+    // -- scaled down there. The pixel-art hero panorama is a flatter,
+    // lower-contrast plate, so it needs a little more still to read as
+    // tonal variation at all.
     readonly property real photoOpacity: Theme.dark ? 0.15 : 0.095
     readonly property real plateOpacity: Theme.dark ? 0.18 : 0.12
 
@@ -48,7 +49,7 @@ Item {
     Item {
         anchors.fill: parent
         visible: !root.showHero
-        opacity: root.cover.length > 0 ? root.photoOpacity : root.plateOpacity
+        opacity: root.photoOpacity
 
         CoverArt {
             anchors.fill: parent
@@ -57,10 +58,10 @@ Item {
             iconKey: ""
             radius: 0
             scrim: "none"
-            // A real screenshot's hard edges (rooflines, tree cover) turn
-            // blotchy at wash opacity when decoded sharp; the fallback plate
-            // is already a smooth gradient and does not need this.
-            photoSoftness: root.cover.length > 0 ? 0.12 : 1.0
+            // Hard photographic edges (rooflines, tree cover) turn blotchy at
+            // wash opacity when decoded sharp -- screenshot and fallback
+            // scene alike -- so decode small and let the upscale soften them.
+            photoSoftness: 0.12
         }
     }
 

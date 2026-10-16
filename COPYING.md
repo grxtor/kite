@@ -289,3 +289,49 @@
 
     You should have received a copy of the GNU Lesser General Public
     License along with this library. If not, see <http://www.gnu.org/licenses/>.
+
+# Inter
+
+    Copyright (c) 2016 The Inter Project Authors (https://github.com/rsms/inter)
+
+    The Inter typeface, bundled with the QML user interface in
+    launcher/qml/Theme/fonts/inter/, is licensed under the SIL Open Font
+    License, Version 1.1. The full licence text ships next to the fonts as
+    launcher/qml/Theme/fonts/inter/OFL.txt and is also available with a FAQ at
+    https://openfontlicense.org
+
+# Lucide icons
+
+    Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as
+    part of Feather (MIT). All other copyright (c) for Lucide are held by
+    Lucide Contributors 2022.
+
+    The interface icons in launcher/qml/Components/icons/ are from Lucide
+    (https://lucide.dev) and are licensed under the ISC License. The full
+    licence text ships next to them as
+    launcher/qml/Components/icons/LICENSE.Lucide.txt.
+
+# "Minecraft Cat" model
+
+    "Minecraft Cat" by JanesBT (https://sketchfab.com/JanesBt), from
+    https://sketchfab.com/3d-models/minecraft-cat-2b59a1815b1e47a298d4a3c084523d72
+    is licensed under the Creative Commons Attribution 4.0 International
+    licence (https://creativecommons.org/licenses/by/4.0/). MeshMC regroups
+    its parts for animation and recolours its texture into other coats; see
+    launcher/qml/Cat/assets/CREDITS.md.
+
+# NeoForged icon
+
+    The NeoForge icon (launcher/resources/multimc/scalable/instances/neoforged.svg)
+    is the official NeoForged branding by Ridanisaurus, © the NeoForged team,
+    from https://github.com/neoforged/.github/tree/main/art, licensed under the
+    Creative Commons Attribution 4.0 International licence
+    (https://creativecommons.org/licenses/by/4.0/). MeshMC converts the
+    official 16x16 artwork to SVG, pixel for pixel, without other changes.
+
+# Fabric and Quilt marks
+
+    The Fabric mark (fabricmc.svg, by unascribed, from
+    https://github.com/FabricMC/community) and the Quilt mark (quilt_mark.svg,
+    from https://github.com/QuiltMC/art) are dedicated to the public domain
+    under CC0 1.0; credited here as a courtesy.

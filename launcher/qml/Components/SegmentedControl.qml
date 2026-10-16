@@ -19,7 +19,11 @@ Rectangle {
     property var current
     signal activated(var value)
 
-    implicitWidth: row.implicitWidth + 6
+    // The selected segment sits this far inside the track: its 1px border
+    // plus a space.xxs gap.
+    readonly property int inset: Theme.space.xxs + 1
+
+    implicitWidth: row.implicitWidth + inset * 2
     implicitHeight: Theme.control.height
     radius: Theme.radius.md
     color: Theme.palette.surfaceSunken
@@ -31,7 +35,7 @@ Rectangle {
     Row {
         id: row
         anchors.centerIn: parent
-        spacing: 2
+        spacing: Theme.space.xxs
 
         Repeater {
             model: root.options
@@ -40,8 +44,10 @@ Rectangle {
                 required property var modelData
                 readonly property bool selected: modelData.value === root.current
 
-                height: root.height - 6
-                width: label.implicitWidth + Theme.space.lg * 2
+                height: root.height - root.inset * 2
+                // Whole pixels: a fractional segment width put every control
+                // after it on a half pixel, blurring 1px borders.
+                width: Math.ceil(label.implicitWidth) + Theme.space.lg * 2
                 hoverEnabled: true
                 checkable: true
                 checked: selected
@@ -50,7 +56,7 @@ Rectangle {
                 onClicked: if (!selected) root.activated(modelData.value)
 
                 background: Rectangle {
-                    radius: Theme.radius.md - 2
+                    radius: Theme.radius.sm
                     color: segment.selected ? Theme.palette.surfaceRaised
                          : segment.hovered ? Theme.palette.hoverOverlay : "transparent"
                     border.width: segment.selected ? 1 : 0

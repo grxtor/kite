@@ -299,7 +299,7 @@ Item {
                     onClicked: { parent.selectedId = modelData.id; root.send("select", modelData.id) }
                     onDoubleClicked: root.send("activate", modelData.id)
                     background: Rectangle {
-                        radius: Theme.radius.sm + 2
+                        radius: Theme.radius.sm
                         color: listRow.selected ? Theme.palette.accentSubtle
                              : listRow.hovered ? Theme.palette.hoverOverlay : "transparent"
                     }

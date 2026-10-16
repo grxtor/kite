@@ -17,11 +17,11 @@ import MeshMC.Theme
  *    InstanceImportTask the widget dialog used.
  * Modpacks browsed by project (Modrinth) come from Discover instead; other
  * catalogue browsing (CurseForge/FTB/ATLauncher/Technic) is not built in
- * QML yet -- see the note in the import pane.
+ * QML yet -- their exported .zip files import here (the import pane's note).
  *
- * In create mode the name follows the chosen version ("1.21.4", "Fabric
- * 1.21.4") until the user types one of their own; in import mode it follows
- * the picked file/URL the same way.
+ * In create mode the name follows the chosen version ("Minecraft 1.21.4",
+ * "1.21.4 Fabric") until the user types one of their own; in import mode it
+ * follows the picked file/URL the same way.
  */
 Dialog {
     id: root
@@ -47,6 +47,9 @@ Dialog {
     signal created()
 
     readonly property bool creating: !!watcher && watcher.running
+    readonly property int loaderTileHeight: 96
+    readonly property int logoWell: Theme.control.heightLg
+    readonly property int logoSize: Theme.control.height
     // Each loader wears the logo the launcher already ships for it (the
     // iconName column of knownModLoaders(), served by the instanceicon
     // provider); the unmodified game gets the grass block, the default
@@ -54,8 +57,8 @@ Dialog {
     readonly property var loaders: [
         { value: "", label: qsTr("Vanilla"), iconKey: "grass" },
         { value: "fabric", label: "Fabric", iconKey: "fabricmc" },
-        { value: "quilt", label: "Quilt", iconKey: "quiltmc" },
-        { value: "forge", label: "Forge", iconKey: "forge" },
+        { value: "quilt", label: "Quilt", iconKey: "quilt_mark" },
+        { value: "forge", label: "Forge", iconKey: "forge_mark" },
         { value: "neoforge", label: "NeoForge", iconKey: "neoforged" }
     ]
 
@@ -69,17 +72,33 @@ Dialog {
             root.controller.selectMinecraftVersion(first)
     }
 
+    // The controller names a vanilla instance by its bare version ("26.3"),
+    // which reads as a number in the library rather than a name; it gets
+    // the game's name in front. A modded one ("26.3 Fabric") already says
+    // what it is.
     function refreshSuggestedName() {
-        if (!root.nameEdited && root.controller)
-            nameField.text = root.controller.suggestedName()
+        if (root.nameEdited || !root.controller || root.mode === "import")
+            return
+        var suggested = root.controller.suggestedName()
+        if (suggested.length > 0 && root.controller.loader.length === 0)
+            suggested = qsTr("Minecraft %1").arg(suggested)
+        nameField.text = suggested
     }
 
+    // Import names the instance after the pack once one is picked; until
+    // then the field stays empty (its placeholder says so) instead of
+    // carrying over the create pane's "Minecraft 26.3".
     function refreshImportName() {
         if (root.nameEdited || !root.controller)
             return
-        var suggested = root.controller.suggestedNameForImportSource(root.importSource)
-        if (suggested.length > 0)
-            nameField.text = suggested
+        nameField.text = root.controller.suggestedNameForImportSource(root.importSource)
+    }
+
+    onModeChanged: {
+        if (root.mode === "import")
+            refreshImportName()
+        else
+            refreshSuggestedName()
     }
 
     // Called from the URL field, the file picker and the drop area alike,
@@ -109,47 +128,13 @@ Dialog {
     closePolicy: root.creating ? Popup.NoAutoClose : Popup.CloseOnEscape
     title: root.mode === "import" ? qsTr("Import instance") : qsTr("New instance")
 
-    // A custom header rather than Style/Dialog.qml's plain title-only one
-    // (see DialogHeader.qml's own doc comment on when that is worth it):
     // MeshMC's own mark, small and quiet, leading the title -- the second
     // of the two places design-plan.md §1 reuses it as a recurring tell.
-    // The same quiet block-texture wash Settings/Discover carry (see
-    // AmbientPattern.qml), scaled down to a header: inset by the dialog's
-    // own corner radius and faded out at its sides and foot, so it never
-    // pokes past the rounded outline or ends on a hard edge.
-    header: Item {
-        implicitHeight: Theme.space.lg + Math.max(Theme.control.height, headerLabel.implicitHeight)
-
-        AmbientPattern {
-            anchors.fill: parent
-            anchors.topMargin: 1
-            anchors.leftMargin: Theme.radius.xl
-            anchors.rightMargin: Theme.radius.xl
-            fadeBottom: true
-            fadeStart: 0.25
-            fadeSides: Theme.space.xl
-            fadeColor: Theme.palette.surfaceOverlay
-        }
-
-        BrandMark {
-            id: headerMark
-            x: Theme.space.lg
-            anchors.verticalCenter: headerLabel.verticalCenter
-            size: Theme.control.height - 10
-        }
-
-        Label {
-            id: headerLabel
-            y: Theme.space.lg
-            anchors.left: headerMark.right
-            anchors.leftMargin: Theme.space.sm
-            anchors.right: parent.right
-            anchors.rightMargin: Theme.space.lg
-            text: root.title
-            elide: Label.ElideRight
-            font.pixelSize: Theme.type.title.pixelSize
-            font.weight: Theme.type.title.weight
-        }
+    // DialogHeader's plain row, the same geometry every other dialog's
+    // title has.
+    header: DialogHeader {
+        title: root.title
+        brand: true
     }
 
     // root.mode itself is left alone here -- the integrator sets it right
@@ -162,7 +147,10 @@ Dialog {
         root.importSource = ""
         sourceField.text = ""
         selectDefaultVersion()
-        refreshSuggestedName()
+        if (root.mode === "import")
+            refreshImportName()
+        else
+            refreshSuggestedName()
     }
 
     Connections {
@@ -222,11 +210,14 @@ Dialog {
                 ToolTip.text: qsTr("Change icon")
                 onClicked: iconPicker.open()
 
+                // A control, so a control's corner; hover moves the border
+                // alone.
                 background: Rectangle {
-                    radius: Theme.radius.lg
-                    color: iconButton.hovered ? Theme.palette.hoverOverlay : Theme.palette.surfaceRaised
+                    radius: Theme.radius.sm
+                    color: Theme.palette.surfaceRaised
                     border.width: 1
                     border.color: iconButton.hovered ? Theme.palette.borderStrong : Theme.palette.border
+                    Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                 }
                 contentItem: Item {
                     Image {
@@ -243,7 +234,7 @@ Dialog {
                         anchors.margins: Theme.space.xxs
                         width: Theme.icon.md
                         height: width
-                        radius: width / 2
+                        radius: Theme.radius.sm
                         color: Theme.palette.surfaceOverlay
                         border.width: 1
                         border.color: Theme.palette.border
@@ -274,6 +265,7 @@ Dialog {
                     width: parent.width
                     enabled: !root.creating
                     selectByMouse: true
+                    placeholderText: root.mode === "import" ? qsTr("Named after the pack") : ""
                     onTextEdited: root.nameEdited = text.length > 0
                 }
             }
@@ -370,8 +362,10 @@ Dialog {
                     required property var time
                     readonly property bool selected: !!root.controller && root.controller.selectedMinecraftVersion === version
 
-                    width: versions.width - Theme.space.md
-                    height: Theme.control.height + 4
+                    // Full width: the scroll bar overlays the rows rather
+                    // than keeping a gutter beside them.
+                    width: versions.width
+                    height: Theme.control.height
                     hoverEnabled: true
                     onClicked: root.controller.selectMinecraftVersion(version)
 
@@ -387,31 +381,57 @@ Dialog {
                             Layout.leftMargin: Theme.space.md
                             Layout.preferredWidth: 140
                             text: versionRow.version
-                            color: versionRow.selected ? Theme.palette.accent : Theme.palette.textPrimary
+                            color: versionRow.selected ? Theme.palette.accentText : Theme.palette.textPrimary
                             font.family: Theme.font.family
                             font.pixelSize: Theme.type.body.pixelSize
                             font.weight: versionRow.selected ? Font.Bold : Font.Medium
                         }
+                        // Releases are the list's default and need no
+                        // badge on every row; a snapshot or an old beta/
+                        // alpha does, once the switches above show them.
                         StatusBadge {
-                            tone: versionRow.type === "release" ? "success"
-                                : versionRow.type === "snapshot" ? "warning" : "neutral"
+                            visible: versionRow.type !== "release"
+                            tone: versionRow.type === "snapshot" ? "warning" : "neutral"
                             text: root.typeLabel(versionRow.type)
                         }
-                        StatusBadge {
+                        // The suggestion in the scheme's own accent -- the
+                        // palette has no blue outside the Diamond scheme.
+                        Rectangle {
                             visible: versionRow.recommended
-                            tone: "info"
-                            text: qsTr("Recommended")
+                            implicitWidth: recommendedLabel.implicitWidth + Theme.space.sm * 2
+                            implicitHeight: recommendedLabel.implicitHeight + Theme.space.xxs * 2
+                            radius: Theme.radius.sm
+                            color: Theme.palette.accentSubtle
+                            Text {
+                                id: recommendedLabel
+                                anchors.centerIn: parent
+                                text: qsTr("Recommended")
+                                color: Theme.palette.accentText
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.type.caption.pixelSize
+                                font.weight: Font.Medium
+                            }
                         }
                         Item { Layout.fillWidth: true }
                         Text {
                             Layout.rightMargin: Theme.space.md
-                            text: versionRow.time ? Qt.formatDate(versionRow.time, Qt.locale().dateFormat(Locale.ShortFormat)) : ""
+                            text: versionRow.time ? Format.calendarDate(new Date(versionRow.time)) : ""
                             color: Theme.palette.textTertiary
                             font.family: Theme.font.family
                             font.pixelSize: Theme.type.caption.pixelSize
                         }
                     }
                 }
+            }
+
+            // The last visible version fades into the list's own surface
+            // instead of being cut through mid-row.
+            ScrollFade {
+                anchors.left: versions.left
+                anchors.right: versions.right
+                anchors.bottom: versions.bottom
+                flickable: versions
+                fadeTo: Theme.palette.surfaceSunken
             }
 
             BusyIndicator {
@@ -492,8 +512,10 @@ Dialog {
                         required property var modelData
                         readonly property bool selected: (root.controller ? root.controller.loader : "") === modelData.value
 
+                        // Equal shares of the row, whatever the label.
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 92
+                        Layout.preferredWidth: 1
+                        Layout.preferredHeight: root.loaderTileHeight
                         enabled: !root.creating
                         hoverEnabled: true
                         checkable: true
@@ -501,30 +523,47 @@ Dialog {
                         Accessible.name: modelData.label
                         onClicked: if (root.controller) root.controller.loader = modelData.value
 
+                        // One surface for every tile; the chosen one gets
+                        // the tile picker's accent ring, hover only lifts
+                        // the border.
                         background: Rectangle {
                             radius: Theme.radius.lg
-                            color: loaderCard.selected ? Theme.palette.accentSubtle
-                                 : loaderCard.hovered ? Theme.palette.hoverOverlay : Theme.palette.surfaceRaised
+                            color: Theme.palette.surfaceRaised
                             border.width: loaderCard.selected ? 2 : 1
-                            border.color: loaderCard.selected ? Theme.palette.accent : Theme.palette.border
-                            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                            border.color: loaderCard.selected ? Theme.palette.accent
+                                        : loaderCard.hovered ? Theme.palette.borderStrong : Theme.palette.border
+                            Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                         }
 
                         contentItem: Item {
                             Column {
                                 anchors.centerIn: parent
-                                spacing: Theme.space.xs
+                                spacing: Theme.space.sm
 
-                                Image {
+                                // Every logo sits in the same well at the
+                                // same size, so a mark that ships on its
+                                // own square (Forge's navy, Quilt's
+                                // purple) reads as a logo on a plate like
+                                // the rest, not as a box only it has.
+                                Rectangle {
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    width: 40
+                                    width: root.logoWell
                                     height: width
-                                    source: "image://instanceicon/" + loaderCard.modelData.iconKey
-                                    sourceSize: Qt.size(width, height)
-                                    fillMode: Image.PreserveAspectFit
-                                    smooth: true
-                                    mipmap: true
-                                    opacity: loaderCard.selected || loaderCard.hovered ? 1 : 0.85
+                                    radius: Theme.radius.sm
+                                    color: Theme.palette.surfaceSunken
+                                    border.width: 1
+                                    border.color: Theme.palette.border
+
+                                    Image {
+                                        anchors.centerIn: parent
+                                        width: root.logoSize
+                                        height: width
+                                        source: "image://instanceicon/" + loaderCard.modelData.iconKey
+                                        sourceSize: Qt.size(width * 2, height * 2)
+                                        fillMode: Image.PreserveAspectFit
+                                        smooth: true
+                                        mipmap: true
+                                    }
                                 }
 
                                 Text {
@@ -602,8 +641,11 @@ Dialog {
                                 root.refreshImportName()
                             }
                         }
+                        // A bordered (default) button, not a flat one: a
+                        // flat button's invisible side padding counted in
+                        // the centring and pulled the field + button group
+                        // visibly left of the drop zone's middle.
                         Button {
-                            flat: true
                             enabled: !root.creating
                             text: qsTr("Browse…")
                             icon.source: Icons.url("folder")
@@ -617,7 +659,7 @@ Dialog {
                         visible: !root.creating && root.importSource.trim().length > 0
                                  && !!root.controller
                                  && !root.controller.isImportSourceValid(root.importSource.trim())
-                        text: qsTr("Doesn't look like a modpack file or link yet -- pick a .zip/.mrpack/.jar that exists, or paste a direct download URL.")
+                        text: qsTr("This doesn't look like a modpack file or link. Pick a .zip, .mrpack or .jar file, or paste a direct download link.")
                         color: Theme.palette.danger
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.caption.pixelSize
@@ -628,7 +670,7 @@ Dialog {
             Text {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
-                text: qsTr("Packs from CurseForge, FTB, ATLauncher and Technic can be imported the same way, from their exported .zip file -- browsing those sites here is coming later.")
+                text: qsTr("Packs exported from CurseForge, FTB, ATLauncher or Technic import the same way, from their .zip file.")
                 color: Theme.palette.textTertiary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize

@@ -45,14 +45,29 @@ Rectangle {
     // Managed pack, ...) now cover everything the widget "Classic editor"
     // opened, so that button is gone there -- see InstancePage.qml.
     property bool showEdit: true
-    // False on the instance page: nothing under the QML shell answers the
-    // "more" menu yet (see InstancePage.qml), and a button that opens
-    // nothing is worse than no button.
+    // The folder button; off where the folder already sits in `menu`.
+    property bool showFolder: true
+    // The ⋯ button. With `menu` set it opens that menu right under itself
+    // (the instance page's own actions); otherwise it emits menuRequested().
     property bool showMenu: true
+    property Menu menu: null
     // A one-line strip: title and tags beside the icon, actions on the
     // right -- for tabs whose content needs the height (the instance page
     // outside its Overview).
     property bool slim: false
+    // Without Play there is no primary action to lead the row under the
+    // title, so the remaining buttons sit on the right instead of trailing
+    // the tags on a line of their own.
+    readonly property bool actionsBeside: root.slim || !root.showPlay
+
+    // Sizes of the banner and its icon tile in each of the three modes.
+    readonly property int minHeight: compact ? 184 : 240
+    readonly property int tileSize: slim ? 56 : compact ? 96 : 124
+    readonly property int tileIconSize: slim ? 40 : compact ? 68 : 88
+    // How far the tile's soft shadow spreads past the tile, and how far it
+    // drops below it.
+    readonly property int shadowSpread: 3
+    readonly property int shadowDrop: 1
 
     signal playRequested()
     signal stopRequested()
@@ -61,7 +76,7 @@ Rectangle {
     signal menuRequested()
 
     implicitHeight: slim ? content.implicitHeight + Theme.space.lg * 2
-                         : Math.max(compact ? 184 : 240, content.implicitHeight + (compact ? Theme.space.xl : Theme.space.xxl) * 2)
+                         : Math.max(root.minHeight, content.implicitHeight + (compact ? Theme.space.xl : Theme.space.xxl) * 2)
     Behavior on implicitHeight { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
     radius: Theme.radius.xl
     border.width: 1
@@ -83,6 +98,9 @@ Rectangle {
         // The tile to the right already carries the icon; showing it again,
         // huge, in the backdrop would just be clutter.
         iconKey: ""
+        // Same id the instance's card and play-bar strip hash, so a
+        // screenshot-less instance shows the same fallback scene everywhere.
+        seed: root.instanceId
         scrim: "horizontal"
     }
 
@@ -91,14 +109,14 @@ Rectangle {
         anchors.left: parent.left
         anchors.leftMargin: root.slim ? Theme.space.lg : Theme.space.xxl
         anchors.right: parent.right
-        anchors.rightMargin: root.slim ? slimActions.width + Theme.space.lg * 2 : Theme.space.xxl
+        anchors.rightMargin: root.actionsBeside ? besideActions.width + Theme.space.lg * 2 : Theme.space.xxl
         anchors.verticalCenter: parent.verticalCenter
         spacing: root.slim ? Theme.space.md : Theme.space.xl
 
         Item {
             id: tile
             anchors.verticalCenter: parent.verticalCenter
-            width: root.slim ? 56 : root.compact ? 96 : 124
+            width: root.tileSize
             height: width
 
             // A soft shadow: a larger, blurred-by-opacity copy of the tile
@@ -108,15 +126,17 @@ Rectangle {
             // colour, so it still reads as raised.
             Rectangle {
                 anchors.fill: parent
-                anchors.margins: -3
-                anchors.topMargin: 1
-                radius: Theme.radius.xl + 3
+                anchors.margins: -root.shadowSpread
+                anchors.topMargin: root.shadowDrop
+                radius: Theme.radius.lg
                 color: Qt.rgba(0, 0, 0, Theme.dark ? 0.35 : 0.22)
             }
 
+            // The instance's identity, so a card corner (lg), never pill or
+            // hero-sized.
             Rectangle {
                 anchors.fill: parent
-                radius: Theme.radius.xl
+                radius: Theme.radius.lg
                 border.width: 1
                 border.color: Qt.rgba(1, 1, 1, 0.08)
                 gradient: Gradient {
@@ -126,7 +146,7 @@ Rectangle {
 
                 Image {
                     anchors.centerIn: parent
-                    width: root.slim ? 40 : root.compact ? 68 : 88
+                    width: root.tileIconSize
                     height: width
                     source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
                     sourceSize: Qt.size(width, height)
@@ -161,8 +181,7 @@ Rectangle {
                 // themes; see Theme.media.
                 color: root.hasPhoto ? Theme.media.text : Theme.palette.textPrimary
                 font.family: Theme.font.family
-                font.pixelSize: root.slim ? Theme.type.heading.pixelSize + 2
-                              : root.compact ? Theme.type.display.pixelSize - 4 : Theme.type.display.pixelSize + 2
+                font.pixelSize: root.slim ? Theme.type.heading.pixelSize : Theme.type.display.pixelSize
                 font.weight: Font.Bold
                 font.letterSpacing: -0.5
             }
@@ -190,15 +209,16 @@ Rectangle {
                     readonly property string played: Format.playTime(root.totalTimePlayed)
                     visible: played.length > 0
                     text: qsTr("%1 played").arg(played)
+                    iconName: "play"
                     onMedia: root.hasPhoto
                 }
             }
 
             // Zero height, but the column's spacing around it doubles the
             // gap between the tags and the buttons.
-            Item { width: 1; height: 0; visible: !root.slim }
+            Item { width: 1; height: 0; visible: !root.actionsBeside }
             Loader {
-                active: !root.slim
+                active: !root.actionsBeside
                 visible: active
                 sourceComponent: actionsComponent
             }
@@ -211,7 +231,7 @@ Rectangle {
                 Text {
                     width: parent.width
                     text: root.launchProgress >= 0
-                          ? qsTr("%1 · %2%").arg(root.launchStatus).arg(Math.round(root.launchProgress * 100))
+                          ? qsTr("%1, %2%").arg(root.launchStatus).arg(Math.round(root.launchProgress * 100))
                           : root.launchStatus
                     elide: Text.ElideRight
                     color: root.hasPhoto ? Theme.media.textSecondary : Theme.palette.textSecondary
@@ -227,7 +247,8 @@ Rectangle {
         }
     }
 
-    // The actions, below the title normally and on the right when slim.
+    // The actions, below the title when Play leads them, on the right
+    // otherwise (see actionsBeside).
     Component {
         id: actionsComponent
         Row {
@@ -252,6 +273,7 @@ Rectangle {
             }
 
             IconButton {
+                visible: root.showFolder
                 size: Theme.control.heightLg
                 flat: false
                 iconName: "folder"
@@ -260,22 +282,34 @@ Rectangle {
             }
 
             IconButton {
+                id: menuButton
                 visible: root.showMenu
-                size: Theme.control.heightLg
+                size: root.slim ? Theme.control.height : Theme.control.heightLg
                 flat: false
                 iconName: "more"
                 tip: qsTr("More")
-                onClicked: root.menuRequested()
+                Accessible.role: Accessible.ButtonMenu
+                onClicked: {
+                    if (!root.menu) {
+                        root.menuRequested()
+                    } else if (root.menu.visible) {
+                        root.menu.close()
+                    } else {
+                        // Right-aligned under the button, like any ⋯ menu.
+                        root.menu.popup(menuButton, menuButton.width - root.menu.width,
+                                        menuButton.height + Theme.space.xs)
+                    }
+                }
             }
         }
     }
 
     Loader {
-        id: slimActions
-        active: root.slim
+        id: besideActions
+        active: root.actionsBeside
         visible: active
         anchors.right: parent.right
-        anchors.rightMargin: Theme.space.lg
+        anchors.rightMargin: root.slim ? Theme.space.lg : Theme.space.xl
         anchors.verticalCenter: parent.verticalCenter
         sourceComponent: actionsComponent
     }

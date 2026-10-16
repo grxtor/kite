@@ -67,10 +67,13 @@ Dialog {
     property var watcher: null
     readonly property bool busy: !!root.watcher && root.watcher.running
     property string pickError: ""
-    // Same per-account fallback tint as AccountsPage's own hero stage
-    // (design-plan.md §5/§9) -- this stage duplicates that idiom
-    // independently, so it needs the same fix, not just the hero card.
-    readonly property color stageTint: Format.hashTint(root.accountId)
+    // The body render's box on the stage below: 1:2, the skin's own 16x32
+    // frame, so the default figure under it lines up pixel for pixel.
+    readonly property int figureWidth: 76
+    readonly property int figureHeight: 152
+    readonly property int floorWidth: 96
+    readonly property int floorHeight: 16
+    readonly property int floorGap: 8
 
     onOpened: {
         reload()
@@ -99,9 +102,9 @@ Dialog {
             spacing: Theme.space.lg
 
             // The stage: a floor shadow and either the account's real
-            // skin body or a neutral, per-account-tinted silhouette
-            // standing on it -- the same idiom AccountsPage's own hero card
-            // uses, scaled down to fit here (design-plan.md §5/§9).
+            // skin body or the neutral default figure standing on it --
+            // the same idiom AccountsPage's own hero card uses, scaled down
+            // to fit here.
             Item {
                 id: stage
                 Layout.preferredWidth: 132
@@ -109,35 +112,40 @@ Dialog {
                 Layout.alignment: Qt.AlignTop
 
                 // Soft floor shadow the figure appears to stand on, matching
-                // AccountsPage's hero exactly -- a flattened pill, not a
-                // glow behind the figure (design-plan.md "no glows").
+                // AccountsPage's hero -- a flattened pill, not a glow behind
+                // the figure.
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottom: parent.bottom
-                    width: 96; height: 16
+                    width: root.floorWidth
+                    height: root.floorHeight
                     radius: height / 2
-                    color: Format.shade(root.stageTint, Theme.dark ? 0.45 : 0.55, 0.6)
-                    opacity: 0.30
+                    color: Theme.palette.shadow
                 }
 
+                // Shown until the render is ready, and in place of one that
+                // never loads; same box as the render, so it is covered
+                // exactly once the real skin arrives.
                 SkinSilhouette {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 10
-                    unit: 0.87
-                    opacity: 0.65
-                    color: Format.shade(root.stageTint, Theme.dark ? 0.62 : 0.42, 0.5)
+                    anchors.bottomMargin: root.floorGap
+                    width: root.figureWidth
+                    height: root.figureHeight
+                    visible: editorBody.status !== Image.Ready
                 }
 
                 Image {
+                    id: editorBody
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottom: parent.bottom
-                    width: 76
-                    height: 152
+                    anchors.bottomMargin: root.floorGap
+                    width: root.figureWidth
+                    height: root.figureHeight
                     fillMode: Image.PreserveAspectFit
                     smooth: false
                     source: root.accountId.length > 0 ? "image://accountface/body/" + root.accountId + "?rev=" + root.rev : ""
-                    sourceSize: Qt.size(152, 304)
+                    sourceSize: Qt.size(root.figureWidth * 2, root.figureHeight * 2)
                 }
             }
 

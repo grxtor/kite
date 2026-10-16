@@ -17,6 +17,15 @@ import MeshMC.Theme
  * used elsewhere: the Home page's one accent-filled control is the
  * persistent play bar's own Play (design-plan.md Principle 1). Clicking the
  * card body itself opens the instance page instead of playing it.
+ *
+ * Two bands: a header at the top-left -- the instance's icon on a small
+ * tile, its name, and its version as a caption line -- and a footer row of
+ * facts (when last played, how long) level with Play, which owns the
+ * bottom-right corner. The facts stay on one row short of Play, dropping
+ * the least useful one on a narrow card. There is always a picture under
+ * all of it -- a screenshot, or else one of CoverArt's rendered scenes --
+ * behind CoverArt's horizontal scrim, so the text, tags and icon tile
+ * always use the media colours, in either theme.
  */
 Item {
     id: root
@@ -32,7 +41,7 @@ Item {
     required property string loader
     required property color iconTint
     // Newest screenshot url (InstanceList's coverImage role), or "" -- same
-    // source as InstanceCard's cover; CoverArt falls back to a tinted plate.
+    // source as InstanceCard's cover; CoverArt falls back to a rendered scene.
     required property string coverImage
     // Set by LaunchTask around the game process exit -- a calm reminder,
     // not an alarm.
@@ -42,8 +51,10 @@ Item {
     signal playRequested()
     signal stopRequested()
 
-    readonly property bool hasPhoto: root.coverImage.length > 0
     readonly property bool hovered: hoverHandler.hovered
+    readonly property string playTimeText: Format.playTime(root.totalTimePlayed)
+    // The header's icon tile: Theme.icon.lg plus a thin frame around it.
+    readonly property int iconTileSize: 32
 
     implicitWidth: 336
     implicitHeight: 148
@@ -81,55 +92,115 @@ Item {
         CoverArt {
             id: art
             anchors.fill: parent
+            // Inside the card's 1px border, so the border stays visible.
+            anchors.margins: card.border.width
             radius: card.radius
             source: root.coverImage
             tint: root.iconTint
-            iconKey: root.iconKey
-            iconSize: 48
+            // No icon from CoverArt: its badge sits under the scrim. The
+            // header below draws the icon over it instead.
+            iconKey: ""
             seed: root.instanceId
             scrim: "horizontal"
             hovered: root.hovered
-            matte: card.color
+            // What is really behind the card's rounded corners: the page.
+            // The card's own colour there showed as square nubs.
+            matte: Theme.palette.canvas
+        }
+
+        // -- Header: icon tile, name, version ------------------------------
+        Rectangle {
+            id: iconTile
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.margins: Theme.space.lg
+            width: root.iconTileSize
+            height: root.iconTileSize
+            radius: Theme.radius.sm
+            color: Theme.media.chip
+            border.width: 1
+            border.color: Theme.media.chipBorder
+
+            Image {
+                anchors.centerIn: parent
+                width: Theme.icon.lg
+                height: Theme.icon.lg
+                source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
+                sourceSize: Qt.size(width, height)
+                fillMode: Image.PreserveAspectFit
+                asynchronous: true
+            }
         }
 
         Column {
-            id: content
-            anchors.left: parent.left
-            anchors.leftMargin: Theme.space.lg
-            anchors.right: playButton.left
-            anchors.rightMargin: Theme.space.md
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: Theme.space.xs
+            anchors.left: iconTile.right
+            anchors.leftMargin: Theme.space.sm
+            anchors.right: parent.right
+            anchors.rightMargin: Theme.space.lg
+            anchors.verticalCenter: iconTile.verticalCenter
 
             Text {
                 width: parent.width
                 text: root.name
                 elide: Text.ElideRight
-                color: root.hasPhoto ? Theme.media.text : Theme.palette.textPrimary
+                color: Theme.media.text
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.bodyStrong.pixelSize + 1
                 font.weight: Font.Bold
             }
-
-            Row {
-                spacing: Theme.space.xs
-
-                Tag {
-                    text: Format.versionLine(root.loader, root.gameVersion)
-                    iconName: "layers"
-                    onMedia: root.hasPhoto
-                }
-                Tag {
-                    readonly property string played: Format.playTime(root.totalTimePlayed)
-                    text: played.length > 0 ? qsTr("%1 · %2").arg(Format.lastPlayed(root.lastLaunch)).arg(played)
-                                             : Format.lastPlayed(root.lastLaunch)
-                    iconName: "clock"
-                    onMedia: root.hasPhoto
-                }
+            Text {
+                width: parent.width
+                visible: text.length > 0
+                text: Format.versionLine(root.loader, root.gameVersion)
+                elide: Text.ElideRight
+                color: Theme.media.textSecondary
+                font.family: Theme.font.family
+                font.pixelSize: Theme.type.caption.pixelSize
             }
+        }
 
+        // -- Footer: facts, level with Play --------------------------------
+        // Always one row, stopping short of Play. The card's width is set by
+        // HomePage, so on a narrow card a fact that would not fit is dropped
+        // rather than wrapped: last played always shows, then the crash
+        // reminder if it fits, then play time (also on the instance page)
+        // if there is still room. Fitting is judged on implicitWidth, which does not
+        // depend on visibility, so the checks cannot feed back on themselves.
+        Row {
+            id: facts
+            anchors.left: parent.left
+            anchors.leftMargin: Theme.space.lg
+            anchors.verticalCenter: playButton.verticalCenter
+            spacing: Theme.space.xs
+
+            readonly property real room: playButton.x - Theme.space.sm - facts.x
+            readonly property real crashWidth: facts.spacing + crashBadge.implicitWidth
+            readonly property bool showCrash: root.hasCrashed
+                && lastPlayedTag.implicitWidth + facts.crashWidth <= facts.room
+            readonly property bool showPlayTime: root.playTimeText.length > 0
+                && lastPlayedTag.implicitWidth + (facts.showCrash ? facts.crashWidth : 0)
+                   + facts.spacing + playTimeTag.implicitWidth <= facts.room
+
+            Tag {
+                id: lastPlayedTag
+                text: Format.lastPlayed(root.lastLaunch)
+                onMedia: true
+            }
+            // "2 h ago" / "Yesterday" says "when" on its own; the clock goes
+            // on the play time, which would otherwise read as a bare number.
+            Tag {
+                id: playTimeTag
+                visible: facts.showPlayTime
+                text: root.playTimeText
+                iconName: "clock"
+                onMedia: true
+            }
+            // The tags' height (its label centres itself), so it sits level
+            // with them.
             StatusBadge {
-                visible: root.hasCrashed
+                id: crashBadge
+                visible: facts.showCrash
+                height: lastPlayedTag.height
                 tone: "danger"
                 text: qsTr("Crashed last time")
             }
@@ -139,7 +210,8 @@ Item {
             id: playButton
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            anchors.margins: Theme.space.md
+            // The same lg inset as the header, so all four corners match.
+            anchors.margins: Theme.space.lg
             text: root.isRunning ? qsTr("Stop") : qsTr("Play")
             icon.source: Icons.url(root.isRunning ? "stop" : "play")
             enabled: root.isRunning || root.canLaunch

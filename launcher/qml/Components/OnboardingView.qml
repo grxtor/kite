@@ -243,7 +243,7 @@ Rectangle {
                                         || name.toLowerCase().indexOf(languageSearch.text.toLowerCase()) >= 0
                                         || languageKey.toLowerCase().indexOf(languageSearch.text.toLowerCase()) >= 0
                                     readonly property bool chosen: SettingsStore.string("Language") === languageKey
-                                    width: languageList.width - Theme.space.md
+                                    width: languageList.width
                                     height: matches ? Theme.control.heightLg : 0
                                     visible: matches
                                     hoverEnabled: true
@@ -336,7 +336,7 @@ Rectangle {
                                     required property var architecture
                                     required property bool recommended
                                     readonly property bool chosen: SettingsStore.string("JavaPath") === path
-                                    width: javaList.width - Theme.space.md
+                                    width: javaList.width
                                     height: 52
                                     hoverEnabled: true
                                     onClicked: root.shell.useJava(path)

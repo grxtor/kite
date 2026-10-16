@@ -21,8 +21,18 @@ Item {
     property string directory
     signal openFolderRequested(string path)
 
-    readonly property int tileWidth: 240
-    readonly property int tileHeight: Math.round(tileWidth * 9 / 16)
+    // The narrowest a thumbnail gets before the grid drops a column.
+    readonly property int minTileWidth: 240
+    readonly property int gap: Theme.space.md
+    // Under each thumbnail: its name and date, two caption lines.
+    readonly property int captionSpacing: 1
+    readonly property int captionHeight: Theme.space.xs + Math.ceil(captionMetrics.height) * 2 + root.captionSpacing
+
+    FontMetrics {
+        id: captionMetrics
+        font.family: Theme.font.family
+        font.pixelSize: Theme.type.caption.pixelSize
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -49,12 +59,21 @@ Item {
             id: grid
             Layout.fillWidth: true
             Layout.fillHeight: true
+            // Each cell carries one gap on its right; the grid is a gap
+            // wider than the page (so `width` below includes it) and the
+            // last column's gap falls outside the content edge, so the
+            // thumbnails run flush with the toolbar's edges.
+            Layout.rightMargin: -root.gap
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             model: root.model
-            readonly property int columns: Math.max(1, Math.floor(width / (root.tileWidth + Theme.space.md)))
-            cellWidth: Math.floor(width / columns)
-            cellHeight: root.tileHeight + Theme.space.xl + Theme.space.lg
+            readonly property int columns: Math.max(1, Math.floor(width / (root.minTileWidth + root.gap)))
+            readonly property int tileWidth: Math.floor(width / columns) - root.gap
+            readonly property int tileHeight: Math.round(tileWidth * 9 / 16)
+            cellWidth: tileWidth + root.gap
+            // The caption, then the same gap as between columns.
+            cellHeight: tileHeight + root.captionHeight + root.gap
+            // Overlays the thumbnails rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
             delegate: Item {
@@ -72,27 +91,19 @@ Item {
 
                 Rectangle {
                     id: frame
-                    x: (parent.width - width) / 2
-                    width: grid.cellWidth - Theme.space.md
-                    height: root.tileHeight
-                    radius: Theme.radius.md
+                    width: grid.tileWidth
+                    height: grid.tileHeight
+                    radius: Theme.radius.lg
                     color: Theme.palette.surfaceSunken
-                    border.width: 1
-                    border.color: hover.hovered ? Theme.palette.borderStrong : Theme.palette.border
                     clip: true
-
-                    Behavior on border.color { ColorAnimation { duration: Theme.motion.fast } }
 
                     Image {
                         id: thumb
                         anchors.fill: parent
-                        anchors.margins: 1
                         source: "image://screenshot/" + encodeURIComponent(cell.path)
                         sourceSize: Qt.size(512, 512)
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
-                        scale: hover.hovered ? 1.04 : 1.0
-                        Behavior on scale { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
                     }
 
                     // A scrim over the foot of the thumbnail, dark regardless
@@ -134,6 +145,11 @@ Item {
                     }
 
                     TapHandler { onTapped: Qt.openUrlExternally(cell.url) }
+
+                    CornerMatte {
+                        cornerRadius: frame.radius
+                        outline: hover.hovered ? Theme.palette.borderStrong : Theme.palette.border
+                    }
                 }
 
                 Column {
@@ -141,7 +157,7 @@ Item {
                     anchors.topMargin: Theme.space.xs
                     x: frame.x
                     width: frame.width
-                    spacing: 1
+                    spacing: root.captionSpacing
 
                     Text {
                         width: parent.width
@@ -163,6 +179,14 @@ Item {
                 }
             }
         }
+    }
+
+    // Rows fade out at the fold instead of being sliced by the play bar.
+    ScrollFade {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        flickable: grid
     }
 
     EmptyState {

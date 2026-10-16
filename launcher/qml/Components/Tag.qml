@@ -6,9 +6,10 @@ import QtQuick
 import MeshMC.Theme
 
 /*
- * A small neutral pill for facts about something ("Fabric", "1.21.4",
+ * A small neutral chip for facts about something ("Fabric", "1.21.4",
  * "9"). StatusBadge is the coloured, stateful sibling; this one never
- * signals state, so it has no tone.
+ * signals state, so it has no tone. Corners use radius.sm, the tile radius,
+ * rather than a pill.
  */
 Rectangle {
     id: root
@@ -16,12 +17,14 @@ Rectangle {
     property string text
     property string iconName
     // On a tinted or image background the default fill would vanish; this
-    // lets such a caller ask for a darker, see-through pill instead.
+    // lets such a caller ask for a darker, see-through chip instead.
     property bool onMedia: false
 
-    implicitWidth: row.implicitWidth + Theme.space.sm * 2
+    // Whole pixels, so a row of tags keeps its gaps exact and 1px borders
+    // stay sharp.
+    implicitWidth: Math.ceil(row.implicitWidth) + Theme.space.sm * 2
     implicitHeight: Theme.control.heightSm - Theme.space.xs
-    radius: Theme.radius.sm + 2
+    radius: Theme.radius.sm
     color: root.onMedia ? Theme.media.chip : Theme.palette.surfaceOverlay
     border.width: 1
     border.color: root.onMedia ? Theme.media.chipBorder : Theme.palette.border

@@ -47,13 +47,28 @@ QtObject {
     // wide hero shape), which are capped at `md`/`lg` instead. A blocky game
     // launcher asking to look professional doesn't have to be as rounded as
     // a fintech app; see design-plan.md §1/§2.7.
+    // Three corner sizes in practice: 6 for controls and small tiles (sm and
+    // md are the same value, md kept as the controls' name), 12 for cards,
+    // 16 for large surfaces (dialogs, heroes). xs is for hairline details
+    // only. Never arithmetic on these (no `md + 2`): an off-scale corner is
+    // exactly the inconsistency this scale exists to prevent.
     readonly property QtObject radius: QtObject {
         readonly property int xs: 2
-        readonly property int sm: 4
-        readonly property int md: 8
+        readonly property int sm: 6
+        readonly property int md: 6
         readonly property int lg: 12
         readonly property int xl: 16
         readonly property int pill: 999
+    }
+
+    // Page layout: on a wide window a page's content stops growing at this
+    // width and centres, instead of hugging the left edge with an empty
+    // band on the right.
+    readonly property QtObject layout: QtObject {
+        readonly property int maxContentWidth: 1280
+        // The bottom play bar's height -- and the sidebar's foot band, which
+        // matches it so their top edges form one line across the window.
+        readonly property int barHeight: 84
     }
 
     readonly property QtObject control: QtObject {
@@ -228,6 +243,15 @@ QtObject {
             readonly property real lineHeight: 1.15
             // lineHeight is a multiplier for Text; this is the same line in pixels,
             // for anything that has to reserve room for text before it exists.
+            readonly property real lineHeightPx: pixelSize * lineHeight
+        }
+        // Lettering laid over artwork (Home's header greeting) -- outside
+        // the page-header ceiling above because it is part of the picture,
+        // not a header over a work area.
+        readonly property QtObject banner: QtObject {
+            readonly property int pixelSize: 32
+            readonly property int weight: Font.Bold
+            readonly property real lineHeight: 1.1
             readonly property real lineHeightPx: pixelSize * lineHeight
         }
     }

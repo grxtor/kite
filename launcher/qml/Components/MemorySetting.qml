@@ -29,9 +29,20 @@ SettingRow {
     readonly property int stored: root.source.number(root.key)
     // Past three quarters of the machine's RAM the game starts competing
     // with the OS and everything else that's open.
-    readonly property bool tooMuch: slider.value > systemMiB * 0.75
+    readonly property real comfortableShare: 0.75
+    readonly property bool tooMuch: slider.value > systemMiB * comfortableShare
+
+    // The slider and the system-memory bar under it share one width, and
+    // the amount sits in a fixed-width slot at the slider's right end, so
+    // "6 GiB" never shifts the slider as it grows to "12.5 GiB".
+    readonly property int sliderWidth: 240
+    readonly property int valueWidth: 72
 
     property string hint
+    // The label sits beside the slider, not centred on the slider and the
+    // bar under it together.
+    topAligned: true
+    controlLineHeight: sliderRow.height
     description: tooMuch ? qsTr("That is most of this computer's %1 of memory; the system and other programs may slow down.").arg(describe(systemMiB))
                          : hint
 
@@ -42,7 +53,7 @@ SettingRow {
 
     Column {
         width: sliderRow.width
-        spacing: Theme.space.sm
+        spacing: Theme.space.xs
 
         Row {
             id: sliderRow
@@ -51,7 +62,7 @@ SettingRow {
             Slider {
                 id: slider
                 anchors.verticalCenter: parent.verticalCenter
-                width: 240
+                width: root.sliderWidth
                 from: root.floor
                 to: root.ceiling
                 stepSize: root.step
@@ -71,21 +82,24 @@ SettingRow {
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 72
+                width: root.valueWidth
                 horizontalAlignment: Text.AlignRight
                 text: root.describe(Math.round(slider.value))
                 color: root.tooMuch ? Theme.palette.warning : Theme.palette.textPrimary
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
-                font.weight: Font.DemiBold
+                font.pixelSize: Theme.type.bodyStrong.pixelSize
+                font.weight: Theme.type.bodyStrong.weight
             }
         }
 
         // How much of the machine's own RAM that allocation is, at a
         // glance -- the slider alone says "2.5 GiB" but not "of how much".
+        // Inset by the slider's own padding so the bar starts and ends
+        // exactly where the slider's track does.
         Column {
-            width: parent.width
-            spacing: Theme.space.xxs
+            x: slider.leftPadding
+            width: slider.availableWidth
+            spacing: Theme.space.xs
 
             Rectangle {
                 width: parent.width
@@ -106,8 +120,8 @@ SettingRow {
                 // Past this line the game starts competing with the OS for
                 // memory -- the same threshold `tooMuch` itself uses.
                 Rectangle {
-                    x: parent.width * 0.75 - width / 2
-                    width: 2
+                    x: parent.width * root.comfortableShare - width / 2
+                    width: Theme.space.xxs
                     height: parent.height
                     color: Theme.palette.surface
                     opacity: 0.7
@@ -115,7 +129,7 @@ SettingRow {
             }
 
             Text {
-                text: qsTr("%1 of %2 system memory").arg(root.describe(Math.round(slider.value))).arg(root.describe(root.systemMiB))
+                text: qsTr("%1 system memory").arg(root.describe(root.systemMiB))
                 color: Theme.palette.textTertiary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize

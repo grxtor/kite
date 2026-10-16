@@ -84,12 +84,18 @@ Popup {
         RowLayout {
             Layout.fillWidth: true
             Layout.margins: Theme.space.sm
+            // The same inset as the account rows below (ItemDelegate's
+            // horizontal padding), so avatars and names share one column.
+            Layout.leftMargin: Theme.space.md
+            Layout.rightMargin: Theme.space.md
             spacing: Theme.space.sm
 
             Rectangle {
                 Layout.preferredWidth: 40
                 Layout.preferredHeight: 40
-                radius: width / 2
+                // A small square, like the account chip and the Accounts
+                // page: an account's face is never a circle in this app.
+                radius: Theme.radius.sm
                 color: Theme.palette.accentSubtle
                 border.width: 1
                 border.color: Theme.palette.border
@@ -182,7 +188,7 @@ Popup {
                     Rectangle {
                         Layout.preferredWidth: 40
                         Layout.preferredHeight: 40
-                        radius: width / 2
+                        radius: Theme.radius.sm
                         color: Theme.palette.accentSubtle
                         border.width: 1
                         border.color: Theme.palette.border

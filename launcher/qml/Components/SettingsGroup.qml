@@ -19,9 +19,10 @@ Column {
 
     spacing: Theme.space.sm
 
+    // Title and description start on the cards' own left edge -- the same
+    // x as the section heading above them -- not indented past it.
     Text {
         visible: root.title.length > 0
-        leftPadding: Theme.space.xs
         text: root.title
         color: Theme.palette.textPrimary
         font.family: Theme.font.family
@@ -32,7 +33,6 @@ Column {
     Text {
         visible: root.description.length > 0
         width: parent.width
-        leftPadding: Theme.space.xs
         text: root.description
         wrapMode: Text.Wrap
         color: Theme.palette.textTertiary
@@ -58,12 +58,24 @@ Column {
         }
     }
 
+    // A row's `visible` is its effective visibility, so it reads false for
+    // every row while the whole group is hidden (e.g. on a tab not shown
+    // yet). Re-mark whenever the group itself or any row changes visibility,
+    // instead of only when rows are added -- otherwise a group built while
+    // hidden never gets its hairlines.
+    onVisibleChanged: root.markRows()
+    property var _watchedRows: []
+
     function markRows() {
         var first = true
         for (var i = 0; i < rowsColumn.children.length; ++i) {
             var row = rowsColumn.children[i]
             if (row.showDivider === undefined)
                 continue
+            if (root._watchedRows.indexOf(row) < 0) {
+                root._watchedRows.push(row)
+                row.visibleChanged.connect(root.markRows)
+            }
             row.showDivider = !first && row.visible
             if (row.visible)
                 first = false

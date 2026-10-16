@@ -8,14 +8,16 @@ import MeshMC.Theme
 
 /*
  * The Home page: one purpose, "get back to what I was doing". The default
- * start page and the sidebar's first item. A welcome line, the most
- * recently played instances ("Jump back in"), the worlds played most
- * recently across all of them ("Recent worlds"), and a slim strip of the
- * whole library -- all from models the shell already keeps locally
- * (recentModel/recentWorlds), so opening this page makes no network call.
+ * start page and the sidebar's first item. A welcome card over MeshMC's own
+ * rendered artwork for the time of day, the most recently played instances
+ * ("Jump back in"), the worlds played most recently across all of them
+ * ("Recent worlds"), and the library at a glance -- all from models the
+ * shell already keeps locally (recentModel/recentWorlds), so opening this
+ * page makes no network call.
  *
- * The page's own header (title + profile button) is TopBar, in Main.qml,
- * the same as every other page -- this file only owns the content below it.
+ * Like every other page it sits under TopBar (title + account button), and
+ * its content stops growing at Theme.layout.maxContentWidth and centres, so
+ * a wide window does not leave everything hugging the left edge.
  */
 Item {
     id: root
@@ -26,10 +28,81 @@ Item {
      * third copy made it a repeat rather than a one-off (project DRY rule).
      */
     component SectionHeading: Text {
+        // One height for every heading, the same as a header's trailing
+        // LinkButton, so every heading-to-content gap on the page matches.
+        height: Theme.control.heightSm
+        verticalAlignment: Text.AlignVCenter
         color: Theme.palette.textPrimary
         font.family: Theme.font.family
         font.pixelSize: Theme.type.title.pixelSize + 1
         font.weight: Font.Bold
+    }
+
+    /*
+     * One entry of "Your library": the instance's icon, its name and its
+     * version line, the whole row clickable -- a labelled list rather than
+     * a strip of bare icons, which read as a debug view.
+     */
+    component LibraryEntry: AbstractButton {
+        id: entry
+
+        required property string instanceId
+        required property string name
+        required property string iconKey
+        required property bool isRunning
+        required property string gameVersion
+        required property string loader
+
+        implicitHeight: Theme.control.heightLg + Theme.space.sm
+        hoverEnabled: true
+
+        Accessible.name: entry.name
+
+        background: Rectangle {
+            radius: Theme.radius.sm
+            color: entry.down ? Theme.palette.pressedOverlay
+                 : entry.hovered ? Theme.palette.hoverOverlay : "transparent"
+            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        }
+
+        contentItem: Row {
+            spacing: Theme.space.md
+            leftPadding: Theme.space.xs
+
+            HomeLibraryTile {
+                anchors.verticalCenter: parent.verticalCenter
+                instanceId: entry.instanceId
+                name: entry.name
+                iconKey: entry.iconKey
+                isRunning: entry.isRunning
+                // The row is the button; the tile is only the picture.
+                enabled: false
+            }
+
+            Column {
+                anchors.verticalCenter: parent.verticalCenter
+                width: entry.width - Theme.control.heightLg - Theme.space.md * 2
+                spacing: Theme.space.xxs
+
+                Text {
+                    width: parent.width
+                    text: entry.name
+                    elide: Text.ElideRight
+                    color: Theme.palette.textPrimary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.label.pixelSize
+                    font.weight: Theme.type.label.weight
+                }
+                Text {
+                    width: parent.width
+                    text: Format.versionLine(entry.loader, entry.gameVersion)
+                    elide: Text.ElideRight
+                    color: Theme.palette.textTertiary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.caption.pixelSize
+                }
+            }
+        }
     }
 
     // Most recently played instances first; never-played ones left out
@@ -40,7 +113,12 @@ Item {
     // QmlShell.recentWorlds -- most recently played worlds across every
     // instance; see RecentWorldsModel's own class comment.
     property var recentWorldsModel: null
+    // The signed-in account's name, for the welcome line.
     property string accountName: ""
+
+    // "day", "golden" or "night" to pin the header scene (review snapshots);
+    // empty follows the local clock.
+    property string moodOverride: ""
 
     signal launchRequested(string id)
     signal stopRequested(string id)
@@ -57,60 +135,94 @@ Item {
     readonly property int recentCount: root.recentModel && root.recentModel.count !== undefined ? root.recentModel.count : 0
     readonly property bool hasLibrary: root.libraryCount > 0
 
-    // -- Backdrop: the most recently played instance's own cover art -------
-    // Bounded to the page's own top region (design-plan.md §5's "visible
-    // tonal variation... within the first ~320px"), behind "Welcome back"/
-    // "Jump back in" -- recentModel is already most-recent-first, so the
-    // one this page needs is just its own first row.
-    // Always visible, even with zero recents: a real screenshot wins when
-    // there is one, otherwise `wideHero` draws Home's own pixel-art
-    // panorama rather than nothing (or, previously, a per-instance plate
-    // stretched across a much wider band than it was designed for).
-    PageBackdrop {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        height: 320
-        fadeBottom: true
-        wideHero: true
-        cover: firstRecent.coverImage
-        tint: firstRecent.iconTint
-    }
+    // The content column: the page minus its padding, never wider than
+    // Theme.layout.maxContentWidth, centred.
+    readonly property int contentWidth: Math.min(root.width - root.pagePadding * 2, Theme.layout.maxContentWidth)
+    readonly property int contentX: Math.round((root.width - root.contentWidth) / 2)
 
-    // A zero-size probe on recentModel's row 0 -- already most-recent-first,
-    // so no reduction like LibraryPage's backdrop probe is needed here.
-    Repeater {
-        model: root.recentModel
-        delegate: Item {
-            required property int index
-            required property string coverImage
-            required property color iconTint
-            visible: false
-            width: 0
-            height: 0
-            function sync() {
-                if (index === 0) {
-                    firstRecent.coverImage = coverImage
-                    firstRecent.iconTint = iconTint
-                }
-            }
-            onIndexChanged: sync()
-            onCoverImageChanged: sync()
-            onIconTintChanged: sync()
-            Component.onCompleted: sync()
-        }
-    }
+    // The welcome card: a share of the window's height, within bounds, so a
+    // short window keeps "Jump back in" above the fold.
+    readonly property real heroShare: 0.26
+    readonly property int heroMinHeight: 168
+    readonly property int heroMaxHeight: 240
+    readonly property int heroHeight: Math.round(Math.max(root.heroMinHeight,
+                                                          Math.min(root.heroMaxHeight, root.height * root.heroShare)))
 
-    QtObject {
-        id: firstRecent
-        property string coverImage: ""
-        property color iconTint: Theme.palette.textTertiary
+    // "Jump back in": as many whole cards as fit (up to three), stretched to
+    // fill the row -- never a card sliced at the edge.
+    readonly property int jumpMax: 3
+    readonly property int jumpMinWidth: 300
+    readonly property int jumpMaxWidth: 440
+    readonly property int jumpSpacing: Theme.space.lg
+    readonly property int jumpFit: Math.max(1, Math.min(root.jumpMax,
+            Math.floor((root.contentWidth + root.jumpSpacing) / (root.jumpMinWidth + root.jumpSpacing))))
+    readonly property int jumpCount: Math.max(1, Math.min(root.jumpFit, root.recentCount))
+    readonly property int jumpCardWidth: Math.min(root.jumpMaxWidth,
+            Math.floor((root.contentWidth - root.jumpSpacing * (root.jumpFit - 1)) / root.jumpFit))
+
+    // "Recent worlds" and "Your library" share one band: side by side on a
+    // wide enough page (worlds as a 2x2 grid on the left, the library as a
+    // short list on the right), stacked below that -- so the default window
+    // shows the whole page instead of a library heading cut by the play bar.
+    readonly property bool hasWorlds: worldsRepeater.count > 0
+    readonly property int splitMinWidth: 880
+    readonly property bool split: root.hasWorlds && root.contentWidth >= root.splitMinWidth
+    readonly property real libraryShare: 0.36
+    readonly property int bandGap: Theme.space.xl
+    readonly property int libraryWidth: root.split ? Math.round(root.contentWidth * root.libraryShare) : root.contentWidth
+    readonly property int worldsWidth: root.split ? root.contentWidth - root.libraryWidth - root.bandGap : root.contentWidth
+
+    // When split, the band shows as many rows as the page has room for
+    // below "Jump back in", so it ends above the play bar instead of being
+    // cut by it: worlds two to a row, the library one entry per row.
+    readonly property int bandHeaderHeight: Theme.control.heightSm + Theme.space.md
+    readonly property int bandAvailable: root.height - content.y - band.y - Theme.space.xxl
+    // HomeWorldTile's and LibraryEntry's own heights.
+    readonly property int worldTileHeight: 88
+    readonly property int libraryEntryHeight: Theme.control.heightLg + Theme.space.sm
+    readonly property int libraryRowSpacing: Theme.space.xxs
+    // HomeLibraryTile's own size, centred in each entry.
+    readonly property int libraryTileSize: 40
+
+    // Worlds: two columns when split, otherwise one row of as many whole
+    // tiles as fit.
+    readonly property int worldMinWidth: 200
+    readonly property int worldSpacing: Theme.space.lg
+    readonly property int worldColumns: root.split ? 2
+            : Math.max(1, Math.floor((root.worldsWidth + root.worldSpacing) / (root.worldMinWidth + root.worldSpacing)))
+    readonly property int worldRows: Math.max(1, Math.min(3, Math.floor((root.bandAvailable - root.bandHeaderHeight + root.worldSpacing)
+                                                                        / (root.worldTileHeight + root.worldSpacing))))
+    readonly property int worldMax: root.split ? root.worldRows * root.worldColumns : root.worldColumns
+    readonly property int worldTileWidth: Math.floor((root.worldsWidth - root.worldSpacing * (root.worldColumns - 1)) / root.worldColumns)
+
+    // Library: a few labelled entries, the rest one click away behind "See
+    // all" -- one column when split, as many as fit when stacked.
+    readonly property int libraryColumnWidth: 240
+    readonly property int libraryColumns: root.split ? 1
+            : Math.max(1, Math.floor((root.libraryWidth + Theme.space.sm) / (root.libraryColumnWidth + Theme.space.sm)))
+    readonly property int libraryRows: Math.max(2, Math.min(8, Math.floor((root.bandAvailable - root.bandHeaderHeight + root.libraryRowSpacing)
+                                                                          / (root.libraryEntryHeight + root.libraryRowSpacing))))
+    readonly property int libraryMax: root.split ? root.libraryRows : root.libraryColumns * 2
+    readonly property int libraryEntryWidth: Math.floor((root.libraryWidth + Theme.space.xs * 2 - Theme.space.sm * (root.libraryColumns - 1)) / root.libraryColumns)
+
+    // The most recently played instance's name, for the welcome line.
+    property string lastName: ""
+
+    // Re-read once a minute so the sky turns with the day while the
+    // launcher stays open; the timer only runs while Home is on screen.
+    property int hour: new Date().getHours()
+    readonly property string mood: root.moodOverride.length > 0 ? root.moodOverride
+                                                                : PixelArt.homeMood(root.hour)
+    Timer {
+        interval: 60 * 1000
+        repeat: true
+        running: root.visible && root.moodOverride.length === 0
+        onTriggered: root.hour = new Date().getHours()
     }
 
     Flickable {
         id: flick
         anchors.fill: parent
-        visible: root.hasLibrary
         contentWidth: width
         contentHeight: content.y + content.height + Theme.space.xxl
         boundsBehavior: Flickable.StopAtBounds
@@ -120,24 +232,65 @@ Item {
 
         Column {
             id: content
-            x: root.pagePadding
-            y: Theme.space.md
-            width: flick.width - root.pagePadding * 2
-            spacing: Theme.space.xl + Theme.space.sm
+            x: root.contentX
+            y: Theme.space.xs
+            width: root.contentWidth
+            spacing: Theme.space.xl
 
-            Text {
+            // -- Welcome card -------------------------------------------------
+            // The time of day's rendered scene, rounded like every other
+            // large surface, with the greeting on its darker left side.
+            Item {
                 width: parent.width
-                text: root.accountName.length > 0 ? qsTr("Welcome back, %1").arg(root.accountName)
-                                                   : qsTr("Welcome back")
-                elide: Text.ElideRight
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.heading.pixelSize
-                font.weight: Theme.type.heading.weight
+                height: root.heroHeight
+
+                CoverArt {
+                    anchors.fill: parent
+                    source: PixelArt.homeHeroUrl(root.mood)
+                    radius: Theme.radius.xl
+                    scrim: "horizontal"
+                    matte: Theme.palette.canvas
+                }
+
+                Column {
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.space.xxl
+                    anchors.right: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Theme.space.sm
+
+                    Text {
+                        width: parent.width
+                        text: root.accountName.length > 0 ? qsTr("Welcome back, %1").arg(root.accountName)
+                                                           : qsTr("Welcome back")
+                        wrapMode: Text.WordWrap
+                        maximumLineCount: 2
+                        elide: Text.ElideRight
+                        color: Theme.media.text
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.type.banner.pixelSize
+                        font.weight: Theme.type.banner.weight
+                        lineHeight: Theme.type.banner.lineHeight
+                    }
+                    Text {
+                        width: parent.width
+                        visible: text.length > 0
+                        text: root.lastName.length > 0 ? qsTr("Pick up where you left off in %1.").arg(root.lastName)
+                            : root.hasLibrary ? qsTr("Pick an instance and press Play.")
+                            : qsTr("Create an instance to start playing.")
+                        wrapMode: Text.WordWrap
+                        maximumLineCount: 2
+                        elide: Text.ElideRight
+                        color: Theme.media.textSecondary
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.type.title.pixelSize
+                    }
+                }
             }
 
             // -- Jump back in ----------------------------------------------
             Column {
+                visible: root.hasLibrary
                 width: parent.width
                 spacing: Theme.space.md
 
@@ -146,75 +299,62 @@ Item {
                     text: qsTr("Jump back in")
                 }
 
-                // A horizontal strip rather than a grid: at narrow widths it
-                // scrolls sideways instead of wrapping the cards onto a
-                // second row.
-                Flickable {
+                Row {
                     visible: root.recentCount > 0
-                    // Bled by the page's own right padding rather than
-                    // stopping flush at the content column's edge: with
-                    // width: parent.width alone, whenever the 3rd card
-                    // almost-but-not-quite fits it clips with a hard edge
-                    // and zero visible hint that it exists -- the
-                    // horizontal ScrollBar stays invisible until hovered,
-                    // and this is the only sideways-scrolling row in the
-                    // app, so there is no other affordance to notice by.
-                    // root.pagePadding of page gutter is otherwise idle
-                    // whitespace here, so reclaiming it costs nothing and
-                    // guarantees a real peek of the next card (see review
-                    // finding on this row).
-                    width: parent.width + root.pagePadding
-                    height: jumpRow.height
-                    contentWidth: jumpRow.width
-                    contentHeight: height
-                    flickableDirection: Flickable.HorizontalFlick
-                    boundsBehavior: Flickable.StopAtBounds
-                    clip: true
+                    spacing: root.jumpSpacing
 
-                    ScrollBar.horizontal: ScrollBar {}
+                    Repeater {
+                        model: root.recentModel
+                        // A plain Item wrapper, not HomeJumpCard directly:
+                        // HomeJumpCard's own required properties put a
+                        // direct delegate in "bound" mode, where a bare
+                        // `index` reference no longer resolves for
+                        // Repeater. The wrapper carries no required
+                        // properties of its own, so it stays "unbound",
+                        // and `model.<role>` -- always valid regardless
+                        // of binding mode -- forwards each role into
+                        // HomeJumpCard explicitly.
+                        delegate: Item {
+                            // The most recently played first (recentModel
+                            // already sorts that way), only as many as fit
+                            // whole.
+                            visible: model.index < root.jumpCount
+                            width: visible ? card.width : 0
+                            height: visible ? card.height : 0
 
-                    Row {
-                        id: jumpRow
-                        spacing: Theme.space.lg
+                            // The first card is the instance the welcome
+                            // line names, so the two can never disagree.
+                            readonly property bool isFirst: model.index === 0
+                            readonly property string cardName: model.name
+                            function claimWelcome() { if (isFirst) root.lastName = cardName }
+                            onIsFirstChanged: claimWelcome()
+                            onCardNameChanged: claimWelcome()
+                            Component.onCompleted: claimWelcome()
 
-                        Repeater {
-                            model: root.recentModel
-                            // A plain Item wrapper, not HomeJumpCard directly:
-                            // HomeJumpCard's own required properties put a
-                            // direct delegate in "bound" mode, where a bare
-                            // `index` reference no longer resolves for
-                            // Repeater. The wrapper carries no required
-                            // properties of its own, so it stays "unbound",
-                            // and `model.<role>` -- always valid regardless
-                            // of binding mode -- forwards each role into
-                            // HomeJumpCard explicitly.
-                            delegate: Item {
-                                id: jumpDelegate
-                                // Only the three most recently played, most
-                                // recent first -- recentModel already sorts
-                                // that way.
-                                visible: model.index < 3
-                                width: visible ? card.width : 0
-                                height: visible ? card.height : 0
-
-                                HomeJumpCard {
-                                    id: card
-                                    instanceId: model.instanceId
-                                    name: model.name
-                                    iconKey: model.iconKey
-                                    isRunning: model.isRunning
-                                    canLaunch: model.canLaunch
-                                    lastLaunch: model.lastLaunch
-                                    totalTimePlayed: model.totalTimePlayed
-                                    gameVersion: model.gameVersion
-                                    loader: model.loader
-                                    iconTint: model.iconTint
-                                    coverImage: model.coverImage
-                                    hasCrashed: model.hasCrashed
-                                    onClicked: root.openInstanceRequested(model.instanceId)
-                                    onPlayRequested: root.launchRequested(model.instanceId)
-                                    onStopRequested: root.stopRequested(model.instanceId)
-                                }
+                            HomeJumpCard {
+                                id: card
+                                // The last card of a full row takes the
+                                // pixels the even split rounded away, so the
+                                // row ends exactly on the content edge.
+                                width: model.index === root.jumpFit - 1 && root.jumpCount === root.jumpFit
+                                       && root.jumpCardWidth < root.jumpMaxWidth
+                                       ? root.contentWidth - (root.jumpFit - 1) * (root.jumpCardWidth + root.jumpSpacing)
+                                       : root.jumpCardWidth
+                                instanceId: model.instanceId
+                                name: model.name
+                                iconKey: model.iconKey
+                                isRunning: model.isRunning
+                                canLaunch: model.canLaunch
+                                lastLaunch: model.lastLaunch
+                                totalTimePlayed: model.totalTimePlayed
+                                gameVersion: model.gameVersion
+                                loader: model.loader
+                                iconTint: model.iconTint
+                                coverImage: model.coverImage
+                                hasCrashed: model.hasCrashed
+                                onClicked: root.openInstanceRequested(model.instanceId)
+                                onPlayRequested: root.launchRequested(model.instanceId)
+                                onStopRequested: root.stopRequested(model.instanceId)
                             }
                         }
                     }
@@ -248,126 +388,147 @@ Item {
                 }
             }
 
-            // -- Recent worlds -----------------------------------------------
-            // Hidden entirely when there is nothing to show -- no empty
-            // section, no placeholder.
-            Column {
+            // -- Recent worlds + Your library --------------------------------
+            Flow {
+                id: band
+                visible: root.hasLibrary
                 width: parent.width
-                spacing: Theme.space.md
-                visible: worldsRepeater.count > 0
+                spacing: root.bandGap
 
-                SectionHeading {
-                    text: qsTr("Recent worlds")
-                }
+                // Hidden entirely when there is nothing to show -- no empty
+                // section, no placeholder; the instance page has every world.
+                Column {
+                    visible: root.hasWorlds
+                    width: root.worldsWidth
+                    spacing: Theme.space.md
 
-                Flickable {
-                    width: parent.width
-                    height: worldsRow.height
-                    contentWidth: worldsRow.width
-                    contentHeight: height
-                    flickableDirection: Flickable.HorizontalFlick
-                    boundsBehavior: Flickable.StopAtBounds
-                    clip: true
+                    SectionHeading {
+                        text: qsTr("Recent worlds")
+                    }
 
-                    ScrollBar.horizontal: ScrollBar {}
-
-                    Row {
-                        id: worldsRow
-                        spacing: Theme.space.sm
+                    Grid {
+                        columns: root.worldColumns
+                        columnSpacing: root.worldSpacing
+                        rowSpacing: root.worldSpacing
 
                         Repeater {
                             id: worldsRepeater
                             model: root.recentWorldsModel
-                            delegate: HomeWorldTile {
-                                onClicked: root.openInstanceWorldsRequested(instanceId)
+                            // Wrapped for the same reason as the jump cards:
+                            // HomeWorldTile's required properties would hide
+                            // `index` from a direct delegate.
+                            delegate: Item {
+                                visible: model.index < root.worldMax
+                                width: visible ? tile.width : 0
+                                height: visible ? tile.height : 0
+
+                                HomeWorldTile {
+                                    id: tile
+                                    // Last column takes the rounding remainder.
+                                    width: model.index % root.worldColumns === root.worldColumns - 1
+                                           ? root.worldsWidth - (root.worldColumns - 1) * (root.worldTileWidth + root.worldSpacing)
+                                           : root.worldTileWidth
+                                    worldName: model.worldName
+                                    folderName: model.folderName
+                                    iconUrl: model.iconUrl
+                                    lastPlayed: model.lastPlayed
+                                    instanceId: model.instanceId
+                                    instanceName: model.instanceName
+                                    onClicked: root.openInstanceWorldsRequested(model.instanceId)
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            // -- Your library -------------------------------------------------
-            Column {
-                width: parent.width
-                spacing: Theme.space.md
+                Column {
+                    width: root.libraryWidth
+                    spacing: Theme.space.md
 
-                Item {
-                    width: parent.width
-                    height: Math.max(libraryHeading.implicitHeight, seeAllButton.implicitHeight)
+                    Item {
+                        width: parent.width
+                        height: Math.max(libraryHeading.implicitHeight, seeAllButton.implicitHeight)
 
-                    SectionHeading {
-                        id: libraryHeading
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: qsTr("Your library")
+                        SectionHeading {
+                            id: libraryHeading
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("Your library")
+                        }
+                        LinkButton {
+                            id: seeAllButton
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: root.libraryCount > root.libraryMax ? qsTr("See all %1").arg(root.libraryCount)
+                                                                      : qsTr("Open library")
+                            onClicked: root.libraryRequested()
+                        }
                     }
-                    Button {
-                        id: seeAllButton
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        flat: true
-                        text: qsTr("See all")
-                        onClicked: root.libraryRequested()
-                    }
-                }
 
-                Flickable {
-                    width: parent.width
-                    height: libraryRow.height
-                    contentWidth: libraryRow.width
-                    contentHeight: height
-                    flickableDirection: Flickable.HorizontalFlick
-                    boundsBehavior: Flickable.StopAtBounds
-                    clip: true
-
-                    ScrollBar.horizontal: ScrollBar {}
-
-                    Row {
-                        id: libraryRow
-                        spacing: Theme.space.xs
+                    // Pulled out by the entries' own inner padding, so their
+                    // icons line up with the heading above, while the hover
+                    // background still has room around them.
+                    Grid {
+                        x: -Theme.space.xs
+                        // And up by the entry's own vertical inset, so the
+                        // first icon's top lines up with the world tiles'.
+                        y: -(root.libraryEntryHeight - root.libraryTileSize) / 2
+                        width: parent.width + Theme.space.xs * 2
+                        columns: root.libraryColumns
+                        columnSpacing: Theme.space.sm
+                        rowSpacing: root.libraryRowSpacing
 
                         Repeater {
                             model: root.instanceModel
-                            delegate: RecentItem {
-                                // RecentItem's own implicitWidth (200) is
-                                // sized for its expanded row form and does
-                                // not shrink for `compact` -- only its
-                                // internal square does. Matching that square
-                                // here keeps the strip tight instead of
-                                // spacing icons 200px apart.
-                                width: 40
-                                compact: true
-                                onClicked: root.openInstanceRequested(instanceId)
+                            delegate: Item {
+                                visible: model.index < root.libraryMax
+                                width: visible ? entryButton.width : 0
+                                height: visible ? entryButton.height : 0
+
+                                LibraryEntry {
+                                    id: entryButton
+                                    width: root.libraryEntryWidth
+                                    instanceId: model.instanceId
+                                    name: model.name
+                                    iconKey: model.iconKey
+                                    isRunning: model.isRunning
+                                    gameVersion: model.gameVersion
+                                    loader: model.loader
+                                    onClicked: root.openInstanceRequested(model.instanceId)
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // Calm, empty breathing room -- reserved for a future roaming
-            // 3D cat. Nothing is drawn here on purpose.
-            Item {
-                width: 1
-                height: 160
+            // Nothing in the library yet: the welcome card stays, and the
+            // way in sits right under it.
+            EmptyState {
+                visible: !root.hasLibrary
+                width: parent.width
+                title: qsTr("Your library is empty")
+                body: qsTr("An instance is one Minecraft setup: a version, a mod loader and its mods. Create one to start playing.")
+                actionText: qsTr("Create your first instance")
+                actionIcon: "plus"
+                onActionTriggered: root.createRequested()
+
+                Image {
+                    // Only fetched when the empty state is actually shown.
+                    source: root.hasLibrary ? "" : PixelArt.emptyUrl("no_instances")
+                    sourceSize: Qt.size(64, 64)
+                    width: 64
+                    height: 64
+                    smooth: false
+                }
             }
         }
     }
 
-    EmptyState {
-        anchors.centerIn: parent
-        visible: !root.hasLibrary
-        title: qsTr("Your library is empty")
-        body: qsTr("An instance is one Minecraft setup: a version, a mod loader and its mods. Create one to start playing.")
-        actionText: qsTr("Create your first instance")
-        actionIcon: "plus"
-        onActionTriggered: root.createRequested()
-
-        Image {
-            source: PixelArt.emptyUrl("no_instances")
-            sourceSize: Qt.size(64, 64)
-            width: 64
-            height: 64
-            smooth: false
-        }
+    ScrollFade {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        flickable: flick
     }
 }

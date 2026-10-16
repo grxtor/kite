@@ -101,11 +101,19 @@ class Mod
 		m_resolving = resolving;
 		m_resolutionTicket = resolutionTicket;
 	}
-	void finishResolvingWithDetails(std::shared_ptr<ModDetails> details)
+	void finishResolvingWithDetails(std::shared_ptr<ModDetails> details,
+									const QString& iconKey = QString())
 	{
 		m_resolving = false;
 		m_resolved = true;
 		m_localDetails = details;
+		m_iconKey = iconKey;
+	}
+
+	/// ModIconCache key of this file's logo, or empty if it has none.
+	QString iconKey() const
+	{
+		return m_iconKey;
 	}
 
   protected:
@@ -119,4 +127,5 @@ class Mod
 	int m_resolutionTicket = 0;
 	ModType m_type = MOD_UNKNOWN;
 	std::shared_ptr<ModDetails> m_localDetails;
+	QString m_iconKey;
 };

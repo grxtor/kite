@@ -60,7 +60,10 @@ class ModFolderModel : public QAbstractListModel
 		NameRole = Qt::UserRole,
 		VersionRole,
 		DateRole,
-		EnabledRole
+		EnabledRole,
+		/// "image://modicon/<key>" (see qml/ModIconProvider.h) for a file
+		/// whose logo is cached, "" otherwise.
+		IconUrlRole
 	};
 	enum ModStatusAction { Disable, Enable, Toggle };
 	ModFolderModel(const QString& dir);
@@ -196,4 +199,6 @@ class ModFolderModel : public QAbstractListModel
 	int nextResolutionTicket = 0;
 	QList<Mod> mods;
 	std::shared_ptr<ModMetadataIndex> m_metadata;
+	/// Where resolved files' logos are cached (ModIconCache::directory()).
+	QString m_iconCacheDir;
 };

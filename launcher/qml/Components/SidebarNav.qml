@@ -21,6 +21,24 @@ import MeshMC.Theme
 Rectangle {
     id: root
 
+    // The collapse toggle -- persisted, so a manual choice survives a
+    // restart; SidebarNav.collapsed itself still ORs this with the caller's
+    // own narrow-window check (see Main.qml), so a small window keeps
+    // auto-collapsing regardless of what was last chosen. Used in two
+    // places: beside Settings in the foot band when expanded, and just above
+    // the band on the icon rail, where the band has room for only the gear
+    // centred on the play bar's own line.
+    component CollapseToggle: IconButton {
+        size: Theme.control.heightSm
+        iconName: "chevron-left"
+        tip: root.collapsed ? qsTr("Expand sidebar") : qsTr("Collapse sidebar")
+        rotation: root.collapsed ? 180 : 0
+
+        Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+
+        onClicked: SettingsStore.setValue("UiSidebarCollapsed", !SettingsStore.bool("UiSidebarCollapsed"))
+    }
+
     // Each entry: { id, icon, label }; icon is a MeshIcon name.
     property var items: []
     property var footerItems: []
@@ -41,6 +59,10 @@ Rectangle {
     property string accountAvatarSource: ""
 
     property bool collapsed: false
+    // Whether the play bar is showing beside the foot band: its top border
+    // only makes sense continuing the bar's own. The band keeps its height
+    // either way, so Settings never moves between pages.
+    property bool barBeside: true
     readonly property int expandedWidth: 244
     readonly property int railWidth: 72
 
@@ -96,12 +118,18 @@ Rectangle {
         target: root.selectedNavItem
         collapsed: root.collapsed
         railSquare: root.railSquare
-        insetX: Theme.space.md
-        insetY: Theme.space.md
+        // Rows live in two containers (the main column and the foot band),
+        // so positions are summed up to this rail rather than read off one
+        // layout.
+        space: root
+        barInset: Theme.space.md
     }
 
     ColumnLayout {
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: footBand.top
         anchors.margins: Theme.space.md
         anchors.rightMargin: Theme.space.md + 1
         spacing: Theme.space.xs
@@ -110,9 +138,14 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: !root.collapsed
             Layout.alignment: root.collapsed ? Qt.AlignHCenter : (Qt.AlignLeft | Qt.AlignVCenter)
-            Layout.preferredHeight: Theme.control.heightLg
+            // Centred on the same line as every page's title row (TopBar:
+            // Theme.space.sm down, Theme.control.height tall), so the brand
+            // and the page title read as one header across the window: the
+            // column's own md top margin is pulled back up to sm.
+            Layout.topMargin: Theme.space.sm - Theme.space.md
+            Layout.preferredHeight: Theme.control.height
             Layout.leftMargin: root.collapsed ? 0 : Theme.space.xs
-            Layout.bottomMargin: Theme.space.md
+            Layout.bottomMargin: Theme.space.xl
             spacing: Theme.space.sm + 2
 
             Image {
@@ -196,45 +229,60 @@ Rectangle {
 
         Item { Layout.fillHeight: true }
 
+        CollapseToggle {
+            visible: root.collapsed
+            Layout.alignment: Qt.AlignHCenter
+        }
+    }
+
+    // The foot band: exactly the play bar's height (Theme.layout.barHeight),
+    // with a top border in the same colour as the bar's own, so the rail's
+    // foot and the bar read as one strip across the window instead of two
+    // dividers at different heights. Settings and the collapse toggle share
+    // its one row, centred like the bar's own content; on the icon rail the
+    // toggle moves just above the band (see CollapseToggle).
+    Item {
+        id: footBand
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.rightMargin: 1
+        anchors.bottom: parent.bottom
+        height: Theme.layout.barHeight
+
         Rectangle {
-            Layout.fillWidth: true
-            Layout.bottomMargin: Theme.space.xs
+            anchors.top: parent.top
+            width: parent.width
             height: 1
-            color: Theme.palette.divider
+            visible: root.barBeside
+            color: Theme.palette.border
         }
 
-        Repeater {
-            id: footerRepeater
-            model: root.footerItems
-            delegate: NavItem {
-                required property var modelData
-                Layout.fillWidth: true
-                iconName: modelData.icon
-                label: modelData.label
-                selected: modelData.id === root.currentId
-                collapsed: root.collapsed
-                onClicked: root.itemActivated(modelData.id)
+        RowLayout {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.leftMargin: Theme.space.md
+            anchors.rightMargin: Theme.space.md
+            spacing: Theme.space.xs
+
+            Repeater {
+                id: footerRepeater
+                model: root.footerItems
+                delegate: NavItem {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    iconName: modelData.icon
+                    label: modelData.label
+                    selected: modelData.id === root.currentId
+                    collapsed: root.collapsed
+                    onClicked: root.itemActivated(modelData.id)
+                }
             }
-        }
 
-        // The collapse toggle, grouped with Settings at the sidebar's foot
-        // rather than floating in its own row up near the logo -- persisted,
-        // so a manual choice survives a restart; SidebarNav.collapsed itself
-        // still ORs this with the caller's own narrow-window check (see
-        // Main.qml), so a small window keeps auto-collapsing regardless of
-        // what was last chosen.
-        IconButton {
-            id: collapseToggle
-            Layout.topMargin: Theme.space.xxs
-            Layout.alignment: root.collapsed ? Qt.AlignHCenter : Qt.AlignRight
-            size: Theme.control.heightSm
-            iconName: "chevron-left"
-            tip: root.collapsed ? qsTr("Expand sidebar") : qsTr("Collapse sidebar")
-            rotation: root.collapsed ? 180 : 0
-
-            Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-
-            onClicked: SettingsStore.setValue("UiSidebarCollapsed", !SettingsStore.bool("UiSidebarCollapsed"))
+            CollapseToggle {
+                visible: !root.collapsed
+                Layout.alignment: Qt.AlignVCenter
+            }
         }
     }
 }

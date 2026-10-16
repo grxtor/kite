@@ -8,10 +8,13 @@ import MeshMC.Theme
 
 /*
  * One tile in the Home page's "Recent worlds" row: a world's own icon (or,
- * lacking one, one of PixelArt's 16x16 block textures), the world's name,
- * which instance it belongs to, and when it was last played. Used directly
- * as a Repeater delegate against the shell's recentWorlds model, so the
- * required properties are filled from RecentWorldsModel's roles.
+ * lacking one, one of PixelArt's rendered scenes), the world's name, which
+ * instance it belongs to, and when it was last played. Used directly as a
+ * Repeater delegate against the shell's recentWorlds model, so the required
+ * properties are filled from RecentWorldsModel's roles.
+ *
+ * A filled surface tile with no outline; hover lifts only that fill to
+ * surfaceRaised (Theme's motion contract: one property per hover).
  */
 AbstractButton {
     id: control
@@ -24,9 +27,12 @@ AbstractButton {
     required property string instanceName
 
     readonly property bool hasIcon: control.iconUrl.length > 0
+    // The game saves a world's icon.png at 64x64, so a real icon draws 1:1
+    // here; the tile's own height leaves an even md inset above and below.
+    readonly property int iconSize: 64
 
-    implicitWidth: 176
-    implicitHeight: 72
+    implicitWidth: 208
+    implicitHeight: control.iconSize + Theme.space.md * 2
     hoverEnabled: true
 
     Accessible.name: qsTr("%1, in %2").arg(control.worldName).arg(control.instanceName)
@@ -36,11 +42,9 @@ AbstractButton {
     ToolTip.text: qsTr("%1 — %2").arg(control.worldName).arg(control.instanceName)
 
     background: Rectangle {
-        radius: Theme.radius.md
-        color: control.down ? Theme.palette.pressedOverlay
-             : control.hovered ? Theme.palette.hoverOverlay : "transparent"
-        border.width: 1
-        border.color: Theme.palette.border
+        radius: Theme.radius.sm
+        color: control.down ? Theme.palette.surfaceOverlay
+             : control.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
@@ -48,15 +52,13 @@ AbstractButton {
         Rectangle {
             id: tile
             anchors.left: parent.left
-            anchors.leftMargin: Theme.space.sm
+            anchors.leftMargin: Theme.space.md
             anchors.verticalCenter: parent.verticalCenter
-            // 48 = three whole pixels per texel of a 16x16 block texture,
-            // so the fallback below stays crisp rather than unevenly scaled.
-            width: 48
-            height: 48
+            width: control.iconSize
+            height: control.iconSize
             radius: Theme.radius.sm
-            border.width: 1
-            border.color: Theme.palette.border
+            // Only seen while the picture decodes.
+            color: Theme.palette.surfaceOverlay
             clip: true
 
             Image {
@@ -69,20 +71,20 @@ AbstractButton {
                 asynchronous: true
             }
 
-            // No world icon: one of PixelArt's block textures, picked
-            // deterministically by this world's own folder name -- a
-            // bounded, designed fallback in place of the old flat
-            // surfaceOverlay square (design-plan.md G3). A whole 96x54
-            // landscape scene would only be an unreadable smear at this
-            // size; a single block reads at a glance. No sourceSize: the
-            // texture is 16x16 and must scale by nearest neighbour, not be
-            // pre-filtered.
+            // No world icon: one of PixelArt's square biome thumbnails,
+            // picked deterministically by this world's own folder name -- the
+            // same picture the instance page's Overview and Worlds tab show
+            // for it, so a world looks the same everywhere. Decoded at 2x for
+            // a retina display; a photo, so filtered and mipmapped rather
+            // than kept crisp like a real icon above.
             Image {
                 anchors.fill: parent
                 visible: !control.hasIcon
-                source: control.hasIcon ? "" : PixelArt.blockUrlFor(control.folderName)
-                fillMode: Image.Stretch
-                smooth: false
+                source: control.hasIcon ? "" : PixelArt.worldUrlFor(control.folderName)
+                sourceSize: Qt.size(width * 2, height * 2)
+                fillMode: Image.PreserveAspectCrop
+                smooth: true
+                mipmap: true
                 asynchronous: true
             }
         }
@@ -91,7 +93,7 @@ AbstractButton {
             anchors.left: tile.right
             anchors.leftMargin: Theme.space.sm
             anchors.right: parent.right
-            anchors.rightMargin: Theme.space.sm
+            anchors.rightMargin: Theme.space.md
             anchors.verticalCenter: parent.verticalCenter
             spacing: Theme.space.xxs
 

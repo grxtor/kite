@@ -27,6 +27,11 @@ Column {
     property bool collapsed: false
     // "grid" (InstanceCard tiles) or "list" (dense InstanceListRow rows).
     property string viewMode: "grid"
+    // Where the cards end: whole-pixel card widths can stop a pixel or two
+    // short of the section's own width, and the header's divider ends with
+    // them rather than poking past the grid's right edge.
+    readonly property int contentRight: viewMode === "list" ? width
+        : Math.min(width, Math.round(columns * cardWidth + (columns - 1) * gutter))
 
     signal selectRequested(string id)
     signal launchRequested(string id)
@@ -46,14 +51,32 @@ Column {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             height: parent.height
-            width: headerRow.implicitWidth + Theme.space.sm
+            width: headerRow.implicitWidth
             hoverEnabled: true
             Accessible.name: root.title
             onClicked: root.toggleRequested()
 
+            // The title first, flush with the page title and the cards'
+            // left edge; the fold chevron trails the count rather than
+            // pushing the title in by its own width.
             contentItem: Row {
                 id: headerRow
                 spacing: Theme.space.sm
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.title
+                    color: Theme.palette.textPrimary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.title.pixelSize
+                    font.weight: Font.Bold
+                }
+
+                Tag {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: !!root.model
+                    text: root.model ? String(root.model.count) : ""
+                }
 
                 MeshIcon {
                     anchors.verticalCenter: parent.verticalCenter
@@ -63,31 +86,16 @@ Column {
                     color: header.hovered ? Theme.palette.textPrimary : Theme.palette.textTertiary
                     Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
                 }
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: root.title
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.title.pixelSize + 1
-                    font.weight: Font.Bold
-                    font.letterSpacing: -0.1
-                }
-
-                Tag {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: !!root.model
-                    text: root.model ? String(root.model.count) : ""
-                }
             }
             background: Item {}
         }
 
+        // On whole pixels: the header's text width is fractional, and a
+        // hairline starting mid-pixel was drawn a pixel past its end.
         Rectangle {
-            anchors.left: header.right
-            anchors.leftMargin: Theme.space.md
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
+            x: Math.ceil(header.width) + Theme.space.md
+            y: Math.floor((parent.height - height) / 2)
+            width: Math.max(0, root.contentRight - x)
             height: 1
             color: Theme.palette.divider
         }
@@ -101,7 +109,7 @@ Column {
         width: parent.width
         height: root.collapsed ? 0 : fullHeight
         // Only while folded or folding: a permanent clip would also cut off
-        // a card's hover lift and focus ring along the top row.
+        // a card's focus ring along the top row.
         clip: height < fullHeight - 0.5
 
         // Off for the section's own initial layout -- height jumps straight
@@ -157,7 +165,7 @@ Column {
         id: listComponent
         Column {
             width: body.width
-            spacing: Theme.space.xs
+            spacing: Theme.space.sm
 
             Repeater {
                 model: root.model

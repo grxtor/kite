@@ -23,6 +23,8 @@
 #include <QDebug>
 #include <QSaveFile>
 
+#include <algorithm>
+
 namespace
 {
 	bool load(const QString& path, std::vector<GameOptionItem>& contents,
@@ -168,4 +170,61 @@ bool GameOptions::reload()
 bool GameOptions::save()
 {
 	return ::save(path, contents, version);
+}
+
+bool GameOptions::setValue(const QString& key, const QString& value)
+{
+	const auto breaksLine = [](const QString& text) {
+		return text.contains(QLatin1Char('\n')) ||
+			   text.contains(QLatin1Char('\r'));
+	};
+	if (key.isEmpty() || key.contains(QLatin1Char(':')) ||
+		key == QLatin1String("version") || breaksLine(key) ||
+		breaksLine(value)) {
+		return false;
+	}
+
+	std::vector<GameOptionItem> fresh;
+	int freshVersion = 0;
+	if (!::load(path, fresh, freshVersion)) {
+		return false;
+	}
+	auto item = std::find_if(
+		fresh.begin(), fresh.end(),
+		[&key](const GameOptionItem& entry) { return entry.key == key; });
+	if (item != fresh.end()) {
+		item->value = value;
+	} else {
+		fresh.push_back(GameOptionItem{key, value});
+	}
+	if (!::save(path, fresh, freshVersion)) {
+		return false;
+	}
+	adopt(std::move(fresh), freshVersion);
+	return true;
+}
+
+void GameOptions::adopt(std::vector<GameOptionItem> fresh, int freshVersion)
+{
+	version = freshVersion;
+	loaded = true;
+	const bool sameKeys = std::equal(
+		fresh.begin(), fresh.end(), contents.begin(), contents.end(),
+		[](const GameOptionItem& a, const GameOptionItem& b) {
+			return a.key == b.key;
+		});
+	if (!sameKeys) {
+		beginResetModel();
+		contents = std::move(fresh);
+		endResetModel();
+		return;
+	}
+	for (size_t row = 0; row < contents.size(); ++row) {
+		if (contents[row].value == fresh[row].value) {
+			continue;
+		}
+		contents[row].value = fresh[row].value;
+		const QModelIndex changed = index(static_cast<int>(row));
+		emit dataChanged(changed, changed.siblingAtColumn(1));
+	}
 }

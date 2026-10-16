@@ -55,10 +55,16 @@ Item {
     // without a real click.
     function openProfileMenu() { profileButton.openMenu() }
 
+    // The same column every page's content uses: the page padding, or on a
+    // wide window whatever centres a Theme.layout.maxContentWidth column --
+    // so the title and toolbar stay aligned with the cards below them.
+    readonly property int sideMargin: Math.max(Theme.space.xl + Theme.space.xs,
+                                               Math.round((root.width - Theme.layout.maxContentWidth) / 2))
+
     ColumnLayout {
         anchors.fill: parent
-        anchors.leftMargin: Theme.space.xl + Theme.space.xs
-        anchors.rightMargin: Theme.space.xl + Theme.space.xs
+        anchors.leftMargin: root.sideMargin
+        anchors.rightMargin: root.sideMargin
         anchors.topMargin: Theme.space.sm
         anchors.bottomMargin: Theme.space.sm
         spacing: Theme.space.xs
@@ -133,7 +139,8 @@ Item {
 
             Row {
                 id: actionsRow
-                spacing: Theme.space.sm
+                // The same gap as between the search field and these actions.
+                spacing: Theme.space.md
             }
         }
     }

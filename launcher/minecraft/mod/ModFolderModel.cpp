@@ -33,6 +33,7 @@
 #include "ModFolderLoadTask.h"
 #include <algorithm>
 #include "LocalModParseTask.h"
+#include "ModIconCache.h"
 
 namespace
 {
@@ -51,7 +52,8 @@ namespace
 } // namespace
 
 ModFolderModel::ModFolderModel(const QString& dir)
-	: QAbstractListModel(), m_dir(dir)
+	: QAbstractListModel(), m_dir(dir),
+	  m_iconCacheDir(ModIconCache::directory())
 {
 	FS::ensureFolderPathExists(m_dir.absolutePath());
 	m_dir.setFilter(QDir::Readable | QDir::NoDotAndDotDot | QDir::Files |
@@ -215,8 +217,8 @@ void ModFolderModel::resolveMod(Mod& m)
 		return;
 	}
 
-	auto task =
-		new LocalModParseTask(nextResolutionTicket, m.type(), m.filename());
+	auto task = new LocalModParseTask(nextResolutionTicket, m.type(),
+									  m.filename(), m_iconCacheDir);
 	auto result = task->result();
 	result->id = m.mmc_id();
 	activeTickets.insert(nextResolutionTicket, result);
@@ -238,7 +240,7 @@ void ModFolderModel::finishModParse(int token)
 	activeTickets.remove(token);
 	int row = modsIndex[result->id];
 	auto& mod = mods[row];
-	mod.finishResolvingWithDetails(result->details);
+	mod.finishResolvingWithDetails(result->details, result->iconKey);
 	emit dataChanged(index(row), index(row, columnCount(QModelIndex()) - 1));
 }
 
@@ -429,6 +431,7 @@ QHash<int, QByteArray> ModFolderModel::roleNames() const
 	roles.insert(VersionRole, "version");
 	roles.insert(DateRole, "dateChanged");
 	roles.insert(EnabledRole, "enabled");
+	roles.insert(IconUrlRole, "iconUrl");
 	return roles;
 }
 
@@ -492,6 +495,11 @@ QVariant ModFolderModel::data(const QModelIndex& index, int role) const
 			return mods[row].dateTimeChanged();
 		case EnabledRole:
 			return mods[row].enabled();
+		case IconUrlRole: {
+			const QString key = mods[row].iconKey();
+			return key.isEmpty() ? QString()
+								 : QStringLiteral("image://modicon/") + key;
+		}
 
 		default:
 			return QVariant();

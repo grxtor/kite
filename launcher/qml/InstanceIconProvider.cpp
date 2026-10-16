@@ -51,8 +51,12 @@ QPixmap InstanceIconProvider::requestPixmap(const QString& id, QSize* size,
 	QPixmap pixmap;
 	if (m_icons) {
 		// getIcon() already falls back to the "grass" builtin for an unknown
-		// key (and for "default"); nothing extra to do for that here.
-		pixmap = m_icons->getIcon(key).pixmap(wanted);
+		// key (and for "default"); nothing extra to do for that here. The
+		// explicit ratio of 1 matters: QIcon::pixmap(QSize) alone multiplies
+		// by the application's device pixel ratio again, which on a 2x
+		// screen handed QML a pixmap twice the item's device size for the
+		// scene graph to shrink.
+		pixmap = m_icons->getIcon(key).pixmap(wanted, 1.0);
 	}
 
 	if (pixmap.isNull()) {

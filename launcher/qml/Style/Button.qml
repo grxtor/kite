@@ -48,14 +48,19 @@ T.Button {
     icon.height: Theme.icon.sm
     icon.color: contentColor
 
-    // Fades as one piece, so a disabled accent button still reads as the
-    // same button rather than a grey one.
-    opacity: enabled ? 1.0 : Theme.opacity.disabled
+    // A primary (highlighted) button that is not available yet drops to the
+    // neutral button's look -- raised surface, border, disabled label --
+    // rather than fading: a faded accent over a dialog surface turned into a
+    // muddy olive that read as a broken colour, not as "not yet". Neutral
+    // and flat buttons keep their shape and fade as one piece.
+    readonly property bool primaryLook: control.highlighted && control.enabled
+    opacity: enabled || control.highlighted ? 1.0 : Theme.opacity.disabled
 
     // The same colour drives the icon and the label so an accent button never
     // ends up with mismatched icon/text tones.
-    readonly property color contentColor: control.highlighted
+    readonly property color contentColor: control.primaryLook
         ? Theme.palette.textOnAccent
+        : control.highlighted ? Theme.palette.textDisabled
         : control.flat && !control.hovered ? Theme.palette.textSecondary
                                            : Theme.palette.textPrimary
 
@@ -65,12 +70,12 @@ T.Button {
     // accent fill would shift its hue/muddy it, where the dedicated tokens
     // are tuned to stay on-brand. Neutral surfaces (default/flat) have no
     // such dedicated variant, so they use the overlay tokens instead.
-    readonly property color restColor: control.highlighted
+    readonly property color restColor: control.primaryLook
         ? (control.danger
             ? (control.down ? Qt.darker(Theme.palette.danger, 1.2) : control.hovered ? Qt.lighter(Theme.palette.danger, 1.12) : Theme.palette.danger)
             : (control.down ? Theme.palette.accentPressed : control.hovered ? Theme.palette.accentHover : Theme.palette.accent))
-        : (control.flat ? "transparent" : Theme.palette.surfaceRaised)
-    readonly property color overlayColor: control.highlighted
+        : (control.flat && !control.highlighted ? "transparent" : Theme.palette.surfaceRaised)
+    readonly property color overlayColor: control.primaryLook || !control.enabled
         ? "transparent"
         : (control.down ? Theme.palette.pressedOverlay : control.hovered ? Theme.palette.hoverOverlay : "transparent")
 
@@ -96,7 +101,7 @@ T.Button {
         // Flat buttons only ever show the hover/press overlay, so the border
         // stays off for them too -- a border would make "flat" look like a
         // fourth, unrequested variant.
-        border.width: !control.highlighted && !control.flat ? 1 : 0
+        border.width: !control.primaryLook && (!control.flat || control.highlighted) ? 1 : 0
         border.color: control.hovered ? Theme.palette.borderStrong : Theme.palette.border
 
         Behavior on color {
@@ -109,18 +114,6 @@ T.Button {
             color: control.overlayColor
             Behavior on color {
                 ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
-            }
-        }
-
-        // A faint light from above on the accent fill: gives the primary
-        // action some depth without a drop shadow.
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            visible: control.highlighted && !control.down
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.22) }
-                GradientStop { position: 0.55; color: Qt.rgba(1, 1, 1, 0.0) }
             }
         }
 

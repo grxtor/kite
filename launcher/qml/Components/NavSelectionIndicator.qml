@@ -42,8 +42,25 @@ Item {
     // to land on them; a host with no such margin leaves these at 0.
     property int insetX: 0
     property int insetY: 0
+    // How far the accent bar stops short of the row's top and bottom.
+    property int barInset: root.insetY
 
-    readonly property real targetY: root.target ? root.target.y : 0
+    // When set, the target's position is found by adding up its own and its
+    // parents' x/y up to this item (which must share this indicator's
+    // origin) -- for a host whose rows live in more than one container, e.g.
+    // SidebarNav's foot band below its main column. The insets are then not
+    // needed. Bindings re-evaluate when any of those x/y values change,
+    // since the sum reads each of them.
+    property Item space: null
+    function _offset(item, horizontal) {
+        var sum = 0
+        for (var it = item; it && it !== root.space; it = it.parent)
+            sum += horizontal ? it.x : it.y
+        return sum
+    }
+
+    readonly property real targetX: !root.target ? 0 : root.space ? root._offset(root.target, true) : root.insetX
+    readonly property real targetY: !root.target ? 0 : root.space ? root._offset(root.target, false) : root.insetY + root.target.y
     readonly property real targetH: root.target ? root.target.height : 0
     readonly property real targetW: root.target ? root.target.width : 0
 
@@ -52,8 +69,8 @@ Item {
         visible: !!root.target
         width: root.collapsed ? root.railSquare : root.targetW
         height: root.collapsed ? root.railSquare : root.targetH
-        x: root.insetX + (root.collapsed ? (root.targetW - width) / 2 : 0)
-        y: root.insetY + root.targetY + (root.collapsed ? (root.targetH - height) / 2 : 0)
+        x: root.targetX + (root.collapsed ? (root.targetW - width) / 2 : 0)
+        y: root.targetY + (root.collapsed ? (root.targetH - height) / 2 : 0)
         radius: Theme.radius.md
         color: Theme.palette.surfaceRaised
 
@@ -64,10 +81,10 @@ Item {
 
     Rectangle {
         visible: !!root.target
-        x: root.insetX
-        y: root.insetY + root.targetY + (root.targetH - height) / 2
+        x: root.targetX
+        y: root.targetY + (root.targetH - height) / 2
         width: 3
-        height: root.targetH - root.insetY * 2 + 4
+        height: root.targetH - root.barInset * 2 + 4
         radius: Theme.radius.xs
         color: Theme.palette.accent
 

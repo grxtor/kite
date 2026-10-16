@@ -12,6 +12,11 @@ import MeshMC.Theme
  * enough (a destructive confirm, a host request carrying its own
  * severity). Set as `header:` only where the badge earns its place;
  * everything else keeps Style/Dialog.qml's plain title-only header.
+ *
+ * `brand` leads with MeshMC's own mark instead of a badge, for the one
+ * dialog that is the launcher's showpiece (New instance). Either way the
+ * row is plain: no band, wash or texture behind it, so it reads as part
+ * of the dialog's one surface.
  */
 Item {
     id: root
@@ -19,8 +24,25 @@ Item {
     property string title
     property string icon: ""
     property color iconColor: Theme.palette.accent
+    property bool brand: false
 
-    implicitHeight: Theme.space.lg + Math.max(Theme.control.height, label.implicitHeight)
+    readonly property bool leading: badge.visible || mark.visible
+
+    // As tall as what is actually in the row: the badge's full control
+    // height only when there is a badge. Reserving it for the brand mark or
+    // a bare title left an empty strip under the title, which read as a gap
+    // between the header and the dialog's first row.
+    implicitHeight: Theme.space.lg + Math.max(badge.visible ? Theme.control.height
+                                            : mark.visible ? mark.size : 0,
+                                              label.implicitHeight)
+
+    BrandMark {
+        id: mark
+        visible: root.brand && root.icon.length === 0
+        x: Theme.space.lg
+        anchors.verticalCenter: label.verticalCenter
+        size: Theme.icon.lg
+    }
 
     Rectangle {
         id: badge
@@ -43,8 +65,8 @@ Item {
     Label {
         id: label
         y: Theme.space.lg
-        anchors.left: badge.visible ? badge.right : parent.left
-        anchors.leftMargin: badge.visible ? Theme.space.sm : Theme.space.lg
+        anchors.left: badge.visible ? badge.right : mark.visible ? mark.right : parent.left
+        anchors.leftMargin: root.leading ? Theme.space.sm : Theme.space.lg
         anchors.right: parent.right
         anchors.rightMargin: Theme.space.lg
         text: root.title

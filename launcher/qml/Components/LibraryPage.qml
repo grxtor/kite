@@ -42,9 +42,16 @@ Item {
 
     readonly property int pagePadding: Theme.space.xl + Theme.space.xs
     readonly property int gutter: Theme.space.lg
-    readonly property int minCardWidth: 184
-    readonly property int maxCardWidth: 240
-    readonly property int contentWidth: Math.max(0, flick.width - pagePadding * 2)
+    // Cards grow to fill the row between these, adding a column once there
+    // is room for one more at the minimum -- so the row is always full
+    // width, never a strip of small cards with the rest of it empty.
+    readonly property int minCardWidth: 220
+    readonly property int maxCardWidth: 320
+    // On a wide window the content stops at Theme.layout.maxContentWidth
+    // and centres (TopBar uses the same rule, so its title and toolbar stay
+    // over the cards' left edge).
+    readonly property int contentWidth: Math.max(0, Math.min(flick.width - pagePadding * 2, Theme.layout.maxContentWidth))
+    readonly property int contentX: Math.max(pagePadding, Math.round((flick.width - contentWidth) / 2))
     readonly property int columns: columnsFor(contentWidth)
     readonly property real cardWidth: Math.floor((contentWidth - gutter * (columns - 1)) / columns)
 
@@ -64,65 +71,9 @@ Item {
 
     Keys.onEscapePressed: root.selectRequested("")
 
-    // -- Backdrop: the most recently played instance's own cover art -------
-    // "arka planlarda hiçbir şey yok" (nothing behind the content) -- the
-    // page was flat Theme.palette.canvas below the header. A full-bleed,
-    // heavily scrimmed crop of the same art the instance's own card already
-    // shows (CoverArt's fallback plate when it has no screenshot yet) reads
-    // as MeshMC's own content, never stock art (design-plan.md §5/§6).
-    // instanceModel has no "most recent" query of its own (that is
-    // recentModel's job, not given to this page) -- found here the same way
-    // AccountsPage finds its hero row: a zero-size probe per instance,
-    // reduced down to the newest lastLaunch.
-    property string backdropCover: ""
-    property color backdropTint: Theme.palette.textTertiary
-
-    function _recomputeBackdrop() {
-        var bestMs = -1
-        var cover = ""
-        var tint = Theme.palette.textTertiary
-        for (var i = 0; i < backdropProbe.count; ++i) {
-            var item = backdropProbe.itemAt(i)
-            if (!item)
-                continue
-            var ms = Number(item.lastLaunch) || 0
-            if (ms > bestMs) {
-                bestMs = ms
-                cover = item.coverImage
-                tint = item.iconTint
-            }
-        }
-        root.backdropCover = cover
-        root.backdropTint = tint
-    }
-
-    Repeater {
-        id: backdropProbe
-        model: root.instanceModel
-        // Cover art is scanned off the GUI thread and lastLaunch moves on
-        // every launch, so a row's roles change after it was counted --
-        // recompute on those too, coalesced into one pass per frame.
-        delegate: Item {
-            required property string coverImage
-            required property color iconTint
-            required property var lastLaunch
-            visible: false
-            width: 0
-            height: 0
-            onCoverImageChanged: Qt.callLater(root._recomputeBackdrop)
-            onLastLaunchChanged: Qt.callLater(root._recomputeBackdrop)
-        }
-        onCountChanged: Qt.callLater(root._recomputeBackdrop)
-    }
-
-    // CoverArt's generated fallback plate is worth showing even without a
-    // real screenshot yet, so this is gated on having any instance at all.
-    PageBackdrop {
-        anchors.fill: parent
-        visible: root.instanceCount > 0
-        cover: root.backdropCover
-        tint: root.backdropTint
-    }
+    // No page-wide photo wash behind the grid: the cards' own covers are
+    // the artwork, and the page stays the flat canvas the top bar sits on,
+    // so there is no edge where the two meet.
 
     Flickable {
         id: flick
@@ -143,7 +94,7 @@ Item {
 
         Column {
             id: content
-            x: root.pagePadding
+            x: root.contentX
             y: Theme.space.xs
             width: root.contentWidth
             spacing: Theme.space.xl + Theme.space.sm
@@ -176,6 +127,14 @@ Item {
                 }
             }
         }
+    }
+
+    // The last visible row fades out at the play bar instead of being cut.
+    ScrollFade {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        flickable: flick
     }
 
     EmptyState {

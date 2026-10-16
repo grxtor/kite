@@ -76,8 +76,10 @@ Dialog {
                     implicitHeight: Theme.control.heightSm
                     implicitWidth: chipText.implicitWidth + Theme.space.md * 2
                     onClicked: field.text = modelData
+                    // A suggestion, not a filter: a control's corner, the
+                    // same as a Tag's, not a pill.
                     background: Rectangle {
-                        radius: height / 2
+                        radius: Theme.radius.sm
                         color: chip.hovered ? Theme.palette.surfaceOverlay : Theme.palette.surfaceRaised
                         border.width: 1
                         border.color: field.text === chip.modelData ? Theme.palette.accent : Theme.palette.border

@@ -27,6 +27,13 @@ Item {
 
     property var openedPack: null
 
+    // The same page frame as Library: content stops at
+    // Theme.layout.maxContentWidth and centres on a wide window, under the
+    // TopBar title that follows the same rule.
+    readonly property int pagePadding: Theme.space.xl + Theme.space.xs
+    readonly property int contentWidth: Math.max(0, Math.min(width - pagePadding * 2, Theme.layout.maxContentWidth))
+    readonly property int contentX: Math.max(pagePadding, Math.round((width - contentWidth) / 2))
+
     readonly property var loaders: [
         { value: "", label: qsTr("Any") },
         { value: "fabric", label: "Fabric" },
@@ -90,20 +97,6 @@ Item {
         }
     }
 
-    // A chrome-only header region (design-plan.md §5): before any result has
-    // come back, or once a search truly has none, there is no cover art of
-    // the page's own to bleed behind the toolbar the way Library/PlayDock
-    // do -- the same quiet wash Settings uses instead. Sits behind the
-    // StackLayout below, not inside its flow.
-    AmbientPattern {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        height: 220
-        fadeBottom: true
-        visible: !root.openedPack && (!root.model || root.model.count === 0)
-    }
-
     StackLayout {
         anchors.fill: parent
         currentIndex: root.openedPack ? 1 : 0
@@ -112,70 +105,87 @@ Item {
         ColumnLayout {
             spacing: Theme.space.lg
 
-            // Search, loader, sort and import in one toolbar row -- a
-            // RowLayout, not a wrapping Flow: a Flow that runs out of room
-            // wraps whichever control does not fit onto its own new line,
-            // which for the last item (the import button) meant a whole
-            // row spent on one small icon. The search field gives up its
-            // width first, down to a floor, so everything else always has
-            // room on the one row -- the same rule Library's own toolbar
-            // uses (see TopBar.qml).
-            RowLayout {
+            // Search, loader, sort and import. One row while the search
+            // field keeps a usable width; below that the loader/sort filters
+            // move to a row of their own instead of squeezing the field to
+            // "Search mo…". Import stays at the row's end either way -- the
+            // same spot Library's "New instance" has.
+            Item {
                 id: toolbar
-                Layout.fillWidth: true
-                Layout.leftMargin: Theme.space.xl + Theme.space.xs
-                Layout.rightMargin: Theme.space.xl + Theme.space.xs
-                spacing: Theme.space.md
+                Layout.leftMargin: root.contentX
+                Layout.preferredWidth: root.contentWidth
+                Layout.preferredHeight: stacked ? Theme.control.height * 2 + rowSpacing : Theme.control.height
+
+                readonly property int spacing: Theme.space.md
+                readonly property int rowSpacing: Theme.space.sm
+                readonly property int searchMinWidth: 240
+                readonly property bool stacked: width < searchMinWidth + filters.implicitWidth
+                                                        + importButton.implicitWidth + spacing * 2
 
                 SearchBox {
                     id: searchField
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 120
+                    x: 0
+                    y: 0
+                    width: toolbar.stacked ? importButton.x - toolbar.spacing
+                                           : filters.x - toolbar.spacing
                     placeholderText: qsTr("Search modpacks on Modrinth")
                     onTextEdited: debounce.restart()
                     onTextChanged: if (text.length === 0) debounce.restart()
                 }
 
-                SegmentedControl {
-                    id: loaderControl
-                    options: root.loaders
-                    current: root.model ? root.model.loader : ""
-                    onActivated: (value) => {
-                        if (!root.model)
-                            return
-                        root.model.loader = value
-                        root.runSearch()
+                Row {
+                    id: filters
+                    x: toolbar.stacked ? 0 : importButton.x - toolbar.spacing - width
+                    y: toolbar.stacked ? Theme.control.height + toolbar.rowSpacing : 0
+                    spacing: toolbar.spacing
+
+                    SegmentedControl {
+                        id: loaderControl
+                        options: root.loaders
+                        current: root.model ? root.model.loader : ""
+                        onActivated: (value) => {
+                            if (!root.model)
+                                return
+                            root.model.loader = value
+                            root.runSearch()
+                        }
+                    }
+
+                    ComboBox {
+                        id: sortBox
+                        readonly property int preferredWidth: 180
+                        width: preferredWidth
+                        visible: count > 0
+                        model: root.model && root.model.sortOptions ? root.model.sortOptions : []
+                        textRole: "label"
+                        valueRole: "id"
+                        Accessible.name: qsTr("Sort modpacks by")
+                        Component.onCompleted: if (root.model) currentIndex = Math.max(0, indexOfValue(root.model.sort))
+                        onActivated: {
+                            if (!root.model)
+                                return
+                            root.model.sort = currentValue
+                            root.runSearch()
+                        }
                     }
                 }
 
-                ComboBox {
-                    id: sortBox
-                    Layout.preferredWidth: 200
-                    visible: count > 0
-                    model: root.model && root.model.sortOptions ? root.model.sortOptions : []
-                    textRole: "label"
-                    valueRole: "id"
-                    Component.onCompleted: if (root.model) currentIndex = Math.max(0, indexOfValue(root.model.sort))
-                    onActivated: {
-                        if (!root.model)
-                            return
-                        root.model.sort = currentValue
-                        root.runSearch()
-                    }
-                }
-
-                IconButton {
-                    id: otherPlatformsButton
-                    flat: false
-                    iconName: "download"
-                    tip: qsTr("Import a pack exported from CurseForge, FTB, ATLauncher or Technic")
+                Button {
+                    id: importButton
+                    x: toolbar.width - width
+                    y: 0
+                    text: qsTr("Import")
+                    icon.source: Icons.url("archive")
+                    ToolTip.visible: hovered
+                    ToolTip.delay: 400
+                    ToolTip.text: qsTr("Import a pack exported from CurseForge, FTB, ATLauncher or Technic")
                     onClicked: root.otherPlatformsRequested()
                 }
             }
 
             // Results, as a responsive card grid -- 2 to 4 columns
-            // depending on width, same breakpoint math LibraryPage uses
-            // for the instance grid.
+            // depending on width, the same fill-the-row math LibraryPage
+            // uses for the instance grid.
             Flickable {
                 id: flick
                 Layout.fillWidth: true
@@ -191,13 +201,21 @@ Item {
                 onAtYEndChanged: if (atYEnd && root.model && root.model.canFetchMore && !root.model.searching)
                                      root.model.fetchMore()
 
-                readonly property int pagePadding: Theme.space.xl + Theme.space.xs
                 readonly property int gutter: Theme.space.lg
                 readonly property int minCardWidth: 260
                 readonly property int maxCardWidth: 340
-                readonly property int gridWidth: Math.max(0, width - pagePadding * 2)
+                readonly property int gridWidth: root.contentWidth
                 readonly property int columns: Math.max(2, Math.min(4, columnsFor(gridWidth)))
-                readonly property real cardWidth: Math.floor((gridWidth - gutter * (columns - 1)) / columns)
+                readonly property int cardWidth: Math.floor((gridWidth - gutter * (columns - 1)) / columns)
+                // The last column takes the pixels flooring left over, so
+                // every row ends exactly on the toolbar's right edge.
+                readonly property int lastCardWidth: gridWidth - (columns - 1) * (cardWidth + gutter)
+
+                // Width of the card at grid slot `slot` (results first, then
+                // any loading placeholders after them).
+                function cardWidthAt(slot) {
+                    return slot % columns === columns - 1 ? lastCardWidth : cardWidth
+                }
 
                 function columnsFor(w) {
                     var columns = Math.max(1, Math.floor((w + gutter) / (minCardWidth + gutter)))
@@ -208,9 +226,9 @@ Item {
 
                 Item {
                     id: content
-                    x: flick.pagePadding
-                    // Room above the first row for a card's hover lift and
-                    // focus ring, which the flickable's clip would cut.
+                    x: root.contentX
+                    // Room above the first row for a card's focus ring,
+                    // which the flickable's clip would cut.
                     y: Theme.space.sm
                     width: flick.gridWidth
                     height: grid.height
@@ -226,7 +244,10 @@ Item {
                             id: resultsRepeater
                             model: root.model
                             delegate: ModpackCard {
-                                width: flick.cardWidth
+                                width: flick.cardWidthAt(index)
+                                // From the common width (see ModpackCard's
+                                // coverHeight), not this card's own.
+                                coverHeight: Math.round(flick.cardWidth * coverRatio)
                                 projectId: model.projectId
                                 title: model.title
                                 author: model.author
@@ -260,7 +281,11 @@ Item {
                                    ? (root.model.count === 0 ? flick.columns * 2 : flick.columns)
                                    : 0
                             delegate: ModpackCard {
-                                width: flick.cardWidth
+                                required property int index
+                                width: flick.cardWidthAt(resultsRepeater.count + index)
+                                // From the common width (see ModpackCard's
+                                // coverHeight), not this card's own.
+                                coverHeight: Math.round(flick.cardWidth * coverRatio)
                                 skeleton: true
                             }
                         }
@@ -275,9 +300,21 @@ Item {
             detail: root.model ? root.model.detail : null
             model: root.model
             installer: root.installer
+            contentX: root.contentX
+            contentWidth: root.contentWidth
             onBackRequested: root.openedPack = null
             onShowInstanceRequested: (id) => root.showInstanceRequested(id)
         }
+    }
+
+    // The results' last visible row fades out at the play bar instead of
+    // being cut (the detail view has its own).
+    ScrollFade {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        visible: !root.openedPack && flick.contentY + flick.height < flick.contentHeight - 1
+        flickable: flick
     }
 
     EmptyState {
@@ -291,36 +328,13 @@ Item {
         actionIcon: "refresh"
         onActionTriggered: root.runSearch()
 
-        Column {
-            spacing: Theme.space.sm
-
-            // MeshMC's own mark, small and quiet, above the state
-            // illustration -- one of the two places design-plan.md §1
-            // reuses it as a recurring tell rather than a sidebar-only
-            // appearance.
-            BrandMark {
-                anchors.horizontalCenter: parent.horizontalCenter
-                size: 18
-                opacity: 0.55
-            }
-            // Nothing matched: the cracked-stone illustration. A failed
-            // request keeps the warning glyph -- that is a fault, not an
-            // empty result.
-            Image {
-                visible: !(root.model && root.model.error.length > 0)
-                anchors.horizontalCenter: parent.horizontalCenter
-                source: PixelArt.emptyUrl("not_found")
-                width: 64
-                height: 64
-                smooth: false
-            }
-            MeshIcon {
-                visible: !!(root.model && root.model.error.length > 0)
-                anchors.horizontalCenter: parent.horizontalCenter
-                iconName: "alert-triangle"
-                size: 40
-                color: Theme.palette.textTertiary
-            }
+        // The same plain line icon Library's empty state uses: a search
+        // glyph for "nothing matched", the warning glyph for a failed
+        // request -- that is a fault, not an empty result.
+        MeshIcon {
+            iconName: root.model && root.model.error.length > 0 ? "alert-triangle" : "search"
+            size: 40
+            color: Theme.palette.textTertiary
         }
     }
 }

@@ -9,7 +9,10 @@ import MeshMC.Theme
 /*
  * One setting: what it is and what it does on the left, its control on the
  * right. `wide` puts the control under the text instead, for text fields
- * that need the room.
+ * that need the room. `topAligned` lines the text up with the control's
+ * first line instead of centring both, for a control with more under that
+ * line (MemorySetting's slider with its system-memory bar below); the label
+ * centres on the first `controlLineHeight` pixels of the control.
  */
 Item {
     id: root
@@ -17,6 +20,8 @@ Item {
     property string label
     property string description
     property bool wide: false
+    property bool topAligned: false
+    property real controlLineHeight: 0
     property bool showDivider: false
     default property alias control: controlSlot.data
 
@@ -49,9 +54,14 @@ Item {
 
         Column {
             Layout.fillWidth: true
+            Layout.alignment: root.topAligned ? Qt.AlignTop : Qt.AlignVCenter
+            Layout.topMargin: root.topAligned
+                              ? Math.max(0, Math.round((root.controlLineHeight - labelText.implicitHeight / Math.max(1, labelText.lineCount)) / 2))
+                              : 0
             spacing: 2
 
             Text {
+                id: labelText
                 width: parent.width
                 text: root.label
                 wrapMode: Text.Wrap
@@ -76,7 +86,8 @@ Item {
         Item {
             id: controlSlot
             Layout.fillWidth: root.wide
-            Layout.alignment: Qt.AlignVCenter | (root.wide ? Qt.AlignLeft : Qt.AlignRight)
+            Layout.alignment: (root.topAligned ? Qt.AlignTop : Qt.AlignVCenter)
+                              | (root.wide ? Qt.AlignLeft : Qt.AlignRight)
             // A wide control takes the width the layout gives it, so it must
             // not also report its own width back as the implicit one.
             implicitWidth: root.wide ? 0 : childrenRect.width

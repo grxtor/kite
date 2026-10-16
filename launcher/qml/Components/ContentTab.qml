@@ -42,7 +42,7 @@ Item {
               model: root.details ? root.details.resourcePacks : null,
               dir: root.details ? root.details.resourcePacksDir : "",
               emptyTitle: qsTr("No resource packs"),
-              emptyBody: qsTr("Change how the game looks -- add one from a file, or browse for one.") },
+              emptyBody: qsTr("Change how the game looks: add one from a file, or browse for one.") },
             { value: "shaderpacks", label: qsTr("Shader packs"), icon: "layers",
               model: root.details ? root.details.shaderPacks : null,
               dir: root.details ? root.details.shaderPacksDir : "",
@@ -73,10 +73,21 @@ Item {
         visible: root.isMinecraft
 
         RowLayout {
+            id: toolbar
             Layout.fillWidth: true
             spacing: Theme.space.md
 
+            // Too narrow for every action side by side: "Browse online" and
+            // "Open folder" fold into a More menu rather than pushing the
+            // toolbar, and the list under it, past the page's right edge.
+            // Measured against the tab's own width, which the toolbar's
+            // contents never feed back into.
+            readonly property bool compact: root.width < kindPicker.implicitWidth + browseButton.implicitWidth
+                                                         + folderButton.implicitWidth + addButton.implicitWidth
+                                                         + spacing * 4
+
             SegmentedControl {
+                id: kindPicker
                 options: root.kinds.map((k) => ({ value: k.value, label: k.label }))
                 current: root.kind
                 onActivated: (value) => root.kind = value
@@ -92,17 +103,45 @@ Item {
             }
 
             Button {
+                id: browseButton
+                visible: !toolbar.compact
                 flat: true
                 text: qsTr("Browse online")
                 onClicked: root.browseRequested()
             }
             Button {
+                id: folderButton
+                visible: !toolbar.compact
                 text: qsTr("Open folder")
                 icon.source: Icons.url("folder")
                 onClicked: root.openFolderRequested(root.current ? root.current.dir : "")
             }
+            // "More ▾": mirrored so the chevron follows the label.
             Button {
-                highlighted: true
+                id: moreButton
+                visible: toolbar.compact
+                LayoutMirroring.enabled: true
+                text: qsTr("More")
+                icon.source: Icons.url("chevron-down")
+                onClicked: moreMenu.popup(moreButton, 0, moreButton.height)
+
+                Menu {
+                    id: moreMenu
+                    MenuItem {
+                        text: qsTr("Browse online")
+                        onTriggered: root.browseRequested()
+                    }
+                    MenuItem {
+                        text: qsTr("Open folder")
+                        icon.source: Icons.url("folder")
+                        onTriggered: root.openFolderRequested(root.current ? root.current.dir : "")
+                    }
+                }
+            }
+            // Secondary, like the rest of the toolbar: the play bar's Play
+            // is this page's one primary action.
+            Button {
+                id: addButton
                 enabled: root.unlocked
                 text: qsTr("Add from file…")
                 icon.source: Icons.url("plus")
@@ -122,13 +161,13 @@ Item {
         }
     }
 
+    // No button of its own: "Add from file…" is already in the toolbar
+    // right above it.
     EmptyState {
         anchors.centerIn: parent
         visible: root.isMinecraft && packList.count === 0
         title: root.current ? root.current.emptyTitle : ""
         body: root.current ? root.current.emptyBody : ""
-        actionText: qsTr("Add from file…")
-        onActionTriggered: fileDialog.open()
         MeshIcon { iconName: root.current ? root.current.icon : "package"; size: 40; color: Theme.palette.textTertiary }
     }
 

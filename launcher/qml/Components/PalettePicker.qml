@@ -8,15 +8,15 @@ import MeshMC.Theme
 
 /*
  * The colour schemes side by side, each drawn as a miniature launcher in its
- * own colours (sidebar, two cards, a Play button) for the current light or
+ * own colours (sidebar, three cards, a Play button) for the current light or
  * dark mode, so the choice is made by looking rather than by name.
  *
- * Flow rather than Row: a fourth card (Grass) made the plain Row wider than
- * Settings' own panel at the window's default width, so it wraps onto a
- * second line instead of overflowing once its host layout constrains this
- * item's own width (SettingRow's `wide` mode gives it Layout.fillWidth).
+ * A Grid of equal tiles, never a wrapping Flow: four in one row while they
+ * fit at a readable size, otherwise two rows of two -- never three and a
+ * lone fourth. The tiles share the width the host gives this item
+ * (SettingRow's `wide` mode gives it the panel's full width).
  */
-Flow {
+Grid {
     id: root
 
     // The scheme shown as chosen; "amethyst", "ember", "diamond" or "grass".
@@ -30,11 +30,19 @@ Flow {
         { id: "diamond", label: qsTr("Diamond"), note: qsTr("Navy and diamond blue") }
     ]
 
-    // Bound to the host's width (SettingRow's `wide` slot resizes to the
-    // panel) rather than left at Flow's own unconstrained implicit width --
-    // otherwise Flow has nothing to wrap against and behaves exactly like
-    // the Row it replaced.
+    // The narrowest tile whose longest note ("Graphite and grass green")
+    // still fits on one line; below it the tiles go two by two.
+    readonly property int minTileWidth: 160
+    readonly property int tileHeight: 150
+    readonly property int previewHeight: 86
+    readonly property int miniSidebarWidth: 34
+    readonly property int miniGap: 6
+    readonly property int miniLabelSize: 9
+    readonly property bool fitsInOneRow: (width - spacing * (schemes.length - 1)) / schemes.length >= minTileWidth
+    readonly property real tileWidth: (width - spacing * (columns - 1)) / columns
+
     width: parent ? parent.width : implicitWidth
+    columns: root.fitsInOneRow ? root.schemes.length : 2
     spacing: Theme.space.md
 
     Repeater {
@@ -47,8 +55,8 @@ Flow {
             readonly property var colors: Theme.dark, Theme.previewPalette(modelData.id)
             readonly property bool chosen: root.current === modelData.id
 
-            width: 188
-            height: 150
+            width: root.tileWidth
+            height: root.tileHeight
             hoverEnabled: true
             Accessible.name: modelData.label
             Accessible.role: Accessible.RadioButton
@@ -69,8 +77,9 @@ Flow {
 
                 // The miniature launcher.
                 Rectangle {
+                    id: preview
                     width: parent.width
-                    height: 86
+                    height: root.previewHeight
                     radius: Theme.radius.md
                     color: card.colors.canvas
                     border.width: 1
@@ -80,7 +89,7 @@ Flow {
                     Rectangle {
                         id: miniSidebar
                         x: 0
-                        width: 34
+                        width: root.miniSidebarWidth
                         height: parent.height
                         color: card.colors.surface
                         Rectangle {
@@ -103,13 +112,17 @@ Flow {
                         }
                     }
                     Row {
-                        x: miniSidebar.width + 8
+                        id: miniCards
+                        x: miniSidebar.width + root.miniGap
                         y: 10
-                        spacing: 6
+                        spacing: root.miniGap
                         Repeater {
                             model: 3
                             delegate: Rectangle {
-                                width: 36; height: 30
+                                // Three cards fill what the sidebar leaves,
+                                // at any tile width.
+                                width: (preview.width - miniCards.x - root.miniGap * 3) / 3
+                                height: 30
                                 radius: Theme.radius.sm
                                 color: card.colors.surfaceRaised
                                 border.width: 1
@@ -130,20 +143,23 @@ Flow {
                             text: qsTr("PLAY")
                             color: card.colors.textOnAccent
                             font.family: Theme.font.family
-                            font.pixelSize: 9
+                            font.pixelSize: root.miniLabelSize
                             font.weight: Font.Bold
                             font.letterSpacing: 1
                         }
                     }
                 }
 
-                Row {
+                // Name and the chosen-mark on one line, the note under
+                // them at the tile's full width.
+                Column {
                     width: parent.width
-                    spacing: Theme.space.xs
-                    Column {
-                        width: parent.width - check.width - parent.spacing
+                    Row {
+                        width: parent.width
+                        spacing: Theme.space.xs
                         Text {
-                            width: parent.width
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width - check.width - parent.spacing
                             text: card.modelData.label
                             elide: Text.ElideRight
                             color: Theme.palette.textPrimary
@@ -151,31 +167,30 @@ Flow {
                             font.pixelSize: Theme.type.bodyStrong.pixelSize
                             font.weight: Theme.type.bodyStrong.weight
                         }
-                        Text {
-                            width: parent.width
-                            text: card.modelData.note
-                            elide: Text.ElideRight
-                            color: Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
+                        Rectangle {
+                            id: check
+                            width: Theme.icon.md
+                            height: width
+                            radius: width / 2
+                            color: card.chosen ? Theme.palette.accent : "transparent"
+                            border.width: card.chosen ? 0 : 1
+                            border.color: Theme.palette.borderStrong
+                            MeshIcon {
+                                anchors.centerIn: parent
+                                visible: card.chosen
+                                iconName: "check"
+                                size: Theme.icon.sm - 2
+                                color: Theme.palette.textOnAccent
+                            }
                         }
                     }
-                    Rectangle {
-                        id: check
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: Theme.icon.md
-                        height: width
-                        radius: width / 2
-                        color: card.chosen ? Theme.palette.accent : "transparent"
-                        border.width: card.chosen ? 0 : 1
-                        border.color: Theme.palette.borderStrong
-                        MeshIcon {
-                            anchors.centerIn: parent
-                            visible: card.chosen
-                            iconName: "check"
-                            size: Theme.icon.sm - 2
-                            color: Theme.palette.textOnAccent
-                        }
+                    Text {
+                        width: parent.width
+                        text: card.modelData.note
+                        elide: Text.ElideRight
+                        color: Theme.palette.textTertiary
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.type.caption.pixelSize
                     }
                 }
             }

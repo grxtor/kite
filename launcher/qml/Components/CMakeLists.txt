@@ -19,11 +19,15 @@ qt_add_library(MeshMC_qml_components STATIC)
 # instead of the one Icons.url() is meant to be called on.
 set_source_files_properties(Icons.qml Format.qml SettingsStore.qml PixelArt.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
-# The landscape fallbacks: 24 scenes at three shapes (card/band/strip, see
-# art/scenes.py). Globbed rather than listed line by line -- 72 checked-in
-# PNGs -- with CONFIGURE_DEPENDS so regenerating the set is picked up.
-file(GLOB MESHMC_ART_LANDSCAPES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
-    art/landscapes/card/*.png art/landscapes/band/*.png art/landscapes/strip/*.png)
+# The fallback cover scenes: 32 rendered scenes at three crops
+# (card/band/strip, see art/scenes/build.py), plus the world thumbnails
+# (art/worlds), generic modpack covers (art/packs) and empty-state
+# illustrations (art/empty/*.jpg), all built by art/scenes/build.py. Globbed
+# rather than listed line by line -- ~100 checked-in JPGs -- with
+# CONFIGURE_DEPENDS so rebuilding the set is picked up.
+file(GLOB MESHMC_ART_SCENES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
+    art/scenes/card/*.jpg art/scenes/band/*.jpg art/scenes/strip/*.jpg
+    art/worlds/*.jpg art/packs/*.jpg art/empty/*.jpg)
 
 qt_add_qml_module(MeshMC_qml_components
     URI MeshMC.Components
@@ -35,11 +39,14 @@ qt_add_qml_module(MeshMC_qml_components
         InstanceListRow.qml
         InstanceSection.qml
         LibraryPage.qml
+        LinkButton.qml
         ContinueCard.qml
+        CornerMatte.qml
         PlayButton.qml
         LaunchProgressBar.qml
         IconButton.qml
         Tag.qml
+        ScrollFade.qml
         SearchBox.qml
         RecentItem.qml
         Format.qml
@@ -61,6 +68,7 @@ qt_add_qml_module(MeshMC_qml_components
         LoaderInstallDialog.qml
         MinecraftVersionDialog.qml
         GameOptionsTab.qml
+        GameOptionRow.qml
         PackList.qml
         PalettePicker.qml
         ContentBrowserView.qml
@@ -113,6 +121,7 @@ qt_add_qml_module(MeshMC_qml_components
         HomePage.qml
         HomeJumpCard.qml
         HomeWorldTile.qml
+        HomeLibraryTile.qml
         AmbientPattern.qml
         PageBackdrop.qml
         BrandMark.qml
@@ -177,8 +186,11 @@ qt_add_qml_module(MeshMC_qml_components
         art/blocks/sand.png
         art/blocks/stone.png
         art/ambient/blocks_mask.png
-        ${MESHMC_ART_LANDSCAPES}
+        ${MESHMC_ART_SCENES}
         art/hero/home_hero.png
+        art/hero/home_day.jpg
+        art/hero/home_golden.jpg
+        art/hero/home_night.jpg
         art/empty/no_instances.png
         art/empty/no_worlds.png
         art/empty/not_found.png

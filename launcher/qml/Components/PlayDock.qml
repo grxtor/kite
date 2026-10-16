@@ -22,6 +22,11 @@ import MeshMC.Theme
  * `rowModel` is the shell's heroModel, freed up by removing the library's
  * own hero card; Main.qml points its instanceId at whichever instance this
  * bar should show (see its own dockInstanceId).
+ *
+ * A plain surface with a hairline border on top, on every page -- no
+ * picture behind the controls. The pages above already carry the artwork
+ * (Home's header, the cards' covers); a third picture under the bar's own
+ * text and Play button only made both harder to read.
  */
 Item {
     id: root
@@ -46,7 +51,7 @@ Item {
     readonly property bool motionEnabled: Qt.application.state === Qt.ApplicationActive
                                           && !SettingsStore.bool("UiReduceMotion")
 
-    implicitHeight: 84
+    implicitHeight: Theme.layout.barHeight
 
     activeFocusOnTab: true
     Keys.onReturnPressed: root.tryLaunch()
@@ -81,7 +86,6 @@ Item {
     property string dockGameVersion: ""
     property string dockLoader: ""
     property color dockIconTint: Theme.palette.textTertiary
-    property string dockCoverImage: ""
     property string dockLaunchStatus: ""
     property real dockLaunchProgress: -1
 
@@ -101,7 +105,6 @@ Item {
             required property string gameVersion
             required property string loader
             required property color iconTint
-            required property string coverImage
             required property string launchStatus
             required property real launchProgress
             visible: false
@@ -118,7 +121,6 @@ Item {
                 root.dockGameVersion = probe.gameVersion
                 root.dockLoader = probe.loader
                 root.dockIconTint = probe.iconTint
-                root.dockCoverImage = probe.coverImage
                 root.dockLaunchStatus = probe.launchStatus
                 root.dockLaunchProgress = probe.launchProgress
             }
@@ -131,7 +133,6 @@ Item {
             onGameVersionChanged: sync()
             onLoaderChanged: sync()
             onIconTintChanged: sync()
-            onCoverImageChanged: sync()
             onLaunchStatusChanged: sync()
             onLaunchProgressChanged: sync()
         }
@@ -140,62 +141,27 @@ Item {
     // id yet): fall back to blank rather than stale leftovers.
     onRowModelChanged: if (!rowModel) { dockInstanceId = ""; dockName = "" }
 
-    // -- Backdrop: the selected instance's own screenshot, darkened --------
-    // The art itself spans the whole bar (CoverArt's own pixel-art "strip"
-    // landscape covers an instance with no screenshot yet); scrim: "none"
-    // here because CoverArt's own horizontal scrim jumps to 62% opacity by
-    // the 45% mark, which read as one flat dark block on the left and a
-    // separate bright picture on the right rather than one continuous
-    // surface. The gradient below fades across the full width instead, so
-    // the art is never fully hidden, only ever darkened.
-    CoverArt {
-        id: backdrop
-        anchors.fill: parent
-        // Square corners: this bar sits flush against the window's own
-        // bottom and side edges, where a rounded photo would look cut off
-        // rather than intentional. radius: 0 also skips CoverArt's corner
-        // mask entirely, so there is no matte colour to get right here.
-        radius: 0
-        source: root.dockCoverImage
-        tint: root.dockIconTint
-        iconKey: ""
-        seed: root.dockInstanceId
-        scrim: "none"
-    }
     Rectangle {
-        id: scrimRect
         anchors.fill: parent
-        // GradientStop's own `parent` is the Gradient, not this Rectangle --
-        // referencing this id directly instead of `parent` is what a
-        // GradientStop child actually needs to reach a property declared
-        // out here.
-        readonly property color scrimBase: Theme.media.scrim
-        // This bar's text is always light regardless of theme, and the
-        // generated landscape behind it can be a pale day sky in either
-        // theme (CoverArt dims it a little in dark mode only) -- so the
-        // same scrim runs over a photo or not.
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-            GradientStop { position: 0.0; color: Qt.rgba(scrimRect.scrimBase.r, scrimRect.scrimBase.g, scrimRect.scrimBase.b, 0.80) }
-            GradientStop { position: 0.35; color: Qt.rgba(scrimRect.scrimBase.r, scrimRect.scrimBase.g, scrimRect.scrimBase.b, 0.55) }
-            GradientStop { position: 0.7; color: Qt.rgba(scrimRect.scrimBase.r, scrimRect.scrimBase.g, scrimRect.scrimBase.b, 0.28) }
-            GradientStop { position: 1.0; color: Qt.rgba(scrimRect.scrimBase.r, scrimRect.scrimBase.g, scrimRect.scrimBase.b, 0.14) }
-        }
+        color: Theme.palette.surface
     }
-    // A thin highlight along the top edge instead of a plain divider --
-    // the bar reads as one raised surface rather than a hairline-separated
-    // strip.
     Rectangle {
         anchors.top: parent.top
         width: parent.width
         height: 1
-        color: Qt.rgba(1, 1, 1, 0.10)
+        color: Theme.palette.border
     }
+
+    // The same column the page above uses (TopBar's rule), so Play's right
+    // edge is the content's right edge and the bar centres with the page on
+    // a wide window.
+    readonly property int sideMargin: Math.max(Theme.space.xl + Theme.space.xs,
+                                               Math.round((root.width - Theme.layout.maxContentWidth) / 2))
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: Theme.space.xl + Theme.space.xs
-        anchors.rightMargin: Theme.space.lg
+        anchors.leftMargin: root.sideMargin
+        anchors.rightMargin: root.sideMargin
         spacing: Theme.space.md
 
         AbstractButton {
@@ -210,7 +176,7 @@ Item {
 
             background: Rectangle {
                 radius: Theme.radius.lg
-                color: pickerButton.hovered ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                color: pickerButton.hovered ? Theme.palette.hoverOverlay : "transparent"
                 Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
             }
 
@@ -221,10 +187,10 @@ Item {
                 Rectangle {
                     Layout.preferredWidth: 44
                     Layout.preferredHeight: 44
-                    radius: Theme.radius.md
+                    radius: Theme.radius.sm
                     color: Format.shade(root.dockIconTint, Theme.dark ? 0.30 : 0.86, 0.55)
                     border.width: 1
-                    border.color: Qt.rgba(1, 1, 1, 0.10)
+                    border.color: Theme.palette.border
 
                     Image {
                         anchors.centerIn: parent
@@ -240,7 +206,7 @@ Item {
                         visible: !root.hasInstance
                         iconName: "library"
                         size: Theme.icon.md
-                        color: Theme.media.textSecondary
+                        color: Theme.palette.textSecondary
                     }
                 }
 
@@ -257,7 +223,7 @@ Item {
                         Layout.maximumWidth: 190
                         text: root.hasInstance ? root.dockName : qsTr("Choose an instance")
                         elide: Text.ElideRight
-                        color: Theme.media.text
+                        color: Theme.palette.textPrimary
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.bodyStrong.pixelSize
                         font.weight: Theme.type.bodyStrong.weight
@@ -267,9 +233,9 @@ Item {
                         Layout.maximumWidth: 190
                         visible: root.hasInstance && subtitle.text.length > 0
                         text: [Format.versionLine(root.dockLoader, root.dockGameVersion),
-                               Format.playTime(root.dockTotalTimePlayed)].filter(s => s.length > 0).join(" · ")
+                               Format.playTime(root.dockTotalTimePlayed)].filter(s => s.length > 0).join(", ")
                         elide: Text.ElideRight
-                        color: Theme.media.textSecondary
+                        color: Theme.palette.textSecondary
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.caption.pixelSize
                     }
@@ -279,7 +245,7 @@ Item {
                     Layout.alignment: Qt.AlignVCenter
                     iconName: "chevron-down"
                     size: Theme.icon.sm
-                    color: Theme.media.textSecondary
+                    color: Theme.palette.textSecondary
                     rotation: picker.visible ? 180 : 0
                     Behavior on rotation { NumberAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                 }
@@ -328,10 +294,10 @@ Item {
                     Text {
                         width: parent.width
                         text: root.dockLaunchProgress >= 0
-                              ? qsTr("%1 · %2%").arg(root.dockLaunchStatus).arg(Math.round(root.dockLaunchProgress * 100))
+                              ? qsTr("%1, %2%").arg(root.dockLaunchStatus).arg(Math.round(root.dockLaunchProgress * 100))
                               : root.dockLaunchStatus
                         elide: Text.ElideRight
-                        color: Theme.media.text
+                        color: Theme.palette.textPrimary
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.label.pixelSize
                         font.weight: Font.Medium
@@ -339,7 +305,6 @@ Item {
                     LaunchProgressBar {
                         width: parent.width
                         implicitHeight: 8
-                        onMedia: true
                         segmented: true
                         progress: root.dockLaunchProgress
                     }
@@ -385,7 +350,7 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: qsTr("Playing")
-                        color: Theme.media.text
+                        color: Theme.palette.textPrimary
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.bodyStrong.pixelSize
                         font.weight: Font.Bold
@@ -475,7 +440,11 @@ Item {
                     required property string loader
                     width: list.width
                     hoverEnabled: true
-                    highlighted: row.instanceId === root.selectedId
+                    // The instance the bar plays right now -- which is the
+                    // selection when there is one, otherwise the most recent
+                    // -- so the list always shows where "Play" points.
+                    readonly property bool current: row.instanceId === root.dockInstanceId
+                    highlighted: row.current
 
                     onClicked: {
                         root.selectRequested(row.instanceId)
@@ -526,6 +495,12 @@ Item {
                             Layout.preferredHeight: 7
                             radius: 3.5
                             color: Theme.palette.success
+                        }
+                        MeshIcon {
+                            visible: row.current
+                            iconName: "check"
+                            size: Theme.icon.sm
+                            color: Theme.palette.accentText
                         }
                     }
                 }

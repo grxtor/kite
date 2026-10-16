@@ -82,9 +82,10 @@ Item {
                         clipboardHelper.copy()
                     }
                 }
+                // Bordered like "Copy all" beside it and like every other
+                // tab's toolbar, so the row ends flush with the panel below.
                 Button {
                     enabled: !!root.model
-                    flat: true
                     text: qsTr("Clear")
                     icon.source: Icons.url("x")
                     onClicked: root.log.clear()
@@ -125,13 +126,13 @@ Item {
                 }
                 Button {
                     enabled: !!root.otherLogs
-                    flat: true
                     text: qsTr("Open folder")
                     icon.source: Icons.url("folder")
                     onClicked: root.openFolderRequested(root.otherLogs.path)
                 }
                 IconButton {
                     enabled: !!root.otherLogs && root.otherLogs.currentFile.length > 0
+                    flat: false
                     iconName: "trash"
                     tip: qsTr("Delete this file")
                     onClicked: {
@@ -183,7 +184,7 @@ Item {
                 upperThird: true
                 visible: root.view === "live" && (!root.model || lines.count === 0)
                 title: qsTr("No log yet")
-                body: qsTr("Start the instance and its output appears here, live.")
+                body: qsTr("Play this instance to see the game's output here as it runs.")
                 MeshIcon { iconName: "terminal"; size: 40; color: Theme.palette.textTertiary }
             }
 

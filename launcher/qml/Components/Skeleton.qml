@@ -30,7 +30,9 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: root.radius
-        color: Theme.palette.surfaceSunken
+        // Raised in dark mode: surfaceSunken is near-black there and a
+        // loading card read as a hole rather than as "coming".
+        color: Theme.dark ? Theme.palette.surfaceRaised : Theme.palette.surfaceSunken
     }
 
     Rectangle {

@@ -241,17 +241,18 @@ namespace
 	SchemeColors grass(bool dark)
 	{
 		if (dark)
-			// A saturated Minecraft-grass green (the official launcher's own
-			// PLAY button and a grass block's top face both sit in this
-			// range) -- bright enough that near-black text clears 4.5:1
-			// (measured 5.64:1), the same "dark text on a bright accent"
-			// shape Ember/Diamond's dark variants already use.
+			// A Minecraft-grass green deep enough for a WHITE label to clear
+			// 4.5:1 (measured 4.91:1). Near-black on the brighter grass green
+			// read as a disabled button next to every other launcher's
+			// white-on-green Play, so the fill moved darker instead of the
+			// label (hover 3.99:1 is a transient state). Still 3.96:1 against
+			// the canvas, over the 3:1 a control's own shape needs.
 			return {QColor(0x0D, 0x0D, 0x0D), QColor(0x19, 0x19, 0x19), QColor(0x23, 0x23, 0x23),
 					QColor(0x2E, 0x2E, 0x2E), QColor(0x08, 0x08, 0x08),
 					QColor(0xF4, 0xF4, 0xF4), QColor(0xB9, 0xB9, 0xB9), QColor(0x8B, 0x8B, 0x8B),
 					QColor(0x5C, 0x5C, 0x5C),
-					QColor(0x56, 0x9C, 0x3D), QColor(0x64, 0xAC, 0x48), QColor(0x3D, 0x7A, 0x28),
-					QColor(0x7E, 0xD9, 0x57), QColor(0x0A, 0x12, 0x06),
+					QColor(0x3F, 0x7F, 0x2A), QColor(0x4A, 0x8F, 0x34), QColor(0x35, 0x6F, 0x23),
+					QColor(0x7E, 0xD9, 0x57), QColor(0xFF, 0xFF, 0xFF),
 					QColor(0x70, 0x70, 0x70), QColor(0x1E, 0x2E, 0x17), QColor(0xF4, 0xF4, 0xF4),
 					QColor(0x24, 0x24, 0x24)};
 		// A deep enough forest green that white text clears 4.5:1 (measured

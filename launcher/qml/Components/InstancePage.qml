@@ -9,9 +9,11 @@ import MeshMC.Theme
 
 /*
  * One instance, opened from the library: the same banner the library's old
- * hero used -- folder, what it runs, the classic editor -- over tabs for
- * what is inside it. Play/Stop no longer live on the banner; the persistent
- * play bar plays and stops whatever instance this page has open instead.
+ * hero used -- what it is and what it runs, with its own actions behind one
+ * ⋯ menu -- over tabs for what is inside it. Play/Stop no longer live on the
+ * banner; the persistent play bar plays and stops whatever instance this
+ * page has open instead. On a wide window the banner, tabs and tab content
+ * stop at Theme.layout.maxContentWidth and centre.
  */
 Item {
     id: root
@@ -45,6 +47,22 @@ Item {
     // Bubbles up from the Servers tab's "Join" button - see Main.qml.
     signal joinServerRequested(string id, string address)
 
+    // The same instance actions the library's ⋯ menu offers, with the same
+    // arguments as LibraryPage's signals of these names, so Main.qml can
+    // answer them with the same dialogs. Set `manageable` once it does:
+    // until then the header menu offers only what this page can do itself.
+    property bool manageable: false
+    signal renameRequested(string id, string name)
+    signal iconRequested(string id, string iconKey)
+    signal groupRequested(string id, string group)
+    signal duplicateRequested(string id, string name, string group)
+    signal deleteRequested(string id, string name)
+
+    // The header delegate below, for the menu's name/icon/group.
+    property var headerCard: null
+    // Whether the opened instance's game is running (from the header model).
+    property bool running: false
+
     readonly property var modsModel: details ? details.mods : null
     readonly property var worldsModel: details ? details.worlds : null
     readonly property var shotsModel: details ? details.screenshots : null
@@ -70,6 +88,10 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
+            // Capped and centred like the banner and tabs below, so on a wide
+            // window the account lands where every other page puts it.
+            Layout.maximumWidth: Theme.layout.maxContentWidth
+            Layout.alignment: Qt.AlignHCenter
             // Theme.control.height, matching TopBar.titleRowHeight -- see
             // the topMargin comment above.
             Layout.preferredHeight: Theme.control.height
@@ -80,6 +102,11 @@ Item {
                 text: qsTr("Library")
                 icon.source: Icons.url("chevron-left")
                 leftPadding: Theme.space.sm
+                // Pulled out by its padding and the empty third of the
+                // chevron's square left of its stroke, so the ink starts on
+                // the banner's and tabs' edge -- the same rule as Discover's
+                // "Back to results".
+                Layout.leftMargin: -(leftPadding + Math.round(Theme.icon.sm / 3))
                 onClicked: root.backRequested()
             }
 
@@ -100,8 +127,11 @@ Item {
         Repeater {
             model: root.headerModel
             delegate: ContinueCard {
+                id: headerCard
                 required property string group
                 Layout.fillWidth: true
+                Layout.maximumWidth: Theme.layout.maxContentWidth
+                Layout.alignment: Qt.AlignHCenter
                 // The group this instance lives in is more useful here than
                 // a label that just repeats "you are looking at an
                 // instance" -- and an ungrouped instance shows nothing.
@@ -119,23 +149,26 @@ Item {
                 // classicEditorRequested is kept below only because Main.qml
                 // still has a handler for it; nothing emits it any more.
                 showEdit: false
-                // Nothing under the QML shell answers this yet either.
-                showMenu: false
-                onFolderRequested: root.openPathRequested(root.details ? root.details.instanceRoot : "")
+                // Folder and the rest live together in one ⋯ menu.
+                showFolder: false
+                menu: instanceMenu
+                Component.onDestruction: if (root.headerCard === headerCard) root.headerCard = null
 
-                // The overview needs these too, and this delegate is the
-                // only place the header model's roles are at hand.
-                Component.onCompleted: overview.syncFrom(this)
-                onLastLaunchChanged: overview.syncFrom(this)
-                onTotalTimePlayedChanged: overview.syncFrom(this)
-                onGameVersionChanged: overview.syncFrom(this)
-                onLoaderChanged: overview.syncFrom(this)
-                onIsRunningChanged: overview.running = isRunning
+                // The settings tab needs to know whether the game runs, and
+                // this delegate is the only place the header model's roles
+                // are at hand.
+                Component.onCompleted: {
+                    root.headerCard = headerCard
+                    root.running = isRunning
+                }
+                onIsRunningChanged: root.running = isRunning
             }
         }
 
         TabStrip {
             Layout.fillWidth: true
+            Layout.maximumWidth: Theme.layout.maxContentWidth
+            Layout.alignment: Qt.AlignHCenter
             current: root.tab
             tabs: [
                 { id: "overview", label: qsTr("Overview") }
@@ -166,27 +199,23 @@ Item {
         StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.maximumWidth: Theme.layout.maxContentWidth
+            Layout.alignment: Qt.AlignHCenter
             Layout.topMargin: Theme.space.sm
             currentIndex: ["overview", "managedpack", "content", "version", "browse", "worlds", "datapacks", "servers", "backups", "screenshots", "log", "settings", "gameoptions", "plugins"].indexOf(root.tab)
 
             InstanceOverviewTab {
-                id: overview
-                property bool running: false
-                function syncFrom(card) {
-                    loader = card.loader
-                    gameVersion = card.gameVersion
-                    lastLaunch = card.lastLaunch
-                    totalTimePlayed = card.totalTimePlayed
-                }
                 details: root.details
                 notes: root.details ? root.details.notes : ""
                 onNotesEdited: (text) => { if (root.details) root.details.notes = text }
                 onScreenshotsRequested: root.tab = "screenshots"
+                onWorldsRequested: root.tab = "worlds"
                 onManageContentRequested: root.tab = "content"
             }
 
             ManagedPackTab {
                 controller: root.managedPackModel
+                iconKey: root.headerCard ? root.headerCard.iconKey : ""
                 onUpdated: root.backRequested()
             }
 
@@ -249,11 +278,12 @@ Item {
                 pluginSurfaces: root.settingsPlugins
                 adapter: root.details ? root.details.settings : null
                 systemMemoryMiB: root.systemMemoryMiB
-                running: overview.running
+                running: root.running
             }
 
             GameOptionsTab {
                 model: root.details ? root.details.gameOptions : null
+                running: root.running
             }
 
             SettingsScroll {
@@ -266,6 +296,73 @@ Item {
                     showTitles: count > 1
                 }
             }
+        }
+    }
+
+    // The header's ⋯ menu: the folders first, then -- once Main.qml answers
+    // them (see `manageable`) -- the library's own instance actions.
+    Menu {
+        id: instanceMenu
+        readonly property bool isMinecraft: !!root.details && root.details.isMinecraft
+        readonly property string name: root.headerCard ? root.headerCard.name : ""
+        readonly property string iconKey: root.headerCard ? root.headerCard.iconKey : ""
+        readonly property string group: root.headerCard ? root.headerCard.group : ""
+
+        MenuItem {
+            text: qsTr("Open folder")
+            icon.source: Icons.url("folder")
+            onTriggered: root.openPathRequested(root.details ? root.details.instanceRoot : "")
+        }
+        MenuItem {
+            // A hidden item still takes its row in a Menu; zero it as well.
+            visible: instanceMenu.isMinecraft
+            height: visible ? implicitHeight : 0
+            text: qsTr("Open mods folder")
+            icon.source: Icons.url("package")
+            onTriggered: root.openPathRequested(root.details ? root.details.modsDir : "")
+        }
+        MenuSeparator {
+            visible: root.manageable
+            height: visible ? implicitHeight : 0
+        }
+        MenuItem {
+            visible: root.manageable
+            height: visible ? implicitHeight : 0
+            text: qsTr("Rename…")
+            icon.source: Icons.url("edit")
+            onTriggered: root.renameRequested(root.instanceId, instanceMenu.name)
+        }
+        MenuItem {
+            visible: root.manageable
+            height: visible ? implicitHeight : 0
+            text: qsTr("Change icon…")
+            icon.source: Icons.url("image")
+            onTriggered: root.iconRequested(root.instanceId, instanceMenu.iconKey)
+        }
+        MenuItem {
+            visible: root.manageable
+            height: visible ? implicitHeight : 0
+            text: qsTr("Change group…")
+            icon.source: Icons.url("layers")
+            onTriggered: root.groupRequested(root.instanceId, instanceMenu.group)
+        }
+        MenuItem {
+            visible: root.manageable
+            height: visible ? implicitHeight : 0
+            text: qsTr("Duplicate…")
+            icon.source: Icons.url("copy")
+            onTriggered: root.duplicateRequested(root.instanceId, instanceMenu.name, instanceMenu.group)
+        }
+        MenuSeparator {
+            visible: root.manageable
+            height: visible ? implicitHeight : 0
+        }
+        MenuItem {
+            visible: root.manageable
+            height: visible ? implicitHeight : 0
+            text: qsTr("Delete…")
+            icon.source: Icons.url("trash")
+            onTriggered: root.deleteRequested(root.instanceId, instanceMenu.name)
         }
     }
 }

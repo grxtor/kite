@@ -53,7 +53,7 @@ Item {
                 visible: root.iconName.length > 0
                 width: Theme.icon.md + Theme.space.xs
                 height: width
-                radius: Theme.radius.sm + 2
+                radius: Theme.radius.sm
                 color: Theme.palette.accentSubtle
                 MeshIcon {
                     anchors.centerIn: parent

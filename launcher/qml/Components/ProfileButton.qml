@@ -41,8 +41,10 @@ AbstractButton {
 
     onClicked: control.signedIn ? menu.toggle() : control.openAccountsRequested()
 
+    // A small radius, not a pill: an account is picked here, and a lone
+    // capsule reads as a toggle rather than as "this is you".
     background: Rectangle {
-        radius: Theme.radius.pill
+        radius: Theme.radius.md
         color: control.down ? Theme.palette.pressedOverlay
              : control.hovered || menu.visible ? Theme.palette.hoverOverlay : "transparent"
         border.width: 1
@@ -83,7 +85,7 @@ AbstractButton {
                     // poke out past it). A small radius keeps that overflow
                     // imperceptible instead of fighting a shape the image
                     // was never cut to.
-                    radius: 6
+                    radius: Theme.radius.sm
                     color: Theme.palette.accentSubtle
                     border.width: 1
                     border.color: Theme.palette.border
