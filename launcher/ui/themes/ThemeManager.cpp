@@ -459,17 +459,6 @@ void ThemeManager::initCustomIconThemes()
 
 void ThemeManager::initializeCatPacks()
 {
-	QList<std::pair<QString, QString>> defaultCats{
-		{"kitteh", QObject::tr("Background Cat (from MultiMC)")},
-		{"rory", QObject::tr("Rory ID 11 (drawn by Ashtaka)")},
-		{"rory-flat",
-		 QObject::tr("Rory ID 11 (flat edition, drawn by Ashtaka)")},
-		{"teawie", QObject::tr("Teawie (drawn by SympathyTea)")}};
-
-	for (const auto& [id, name] : defaultCats) {
-		addCatPack(std::make_unique<BasicCatPack>(id, name));
-	}
-
 	// Create catpacks folder in data directory
 	m_catPacksFolder = QDir("catpacks");
 	if (!m_catPacksFolder.mkpath("."))
@@ -480,33 +469,10 @@ void ThemeManager::initializeCatPacks()
 		supportedImageFormats.append("*." + format);
 	}
 
-	auto loadFiles = [this, &supportedImageFormats](const QDir& dir) {
-		QDirIterator it(dir.absolutePath(), supportedImageFormats, QDir::Files);
-		while (it.hasNext()) {
-			QFileInfo info(it.next());
-			addCatPack(std::make_unique<FileCatPack>(info));
-		}
-	};
-
-	// Load image files in catpacks folder root
-	loadFiles(m_catPacksFolder);
-
-	// Load subdirectories
-	QDirIterator directoryIterator(m_catPacksFolder.path(),
-								   QDir::Dirs | QDir::NoDotAndDotDot);
-	while (directoryIterator.hasNext()) {
-		QDir dir(directoryIterator.next());
-		QFileInfo manifest(dir.absoluteFilePath("catpack.json"));
-
-		if (manifest.isFile()) {
-			try {
-				addCatPack(std::make_unique<JsonCatPack>(manifest));
-			} catch (const Exception& e) {
-				qWarning() << "Couldn't load catpack json:" << e.cause();
-			}
-		} else {
-			loadFiles(dir);
-		}
+	// The built-in packs, loose pictures and sub-folders: see
+	// discoverCatPacks(), shared with the QML shell.
+	for (auto& pack : discoverCatPacks(m_catPacksFolder, supportedImageFormats)) {
+		addCatPack(std::move(pack));
 	}
 }
 

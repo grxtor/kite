@@ -49,7 +49,8 @@ Rectangle {
                 // after it on a half pixel, blurring 1px borders.
                 width: Math.ceil(label.implicitWidth) + Theme.space.lg * 2
                 hoverEnabled: true
-                checkable: true
+                // `checked` only mirrors `selected` (for accessibility); the
+                // button must not toggle it itself, which would drop the binding.
                 checked: selected
                 Accessible.role: Accessible.PageTab
                 Accessible.name: modelData.label

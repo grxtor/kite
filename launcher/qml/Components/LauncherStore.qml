@@ -22,4 +22,6 @@ QtObject {
     property var updates: null
     // PlayTimeSummary: total play time across every instance, in seconds.
     property var playTime: null
+    // CatPackList: the cat pictures (packs, sourceFor(id)).
+    property var catPacks: null
 }

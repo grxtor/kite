@@ -19,10 +19,14 @@
 
 #pragma once
 
-#include <QString>
 #include <QDate>
+#include <QDir>
 #include <QFileInfo>
 #include <QList>
+#include <QString>
+#include <QStringList>
+#include <memory>
+#include <vector>
 
 class CatPack
 {
@@ -31,6 +35,13 @@ class CatPack
 	virtual QString id() = 0;
 	virtual QString name() = 0;
 	virtual QString path() = 0;
+	/// path() as it would be on @p date, for the seasonal pictures. Packs
+	/// with only one picture return it whatever the date.
+	virtual QString pathOn(const QDate& date)
+	{
+		Q_UNUSED(date);
+		return path();
+	}
 };
 
 class BasicCatPack : public CatPack
@@ -41,6 +52,7 @@ class BasicCatPack : public CatPack
 	QString id() override;
 	QString name() override;
 	QString path() override;
+	QString pathOn(const QDate& date) override;
 
   private:
 	QString m_id;
@@ -76,6 +88,7 @@ class JsonCatPack : public CatPack
 	QString id() override;
 	QString name() override;
 	QString path() override;
+	QString pathOn(const QDate& date) override;
 
   private:
 	QString m_id;
@@ -83,3 +96,14 @@ class JsonCatPack : public CatPack
 	QString m_defaultPath;
 	QList<JsonCatPackVariant> m_variants;
 };
+
+/*!
+ * Every cat pack there is: the four that ship with MeshMC, then whatever is
+ * in @p folder (the data folder's "catpacks"): loose pictures matching
+ * @p imageFilters (e.g. "*.png"), and sub-folders holding either a
+ * catpack.json or pictures. A pack whose id is already taken is left out,
+ * and a manifest that cannot be read is skipped with a warning. Shared by
+ * the classic ThemeManager and the QML shell's CatPackList.
+ */
+std::vector<std::unique_ptr<CatPack>>
+discoverCatPacks(const QDir& folder, const QStringList& imageFilters);

@@ -21,7 +21,9 @@
 #include "Exception.h"
 
 #include <QDate>
+#include <QDebug>
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -46,7 +48,11 @@ QString BasicCatPack::name()
 
 QString BasicCatPack::path()
 {
-	QDate now = QDate::currentDate();
+	return pathOn(QDate::currentDate());
+}
+
+QString BasicCatPack::pathOn(const QDate& now)
+{
 	int month = now.month();
 	int day = now.day();
 
@@ -136,8 +142,11 @@ QString JsonCatPack::name()
 
 QString JsonCatPack::path()
 {
-	QDate now = QDate::currentDate();
+	return pathOn(QDate::currentDate());
+}
 
+QString JsonCatPack::pathOn(const QDate& now)
+{
 	for (const auto& v : m_variants) {
 		bool inRange = false;
 		if (v.startMonth <= v.endMonth) {
@@ -161,4 +170,59 @@ QString JsonCatPack::path()
 	}
 
 	return m_defaultPath;
+}
+
+// ===================== discovery =====================
+
+std::vector<std::unique_ptr<CatPack>>
+discoverCatPacks(const QDir& folder, const QStringList& imageFilters)
+{
+	std::vector<std::unique_ptr<CatPack>> packs;
+	QStringList seen;
+	auto add = [&](std::unique_ptr<CatPack> pack) {
+		const QString id = pack->id();
+		if (seen.contains(id)) {
+			qWarning() << "CatPack" << id << "not added to prevent id duplication";
+			return;
+		}
+		seen << id;
+		packs.push_back(std::move(pack));
+	};
+
+	const QList<std::pair<QString, QString>> defaultCats{
+		{"kitteh", QObject::tr("Background Cat (from MultiMC)")},
+		{"rory", QObject::tr("Rory ID 11 (drawn by Ashtaka)")},
+		{"rory-flat",
+		 QObject::tr("Rory ID 11 (flat edition, drawn by Ashtaka)")},
+		{"teawie", QObject::tr("Teawie (drawn by SympathyTea)")}};
+	for (const auto& [id, name] : defaultCats) {
+		add(std::make_unique<BasicCatPack>(id, name));
+	}
+
+	auto loadFiles = [&](const QDir& dir) {
+		QDirIterator it(dir.absolutePath(), imageFilters, QDir::Files);
+		while (it.hasNext()) {
+			add(std::make_unique<FileCatPack>(QFileInfo(it.next())));
+		}
+	};
+
+	// Pictures in the folder's root.
+	loadFiles(folder);
+
+	// Sub-folders: a catpack.json, or just pictures.
+	QDirIterator directories(folder.path(), QDir::Dirs | QDir::NoDotAndDotDot);
+	while (directories.hasNext()) {
+		QDir dir(directories.next());
+		QFileInfo manifest(dir.absoluteFilePath("catpack.json"));
+		if (manifest.isFile()) {
+			try {
+				add(std::make_unique<JsonCatPack>(manifest));
+			} catch (const Exception& e) {
+				qWarning() << "Couldn't load catpack json:" << e.cause();
+			}
+		} else {
+			loadFiles(dir);
+		}
+	}
+	return packs;
 }

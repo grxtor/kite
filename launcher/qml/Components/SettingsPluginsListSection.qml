@@ -82,7 +82,13 @@ SettingsScroll {
                         checked: pluginRow.model.enabled
                         enabled: pluginRow.model.canToggle
                         Accessible.name: qsTr("Use %1").arg(pluginRow.model.name)
-                        onToggled: root.pluginList.setEnabled(pluginRow.index, checked)
+                        onToggled: {
+                            root.pluginList.setEnabled(pluginRow.index, checked)
+                            // A click assigns `checked` and drops the binding; put it
+                            // back so the switch shows the plugin's state, not the
+                            // click, whatever the plugin made of it.
+                            checked = Qt.binding(() => pluginRow.model.enabled)
+                        }
                     }
                 }
             }

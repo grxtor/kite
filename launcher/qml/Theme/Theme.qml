@@ -159,13 +159,23 @@ QtObject {
                           Qt.application.font.family)
     }
 
+    // The interface font the user picked, by family name; empty or "Inter"
+    // means the bundled Inter. Set from the UiFontFamily setting (see
+    // SettingsStore.qml). Sizes stay on the type scale below whatever it is.
+    property string customFamily: ""
+
     readonly property QtObject font: QtObject {
         // Unconditional now that Inter is bundled (see the FontLoaders
         // above) -- the platform font is only ever used if loading the
         // bundled resource itself failed, not merely because Inter isn't
         // separately installed system-wide.
-        readonly property string family: root._interReady
-                                         ? "Inter" : Qt.application.font.family
+        // The family the user chose in Settings > Appearance, when it is
+        // installed (see Theme.customFamily); else the bundled Inter.
+        readonly property string family: root.customFamily.length > 0
+                                         && root.customFamily !== "Inter"
+                                         && Qt.fontFamilies().indexOf(root.customFamily) >= 0
+                                         ? root.customFamily
+                                         : root._interReady ? "Inter" : Qt.application.font.family
         readonly property string mono: Qt.fontFamilies().indexOf("JetBrains Mono") >= 0
                                        ? "JetBrains Mono"
                                        : Qt.platform.os === "osx" ? "Menlo"

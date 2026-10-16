@@ -73,6 +73,9 @@ qt_add_qml_module(MeshMC_qml_components
         LauncherStore.qml
         FolderRow.qml
         ExtraInstanceFolders.qml
+        FontFamilyRow.qml
+        CatPicture.qml
+        CatPackPicker.qml
         ConsoleFontRow.qml
         ConsolePreview.qml
         TotalPlayTime.qml

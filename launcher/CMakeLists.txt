@@ -94,6 +94,12 @@ set(CORE_SOURCES
     models/PlayTimeSummary.cpp
     models/ComponentTools.h
     models/ComponentTools.cpp
+    models/CatPackList.h
+    models/CatPackList.cpp
+    # The cat pack classes and discovery: QtCore only, shared by the widget
+    # ThemeManager and the QML shell's CatPackList.
+    ui/themes/CatPack.h
+    ui/themes/CatPack.cpp
     models/ContentUpdateController.h
     models/ContentUpdateController.cpp
     models/AtlOptionalModsModel.h
@@ -997,8 +1003,6 @@ SET(MESHMC_SOURCES
     ui/themes/SystemTheme.h
     ui/themes/ThemeManager.cpp
     ui/themes/ThemeManager.h
-    ui/themes/CatPack.cpp
-    ui/themes/CatPack.h
 
     # Processes
     ui/LaunchController.h
@@ -1518,6 +1522,12 @@ add_unit_test(PlayTimeSummary
 # filtering, plus every action refusing politely without an instance.
 add_unit_test(ComponentTools
     SOURCES models/ComponentTools_test.cpp
+    LIBS MeshMC_core
+    )
+# CatPackList: discovery of built-in, loose and manifest packs against a
+# temporary folder, and the seasonal pictures.
+add_unit_test(CatPackList
+    SOURCES models/CatPackList_test.cpp
     LIBS MeshMC_core
     )
 

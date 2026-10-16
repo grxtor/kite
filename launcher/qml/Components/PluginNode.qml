@@ -242,7 +242,11 @@ Item {
                 stepSize: root.props.step !== undefined ? root.props.step : 1
                 editable: true
                 value: root.props.value !== undefined ? root.props.value : 0
-                onValueModified: root.send("change", value)
+                onValueModified: {
+                    root.send("change", value)
+                    // Back to following the plugin's value, not the click.
+                    value = Qt.binding(() => root.props.value !== undefined ? root.props.value : 0)
+                }
             }
         }
     }
@@ -260,7 +264,11 @@ Item {
                 textRole: "label"
                 valueRole: "id"
                 currentIndex: Math.max(0, options.findIndex(o => o.id === root.props.value))
-                onActivated: root.send("change", currentValue)
+                onActivated: {
+                    root.send("change", currentValue)
+                    // Back to following the plugin's value, not the click.
+                    currentIndex = Qt.binding(() => Math.max(0, options.findIndex(o => o.id === root.props.value)))
+                }
             }
         }
     }

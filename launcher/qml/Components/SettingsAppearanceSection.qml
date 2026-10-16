@@ -89,12 +89,19 @@ SettingsScroll {
                 textRole: "name"
                 valueRole: "languageKey"
                 enabled: !!root.languages && !!root.selectLanguage
+                // Follows the setting (changed here, in the old settings
+                // window or by a plugin), not only the first time.
+                readonly property string stored: SettingsStore.string("Language")
                 function syncToSetting() {
-                    currentIndex = indexOfValue(SettingsStore.string("Language"))
+                    currentIndex = indexOfValue(stored)
                 }
+                onStoredChanged: syncToSetting()
                 onCountChanged: syncToSetting()
                 Component.onCompleted: syncToSetting()
-                onActivated: root.selectLanguage(currentValue)
+                onActivated: {
+                    root.selectLanguage(currentValue)
+                    syncToSetting()
+                }
                 Accessible.name: qsTr("Display language")
             }
         }
@@ -127,6 +134,16 @@ SettingsScroll {
     }
     SettingsGroup {
         width: parent.width
+        title: qsTr("Font")
+        FontFamilyRow {
+            key: "UiFontFamily"
+            defaultFamily: "Inter"
+            label: qsTr("Interface font")
+            description: qsTr("The font every screen of the launcher is drawn in. Sizes stay the same. Inter comes with MeshMC; the rest are installed on this computer.")
+        }
+    }
+    SettingsGroup {
+        width: parent.width
         title: qsTr("Motion")
         SettingSwitch {
             key: "UiReduceMotion"
@@ -146,6 +163,8 @@ SettingsScroll {
             key: "CatEnabled"
             label: qsTr("Show the cat")
             description: qsTr("A small Minecraft cat that lives on the play bar. Click to pet it, double-click and it hops.")
+            // One cat in that corner: the picture below steps aside.
+            onSwitched: (on) => { if (on) SettingsStore.setValue("TheCat", false) }
         }
         SettingRow {
             wide: true
@@ -158,6 +177,32 @@ SettingsScroll {
                 CatVariantTile { value: "black"; label: qsTr("Black") }
                 CatVariantTile { value: "white"; label: qsTr("White") }
                 CatVariantTile { value: "siamese"; label: qsTr("Siamese") }
+            }
+        }
+    }
+    // The still cat pictures of the classic window, for builds with or
+    // without the 3D cat. Shares the corner with the 3D cat, so turning one
+    // on turns the other off.
+    SettingsGroup {
+        width: parent.width
+        title: qsTr("Cat picture")
+        SettingSwitch {
+            key: "TheCat"
+            label: qsTr("Show a cat picture")
+            description: root.catAvailable
+                         ? qsTr("A quiet picture of a cat in the corner of every page, instead of the 3D cat.")
+                         : qsTr("A quiet picture of a cat in the corner of every page.")
+            onSwitched: (on) => { if (on) SettingsStore.setValue("CatEnabled", false) }
+        }
+        SettingRow {
+            wide: true
+            showDivider: true
+            enabled: SettingsStore.bool("TheCat")
+            label: qsTr("Picture")
+            description: qsTr("Add your own by putting a picture in the catpacks folder inside MeshMC's data folder.")
+            visible: !!LauncherStore.catPacks
+            CatPackPicker {
+                width: parent.width
             }
         }
     }
