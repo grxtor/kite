@@ -1080,9 +1080,17 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 		process->appendStep(step);
 	}
 
-	// if we aren't in offline mode,.
-	if (session->status != AuthSession::PlayableOffline) {
-		if (!session->demo) {
+	/* The game's files come from the network unless this is an offline
+	 * launch. An offline *account* is not that: it has no sign-in to claim,
+	 * but a new instance still has to be downloaded once, so
+	 * AuthSession::fetch_game_files keeps the update online for it. A
+	 * signed-in account in offline mode (status PlayableOffline without it)
+	 * stays strictly offline. */
+	const bool updateOnline = session->status != AuthSession::PlayableOffline ||
+							  session->fetch_game_files;
+	if (updateOnline) {
+		// Only a signed-in session has anything to claim.
+		if (!session->demo && session->status != AuthSession::PlayableOffline) {
 			process->appendStep(new ClaimAccount(pptr, session));
 		}
 		process->appendStep(new Update(pptr, Net::Mode::Online));

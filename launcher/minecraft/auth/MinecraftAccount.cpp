@@ -196,10 +196,35 @@ bool MinecraftAccount::shouldRefresh() const
 	return false;
 }
 
+bool MinecraftAccount::shouldFetchGameFiles(
+	bool wantsOnline, QNetworkInformation::Reachability reachability)
+{
+	return wantsOnline &&
+		   reachability != QNetworkInformation::Reachability::Disconnected;
+}
+
+QNetworkInformation::Reachability MinecraftAccount::networkReachability()
+{
+	// Loaded once; where the platform has no backend there is no answer, and
+	// "unknown" is treated as "try".
+	static const bool loaded = QNetworkInformation::loadDefaultBackend();
+	if (!loaded || !QNetworkInformation::instance()) {
+		return QNetworkInformation::Reachability::Unknown;
+	}
+	return QNetworkInformation::instance()->reachability();
+}
+
 void MinecraftAccount::fillSession(AuthSessionPtr session)
 {
 	if (data.type == AccountType::Offline) {
 		session->status = AuthSession::PlayableOffline;
+		/* No sign-in, so never "online" -- but the game still has to come
+		 * from somewhere. Offline here means "no login", not "no network":
+		 * only an explicit offline launch (wants_online was cleared by
+		 * LaunchController: Play offline, or skipping the account refresh)
+		 * or a missing network keeps the update offline. */
+		session->fetch_game_files =
+			shouldFetchGameFiles(session->wants_online, networkReachability());
 		session->wants_online = false;
 		session->player_name = data.offlineUsername;
 		session->username = data.offlineUsername;

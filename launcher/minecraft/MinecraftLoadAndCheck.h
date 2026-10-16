@@ -23,6 +23,7 @@
 #include <QObject>
 #include <QList>
 #include <QUrl>
+#include <memory>
 
 #include "tasks/Task.h"
 
@@ -30,6 +31,7 @@
 
 class MinecraftVersion;
 class MinecraftInstance;
+class LaunchProfile;
 
 class MinecraftLoadAndCheck : public Task
 {
@@ -39,6 +41,17 @@ class MinecraftLoadAndCheck : public Task
 								   QObject* parent = 0);
 	virtual ~MinecraftLoadAndCheck() {};
 	void executeTask() override;
+
+	/// Whether @p profile (PackProfile::getProfile(), which is null when the
+	/// patches could not be applied) is complete enough to launch from: it
+	/// exists and none of its components is missing or broken. A launch that
+	/// carries on without this starts java with no libraries and no game,
+	/// and only says "Game crashed".
+	static bool profileUsable(const std::shared_ptr<LaunchProfile>& profile);
+	/// What the user is told when the game's data is not there yet: that it
+	/// still has to be downloaded, and how. @p detail (the technical reason,
+	/// may be empty) follows on its own line.
+	static QString notDownloadedMessage(const QString& detail = QString());
 
   private slots:
 	void subtaskSucceeded();

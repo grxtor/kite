@@ -591,6 +591,13 @@ add_unit_test(Library
     LIBS MeshMC_logic
     )
 
+# Launch preflight: an offline account may still download the game's files, and
+# a failed offline metadata load fails the launch with a reason.
+add_unit_test(LaunchPreflight
+    SOURCES minecraft/LaunchPreflight_test.cpp
+    LIBS MeshMC_core
+    )
+
 # FIXME: shares data with FileSystem test
 add_unit_test(ModFolderModel
     SOURCES minecraft/mod/ModFolderModel_test.cpp

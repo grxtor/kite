@@ -62,6 +62,14 @@ struct AuthSession {
 	// Did the user request online mode?
 	bool wants_online = true;
 
+	/* Whether the game's own files (version data, libraries, assets) may be
+	 * downloaded for this launch. An offline account has nothing to sign in
+	 * to, so it is never "online" in the sense above, but it still needs the
+	 * game; MinecraftAccount::fillSession() sets this for it from the user's
+	 * request and the network. Accounts that sign in decide through
+	 * `status` instead (PlayableOnline updates, PlayableOffline does not). */
+	bool fetch_game_files = false;
+
 	// Is this a demo session?
 	bool demo = false;
 

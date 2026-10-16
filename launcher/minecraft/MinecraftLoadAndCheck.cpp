@@ -19,6 +19,7 @@
 
 #include "MinecraftLoadAndCheck.h"
 #include "MinecraftInstance.h"
+#include "LaunchProfile.h"
 #include "PackProfile.h"
 
 MinecraftLoadAndCheck::MinecraftLoadAndCheck(MinecraftInstance* inst,
@@ -35,6 +36,25 @@ void MinecraftLoadAndCheck::executeTask()
 	m_task = components->getCurrentTask();
 
 	if (!m_task) {
+		/* No task left over does not mean all is well: when the metadata is
+		 * not in the cache (a new instance, a new data folder) the offline
+		 * resolve fails on the spot, before there is anything to hand back
+		 * here. Say so, rather than let the launch start without a game. */
+		const auto profile = components->getProfile();
+		if (!profileUsable(profile)) {
+			// The reason: what the resolve said, else what the profile lists.
+			QString detail = components->lastError();
+			if (detail.isEmpty() && profile) {
+				for (const auto& problem : profile->getProblems()) {
+					detail += problem.m_description + QLatin1Char('\n');
+				}
+			}
+			qWarning() << "MinecraftLoadAndCheck: the instance's components "
+						  "could not be loaded offline:"
+					   << detail;
+			emitFailed(notDownloadedMessage(detail));
+			return;
+		}
 		emitSucceeded();
 		return;
 	}
@@ -69,5 +89,21 @@ void MinecraftLoadAndCheck::subtaskFailed(QString error)
 					<< "failed, but work was already done!";
 		return;
 	}
-	emitFailed(error);
+	emitFailed(notDownloadedMessage(error));
+}
+
+bool MinecraftLoadAndCheck::profileUsable(
+	const std::shared_ptr<LaunchProfile>& profile)
+{
+	return profile && profile->getProblemSeverity() != ProblemSeverity::Error;
+}
+
+QString MinecraftLoadAndCheck::notDownloadedMessage(const QString& detail)
+{
+	const QString message =
+		tr("This instance's game files aren't downloaded yet. Connect to the "
+		   "internet and play once.");
+	return detail.trimmed().isEmpty()
+			   ? message
+			   : message + QStringLiteral("\n\n") + detail.trimmed();
 }

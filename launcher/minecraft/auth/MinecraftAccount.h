@@ -26,6 +26,7 @@
 #include <QJsonObject>
 #include <QPair>
 #include <QMap>
+#include <QNetworkInformation>
 #include <QPixmap>
 
 #include <memory>
@@ -160,6 +161,14 @@ class MinecraftAccount : public QObject, public Usable
 	bool shouldRefresh() const;
 
 	void fillSession(AuthSessionPtr session);
+
+	/// Whether an offline account's launch may download the game's files:
+	/// the user asked for an online launch and the network is not known to
+	/// be down. See AuthSession::fetch_game_files.
+	static bool shouldFetchGameFiles(
+		bool wantsOnline, QNetworkInformation::Reachability reachability);
+	/// The platform's current view of the network (Unknown where it has none).
+	static QNetworkInformation::Reachability networkReachability();
 
 	QString lastError() const
 	{
