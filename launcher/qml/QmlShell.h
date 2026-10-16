@@ -31,13 +31,20 @@
 class IdSelectionModel;
 class InstanceFilterModel;
 class InstanceDetails;
+class InstanceExportController;
+class InstanceShortcutController;
 class SettingsAdapter;
 class ModrinthModpackModel;
+class FlameModpackModel;
 class AccountsController;
 class NewInstanceController;
+class JavaController;
+class JavaDownloadController;
 class RecentWorldsModel;
 class JavaInstallList;
 class TranslationsModel;
+class AboutInfo;
+class NewsModel;
 class QmlUiHost;
 class UiHost;
 class QQmlApplicationEngine;
@@ -101,6 +108,8 @@ class QmlShell : public QObject
 	Q_PROPERTY(int systemMemoryMiB READ systemMemoryMiB CONSTANT)
 	/// Modrinth modpack search for the Discover page.
 	Q_PROPERTY(QObject* modpackModel READ modpackModel CONSTANT)
+	/// CurseForge modpack search for the Discover page's provider switch.
+	Q_PROPERTY(QObject* curseForgeModpackModel READ curseForgeModpackModel CONSTANT)
 	/// Every instance, most recently played first; never-played ones left out.
 	Q_PROPERTY(QObject* recentModel READ recentModel CONSTANT)
 	/// At most one row: the instance whose id QML writes into instanceId.
@@ -115,6 +124,10 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* accountsController READ accountsController CONSTANT)
 	/// The QML "New instance" flow: picks a Minecraft version and loader.
 	Q_PROPERTY(QObject* newInstance READ newInstance CONSTANT)
+	/// Java detection, tests and downloaded runtimes (see models/JavaController.h).
+	Q_PROPERTY(QObject* javaController READ javaController CONSTANT)
+	/// The "Download Java" flow (see models/JavaDownloadController.h).
+	Q_PROPERTY(QObject* javaDownload READ javaDownload CONSTANT)
 	/* Distinct groups currently in use, for a "move to group" picker's
 	 * suggestions -- the same list InstanceFilterModel derives for the
 	 * library's own section headers (see m_instances), so a group picker
@@ -142,6 +155,17 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* javaInstalls READ javaInstalls CONSTANT)
 	/// Whether detectJava()'s task is still running.
 	Q_PROPERTY(bool javaDetecting READ javaDetecting NOTIFY javaDetectingChanged)
+
+	/// Settings' About section: version, build, credits, licences, help
+	/// links (see AboutInfo). Created in load().
+	Q_PROPERTY(QObject* about READ about CONSTANT)
+	/* The launcher's news, newest first (see NewsModel), following the
+	 * application's NewsChecker; null without one. Created in load(). */
+	Q_PROPERTY(QObject* news READ news CONSTANT)
+	/* Whether this build can update itself, so "Check for updates" has
+	 * something to do -- set by Application, which owns the updater. */
+	Q_PROPERTY(bool updaterAvailable READ updaterAvailable NOTIFY
+				   updaterAvailableChanged)
 
   public:
 	explicit QmlShell(QObject* parent = nullptr);
@@ -200,6 +224,16 @@ class QmlShell : public QObject
 	using ProfilersProvider = std::function<QVariantList()>;
 	void setProfilersProvider(ProfilersProvider provider);
 
+	/* Builds the "Installed plugins" list (a PluginListModel, which lives
+	 * next to PluginManager in MeshMC_logic) -- same indirection as
+	 * setPluginSurfaceFactory(). Application installs it; it returns null
+	 * in a build without the plugin host. */
+	using PluginListFactory = std::function<QObject*()>;
+	void setPluginListFactory(PluginListFactory factory);
+	/* The plugin list, made by that factory on first use and kept; null
+	 * without one, which Settings takes as "no plugins section". */
+	Q_INVOKABLE QObject* pluginList();
+
 	/* One C++-owned model per (anchor, anchorContext) pair asked for,
 	 * reused across calls the same way sectionModel() reuses one
 	 * InstanceFilterModel per group. `anchor` is an MMCOUiAnchor value, or
@@ -238,6 +272,7 @@ class QmlShell : public QObject
 	UiHost* uiHostInterface() const;
 	int systemMemoryMiB() const;
 	QObject* modpackModel() const;
+	QObject* curseForgeModpackModel() const;
 	/* Starts installing a Modrinth modpack version as a new instance and
 	 * returns its TaskWatcher, owned by C++: the install must outlive the
 	 * page that started it, whatever QML does with the reference. */
@@ -258,12 +293,23 @@ class QmlShell : public QObject
 	 * destroys) whichever one was open before; asking again for the same
 	 * id returns the one already open. Null if @p id names no instance. */
 	Q_INVOKABLE QObject* instanceDetails(const QString& id);
+	/* The Export dialog's controller for instance @p id. At most one is
+	 * kept, like instanceDetails(): asking for another id replaces it,
+	 * asking again for the same id returns the one already open. Null if
+	 * @p id names no instance. */
+	Q_INVOKABLE QObject* exportController(const QString& id);
+	/* The Create shortcut dialog's controller for instance @p id; the same
+	 * keeping rule. */
+	Q_INVOKABLE QObject* shortcutController(const QString& id);
 	/// The Accounts page's model+actions object. Created in load(), like
 	/// the other CONSTANT properties above.
 	QObject* accountsController() const;
 	/// The "New instance" flow's controller. Created in load(), like the
 	/// other CONSTANT properties above.
 	QObject* newInstance() const;
+	/// Made on first use, like newInstance().
+	QObject* javaController() const;
+	QObject* javaDownload() const;
 
 	/* Everything below just emits the matching *Requested() signal: QmlShell
 	 * sits in MeshMC_qml, which cannot see the widget code that actually
@@ -376,8 +422,9 @@ class QmlShell : public QObject
 	 * launch would otherwise ask (Main.qml's applyDevRoute(), "ask=<kind>"):
 	 * "pickAccount" asks the launch account picker over the real account
 	 * list; "busySkip" shows the account-refresh wait with its "Play
-	 * offline" button, which ends it. Through the same QmlUiHost calls a
-	 * launch makes. No-op for any other kind. */
+	 * offline" button, which ends it; "modal" shows a sample plugin prompt
+	 * (UiHost::runPluginModal()). Through the same QmlUiHost calls the
+	 * real code makes. No-op for any other kind. */
 	Q_INVOKABLE void debugShowRequest(const QString& kind);
 
 	QStringList groups() const;
@@ -413,6 +460,14 @@ class QmlShell : public QObject
 	 * The wizard page never writes JavaVersion/JavaArchitecture itself
 	 * (CheckJava, the launch step, does that later), so neither does this. */
 	Q_INVOKABLE void useJava(const QString& path);
+
+	QObject* about() const;
+	QObject* news() const;
+	bool updaterAvailable() const;
+	/// Called by Application, which knows whether the updater exists.
+	void setUpdaterAvailable(bool available);
+	/// Asks Application to check for updates now (checkForUpdatesRequested()).
+	Q_INVOKABLE void checkForUpdates();
 
   signals:
 	/* Emitted when the root window really closes -- not merely when it
@@ -455,6 +510,10 @@ class QmlShell : public QObject
 	/// javaDetecting() moved.
 	void javaDetectingChanged();
 
+	void updaterAvailableChanged();
+	/// checkForUpdates() -- Application runs the updater's check.
+	void checkForUpdatesRequested();
+
   private:
 	QVariantMap rootProperties();
 	void scheduleSnapshotIfRequested();
@@ -482,10 +541,15 @@ class QmlShell : public QObject
 	 * comment for how Application reaches this. */
 	std::unique_ptr<QmlUiHost> m_uiHost;
 	std::unique_ptr<ModrinthModpackModel> m_modpacks;
+	std::unique_ptr<FlameModpackModel> m_curseForgeModpacks;
 	/* The one open instance detail page, if any - see instanceDetails(). */
 	std::unique_ptr<InstanceDetails> m_instanceDetails;
+	std::unique_ptr<InstanceExportController> m_exportController;
+	std::unique_ptr<InstanceShortcutController> m_shortcutController;
 	std::unique_ptr<AccountsController> m_accountsController;
 	mutable std::unique_ptr<NewInstanceController> m_newInstance;
+	mutable std::unique_ptr<JavaController> m_javaController;
+	mutable std::unique_ptr<JavaDownloadController> m_javaDownload;
 	/* Keyed by (anchor, anchorContext) -- see pluginSurfaces(). Declared
 	 * alongside the other cached models, for the same reason: destroyed
 	 * before the engine is torn down. */
@@ -509,6 +573,11 @@ class QmlShell : public QObject
 	QStringList m_pendingImports;
 
 	ProfilersProvider m_profilersProvider;
+	PluginListFactory m_pluginListFactory;
+	std::unique_ptr<QObject> m_pluginList;
+	std::unique_ptr<AboutInfo> m_about;
+	std::unique_ptr<NewsModel> m_news;
+	bool m_updaterAvailable = false;
 	/* Whether show() has shown m_window yet: the first call shows it,
 	 * later ones only raise it. */
 	bool m_shown = false;

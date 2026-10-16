@@ -22,12 +22,16 @@
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlExpression>
+#include <QQuickItem>
 #include <QStandardItemModel>
 #include <QQmlEngine>
 #include <QQuickStyle>
 #include <QUrl>
 
+#include <functional>
 #include <memory>
+
+#include "models/NewsModel.h"
 
 /*
  * Smoke test for the QML user interface module.
@@ -54,6 +58,7 @@ class FakeShell : public QObject
 	/// Non-null is all Main.qml's openNewInstance() checks before opening.
 	Q_PROPERTY(QObject* newInstance READ newInstance CONSTANT)
 	Q_PROPERTY(int accountCount READ accountCount CONSTANT)
+	Q_PROPERTY(QObject* news READ news CONSTANT)
 
   public:
 	QObject* newInstance()
@@ -64,6 +69,11 @@ class FakeShell : public QObject
 	{
 		return m_accountCount;
 	}
+	QObject* news()
+	{
+		return &m_news;
+	}
+	NewsModel m_news;
 
 	/// What QmlShell::launchInstanceMode() was last asked, as "id:mode".
 	Q_INVOKABLE void launchInstanceMode(const QString& id, const QString& mode)
@@ -267,6 +277,79 @@ class QmlModuleTest : public QObject
 			Q_ARG(QVariant, QStringLiteral("fabric")),
 			Q_ARG(QVariant, QStringLiteral("demo"))));
 		QCOMPARE(shell.lastLaunch, QStringLiteral("fabric:demo"));
+	}
+
+	/* The macOS menu bar only ever shows natively (Cocoa); anywhere else
+	 * -- this offscreen test included -- it stays out of the window. */
+	void nativeMenuBarStaysOffOutsideCocoa()
+	{
+		QQmlEngine engine;
+		QObject shell;
+		auto root = createRoot(engine, &shell);
+		QVERIFY(root);
+		QVERIFY(!root->property("nativeMenuBar").toBool());
+		QVERIFY(!evaluate(root.get(), QStringLiteral("root.menuBar.visible")).toBool());
+	}
+
+	/* "Installed plugins" draws one row per plugin of its model, with the
+	 * model's own roles (the preview data has no plugins to render). */
+	void pluginListSectionDrawsARowPerPlugin()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		// Plain literals rather than a raw string: moc stops parsing the
+		// rest of this file at one.
+		component.setData(
+			"import QtQuick\n"
+			"import MeshMC.Components\n"
+			"SettingsPluginsListSection {\n"
+			"  width: 800; height: 600\n"
+			"  pluginList: ListModel {\n"
+			"    ListElement { name: 'World Share'; version: '1.0'; author: 'Steve';\n"
+			"      description: 'Shares worlds.'; license: 'MIT'; sourceUrl: '';\n"
+			"      signature: 'Signed'; status: 'Loaded'; statusDetail: '';\n"
+			"      enabled: true; canToggle: true; dependencies: '' }\n"
+			"    ListElement { name: 'Old Thing'; version: ''; author: '';\n"
+			"      description: ''; license: ''; sourceUrl: 'https://example.org';\n"
+			"      signature: 'Unsigned'; status: 'Missing dependency';\n"
+			"      statusDetail: 'Needs Core'; enabled: false; canToggle: true;\n"
+			"      dependencies: 'Core >= 2.0' }\n"
+			"  }\n"
+			"}\n",
+			QUrl(QStringLiteral("qrc:/test/PluginList.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		std::unique_ptr<QObject> section(component.create());
+		QVERIFY2(section, qPrintable(component.errorString()));
+		QVERIFY(section->property("shown").toBool());
+		QCOMPARE(section->property("count").toInt(), 2);
+		// Every row is a SettingRow carrying its plugin's name and version;
+		// Repeater rows live in the visual tree, not among QObject children.
+		int rows = 0;
+		std::function<void(QQuickItem*)> visit = [&](QQuickItem* item) {
+			const QString label = item->property("label").toString();
+			if (label == QStringLiteral("World Share 1.0") ||
+				label == QStringLiteral("Old Thing"))
+				++rows;
+			for (QQuickItem* child : item->childItems())
+				visit(child);
+		};
+		visit(qobject_cast<QQuickItem*>(section.get()));
+		QCOMPARE(rows, 2);
+	}
+
+	/* QmlShell.news reaches the Home page's welcome card. */
+	void homeShowsTheNewestHeadline()
+	{
+		QQmlEngine engine;
+		FakeShell shell;
+		shell.m_news.setEntries({ std::make_shared<NewsEntry>(
+			QStringLiteral("MeshMC 7 is out"), QString(),
+			QStringLiteral("https://example.org/7"), QString(), QDateTime()) });
+		auto root = createRoot(engine, &shell);
+		QVERIFY(root);
+		QCOMPARE(evaluate(root.get(), QStringLiteral("homePage.newsLatest.title")).toString(),
+				 QStringLiteral("MeshMC 7 is out"));
 	}
 
 	/* `meshmc --import` and the IPC "import" message reach QML as

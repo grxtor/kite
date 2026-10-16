@@ -142,3 +142,22 @@ bool NotificationChecker::entryApplies(
 					 !versionLessThan(entry.to, m_appFullVersion);
 	return channelApplies && platformApplies && fromApplies && toApplies;
 }
+
+QList<int> NotificationChecker::parseShownIds(const QString& setting)
+{
+	QList<int> ids;
+	const QStringList parts = setting.split(',', Qt::SkipEmptyParts);
+	for (const QString& part : parts) {
+		ids.append(part.toInt());
+	}
+	return ids;
+}
+
+QString NotificationChecker::formatShownIds(const QList<int>& ids)
+{
+	QStringList parts;
+	for (int id : ids) {
+		parts.append(QString::number(id));
+	}
+	return parts.join(',');
+}

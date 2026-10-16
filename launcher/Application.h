@@ -191,6 +191,9 @@ class Application : public QApplication, public LauncherContext
 
 	UiHost* uiHost() const override;
 
+	NewsChecker* newsChecker() const override;
+	NotificationChecker* notificationChecker() const override;
+
 	/* Whether the QML shell is up and its presenter ready to answer -- the
 	 * same check uiHost() makes before it will route a UiHost call to
 	 * QmlUiHost (see that method's comment). To choose between a widget
@@ -417,6 +420,20 @@ class Application : public QApplication, public LauncherContext
 	 * and whatever waited for its presenter has run through the widget
 	 * host instead. */
 	bool ensureQmlShell();
+	/* Loads the news and checks for notifications once, after the first
+	 * window is on screen (a launch straight from the command line never
+	 * gets here, as before); under the QML shell also checks the instance
+	 * folders, which MainWindow does for itself. */
+	void startBackgroundChecks();
+	bool m_backgroundChecksStarted = false;
+	/* Shows the notifications not yet dismissed for good through UiHost
+	 * -- the QML shell's equivalent of MainWindow::notificationsChanged(). */
+	void showNotificationsThroughUiHost();
+	/* The instance folder warnings MainWindow::checkInstancePathForProblems()
+	 * shows, through UiHost for the QML shell. */
+	void reportInstancePathProblems();
+	unique_qobject_ptr<NewsChecker> m_newsChecker;
+	unique_qobject_ptr<NotificationChecker> m_notificationChecker;
 	/* Shows (first time) or raises the QML shell's window, counting it as
 	 * an open window while it is shown -- see m_qmlWindowShown. */
 	void showQmlShellWindow(bool minimized);

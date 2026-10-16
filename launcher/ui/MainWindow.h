@@ -90,10 +90,6 @@ class MainWindow : public QMainWindow
 										 const QString& groupName,
 										 const QString& url = QString());
 
-	NewsChecker* newsChecker() const
-	{
-		return m_newsChecker.get();
-	}
   signals:
 	void isClosing();
 
@@ -334,8 +330,6 @@ class MainWindow : public QMainWindow
 	QActionGroup* m_profilerActions = nullptr;
 	KonamiCode* secretEventFilter = nullptr;
 
-	unique_qobject_ptr<NewsChecker> m_newsChecker;
-	unique_qobject_ptr<NotificationChecker> m_notificationChecker;
 
 	// Deletes itself on close (WA_DeleteOnClose), so this only ever
 	// holds a live dialog.

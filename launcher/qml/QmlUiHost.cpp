@@ -23,6 +23,7 @@
 #include <QDir>
 #include <QEventLoop>
 #include <QFileSystemWatcher>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkRequest>
@@ -131,6 +132,8 @@ QString QmlUiRequest::kind() const
 			return QStringLiteral("filePicker");
 		case Kind::PickAccount:
 			return QStringLiteral("pickAccount");
+		case Kind::Modal:
+			return QStringLiteral("modal");
 	}
 	return QString();
 }
@@ -154,6 +157,27 @@ void QmlUiRequest::setActions(QStringList actions)
 void QmlUiRequest::setAccountOptions(QVariantList options)
 {
 	m_accountOptions = std::move(options);
+}
+
+void QmlUiRequest::setModal(QVariantMap document, QVariantMap fields)
+{
+	m_modalDocument = std::move(document);
+	m_modalFields = std::move(fields);
+}
+
+void QmlUiRequest::sendEvent(const QString& surfaceId, const QString& nodeId,
+							 const QString& event, const QVariant& value)
+{
+	Q_UNUSED(surfaceId);
+	if (m_answered || nodeId.isEmpty()) {
+		return;
+	}
+	if (event == QLatin1String("change")) {
+		m_modalFields.insert(nodeId, value);
+	} else if (event == QLatin1String("click")) {
+		m_modalClicked = nodeId;
+		accept();
+	}
 }
 
 void QmlUiRequest::setValue(QString value)
@@ -542,6 +566,57 @@ QmlUiHost::pickAccount(const QString& title, const QString& text,
 		choice.makeDefault = request.makeDefault();
 	}
 	return choice;
+}
+
+namespace
+{
+	/* The starting value of every input node under @p node, keyed by id
+	 * -- what PluginUiRenderer's collectValues() would read straight after
+	 * building the same document: a toggle's, text or number field's and
+	 * choice's "value" prop, or each type's empty value without one. */
+	void collectModalFields(const QJsonObject& node, QVariantMap& fields)
+	{
+		const QString type = node.value(QStringLiteral("type")).toString();
+		const QString id = node.value(QStringLiteral("id")).toString();
+		const QJsonValue value =
+			node.value(QStringLiteral("props")).toObject().value(
+				QStringLiteral("value"));
+		if (!id.isEmpty()) {
+			if (type == QLatin1String("toggle")) {
+				fields.insert(id, value.toBool(false));
+			} else if (type == QLatin1String("text_field") ||
+					   type == QLatin1String("choice")) {
+				fields.insert(id, value.toString());
+			} else if (type == QLatin1String("number_field")) {
+				fields.insert(id, value.toDouble(0));
+			}
+		}
+		const QJsonArray children =
+			node.value(QStringLiteral("children")).toArray();
+		for (const QJsonValue& child : children) {
+			collectModalFields(child.toObject(), fields);
+		}
+	}
+} // namespace
+
+std::optional<UiHost::PluginModalResult>
+QmlUiHost::runPluginModal(const QString& title, const QJsonObject& document)
+{
+	// A document may wrap its tree in "root", as surface documents do.
+	const QJsonObject root = document.contains(QStringLiteral("root"))
+								 ? document.value(QStringLiteral("root")).toObject()
+								 : document;
+	QVariantMap fields;
+	collectModalFields(root, fields);
+
+	QmlUiRequest request(QmlUiRequest::Kind::Modal, title, QString());
+	request.setModal(document.toVariantMap(), fields);
+	runRequest(request);
+	if (!request.accepted() || request.modalClicked().isEmpty()) {
+		return std::nullopt;
+	}
+	return PluginModalResult{ request.modalClicked(),
+							  QJsonObject::fromVariantMap(request.modalFields()) };
 }
 
 std::optional<QString> QmlUiHost::askText(const QString& title,

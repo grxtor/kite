@@ -99,6 +99,7 @@ qt_add_qml_module(MeshMC_qml_components
         PluginNode.qml
         PluginSurfaces.qml
         UiRequestDialog.qml
+        AppMenuBar.qml
         BusyOverlay.qml
         OnboardingView.qml
         WorldsTab.qml

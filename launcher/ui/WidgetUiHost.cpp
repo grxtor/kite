@@ -21,6 +21,9 @@
 
 #include <QApplication>
 #include <QAbstractButton>
+#include <QDialog>
+#include <QJsonDocument>
+#include <QVBoxLayout>
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QLineEdit>
@@ -34,6 +37,7 @@
 #include "ui/dialogs/ProfileSetupDialog.h"
 #include "ui/dialogs/UntrustedModsDialog.h"
 #include "ui/dialogs/UpdateAvailableDialog.h"
+#include "plugin/PluginUiRenderer.h"
 
 namespace
 {
@@ -214,6 +218,34 @@ WidgetUiHost::pickAccount(const QString& title, const QString& text,
 	choice.index = accounts.indexOf(dialog.selectedAccount());
 	choice.makeDefault = choice.index >= 0 && dialog.useAsGlobalDefault();
 	return choice;
+}
+
+std::optional<UiHost::PluginModalResult>
+WidgetUiHost::runPluginModal(const QString& title, const QJsonObject& document)
+{
+	QDialog dialog(activeWindow());
+	dialog.setWindowTitle(title);
+	auto* layout = new QVBoxLayout(&dialog);
+
+	/* Any `click` event (a button, or a `link` if a plugin puts one in a
+	 * modal document) closes the dialog with that node's id -- a modal is
+	 * meant for small button-row prompts, not full pages. */
+	QString clicked;
+	auto renderer = PluginUiRenderer::build(
+		QString::fromUtf8(QJsonDocument(document).toJson(QJsonDocument::Compact)),
+		[&clicked, &dialog](const QString& nodeId, const QString& event,
+							const QString& /*valueJson*/) {
+			if (event == QLatin1String("click")) {
+				clicked = nodeId;
+				dialog.accept();
+			}
+		});
+	layout->addWidget(renderer->rootWidget());
+
+	if (dialog.exec() != QDialog::Accepted || clicked.isEmpty()) {
+		return std::nullopt;
+	}
+	return PluginModalResult{ clicked, renderer->collectValues() };
 }
 
 bool WidgetUiHost::setupProfile(MinecraftAccountPtr account)

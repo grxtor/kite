@@ -13,7 +13,8 @@ import MeshMC.Theme
  * ("Jump back in"), the worlds played most recently across all of them
  * ("Recent worlds"), and the library at a glance -- all from models the
  * shell already keeps locally (recentModel/recentWorlds), so opening this
- * page makes no network call.
+ * page makes no network call. MeshMC's newest headline sits at the foot of
+ * the welcome card once the application has loaded the news (QmlShell.news).
  *
  * Like every other page it sits under TopBar (title + account button), and
  * its content stops growing at Theme.layout.maxContentWidth and centres, so
@@ -115,6 +116,9 @@ Item {
     property var recentWorldsModel: null
     // The signed-in account's name, for the welcome line.
     property string accountName: ""
+    // QmlShell.news (NewsModel): MeshMC's news, newest first, or null.
+    property var news: null
+    readonly property var newsLatest: root.news && root.news.count > 0 ? root.news.latest : null
 
     // "day", "golden" or "night" to pin the header scene (review snapshots);
     // empty follows the local clock.
@@ -257,6 +261,8 @@ Item {
                     anchors.leftMargin: Theme.space.xxl
                     anchors.right: parent.horizontalCenter
                     anchors.verticalCenter: parent.verticalCenter
+                    // Leaves the news line its room at the bottom.
+                    anchors.verticalCenterOffset: newsLine.visible ? -Math.round(newsLine.height / 2) : 0
                     spacing: Theme.space.sm
 
                     Text {
@@ -284,6 +290,120 @@ Item {
                         color: Theme.media.textSecondary
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.title.pixelSize
+                    }
+                }
+
+                // MeshMC's newest headline, quietly, on the card's darker
+                // side: the headline opens the post, "More news" lists the
+                // rest. Not shown until there is news.
+                Row {
+                    id: newsLine
+                    visible: !!root.newsLatest
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.space.xxl
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: Theme.space.lg
+                    spacing: Theme.space.md
+
+                    AbstractButton {
+                        id: headline
+                        anchors.verticalCenter: parent.verticalCenter
+                        // The card's left half, less "More news" -- the
+                        // headline's text elides to fit, the chip hugs it.
+                        readonly property real maxTextWidth: root.contentWidth / 2 - Theme.space.xxl
+                                                             - (moreNews.visible ? moreNews.width + newsLine.spacing : 0)
+                                                             - Theme.space.md * 2 - newsIcon.width - Theme.space.sm
+                        implicitWidth: Theme.space.md * 2 + newsIcon.width + Theme.space.sm + headlineText.width
+                        implicitHeight: Theme.control.heightSm
+                        hoverEnabled: true
+                        Accessible.role: Accessible.Link
+                        Accessible.name: headlineText.text
+                        onClicked: if (root.newsLatest && root.newsLatest.link) Qt.openUrlExternally(root.newsLatest.link)
+
+                        background: Rectangle {
+                            radius: Theme.radius.sm
+                            color: headline.hovered ? Theme.media.scrim : Theme.media.chip
+                            border.width: 1
+                            border.color: Theme.media.chipBorder
+                            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                        }
+                        contentItem: Item {
+                            MeshIcon {
+                                id: newsIcon
+                                anchors.left: parent.left
+                                anchors.leftMargin: Theme.space.md - headline.leftPadding
+                                anchors.verticalCenter: parent.verticalCenter
+                                iconName: "bell"
+                                size: Theme.icon.sm
+                                color: Theme.media.textSecondary
+                            }
+                            Text {
+                                id: headlineText
+                                anchors.left: newsIcon.right
+                                anchors.leftMargin: Theme.space.sm
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: Math.max(0, Math.min(implicitWidth, headline.maxTextWidth))
+                                text: root.newsLatest ? root.newsLatest.title : ""
+                                elide: Text.ElideRight
+                                color: Theme.media.text
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.type.label.pixelSize
+                                font.weight: Font.Medium
+                            }
+                        }
+                    }
+
+                    AbstractButton {
+                        id: moreNews
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: !!root.news && root.news.count > 1
+                        implicitWidth: moreRow.implicitWidth
+                        implicitHeight: Theme.control.heightSm
+                        hoverEnabled: true
+                        Accessible.name: qsTr("More news")
+                        onClicked: newsMenu.popup(moreNews, 0, moreNews.height)
+
+                        contentItem: Item {
+                            Row {
+                                id: moreRow
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: Theme.space.xxs
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: qsTr("More news")
+                                    color: moreNews.hovered ? Theme.media.text : Theme.media.textSecondary
+                                    font.family: Theme.font.family
+                                    font.pixelSize: Theme.type.label.pixelSize
+                                    Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                                }
+                                MeshIcon {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    iconName: "chevron-down"
+                                    size: Theme.icon.sm
+                                    color: Theme.media.textSecondary
+                                }
+                            }
+                        }
+
+                        // The latest few headlines; each opens its post.
+                        Menu {
+                            id: newsMenu
+                            readonly property int maxEntries: 8
+                            Instantiator {
+                                model: root.news
+                                delegate: MenuItem {
+                                    required property int index
+                                    required property string title
+                                    required property string link
+                                    visible: index < newsMenu.maxEntries
+                                    height: visible ? implicitHeight : 0
+                                    text: title
+                                    onTriggered: if (link.length > 0) Qt.openUrlExternally(link)
+                                }
+                                onObjectAdded: (index, object) => newsMenu.insertItem(index, object)
+                                onObjectRemoved: (index, object) => newsMenu.removeItem(object)
+                            }
+                        }
                     }
                 }
             }

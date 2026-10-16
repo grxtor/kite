@@ -74,6 +74,7 @@
 #include <net/Download.h>
 #include <news/NewsChecker.h>
 #include <notifications/NotificationChecker.h>
+#include "core/InstancePathProblems.h"
 #include <tools/BaseProfiler.h>
 
 #include <updater/ExternalUpdater.h>
@@ -417,14 +418,10 @@ MainWindow::MainWindow(QWidget* parent)
 
 	// Add the news label to the news toolbar.
 	{
-		// Feed 0 is ours; anything after it comes from
-		// -DMeshMC_NEWS_EXTRA_FEEDS at build time. The news bar only
-		// ever shows the newest headline across the lot; the rest is
-		// for the news dialog.
-		QStringList feeds{BuildConfig.NEWS_RSS_URL};
-		feeds.append(BuildConfig.NEWS_EXTRA_FEEDS.split(QLatin1Char(';'),
-														Qt::SkipEmptyParts));
-		m_newsChecker.reset(new NewsChecker(APPLICATION->network(), feeds));
+		// The feeds belong to the application (Application::newsChecker()),
+		// shared with the QML shell and the plugin news API. The news bar
+		// only ever shows the newest headline across every feed; the rest
+		// is for the news dialog.
 		newsLabel = new QToolButton();
 		newsLabel->setIcon(APPLICATION->getThemedIcon("news"));
 		newsLabel->setSizePolicy(QSizePolicy::Expanding,
@@ -434,20 +431,10 @@ MainWindow::MainWindow(QWidget* parent)
 		ui->newsToolBar->insertWidget(ui->actionMoreNews, newsLabel);
 		QObject::connect(newsLabel, &QAbstractButton::clicked, this,
 						 &MainWindow::newsButtonClicked);
-		QObject::connect(m_newsChecker.get(), &NewsChecker::newsLoaded, this,
-						 &MainWindow::updateNewsLabel);
-
-		/* Re-publish a finished load as MMCO_HOOK_NEWS_UPDATED. The
-		 * checker is ours, so this is the only place that knows when
-		 * every feed has landed — and by now they all have, which is
-		 * what the hook promises its listeners. */
-		QObject::connect(m_newsChecker.get(), &NewsChecker::newsLoaded, this,
-						 []() {
-							 if (APPLICATION->pluginManager()) {
-								 APPLICATION->pluginManager()->dispatchHook(
-									 MMCO_HOOK_NEWS_UPDATED);
-							 }
-						 });
+		// MMCO_HOOK_NEWS_UPDATED is re-published by Application, which
+		// owns the checker.
+		QObject::connect(APPLICATION->newsChecker(), &NewsChecker::newsLoaded,
+						 this, &MainWindow::updateNewsLabel);
 
 		updateNewsLabel();
 	}
@@ -589,7 +576,7 @@ MainWindow::MainWindow(QWidget* parent)
 
 	// load the news
 	{
-		m_newsChecker->reloadNews();
+		APPLICATION->newsChecker()->reloadNews();
 		updateNewsLabel();
 	}
 
@@ -611,18 +598,11 @@ MainWindow::MainWindow(QWidget* parent)
 		}
 	}
 
-	{
-		auto checker = new NotificationChecker();
-		checker->setNotificationsUrl(QUrl(BuildConfig.NOTIFICATION_URL));
-		checker->setApplicationChannel(BuildConfig.VERSION_CHANNEL);
-		checker->setApplicationPlatform(BuildConfig.BUILD_PLATFORM);
-		checker->setApplicationFullVersion(BuildConfig.FULL_VERSION_STR);
-		m_notificationChecker.reset(checker);
-		connect(m_notificationChecker.get(),
-				&NotificationChecker::notificationCheckFinished, this,
-				&MainWindow::notificationsChanged);
-		checker->checkForNotifications();
-	}
+	// The check itself belongs to the application, which starts it once
+	// this window is up (Application::startBackgroundChecks()).
+	connect(APPLICATION->notificationChecker(),
+			&NotificationChecker::notificationCheckFinished, this,
+			&MainWindow::notificationsChanged);
 
 	// Toolbar movability, restored from settings. The layout the user drags the
 	// toolbars into is persisted separately by saveState()/restoreState().
@@ -1168,11 +1148,12 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* ev)
 
 void MainWindow::updateNewsLabel()
 {
-	if (m_newsChecker->isLoadingNews()) {
+	auto* newsChecker = APPLICATION->newsChecker();
+	if (newsChecker->isLoadingNews()) {
 		newsLabel->setText(tr("Loading news..."));
 		newsLabel->setEnabled(false);
 	} else {
-		QList<NewsEntryPtr> entries = m_newsChecker->getNewsEntries();
+		QList<NewsEntryPtr> entries = newsChecker->getNewsEntries();
 		if (entries.length() > 0) {
 			newsLabel->setText(entries[0]->title);
 			newsLabel->setEnabled(true);
@@ -1183,28 +1164,11 @@ void MainWindow::updateNewsLabel()
 	}
 }
 
-QList<int> stringToIntList(const QString& string)
-{
-	QStringList split = string.split(',', Qt::SkipEmptyParts);
-	QList<int> out;
-	for (int i = 0; i < split.size(); ++i) {
-		out.append(split.at(i).toInt());
-	}
-	return out;
-}
-QString intListToString(const QList<int>& list)
-{
-	QStringList slist;
-	for (int i = 0; i < list.size(); ++i) {
-		slist.append(QString::number(list.at(i)));
-	}
-	return slist.join(',');
-}
 void MainWindow::notificationsChanged()
 {
 	QList<NotificationChecker::NotificationEntry> entries =
-		m_notificationChecker->notificationEntries();
-	QList<int> shownNotifications = stringToIntList(
+		APPLICATION->notificationChecker()->notificationEntries();
+	QList<int> shownNotifications = NotificationChecker::parseShownIds(
 		APPLICATION->settings()->get("ShownNotifications").toString());
 	for (auto it = entries.begin(); it != entries.end(); ++it) {
 		NotificationChecker::NotificationEntry entry = *it;
@@ -1215,8 +1179,9 @@ void MainWindow::notificationsChanged()
 			}
 		}
 	}
-	APPLICATION->settings()->set("ShownNotifications",
-								 intListToString(shownNotifications));
+	APPLICATION->settings()->set(
+		"ShownNotifications",
+		NotificationChecker::formatShownIds(shownNotifications));
 }
 
 void MainWindow::onCatToggled(bool state)
@@ -1658,7 +1623,7 @@ void MainWindow::on_actionPatreon_triggered()
 void MainWindow::showNews(bool withSidebar)
 {
 	if (!m_newsDialog) {
-		m_newsDialog = new NewsViewerDialog(m_newsChecker.get(), this);
+		m_newsDialog = new NewsViewerDialog(APPLICATION->newsChecker(), this);
 		m_newsDialog->setAttribute(Qt::WA_DeleteOnClose);
 	}
 	m_newsDialog->loadEntries(withSidebar);
@@ -2106,62 +2071,17 @@ void MainWindow::selectionBad()
 
 void MainWindow::checkInstancePathForProblems()
 {
-	/* Every configured instance folder is checked, not just the primary
-	 * one. None of these problems care which of our folders an instance
-	 * came out of - Java chokes on '!' in a path wherever that path is,
-	 * and an unextracted archive is no less temporary for being the second
-	 * folder in the list. Checking one and staying quiet about the rest
-	 * would leave the user with instances that fail for a reason we
-	 * already knew how to name.
-	 *
-	 * Each message names the folder it is about, because with more than
-	 * one configured "your instance folder" is no longer an answer.
-	 */
-	auto tempFolderText = tr("This is a problem: <br/>"
-							 " - MeshMC will likely be deleted without warning "
-							 "by the operating system <br/>"
-							 " - close MeshMC now and extract it to a real "
-							 "location, not a temporary folder");
-
-	const QStringList instanceFolders =
-		APPLICATION->instances()->instanceDirs();
-	for (const QString& instanceFolder : instanceFolders) {
-		if (FS::checkProblemticPathJava(QDir(instanceFolder))) {
-			QMessageBox warning(this);
-			warning.setText(
-				tr("Your instance folder \'%1\' contains \'!\' and this is "
-				   "known to cause Java problems!")
-					.arg(instanceFolder));
-			warning.setInformativeText(
-				tr("You have now two options: <br/>"
-				   " - change the instance folder in the settings <br/>"
-				   " - move this installation of %1 to a different folder")
-					.arg(BuildConfig.MESHMC_NAME));
-			warning.setDefaultButton(QMessageBox::Ok);
-			warning.exec();
-		}
-
-		QString pathfoldername = QDir(instanceFolder).absolutePath();
-		if (pathfoldername.contains("Rar$", Qt::CaseInsensitive)) {
-			QMessageBox warning(this);
-			warning.setText(
-				tr("Your instance folder \'%1\' contains \'Rar$\' - that "
-				   "means you haven't extracted MeshMC archive!")
-					.arg(instanceFolder));
-			warning.setInformativeText(tempFolderText);
-			warning.setDefaultButton(QMessageBox::Ok);
-			warning.exec();
-		} else if (pathfoldername.startsWith(QDir::tempPath()) ||
-				   pathfoldername.contains("/TempState/")) {
-			QMessageBox warning(this);
-			warning.setText(
-				tr("Your instance folder \'%1\' is in a temporary folder: "
-				   "\'%2\'!")
-					.arg(instanceFolder, QDir::tempPath()));
-			warning.setInformativeText(tempFolderText);
-			warning.setDefaultButton(QMessageBox::Ok);
-			warning.exec();
-		}
+	/* Every configured instance folder is checked, and each message names
+	 * the folder it is about -- see core/InstancePathProblems.h, which the
+	 * QML shell shares (Application::reportInstancePathProblems()). */
+	const auto problems = instancePathProblems(
+		APPLICATION->instances()->instanceDirs(), QDir::tempPath());
+	for (const auto& problem : problems) {
+		QMessageBox warning(this);
+		warning.setText(problem.text);
+		warning.setInformativeText(problem.advice);
+		warning.setDefaultButton(QMessageBox::Ok);
+		warning.exec();
 	}
 }
 

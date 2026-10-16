@@ -215,7 +215,14 @@ Item {
                 width: parent ? parent.width : 300
                 placeholderText: root.props.placeholder || ""
                 selectByMouse: true
-                Component.onCompleted: text = root.props.value || ""
+                // Follows the plugin's value while the user is not editing.
+                // Not only on completion: a child node's `node` arrives
+                // after it is created (see the containers' onLoaded), and
+                // this field can complete before `props` has caught up.
+                readonly property string pluginValue: root.props.value !== undefined && root.props.value !== null
+                                                      ? String(root.props.value) : ""
+                onPluginValueChanged: if (!activeFocus) text = pluginValue
+                Component.onCompleted: text = pluginValue
                 // Same moment the widget renderer reports it: when editing
                 // finishes, so a plugin never sees half-typed values.
                 onEditingFinished: root.send("change", text)

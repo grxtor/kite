@@ -24,6 +24,8 @@
 #include <QEvent>
 #include <QFileInfo>
 #include <QHostInfo>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QImage>
 #include <QTimer>
 #include <QQmlApplicationEngine>
@@ -38,14 +40,21 @@
 #include "InstanceList.h"
 #include "icons/IconList.h"
 #include "java/JavaInstallList.h"
+#include "models/AboutInfo.h"
 #include "models/AccountsController.h"
+#include "models/NewsModel.h"
 #include "models/IdSelectionModel.h"
 #include "models/InstanceDetails.h"
+#include "models/InstanceExportController.h"
+#include "models/InstanceShortcutController.h"
+#include "models/JavaController.h"
+#include "models/JavaDownloadController.h"
 #include "models/InstanceFilterModel.h"
 #include "models/NewInstanceController.h"
 #include "models/RecentWorldsModel.h"
 #include "models/SettingsAdapter.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
+#include "modplatform/flame/FlameModpackModel.h"
 #include "tasks/Task.h"
 #include "tasks/TaskWatcher.h"
 #include "translations/TranslationsModel.h"
@@ -210,6 +219,19 @@ void QmlShell::setProfilersProvider(ProfilersProvider provider)
 	m_profilersProvider = std::move(provider);
 }
 
+void QmlShell::setPluginListFactory(PluginListFactory factory)
+{
+	m_pluginListFactory = std::move(factory);
+}
+
+QObject* QmlShell::pluginList()
+{
+	if (!m_pluginList && m_pluginListFactory) {
+		m_pluginList.reset(m_pluginListFactory());
+	}
+	return expose(m_pluginList.get());
+}
+
 QVariantMap QmlShell::launchOptions(const QString& id) const
 {
 	auto instance = LAUNCHER->instances()->getInstanceById(id);
@@ -369,6 +391,36 @@ void QmlShell::debugShowRequest(const QString& kind)
 				tr("No account is set as the default. Pick the one to play "
 				   "with."),
 				list);
+		});
+	} else if (kind == QLatin1String("modal")) {
+		// A plugin's one-off prompt, as a typical plugin builds it.
+		QTimer::singleShot(0, this, [this]() {
+			if (!m_uiHost) {
+				return;
+			}
+			const QJsonObject document{
+				{ "type", "column" },
+				{ "children",
+				  QJsonArray{
+					  QJsonObject{ { "type", "text" },
+								   { "props",
+									 QJsonObject{ { "text",
+													"Share this world with your friends' server?" } } } },
+					  QJsonObject{ { "type", "text_field" },
+								   { "id", "address" },
+								   { "props", QJsonObject{ { "label", "Server address" },
+														   { "value", "play.example.net" } } } },
+					  QJsonObject{ { "type", "toggle" },
+								   { "id", "remember" },
+								   { "props", QJsonObject{ { "label", "Remember this server" } } } },
+					  QJsonObject{ { "type", "row" },
+								   { "children",
+									 QJsonArray{ QJsonObject{ { "type", "button" },
+															  { "id", "share" },
+															  { "props", QJsonObject{ { "label", "Share" } } } } } } },
+				  } },
+			};
+			m_uiHost->runPluginModal(QStringLiteral("World Share"), document);
 		});
 	} else if (kind == QLatin1String("busySkip")) {
 		/* Kept alive by its own skip callback, which ends it; QmlUiHost
@@ -579,6 +631,35 @@ void QmlShell::useJava(const QString& path)
 	LAUNCHER->settings()->set("JavaPath", path);
 }
 
+QObject* QmlShell::about() const
+{
+	return expose(m_about.get());
+}
+
+QObject* QmlShell::news() const
+{
+	return expose(m_news.get());
+}
+
+bool QmlShell::updaterAvailable() const
+{
+	return m_updaterAvailable;
+}
+
+void QmlShell::setUpdaterAvailable(bool available)
+{
+	if (m_updaterAvailable == available) {
+		return;
+	}
+	m_updaterAvailable = available;
+	emit updaterAvailableChanged();
+}
+
+void QmlShell::checkForUpdates()
+{
+	emit checkForUpdatesRequested();
+}
+
 QObject* QmlShell::settings() const
 {
 	return expose(m_settings.get());
@@ -626,6 +707,11 @@ int QmlShell::systemMemoryMiB() const
 QObject* QmlShell::modpackModel() const
 {
 	return expose(m_modpacks.get());
+}
+
+QObject* QmlShell::curseForgeModpackModel() const
+{
+	return expose(m_curseForgeModpacks.get());
 }
 
 QObject* QmlShell::installModpack(const QString& projectId,
@@ -681,6 +767,50 @@ QObject* QmlShell::newInstance() const
 		expose(m_newInstance->loaderVersions());
 	}
 	return expose(m_newInstance.get());
+}
+
+QObject* QmlShell::javaController() const
+{
+	if (!m_javaController) {
+		m_javaController = std::make_unique<JavaController>();
+	}
+	return expose(m_javaController.get());
+}
+
+QObject* QmlShell::javaDownload() const
+{
+	if (!m_javaDownload) {
+		m_javaDownload = std::make_unique<JavaDownloadController>();
+	}
+	return expose(m_javaDownload.get());
+}
+
+QObject* QmlShell::exportController(const QString& id)
+{
+	if (!m_exportController || m_exportController->instanceId() != id) {
+		auto instance = LAUNCHER->instances()->getInstanceById(id);
+		if (!instance) {
+			return nullptr;
+		}
+		// Replacing one whose export still runs is safe: its destructor
+		// aborts the task and keeps it alive until it has wound down.
+		m_exportController = std::make_unique<InstanceExportController>(instance);
+		expose(m_exportController->files());
+	}
+	return expose(m_exportController.get());
+}
+
+QObject* QmlShell::shortcutController(const QString& id)
+{
+	if (!m_shortcutController || m_shortcutController->instanceId() != id) {
+		auto instance = LAUNCHER->instances()->getInstanceById(id);
+		if (!instance) {
+			return nullptr;
+		}
+		m_shortcutController =
+			std::make_unique<InstanceShortcutController>(instance);
+	}
+	return expose(m_shortcutController.get());
 }
 
 QObject* QmlShell::sectionModel(const QString& group)
@@ -822,8 +952,13 @@ bool QmlShell::load()
 	m_settings = std::make_unique<SettingsAdapter>(LAUNCHER->settings());
 	m_uiHost = std::make_unique<QmlUiHost>();
 	m_modpacks = std::make_unique<ModrinthModpackModel>();
+	m_curseForgeModpacks = std::make_unique<FlameModpackModel>();
 	m_accountsController =
 		std::make_unique<AccountsController>(LAUNCHER->accounts());
+	m_about = std::make_unique<AboutInfo>();
+	if (auto* checker = LAUNCHER->newsChecker()) {
+		m_news = std::make_unique<NewsModel>(checker);
+	}
 
 	/* The sort order reads InstSortMode on every comparison, but a proxy
 	 * only compares when told to: re-sort when the setting moves. */

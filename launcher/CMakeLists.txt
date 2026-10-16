@@ -18,6 +18,8 @@ set(CORE_SOURCES
     DesktopServices.cpp
     core/AuthRequestDecorator.h
     core/UiHost.h
+    core/InstancePathProblems.h
+    core/InstancePathProblems.cpp
 
     # WCAG 2.1 contrast math for the token-based theme. Confined to QtGui,
     # same as the block above -- no QtWidgets, no ui/.
@@ -50,6 +52,10 @@ set(CORE_SOURCES
     models/NewInstanceController.cpp
     models/RecentWorldsModel.h
     models/RecentWorldsModel.cpp
+    models/AboutInfo.h
+    models/AboutInfo.cpp
+    models/NewsModel.h
+    models/NewsModel.cpp
     models/ServersListModel.h
     models/ServersListModel.cpp
     models/BackupController.h
@@ -841,6 +847,8 @@ set(PLUGIN_SOURCES
     plugin/PluginDependencyResolver.cpp
     plugin/PluginSurfaceModel.h
     plugin/PluginSurfaceModel.cpp
+    plugin/PluginListModel.h
+    plugin/PluginListModel.cpp
 )
 
 add_unit_test(Index
@@ -1366,6 +1374,11 @@ add_unit_test(PluginSurfaceModel
     LIBS MeshMC_logic
     )
 
+add_unit_test(PluginListModel
+    SOURCES plugin/PluginListModel_test.cpp
+    LIBS MeshMC_logic
+    )
+
 add_unit_test(Contrast
     SOURCES theme/Contrast_test.cpp
     LIBS MeshMC_logic
@@ -1479,6 +1492,21 @@ add_unit_test(ManagedPackController
 # HasCrashedRole tests) - that needs no real MinecraftInstance either.
 add_unit_test(RecentWorldsModel
     SOURCES models/RecentWorldsModel_test.cpp
+    LIBS MeshMC_core
+    )
+
+add_unit_test(AboutInfo
+    SOURCES models/AboutInfo_test.cpp
+    LIBS MeshMC_core
+    )
+
+add_unit_test(NewsModel
+    SOURCES models/NewsModel_test.cpp
+    LIBS MeshMC_core
+    )
+
+add_unit_test(InstancePathProblems
+    SOURCES core/InstancePathProblems_test.cpp
     LIBS MeshMC_core
     )
 

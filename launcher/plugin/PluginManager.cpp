@@ -393,7 +393,12 @@ bool PluginManager::runBackgroundHooks(uint32_t hook_id, void* payload,
 	if (!owner) {
 		owner = resolveMainWindow();
 	}
-	if (!owner || m_shutdownDone) {
+	/* Under the QML shell there is no QWidget to parent a ProgressDialog
+	 * to; once its presenter can show a busy indication, the callbacks run
+	 * off the GUI thread the same way, behind that instead. */
+	const bool qmlProgress = !m_shutdownDone && m_app && m_app->qmlShellChosen() &&
+							 m_app->usingQmlShell();
+	if (!qmlProgress && (!owner || m_shutdownDone)) {
 		for (const auto& reg : regs) {
 			int rc = reg.callback(reg.module_handle, hook_id, payload,
 								  reg.user_data);
@@ -422,8 +427,19 @@ bool PluginManager::runBackgroundHooks(uint32_t hook_id, void* payload,
 		sequence.addTask(task);
 	}
 
-	ProgressDialog prog(owner);
-	prog.execWithTask(&sequence);
+	if (qmlProgress) {
+		auto busy = m_app->uiHost()->showBusy(tr("Waiting for plugins…"));
+		QEventLoop loop;
+		connect(&sequence, &Task::finished, &loop, &QEventLoop::quit);
+		// Queued, so a sequence that finishes at once still finds the
+		// loop running.
+		QMetaObject::invokeMethod(&sequence, &Task::start,
+								  Qt::QueuedConnection);
+		loop.exec();
+	} else {
+		ProgressDialog prog(owner);
+		prog.execWithTask(&sequence);
+	}
 
 	/* Escape dismisses the dialog without stopping anything, and a C
 	 * callback cannot be interrupted anyway. Keep the event loop
@@ -1565,6 +1581,29 @@ namespace
 	}
 } // namespace
 
+namespace
+{
+	/* Runs an account task (skin upload/reset, cape change) to its end
+	 * with whichever UI is up: a busy indication under the QML shell, the
+	 * widget ProgressDialog otherwise. True when the task succeeded. */
+	bool runAccountTask(Application* app, Task* task, const QString& busyText,
+						const char* api)
+	{
+		if (app && app->qmlShellChosen()) {
+			if (qmlPresenterMissing(app, api))
+				return false;
+			auto busy = app->uiHost()->showBusy(busyText);
+			QEventLoop loop;
+			QObject::connect(task, &Task::finished, &loop, &QEventLoop::quit);
+			QMetaObject::invokeMethod(task, &Task::start, Qt::QueuedConnection);
+			loop.exec();
+			return task->wasSuccessful();
+		}
+		ProgressDialog prog(QApplication::activeWindow());
+		return prog.execWithTask(task) == QDialog::Accepted;
+	}
+} // namespace
+
 void PluginManager::api_ui_show_message(void* mh, int type, const char* title,
 										const char* msg)
 {
@@ -2649,50 +2688,30 @@ int PluginManager::api_ui_modal_run(void* mh, const char* title,
 	if (!json_doc)
 		return -1;
 
-	/* No QML-native renderer for a one-off "mmco-ui/1" modal document yet --
-	 * PluginSurfaceModel only serves the anchored, persistent surfaces
-	 * (Settings/instance-page plugin sections), not this ad-hoc prompt
-	 * shape (see the qml-preview-tools audit, plan item 3). Rather than
-	 * fall back to the QDialog below -- which the QML shell must never
-	 * show -- refuse cleanly so a plugin author sees a real "unsupported"
-	 * result instead of a widget window appearing out of nowhere. */
-	if (auto* r = rt(mh); r && r->manager->m_app &&
-		r->manager->m_app->qmlShellChosen()) {
+	auto* r = rt(mh);
+	auto* app = r ? r->manager->m_app : nullptr;
+	if (!app)
 		return -1;
-	}
 
 	QJsonParseError err{};
 	const QJsonDocument jd = QJsonDocument::fromJson(QByteArray(json_doc), &err);
 	if (err.error != QJsonParseError::NoError || !jd.isObject())
 		return -1;
 
-	QDialog dlg(QApplication::activeWindow());
-	dlg.setWindowTitle(title ? QString::fromUtf8(title) : QString());
-	auto* layout = new QVBoxLayout(&dlg);
-
-	/* Any `click` event (button, or a `link` if a plugin puts one in a
-	 * modal doc) closes the dialog with that node's id -- ui_modal_run
-	 * is meant for small button-row prompts, not full pages. */
-	QString clickedId;
-	auto renderer = PluginUiRenderer::build(
-		surfaceDocToText(jd.object()),
-		[&clickedId, &dlg](const QString& nodeId, const QString& event,
-						  const QString& /*valueJson*/) {
-			if (event == QLatin1String("click")) {
-				clickedId = nodeId;
-				dlg.accept();
-			}
-		});
-	layout->addWidget(renderer->rootWidget());
-
-	const int code = dlg.exec();
-	if (code != QDialog::Accepted || clickedId.isEmpty())
+	/* Drawn by whichever UI is up, through UiHost: the QML shell renders
+	 * the document with PluginNode.qml, the widget UI with
+	 * PluginUiRenderer in a QDialog. */
+	if (app->qmlShellChosen() && qmlPresenterMissing(app, "ui_modal_run"))
+		return -1;
+	const auto result = app->uiHost()->runPluginModal(
+		title ? QString::fromUtf8(title) : QString(), jd.object());
+	if (!result)
 		return -1;
 
-	QJsonObject result;
-	result[QStringLiteral("button")] = clickedId;
-	result[QStringLiteral("fields")] = renderer->collectValues();
-	const QByteArray bytes = QJsonDocument(result).toJson(QJsonDocument::Compact);
+	QJsonObject out;
+	out[QStringLiteral("button")] = result->clicked;
+	out[QStringLiteral("fields")] = result->fields;
+	const QByteArray bytes = QJsonDocument(out).toJson(QJsonDocument::Compact);
 
 	if (out_result_json && out_buf_size > 0) {
 		const int n = qMin(static_cast<int>(bytes.size()), out_buf_size - 1);
@@ -2951,8 +2970,9 @@ const char* PluginManager::api_ui_plugin_icon(void* mh, const char* name)
 /* ── S17 — News API ────────────────────────────────────────────────── */
 
 /*
- * The whole S17 surface is a read-only view onto MainWindow's
- * NewsChecker, which owns every feed — the launcher's own plus the
+ * The whole S17 surface is a read-only view onto the application's
+ * NewsChecker (Application::newsChecker(), shared by MainWindow and the
+ * QML shell alike), which owns every feed — the launcher's own plus the
  * extra ones from MeshMC_NEWS_EXTRA_FEEDS — parses them, and hands
  * them back merged and sorted newest first.
  *
@@ -2965,12 +2985,7 @@ const char* PluginManager::api_ui_plugin_icon(void* mh, const char* name)
  */
 NewsChecker* PluginManager::newsChecker() const
 {
-	if (!m_app)
-		return nullptr;
-	auto* mw = m_app->mainWindow();
-	if (!mw)
-		return nullptr;
-	return mw->newsChecker();
+	return m_app ? m_app->newsChecker() : nullptr;
 }
 
 QList<NewsEntryPtr> PluginManager::newsEntries() const
@@ -4285,11 +4300,10 @@ int PluginManager::api_account_skin_upload(void* mh, const char* account_id,
 										? SkinUpload::ALEX
 										: SkinUpload::STEVE;
 
-	QWidget* parent = QApplication::activeWindow();
 	auto task = shared_qobject_ptr<SkinUpload>(
 		new SkinUpload(nullptr, a->accessToken(), bytes, model));
-	ProgressDialog prog(parent);
-	if (prog.execWithTask(task.get()) != QDialog::Accepted)
+	if (!runAccountTask(r->manager->m_app, task.get(), tr("Uploading skin…"),
+						"account_skin_set"))
 		return -1;
 	return 0;
 }
@@ -4303,11 +4317,10 @@ int PluginManager::api_account_skin_reset(void* mh, const char* account_id)
 	if (!a)
 		return -1;
 
-	QWidget* parent = QApplication::activeWindow();
 	auto task = shared_qobject_ptr<SkinDelete>(
 		new SkinDelete(nullptr, a->accessToken()));
-	ProgressDialog prog(parent);
-	if (prog.execWithTask(task.get()) != QDialog::Accepted)
+	if (!runAccountTask(r->manager->m_app, task.get(), tr("Resetting skin…"),
+						"account_skin_reset"))
 		return -1;
 	return 0;
 }
@@ -4323,11 +4336,10 @@ int PluginManager::api_account_cape_set(void* mh, const char* account_id,
 		return -1;
 
 	const QString cape = cape_id ? QString::fromUtf8(cape_id) : QString();
-	QWidget* parent = QApplication::activeWindow();
 	auto task = shared_qobject_ptr<CapeChange>(
 		new CapeChange(nullptr, a->accessToken(), cape));
-	ProgressDialog prog(parent);
-	if (prog.execWithTask(task.get()) != QDialog::Accepted)
+	if (!runAccountTask(r->manager->m_app, task.get(), tr("Changing cape…"),
+						"account_cape_set"))
 		return -1;
 	return 0;
 }

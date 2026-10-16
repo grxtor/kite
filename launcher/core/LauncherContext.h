@@ -31,6 +31,8 @@ class HttpMetaCache;
 class IconList;
 class InstanceList;
 class JavaInstallList;
+class NewsChecker;
+class NotificationChecker;
 class QNetworkAccessManager;
 class SettingsObject;
 class TranslationsModel;
@@ -112,6 +114,19 @@ class LauncherContext
 	 * meaningfully carry on without an answer, so the shell installs one
 	 * before anything that might ask is allowed to run. */
 	virtual UiHost* uiHost() const = 0;
+
+	/* The launcher's news feeds and its notification check, owned by the
+	 * application and shared by whichever UI is up (MainWindow, the QML
+	 * shell) and by the plugin news API. Null where there are none -- a
+	 * test or tool context, which is why these are not pure. */
+	virtual NewsChecker* newsChecker() const
+	{
+		return nullptr;
+	}
+	virtual NotificationChecker* notificationChecker() const
+	{
+		return nullptr;
+	}
 
   protected:
 	/* Called by the implementation's constructor/destructor. Registering is

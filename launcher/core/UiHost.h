@@ -23,6 +23,7 @@
 #include <memory>
 #include <optional>
 
+#include <QJsonObject>
 #include <QList>
 #include <QString>
 #include <QStringList>
@@ -167,4 +168,20 @@ class UiHost
 											const QString& title,
 											const QString& defaultPath,
 											const QString& filter) = 0;
+
+	/* A plugin's one-off prompt (the plugin SDK's ui_modal_run):
+	 * @p document is an "mmco-ui/1" node tree, drawn with the shell's own
+	 * components. Clicking any node that reports a click (a button,
+	 * usually) answers it. */
+	struct PluginModalResult {
+		/// The id of the node that was clicked.
+		QString clicked;
+		/// The value of every input node at that moment, keyed by node id:
+		/// toggles (bool), text fields (string), number fields (double),
+		/// choices (the chosen option's value).
+		QJsonObject fields;
+	};
+	/// nullopt when the user backed out instead.
+	virtual std::optional<PluginModalResult> runPluginModal(
+		const QString& title, const QJsonObject& document) = 0;
 };

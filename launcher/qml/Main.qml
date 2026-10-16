@@ -34,6 +34,20 @@ ApplicationWindow {
     // right default for QmlModule_test, which never sets it.
     property bool catAvailable: false
 
+    // The macOS menu bar (AppMenuBar.qml), on the native Cocoa platform
+    // only and with the same switch the widget bar uses -- anywhere else
+    // Qt would draw it inside the window instead, so it stays hidden.
+    readonly property bool nativeMenuBar: Qt.platform.os === "osx" && Qt.platform.pluginName === "cocoa"
+                                          && SettingsStore.bool("MacNativeMenuBar")
+    menuBar: AppMenuBar {
+        visible: root.nativeMenuBar
+        about: root.shell && root.shell.about ? root.shell.about : null
+        updaterAvailable: !!root.shell && !!root.shell.updaterAvailable
+        onNewInstanceRequested: (mode) => root.openNewInstance(mode)
+        onNavigateRequested: (target) => root.navigate(target)
+        onCheckForUpdatesRequested: root.call("checkForUpdates")
+    }
+
     property string selectedId: ""
     // "home", "library", "discover", "settings", "instance" or "accounts".
     property string page: "home"
@@ -53,6 +67,10 @@ ApplicationWindow {
     Component.onCompleted: {
         if (root.shell && root.shell.settings) {
             SettingsStore.adapter = root.shell.settings
+            // Java management (JavaStore.qml), read by the Java settings
+            // rows wherever they appear.
+            JavaStore.controller = root.shell.javaController
+            JavaStore.download = root.shell.javaDownload
             var mode = SettingsStore.string("UiThemeMode")
             if (mode === "dark" || mode === "light")
                 Theme.mode = mode
@@ -115,7 +133,22 @@ ApplicationWindow {
             // The play bar's Play options menu, open; "launchmenu=playAs" or
             // "=profiler" opens that submenu as well.
             else if (key === "launchmenu")
-                Qt.callLater(() => playDock.openLaunchMenu(value))
+                Qt.callLater(playDock.openLaunchMenu, value)
+            // The Export dialog over instance <id>, optionally on a format:
+            // "export=fabric" or "export=fabric:modrinth".
+            else if (key === "export") {
+                var exportArgs = value.split(":")
+                Qt.callLater(libraryPage.exportInstance, exportArgs[0], exportArgs[1] || "")
+            }
+            // The Create shortcut dialog over instance <id>.
+            else if (key === "shortcut")
+                Qt.callLater(libraryPage.createShortcut, value)
+            // The library card ⋯ menu for instance <id>, open.
+            else if (key === "librarymenu")
+                Qt.callLater(libraryPage.openInstanceMenu, value)
+            // The instance page header ⋯ menu, open (after instance=<id>).
+            else if (key === "instancemenu")
+                Qt.callLater(instancePage.openHeaderMenu)
             // A question only a real launch asks -- see QmlShell's
             // debugShowRequest(): "pickAccount" or "busySkip".
             else if (key === "ask")
@@ -293,6 +326,15 @@ ApplicationWindow {
         sequences: [StandardKey.Find]
         onActivated: topBar.focusSearch()
     }
+    // A page's link to Settings > Java (InstanceJavaSettings.qml), sent
+    // through the JavaStore singleton the Java rows already share.
+    Connections {
+        target: JavaStore
+        function onNavigateRequested(target) {
+            root.navigate(target)
+        }
+    }
+
     // The game's console, asked for by the launch flow (ShowConsole, or a
     // crash): the instance page, on its Log tab.
     Connections {
@@ -525,6 +567,7 @@ ApplicationWindow {
                         recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
                         instanceModel: root.instanceModel
                         recentWorldsModel: root.shell && root.shell.recentWorlds ? root.shell.recentWorlds : null
+                        news: root.shell && root.shell.news ? root.shell.news : null
                         accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
 
                         onLaunchRequested: (id) => root.launch(id)
@@ -562,6 +605,20 @@ ApplicationWindow {
                         onDuplicateRequested: (id, name, group) => root.askDuplicate(id, name, group)
                         onDeleteRequested: (id, name) => root.askDelete(id, name)
                         onClearSearchRequested: topBar.searchText = ""
+                        exportControllerFor: function (id) {
+                            return root.shell && typeof root.shell.exportController === "function"
+                                   ? root.shell.exportController(id) : null
+                        }
+                        shortcutControllerFor: function (id) {
+                            return root.shell && typeof root.shell.shortcutController === "function"
+                                   ? root.shell.shortcutController(id) : null
+                        }
+                        // Play options (LaunchOptionsMenu.qml) in the ⋯ menu.
+                        launchOptionsFor: function (id) { return root.launchOptions(id) }
+                        onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
+                        onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
+                        onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+                        onNavigateRequested: (target) => root.navigate(target)
                     }
 
                     SettingsPage {
@@ -574,12 +631,16 @@ ApplicationWindow {
                         // Whether to show the Cat group at all -- see
                         // root.catAvailable's own comment.
                         catAvailable: root.catAvailable
+                        about: root.shell && root.shell.about ? root.shell.about : null
+                        pluginList: root.shell && typeof root.shell.pluginList === "function"
+                                    ? root.shell.pluginList() : null
                         onOpenPathRequested: (path) => root.call("openPath", path)
                     }
 
                     DiscoverPage {
                         id: discoverPage
                         model: root.shell && root.shell.modpackModel ? root.shell.modpackModel : null
+                        curseForgeModel: root.shell && root.shell.curseForgeModpackModel ? root.shell.curseForgeModpackModel : null
                         installer: function (projectId, versionId, name, group) {
                             return root.shell.installModpack(projectId, versionId, name, group)
                         }
@@ -618,6 +679,20 @@ ApplicationWindow {
                                    ? root.shell.pluginSurfaces(anchor, instanceId) : null
                         }
                         onOpenPathRequested: (path) => root.call("openPath", path)
+                        exportControllerFor: function (id) {
+                            return root.shell && typeof root.shell.exportController === "function"
+                                   ? root.shell.exportController(id) : null
+                        }
+                        shortcutControllerFor: function (id) {
+                            return root.shell && typeof root.shell.shortcutController === "function"
+                                   ? root.shell.shortcutController(id) : null
+                        }
+                        // Play options (LaunchOptionsMenu.qml) in the ⋯ menu.
+                        launchOptionsFor: function (id) { return root.launchOptions(id) }
+                        onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
+                        onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
+                        onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+                        onNavigateRequested: (target) => root.navigate(target)
                     }
 
                     AccountsPage {

@@ -25,8 +25,12 @@
 #include "qml/QmlUiHost.h"
 #include "plugin/PluginManager.h"
 #include "plugin/PluginSurfaceModel.h"
+#include "plugin/PluginListModel.h"
 
 #include "ui/MainWindow.h"
+#include "news/NewsChecker.h"
+#include "notifications/NotificationChecker.h"
+#include "core/InstancePathProblems.h"
 #include "ui/InstanceWindow.h"
 #include "ui/MacMenuBar.h"
 
@@ -1169,6 +1173,43 @@ void Application::initSubsystems()
 		qDebug() << "<> Network done.";
 	}
 
+	/* News and notifications belong to the application rather than to a
+	 * window, so the QML shell and the plugin news API have them too.
+	 * Nothing is fetched yet -- see startBackgroundChecks(). Feed 0 is
+	 * ours; anything after it comes from -DMeshMC_NEWS_EXTRA_FEEDS at
+	 * build time. */
+	{
+		QStringList feeds{ BuildConfig.NEWS_RSS_URL };
+		feeds.append(BuildConfig.NEWS_EXTRA_FEEDS.split(QLatin1Char(';'),
+														Qt::SkipEmptyParts));
+		m_newsChecker.reset(new NewsChecker(m_network, feeds));
+		/* Re-publish a finished load as MMCO_HOOK_NEWS_UPDATED: this is
+		 * the only place that knows when every feed has landed, which is
+		 * what the hook promises its listeners. */
+		connect(m_newsChecker.get(), &NewsChecker::newsLoaded, this, [this]() {
+			if (m_pluginManager) {
+				m_pluginManager->dispatchHook(MMCO_HOOK_NEWS_UPDATED);
+			}
+		});
+
+		auto* notifications = new NotificationChecker();
+		notifications->setNotificationsUrl(QUrl(BuildConfig.NOTIFICATION_URL));
+		notifications->setApplicationChannel(BuildConfig.VERSION_CHANNEL);
+		notifications->setApplicationPlatform(BuildConfig.BUILD_PLATFORM);
+		notifications->setApplicationFullVersion(BuildConfig.FULL_VERSION_STR);
+		m_notificationChecker.reset(notifications);
+		/* MainWindow shows its own dialogs for these; the QML shell asks
+		 * through UiHost, once its presenter can answer. */
+		connect(m_notificationChecker.get(),
+				&NotificationChecker::notificationCheckFinished, this,
+				[this]() {
+					if (qmlShellChosen()) {
+						runWhenQmlPresenterReady(
+							[this]() { showNotificationsThroughUiHost(); });
+					}
+				});
+	}
+
 	// load translations
 	{
 		m_translations.reset(new TranslationsModel("translations"));
@@ -2295,6 +2336,13 @@ bool Application::ensureQmlShell()
 		return list;
 	});
 
+	/* Settings' "Installed plugins": nothing to list without the plugin
+	 * host (MeshMC_PLUGINS off). */
+	m_qmlShell->setPluginListFactory([this]() -> QObject* {
+		return m_pluginManager ? new PluginListModel(m_pluginManager.get())
+							   : nullptr;
+	});
+
 	/* Counted and closed through the same path as MainWindow, so the
 	 * launcher quits when its last window goes, as it always has -- but
 	 * only while showQmlShellWindow() counts it as open: a hidden shell
@@ -2364,6 +2412,11 @@ bool Application::ensureQmlShell()
 				}
 				launch(inst, LaunchMode::Normal, nullptr, account);
 			});
+	/* "Check for updates" (the macOS menu bar, the Updates settings):
+	 * QmlShell cannot reach the updater itself. */
+	m_qmlShell->setUpdaterAvailable(updaterEnabled() && m_updater);
+	connect(m_qmlShell.get(), &QmlShell::checkForUpdatesRequested, this,
+			&Application::triggerUpdateCheck);
 	connect(m_qmlShell.get(), &QmlShell::killRequested, this,
 			[this](const QString& id) {
 				if (auto inst = instances()->getInstanceById(id)) {
@@ -2477,6 +2530,7 @@ MainWindow* Application::showMainWindow(bool minimized)
 {
 	if (useQmlShell() && ensureQmlShell()) {
 		showQmlShellWindow(minimized);
+		startBackgroundChecks();
 		return nullptr;
 	}
 
@@ -2507,7 +2561,66 @@ MainWindow* Application::showMainWindow(bool minimized)
 				&Application::on_windowClose);
 		m_openWindows++;
 	}
+	startBackgroundChecks();
 	return m_mainWindow;
+}
+
+void Application::startBackgroundChecks()
+{
+	if (m_backgroundChecksStarted) {
+		return;
+	}
+	m_backgroundChecksStarted = true;
+	// No-op if MainWindow already started it; it shows "Loading news..."
+	// from its own constructor.
+	m_newsChecker->reloadNews();
+	m_notificationChecker->checkForNotifications();
+	if (qmlShellChosen()) {
+		runWhenQmlPresenterReady([this]() { reportInstancePathProblems(); });
+	}
+}
+
+void Application::showNotificationsThroughUiHost()
+{
+	QList<int> shown = NotificationChecker::parseShownIds(
+		m_settings->get("ShownNotifications").toString());
+	bool changed = false;
+	for (const auto& entry : m_notificationChecker->notificationEntries()) {
+		if (shown.contains(entry.id)) {
+			continue;
+		}
+		UiHost::Severity severity = UiHost::Severity::Information;
+		if (entry.type == NotificationChecker::NotificationEntry::Critical) {
+			severity = UiHost::Severity::Critical;
+		} else if (entry.type ==
+				   NotificationChecker::NotificationEntry::Warning) {
+			severity = UiHost::Severity::Warning;
+		}
+		// NotificationDialog's two buttons; backing out is "Close".
+		const int choice = uiHost()->choose(
+			tr("Notification"), entry.message, severity,
+			{ tr("Close"), tr("Don't show again") });
+		if (choice == 1) {
+			shown.append(entry.id);
+			changed = true;
+		}
+	}
+	if (changed) {
+		m_settings->set("ShownNotifications",
+						NotificationChecker::formatShownIds(shown));
+	}
+}
+
+void Application::reportInstancePathProblems()
+{
+	const auto problems =
+		instancePathProblems(instances()->instanceDirs(), QDir::tempPath());
+	for (const auto& problem : problems) {
+		uiHost()->message(tr("Check your instance folder"),
+						  problem.text + QStringLiteral("<br/><br/>") +
+							  problem.advice,
+						  UiHost::Severity::Warning);
+	}
 }
 
 QWindow* Application::qmlShellWindow() const
@@ -2721,6 +2834,16 @@ UiHost* Application::uiHost() const
 		}
 	}
 	return m_uiHost.get();
+}
+
+NewsChecker* Application::newsChecker() const
+{
+	return m_newsChecker.get();
+}
+
+NotificationChecker* Application::notificationChecker() const
+{
+	return m_notificationChecker.get();
 }
 
 bool Application::usingQmlShell() const

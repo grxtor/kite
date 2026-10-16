@@ -19,6 +19,8 @@
 
 #include <QTest>
 
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QSignalSpy>
 #include <QTimer>
 #include <memory>
@@ -388,6 +390,58 @@ class QmlUiHostTest : public QObject
 											 QStringLiteral("Text"), accounts);
 		QCOMPARE(choice.index, 1);
 		QVERIFY(choice.makeDefault);
+	}
+
+	/* A plugin's one-off prompt: the clicked node's id comes back with
+	 * every input's value -- its starting value unless QML changed it. */
+	void pluginModalReturnsTheClickAndTheFields()
+	{
+		QmlUiHost host;
+		const QJsonObject document{
+			{ "type", "column" },
+			{ "children",
+			  QJsonArray{
+				  QJsonObject{ { "type", "text_field" }, { "id", "name" },
+							   { "props", QJsonObject{ { "value", "Steve" } } } },
+				  QJsonObject{ { "type", "toggle" }, { "id", "agree" } },
+				  QJsonObject{ { "type", "number_field" }, { "id", "count" },
+							   { "props", QJsonObject{ { "value", 3 } } } },
+				  QJsonObject{ { "type", "button" }, { "id", "ok" } },
+			  } },
+		};
+
+		QTimer::singleShot(0, [&host]() {
+			auto* request = qobject_cast<QmlUiRequest*>(host.current());
+			QVERIFY(request);
+			QCOMPARE(request->kind(), QStringLiteral("modal"));
+			QCOMPARE(request->modalDocument().value("type").toString(),
+					 QStringLiteral("column"));
+			request->sendEvent(QStringLiteral("modal"), QStringLiteral("name"),
+							   QStringLiteral("change"), QStringLiteral("Alex"));
+			request->sendEvent(QStringLiteral("modal"), QStringLiteral("ok"),
+							   QStringLiteral("click"), QVariant());
+		});
+
+		const auto result = host.runPluginModal(QStringLiteral("Title"), document);
+		QVERIFY(result.has_value());
+		QCOMPARE(result->clicked, QStringLiteral("ok"));
+		QCOMPARE(result->fields.value("name").toString(), QStringLiteral("Alex"));
+		QCOMPARE(result->fields.value("agree").toBool(true), false);
+		QCOMPARE(result->fields.value("count").toDouble(), 3.0);
+	}
+
+	void pluginModalBackingOutAnswersNothing()
+	{
+		QmlUiHost host;
+		QTimer::singleShot(0, [&host]() {
+			auto* request = qobject_cast<QmlUiRequest*>(host.current());
+			QVERIFY(request);
+			request->reject();
+		});
+		const auto result = host.runPluginModal(
+			QStringLiteral("Title"),
+			QJsonObject{ { "type", "button" }, { "id", "ok" } });
+		QVERIFY(!result.has_value());
 	}
 
 	void pickAccountBackingOutChoosesNothing()

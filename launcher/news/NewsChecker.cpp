@@ -233,6 +233,11 @@ QList<NewsEntryPtr> NewsChecker::getNewsEntries() const
 	return merged;
 }
 
+bool NewsChecker::isNewsLoaded() const
+{
+	return m_loadedNews;
+}
+
 bool NewsChecker::isLoadingNews() const
 {
 	for (const auto& feed : m_feeds) {

@@ -63,7 +63,7 @@ Item {
 
     parent: Overlay.overlay
     anchors.centerIn: parent
-    width: Math.min(kind === "blockedMods" || kind === "untrustedMods" || kind === "update" ? 620 : 460,
+    width: Math.min(kind === "blockedMods" || kind === "untrustedMods" || kind === "update" || kind === "modal" ? 620 : 460,
                     parent ? parent.width - Theme.space.xxl * 2 : 460)
     modal: true
     closePolicy: Popup.CloseOnEscape
@@ -107,6 +107,8 @@ Item {
         // beside the body text, so this is just the text at full width.
         Text {
             Layout.fillWidth: true
+            // A plugin modal brings its own text in its document.
+            visible: text.length > 0
             text: root.request ? root.request.text : ""
             textFormat: Text.AutoText
             wrapMode: Text.Wrap
@@ -409,6 +411,24 @@ Item {
             }
         }
 
+        // modal: a plugin's one-off prompt (UiHost::runPluginModal()),
+        // drawn by the same PluginNode the plugin settings surfaces use.
+        // This request is the node's sink: a click on any node answers it,
+        // changes are remembered as the prompt's field values.
+        // Built afresh for every modal request (the request goes null
+        // between two of them), since PluginNode's inputs read their
+        // starting values once, when they are created.
+        Loader {
+            Layout.fillWidth: true
+            active: root.kind === "modal" && !!root.request
+            visible: active
+            sourceComponent: PluginNode {
+                surfaceId: "modal"
+                sink: root.request
+                node: root.request.modalDocument.root || root.request.modalDocument
+            }
+        }
+
         // Update: what changes, in the author's words.
         Column {
             Layout.fillWidth: true
@@ -517,7 +537,7 @@ Item {
 
         Button {
             visible: root.kind !== "choose" && root.kind !== "update" && root.kind !== "profileSetup"
-                     && root.kind !== "filePicker" && root.kind !== "pickAccount"
+                     && root.kind !== "filePicker" && root.kind !== "pickAccount" && root.kind !== "modal"
             enabled: root.kind === "blockedMods" ? root.allFound
                    : root.kind === "untrustedMods" ? trustBox.checked
                    : root.kind === "text" ? textAnswer.text.trim().length > 0 : true

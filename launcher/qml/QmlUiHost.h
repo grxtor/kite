@@ -56,6 +56,10 @@
  *                    request's own UI for this kind)
  *   pickAccount   -- accountOptions, then chooseAccount(index, makeDefault)
  *                    / reject()
+ *   modal         -- modalDocument, drawn with PluginNode.qml, which reports
+ *                    every user action through sendEvent() (this request
+ *                    is the PluginNode `sink`); a "click" answers it,
+ *                    reject() backs out
  *
  * Ownership is C++'s throughout: QmlUiHost hands this to QML with
  * QQmlEngine::CppOwnership (see exposeToQml() in the .cpp) and deletes it
@@ -124,6 +128,8 @@ class QmlUiRequest : public QObject
 	 * UiHost::pickAccount() received them -- {name, kind ("Microsoft" or
 	 * "Offline"), faceId (for image://accountface/<faceId>)}. */
 	Q_PROPERTY(QVariantList accountOptions READ accountOptions CONSTANT)
+	/// kind == "modal": the plugin's "mmco-ui/1" document, as a map.
+	Q_PROPERTY(QVariantMap modalDocument READ modalDocument CONSTANT)
 
   public:
 	enum class Kind {
@@ -137,6 +143,7 @@ class QmlUiRequest : public QObject
 		ProfileSetup,
 		FilePicker,
 		PickAccount,
+		Modal,
 	};
 
 	QmlUiRequest(Kind kind, QString title, QString text,
@@ -212,6 +219,10 @@ class QmlUiRequest : public QObject
 	{
 		return m_accountOptions;
 	}
+	QVariantMap modalDocument() const
+	{
+		return m_modalDocument;
+	}
 
 	/* Filled in by QmlUiHost before the request is published (from
 	 * runRequest()'s caller, never after) -- not reachable from QML, which
@@ -226,6 +237,9 @@ class QmlUiRequest : public QObject
 						QString releaseNotes);
 	void setFilePicker(QString mode, QString defaultPath, QString filter);
 	void setAccountOptions(QVariantList options);
+	/* kind == "modal": the document, and the starting value of every
+	 * input node in it (see QmlUiHost::runPluginModal()). */
+	void setModal(QVariantMap document, QVariantMap fields);
 	/* Read by QmlUiHost's checkNameRequested/submitNameRequested handlers
 	 * (which do the actual network work -- see QmlUiHost::setupProfile())
 	 * to update what QML sees; not reachable from QML itself, which only
@@ -267,6 +281,16 @@ class QmlUiRequest : public QObject
 	{
 		return m_makeDefault;
 	}
+	/// kind == "modal": the node id whose click answered the request.
+	QString modalClicked() const
+	{
+		return m_modalClicked;
+	}
+	/// kind == "modal": every input node's value when it was answered.
+	QVariantMap modalFields() const
+	{
+		return m_modalFields;
+	}
 	/// kind == "text": the text accept(QString) was called with; meaningless
 	/// unless accepted() is true.
 	QString answeredText() const
@@ -293,6 +317,12 @@ class QmlUiRequest : public QObject
 	/// `accountOptions` (negative for "backed out", like choose()) and
 	/// whether that account should become the default.
 	Q_INVOKABLE void chooseAccount(int index, bool makeDefault);
+	/* kind == "modal": PluginNode.qml's sink. A "change" records @p value
+	 * as node @p nodeId's field; a "click" answers the request with that
+	 * node. Other events are ignored. @p surfaceId is PluginNode's and
+	 * plays no part here. */
+	Q_INVOKABLE void sendEvent(const QString& surfaceId, const QString& nodeId,
+							   const QString& event, const QVariant& value);
 	/// kind == "update": one of "install", "later", "skip". Anything else
 	/// is treated as "later".
 	Q_INVOKABLE void answerUpdate(const QString& choice);
@@ -354,6 +384,9 @@ class QmlUiRequest : public QObject
 	QString m_filePickerFilter;
 	QString m_filePickerDefaultPath;
 	QVariantList m_accountOptions;
+	QVariantMap m_modalDocument;
+	QVariantMap m_modalFields;
+	QString m_modalClicked;
 	int m_checkSequence = 0;
 
 	bool m_answered = false;
@@ -477,6 +510,9 @@ class QmlUiHost : public QObject, public UiHost
 	std::optional<QString> pickFile(FilePickerMode mode, const QString& title,
 									const QString& defaultPath,
 									const QString& filter) override;
+
+	std::optional<PluginModalResult> runPluginModal(
+		const QString& title, const QJsonObject& document) override;
 
 	QObject* current() const;
 	bool busy() const;

@@ -38,31 +38,6 @@ namespace
 	 * relying on the order being identical. */
 	constexpr int ModuleIndexRole = Qt::UserRole + 1;
 
-	QString disableReasonLabel(PluginDisableReason r)
-	{
-		switch (r) {
-			case PluginDisableReason::None:
-				return QObject::tr("OK");
-			case PluginDisableReason::UserDisabled:
-				return QObject::tr("Disabled by user");
-			case PluginDisableReason::SignatureRequired:
-				return QObject::tr("Signature required");
-			case PluginDisableReason::SignatureInvalid:
-				return QObject::tr("Invalid signature");
-			case PluginDisableReason::DependencyMissing:
-				return QObject::tr("Missing dependency");
-			case PluginDisableReason::DependencyCycle:
-				return QObject::tr("Dependency cycle");
-			case PluginDisableReason::SupersededByCore:
-				return QObject::tr("Built into MeshMC");
-			case PluginDisableReason::AbiTooOld:
-				return QObject::tr("Plugin ABI too old");
-			case PluginDisableReason::AbiTooNew:
-				return QObject::tr("Plugin ABI too new");
-		}
-		return QString();
-	}
-
 	QString buildModuleHtml(const PluginMetadata& mod)
 	{
 		QString html;
@@ -127,7 +102,7 @@ namespace
 		if (mod.disabled) {
 			row(QObject::tr("Status:"),
 				QStringLiteral("%1 — %2").arg(
-					disableReasonLabel(mod.disableReason), mod.disableDetail));
+					pluginDisableReasonLabel(mod.disableReason), mod.disableDetail));
 		} else if (mod.initialized) {
 			row(QObject::tr("Status:"), QObject::tr("Loaded"));
 		} else {
@@ -210,7 +185,7 @@ void PluginsDialog::populateTree()
 		item->setText(2, QString::fromUtf8(
 							 PluginSignature::stateLabel(mod.signatureState)));
 		if (mod.disabled)
-			item->setText(3, disableReasonLabel(mod.disableReason));
+			item->setText(3, pluginDisableReasonLabel(mod.disableReason));
 		else if (mod.initialized)
 			item->setText(3, tr("Loaded"));
 		else

@@ -33,6 +33,10 @@ Item {
     // catAvailable, in turn MESHMC_HAS_CAT) -- passed on to the Appearance
     // section, which hides its Cat group without it.
     property bool catAvailable: false
+    // QmlShell.about (AboutInfo) for the About section, and the
+    // PluginListModel for "Installed plugins"; null hides either section.
+    property var about: null
+    property var pluginList: null
 
     // Show a folder in the file manager (the General section's Folders).
     signal openPathRequested(string path)
@@ -150,7 +154,9 @@ Item {
                 catAvailable: root.catAvailable
             }
             SettingsCommandsSection {}
-            SettingsPluginsListSection {}
+            SettingsPluginsListSection {
+                pluginList: root.pluginList
+            }
             SettingsPluginsSection {
                 pluginSurfaces: root.pluginSurfaces
             }
@@ -159,7 +165,9 @@ Item {
             SettingsLogUploadSection {}
             SettingsLauncherLogsSection {}
             SettingsUpdatesSection {}
-            SettingsAboutSection {}
+            SettingsAboutSection {
+                about: root.about
+            }
         }
     }
 }

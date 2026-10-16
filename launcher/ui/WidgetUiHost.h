@@ -50,6 +50,9 @@ class WidgetUiHost final : public UiHost
 		const QString& title, const QString& text,
 		const QList<MinecraftAccountPtr>& accounts) override;
 
+	std::optional<PluginModalResult> runPluginModal(
+		const QString& title, const QJsonObject& document) override;
+
 	std::optional<QString> askText(
 		const QString& title, const QString& text,
 		const QString& defaultValue = QString()) override;
