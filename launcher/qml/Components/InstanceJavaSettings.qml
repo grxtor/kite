@@ -7,10 +7,13 @@ import MeshMC.Theme
 
 /*
  * The Java part of one instance's settings (InstanceSettingsTab.qml):
- * memory, which Java runs the game, and its JVM arguments. Each group
- * follows the launcher-wide value (Settings, "Java & memory") until
- * switched to "custom for this instance". The tab hands in its own
- * SettingsSource and disables this whole column while the game runs.
+ * memory, which Java runs the game (with Choose, Browse and Test, see
+ * JavaPathRow.qml), its JVM arguments and the vendor automatic downloads
+ * come from. Each group follows the launcher-wide value (Settings, "Java &
+ * memory") until switched to "custom for this instance". The tab hands in
+ * its own SettingsSource and disables this whole column while the game
+ * runs. Downloading and removing Java is launcher-wide, so a link points
+ * to Settings for that.
  */
 Column {
     id: root
@@ -44,22 +47,47 @@ Column {
             stepSize: 128
             suffix: qsTr("MiB")
         }
+        SettingNumber {
+            source: root.source
+            key: "PermGen"
+            visible: javaLocation.legacy
+            enabled: memory.overriding
+            label: qsTr("PermGen size")
+            description: qsTr("Extra memory for Java older than 8. Newer Java ignores it.")
+            from: 64
+            to: 4096
+            stepSize: 64
+            suffix: qsTr("MiB")
+        }
     }
 
-    OverrideGroup {
-        id: javaPath
+    // The Java choice and, under it, the way to the launcher-wide Java
+    // downloads.
+    Column {
         width: parent.width
-        title: qsTr("Java")
-        source: root.source
-        gateKey: "OverrideJavaLocation"
-        gateLabel: qsTr("Use a specific Java for this instance")
-        keys: ["JavaPath"]
-        SettingText {
+        spacing: Theme.space.sm
+
+        OverrideGroup {
+            id: javaPath
+            width: parent.width
+            title: qsTr("Java")
             source: root.source
-            key: "JavaPath"
-            enabled: javaPath.overriding
-            label: qsTr("Java executable")
-            monospace: true
+            gateKey: "OverrideJavaLocation"
+            gateLabel: qsTr("Use a specific Java for this instance")
+            keys: ["JavaPath"]
+            JavaPathRow {
+                id: javaLocation
+                source: root.source
+                enabled: javaPath.overriding
+                label: qsTr("Java executable")
+            }
+        }
+
+        LinkButton {
+            x: parent.width - width
+            visible: !!JavaStore.controller
+            text: qsTr("Download or remove Java in Settings")
+            onClicked: JavaStore.navigateRequested("settings/java")
         }
     }
 
@@ -71,12 +99,26 @@ Column {
         gateKey: "OverrideJavaArgs"
         gateLabel: qsTr("Use custom JVM arguments for this instance")
         keys: ["JvmArgs"]
-        SettingText {
+        JvmArgsRow {
             source: root.source
-            key: "JvmArgs"
             enabled: javaArgs.overriding
             label: qsTr("Arguments")
-            monospace: true
+        }
+    }
+
+    OverrideGroup {
+        id: javaVendor
+        width: parent.width
+        visible: !!JavaStore.controller && JavaStore.controller.downloaderAvailable
+        title: qsTr("Automatic Java")
+        source: root.source
+        gateKey: "OverrideJavaAutoDownloadVendor"
+        gateLabel: qsTr("Download Java from a different vendor for this instance")
+        keys: ["JavaAutoDownloadVendor"]
+        JavaVendorRow {
+            source: root.source
+            enabled: javaVendor.overriding
+            label: qsTr("Download from")
         }
     }
 }

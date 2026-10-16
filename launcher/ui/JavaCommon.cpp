@@ -18,26 +18,14 @@
  */
 
 #include "ui/JavaCommon.h"
+#include "java/JavaArgs.h"
 #include "ui/dialogs/CustomMessageBox.h"
 #include <MMCStrings.h>
 #include <QRegularExpression>
 
 QString JavaCommon::jvmArgsWarning(const QString& jvmargs)
 {
-	if (jvmargs.contains("-XX:PermSize=") ||
-		jvmargs.contains(QRegularExpression("-Xm[sx]")) ||
-		jvmargs.contains("-XX-MaxHeapSize") ||
-		jvmargs.contains("-XX:InitialHeapSize")) {
-		return QObject::tr(
-			"You tried to manually set a JVM memory option (using "
-			"\"-XX:PermSize\", \"-XX-MaxHeapSize\", "
-			"\"-XX:InitialHeapSize\",  \"-Xmx\" or \"-Xms\").\n"
-			"There are dedicated boxes for these in the settings "
-			"(Java tab, in the Memory group at the top).\n"
-			"This message will be displayed until you remove them "
-			"from the JVM arguments.");
-	}
-	return QString();
+	return JavaArgs::memoryFlagWarning(jvmargs);
 }
 
 bool JavaCommon::checkJVMArgs(QString jvmargs, QWidget* parent)

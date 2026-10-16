@@ -64,6 +64,10 @@ set(CORE_SOURCES
     models/InstanceContentController.cpp
     models/ContentInstallReview.h
     models/ContentInstallReview.cpp
+    models/JavaController.h
+    models/JavaController.cpp
+    models/JavaDownloadController.h
+    models/JavaDownloadController.cpp
     models/ContentUpdateController.h
     models/ContentUpdateController.cpp
     models/InstanceExportController.h
@@ -643,6 +647,8 @@ set(JAVA_SOURCES
     java/JavaUtils.cpp
     java/JavaVersion.h
     java/JavaVersion.cpp
+    java/JavaArgs.h
+    java/JavaArgs.cpp
 )
 
 if(NOT MeshMC_DISABLE_JAVA_DOWNLOADER)
@@ -1431,6 +1437,19 @@ add_unit_test(NewInstanceController
 # exercises InstanceLogBridge.
 add_unit_test(ServersListModel
     SOURCES models/ServersListModel_test.cpp
+    LIBS MeshMC_core
+    )
+
+# JavaController/JavaDownloadController: the pure parts (JVM-argument check,
+# managed-runtime scan and removal on a temporary directory, meta-server
+# JSON parsing from fixtures). Actually running JavaChecker or the download
+# needs a LauncherContext and the network, so those are not exercised here.
+add_unit_test(JavaController
+    SOURCES models/JavaController_test.cpp
+    LIBS MeshMC_core
+    )
+add_unit_test(JavaDownloadController
+    SOURCES models/JavaDownloadController_test.cpp
     LIBS MeshMC_core
     )
 
