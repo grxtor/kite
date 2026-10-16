@@ -160,7 +160,7 @@ SettingRow {
                         color: Theme.palette.textPrimary
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.label.pixelSize
-                        lineHeight: 1.3
+                        lineHeight: Theme.type.label.lineHeight
                         text: {
                             if (root.testing)
                                 return qsTr("Checking this Java…")

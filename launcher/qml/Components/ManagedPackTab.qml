@@ -370,6 +370,11 @@ Item {
                              root.controller.versions[list.currentIndex] &&
                              root.controller.versions[list.currentIndex].installable &&
                              !root.controller.versions[list.currentIndex].current
+                    // The tab's one main action, shown as such only while it
+                    // would do something: a version other than the installed
+                    // one is picked (the newest, by default, when there is
+                    // an update).
+                    highlighted: enabled
                     text: qsTr("Update to this version")
                     icon.source: Icons.url("download")
                     onClicked: root.watcher = root.controller.updateToVersion(list.currentIndex)

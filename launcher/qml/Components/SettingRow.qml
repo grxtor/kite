@@ -84,7 +84,7 @@ Item {
                 color: Theme.palette.textTertiary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.label.pixelSize
-                lineHeight: 1.3
+                lineHeight: Theme.type.label.lineHeight
             }
         }
 

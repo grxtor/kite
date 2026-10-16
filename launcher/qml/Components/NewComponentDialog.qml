@@ -27,9 +27,11 @@ Dialog {
     // Shown only once the user has typed something, not on an untouched form.
     readonly property bool touched: nameField.text.length > 0 || uidField.text.length > 0
 
+    readonly property int dialogWidth: 480
+
     parent: Overlay.overlay
     anchors.centerIn: parent
-    width: Math.min(480, parent ? parent.width - Theme.space.xxl * 2 : 480)
+    width: Math.min(root.dialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.dialogWidth)
     modal: true
     title: qsTr("Add empty component")
 
@@ -54,21 +56,14 @@ Dialog {
             color: Theme.palette.textTertiary
             font.family: Theme.font.family
             font.pixelSize: Theme.type.label.pixelSize
-            lineHeight: 1.3
+            lineHeight: Theme.type.label.lineHeight
         }
 
-        GridLayout {
+        // Each label over its field, as in the other dialogs' forms.
+        ColumnLayout {
             Layout.fillWidth: true
-            columns: 2
-            columnSpacing: Theme.space.lg
-            rowSpacing: Theme.space.md
-
-            Text {
-                text: qsTr("Name")
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
-            }
+            spacing: Theme.space.xs
+            FieldLabel { text: qsTr("Name") }
             TextField {
                 id: nameField
                 Layout.fillWidth: true
@@ -77,13 +72,12 @@ Dialog {
                 Accessible.name: qsTr("Name")
                 onAccepted: if (root.problem.length === 0) root.add()
             }
+        }
 
-            Text {
-                text: qsTr("ID")
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
-            }
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: Theme.space.xs
+            FieldLabel { text: qsTr("ID") }
             TextField {
                 id: uidField
                 Layout.fillWidth: true
