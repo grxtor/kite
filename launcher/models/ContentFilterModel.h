@@ -105,6 +105,9 @@ class ContentFilterModel : public QSortFilterProxyModel
 	QModelIndexList sourceIndexesForKeys(const QStringList& keys) const;
 	/// The keys of the rows the search currently shows, top to bottom.
 	Q_INVOKABLE QStringList visibleKeys() const;
+	/// Re-announces the rows with @p keys, for a change the folder model
+	/// cannot see (the sidecar behind `source`/`homepage`).
+	void refreshRows(const QStringList& keys);
 
 	/// ModMetadataIndex::canonicalFileName() of the mod's file.
 	static QString keyFor(const Mod& mod);

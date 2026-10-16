@@ -154,6 +154,16 @@ QStringList ContentFilterModel::visibleKeys() const
 	return keys;
 }
 
+void ContentFilterModel::refreshRows(const QStringList& keys)
+{
+	for (int row = 0; row < rowCount(); ++row) {
+		const QModelIndex at = index(row, 0);
+		if (keys.contains(data(at, KeyRole).toString())) {
+			emit dataChanged(at, at);
+		}
+	}
+}
+
 QString ContentFilterModel::keyFor(const Mod& mod)
 {
 	return ModMetadataIndex::canonicalFileName(mod.filename().fileName());

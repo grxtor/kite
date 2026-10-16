@@ -18,7 +18,9 @@ import MeshMC.Theme
  * A search narrows the list; ticking rows (see PackList) swaps in a bar of
  * actions for the selection -- enable, disable, remove, export -- in place
  * of nothing, the way a mail or file list does. "Export list…" writes the
- * list as HTML, Markdown, CSV and more.
+ * list as HTML, Markdown, CSV and more. "Check for updates", "Change
+ * version…", "Verify dependencies" and "Reset metadata" run through
+ * ContentUpdateFlows, with a progress notice while anything downloads.
  *
  * Mods are locked while the game runs, as the old Mods tab was: the files
  * are open, and a change would only apply to the next launch. Packs the
@@ -81,6 +83,10 @@ Item {
     }
     readonly property string lockedReason: root.unlocked ? ""
         : qsTr("The game is running. %1 can be changed once it closes.").arg(root.current.label)
+    // Whether files of this kind can come from Modrinth or CurseForge, and
+    // so be updated or changed to another version.
+    readonly property bool updatable: !!root.content && !!root.content.updater
+                                      && root.content.updater.supportsUpdates(root.kind)
     // Every file of the current kind, searched or not (the tab's badge).
     readonly property int count: root.listModel ? root.listModel.totalCount : 0
 
@@ -99,6 +105,11 @@ Item {
         root.afterLoader = action
         loaderPrompt.open()
         return true
+    }
+    // Runs @p action now, or once a loader is in place for mods.
+    function withLoader(action) {
+        if (!root.needsLoaderFirst(action))
+            action()
     }
     function addFromFile() {
         if (!root.needsLoaderFirst(() => fileDialog.open()))
@@ -166,9 +177,17 @@ Item {
             // field; a drop-down once they do not (legacy instances have
             // up to five kinds). Measured against the tab's own width,
             // which the toolbar's contents never feed back into.
+            readonly property int updatesIconWidth: root.updatable ? Theme.control.height + spacing : 0
             readonly property bool kindsFit: root.width >= kindPicker.implicitWidth + searchMinWidth
+                                                           + updatesIconWidth
                                                            + moreButton.implicitWidth + addReason.implicitWidth
                                                            + spacing * 3
+            // "Check for updates" spelled out when there is room for it as
+            // well; just its icon (and tooltip) otherwise.
+            readonly property bool updatesLabelFits: kindsFit && root.width >= kindPicker.implicitWidth + searchMinWidth
+                                                                 + updatesMeasure.implicitWidth + spacing
+                                                                 + moreButton.implicitWidth + addReason.implicitWidth
+                                                                 + spacing * 3
 
             SegmentedControl {
                 id: kindPicker
@@ -197,6 +216,28 @@ Item {
                 Layout.fillWidth: true
                 Layout.minimumWidth: toolbar.searchMinWidth
                 placeholderText: qsTr("Search %1").arg(root.current.noun)
+            }
+
+            // Only measured, for updatesLabelFits.
+            Button {
+                id: updatesMeasure
+                visible: false
+                text: qsTr("Check for updates")
+                icon.source: Icons.url("refresh")
+            }
+            HoverReason {
+                visible: root.updatable
+                reason: root.lockedReason
+                Button {
+                    enabled: root.unlocked && root.count > 0 && !root.flowsBusy
+                    display: toolbar.updatesLabelFits ? AbstractButton.TextBesideIcon : AbstractButton.IconOnly
+                    text: qsTr("Check for updates")
+                    icon.source: Icons.url("refresh")
+                    ToolTip.visible: hovered && display === AbstractButton.IconOnly
+                    ToolTip.delay: 400
+                    ToolTip.text: text
+                    onClicked: root.withLoader(() => flows.checkUpdates([]))
+                }
             }
 
             // "More ▾": mirrored so the chevron follows the label.
@@ -228,6 +269,26 @@ Item {
                         onTriggered: root.openFolderRequested(root.content ? root.content.configsDir : "")
                     }
                     MenuSeparator {}
+                    MenuItem {
+                        visible: root.updatable
+                        height: visible ? implicitHeight : 0
+                        enabled: root.unlocked && root.count > 0 && !root.flowsBusy
+                        text: qsTr("Check for updates")
+                        icon.source: Icons.url("refresh")
+                        onTriggered: root.withLoader(() => flows.checkUpdates([]))
+                    }
+                    MenuItem {
+                        visible: root.kind === "mods"
+                        height: visible ? implicitHeight : 0
+                        enabled: root.unlocked && root.count > 0 && !root.flowsBusy
+                        text: qsTr("Verify dependencies")
+                        icon.source: Icons.url("layers")
+                        onTriggered: root.withLoader(() => flows.verifyDependencies())
+                    }
+                    MenuSeparator {
+                        visible: root.updatable
+                        height: visible ? implicitHeight : 0
+                    }
                     MenuItem {
                         enabled: root.listModel && root.listModel.count > 0
                         text: qsTr("Select all")
@@ -263,6 +324,16 @@ Item {
             text: root.lockedReason
         }
 
+        // An update, version change or missing-dependency install on its
+        // way.
+        NoticeBar {
+            Layout.fillWidth: true
+            visible: root.flowsBusy
+            tone: "info"
+            text: flows.busyText
+            progress: flows.busyProgress
+        }
+
         // What can be done with the ticked rows.
         ContentSelectionBar {
             Layout.fillWidth: true
@@ -274,6 +345,9 @@ Item {
             onEnableRequested: (enabled) => root.bulkEnable(enabled)
             onRemoveRequested: root.bulkRemove()
             onExportRequested: root.exportList(packList.selectedKeys)
+            updatable: root.updatable
+            onCheckUpdatesRequested: root.withLoader(() => flows.checkUpdates(packList.selectedKeys))
+            onResetMetadataRequested: flows.resetMetadata(packList.selectedKeys, "")
         }
 
         PackList {
@@ -288,7 +362,19 @@ Item {
             iconName: root.current.icon
             noun: root.current.noun
             onOpenFolderRequested: (path) => root.openFolderRequested(path)
+            updatable: root.updatable
+            onChangeVersionRequested: (key) => root.withLoader(() => flows.changeVersion(key))
+            onResetMetadataRequested: (key, name) => flows.resetMetadata([key], name)
         }
+    }
+
+    readonly property bool flowsBusy: flows.busyText.length > 0
+    ContentUpdateFlows {
+        id: flows
+        content: root.content
+        kind: root.kind
+        noun: root.current.noun
+        onNotify: (message, tone) => { if (message.length > 0) toast.show(message, tone) }
     }
 
     // The search follows whichever list is showing.

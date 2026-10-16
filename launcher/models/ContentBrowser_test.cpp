@@ -23,6 +23,7 @@
 
 #include "modplatform/ContentApi.h"
 #include "modplatform/ContentProviderModel.h"
+#include "modplatform/ModDownloadTypes.h"
 
 /* Both functions under test are public and static, and touch neither the
  * network nor a MinecraftInstance - see the class comment on
@@ -179,6 +180,50 @@ class ContentBrowserTest : public QObject
 		QVERIFY(packs.loaders.isEmpty());
 		QCOMPARE(packs.side, ModPlatform::SideFilter::Any);
 		QVERIFY(packs.openSourceOnly);
+	}
+
+	/* The version list "Change version…" shares with this browser. */
+	void test_VersionEntriesNewestFirstAndFlagged()
+	{
+		ModPlatform::ContentVersion older;
+		older.versionId = "a";
+		older.versionNumber = "1.0";
+		older.datePublished = "2024-01-01T00:00:00Z";
+		older.gameVersions = {"1.20.1"};
+		ModPlatform::ContentVersion newer;
+		newer.versionId = "b";
+		newer.versionNumber = "2.0";
+		newer.datePublished = "2025-01-01T00:00:00Z";
+		newer.gameVersions = {"1.21.4"};
+
+		const QVariantList entries =
+			ContentBrowser::versionEntries({older, newer}, "1.21.4", "fabric");
+		QCOMPARE(entries.size(), 2);
+		QCOMPARE(entries.at(0).toMap().value("id").toString(), QString("b"));
+		QVERIFY(entries.at(0).toMap().value("isCompatible").toBool());
+		QVERIFY(!entries.at(1).toMap().value("isCompatible").toBool());
+	}
+
+	void test_SelectionFromCopiesTheVersion()
+	{
+		ModPlatform::IndexedProject project;
+		project.projectId = "AANobbMI";
+		project.name = "Sodium";
+		project.slug = "sodium";
+		ModPlatform::ContentVersion version;
+		version.versionId = "v9";
+		version.fileName = "sodium.jar";
+		version.versionType = "beta";
+
+		const auto mod = ContentBrowser::selectionFrom(project, version,
+														"modrinth", "1.21.4",
+														"fabric");
+		QCOMPARE(mod.projectId, QString("AANobbMI"));
+		QCOMPARE(mod.versionId, QString("v9"));
+		QCOMPARE(mod.fileName, QString("sodium.jar"));
+		QCOMPARE(mod.platform, QString("modrinth"));
+		QCOMPARE(mod.loaders, QString("fabric"));
+		QCOMPARE(mod.versionType, QString("beta"));
 	}
 
 	void test_CategoryLabel()

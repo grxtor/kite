@@ -57,6 +57,12 @@ class ModUpdateCheckTask : public Task
 		QString name;
 		QString platform;
 		ModPlatform::DownloadItem item;
+		/* The two versions as a person reads them ("0.6.5"), for a review
+		 * list; the ids above are each platform's own opaque handles.
+		 * Either may be empty when nothing readable was recorded or
+		 * offered. */
+		QString currentVersionNumber;
+		QString newVersionNumber;
 	};
 
 	/* `loader` is ignored for content that has no loaders (resource

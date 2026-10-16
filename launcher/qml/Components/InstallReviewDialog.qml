@@ -8,25 +8,32 @@ import QtQuick.Layouts
 import MeshMC.Theme
 
 /*
- * What an install from Add content brings along, before anything is
- * downloaded -- the QML replacement for DownloadSummaryDialog. The picked
- * project is always installed; each dependency it needs can be unticked
- * (one already installed at another version starts unticked, as it did
- * there). Dependencies no provider had a compatible version of are named
- * underneath, since the install may not work without them.
+ * What an install brings along, before anything is downloaded -- the QML
+ * replacement for DownloadSummaryDialog. Two shapes, from the review's
+ * own primaryCount:
+ *   - A picked project (Add content, "Change version…"): the project is
+ *     always installed, so its row has no checkbox; what it needs is
+ *     listed under it, each one optional (one already installed at
+ *     another version starts unticked, as it did there).
+ *   - Missing dependencies ("Verify dependencies"): only what the
+ *     installed mods need and do not have, all optional.
+ * Dependencies no provider had a compatible version of are named
+ * underneath, since things may not work without them.
  *
- * Shown by ContentBrowserView only when there is something to review: a
- * project with no dependencies installs straight away.
+ * As tall as its rows, up to a limit; past that the list scrolls.
  */
 Dialog {
     id: root
 
-    // ContentInstallReview (ContentBrowser.review()), already `ready`.
+    // ContentInstallReview, already `ready`.
     property var review: null
     // Started with this review's TaskWatcher once Install is pressed.
     signal installStarted(var watcher)
 
     property bool started: false
+    readonly property bool picked: !!root.review && root.review.primaryCount > 0
+    readonly property int preferredWidth: 560
+    readonly property int maxHeight: 560
 
     function show(review) {
         root.review = review
@@ -34,13 +41,20 @@ Dialog {
         root.open()
     }
 
+    // The "All dependencies" box: ticked, unticked, or some of them.
+    function allState() {
+        if (!root.review || root.review.checkedDependencyCount === 0)
+            return Qt.Unchecked
+        return root.review.checkedDependencyCount === root.review.dependencyCount ? Qt.Checked : Qt.PartiallyChecked
+    }
+
     parent: Overlay.overlay
     anchors.centerIn: parent
-    width: Math.min(560, parent ? parent.width - Theme.space.xxl * 2 : 560)
-    height: Math.min(560, parent ? parent.height - Theme.space.xxl * 2 : 560)
+    width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
+    height: Math.min(root.maxHeight, implicitHeight, parent ? parent.height - Theme.space.xxl * 2 : root.maxHeight)
     modal: true
     closePolicy: Popup.CloseOnEscape
-    title: root.review ? qsTr("Install %1").arg(root.review.title) : ""
+    title: !root.review ? "" : root.picked ? qsTr("Install %1").arg(root.review.title) : root.review.title
 
     header: DialogHeader {
         title: root.title
@@ -60,8 +74,9 @@ Dialog {
 
         Text {
             Layout.fillWidth: true
-            text: root.review && root.review.dependencyCount > 0
-                  ? qsTr("It needs these to run. Untick any you do not want.")
+            text: !root.review ? ""
+                  : !root.picked ? qsTr("Mods in this instance need these, and they are not installed.")
+                  : root.review.dependencyCount > 0 ? qsTr("It needs these to run. Untick any you do not want.")
                   : qsTr("Nothing else needs to come with it.")
             wrapMode: Text.Wrap
             color: Theme.palette.textSecondary
@@ -74,84 +89,58 @@ Dialog {
             id: list
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.preferredHeight: contentHeight
             clip: true
             spacing: Theme.space.xs
             boundsBehavior: Flickable.StopAtBounds
             model: root.review
             ScrollBar.vertical: ScrollBar {}
 
-            delegate: Rectangle {
-                id: row
+            // "Needed to run it" over the dependencies, under the project.
+            section.property: "isDependency"
+            // ListView keeps section items visible itself, so the one over
+            // the picked project collapses to nothing instead.
+            section.delegate: Item {
+                required property string section
+                readonly property bool shown: root.picked && section === "true"
+                width: list.width
+                height: shown ? sectionLabel.implicitHeight + Theme.space.sm : 0
+                Text {
+                    id: sectionLabel
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: Theme.space.xxs
+                    text: parent.shown ? qsTr("Needed to run it") : ""
+                    color: Theme.palette.textTertiary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.caption.pixelSize
+                    font.weight: Font.DemiBold
+                }
+            }
+
+            delegate: ReviewRow {
                 required property int index
                 required property string name
                 required property string fileName
                 required property string provider
                 required property string requiredBy
                 required property bool isDependency
-                required property bool checked
                 required property bool maybeInstalled
                 required property bool browserOnly
                 required property string versionType
+                required property var model
 
                 width: list.width
-                height: Theme.control.heightLg + Theme.space.sm
-                radius: Theme.radius.sm
-                color: Theme.palette.surfaceSunken
-                border.width: 1
-                border.color: Theme.palette.border
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: Theme.space.sm
-                    anchors.rightMargin: Theme.space.md
-                    spacing: Theme.space.sm
-
-                    // The picked project cannot be unticked: it is what
-                    // this install is for.
-                    CheckBox {
-                        enabled: row.isDependency
-                        checked: row.checked
-                        Accessible.name: qsTr("Install %1").arg(row.name)
-                        onToggled: {
-                            root.review.setChecked(row.index, checked)
-                            checked = Qt.binding(() => row.checked)
-                        }
-                    }
-                    Column {
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                        spacing: 1
-                        Text {
-                            width: parent.width
-                            text: row.name
-                            elide: Text.ElideRight
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.body.pixelSize
-                            font.weight: Font.Medium
-                        }
-                        Text {
-                            width: parent.width
-                            text: row.maybeInstalled ? qsTr("Another version is already installed")
-                                : row.browserOnly ? qsTr("The author only allows downloads from their own page")
-                                : row.isDependency && row.requiredBy.length > 0 ? qsTr("Needed by %1").arg(row.requiredBy)
-                                : row.fileName
-                            elide: Text.ElideRight
-                            color: row.maybeInstalled || row.browserOnly ? Theme.palette.warning : Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
-                        }
-                    }
-                    Tag {
-                        visible: row.versionType.length > 0 && row.versionType !== "release"
-                        text: row.versionType === "beta" ? qsTr("Beta")
-                            : row.versionType === "alpha" ? qsTr("Alpha") : row.versionType
-                    }
-                    Tag {
-                        visible: row.provider.length > 0
-                        text: row.provider
-                    }
-                }
+                checkable: isDependency
+                checked: model.checked
+                title: name
+                subtitle: maybeInstalled ? qsTr("Another version is already installed")
+                        : browserOnly ? qsTr("The author only allows downloads from their own page")
+                        : isDependency && requiredBy.length > 0 ? qsTr("Needed by %1").arg(requiredBy)
+                        : fileName
+                subtitleWarning: maybeInstalled || browserOnly
+                tags: (versionType === "beta" ? [qsTr("Beta")] : versionType === "alpha" ? [qsTr("Alpha")] : [])
+                      .concat(provider.length > 0 ? [provider] : [])
+                onToggled: (on) => root.review.setChecked(index, on)
             }
         }
 
@@ -178,11 +167,13 @@ Dialog {
             spacing: Theme.space.sm
 
             CheckBox {
+                // Box edge on the content edge.
+                leftPadding: 0
                 visible: !!root.review && root.review.dependencyCount > 1
                 text: qsTr("All dependencies")
                 checkState: root.allState()
                 onClicked: {
-                    root.review.setAllDependenciesChecked(root.review.checkedCount !== root.review.count)
+                    root.review.setAllDependenciesChecked(root.review.checkedDependencyCount !== root.review.dependencyCount)
                     checkState = Qt.binding(() => root.allState())
                 }
             }
@@ -194,9 +185,10 @@ Dialog {
             }
             Button {
                 highlighted: true
-                enabled: !!root.review && root.review.ready
-                text: root.review && root.review.checkedCount > 1
-                      ? qsTr("Install %1 files").arg(root.review.checkedCount) : qsTr("Install")
+                enabled: !!root.review && root.review.ready && root.review.checkedCount > 0
+                text: !root.review ? qsTr("Install")
+                      : root.review.checkedCount > 1 ? qsTr("Install %1 files").arg(root.review.checkedCount)
+                      : qsTr("Install")
                 icon.source: Icons.url("download")
                 onClicked: {
                     const watcher = root.review.install()
@@ -207,12 +199,5 @@ Dialog {
                 }
             }
         }
-    }
-
-    // The "All dependencies" box: ticked, unticked, or some of them.
-    function allState() {
-        if (!root.review || root.review.checkedCount === 1)
-            return Qt.Unchecked
-        return root.review.checkedCount === root.review.count ? Qt.Checked : Qt.PartiallyChecked
     }
 }

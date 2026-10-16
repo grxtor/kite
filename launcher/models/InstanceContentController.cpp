@@ -35,6 +35,7 @@
 #include "minecraft/mod/ModFolderModel.h"
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "models/ContentFilterModel.h"
+#include "models/ContentUpdateController.h"
 #include "settings/Setting.h"
 
 namespace
@@ -65,6 +66,7 @@ InstanceContentController::InstanceContentController(
 	MinecraftInstance* instance, QObject* parent)
 	: QObject(parent), m_instance(instance)
 {
+	m_updater = new ContentUpdateController(m_instance, this, this);
 	if (!m_instance) {
 		return;
 	}
@@ -129,6 +131,19 @@ QStringList InstanceContentController::kinds() const
 bool InstanceContentController::running() const
 {
 	return m_instance && m_instance->isRunning();
+}
+
+QObject* InstanceContentController::updater() const
+{
+	return m_updater;
+}
+
+void InstanceContentController::refreshRows(const QString& kind,
+											const QStringList& keys)
+{
+	if (auto* proxy = filterModel(kind)) {
+		proxy->refreshRows(keys);
+	}
 }
 
 QString InstanceContentController::configsDir() const

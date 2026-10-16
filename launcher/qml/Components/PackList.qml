@@ -56,7 +56,12 @@ Item {
     // Details line up under the name, past the logo.
     readonly property int detailsIndent: Theme.space.md + thumbSize + Theme.space.md
 
+    // Whether files of `kind` can come from a provider (ContentTab).
+    property bool updatable: false
+
     signal openFolderRequested(string path)
+    signal changeVersionRequested(string key)
+    signal resetMetadataRequested(string key, string name)
 
     function isSelected(key) {
         return root.selectedKeys.indexOf(key) >= 0

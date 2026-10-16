@@ -12,7 +12,8 @@ import MeshMC.Theme
  * tick or untick all of them, and what can be done with them. Its
  * checkbox sits in the rows' own checkbox column. Enable, Disable and
  * Remove are off while the game holds the files (with the reason on
- * hover); Export always works.
+ * hover); Export always works. Its ⋯ menu checks just these for updates
+ * or forgets where they came from.
  */
 Rectangle {
     id: root
@@ -23,9 +24,14 @@ Rectangle {
     property bool unlocked: false
     property string lockedReason: ""
 
+    // Whether these files can come from a provider (updates, origins).
+    property bool updatable: false
+
     signal enableRequested(bool enabled)
     signal removeRequested()
     signal exportRequested()
+    signal checkUpdatesRequested()
+    signal resetMetadataRequested()
 
     // Whether every row the search shows is ticked.
     readonly property bool allShown: {
@@ -99,6 +105,28 @@ Rectangle {
         Button {
             text: qsTr("Export…")
             onClicked: root.exportRequested()
+        }
+        IconButton {
+            id: moreButton
+            visible: root.updatable
+            iconName: "more"
+            tip: qsTr("More")
+            onClicked: moreMenu.popup(moreButton, moreButton.width - moreMenu.width, moreButton.height)
+
+            Menu {
+                id: moreMenu
+                MenuItem {
+                    enabled: root.unlocked
+                    text: qsTr("Check these for updates")
+                    icon.source: Icons.url("refresh")
+                    onTriggered: root.checkUpdatesRequested()
+                }
+                MenuItem {
+                    text: qsTr("Reset metadata…")
+                    icon.source: Icons.url("refresh")
+                    onTriggered: root.resetMetadataRequested()
+                }
+            }
         }
         IconButton {
             iconName: "x"

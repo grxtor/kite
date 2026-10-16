@@ -80,6 +80,11 @@ qt_add_qml_module(MeshMC_qml_components
         InstallReviewDialog.qml
         ContentFilterPopup.qml
         NoticeBar.qml
+        ReviewRow.qml
+        VersionRow.qml
+        UpdateReviewDialog.qml
+        ChangeVersionDialog.qml
+        ContentUpdateFlows.qml
         PluginNode.qml
         PluginSurfaces.qml
         UiRequestDialog.qml

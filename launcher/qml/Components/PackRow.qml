@@ -28,6 +28,8 @@ Rectangle {
     readonly property bool itemEnabled: model.enabled
     readonly property string iconUrl: model.iconUrl || ""
     readonly property string homepage: model.homepage || ""
+    // "Modrinth" / "CurseForge" when installed from one.
+    readonly property string source: model.source || ""
     readonly property bool selected: owner.isSelected(key)
     readonly property bool expanded: owner.expandedKey === key
 
@@ -294,6 +296,27 @@ Rectangle {
             text: qsTr("Open configs folder")
             icon.source: Icons.url("folder")
             onTriggered: owner.openFolderRequested(owner.controller ? owner.controller.configsDir : "")
+        }
+        MenuSeparator {
+            visible: owner.updatable
+            height: visible ? implicitHeight : 0
+        }
+        // Both need a recorded origin: where it was installed from.
+        MenuItem {
+            visible: owner.updatable
+            height: visible ? implicitHeight : 0
+            enabled: owner.unlocked && row.source.length > 0
+            text: qsTr("Change version…")
+            icon.source: Icons.url("layers")
+            onTriggered: owner.changeVersionRequested(row.key)
+        }
+        MenuItem {
+            visible: owner.updatable
+            height: visible ? implicitHeight : 0
+            enabled: row.source.length > 0
+            text: qsTr("Reset metadata…")
+            icon.source: Icons.url("refresh")
+            onTriggered: owner.resetMetadataRequested(row.key, row.name)
         }
         MenuSeparator {}
         MenuItem {

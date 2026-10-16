@@ -57,18 +57,15 @@ namespace Meta
  * detectInstanceProfile()/buildPages() does, one model kept (and its
  * search state preserved) per provider/content-type pair actually visited.
  *
- * install() collapses the widget's three-dialog "resolve dependencies ->
- * review -> confirm conflicts" pipeline into one automatic decision, since
- * there is no dialog here to ask through: required dependencies are always
- * installed, a dependency whose project is already present at some other
- * version is left alone (the same default the review dialog's tick boxes
- * start at), and a name/file-name conflict against what is already on disk
- * is resolved exactly as the conflict analyzer already decides for the
- * widget (replace in place). See ContentBrowserInstallTask in the .cpp.
+ * Installing goes through review(): a ContentInstallReview resolves the
+ * pick's required dependencies and lists them to untick (the widget's
+ * DownloadSummaryDialog), then downloads what is left with conflicts
+ * against what is on disk settled the way the widget settles them
+ * (ModInstallConflictAnalyzer: replace in place).
  *
  * Created lazily by InstanceDetails::contentBrowser() and parented to it
  * (see that class), so opening an instance page never talks to the network
- * on its own - only search()/loadVersions()/install() do.
+ * on its own - only search()/loadVersions()/review() do.
  */
 class ContentBrowser : public QObject
 {
@@ -186,7 +183,7 @@ class ContentBrowser : public QObject
 	/// Whether the current contentType has a folder to install into.
 	/// False for data packs while the instance-wide data pack folder is
 	/// switched off (GlobalDataPacksEnabled): there is nowhere for them
-	/// to go, so install() and review() return null.
+	/// to go, so review() returns null.
 	Q_PROPERTY(bool installTargetAvailable READ installTargetAvailable NOTIFY
 				   installTargetAvailableChanged)
 
@@ -256,18 +253,12 @@ class ContentBrowser : public QObject
 	/// Fetches (or re-shows, if already loaded) the compatible versions of
 	/// results() row `row`, filling `versions`.
 	Q_INVOKABLE void loadVersions(int row);
-	/// Resolves required dependencies, settles conflicts against what is
-	/// already installed and downloads everything, exactly the way the
-	/// widget dialog does once its own dialogs are out of the way. Returns
-	/// a TaskWatcher (parented to this browser - InstanceDetails/QmlShell
-	/// pin it for QML the same way they do every other child object), or
-	/// null if `row` or `versionId` do not name anything installable
-	/// (call loadVersions() first).
-	Q_INVOKABLE QObject* install(int row, const QString& versionId);
-	/// The reviewed form of install(): a ContentInstallReview (parented
-	/// to this browser) that resolves the dependencies first and lists
-	/// them, so some can be unticked before its own install() downloads
-	/// anything. Null under the same conditions as install().
+	/// Installing version `versionId` of results() row `row`: a
+	/// ContentInstallReview (parented to this browser, already started)
+	/// that resolves the dependencies first and lists them, so some can be
+	/// unticked before its own install() downloads anything. Null if `row`
+	/// or `versionId` do not name anything installable (call
+	/// loadVersions() first), or there is no folder for this content type.
 	Q_INVOKABLE QObject* review(int row, const QString& versionId);
 
 	QVariantList categories() const;
@@ -351,6 +342,20 @@ class ContentBrowser : public QObject
 	static bool isVersionCompatible(const ModPlatform::ContentVersion& version,
 									const QString& mcVersion,
 									const QString& loader);
+	/// What `versions` holds for a project with @p versions: newest
+	/// first, each flagged compatible with @p mcVersion / @p loader or
+	/// not. Public and static so "Change version…"
+	/// (ContentUpdateController) lists versions exactly as this does.
+	static QVariantList
+	versionEntries(const QList<ModPlatform::ContentVersion>& versions,
+				   const QString& mcVersion, const QString& loader);
+	/// What installing @p version of @p project from @p platform means,
+	/// for a review or an install. Public and static for the same reason.
+	static ModPlatform::SelectedMod
+	selectionFrom(const ModPlatform::IndexedProject& project,
+				  const ModPlatform::ContentVersion& version,
+				  const QString& platform, const QString& mcVersion,
+				  const QString& loader);
 	/// ModPlatform::SortingMethod -> {id: <index>, label: <readableName>}.
 	/// Public and static for the same reason as isVersionCompatible().
 	static QVariantList
@@ -403,7 +408,7 @@ class ContentBrowser : public QObject
 	/// components change, moving filters still on the old defaults along.
 	void refreshInstanceProfile();
 	void rebuildGameVersionOptions();
-	/// Shared by install() and review(): what row @p row's version
+	/// For review(): what row @p row's version
 	/// @p versionId would install, or false if either names nothing.
 	bool selectionFor(int row, const QString& versionId,
 					  ModPlatform::SelectedMod& mod) const;

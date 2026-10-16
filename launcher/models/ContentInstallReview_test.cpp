@@ -158,6 +158,44 @@ class ContentInstallReviewTest : public QObject
 		QVERIFY(!review.ready());
 	}
 
+	void checkedDependencyCountLeavesThePickOut()
+	{
+		ContentInstallReview review(picked(), "1.21.4", "fabric", folder(),
+									true);
+		review.applyResolution(
+			{dependency("Sodium", true), dependency("Cloth Config", false)},
+			{});
+		QCOMPARE(review.primaryCount(), 1);
+		QCOMPARE(review.checkedDependencyCount(), 1);
+		review.setAllDependenciesChecked(false);
+		QCOMPARE(review.checkedDependencyCount(), 0);
+		QCOMPARE(review.checkedCount(), 1);
+	}
+
+	void missingDependenciesHaveNoPick()
+	{
+		ModPlatform::SelectedMod installed = picked();
+		std::unique_ptr<ContentInstallReview> review(
+			ContentInstallReview::missingDependencies(
+				{installed}, "Missing dependencies", "1.21.4", "fabric",
+				folder()));
+		QCOMPARE(review->primaryCount(), 0);
+		QCOMPARE(review->title(), QStringLiteral("Missing dependencies"));
+		QCOMPARE(review->count(), 0);
+
+		review->applyResolution({dependency("Sodium", false)}, {});
+		QCOMPARE(review->count(), 1);
+		QCOMPARE(review->dependencyCount(), 1);
+		QVERIFY(review->needsReview());
+
+		/* Every row is optional here, the first one included. */
+		review->setChecked(0, false);
+		QCOMPARE(review->checkedCount(), 0);
+		QVERIFY(review->downloadItems().isEmpty());
+		/* Nothing ticked: nothing to install. */
+		QCOMPARE(review->install(), nullptr);
+	}
+
 	void providerNames()
 	{
 		QCOMPARE(ContentInstallReview::providerName("modrinth"),

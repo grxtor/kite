@@ -31,6 +31,7 @@ class MinecraftInstance;
 class ModFolderModel;
 class ModMetadataIndex;
 class ContentFilterModel;
+class ContentUpdateController;
 class Mod;
 
 /*
@@ -74,6 +75,9 @@ class InstanceContentController : public QObject
 	Q_PROPERTY(QString configsDir READ configsDir CONSTANT)
 	/// Why the last saveText() failed; empty after a success.
 	Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
+	/// Updates, version changes, dependency checks and metadata resets
+	/// for these folders (ContentUpdateController).
+	Q_PROPERTY(QObject* updater READ updater CONSTANT)
 
   public:
 	explicit InstanceContentController(MinecraftInstance* instance,
@@ -91,6 +95,17 @@ class InstanceContentController : public QObject
 	{
 		return m_lastError;
 	}
+	QObject* updater() const;
+
+	/// The folder model behind @p kind (building it if needed), or null -
+	/// for ContentUpdateController, which works on the folders directly.
+	std::shared_ptr<ModFolderModel> folderFor(const QString& kind) const
+	{
+		return folderModel(kind);
+	}
+	/// Tells the list for @p kind that the rows with @p keys changed in a
+	/// way the folder model does not notice (a forgotten origin).
+	void refreshRows(const QString& kind, const QStringList& keys);
 
 	/// The searchable list for @p kind (a ContentFilterModel), or null if
 	/// this instance does not have that kind right now.
@@ -179,4 +194,6 @@ class InstanceContentController : public QObject
 	QList<std::shared_ptr<ModFolderModel>> m_watched;
 	bool m_hasModLoader = false;
 	QString m_lastError;
+	/// Owned via QObject parentage (parent is `this`).
+	ContentUpdateController* m_updater = nullptr;
 };

@@ -144,6 +144,8 @@ namespace
 		out.name = entry.name;
 		out.platform = entry.platform;
 		out.item = item;
+		out.currentVersionNumber = entry.versionNumber;
+		out.newVersionNumber = Json::ensureString(vObj, "version_number", "");
 		return true;
 	}
 
@@ -203,6 +205,10 @@ namespace
 		out.name = entry.name;
 		out.platform = entry.platform;
 		out.item = item;
+		/* CurseForge has no bare version number; its display name is
+		 * what its own site shows for the file. */
+		out.currentVersionNumber = entry.versionNumber;
+		out.newVersionNumber = Json::ensureString(fObj, "displayName", "");
 		return true;
 	}
 } // namespace

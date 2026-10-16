@@ -64,6 +64,8 @@ set(CORE_SOURCES
     models/InstanceContentController.cpp
     models/ContentInstallReview.h
     models/ContentInstallReview.cpp
+    models/ContentUpdateController.h
+    models/ContentUpdateController.cpp
     modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
@@ -1505,6 +1507,13 @@ add_unit_test(ContentFilterModel
     )
 add_unit_test(ContentInstallReview
     SOURCES models/ContentInstallReview_test.cpp
+    LIBS MeshMC_core
+    )
+# WP2a: the update list, the selection filter for a check, which recorded
+# files the dependency check asks about, and forgetting origins on a temp
+# folder. The checks and downloads themselves ask a provider.
+add_unit_test(ContentUpdateController
+    SOURCES models/ContentUpdateController_test.cpp
     LIBS MeshMC_core
     )
 

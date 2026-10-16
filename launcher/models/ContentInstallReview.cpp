@@ -32,9 +32,9 @@ ContentInstallReview::ContentInstallReview(
 	const ModPlatform::SelectedMod& mod, const QString& mcVersion,
 	const QString& loader, std::shared_ptr<ModFolderModel> folder,
 	bool resolveDependencies, QObject* parent)
-	: QAbstractListModel(parent), m_mod(mod), m_mcVersion(mcVersion),
-	  m_loader(loader), m_folder(std::move(folder)),
-	  m_resolveDependencies(resolveDependencies)
+	: QAbstractListModel(parent), m_resolveFor({mod}), m_title(mod.name),
+	  m_primaryCount(1), m_mcVersion(mcVersion), m_loader(loader),
+	  m_folder(std::move(folder)), m_resolveDependencies(resolveDependencies)
 {
 	/* The project's own row: what was picked, always installed. Same
 	 * field-by-field copy DownloadSummaryDialog makes. */
@@ -53,6 +53,25 @@ ContentInstallReview::ContentInstallReview(
 	own.provider = providerName(mod.platform);
 	own.versionType = mod.versionType;
 	m_rows.append(own);
+}
+
+ContentInstallReview::ContentInstallReview(
+	const QList<ModPlatform::SelectedMod>& resolveFor, const QString& title,
+	const QString& mcVersion, const QString& loader,
+	std::shared_ptr<ModFolderModel> folder, QObject* parent)
+	: QAbstractListModel(parent), m_resolveFor(resolveFor), m_title(title),
+	  m_primaryCount(0), m_mcVersion(mcVersion), m_loader(loader),
+	  m_folder(std::move(folder)), m_resolveDependencies(true)
+{
+}
+
+ContentInstallReview* ContentInstallReview::missingDependencies(
+	const QList<ModPlatform::SelectedMod>& installed, const QString& title,
+	const QString& mcVersion, const QString& loader,
+	std::shared_ptr<ModFolderModel> folder, QObject* parent)
+{
+	return new ContentInstallReview(installed, title, mcVersion, loader,
+									std::move(folder), parent);
 }
 
 ContentInstallReview::~ContentInstallReview()
@@ -80,7 +99,7 @@ bool ContentInstallReview::needsReview() const
 
 int ContentInstallReview::dependencyCount() const
 {
-	return int(m_rows.size()) - 1;
+	return int(m_rows.size()) - m_primaryCount;
 }
 
 int ContentInstallReview::checkedCount() const
@@ -88,6 +107,17 @@ int ContentInstallReview::checkedCount() const
 	int n = 0;
 	for (const Row& row : m_rows) {
 		if (row.checked) {
+			++n;
+		}
+	}
+	return n;
+}
+
+int ContentInstallReview::checkedDependencyCount() const
+{
+	int n = 0;
+	for (int row = m_primaryCount; row < m_rows.size(); ++row) {
+		if (m_rows.at(row).checked) {
 			++n;
 		}
 	}
@@ -168,7 +198,7 @@ void ContentInstallReview::start()
 	m_resolving = true;
 	emit stateChanged();
 
-	m_resolver = new DependencyResolver({m_mod}, m_mcVersion, m_loader, this);
+	m_resolver = new DependencyResolver(m_resolveFor, m_mcVersion, m_loader, this);
 	if (m_folder) {
 		m_resolver->setInstalledIndex(m_folder->metadataIndex());
 	}
@@ -194,7 +224,7 @@ void ContentInstallReview::applyResolution(
 	const QList<ModPlatform::UnresolvedDep>& unresolved)
 {
 	beginResetModel();
-	while (m_rows.size() > 1) {
+	while (m_rows.size() > m_primaryCount) {
 		m_rows.removeLast();
 	}
 	for (const auto& dep : dependencies) {
@@ -240,8 +270,9 @@ QList<ModPlatform::DownloadItem> ContentInstallReview::downloadItems() const
 
 void ContentInstallReview::setChecked(int row, bool checked)
 {
-	/* Row 0 is what was picked; unticking it would install nothing. */
-	if (row <= 0 || row >= m_rows.size() || m_rows[row].checked == checked) {
+	/* The picked project's row is what the install is for. */
+	if (row < m_primaryCount || row >= m_rows.size() ||
+		m_rows[row].checked == checked) {
 		return;
 	}
 	m_rows[row].checked = checked;
@@ -251,21 +282,21 @@ void ContentInstallReview::setChecked(int row, bool checked)
 
 void ContentInstallReview::setAllDependenciesChecked(bool checked)
 {
-	for (int row = 1; row < m_rows.size(); ++row) {
+	for (int row = m_primaryCount; row < m_rows.size(); ++row) {
 		setChecked(row, checked);
 	}
 }
 
 QObject* ContentInstallReview::install()
 {
-	if (!m_ready || m_finished || !m_folder) {
+	const auto items = downloadItems();
+	if (!m_ready || m_finished || !m_folder || items.isEmpty()) {
 		return nullptr;
 	}
 	m_finished = true;
 
 	auto index = m_folder->metadataIndex();
-	const auto decisions =
-		ModInstallConflictAnalyzer::analyze(downloadItems(), index);
+	const auto decisions = ModInstallConflictAnalyzer::analyze(items, index);
 	const auto plan = ModInstallConflictAnalyzer::toDownloadPlan(decisions);
 
 	auto* task =
@@ -274,11 +305,11 @@ QObject* ContentInstallReview::install()
 
 	/* Parented to the browser, not to this review, which ends below. */
 	auto* watcher = new TaskWatcher(Task::Ptr(task), parent());
-	watcher->setTitle(m_mod.name);
+	watcher->setTitle(m_title);
 
 	/* Refresh the list afterwards whatever happened - some files may
-	 * have landed before the rest failed - as ContentBrowser::install()
-	 * does. */
+	 * have landed before the rest failed - as ModFolderPage::
+	 * reviewAndInstall() does. */
 	auto folder = m_folder;
 	connect(watcher, &TaskWatcher::finished, watcher,
 			[folder](bool) { folder->update(); });
