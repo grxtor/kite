@@ -67,6 +67,9 @@ Item {
     // menu offers "Export…" and "Create shortcut…" once these are set.
     property var exportControllerFor: null
     property var shortcutControllerFor: null
+    // LibraryController, as on LibraryPage: Duplicate with options. Until
+    // it is set, Duplicate goes to Main.qml's own dialog.
+    property var library: null
 
     // The header ⋯ menu, open under the banner's top-right corner where
     // its button sits: for review snapshots (Main.qml's "instancemenu" dev
@@ -326,6 +329,9 @@ Item {
     // functions above) -- the library's own instance actions.
     Menu {
         id: instanceMenu
+        // The style's menu is a fixed width; "Open .minecraft folder" needs
+        // a step more.
+        width: Math.max(implicitWidth, Theme.control.heightLg * 5)
         readonly property bool isMinecraft: !!root.details && root.details.isMinecraft
         readonly property string name: root.headerCard ? root.headerCard.name : ""
         readonly property string iconKey: root.headerCard ? root.headerCard.iconKey : ""
@@ -366,6 +372,14 @@ Item {
         }
         MenuItem {
             // A hidden item still takes its row in a Menu; zero it as well.
+            visible: instanceMenu.isMinecraft && root.details.gameRoot !== root.details.instanceRoot
+            height: visible ? implicitHeight : 0
+            text: qsTr("Open .minecraft folder")
+            icon.source: Icons.url("folder")
+            onTriggered: root.openPathRequested(root.details ? root.details.gameRoot : "")
+        }
+        MenuItem {
+            // A hidden item still takes its row in a Menu; zero it as well.
             visible: instanceMenu.isMinecraft
             height: visible ? implicitHeight : 0
             text: qsTr("Open mods folder")
@@ -402,7 +416,9 @@ Item {
             height: visible ? implicitHeight : 0
             text: qsTr("Duplicate…")
             icon.source: Icons.url("copy")
-            onTriggered: root.duplicateRequested(root.instanceId, instanceMenu.name, instanceMenu.group)
+            onTriggered: exportFlows.canDuplicate
+                         ? exportFlows.duplicateInstance(root.instanceId, instanceMenu.name, instanceMenu.group, instanceMenu.iconKey)
+                         : root.duplicateRequested(root.instanceId, instanceMenu.name, instanceMenu.group)
         }
         MenuItem {
             visible: exportFlows.canExport
@@ -437,5 +453,6 @@ Item {
         id: exportFlows
         exportControllerFor: root.exportControllerFor
         shortcutControllerFor: root.shortcutControllerFor
+        library: root.library
     }
 }

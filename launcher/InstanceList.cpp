@@ -475,12 +475,46 @@ void InstanceList::deleteGroup(const QString& name)
 			qDebug() << "Remove" << instID << "from group" << name;
 			removed = true;
 			auto idx = getInstIndex(instance.get());
-			if (idx > 0) {
+			if (idx >= 0) {
 				emit dataChanged(index(idx), index(idx), {GroupRole});
 			}
 		}
 	}
+	/* Gone from the name list and the collapsed set as well, or it would
+	 * still be offered as a group to move instances into. */
+	m_groupNameCache.remove(name);
+	m_collapsedGroups.remove(name);
 	if (removed) {
+		saveGroupList();
+	}
+}
+
+void InstanceList::renameGroup(const GroupId& from, const GroupId& to)
+{
+	if (from.isEmpty() || to.isEmpty() || from == to) {
+		return;
+	}
+
+	bool changed = false;
+	for (auto iter = m_instanceGroupIndex.begin();
+		 iter != m_instanceGroupIndex.end(); ++iter) {
+		if (*iter != from) {
+			continue;
+		}
+		*iter = to;
+		changed = true;
+		const int idx = getInstIndex(getInstanceById(iter.key()).get());
+		if (idx >= 0) {
+			emit dataChanged(index(idx), index(idx), {GroupRole});
+		}
+	}
+
+	m_groupNameCache.remove(from);
+	if (m_collapsedGroups.remove(from)) {
+		m_collapsedGroups.insert(to);
+	}
+	if (changed) {
+		m_groupNameCache.insert(to);
 		saveGroupList();
 	}
 }
@@ -1259,6 +1293,12 @@ void InstanceList::loadGroupList()
 		QString legacyGroupFileName =
 			FS::PathCombine(primaryDir(), "instgroups.json");
 		if (!QFileInfo::exists(legacyGroupFileName)) {
+			/* No file at all is a loaded, empty list - not a list still
+			 * to load. Left unmarked, every instance loaded after this
+			 * would run this function again and its clear() above would
+			 * throw away any group set since, such as the one a copy was
+			 * just committed into. */
+			m_groupsLoaded = true;
 			return;
 		}
 		qInfo() << "Migrating instance groups from legacy location"

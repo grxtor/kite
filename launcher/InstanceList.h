@@ -207,6 +207,15 @@ class InstanceList : public QAbstractListModel
 
 	void deleteGroup(const GroupId& name);
 
+	/**
+	 * Move every instance in group @p from into group @p to, keeping
+	 * whether the group was collapsed. Renaming onto a group that already
+	 * exists merges the two. Does nothing for an empty name on either side:
+	 * "no group" has no name to change, and renaming a group to nothing is
+	 * what deleteGroup() does.
+	 */
+	void renameGroup(const GroupId& from, const GroupId& to);
+
 	/// Delete an instance and its shortcuts for good.
 	void deleteInstance(const InstanceId& id);
 

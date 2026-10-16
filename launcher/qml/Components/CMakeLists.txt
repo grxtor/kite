@@ -102,6 +102,7 @@ qt_add_qml_module(MeshMC_qml_components
         ExportInstanceDialog.qml
         CreateShortcutDialog.qml
         InstanceExportFlows.qml
+        DuplicateInstanceDialog.qml
         PluginNode.qml
         PluginSurfaces.qml
         UiRequestDialog.qml

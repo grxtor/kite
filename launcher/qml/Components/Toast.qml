@@ -10,6 +10,10 @@ import MeshMC.Theme
  * A short note at the bottom of the window that goes away by itself --
  * "Instance deleted", "Copy failed: ..." -- for outcomes worth saying but
  * not worth a dialog. show() replaces whatever is showing.
+ *
+ * With an action ("Undo", "Show in folder") it stays twice as long, and it
+ * never goes while the pointer is on it: an action pulled away mid-reach is
+ * worse than none.
  */
 Rectangle {
     id: root
@@ -66,10 +70,22 @@ Rectangle {
     Accessible.role: Accessible.AlertMessage
     Accessible.name: label.text
 
+    readonly property int shortTimeoutMs: 3000
+    readonly property int longTimeoutMs: 6000
+
     Timer {
         id: hideTimer
-        interval: root.tone === "danger" ? 6000 : 3000
+        interval: root.tone === "danger" || root.actionText.length > 0 ? root.longTimeoutMs : root.shortTimeoutMs
         onTriggered: root.shown = false
+    }
+
+    HoverHandler {
+        onHoveredChanged: {
+            if (hovered)
+                hideTimer.stop()
+            else if (root.shown)
+                hideTimer.restart()
+        }
     }
 
     readonly property color toneColor: tone === "danger" ? Theme.palette.danger

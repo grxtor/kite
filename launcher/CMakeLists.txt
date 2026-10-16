@@ -88,6 +88,8 @@ set(CORE_SOURCES
     models/InstanceExportController.cpp
     models/InstanceShortcutController.h
     models/InstanceShortcutController.cpp
+    models/LibraryController.h
+    models/LibraryController.cpp
     modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
@@ -1639,6 +1641,14 @@ add_unit_test(InstanceExportController
 add_unit_test(InstanceShortcutController
     SOURCES models/InstanceShortcutController_test.cpp
     LIBS MeshMC_core Qt${QT_VERSION_MAJOR}::Gui
+    )
+# WP11: groups (rename, delete, fold, move), folders and a duplicate with
+# options, against a real InstanceList of NullInstances in a temp folder.
+# Undoing a delete is exercised only for "nothing to undo": a real trash
+# would fill the user's own.
+add_unit_test(LibraryController
+    SOURCES models/LibraryController_test.cpp
+    LIBS MeshMC_core
     )
 
 add_unit_test(IconTheme

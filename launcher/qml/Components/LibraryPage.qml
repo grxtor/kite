@@ -54,12 +54,30 @@ Item {
     // dialogs themselves are InstanceExportFlows below.
     property var exportControllerFor: null
     property var shortcutControllerFor: null
+    // LibraryController (QmlShell's `library`, set in Main.qml): group
+    // management, folds that persist, dragging an instance onto a group,
+    // the instance's folders and Duplicate with options. Until it is set
+    // the page keeps its session-only folds and Main.qml's duplicate.
+    property var library: null
 
     function exportInstance(id, format) {
         exportFlows.exportInstance(id, format)
     }
     function createShortcut(id) {
         exportFlows.createShortcut(id)
+    }
+    // For review snapshots (Main.qml's "groupmenu=<name>" and
+    // "duplicate=<id>" dev routes): a group's ⋯ menu, and the duplicate
+    // dialog (named after the id; a snapshot does not need the real name).
+    function openGroupMenu(group) {
+        for (var i = 0; i < sections.count; ++i) {
+            var section = sections.itemAt(i)
+            if (section && section.group === group && section.manageable)
+                section.openGroupMenu()
+        }
+    }
+    function duplicateInstance(id) {
+        exportFlows.duplicateInstance(id, id, "", "")
     }
     // The card ⋯ menu for instance @p id, for review snapshots (Main.qml's
     // "librarymenu=<id>" dev route). A snapshot has no mouse to open it at,
@@ -89,8 +107,29 @@ Item {
     readonly property var groups: instanceModel && instanceModel.groups ? instanceModel.groups : []
     readonly property int instanceCount: instanceModel && instanceModel.count !== undefined ? instanceModel.count : 0
 
-    // Session-only: which groups the user folded away.
-    property var collapsedGroups: ({})
+    // Which groups are folded away: the library's, kept in the group file,
+    // or a session-only list without one.
+    property var sessionCollapsed: []
+    readonly property var collapsedGroups: root.library ? root.library.collapsedGroups : root.sessionCollapsed
+    function setCollapsed(group, collapsed) {
+        if (root.library) {
+            root.library.setGroupCollapsed(group, collapsed)
+            return
+        }
+        var next = root.sessionCollapsed.filter((g) => g !== group)
+        if (collapsed)
+            next.push(group)
+        root.sessionCollapsed = next
+    }
+
+    // An instance being dragged to another group. The page holds still
+    // under it, and scrolls when the pointer nears its top or bottom edge
+    // so a group out of view can still be reached.
+    property bool dragging: false
+    property real dragSceneY: 0
+    readonly property int autoScrollEdge: Theme.space.xxl * 2
+    readonly property int autoScrollStep: Theme.space.md
+    readonly property int autoScrollIntervalMs: 16
 
     function columnsFor(width) {
         var columns = Math.max(1, Math.floor((width + gutter) / (minCardWidth + gutter)))
@@ -112,6 +151,7 @@ Item {
         contentHeight: content.y + content.height + root.pagePadding
         boundsBehavior: Flickable.StopAtBounds
         clip: true
+        interactive: !root.dragging
 
         ScrollBar.vertical: ScrollBar {}
 
@@ -130,6 +170,7 @@ Item {
             spacing: Theme.space.xl + Theme.space.sm
 
             Repeater {
+                id: sections
                 model: root.groups
                 delegate: InstanceSection {
                     required property string modelData
@@ -144,12 +185,24 @@ Item {
                     gutter: root.gutter
                     selectedId: root.selectedId
                     viewMode: root.viewMode
-                    collapsed: !root.searching && root.collapsedGroups[modelData] === true
-                    onToggleRequested: {
-                        var next = Object.assign({}, root.collapsedGroups)
-                        next[modelData] = !(next[modelData] === true)
-                        root.collapsedGroups = next
+                    collapsed: !root.searching && root.collapsedGroups.indexOf(modelData) >= 0
+                    onToggleRequested: root.setCollapsed(modelData, root.collapsedGroups.indexOf(modelData) < 0)
+                    manageable: !!root.library && modelData.length > 0
+                    // Somewhere else to drop it only with two groups or more.
+                    dragEnabled: !!root.library && root.groups.length > 1
+                    onRenameGroupRequested: (group) => {
+                        groupRenameDialog.group = group
+                        groupRenameDialog.value = group
+                        groupRenameDialog.open()
                     }
+                    onDeleteGroupRequested: (group) => {
+                        groupDeleteDialog.group = group
+                        groupDeleteDialog.text = qsTr("Delete the group \u201c%1\u201d? Its instances stay in your library, without a group.").arg(group)
+                        groupDeleteDialog.open()
+                    }
+                    onInstanceDropped: (id, group) => root.library.moveToGroup(id, group)
+                    onDragActiveChanged: (active) => root.dragging = active
+                    onDragMoved: (sceneY) => root.dragSceneY = sceneY
                     onSelectRequested: (id) => root.selectRequested(id)
                     onLaunchRequested: (id) => root.launchRequested(id)
                     onStopRequested: (id) => root.stopRequested(id)
@@ -187,14 +240,24 @@ Item {
 
     Menu {
         id: instanceMenu
+        // The style's menu is a fixed width; "Open .minecraft folder" needs
+        // a step more.
+        width: Math.max(implicitWidth, Theme.control.heightLg * 5)
 
         property string targetId
         property bool targetRunning: false
         property string targetName
         property string targetIcon
         property string targetGroup
+        // This instance's .minecraft and mods folders; empty where there is
+        // no such folder to open (see LibraryController.folders()).
+        property string gameFolder
+        property string modsFolder
 
         function openFor(id, running, name, iconKey, group) {
+            var folders = root.library ? root.library.folders(id) : ({})
+            gameFolder = folders.game && folders.game !== folders.instance ? folders.game : ""
+            modsFolder = folders.mods || ""
             targetId = id
             targetRunning = running
             targetName = name || ""
@@ -239,6 +302,21 @@ Item {
             icon.source: Icons.url("folder")
             onTriggered: root.folderRequested(instanceMenu.targetId)
         }
+        MenuItem {
+            // A hidden item still takes its row in a Menu; zero it as well.
+            visible: instanceMenu.gameFolder.length > 0
+            height: visible ? implicitHeight : 0
+            text: qsTr("Open .minecraft folder")
+            icon.source: Icons.url("folder")
+            onTriggered: root.library.openFolder(instanceMenu.gameFolder)
+        }
+        MenuItem {
+            visible: instanceMenu.modsFolder.length > 0
+            height: visible ? implicitHeight : 0
+            text: qsTr("Open mods folder")
+            icon.source: Icons.url("package")
+            onTriggered: root.library.openFolder(instanceMenu.modsFolder)
+        }
         MenuSeparator {}
         MenuItem {
             text: qsTr("Rename\u2026")
@@ -258,7 +336,10 @@ Item {
         MenuItem {
             text: qsTr("Duplicate\u2026")
             icon.source: Icons.url("copy")
-            onTriggered: root.duplicateRequested(instanceMenu.targetId, instanceMenu.targetName, instanceMenu.targetGroup)
+            onTriggered: exportFlows.canDuplicate
+                         ? exportFlows.duplicateInstance(instanceMenu.targetId, instanceMenu.targetName,
+                                                         instanceMenu.targetGroup, instanceMenu.targetIcon)
+                         : root.duplicateRequested(instanceMenu.targetId, instanceMenu.targetName, instanceMenu.targetGroup)
         }
         MenuItem {
             // A hidden item still takes its row in a Menu; zero it as well.
@@ -289,5 +370,41 @@ Item {
         id: exportFlows
         exportControllerFor: root.exportControllerFor
         shortcutControllerFor: root.shortcutControllerFor
+        library: root.library
+    }
+
+    Timer {
+        interval: root.autoScrollIntervalMs
+        repeat: true
+        running: root.dragging
+        onTriggered: {
+            var y = flick.mapFromItem(null, 0, root.dragSceneY).y
+            var step = y < root.autoScrollEdge ? -root.autoScrollStep
+                     : y > flick.height - root.autoScrollEdge ? root.autoScrollStep : 0
+            if (step !== 0)
+                flick.contentY = Math.max(0, Math.min(flick.contentHeight - flick.height, flick.contentY + step))
+        }
+    }
+
+    PromptDialog {
+        id: groupRenameDialog
+        property string group
+        title: qsTr("Rename group")
+        confirmText: qsTr("Rename")
+        onSubmitted: (text) => {
+            if (root.library)
+                root.library.renameGroup(group, text)
+            close()
+        }
+    }
+
+    ConfirmDialog {
+        id: groupDeleteDialog
+        property string group
+        title: qsTr("Delete group")
+        confirmText: qsTr("Delete group")
+        // Nothing is lost: the instances stay, ungrouped.
+        danger: false
+        onConfirmed: if (root.library) root.library.deleteGroup(group)
     }
 }

@@ -11,6 +11,12 @@ import MeshMC.Theme
  * One group of the library: a collapsible header and a grid of cards.
  * Column count and card width come from the page so every section lines
  * up with every other one.
+ *
+ * A named group's header carries a ⋯ menu (also on right-click) to rename
+ * or delete the group, and the whole section takes an instance dragged
+ * from another one: the card stays put while a small chip with its icon
+ * and name follows the pointer. What either means is the page's business;
+ * this only says what was asked for.
  */
 Column {
     id: root
@@ -39,6 +45,105 @@ Column {
     signal menuRequested(string id, bool running, string name, string iconKey, string group)
     signal toggleRequested()
 
+    // Rename/delete, offered only for a named group the page can manage.
+    property bool manageable: false
+    // Whether instances can be dragged out of this section, onto another.
+    property bool dragEnabled: false
+    signal renameGroupRequested(string group)
+    signal deleteGroupRequested(string group)
+    // An instance from another group, dropped here.
+    signal instanceDropped(string id, string group)
+    // A drag of one of this section's instances began or ended, and where
+    // the pointer is (window y), so the page can hold its scrolling still
+    // under it and scroll near its edges.
+    signal dragActiveChanged(bool active)
+    signal dragMoved(real sceneY)
+
+    readonly property string dragKey: "meshmc/instance"
+
+    // The group ⋯ menu, under its button.
+    function openGroupMenu() {
+        groupMenu.popup(groupMenuButton, groupMenuButton.width - groupMenu.width, groupMenuButton.height)
+    }
+    // Under the page Flickable's own threshold, so a drag on a card is
+    // claimed as a drag before the page starts to scroll.
+    readonly property int dragThreshold: Theme.space.sm
+
+    // A card or row's drag: the handler over it, and the chip that follows
+    // the pointer, so the grid itself never moves.
+    component InstanceDrag: Item {
+        id: dragSource
+        // The InstanceSection it belongs to (an inline component does not
+        // see the file's ids).
+        required property Item section
+        property string instanceId
+        property string name
+        property string iconKey
+        anchors.fill: parent
+        enabled: dragSource.section.dragEnabled
+
+        DragHandler {
+            id: dragger
+            target: null
+            dragThreshold: dragSource.section.dragThreshold
+            // May take the pointer from the card's own taps, and does not
+            // hand it to the page's scrolling once the drag is on.
+            grabPermissions: PointerHandler.CanTakeOverFromItems | PointerHandler.CanTakeOverFromHandlersOfDifferentType
+            onActiveChanged: {
+                if (active)
+                    chip.Drag.start()
+                else
+                    chip.Drag.drop()
+                dragSource.section.dragActiveChanged(active)
+            }
+            onCentroidChanged: if (active) dragSource.section.dragMoved(centroid.scenePosition.y)
+        }
+
+        Rectangle {
+            id: chip
+            parent: Overlay.overlay
+            visible: dragger.active
+            // What a drop reads off its source.
+            readonly property string instanceId: dragSource.instanceId
+            readonly property string group: dragSource.section.group
+            x: dragger.centroid.scenePosition.x - width / 2
+            y: dragger.centroid.scenePosition.y - height / 2
+            width: chipRow.implicitWidth + Theme.space.md * 2
+            height: Theme.control.height
+            radius: Theme.radius.sm
+            color: Theme.palette.surfaceOverlay
+            border.width: 1
+            border.color: Theme.palette.borderStrong
+            Drag.keys: [dragSource.section.dragKey]
+            Drag.hotSpot.x: width / 2
+            Drag.hotSpot.y: height / 2
+
+            Row {
+                id: chipRow
+                anchors.centerIn: parent
+                spacing: Theme.space.sm
+                Image {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Theme.icon.md
+                    height: Theme.icon.md
+                    sourceSize.width: width * 2
+                    sourceSize.height: height * 2
+                    source: "image://instanceicon/" + (dragSource.iconKey.length > 0 ? dragSource.iconKey : "default")
+                    smooth: true
+                    mipmap: true
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: dragSource.name
+                    color: Theme.palette.textPrimary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.body.pixelSize
+                    font.weight: Font.Medium
+                }
+            }
+        }
+    }
+
     spacing: Theme.space.md
 
     Item {
@@ -55,6 +160,12 @@ Column {
             hoverEnabled: true
             Accessible.name: root.title
             onClicked: root.toggleRequested()
+
+            TapHandler {
+                acceptedButtons: Qt.RightButton
+                enabled: root.manageable
+                onTapped: groupMenu.popup()
+            }
 
             // The title first, flush with the page title and the cards'
             // left edge; the fold chevron trails the count rather than
@@ -95,9 +206,65 @@ Column {
         Rectangle {
             x: Math.ceil(header.width) + Theme.space.md
             y: Math.floor((parent.height - height) / 2)
-            width: Math.max(0, root.contentRight - x)
+            width: Math.max(0, (root.manageable ? groupMenuButton.x - Theme.space.sm : root.contentRight) - x)
             height: 1
             color: Theme.palette.divider
+        }
+
+        IconButton {
+            id: groupMenuButton
+            visible: root.manageable
+            x: root.contentRight - width
+            anchors.verticalCenter: parent.verticalCenter
+            size: Theme.control.heightSm
+            iconName: "more"
+            tip: qsTr("Group options")
+            onClicked: root.openGroupMenu()
+        }
+
+        // The whole section is the target, header and cards alike, and a
+        // folded group's header alone still is one. Lives in the header so
+        // the Column does not lay it out as a row of its own; drawn under
+        // the cards, around them.
+        DropArea {
+            id: dropArea
+            // Under the header's own title and button too.
+            z: -1
+            x: -Theme.space.sm
+            y: -Theme.space.sm
+            width: root.width + Theme.space.sm * 2
+            height: root.height + Theme.space.sm * 2
+            keys: [root.dragKey]
+            readonly property bool wanted: containsDrag && !!drag.source && drag.source.group !== root.group
+            onDropped: (drop) => {
+                if (!drop.source || drop.source.group === root.group)
+                    return
+                root.instanceDropped(drop.source.instanceId, root.group)
+                drop.accept()
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                visible: dropArea.wanted
+                radius: Theme.radius.lg
+                color: Theme.palette.accentSubtle
+                border.width: 1
+                border.color: Theme.palette.accent
+            }
+        }
+    }
+
+    Menu {
+        id: groupMenu
+        MenuItem {
+            text: qsTr("Rename group\u2026")
+            icon.source: Icons.url("edit")
+            onTriggered: root.renameGroupRequested(root.group)
+        }
+        MenuItem {
+            text: qsTr("Delete group\u2026")
+            icon.source: Icons.url("trash")
+            onTriggered: root.deleteGroupRequested(root.group)
         }
     }
 
@@ -147,8 +314,15 @@ Column {
             Repeater {
                 model: root.model
                 delegate: InstanceCard {
+                    id: card
                     width: root.cardWidth
                     selected: root.selectedId === instanceId
+                    InstanceDrag {
+                        section: root
+                        instanceId: card.instanceId
+                        name: card.name
+                        iconKey: card.iconKey
+                    }
                     onClicked: root.selectRequested(instanceId)
                     onPlayRequested: root.launchRequested(instanceId)
                     onStopRequested: root.stopRequested(instanceId)
@@ -170,8 +344,15 @@ Column {
             Repeater {
                 model: root.model
                 delegate: InstanceListRow {
+                    id: row
                     width: body.width
                     selected: root.selectedId === instanceId
+                    InstanceDrag {
+                        section: root
+                        instanceId: row.instanceId
+                        name: row.name
+                        iconKey: row.iconKey
+                    }
                     onClicked: root.selectRequested(instanceId)
                     onPlayRequested: root.launchRequested(instanceId)
                     onStopRequested: root.stopRequested(instanceId)
