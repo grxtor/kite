@@ -38,6 +38,7 @@
 #include "DesktopServices.h"
 #include "minecraft/auth/AuthRequest.h"
 #include "modplatform/flame/FlameApi.h"
+#include "models/AtlOptionalModsModel.h"
 
 namespace
 {
@@ -134,6 +135,8 @@ QString QmlUiRequest::kind() const
 			return QStringLiteral("pickAccount");
 		case Kind::Modal:
 			return QStringLiteral("modal");
+		case Kind::OptionalMods:
+			return QStringLiteral("optionalMods");
 	}
 	return QString();
 }
@@ -157,6 +160,11 @@ void QmlUiRequest::setActions(QStringList actions)
 void QmlUiRequest::setAccountOptions(QVariantList options)
 {
 	m_accountOptions = std::move(options);
+}
+
+void QmlUiRequest::setOptionalMods(QObject* mods)
+{
+	m_optionalMods = exposeToQml(mods);
 }
 
 void QmlUiRequest::setModal(QVariantMap document, QVariantMap fields)
@@ -617,6 +625,20 @@ QmlUiHost::runPluginModal(const QString& title, const QJsonObject& document)
 	}
 	return PluginModalResult{ request.modalClicked(),
 							  QJsonObject::fromVariantMap(request.modalFields()) };
+}
+
+bool QmlUiHost::chooseOptionalMods(const QString& packName,
+								   AtlOptionalModsModel& mods)
+{
+	QmlUiRequest request(
+		QmlUiRequest::Kind::OptionalMods, tr("Optional mods for %1").arg(packName),
+		tr("Pick the extra mods this pack can install. The recommended ones "
+		   "are ticked to begin with."));
+	request.setSeverity(Severity::Question);
+	request.setLabels(tr("Install"), tr("Use the pack's choice"));
+	request.setOptionalMods(&mods);
+	runRequest(request);
+	return request.accepted();
 }
 
 std::optional<QString> QmlUiHost::askText(const QString& title,

@@ -23,6 +23,7 @@
 #include "ui/WidgetUiHost.h"
 #include "qml/QmlShell.h"
 #include "qml/QmlUiHost.h"
+#include "models/UpdateSettingsController.h"
 #include "plugin/PluginManager.h"
 #include "plugin/PluginSurfaceModel.h"
 #include "plugin/PluginListModel.h"
@@ -2417,6 +2418,17 @@ bool Application::ensureQmlShell()
 	m_qmlShell->setUpdaterAvailable(updaterEnabled() && m_updater);
 	connect(m_qmlShell.get(), &QmlShell::checkForUpdatesRequested, this,
 			&Application::triggerUpdateCheck);
+	/* The Updates settings read and write the updater's own schedule;
+	 * without a backend that section hides itself. */
+	if (m_updater && updaterEnabled()) {
+		ExternalUpdater* updater = m_updater.get();
+		m_qmlShell->updateSettingsController()->setBackend(
+			{[updater] { return updater->getAutomaticallyChecksForUpdates(); },
+			 [updater](bool v) { updater->setAutomaticallyChecksForUpdates(v); },
+			 [updater] { return updater->getUpdateCheckInterval(); },
+			 [updater](double s) { updater->setUpdateCheckInterval(s); },
+			 [this] { triggerUpdateCheck(); }});
+	}
 	connect(m_qmlShell.get(), &QmlShell::killRequested, this,
 			[this](const QString& id) {
 				if (auto inst = instances()->getInstanceById(id)) {

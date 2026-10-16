@@ -56,6 +56,9 @@
  *                    request's own UI for this kind)
  *   pickAccount   -- accountOptions, then chooseAccount(index, makeDefault)
  *                    / reject()
+ *   optionalMods  -- optionalMods (an AtlOptionalModsModel, ticked in place
+ *                    through its own invokables), then accept() to install
+ *                    what is ticked / reject() to keep the pack's defaults
  *   modal         -- modalDocument, drawn with PluginNode.qml, which reports
  *                    every user action through sendEvent() (this request
  *                    is the PluginNode `sink`); a "click" answers it,
@@ -130,6 +133,9 @@ class QmlUiRequest : public QObject
 	Q_PROPERTY(QVariantList accountOptions READ accountOptions CONSTANT)
 	/// kind == "modal": the plugin's "mmco-ui/1" document, as a map.
 	Q_PROPERTY(QVariantMap modalDocument READ modalDocument CONSTANT)
+	/* kind == "optionalMods": the AtlOptionalModsModel to tick, owned by
+	 * the blocked caller for as long as the request is pending. */
+	Q_PROPERTY(QObject* optionalMods READ optionalMods CONSTANT)
 
   public:
 	enum class Kind {
@@ -144,6 +150,7 @@ class QmlUiRequest : public QObject
 		FilePicker,
 		PickAccount,
 		Modal,
+		OptionalMods,
 	};
 
 	QmlUiRequest(Kind kind, QString title, QString text,
@@ -223,6 +230,10 @@ class QmlUiRequest : public QObject
 	{
 		return m_modalDocument;
 	}
+	QObject* optionalMods() const
+	{
+		return m_optionalMods;
+	}
 
 	/* Filled in by QmlUiHost before the request is published (from
 	 * runRequest()'s caller, never after) -- not reachable from QML, which
@@ -240,6 +251,7 @@ class QmlUiRequest : public QObject
 	/* kind == "modal": the document, and the starting value of every
 	 * input node in it (see QmlUiHost::runPluginModal()). */
 	void setModal(QVariantMap document, QVariantMap fields);
+	void setOptionalMods(QObject* mods);
 	/* Read by QmlUiHost's checkNameRequested/submitNameRequested handlers
 	 * (which do the actual network work -- see QmlUiHost::setupProfile())
 	 * to update what QML sees; not reachable from QML itself, which only
@@ -385,6 +397,7 @@ class QmlUiRequest : public QObject
 	QString m_filePickerDefaultPath;
 	QVariantList m_accountOptions;
 	QVariantMap m_modalDocument;
+	QObject* m_optionalMods = nullptr;
 	QVariantMap m_modalFields;
 	QString m_modalClicked;
 	int m_checkSequence = 0;
@@ -513,6 +526,9 @@ class QmlUiHost : public QObject, public UiHost
 
 	std::optional<PluginModalResult> runPluginModal(
 		const QString& title, const QJsonObject& document) override;
+
+	bool chooseOptionalMods(const QString& packName,
+							AtlOptionalModsModel& mods) override;
 
 	QObject* current() const;
 	bool busy() const;

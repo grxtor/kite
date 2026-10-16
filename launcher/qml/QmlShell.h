@@ -36,10 +36,18 @@ class InstanceShortcutController;
 class SettingsAdapter;
 class ModrinthModpackModel;
 class FlameModpackModel;
+class FtbModpackModel;
+class AtlModpackModel;
+class TechnicModpackModel;
 class AccountsController;
 class NewInstanceController;
 class JavaController;
 class JavaDownloadController;
+class FolderSettingsController;
+class UpdateSettingsController;
+class PlayTimeSummary;
+class LibraryController;
+class LauncherLogs;
 class RecentWorldsModel;
 class JavaInstallList;
 class TranslationsModel;
@@ -110,6 +118,10 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* modpackModel READ modpackModel CONSTANT)
 	/// CurseForge modpack search for the Discover page's provider switch.
 	Q_PROPERTY(QObject* curseForgeModpackModel READ curseForgeModpackModel CONSTANT)
+	/// FTB (modpacks.ch), ATLauncher and Technic modpack search for Discover.
+	Q_PROPERTY(QObject* ftbModpackModel READ ftbModpackModel CONSTANT)
+	Q_PROPERTY(QObject* atlModpackModel READ atlModpackModel CONSTANT)
+	Q_PROPERTY(QObject* technicModpackModel READ technicModpackModel CONSTANT)
 	/// Every instance, most recently played first; never-played ones left out.
 	Q_PROPERTY(QObject* recentModel READ recentModel CONSTANT)
 	/// At most one row: the instance whose id QML writes into instanceId.
@@ -128,6 +140,18 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* javaController READ javaController CONSTANT)
 	/// The "Download Java" flow (see models/JavaDownloadController.h).
 	Q_PROPERTY(QObject* javaDownload READ javaDownload CONSTANT)
+	/// Settings' folder rows (see models/FolderSettingsController.h).
+	Q_PROPERTY(QObject* folderSettings READ folderSettings CONSTANT)
+	/// Settings' Updates section (see models/UpdateSettingsController.h).
+	Q_PROPERTY(QObject* updateSettings READ updateSettings CONSTANT)
+	/// Play time across every instance (see models/PlayTimeSummary.h).
+	Q_PROPERTY(QObject* playTime READ playTime CONSTANT)
+	/// The library's housekeeping: groups, undo delete, duplicate with
+	/// options, an instance's folders. See models/LibraryController.h.
+	Q_PROPERTY(QObject* library READ library CONSTANT)
+	/// Settings' Launcher logs section: the launcher's own log files and
+	/// their uploader (see models/LauncherLogs.h).
+	Q_PROPERTY(QObject* launcherLogs READ launcherLogs CONSTANT)
 	/* Distinct groups currently in use, for a "move to group" picker's
 	 * suggestions -- the same list InstanceFilterModel derives for the
 	 * library's own section headers (see m_instances), so a group picker
@@ -273,6 +297,9 @@ class QmlShell : public QObject
 	int systemMemoryMiB() const;
 	QObject* modpackModel() const;
 	QObject* curseForgeModpackModel() const;
+	QObject* ftbModpackModel() const;
+	QObject* atlModpackModel() const;
+	QObject* technicModpackModel() const;
 	/* Starts installing a Modrinth modpack version as a new instance and
 	 * returns its TaskWatcher, owned by C++: the install must outlive the
 	 * page that started it, whatever QML does with the reference. */
@@ -310,6 +337,17 @@ class QmlShell : public QObject
 	/// Made on first use, like newInstance().
 	QObject* javaController() const;
 	QObject* javaDownload() const;
+	/// Made on first use, like javaController().
+	QObject* folderSettings() const;
+	QObject* updateSettings() const;
+	QObject* playTime() const;
+	/* The same object as updateSettings(), typed for Application, which
+	 * hands it the updater (UpdateSettingsController::setBackend()). */
+	UpdateSettingsController* updateSettingsController() const;
+	/// Made on first use, like newInstance().
+	QObject* library() const;
+	/// Made on first use: nothing watches the log folder before then.
+	QObject* launcherLogs() const;
 
 	/* Everything below just emits the matching *Requested() signal: QmlShell
 	 * sits in MeshMC_qml, which cannot see the widget code that actually
@@ -423,7 +461,8 @@ class QmlShell : public QObject
 	 * "pickAccount" asks the launch account picker over the real account
 	 * list; "busySkip" shows the account-refresh wait with its "Play
 	 * offline" button, which ends it; "modal" shows a sample plugin prompt
-	 * (UiHost::runPluginModal()). Through the same QmlUiHost calls the
+	 * (UiHost::runPluginModal()); "optionalMods" a sample ATLauncher
+	 * optional-mods question (UiHost::chooseOptionalMods()). Through the same QmlUiHost calls the
 	 * real code makes. No-op for any other kind. */
 	Q_INVOKABLE void debugShowRequest(const QString& kind);
 
@@ -542,6 +581,9 @@ class QmlShell : public QObject
 	std::unique_ptr<QmlUiHost> m_uiHost;
 	std::unique_ptr<ModrinthModpackModel> m_modpacks;
 	std::unique_ptr<FlameModpackModel> m_curseForgeModpacks;
+	std::unique_ptr<FtbModpackModel> m_ftbModpacks;
+	std::unique_ptr<AtlModpackModel> m_atlModpacks;
+	std::unique_ptr<TechnicModpackModel> m_technicModpacks;
 	/* The one open instance detail page, if any - see instanceDetails(). */
 	std::unique_ptr<InstanceDetails> m_instanceDetails;
 	std::unique_ptr<InstanceExportController> m_exportController;
@@ -550,6 +592,11 @@ class QmlShell : public QObject
 	mutable std::unique_ptr<NewInstanceController> m_newInstance;
 	mutable std::unique_ptr<JavaController> m_javaController;
 	mutable std::unique_ptr<JavaDownloadController> m_javaDownload;
+	mutable std::unique_ptr<FolderSettingsController> m_folderSettings;
+	mutable std::unique_ptr<UpdateSettingsController> m_updateSettings;
+	mutable std::unique_ptr<PlayTimeSummary> m_playTime;
+	mutable std::unique_ptr<LibraryController> m_library;
+	mutable std::unique_ptr<LauncherLogs> m_launcherLogs;
 	/* Keyed by (anchor, anchorContext) -- see pluginSurfaces(). Declared
 	 * alongside the other cached models, for the same reason: destroyed
 	 * before the engine is torn down. */

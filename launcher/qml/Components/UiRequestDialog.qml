@@ -63,7 +63,8 @@ Item {
 
     parent: Overlay.overlay
     anchors.centerIn: parent
-    width: Math.min(kind === "blockedMods" || kind === "untrustedMods" || kind === "update" || kind === "modal" ? 620 : 460,
+    width: Math.min(kind === "blockedMods" || kind === "untrustedMods" || kind === "update" || kind === "modal"
+                    || kind === "optionalMods" ? 620 : 460,
                     parent ? parent.width - Theme.space.xxl * 2 : 460)
     modal: true
     closePolicy: Popup.CloseOnEscape
@@ -426,6 +427,80 @@ Item {
                 surfaceId: "modal"
                 sink: root.request
                 node: root.request.modalDocument.root || root.request.modalDocument
+            }
+        }
+
+        // optionalMods: an ATLauncher pack's extra mods, ticked in place on
+        // the request's AtlOptionalModsModel, which applies the pack's own
+        // rules (dependencies, one per group). Hidden rows are libraries.
+        Column {
+            id: optionalModsBox
+            Layout.fillWidth: true
+            visible: root.kind === "optionalMods"
+            spacing: Theme.space.sm
+
+            readonly property var mods: root.kind === "optionalMods" && root.request ? root.request.optionalMods : null
+
+            Rectangle {
+                width: parent.width
+                height: Math.min(320, modsList.contentHeight + Theme.space.sm * 2)
+                radius: Theme.radius.md
+                color: Theme.palette.surfaceSunken
+                ListView {
+                    id: modsList
+                    anchors.fill: parent
+                    anchors.margins: Theme.space.sm
+                    clip: true
+                    model: optionalModsBox.mods
+                    ScrollBar.vertical: ScrollBar {}
+                    delegate: Item {
+                        id: modRow
+                        required property int index
+                        required property string name
+                        required property string description
+                        required property bool selected
+                        required property bool hidden
+                        width: ListView.view ? ListView.view.width : 0
+                        visible: !modRow.hidden
+                        height: visible ? modColumn.implicitHeight + Theme.space.xs * 2 : 0
+                        Column {
+                            id: modColumn
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            CheckBox {
+                                text: modRow.name
+                                checked: modRow.selected
+                                onToggled: modsList.model.toggle(modRow.index)
+                            }
+                            Text {
+                                width: parent.width
+                                visible: modRow.description.length > 0
+                                leftPadding: Theme.space.xl + Theme.space.xs
+                                text: modRow.description
+                                wrapMode: Text.Wrap
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
+                                color: Theme.palette.textTertiary
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.type.caption.pixelSize
+                            }
+                        }
+                    }
+                }
+            }
+            Row {
+                spacing: Theme.space.sm
+                Button {
+                    flat: true
+                    text: qsTr("Recommended")
+                    onClicked: modsList.model.selectRecommended()
+                }
+                Button {
+                    flat: true
+                    text: qsTr("None")
+                    onClicked: modsList.model.clearAll()
+                }
             }
         }
 

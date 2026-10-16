@@ -29,6 +29,8 @@
 #include <QStringList>
 
 #include "minecraft/auth/MinecraftAccount.h"
+
+class AtlOptionalModsModel;
 #include "modplatform/BlockedMod.h"
 
 /*
@@ -184,4 +186,11 @@ class UiHost
 	/// nullopt when the user backed out instead.
 	virtual std::optional<PluginModalResult> runPluginModal(
 		const QString& title, const QJsonObject& document) = 0;
+
+	/* Which of an ATLauncher pack's optional mods to install, while it
+	 * installs. @p mods is ticked in place, under its own rules (see
+	 * AtlOptionalModsModel). True means install what is ticked now; false
+	 * means keep the pack's own defaults. */
+	virtual bool chooseOptionalMods(const QString& packName,
+									AtlOptionalModsModel& mods) = 0;
 };

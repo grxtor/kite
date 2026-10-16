@@ -49,12 +49,23 @@
 #include "models/InstanceShortcutController.h"
 #include "models/JavaController.h"
 #include "models/JavaDownloadController.h"
+#include "models/FolderSettingsController.h"
+#include "models/UpdateSettingsController.h"
+#include "models/PlayTimeSummary.h"
+#include "models/LibraryController.h"
+#include "models/LauncherLogs.h"
+#include "BuildConfig.h"
 #include "models/InstanceFilterModel.h"
 #include "models/NewInstanceController.h"
 #include "models/RecentWorldsModel.h"
 #include "models/SettingsAdapter.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
 #include "modplatform/flame/FlameModpackModel.h"
+#include "modplatform/atlauncher/AtlModpackModel.h"
+#include "modplatform/modpacksch/FtbModpackModel.h"
+#include "modplatform/technic/TechnicModpackModel.h"
+#include "models/AtlOptionalModsModel.h"
+#include "core/UiHost.h"
 #include "tasks/Task.h"
 #include "tasks/TaskWatcher.h"
 #include "translations/TranslationsModel.h"
@@ -422,6 +433,32 @@ void QmlShell::debugShowRequest(const QString& kind)
 			};
 			m_uiHost->runPluginModal(QStringLiteral("World Share"), document);
 		});
+	} else if (kind == QLatin1String("optionalMods")) {
+		// An ATLauncher pack's optional mods, as AtlModpackModel asks.
+		QTimer::singleShot(0, this, [this]() {
+			if (!m_uiHost) {
+				return;
+			}
+			auto mod = [](const QString& name, const QString& description,
+						  bool selected) {
+				ATLauncher::VersionMod m;
+				m.name = name;
+				m.description = description;
+				m.optional = true;
+				m.selected = selected;
+				m.recommended = selected;
+				m.hidden = false;
+				m.library = false;
+				m.effectively_hidden = false;
+				m.client = true;
+				return m;
+			};
+			AtlOptionalModsModel mods(
+				{ mod(QStringLiteral("Optifine"), QStringLiteral("Better frame rates and shader support."), true),
+				  mod(QStringLiteral("JourneyMap"), QStringLiteral("A minimap and a full world map."), true),
+				  mod(QStringLiteral("Inventory Tweaks"), QStringLiteral("Sorts your inventory with one click."), false) });
+			m_uiHost->chooseOptionalMods(QStringLiteral("Sky Factory"), mods);
+		});
 	} else if (kind == QLatin1String("busySkip")) {
 		/* Kept alive by its own skip callback, which ends it; QmlUiHost
 		 * drops the callback (and so the indicator) at the latest when it
@@ -714,6 +751,21 @@ QObject* QmlShell::curseForgeModpackModel() const
 	return expose(m_curseForgeModpacks.get());
 }
 
+QObject* QmlShell::ftbModpackModel() const
+{
+	return expose(m_ftbModpacks.get());
+}
+
+QObject* QmlShell::atlModpackModel() const
+{
+	return expose(m_atlModpacks.get());
+}
+
+QObject* QmlShell::technicModpackModel() const
+{
+	return expose(m_technicModpacks.get());
+}
+
 QObject* QmlShell::installModpack(const QString& projectId,
 								  const QString& versionId,
 								  const QString& instanceName,
@@ -783,6 +835,63 @@ QObject* QmlShell::javaDownload() const
 		m_javaDownload = std::make_unique<JavaDownloadController>();
 	}
 	return expose(m_javaDownload.get());
+}
+
+QObject* QmlShell::folderSettings() const
+{
+	if (!m_folderSettings) {
+		m_folderSettings = std::make_unique<FolderSettingsController>();
+	}
+	return expose(m_folderSettings.get());
+}
+
+UpdateSettingsController* QmlShell::updateSettingsController() const
+{
+	if (!m_updateSettings) {
+		m_updateSettings = std::make_unique<UpdateSettingsController>();
+	}
+	return m_updateSettings.get();
+}
+
+QObject* QmlShell::updateSettings() const
+{
+	return expose(updateSettingsController());
+}
+
+QObject* QmlShell::playTime() const
+{
+	/* First read once the root window loads, by which time the instance
+	 * list exists; PlayTimeSummary recounts whenever it changes. */
+	if (!m_playTime) {
+		m_playTime = std::make_unique<PlayTimeSummary>();
+	}
+	return expose(m_playTime.get());
+}
+
+QObject* QmlShell::library() const
+{
+	if (!m_library && m_engine) {
+		m_library = std::make_unique<LibraryController>(LAUNCHER->instances(),
+														LAUNCHER->icons());
+	}
+	if (m_library) {
+		// The icons model the duplicate dialog's picker reads: CppOwnership,
+		// like iconsModel().
+		expose(m_library->iconsModel());
+	}
+	return expose(m_library.get());
+}
+
+QObject* QmlShell::launcherLogs() const
+{
+	/* The working directory is the data folder, where the launcher writes
+	 * <MESHMC_NAME>-<n>.log -- the same folder the widget logs dialog
+	 * lists. */
+	if (!m_launcherLogs) {
+		m_launcherLogs = std::make_unique<LauncherLogs>(
+			QDir::currentPath(), BuildConfig.MESHMC_NAME);
+	}
+	return expose(m_launcherLogs.get());
 }
 
 QObject* QmlShell::exportController(const QString& id)
@@ -953,6 +1062,21 @@ bool QmlShell::load()
 	m_uiHost = std::make_unique<QmlUiHost>();
 	m_modpacks = std::make_unique<ModrinthModpackModel>();
 	m_curseForgeModpacks = std::make_unique<FlameModpackModel>();
+	m_ftbModpacks = std::make_unique<FtbModpackModel>();
+	m_atlModpacks = std::make_unique<AtlModpackModel>();
+	m_technicModpacks = std::make_unique<TechnicModpackModel>();
+	/* An ATLauncher pack's optional mods are asked through UiHost (the QML
+	 * "optionalMods" question); without an answer the pack's defaults
+	 * install. */
+	m_atlModpacks->setOptionalModsHandler(
+		[](const QString& name,
+		   AtlOptionalModsModel& mods) -> std::optional<QVector<QString>> {
+			UiHost* host = LAUNCHER->uiHost();
+			if (host && host->chooseOptionalMods(name, mods)) {
+				return mods.selectedNames();
+			}
+			return std::nullopt;
+		});
 	m_accountsController =
 		std::make_unique<AccountsController>(LAUNCHER->accounts());
 	m_about = std::make_unique<AboutInfo>();

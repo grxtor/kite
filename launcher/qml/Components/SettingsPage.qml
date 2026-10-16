@@ -37,6 +37,9 @@ Item {
     // PluginListModel for "Installed plugins"; null hides either section.
     property var about: null
     property var pluginList: null
+    // QmlShell.launcherLogs (LauncherLogs) for "Launcher logs"; null hides
+    // that section.
+    property var launcherLogs: null
 
     // Show a folder in the file manager (the General section's Folders).
     signal openPathRequested(string path)
@@ -167,7 +170,10 @@ Item {
             SettingsProxySection {}
             SettingsExternalToolsSection {}
             SettingsLogUploadSection {}
-            SettingsLauncherLogsSection {}
+            SettingsLauncherLogsSection {
+                launcherLogs: root.launcherLogs
+                onOpenPathRequested: (path) => root.openPathRequested(path)
+            }
             SettingsUpdatesSection {}
             SettingsAboutSection {
                 about: root.about

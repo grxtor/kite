@@ -27,6 +27,7 @@
 
 #include "qml/QmlUiHost.h"
 #include "minecraft/auth/MinecraftAccount.h"
+#include "models/AtlOptionalModsModel.h"
 
 /*
  * Drives QmlUiHost the way QML would, without any QML: confirm()/etc. block
@@ -442,6 +443,48 @@ class QmlUiHostTest : public QObject
 			QStringLiteral("Title"),
 			QJsonObject{ { "type", "button" }, { "id", "ok" } });
 		QVERIFY(!result.has_value());
+	}
+
+	/* An ATLauncher pack's optional mods: QML ticks them on the request's
+	 * own model, and Install (accept) or the pack's defaults (reject) is
+	 * the answer. */
+	void chooseOptionalModsTicksInPlace()
+	{
+		auto mod = [](const QString& name, bool selected) {
+			ATLauncher::VersionMod m;
+			m.name = name;
+			m.optional = true;
+			m.selected = selected;
+			m.recommended = selected;
+			m.hidden = false;
+			m.library = false;
+			m.effectively_hidden = false;
+			m.client = true;
+			return m;
+		};
+		QmlUiHost host;
+		AtlOptionalModsModel mods({ mod(QStringLiteral("Shaders"), true),
+									mod(QStringLiteral("Minimap"), false) });
+
+		QTimer::singleShot(0, [&host]() {
+			auto* request = qobject_cast<QmlUiRequest*>(host.current());
+			QVERIFY(request);
+			QCOMPARE(request->kind(), QStringLiteral("optionalMods"));
+			auto* model = qobject_cast<AtlOptionalModsModel*>(request->optionalMods());
+			QVERIFY(model);
+			model->toggle(1);
+			request->accept();
+		});
+		QVERIFY(host.chooseOptionalMods(QStringLiteral("Pack"), mods));
+		QCOMPARE(mods.selectedNames(),
+				 QVector<QString>({ QStringLiteral("Shaders"), QStringLiteral("Minimap") }));
+
+		QTimer::singleShot(0, [&host]() {
+			auto* request = qobject_cast<QmlUiRequest*>(host.current());
+			QVERIFY(request);
+			request->reject();
+		});
+		QVERIFY(!host.chooseOptionalMods(QStringLiteral("Pack"), mods));
 	}
 
 	void pickAccountBackingOutChoosesNothing()

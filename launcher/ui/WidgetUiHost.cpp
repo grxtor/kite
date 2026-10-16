@@ -248,6 +248,17 @@ WidgetUiHost::runPluginModal(const QString& title, const QJsonObject& document)
 	return PluginModalResult{ clicked, renderer->collectValues() };
 }
 
+bool WidgetUiHost::chooseOptionalMods(const QString& packName,
+									  AtlOptionalModsModel& mods)
+{
+	/* The widget ATLauncher page asks with its own AtlOptionalModDialog
+	 * and never installs through AtlModpackModel, the only caller of this;
+	 * keep the pack's defaults rather than build a second dialog. */
+	Q_UNUSED(packName);
+	Q_UNUSED(mods);
+	return false;
+}
+
 bool WidgetUiHost::setupProfile(MinecraftAccountPtr account)
 {
 	ProfileSetupDialog dialog(account, activeWindow());

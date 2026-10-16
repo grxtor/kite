@@ -71,6 +71,11 @@ ApplicationWindow {
             // rows wherever they appear.
             JavaStore.controller = root.shell.javaController
             JavaStore.download = root.shell.javaDownload
+            // Folder and update settings and the total play time
+            // (LauncherStore.qml), read by Settings and the library.
+            LauncherStore.folders = root.shell.folderSettings
+            LauncherStore.updates = root.shell.updateSettings
+            LauncherStore.playTime = root.shell.playTime
             var mode = SettingsStore.string("UiThemeMode")
             if (mode === "dark" || mode === "light")
                 Theme.mode = mode
@@ -146,6 +151,12 @@ ApplicationWindow {
             // The library card ⋯ menu for instance <id>, open.
             else if (key === "librarymenu")
                 Qt.callLater(libraryPage.openInstanceMenu, value)
+            // The group header ⋯ menu of group <name>, open.
+            else if (key === "groupmenu")
+                Qt.callLater(libraryPage.openGroupMenu, value)
+            // The duplicate dialog over instance <id>.
+            else if (key === "duplicate")
+                Qt.callLater(libraryPage.duplicateInstance, value)
             // The instance page header ⋯ menu, open (after instance=<id>).
             else if (key === "instancemenu")
                 Qt.callLater(instancePage.openHeaderMenu)
@@ -394,12 +405,6 @@ ApplicationWindow {
         groupDialog.suggestions = root.instanceGroups()
         groupDialog.open()
     }
-    function askDuplicate(id, name, group) {
-        duplicateDialog.targetId = id
-        duplicateDialog.targetGroup = group
-        duplicateDialog.value = qsTr("%1 (copy)").arg(name)
-        duplicateDialog.open()
-    }
     function askDelete(id, name) {
         deleteDialog.targetId = id
         deleteDialog.text = qsTr("Delete \u201c%1\u201d? Its folder \u2014 worlds, mods, screenshots \u2014 is removed for good.").arg(name)
@@ -409,6 +414,22 @@ ApplicationWindow {
     Shortcut {
         sequences: [StandardKey.New]
         onActivated: root.openNewInstance()
+    }
+
+    // A zip, an .mrpack or a link dropped anywhere on the window opens
+    // import with it, as the widget main window's drop did. First, so it
+    // sits under everything else: NewInstanceDialog's own drop area, and
+    // the library's group drop areas (which take only their own drag),
+    // keep their drops.
+    DropArea {
+        anchors.fill: parent
+        keys: ["text/uri-list"]
+        onDropped: (drop) => {
+            if (!drop.hasUrls || drop.urls.length === 0)
+                return
+            root.openImport(drop.urls[0].toString())
+            drop.accept()
+        }
     }
 
     RowLayout {
@@ -592,6 +613,9 @@ ApplicationWindow {
                         }
                         searchText: topBar.searchText
                         selectedId: root.selectedId
+                        // Groups, undo delete and Duplicate with its own
+                        // dialog (LibraryController).
+                        library: root.shell && root.shell.library ? root.shell.library : null
 
                         onSelectRequested: (id) => root.selectedId = id
                         onLaunchRequested: (id) => root.launch(id)
@@ -602,7 +626,6 @@ ApplicationWindow {
                         onRenameRequested: (id, name) => root.askRename(id, name)
                         onIconRequested: (id, iconKey) => root.askIcon(id, iconKey)
                         onGroupRequested: (id, group) => root.askGroup(id, group)
-                        onDuplicateRequested: (id, name, group) => root.askDuplicate(id, name, group)
                         onDeleteRequested: (id, name) => root.askDelete(id, name)
                         onClearSearchRequested: topBar.searchText = ""
                         exportControllerFor: function (id) {
@@ -634,6 +657,7 @@ ApplicationWindow {
                         about: root.shell && root.shell.about ? root.shell.about : null
                         pluginList: root.shell && typeof root.shell.pluginList === "function"
                                     ? root.shell.pluginList() : null
+                        launcherLogs: root.shell && root.shell.launcherLogs ? root.shell.launcherLogs : null
                         onOpenPathRequested: (path) => root.call("openPath", path)
                     }
 
@@ -641,6 +665,9 @@ ApplicationWindow {
                         id: discoverPage
                         model: root.shell && root.shell.modpackModel ? root.shell.modpackModel : null
                         curseForgeModel: root.shell && root.shell.curseForgeModpackModel ? root.shell.curseForgeModpackModel : null
+                        ftbModel: root.shell && root.shell.ftbModpackModel ? root.shell.ftbModpackModel : null
+                        atlModel: root.shell && root.shell.atlModpackModel ? root.shell.atlModpackModel : null
+                        technicModel: root.shell && root.shell.technicModpackModel ? root.shell.technicModpackModel : null
                         installer: function (projectId, versionId, name, group) {
                             return root.shell.installModpack(projectId, versionId, name, group)
                         }
@@ -666,10 +693,10 @@ ApplicationWindow {
                         // The header's ⋯ menu manages the instance with the
                         // same dialogs as the library's own card menu.
                         manageable: true
+                        library: root.shell && root.shell.library ? root.shell.library : null
                         onRenameRequested: (id, name) => root.askRename(id, name)
                         onIconRequested: (id, iconKey) => root.askIcon(id, iconKey)
                         onGroupRequested: (id, group) => root.askGroup(id, group)
-                        onDuplicateRequested: (id, name, group) => root.askDuplicate(id, name, group)
                         onDeleteRequested: (id, name) => root.askDelete(id, name)
                         // Two arguments -- root.call() only ever forwards
                         // one -- so this goes straight to the shell instead.
@@ -783,33 +810,6 @@ ApplicationWindow {
         }
     }
 
-    PromptDialog {
-        id: duplicateDialog
-        property string targetId
-        property string targetGroup
-        property var watcher: null
-        title: qsTr("Duplicate instance")
-        label: qsTr("A full copy, worlds included, under a new name.")
-        confirmText: qsTr("Duplicate")
-        onSubmitted: (text) => {
-            watcher = root.shell.duplicateInstance(targetId, text, targetGroup)
-            close()
-            if (watcher)
-                toast.show(qsTr("Copying \u201c%1\u201d\u2026").arg(text))
-            else
-                toast.show(qsTr("The instance could not be copied."), "danger")
-        }
-        Connections {
-            target: duplicateDialog.watcher
-            ignoreUnknownSignals: true
-            function onFinished(ok) {
-                toast.show(ok ? qsTr("Copy ready in your library.")
-                              : qsTr("Copy failed: %1").arg(duplicateDialog.watcher.error),
-                           ok ? "success" : "danger")
-            }
-        }
-    }
-
     ConfirmDialog {
         id: deleteDialog
         property string targetId
@@ -822,7 +822,20 @@ ApplicationWindow {
                 // Deleted from its own page: there is no page left to show.
                 if (root.page === "instance" && root.openedInstanceId === targetId)
                     root.page = "library"
-                toast.show(qsTr("Instance deleted."), "success")
+                // Undo is offered only when it went to the trash; a
+                // platform without one deleted it for good.
+                var library = root.shell.library
+                if (library && library.canUndoDelete) {
+                    var trashedName = library.lastDeletedName
+                    toast.show(qsTr("Instance deleted."), "success", qsTr("Undo"), function () {
+                        if (library.undoDelete())
+                            toast.show(qsTr("“%1” is back in your library.").arg(trashedName), "success")
+                        else
+                            toast.show(qsTr("“%1” could not be put back. It is still in the trash.").arg(trashedName), "danger")
+                    })
+                } else {
+                    toast.show(qsTr("Instance deleted."), "success")
+                }
             } else {
                 toast.show(qsTr("The instance could not be deleted. Is it running?"), "danger")
             }

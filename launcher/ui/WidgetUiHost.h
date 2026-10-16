@@ -53,6 +53,9 @@ class WidgetUiHost final : public UiHost
 	std::optional<PluginModalResult> runPluginModal(
 		const QString& title, const QJsonObject& document) override;
 
+	bool chooseOptionalMods(const QString& packName,
+							AtlOptionalModsModel& mods) override;
+
 	std::optional<QString> askText(
 		const QString& title, const QString& text,
 		const QString& defaultValue = QString()) override;
