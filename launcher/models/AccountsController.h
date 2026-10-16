@@ -22,11 +22,14 @@
 #include <QObject>
 #include <QString>
 #include <QUrl>
+#include <QPointer>
 #include <QVariantMap>
 
 #include "QObjectPtr.h"
 #include "minecraft/auth/AccountList.h"
 #include "minecraft/auth/MinecraftAccount.h"
+
+class SkinsController;
 
 class AccountTask;
 
@@ -54,6 +57,8 @@ class AccountsController : public QObject
 	Q_PROPERTY(QString defaultName READ defaultName NOTIFY defaultChanged)
 	/// See skinDemoRequested() below.
 	Q_PROPERTY(bool skinDemoRequested READ skinDemoRequested CONSTANT)
+	/// See skinDemoPose() below.
+	Q_PROPERTY(QString skinDemoPose READ skinDemoPose CONSTANT)
 
   public:
 	explicit AccountsController(shared_qobject_ptr<AccountList> accounts,
@@ -98,7 +103,9 @@ class AccountsController : public QObject
 	/*!
 	 * Skin and cape state for row @p row's Microsoft profile, for the QML
 	 * skin/cape editor (see AccountsPage.qml): { "valid": bool, "slim":
-	 * bool, "currentCapeId": string, "capes": [{ "id", "alias", "url" }] }.
+	 * bool, "hasSkin": bool, "currentCapeId": string, "currentCapeUrl":
+	 * string, "capes": [{ "id", "alias", "url" }] }. Each cape is listed
+	 * once, even when the stored profile repeats it.
 	 * "valid" is false -- and every other field is at its empty default --
 	 * for a row out of range, an offline account, or an MSA account with no
 	 * profile data yet; the caller is expected to check it before reading
@@ -117,6 +124,14 @@ class AccountsController : public QObject
 	 * False, and accountSkinInfo(-1) stays "invalid", the rest of the time.
 	 */
 	bool skinDemoRequested() const;
+
+	/*!
+	 * The demo editor's starting view, from the route's
+	 * "accounts-demo=<pose>" step: "cape" shows the player from behind,
+	 * "elytra" also puts the elytra on; anything else is the front view.
+	 * Empty when skinDemoRequested() is false.
+	 */
+	QString skinDemoPose() const;
 
 	/*!
 	 * Whether @p path is a PNG MinecraftServices will accept as a skin (64
@@ -155,12 +170,24 @@ class AccountsController : public QObject
 	 */
 	Q_INVOKABLE QObject* changeCape(int row, const QString& capeId);
 
+	/*
+	 * The skin library (SkinsController over the launcher's SkinsDir) for
+	 * row @p row's account: its skins, imports, rename and delete. One is
+	 * kept at a time; asking for another row replaces it. Null for a row
+	 * out of range.
+	 */
+	Q_INVOKABLE QObject* skins(int row);
+
   signals:
 	/// hasDefault()/defaultName() moved.
 	void defaultChanged();
 
   private:
 	shared_qobject_ptr<AccountList> m_accounts;
+	/* Parented to this, for the reason loginMicrosoft()'s comment gives:
+	 * QML gets it straight from here, with nothing to pin its ownership. */
+	QPointer<SkinsController> m_skins;
+	QString m_skinsAccountId;
 };
 
 /*

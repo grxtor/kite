@@ -66,6 +66,8 @@ set(CORE_SOURCES
     models/AboutInfo.cpp
     models/NewsModel.h
     models/NewsModel.cpp
+    models/SkinsController.h
+    models/SkinsController.cpp
     models/ServersListModel.h
     models/ServersListModel.cpp
     models/BackupController.h
@@ -1545,6 +1547,11 @@ add_unit_test(AboutInfo
 
 add_unit_test(NewsModel
     SOURCES models/NewsModel_test.cpp
+    LIBS MeshMC_core
+    )
+
+add_unit_test(SkinsController
+    SOURCES models/SkinsController_test.cpp
     LIBS MeshMC_core
     )
 

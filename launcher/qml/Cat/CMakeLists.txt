@@ -36,11 +36,16 @@ qt_add_qml_module(MeshMC_qml_cat
     # packaging comments in launcher/CMakeLists.txt).
     DEPENDENCIES
         QtQuick3D
+        QtQuick3D.Helpers
         QtQuick.Window
         QtQuick.Controls
+    # SkinPreview3D.qml: the 3D player in the skin editor and on the
+    # Accounts page (Components/SkinPreview.qml loads it). It lives here
+    # because this is the module that only exists when Qt Quick3D does.
     QML_FILES
         CatOverlay.qml
         CatRig.qml
+        SkinPreview3D.qml
     # The model's parts (generated from assets/cat.glb with Qt's balsam
     # tool -- see assets/CREDITS.md) and its coats. assets/cat.glb itself is
     # the source and is not needed at run time.

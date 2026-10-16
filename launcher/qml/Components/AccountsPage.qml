@@ -13,8 +13,9 @@ import MeshMC.Theme
  * the browser tab was lost. Offline accounts need a Microsoft account that
  * owns the game first -- the same rule the classic page enforced.
  *
- * A hero at the top shows the account games actually launch with -- full
- * body, standing on a small "stage" -- the same way the library's
+ * A hero at the top shows the account games actually launch with -- the
+ * player in its skin, in 3D where Qt Quick3D draws (SkinPreview) -- the
+ * same way the library's
  * ContinueCard/InstancePage hero leads with the instance that matters most.
  * Every other account is a compact row below it, as wide as the hero.
  */
@@ -140,14 +141,13 @@ Item {
     readonly property string heroStatus: heroItem ? heroItem.status : ""
     readonly property string heroStateKey: heroItem ? heroItem.stateKey : ""
     readonly property int heroRow: heroItem ? heroItem.index : -1
-    // The hero's figure box: 1:2, the skin's own 16x32 frame (see
-    // AccountFaceProvider::bodyFromSkin), so the default figure under the
-    // render lines up with it exactly.
-    readonly property int figureWidth: 88
-    readonly property int figureHeight: 176
-    readonly property int floorWidth: 116
-    readonly property int floorHeight: 20
-    readonly property int floorGap: 12
+    // Whether launcher/qml/Cat (Qt Quick3D) exists -- see SkinPreview.
+    property bool catAvailable: false
+    // The hero account's skin facts (AccountsController::accountSkinInfo):
+    // whether it has a skin at all, and its arm width. Re-read whenever the
+    // images are (imageRevision).
+    readonly property var heroSkin: root.controller && root.heroIsMSA && root.imageRevision >= 0
+                                    ? root.controller.accountSkinInfo(root.heroRow) : ({})
     readonly property int heroHeight: 248
 
     ColumnLayout {
@@ -218,54 +218,20 @@ Item {
                 anchors.margins: Theme.space.xl
                 spacing: Theme.space.xl
 
-                // The stage: a floor shadow and either the account's real
-                // skin or the neutral default figure standing on it.
-                Item {
-                    id: stage
+                // The player in the account's skin, turned by dragging where
+                // it is 3D; the neutral figure for an account without one
+                // (offline accounts, or before the profile has loaded).
+                SkinPreview {
                     Layout.preferredWidth: 168
                     Layout.preferredHeight: 200
                     Layout.alignment: Qt.AlignVCenter
-
-                    // Soft floor shadow the figure appears to stand on. A
-                    // flattened pill rather than a true ellipse -- Rectangle
-                    // has no radial shape, but a wide, short rounded rect
-                    // reads the same way at this size.
-                    Rectangle {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.bottom: parent.bottom
-                        width: root.floorWidth
-                        height: root.floorHeight
-                        radius: height / 2
-                        color: Theme.palette.shadow
-                    }
-
-                    // An offline account has no skin to render (the
-                    // provider hands back a transparent image), and a
-                    // Microsoft one has none until its render is ready:
-                    // both get the default figure, in the render's own box.
-                    SkinSilhouette {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.bottom: parent.bottom
-                        anchors.bottomMargin: root.floorGap
-                        width: root.figureWidth
-                        height: root.figureHeight
-                        visible: !root.heroIsMSA || heroBody.status !== Image.Ready
-                    }
-
-                    Image {
-                        id: heroBody
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.bottom: parent.bottom
-                        anchors.bottomMargin: root.floorGap
-                        width: root.figureWidth
-                        height: root.figureHeight
-                        visible: root.heroIsMSA
-                        fillMode: Image.PreserveAspectFit
-                        smooth: false
-                        source: root.heroAccountId.length > 0
+                    catAvailable: root.catAvailable
+                    skinTexture: root.heroSkin.hasSkin && root.heroAccountId.length > 0
+                                 ? "image://accountface/skin/" + root.heroAccountId + "?rev=" + root.imageRevision : ""
+                    flatSource: root.heroAccountId.length > 0
                                 ? "image://accountface/body/" + root.heroAccountId + "?rev=" + root.imageRevision : ""
-                        sourceSize: Qt.size(root.figureWidth * 2, root.figureHeight * 2)
-                    }
+                    slim: !!root.heroSkin.slim
+                    capeTexture: root.heroSkin.currentCapeUrl || ""
                 }
 
                 ColumnLayout {
@@ -621,6 +587,7 @@ Item {
         id: skinCapeEditor
         controller: root.controller
         rev: root.imageRevision
+        catAvailable: root.catAvailable
     }
 
     Dialog {

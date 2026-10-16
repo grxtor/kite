@@ -20,10 +20,12 @@
 #include "AccountFaceProvider.h"
 
 #include <QPainter>
+#include <QUrl>
 
 #include "core/LauncherContext.h"
 #include "minecraft/auth/AccountList.h"
 #include "minecraft/auth/MinecraftAccount.h"
+#include "minecraft/skins/SkinEntry.h"
 
 namespace
 {
@@ -43,6 +45,22 @@ constexpr int kFaceExtent = 8;
 // Prefix an id is checked for (after the "?rev=N" cache-buster is already
 // stripped) to ask for the full body instead of the face.
 const QString kBodyPrefix = QStringLiteral("body/");
+
+// Raw skin textures, normalised to 64x64 (SkinEntry::normalisedTexture()),
+// for a 3D preview to wrap a model in: an account's own skin by account
+// key, or a PNG in the skin library by its percent-encoded path. And a
+// library PNG's flat front-and-back sprite (SkinEntry::thumbnail()), for
+// the library's list. Never scaled: these are textures, not pictures.
+const QString kSkinTexturePrefix = QStringLiteral("skin/");
+const QString kSkinFilePrefix = QStringLiteral("skinfile/");
+const QString kSkinThumbPrefix = QStringLiteral("skinthumb/");
+// The same sprite drawn with slim arms: a bare PNG does not say which arm
+// width it was drawn for, so the library's choice travels in the id.
+const QString kSkinThumbSlimPrefix = QStringLiteral("skinthumbslim/");
+// A library PNG's front view, like "body/" does for an account; the arm
+// width comes with the prefix, since the file does not say.
+const QString kSkinBodyPrefix = QStringLiteral("skinbody/");
+const QString kSkinBodySlimPrefix = QStringLiteral("skinbodyslim/");
 
 // Front-view body layout, all still the standard Minecraft skin UV: torso
 // and legs are always this wide, only the arms narrow for the slim variant.
@@ -203,6 +221,44 @@ QImage AccountFaceProvider::bodyFromSkin(const QImage& skin, bool slim)
 	return body;
 }
 
+QImage AccountFaceProvider::skinTexture(const QString& id)
+{
+	const bool slimThumb = id.startsWith(kSkinThumbSlimPrefix);
+	const bool thumb = slimThumb || id.startsWith(kSkinThumbPrefix);
+	if (thumb || id.startsWith(kSkinFilePrefix)) {
+		const int prefixLength = slimThumb ? kSkinThumbSlimPrefix.length()
+								 : thumb   ? kSkinThumbPrefix.length()
+										   : kSkinFilePrefix.length();
+		const QString path =
+			QUrl::fromPercentEncoding(id.mid(prefixLength).toUtf8());
+		SkinEntry entry(path);
+		if (!entry.isUsable()) {
+			return QImage();
+		}
+		if (slimThumb) {
+			entry.setArms(SkinEntry::Arms::Slim);
+		}
+		return thumb ? entry.thumbnail() : entry.texture();
+	}
+	if (id.startsWith(kSkinTexturePrefix)) {
+		auto* context = LauncherContext::instance();
+		const MinecraftAccountPtr account =
+			context ? findAccount(context->accounts().get(),
+								  id.mid(kSkinTexturePrefix.length()))
+					: MinecraftAccountPtr();
+		QImage skin;
+		if (!account ||
+			!skin.loadFromData(account->accountData()->minecraftProfile.skin.data,
+							   "PNG")) {
+			return QImage();
+		}
+		const QImage texture = SkinEntry::normalisedTexture(skin);
+		return texture.width() == 64 && texture.height() == 64 ? texture
+															   : QImage();
+	}
+	return QImage();
+}
+
 QPixmap AccountFaceProvider::requestPixmap(const QString& id, QSize* size,
 										   const QSize& requestedSize)
 {
@@ -210,6 +266,46 @@ QPixmap AccountFaceProvider::requestPixmap(const QString& id, QSize* size,
 	// the header for why it exists at all.
 	const int queryStart = id.indexOf(QLatin1Char('?'));
 	const QString withoutQuery = queryStart < 0 ? id : id.left(queryStart);
+
+	const bool slimBody = withoutQuery.startsWith(kSkinBodySlimPrefix);
+	if (slimBody || withoutQuery.startsWith(kSkinBodyPrefix)) {
+		const QString path = QUrl::fromPercentEncoding(
+			withoutQuery
+				.mid(slimBody ? kSkinBodySlimPrefix.length()
+							  : kSkinBodyPrefix.length())
+				.toUtf8());
+		const SkinEntry entry(path);
+		const QSize bodyWanted =
+			requestedSize.isEmpty()
+				? QSize(kDefaultBodyWidth, kDefaultBodyHeight)
+				: requestedSize;
+		QPixmap pixmap;
+		if (entry.isUsable()) {
+			const QImage body = bodyFromSkin(entry.texture(), slimBody);
+			if (!body.isNull()) {
+				pixmap = QPixmap::fromImage(body).scaled(
+					bodyWanted, Qt::KeepAspectRatio, Qt::FastTransformation);
+			}
+		}
+		if (pixmap.isNull()) {
+			pixmap = transparentPixmap(bodyWanted);
+		}
+		*size = pixmap.size();
+		return pixmap;
+	}
+
+	if (withoutQuery.startsWith(kSkinTexturePrefix) ||
+		withoutQuery.startsWith(kSkinFilePrefix) ||
+		withoutQuery.startsWith(kSkinThumbPrefix) ||
+		withoutQuery.startsWith(kSkinThumbSlimPrefix)) {
+		const QImage image = skinTexture(withoutQuery);
+		const QPixmap pixmap = image.isNull()
+								   ? transparentPixmap(QSize(kDefaultFaceExtent,
+															 kDefaultFaceExtent))
+								   : QPixmap::fromImage(image);
+		*size = pixmap.size();
+		return pixmap;
+	}
 
 	const bool wantsBody = withoutQuery.startsWith(kBodyPrefix);
 	const QString key =

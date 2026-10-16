@@ -194,6 +194,9 @@ namespace Parsers
 			return false;
 		}
 
+		/* Reset for the same reason as the capes below: without an ACTIVE
+		 * skin in this response, the previous refresh's skin would stay. */
+		output.skin = Skin();
 		auto skinsArray = obj.value("skins").toArray();
 		for (auto skin : skinsArray) {
 			auto skinObj = skin.toObject();
@@ -220,6 +223,10 @@ namespace Parsers
 		}
 		auto capesArray = obj.value("capes").toArray();
 
+		/* `output` is the account's stored profile, parsed into again on every
+		 * refresh: without this the cape list grew by a full copy each time
+		 * (and was saved that way). */
+		output.capes.clear();
 		QString currentCape;
 		for (auto cape : capesArray) {
 			auto capeObj = cape.toObject();

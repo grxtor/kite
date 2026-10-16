@@ -124,6 +124,7 @@ qt_add_qml_module(MeshMC_qml_components
         AccountsPage.qml
         AccountRow.qml
         SkinCapeEditor.qml
+        SkinPreview.qml
         CapeTile.qml
         NewInstanceDialog.qml
         PromptDialog.qml

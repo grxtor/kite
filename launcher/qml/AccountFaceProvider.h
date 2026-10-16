@@ -39,6 +39,16 @@
  * "body/" prefix is stripped before lookup, exactly like the "?rev=N" cache-
  * buster below, so both forms find the same account.
  *
+ * TEXTURES. Three more prefixes hand out raw skins instead of renders, for
+ * the 3D skin preview and the skin library: "skin/<accountId>" is the
+ * account's own skin and "skinfile/<percent-encoded path>" a PNG from the
+ * skin library, both normalised to 64x64 (SkinEntry::normalisedTexture());
+ * "skinthumb/<percent-encoded path>" is a library PNG's flat sprite
+ * (SkinEntry::thumbnail()), "skinthumbslim/<path>" the same with slim arms.
+ * These come back at their own size, unscaled.
+ * "skinbody/<path>" and "skinbodyslim/<path>" are a library PNG's front
+ * view, like "body/", with the arm width the prefix names.
+ *
  * THREADING. Pixmap type, not Image or an async provider, for exactly the
  * reason InstanceIconProvider.h gives: QPixmap/QImage compositing is
  * GUI-thread-only, and Pixmap is the only one of the three
@@ -96,6 +106,13 @@ class AccountFaceProvider : public QQuickImageProvider
 	 * composited over it with ordinary SourceOver painting, which is a
 	 * no-op wherever the source alpha is 0. */
 	static QImage faceFromSkin(const QImage& skin);
+
+	/* The raw image behind a "skin/", "skinfile/" or "skinthumb[slim]/" id (see
+	 * TEXTURES above, query already stripped): a 64x64 texture or a
+	 * library PNG's sprite. Null for any other id, and for an account or
+	 * file without a usable skin. "skin/" needs LauncherContext; the file
+	 * kinds do not, which is what lets them be unit tested. */
+	static QImage skinTexture(const QString& id);
 
 	/* Composites a front-facing full body from a skin texture: head (with
 	 * hat), torso (with jacket), both arms (with sleeves) and both legs

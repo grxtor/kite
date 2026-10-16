@@ -300,6 +300,49 @@ class AccountsControllerTest : public QObject
 				 QStringLiteral("https://example.test/cape.png"));
 	}
 
+	// The PR #190 screenshot: every refresh used to append the profile's
+	// capes again, so stored profiles can hold one cape many times over.
+	void test_accountSkinInfo_repeatedCapes_listedOnce()
+	{
+		auto list = shared_qobject_ptr<AccountList>(new AccountList());
+		AccountsController controller(list);
+		auto msa = MinecraftAccount::createBlankMSA();
+		auto& profile = msa->accountData()->minecraftProfile;
+		profile.currentCape = "cape-2";
+		for (int refresh = 0; refresh < 3; ++refresh) {
+			for (const QString& id : { QStringLiteral("cape-1"), QStringLiteral("cape-2") }) {
+				Cape cape;
+				cape.id = id;
+				cape.alias = id;
+				cape.url = "https://example.test/" + id + ".png";
+				profile.capes.append(cape);
+			}
+		}
+		list->addAccount(msa);
+
+		const QVariantMap info = controller.accountSkinInfo(0);
+		const QVariantList capes = info.value("capes").toList();
+		QCOMPARE(capes.size(), 2);
+		QCOMPARE(capes.at(0).toMap().value("id").toString(), QStringLiteral("cape-1"));
+		QCOMPARE(capes.at(1).toMap().value("id").toString(), QStringLiteral("cape-2"));
+		QCOMPARE(info.value("currentCapeUrl").toString(),
+				 QStringLiteral("https://example.test/cape-2.png"));
+	}
+
+	void test_skinDemoPose_readsRouteStep()
+	{
+		auto list = shared_qobject_ptr<AccountList>(new AccountList());
+		AccountsController controller(list);
+
+		qputenv("MESHMC_QML_ROUTE", "page=accounts;accounts-demo=elytra;size=1240x780");
+		QCOMPARE(controller.skinDemoPose(), QStringLiteral("elytra"));
+		qputenv("MESHMC_QML_ROUTE", "page=accounts;accounts-demo");
+		QVERIFY(controller.skinDemoRequested());
+		QCOMPARE(controller.skinDemoPose(), QString());
+		qunsetenv("MESHMC_QML_ROUTE");
+		QCOMPARE(controller.skinDemoPose(), QString());
+	}
+
 	void test_validateSkinFile_rejectsWrongSizedImage()
 	{
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());

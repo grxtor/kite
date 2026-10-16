@@ -20,7 +20,10 @@
 #include "AccountsController.h"
 
 #include <QDesktopServices>
+#include <QDir>
 #include <QFile>
+#include <QFileInfo>
+#include <QSet>
 #include <QUrl>
 
 #include "core/LauncherContext.h"
@@ -29,6 +32,8 @@
 #include "minecraft/services/SkinDelete.h"
 #include "minecraft/services/SkinUpload.h"
 #include "minecraft/skins/SkinEntry.h"
+#include "models/SkinsController.h"
+#include "settings/SettingsObject.h"
 #include "tasks/SequentialTask.h"
 #include "tasks/Task.h"
 #include "tasks/TaskWatcher.h"
@@ -43,6 +48,37 @@ namespace
 	{
 		const QUrl url(fileUrlOrPath);
 		return url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
+	}
+
+	/* The launcher's skins folder (the SkinsDir setting), absolute.
+	 * Relative to the data folder, which is the working directory, like
+	 * every other folder setting; "skins" where there are no settings. */
+	QString skinsDirectory()
+	{
+		auto* context = LauncherContext::instance();
+		const QString setting =
+			context && context->settings()
+				? context->settings()->get(QStringLiteral("SkinsDir")).toString()
+				: QString();
+		return QDir(setting.isEmpty() ? QStringLiteral("skins") : setting)
+			.absolutePath();
+	}
+
+	/* The demo's capes: textures from "capes/" in the skins folder, where
+	 * the widget skin dialog kept its cape cache (qml-preview-tools puts
+	 * two there). A missing file leaves the cape without a picture, as a
+	 * real cape whose texture has not loaded. */
+	QVariantMap demoCape(const QString& id, const QString& alias)
+	{
+		const QString file =
+			QDir(skinsDirectory()).filePath(QStringLiteral("capes/%1.png").arg(id));
+		QVariantMap cape;
+		cape[QStringLiteral("id")] = id;
+		cape[QStringLiteral("alias")] = alias;
+		cape[QStringLiteral("url")] = QFileInfo::exists(file)
+										  ? QUrl::fromLocalFile(file).toString()
+										  : QString();
+		return cape;
 	}
 } // namespace
 
@@ -160,12 +196,30 @@ bool AccountsController::skinDemoRequested() const
 		.contains(QStringLiteral("accounts-demo"));
 }
 
+QString AccountsController::skinDemoPose() const
+{
+	const QStringList steps =
+		qEnvironmentVariable("MESHMC_QML_ROUTE").split(QLatin1Char(';'));
+	const QString key = QStringLiteral("accounts-demo=");
+	for (const QString& step : steps) {
+		if (step.trimmed().startsWith(key)) {
+			return step.trimmed().mid(key.length());
+		}
+	}
+	return QString();
+}
+
 QVariantMap AccountsController::accountSkinInfo(int row) const
 {
 	QVariantMap info;
 	info[QStringLiteral("valid")] = false;
 	info[QStringLiteral("slim")] = false;
+	/* Whether there is a skin to draw at all -- offline accounts, and any
+	 * account before its profile has been fetched, have none, and a
+	 * preview then shows the neutral figure instead. */
+	info[QStringLiteral("hasSkin")] = false;
 	info[QStringLiteral("currentCapeId")] = QString();
+	info[QStringLiteral("currentCapeUrl")] = QString();
 	info[QStringLiteral("capes")] = QVariantList();
 
 	/* Row -1 is the qml-preview-tools demo sentinel (see
@@ -177,16 +231,13 @@ QVariantMap AccountsController::accountSkinInfo(int row) const
 	 * still reads as invalid the rest of the time. */
 	if (row == -1 && skinDemoRequested()) {
 		info[QStringLiteral("valid")] = true;
-		info[QStringLiteral("currentCapeId")] = QStringLiteral("demo-ember");
-		QVariantMap ember;
-		ember[QStringLiteral("id")] = QStringLiteral("demo-ember");
-		ember[QStringLiteral("alias")] = QStringLiteral("Ember");
-		ember[QStringLiteral("url")] = QString();
-		QVariantMap vault;
-		vault[QStringLiteral("id")] = QStringLiteral("demo-vault");
-		vault[QStringLiteral("alias")] = QStringLiteral("Vault");
-		vault[QStringLiteral("url")] = QString();
-		info[QStringLiteral("capes")] = QVariantList{ ember, vault };
+		const QVariantMap ember =
+			demoCape(QStringLiteral("demo-ember"), QStringLiteral("Ember"));
+		info[QStringLiteral("currentCapeId")] = ember.value(QStringLiteral("id"));
+		info[QStringLiteral("currentCapeUrl")] = ember.value(QStringLiteral("url"));
+		info[QStringLiteral("capes")] = QVariantList{
+			ember, demoCape(QStringLiteral("demo-vault"), QStringLiteral("Vault"))
+		};
 		return info;
 	}
 
@@ -200,17 +251,29 @@ QVariantMap AccountsController::accountSkinInfo(int row) const
 
 	const MinecraftProfile& profile = account->accountData()->minecraftProfile;
 	info[QStringLiteral("valid")] = true;
+	info[QStringLiteral("hasSkin")] = !profile.skin.data.isEmpty();
 	info[QStringLiteral("slim")] =
 		profile.skin.variant == QLatin1String("SLIM");
 	info[QStringLiteral("currentCapeId")] = profile.currentCape;
 
+	/* Once per id: account files saved before Parsers::
+	 * parseMinecraftProfile() cleared its list kept every refresh's capes,
+	 * so one cape could be stored many times over. */
 	QVariantList capes;
+	QSet<QString> seen;
 	for (const Cape& cape : profile.capes) {
+		if (seen.contains(cape.id)) {
+			continue;
+		}
+		seen.insert(cape.id);
 		QVariantMap c;
 		c[QStringLiteral("id")] = cape.id;
 		c[QStringLiteral("alias")] = cape.alias;
 		c[QStringLiteral("url")] = cape.url;
 		capes.append(c);
+		if (cape.id == profile.currentCape) {
+			info[QStringLiteral("currentCapeUrl")] = cape.url;
+		}
 	}
 	info[QStringLiteral("capes")] = capes;
 	return info;
@@ -297,6 +360,30 @@ QObject* AccountsController::changeCape(int row, const QString& capeId)
 	watcher->setTitle(tr("Change cape"));
 	job->start();
 	return watcher;
+}
+
+QObject* AccountsController::skins(int row)
+{
+	/* The qml-preview-tools demo row (see skinDemoRequested()): the
+	 * library on its own, with no account to say which skin is worn. */
+	const bool demo = row == -1 && skinDemoRequested();
+	if (!demo && (row < 0 || row >= m_accounts->count())) {
+		return nullptr;
+	}
+	auto account = demo ? MinecraftAccountPtr() : m_accounts->at(row);
+	if (!demo && !account) {
+		return nullptr;
+	}
+	const QString accountId =
+		account ? account->internalId() : QStringLiteral("demo");
+	if (!m_skins || m_skinsAccountId != accountId) {
+		if (m_skins) {
+			m_skins->deleteLater();
+		}
+		m_skins = new SkinsController(account, skinsDirectory(), this);
+		m_skinsAccountId = accountId;
+	}
+	return m_skins;
 }
 
 MicrosoftLoginController::MicrosoftLoginController(

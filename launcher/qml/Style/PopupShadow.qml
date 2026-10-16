@@ -8,9 +8,10 @@ import MeshMC.Theme
 // A soft drop shadow for a rounded popup/menu/dialog surface, built from two
 // oversized, low-opacity rounded rects rather than a blur -- this style's Qt
 // floor (6.4) has neither MultiEffect nor ShaderEffect to draw a real one.
-// Place as the first child of the surface Rectangle with `radius` matching
-// it; declaring it first (and leaving z at the default) is enough to paint
-// it behind the surface and its border, since later siblings draw on top.
+// Place as a child of the surface Rectangle with `radius` matching it.
+// Children paint over their parent, so z is -1: without it the two scrim
+// rects darkened the surface itself (a dark dialog drew #252525 instead of
+// surfaceOverlay), and a ScrollFade fading into surfaceOverlay showed a band.
 Item {
     id: shadow
 
@@ -18,6 +19,7 @@ Item {
     // rounding never mismatches the card's own.
     property real radius: 0
 
+    z: -1
     anchors.fill: parent
 
     Rectangle {

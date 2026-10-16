@@ -102,6 +102,12 @@ class SkinEntry
 		return m_textureUrl;
 	}
 
+	/* @p image in the one shape every texture here has: 64x64, ARGB32,
+	 * base layer opaque, a legacy 64x32 skin widened (its left limbs
+	 * mirrored from the right). Anything that is not a skin comes back
+	 * untouched. For skins that are not files, such as an account's. */
+	static QImage normalisedTexture(const QImage& image);
+
 	/* Whether this is a skin at all: 64 pixels wide and either 32 (legacy)
 	 * or 64 pixels tall. Everything else -- HD skins, arbitrary images, a
 	 * PNG that failed to decode -- is rejected. */

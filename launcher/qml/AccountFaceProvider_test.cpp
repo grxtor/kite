@@ -18,7 +18,11 @@
  */
 
 #include <QColor>
+#include <QDir>
+#include <QFileInfo>
 #include <QImage>
+#include <QTemporaryDir>
+#include <QUrl>
 #include <QtTest>
 
 #include "AccountFaceProvider.h"
@@ -112,6 +116,8 @@ QImage makeBodySkin(int height)
  * a real Application), which is neither cheap nor hermetic here. The helper
  * is where the interesting logic (and the interesting bug -- a hat pixel
  * clobbering the face where it should be transparent) actually lives.
+ * skinTexture() is tested for the skin library's file ids only, which need
+ * no account.
  */
 class AccountFaceProviderTest : public QObject
 {
@@ -284,6 +290,59 @@ class AccountFaceProviderTest : public QObject
 	void nullSkinReturnsNullBody()
 	{
 		QVERIFY(AccountFaceProvider::bodyFromSkin(QImage(), false).isNull());
+	}
+
+	// The skin library's ids carry the whole path percent-encoded, so a
+	// folder with spaces or a '#' must come back out intact; a legacy
+	// 64x32 skin comes out as a 64x64 texture.
+	void skinFileTextureSurvivesItsUrl()
+	{
+		QTemporaryDir dir;
+		QVERIFY(dir.isValid());
+		const QString path = dir.filePath(QStringLiteral("my skins #2/Old one.png"));
+		QVERIFY(QDir().mkpath(QFileInfo(path).absolutePath()));
+		QImage legacy(64, 32, QImage::Format_ARGB32);
+		legacy.fill(QColor(30, 120, 60));
+		QVERIFY(legacy.save(path, "PNG"));
+		const QString encoded = QString::fromLatin1(QUrl::toPercentEncoding(path));
+
+		const QImage texture =
+			AccountFaceProvider::skinTexture(QStringLiteral("skinfile/") + encoded);
+		QCOMPARE(texture.size(), QSize(64, 64));
+		QVERIFY(!AccountFaceProvider::skinTexture(QStringLiteral("skinthumb/") + encoded).isNull());
+	}
+
+	// The sprite's back right arm starts a pixel further in with slim arms
+	// (SkinEntry's renderThumbnail()), so its first column is empty.
+	void slimThumbnailHasSlimArms()
+	{
+		QTemporaryDir dir;
+		const QString path = dir.filePath(QStringLiteral("skin.png"));
+		QImage skin(64, 64, QImage::Format_ARGB32);
+		skin.fill(QColor(200, 150, 100));
+		QVERIFY(skin.save(path, "PNG"));
+		const QString encoded = QString::fromLatin1(QUrl::toPercentEncoding(path));
+		const QPoint backRightArm(20, 10);
+
+		const QImage classic =
+			AccountFaceProvider::skinTexture(QStringLiteral("skinthumb/") + encoded);
+		const QImage slim =
+			AccountFaceProvider::skinTexture(QStringLiteral("skinthumbslim/") + encoded);
+		QCOMPARE(classic.pixelColor(backRightArm).alpha(), 255);
+		QCOMPARE(slim.pixelColor(backRightArm).alpha(), 0);
+	}
+
+	void notASkinFileHasNoTexture()
+	{
+		QTemporaryDir dir;
+		const QString path = dir.filePath(QStringLiteral("big.png"));
+		QImage big(128, 128, QImage::Format_ARGB32);
+		big.fill(Qt::red);
+		QVERIFY(big.save(path, "PNG"));
+		const QString encoded = QString::fromLatin1(QUrl::toPercentEncoding(path));
+
+		QVERIFY(AccountFaceProvider::skinTexture(QStringLiteral("skinfile/") + encoded).isNull());
+		QVERIFY(AccountFaceProvider::skinTexture(QStringLiteral("face/") + encoded).isNull());
 	}
 };
 
