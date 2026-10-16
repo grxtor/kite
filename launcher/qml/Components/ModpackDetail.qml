@@ -12,7 +12,9 @@ import MeshMC.Theme
  * and the install itself -- progress in place, then a way to the new
  * instance. `pack` is the row that was opened (title, author, logo,
  * galleryUrl, accentColor...); `detail` is the model's lazily loaded body,
- * gallery and version list.
+ * gallery and version list. Provider-neutral: Modrinth's and CurseForge's
+ * models give the same roles and the same `detail` shape; only the body's
+ * format differs (`bodyFormat`).
  *
  * Install is the page's one primary button and sits in the header, where a
  * launcher's project page puts it; the Install card below only holds what
@@ -24,9 +26,11 @@ Item {
     property var pack: ({})
     property var detail: null
     property var model: null
-    // (projectId, versionId, name, group) -> TaskWatcher. The shell's, so
-    // the install is owned by C++ and survives leaving this page.
+    // (projectId, versionId, name, group) -> TaskWatcher, owned by C++ so
+    // the install survives leaving this page.
     property var installer: null
+    // "markdown" (Modrinth) or "html" (CurseForge): how `detail.body` reads.
+    property string bodyFormat: "markdown"
     // TaskWatcher of the install started from here, if any.
     property var watcher: null
     // DiscoverPage's page frame, so the detail lines up with its title.
@@ -44,12 +48,13 @@ Item {
     readonly property bool installed: !!watcher && watcher.succeeded
 
     // The best backdrop available right now: the detail's own gallery once
-    // it has loaded (its featured image first, see ModrinthModpackModel),
+    // it has loaded (its featured image first, see the models' loadDetail()),
     // falling back to the card's cover so the header is never bare while
     // that request is still in flight.
     readonly property string backdropUrl: root.gallery.length > 0 ? root.gallery[0].url
                                          : (root.pack.galleryUrl || "")
-    // Modrinth's ISO "date_modified" as Format.lastPlayed() words it, or ""
+    // The provider's ISO last-modified date as Format.lastPlayed() words it,
+    // or ""
     // when there is none.
     readonly property string updatedText: {
         var ms = Date.parse(root.pack.updated || "")
@@ -251,6 +256,8 @@ Item {
                             spacing: Theme.space.sm
                             Tag {
                                 onMedia: true
+                                // Not every provider counts them (ATLauncher).
+                                visible: (root.pack.downloads || 0) > 0
                                 iconName: "download"
                                 text: qsTr("%1 downloads").arg(Format.compactNumber(root.pack.downloads))
                             }
@@ -336,7 +343,7 @@ Item {
                         enabled: root.versions.length > 0 && !root.installing
                         model: root.versions.map(v => root.versionLabel(v))
                         Accessible.name: qsTr("Version")
-                        // Newest first from Modrinth, alphas included: start on
+                        // Newest first from either provider, alphas included: start on
                         // the version the author features, if there is one.
                         onModelChanged: {
                             var featured = root.versions.findIndex(v => v.featured)
@@ -466,7 +473,7 @@ Item {
                 Text {
                     width: parent.width
                     text: root.detail ? (root.detail.body || "") : ""
-                    textFormat: Text.MarkdownText
+                    textFormat: root.bodyFormat === "html" ? Text.RichText : Text.MarkdownText
                     wrapMode: Text.Wrap
                     color: Theme.palette.textSecondary
                     linkColor: Theme.palette.accent

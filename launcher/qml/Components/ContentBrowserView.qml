@@ -28,9 +28,6 @@ Item {
 
     // ContentBrowser of the open instance.
     property var browser: null
-    // (row, versionId) -> TaskWatcher, C++-owned. No longer used: installs
-    // go through browser.review() so they can be reviewed first.
-    property var installer: null
     // InstanceDetails, for its loaderInstaller (the "Install a loader"
     // action). Optional: without it that notice just has no button.
     property var details: null

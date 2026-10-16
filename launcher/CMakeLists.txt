@@ -70,6 +70,8 @@ set(CORE_SOURCES
     models/JavaDownloadController.cpp
     models/ContentUpdateController.h
     models/ContentUpdateController.cpp
+    models/AtlOptionalModsModel.h
+    models/AtlOptionalModsModel.cpp
     models/InstanceExportController.h
     models/InstanceExportController.cpp
     models/InstanceShortcutController.h
@@ -742,6 +744,8 @@ set(MODPACKSCH_SOURCES
     modplatform/modpacksch/FTBPackInstallTask.cpp
     modplatform/modpacksch/FTBPackManifest.h
     modplatform/modpacksch/FTBPackManifest.cpp
+    modplatform/modpacksch/FtbModpackModel.h
+    modplatform/modpacksch/FtbModpackModel.cpp
 )
 
 set(TECHNIC_SOURCES
@@ -751,6 +755,8 @@ set(TECHNIC_SOURCES
     modplatform/technic/SolderPackInstallTask.cpp
     modplatform/technic/TechnicPackProcessor.h
     modplatform/technic/TechnicPackProcessor.cpp
+    modplatform/technic/TechnicModpackModel.h
+    modplatform/technic/TechnicModpackModel.cpp
 )
 
 set(ATLAUNCHER_SOURCES
@@ -760,6 +766,8 @@ set(ATLAUNCHER_SOURCES
     modplatform/atlauncher/ATLPackInstallTask.h
     modplatform/atlauncher/ATLPackManifest.cpp
     modplatform/atlauncher/ATLPackManifest.h
+    modplatform/atlauncher/AtlModpackModel.h
+    modplatform/atlauncher/AtlModpackModel.cpp
 )
 
 set(MODRINTH_SOURCES
@@ -775,6 +783,8 @@ set(MODRINTH_SOURCES
     modplatform/modrinth/ModrinthPackExportTask.cpp
     modplatform/modrinth/ModrinthModpackModel.h
     modplatform/modrinth/ModrinthModpackModel.cpp
+    modplatform/flame/FlameModpackModel.h
+    modplatform/flame/FlameModpackModel.cpp
 )
 
 set(CONTENT_DOWNLOAD_SOURCES
@@ -1484,6 +1494,29 @@ add_unit_test(TaskWatcher
 # ModrinthModpackModel::parseSearchResults().
 add_unit_test(ModrinthModpackModel
     SOURCES modplatform/modrinth/ModrinthModpackModel_test.cpp
+    LIBS MeshMC_core
+    )
+
+# WP8: the same static, network-free halves for CurseForge - canned search,
+# file list and description replies, and the search URL's filters.
+add_unit_test(FlameModpackModel
+    SOURCES modplatform/flame/FlameModpackModel_test.cpp
+    LIBS MeshMC_core
+    )
+add_unit_test(FtbModpackModel
+    SOURCES modplatform/modpacksch/FtbModpackModel_test.cpp
+    LIBS MeshMC_core
+    )
+add_unit_test(AtlModpackModel
+    SOURCES modplatform/atlauncher/AtlModpackModel_test.cpp
+    LIBS MeshMC_core
+    )
+add_unit_test(AtlOptionalModsModel
+    SOURCES models/AtlOptionalModsModel_test.cpp
+    LIBS MeshMC_core
+    )
+add_unit_test(TechnicModpackModel
+    SOURCES modplatform/technic/TechnicModpackModel_test.cpp
     LIBS MeshMC_core
     )
 

@@ -36,13 +36,13 @@ Item {
     property string description: ""
     property string logoUrl: ""
     property var downloads: 0
-    // Modrinth's "date_modified", ISO 8601 -- may be empty.
+    // The provider's last-modified date, ISO 8601 -- may be empty.
     property string updated: ""
     property var categories: []
     // Cover image URL; empty falls back to a rendered scene.
     property string galleryUrl: ""
-    // A colour, or undefined/null when Modrinth has none for this project
-    // -- see ModrinthModpackModel's accentColor role.
+    // A colour, or undefined/null when the provider has none for this
+    // project (CurseForge never does) -- see the models' accentColor role.
     property var accentColor: undefined
     property bool skeleton: false
 
@@ -74,7 +74,7 @@ Item {
     readonly property real pitchLine: Theme.type.body.lineHeightPx
     readonly property int tagRowHeight: Theme.control.heightSm - Theme.space.xs
 
-    // Modrinth's ISO "date_modified" as Format.lastPlayed() words it
+    // The provider's ISO last-modified date as Format.lastPlayed() words it
     // ("3 h ago", "22 days ago", "Sep 15"), or "" when there is none.
     readonly property string updatedText: {
         var ms = Date.parse(root.updated || "")
@@ -180,7 +180,7 @@ Item {
             Skeleton { anchors.fill: parent; radius: 0; visible: root.skeleton }
 
             // Under whichever picture is on its way: a gallery shot that has
-            // not arrived yet (Modrinth's images routinely take several
+            // not arrived yet (providers' images routinely take several
             // seconds) shows this flat neutral fill, not the fallback scene
             // below -- that is for a pack that has no gallery shot at all,
             // or whose one failed outright.
@@ -450,7 +450,8 @@ Item {
                 Row {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: !root.skeleton
+                    // Not every provider counts downloads (ATLauncher).
+                    visible: !root.skeleton && (root.downloads || 0) > 0
                     spacing: Theme.space.xs
                     MeshIcon {
                         anchors.verticalCenter: parent.verticalCenter

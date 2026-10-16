@@ -9,19 +9,53 @@ import MeshMC.Theme
 
 /*
  * Browse modpacks and install them as new instances, without leaving the
- * main window. Modrinth for now -- no account or key needed; a pack from
- * another platform (CurseForge, FTB, ATLauncher, Technic) can be imported
- * from its exported .zip via the New instance dialog's Import mode, one
- * click away; browsing those catalogues here is not built yet.
+ * main window, from Modrinth, CurseForge, FTB, ATLauncher or Technic -- a
+ * provider switch lists whichever of them the shell hands this page a
+ * model for. A pack exported from anywhere else can still be imported
+ * from its .zip via the New instance dialog's Import mode.
  *
- * `model` is the shell's ModrinthModpackModel: query/loader/sort in,
- * search()/fetchMore() to run, rows out, plus a lazily loaded `detail`.
+ * `model` is the shell's ModrinthModpackModel; the others are
+ * FlameModpackModel, FtbModpackModel, AtlModpackModel and
+ * TechnicModpackModel. All share the same properties, invokables and row
+ * roles, so everything below works on `active`, whichever the switch
+ * picked -- query/loader/sort in, search()/fetchMore() to run, rows out,
+ * plus a lazily loaded `detail`. Each provider keeps its own results.
+ * Filters a provider cannot answer (a loader on ATLauncher or Technic, a
+ * sort on Technic) are left out rather than shown doing nothing.
  */
 Item {
     id: root
 
     property var model: null
     property var installer: null
+    // The other providers' models; null ones are not offered.
+    property var curseForgeModel: null
+    property var ftbModel: null
+    property var atlModel: null
+    property var technicModel: null
+    property string provider: "modrinth"
+
+    // Every provider the shell has a model for, in the switch's order.
+    readonly property var providers: [
+        { value: "modrinth", label: "Modrinth", model: root.model },
+        { value: "curseforge", label: "CurseForge", model: root.curseForgeModel },
+        { value: "ftb", label: "FTB", model: root.ftbModel },
+        { value: "atlauncher", label: "ATLauncher", model: root.atlModel },
+        { value: "technic", label: "Technic", model: root.technicModel }
+    ].filter((p) => !!p.model)
+    readonly property var current: root.providers.find((p) => p.value === root.provider) || root.providers[0] || null
+    // The model the page is showing.
+    readonly property var active: root.current ? root.current.model : null
+    readonly property string providerName: root.current ? root.current.label : "Modrinth"
+    readonly property bool keyMissing: !!root.active && root.active.keyMissing === true
+    // ATLauncher and Technic say nothing about loaders; Technic has no sorts.
+    readonly property bool loaderFilterAvailable: root.provider !== "atlauncher" && root.provider !== "technic"
+    // Modrinth installs through the shell; the other models install
+    // themselves (their TaskWatchers are parented to the model, so C++
+    // owns them).
+    readonly property var activeInstaller: root.provider === "modrinth"
+        ? root.installer
+        : function (projectId, versionId, name, group) { return root.active.install(projectId, versionId, name, group) }
     signal showInstanceRequested(string id)
     signal otherPlatformsRequested()
 
@@ -51,19 +85,41 @@ Item {
 
     function open(pack) {
         root.openedPack = pack
-        if (root.model)
-            root.model.loadDetail(pack.projectId)
+        if (root.active)
+            root.active.loadDetail(pack.projectId)
     }
 
-    // Set once a search has been asked for, so "nothing found" is never
-    // shown for a search that has not happened.
-    property bool searched: false
+    // The providers a search has been asked of, so "nothing found" is
+    // never shown for a search that has not happened. Replaced, never
+    // changed in place, so bindings see it.
+    property var searchedProviders: []
+    readonly property bool searched: root.searchedProviders.indexOf(root.provider) >= 0
 
     function runSearch() {
-        if (!root.model)
+        if (!root.active)
             return
-        root.searched = true
-        root.model.search()
+        if (!root.searched)
+            root.searchedProviders = root.searchedProviders.concat([root.provider])
+        root.active.search()
+    }
+
+    // Switches provider, carrying the search words and loader across, and
+    // searches only if the other provider's results do not already answer
+    // them.
+    function setProvider(value) {
+        if (value === root.provider)
+            return
+        var query = searchField.text
+        var loader = root.active ? root.active.loader : ""
+        root.openedPack = null
+        root.provider = value
+        if (!root.active)
+            return
+        var stale = root.active.query !== query || root.active.loader !== loader
+        root.active.query = query
+        root.active.loader = loader
+        if (!root.searched || stale)
+            root.runSearch()
     }
 
     // First search when the page is first shown -- not at startup, so
@@ -90,9 +146,9 @@ Item {
         id: debounce
         interval: 350
         onTriggered: {
-            if (!root.model)
+            if (!root.active)
                 return
-            root.model.query = searchField.text
+            root.active.query = searchField.text
             root.runSearch()
         }
     }
@@ -128,7 +184,7 @@ Item {
                     y: 0
                     width: toolbar.stacked ? importButton.x - toolbar.spacing
                                            : filters.x - toolbar.spacing
-                    placeholderText: qsTr("Search modpacks on Modrinth")
+                    placeholderText: qsTr("Search modpacks on %1").arg(root.providerName)
                     onTextEdited: debounce.restart()
                     onTextChanged: if (text.length === 0) debounce.restart()
                 }
@@ -139,14 +195,24 @@ Item {
                     y: toolbar.stacked ? Theme.control.height + toolbar.rowSpacing : 0
                     spacing: toolbar.spacing
 
+                    // Where to browse; only once there is somewhere else.
+                    SegmentedControl {
+                        id: providerControl
+                        visible: root.providers.length > 1
+                        options: root.providers.map((p) => ({ value: p.value, label: p.label }))
+                        current: root.current ? root.current.value : "modrinth"
+                        onActivated: (value) => root.setProvider(value)
+                    }
+
                     SegmentedControl {
                         id: loaderControl
+                        visible: root.loaderFilterAvailable
                         options: root.loaders
-                        current: root.model ? root.model.loader : ""
+                        current: root.active ? root.active.loader : ""
                         onActivated: (value) => {
-                            if (!root.model)
+                            if (!root.active)
                                 return
-                            root.model.loader = value
+                            root.active.loader = value
                             root.runSearch()
                         }
                     }
@@ -155,16 +221,28 @@ Item {
                         id: sortBox
                         readonly property int preferredWidth: 180
                         width: preferredWidth
-                        visible: count > 0
-                        model: root.model && root.model.sortOptions ? root.model.sortOptions : []
+                        // One sort is no choice (Technic).
+                        visible: count > 1
+                        model: root.active && root.active.sortOptions ? root.active.sortOptions : []
                         textRole: "label"
                         valueRole: "id"
                         Accessible.name: qsTr("Sort modpacks by")
-                        Component.onCompleted: if (root.model) currentIndex = Math.max(0, indexOfValue(root.model.sort))
+                        // Each provider has its own sorts and its own pick;
+                        // re-read once the box has the new provider's entries
+                        // (indexOfValue() needs them in place).
+                        function syncSort() {
+                            currentIndex = root.active ? Math.max(0, indexOfValue(root.active.sort)) : 0
+                        }
+                        onCountChanged: syncSort()
+                        Component.onCompleted: syncSort()
+                        Connections {
+                            target: root
+                            function onActiveChanged() { Qt.callLater(sortBox.syncSort) }
+                        }
                         onActivated: {
-                            if (!root.model)
+                            if (!root.active)
                                 return
-                            root.model.sort = currentValue
+                            root.active.sort = currentValue
                             root.runSearch()
                         }
                     }
@@ -198,8 +276,8 @@ Item {
 
                 // QML views never ask for more on their own; ask as the
                 // end comes into view.
-                onAtYEndChanged: if (atYEnd && root.model && root.model.canFetchMore && !root.model.searching)
-                                     root.model.fetchMore()
+                onAtYEndChanged: if (atYEnd && root.active && root.active.canFetchMore && !root.active.searching)
+                                     root.active.fetchMore()
 
                 readonly property int gutter: Theme.space.lg
                 readonly property int minCardWidth: 260
@@ -242,7 +320,7 @@ Item {
 
                         Repeater {
                             id: resultsRepeater
-                            model: root.model
+                            model: root.active
                             delegate: ModpackCard {
                                 width: flick.cardWidthAt(index)
                                 // From the common width (see ModpackCard's
@@ -277,8 +355,8 @@ Item {
                         // row while a further page is being fetched --
                         // never a bare spinner.
                         Repeater {
-                            model: root.model && root.model.searching
-                                   ? (root.model.count === 0 ? flick.columns * 2 : flick.columns)
+                            model: root.active && root.active.searching
+                                   ? (root.active.count === 0 ? flick.columns * 2 : flick.columns)
                                    : 0
                             delegate: ModpackCard {
                                 required property int index
@@ -297,9 +375,11 @@ Item {
         // Detail
         ModpackDetail {
             pack: root.openedPack || ({})
-            detail: root.model ? root.model.detail : null
-            model: root.model
-            installer: root.installer
+            detail: root.active ? root.active.detail : null
+            model: root.active
+            installer: root.activeInstaller
+            // CurseForge describes a pack in HTML, Modrinth in Markdown.
+            bodyFormat: root.active && root.active.bodyFormat ? root.active.bodyFormat : "markdown"
             contentX: root.contentX
             contentWidth: root.contentWidth
             onBackRequested: root.openedPack = null
@@ -319,12 +399,13 @@ Item {
 
     EmptyState {
         anchors.centerIn: parent
-        visible: root.searched && !root.openedPack && !!root.model && !root.model.searching && root.model.count === 0
-        title: root.model && root.model.error.length > 0 ? qsTr("Couldn't reach Modrinth")
-                                                         : qsTr("No modpacks found")
-        body: root.model && root.model.error.length > 0 ? root.model.error
-                                                        : qsTr("Try fewer words, or another loader.")
-        actionText: root.model && root.model.error.length > 0 ? qsTr("Try again") : ""
+        visible: root.searched && !root.keyMissing && !root.openedPack && !!root.active
+                 && !root.active.searching && root.active.count === 0
+        title: root.active && root.active.error.length > 0 ? qsTr("Couldn't reach %1").arg(root.providerName)
+                                                           : qsTr("No modpacks found")
+        body: root.active && root.active.error.length > 0 ? root.active.error
+                                                          : qsTr("Try fewer words, or another loader.")
+        actionText: root.active && root.active.error.length > 0 ? qsTr("Try again") : ""
         actionIcon: "refresh"
         onActionTriggered: root.runSearch()
 
@@ -332,9 +413,24 @@ Item {
         // glyph for "nothing matched", the warning glyph for a failed
         // request -- that is a fault, not an empty result.
         MeshIcon {
-            iconName: root.model && root.model.error.length > 0 ? "alert-triangle" : "search"
+            iconName: root.active && root.active.error.length > 0 ? "alert-triangle" : "search"
             size: 40
             color: Theme.palette.textTertiary
         }
+    }
+
+    // A build without a CurseForge API key cannot ask CurseForge anything;
+    // say so rather than show a failed search. (Only CurseForge needs a
+    // key.)
+    EmptyState {
+        anchors.centerIn: parent
+        width: parent.width
+        visible: root.keyMissing && !root.openedPack
+        title: qsTr("CurseForge isn't available")
+        body: qsTr("This build has no CurseForge API key, so its modpacks can't be browsed here. Modrinth works as usual.")
+        actionText: qsTr("Browse Modrinth")
+        actionIcon: "compass"
+        onActionTriggered: root.setProvider("modrinth")
+        MeshIcon { iconName: "alert-triangle"; size: 40; color: Theme.palette.textTertiary }
     }
 }
