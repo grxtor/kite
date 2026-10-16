@@ -191,12 +191,27 @@ class Application : public QApplication, public LauncherContext
 
 	UiHost* uiHost() const override;
 
-	/* Whether the QML shell is up and ready to answer -- the same check
-	 * uiHost() makes before it will route a UiHost call to QmlUiHost (see
-	 * that method's comment). Callers that need to choose between a
-	 * widget window and a QML-side equivalent themselves (LaunchController's
-	 * account picker, for one) use this instead of duplicating the check. */
+	/* Whether the QML shell is up and its presenter ready to answer -- the
+	 * same check uiHost() makes before it will route a UiHost call to
+	 * QmlUiHost (see that method's comment). To choose between a widget
+	 * window and its QML equivalent, ask qmlShellChosen() instead: this is
+	 * still false for a moment after the QML shell exists. */
 	bool usingQmlShell() const;
+
+	/* Whether the QML shell is the user interface: it exists (see
+	 * showMainWindow()), whether or not its presenter can answer yet.
+	 * Every "widget dialog or QML equivalent?" choice (LaunchController,
+	 * PluginManager, showInstanceLog()) asks this, so the widget branch is
+	 * never taken under the QML shell. A call that needs the presenter
+	 * before it is ready waits through runWhenQmlPresenterReady(). */
+	bool qmlShellChosen() const;
+
+	/* Runs @p call now, unless the QML shell is chosen but its presenter
+	 * is not ready yet (qmlShellChosen() && !usingQmlShell()): then it is
+	 * queued with the startup update reports (m_pendingQmlPresenterCalls)
+	 * and run once the presenter is up -- or through the widget host if
+	 * the QML shell fails to load after all. */
+	void runWhenQmlPresenterReady(std::function<void()> call);
 
 	/// this is the root of the 'installation'. Used for automatic updates
 	const QString& root()
@@ -217,7 +232,7 @@ class Application : public QApplication, public LauncherContext
 
 	/* What a launch reaches for instead of showInstanceWindow() when it
 	 * wants to show an instance's console: routes to the QML shell's own
-	 * instance-log signal while it is the active UI (usingQmlShell()), or
+	 * instance-log signal while it is the active UI (qmlShellChosen()), or
 	 * to the widget console window (showInstanceWindow(), selecting its
 	 * Log page) otherwise -- so a launch never raises a widget window
 	 * under the QML shell. */
@@ -368,16 +383,27 @@ class Application : public QApplication, public LauncherContext
 	 * MainWindow. See useQmlShell(). */
 	std::unique_ptr<QmlShell> m_qmlShell;
 
-	/* Set by reportUpdateMarkers() when init() (before useQmlShell() is
-	 * even consulted) finds an update lock/fail/success marker and the QML
+	/* Work that has to wait for the QML presenter. Set by
+	 * reportUpdateMarkers() when init() (before useQmlShell() is even
+	 * consulted) finds an update lock/fail/success marker and the QML
 	 * shell is about to be used: there is no QML window yet to answer
 	 * through uiHost() at that point (see QmlUiHost's PRESENTER READINESS),
 	 * so showing the classic QMessageBox there instead would be exactly
-	 * the widget-under-QML leak the whole audit is about. Queued here and
-	 * run once showMainWindow()'s QmlUiHost reports presenterReady(); run
-	 * through the widget host instead if the QML shell then fails to load
-	 * (see showMainWindow()). Empty when there is nothing to report. */
-	QList<std::function<void()>> m_pendingQmlUpdateReports;
+	 * the widget-under-QML leak the whole audit is about. Also filled by
+	 * runWhenQmlPresenterReady() (a launch, a plugin message) in the
+	 * moment between the QML shell existing and its presenter being up.
+	 * Run by runPendingQmlPresenterCalls() once showMainWindow()'s
+	 * QmlUiHost reports presenterReady(); run through the widget host
+	 * instead if the QML shell then fails to load (see showMainWindow()).
+	 * Empty when there is nothing waiting. */
+	QList<std::function<void()>> m_pendingQmlPresenterCalls;
+	void runPendingQmlPresenterCalls();
+
+	/* An import from outside the window (--import, or the IPC "import"
+	 * message): the QML shell's New instance dialog when it is the UI,
+	 * MainWindow::droppedURLs() otherwise. Shows a window first when
+	 * there is none. */
+	void importFromUrl(const QUrl& url);
 
   public:
 	QString m_instanceIdToLaunch;

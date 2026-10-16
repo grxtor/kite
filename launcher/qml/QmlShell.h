@@ -258,28 +258,24 @@ class QmlShell : public QObject
 	 * connects these to the real actions. */
 	Q_INVOKABLE void launchInstance(const QString& id);
 	Q_INVOKABLE void killInstance(const QString& id);
-	Q_INVOKABLE void editInstance(const QString& id);
 	Q_INVOKABLE void openInstanceFolder(const QString& id);
 	/* Launches instance @p id straight into server @p address (host[:port]),
 	 * the QML-facing replacement for ServersPage's "Join" action
 	 * (ServersPage::on_actionJoin_triggered()). */
 	Q_INVOKABLE void joinServer(const QString& id, const QString& address);
-	/* No longer called from QML: the New instance dialog and Discover's
-	 * "other platforms" button both used to route here, into the widget
-	 * NewInstanceDialog with a null parent (see Application.cpp's
-	 * createInstanceRequested connection) - that crashed under the QML
-	 * shell. Both now go through NewInstanceController::create()/
-	 * importFrom() instead (see NewInstanceDialog.qml). Left in place
-	 * only because Application.cpp still connects createInstanceRequested
-	 * below; safe to delete both once that connection is removed too. */
-	Q_INVOKABLE void createInstance();
-	/// @p page: a classic settings page id ("accounts", "proxy-settings",
-	/// ...) to open on, or empty for the first one.
-	Q_INVOKABLE void openSettings(const QString& page = QString());
 	/// Opens a folder in the file manager; relative paths are resolved
 	/// against the data folder, which is the working directory.
 	Q_INVOKABLE void openPath(const QString& path);
-	Q_INVOKABLE void manageAccounts();
+
+	/* Called by Application for an import that comes from outside the
+	 * window -- `meshmc --import <zip|url>`, or a second launcher process
+	 * passing its file on (the IPC "import" message) -- where the widget
+	 * UI used MainWindow::droppedURLs(). Relays @p source (a local path or
+	 * a URL) into QML as importRequested() below, which opens the New
+	 * instance dialog in import mode with it filled in. Before show() has
+	 * loaded the root window nothing in QML could answer that signal yet,
+	 * so the source is kept and delivered as soon as show() succeeds. */
+	void requestImport(const QString& source);
 
 	/* Called by Application (see Application::showInstanceLog()) instead
 	 * of raising a widget InstanceWindow when the QML shell is the active
@@ -381,12 +377,12 @@ class QmlShell : public QObject
 
 	void launchRequested(const QString& id);
 	void killRequested(const QString& id);
-	void editRequested(const QString& id);
 	void folderRequested(const QString& id);
 	void joinServerRequested(const QString& id, const QString& address);
-	void createInstanceRequested();
-	void settingsRequested(const QString& page);
-	void accountsRequested();
+
+	/// Emitted by requestImport() -- asks QML to open the New instance
+	/// dialog in import mode with @p source filled in.
+	void importRequested(const QString& source);
 
 	/// Emitted by showInstanceLogRequested() above -- asks QML to open
 	/// instance @p id's page on its Log tab.
@@ -450,4 +446,8 @@ class QmlShell : public QObject
 	 * outliving any one QmlShell, so there is nothing here to own. */
 	QStringList m_setupSteps;
 	bool m_javaDetecting = false;
+
+	/* requestImport() sources that arrived before show() loaded the root
+	 * window; emitted, in order, once it has. */
+	QStringList m_pendingImports;
 };

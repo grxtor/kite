@@ -55,63 +55,12 @@ SettingsScroll {
         spacing: Theme.space.xl
         enabled: !root.running
 
-        OverrideGroup {
-            id: memory
+        // Memory, Java and JVM arguments: their own file, so Java
+        // management can grow there without touching the rest of this tab.
+        InstanceJavaSettings {
             width: parent.width
-            title: qsTr("Memory")
             source: store
-            gateKey: "OverrideMemory"
-            keys: ["MinMemAlloc", "MaxMemAlloc", "PermGen"]
-            MemorySetting {
-                source: store
-                enabled: memory.overriding
-                label: qsTr("Maximum memory")
-                systemMiB: root.systemMemoryMiB
-            }
-            SettingNumber {
-                source: store
-                key: "MinMemAlloc"
-                enabled: memory.overriding
-                label: qsTr("Starting memory")
-                from: 128
-                to: store.number("MaxMemAlloc")
-                stepSize: 128
-                suffix: qsTr("MiB")
-            }
-        }
-
-        OverrideGroup {
-            id: javaPath
-            width: parent.width
-            title: qsTr("Java")
-            source: store
-            gateKey: "OverrideJavaLocation"
-            gateLabel: qsTr("Use a specific Java for this instance")
-            keys: ["JavaPath"]
-            SettingText {
-                source: store
-                key: "JavaPath"
-                enabled: javaPath.overriding
-                label: qsTr("Java executable")
-                monospace: true
-            }
-        }
-
-        OverrideGroup {
-            id: javaArgs
-            width: parent.width
-            title: qsTr("JVM arguments")
-            source: store
-            gateKey: "OverrideJavaArgs"
-            gateLabel: qsTr("Use custom JVM arguments for this instance")
-            keys: ["JvmArgs"]
-            SettingText {
-                source: store
-                key: "JvmArgs"
-                enabled: javaArgs.overriding
-                label: qsTr("Arguments")
-                monospace: true
-            }
+            systemMemoryMiB: root.systemMemoryMiB
         }
 
         OverrideGroup {

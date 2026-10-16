@@ -3,13 +3,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import MeshMC.Theme
 
 /*
  * Launcher settings. Every change is saved the moment it is made -- there
  * is no OK/Cancel, as in any current desktop app's preferences.
+ *
+ * This file is only the frame: the section list on the left, and a stack
+ * with one Settings*Section.qml file per entry of `sections` below, in the
+ * same order. Each section's rows live in its own file. A section file can
+ * keep itself out of the list by declaring `shown: false` -- the plugin
+ * section while no plugin has added a setting, and the sections that are
+ * still empty (About, Updates, Launcher logs, Installed plugins) until they
+ * are filled in. Main.qml's navigate("settings/<id>") opens one by id.
  */
 Item {
     id: root
@@ -23,76 +30,22 @@ Item {
     property var selectLanguage: null
     property string section: "general"
     // Whether launcher/qml/Cat was built at all (Main.qml's own
-    // catAvailable, in turn MESHMC_HAS_CAT) -- hides the Cat group below
-    // rather than offering switches that would do nothing on a build
-    // without Qt Quick3D.
+    // catAvailable, in turn MESHMC_HAS_CAT) -- passed on to the Appearance
+    // section, which hides its Cat group without it.
     property bool catAvailable: false
 
-    // One tile in the cat variant picker below -- the coat's face, cropped
-    // out of the same texture the 3D cat wears (see Cat/CatRig.qml), plus a label,
-    // styled like SkinCapeEditor's CapeTile but simple enough not to
-    // warrant its own file for the one row that uses it.
-    component CatVariantTile: Item {
-        id: tile
-        required property string value
-        required property string label
-        readonly property bool selected: SettingsStore.string("CatVariant") === tile.value
-
-        implicitWidth: 56
-        implicitHeight: 76
-
-        Rectangle {
-            id: swatch
-            anchors.top: parent.top
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: 48
-            height: 48
-            radius: Theme.radius.md
-            color: tile.selected ? Theme.palette.accentSubtle : Theme.palette.surface
-            border.width: tile.selected ? 2 : 1
-            border.color: tile.selected ? Theme.palette.accent : Theme.palette.border
-
-            // The front of the head in the model's 64x64 UV layout: five
-            // pixels wide, four high, eyes on its second row.
-            Image {
-                anchors.centerIn: parent
-                width: 35
-                height: 28
-                smooth: false
-                sourceClipRect: Qt.rect(5, 33, 5, 4)
-                source: "qrc:/qt/qml/MeshMC/Cat/textures/cat_" + tile.value + ".png"
-            }
-        }
-
-        Text {
-            anchors.top: swatch.bottom
-            anchors.topMargin: Theme.space.xs
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: tile.label
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
-        }
-
-        TapHandler {
-            onTapped: SettingsStore.setValue("CatVariant", tile.value)
-        }
-    }
-
-    // No longer emitted from within this file -- proxy/external-tools/
-    // log-upload all have QML sections of their own now (below) instead of
-    // a "More" escape hatch into the classic dialog. Left declared because
-    // Main.qml still binds a handler to it; removing the signal outright is
-    // for whoever next touches that file's own wiring.
-    signal openClassicRequested(string page)
+    // Show a folder in the file manager (the General section's Folders).
     signal openPathRequested(string path)
 
     // Each icon says what its section is about ("layers" is a mod loader
     // elsewhere in the app, so Java does not wear it): the gear for the
     // general preferences, a server rack for the runtime and its memory, a
     // list of lines for the log window, a sun for the launcher's look, the
-    // ">_" prompt for the shell commands, an arrow out of a box for programs
-    // outside the launcher, an up arrow for sending a log away.
+    // ">_" prompt for the shell commands, a grid of installed things for the
+    // plugin list, an arrow out of a box for programs outside the launcher,
+    // an up arrow for sending a log away, a filing box for the launcher's
+    // own kept logs, the circling arrows of "check again" for updates, and
+    // "i" for about.
     readonly property var sections: [
         { id: "general", icon: "settings", label: qsTr("General") },
         { id: "java", icon: "server", label: qsTr("Java & memory") },
@@ -100,16 +53,27 @@ Item {
         { id: "console", icon: "list", label: qsTr("Console") },
         { id: "appearance", icon: "sun", label: qsTr("Appearance") },
         { id: "commands", icon: "terminal", label: qsTr("Custom commands") },
+        { id: "plugins-list", icon: "grid", label: qsTr("Installed plugins") },
         { id: "plugins", icon: "package", label: qsTr("Plugins") },
         { id: "proxy", icon: "globe", label: qsTr("Proxy") },
         { id: "external-tools", icon: "external-link", label: qsTr("External tools") },
-        { id: "log-upload", icon: "arrow-up", label: qsTr("Log upload") }
+        { id: "log-upload", icon: "arrow-up", label: qsTr("Log upload") },
+        { id: "launcher-logs", icon: "archive", label: qsTr("Launcher logs") },
+        { id: "updates", icon: "refresh", label: qsTr("Updates") },
+        { id: "about", icon: "info", label: qsTr("About") }
     ]
     readonly property int sectionIndex: {
         for (var i = 0; i < sections.length; ++i)
             if (sections[i].id === section)
                 return i
         return 0
+    }
+
+    // Whether section @p i is offered in the list: its file decides, with
+    // `shown` (see this file's header comment); without one it always is.
+    function sectionShown(i) {
+        var item = sectionStack.children[i]
+        return !item || item.shown === undefined || item.shown
     }
 
     RowLayout {
@@ -153,9 +117,9 @@ Item {
                     model: root.sections
                     delegate: NavItem {
                         required property var modelData
+                        required property int index
                         width: parent.width
-                        // Only offered when some plugin put something there.
-                        visible: modelData.id !== "plugins" || pluginsView.count > 0
+                        visible: root.sectionShown(index)
                         iconName: modelData.icon
                         label: modelData.label
                         selected: root.section === modelData.id
@@ -166,355 +130,36 @@ Item {
         }
 
         StackLayout {
+            id: sectionStack
             Layout.fillWidth: true
             Layout.fillHeight: true
             currentIndex: root.sectionIndex
 
-            // General
-            SettingsScroll {
-                title: qsTr("General")
-                description: qsTr("How the library sorts and where new instances start out.")
-                SettingsGroup {
-                    width: parent.width
-                    title: qsTr("Library")
-                    SettingChoice {
-                        key: "InstSortMode"
-                        label: qsTr("Sort instances by")
-                        description: qsTr("Order inside each group of the library.")
-                        options: [
-                            { value: "Name", label: qsTr("Name") },
-                            { value: "LastLaunch", label: qsTr("Last played") }
-                        ]
-                    }
-                }
-                SettingsGroup {
-                    width: parent.width
-                    title: qsTr("New instances")
-                    SettingSwitch {
-                        key: "DownloadGameFilesDuringInstanceCreation"
-                        label: qsTr("Download game files right away")
-                        description: qsTr("Fetch libraries and assets while the instance is created, instead of on its first launch.")
-                    }
-                    SettingSwitch {
-                        key: "SkipModpackUpdatePrompt"
-                        invert: true
-                        label: qsTr("Offer to update an installed modpack")
-                        description: qsTr("Installing a modpack you already have suggests updating that instance instead of making a second copy.")
-                    }
-                    SettingSwitch {
-                        key: "BackupBeforeLaunch"
-                        label: qsTr("Back up before every launch")
-                        description: qsTr("Keeps a “pre-launch” snapshot in the instance's .backups folder.")
-                    }
-                }
-                SettingsGroup {
-                    width: parent.width
-                    title: qsTr("Folders")
-                    description: qsTr("Relative paths are inside MeshMC's data folder. Moving them is done in the classic settings, which check the new place first.")
-                    Repeater {
-                        model: [
-                            { key: "InstanceDir", label: qsTr("Instances") },
-                            { key: "CentralModsDir", label: qsTr("Mods") },
-                            { key: "IconsDir", label: qsTr("Icons") },
-                            { key: "SkinsDir", label: qsTr("Skins") },
-                            { key: "JavaDir", label: qsTr("Java runtimes") }
-                        ]
-                        delegate: SettingRow {
-                            required property var modelData
-                            label: modelData.label
-                            description: SettingsStore.string(modelData.key)
-                            IconButton {
-                                iconName: "folder"
-                                tip: qsTr("Open folder")
-                                flat: false
-                                onClicked: root.openPathRequested(SettingsStore.string(modelData.key))
-                            }
-                        }
-                    }
-                }
+            // One per entry of root.sections, in the same order.
+            SettingsGeneralSection {
+                onOpenPathRequested: (path) => root.openPathRequested(path)
             }
-
-            // Java & memory
-            SettingsScroll {
-                title: qsTr("Java & memory")
-                description: qsTr("How much memory Minecraft gets, and which Java runtime runs it.")
-                SettingsGroup {
-                    width: parent.width
-                    title: qsTr("Memory")
-                    MemorySetting {
-                        label: qsTr("Maximum memory")
-                        hint: qsTr("How much memory Minecraft may use. Big modpacks want 6–8 GiB; vanilla is happy with 2–4.")
-                        systemMiB: root.systemMemoryMiB
-                    }
-                    SettingNumber {
-                        key: "MinMemAlloc"
-                        label: qsTr("Starting memory")
-                        description: qsTr("Memory reserved when the game starts. Never above the maximum.")
-                        from: 128
-                        to: SettingsStore.number("MaxMemAlloc")
-                        stepSize: 128
-                        suffix: qsTr("MiB")
-                    }
-                }
-                SettingsGroup {
-                    width: parent.width
-                    title: qsTr("Java runtime")
-                    SettingSwitch {
-                        key: "JavaAutoDownload"
-                        label: qsTr("Download Java automatically")
-                        description: qsTr("Fetches the Java version each Minecraft release needs, so you never have to install one yourself.")
-                    }
-                    SettingText {
-                        key: "JavaPath"
-                        label: qsTr("Java executable")
-                        description: qsTr("Used when an instance does not choose its own. Leave empty to let MeshMC pick.")
-                        placeholder: qsTr("Automatic")
-                        monospace: true
-                    }
-                    SettingText {
-                        key: "JvmArgs"
-                        label: qsTr("JVM arguments")
-                        description: qsTr("Extra flags for every launch. MeshMC already sets memory and the classpath.")
-                        placeholder: "-XX:+UseG1GC"
-                        monospace: true
-                    }
-                }
+            SettingsJavaSection {
+                systemMemoryMiB: root.systemMemoryMiB
             }
-
-            // Minecraft
-            SettingsScroll {
-                title: qsTr("Minecraft")
-                description: qsTr("The game window, play time tracking, and native library overrides.")
-                SettingsGroup {
-                    width: parent.width
-                    title: qsTr("Game window")
-                    SettingSwitch {
-                        id: maximized
-                        key: "LaunchMaximized"
-                        label: qsTr("Start maximized")
-                    }
-                    SettingNumber {
-                        key: "MinecraftWinWidth"
-                        enabled: !maximized.checked
-                        label: qsTr("Window width")
-                        from: 1
-                        to: 65536
-                        suffix: qsTr("px")
-                    }
-                    SettingNumber {
-                        key: "MinecraftWinHeight"
-                        enabled: !maximized.checked
-                        label: qsTr("Window height")
-                        from: 1
-                        to: 65536
-                        suffix: qsTr("px")
-                    }
-                }
-                SettingsGroup {
-                    width: parent.width
-                    title: qsTr("Play time")
-                    SettingSwitch {
-                        key: "RecordGameTime"
-                        label: qsTr("Record play time")
-                    }
-                    SettingSwitch {
-                        key: "ShowGameTime"
-                        label: qsTr("Show play time per instance")
-                    }
-                    SettingSwitch {
-                        key: "ShowGlobalGameTime"
-                        label: qsTr("Show total play time")
-                    }
-                }
-                SettingsGroup {
-                    width: parent.width
-                    title: qsTr("Native libraries")
-                    description: qsTr("Only for systems where the bundled libraries don't work, such as some Linux setups.")
-                    SettingSwitch {
-                        key: "UseNativeGLFW"
-                        label: qsTr("Use the system's GLFW")
-                    }
-                    SettingSwitch {
-                        key: "UseNativeOpenAL"
-                        label: qsTr("Use the system's OpenAL")
-                    }
-                }
+            SettingsMinecraftSection {}
+            SettingsConsoleSection {}
+            SettingsAppearanceSection {
+                languages: root.languages
+                selectLanguage: root.selectLanguage
+                catAvailable: root.catAvailable
             }
-
-            // Console
-            SettingsScroll {
-                title: qsTr("Console")
-                description: qsTr("What the game's log window does while you play, and how much of it is kept.")
-                SettingsGroup {
-                    width: parent.width
-                    title: qsTr("Game console")
-                    SettingSwitch {
-                        key: "ShowConsole"
-                        label: qsTr("Show the console while playing")
-                    }
-                    SettingSwitch {
-                        key: "AutoCloseConsole"
-                        label: qsTr("Close the console when the game quits")
-                    }
-                    SettingSwitch {
-                        key: "ShowConsoleOnError"
-                        label: qsTr("Show the console when the game crashes")
-                    }
-                }
-                SettingsGroup {
-                    width: parent.width
-                    title: qsTr("Log history")
-                    SettingNumber {
-                        key: "ConsoleMaxLines"
-                        label: qsTr("Lines to keep")
-                        from: 10000
-                        to: 1000000
-                        stepSize: 10000
-                    }
-                    SettingSwitch {
-                        key: "ConsoleOverflowStop"
-                        label: qsTr("Stop logging when the limit is reached")
-                        description: qsTr("Otherwise the oldest lines are dropped to make room.")
-                    }
-                }
+            SettingsCommandsSection {}
+            SettingsPluginsListSection {}
+            SettingsPluginsSection {
+                pluginSurfaces: root.pluginSurfaces
             }
-
-            // Appearance
-            SettingsScroll {
-                title: qsTr("Appearance")
-                description: qsTr("The launcher's own language and colour scheme.")
-                SettingsGroup {
-                    width: parent.width
-                    title: qsTr("Language")
-                    SettingRow {
-                        label: qsTr("Display language")
-                        description: qsTr("Applied immediately.")
-                        ComboBox {
-                            id: languageBox
-                            width: 260
-                            model: root.languages
-                            textRole: "name"
-                            valueRole: "languageKey"
-                            enabled: !!root.languages && !!root.selectLanguage
-                            function syncToSetting() {
-                                currentIndex = indexOfValue(SettingsStore.string("Language"))
-                            }
-                            onCountChanged: syncToSetting()
-                            Component.onCompleted: syncToSetting()
-                            onActivated: root.selectLanguage(currentValue)
-                            Accessible.name: qsTr("Display language")
-                        }
-                    }
-                }
-                SettingsGroup {
-                    width: parent.width
-                    title: qsTr("Theme")
-                    SettingRow {
-                        wide: true
-                        label: qsTr("Palette")
-                        description: qsTr("The launcher's colours. Each palette has a dark and a light variant.")
-                        PalettePicker {
-                            current: Theme.scheme
-                            onPicked: (scheme) => {
-                                Theme.scheme = scheme
-                                SettingsStore.setValue("UiPalette", scheme)
-                            }
-                        }
-                    }
-                    SettingChoice {
-                        key: "UiThemeMode"
-                        label: qsTr("Mode")
-                        showDivider: true
-                        options: [
-                            { value: "dark", label: qsTr("Dark") },
-                            { value: "light", label: qsTr("Light") }
-                        ]
-                        onChanged: (value) => Theme.mode = value
-                    }
-                }
-                SettingsGroup {
-                    width: parent.width
-                    title: qsTr("Motion")
-                    SettingSwitch {
-                        key: "UiReduceMotion"
-                        label: qsTr("Reduce motion")
-                        description: qsTr("Turns off decorative animation across the launcher, including the cat.")
-                    }
-                }
-                // Hidden outright rather than shown disabled: a build
-                // without Qt Quick3D has nothing these switches could turn
-                // on, and a visible-but-inert row reads as broken, not as
-                // "not for you". See root.catAvailable's own comment.
-                SettingsGroup {
-                    width: parent.width
-                    visible: root.catAvailable
-                    title: qsTr("Cat")
-                    SettingSwitch {
-                        key: "CatEnabled"
-                        label: qsTr("Show the cat")
-                        description: qsTr("A small Minecraft cat that lives on the play bar. Click to pet it, double-click and it hops.")
-                    }
-                    SettingRow {
-                        wide: true
-                        showDivider: true
-                        label: qsTr("Variant")
-                        Row {
-                            spacing: Theme.space.md
-                            CatVariantTile { value: "calico"; label: qsTr("Calico") }
-                            CatVariantTile { value: "ginger"; label: qsTr("Ginger") }
-                            CatVariantTile { value: "black"; label: qsTr("Black") }
-                            CatVariantTile { value: "white"; label: qsTr("White") }
-                            CatVariantTile { value: "siamese"; label: qsTr("Siamese") }
-                        }
-                    }
-                }
-            }
-
-            // Custom commands
-            SettingsScroll {
-                title: qsTr("Custom commands")
-                description: qsTr("Shell commands run around every launch, launcher-wide.")
-                SettingsGroup {
-                    width: parent.width
-                    description: qsTr("Run around every launch. Available variables: $INST_NAME, $INST_ID, $INST_DIR, $INST_MC_DIR, $INST_JAVA and $INST_JAVA_ARGS.")
-                    SettingText {
-                        key: "PreLaunchCommand"
-                        label: qsTr("Before launch")
-                        monospace: true
-                    }
-                    SettingText {
-                        key: "WrapperCommand"
-                        label: qsTr("Wrapper")
-                        description: qsTr("Runs the game through another program, such as prime-run or gamemoderun.")
-                        monospace: true
-                    }
-                    SettingText {
-                        key: "PostExitCommand"
-                        label: qsTr("After exit")
-                        monospace: true
-                    }
-                }
-            }
-
-            // Plugins
-            SettingsScroll {
-                title: qsTr("Plugins")
-                description: qsTr("Settings the installed plugins have added.")
-                PluginSurfaces {
-                    id: pluginsView
-                    width: parent.width
-                    model: root.pluginSurfaces
-                }
-            }
-
-            // Proxy
             SettingsProxySection {}
-
-            // External tools
             SettingsExternalToolsSection {}
-
-            // Log upload
             SettingsLogUploadSection {}
+            SettingsLauncherLogsSection {}
+            SettingsUpdatesSection {}
+            SettingsAboutSection {}
         }
     }
 }

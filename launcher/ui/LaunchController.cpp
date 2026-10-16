@@ -103,13 +103,14 @@ void LaunchController::decideAccount()
 
 		if (wantsAccountManager) {
 			// Open the account manager.
-			if (APPLICATION->usingQmlShell()) {
+			if (APPLICATION->qmlShellChosen()) {
 				/* ShowGlobalSettings(m_parentWidget, "accounts") would open
 				 * the classic PageDialog with a null parent under QML
 				 * (m_parentWidget defaults to null and QML never sets it) --
-				 * the same defect class as the createInstanceRequested
-				 * SIGSEGV. QML has its own Accounts page but nothing here
-				 * can switch it there, so just say where to go. */
+				 * the same defect class as the old SIGSEGV from the widget
+				 * NewInstanceDialog under QML. QML has its own Accounts
+				 * page but nothing here can switch it there, so just say
+				 * where to go. */
 				LAUNCHER->uiHost()->message(
 					tr("No Accounts"),
 					tr("Use the Accounts page in the sidebar to sign in."),
@@ -168,7 +169,7 @@ void LaunchController::decideAccount()
 	m_accountToUse = accounts->defaultAccount();
 	if (!m_accountToUse) {
 		// If no default account is set, ask the user which one to use.
-		if (APPLICATION->usingQmlShell()) {
+		if (APPLICATION->qmlShellChosen()) {
 			/* Plain choose() by account name -- QML has no equivalent of
 			 * the widget dialog's "use as global default" checkbox below,
 			 * so picking an account here never changes the default. Built
@@ -319,12 +320,12 @@ void LaunchController::login()
 				if (m_accountToUse->ownsMinecraft()) {
 					if (!m_accountToUse->hasProfile()) {
 						// Now handle setting up a profile name here...
-						if (APPLICATION->usingQmlShell()) {
+						if (APPLICATION->qmlShellChosen()) {
 							/* ProfileSetupDialog(m_accountToUse,
 							 * m_parentWidget) below would build with a null
 							 * parent under QML (m_parentWidget is unset on
-							 * this path) -- the same defect class as
-							 * createInstanceRequested's SIGSEGV. Ask through
+							 * this path) -- the same defect class as the
+							 * old widget NewInstanceDialog SIGSEGV. Ask through
 							 * UiHost instead, which shows a QML dialog doing
 							 * the same live name check and profile
 							 * creation. */
@@ -384,7 +385,7 @@ void LaunchController::login()
 				// refresh is in progress, we need to wait for it to finish to
 				// proceed.
 				auto task = m_accountToUse->currentTask();
-				if (APPLICATION->usingQmlShell()) {
+				if (APPLICATION->qmlShellChosen()) {
 					/* No card to reflect this on -- there is no launch task
 					 * yet, just an account refresh -- and no "Play Offline"
 					 * skip affordance without a dedicated UiHost API for
@@ -656,7 +657,7 @@ void LaunchController::onFailed(QString reason)
 
 void LaunchController::onProgressRequested(Task* task)
 {
-	if (APPLICATION->usingQmlShell()) {
+	if (APPLICATION->qmlShellChosen()) {
 		/* The instance's card already tracks this task's status/progress
 		 * (see InstanceList::trackLaunchProgress()) -- proceeding is all
 		 * this step is actually waiting on; no dialog needed to make it

@@ -61,6 +61,7 @@ qt_add_qml_module(MeshMC_qml_components
         SettingsSource.qml
         OverrideGroup.qml
         InstanceSettingsTab.qml
+        InstanceJavaSettings.qml
         InstanceOverviewTab.qml
         InstancePage.qml
         ContentTab.qml
@@ -101,6 +102,17 @@ qt_add_qml_module(MeshMC_qml_components
         SettingsProxySection.qml
         SettingsExternalToolsSection.qml
         SettingsLogUploadSection.qml
+        SettingsGeneralSection.qml
+        SettingsJavaSection.qml
+        SettingsMinecraftSection.qml
+        SettingsConsoleSection.qml
+        SettingsAppearanceSection.qml
+        SettingsCommandsSection.qml
+        SettingsPluginsSection.qml
+        SettingsPluginsListSection.qml
+        SettingsLauncherLogsSection.qml
+        SettingsUpdatesSection.qml
+        SettingsAboutSection.qml
         MemorySetting.qml
         SegmentedControl.qml
         EmptyState.qml

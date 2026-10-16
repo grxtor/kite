@@ -43,6 +43,10 @@ Dialog {
     property string mode: "create"
     // Raw text of the chosen file/URL in import mode.
     property string importSource: ""
+    // What import mode's file/URL field starts with when the dialog opens:
+    // a file or link handed in from outside (`meshmc --import`, see
+    // Main.qml's openImport()); empty for a dialog opened from a button.
+    property string presetSource: ""
 
     signal created()
 
@@ -144,8 +148,8 @@ Dialog {
         root.nameEdited = false
         root.selectedIcon = "default"
         groupField.text = ""
-        root.importSource = ""
-        sourceField.text = ""
+        root.importSource = root.presetSource
+        sourceField.text = root.presetSource
         selectDefaultVersion()
         if (root.mode === "import")
             refreshImportName()

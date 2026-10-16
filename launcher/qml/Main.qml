@@ -13,7 +13,7 @@ ApplicationWindow {
 
     required property var instanceModel
     required property var selection
-    // QmlShell: actions (launchInstance, editInstance, ...), account summary
+    // QmlShell: actions (launchInstance, killInstance, ...), account summary
     // and the extra instance models the library needs.
     required property var shell
 
@@ -70,7 +70,9 @@ ApplicationWindow {
     // "instance=<id>;tab=mods", "page=discover;detail=0", "newinstance",
     // "gallery" or "page=home;crashed=<id>" (marks that instance as having
     // crashed last time, for the Home page's chip -- see QmlShell's
-    // debugMarkInstanceCrashed()).
+    // debugMarkInstanceCrashed()). "nav=<path>" goes through navigate()
+    // below ("nav=settings/java", "nav=instance/fabric/settings"), and
+    // "import=<path or url>" acts like `meshmc --import` (onImportRequested).
     property string devRoute: ""
     function applyDevRoute() {
         var steps = root.devRoute.split(";")
@@ -100,6 +102,10 @@ ApplicationWindow {
                 devDetail.start()
             else if (key === "newinstance")
                 root.openNewInstance(value)
+            else if (key === "nav")
+                root.navigate(value)
+            else if (key === "import")
+                root.openImport(value)
             else if (key === "gallery")
                 galleryLoader.active = true
             else if (key === "profilemenu")
@@ -141,12 +147,79 @@ ApplicationWindow {
     }
 
     // mode is "create" (default) or "import" -- see NewInstanceDialog.qml.
-    function openNewInstance(mode) {
+    // source pre-fills import mode's file/URL field; empty otherwise.
+    function openNewInstance(mode, source) {
         if (!root.shell || !root.shell.newInstance)
             return
         newInstanceDialog.controller = root.shell.newInstance
         newInstanceDialog.mode = mode === "import" ? "import" : "create"
+        newInstanceDialog.presetSource = source || ""
         newInstanceDialog.open()
+    }
+
+    // An import asked for from outside the window: `meshmc --import`, or a
+    // second launcher passing a file on (QmlShell::requestImport()). With
+    // the dialog already open it takes the new source in place, unless it
+    // is still busy with the last one.
+    function openImport(source) {
+        if (!newInstanceDialog.opened) {
+            root.openNewInstance("import", source)
+            return
+        }
+        if (newInstanceDialog.creating) {
+            toast.show(qsTr("Another instance is still being set up. Try again once it is in your library."))
+            return
+        }
+        newInstanceDialog.mode = "import"
+        newInstanceDialog.setImportSource(source)
+    }
+
+    /*
+     * Cross-page links: any page can send the user somewhere else in the
+     * app with one call (an instance's Java settings pointing at the
+     * launcher-wide Java section, say). A page declares a signal such as
+     * `signal navigateRequested(string target)` and its handler here
+     * forwards it: `onNavigateRequested: (target) => root.navigate(target)`.
+     *
+     * Targets are paths, given whole or split in two (navigate("settings",
+     * "java") is navigate("settings/java")):
+     *   "home", "library", "discover", "accounts"
+     *   "settings" or "settings/<section>"  a SettingsPage.qml section id
+     *                                       ("java", "proxy", "about", ...)
+     *   "instance/<id>" or "instance/<id>/<tab>"
+     *                                       an InstancePage.qml tab id
+     *                                       ("settings", "content", "log", ...)
+     * Instance ids are folder names and never contain "/". Returns false,
+     * leaving the current page alone, for a path it does not know or an
+     * instance that does not exist.
+     */
+    function navigate(page, sub) {
+        var path = sub === undefined || sub === null || String(sub).length === 0
+                ? String(page) : page + "/" + sub
+        var parts = path.split("/")
+        switch (parts[0]) {
+        case "home":
+        case "library":
+        case "discover":
+        case "accounts":
+            root.page = parts[0]
+            return true
+        case "settings":
+            if (parts.length > 1 && parts[1].length > 0)
+                settingsPage.section = parts[1]
+            root.page = "settings"
+            return true
+        case "instance":
+            if (parts.length < 2 || parts[1].length === 0 || !root.shell
+                    || typeof root.shell.instanceDetails !== "function"
+                    || !root.shell.instanceDetails(parts[1]))
+                return false
+            root.openInstance(parts[1])
+            if (parts.length > 2 && parts[2].length > 0)
+                instancePage.tab = parts[2]
+            return true
+        }
+        return false
     }
 
     // Play, everywhere in the shell. With no account at all the classic
@@ -192,6 +265,9 @@ ApplicationWindow {
         function onOpenInstanceLog(id) {
             root.openInstance(id)
             instancePage.tab = "log"
+        }
+        function onImportRequested(source) {
+            root.openImport(source)
         }
     }
 
@@ -457,12 +533,6 @@ ApplicationWindow {
                         // Whether to show the Cat group at all -- see
                         // root.catAvailable's own comment.
                         catAvailable: root.catAvailable
-                        onOpenClassicRequested: (page) => {
-                            if (page === "accounts")
-                                root.page = "accounts"
-                            else
-                                root.call("openSettings", page)
-                        }
                         onOpenPathRequested: (path) => root.call("openPath", path)
                     }
 
@@ -499,7 +569,6 @@ ApplicationWindow {
                         onGroupRequested: (id, group) => root.askGroup(id, group)
                         onDuplicateRequested: (id, name, group) => root.askDuplicate(id, name, group)
                         onDeleteRequested: (id, name) => root.askDelete(id, name)
-                        onClassicEditorRequested: (id) => root.call("editInstance", id)
                         // Two arguments -- root.call() only ever forwards
                         // one -- so this goes straight to the shell instead.
                         onJoinServerRequested: (id, address) => { if (root.shell) root.shell.joinServer(id, address) }

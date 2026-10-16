@@ -1581,7 +1581,25 @@ void Application::performMainStartupAction()
 	}
 	if (!m_zipToImport.isEmpty()) {
 		qDebug() << "<> Importing instance from zip:" << m_zipToImport;
-		m_mainWindow->droppedURLs({m_zipToImport});
+		importFromUrl(m_zipToImport);
+	}
+}
+
+void Application::importFromUrl(const QUrl& url)
+{
+	/* An import asks its questions in a window: MainWindow's own import
+	 * route, or the QML shell's New instance dialog. A launcher started
+	 * with --launch has neither, and a second process can still send it
+	 * an "import" message, so bring the usual window up first. */
+	if (!m_qmlShell && !m_mainWindow) {
+		showMainWindow();
+	}
+	if (m_qmlShell) {
+		// Same local-file/URL split MainWindow::droppedURLs() makes.
+		m_qmlShell->requestImport(url.isLocalFile() ? url.toLocalFile()
+													: url.toString());
+	} else if (m_mainWindow) {
+		m_mainWindow->droppedURLs({url});
 	}
 }
 
@@ -1644,7 +1662,7 @@ void Application::messageReceived(const QByteArray& message)
 					   << "message without a zip path/URL.";
 			return;
 		}
-		m_mainWindow->droppedURLs({QUrl(path)});
+		importFromUrl(QUrl(path));
 	} else if (command == "launch") {
 		QString id = received.args["id"];
 		QString server = received.args["server"];
@@ -1746,6 +1764,18 @@ bool Application::launch(InstancePtr instance, LaunchMode mode,
 						 MinecraftServerTargetPtr serverToJoin,
 						 MinecraftAccountPtr accountToUse)
 {
+	/* LaunchController asks everything (which account, a profile name, an
+	 * offline player name, ...) through UiHost. Under the QML shell those
+	 * questions must wait for its presenter instead of falling back to the
+	 * widget host, so a launch that comes in before then is held until it
+	 * is up -- see qmlShellChosen(). */
+	if (qmlShellChosen() && !usingQmlShell()) {
+		runWhenQmlPresenterReady(
+			[this, instance, mode, serverToJoin, accountToUse]() {
+				launch(instance, mode, serverToJoin, accountToUse);
+			});
+		return true;
+	}
 	if (m_updateRunning) {
 		qDebug() << "Cannot launch instances while an update is running. "
 					"Please try again when updates are completed.";
@@ -1809,7 +1839,7 @@ bool Application::launch(InstancePtr instance, LaunchMode mode,
 		// own widget behaviour opens on the window's own default page
 		// instead (showInstanceWindow(instance), no explicit page) - kept
 		// exactly as it was when the QML shell is off.
-		if (usingQmlShell()) {
+		if (qmlShellChosen()) {
 			m_qmlShell->show();
 			m_qmlShell->showInstanceLogRequested(instance->id());
 		} else {
@@ -1930,7 +1960,8 @@ bool Application::reportUpdateMarkers()
 	 * answer a UiHost call either (see QmlUiHost's PRESENTER READINESS
 	 * comment). Queue what would have been a QMessageBox instead of
 	 * showing one, and let showMainWindow() run the queue once its
-	 * QmlUiHost reports presenterReady() -- see m_pendingQmlUpdateReports.
+	 * QmlUiHost reports presenterReady() -- see m_pendingQmlPresenterCalls
+	 * (the same queue runWhenQmlPresenterReady() adds to).
 	 * The classic path below is entirely unchanged when this is false. */
 	const bool qml = useQmlShell();
 
@@ -1966,7 +1997,7 @@ bool Application::reportUpdateMarkers()
 					 QDir::toNativeSeparators(updateLog));
 
 		if (qml) {
-			m_pendingQmlUpdateReports.append([this, lockPath, text]() {
+			m_pendingQmlPresenterCalls.append([this, lockPath, text]() {
 				const bool ignore = uiHost()->confirm(
 					tr("Update In Progress"), text, UiHost::Severity::Warning,
 					tr("Ignore"), tr("Quit"));
@@ -2008,7 +2039,7 @@ bool Application::reportUpdateMarkers()
 								 .arg(QDir::toNativeSeparators(updateLog));
 
 		if (qml) {
-			m_pendingQmlUpdateReports.append([this, failMarker, text]() {
+			m_pendingQmlPresenterCalls.append([this, failMarker, text]() {
 				const bool ignore = uiHost()->confirm(
 					tr("Update Failed"), text, UiHost::Severity::Warning,
 					tr("Ignore"), tr("Quit"));
@@ -2049,7 +2080,7 @@ bool Application::reportUpdateMarkers()
 									  QDir::toNativeSeparators(updateLog));
 
 		if (qml) {
-			m_pendingQmlUpdateReports.append([this, text]() {
+			m_pendingQmlPresenterCalls.append([this, text]() {
 				uiHost()->message(tr("Update Succeeded"), text,
 								  UiHost::Severity::Information);
 			});
@@ -2259,23 +2290,6 @@ MainWindow* Application::showMainWindow(bool minimized)
 							kill(inst);
 						}
 					});
-			connect(m_qmlShell.get(), &QmlShell::editRequested, this,
-					[this](const QString& id) {
-						/* The instance page's "Classic editor" button that
-						 * used to reach here is gone (see InstancePage.qml)
-						 * now that the page covers servers, backups, data
-						 * packs, worlds and the managed-pack section
-						 * directly. Refuse rather than open a widget
-						 * InstanceWindow regardless -- same reasoning as
-						 * settingsRequested/accountsRequested below: the
-						 * hard rule is no Qt Widgets window opens under the
-						 * QML shell, full stop. */
-						qWarning()
-							<< "Application: editRequested(" << id
-							<< ") ignored under the QML shell -- the "
-							   "instance page covers this instance's "
-							   "content directly now";
-					});
 			connect(m_qmlShell.get(), &QmlShell::joinServerRequested, this,
 					[this](const QString& id, const QString& address) {
 						if (auto inst = instances()->getInstanceById(id)) {
@@ -2292,64 +2306,13 @@ MainWindow* Application::showMainWindow(bool minimized)
 														  true);
 						}
 					});
-			connect(m_qmlShell.get(), &QmlShell::settingsRequested, this,
-					[](const QString& page) {
-						/* Every settings page has a QML section of its own
-						 * now -- proxy-settings/external-tools/log-upload
-						 * (the last rows that still opened the classic
-						 * dialog, under Settings' "More" section) moved to
-						 * SettingsPage.qml alongside accounts/language/...,
-						 * so nothing under the QML shell should ever reach
-						 * this signal any more. Refuse rather than open
-						 * ShowGlobalSettings(nullptr, ...) regardless: that
-						 * null parent is the same defect class as
-						 * createInstanceRequested below, and the hard rule
-						 * is no Qt Widgets dialog opens under the QML
-						 * shell, full stop -- not "only the ones without a
-						 * QML page yet". */
-						qWarning()
-							<< "Application: settingsRequested(" << page
-							<< ") ignored under the QML shell -- open the "
-							   "matching SettingsPage/AccountsPage section "
-							   "instead";
-					});
-			connect(m_qmlShell.get(), &QmlShell::accountsRequested, this,
-					[]() {
-						/* Full parity in QML already (see AccountsPage.qml);
-						 * nothing currently emits this signal, but refuse it
-						 * rather than open ShowGlobalSettings(nullptr, ...)
-						 * if something someday does. */
-						qWarning() << "Application: accountsRequested ignored "
-									  "under the QML shell -- use the Accounts "
-									  "page instead";
-					});
-			connect(m_qmlShell.get(), &QmlShell::createInstanceRequested, this,
-					[this]() {
-						/* This is the reported SIGSEGV: with no MainWindow
-						 * under the QML shell (see this method's own doc
-						 * comment), MainWindow::createInstanceFromDialog()
-						 * used to be called with a null parent, constructing
-						 * NewInstanceDialog's whole ~15-file widget stack
-						 * that was never built or tested that way. The
-						 * import lane is building a QML replacement for the
-						 * button that emits this; until it ships, refuse
-						 * instead of ever reaching that dialog under QML. */
-						qWarning() << "Application: createInstanceRequested "
-									  "ignored under the QML shell (no QML "
-									  "import screen yet)";
-						uiHost()->message(
-							tr("Not available yet"),
-							tr("Importing a modpack from a file, or browsing "
-							   "other platforms, isn't available in this "
-							   "preview interface yet."),
-							UiHost::Severity::Information);
-					});
 
 			if (m_qmlShell->show(minimized)) {
 				m_openWindows++;
 
-				/* Runs whatever reportUpdateMarkers() queued at init() (see
-				 * m_pendingQmlUpdateReports) the moment QmlUiHost can
+				/* Runs whatever waited for the presenter -- reportUpdateMarkers()
+				 * at init(), runWhenQmlPresenterReady() since (see
+				 * m_pendingQmlPresenterCalls) -- the moment QmlUiHost can
 				 * actually show a request. Wired here rather than right
 				 * after QmlShell's construction above: QmlShell only builds
 				 * its QmlUiHost inside show() (called just above), so
@@ -2360,15 +2323,8 @@ MainWindow* Application::showMainWindow(bool minimized)
 				if (auto* host = qobject_cast<QmlUiHost*>(m_qmlShell->uiHost())) {
 					connect(host, &QmlUiHost::presenterReadyChanged, this,
 							[this, host]() {
-								if (!host->presenterReady() ||
-									m_pendingQmlUpdateReports.isEmpty()) {
-									return;
-								}
-								const auto pending =
-									std::move(m_pendingQmlUpdateReports);
-								m_pendingQmlUpdateReports.clear();
-								for (const auto& report : pending) {
-									report();
+								if (host->presenterReady()) {
+									runPendingQmlPresenterCalls();
 								}
 							});
 					/* presenterReady() may already be true by the time this
@@ -2378,14 +2334,8 @@ MainWindow* Application::showMainWindow(bool minimized)
 					 * trigger the flush. Run the queue once here too; the
 					 * lambda above is a no-op if it later fires with nothing
 					 * left queued. */
-					if (host->presenterReady() &&
-						!m_pendingQmlUpdateReports.isEmpty()) {
-						const auto pending =
-							std::move(m_pendingQmlUpdateReports);
-						m_pendingQmlUpdateReports.clear();
-						for (const auto& report : pending) {
-							report();
-						}
+					if (host->presenterReady()) {
+						runPendingQmlPresenterCalls();
 					}
 				}
 
@@ -2414,17 +2364,12 @@ MainWindow* Application::showMainWindow(bool minimized)
 			qWarning() << "QML shell failed to load; using the widget window";
 			m_qmlShell.reset();
 
-			if (!m_pendingQmlUpdateReports.isEmpty()) {
-				/* Never ran above -- the QmlUiHost that would have shown
-				 * them never came up. uiHost() now falls back to the widget
-				 * host since m_qmlShell is gone, so these still reach the
-				 * user instead of being silently dropped. */
-				const auto pending = std::move(m_pendingQmlUpdateReports);
-				m_pendingQmlUpdateReports.clear();
-				for (const auto& report : pending) {
-					report();
-				}
-			}
+			/* Never ran above -- the QmlUiHost that would have shown
+			 * them never came up. uiHost() now falls back to the widget
+			 * host and qmlShellChosen() is false since m_qmlShell is
+			 * gone, so these still reach the user (a held launch takes the
+			 * widget path) instead of being silently dropped. */
+			runPendingQmlPresenterCalls();
 		} else {
 			m_qmlShell->show(minimized);
 			return nullptr;
@@ -2679,12 +2624,38 @@ bool Application::usingQmlShell() const
 	return m_qmlShell && m_qmlShell->uiHostInterface() != nullptr;
 }
 
+bool Application::qmlShellChosen() const
+{
+	return m_qmlShell != nullptr;
+}
+
+void Application::runWhenQmlPresenterReady(std::function<void()> call)
+{
+	if (qmlShellChosen() && !usingQmlShell()) {
+		m_pendingQmlPresenterCalls.append(std::move(call));
+		return;
+	}
+	call();
+}
+
+void Application::runPendingQmlPresenterCalls()
+{
+	/* Taken out first: a call may queue again (a launch while the
+	 * presenter has gone away again, say), and that must land in the
+	 * next batch rather than in the list being walked. */
+	const auto pending = std::move(m_pendingQmlPresenterCalls);
+	m_pendingQmlPresenterCalls.clear();
+	for (const auto& call : pending) {
+		call();
+	}
+}
+
 void Application::showInstanceLog(InstancePtr instance)
 {
 	if (!instance) {
 		return;
 	}
-	if (usingQmlShell()) {
+	if (qmlShellChosen()) {
 		// The request can arrive with the QML window minimized or behind
 		// others (a background crash, or - see launch()'s own
 		// isRunning()/canEdit() branches - a second Play click while

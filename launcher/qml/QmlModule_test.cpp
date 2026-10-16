@@ -20,6 +20,8 @@
 #include <QtTest>
 #include <QGuiApplication>
 #include <QQmlComponent>
+#include <QQmlContext>
+#include <QQmlExpression>
 #include <QStandardItemModel>
 #include <QQmlEngine>
 #include <QQuickStyle>
@@ -42,9 +44,82 @@
  * qt_add_qml_module is given RESOURCE_PREFIX "/qt/qml" so this path is the
  * same on 6.4 as it is once QTP0001 is available.
  */
+/* Stands in for QmlShell where a test needs Main.qml to see one of its
+ * signals or properties. Everything else stays absent, as with the plain
+ * QObject rootComponentInstantiates() passes: Main.qml checks for each
+ * shell member before using it. */
+class FakeShell : public QObject
+{
+	Q_OBJECT
+	/// Non-null is all Main.qml's openNewInstance() checks before opening.
+	Q_PROPERTY(QObject* newInstance READ newInstance CONSTANT)
+
+  public:
+	QObject* newInstance()
+	{
+		return &m_newInstance;
+	}
+
+  signals:
+	void importRequested(const QString& source);
+
+  private:
+	QObject m_newInstance;
+};
+
 class QmlModuleTest : public QObject
 {
 	Q_OBJECT
+
+	/* Main.qml instantiated with @p shell, or null (with the reason
+	 * already reported through QVERIFY) if it fails to load. */
+	std::unique_ptr<QObject> createRoot(QQmlEngine& engine, QObject* shell)
+	{
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(
+			&engine, QUrl(QStringLiteral("qrc:/qt/qml/MeshMC/Main.qml")));
+		if (!component.isReady()) {
+			qWarning() << component.errorString();
+			return nullptr;
+		}
+		std::unique_ptr<QObject> root(component.createWithInitialProperties(
+			{{QStringLiteral("instanceModel"),
+			  QVariant::fromValue<QObject*>(&m_instances)},
+			 {QStringLiteral("selection"),
+			  QVariant::fromValue<QObject*>(&m_selection)},
+			 {QStringLiteral("shell"), QVariant::fromValue<QObject*>(shell)}}));
+		if (!root) {
+			qWarning() << component.errorString();
+		}
+		return root;
+	}
+
+	/* @p expression evaluated in Main.qml's own scope, where its ids
+	 * (settingsPage, newInstanceDialog, ...) resolve. */
+	static QVariant evaluate(QObject* root, const QString& expression)
+	{
+		QQmlExpression expr(qmlContext(root), root, expression);
+		const QVariant result = expr.evaluate();
+		if (expr.hasError()) {
+			qWarning() << expr.error().toString();
+		}
+		return result;
+	}
+
+	/* Main.qml's navigate(page, sub); an invalid @p sub reaches it as
+	 * undefined, the way a one-argument call from QML would. */
+	static bool navigate(QObject* root, const QString& page,
+						 const QVariant& sub = QVariant())
+	{
+		QVariant ok;
+		const bool invoked = QMetaObject::invokeMethod(
+			root, "navigate", Q_RETURN_ARG(QVariant, ok),
+			Q_ARG(QVariant, page), Q_ARG(QVariant, sub));
+		return invoked && ok.toBool();
+	}
+
+	QStandardItemModel m_instances;
+	QObject m_selection;
 
   private slots:
 	/* The same controls style QmlShell::show() selects: components use its
@@ -91,6 +166,75 @@ class QmlModuleTest : public QObject
 		 * constructed: the property only exists on our Main.qml. */
 		QCOMPARE(root->property("moduleName").toString(),
 				 QStringLiteral("MeshMC"));
+	}
+
+	/* navigate() is how pages link across the app: whole paths and the
+	 * split (page, sub) form alike, settings sections included, and an
+	 * unknown target changes nothing. */
+	void navigateOpensPagesAndSettingsSections()
+	{
+		QQmlEngine engine;
+		QObject shell;
+		auto root = createRoot(engine, &shell);
+		QVERIFY(root);
+
+		QVERIFY(navigate(root.get(), QStringLiteral("settings/java")));
+		QCOMPARE(root->property("page").toString(), QStringLiteral("settings"));
+		QCOMPARE(evaluate(root.get(), QStringLiteral("settingsPage.section"))
+					 .toString(),
+				 QStringLiteral("java"));
+
+		QVERIFY(navigate(root.get(), QStringLiteral("settings"),
+						 QStringLiteral("proxy")));
+		QCOMPARE(evaluate(root.get(), QStringLiteral("settingsPage.section"))
+					 .toString(),
+				 QStringLiteral("proxy"));
+
+		QVERIFY(navigate(root.get(), QStringLiteral("library")));
+		QCOMPARE(root->property("page").toString(), QStringLiteral("library"));
+
+		QVERIFY(!navigate(root.get(), QStringLiteral("nowhere/at/all")));
+		QCOMPARE(root->property("page").toString(), QStringLiteral("library"));
+	}
+
+	/* No instance by that id (this stand-in shell has no instanceDetails()
+	 * at all): refused, and the current page stays. */
+	void navigateRefusesAnUnknownInstance()
+	{
+		QQmlEngine engine;
+		QObject shell;
+		auto root = createRoot(engine, &shell);
+		QVERIFY(root);
+
+		QVERIFY(navigate(root.get(), QStringLiteral("discover")));
+		QVERIFY(!navigate(root.get(), QStringLiteral("instance/fabric/settings")));
+		QVERIFY(!navigate(root.get(), QStringLiteral("instance")));
+		QCOMPARE(root->property("page").toString(), QStringLiteral("discover"));
+	}
+
+	/* `meshmc --import` and the IPC "import" message reach QML as
+	 * QmlShell::importRequested(): the New instance dialog opens in import
+	 * mode with the source already filled in (the A9/A10 fix). The
+	 * stand-in controller is a bare QObject, so the dialog logs TypeErrors
+	 * for the NewInstanceController members it reads; only the two
+	 * properties checked here matter. */
+	void importRequestOpensNewInstanceDialogInImportMode()
+	{
+		QQmlEngine engine;
+		FakeShell shell;
+		auto root = createRoot(engine, &shell);
+		QVERIFY(root);
+
+		const QString source = QStringLiteral("/tmp/Some Pack.mrpack");
+		emit shell.importRequested(source);
+
+		QCOMPARE(evaluate(root.get(), QStringLiteral("newInstanceDialog.mode"))
+					 .toString(),
+				 QStringLiteral("import"));
+		QCOMPARE(evaluate(root.get(),
+						  QStringLiteral("newInstanceDialog.presetSource"))
+					 .toString(),
+				 source);
 	}
 };
 

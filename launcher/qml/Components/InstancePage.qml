@@ -42,7 +42,6 @@ Item {
     // Play/Stop no longer round-trip through this page: the persistent play
     // bar plays and stops whatever instance is open (see Main.qml).
     signal backRequested()
-    signal classicEditorRequested(string id)
     signal openPathRequested(string path)
     // Bubbles up from the Servers tab's "Join" button - see Main.qml.
     signal joinServerRequested(string id, string address)
@@ -146,8 +145,6 @@ Item {
                 // a widget InstanceWindow, which the QML shell must never
                 // do -- this page's own tabs (Servers, Backups, Worlds,
                 // Managed pack, ...) now cover everything it did instead.
-                // classicEditorRequested is kept below only because Main.qml
-                // still has a handler for it; nothing emits it any more.
                 showEdit: false
                 // Folder and the rest live together in one ⋯ menu.
                 showFolder: false

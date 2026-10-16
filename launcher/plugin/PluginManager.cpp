@@ -1545,6 +1545,26 @@ int PluginManager::api_http_post(void* mh, const char* url, const void* body,
 	return 0;
 }
 
+namespace
+{
+	/* Under the QML shell (Application::qmlShellChosen()) a plugin's
+	 * question goes to QmlUiHost, never to a widget dialog -- not even in
+	 * the moment before the QML presenter is up, when uiHost() would still
+	 * hand out the widget host. A question that needs its answer right
+	 * away cannot wait for the presenter the way a plain message does
+	 * (runWhenQmlPresenterReady()), so it is declined instead: the same
+	 * result as the user cancelling it, which every caller handles. */
+	bool qmlPresenterMissing(Application* app, const char* api)
+	{
+		if (app->usingQmlShell()) {
+			return false;
+		}
+		qWarning() << "PluginManager:" << api
+				   << "declined: the QML shell cannot ask questions yet";
+		return true;
+	}
+} // namespace
+
 void PluginManager::api_ui_show_message(void* mh, int type, const char* title,
 										const char* msg)
 {
@@ -1559,11 +1579,11 @@ void PluginManager::api_ui_show_message(void* mh, int type, const char* title,
 	 * to (see the qml-preview-tools audit, plan item 2) -- route through
 	 * the same UiHost a plugin's message()/confirm() would already reach on
 	 * the core side, instead of a plugin popping a widget the QML shell
-	 * must never show. The classic UI is untouched: usingQmlShell() is
+	 * must never show. The classic UI is untouched: qmlShellChosen() is
 	 * false there, so this falls through to the QMessageBox it always
-	 * used. */
+	 * used. A message sent before the QML presenter is up waits for it. */
 	auto* app = r->manager->m_app;
-	if (app && app->usingQmlShell()) {
+	if (app && app->qmlShellChosen()) {
 		UiHost::Severity severity = UiHost::Severity::Information;
 		switch (type) {
 			case 1:
@@ -1575,7 +1595,9 @@ void PluginManager::api_ui_show_message(void* mh, int type, const char* title,
 			default:
 				break;
 		}
-		app->uiHost()->message(qtitle, qmsg, severity);
+		app->runWhenQmlPresenterReady([app, qtitle, qmsg, severity]() {
+			app->uiHost()->message(qtitle, qmsg, severity);
+		});
 		return;
 	}
 
@@ -2162,10 +2184,12 @@ const char* PluginManager::api_ui_file_open_dialog(void* mh, const char* title,
 
 	std::optional<QString> result;
 	auto* app = r->manager->m_app;
-	if (app && app->usingQmlShell()) {
+	if (app && app->qmlShellChosen()) {
 		/* QApplication::activeWindow() is always null under the QML shell
 		 * (see the audit) -- ask through UiHost instead, which shows a
 		 * QtQuick.Dialogs FileDialog rather than this QFileDialog. */
+		if (qmlPresenterMissing(app, "ui_file_open_dialog"))
+			return nullptr;
 		result = app->uiHost()->pickFile(UiHost::FilePickerMode::Open, qtitle,
 										 QString(), qfilter);
 	} else {
@@ -2191,7 +2215,9 @@ const char* PluginManager::api_ui_file_save_dialog(void* mh, const char* title,
 
 	std::optional<QString> result;
 	auto* app = r->manager->m_app;
-	if (app && app->usingQmlShell()) {
+	if (app && app->qmlShellChosen()) {
+		if (qmlPresenterMissing(app, "ui_file_save_dialog"))
+			return nullptr;
 		result = app->uiHost()->pickFile(UiHost::FilePickerMode::Save, qtitle,
 										 qdef, qfilter);
 	} else {
@@ -2216,7 +2242,9 @@ const char* PluginManager::api_ui_input_dialog(void* mh, const char* title,
 	const QString qdef = def ? QString::fromUtf8(def) : QString();
 
 	auto* app = r->manager->m_app;
-	if (app && app->usingQmlShell()) {
+	if (app && app->qmlShellChosen()) {
+		if (qmlPresenterMissing(app, "ui_input_dialog"))
+			return nullptr;
 		const auto answer = app->uiHost()->askText(qtitle, qprompt, qdef);
 		if (!answer)
 			return nullptr;
@@ -2241,7 +2269,9 @@ int PluginManager::api_ui_confirm_dialog(void* mh, const char* title,
 	const QString qmsg = msg ? QString::fromUtf8(msg) : QString();
 
 	auto* app = r->manager->m_app;
-	if (app && app->usingQmlShell()) {
+	if (app && app->qmlShellChosen()) {
+		if (qmlPresenterMissing(app, "ui_confirm_dialog"))
+			return 0;
 		return app->uiHost()->confirm(qtitle, qmsg, UiHost::Severity::Question)
 				  ? 1
 				  : 0;
@@ -2627,7 +2657,7 @@ int PluginManager::api_ui_modal_run(void* mh, const char* title,
 	 * show -- refuse cleanly so a plugin author sees a real "unsupported"
 	 * result instead of a widget window appearing out of nowhere. */
 	if (auto* r = rt(mh); r && r->manager->m_app &&
-		r->manager->m_app->usingQmlShell()) {
+		r->manager->m_app->qmlShellChosen()) {
 		return -1;
 	}
 

@@ -200,11 +200,6 @@ void QmlShell::killInstance(const QString& id)
 	emit killRequested(id);
 }
 
-void QmlShell::editInstance(const QString& id)
-{
-	emit editRequested(id);
-}
-
 void QmlShell::openInstanceFolder(const QString& id)
 {
 	emit folderRequested(id);
@@ -215,29 +210,26 @@ void QmlShell::joinServer(const QString& id, const QString& address)
 	emit joinServerRequested(id, address);
 }
 
-void QmlShell::createInstance()
-{
-	emit createInstanceRequested();
-}
-
-void QmlShell::openSettings(const QString& page)
-{
-	emit settingsRequested(page);
-}
-
 void QmlShell::openPath(const QString& path)
 {
 	DesktopServices::openDirectory(QDir(path).absolutePath(), true);
 }
 
-void QmlShell::manageAccounts()
-{
-	emit accountsRequested();
-}
-
 void QmlShell::showInstanceLogRequested(const QString& id)
 {
 	emit openInstanceLog(id);
+}
+
+void QmlShell::requestImport(const QString& source)
+{
+	if (source.isEmpty()) {
+		return;
+	}
+	if (!m_window) {
+		m_pendingImports.append(source);
+		return;
+	}
+	emit importRequested(source);
 }
 
 bool QmlShell::renameInstance(const QString& id, const QString& name)
@@ -774,6 +766,14 @@ bool QmlShell::show(bool minimized)
 		m_window->showMinimized();
 	else
 		m_window->show();
+
+	/* Imports asked for before there was a window to ask in -- see
+	 * requestImport(). Main.qml's handler exists now: load() above
+	 * created it along with the rest of the root window. */
+	const QStringList pendingImports = std::exchange(m_pendingImports, {});
+	for (const QString& source : pendingImports) {
+		emit importRequested(source);
+	}
 
 	scheduleSnapshotIfRequested();
 	return true;
