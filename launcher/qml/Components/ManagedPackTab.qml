@@ -281,17 +281,36 @@ Item {
 
                     TapHandler { onTapped: list.currentIndex = verRow.index }
 
+                    // The version, the Minecraft it is for under it, and a
+                    // tag only where it is not a plain release.
                     RowLayout {
                         anchors.fill: parent
                         anchors.leftMargin: Theme.space.sm
                         anchors.rightMargin: Theme.space.sm
-                        Text {
+                        spacing: Theme.space.sm
+                        Column {
                             Layout.fillWidth: true
-                            text: verRow.modelData.label
-                            elide: Text.ElideRight
-                            color: verRow.modelData.installable ? Theme.palette.textPrimary : Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.label.pixelSize
+                            Text {
+                                width: parent.width
+                                text: verRow.modelData.name || verRow.modelData.label
+                                elide: Text.ElideRight
+                                color: verRow.modelData.installable ? Theme.palette.textPrimary : Theme.palette.textTertiary
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.type.label.pixelSize
+                            }
+                            Text {
+                                width: parent.width
+                                visible: !!verRow.modelData.minecraft
+                                text: qsTr("Minecraft %1").arg(verRow.modelData.minecraft)
+                                elide: Text.ElideRight
+                                color: Theme.palette.textTertiary
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.type.caption.pixelSize
+                            }
+                        }
+                        Tag {
+                            visible: verRow.modelData.releaseType === "beta" || verRow.modelData.releaseType === "alpha"
+                            text: verRow.modelData.releaseType === "alpha" ? qsTr("Alpha") : qsTr("Beta")
                         }
                         Tag { visible: verRow.modelData.current; text: qsTr("Current") }
                     }

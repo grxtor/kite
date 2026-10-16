@@ -79,7 +79,7 @@ Dialog {
             }
 
             Text {
-                text: qsTr("Id")
+                text: qsTr("ID")
                 color: Theme.palette.textSecondary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.body.pixelSize
@@ -90,7 +90,7 @@ Dialog {
                 selectByMouse: true
                 font.family: Theme.font.mono
                 placeholderText: root.suggestedUid.length > 0 ? root.suggestedUid : "org.example.mycomponent"
-                Accessible.name: qsTr("Id")
+                Accessible.name: qsTr("ID")
                 onAccepted: if (root.problem.length === 0) root.add()
             }
         }

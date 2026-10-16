@@ -61,8 +61,11 @@ class ManagedPackController : public QObject
 	/// id of (an old import) - fetchVersions()/updateToVersion() are both
 	/// no-ops while this is false. See the class comment.
 	Q_PROPERTY(bool hasPackId READ hasPackId CONSTANT)
-	/// QVariantList of {id, label, current, installable, changelog}, newest
-	/// first - empty until fetchVersions() succeeds.
+	/// QVariantList of {id, label, name, minecraft, releaseType, current,
+	/// installable, changelog}, newest first - empty until fetchVersions()
+	/// succeeds. `label` is the widget page's one-line form; `name`,
+	/// `minecraft` and `releaseType` ("release", "beta", "alpha" or "")
+	/// are the same facts apart.
 	Q_PROPERTY(QVariantList versions READ versions NOTIFY versionsChanged)
 	/// Name filter for the "update from a file" dialog, e.g.
 	/// "Modrinth pack (*.mrpack *.zip)": what this pack's provider ships.

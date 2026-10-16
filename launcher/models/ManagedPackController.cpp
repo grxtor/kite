@@ -282,6 +282,31 @@ void ManagedPackController::rebuildVariants()
 		QVariantMap row;
 		row[QStringLiteral("id")] = version.versionId;
 		row[QStringLiteral("label")] = version.label();
+		/* The same facts as `label`, apart, for a row that lays them out
+		 * itself: the name, the first Minecraft version it declares, and
+		 * the release type as a lower-case key ("" when unknown). */
+		const QString name = version.displayName.isEmpty()
+								 ? version.versionNumber
+								 : version.displayName;
+		row[QStringLiteral("name")] = name;
+		/* Left out when the name already says it, as label() does: many
+		 * packs name their versions "15.0.0 for 26.3". */
+		QString minecraft;
+		for (const QString& mcVersion : version.mcVersions) {
+			if (mcVersion.isEmpty()) {
+				continue;
+			}
+			if (name.contains(mcVersion)) {
+				minecraft.clear();
+				break;
+			}
+			if (minecraft.isEmpty()) {
+				minecraft = mcVersion;
+			}
+		}
+		row[QStringLiteral("minecraft")] = minecraft;
+		row[QStringLiteral("releaseType")] =
+			ManagedPack::releaseTypeToString(version.releaseType).toLower();
 		row[QStringLiteral("current")] = isInstalled;
 		row[QStringLiteral("installable")] = version.isInstallable();
 		// Only ever non-empty for Modrinth (included in the version list

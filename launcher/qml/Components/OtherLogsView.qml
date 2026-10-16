@@ -155,6 +155,9 @@ Item {
                     return -1
                 }
                 onActivated: (index) => root.logs.selectFile(textAt(index))
+                // Says what it is for before a file is picked, rather than
+                // sitting there empty.
+                displayText: currentIndex < 0 && count > 0 ? qsTr("Choose a log file") : currentText
             }
 
             Item { Layout.fillWidth: true }

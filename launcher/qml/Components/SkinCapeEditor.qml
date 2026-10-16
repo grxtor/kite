@@ -33,8 +33,10 @@ Dialog {
     width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
     height: Math.min(implicitHeight, parent ? parent.height - Theme.space.xxl * 2 : implicitHeight)
     modal: true
-    title: root.accountName.length > 0 ? qsTr("Skin & cape — %1").arg(root.accountName)
-                                        : qsTr("Skin & cape")
+    // Worded like the buttons that open it ("Skin and cape"), with the
+    // player's name as part of the sentence rather than after a dash.
+    title: root.accountName.length > 0 ? qsTr("Skin and cape for %1").arg(root.accountName)
+                                        : qsTr("Skin and cape")
 
     // AccountsController: accountSkinInfo, skins, changeSkin, resetSkin,
     // changeCape.

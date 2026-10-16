@@ -170,6 +170,11 @@ ApplicationWindow {
             // Add content's Filters popup (after instance=<id>).
             else if (key === "browsefilters")
                 Qt.callLater(instancePage.openBrowseFilters)
+            // A tab's own state, after instance=<id>: "versionmore",
+            // "newcomponent", "otherlogs", "logfind", "shotselect",
+            // "shotrename" -- see InstancePage.review().
+            else if (key === "review")
+                Qt.callLater(instancePage.review, value)
             // A question only a real launch asks -- see QmlShell's
             // debugShowRequest(): "pickAccount" or "busySkip".
             else if (key === "ask")

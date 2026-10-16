@@ -31,6 +31,18 @@ Item {
 
     readonly property var accounts: controller ? controller.accounts : null
 
+    // The dialogs' widths, before a narrow window takes its margin off.
+    readonly property int offlineDialogWidth: 420
+    readonly property int loginDialogWidth: 460
+    readonly property int skinNoticeWidth: 380
+    // The sign-in dialog's spinner.
+    readonly property int loginIndicatorSize: 32
+    // The empty state's avatar: a faint ring, a tinted disc, the icon.
+    readonly property int avatarRingSize: 96
+    readonly property int avatarDiscSize: 72
+    readonly property int avatarIconSize: 32
+    readonly property real avatarRingOpacity: 0.10
+
     // Bumped whenever any account's data changes (a refresh landing, a skin
     // upload finishing...), so the "image://accountface/..." urls below
     // change and QML actually refetches them -- it caches by url, and
@@ -390,21 +402,21 @@ Item {
             onActionTriggered: root.startMicrosoftLogin()
 
             Item {
-                width: 96; height: 96
+                width: root.avatarRingSize; height: root.avatarRingSize
                 Rectangle {
                     anchors.centerIn: parent
-                    width: 96; height: 96
+                    width: root.avatarRingSize; height: root.avatarRingSize
                     radius: width / 2
                     color: Theme.palette.accent
-                    opacity: 0.10
+                    opacity: root.avatarRingOpacity
                 }
                 Rectangle {
                     anchors.centerIn: parent
-                    width: 72; height: 72
+                    width: root.avatarDiscSize; height: root.avatarDiscSize
                     radius: width / 2
                     color: Theme.palette.accentSubtle
                 }
-                MeshIcon { anchors.centerIn: parent; iconName: "user"; size: 32; color: Theme.palette.accent }
+                MeshIcon { anchors.centerIn: parent; iconName: "user"; size: root.avatarIconSize; color: Theme.palette.accent }
             }
         }
 
@@ -428,7 +440,7 @@ Item {
         id: offlineDialog
         parent: Overlay.overlay
         anchors.centerIn: parent
-        width: 420
+        width: Math.min(root.offlineDialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.offlineDialogWidth)
         modal: true
         title: qsTr("Add offline account")
         onOpened: {
@@ -494,7 +506,7 @@ Item {
         id: loginDialog
         parent: Overlay.overlay
         anchors.centerIn: parent
-        width: 460
+        width: Math.min(root.loginDialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.loginDialogWidth)
         modal: true
         closePolicy: Popup.NoAutoClose
         title: qsTr("Sign in with Microsoft")
@@ -511,7 +523,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: !loginDialog.done && !loginDialog.failed
                     running: visible
-                    width: 32; height: 32
+                    width: root.loginIndicatorSize; height: root.loginIndicatorSize
                 }
                 MeshIcon {
                     anchors.verticalCenter: parent.verticalCenter
@@ -522,7 +534,8 @@ Item {
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 360
+                    // The rest of the dialog's width, beside the spinner.
+                    width: loginDialog.availableWidth - root.loginIndicatorSize - parent.spacing
                     text: loginDialog.done ? qsTr("Signed in. You're ready to play.")
                         : loginDialog.failed ? (root.login.error || qsTr("Sign-in failed."))
                         : (root.login && root.login.status.length > 0 ? root.login.status
@@ -594,9 +607,12 @@ Item {
         id: offlineSkinDialog
         parent: Overlay.overlay
         anchors.centerIn: parent
-        width: 380
+        // A fixed width, not clamped to the window like the others: it fits
+        // the narrowest window anyway, and a width bound to the overlay
+        // made this text-only dialog's height depend on itself.
+        width: root.skinNoticeWidth
         modal: true
-        title: qsTr("Skin & cape")
+        title: qsTr("Skin and cape")
 
         contentItem: Text {
             width: parent.width

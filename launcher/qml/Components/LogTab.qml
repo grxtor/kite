@@ -51,6 +51,15 @@ Item {
     // While the log grows, matches are refreshed this often at most.
     readonly property int growDelayMs: 500
 
+    // For review snapshots (Main.qml's "review=<name>" dev route, through
+    // InstancePage): the Other logs view, or the find bar with a query.
+    function review(name) {
+        if (name === "otherlogs")
+            root.view = "other"
+        else if (name === "logfind")
+            findBar.text = "Loading"
+    }
+
     function recomputeMatches() {
         var found = []
         if (root.log && findBar.text.length > 0 && typeof root.log.findLines === "function")

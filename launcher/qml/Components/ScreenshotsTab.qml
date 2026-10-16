@@ -47,6 +47,20 @@ Item {
     // Set by the Upload actions, so only this tab reacts to the result.
     property bool uploading: false
 
+    // For review snapshots (Main.qml's "review=<name>" dev route, through
+    // InstancePage): everything selected, or the first picture's rename.
+    function review(name) {
+        if (name === "shotselect") {
+            root.selectAll()
+        } else if (name === "shotrename" && root.model && root.model.count > 0) {
+            const path = root.model.pathAt(0)
+            renamePrompt.path = path
+            renamePrompt.value = root.baseName(path.substring(path.lastIndexOf("/") + 1))
+            renamePrompt.error = ""
+            renamePrompt.open()
+        }
+    }
+
     function isSelected(path) {
         return root.selected[path] === true
     }

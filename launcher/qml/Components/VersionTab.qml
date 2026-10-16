@@ -408,6 +408,15 @@ Item {
     // component this tab does not have a picker for, e.g. LWJGL).
     readonly property var loaderUids: root.installer ? root.installer.loaders.map(function (l) { return l.uid }) : []
 
+    // For review snapshots (Main.qml's "review=<name>" dev route, through
+    // InstancePage): the More menu, or the add-a-component dialog.
+    function review(name) {
+        if (name === "versionmore")
+            moreMenu.popup(moreButton, moreButton.width - moreMenu.width, moreButton.height)
+        else if (name === "newcomponent")
+            newComponentDialog.open()
+    }
+
     function openChangeVersion(uid) {
         if (uid === "net.minecraft") {
             minecraftVersionDialog.open()

@@ -23,6 +23,9 @@ SettingsScroll {
     // without Qt Quick3D.
     property bool catAvailable: false
 
+    // The language box, as wide as the longest language name needs.
+    readonly property int languageBoxWidth: 260
+
     // One tile in the cat variant picker below -- the coat's face, cropped
     // out of the same texture the 3D cat wears (see Cat/CatRig.qml), plus a label,
     // styled like SkinCapeEditor's CapeTile but simple enough not to
@@ -33,15 +36,19 @@ SettingsScroll {
         required property string label
         readonly property bool selected: SettingsStore.string("CatVariant") === tile.value
 
-        implicitWidth: 56
-        implicitHeight: 76
+        // The face is the texture's 5x4 pixels at seven times their size,
+        // on a swatch with room around it, over its label.
+        readonly property int faceScale: 7
+        readonly property int swatchSize: 48
+        implicitWidth: swatchSize + Theme.space.sm
+        implicitHeight: swatch.height + Theme.space.xs + tileLabel.implicitHeight
 
         Rectangle {
             id: swatch
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 48
-            height: 48
+            width: tile.swatchSize
+            height: tile.swatchSize
             radius: Theme.radius.md
             color: tile.selected ? Theme.palette.accentSubtle : Theme.palette.surface
             border.width: tile.selected ? 2 : 1
@@ -51,8 +58,8 @@ SettingsScroll {
             // pixels wide, four high, eyes on its second row.
             Image {
                 anchors.centerIn: parent
-                width: 35
-                height: 28
+                width: 5 * tile.faceScale
+                height: 4 * tile.faceScale
                 smooth: false
                 sourceClipRect: Qt.rect(5, 33, 5, 4)
                 source: "qrc:/qt/qml/MeshMC/Cat/textures/cat_" + tile.value + ".png"
@@ -60,6 +67,7 @@ SettingsScroll {
         }
 
         Text {
+            id: tileLabel
             anchors.top: swatch.bottom
             anchors.topMargin: Theme.space.xs
             anchors.horizontalCenter: parent.horizontalCenter
@@ -84,7 +92,7 @@ SettingsScroll {
             description: qsTr("Applied immediately.")
             ComboBox {
                 id: languageBox
-                width: 260
+                width: root.languageBoxWidth
                 model: root.languages
                 textRole: "name"
                 valueRole: "languageKey"

@@ -88,6 +88,21 @@ Item {
         reviewDelay.run(browseView.openFilters)
     }
 
+    // A tab's own state for review snapshots (Main.qml's "review=<name>"
+    // dev route, after instance=<id>): the tab is shown first, then asked.
+    function review(name) {
+        const owners = {
+            versionmore: ["version", versionTab], newcomponent: ["version", versionTab],
+            otherlogs: ["log", logTab], logfind: ["log", logTab],
+            shotselect: ["screenshots", shotsTab], shotrename: ["screenshots", shotsTab]
+        }
+        const owner = owners[name]
+        if (!owner)
+            return
+        root.tab = owner[0]
+        reviewDelay.run(function () { owner[1].review(name) })
+    }
+
     function openHeaderMenu() {
         reviewDelay.run(function () {
             if (root.headerCard)
@@ -274,6 +289,7 @@ Item {
             }
 
             VersionTab {
+                id: versionTab
                 details: root.details
             }
 
@@ -311,6 +327,7 @@ Item {
             }
 
             ScreenshotsTab {
+                id: shotsTab
                 model: root.shotsModel
                 details: root.details
                 directory: root.details ? root.details.screenshotsDir : ""
@@ -318,6 +335,7 @@ Item {
             }
 
             LogTab {
+                id: logTab
                 log: root.details ? root.details.log : null
                 otherLogs: root.details ? root.details.otherLogs : null
                 details: root.details
