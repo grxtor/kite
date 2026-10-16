@@ -40,6 +40,36 @@ Item {
     signal deleteRequested(string id, string name)
     signal clearSearchRequested()
 
+    // The ⋯ menu's Play options (LaunchOptionsMenu.qml): what it offers comes
+    // from launchOptionsFor(id) -- Main.qml's launchOptions() -- and its
+    // choices leave as the signals below.
+    property var launchOptionsFor: null
+    signal launchModeRequested(string id, string mode)
+    signal launchAsRequested(string id, string accountId)
+    signal profilerChosen(string id, string profilerKey)
+    signal navigateRequested(string target)
+
+    // id -> export / shortcut controller (QmlShell, set in Main.qml). The ⋯
+    // menu offers "Export…" and "Create shortcut…" once these are set; the
+    // dialogs themselves are InstanceExportFlows below.
+    property var exportControllerFor: null
+    property var shortcutControllerFor: null
+
+    function exportInstance(id, format) {
+        exportFlows.exportInstance(id, format)
+    }
+    function createShortcut(id) {
+        exportFlows.createShortcut(id)
+    }
+    // The card ⋯ menu for instance @p id, for review snapshots (Main.qml's
+    // "librarymenu=<id>" dev route). A snapshot has no mouse to open it at,
+    // so it goes to the top-left of the cards instead of the window corner.
+    function openInstanceMenu(id) {
+        instanceMenu.openFor(id, false, "", "", "")
+        instanceMenu.x = root.contentX
+        instanceMenu.y = Theme.space.xl
+    }
+
     readonly property int pagePadding: Theme.space.xl + Theme.space.xs
     readonly property int gutter: Theme.space.lg
     // Cards grow to fill the row between these, adding a column once there
@@ -170,6 +200,17 @@ Item {
             targetName = name || ""
             targetIcon = iconKey || ""
             targetGroup = group || ""
+            // Play options make no sense for a running instance. A submenu
+            // has no `visible` of its own: its entry is a MenuItem Qt makes,
+            // found here by its subMenu.
+            var offerOptions = !running && !!root.launchOptionsFor
+            for (var i = 0; i < instanceMenu.count; ++i) {
+                var item = instanceMenu.itemAt(i)
+                if (item && item.subMenu === playOptionsMenu) {
+                    item.visible = offerOptions
+                    item.height = offerOptions ? item.implicitHeight : 0
+                }
+            }
             popup()
         }
 
@@ -178,6 +219,15 @@ Item {
             icon.source: Icons.url(instanceMenu.targetRunning ? "stop" : "play")
             onTriggered: instanceMenu.targetRunning ? root.stopRequested(instanceMenu.targetId)
                                                     : root.launchRequested(instanceMenu.targetId)
+        }
+        LaunchOptionsMenu {
+            id: playOptionsMenu
+            instanceId: instanceMenu.targetId
+            optionsFor: root.launchOptionsFor
+            onLaunchModeRequested: (id, mode) => root.launchModeRequested(id, mode)
+            onLaunchAsRequested: (id, accountId) => root.launchAsRequested(id, accountId)
+            onProfilerChosen: (id, key) => root.profilerChosen(id, key)
+            onNavigateRequested: (target) => root.navigateRequested(target)
         }
         MenuItem {
             text: qsTr("Open")
@@ -210,6 +260,21 @@ Item {
             icon.source: Icons.url("copy")
             onTriggered: root.duplicateRequested(instanceMenu.targetId, instanceMenu.targetName, instanceMenu.targetGroup)
         }
+        MenuItem {
+            // A hidden item still takes its row in a Menu; zero it as well.
+            visible: exportFlows.canExport
+            height: visible ? implicitHeight : 0
+            text: qsTr("Export\u2026")
+            icon.source: Icons.url("archive")
+            onTriggered: exportFlows.exportInstance(instanceMenu.targetId)
+        }
+        MenuItem {
+            visible: exportFlows.canCreateShortcut
+            height: visible ? implicitHeight : 0
+            text: qsTr("Create shortcut\u2026")
+            icon.source: Icons.url("external-link")
+            onTriggered: exportFlows.createShortcut(instanceMenu.targetId)
+        }
         MenuSeparator {}
         MenuItem {
             text: qsTr("Delete\u2026")
@@ -217,5 +282,12 @@ Item {
             enabled: !instanceMenu.targetRunning
             onTriggered: root.deleteRequested(instanceMenu.targetId, instanceMenu.targetName)
         }
+    }
+
+    // "Export…" and "Create shortcut…": the dialogs and their toast.
+    InstanceExportFlows {
+        id: exportFlows
+        exportControllerFor: root.exportControllerFor
+        shortcutControllerFor: root.shortcutControllerFor
     }
 }

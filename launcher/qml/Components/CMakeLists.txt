@@ -85,6 +85,10 @@ qt_add_qml_module(MeshMC_qml_components
         UpdateReviewDialog.qml
         ChangeVersionDialog.qml
         ContentUpdateFlows.qml
+        FieldLabel.qml
+        ExportInstanceDialog.qml
+        CreateShortcutDialog.qml
+        InstanceExportFlows.qml
         PluginNode.qml
         PluginSurfaces.qml
         UiRequestDialog.qml
@@ -172,6 +176,7 @@ qt_add_qml_module(MeshMC_qml_components
         icons/download.svg
         icons/edit.svg
         icons/external-link.svg
+        icons/file.svg
         icons/filter.svg
         icons/folder.svg
         icons/globe.svg

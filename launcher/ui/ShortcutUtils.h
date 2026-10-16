@@ -29,13 +29,12 @@
 class QWidget;
 
 /* Shortcuts that start one instance without going through the launcher
- * window first.
+ * window first, for the widget dialogs.
  *
- * FS::createShortcut() writes the file; everything here is the step before
- * that, which is entirely about the icon. The launcher knows an instance's
- * icon only as a theme key, and every platform's shell wants a different
- * image format on disk (.icns, .png, .ico), so the icon has to be rendered
- * into the instance folder before a shortcut can point at it.
+ * The writing itself (the icon, the platform's quirks, the folders) is
+ * InstanceShortcuts in the core, which the QML shell uses too. What is
+ * left here is the part only a widget caller has: a file dialog for
+ * "Other...", and message boxes.
  *
  * All of these report their own failures with a message box, since the
  * only caller is a dialog the user is looking at. */

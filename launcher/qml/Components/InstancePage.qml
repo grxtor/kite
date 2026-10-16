@@ -24,8 +24,6 @@ Item {
     property var details: null
     property int systemMemoryMiB: 8192
     property string tab: "overview"
-    // (row, versionId) -> TaskWatcher for the content browser.
-    property var contentInstaller: null
     // (anchor, instanceId) -> PluginSurfaceModel.
     property var pluginSurfacesFor: null
     // The account, for the top-right ProfileButton -- this page has no
@@ -56,6 +54,33 @@ Item {
     signal groupRequested(string id, string group)
     signal duplicateRequested(string id, string name, string group)
     signal deleteRequested(string id, string name)
+
+    // The header menu's Play options, with the same arguments as
+    // LibraryPage's signals of these names (LaunchOptionsMenu.qml).
+    property var launchOptionsFor: null
+    signal launchModeRequested(string id, string mode)
+    signal launchAsRequested(string id, string accountId)
+    signal profilerChosen(string id, string profilerKey)
+    signal navigateRequested(string target)
+
+    // id -> export / shortcut controller, as on LibraryPage: the header
+    // menu offers "Export…" and "Create shortcut…" once these are set.
+    property var exportControllerFor: null
+    property var shortcutControllerFor: null
+
+    // The header ⋯ menu, open under the banner's top-right corner where
+    // its button sits: for review snapshots (Main.qml's "instancemenu" dev
+    // route). Deferred a beat, because the route opens the page in the same
+    // breath and the banner has no width until it has been laid out.
+    function openHeaderMenu() {
+        headerMenuDelay.restart()
+    }
+    Timer {
+        id: headerMenuDelay
+        interval: Theme.motion.normal
+        onTriggered: if (root.headerCard)
+            instanceMenu.popup(root.headerCard, root.headerCard.width - instanceMenu.width, Theme.control.height)
+    }
 
     // The header delegate below, for the menu's name/icon/group.
     property var headerCard: null
@@ -229,7 +254,7 @@ Item {
 
             ContentBrowserView {
                 browser: root.details ? root.details.contentBrowser : null
-                installer: root.contentInstaller
+                details: root.details
             }
 
             WorldsTab {
@@ -296,15 +321,44 @@ Item {
         }
     }
 
-    // The header's ⋯ menu: the folders first, then -- once Main.qml answers
-    // them (see `manageable`) -- the library's own instance actions.
+    // The header's ⋯ menu: Play options and the folders first, then --
+    // once Main.qml answers them (see `manageable` and the controller
+    // functions above) -- the library's own instance actions.
     Menu {
         id: instanceMenu
         readonly property bool isMinecraft: !!root.details && root.details.isMinecraft
         readonly property string name: root.headerCard ? root.headerCard.name : ""
         readonly property string iconKey: root.headerCard ? root.headerCard.iconKey : ""
         readonly property string group: root.headerCard ? root.headerCard.group : ""
+        // Play options make no sense while the game runs.
+        readonly property bool offerOptions: !root.running && !!root.launchOptionsFor
+        readonly property bool offerManage: root.manageable || exportFlows.canExport || exportFlows.canCreateShortcut
 
+        // A submenu has no `visible` of its own: its entry is a MenuItem Qt
+        // makes, found here by its subMenu.
+        onAboutToShow: {
+            for (var i = 0; i < instanceMenu.count; ++i) {
+                var item = instanceMenu.itemAt(i)
+                if (item && item.subMenu === playOptionsMenu) {
+                    item.visible = instanceMenu.offerOptions
+                    item.height = instanceMenu.offerOptions ? item.implicitHeight : 0
+                }
+            }
+        }
+
+        LaunchOptionsMenu {
+            id: playOptionsMenu
+            instanceId: root.instanceId
+            optionsFor: root.launchOptionsFor
+            onLaunchModeRequested: (id, mode) => root.launchModeRequested(id, mode)
+            onLaunchAsRequested: (id, accountId) => root.launchAsRequested(id, accountId)
+            onProfilerChosen: (id, key) => root.profilerChosen(id, key)
+            onNavigateRequested: (target) => root.navigateRequested(target)
+        }
+        MenuSeparator {
+            visible: instanceMenu.offerOptions
+            height: visible ? implicitHeight : 0
+        }
         MenuItem {
             text: qsTr("Open folder")
             icon.source: Icons.url("folder")
@@ -319,7 +373,7 @@ Item {
             onTriggered: root.openPathRequested(root.details ? root.details.modsDir : "")
         }
         MenuSeparator {
-            visible: root.manageable
+            visible: instanceMenu.offerManage
             height: visible ? implicitHeight : 0
         }
         MenuItem {
@@ -350,6 +404,20 @@ Item {
             icon.source: Icons.url("copy")
             onTriggered: root.duplicateRequested(root.instanceId, instanceMenu.name, instanceMenu.group)
         }
+        MenuItem {
+            visible: exportFlows.canExport
+            height: visible ? implicitHeight : 0
+            text: qsTr("Export…")
+            icon.source: Icons.url("archive")
+            onTriggered: exportFlows.exportInstance(root.instanceId)
+        }
+        MenuItem {
+            visible: exportFlows.canCreateShortcut
+            height: visible ? implicitHeight : 0
+            text: qsTr("Create shortcut…")
+            icon.source: Icons.url("external-link")
+            onTriggered: exportFlows.createShortcut(root.instanceId)
+        }
         MenuSeparator {
             visible: root.manageable
             height: visible ? implicitHeight : 0
@@ -361,5 +429,13 @@ Item {
             icon.source: Icons.url("trash")
             onTriggered: root.deleteRequested(root.instanceId, instanceMenu.name)
         }
+    }
+
+    // "Export…" and "Create shortcut…": the dialogs and their toast, shared
+    // with LibraryPage.
+    InstanceExportFlows {
+        id: exportFlows
+        exportControllerFor: root.exportControllerFor
+        shortcutControllerFor: root.shortcutControllerFor
     }
 }

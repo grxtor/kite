@@ -66,6 +66,10 @@ set(CORE_SOURCES
     models/ContentInstallReview.cpp
     models/ContentUpdateController.h
     models/ContentUpdateController.cpp
+    models/InstanceExportController.h
+    models/InstanceExportController.cpp
+    models/InstanceShortcutController.h
+    models/InstanceShortcutController.cpp
     modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
@@ -123,6 +127,11 @@ set(CORE_SOURCES
     # from costing a per-file platform lookup.
     FileIgnoreProxy.h
     FileIgnoreProxy.cpp
+
+    # Writing a shortcut to an instance: the platform half both user
+    # interfaces share (ui/ShortcutUtils adds the widget dialogs on top).
+    InstanceShortcuts.h
+    InstanceShortcuts.cpp
 
     # String filters
     Filter.h
@@ -1515,6 +1524,18 @@ add_unit_test(ContentInstallReview
 add_unit_test(ContentUpdateController
     SOURCES models/ContentUpdateController_test.cpp
     LIBS MeshMC_core
+    )
+# WP1: a plain zip export of a NullInstance over a temp folder (ignore lists,
+# .packignore, unchecking through the tree model) and its failures; the pack
+# formats need a MinecraftInstance and the network. The shortcut test writes
+# into a temp folder only, with a stand-in LauncherContext for the icon list.
+add_unit_test(InstanceExportController
+    SOURCES models/InstanceExportController_test.cpp
+    LIBS MeshMC_core Qt${QT_VERSION_MAJOR}::Gui
+    )
+add_unit_test(InstanceShortcutController
+    SOURCES models/InstanceShortcutController_test.cpp
+    LIBS MeshMC_core Qt${QT_VERSION_MAJOR}::Gui
     )
 
 add_unit_test(IconTheme
