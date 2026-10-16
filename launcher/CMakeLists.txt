@@ -58,6 +58,12 @@ set(CORE_SOURCES
     models/WorldDataPacksController.cpp
     models/ManagedPackController.h
     models/ManagedPackController.cpp
+    models/ContentFilterModel.h
+    models/ContentFilterModel.cpp
+    models/InstanceContentController.h
+    models/InstanceContentController.cpp
+    models/ContentInstallReview.h
+    models/ContentInstallReview.cpp
     modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
@@ -1485,6 +1491,20 @@ add_unit_test(OtherLogsModel
 # this filter is built for.
 add_unit_test(KeyValueFilterModel
     SOURCES models/KeyValueFilterModel_test.cpp
+    LIBS MeshMC_core
+    )
+
+# WP2b: the content list search proxy and list export, driven against a real
+# ModFolderModel over a temp folder of jars; the install review against its
+# applyResolution() seam, so no network is needed. InstanceContentController
+# itself needs a MinecraftInstance and is exercised through its static
+# helpers only, the same reason ContentBrowser_test.cpp is.
+add_unit_test(ContentFilterModel
+    SOURCES models/ContentFilterModel_test.cpp
+    LIBS MeshMC_core
+    )
+add_unit_test(ContentInstallReview
+    SOURCES models/ContentInstallReview_test.cpp
     LIBS MeshMC_core
     )
 

@@ -38,6 +38,7 @@
 #include "minecraft/mod/ModFolderModel.h"
 #include "models/BackupController.h"
 #include "models/ContentBrowser.h"
+#include "models/InstanceContentController.h"
 #include "models/KeyValueFilterModel.h"
 #include "models/LoaderInstaller.h"
 #include "models/ManagedPackController.h"
@@ -591,6 +592,15 @@ QObject* InstanceDetails::gameOptions() const
 bool InstanceDetails::isMinecraft() const
 {
 	return m_mc != nullptr;
+}
+
+QObject* InstanceDetails::content() const
+{
+	if (!m_content && m_mc) {
+		m_content = new InstanceContentController(
+			m_mc, const_cast<InstanceDetails*>(this));
+	}
+	return m_content;
 }
 
 void InstanceDetails::onRunningStatusChanged(bool running)

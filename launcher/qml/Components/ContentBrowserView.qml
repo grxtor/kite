@@ -10,21 +10,30 @@ import MeshMC.Theme
 /*
  * Find mods, resource packs, shaders and data packs for this instance on
  * Modrinth or CurseForge, and install them -- dependencies included --
- * without leaving the instance. Results already match the instance's
- * Minecraft version and loader; things already installed say so.
+ * without leaving the instance. Results start out matching the instance's
+ * Minecraft version and loader; Filters (ContentFilterPopup) widens or
+ * narrows that, and adds categories and environment. Things already
+ * installed say so.
  *
  * Results on the left, the picked project on the right with its versions,
- * the newest compatible one preselected. Installs run side by side: each
- * project keeps its own progress, shown on its row, so browsing on and
- * installing something else never waits for the previous download.
+ * the newest compatible one preselected. Install first works out what the
+ * project needs; when that is anything at all, InstallReviewDialog lists
+ * it to untick before downloading (DownloadSummaryDialog's job). Installs
+ * run side by side: each project keeps its own progress, shown on its row,
+ * so browsing on and installing something else never waits for the
+ * previous download.
  */
 Item {
     id: root
 
     // ContentBrowser of the open instance.
     property var browser: null
-    // (row, versionId) -> TaskWatcher, C++-owned.
+    // (row, versionId) -> TaskWatcher, C++-owned. No longer used: installs
+    // go through browser.review() so they can be reviewed first.
     property var installer: null
+    // InstanceDetails, for its loaderInstaller (the "Install a loader"
+    // action). Optional: without it that notice just has no button.
+    property var details: null
     property int selectedRow: -1
     property var selectedProject: null
     property int pickedVersion: -1
@@ -60,16 +69,69 @@ Item {
     readonly property var selectedDownload: selectedProject
                                             ? downloadFor(projectKey(selectedProject.title, selectedProject.author)) : null
     readonly property bool selectedInstalling: !!selectedDownload && selectedDownload.running
+    readonly property bool selectedChecking: selectedProject
+                                             ? root.isChecking(projectKey(selectedProject.title, selectedProject.author)) : false
+
+    // Reviews still working out dependencies, by project key, under the
+    // same revision counter as `downloads`.
+    property var checking: ({})
+    function isChecking(key) {
+        root.downloadsRevision
+        return !!root.checking[key]
+    }
+    // Why the install button is off, if it is.
+    readonly property string blockedReason: !root.browser ? ""
+        : !root.browser.changesAllowed ? qsTr("The game is running. Mods can be installed once it closes.")
+        : !root.browser.installTargetAvailable ? qsTr("This instance's shared data pack folder is turned off.")
+        : ""
+    property string installNote: ""
 
     function install() {
-        if (!root.installer || root.pickedVersion < 0 || !root.selectedProject)
+        if (!root.browser || root.pickedVersion < 0 || !root.selectedProject)
             return
-        var watcher = root.installer(root.selectedRow, root.versions[root.pickedVersion].id)
+        root.installNote = ""
+        var key = projectKey(root.selectedProject.title, root.selectedProject.author)
+        var review = root.browser.review(root.selectedRow, root.versions[root.pickedVersion].id)
+        if (!review) {
+            root.installNote = qsTr("This version cannot be installed here.")
+            return
+        }
+        root.checking[key] = review
+        root.downloadsRevision++
+        var settle = function () {
+            if (!review.ready || root.checking[key] !== review)
+                return
+            delete root.checking[key]
+            root.downloadsRevision++
+            if (review.needsReview)
+                root.queueReview(key, review)
+            else
+                root.track(key, review.install())
+        }
+        review.stateChanged.connect(settle)
+        settle()
+    }
+    function track(key, watcher) {
         if (!watcher)
             return
-        root.downloads[projectKey(root.selectedProject.title, root.selectedProject.author)] = watcher
+        root.downloads[key] = watcher
         watcher.runningChanged.connect(function () { root.downloadsRevision++ })
         root.downloadsRevision++
+    }
+
+    // Reviews waiting for the dialog, oldest first.
+    property var reviewQueue: []
+    function queueReview(key, review) {
+        root.reviewQueue = root.reviewQueue.concat([{ key: key, review: review }])
+        root.showNextReview()
+    }
+    function showNextReview() {
+        if (reviewDialog.visible || root.reviewQueue.length === 0)
+            return
+        var next = root.reviewQueue[0]
+        root.reviewQueue = root.reviewQueue.slice(1)
+        reviewDialog.key = next.key
+        reviewDialog.show(next.review)
     }
 
     readonly property var providers: [
@@ -100,6 +162,7 @@ Item {
     onBrowserChanged: { root.searched = false; searchIfFirstShown() }
 
     function select(row, project) {
+        root.installNote = ""
         root.selectedRow = row
         root.selectedProject = project
         root.pickedVersion = -1
@@ -172,6 +235,20 @@ Item {
             }
         }
 
+        // At most one: the game running, no loader for mods, or nowhere for
+        // data packs to go.
+        NoticeBar {
+            Layout.fillWidth: true
+            visible: text.length > 0
+            text: root.blockedReason.length > 0 ? root.blockedReason
+                : root.browser && root.browser.contentType === "mods" && !root.browser.hasModLoader
+                  ? qsTr("This instance has no mod loader, so mods will not run. Install one first.")
+                : ""
+            actionText: !!root.details && root.blockedReason.length === 0 && text.length > 0
+                        ? qsTr("Install a loader…") : ""
+            onActionTriggered: loaderDialog.open()
+        }
+
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -206,6 +283,20 @@ Item {
                         textRole: "label"
                         valueRole: "id"
                         onActivated: { root.browser.sortIndex = currentValue; root.runSearch() }
+                    }
+                    Button {
+                        id: filtersButton
+                        readonly property int active: root.browser ? root.browser.activeFilterCount : 0
+                        text: active > 0 ? qsTr("Filters (%1)").arg(active) : qsTr("Filters")
+                        icon.source: Icons.url("filter")
+                        onClicked: filterPopup.opened ? filterPopup.close() : filterPopup.open()
+
+                        ContentFilterPopup {
+                            id: filterPopup
+                            browser: root.browser
+                            y: filtersButton.height + Theme.space.xs
+                            x: filtersButton.width - width
+                        }
                     }
                 }
 
@@ -243,6 +334,7 @@ Item {
                         readonly property bool selected: root.selectedRow === index
                         readonly property var download: root.downloadFor(root.projectKey(title, author))
                         readonly property bool downloading: !!download && download.running
+                        readonly property bool checking: root.isChecking(root.projectKey(title, author))
                         readonly property bool justInstalled: !!download && download.succeeded
 
                         // Full width: the ScrollBar overlays the rows' right
@@ -271,8 +363,8 @@ Item {
                                 anchors.bottom: parent.bottom
                                 anchors.margins: Theme.space.xs
                                 height: 3
-                                visible: row.downloading
-                                progress: row.download ? row.download.progress : -1
+                                visible: row.downloading || row.checking
+                                progress: row.downloading && row.download ? row.download.progress : -1
                             }
                         }
 
@@ -308,9 +400,10 @@ Item {
                                 }
                                 Text {
                                     width: parent.width
-                                    text: row.downloading ? (row.download.status || qsTr("Installing…")) : row.description
+                                    text: row.downloading ? (row.download.status || qsTr("Installing…"))
+                                        : row.checking ? qsTr("Checking what it needs…") : row.description
                                     elide: Text.ElideRight
-                                    color: row.downloading ? Theme.palette.accentText : Theme.palette.textTertiary
+                                    color: row.downloading || row.checking ? Theme.palette.accentText : Theme.palette.textTertiary
                                     font.family: Theme.font.family
                                     font.pixelSize: Theme.type.caption.pixelSize
                                 }
@@ -540,14 +633,16 @@ Item {
                         Layout.fillWidth: true
                         visible: text.length > 0
                         readonly property var d: root.selectedDownload
-                        text: d && d.failed ? (d.error || qsTr("Install failed."))
+                        text: root.installNote.length > 0 ? root.installNote
+                            : root.selectedChecking ? qsTr("Checking what it needs…")
+                            : d && d.failed ? (d.error || qsTr("Install failed."))
                             : d && d.succeeded ? qsTr("Installed.")
                             : d ? (d.status || "") : ""
                         wrapMode: Text.Wrap
                         maximumLineCount: 2
                         elide: Text.ElideRight
-                        color: d && d.failed ? Theme.palette.danger
-                             : d && d.succeeded ? Theme.palette.success : Theme.palette.textSecondary
+                        color: root.installNote.length > 0 || (d && d.failed) ? Theme.palette.danger
+                             : d && d.succeeded && !root.selectedChecking ? Theme.palette.success : Theme.palette.textSecondary
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.label.pixelSize
                     }
@@ -557,15 +652,21 @@ Item {
                         progress: root.selectedDownload ? root.selectedDownload.progress : -1
                     }
 
-                    Button {
+                    HoverReason {
                         Layout.fillWidth: true
-                        highlighted: true
-                        enabled: !root.selectedInstalling && root.pickedVersion >= 0 && !!root.installer
-                        text: root.selectedInstalling ? qsTr("Installing…")
-                            : root.selectedProject && root.selectedProject.installed ? qsTr("Install this version")
-                            : qsTr("Install")
-                        icon.source: Icons.url("download")
-                        onClicked: root.install()
+                        reason: root.blockedReason
+                        Button {
+                            width: parent ? parent.width : implicitWidth
+                            highlighted: true
+                            enabled: !root.selectedInstalling && !root.selectedChecking && root.pickedVersion >= 0
+                                     && !!root.browser && root.blockedReason.length === 0
+                            text: root.selectedInstalling ? qsTr("Installing…")
+                                : root.selectedChecking ? qsTr("Checking…")
+                                : root.selectedProject && root.selectedProject.installed ? qsTr("Install this version")
+                                : qsTr("Install")
+                            icon.source: Icons.url("download")
+                            onClicked: root.install()
+                        }
                     }
                 }
 
@@ -574,7 +675,7 @@ Item {
                     width: parent.width - Theme.space.xxl * 2
                     horizontalAlignment: Text.AlignHCenter
                     visible: !root.selectedProject
-                    text: qsTr("Pick something on the left to see its versions and install it. Required dependencies come along automatically.")
+                    text: qsTr("Pick something on the left to see its versions and install it. Anything it needs is listed before it downloads.")
                     wrapMode: Text.Wrap
                     color: Theme.palette.textTertiary
                     font.family: Theme.font.family
@@ -582,5 +683,17 @@ Item {
                 }
             }
         }
+    }
+
+    InstallReviewDialog {
+        id: reviewDialog
+        property string key: ""
+        onInstallStarted: (watcher) => root.track(reviewDialog.key, watcher)
+        onClosed: Qt.callLater(root.showNextReview)
+    }
+
+    LoaderInstallDialog {
+        id: loaderDialog
+        installer: root.details ? root.details.loaderInstaller : null
     }
 }

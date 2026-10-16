@@ -137,6 +137,57 @@ class ContentBrowserTest : public QObject
 	{
 		QVERIFY(ContentBrowser::sortOptionsFor({}).isEmpty());
 	}
+
+	/* The filter panel's state turned into a provider query
+	 * (searchFiltersFor(), static for this reason). */
+	void test_FiltersForModsOnModrinth()
+	{
+		ContentBrowser::FilterState state;
+		state.categories = {"optimization"};
+		state.gameVersion = "1.21.4";
+		state.loaders = {"fabric", "quilt"};
+		state.environment = "both";
+		state.openSourceOnly = true;
+
+		const auto filters = ContentBrowser::searchFiltersFor(
+			state, ModPlatform::ContentType::Mod, /*extended=*/true);
+		QCOMPARE(filters.mcVersions, QStringList{"1.21.4"});
+		QCOMPARE(filters.loaders, (QStringList{"fabric", "quilt"}));
+		QCOMPARE(filters.categoryIds, QStringList{"optimization"});
+		QCOMPARE(filters.side, ModPlatform::SideFilter::Universal);
+		QVERIFY(filters.openSourceOnly);
+	}
+
+	void test_FiltersDropWhatTheProviderCannotAnswer()
+	{
+		ContentBrowser::FilterState state;
+		state.gameVersion = "";
+		state.loaders = {"fabric"};
+		state.environment = "client";
+		state.openSourceOnly = true;
+
+		/* CurseForge indexes neither environment nor licence. */
+		const auto curseforge = ContentBrowser::searchFiltersFor(
+			state, ModPlatform::ContentType::Mod, false);
+		QVERIFY(curseforge.mcVersions.isEmpty());
+		QCOMPARE(curseforge.side, ModPlatform::SideFilter::Any);
+		QVERIFY(!curseforge.openSourceOnly);
+
+		/* A resource pack works with every loader, on every side. */
+		const auto packs = ContentBrowser::searchFiltersFor(
+			state, ModPlatform::ContentType::ResourcePack, true);
+		QVERIFY(packs.loaders.isEmpty());
+		QCOMPARE(packs.side, ModPlatform::SideFilter::Any);
+		QVERIFY(packs.openSourceOnly);
+	}
+
+	void test_CategoryLabel()
+	{
+		QCOMPARE(ContentBrowser::categoryLabel("game-mechanics"),
+				 QString("Game Mechanics"));
+		QCOMPARE(ContentBrowser::categoryLabel("Tech"), QString("Tech"));
+		QCOMPARE(ContentBrowser::categoryLabel(""), QString());
+	}
 };
 
 QTEST_GUILESS_MAIN(ContentBrowserTest)

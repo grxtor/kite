@@ -37,6 +37,12 @@
 #include "modplatform/flame/FlameContentModel.h"
 #include "modplatform/modrinth/ModrinthContentModel.h"
 #include "tasks/TaskWatcher.h"
+#include "core/LauncherContext.h"
+#include "meta/Index.h"
+#include "meta/Version.h"
+#include "meta/VersionList.h"
+#include "models/ContentInstallReview.h"
+#include "settings/Setting.h"
 
 namespace
 {
@@ -274,7 +280,41 @@ ContentBrowser::ContentBrowser(MinecraftInstance* instance, QObject* parent)
 	if (auto profile = m_instance ? m_instance->getPackProfile() : nullptr) {
 		m_mcVersion = profile->getComponentVersion("net.minecraft");
 		m_loaderType = profile->primaryModLoader();
+
+		/* Unlike the widget dialog, this page stays open while a loader is
+		 * installed from it (ContentBrowserView's "Install a loader"), so
+		 * follow the component list rather than reading it only once. */
+		auto* p = profile.get();
+		connect(p, &QAbstractItemModel::rowsInserted, this,
+				&ContentBrowser::refreshInstanceProfile);
+		connect(p, &QAbstractItemModel::rowsRemoved, this,
+				&ContentBrowser::refreshInstanceProfile);
+		connect(p, &QAbstractItemModel::modelReset, this,
+				&ContentBrowser::refreshInstanceProfile);
+		connect(p, &QAbstractItemModel::dataChanged, this,
+				&ContentBrowser::refreshInstanceProfile);
 	}
+
+	if (m_instance) {
+		connect(m_instance, &BaseInstance::runningStatusChanged, this,
+				&ContentBrowser::changesAllowedChanged);
+	}
+	connect(this, &ContentBrowser::contentTypeChanged, this,
+			&ContentBrowser::changesAllowedChanged);
+	connect(this, &ContentBrowser::contentTypeChanged, this,
+			&ContentBrowser::installTargetAvailableChanged);
+	if (m_instance && m_instance->settings()) {
+		if (auto setting = m_instance->settings()->getSetting(
+				QStringLiteral("GlobalDataPacksEnabled"))) {
+			connect(setting.get(), &Setting::SettingChanged, this,
+					&ContentBrowser::installTargetAvailableChanged);
+		}
+	}
+
+	/* The search this browser has always made: this instance's own
+	 * version and loader. */
+	m_filter.gameVersion = m_mcVersion;
+	m_filter.loaders = ModPlatform::singleLoaderList(m_loaderType);
 }
 
 ContentBrowser::~ContentBrowser() = default;
@@ -297,6 +337,9 @@ void ContentBrowser::setProvider(const QString& provider)
 	emit canFetchMoreChanged();
 	emit countChanged();
 	setError(QString());
+	clearCategoryFilter();
+	emit categoriesChanged();
+	applyFilters();
 }
 
 bool ContentBrowser::curseForgeKeyMissing() const
@@ -325,6 +368,9 @@ void ContentBrowser::setContentType(const QString& contentType)
 	emit canFetchMoreChanged();
 	emit countChanged();
 	setError(QString());
+	clearCategoryFilter();
+	emit categoriesChanged();
+	applyFilters();
 }
 
 void ContentBrowser::setQuery(const QString& query)
@@ -451,6 +497,13 @@ ContentProviderModel* ContentBrowser::ensureModel(const QString& provider,
 		model->setInstalledIndex(folder->metadataIndex());
 	}
 
+	/* Then whatever the filter panel says now, which starts out as exactly
+	 * the above but may have moved since. Nothing has searched yet, so
+	 * this only records them. */
+	model->setSearchFilters(
+		searchFiltersFor(m_filter, type, model->supportsExtendedFilters()));
+	model->setHideInstalled(m_hideInstalled);
+
 	connectModel(model);
 	m_models.insert(key, model);
 	return model;
@@ -468,6 +521,20 @@ void ContentBrowser::connectModel(ContentProviderModel* model)
 			&ContentBrowser::onModelSearchStateChanged);
 	connect(model, &ContentProviderModel::entryUpdated, this,
 			&ContentBrowser::onEntryUpdated);
+	connect(model, &ContentProviderModel::categoriesLoaded, this,
+			[this, model](const QList<ModPlatform::Category>& categories) {
+				QVariantList list;
+				for (const auto& category : categories) {
+					QVariantMap entry;
+					entry[QStringLiteral("id")] = category.id;
+					entry[QStringLiteral("label")] = categoryLabel(category.name);
+					list.append(entry);
+				}
+				m_categories.insert(m_models.key(model), list);
+				if (model == currentModel()) {
+					emit categoriesChanged();
+				}
+			});
 }
 
 void ContentBrowser::onModelSearchStateChanged()
@@ -623,13 +690,14 @@ void ContentBrowser::loadVersions(int row)
 	model->loadEntry(row);
 }
 
-QObject* ContentBrowser::install(int row, const QString& versionId)
+bool ContentBrowser::selectionFor(int row, const QString& versionId,
+								  ModPlatform::SelectedMod& mod) const
 {
 	auto* model = currentModel();
 	const auto* project = model ? model->projectAt(row) : nullptr;
 	if (!project) {
 		qWarning() << "ContentBrowser::install: no such row" << row;
-		return nullptr;
+		return false;
 	}
 
 	const ModPlatform::ContentVersion* version = nullptr;
@@ -643,17 +711,15 @@ QObject* ContentBrowser::install(int row, const QString& versionId)
 		qWarning() << "ContentBrowser::install: version" << versionId
 				   << "not known for" << project->name
 				   << "- call loadVersions() first";
-		return nullptr;
+		return false;
 	}
 
-	auto folder = folderModelFor(m_contentType);
-	if (!folder) {
+	if (!folderModelFor(m_contentType)) {
 		qWarning() << "ContentBrowser::install: no folder for this content "
 					  "type on this instance";
-		return nullptr;
+		return false;
 	}
 
-	ModPlatform::SelectedMod mod;
 	mod.name = project->name;
 	mod.projectId = project->projectId;
 	mod.versionId = version->versionId;
@@ -667,6 +733,16 @@ QObject* ContentBrowser::install(int row, const QString& versionId)
 	mod.loaders = m_loaderType;
 	mod.versionType = version->versionType;
 	mod.browserDownloadOnly = version->browserDownloadOnly;
+	return true;
+}
+
+QObject* ContentBrowser::install(int row, const QString& versionId)
+{
+	ModPlatform::SelectedMod mod;
+	if (!selectionFor(row, versionId, mod)) {
+		return nullptr;
+	}
+	auto folder = folderModelFor(m_contentType);
 
 	/* Dependencies are a mod-only idea - see ModFolderPage::
 	 * installSelection()'s own ContentType::Mod check. */
@@ -681,7 +757,7 @@ QObject* ContentBrowser::install(int row, const QString& versionId)
 		folder->metadataIndex(), resolveDependencies, this);
 
 	auto* watcher = new TaskWatcher(Task::Ptr(task), this);
-	watcher->setTitle(project->name);
+	watcher->setTitle(mod.name);
 
 	/* Refresh the instance's content list afterwards, exactly the way
 	 * ModFolderPage::reviewAndInstall() calls m_mods->update() once the
@@ -692,6 +768,332 @@ QObject* ContentBrowser::install(int row, const QString& versionId)
 
 	task->start();
 	return watcher;
+}
+
+QObject* ContentBrowser::review(int row, const QString& versionId)
+{
+	ModPlatform::SelectedMod mod;
+	if (!selectionFor(row, versionId, mod)) {
+		return nullptr;
+	}
+	/* The same two decisions install() makes above. */
+	const bool resolveDependencies =
+		m_contentType == ModPlatform::ContentType::Mod;
+	const QString loaderForResolver =
+		ModPlatform::contentTypeUsesLoader(m_contentType) ? m_loaderType
+														  : QString();
+	auto* review =
+		new ContentInstallReview(mod, m_mcVersion, loaderForResolver,
+								 folderModelFor(m_contentType),
+								 resolveDependencies, this);
+	review->start();
+	return review;
+}
+
+// ---------------------------------------------------------------------------
+// Filters
+
+ModPlatform::SearchFilters
+ContentBrowser::searchFiltersFor(const FilterState& state,
+								 ModPlatform::ContentType type, bool extended)
+{
+	ModPlatform::SearchFilters filters;
+	/* An empty list means "any version", which the query expresses by
+	 * leaving the version out. */
+	filters.mcVersions = ModPlatform::singleVersionList(state.gameVersion);
+	filters.categoryIds = state.categories;
+	if (ModPlatform::contentTypeUsesLoader(type)) {
+		filters.loaders = state.loaders;
+	}
+	/* Only Modrinth indexes these; on CurseForge they would quietly
+	 * change nothing, so they are not sent at all. Environment, like the
+	 * loader, only means something for mods. */
+	if (extended) {
+		filters.openSourceOnly = state.openSourceOnly;
+		if (ModPlatform::contentTypeUsesLoader(type)) {
+			if (state.environment == QStringLiteral("client")) {
+				filters.side = ModPlatform::SideFilter::Client;
+			} else if (state.environment == QStringLiteral("server")) {
+				filters.side = ModPlatform::SideFilter::Server;
+			} else if (state.environment == QStringLiteral("both")) {
+				/* Has to work on each side - the strict reading, as the
+				 * widget panel has it with both boxes ticked. */
+				filters.side = ModPlatform::SideFilter::Universal;
+			}
+		}
+	}
+	return filters;
+}
+
+QString ContentBrowser::categoryLabel(const QString& name)
+{
+	QStringList words = QString(name).replace(QLatin1Char('-'), QLatin1Char(' '))
+							.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+	for (QString& word : words) {
+		word[0] = word[0].toUpper();
+	}
+	return words.join(QLatin1Char(' '));
+}
+
+void ContentBrowser::applyFilters()
+{
+	auto* model = currentModel();
+	if (!model) {
+		return;
+	}
+	model->setSearchFilters(searchFiltersFor(m_filter, m_contentType,
+											 model->supportsExtendedFilters()));
+	model->setHideInstalled(m_hideInstalled);
+}
+
+void ContentBrowser::clearCategoryFilter()
+{
+	if (m_filter.categories.isEmpty()) {
+		return;
+	}
+	m_filter.categories.clear();
+	emit filtersChanged();
+}
+
+QVariantList ContentBrowser::categories() const
+{
+	return m_categories.value(modelKey(m_provider, m_contentType));
+}
+
+void ContentBrowser::setCategoryFilter(const QStringList& ids)
+{
+	if (m_filter.categories == ids) {
+		return;
+	}
+	m_filter.categories = ids;
+	emit filtersChanged();
+	applyFilters();
+}
+
+void ContentBrowser::setGameVersionFilter(const QString& version)
+{
+	if (m_filter.gameVersion == version) {
+		return;
+	}
+	m_filter.gameVersion = version;
+	emit filtersChanged();
+	applyFilters();
+}
+
+void ContentBrowser::setLoaderFilter(const QStringList& loaders)
+{
+	if (m_filter.loaders == loaders) {
+		return;
+	}
+	m_filter.loaders = loaders;
+	emit filtersChanged();
+	applyFilters();
+}
+
+QVariantList ContentBrowser::loaderOptions() const
+{
+	/* The ones the widget panel shows before "Show More". CurseForge has
+	 * an id for each of these. */
+	const QList<QPair<QString, QString>> common = {
+		{QStringLiteral("neoforge"), QStringLiteral("NeoForge")},
+		{QStringLiteral("forge"), QStringLiteral("Forge")},
+		{QStringLiteral("fabric"), QStringLiteral("Fabric")},
+		{QStringLiteral("quilt"), QStringLiteral("Quilt")},
+	};
+	QVariantList list;
+	bool hasOwn = m_loaderType.isEmpty();
+	for (const auto& loader : common) {
+		QVariantMap entry;
+		entry[QStringLiteral("id")] = loader.first;
+		entry[QStringLiteral("label")] = loader.second;
+		list.append(entry);
+		hasOwn = hasOwn || loader.first == m_loaderType;
+	}
+	if (!hasOwn) {
+		QVariantMap entry;
+		entry[QStringLiteral("id")] = m_loaderType;
+		entry[QStringLiteral("label")] = categoryLabel(m_loaderType);
+		list.append(entry);
+	}
+	return list;
+}
+
+void ContentBrowser::setEnvironmentFilter(const QString& environment)
+{
+	if (m_filter.environment == environment) {
+		return;
+	}
+	m_filter.environment = environment;
+	emit filtersChanged();
+	applyFilters();
+}
+
+void ContentBrowser::setOpenSourceOnly(bool only)
+{
+	if (m_filter.openSourceOnly == only) {
+		return;
+	}
+	m_filter.openSourceOnly = only;
+	emit filtersChanged();
+	applyFilters();
+}
+
+void ContentBrowser::setHideInstalled(bool hide)
+{
+	if (m_hideInstalled == hide) {
+		return;
+	}
+	m_hideInstalled = hide;
+	emit filtersChanged();
+	/* Re-filters what is loaded; no new search. */
+	if (auto* model = currentModel()) {
+		model->setHideInstalled(hide);
+	}
+	emit countChanged();
+}
+
+bool ContentBrowser::loaderFilterAvailable() const
+{
+	return ModPlatform::contentTypeUsesLoader(m_contentType);
+}
+
+bool ContentBrowser::changesAllowed() const
+{
+	return !m_instance || !m_instance->isRunning() ||
+		   m_contentType != ModPlatform::ContentType::Mod;
+}
+
+bool ContentBrowser::installTargetAvailable() const
+{
+	return folderModelFor(m_contentType) != nullptr;
+}
+
+bool ContentBrowser::extendedFilters() const
+{
+	auto* model = currentModel();
+	return model && model->supportsExtendedFilters();
+}
+
+int ContentBrowser::activeFilterCount() const
+{
+	int n = int(m_filter.categories.size());
+	if (m_filter.gameVersion != m_mcVersion) {
+		++n;
+	}
+	if (loaderFilterAvailable() &&
+		m_filter.loaders != ModPlatform::singleLoaderList(m_loaderType)) {
+		++n;
+	}
+	if (extendedFilters()) {
+		if (loaderFilterAvailable() && !m_filter.environment.isEmpty()) {
+			++n;
+		}
+		if (m_filter.openSourceOnly) {
+			++n;
+		}
+	}
+	if (m_hideInstalled) {
+		++n;
+	}
+	return n;
+}
+
+void ContentBrowser::resetFilters()
+{
+	FilterState fresh;
+	fresh.gameVersion = m_mcVersion;
+	fresh.loaders = ModPlatform::singleLoaderList(m_loaderType);
+	m_filter = fresh;
+	m_hideInstalled = false;
+	emit filtersChanged();
+	applyFilters();
+	emit countChanged();
+}
+
+void ContentBrowser::loadFilterOptions()
+{
+	if (auto* model = currentModel()) {
+		model->loadCategories();
+	}
+	if (m_mcVersionList || !LAUNCHER || !LAUNCHER->metadataIndex()) {
+		rebuildGameVersionOptions();
+		return;
+	}
+	m_mcVersionList =
+		LAUNCHER->metadataIndex()->get(QStringLiteral("net.minecraft"));
+	if (!m_mcVersionList) {
+		rebuildGameVersionOptions();
+		return;
+	}
+	/* Fills in when the list arrives rather than waiting for it - the
+	 * same choice ContentFilterWidget::loadMcVersions() makes. A list
+	 * already on disk is usable straight away. */
+	if (auto task = m_mcVersionList->getLoadTask()) {
+		connect(task.get(), &Task::succeeded, this,
+				&ContentBrowser::rebuildGameVersionOptions);
+	}
+	rebuildGameVersionOptions();
+}
+
+void ContentBrowser::rebuildGameVersionOptions()
+{
+	QStringList versions;
+	if (m_mcVersionList) {
+		auto entries = m_mcVersionList->versions();
+		/* Newest first, by release date: version strings do not sort. */
+		std::sort(entries.begin(), entries.end(),
+				  [](const Meta::VersionPtr& a, const Meta::VersionPtr& b) {
+					  return a->rawTime() > b->rawTime();
+				  });
+		for (const auto& entry : entries) {
+			if (entry && !entry->version().isEmpty() &&
+				entry->type() == QLatin1String("release")) {
+				versions.append(entry->version());
+			}
+		}
+	}
+	/* Offered whatever happens, snapshot or not. */
+	if (!m_mcVersion.isEmpty() && !versions.contains(m_mcVersion)) {
+		versions.prepend(m_mcVersion);
+	}
+	if (versions == m_gameVersionOptions) {
+		return;
+	}
+	m_gameVersionOptions = versions;
+	emit gameVersionOptionsChanged();
+}
+
+void ContentBrowser::refreshInstanceProfile()
+{
+	auto profile = m_instance ? m_instance->getPackProfile() : nullptr;
+	if (!profile) {
+		return;
+	}
+	const QString mcVersion = profile->getComponentVersion("net.minecraft");
+	const QString loader = profile->primaryModLoader();
+	if (mcVersion == m_mcVersion && loader == m_loaderType) {
+		return;
+	}
+
+	/* Filters still on the old defaults follow the instance; ones the
+	 * user picked stay put. */
+	bool moved = false;
+	if (m_filter.gameVersion == m_mcVersion && mcVersion != m_mcVersion) {
+		m_filter.gameVersion = mcVersion;
+		moved = true;
+	}
+	if (m_filter.loaders == ModPlatform::singleLoaderList(m_loaderType) &&
+		loader != m_loaderType) {
+		m_filter.loaders = ModPlatform::singleLoaderList(loader);
+		moved = true;
+	}
+	m_mcVersion = mcVersion;
+	m_loaderType = loader;
+	emit instanceProfileChanged();
+	if (moved) {
+		emit filtersChanged();
+		applyFilters();
+	}
 }
 
 #include "ContentBrowser.moc"

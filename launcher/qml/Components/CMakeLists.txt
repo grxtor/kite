@@ -73,6 +73,12 @@ qt_add_qml_module(MeshMC_qml_components
         PackList.qml
         PalettePicker.qml
         ContentBrowserView.qml
+        PackRow.qml
+        ContentSelectionBar.qml
+        ExportContentListDialog.qml
+        InstallReviewDialog.qml
+        ContentFilterPopup.qml
+        NoticeBar.qml
         PluginNode.qml
         PluginSurfaces.qml
         UiRequestDialog.qml
@@ -133,6 +139,7 @@ qt_add_qml_module(MeshMC_qml_components
         HomePage.qml
         HomeJumpCard.qml
         HomeWorldTile.qml
+        HoverReason.qml
         HomeLibraryTile.qml
         AmbientPattern.qml
         PageBackdrop.qml
@@ -159,6 +166,7 @@ qt_add_qml_module(MeshMC_qml_components
         icons/download.svg
         icons/edit.svg
         icons/external-link.svg
+        icons/filter.svg
         icons/folder.svg
         icons/globe.svg
         icons/grid.svg

@@ -22,6 +22,7 @@
 #include <QHash>
 #include <QObject>
 #include <QString>
+#include <QStringList>
 #include <QVariantList>
 #include <memory>
 
@@ -36,7 +37,14 @@ namespace ModPlatform
 	struct ContentVersion;
 	struct SortingMethod;
 	struct IndexedProject;
+	struct SearchFilters;
+	struct SelectedMod;
 } // namespace ModPlatform
+
+namespace Meta
+{
+	class VersionList;
+} // namespace Meta
 
 /*
  * QML-facing bridge to CurseForge/Modrinth content search and install for
@@ -115,7 +123,83 @@ class ContentBrowser : public QObject
 	Q_PROPERTY(bool versionsLoading READ versionsLoading NOTIFY
 				   versionsLoadingChanged)
 
+	/* The search filters ContentFilterWidget offers in the widget dialog,
+	 * as properties. A change re-runs the current search (or, for
+	 * hideInstalled, only re-filters what is already loaded - see
+	 * ContentFilterWidget's two signals). They start on this instance's
+	 * own Minecraft version and loader, the search the browser has always
+	 * made; categories are provider- and type-specific, so they are
+	 * cleared whenever either changes. */
+
+	/// QVariantList of {id, label} for the current provider/contentType;
+	/// empty until loadFilterOptions() has had an answer.
+	Q_PROPERTY(QVariantList categories READ categories NOTIFY categoriesChanged)
+	/// Category ids to narrow to; empty means every category.
+	Q_PROPERTY(QStringList categoryFilter READ categoryFilter WRITE
+				   setCategoryFilter NOTIFY filtersChanged)
+	/// One Minecraft version, or "" for every version.
+	Q_PROPERTY(QString gameVersionFilter READ gameVersionFilter WRITE
+				   setGameVersionFilter NOTIFY filtersChanged)
+	/// Release versions, newest first, with this instance's own version
+	/// always among them; filled by loadFilterOptions().
+	Q_PROPERTY(QStringList gameVersionOptions READ gameVersionOptions NOTIFY
+				   gameVersionOptionsChanged)
+	Q_PROPERTY(QString instanceGameVersion READ instanceGameVersion NOTIFY
+				   instanceProfileChanged)
+	/// Loader names to narrow to ("fabric", ...); empty means any loader.
+	/// Only used for content that is loader-specific.
+	Q_PROPERTY(QStringList loaderFilter READ loaderFilter WRITE setLoaderFilter
+				   NOTIFY filtersChanged)
+	/// QVariantList of {id, label}: the loaders the widget panel offers
+	/// up front, plus this instance's own if it is another one.
+	Q_PROPERTY(QVariantList loaderOptions READ loaderOptions NOTIFY
+				   instanceProfileChanged)
+	/// This instance's primary mod loader ("" when it has none).
+	Q_PROPERTY(QString instanceLoader READ instanceLoader NOTIFY
+				   instanceProfileChanged)
+	Q_PROPERTY(bool hasModLoader READ hasModLoader NOTIFY instanceProfileChanged)
+	/// "" (any) | "client" | "server" | "both". Only Modrinth indexes it.
+	Q_PROPERTY(QString environmentFilter READ environmentFilter WRITE
+				   setEnvironmentFilter NOTIFY filtersChanged)
+	/// Only Modrinth indexes licences.
+	Q_PROPERTY(bool openSourceOnly READ openSourceOnly WRITE setOpenSourceOnly
+				   NOTIFY filtersChanged)
+	/// Leave out results already in this instance; needs no new search.
+	Q_PROPERTY(bool hideInstalled READ hideInstalled WRITE setHideInstalled
+				   NOTIFY filtersChanged)
+	/// Whether the loader filter means anything for the current
+	/// contentType (ModPlatform::contentTypeUsesLoader()).
+	Q_PROPERTY(bool loaderFilterAvailable READ loaderFilterAvailable NOTIFY
+				   contentTypeChanged)
+	/// Whether the current provider can filter by environment and
+	/// licence (ContentApi::supportsExtendedFilters()).
+	Q_PROPERTY(bool extendedFilters READ extendedFilters NOTIFY providerChanged)
+	/// How many filters differ from where they started, for a badge.
+	Q_PROPERTY(int activeFilterCount READ activeFilterCount NOTIFY
+				   filtersChanged)
+	/// False while the game runs and the current contentType is one it
+	/// holds open (mods) - InstanceContentController::changesAllowed()'s
+	/// rule. Installing is refused then, the way the widget page refuses
+	/// its Download action.
+	Q_PROPERTY(bool changesAllowed READ changesAllowed NOTIFY
+				   changesAllowedChanged)
+	/// Whether the current contentType has a folder to install into.
+	/// False for data packs while the instance-wide data pack folder is
+	/// switched off (GlobalDataPacksEnabled): there is nowhere for them
+	/// to go, so install() and review() return null.
+	Q_PROPERTY(bool installTargetAvailable READ installTargetAvailable NOTIFY
+				   installTargetAvailableChanged)
+
   public:
+	/// Everything the filter properties above hold, in one value - what
+	/// searchFiltersFor() turns into a provider query.
+	struct FilterState {
+		QStringList categories;
+		QString gameVersion;
+		QStringList loaders;
+		QString environment;
+		bool openSourceOnly = false;
+	};
 	explicit ContentBrowser(MinecraftInstance* instance,
 							QObject* parent = nullptr);
 	~ContentBrowser() override;
@@ -180,6 +264,83 @@ class ContentBrowser : public QObject
 	/// null if `row` or `versionId` do not name anything installable
 	/// (call loadVersions() first).
 	Q_INVOKABLE QObject* install(int row, const QString& versionId);
+	/// The reviewed form of install(): a ContentInstallReview (parented
+	/// to this browser) that resolves the dependencies first and lists
+	/// them, so some can be unticked before its own install() downloads
+	/// anything. Null under the same conditions as install().
+	Q_INVOKABLE QObject* review(int row, const QString& versionId);
+
+	QVariantList categories() const;
+	QStringList categoryFilter() const
+	{
+		return m_filter.categories;
+	}
+	void setCategoryFilter(const QStringList& ids);
+	QString gameVersionFilter() const
+	{
+		return m_filter.gameVersion;
+	}
+	void setGameVersionFilter(const QString& version);
+	QStringList gameVersionOptions() const
+	{
+		return m_gameVersionOptions;
+	}
+	QString instanceGameVersion() const
+	{
+		return m_mcVersion;
+	}
+	QStringList loaderFilter() const
+	{
+		return m_filter.loaders;
+	}
+	void setLoaderFilter(const QStringList& loaders);
+	QVariantList loaderOptions() const;
+	QString instanceLoader() const
+	{
+		return m_loaderType;
+	}
+	bool hasModLoader() const
+	{
+		return !m_loaderType.isEmpty();
+	}
+	QString environmentFilter() const
+	{
+		return m_filter.environment;
+	}
+	void setEnvironmentFilter(const QString& environment);
+	bool openSourceOnly() const
+	{
+		return m_filter.openSourceOnly;
+	}
+	void setOpenSourceOnly(bool only);
+	bool hideInstalled() const
+	{
+		return m_hideInstalled;
+	}
+	void setHideInstalled(bool hide);
+	bool loaderFilterAvailable() const;
+	bool extendedFilters() const;
+	int activeFilterCount() const;
+	bool changesAllowed() const;
+	bool installTargetAvailable() const;
+
+	/// Asks for what the filter panel offers - the current provider's
+	/// categories and Minecraft's version list - once each; cheap to call
+	/// every time the panel opens.
+	Q_INVOKABLE void loadFilterOptions();
+	/// Back to this instance's own version and loader, nothing else.
+	Q_INVOKABLE void resetFilters();
+
+	/// The provider query for @p state on @p type: the loader filter only
+	/// for loader-specific content, environment and licence only where
+	/// the provider indexes them (@p extended). Public and static so it
+	/// can be unit tested without a live search.
+	static ModPlatform::SearchFilters
+	searchFiltersFor(const FilterState& state, ModPlatform::ContentType type,
+					 bool extended);
+	/// "game-mechanics" -> "Game Mechanics": providers hand category
+	/// names out slugged.
+	static QString categoryLabel(const QString& name);
 
 	/// Whether `version` may run on `mcVersion`/`loader`. A version with no
 	/// stated game versions or no stated loaders is accepted for that half
@@ -208,6 +369,12 @@ class ContentBrowser : public QObject
 	void resultsChanged();
 	void versionsChanged();
 	void versionsLoadingChanged();
+	void categoriesChanged();
+	void filtersChanged();
+	void gameVersionOptionsChanged();
+	void instanceProfileChanged();
+	void changesAllowedChanged();
+	void installTargetAvailableChanged();
 
   private slots:
 	void onModelSearchStateChanged();
@@ -228,6 +395,18 @@ class ContentBrowser : public QObject
 	/// whose versions were already loaded, and by onEntryUpdated(), for one
 	/// that just finished loading.
 	void applyVersionsFromProject(const ModPlatform::IndexedProject* project);
+	/// Hands the filter properties to the current model.
+	void applyFilters();
+	/// Clears the category filter (provider- and type-specific ids).
+	void clearCategoryFilter();
+	/// Re-reads the instance's Minecraft version and loader after its
+	/// components change, moving filters still on the old defaults along.
+	void refreshInstanceProfile();
+	void rebuildGameVersionOptions();
+	/// Shared by install() and review(): what row @p row's version
+	/// @p versionId would install, or false if either names nothing.
+	bool selectionFor(int row, const QString& versionId,
+					  ModPlatform::SelectedMod& mod) const;
 
   private:
 	MinecraftInstance* m_instance;
@@ -257,4 +436,13 @@ class ContentBrowser : public QObject
 	/// model that is no longer current) is not applied.
 	ContentProviderModel* m_versionsModel = nullptr;
 	int m_versionsRow = -1;
+
+	FilterState m_filter;
+	bool m_hideInstalled = false;
+	/// modelKey(provider, type) -> {id, label} list, as each provider
+	/// answers loadFilterOptions().
+	QHash<QString, QVariantList> m_categories;
+	QStringList m_gameVersionOptions;
+	/// Held so a refreshed list can be read again when it arrives.
+	std::shared_ptr<Meta::VersionList> m_mcVersionList;
 };

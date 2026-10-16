@@ -46,6 +46,7 @@ class ServersListModel;
 class BackupController;
 class WorldDataPacksController;
 class ManagedPackController;
+class InstanceContentController;
 
 /*
  * QML-facing bridge for one instance's detail page: notes, mods, worlds,
@@ -159,6 +160,13 @@ class InstanceDetails : public QObject
 	/// Minecraft-backed.
 	Q_PROPERTY(QObject* gameOptions READ gameOptions CONSTANT)
 	Q_PROPERTY(bool isMinecraft READ isMinecraft CONSTANT)
+	/// Searchable lists of every content kind this instance has (mods,
+	/// coremods, resource/shader/texture packs, global data packs) with
+	/// bulk actions and list export - the QML-facing replacement for the
+	/// rest of ModFolderPage and its variants (InstanceContentController).
+	/// Created lazily on first access; null if this instance is not
+	/// Minecraft-backed.
+	Q_PROPERTY(QObject* content READ content CONSTANT)
 
   public:
 	explicit InstanceDetails(InstancePtr instance, QObject* parent = nullptr);
@@ -236,6 +244,7 @@ class InstanceDetails : public QObject
 	QObject* loaderInstaller() const;
 	QObject* gameOptions() const;
 	bool isMinecraft() const;
+	QObject* content() const;
 
   signals:
 	void nameChanged();
@@ -326,6 +335,10 @@ class InstanceDetails : public QObject
 	/// during this bridge's lifetime - it depends only on instance.cfg
 	/// fields and the CurseForge API key).
 	mutable bool m_managedPackChecked = false;
+	/// Created on first content() call, not here - mirrors
+	/// m_contentBrowser above. Owned via QObject parentage (parent is
+	/// `this`).
+	mutable InstanceContentController* m_content = nullptr;
 };
 
 /*
