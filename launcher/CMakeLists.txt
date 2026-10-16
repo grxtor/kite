@@ -80,6 +80,8 @@ set(CORE_SOURCES
     models/UpdateSettingsController.cpp
     models/PlayTimeSummary.h
     models/PlayTimeSummary.cpp
+    models/ComponentTools.h
+    models/ComponentTools.cpp
     models/ContentUpdateController.h
     models/ContentUpdateController.cpp
     models/AtlOptionalModsModel.h
@@ -1498,6 +1500,12 @@ add_unit_test(UpdateSettingsController
     )
 add_unit_test(PlayTimeSummary
     SOURCES models/PlayTimeSummary_test.cpp
+    LIBS MeshMC_core
+    )
+# ComponentTools: the uid/name rules for a new component and the file
+# filtering, plus every action refusing politely without an instance.
+add_unit_test(ComponentTools
+    SOURCES models/ComponentTools_test.cpp
     LIBS MeshMC_core
     )
 

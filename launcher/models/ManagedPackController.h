@@ -21,6 +21,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QUrl>
 #include <QVariantList>
 
 #include "modplatform/ManagedPackVersions.h"
@@ -63,6 +64,13 @@ class ManagedPackController : public QObject
 	/// QVariantList of {id, label, current, installable, changelog}, newest
 	/// first - empty until fetchVersions() succeeds.
 	Q_PROPERTY(QVariantList versions READ versions NOTIFY versionsChanged)
+	/// Name filter for the "update from a file" dialog, e.g.
+	/// "Modrinth pack (*.mrpack *.zip)": what this pack's provider ships.
+	Q_PROPERTY(QString fileFilter READ fileFilter CONSTANT)
+	/// Whether the instance is running: an update replaces files the game
+	/// has open, so updateToVersion()/updateFromFile() refuse then, and the
+	/// tab greys its buttons out by this.
+	Q_PROPERTY(bool running READ running NOTIFY runningChanged)
 	Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
 	/// Empty on success, or while nothing has failed yet.
 	Q_PROPERTY(QString error READ error NOTIFY errorChanged)
@@ -85,8 +93,13 @@ class ManagedPackController : public QObject
 	/// class's internals, so it can be unit tested without a BaseInstance -
 	/// same reasoning as ContentBrowser::isVersionCompatible().
 	static Provider providerFromString(const QString& provider);
+	/// The "update from a file" name filter for @p provider - public and
+	/// static for the same reason as providerFromString().
+	static QString fileFilterFor(Provider provider);
 
 	QString providerLabel() const;
+	QString fileFilter() const;
+	bool running() const;
 	QString packName() const;
 	QString packUrl() const;
 	QString packId() const;
@@ -120,10 +133,20 @@ class ManagedPackController : public QObject
 	/// no download (CurseForge withholds some), or the instance is
 	/// currently running.
 	Q_INVOKABLE QObject* updateToVersion(int index);
+	/// Replaces this instance with the modpack archive at @p file (a local
+	/// path from a file dialog), the same import ManagedPackPage::
+	/// updateFromFile() runs. Works for a pack with no catalogue id too,
+	/// which is what it is for. An archive on disk says nothing reliable
+	/// about which catalogue version it is, so no version is recorded, and
+	/// the source is not trusted (untrusted mods are asked about before
+	/// they install). Returns a TaskWatcher, or null when @p file is not an
+	/// existing file or the instance is running.
+	Q_INVOKABLE QObject* updateFromFile(const QUrl& file);
 
   signals:
 	void versionsChanged();
 	void loadingChanged();
+	void runningChanged();
 	void errorChanged();
 
   private:
@@ -131,6 +154,11 @@ class ManagedPackController : public QObject
 	void setError(const QString& error);
 	void applyVersions(quint64 generation, const QByteArray& bytes);
 	void rebuildVariants();
+	/// The import both update paths run: replaces this instance in place
+	/// with the pack at @p url. Returns the watcher, already started.
+	QObject* startUpdate(const QUrl& url, bool trusted,
+						 const QString& versionId, const QString& versionName,
+						 const QString& title);
 
 	/// Borrowed - valid for this controller's whole lifetime (parented to
 	/// the InstanceDetails that owns both).

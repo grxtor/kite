@@ -5,6 +5,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import MeshMC.Theme
 
 /*
@@ -172,6 +173,18 @@ Item {
                 visible: root.controller && root.controller.packUrl.length > 0
                 onClicked: Qt.openUrlExternally(root.controller.packUrl)
             }
+            // An update from a pack file on this computer: works for any
+            // pack, including one with no catalogue id.
+            HoverReason {
+                reason: root.controller && root.controller.running
+                        ? qsTr("The game is running. The pack can be updated once it closes.") : ""
+                Button {
+                    enabled: !root.updating && !!root.controller && !root.controller.running
+                    text: qsTr("Update from file…")
+                    icon.source: Icons.url("archive")
+                    onClicked: fileDialog.open()
+                }
+            }
         }
 
         RowLayout {
@@ -203,7 +216,7 @@ Item {
             Text {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
-                text: qsTr("MeshMC does not have a catalogue id on record for this pack, so it cannot list other versions here. Install the pack again from Discover if you need a specific version.")
+                text: qsTr("MeshMC does not have a catalogue id on record for this pack, so it cannot list other versions here. You can still update it from a pack file, or install the pack again from Discover for a specific version.")
                 color: Theme.palette.textSecondary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.body.pixelSize
@@ -344,6 +357,13 @@ Item {
                 }
             }
         }
+    }
+
+    FileDialog {
+        id: fileDialog
+        title: qsTr("Choose the pack file")
+        nameFilters: root.controller ? [root.controller.fileFilter] : []
+        onAccepted: root.watcher = root.controller.updateFromFile(selectedFile)
     }
 
     BusyIndicator {

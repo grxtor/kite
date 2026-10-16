@@ -39,6 +39,7 @@ class LogModel;
 class ContentBrowser;
 class OtherLogsModel;
 class LoaderInstaller;
+class ComponentTools;
 class GameOptions;
 class KeyValueFilterModel;
 class MinecraftVersionListProxy;
@@ -150,6 +151,10 @@ class InstanceDetails : public QObject
 	/// first access, same reason as contentBrowser() above. Null if this
 	/// instance is not Minecraft-backed.
 	Q_PROPERTY(QObject* loaderInstaller READ loaderInstaller CONSTANT)
+	/// The Version tab's extra actions (empty component, jar mods, download
+	/// all, edit JSON, open folders), or null for a non-Minecraft instance.
+	/// Created on first use.
+	Q_PROPERTY(QObject* componentTools READ componentTools CONSTANT)
 	/// This instance's options.txt as a flat key/value list (GameOptions'
 	/// own `key`/`value` roles, through a KeyValueFilterModel for
 	/// GameOptionsTab.qml's search box) - the QML-facing replacement for
@@ -242,6 +247,7 @@ class InstanceDetails : public QObject
 	QObject* components() const;
 	QObject* minecraftVersions() const;
 	QObject* loaderInstaller() const;
+	QObject* componentTools() const;
 	QObject* gameOptions() const;
 	bool isMinecraft() const;
 	QObject* content() const;
@@ -309,6 +315,8 @@ class InstanceDetails : public QObject
 	/// Created on first loaderInstaller() call, not here - mirrors
 	/// m_contentBrowser above.
 	mutable std::unique_ptr<LoaderInstaller> m_loaderInstaller;
+	/// Created on first componentTools() call, like m_loaderInstaller.
+	mutable std::unique_ptr<ComponentTools> m_componentTools;
 	/// Borrowed from the instance, not created here - see the class
 	/// comment. Null when the instance is not Minecraft.
 	std::shared_ptr<GameOptions> m_gameOptions;

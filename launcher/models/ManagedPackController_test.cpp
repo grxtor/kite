@@ -33,6 +33,7 @@ class ManagedPackControllerTest : public QObject
 
   private slots:
 	void providerFromString();
+	void fileFilterFollowsTheProvider();
 };
 
 void ManagedPackControllerTest::providerFromString()
@@ -56,6 +57,20 @@ void ManagedPackControllerTest::providerFromString()
 			Provider::Unknown);
 	QCOMPARE(ManagedPackController::providerFromString("technic"),
 			Provider::Unknown);
+}
+
+void ManagedPackControllerTest::fileFilterFollowsTheProvider()
+{
+	using Provider = ManagedPackController::Provider;
+	const QString modrinth = ManagedPackController::fileFilterFor(Provider::Modrinth);
+	QVERIFY(modrinth.contains("*.mrpack"));
+	QVERIFY(modrinth.contains("*.zip"));
+	const QString flame = ManagedPackController::fileFilterFor(Provider::CurseForge);
+	QVERIFY(flame.contains("*.zip"));
+	QVERIFY(!flame.contains("*.mrpack"));
+	// An unknown provider accepts either archive.
+	const QString any = ManagedPackController::fileFilterFor(Provider::Unknown);
+	QVERIFY(any.contains("*.zip") && any.contains("*.mrpack"));
 }
 
 QTEST_GUILESS_MAIN(ManagedPackControllerTest)

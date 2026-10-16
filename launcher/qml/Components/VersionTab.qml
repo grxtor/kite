@@ -5,6 +5,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import MeshMC.Theme
 
 /*
@@ -13,7 +14,10 @@ import MeshMC.Theme
  * VersionPage. Long operations (installing/updating a component) run
  * through PackProfile's own `task`, shown as a thin progress bar rather
  * than a blocking dialog. Each row's actions sit behind its ⋯ menu (also
- * on right-click); only the on/off switch stays out in the row.
+ * on right-click); only the on/off switch stays out in the row. The
+ * toolbar's "More" menu holds the rarer actions: an empty component,
+ * jar mods, a replacement Minecraft.jar, downloading the game files again,
+ * and the libraries and game folders.
  */
 Item {
     id: root
@@ -23,6 +27,12 @@ Item {
     readonly property var components: root.details ? root.details.components : null
     readonly property var installer: root.details ? root.details.loaderInstaller : null
     readonly property bool locked: !root.details || !root.details.contentChangesAllowed
+    // ComponentTools: the actions behind "More" and a row's "Edit JSON".
+    readonly property var tools: root.details ? root.details.componentTools : null
+    readonly property string lockedReason: root.locked ? qsTr("The game is running. Components can be changed once it closes.") : ""
+    // The TaskWatcher of "Download all files", while it runs and after it fails.
+    property var downloadWatcher: null
+    readonly property bool downloading: !!root.downloadWatcher && root.downloadWatcher.running
     readonly property int rowHeight: 56
 
     // PackProfile reports its failures in launcher terms; the one a player
@@ -58,7 +68,7 @@ Item {
                 onClicked: minecraftVersionDialog.open()
             }
             Button {
-                enabled: !root.locked && !!root.installer && !root.components.busy
+                enabled: !root.locked && !!root.installer && !!root.components && !root.components.busy
                 text: qsTr("Install loader")
                 icon.source: Icons.url("download")
                 onClicked: {
@@ -67,14 +77,38 @@ Item {
                 }
             }
             IconButton {
-                // Bordered, like every other toolbar's last button, so its
-                // edge is the content edge.
                 flat: false
                 iconName: "refresh"
                 tip: qsTr("Reload")
                 enabled: !root.locked && !!root.components && !root.components.busy
                 onClicked: root.components.reloadProfile()
             }
+            // "More ▾", last so its edge is the content edge: mirrored so
+            // the chevron follows the label.
+            HoverReason {
+                visible: !!root.tools
+                reason: root.lockedReason
+                Button {
+                    id: moreButton
+                    LayoutMirroring.enabled: true
+                    text: qsTr("More")
+                    icon.source: Icons.url("chevron-down")
+                    onClicked: moreMenu.popup(moreButton, moreButton.width - moreMenu.width, moreButton.height)
+                }
+            }
+        }
+
+        // The result of "Download all files" (progress, or why it failed) and
+        // anything else the extra actions have to say.
+        NoticeBar {
+            Layout.fillWidth: true
+            readonly property bool failed: !!root.downloadWatcher && root.downloadWatcher.failed
+            visible: root.downloading || failed || (!!root.tools && root.tools.error.length > 0)
+            tone: root.downloading ? "info" : "warning"
+            progress: root.downloading ? root.downloadWatcher.progress : -2
+            text: root.downloading ? (root.downloadWatcher.status.length > 0 ? root.downloadWatcher.status : qsTr("Downloading game files…"))
+                  : failed ? (root.downloadWatcher.error.length > 0 ? root.downloadWatcher.error : qsTr("Downloading the game files failed."))
+                  : (root.tools ? root.tools.error : "")
         }
 
         Rectangle {
@@ -144,7 +178,7 @@ Item {
                 Button {
                     flat: true
                     visible: !!root.components && root.components.lastError === root.unresolvedError
-                    enabled: !root.locked && !root.components.busy
+                    enabled: !root.locked && !!root.components && !root.components.busy
                     text: qsTr("Reload")
                     onClicked: {
                         errorBanner.dismissed = true
@@ -209,6 +243,9 @@ Item {
             required property bool isRevertible
             required property bool hasVersionList
 
+            // Whether this component has a patch file to edit; refreshed
+            // when its menu opens.
+            property bool hasFile: false
             readonly property bool changeable: uid === "net.minecraft" || root.loaderUids.indexOf(uid) >= 0
 
             // Whether the ⋯ menu would hold anything at all.
@@ -291,6 +328,9 @@ Item {
             // its row in a Menu.
             Menu {
                 id: rowMenu
+                // Looked up each time the menu opens: customizing a
+                // component creates its file.
+                onAboutToShow: row.hasFile = !!root.tools && root.tools.hasJsonFile(row.index)
                 MenuItem {
                     visible: row.changeable && row.hasVersionList
                     height: visible ? implicitHeight : 0
@@ -318,6 +358,13 @@ Item {
                         revertConfirm.text = qsTr("Revert “%1” to its original version? Your own changes to it are lost.").arg(row.name)
                         revertConfirm.open()
                     }
+                }
+                MenuItem {
+                    visible: row.hasFile
+                    height: visible ? implicitHeight : 0
+                    text: qsTr("Edit JSON")
+                    icon.source: Icons.url("edit")
+                    onTriggered: root.tools.editComponentJson(row.index)
                 }
                 MenuItem {
                     visible: row.isMoveable
@@ -378,6 +425,67 @@ Item {
     LoaderInstallDialog {
         id: loaderInstallDialog
         installer: root.installer
+    }
+
+    Menu {
+        id: moreMenu
+        MenuItem {
+            enabled: !root.locked && !!root.components && !root.components.busy
+            text: qsTr("Add empty component…")
+            icon.source: Icons.url("plus")
+            onTriggered: newComponentDialog.open()
+        }
+        MenuItem {
+            enabled: !root.locked && !!root.components && !root.components.busy
+            text: qsTr("Add to Minecraft.jar…")
+            icon.source: Icons.url("archive")
+            onTriggered: jarModsDialog.open()
+        }
+        MenuItem {
+            enabled: !root.locked && !!root.components && !root.components.busy
+            text: qsTr("Replace Minecraft.jar…")
+            icon.source: Icons.url("archive")
+            onTriggered: mainJarDialog.open()
+        }
+        MenuSeparator {}
+        MenuItem {
+            enabled: !root.locked && !root.downloading
+            text: qsTr("Download all game files")
+            icon.source: Icons.url("download")
+            onTriggered: root.downloadWatcher = root.tools.downloadAll()
+        }
+        MenuSeparator {}
+        MenuItem {
+            text: qsTr("Open libraries folder")
+            icon.source: Icons.url("folder")
+            onTriggered: root.tools.openLibrariesFolder()
+        }
+        MenuItem {
+            text: qsTr("Open game folder")
+            icon.source: Icons.url("folder")
+            onTriggered: root.tools.openGameFolder()
+        }
+    }
+
+    NewComponentDialog {
+        id: newComponentDialog
+        tools: root.tools
+    }
+
+    FileDialog {
+        id: jarModsDialog
+        title: qsTr("Choose jar mods")
+        fileMode: FileDialog.OpenFiles
+        nameFilters: [qsTr("Minecraft.jar mods (*.zip *.jar)")]
+        onAccepted: root.tools.addJarMods(selectedFiles)
+    }
+
+    FileDialog {
+        id: mainJarDialog
+        title: qsTr("Choose the replacement Minecraft.jar")
+        fileMode: FileDialog.OpenFile
+        nameFilters: [qsTr("Minecraft.jar replacement (*.jar)")]
+        onAccepted: root.tools.replaceMainJar(selectedFile)
     }
 
     ConfirmDialog {

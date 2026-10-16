@@ -76,6 +76,7 @@ qt_add_qml_module(MeshMC_qml_components
         ConsoleFontRow.qml
         ConsolePreview.qml
         TotalPlayTime.qml
+        NewComponentDialog.qml
         InstanceOverviewTab.qml
         InstancePage.qml
         ContentTab.qml

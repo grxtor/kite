@@ -20,6 +20,7 @@
 #include "ManagedPackController.h"
 
 #include <QDebug>
+#include <QFileInfo>
 #include <QUrl>
 #include <QVariantMap>
 #include <memory>
@@ -73,6 +74,8 @@ ManagedPackController::ManagedPackController(BaseInstance* instance,
 	: QObject(parent), m_instance(instance)
 {
 	m_provider = providerFromString(m_instance->managedPackProvider());
+	connect(m_instance, &BaseInstance::runningStatusChanged, this,
+			&ManagedPackController::runningChanged);
 }
 
 ManagedPackController::~ManagedPackController()
@@ -301,23 +304,64 @@ QObject* ManagedPackController::updateToVersion(int index)
 		return nullptr;
 	}
 
-	const QUrl downloadUrl(version.downloadUrl);
-	const QString versionId = version.versionId;
 	const QString versionName = version.versionNumber.isEmpty()
 									? version.displayName
 									: version.versionNumber;
+	// Straight out of the catalogue's own version list - the launcher
+	// chose this download, not the user, so it is trusted the same way
+	// ManagedPackPage::update() trusts a catalogue selection.
+	return startUpdate(QUrl(version.downloadUrl), true, version.versionId,
+					   versionName,
+					   versionName.isEmpty() ? packName() : versionName);
+}
 
-	auto* task = new InstanceImportTask(downloadUrl);
+bool ManagedPackController::running() const
+{
+	return m_instance->isRunning();
+}
+
+QString ManagedPackController::fileFilter() const
+{
+	return fileFilterFor(m_provider);
+}
+
+QString ManagedPackController::fileFilterFor(Provider provider)
+{
+	switch (provider) {
+		case Provider::Modrinth:
+			return tr("Modrinth pack") + QStringLiteral(" (*.mrpack *.zip)");
+		case Provider::CurseForge:
+			return tr("CurseForge pack") + QStringLiteral(" (*.zip)");
+		case Provider::Unknown:
+			break;
+	}
+	return tr("Modpack") + QStringLiteral(" (*.zip *.mrpack)");
+}
+
+QObject* ManagedPackController::updateFromFile(const QUrl& file)
+{
+	const QString path = file.toLocalFile();
+	if (path.isEmpty() || !QFileInfo(path).isFile() ||
+		m_instance->isRunning()) {
+		return nullptr;
+	}
+	return startUpdate(QUrl::fromLocalFile(path), false, QString(), QString(),
+					   tr("Update from file"));
+}
+
+QObject* ManagedPackController::startUpdate(const QUrl& url, bool trusted,
+											const QString& versionId,
+											const QString& versionName,
+											const QString& title)
+{
+	auto* task = new InstanceImportTask(url);
 
 	InstanceImportTask::UpdateTarget target;
 	target.instanceId = m_instance->id();
 	target.versionId = versionId;
 	target.versionLabel = versionName;
 	task->setUpdateTarget(target);
-	// Straight out of the catalogue's own version list - the launcher
-	// chose this download, not the user, so it is trusted the same way
-	// ManagedPackPage::update() trusts a catalogue selection.
-	task->setTrustedSource(true);
+	task->setTrustedSource(trusted);
 
 	InstanceImportTask::PackSourceHint hint;
 	hint.provider = m_instance->managedPackProvider();
@@ -339,7 +383,7 @@ QObject* ManagedPackController::updateToVersion(int index)
 
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(task);
 	auto* watcher = new TaskWatcher(Task::Ptr(wrapped), this);
-	watcher->setTitle(versionName.isEmpty() ? packName() : versionName);
+	watcher->setTitle(title);
 	watcher->setInstanceId(m_instance->id());
 	/* Deliberately not refreshed/reloaded from here on success: this
 	 * instance has just been replaced on disk (staged over its own id),

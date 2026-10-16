@@ -37,6 +37,7 @@
 #include "minecraft/gameoptions/GameOptions.h"
 #include "minecraft/mod/ModFolderModel.h"
 #include "models/BackupController.h"
+#include "models/ComponentTools.h"
 #include "models/ContentBrowser.h"
 #include "models/InstanceContentController.h"
 #include "models/KeyValueFilterModel.h"
@@ -582,6 +583,16 @@ QObject* InstanceDetails::loaderInstaller() const
 			m_mc->getPackProfile().get(), const_cast<InstanceDetails*>(this));
 	}
 	return m_loaderInstaller.get();
+}
+
+QObject* InstanceDetails::componentTools() const
+{
+	if (!m_componentTools && m_mc) {
+		m_componentTools = std::make_unique<ComponentTools>(
+			std::dynamic_pointer_cast<MinecraftInstance>(m_instance),
+			const_cast<InstanceDetails*>(this));
+	}
+	return m_componentTools.get();
 }
 
 QObject* InstanceDetails::gameOptions() const
