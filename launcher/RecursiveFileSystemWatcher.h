@@ -42,6 +42,18 @@ class RecursiveFileSystemWatcher : public QObject
 		return m_watchFiles;
 	}
 
+	// On by default. Off: only @c root itself is listed and watched, not its
+	// subfolders - for a folder (like the launcher's own data folder) that
+	// holds far more than the files being looked for. Set before setRootDir().
+	void setRecursive(const bool recursive)
+	{
+		m_recursive = recursive;
+	}
+	bool recursive() const
+	{
+		return m_recursive;
+	}
+
 	void setMatcher(IPathMatcher::Ptr matcher)
 	{
 		m_matcher = matcher;
@@ -63,6 +75,7 @@ class RecursiveFileSystemWatcher : public QObject
   private:
 	QDir m_root;
 	bool m_watchFiles = false;
+	bool m_recursive = true;
 	bool m_isEnabled = false;
 	IPathMatcher::Ptr m_matcher;
 

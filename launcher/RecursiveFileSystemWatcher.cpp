@@ -85,9 +85,11 @@ void RecursiveFileSystemWatcher::setFiles(const QStringList& files)
 void RecursiveFileSystemWatcher::addFilesToWatcherRecursive(const QDir& dir)
 {
 	m_watcher->addPath(dir.absolutePath());
-	for (const QString& directory :
-		 dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
-		addFilesToWatcherRecursive(dir.absoluteFilePath(directory));
+	if (m_recursive) {
+		for (const QString& directory :
+			 dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+			addFilesToWatcherRecursive(dir.absoluteFilePath(directory));
+		}
 	}
 	if (m_watchFiles) {
 		for (const QFileInfo& info : dir.entryInfoList(QDir::Files)) {
@@ -101,9 +103,11 @@ QStringList RecursiveFileSystemWatcher::scanRecursive(const QDir& directory)
 	if (!m_matcher) {
 		return {};
 	}
-	for (const QString& dir : directory.entryList(
-			 QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden)) {
-		ret.append(scanRecursive(directory.absoluteFilePath(dir)));
+	if (m_recursive) {
+		for (const QString& dir : directory.entryList(
+				 QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden)) {
+			ret.append(scanRecursive(directory.absoluteFilePath(dir)));
+		}
 	}
 	for (const QString& file :
 		 directory.entryList(QDir::Files | QDir::Hidden)) {

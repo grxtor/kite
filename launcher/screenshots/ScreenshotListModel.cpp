@@ -19,8 +19,13 @@
 
 #include "ScreenshotListModel.h"
 
+#include <QClipboard>
+#include <QDebug>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
+#include <QGuiApplication>
+#include <QImage>
 #include <QUrl>
 #include <algorithm>
 
@@ -153,6 +158,79 @@ QString ScreenshotListModel::pathAt(int row) const
 		return QString();
 	}
 	return m_entries.at(row).path;
+}
+
+bool ScreenshotListModel::rename(int row, const QString& newName)
+{
+	if (row < 0 || row >= m_entries.size()) {
+		return false;
+	}
+	Entry& entry = m_entries[row];
+	const QString fileName = renamedFileName(entry.name, newName);
+	if (fileName.isEmpty()) {
+		return false;
+	}
+	if (fileName == entry.name) {
+		return true;
+	}
+	const QString target = QDir(QFileInfo(entry.path).absolutePath())
+							   .absoluteFilePath(fileName);
+	// QFile::rename() overwrites nothing, but a name that differs from an
+	// existing file only by case would on a case-insensitive filesystem.
+	for (const Entry& other : m_entries) {
+		if (other.name.compare(fileName, Qt::CaseInsensitive) == 0 &&
+			other.path != entry.path) {
+			return false;
+		}
+	}
+	if (!QFile::rename(entry.path, target)) {
+		qWarning() << "Failed to rename screenshot" << entry.path << "to"
+				   << target;
+		return false;
+	}
+	entry.name = fileName;
+	entry.path = target;
+	const QModelIndex idx = index(row);
+	emit dataChanged(idx, idx, {NameRole, PathRole, UrlRole});
+	return true;
+}
+
+bool ScreenshotListModel::copyImage(int row) const
+{
+	if (row < 0 || row >= m_entries.size()) {
+		return false;
+	}
+	QClipboard* clipboard = QGuiApplication::clipboard();
+	if (!clipboard) {
+		return false;
+	}
+	const QImage image(m_entries.at(row).path);
+	if (image.isNull()) {
+		return false;
+	}
+	clipboard->setImage(image);
+	return true;
+}
+
+QString ScreenshotListModel::renamedFileName(const QString& currentName,
+											 const QString& input)
+{
+	const QString trimmed = input.trimmed();
+	if (trimmed.isEmpty() || trimmed == QLatin1String(".") ||
+		trimmed == QLatin1String("..")) {
+		return QString();
+	}
+	static const QString kForbidden = QStringLiteral("/\\:*?\"<>|");
+	for (const QChar c : trimmed) {
+		if (kForbidden.contains(c) || c.unicode() < 0x20) {
+			return QString();
+		}
+	}
+	if (isImageFile(trimmed)) {
+		return trimmed;
+	}
+	const QString suffix = QFileInfo(currentName).suffix();
+	return suffix.isEmpty() ? trimmed : trimmed + QLatin1Char('.') + suffix;
 }
 
 void ScreenshotListModel::onWatcherDirectoryChanged(const QString& path)

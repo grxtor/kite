@@ -289,6 +289,7 @@ Item {
 
             ScreenshotsTab {
                 model: root.shotsModel
+                details: root.details
                 directory: root.details ? root.details.screenshotsDir : ""
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
             }
@@ -296,6 +297,7 @@ Item {
             LogTab {
                 log: root.details ? root.details.log : null
                 otherLogs: root.details ? root.details.otherLogs : null
+                details: root.details
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
             }
 

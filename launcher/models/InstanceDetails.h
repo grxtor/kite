@@ -48,6 +48,8 @@ class BackupController;
 class WorldDataPacksController;
 class ManagedPackController;
 class InstanceContentController;
+class LogUploader;
+class ScreenshotUploader;
 
 /*
  * QML-facing bridge for one instance's detail page: notes, mods, worlds,
@@ -172,6 +174,13 @@ class InstanceDetails : public QObject
 	/// Created lazily on first access; null if this instance is not
 	/// Minecraft-backed.
 	Q_PROPERTY(QObject* content READ content CONSTANT)
+	/// Uploads a log (the live one, or an "other" log file) to paste.ee and
+	/// hands back its link - LogTab.qml's Upload. Always available.
+	Q_PROPERTY(QObject* logUploader READ logUploader CONSTANT)
+	/// Uploads screenshots to Imgur (one, or several as an album) -
+	/// ScreenshotsTab.qml's Upload. `available` is false in a build without
+	/// an Imgur client id.
+	Q_PROPERTY(QObject* screenshotUploader READ screenshotUploader CONSTANT)
 
   public:
 	explicit InstanceDetails(InstancePtr instance, QObject* parent = nullptr);
@@ -251,6 +260,25 @@ class InstanceDetails : public QObject
 	QObject* gameOptions() const;
 	bool isMinecraft() const;
 	QObject* content() const;
+
+	QObject* logUploader() const;
+	QObject* screenshotUploader() const;
+	/// Installs a world from a .zip (or a world folder) into this instance's
+	/// worlds folder - the QML-facing replacement for WorldListPage's "Add"
+	/// and drop handling. @p fileUrlOrPath: a file:// URL (as a QML
+	/// FileDialog or DropArea hands out) or a plain local path. Unpacks off
+	/// the GUI thread (a world can run into gigabytes) behind a TaskWatcher;
+	/// returns null at once if the file is not a Minecraft world.
+	Q_INVOKABLE QObject* installWorld(const QString& fileUrlOrPath);
+	/// Re-reads the worlds folder - WorldsTab.qml's Refresh. The list also
+	/// watches the folder, so this is for when that missed something.
+	Q_INVOKABLE void refreshWorlds();
+	/// Whether the MCEditPath setting points at a usable MCEdit - the Worlds
+	/// tab shows "Open in MCEdit" only then.
+	Q_INVOKABLE bool mceditConfigured() const;
+	/// Starts MCEdit on world @p row. Empty on success, otherwise a message
+	/// for the user.
+	Q_INVOKABLE QString openWorldInMCEdit(int row);
 
   signals:
 	void nameChanged();
@@ -347,6 +375,9 @@ class InstanceDetails : public QObject
 	/// m_contentBrowser above. Owned via QObject parentage (parent is
 	/// `this`).
 	mutable InstanceContentController* m_content = nullptr;
+	/// Always created; owned via QObject parentage (parent is `this`).
+	LogUploader* m_logUploader = nullptr;
+	ScreenshotUploader* m_screenshotUploader = nullptr;
 };
 
 /*
@@ -377,6 +408,9 @@ class InstanceLogBridge : public QObject
 	/// The whole log as plain text, e.g. for a QML copy action.
 	Q_INVOKABLE QString text();
 	Q_INVOKABLE void setSuspended(bool suspended);
+	/// Rows of the current log whose line contains @p needle (ignoring case),
+	/// ascending - LogTab.qml's Find. Empty when there is no log.
+	Q_INVOKABLE QVariantList findLines(const QString& needle) const;
 
   signals:
 	void modelChanged();

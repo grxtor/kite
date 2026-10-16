@@ -41,14 +41,19 @@
 #include "models/ContentBrowser.h"
 #include "models/InstanceContentController.h"
 #include "models/KeyValueFilterModel.h"
+#include "models/LogFind.h"
+#include "models/LogUploader.h"
 #include "models/LoaderInstaller.h"
 #include "models/ManagedPackController.h"
 #include "models/NewInstanceController.h"
 #include "models/OtherLogsModel.h"
+#include "models/ScreenshotUploader.h"
 #include "models/ServersListModel.h"
 #include "models/SettingsAdapter.h"
 #include "models/WorldDataPacksController.h"
+#include "models/WorldTools.h"
 #include "screenshots/ScreenshotListModel.h"
+#include "settings/SettingsObject.h"
 #include "tasks/Task.h"
 #include "tasks/TaskWatcher.h"
 #include "FileSystem.h"
@@ -211,6 +216,10 @@ InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 		m_otherLogs =
 			new OtherLogsModel(m_instance->getLogFileRoot(), matcher, this);
 	}
+
+	// Neither touches the network until asked to upload.
+	m_logUploader = new LogUploader(this);
+	m_screenshotUploader = new ScreenshotUploader(this);
 }
 
 InstanceDetails::~InstanceDetails()
@@ -614,6 +623,71 @@ QObject* InstanceDetails::content() const
 	return m_content;
 }
 
+QObject* InstanceDetails::logUploader() const
+{
+	return m_logUploader;
+}
+
+QObject* InstanceDetails::screenshotUploader() const
+{
+	return m_screenshotUploader;
+}
+
+QObject* InstanceDetails::installWorld(const QString& fileUrlOrPath)
+{
+	if (!m_worlds) {
+		return nullptr;
+	}
+	// Same file:// handling install() above does for dropped content.
+	const QUrl url(fileUrlOrPath);
+	const QString source = url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
+	if (!WorldTools::isWorld(source)) {
+		return nullptr;
+	}
+	const QString to = m_worlds->dir().absolutePath();
+
+	auto* task = new WorldCopyTask(tr("Adding world…"), [source, to]() {
+		return WorldTools::installWorld(source, to);
+	});
+	auto* watcher = new TaskWatcher(Task::Ptr(task), this);
+	watcher->setTitle(tr("Add world"));
+	task->start();
+	return watcher;
+}
+
+void InstanceDetails::refreshWorlds()
+{
+	if (m_worlds) {
+		m_worlds->update();
+	}
+}
+
+bool InstanceDetails::mceditConfigured() const
+{
+	auto* launcher = LauncherContext::instance();
+	if (!launcher || !launcher->settings()) {
+		return false;
+	}
+	const QString path =
+		launcher->settings()->get(QStringLiteral("MCEditPath")).toString();
+	return !WorldTools::mceditProgram(path).isEmpty();
+}
+
+QString InstanceDetails::openWorldInMCEdit(int row)
+{
+	if (!m_worlds || row < 0 || static_cast<size_t>(row) >= m_worlds->size()) {
+		return tr("That world is no longer in the list.");
+	}
+	auto* launcher = LauncherContext::instance();
+	const QString path =
+		launcher && launcher->settings()
+			? launcher->settings()->get(QStringLiteral("MCEditPath")).toString()
+			: QString();
+	const QString folder =
+		m_worlds->dir().absoluteFilePath((*m_worlds)[static_cast<size_t>(row)].folderName());
+	return WorldTools::openInMCEdit(path, folder);
+}
+
 void InstanceDetails::onRunningStatusChanged(bool running)
 {
 	emit contentChangesAllowedChanged();
@@ -668,6 +742,15 @@ void InstanceLogBridge::clear()
 QString InstanceLogBridge::text()
 {
 	return m_model ? m_model->toPlainText() : QString();
+}
+
+QVariantList InstanceLogBridge::findLines(const QString& needle) const
+{
+	QVariantList out;
+	for (int row : LogFind::matchingRows(m_model.get(), LogModel::LineRole, needle)) {
+		out.append(row);
+	}
+	return out;
 }
 
 void InstanceLogBridge::setSuspended(bool suspended)

@@ -180,6 +180,84 @@ class ScreenshotListModelTest : public QObject
 		QCOMPARE(model.pathAt(1), QString());
 		QCOMPARE(model.pathAt(-1), QString());
 	}
+
+	void renamedFileNameKeepsOrRestoresTheImageExtension()
+	{
+		using M = ScreenshotListModel;
+		QCOMPARE(M::renamedFileName("a.png", "holiday"), QString("holiday.png"));
+		QCOMPARE(M::renamedFileName("a.png", "  holiday  "), QString("holiday.png"));
+		QCOMPARE(M::renamedFileName("a.png", "holiday.jpg"), QString("holiday.jpg"));
+		QCOMPARE(M::renamedFileName("a.jpeg", "v1.2"), QString("v1.2.jpeg"));
+	}
+
+	void renamedFileNameRefusesUnusableNames()
+	{
+		using M = ScreenshotListModel;
+		QVERIFY(M::renamedFileName("a.png", "").isEmpty());
+		QVERIFY(M::renamedFileName("a.png", "   ").isEmpty());
+		QVERIFY(M::renamedFileName("a.png", "..").isEmpty());
+		QVERIFY(M::renamedFileName("a.png", "../evil").isEmpty());
+		QVERIFY(M::renamedFileName("a.png", "sub\\evil").isEmpty());
+		QVERIFY(M::renamedFileName("a.png", "what?").isEmpty());
+	}
+
+	void renameMovesTheFileAndKeepsTheRowInPlace()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		const QString dir = tempDir.path();
+		const QDateTime base = QDateTime::currentDateTime();
+		QVERIFY(writeFile(QDir(dir).filePath("newer.png"), "n", base));
+		QVERIFY(writeFile(QDir(dir).filePath("older.png"), "o", base.addSecs(-60)));
+
+		ScreenshotListModel model;
+		model.setDirectory(dir);
+		QCOMPARE(model.pathAt(0), QFileInfo(QDir(dir).filePath("newer.png")).absoluteFilePath());
+
+		QVERIFY(model.rename(0, "castle"));
+		QVERIFY(!QFileInfo::exists(QDir(dir).filePath("newer.png")));
+		QVERIFY(QFileInfo::exists(QDir(dir).filePath("castle.png")));
+		QCOMPARE(model.data(model.index(0, 0), ScreenshotListModel::NameRole).toString(),
+				 QString("castle.png"));
+		QCOMPARE(model.count(), 2);
+	}
+
+	// The clipboard itself needs a running GUI application; what can be
+	// checked here is that a bad row or a file that is not a picture is
+	// refused instead of crashing.
+	void copyImageRefusesBadRowsAndNonImages()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		const QString dir = tempDir.path();
+		QVERIFY(writeFile(QDir(dir).filePath("fake.png"), "not a png",
+						   QDateTime::currentDateTime()));
+		ScreenshotListModel model;
+		model.setDirectory(dir);
+		QVERIFY(!model.copyImage(0));
+		QVERIFY(!model.copyImage(1));
+		QVERIFY(!model.copyImage(-1));
+	}
+
+	void renameFailsForTakenNamesBadNamesAndBadRows()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		const QString dir = tempDir.path();
+		const QDateTime base = QDateTime::currentDateTime();
+		QVERIFY(writeFile(QDir(dir).filePath("a.png"), "a", base));
+		QVERIFY(writeFile(QDir(dir).filePath("b.png"), "b", base.addSecs(-60)));
+
+		ScreenshotListModel model;
+		model.setDirectory(dir);
+		QVERIFY(!model.rename(0, "b"));      // taken by the other file
+		QVERIFY(!model.rename(0, "B"));      // same, ignoring case
+		QVERIFY(!model.rename(0, "x/y"));    // not a name
+		QVERIFY(!model.rename(5, "fine"));   // no such row
+		QVERIFY(!model.rename(-1, "fine"));
+		QVERIFY(QFileInfo::exists(QDir(dir).filePath("a.png")));
+		QVERIFY(QFileInfo::exists(QDir(dir).filePath("b.png")));
+	}
 };
 
 QTEST_GUILESS_MAIN(ScreenshotListModelTest)

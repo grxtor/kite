@@ -44,6 +44,16 @@ set(CORE_SOURCES
     models/LoaderInstaller.cpp
     models/OtherLogsModel.h
     models/OtherLogsModel.cpp
+    models/LogUploader.h
+    models/LogUploader.cpp
+    models/LogFind.h
+    models/LogFind.cpp
+    models/LauncherLogs.h
+    models/LauncherLogs.cpp
+    models/ScreenshotUploader.h
+    models/ScreenshotUploader.cpp
+    models/WorldTools.h
+    models/WorldTools.cpp
     models/KeyValueFilterModel.h
     models/KeyValueFilterModel.cpp
     models/AccountsController.h
@@ -1606,6 +1616,39 @@ add_unit_test(LoaderInstaller
 
 add_unit_test(OtherLogsModel
     SOURCES models/OtherLogsModel_test.cpp
+    LIBS MeshMC_core
+    )
+
+# WP7: request composition (key resolution, size limits, .gz reading) and the
+# no-network error path; the PasteUpload round trip itself needs the network.
+add_unit_test(LogUploader
+    SOURCES models/LogUploader_test.cpp
+    LIBS MeshMC_core
+    )
+
+# The launcher's own logs: only the data folder itself is listed (not the
+# instances under it), delete-all leaves everything else alone.
+add_unit_test(LauncherLogs
+    SOURCES models/LauncherLogs_test.cpp
+    LIBS MeshMC_core
+    )
+
+# The Imgur upload's link composition and its refusal paths; the upload itself
+# needs the network and a client id.
+add_unit_test(ScreenshotUploader
+    SOURCES models/ScreenshotUploader_test.cpp
+    LIBS MeshMC_core
+    )
+
+# World install from a generated zip (a minimal level.dat), and MCEdit lookup.
+add_unit_test(WorldTools
+    SOURCES models/WorldTools_test.cpp
+    LIBS MeshMC_core
+    )
+
+# Log "Find": matching rows of a list model, including a real LogModel.
+add_unit_test(LogFind
+    SOURCES models/LogFind_test.cpp
     LIBS MeshMC_core
     )
 

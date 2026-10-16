@@ -113,6 +113,10 @@ qt_add_qml_module(MeshMC_qml_components
         WorldsTab.qml
         ScreenshotsTab.qml
         LogTab.qml
+        LogLines.qml
+        LogFindBar.qml
+        OtherLogsView.qml
+        ClipboardText.qml
         TabStrip.qml
         StatTile.qml
         ConfirmDialog.qml

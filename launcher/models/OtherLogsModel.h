@@ -56,9 +56,11 @@ class OtherLogsModel : public QAbstractListModel
 	enum Roles { NameRole = Qt::UserRole };
 
 	/// @p path / @p fileFilter: same as BaseInstance::getLogFileRoot() /
-	/// getLogFileMatcher().
+	/// getLogFileMatcher(). @p recursive false lists only @p path itself, not
+	/// its subfolders - for the launcher's own logs, which sit in a data
+	/// folder next to every instance.
 	explicit OtherLogsModel(const QString& path, IPathMatcher::Ptr fileFilter,
-							QObject* parent = nullptr);
+							QObject* parent = nullptr, bool recursive = true);
 	~OtherLogsModel() override;
 
 	int rowCount(const QModelIndex& parent = QModelIndex()) const override;

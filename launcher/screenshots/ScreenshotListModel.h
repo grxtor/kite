@@ -118,6 +118,25 @@ class ScreenshotListModel : public QAbstractListModel
 	/* Absolute path of the file at `row`, or an empty string if `row` is
 	 * out of range. */
 	Q_INVOKABLE QString pathAt(int row) const;
+	/* Renames the file at `row` to `newName` (see renamedFileName() for what
+	 * is accepted). False, with nothing changed, for an out-of-range row, a
+	 * name that is not usable, a name another file in the folder already
+	 * has, or a filesystem failure. The row keeps its place: a rename does
+	 * not touch the modification time the list is sorted by. */
+	Q_INVOKABLE bool rename(int row, const QString& newName);
+	/* Puts the picture at `row` on the system clipboard as an image, ready to
+	 * paste into a chat or an editor. False for an out-of-range row, a file
+	 * that is not a readable image, or when there is no clipboard (no GUI
+	 * application running). */
+	Q_INVOKABLE bool copyImage(int row) const;
+	/* The file name `input` asks for when the current name is `currentName`,
+	 * or an empty string if it cannot be used: empty after trimming, or
+	 * containing a path separator or another character no common filesystem
+	 * allows. An image extension (png/jpg/jpeg) typed by the user is kept;
+	 * otherwise the current extension is added back, so "holiday" stays a
+	 * picture. */
+	static QString renamedFileName(const QString& currentName,
+								   const QString& input);
 
   signals:
 	void directoryChanged();

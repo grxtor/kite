@@ -5,6 +5,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import MeshMC.Theme
 
 /*
@@ -12,6 +13,11 @@ import MeshMC.Theme
  * game mode, when it was last played. Every row's actions sit behind its
  * ⋯ menu (also on right-click). Deleting one asks first -- a world is hours
  * of someone's play and there is no undo.
+ *
+ * "Add world" unpacks a .zip (picked, or dropped onto the tab) into the
+ * worlds folder. Changing a world while the game is running can corrupt it,
+ * so every action that changes one asks "Continue anyway?" first instead of
+ * being unavailable -- the same warning the widget version gave.
  */
 Item {
     id: root
@@ -27,10 +33,50 @@ Item {
     // world `row` - see InstancePage.qml.
     signal dataPacksRequested(int row)
 
-    // The TaskWatcher of a copy in progress, if any - copyWorld() runs off
-    // the GUI thread (a world can run into gigabytes), see InstanceDetails.
+    // The TaskWatcher of a copy or an install in progress, if any - both run
+    // off the GUI thread (a world can run into gigabytes), see InstanceDetails.
     property var watcher: null
     readonly property bool busy: !!root.watcher && root.watcher.running
+    // What the watcher is doing, for the progress line and the toasts.
+    property string busyText: qsTr("Copying world…")
+    property string failText: qsTr("The world could not be copied.")
+    property string doneText: qsTr("World copied.")
+    // Whether the MCEdit setting points at a usable MCEdit; checked each time
+    // a row menu opens, since it is a launcher setting that can change.
+    property bool mceditReady: false
+    // The action waiting on the "game is running" question.
+    property var pendingAction: null
+
+    // Runs @p action now, or after "Continue anyway?" while the game runs.
+    function guarded(action) {
+        if (root.unlocked) {
+            action()
+            return
+        }
+        root.pendingAction = action
+        runningConfirm.open()
+    }
+
+    // Starts installing the first of @p fileUrls (an array of file:// URLs)
+    // that is a Minecraft world. Only one install runs at a time -- they
+    // would fight over the one progress line -- so a drop of several adds
+    // the first and says so.
+    function addWorlds(fileUrls) {
+        if (!root.details || root.busy)
+            return
+        for (var i = 0; i < fileUrls.length; ++i) {
+            var started = root.details.installWorld(String(fileUrls[i]))
+            if (!started)
+                continue
+            root.busyText = qsTr("Adding world…")
+            root.failText = qsTr("The world could not be added.")
+            root.doneText = fileUrls.length > 1 ? qsTr("World added. Add the others one at a time.")
+                                                : qsTr("World added.")
+            root.watcher = started
+            return
+        }
+        toast.show(qsTr("That is not a Minecraft world. Pick a .zip with a world in it."), "danger")
+    }
 
     readonly property int rowHeight: 76
     readonly property int thumbSize: 52
@@ -58,6 +104,18 @@ Item {
                 font.pixelSize: Theme.type.label.pixelSize
             }
             Button {
+                enabled: !!root.details && !root.busy
+                text: qsTr("Add world")
+                icon.source: Icons.url("plus")
+                onClicked: root.guarded(() => addDialog.open())
+            }
+            IconButton {
+                flat: false
+                iconName: "refresh"
+                tip: qsTr("Refresh")
+                onClicked: if (root.details) root.details.refreshWorlds()
+            }
+            Button {
                 text: qsTr("Open folder")
                 icon.source: Icons.url("folder")
                 onClicked: root.openFolderRequested(root.details ? root.details.worldsDir : "")
@@ -72,8 +130,8 @@ Item {
             Text {
                 Layout.fillWidth: true
                 text: root.watcher
-                      ? (root.watcher.failed ? (root.watcher.error || qsTr("Copy failed."))
-                                             : (root.watcher.status || qsTr("Copying world…")))
+                      ? (root.watcher.failed ? (root.watcher.error || root.failText)
+                                             : (root.watcher.status || root.busyText))
                       : ""
                 color: root.watcher && root.watcher.failed ? Theme.palette.danger : Theme.palette.textSecondary
                 elide: Text.ElideRight
@@ -107,6 +165,7 @@ Item {
                 required property var lastPlayed
                 required property var iconFile
                 required property var dayCount
+                required property var seed
 
                 readonly property string displayName: cell.name.length > 0 ? cell.name : cell.folderName
                 // The folder's own name: the seed Home's world tiles and the
@@ -121,7 +180,7 @@ Item {
                 HoverHandler { id: hover }
                 TapHandler {
                     acceptedButtons: Qt.RightButton
-                    onTapped: if (root.unlocked && !root.busy) rowMenu.popup()
+                    onTapped: if (!root.busy) rowMenu.popup()
                 }
 
                 Rectangle {
@@ -210,52 +269,72 @@ Item {
 
                         IconButton {
                             id: moreButton
-                            enabled: root.unlocked && !root.busy
+                            enabled: !root.busy
                             iconName: "more"
                             tip: qsTr("More")
                             onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
 
                             Menu {
                                 id: rowMenu
+                                onAboutToShow: root.mceditReady = !!root.details && root.details.mceditConfigured()
                                 MenuItem {
                                     text: qsTr("Data packs")
                                     icon.source: Icons.url("package")
                                     onTriggered: root.dataPacksRequested(cell.index)
                                 }
+                                MenuItem {
+                                    text: qsTr("Copy seed")
+                                    icon.source: Icons.url("copy")
+                                    onTriggered: {
+                                        clipboard.copyText(String(cell.seed))
+                                        toast.show(qsTr("Seed copied."), "success")
+                                    }
+                                }
+                                MenuItem {
+                                    visible: root.mceditReady
+                                    height: visible ? implicitHeight : 0
+                                    text: qsTr("Open in MCEdit")
+                                    icon.source: Icons.url("external-link")
+                                    onTriggered: root.guarded(() => {
+                                        var problem = root.details.openWorldInMCEdit(cell.index)
+                                        if (problem.length > 0)
+                                            toast.show(problem, "danger")
+                                    })
+                                }
                                 MenuSeparator {}
                                 MenuItem {
                                     text: qsTr("Rename…")
                                     icon.source: Icons.url("edit")
-                                    onTriggered: {
+                                    onTriggered: root.guarded(() => {
                                         renamePrompt.row = cell.index
                                         renamePrompt.value = cell.displayName
                                         renamePrompt.open()
-                                    }
+                                    })
                                 }
                                 MenuItem {
                                     text: qsTr("Copy…")
                                     icon.source: Icons.url("copy")
-                                    onTriggered: {
+                                    onTriggered: root.guarded(() => {
                                         copyPrompt.row = cell.index
                                         copyPrompt.value = qsTr("%1 (copy)").arg(cell.displayName)
                                         copyPrompt.open()
-                                    }
+                                    })
                                 }
                                 MenuItem {
                                     text: qsTr("Reset icon")
                                     icon.source: Icons.url("image")
                                     enabled: !!cell.iconFile
-                                    onTriggered: if (root.details) root.details.resetWorldIcon(cell.index)
+                                    onTriggered: root.guarded(() => root.details.resetWorldIcon(cell.index))
                                 }
                                 MenuSeparator {}
                                 MenuItem {
                                     text: qsTr("Delete…")
                                     icon.source: Icons.url("trash")
-                                    onTriggered: {
+                                    onTriggered: root.guarded(() => {
                                         confirm.row = cell.index
                                         confirm.text = qsTr("Delete the world “%1”? It cannot be recovered from the launcher.").arg(cell.displayName)
                                         confirm.open()
-                                    }
+                                    })
                                 }
                             }
                         }
@@ -302,6 +381,9 @@ Item {
         onSubmitted: (text) => {
             var watcher = root.details ? root.details.copyWorld(row, text) : null
             if (watcher) {
+                root.busyText = qsTr("Copying world…")
+                root.failText = qsTr("The world could not be copied.")
+                root.doneText = qsTr("World copied.")
                 root.watcher = watcher
                 close()
             } else {
@@ -310,12 +392,79 @@ Item {
         }
     }
 
+    ConfirmDialog {
+        id: runningConfirm
+        title: qsTr("Minecraft is running")
+        text: qsTr("Changing a world while Minecraft is running can damage it. Continue anyway?")
+        confirmText: qsTr("Continue anyway")
+        onConfirmed: {
+            var action = root.pendingAction
+            root.pendingAction = null
+            if (action)
+                action()
+        }
+    }
+
+    FileDialog {
+        id: addDialog
+        title: qsTr("Add world")
+        nameFilters: [qsTr("World archives (*.zip)"), qsTr("All files (*)")]
+        onAccepted: root.addWorlds([selectedFile])
+    }
+
+    // Worlds dropped from the file manager. Only the first is added; the
+    // rest would fight over the one progress line.
+    DropArea {
+        id: drop
+        anchors.fill: parent
+        keys: ["text/uri-list"]
+        onDropped: (event) => {
+            if (event.hasUrls) {
+                // The event is gone once this handler returns, but the
+                // question may still be open.
+                var urls = event.urls
+                root.guarded(() => root.addWorlds(urls))
+            }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            visible: drop.containsDrag
+            radius: Theme.radius.lg
+            color: Theme.palette.accentSubtle
+            border.width: 1
+            border.color: Theme.palette.accent
+
+            Text {
+                anchors.centerIn: parent
+                text: qsTr("Drop a world here to add it")
+                color: Theme.palette.accentText
+                font.family: Theme.font.family
+                font.pixelSize: Theme.type.bodyStrong.pixelSize
+                font.weight: Theme.type.bodyStrong.weight
+            }
+        }
+    }
+
+    Connections {
+        target: root.watcher
+        ignoreUnknownSignals: true
+        function onFinished(ok) {
+            if (ok)
+                toast.show(root.doneText, "success")
+        }
+    }
+
+    ClipboardText { id: clipboard }
+
+    Toast { id: toast }
+
     EmptyState {
         anchors.centerIn: parent
         upperThird: true
         visible: list.count === 0
         title: qsTr("No worlds yet")
-        body: qsTr("Worlds you create in single player show up here.")
+        body: qsTr("Worlds you create in single player show up here. You can also add one from a .zip.")
         MeshIcon { iconName: "globe"; size: 40; color: Theme.palette.textTertiary }
     }
 }

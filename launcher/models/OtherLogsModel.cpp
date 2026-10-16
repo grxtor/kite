@@ -34,11 +34,12 @@ namespace
 } // namespace
 
 OtherLogsModel::OtherLogsModel(const QString& path, IPathMatcher::Ptr fileFilter,
-							   QObject* parent)
+							   QObject* parent, bool recursive)
 	: QAbstractListModel(parent), m_path(path),
 	  m_watcher(new RecursiveFileSystemWatcher(this))
 {
 	m_watcher->setMatcher(std::move(fileFilter));
+	m_watcher->setRecursive(recursive);
 	m_watcher->setRootDir(QDir::current().absoluteFilePath(m_path));
 	connect(m_watcher, &RecursiveFileSystemWatcher::filesChanged, this,
 			&OtherLogsModel::onFilesChanged);
