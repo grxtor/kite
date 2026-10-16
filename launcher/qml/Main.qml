@@ -76,6 +76,7 @@ ApplicationWindow {
             LauncherStore.folders = root.shell.folderSettings
             LauncherStore.updates = root.shell.updateSettings
             LauncherStore.playTime = root.shell.playTime
+            LauncherStore.catPacks = root.shell.catPacks
             var mode = SettingsStore.string("UiThemeMode")
             if (mode === "dark" || mode === "light")
                 Theme.mode = mode
@@ -96,6 +97,9 @@ ApplicationWindow {
     // debugMarkInstanceCrashed()). "nav=<path>" goes through navigate()
     // below ("nav=settings/java", "nav=instance/fabric/settings"), and
     // "import=<path or url>" acts like `meshmc --import` (onImportRequested).
+    // "page=accounts;accounts-demo" opens the skin editor on demo data
+    // ("accounts-demo=cape" / "=elytra" start on the player's back); that
+    // step is read by AccountsController, not here.
     property string devRoute: ""
     function applyDevRoute() {
         var steps = root.devRoute.split(";")
@@ -160,6 +164,12 @@ ApplicationWindow {
             // The instance page header ⋯ menu, open (after instance=<id>).
             else if (key === "instancemenu")
                 Qt.callLater(instancePage.openHeaderMenu)
+            // The Content tab's "Export list" dialog (after instance=<id>).
+            else if (key === "exportlist")
+                Qt.callLater(instancePage.openContentExportList)
+            // Add content's Filters popup (after instance=<id>).
+            else if (key === "browsefilters")
+                Qt.callLater(instancePage.openBrowseFilters)
             // A question only a real launch asks -- see QmlShell's
             // debugShowRequest(): "pickAccount" or "busySkip".
             else if (key === "ask")
@@ -506,12 +516,16 @@ ApplicationWindow {
                     // classic Settings page's "Sort instances by" choice
                     // writes -- QmlShell already re-sorts every instance
                     // proxy when it changes, so this needs no plumbing of
-                    // its own beyond reading and writing it. Deferred with
-                    // callLater: this control completes before root's own
-                    // Component.onCompleted has pointed SettingsStore at a
-                    // live adapter, so reading the setting here directly
-                    // would always see it empty.
-                    Component.onCompleted: Qt.callLater(() => sortCombo.currentIndex = Math.max(0, sortCombo.indexOfValue(SettingsStore.string("InstSortMode") || "Name")))
+                    // its own beyond reading and writing it. Follows the
+                    // setting rather than reading it once: it is still empty
+                    // when this control completes (root's own
+                    // Component.onCompleted points SettingsStore at the live
+                    // adapter afterwards), and Settings > General changes it
+                    // too.
+                    readonly property string stored: SettingsStore.string("InstSortMode") || "Name"
+                    function sync() { currentIndex = Math.max(0, indexOfValue(stored)) }
+                    onStoredChanged: sync()
+                    Component.onCompleted: sync()
                     onActivated: SettingsStore.setValue("InstSortMode", currentValue)
 
                     Accessible.name: qsTr("Sort instances by")
@@ -725,6 +739,8 @@ ApplicationWindow {
                     AccountsPage {
                         id: accountsPage
                         controller: root.shell && root.shell.accountsController ? root.shell.accountsController : null
+                        // The 3D skin preview needs the cat's Quick3D module.
+                        catAvailable: root.catAvailable
                     }
                 }
 
@@ -743,6 +759,15 @@ ApplicationWindow {
                     anchors.fill: parent
                     active: root.catAvailable && SettingsStore.bool("CatEnabled")
                     source: active ? "qrc:/qt/qml/MeshMC/Cat/CatOverlay.qml" : ""
+                }
+
+                // The still cat picture (Settings > Appearance > Cat picture).
+                // Never together with the 3D cat: an old or hand-edited
+                // config may have both on, and they share the same corner.
+                Loader {
+                    anchors.fill: parent
+                    active: SettingsStore.bool("TheCat") && !catLoader.active
+                    source: active ? "qrc:/qt/qml/MeshMC/Components/CatPicture.qml" : ""
                 }
             }
 

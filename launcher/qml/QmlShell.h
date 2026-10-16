@@ -48,6 +48,7 @@ class UpdateSettingsController;
 class PlayTimeSummary;
 class LibraryController;
 class LauncherLogs;
+class CatPackList;
 class RecentWorldsModel;
 class JavaInstallList;
 class TranslationsModel;
@@ -152,6 +153,9 @@ class QmlShell : public QObject
 	/// Settings' Launcher logs section: the launcher's own log files and
 	/// their uploader (see models/LauncherLogs.h).
 	Q_PROPERTY(QObject* launcherLogs READ launcherLogs CONSTANT)
+	/// The cat pictures for Settings > Appearance and the still cat
+	/// (see models/CatPackList.h).
+	Q_PROPERTY(QObject* catPacks READ catPacks CONSTANT)
 	/* Distinct groups currently in use, for a "move to group" picker's
 	 * suggestions -- the same list InstanceFilterModel derives for the
 	 * library's own section headers (see m_instances), so a group picker
@@ -348,6 +352,8 @@ class QmlShell : public QObject
 	QObject* library() const;
 	/// Made on first use: nothing watches the log folder before then.
 	QObject* launcherLogs() const;
+	/// Made on first use, like javaController().
+	QObject* catPacks() const;
 
 	/* Everything below just emits the matching *Requested() signal: QmlShell
 	 * sits in MeshMC_qml, which cannot see the widget code that actually
@@ -597,6 +603,7 @@ class QmlShell : public QObject
 	mutable std::unique_ptr<PlayTimeSummary> m_playTime;
 	mutable std::unique_ptr<LibraryController> m_library;
 	mutable std::unique_ptr<LauncherLogs> m_launcherLogs;
+	mutable std::unique_ptr<CatPackList> m_catPacks;
 	/* Keyed by (anchor, anchorContext) -- see pluginSurfaces(). Declared
 	 * alongside the other cached models, for the same reason: destroyed
 	 * before the engine is torn down. */

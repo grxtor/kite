@@ -408,6 +408,8 @@ Item {
 
             CheckBox {
                 id: makeDefaultBox
+                // Its box on the account rows' left edge.
+                leftPadding: 0
                 text: qsTr("Make this the default account")
             }
         }
@@ -490,8 +492,12 @@ Item {
                 }
             }
             Row {
+                // Pulled out by the flat button's own padding, so the first
+                // label starts on the list box's edge.
+                x: -recommendedButton.leftPadding
                 spacing: Theme.space.sm
                 Button {
+                    id: recommendedButton
                     flat: true
                     text: qsTr("Recommended")
                     onClicked: modsList.model.selectRecommended()

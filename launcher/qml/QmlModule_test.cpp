@@ -26,6 +26,11 @@
 #include <QStandardItemModel>
 #include <QQmlEngine>
 #include <QQuickStyle>
+#include <QQuickWindow>
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
+#include <QMimeData>
 #include <QUrl>
 
 #include <functional>
@@ -338,6 +343,52 @@ class QmlModuleTest : public QObject
 		QCOMPARE(rows, 2);
 	}
 
+	/* A switch must go on showing what the model says, also after the user
+	 * has flipped it: a plugin may refuse (or only apply the change at the
+	 * next start), and a switch left showing the click instead of the state
+	 * is the "buttons are wrong until a restart" bug. */
+	void pluginSwitchesKeepFollowingTheirModel()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(
+			"import QtQuick\n"
+			"import MeshMC.Components\n"
+			"SettingsPluginsListSection {\n"
+			"  width: 800; height: 600\n"
+			"  pluginList: ListModel {\n"
+			"    function setEnabled(row, on) { /* refused: model unchanged */ }\n"
+			"    ListElement { name: 'World Share'; version: '1.0'; author: '';\n"
+			"      description: ''; license: ''; sourceUrl: '';\n"
+			"      signature: 'Signed'; status: 'Loaded'; statusDetail: '';\n"
+			"      enabled: true; canToggle: true; dependencies: '' }\n"
+			"  }\n"
+			"}\n",
+			QUrl(QStringLiteral("qrc:/test/PluginSwitch.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		std::unique_ptr<QObject> section(component.create());
+		QVERIFY2(section, qPrintable(component.errorString()));
+
+		QQuickItem* sw = nullptr;
+		std::function<void(QQuickItem*)> find = [&](QQuickItem* item) {
+			for (const QMetaObject* mo = item->metaObject(); mo && !sw;
+				 mo = mo->superClass()) {
+				if (QByteArray(mo->className()) == "QQuickSwitch")
+					sw = item;
+			}
+			for (QQuickItem* child : item->childItems())
+				find(child);
+		};
+		find(qobject_cast<QQuickItem*>(section.get()));
+		QVERIFY(sw);
+		QVERIFY(sw->property("checked").toBool());
+
+		// The user clicks; the model does not change.
+		QVERIFY(QMetaObject::invokeMethod(sw, "click"));
+		QVERIFY(sw->property("checked").toBool());
+	}
+
 	/* QmlShell.news reaches the Home page's welcome card. */
 	void homeShowsTheNewestHeadline()
 	{
@@ -375,6 +426,74 @@ class QmlModuleTest : public QObject
 						  QStringLiteral("newInstanceDialog.presetSource"))
 					 .toString(),
 				 source);
+	}
+
+	/* A file dropped on the window opens import with it -- unless a drop
+	 * area inside the pages (the Content tab's mods, the Worlds tab's
+	 * worlds) takes it: Main.qml's window-wide one sits under all of them.
+	 * The inner area here stands in for those, made the way a page's own
+	 * would be stacked: a later item above the window's first child. */
+	void windowDropOpensImportUnlessAPageAreaTakesIt()
+	{
+		QQmlEngine engine;
+		FakeShell shell;
+		auto root = createRoot(engine, &shell);
+		QVERIFY(root);
+		auto* window = qobject_cast<QQuickWindow*>(root.get());
+		QVERIFY(window);
+		window->show();
+		QVERIFY(QTest::qWaitForWindowExposed(window));
+
+		const QUrl file = QUrl::fromLocalFile(QStringLiteral("/tmp/Some Pack.mrpack"));
+		const auto dropFile = [&]() {
+			QMimeData mime;
+			mime.setUrls({file});
+			const QPoint pos(window->width() / 2, window->height() / 2);
+			QDragEnterEvent enter(pos, Qt::CopyAction, &mime, Qt::LeftButton,
+								  Qt::NoModifier);
+			QCoreApplication::sendEvent(window, &enter);
+			QDragMoveEvent move(pos, Qt::CopyAction, &mime, Qt::LeftButton,
+								Qt::NoModifier);
+			QCoreApplication::sendEvent(window, &move);
+			QDropEvent drop(pos, Qt::CopyAction, &mime, Qt::LeftButton,
+							Qt::NoModifier);
+			QCoreApplication::sendEvent(window, &drop);
+		};
+
+		QQmlComponent component(&engine);
+		component.setData("import QtQuick\n"
+						  "DropArea {\n"
+						  "  anchors.fill: parent\n"
+						  "  keys: ['text/uri-list']\n"
+						  "  property string received: ''\n"
+						  "  onDropped: (drop) => {\n"
+						  "    received = drop.urls[0].toString()\n"
+						  "    drop.accept()\n"
+						  "  }\n"
+						  "}\n",
+						  QUrl(QStringLiteral("qrc:/test/PageDropArea.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		std::unique_ptr<QObject> pageArea(component.create());
+		QVERIFY2(pageArea, qPrintable(component.errorString()));
+		qobject_cast<QQuickItem*>(pageArea.get())
+			->setParentItem(window->contentItem());
+
+		dropFile();
+		QCOMPARE(pageArea->property("received").toString(), file.toString());
+		QVERIFY(!evaluate(root.get(), QStringLiteral("newInstanceDialog.visible"))
+					 .toBool());
+
+		pageArea.reset();
+		dropFile();
+		QVERIFY(evaluate(root.get(), QStringLiteral("newInstanceDialog.visible"))
+					.toBool());
+		QCOMPARE(evaluate(root.get(), QStringLiteral("newInstanceDialog.mode"))
+					 .toString(),
+				 QStringLiteral("import"));
+		QCOMPARE(evaluate(root.get(),
+						  QStringLiteral("newInstanceDialog.presetSource"))
+					 .toString(),
+				 file.toString());
 	}
 };
 

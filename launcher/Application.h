@@ -201,8 +201,9 @@ class Application : public QApplication, public LauncherContext
 	 * still false for a moment after the QML shell exists. */
 	bool usingQmlShell() const;
 
-	/* Whether the QML shell is the user interface: it exists (see
-	 * showMainWindow()), whether or not its presenter can answer yet.
+	/* Whether the QML shell is the user interface: it was chosen at startup
+	 * (useQmlShell()) and has not failed to load, whether or not it exists
+	 * yet (see showMainWindow()) or its presenter can answer.
 	 * Every "widget dialog or QML equivalent?" choice (LaunchController,
 	 * PluginManager, showInstanceLog()) asks this, so the widget branch is
 	 * never taken under the QML shell. A call that needs the presenter
@@ -420,6 +421,13 @@ class Application : public QApplication, public LauncherContext
 	 * and whatever waited for its presenter has run through the widget
 	 * host instead. */
 	bool ensureQmlShell();
+	/* Set when the QML shell's window failed to load: the widget window
+	 * takes over for good, and qmlShellChosen() turns false. */
+	bool m_qmlShellLoadFailed = false;
+	/* Tells the QML shell about the updater: whether "Check for updates"
+	 * has anything to do, and the Updates settings' backend. Called by
+	 * whichever of the two is made second; a no-op without a shell. */
+	void connectUpdaterToQmlShell();
 	/* Loads the news and checks for notifications once, after the first
 	 * window is on screen (a launch straight from the command line never
 	 * gets here, as before); under the QML shell also checks the instance

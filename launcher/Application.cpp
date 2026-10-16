@@ -902,6 +902,8 @@ void Application::initSettings()
 	m_settings->registerSetting("UiThemeMode", QString("dark"));
 	// Colour scheme of the QML interface: amethyst, ember or diamond.
 	m_settings->registerSetting("UiPalette", QString("grass"));
+	// The QML interface's font (Settings > Appearance).
+	m_settings->registerSetting("UiFontFamily", QString("Inter"));
 	m_settings->registerSetting("UiSidebarCollapsed", false);
 	// Stops decorative loops (Play sheen, the cat's idle moves) for people
 	// who find motion distracting.
@@ -1226,25 +1228,35 @@ void Application::initSubsystems()
 	// dialogs to yet, which only matters for the "On Launch" check below.
 	if (updaterEnabled()) {
 		qDebug() << "Initializing the updater";
+		[[maybe_unused]] const auto startUpdater =
+			[this](ExternalUpdater* updater) {
+				m_updater.reset(updater);
+				// A build follows the channel it was published on unless the
+				// user has said otherwise, so a stable install is never
+				// handed a pre-release by default.
+				m_updater->setBetaAllowed(BuildConfig.UPDATE_CHANNEL ==
+										  QLatin1String("beta"));
+				qDebug() << "<> Updater started.";
+				connectUpdaterToQmlShell();
+			};
 #if defined(Q_OS_MAC)
 #if defined(MESHMC_SPARKLE_ENABLED)
-		m_updater.reset(new MacSparkleUpdater());
+		startUpdater(new MacSparkleUpdater());
 #endif
 #else
-		m_updater.reset(new MeshMCExternalUpdater(
-			m_rootPath, m_dataPath,
-			// Migrates the launcher's old "check on start" setting into the
-			// updater's config, once. See the constructor.
-			m_settings->get("AutoUpdate").toBool()));
+		/* Its "On Launch" check runs, and asks about what it finds, inside
+		 * its constructor. Under the QML shell nothing can answer yet and
+		 * uiHost() would hand it the widget dialogs, so it is made once the
+		 * QML presenter is up (or, if the QML shell fails to load, just
+		 * before the widget window). Under the widget UI this runs now. */
+		runWhenQmlPresenterReady([this, startUpdater]() {
+			startUpdater(new MeshMCExternalUpdater(
+				m_rootPath, m_dataPath,
+				// Migrates the launcher's old "check on start" setting into
+				// the updater's config, once. See the constructor.
+				m_settings->get("AutoUpdate").toBool()));
+		});
 #endif
-		if (m_updater) {
-			// A build follows the channel it was published on unless the user
-			// has said otherwise, so a stable install is never handed a
-			// pre-release by default.
-			m_updater->setBetaAllowed(BuildConfig.UPDATE_CHANNEL ==
-									  QLatin1String("beta"));
-			qDebug() << "<> Updater started.";
-		}
 	} else {
 		qDebug() << "<> Updater not available for this build.";
 	}
@@ -1992,6 +2004,25 @@ void Application::triggerUpdateCheck()
 	m_updater->checkForUpdates();
 }
 
+void Application::connectUpdaterToQmlShell()
+{
+	if (!m_qmlShell) {
+		return;
+	}
+	m_qmlShell->setUpdaterAvailable(updaterEnabled() && m_updater);
+	/* The Updates settings read and write the updater's own schedule;
+	 * without a backend that section hides itself. */
+	if (m_updater && updaterEnabled()) {
+		ExternalUpdater* updater = m_updater.get();
+		m_qmlShell->updateSettingsController()->setBackend(
+			{[updater] { return updater->getAutomaticallyChecksForUpdates(); },
+			 [updater](bool v) { updater->setAutomaticallyChecksForUpdates(v); },
+			 [updater] { return updater->getUpdateCheckInterval(); },
+			 [updater](double s) { updater->setUpdateCheckInterval(s); },
+			 [this] { triggerUpdateCheck(); }});
+	}
+}
+
 bool Application::reportUpdateMarkers()
 {
 	const QString updateLog = UpdateLockFile::updateLogPath(m_dataPath);
@@ -2303,6 +2334,10 @@ bool Application::ensureQmlShell()
 	if (m_qmlShell) {
 		return true;
 	}
+	// Not tried again: the widget window has taken over by now.
+	if (m_qmlShellLoadFailed) {
+		return false;
+	}
 	m_qmlShell = std::make_unique<QmlShell>();
 
 	/* QmlShell cannot see PluginManager (MeshMC_qml does not link
@@ -2415,20 +2450,9 @@ bool Application::ensureQmlShell()
 			});
 	/* "Check for updates" (the macOS menu bar, the Updates settings):
 	 * QmlShell cannot reach the updater itself. */
-	m_qmlShell->setUpdaterAvailable(updaterEnabled() && m_updater);
 	connect(m_qmlShell.get(), &QmlShell::checkForUpdatesRequested, this,
 			&Application::triggerUpdateCheck);
-	/* The Updates settings read and write the updater's own schedule;
-	 * without a backend that section hides itself. */
-	if (m_updater && updaterEnabled()) {
-		ExternalUpdater* updater = m_updater.get();
-		m_qmlShell->updateSettingsController()->setBackend(
-			{[updater] { return updater->getAutomaticallyChecksForUpdates(); },
-			 [updater](bool v) { updater->setAutomaticallyChecksForUpdates(v); },
-			 [updater] { return updater->getUpdateCheckInterval(); },
-			 [updater](double s) { updater->setUpdateCheckInterval(s); },
-			 [this] { triggerUpdateCheck(); }});
-	}
+	connectUpdaterToQmlShell();
 	connect(m_qmlShell.get(), &QmlShell::killRequested, this,
 			[this](const QString& id) {
 				if (auto inst = instances()->getInstanceById(id)) {
@@ -2455,10 +2479,11 @@ bool Application::ensureQmlShell()
 		 * screen: showMainWindow() falls through to the widget window. */
 		qWarning() << "QML shell failed to load; using the widget window";
 		m_qmlShell.reset();
+		m_qmlShellLoadFailed = true;
 
 		/* The QmlUiHost that would have shown these never came up.
 		 * uiHost() now falls back to the widget host and qmlShellChosen()
-		 * is false since m_qmlShell is gone, so they still reach the user
+		 * is false since the load failed, so they still reach the user
 		 * (a held launch takes the widget path) instead of being silently
 		 * dropped. */
 		runPendingQmlPresenterCalls();
@@ -2865,7 +2890,11 @@ bool Application::usingQmlShell() const
 
 bool Application::qmlShellChosen() const
 {
-	return m_qmlShell != nullptr;
+	/* The decision, not the object: plugins initialise and the updater
+	 * starts before ensureQmlShell() has made the shell, and they must
+	 * already wait for it (or be declined) rather than take the widget
+	 * path. False again once the QML shell has failed to load. */
+	return m_qmlShell != nullptr || (useQmlShell() && !m_qmlShellLoadFailed);
 }
 
 void Application::runWhenQmlPresenterReady(std::function<void()> call)
@@ -2895,6 +2924,12 @@ void Application::showInstanceLog(InstancePtr instance)
 		return;
 	}
 	if (qmlShellChosen()) {
+		// Chosen but not made yet: shown once it is.
+		if (!m_qmlShell) {
+			runWhenQmlPresenterReady(
+				[this, instance]() { showInstanceLog(instance); });
+			return;
+		}
 		// The request can arrive with the QML window minimized or behind
 		// others (a background crash, or - see launch()'s own
 		// isRunning()/canEdit() branches - a second Play click while

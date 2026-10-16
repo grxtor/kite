@@ -54,6 +54,7 @@
 #include "models/PlayTimeSummary.h"
 #include "models/LibraryController.h"
 #include "models/LauncherLogs.h"
+#include "models/CatPackList.h"
 #include "BuildConfig.h"
 #include "models/InstanceFilterModel.h"
 #include "models/NewInstanceController.h"
@@ -892,6 +893,14 @@ QObject* QmlShell::launcherLogs() const
 			QDir::currentPath(), BuildConfig.MESHMC_NAME);
 	}
 	return expose(m_launcherLogs.get());
+}
+
+QObject* QmlShell::catPacks() const
+{
+	if (!m_catPacks) {
+		m_catPacks = std::make_unique<CatPackList>();
+	}
+	return expose(m_catPacks.get());
 }
 
 QObject* QmlShell::exportController(const QString& id)
