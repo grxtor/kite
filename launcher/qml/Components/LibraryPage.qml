@@ -276,6 +276,9 @@ Item {
                 if (item && item.subMenu === playOptionsMenu) {
                     item.visible = offerOptions
                     item.height = offerOptions ? item.implicitHeight : 0
+                    // An icon like its neighbours', or its label would
+                    // start where theirs' icons do.
+                    item.icon.source = Icons.url("sliders")
                 }
             }
             popup()

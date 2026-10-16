@@ -18,6 +18,8 @@ SettingsScroll {
     readonly property var updates: LauncherStore.updates
     // Read by SettingsPage.qml's section list.
     readonly property bool shown: !!updates && updates.available
+    // The same width SettingNumber gives its field.
+    readonly property int intervalFieldWidth: 168
 
     title: qsTr("Updates")
     description: qsTr("Whether MeshMC looks for new versions by itself.")
@@ -43,7 +45,7 @@ SettingsScroll {
             enabled: !!root.updates && root.updates.autoCheck
             SpinBox {
                 id: interval
-                width: 168
+                width: root.intervalFieldWidth
                 from: 0
                 to: 24 * 30
                 stepSize: 6

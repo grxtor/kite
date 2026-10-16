@@ -145,11 +145,16 @@ Item {
     readonly property int contentX: Math.round((root.width - root.contentWidth) / 2)
 
     // The welcome card: a share of the window's height, within bounds, so a
-    // short window keeps "Jump back in" above the fold.
+    // short window keeps "Jump back in" above the fold -- but never shorter
+    // than its own words: on a narrow window the greeting wraps, and it
+    // must still clear the news line under it.
     readonly property real heroShare: 0.26
     readonly property int heroMinHeight: 168
     readonly property int heroMaxHeight: 240
-    readonly property int heroHeight: Math.round(Math.max(root.heroMinHeight,
+    readonly property int heroFitHeight: greeting.implicitHeight
+                                         + (newsLine.visible ? newsLine.height + (Theme.space.lg + Theme.space.md) * 2
+                                                             : Theme.space.lg * 2)
+    readonly property int heroHeight: Math.round(Math.max(root.heroMinHeight, root.heroFitHeight,
                                                           Math.min(root.heroMaxHeight, root.height * root.heroShare)))
 
     // "Jump back in": as many whole cards as fit (up to three), stretched to
@@ -257,6 +262,7 @@ Item {
                 }
 
                 Column {
+                    id: greeting
                     anchors.left: parent.left
                     anchors.leftMargin: Theme.space.xxl
                     anchors.right: parent.horizontalCenter

@@ -9,7 +9,8 @@ import MeshMC.Theme
 /*
  * One setting: what it is and what it does on the left, its control on the
  * right. `wide` puts the control under the text instead, for text fields
- * that need the room. `topAligned` lines the text up with the control's
+ * that need the room; a row too narrow to give its text `labelMinWidth`
+ * beside the control (a narrow window) does the same by itself. `topAligned` lines the text up with the control's
  * first line instead of centring both, for a control with more under that
  * line (MemorySetting's slider with its system-memory bar below); the label
  * centres on the first `controlLineHeight` pixels of the control.
@@ -24,6 +25,10 @@ Item {
     property real controlLineHeight: 0
     property bool showDivider: false
     default property alias control: controlSlot.data
+
+    readonly property int labelMinWidth: 220
+    readonly property bool stacked: root.wide
+                                    || layout.width - controlSlot.implicitWidth - layout.columnSpacing < root.labelMinWidth
 
     width: parent ? parent.width : implicitWidth
     implicitHeight: Math.max(Theme.control.heightLg + Theme.space.md,
@@ -48,14 +53,14 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         anchors.leftMargin: Theme.space.lg
         anchors.rightMargin: Theme.space.lg
-        columns: root.wide ? 1 : 2
+        columns: root.stacked ? 1 : 2
         columnSpacing: Theme.space.xl
         rowSpacing: Theme.space.sm
 
         Column {
             Layout.fillWidth: true
             Layout.alignment: root.topAligned ? Qt.AlignTop : Qt.AlignVCenter
-            Layout.topMargin: root.topAligned
+            Layout.topMargin: root.topAligned && !root.stacked
                               ? Math.max(0, Math.round((root.controlLineHeight - labelText.implicitHeight / Math.max(1, labelText.lineCount)) / 2))
                               : 0
             spacing: 2
@@ -87,7 +92,7 @@ Item {
             id: controlSlot
             Layout.fillWidth: root.wide
             Layout.alignment: (root.topAligned ? Qt.AlignTop : Qt.AlignVCenter)
-                              | (root.wide ? Qt.AlignLeft : Qt.AlignRight)
+                              | (root.stacked ? Qt.AlignLeft : Qt.AlignRight)
             // A wide control takes the width the layout gives it, so it must
             // not also report its own width back as the implicit one.
             implicitWidth: root.wide ? 0 : childrenRect.width

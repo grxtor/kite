@@ -221,6 +221,7 @@ qt_add_qml_module(MeshMC_qml_components
         icons/search.svg
         icons/server.svg
         icons/settings.svg
+        icons/sliders.svg
         icons/sort.svg
         icons/stop.svg
         icons/sun.svg

@@ -38,6 +38,20 @@ Item {
     readonly property var versions: browser && browser.versions ? browser.versions : []
     // The sort box beside the search field.
     readonly property int sortWidth: 200
+    // The search field is not worth having narrower than this; below it,
+    // it takes a row of its own above the sort box and Filters.
+    readonly property int searchMinWidth: 200
+    // The project panel's share of the row, between its own bounds, so on a
+    // narrow window the results keep room for their names.
+    readonly property real panelShare: 0.4
+    readonly property int panelMinWidth: 300
+    readonly property int panelMaxWidth: 440
+    // A result row, its logo, the selected project's logo, and the least
+    // the version list shrinks to under the project's header.
+    readonly property int resultHeight: 60
+    readonly property int resultLogoSize: 40
+    readonly property int projectLogoSize: 48
+    readonly property int versionListMinHeight: 160
 
     // Every install started from here, by project key. A plain JS object
     // does not notify, so `downloadsRevision` is bumped on every change and
@@ -143,6 +157,12 @@ Item {
     ]
 
     property bool searched: false
+    // The Filters popup, open: for review snapshots (Main.qml's
+    // "browsefilters" dev route, through InstancePage).
+    function openFilters() {
+        filterPopup.open()
+    }
+
     function runSearch() {
         if (!root.browser)
             return
@@ -247,6 +267,7 @@ Item {
         }
 
         RowLayout {
+            id: panes
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: Theme.space.lg
@@ -261,20 +282,29 @@ Item {
                 Layout.minimumWidth: 0
                 spacing: Theme.space.md
 
-                RowLayout {
+                GridLayout {
+                    id: searchRow
+                    // Search, sort and Filters on one row while they fit;
+                    // otherwise the search gets the full width above them.
+                    readonly property bool stacked: width < root.searchMinWidth + root.sortWidth
+                                                    + filtersButton.implicitWidth + columnSpacing * 2
                     Layout.fillWidth: true
-                    spacing: Theme.space.md
+                    columns: stacked ? 2 : 3
+                    columnSpacing: Theme.space.md
+                    rowSpacing: Theme.space.md
 
                     SearchBox {
                         id: searchField
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
+                        Layout.columnSpan: searchRow.stacked ? 2 : 1
                         placeholderText: qsTr("Search")
                         onTextEdited: debounce.restart()
                         onTextChanged: if (text.length === 0) debounce.restart()
                     }
                     ComboBox {
                         Layout.preferredWidth: root.sortWidth
+                        Layout.fillWidth: searchRow.stacked
                         visible: count > 0
                         model: root.browser && root.browser.sortOptions ? root.browser.sortOptions : []
                         textRole: "label"
@@ -337,7 +367,7 @@ Item {
                         // Full width: the ScrollBar overlays the rows' right
                         // edge rather than reserving a gutter beside them.
                         width: results.width
-                        height: 60
+                        height: root.resultHeight
                         // The icon sits as far in as on Content's rows, and
                         // the text stops as far from the right border.
                         leftPadding: Theme.space.md
@@ -368,8 +398,8 @@ Item {
                         contentItem: RowLayout {
                             spacing: Theme.space.md
                             Rectangle {
-                                Layout.preferredWidth: 40
-                                Layout.preferredHeight: 40
+                                Layout.preferredWidth: root.resultLogoSize
+                                Layout.preferredHeight: root.resultLogoSize
                                 radius: Theme.radius.md
                                 color: Theme.palette.surfaceSunken
                                 clip: true
@@ -438,10 +468,8 @@ Item {
             // get every pixel the header does not need.
             Rectangle {
                 Layout.fillHeight: true
-                Layout.fillWidth: true
-                Layout.preferredWidth: 2
-                Layout.minimumWidth: 300
-                Layout.maximumWidth: 440
+                Layout.preferredWidth: Math.round(Math.min(root.panelMaxWidth,
+                                                           Math.max(root.panelMinWidth, panes.width * root.panelShare)))
                 radius: Theme.radius.lg
                 color: Theme.palette.surface
                 border.width: 1
@@ -457,8 +485,8 @@ Item {
                         Layout.fillWidth: true
                         spacing: Theme.space.md
                         Rectangle {
-                            Layout.preferredWidth: 48
-                            Layout.preferredHeight: 48
+                            Layout.preferredWidth: root.projectLogoSize
+                            Layout.preferredHeight: root.projectLogoSize
                             radius: Theme.radius.md
                             color: Theme.palette.surfaceSunken
                             Image {
@@ -540,7 +568,7 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        Layout.minimumHeight: 160
+                        Layout.minimumHeight: root.versionListMinHeight
                         radius: Theme.radius.md
                         color: Theme.palette.surfaceSunken
                         border.width: 1
