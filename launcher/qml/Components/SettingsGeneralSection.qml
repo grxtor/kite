@@ -3,10 +3,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
+import QtQuick.Controls
 
 /*
  * The "General" section of SettingsPage.qml: how the library sorts, what a
- * new instance starts out with, and where MeshMC keeps its folders.
+ * new instance starts out with, where MeshMC keeps its folders (and which
+ * other folders it looks in for instances), and the news notices.
  */
 SettingsScroll {
     id: root
@@ -15,7 +17,7 @@ SettingsScroll {
     signal openPathRequested(string path)
 
     title: qsTr("General")
-    description: qsTr("How the library sorts and where new instances start out.")
+    description: qsTr("How the library sorts, where new instances start out, and where MeshMC keeps its folders.")
     SettingsGroup {
         width: parent.width
         title: qsTr("Library")
@@ -52,7 +54,7 @@ SettingsScroll {
     SettingsGroup {
         width: parent.width
         title: qsTr("Folders")
-        description: qsTr("Relative paths are inside MeshMC's data folder. These folders can be opened from here, but not moved.")
+        description: qsTr("Relative paths are inside MeshMC's data folder. Changing a folder does not move what is already in it.")
         Repeater {
             model: [
                 { key: "InstanceDir", label: qsTr("Instances") },
@@ -61,16 +63,28 @@ SettingsScroll {
                 { key: "SkinsDir", label: qsTr("Skins") },
                 { key: "JavaDir", label: qsTr("Java runtimes") }
             ]
-            delegate: SettingRow {
+            delegate: FolderRow {
                 required property var modelData
+                key: modelData.key
                 label: modelData.label
-                description: SettingsStore.string(modelData.key)
-                IconButton {
-                    iconName: "folder"
-                    tip: qsTr("Open folder")
-                    flat: false
-                    onClicked: root.openPathRequested(SettingsStore.string(modelData.key))
-                }
+                onOpenRequested: (path) => root.openPathRequested(path)
+            }
+        }
+    }
+    ExtraInstanceFolders {
+        width: parent.width
+        onOpenRequested: (path) => root.openPathRequested(path)
+    }
+    SettingsGroup {
+        width: parent.width
+        title: qsTr("Notifications")
+        SettingRow {
+            label: qsTr("Show notices again")
+            description: qsTr("News and announcements you have already seen come back the next time MeshMC checks.")
+            enabled: SettingsStore.string("ShownNotifications").length > 0
+            Button {
+                text: qsTr("Reset")
+                onClicked: SettingsStore.setValue("ShownNotifications", "")
             }
         }
     }

@@ -74,6 +74,12 @@ set(CORE_SOURCES
     models/JavaController.cpp
     models/JavaDownloadController.h
     models/JavaDownloadController.cpp
+    models/FolderSettingsController.h
+    models/FolderSettingsController.cpp
+    models/UpdateSettingsController.h
+    models/UpdateSettingsController.cpp
+    models/PlayTimeSummary.h
+    models/PlayTimeSummary.cpp
     models/ContentUpdateController.h
     models/ContentUpdateController.cpp
     models/AtlOptionalModsModel.h
@@ -1473,6 +1479,23 @@ add_unit_test(JavaController
     )
 add_unit_test(JavaDownloadController
     SOURCES models/JavaDownloadController_test.cpp
+    LIBS MeshMC_core
+    )
+
+# FolderSettingsController: the path rules ("!" in a path, Flatpak portal
+# folders, duplicate extra folders) as pure functions. Moving a folder asks
+# through UiHost and writes settings, which need a LauncherContext.
+add_unit_test(FolderSettingsController
+    SOURCES models/FolderSettingsController_test.cpp
+    LIBS MeshMC_core
+    )
+# UpdateSettingsController against a fake updater backend.
+add_unit_test(UpdateSettingsController
+    SOURCES models/UpdateSettingsController_test.cpp
+    LIBS MeshMC_core
+    )
+add_unit_test(PlayTimeSummary
+    SOURCES models/PlayTimeSummary_test.cpp
     LIBS MeshMC_core
     )
 

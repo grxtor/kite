@@ -29,6 +29,22 @@ SettingsScroll {
     }
     SettingsGroup {
         width: parent.width
+        title: qsTr("Font")
+        ConsoleFontRow {
+            label: qsTr("Font")
+            description: qsTr("Used for the game's log. A monospaced font lines columns up best.")
+        }
+        SettingNumber {
+            key: "ConsoleFontSize"
+            label: qsTr("Font size")
+            from: 6
+            to: 48
+            suffix: qsTr("pt")
+        }
+        ConsolePreview {}
+    }
+    SettingsGroup {
+        width: parent.width
         title: qsTr("Log history")
         SettingNumber {
             key: "ConsoleMaxLines"

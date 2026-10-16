@@ -17,7 +17,7 @@ qt_add_library(MeshMC_qml_components STATIC)
 # qt_add_qml_module, or Icons.qml registers as an ordinary re-instantiable
 # type and every "import MeshMC.Components" gets its own private instance
 # instead of the one Icons.url() is meant to be called on.
-set_source_files_properties(Icons.qml Format.qml SettingsStore.qml JavaStore.qml PixelArt.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(Icons.qml Format.qml SettingsStore.qml JavaStore.qml LauncherStore.qml PixelArt.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 # The fallback cover scenes: 32 rendered scenes at three crops
 # (card/band/strip, see art/scenes/build.py), plus the world thumbnails
@@ -70,6 +70,12 @@ qt_add_qml_module(MeshMC_qml_components
         JavaVendorRow.qml
         JvmArgsRow.qml
         ManagedJavaList.qml
+        LauncherStore.qml
+        FolderRow.qml
+        ExtraInstanceFolders.qml
+        ConsoleFontRow.qml
+        ConsolePreview.qml
+        TotalPlayTime.qml
         InstanceOverviewTab.qml
         InstancePage.qml
         ContentTab.qml

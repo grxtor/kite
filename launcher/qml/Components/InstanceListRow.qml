@@ -182,7 +182,8 @@ Item {
             }
 
             Text {
-                visible: root.showStatsColumns
+                // "Show play time per instance" (Settings > Minecraft).
+                visible: root.showStatsColumns && SettingsStore.bool("ShowGameTime")
                 Layout.preferredWidth: root.playTimeColumnWidth
                 horizontalAlignment: Text.AlignRight
                 text: Format.playTime(root.totalTimePlayed)

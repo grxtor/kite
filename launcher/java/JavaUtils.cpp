@@ -33,6 +33,8 @@
 #include "java/JavaUtils.h"
 #include "java/JavaInstallList.h"
 #include "FileSystem.h"
+#include "core/LauncherContext.h"
+#include "settings/SettingsObject.h"
 
 #define IBUS "@im=ibus"
 
@@ -40,7 +42,20 @@ JavaUtils::JavaUtils() {}
 
 QString JavaUtils::managedJavaRoot()
 {
-	return FS::PathCombine(QDir::currentPath(), "java");
+	/* The JavaDir setting: relative to the data folder (the working
+	 * directory) unless it is absolute. Without a launcher context, or
+	 * with the setting empty, the default "java" applies. */
+	QString dir = QStringLiteral("java");
+	if (LAUNCHER && LAUNCHER->settings()) {
+		const QString configured =
+			LAUNCHER->settings()->get("JavaDir").toString().trimmed();
+		if (!configured.isEmpty()) {
+			dir = configured;
+		}
+	}
+	return QDir::isAbsolutePath(dir)
+			   ? QDir::cleanPath(dir)
+			   : FS::PathCombine(QDir::currentPath(), dir);
 }
 
 namespace

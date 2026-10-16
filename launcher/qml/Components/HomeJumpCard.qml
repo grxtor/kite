@@ -52,7 +52,9 @@ Item {
     signal stopRequested()
 
     readonly property bool hovered: hoverHandler.hovered
-    readonly property string playTimeText: Format.playTime(root.totalTimePlayed)
+    // Empty (so not shown) when "Show play time per instance" is off.
+    readonly property string playTimeText: SettingsStore.bool("ShowGameTime")
+                                           ? Format.playTime(root.totalTimePlayed) : ""
     // The header's icon tile: Theme.icon.lg plus a thin frame around it.
     readonly property int iconTileSize: 32
 

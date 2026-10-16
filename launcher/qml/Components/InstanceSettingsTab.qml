@@ -154,6 +154,69 @@ SettingsScroll {
             }
         }
 
+        OverrideGroup {
+            id: gameTime
+            width: parent.width
+            title: qsTr("Play time")
+            source: store
+            gateKey: "OverrideGameTime"
+            keys: ["RecordGameTime", "ShowGameTime"]
+            SettingSwitch {
+                source: store
+                key: "RecordGameTime"
+                enabled: gameTime.overriding
+                label: qsTr("Record play time")
+            }
+            SettingSwitch {
+                source: store
+                key: "ShowGameTime"
+                enabled: gameTime.overriding
+                label: qsTr("Show play time")
+            }
+        }
+
+        OverrideGroup {
+            id: workarounds
+            width: parent.width
+            title: qsTr("Native libraries")
+            source: store
+            gateKey: "OverrideNativeWorkarounds"
+            gateLabel: qsTr("Use custom native library settings for this instance")
+            keys: ["UseNativeGLFW", "UseNativeOpenAL"]
+            SettingSwitch {
+                source: store
+                key: "UseNativeGLFW"
+                enabled: workarounds.overriding
+                label: qsTr("Use the system's GLFW")
+                description: qsTr("Only for systems where the bundled libraries don't work, such as some Linux setups.")
+            }
+            SettingSwitch {
+                source: store
+                key: "UseNativeOpenAL"
+                enabled: workarounds.overriding
+                label: qsTr("Use the system's OpenAL")
+            }
+        }
+
+        SettingsGroup {
+            width: parent.width
+            title: qsTr("Data packs")
+            description: qsTr("A folder of data packs added to every world. Needs a loader mod such as Paxi or OpenLoader.")
+            SettingSwitch {
+                id: globalPacks
+                source: store
+                key: "GlobalDataPacksEnabled"
+                label: qsTr("Use a shared data pack folder")
+            }
+            SettingText {
+                source: store
+                key: "GlobalDataPacksPath"
+                enabled: globalPacks.checked
+                label: qsTr("Folder, inside the game folder")
+                placeholder: "datapacks"
+            }
+        }
+
         PluginSurfaces {
             width: parent.width
             model: root.pluginSurfaces
