@@ -54,6 +54,8 @@ set(CORE_SOURCES
     models/ScreenshotUploader.cpp
     models/WorldTools.h
     models/WorldTools.cpp
+    models/LegacyUpgrade.h
+    models/LegacyUpgrade.cpp
     models/KeyValueFilterModel.h
     models/KeyValueFilterModel.cpp
     models/AccountsController.h
@@ -1660,6 +1662,13 @@ add_unit_test(ScreenshotUploader
 # World install from a generated zip (a minimal level.dat), and MCEdit lookup.
 add_unit_test(WorldTools
     SOURCES models/WorldTools_test.cpp
+    LIBS MeshMC_core
+    )
+
+# Legacy instance upgrade: recognising a LegacyInstance, naming the copy,
+# refusing anything else. The copy itself is LegacyUpgradeTask's.
+add_unit_test(LegacyUpgrade
+    SOURCES models/LegacyUpgrade_test.cpp
     LIBS MeshMC_core
     )
 

@@ -167,6 +167,10 @@ class InstanceDetails : public QObject
 	/// Minecraft-backed.
 	Q_PROPERTY(QObject* gameOptions READ gameOptions CONSTANT)
 	Q_PROPERTY(bool isMinecraft READ isMinecraft CONSTANT)
+	/// An old-format (Legacy) instance: it has no mods, version or content
+	/// tabs, only worlds, screenshots, notes and logs, and needs upgrading
+	/// (upgradeLegacy()) before it can be played.
+	Q_PROPERTY(bool isLegacy READ isLegacy CONSTANT)
 	/// Searchable lists of every content kind this instance has (mods,
 	/// coremods, resource/shader/texture packs, global data packs) with
 	/// bulk actions and list export - the QML-facing replacement for the
@@ -273,6 +277,13 @@ class InstanceDetails : public QObject
 	/// Re-reads the worlds folder - WorldsTab.qml's Refresh. The list also
 	/// watches the folder, so this is for when that missed something.
 	Q_INVOKABLE void refreshWorlds();
+	bool isLegacy() const;
+	/// Copies this legacy instance into a new one in the current format -
+	/// the QML-facing replacement for LegacyUpgradePage's button. Returns a
+	/// TaskWatcher (the new instance appears in the library when it
+	/// succeeds), or null if this is not a legacy instance, it is running,
+	/// or the launcher's instance list is not available.
+	Q_INVOKABLE QObject* upgradeLegacy();
 	/// Whether the MCEditPath setting points at a usable MCEdit - the Worlds
 	/// tab shows "Open in MCEdit" only then.
 	Q_INVOKABLE bool mceditConfigured() const;

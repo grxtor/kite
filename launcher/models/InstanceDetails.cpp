@@ -32,6 +32,8 @@
 #include "meta/Index.h"
 #include "meta/VersionList.h"
 #include "minecraft/MinecraftInstance.h"
+#include "minecraft/legacy/LegacyInstance.h"
+#include "minecraft/legacy/LegacyUpgradeTask.h"
 #include "minecraft/PackProfile.h"
 #include "minecraft/WorldList.h"
 #include "minecraft/gameoptions/GameOptions.h"
@@ -41,6 +43,7 @@
 #include "models/ContentBrowser.h"
 #include "models/InstanceContentController.h"
 #include "models/KeyValueFilterModel.h"
+#include "models/LegacyUpgrade.h"
 #include "models/LogFind.h"
 #include "models/LogUploader.h"
 #include "models/LoaderInstaller.h"
@@ -57,6 +60,7 @@
 #include "tasks/Task.h"
 #include "tasks/TaskWatcher.h"
 #include "FileSystem.h"
+#include "InstanceList.h"
 
 namespace
 {
@@ -195,6 +199,18 @@ InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 		m_servers = std::make_unique<ServersListModel>(m_instance->gameRoot());
 		m_servers->setLocked(m_instance->isRunning());
 		m_servers->startWatching();
+	}
+
+	/* An old-format (Legacy) instance is not Minecraft-backed here, but the
+	 * widget version still listed its worlds (LegacyUpgradePage's neighbour
+	 * WorldListPage), so keep that: the Worlds tab is one of the few that
+	 * stay for it. */
+	if (!m_mc) {
+		if (auto legacy =
+				std::dynamic_pointer_cast<LegacyInstance>(m_instance)) {
+			m_worlds = legacy->worldList();
+			m_worlds->startWatching();
+		}
 	}
 
 	// Every instance can be backed up, Minecraft-backed or not.
@@ -652,6 +668,31 @@ QObject* InstanceDetails::installWorld(const QString& fileUrlOrPath)
 	auto* watcher = new TaskWatcher(Task::Ptr(task), this);
 	watcher->setTitle(tr("Add world"));
 	task->start();
+	return watcher;
+}
+
+bool InstanceDetails::isLegacy() const
+{
+	return LegacyUpgrade::isLegacy(m_instance);
+}
+
+QObject* InstanceDetails::upgradeLegacy()
+{
+	auto* launcher = LauncherContext::instance();
+	auto instances = launcher ? launcher->instances() : nullptr;
+	if (!instances) {
+		return nullptr;
+	}
+	auto* task = LegacyUpgrade::makeTask(
+		m_instance, instances->getInstanceGroup(m_instance->id()));
+	if (!task) {
+		return nullptr;
+	}
+	// Staged and committed into the library like every other new instance.
+	Task* wrapped = instances->wrapInstanceTask(task);
+	auto* watcher = new TaskWatcher(Task::Ptr(wrapped), this);
+	watcher->setTitle(LegacyUpgrade::upgradedName(m_instance->name()));
+	wrapped->start();
 	return watcher;
 }
 

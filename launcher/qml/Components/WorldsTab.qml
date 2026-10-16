@@ -278,6 +278,9 @@ Item {
                                 id: rowMenu
                                 onAboutToShow: root.mceditReady = !!root.details && root.details.mceditConfigured()
                                 MenuItem {
+                                    // An old-format instance has no Data packs tab.
+                                    visible: !!root.details && root.details.isMinecraft
+                                    height: visible ? implicitHeight : 0
                                     text: qsTr("Data packs")
                                     icon.source: Icons.url("package")
                                     onTriggered: root.dataPacksRequested(cell.index)

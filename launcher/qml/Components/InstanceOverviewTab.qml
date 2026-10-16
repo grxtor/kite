@@ -32,6 +32,12 @@ Item {
     readonly property var worldsModel: root.details ? root.details.worlds : null
     readonly property var modsModel: root.details ? root.details.mods : null
     readonly property bool isMinecraft: !!root.details && root.details.isMinecraft
+    // An old-format instance: it can only be upgraded, not played or edited.
+    readonly property bool isLegacy: !!root.details && root.details.isLegacy
+    // The upgrade in progress (a TaskWatcher), if one was started here.
+    property var upgrade: null
+    readonly property bool upgrading: !!root.upgrade && root.upgrade.running
+    onDetailsChanged: root.upgrade = null
 
     // How much of each list the board previews before handing off.
     readonly property int shotsShown: 4
@@ -155,6 +161,52 @@ Item {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignTop
                 spacing: Theme.space.lg
+
+                // Old-format instance: the one thing to do with it. Mirrors the
+                // widget's "Upgrade is required" page.
+                Card {
+                    visible: root.isLegacy
+                    title: qsTr("Upgrade is required")
+
+                    Hint {
+                        text: qsTr("MeshMC now runs old Minecraft versions in its newer instance format, and the old (legacy) format is switched off, so this instance has to be upgraded before it can be played.")
+                    }
+                    Hint {
+                        text: qsTr("The upgrade makes a copy of this instance in the new format. The original stays as it is, in case anything goes wrong.")
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Theme.space.md
+
+                        Button {
+                            highlighted: true
+                            enabled: !root.upgrading && !!root.details && root.details.contentChangesAllowed
+                            text: root.upgrading ? qsTr("Upgrading…") : qsTr("Upgrade to a new instance")
+                            onClicked: root.upgrade = root.details.upgradeLegacy()
+                        }
+                        LaunchProgressBar {
+                            Layout.fillWidth: true
+                            visible: root.upgrading
+                            progress: root.upgrade ? root.upgrade.progress : -1
+                        }
+                    }
+
+                    Hint {
+                        visible: !!root.details && !root.details.contentChangesAllowed
+                        text: qsTr("Close the game first.")
+                    }
+                    Hint {
+                        visible: !!root.upgrade && root.upgrade.failed
+                        text: root.upgrade ? (root.upgrade.error || qsTr("The upgrade did not work.")) : ""
+                        color: Theme.palette.danger
+                    }
+                    Hint {
+                        visible: !!root.upgrade && root.upgrade.succeeded
+                        text: qsTr("Done. The upgraded instance is in your library.")
+                        color: Theme.palette.success
+                    }
+                }
 
                 Card {
                     title: qsTr("Recent screenshots")

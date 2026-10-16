@@ -75,14 +75,34 @@ Item {
     // its button sits: for review snapshots (Main.qml's "instancemenu" dev
     // route). Deferred a beat, because the route opens the page in the same
     // breath and the banner has no width until it has been laid out.
+    // The Content tab's "Export list" dialog and Add content's Filters
+    // popup, open: for review snapshots (Main.qml's "exportlist" and
+    // "browsefilters" dev routes, after instance=<id>). Deferred like the
+    // header menu below, for the tab to be shown and laid out first.
+    function openContentExportList() {
+        root.tab = "content"
+        reviewDelay.run(function () { contentTab.exportList([]) })
+    }
+    function openBrowseFilters() {
+        root.tab = "browse"
+        reviewDelay.run(browseView.openFilters)
+    }
+
     function openHeaderMenu() {
-        headerMenuDelay.restart()
+        reviewDelay.run(function () {
+            if (root.headerCard)
+                instanceMenu.popup(root.headerCard, root.headerCard.width - instanceMenu.width, Theme.control.height)
+        })
     }
     Timer {
-        id: headerMenuDelay
+        id: reviewDelay
+        property var action: null
+        function run(fn) {
+            action = fn
+            restart()
+        }
         interval: Theme.motion.normal
-        onTriggered: if (root.headerCard)
-            instanceMenu.popup(root.headerCard, root.headerCard.width - instanceMenu.width, Theme.control.height)
+        onTriggered: if (action) action()
     }
 
     // The header delegate below, for the menu's name/icon/group.
@@ -198,10 +218,12 @@ Item {
             tabs: [
                 { id: "overview", label: qsTr("Overview") }
             ].concat(root.managedPackModel ? [{ id: "managedpack", label: qsTr("Modpack") }] : [])
-             .concat([
+             .concat(root.details && root.details.isLegacy ? [] : [
                 { id: "content", label: qsTr("Content"), count: root.modsModel ? contentTab.count : -1 },
                 { id: "version", label: qsTr("Version") },
-                { id: "browse", label: qsTr("Add content") },
+                { id: "browse", label: qsTr("Add content") }
+             ])
+             .concat([
                 { id: "worlds", label: qsTr("Worlds"), count: root.worldsModel ? worldsTab.count : -1 }
              ])
              .concat(root.details && root.details.isMinecraft
@@ -210,9 +232,9 @@ Item {
              .concat([
                 { id: "backups", label: qsTr("Backups") },
                 { id: "screenshots", label: qsTr("Screenshots"), count: root.shotsModel ? root.shotsModel.count : -1 },
-                { id: "log", label: qsTr("Log") },
-                { id: "settings", label: qsTr("Settings") }
+                { id: "log", label: qsTr("Log") }
              ])
+             .concat(root.details && root.details.isLegacy ? [] : [{ id: "settings", label: qsTr("Settings") }])
              .concat(root.details && root.details.isMinecraft
                      ? [{ id: "gameoptions", label: qsTr("Game options") }] : [])
              .concat(pluginPages.count === 0 ? []
@@ -256,6 +278,7 @@ Item {
             }
 
             ContentBrowserView {
+                id: browseView
                 browser: root.details ? root.details.contentBrowser : null
                 details: root.details
             }
@@ -347,6 +370,9 @@ Item {
                 if (item && item.subMenu === playOptionsMenu) {
                     item.visible = instanceMenu.offerOptions
                     item.height = instanceMenu.offerOptions ? item.implicitHeight : 0
+                    // An icon like its neighbours', or its label would
+                    // start where theirs' icons do.
+                    item.icon.source = Icons.url("sliders")
                 }
             }
         }
