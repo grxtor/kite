@@ -213,6 +213,12 @@ class Application : public QApplication, public LauncherContext
 	 * the QML shell fails to load after all. */
 	void runWhenQmlPresenterReady(std::function<void()> call);
 
+	/* Brings the QML shell's window up on @p target, a Main.qml navigate()
+	 * path ("accounts", "settings/java", ...) -- for code outside QML that
+	 * wants to send the user to a page, such as a launch that needs an
+	 * account. No-op without a QML shell. */
+	void navigateQmlShell(const QString& target);
+
 	/// this is the root of the 'installation'. Used for automatic updates
 	const QString& root()
 	{
@@ -404,6 +410,22 @@ class Application : public QApplication, public LauncherContext
 	 * MainWindow::droppedURLs() otherwise. Shows a window first when
 	 * there is none. */
 	void importFromUrl(const QUrl& url);
+
+	/* Creates the QML shell, wires its signals to the real actions and
+	 * loads its window without showing it. True once the shell exists;
+	 * false if its QML failed to load, in which case m_qmlShell is reset
+	 * and whatever waited for its presenter has run through the widget
+	 * host instead. */
+	bool ensureQmlShell();
+	/* Shows (first time) or raises the QML shell's window, counting it as
+	 * an open window while it is shown -- see m_qmlWindowShown. */
+	void showQmlShellWindow(bool minimized);
+	/* Whether the QML shell's window is on screen and counted in
+	 * m_openWindows: false while it is loaded but hidden (a launch from
+	 * the command line), and again once the user closes it. */
+	bool m_qmlWindowShown = false;
+	/// MMCO_HOOK_UI_MAIN_READY has been sent for the QML shell.
+	bool m_qmlMainReadyDispatched = false;
 
   public:
 	QString m_instanceIdToLaunch;

@@ -23,6 +23,10 @@ import MeshMC.Theme
  * own hero card; Main.qml points its instanceId at whichever instance this
  * bar should show (see its own dockInstanceId).
  *
+ * Beside Play, a chevron opens the other ways to play the same instance
+ * (LaunchOptionsMenu: offline, demo, as another account, a profiler); its
+ * choices leave here as signals, like Play itself.
+ *
  * A plain surface with a hairline border on top, on every page -- no
  * picture behind the controls. The pages above already carry the artwork
  * (Home's header, the cards' covers); a third picture under the bar's own
@@ -45,6 +49,15 @@ Item {
     signal launchRequested(string id)
     signal stopRequested(string id)
     signal cancelRequested(string id)
+
+    // The Play options menu (LaunchOptionsMenu.qml): what it offers comes
+    // from launchOptionsFor(id) -- Main.qml's launchOptions() -- and its
+    // choices leave as the signals below.
+    property var launchOptionsFor: null
+    signal launchModeRequested(string id, string mode)
+    signal launchAsRequested(string id, string accountId)
+    signal profilerChosen(string id, string profilerKey)
+    signal navigateRequested(string target)
 
     // Every decorative loop stops when the window is not the active one and
     // when the user has asked for less motion.
@@ -71,6 +84,20 @@ Item {
     // For a dev-route snapshot ("picker") that needs the instance picker
     // open without a real click.
     function openPicker() { picker.open() }
+
+    // Opens the Play options menu above its chevron, right-aligned with it
+    // (the bar sits at the bottom of the window, so there is no room
+    // below). Also a dev-route step ("launchmenu", "launchmenu=playAs"),
+    // which can open one of its submenus too.
+    function openLaunchMenu(submenu) {
+        if (!root.hasInstance)
+            return
+        launchMenu.refresh()
+        launchMenu.popup(moreButton, moreButton.width - launchMenu.implicitWidth,
+                         -launchMenu.implicitHeight - Theme.space.xs)
+        if (submenu)
+            Qt.callLater(() => launchMenu.openSubmenu(submenu))
+    }
 
     // -- The current row, read out of rowModel's one row --------------------
     // Same idiom as InstancePage's header ContinueCard/InstanceOverviewTab
@@ -263,18 +290,36 @@ Item {
             Layout.preferredWidth: Math.max(readyFace.implicitWidth, launchingFace.implicitWidth, runningFace.implicitWidth)
             Layout.preferredHeight: Theme.control.heightLg + 6
 
-            PlayButton {
+            // Play, and beside it the chevron for the other ways to play:
+            // a secondary (bordered) button, so Play stays the one primary
+            // action on screen.
+            Row {
                 id: readyFace
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                hero: true
-                round: false
-                size: Theme.control.heightLg + 6
-                enabled: root.hasInstance && root.dockCanLaunch
+                spacing: Theme.space.sm
                 opacity: root.hasInstance && !root.launching && !root.dockRunning ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-                onClicked: root.launchRequested(root.dockInstanceId)
+
+                PlayButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    hero: true
+                    round: false
+                    size: Theme.control.heightLg + 6
+                    enabled: root.hasInstance && root.dockCanLaunch
+                    onClicked: root.launchRequested(root.dockInstanceId)
+                }
+                IconButton {
+                    id: moreButton
+                    anchors.verticalCenter: parent.verticalCenter
+                    size: Theme.control.heightLg + 6
+                    flat: false
+                    iconName: "chevron-down"
+                    tip: qsTr("More ways to play")
+                    enabled: root.hasInstance && root.dockCanLaunch
+                    onClicked: launchMenu.visible ? launchMenu.close() : root.openLaunchMenu()
+                }
             }
 
             Row {
@@ -367,6 +412,16 @@ Item {
                 }
             }
         }
+    }
+
+    LaunchOptionsMenu {
+        id: launchMenu
+        instanceId: root.dockInstanceId
+        optionsFor: root.launchOptionsFor
+        onLaunchModeRequested: (id, mode) => root.launchModeRequested(id, mode)
+        onLaunchAsRequested: (id, accountId) => root.launchAsRequested(id, accountId)
+        onProfilerChosen: (id, key) => root.profilerChosen(id, key)
+        onNavigateRequested: (target) => root.navigateRequested(target)
     }
 
     // -- The instance picker -------------------------------------------------

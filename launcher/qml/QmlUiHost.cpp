@@ -129,6 +129,8 @@ QString QmlUiRequest::kind() const
 			return QStringLiteral("profileSetup");
 		case Kind::FilePicker:
 			return QStringLiteral("filePicker");
+		case Kind::PickAccount:
+			return QStringLiteral("pickAccount");
 	}
 	return QString();
 }
@@ -147,6 +149,11 @@ void QmlUiRequest::setLabels(QString acceptLabel, QString rejectLabel)
 void QmlUiRequest::setActions(QStringList actions)
 {
 	m_actions = std::move(actions);
+}
+
+void QmlUiRequest::setAccountOptions(QVariantList options)
+{
+	m_accountOptions = std::move(options);
 }
 
 void QmlUiRequest::setValue(QString value)
@@ -261,6 +268,15 @@ void QmlUiRequest::choose(int index)
 	emit answered();
 }
 
+void QmlUiRequest::chooseAccount(int index, bool makeDefault)
+{
+	if (m_answered) {
+		return;
+	}
+	m_makeDefault = index >= 0 && makeDefault;
+	choose(index);
+}
+
 void QmlUiRequest::answerUpdate(const QString& choice)
 {
 	if (m_answered) {
@@ -373,6 +389,24 @@ QString QmlUiHost::busyText() const
 	return m_busy.isEmpty() ? QString() : m_busy.last().text;
 }
 
+QString QmlUiHost::busySkipLabel() const
+{
+	return m_busy.isEmpty() || !m_busy.last().onSkip ? QString()
+													 : m_busy.last().skipLabel;
+}
+
+void QmlUiHost::skipBusy()
+{
+	if (m_busy.isEmpty() || !m_busy.last().onSkip) {
+		return;
+	}
+	/* A copy: the callback typically ends the wait that owns this busy
+	 * indication, which destroys it and removes its entry from m_busy
+	 * while the callback is still running. */
+	const auto onSkip = m_busy.last().onSkip;
+	onSkip();
+}
+
 void QmlUiHost::endBusy(int id)
 {
 	for (int i = 0; i < m_busy.size(); ++i) {
@@ -384,10 +418,12 @@ void QmlUiHost::endBusy(int id)
 	}
 }
 
-std::unique_ptr<UiHost::BusyIndicator> QmlUiHost::showBusy(const QString& text)
+std::unique_ptr<UiHost::BusyIndicator>
+QmlUiHost::showBusy(const QString& text, const QString& skipLabel,
+					std::function<void()> onSkip)
 {
 	const int id = m_nextBusyId++;
-	m_busy.append({ id, text });
+	m_busy.append({ id, text, skipLabel, std::move(onSkip) });
 	emit busyChanged();
 	return std::make_unique<BusyToken>(this, id);
 }
@@ -466,6 +502,46 @@ int QmlUiHost::choose(const QString& title, const QString& text,
 	request.setActions(actions);
 	runRequest(request);
 	return request.chosenIndex();
+}
+
+UiHost::AccountChoice
+QmlUiHost::pickAccount(const QString& title, const QString& text,
+					   const QList<MinecraftAccountPtr>& accounts)
+{
+	QVariantList options;
+	options.reserve(accounts.size());
+	for (const auto& account : accounts) {
+		if (!account) {
+			options.append(QVariantMap{});
+			continue;
+		}
+		// The same id AccountFaceProvider takes: offline accounts have no
+		// profile id (see QmlShell::accountFace()).
+		const QString faceId = account->profileId().isEmpty()
+								   ? account->internalId()
+								   : account->profileId();
+		options.append(QVariantMap{
+			// The Minecraft name, as the Accounts page shows it; for a
+			// Microsoft account without a profile it says so itself.
+			{ QStringLiteral("name"), account->profileName() },
+			{ QStringLiteral("kind"), account->isMSA()
+										  ? QStringLiteral("Microsoft")
+										  : QStringLiteral("Offline") },
+			{ QStringLiteral("faceId"), faceId },
+		});
+	}
+
+	QmlUiRequest request(QmlUiRequest::Kind::PickAccount, title, text);
+	request.setSeverity(Severity::Question);
+	request.setAccountOptions(options);
+	runRequest(request);
+
+	AccountChoice choice;
+	if (request.chosenIndex() >= 0 && request.chosenIndex() < accounts.size()) {
+		choice.index = request.chosenIndex();
+		choice.makeDefault = request.makeDefault();
+	}
+	return choice;
 }
 
 std::optional<QString> QmlUiHost::askText(const QString& title,

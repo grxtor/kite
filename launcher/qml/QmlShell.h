@@ -95,7 +95,7 @@ class QmlShell : public QObject
 	/* The core's UiHost, when it is this shell's QmlUiHost -- see
 	 * Application::uiHost(), which prefers this over the widget host for
 	 * as long as it is non-null. QML binds to `current`/`busy`/`busyText`
-	 * on it (see QmlUiHost's class comment). Null until show() has run. */
+	 * on it (see QmlUiHost's class comment). Null until load() has run. */
 	Q_PROPERTY(QObject* uiHost READ uiHost CONSTANT)
 	/// Installed memory in MiB: the ceiling for the memory settings.
 	Q_PROPERTY(int systemMemoryMiB READ systemMemoryMiB CONSTANT)
@@ -147,12 +147,20 @@ class QmlShell : public QObject
 	explicit QmlShell(QObject* parent = nullptr);
 	~QmlShell() override;
 
-	/* Loads the root window on first call; raises it on later ones. Returns
-	 * false if the QML failed to load, in which case the reasons have already
-	 * been logged. */
+	/* Builds the models and loads the root window without showing it --
+	 * a launch straight from the command line (`meshmc --launch`) keeps the
+	 * window hidden until it has something to show (see
+	 * Application::ensureQmlShell()). Does nothing once loaded. Returns
+	 * false if the QML failed to load, in which case the reasons have
+	 * already been logged. */
+	bool load();
+
+	/* Loads the root window if needed and shows it on first call; raises
+	 * it on later ones. Returns false if the QML failed to load, as load()
+	 * does. */
 	bool show(bool minimized = false);
 
-	/* The root window show() created, or nullptr before it has
+	/* The root window load() created, or nullptr before it has
 	 * succeeded. PluginManager (MeshMC_logic, which links MeshMC_qml --
 	 * see setPluginSurfaceFactory()'s comment) uses this through
 	 * Application::qmlShellWindow() to generalise main-window handling
@@ -182,6 +190,15 @@ class QmlShell : public QObject
 	using PluginSurfaceFactory =
 		std::function<QObject*(int anchor, const QString& anchorContext)>;
 	static void setPluginSurfaceFactory(PluginSurfaceFactory factory);
+
+	/* The launcher's profilers (Application::profilers()), which QmlShell
+	 * cannot see from MeshMC_qml either: one {key, name, ready} map per
+	 * profiler, `ready` meaning its own check() passes (the program is set
+	 * up under Settings, External tools). Asked fresh by launchOptions()
+	 * every time, since that check reads settings the user can change.
+	 * Application installs it right after creating the shell. */
+	using ProfilersProvider = std::function<QVariantList()>;
+	void setProfilersProvider(ProfilersProvider provider);
 
 	/* One C++-owned model per (anchor, anchorContext) pair asked for,
 	 * reused across calls the same way sectionModel() reuses one
@@ -215,7 +232,7 @@ class QmlShell : public QObject
 	/* The same object as uiHost() above, typed for Application's own use
 	 * (Application::uiHost() prefers this over the widget UiHost while
 	 * this is non-null) instead of QML's property binding. Null until
-	 * show() has run *and* QmlUiHost::presenterReady() is true -- see
+	 * load() has run *and* QmlUiHost::presenterReady() is true -- see
 	 * QmlUiHost's class comment's PRESENTER READINESS section for why a
 	 * call must not reach this object before some QML item can answer it. */
 	UiHost* uiHostInterface() const;
@@ -228,10 +245,6 @@ class QmlShell : public QObject
 										const QString& versionId,
 										const QString& instanceName,
 										const QString& group);
-	/* Installs version @p versionId of result @p row of the open
-	 * instance's content browser; the TaskWatcher is C++-owned, like
-	 * installModpack()'s. */
-	Q_INVOKABLE QObject* installContent(int row, const QString& versionId);
 	QObject* recentModel() const;
 	QObject* heroModel() const;
 	QObject* instancePageModel() const;
@@ -245,10 +258,10 @@ class QmlShell : public QObject
 	 * destroys) whichever one was open before; asking again for the same
 	 * id returns the one already open. Null if @p id names no instance. */
 	Q_INVOKABLE QObject* instanceDetails(const QString& id);
-	/// The Accounts page's model+actions object. Created in show(), like
+	/// The Accounts page's model+actions object. Created in load(), like
 	/// the other CONSTANT properties above.
 	QObject* accountsController() const;
-	/// The "New instance" flow's controller. Created in show(), like the
+	/// The "New instance" flow's controller. Created in load(), like the
 	/// other CONSTANT properties above.
 	QObject* newInstance() const;
 
@@ -257,6 +270,30 @@ class QmlShell : public QObject
 	 * launches an instance, opens a dialog or shows a folder. Application
 	 * connects these to the real actions. */
 	Q_INVOKABLE void launchInstance(const QString& id);
+	/* Play in a given way: @p mode is "offline" (no sign-in, the account
+	 * cache as it is), "demo" (the demo, no account needed; refused by
+	 * Application where launchOptions() says supportsDemo is false) or
+	 * anything else for a normal launch -- the widget launch menu's Launch,
+	 * Launch Offline and Launch Demo. */
+	Q_INVOKABLE void launchInstanceMode(const QString& id, const QString& mode);
+	/* Play with account @p accountId (an `accounts` id from
+	 * launchOptions()) instead of the default one, without making it the
+	 * default. */
+	Q_INVOKABLE void launchInstanceAs(const QString& id,
+									  const QString& accountId);
+	/* What a "Play options" menu needs for instance @p id, read fresh each
+	 * time it opens:
+	 *   supportsDemo  whether the game version has a demo (1.3.1 and newer)
+	 *   profiler      the instance's profiler key ("" for none)
+	 *   profilers     [{key, name, ready}] -- see setProfilersProvider()
+	 *   accounts      [{id, name, kind, isDefault}] for "Play as"
+	 * Empty for an unknown id. */
+	Q_INVOKABLE QVariantMap launchOptions(const QString& id) const;
+	/* Sets instance @p id's profiler ("" for none), the setting every way
+	 * into the game reads -- the widget launch menu's profiler entries.
+	 * Starts nothing by itself. */
+	Q_INVOKABLE void setInstanceProfiler(const QString& id,
+										 const QString& profilerKey);
 	Q_INVOKABLE void killInstance(const QString& id);
 	Q_INVOKABLE void openInstanceFolder(const QString& id);
 	/* Launches instance @p id straight into server @p address (host[:port]),
@@ -272,10 +309,16 @@ class QmlShell : public QObject
 	 * passing its file on (the IPC "import" message) -- where the widget
 	 * UI used MainWindow::droppedURLs(). Relays @p source (a local path or
 	 * a URL) into QML as importRequested() below, which opens the New
-	 * instance dialog in import mode with it filled in. Before show() has
+	 * instance dialog in import mode with it filled in. Before load() has
 	 * loaded the root window nothing in QML could answer that signal yet,
-	 * so the source is kept and delivered as soon as show() succeeds. */
+	 * so the source is kept and delivered as soon as load() succeeds. */
 	void requestImport(const QString& source);
+
+	/* Called by Application to send the user somewhere in the QML shell
+	 * from outside it -- a launch that needs an account opens the Accounts
+	 * page. @p target is a Main.qml navigate() path ("accounts",
+	 * "settings/java", ...); relayed as navigateRequested() below. */
+	void requestNavigate(const QString& target);
 
 	/* Called by Application (see Application::showInstanceLog()) instead
 	 * of raising a widget InstanceWindow when the QML shell is the active
@@ -329,6 +372,13 @@ class QmlShell : public QObject
 	 * does instead of inventing a parallel on-disk one. No-op for an
 	 * unknown id. */
 	Q_INVOKABLE void debugMarkInstanceCrashed(const QString& id);
+	/* Preview/dev-only, for review snapshots of questions only a real
+	 * launch would otherwise ask (Main.qml's applyDevRoute(), "ask=<kind>"):
+	 * "pickAccount" asks the launch account picker over the real account
+	 * list; "busySkip" shows the account-refresh wait with its "Play
+	 * offline" button, which ends it. Through the same QmlUiHost calls a
+	 * launch makes. No-op for any other kind. */
+	Q_INVOKABLE void debugShowRequest(const QString& kind);
 
 	QStringList groups() const;
 	QObject* iconsModel() const;
@@ -376,6 +426,9 @@ class QmlShell : public QObject
 	void accountChanged();
 
 	void launchRequested(const QString& id);
+	/// launchInstanceMode() and launchInstanceAs() -- see there.
+	void launchModeRequested(const QString& id, const QString& mode);
+	void launchAsRequested(const QString& id, const QString& accountId);
 	void killRequested(const QString& id);
 	void folderRequested(const QString& id);
 	void joinServerRequested(const QString& id, const QString& address);
@@ -383,6 +436,10 @@ class QmlShell : public QObject
 	/// Emitted by requestImport() -- asks QML to open the New instance
 	/// dialog in import mode with @p source filled in.
 	void importRequested(const QString& source);
+
+	/// Emitted by requestNavigate() -- Main.qml passes @p target to its
+	/// navigate().
+	void navigateRequested(const QString& target);
 
 	/// Emitted by showInstanceLogRequested() above -- asks QML to open
 	/// instance @p id's page on its Log tab.
@@ -405,7 +462,7 @@ class QmlShell : public QObject
 	 * finishSetupStep(). */
 	void recomputeSetupSteps();
 
-	/* Installed on m_window by show(). Watches for the window's own
+	/* Installed on m_window by load(). Watches for the window's own
 	 * QEvent::Close to emit closed() -- see the signal's doc comment
 	 * above and the longer comment on the definition. */
 	bool eventFilter(QObject* watched, QEvent* event) override;
@@ -421,7 +478,7 @@ class QmlShell : public QObject
 	std::map<QString, std::unique_ptr<InstanceFilterModel>> m_sections;
 	std::unique_ptr<IdSelectionModel> m_selection;
 	std::unique_ptr<SettingsAdapter> m_settings;
-	/* Created in show(), like m_settings above -- see uiHost()'s Q_PROPERTY
+	/* Created in load(), like m_settings above -- see uiHost()'s Q_PROPERTY
 	 * comment for how Application reaches this. */
 	std::unique_ptr<QmlUiHost> m_uiHost;
 	std::unique_ptr<ModrinthModpackModel> m_modpacks;
@@ -447,7 +504,12 @@ class QmlShell : public QObject
 	QStringList m_setupSteps;
 	bool m_javaDetecting = false;
 
-	/* requestImport() sources that arrived before show() loaded the root
+	/* requestImport() sources that arrived before load() loaded the root
 	 * window; emitted, in order, once it has. */
 	QStringList m_pendingImports;
+
+	ProfilersProvider m_profilersProvider;
+	/* Whether show() has shown m_window yet: the first call shows it,
+	 * later ones only raise it. */
+	bool m_shown = false;
 };

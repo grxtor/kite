@@ -32,7 +32,9 @@
 class WidgetUiHost final : public UiHost
 {
   public:
-	std::unique_ptr<BusyIndicator> showBusy(const QString& text) override;
+	std::unique_ptr<BusyIndicator> showBusy(
+		const QString& text, const QString& skipLabel = QString(),
+		std::function<void()> onSkip = {}) override;
 
 	void message(const QString& title, const QString& text,
 				 Severity severity) override;
@@ -43,6 +45,10 @@ class WidgetUiHost final : public UiHost
 
 	int choose(const QString& title, const QString& text, Severity severity,
 			   const QStringList& actions) override;
+
+	AccountChoice pickAccount(
+		const QString& title, const QString& text,
+		const QList<MinecraftAccountPtr>& accounts) override;
 
 	std::optional<QString> askText(
 		const QString& title, const QString& text,

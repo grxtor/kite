@@ -10,12 +10,19 @@ import MeshMC.Theme
  * Shown while the core runs something the user has to wait for and cannot
  * interact around (UiHost::showBusy): a dimmed window, a spinner and what
  * is happening. It swallows input, as the modal progress dialog did.
+ *
+ * Some waits offer one way out ("Play offline" while an account refreshes
+ * before a launch): `skipLabel` names it, and the button below emits
+ * skipRequested() for Main.qml to pass on (QmlUiHost::skipBusy()).
  */
 Rectangle {
     id: root
 
     property bool busy: false
     property string text
+    property string skipLabel
+
+    signal skipRequested()
 
     anchors.fill: parent
     z: 900
@@ -58,6 +65,12 @@ Rectangle {
                 color: Theme.palette.textPrimary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.body.pixelSize
+            }
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: root.skipLabel.length > 0
+                text: root.skipLabel
+                onClicked: root.skipRequested()
             }
         }
     }

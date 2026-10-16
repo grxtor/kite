@@ -30,6 +30,7 @@
 
 #include "ui/dialogs/BlockedModsDialog.h"
 #include "ui/dialogs/CustomMessageBox.h"
+#include "ui/dialogs/ProfileSelectDialog.h"
 #include "ui/dialogs/ProfileSetupDialog.h"
 #include "ui/dialogs/UntrustedModsDialog.h"
 #include "ui/dialogs/UpdateAvailableDialog.h"
@@ -59,17 +60,26 @@ namespace
 
 namespace
 {
-	/* Indeterminate and uncancellable: the caller has nothing to report and
-	 * nothing it could abort. */
+	/* Indeterminate: the caller has nothing to report. Uncancellable too,
+	 * unless the caller offers a skip (UiHost::showBusy()'s skipLabel), in
+	 * which case the dialog's cancel button carries that label and calls
+	 * it. */
 	class ProgressDialogBusy final : public UiHost::BusyIndicator
 	{
 	  public:
-		explicit ProgressDialogBusy(const QString& text)
+		ProgressDialogBusy(const QString& text, const QString& skipLabel,
+						   std::function<void()> onSkip)
 			: m_dialog(text, QString(), 0, 0, QApplication::activeWindow())
 		{
 			m_dialog.setWindowTitle(text);
 			m_dialog.setMinimumDuration(0);
-			m_dialog.setCancelButton(nullptr);
+			if (skipLabel.isEmpty() || !onSkip) {
+				m_dialog.setCancelButton(nullptr);
+			} else {
+				m_dialog.setCancelButtonText(skipLabel);
+				QObject::connect(&m_dialog, &QProgressDialog::canceled,
+								 &m_dialog, std::move(onSkip));
+			}
 			m_dialog.adjustSize();
 			m_dialog.show();
 		}
@@ -80,9 +90,11 @@ namespace
 } // namespace
 
 std::unique_ptr<UiHost::BusyIndicator>
-WidgetUiHost::showBusy(const QString& text)
+WidgetUiHost::showBusy(const QString& text, const QString& skipLabel,
+					   std::function<void()> onSkip)
 {
-	return std::make_unique<ProgressDialogBusy>(text);
+	return std::make_unique<ProgressDialogBusy>(text, skipLabel,
+												std::move(onSkip));
 }
 
 void WidgetUiHost::message(const QString& title, const QString& text,
@@ -182,6 +194,26 @@ UiHost::UpdateChoice WidgetUiHost::offerUpdate(const QString& currentVersion,
 			 * the offer standing for next time. */
 			return UpdateChoice::Later;
 	}
+}
+
+UiHost::AccountChoice
+WidgetUiHost::pickAccount(const QString& title, const QString& text,
+						  const QList<MinecraftAccountPtr>& accounts)
+{
+	/* ProfileSelectDialog lists the launcher's own accounts rather than
+	 * the ones passed in -- in practice the same list, which is what every
+	 * caller passes; an account outside @p accounts counts as backing out.
+	 * It has one message line, so the title leads it. */
+	Q_UNUSED(text);
+	ProfileSelectDialog dialog(title, ProfileSelectDialog::GlobalDefaultCheckbox,
+							   activeWindow());
+	AccountChoice choice;
+	if (dialog.exec() != QDialog::Accepted) {
+		return choice;
+	}
+	choice.index = accounts.indexOf(dialog.selectedAccount());
+	choice.makeDefault = choice.index >= 0 && dialog.useAsGlobalDefault();
+	return choice;
 }
 
 bool WidgetUiHost::setupProfile(MinecraftAccountPtr account)

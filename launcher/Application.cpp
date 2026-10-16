@@ -1570,6 +1570,14 @@ void Application::performMainStartupAction()
 				qDebug() << "   Launching with account" << m_profileToUse;
 			}
 
+			/* A launch straight from the command line opens no main
+			 * window, as with the widget UI. Under the QML shell the shell
+			 * is still loaded, only hidden, so that the launch asks its
+			 * questions there -- the window shows itself for them, see
+			 * ensureQmlShell() -- and never through widget dialogs. */
+			if (useQmlShell()) {
+				ensureQmlShell();
+			}
 			launch(inst, LaunchMode::Normal, serverToJoin, accountToUse);
 			return;
 		}
@@ -1589,9 +1597,9 @@ void Application::importFromUrl(const QUrl& url)
 {
 	/* An import asks its questions in a window: MainWindow's own import
 	 * route, or the QML shell's New instance dialog. A launcher started
-	 * with --launch has neither, and a second process can still send it
-	 * an "import" message, so bring the usual window up first. */
-	if (!m_qmlShell && !m_mainWindow) {
+	 * with --launch has neither on screen, and a second process can still
+	 * send it an "import" message, so bring the usual window up first. */
+	if (!m_mainWindow && !m_qmlWindowShown) {
 		showMainWindow();
 	}
 	if (m_qmlShell) {
@@ -1840,7 +1848,7 @@ bool Application::launch(InstancePtr instance, LaunchMode mode,
 		// instead (showInstanceWindow(instance), no explicit page) - kept
 		// exactly as it was when the QML shell is off.
 		if (qmlShellChosen()) {
-			m_qmlShell->show();
+			showQmlShellWindow(false);
 			m_qmlShell->showInstanceLogRequested(instance->id());
 		} else {
 			showInstanceWindow(instance);
@@ -2248,132 +2256,228 @@ namespace
 	}
 } // namespace
 
-MainWindow* Application::showMainWindow(bool minimized)
+bool Application::ensureQmlShell()
 {
-	if (useQmlShell()) {
-		if (!m_qmlShell) {
-			m_qmlShell = std::make_unique<QmlShell>();
+	if (m_qmlShell) {
+		return true;
+	}
+	m_qmlShell = std::make_unique<QmlShell>();
 
-			/* QmlShell cannot see PluginManager (MeshMC_qml does not link
-			 * MeshMC_logic, which is where the plugin host lives) -- this
-			 * factory is the bridge, installed once here the same way the
-			 * signal connections below wire up the widget-side actions
-			 * QmlShell itself cannot reach. Harmless to install again on a
-			 * second showMainWindow() call: it is process-wide state, and
-			 * this whole block already only runs once per m_qmlShell. */
-			QmlShell::setPluginSurfaceFactory(
-				[this](int anchor, const QString& anchorContext) -> QObject* {
-					if (!m_pluginManager) {
-						return nullptr;
+	/* QmlShell cannot see PluginManager (MeshMC_qml does not link
+	 * MeshMC_logic, which is where the plugin host lives) -- this
+	 * factory is the bridge, installed once here the same way the
+	 * signal connections below wire up the widget-side actions
+	 * QmlShell itself cannot reach. Harmless to install again for a
+	 * second shell: it is process-wide state, and this whole function
+	 * only runs once per m_qmlShell. */
+	QmlShell::setPluginSurfaceFactory(
+		[this](int anchor, const QString& anchorContext) -> QObject* {
+			if (!m_pluginManager) {
+				return nullptr;
+			}
+			return QmlShell::expose(new PluginSurfaceModel(
+				m_pluginManager.get(), anchor, anchorContext));
+		});
+
+	/* The same list the widget launch menu's profiler entries come from,
+	 * checked afresh each time a QML "Play options" menu opens. */
+	m_qmlShell->setProfilersProvider([this]() {
+		QVariantList list;
+		for (auto it = m_profilers.constBegin(); it != m_profilers.constEnd();
+			 ++it) {
+			QString error;
+			list.append(QVariantMap{
+				{ QStringLiteral("key"), it.key() },
+				{ QStringLiteral("name"), it.value()->name() },
+				{ QStringLiteral("ready"), it.value()->check(&error) },
+			});
+		}
+		return list;
+	});
+
+	/* Counted and closed through the same path as MainWindow, so the
+	 * launcher quits when its last window goes, as it always has -- but
+	 * only while showQmlShellWindow() counts it as open: a hidden shell
+	 * (see performMainStartupAction()) is not a window anyone closed. */
+	connect(m_qmlShell.get(), &QmlShell::closed, this, [this]() {
+		if (!m_qmlWindowShown) {
+			return;
+		}
+		m_qmlWindowShown = false;
+		on_windowClose();
+	});
+
+	/* QmlShell cannot see widget code, so it only emits these
+	 * signals; the actual actions - the same ones the widget menus
+	 * already run - are wired up here. */
+	connect(m_qmlShell.get(), &QmlShell::launchRequested, this,
+			[this](const QString& id) {
+				if (auto inst = instances()->getInstanceById(id)) {
+					launch(inst);
+				}
+			});
+	connect(m_qmlShell.get(), &QmlShell::launchModeRequested, this,
+			[this](const QString& id, const QString& mode) {
+				auto inst = instances()->getInstanceById(id);
+				if (!inst) {
+					return;
+				}
+				if (mode == QLatin1String("offline")) {
+					launch(inst, LaunchMode::Offline);
+				} else if (mode == QLatin1String("demo")) {
+					// Same check as the widget launch menu's Launch Demo.
+					auto minecraft =
+						std::dynamic_pointer_cast<MinecraftInstance>(inst);
+					if (!minecraft || !minecraft->supportsDemo()) {
+						qWarning() << "Application: no demo launch for" << id
+								   << "-- its Minecraft version has no demo";
+						return;
 					}
-					return QmlShell::expose(new PluginSurfaceModel(
-						m_pluginManager.get(), anchor, anchorContext));
-				});
+					launch(inst, LaunchMode::Demo);
+				} else {
+					launch(inst);
+				}
+			});
+	connect(m_qmlShell.get(), &QmlShell::launchAsRequested, this,
+			[this](const QString& id, const QString& accountId) {
+				auto inst = instances()->getInstanceById(id);
+				if (!inst) {
+					return;
+				}
+				// The id QmlShell::launchOptions() hands out.
+				MinecraftAccountPtr account;
+				for (int i = 0; i < m_accounts->count(); ++i) {
+					const auto candidate = m_accounts->at(i);
+					const QString candidateId =
+						candidate->profileId().isEmpty()
+							? candidate->internalId()
+							: candidate->profileId();
+					if (candidateId == accountId) {
+						account = candidate;
+						break;
+					}
+				}
+				if (!account) {
+					qWarning() << "Application: no account" << accountId
+							   << "to launch" << id << "with";
+					return;
+				}
+				launch(inst, LaunchMode::Normal, nullptr, account);
+			});
+	connect(m_qmlShell.get(), &QmlShell::killRequested, this,
+			[this](const QString& id) {
+				if (auto inst = instances()->getInstanceById(id)) {
+					kill(inst);
+				}
+			});
+	connect(m_qmlShell.get(), &QmlShell::joinServerRequested, this,
+			[this](const QString& id, const QString& address) {
+				if (auto inst = instances()->getInstanceById(id)) {
+					launch(inst, LaunchMode::Normal,
+						   std::make_shared<MinecraftServerTarget>(
+							   MinecraftServerTarget::parse(address, false)));
+				}
+			});
+	connect(m_qmlShell.get(), &QmlShell::folderRequested, this,
+			[this](const QString& id) {
+				if (auto inst = instances()->getInstanceById(id)) {
+					DesktopServices::openDirectory(inst->instanceRoot(), true);
+				}
+			});
 
-			/* Counted and closed through the same path as MainWindow, so the
-			 * launcher quits when its last window goes, as it always has. */
-			connect(m_qmlShell.get(), &QmlShell::closed, this,
-					&Application::on_windowClose);
+	if (!m_qmlShell->load()) {
+		/* A QML load failure must not leave the user with nothing on
+		 * screen: showMainWindow() falls through to the widget window. */
+		qWarning() << "QML shell failed to load; using the widget window";
+		m_qmlShell.reset();
 
-			/* QmlShell cannot see widget code, so it only emits these
-			 * signals; the actual actions - the same ones the widget menus
-			 * already run - are wired up here. */
-			connect(m_qmlShell.get(), &QmlShell::launchRequested, this,
-					[this](const QString& id) {
-						if (auto inst = instances()->getInstanceById(id)) {
-							launch(inst);
-						}
-					});
-			connect(m_qmlShell.get(), &QmlShell::killRequested, this,
-					[this](const QString& id) {
-						if (auto inst = instances()->getInstanceById(id)) {
-							kill(inst);
-						}
-					});
-			connect(m_qmlShell.get(), &QmlShell::joinServerRequested, this,
-					[this](const QString& id, const QString& address) {
-						if (auto inst = instances()->getInstanceById(id)) {
-							launch(inst, LaunchMode::Normal,
-								   std::make_shared<MinecraftServerTarget>(
-									   MinecraftServerTarget::parse(address,
-																	false)));
-						}
-					});
-			connect(m_qmlShell.get(), &QmlShell::folderRequested, this,
-					[this](const QString& id) {
-						if (auto inst = instances()->getInstanceById(id)) {
-							DesktopServices::openDirectory(inst->instanceRoot(),
-														  true);
-						}
-					});
+		/* The QmlUiHost that would have shown these never came up.
+		 * uiHost() now falls back to the widget host and qmlShellChosen()
+		 * is false since m_qmlShell is gone, so they still reach the user
+		 * (a held launch takes the widget path) instead of being silently
+		 * dropped. */
+		runPendingQmlPresenterCalls();
+		return false;
+	}
 
-			if (m_qmlShell->show(minimized)) {
-				m_openWindows++;
-
-				/* Runs whatever waited for the presenter -- reportUpdateMarkers()
-				 * at init(), runWhenQmlPresenterReady() since (see
-				 * m_pendingQmlPresenterCalls) -- the moment QmlUiHost can
-				 * actually show a request. Wired here rather than right
-				 * after QmlShell's construction above: QmlShell only builds
-				 * its QmlUiHost inside show() (called just above), so
-				 * m_qmlShell->uiHost() is null before this point and the
-				 * qobject_cast below would always fail silently. show()
-				 * having just returned true guarantees the host now
-				 * exists. */
-				if (auto* host = qobject_cast<QmlUiHost*>(m_qmlShell->uiHost())) {
-					connect(host, &QmlUiHost::presenterReadyChanged, this,
-							[this, host]() {
-								if (host->presenterReady()) {
-									runPendingQmlPresenterCalls();
-								}
-							});
-					/* presenterReady() may already be true by the time this
-					 * connection is made (e.g. the QML window finished its
-					 * Component.onCompleted during the load() call above) --
-					 * presenterReadyChanged() would then never fire again to
-					 * trigger the flush. Run the queue once here too; the
-					 * lambda above is a no-op if it later fires with nothing
-					 * left queued. */
+	/* Runs whatever waited for the presenter -- reportUpdateMarkers() at
+	 * init(), runWhenQmlPresenterReady() since (see
+	 * m_pendingQmlPresenterCalls) -- the moment QmlUiHost can actually
+	 * show a request. Wired here rather than right after QmlShell's
+	 * construction above: QmlShell only builds its QmlUiHost inside
+	 * load(), so m_qmlShell->uiHost() is null before this point and the
+	 * qobject_cast below would always fail silently. */
+	if (auto* host = qobject_cast<QmlUiHost*>(m_qmlShell->uiHost())) {
+		connect(host, &QmlUiHost::presenterReadyChanged, this,
+				[this, host]() {
 					if (host->presenterReady()) {
 						runPendingQmlPresenterCalls();
 					}
-				}
+				});
 
-				/* The widget MainWindow fires MMCO_HOOK_UI_MAIN_READY
-				 * itself, from its own constructor (see
-				 * ui/MainWindow.cpp) -- the QML shell has no equivalent
-				 * place to hang that off of, so this is it: once, right
-				 * after the shell's root window is up, with every
-				 * widget handle in the payload null (see
-				 * PluginHooks.h). Plugins are already initialised by
-				 * this point -- initializeAll() runs during
-				 * Application::init(), well before showMainWindow() is
-				 * ever reachable -- so every hook registration this
-				 * dispatch could reach is already in place. This whole
-				 * branch only runs the first time m_qmlShell is
-				 * created, so the hook fires at most once per shell. */
-				if (m_pluginManager) {
-					MMCOUiMainReadyPayload mainReady{};
-					m_pluginManager->dispatchHook(MMCO_HOOK_UI_MAIN_READY,
-												  &mainReady);
-				}
-				return nullptr;
+		/* The window may still be hidden -- a launch straight from the
+		 * command line keeps it so (see performMainStartupAction()). A
+		 * question, or a wait the user should see, brings it up. */
+		const auto reveal = [this, host]() {
+			if (!m_qmlWindowShown && (host->current() || host->busy())) {
+				showQmlShellWindow(false);
 			}
-			/* A QML load failure must not leave the user with nothing on
-			 * screen: fall through to the widget window instead. */
-			qWarning() << "QML shell failed to load; using the widget window";
-			m_qmlShell.reset();
+		};
+		connect(host, &QmlUiHost::currentChanged, this, reveal);
+		connect(host, &QmlUiHost::busyChanged, this, reveal);
 
-			/* Never ran above -- the QmlUiHost that would have shown
-			 * them never came up. uiHost() now falls back to the widget
-			 * host and qmlShellChosen() is false since m_qmlShell is
-			 * gone, so these still reach the user (a held launch takes the
-			 * widget path) instead of being silently dropped. */
+		/* presenterReady() is normally already true here (the QML window
+		 * finished its Component.onCompleted during load()), so
+		 * presenterReadyChanged() would never fire again to trigger the
+		 * flush. Run the queue once here too; the lambda above is a no-op
+		 * if it later fires with nothing left queued. */
+		if (host->presenterReady()) {
 			runPendingQmlPresenterCalls();
-		} else {
-			m_qmlShell->show(minimized);
-			return nullptr;
 		}
+	}
+	return true;
+}
+
+void Application::showQmlShellWindow(bool minimized)
+{
+	if (!m_qmlShell || !m_qmlShell->show(minimized) || m_qmlWindowShown) {
+		return;
+	}
+	m_qmlWindowShown = true;
+	m_openWindows++;
+
+	/* The widget MainWindow fires MMCO_HOOK_UI_MAIN_READY itself, from
+	 * its own constructor (see ui/MainWindow.cpp) -- the QML shell has no
+	 * equivalent place to hang that off of, so this is it: once, the
+	 * first time the shell's root window is on screen, with every widget
+	 * handle in the payload null (see PluginHooks.h). Plugins are already
+	 * initialised by this point -- initializeAll() runs during
+	 * Application::init(), well before any window is shown -- so every
+	 * hook registration this dispatch could reach is already in place. */
+	if (!m_qmlMainReadyDispatched) {
+		m_qmlMainReadyDispatched = true;
+		if (m_pluginManager) {
+			MMCOUiMainReadyPayload mainReady{};
+			m_pluginManager->dispatchHook(MMCO_HOOK_UI_MAIN_READY,
+										  &mainReady);
+		}
+	}
+}
+
+void Application::navigateQmlShell(const QString& target)
+{
+	if (!m_qmlShell) {
+		return;
+	}
+	showQmlShellWindow(false);
+	m_qmlShell->requestNavigate(target);
+}
+
+MainWindow* Application::showMainWindow(bool minimized)
+{
+	if (useQmlShell() && ensureQmlShell()) {
+		showQmlShellWindow(minimized);
+		return nullptr;
 	}
 
 	if (m_mainWindow) {
@@ -2661,7 +2765,7 @@ void Application::showInstanceLog(InstancePtr instance)
 		// isRunning()/canEdit() branches - a second Play click while
 		// nothing new needs launching): raise it the same way clicking
 		// the dock/taskbar icon would, so the log actually gets seen.
-		m_qmlShell->show();
+		showQmlShellWindow(false);
 		m_qmlShell->showInstanceLogRequested(instance->id());
 		return;
 	}

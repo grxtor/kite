@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <optional>
 
@@ -69,9 +70,18 @@ class UiHost
 
 	virtual ~UiHost() = default;
 
-	/* Not a question -- nothing to answer and nothing to cancel. For work that
-	 * blocks without being able to say how far along it is. */
-	virtual std::unique_ptr<BusyIndicator> showBusy(const QString& text) = 0;
+	/* Not a question -- nothing to answer. For work that blocks without
+	 * being able to say how far along it is.
+	 *
+	 * With @p skipLabel set, the indication also offers one way out: a
+	 * button with that label, which calls @p onSkip ("Play offline" while
+	 * an account refreshes before a launch). The caller decides what
+	 * skipping means; the indication itself stays up until the returned
+	 * object is destroyed, as always. Without a label there is nothing to
+	 * cancel, as before. */
+	virtual std::unique_ptr<BusyIndicator> showBusy(
+		const QString& text, const QString& skipLabel = QString(),
+		std::function<void()> onSkip = {}) = 0;
 
 	/* Something the user only has to acknowledge. */
 	virtual void message(const QString& title, const QString& text,
@@ -92,6 +102,22 @@ class UiHost
 	 * `actions`, or -1 when the user backed out. */
 	virtual int choose(const QString& title, const QString& text,
 					   Severity severity, const QStringList& actions) = 0;
+
+	/* pickAccount()'s answer: an index into the accounts it was given (-1
+	 * when the user backed out) and whether to make that account the
+	 * default from now on. */
+	struct AccountChoice {
+		int index = -1;
+		bool makeDefault = false;
+	};
+
+	/* Which of @p accounts to play with, plus a "make this the default"
+	 * option -- what the widget ProfileSelectDialog asks at launch when no
+	 * account is the default. Making it the default is the caller's job;
+	 * this only reports the wish. */
+	virtual AccountChoice pickAccount(
+		const QString& title, const QString& text,
+		const QList<MinecraftAccountPtr>& accounts) = 0;
 
 	/* A single line of free text, pre-filled with @p defaultValue --
 	 * "what should the demo player be called", "what name for offline

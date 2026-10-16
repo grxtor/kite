@@ -112,6 +112,14 @@ ApplicationWindow {
                 Qt.callLater(() => topBar.openProfileMenu())
             else if (key === "picker")
                 Qt.callLater(() => playDock.openPicker())
+            // The play bar's Play options menu, open; "launchmenu=playAs" or
+            // "=profiler" opens that submenu as well.
+            else if (key === "launchmenu")
+                Qt.callLater(() => playDock.openLaunchMenu(value))
+            // A question only a real launch asks -- see QmlShell's
+            // debugShowRequest(): "pickAccount" or "busySkip".
+            else if (key === "ask")
+                root.call("debugShowRequest", value)
             else if (key === "sidebar")
                 SettingsStore.setValue("UiSidebarCollapsed", value === "collapsed")
             else if (key === "crashed")
@@ -222,16 +230,44 @@ ApplicationWindow {
         return false
     }
 
-    // Play, everywhere in the shell. With no account at all the classic
-    // launch flow would pop a widget dialog; say what is missing instead
-    // and go where it is fixed.
+    // Play, everywhere in the shell. With no account at all the launch
+    // flow could only ask whether to open the Accounts page; go there
+    // straight away and say what is missing instead.
     function launch(id) {
-        if (root.shell && root.shell.accountCount === 0) {
-            root.page = "accounts"
-            toast.show(qsTr("Sign in with the Microsoft account that owns Minecraft to play."))
+        if (root.sendToAccountsIfNone())
             return
-        }
         root.call("launchInstance", id)
+    }
+    function sendToAccountsIfNone() {
+        if (!root.shell || root.shell.accountCount !== 0)
+            return false
+        root.navigate("accounts")
+        toast.show(qsTr("Sign in with the Microsoft account that owns Minecraft to play."))
+        return true
+    }
+
+    // The other ways to play (LaunchOptionsMenu.qml): "offline" or "demo"
+    // (QmlShell::launchInstanceMode()), as another account, and the
+    // instance's profiler. The demo needs no account; the rest do.
+    function launchMode(id, mode) {
+        if (mode !== "demo" && root.sendToAccountsIfNone())
+            return
+        if (root.shell && typeof root.shell.launchInstanceMode === "function")
+            root.shell.launchInstanceMode(id, mode)
+    }
+    function launchAs(id, accountId) {
+        if (root.shell && typeof root.shell.launchInstanceAs === "function")
+            root.shell.launchInstanceAs(id, accountId)
+    }
+    function setProfiler(id, profilerKey) {
+        if (root.shell && typeof root.shell.setInstanceProfiler === "function")
+            root.shell.setInstanceProfiler(id, profilerKey)
+    }
+    // What a LaunchOptionsMenu offers for instance @p id; a page hands this
+    // to its menu as `optionsFor` (see QmlShell::launchOptions()).
+    function launchOptions(id) {
+        return root.shell && typeof root.shell.launchOptions === "function"
+                ? root.shell.launchOptions(id) : ({})
     }
 
     // Home/Library/Discover/Instance keep the play bar; Settings/Accounts
@@ -268,6 +304,11 @@ ApplicationWindow {
         }
         function onImportRequested(source) {
             root.openImport(source)
+        }
+        // From C++ (QmlShell::requestNavigate()): a launch that needs an
+        // account opens the Accounts page, for one.
+        function onNavigateRequested(target) {
+            root.navigate(target)
         }
     }
 
@@ -576,9 +617,6 @@ ApplicationWindow {
                             return root.shell && typeof root.shell.pluginSurfaces === "function"
                                    ? root.shell.pluginSurfaces(anchor, instanceId) : null
                         }
-                        contentInstaller: function (row, versionId) {
-                            return root.shell.installContent(row, versionId)
-                        }
                         onOpenPathRequested: (path) => root.call("openPath", path)
                     }
 
@@ -627,6 +665,11 @@ ApplicationWindow {
                 onLaunchRequested: (id) => root.launch(id)
                 onStopRequested: (id) => root.call("killInstance", id)
                 onCancelRequested: (id) => root.call("killInstance", id)
+                launchOptionsFor: function (id) { return root.launchOptions(id) }
+                onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
+                onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
+                onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+                onNavigateRequested: (target) => root.navigate(target)
             }
         }
     }
@@ -736,6 +779,9 @@ ApplicationWindow {
     BusyOverlay {
         busy: root.shell && root.shell.uiHost ? root.shell.uiHost.busy : false
         text: root.shell && root.shell.uiHost ? root.shell.uiHost.busyText : ""
+        skipLabel: root.shell && root.shell.uiHost && root.shell.uiHost.busySkipLabel !== undefined
+                   ? root.shell.uiHost.busySkipLabel : ""
+        onSkipRequested: if (root.shell && root.shell.uiHost) root.shell.uiHost.skipBusy()
     }
 
     // First run: language, Java, account -- over everything else.

@@ -10,10 +10,10 @@ import MeshMC.Theme
 
 /*
  * Answers the questions the core asks while it works -- "overwrite this?",
- * "which of these?", "these mods must be downloaded by hand" -- in the
- * shell's own style instead of widget message boxes. `host` is the
- * shell's QmlUiHost; whenever it has a pending request, this opens on it,
- * and closing it any way other than a button counts as "no".
+ * "which of these?", "which account?", "these mods must be downloaded by
+ * hand" -- in the shell's own style instead of widget message boxes.
+ * `host` is the shell's QmlUiHost; whenever it has a pending request, this
+ * opens on it, and closing it any way other than a button counts as "no".
  *
  * The root is a plain Item, not the Dialog itself: kind == "filePicker"
  * answers through a native QtQuick.Dialogs file dialog instead of this
@@ -291,6 +291,124 @@ Item {
             }
         }
 
+        // pickAccount: which account to play with, and whether it becomes
+        // the default -- the widget ProfileSelectDialog's list and
+        // checkbox. The first account starts selected; double-clicking a
+        // row plays with it straight away.
+        Column {
+            id: accountPicker
+            Layout.fillWidth: true
+            visible: root.kind === "pickAccount"
+            spacing: Theme.space.xs
+
+            property int selected: 0
+            readonly property int faceSize: 28
+
+            function play() {
+                root.answer(() => root.request.chooseAccount(accountPicker.selected, makeDefaultBox.checked))
+            }
+
+            Connections {
+                target: root
+                function onRequestChanged() {
+                    if (root.kind === "pickAccount") {
+                        accountPicker.selected = 0
+                        makeDefaultBox.checked = false
+                    }
+                }
+            }
+
+            Repeater {
+                model: root.kind === "pickAccount" && root.request ? root.request.accountOptions : []
+                delegate: AbstractButton {
+                    id: accountRow
+                    required property var modelData
+                    required property int index
+                    readonly property bool selected: accountPicker.selected === index
+
+                    width: parent.width
+                    implicitHeight: Theme.control.heightLg + Theme.space.sm
+                    hoverEnabled: true
+                    Accessible.role: Accessible.RadioButton
+                    Accessible.name: modelData.name
+                    Accessible.checked: accountRow.selected
+
+                    onClicked: accountPicker.selected = index
+                    onDoubleClicked: {
+                        accountPicker.selected = index
+                        accountPicker.play()
+                    }
+
+                    background: Rectangle {
+                        radius: Theme.radius.md
+                        color: accountRow.selected ? Theme.palette.accentSubtle
+                             : accountRow.hovered ? Theme.palette.hoverOverlay : "transparent"
+                        border.width: 1
+                        border.color: accountRow.selected ? Theme.palette.accent : Theme.palette.border
+                        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                    }
+
+                    contentItem: RowLayout {
+                        spacing: Theme.space.sm
+
+                        // The same face tile as the Accounts page's rows: the
+                        // name's initial, with the skin's face drawn over it.
+                        // An account without a skin comes back transparent,
+                        // so the initial shows through.
+                        Rectangle {
+                            Layout.leftMargin: Theme.space.sm
+                            Layout.preferredWidth: accountPicker.faceSize
+                            Layout.preferredHeight: accountPicker.faceSize
+                            radius: Theme.radius.sm
+                            color: Theme.palette.accentSubtle
+                            border.width: 1
+                            border.color: Theme.palette.border
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: String(modelData.name || "").charAt(0).toUpperCase()
+                                color: Theme.palette.accent
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.type.label.pixelSize
+                                font.weight: Font.Bold
+                            }
+                            Image {
+                                anchors.fill: parent
+                                anchors.margins: 1
+                                source: modelData.faceId ? "image://accountface/" + modelData.faceId : ""
+                                sourceSize: Qt.size(accountPicker.faceSize * 2, accountPicker.faceSize * 2)
+                                smooth: false
+                            }
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: modelData.name
+                            elide: Text.ElideRight
+                            color: Theme.palette.textPrimary
+                            font.family: Theme.font.family
+                            font.pixelSize: Theme.type.body.pixelSize
+                            font.weight: Font.Medium
+                        }
+                        Tag {
+                            text: modelData.kind === "Microsoft" ? qsTr("Microsoft") : qsTr("Offline")
+                        }
+                        MeshIcon {
+                            Layout.rightMargin: Theme.space.sm
+                            iconName: "check"
+                            size: Theme.icon.sm
+                            color: Theme.palette.accent
+                            opacity: accountRow.selected ? 1 : 0
+                        }
+                    }
+                }
+            }
+
+            CheckBox {
+                id: makeDefaultBox
+                text: qsTr("Make this the default account")
+            }
+        }
+
         // Update: what changes, in the author's words.
         Column {
             Layout.fillWidth: true
@@ -349,6 +467,14 @@ Item {
             }
         }
 
+        // pickAccount: play with the selected account.
+        Button {
+            visible: root.kind === "pickAccount"
+            highlighted: true
+            text: qsTr("Play")
+            onClicked: accountPicker.play()
+        }
+
         // update: install / later / skip this version.
         Button {
             visible: root.kind === "update"
@@ -390,7 +516,8 @@ Item {
         }
 
         Button {
-            visible: root.kind !== "choose" && root.kind !== "update" && root.kind !== "profileSetup" && root.kind !== "filePicker"
+            visible: root.kind !== "choose" && root.kind !== "update" && root.kind !== "profileSetup"
+                     && root.kind !== "filePicker" && root.kind !== "pickAccount"
             enabled: root.kind === "blockedMods" ? root.allFound
                    : root.kind === "untrustedMods" ? trustBox.checked
                    : root.kind === "text" ? textAnswer.text.trim().length > 0 : true

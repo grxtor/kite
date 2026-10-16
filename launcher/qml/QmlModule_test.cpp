@@ -53,15 +53,30 @@ class FakeShell : public QObject
 	Q_OBJECT
 	/// Non-null is all Main.qml's openNewInstance() checks before opening.
 	Q_PROPERTY(QObject* newInstance READ newInstance CONSTANT)
+	Q_PROPERTY(int accountCount READ accountCount CONSTANT)
 
   public:
 	QObject* newInstance()
 	{
 		return &m_newInstance;
 	}
+	int accountCount() const
+	{
+		return m_accountCount;
+	}
+
+	/// What QmlShell::launchInstanceMode() was last asked, as "id:mode".
+	Q_INVOKABLE void launchInstanceMode(const QString& id, const QString& mode)
+	{
+		lastLaunch = id + QLatin1Char(':') + mode;
+	}
+
+	int m_accountCount = 1;
+	QString lastLaunch;
 
   signals:
 	void importRequested(const QString& source);
+	void navigateRequested(const QString& target);
 
   private:
 	QObject m_newInstance;
@@ -210,6 +225,48 @@ class QmlModuleTest : public QObject
 		QVERIFY(!navigate(root.get(), QStringLiteral("instance/fabric/settings")));
 		QVERIFY(!navigate(root.get(), QStringLiteral("instance")));
 		QCOMPARE(root->property("page").toString(), QStringLiteral("discover"));
+	}
+
+	/* QmlShell::requestNavigate() (a launch that needs an account, say)
+	 * reaches Main.qml's navigate(). */
+	void navigateRequestFromTheShellIsFollowed()
+	{
+		QQmlEngine engine;
+		FakeShell shell;
+		auto root = createRoot(engine, &shell);
+		QVERIFY(root);
+
+		emit shell.navigateRequested(QStringLiteral("settings/java"));
+		QCOMPARE(root->property("page").toString(), QStringLiteral("settings"));
+		QCOMPARE(evaluate(root.get(), QStringLiteral("settingsPage.section"))
+					 .toString(),
+				 QStringLiteral("java"));
+	}
+
+	/* The Play options: with no account at all, "Play offline" goes to the
+	 * Accounts page instead of launching; the demo needs no account and
+	 * launches either way. */
+	void launchModeNeedsAnAccountExceptForTheDemo()
+	{
+		QQmlEngine engine;
+		FakeShell shell;
+		shell.m_accountCount = 0;
+		auto root = createRoot(engine, &shell);
+		QVERIFY(root);
+
+		QVariant unused;
+		QVERIFY(QMetaObject::invokeMethod(
+			root.get(), "launchMode", Q_RETURN_ARG(QVariant, unused),
+			Q_ARG(QVariant, QStringLiteral("fabric")),
+			Q_ARG(QVariant, QStringLiteral("offline"))));
+		QVERIFY(shell.lastLaunch.isEmpty());
+		QCOMPARE(root->property("page").toString(), QStringLiteral("accounts"));
+
+		QVERIFY(QMetaObject::invokeMethod(
+			root.get(), "launchMode", Q_RETURN_ARG(QVariant, unused),
+			Q_ARG(QVariant, QStringLiteral("fabric")),
+			Q_ARG(QVariant, QStringLiteral("demo"))));
+		QCOMPARE(shell.lastLaunch, QStringLiteral("fabric:demo"));
 	}
 
 	/* `meshmc --import` and the IPC "import" message reach QML as

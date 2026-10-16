@@ -95,8 +95,7 @@ void LaunchController::decideAccount()
 		const bool wantsAccountManager = LAUNCHER->uiHost()->confirm(
 			tr("No Accounts"),
 			tr("In order to play Minecraft, you must have at least one "
-			   "Microsoft "
-			   "account logged in."
+			   "Microsoft account logged in. "
 			   "Would you like to open the account manager to add an "
 			   "account now?"),
 			UiHost::Severity::Information);
@@ -108,13 +107,12 @@ void LaunchController::decideAccount()
 				 * the classic PageDialog with a null parent under QML
 				 * (m_parentWidget defaults to null and QML never sets it) --
 				 * the same defect class as the old SIGSEGV from the widget
-				 * NewInstanceDialog under QML. QML has its own Accounts
-				 * page but nothing here can switch it there, so just say
-				 * where to go. */
-				LAUNCHER->uiHost()->message(
-					tr("No Accounts"),
-					tr("Use the Accounts page in the sidebar to sign in."),
-					UiHost::Severity::Information);
+				 * NewInstanceDialog under QML. The QML shell's own Accounts
+				 * page instead. It is not a modal dialog the way the
+				 * classic one was, so this launch does not wait for a
+				 * sign-in: it ends below for want of an account, and Play
+				 * works once one is added. */
+				APPLICATION->navigateQmlShell(QStringLiteral("accounts"));
 			} else {
 				APPLICATION->ShowGlobalSettings(m_parentWidget, "accounts");
 			}
@@ -170,22 +168,26 @@ void LaunchController::decideAccount()
 	if (!m_accountToUse) {
 		// If no default account is set, ask the user which one to use.
 		if (APPLICATION->qmlShellChosen()) {
-			/* Plain choose() by account name -- QML has no equivalent of
-			 * the widget dialog's "use as global default" checkbox below,
-			 * so picking an account here never changes the default. Built
-			 * from at(i) rather than accounts->profileNames(), which skips
-			 * accounts with no profile name and would leave the chosen
-			 * index pointing at the wrong account. */
-			QStringList names;
-			names.reserve(accounts->count());
+			/* The widget dialog below, through UiHost: the account to play
+			 * with, and whether it becomes the default. Built from at(i)
+			 * rather than accounts->profileNames(), which skips accounts
+			 * with no profile name and would leave the chosen index
+			 * pointing at the wrong account. */
+			QList<MinecraftAccountPtr> list;
+			list.reserve(accounts->count());
 			for (int i = 0; i < accounts->count(); ++i) {
-				names.append(accounts->at(i)->accountDisplayString());
+				list.append(accounts->at(i));
 			}
-			const int index = LAUNCHER->uiHost()->choose(
-				tr("Which account would you like to use?"), QString(),
-				UiHost::Severity::Question, names);
-			if (index >= 0) {
-				m_accountToUse = accounts->at(index);
+			const auto choice = LAUNCHER->uiHost()->pickAccount(
+				tr("Choose an account"),
+				tr("No account is set as the default. Pick the one to play "
+				   "with."),
+				list);
+			if (choice.index >= 0) {
+				m_accountToUse = list.at(choice.index);
+				if (choice.makeDefault) {
+					accounts->setDefaultAccount(m_accountToUse);
+				}
 			}
 		} else {
 			ProfileSelectDialog selectDialog(
@@ -237,6 +239,10 @@ void LaunchController::login()
 		   "password to log in again. <br /> <br /> This could be caused by a "
 		   "password change.");
 	QString failReason = needLoginAgain;
+	/* Set when the user takes "Play offline" while the account refreshes:
+	 * from then on this launch goes the Offline way, whatever state the
+	 * still-running refresh leaves the account in. */
+	bool refreshSkipped = false;
 
 	while (tryagain) {
 		m_session = std::make_shared<AuthSession>();
@@ -288,7 +294,10 @@ void LaunchController::login()
 					QString::fromUtf8(fillEv.extra_user_properties);
 		}
 
-		switch (m_accountToUse->accountState()) {
+		const AccountState accountState =
+			refreshSkipped ? AccountState::Offline
+						   : m_accountToUse->accountState();
+		switch (accountState) {
 			case AccountState::Offline: {
 				m_session->wants_online = false;
 				// NOTE: fallthrough is intentional
@@ -387,20 +396,31 @@ void LaunchController::login()
 				auto task = m_accountToUse->currentTask();
 				if (APPLICATION->qmlShellChosen()) {
 					/* No card to reflect this on -- there is no launch task
-					 * yet, just an account refresh -- and no "Play Offline"
-					 * skip affordance without a dedicated UiHost API for
-					 * it, so this is a plain wait with a busy indication. */
+					 * yet, just an account refresh -- so a busy indication,
+					 * with the widget dialog's "Play offline" way out for
+					 * an online launch. The refresh itself cannot be
+					 * aborted (the widget's skip button asked it to and was
+					 * ignored); skipping stops waiting for it instead and
+					 * launches with what the account cache already has. */
 					if (!task->isFinished()) {
+						QEventLoop loop;
 						auto busy = LAUNCHER->uiHost()->showBusy(
-							tr("Refreshing account…"));
+							tr("Refreshing account…"),
+							m_online ? tr("Play offline") : QString(),
+							[&loop, &refreshSkipped]() {
+								refreshSkipped = true;
+								loop.quit();
+							});
 						if (!task->isRunning()) {
 							QMetaObject::invokeMethod(task.get(), &Task::start,
 													  Qt::QueuedConnection);
 						}
-						QEventLoop loop;
 						connect(task.get(), &Task::finished, &loop,
 								&QEventLoop::quit);
 						loop.exec();
+					}
+					if (refreshSkipped) {
+						m_online = false;
 					}
 				} else {
 					ProgressDialog progDialog(m_parentWidget);

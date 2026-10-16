@@ -26,6 +26,7 @@
 #include <QVariantList>
 #include <QVariantMap>
 
+#include <functional>
 #include <memory>
 
 #include "core/UiHost.h"
@@ -53,6 +54,8 @@
  *                    then accept(path) / reject() (QML shows a native
  *                    QtQuick.Dialogs file dialog rather than this
  *                    request's own UI for this kind)
+ *   pickAccount   -- accountOptions, then chooseAccount(index, makeDefault)
+ *                    / reject()
  *
  * Ownership is C++'s throughout: QmlUiHost hands this to QML with
  * QQmlEngine::CppOwnership (see exposeToQml() in the .cpp) and deletes it
@@ -117,6 +120,10 @@ class QmlUiRequest : public QObject
 	/// empty otherwise.
 	Q_PROPERTY(QString filePickerDefaultPath READ filePickerDefaultPath
 			   CONSTANT)
+	/* kind == "pickAccount": one entry per account, in the order
+	 * UiHost::pickAccount() received them -- {name, kind ("Microsoft" or
+	 * "Offline"), faceId (for image://accountface/<faceId>)}. */
+	Q_PROPERTY(QVariantList accountOptions READ accountOptions CONSTANT)
 
   public:
 	enum class Kind {
@@ -129,6 +136,7 @@ class QmlUiRequest : public QObject
 		Update,
 		ProfileSetup,
 		FilePicker,
+		PickAccount,
 	};
 
 	QmlUiRequest(Kind kind, QString title, QString text,
@@ -200,6 +208,10 @@ class QmlUiRequest : public QObject
 	{
 		return m_filePickerDefaultPath;
 	}
+	QVariantList accountOptions() const
+	{
+		return m_accountOptions;
+	}
 
 	/* Filled in by QmlUiHost before the request is published (from
 	 * runRequest()'s caller, never after) -- not reachable from QML, which
@@ -213,6 +225,7 @@ class QmlUiRequest : public QObject
 	void setUpdateInfo(QString currentVersion, QString availableVersion,
 						QString releaseNotes);
 	void setFilePicker(QString mode, QString defaultPath, QString filter);
+	void setAccountOptions(QVariantList options);
 	/* Read by QmlUiHost's checkNameRequested/submitNameRequested handlers
 	 * (which do the actual network work -- see QmlUiHost::setupProfile())
 	 * to update what QML sees; not reachable from QML itself, which only
@@ -248,6 +261,12 @@ class QmlUiRequest : public QObject
 	{
 		return m_updateChoice;
 	}
+	/// kind == "pickAccount": the "make it the default" choice that came
+	/// with chooseAccount(); false otherwise.
+	bool makeDefault() const
+	{
+		return m_makeDefault;
+	}
 	/// kind == "text": the text accept(QString) was called with; meaningless
 	/// unless accepted() is true.
 	QString answeredText() const
@@ -270,6 +289,10 @@ class QmlUiRequest : public QObject
 	/// negative index for "backed out" (see UiHost::choose()'s doc
 	/// comment).
 	Q_INVOKABLE void choose(int index);
+	/// kind == "pickAccount": answers with the index into
+	/// `accountOptions` (negative for "backed out", like choose()) and
+	/// whether that account should become the default.
+	Q_INVOKABLE void chooseAccount(int index, bool makeDefault);
 	/// kind == "update": one of "install", "later", "skip". Anything else
 	/// is treated as "later".
 	Q_INVOKABLE void answerUpdate(const QString& choice);
@@ -330,11 +353,13 @@ class QmlUiRequest : public QObject
 	QString m_filePickerMode;
 	QString m_filePickerFilter;
 	QString m_filePickerDefaultPath;
+	QVariantList m_accountOptions;
 	int m_checkSequence = 0;
 
 	bool m_answered = false;
 	bool m_accepted = false;
 	int m_chosenIndex = -1;
+	bool m_makeDefault = false;
 	UiHost::UpdateChoice m_updateChoice = UiHost::UpdateChoice::Later;
 };
 
@@ -367,6 +392,8 @@ class QmlUiRequest : public QObject
  * BUSY nests the same way: `busy` is true and `busyText` names the most
  * recently started text for as long as any BusyIndicator this object handed
  * out is still alive, in whatever order they end up being destroyed.
+ * `busySkipLabel` belongs to that same most recent one: non-empty when it
+ * offers a way out, which QML takes with skipBusy().
  *
  * QUIT / DESTRUCTION: aboutToQuit and the destructor both reject() every
  * request still on the stack, so that a call blocked in runRequest() never
@@ -378,7 +405,7 @@ class QmlUiRequest : public QObject
  * nothing.
  *
  * PRESENTER READINESS: this object exists (and is reachable through
- * QmlShell::uiHost()) from the moment QmlShell::show() creates it, which is
+ * QmlShell::uiHost()) from the moment QmlShell::load() creates it, which is
  * before the QML engine has even loaded Main.qml, let alone before whatever
  * item there binds to `current` and can actually show a request. A UiHost
  * call reached in that window -- an automatic startup update check finding
@@ -401,6 +428,9 @@ class QmlUiHost : public QObject, public UiHost
 	/// Text of the most recently started still-active showBusy() call, or
 	/// empty when busy is false.
 	Q_PROPERTY(QString busyText READ busyText NOTIFY busyChanged)
+	/// The skip button's label for that same showBusy() call, or empty
+	/// when it offers none -- see UiHost::showBusy().
+	Q_PROPERTY(QString busySkipLabel READ busySkipLabel NOTIFY busyChanged)
 	/* Whether some QML item is actually watching `current` and able to
 	 * answer a request -- see the class comment's PRESENTER READINESS
 	 * section. False until that item calls setPresenterReady(true). */
@@ -411,7 +441,9 @@ class QmlUiHost : public QObject, public UiHost
 	explicit QmlUiHost(QObject* parent = nullptr);
 	~QmlUiHost() override;
 
-	std::unique_ptr<BusyIndicator> showBusy(const QString& text) override;
+	std::unique_ptr<BusyIndicator> showBusy(
+		const QString& text, const QString& skipLabel = QString(),
+		std::function<void()> onSkip = {}) override;
 
 	void message(const QString& title, const QString& text,
 				 Severity severity) override;
@@ -422,6 +454,10 @@ class QmlUiHost : public QObject, public UiHost
 
 	int choose(const QString& title, const QString& text, Severity severity,
 			   const QStringList& actions) override;
+
+	AccountChoice pickAccount(
+		const QString& title, const QString& text,
+		const QList<MinecraftAccountPtr>& accounts) override;
 
 	std::optional<QString> askText(
 		const QString& title, const QString& text,
@@ -445,6 +481,10 @@ class QmlUiHost : public QObject, public UiHost
 	QObject* current() const;
 	bool busy() const;
 	QString busyText() const;
+	QString busySkipLabel() const;
+	/// The skip button of the most recent showBusy() call was pressed:
+	/// runs its onSkip. No-op when it offers no skip.
+	Q_INVOKABLE void skipBusy();
 	bool presenterReady() const;
 	/// Called by the QML item that shows `current` -- see PRESENTER
 	/// READINESS in the class comment. Application/QmlShell read this
@@ -474,6 +514,8 @@ class QmlUiHost : public QObject, public UiHost
 	struct BusyEntry {
 		int id;
 		QString text;
+		QString skipLabel;
+		std::function<void()> onSkip;
 	};
 	QList<BusyEntry> m_busy;
 	int m_nextBusyId = 0;

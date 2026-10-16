@@ -32,6 +32,7 @@
 #include <QUrl>
 
 #include "BaseInstance.h"
+#include "minecraft/MinecraftInstance.h"
 #include "FileSystem.h"
 #include "InstanceCopyTask.h"
 #include "InstanceList.h"
@@ -44,7 +45,6 @@
 #include "models/NewInstanceController.h"
 #include "models/RecentWorldsModel.h"
 #include "models/SettingsAdapter.h"
-#include "models/ContentBrowser.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
 #include "tasks/Task.h"
 #include "tasks/TaskWatcher.h"
@@ -195,6 +195,72 @@ void QmlShell::launchInstance(const QString& id)
 	emit launchRequested(id);
 }
 
+void QmlShell::launchInstanceMode(const QString& id, const QString& mode)
+{
+	emit launchModeRequested(id, mode);
+}
+
+void QmlShell::launchInstanceAs(const QString& id, const QString& accountId)
+{
+	emit launchAsRequested(id, accountId);
+}
+
+void QmlShell::setProfilersProvider(ProfilersProvider provider)
+{
+	m_profilersProvider = std::move(provider);
+}
+
+QVariantMap QmlShell::launchOptions(const QString& id) const
+{
+	auto instance = LAUNCHER->instances()->getInstanceById(id);
+	if (!instance) {
+		return {};
+	}
+
+	// Same check as the widget launch menu's Launch Demo entry.
+	auto minecraft = std::dynamic_pointer_cast<MinecraftInstance>(instance);
+	const bool supportsDemo = minecraft && minecraft->supportsDemo();
+
+	QVariantList accounts;
+	auto accountList = LAUNCHER->accounts();
+	const auto defaultAccount = accountList->defaultAccount();
+	for (int i = 0; i < accountList->count(); ++i) {
+		const auto account = accountList->at(i);
+		if (!account) {
+			continue;
+		}
+		accounts.append(QVariantMap{
+			// Same id accountFace() uses: offline accounts have no
+			// profile id.
+			{ QStringLiteral("id"), account->profileId().isEmpty()
+										? account->internalId()
+										: account->profileId() },
+			{ QStringLiteral("name"), account->profileName() },
+			{ QStringLiteral("kind"), account->isMSA()
+										  ? QStringLiteral("Microsoft")
+										  : QStringLiteral("Offline") },
+			{ QStringLiteral("isDefault"), account == defaultAccount },
+		});
+	}
+
+	return QVariantMap{
+		{ QStringLiteral("supportsDemo"), supportsDemo },
+		{ QStringLiteral("profiler"), instance->profilerKey() },
+		{ QStringLiteral("profilers"), m_profilersProvider
+											? m_profilersProvider()
+											: QVariantList() },
+		{ QStringLiteral("accounts"), accounts },
+	};
+}
+
+void QmlShell::setInstanceProfiler(const QString& id,
+								   const QString& profilerKey)
+{
+	if (auto instance = LAUNCHER->instances()->getInstanceById(id)) {
+		instance->setProfilerKey(profilerKey);
+	}
+}
+
 void QmlShell::killInstance(const QString& id)
 {
 	emit killRequested(id);
@@ -230,6 +296,11 @@ void QmlShell::requestImport(const QString& source)
 		return;
 	}
 	emit importRequested(source);
+}
+
+void QmlShell::requestNavigate(const QString& target)
+{
+	emit navigateRequested(target);
 }
 
 bool QmlShell::renameInstance(const QString& id, const QString& name)
@@ -274,6 +345,41 @@ void QmlShell::debugMarkInstanceCrashed(const QString& id)
 		return;
 	}
 	instance->setCrashed(true);
+}
+
+void QmlShell::debugShowRequest(const QString& kind)
+{
+	if (!m_uiHost) {
+		return;
+	}
+	if (kind == QLatin1String("pickAccount")) {
+		// Queued: pickAccount() blocks until answered, and the QML call
+		// that got here should return first.
+		QTimer::singleShot(0, this, [this]() {
+			if (!m_uiHost) {
+				return;
+			}
+			QList<MinecraftAccountPtr> list;
+			auto accounts = LAUNCHER->accounts();
+			for (int i = 0; i < accounts->count(); ++i) {
+				list.append(accounts->at(i));
+			}
+			m_uiHost->pickAccount(
+				tr("Choose an account"),
+				tr("No account is set as the default. Pick the one to play "
+				   "with."),
+				list);
+		});
+	} else if (kind == QLatin1String("busySkip")) {
+		/* Kept alive by its own skip callback, which ends it; QmlUiHost
+		 * drops the callback (and so the indicator) at the latest when it
+		 * is destroyed itself. */
+		auto holder =
+			std::make_shared<std::unique_ptr<UiHost::BusyIndicator>>();
+		*holder = m_uiHost->showBusy(tr("Refreshing account…"),
+									 tr("Play offline"),
+									 [holder]() { holder->reset(); });
+	}
 }
 
 bool QmlShell::importIcon(const QString& fileUrlOrPath)
@@ -534,18 +640,6 @@ QObject* QmlShell::installModpack(const QString& projectId,
 		m_modpacks->install(projectId, versionId, instanceName, group));
 }
 
-QObject* QmlShell::installContent(int row, const QString& versionId)
-{
-	auto* browser = m_instanceDetails
-						? qobject_cast<ContentBrowser*>(
-							  m_instanceDetails->contentBrowser())
-						: nullptr;
-	if (!browser) {
-		return nullptr;
-	}
-	return expose(browser->install(row, versionId));
-}
-
 QObject* QmlShell::recentModel() const
 {
 	return expose(m_recent.get());
@@ -573,7 +667,7 @@ QObject* QmlShell::accountsController() const
 
 QObject* QmlShell::newInstance() const
 {
-	/* Made on first use, not in show(): the controller starts loading the
+	/* Made on first use, not in load(): the controller starts loading the
 	 * Minecraft version list, and opening the launcher should not fetch
 	 * metadata nobody asked for. */
 	if (!m_newInstance && m_engine) {
@@ -676,10 +770,29 @@ QVariantMap QmlShell::rootProperties()
 
 bool QmlShell::show(bool minimized)
 {
-	if (m_window) {
+	if (!load()) {
+		return false;
+	}
+	if (m_shown) {
 		m_window->showNormal();
 		m_window->raise();
 		m_window->requestActivate();
+		return true;
+	}
+	m_shown = true;
+
+	if (minimized)
+		m_window->showMinimized();
+	else
+		m_window->show();
+
+	scheduleSnapshotIfRequested();
+	return true;
+}
+
+bool QmlShell::load()
+{
+	if (m_window) {
 		return true;
 	}
 
@@ -762,20 +875,13 @@ bool QmlShell::show(bool minimized)
 	 * see eventFilter() and closed()'s doc comment. */
 	m_window->installEventFilter(this);
 
-	if (minimized)
-		m_window->showMinimized();
-	else
-		m_window->show();
-
 	/* Imports asked for before there was a window to ask in -- see
-	 * requestImport(). Main.qml's handler exists now: load() above
-	 * created it along with the rest of the root window. */
+	 * requestImport(). Main.qml's handler exists now: the engine's load()
+	 * above created it along with the rest of the root window. */
 	const QStringList pendingImports = std::exchange(m_pendingImports, {});
 	for (const QString& source : pendingImports) {
 		emit importRequested(source);
 	}
-
-	scheduleSnapshotIfRequested();
 	return true;
 }
 
@@ -820,7 +926,7 @@ bool QmlShell::eventFilter(QObject* watched, QEvent* event)
 	 * see PluginManager::ensureCloseFilterInstalled()) -- always after
 	 * this one, since that only happens once a plugin's
 	 * MMCO_HOOK_UI_MAIN_READY handler runs, which is dispatched only
-	 * after show() (and this installEventFilter() call) has already
+	 * after load() (and this installEventFilter() call) has already
 	 * returned. Qt calls the most-recently-installed filter first, so a
 	 * plugin veto (ce->ignore(), then stopping the event by returning
 	 * true) never reaches here -- the same way a vetoed close never

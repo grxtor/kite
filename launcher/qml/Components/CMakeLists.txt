@@ -43,6 +43,7 @@ qt_add_qml_module(MeshMC_qml_components
         ContinueCard.qml
         CornerMatte.qml
         PlayButton.qml
+        LaunchOptionsMenu.qml
         LaunchProgressBar.qml
         IconButton.qml
         Tag.qml

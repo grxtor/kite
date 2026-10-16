@@ -24,6 +24,7 @@
 #include <memory>
 
 #include "qml/QmlUiHost.h"
+#include "minecraft/auth/MinecraftAccount.h"
 
 /*
  * Drives QmlUiHost the way QML would, without any QML: confirm()/etc. block
@@ -326,6 +327,86 @@ class QmlUiHostTest : public QObject
 		outer.reset();
 		QVERIFY(!host.busy());
 		QVERIFY(host.busyText().isEmpty());
+	}
+
+	/* "Play offline" while an account refreshes: the skip label is the
+	 * innermost wait's own, skipBusy() runs its callback, and a wait
+	 * without one offers nothing to skip. */
+	void busySkipRunsTheCallbackOfTheInnermostWait()
+	{
+		QmlUiHost host;
+		int skipped = 0;
+
+		auto plain = host.showBusy(QStringLiteral("Loading"));
+		QVERIFY(host.busySkipLabel().isEmpty());
+		host.skipBusy(); // nothing to skip: no-op
+		QCOMPARE(skipped, 0);
+
+		std::unique_ptr<UiHost::BusyIndicator> refresh;
+		refresh = host.showBusy(QStringLiteral("Refreshing account"),
+								QStringLiteral("Play offline"),
+								[&]() {
+									++skipped;
+									// What a real caller does: stop waiting.
+									refresh.reset();
+								});
+		QCOMPARE(host.busySkipLabel(), QStringLiteral("Play offline"));
+
+		host.skipBusy();
+		QCOMPARE(skipped, 1);
+		QVERIFY(!refresh);
+		// Back to the outer wait, which offers no skip.
+		QCOMPARE(host.busyText(), QStringLiteral("Loading"));
+		QVERIFY(host.busySkipLabel().isEmpty());
+	}
+
+	/* The launch account picker: the accounts as QML sees them, and the
+	 * chosen index together with "make it the default". */
+	void pickAccountReturnsTheChoiceAndTheDefaultWish()
+	{
+		QmlUiHost host;
+		const QList<MinecraftAccountPtr> accounts{
+			MinecraftAccount::createOffline(QStringLiteral("Steve")),
+			MinecraftAccount::createOffline(QStringLiteral("Alex")),
+		};
+
+		QTimer::singleShot(0, [&host]() {
+			auto* request = qobject_cast<QmlUiRequest*>(host.current());
+			QVERIFY(request);
+			QCOMPARE(request->kind(), QStringLiteral("pickAccount"));
+			const auto options = request->accountOptions();
+			QCOMPARE(options.size(), 2);
+			QCOMPARE(options.at(1).toMap().value(QStringLiteral("name")).toString(),
+					 QStringLiteral("Alex"));
+			QCOMPARE(options.at(1).toMap().value(QStringLiteral("kind")).toString(),
+					 QStringLiteral("Offline"));
+			QVERIFY(!options.at(1).toMap().value(QStringLiteral("faceId")).toString().isEmpty());
+			request->chooseAccount(1, true);
+		});
+
+		const auto choice = host.pickAccount(QStringLiteral("Title"),
+											 QStringLiteral("Text"), accounts);
+		QCOMPARE(choice.index, 1);
+		QVERIFY(choice.makeDefault);
+	}
+
+	void pickAccountBackingOutChoosesNothing()
+	{
+		QmlUiHost host;
+		const QList<MinecraftAccountPtr> accounts{
+			MinecraftAccount::createOffline(QStringLiteral("Steve")),
+		};
+
+		QTimer::singleShot(0, [&host]() {
+			auto* request = qobject_cast<QmlUiRequest*>(host.current());
+			QVERIFY(request);
+			request->reject();
+		});
+
+		const auto choice = host.pickAccount(QStringLiteral("Title"),
+											 QStringLiteral("Text"), accounts);
+		QCOMPARE(choice.index, -1);
+		QVERIFY(!choice.makeDefault);
 	}
 };
 
