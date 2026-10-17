@@ -30,11 +30,61 @@
 
 #include "BuildConfig.h"
 #include "core/LauncherContext.h"
+#include "core/UiHost.h"
+
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QStandardPaths>
+#include <QUrl>
 
 #include <QDateTime>
 
 namespace ModpacksCH
 {
+	void classifyFailedDownloads(const QStringList& failedUrls,
+								 const QHash<QString, VersionFile>& files,
+								 const QHash<QString, QString>& targets,
+								 QList<BlockedMod>& blocked,
+								 QStringList& unrecoverable)
+	{
+		for (const QString& url : failedUrls) {
+			const auto it = files.constFind(url);
+			if (it == files.constEnd()) {
+				unrecoverable.append(url);
+				continue;
+			}
+			if (it->curseforgeProject > 0 && it->curseforgeFile > 0) {
+				BlockedMod mod;
+				mod.projectId = it->curseforgeProject;
+				mod.fileId = it->curseforgeFile;
+				mod.fileName = it->name;
+				mod.targetPath = targets.value(url);
+				blocked.append(mod);
+			} else {
+				unrecoverable.append(it->name);
+			}
+		}
+	}
+
+	QString undownloadableMessage(const QStringList& names)
+	{
+		static constexpr int kNamedFiles = 3;
+		const QString named =
+			names.mid(0, kNamedFiles).join(QStringLiteral(", "));
+		const int rest = int(names.size()) - kNamedFiles;
+		if (rest <= 0) {
+			return PackInstallTask::tr("Could not download %1.").arg(named);
+		}
+		if (rest == 1) {
+			return PackInstallTask::tr("Could not download %1 and 1 more file.")
+				.arg(named);
+		}
+		return PackInstallTask::tr("Could not download %1 and %2 more files.")
+			.arg(named)
+			.arg(rest);
+	}
+
 
 	PackInstallTask::PackInstallTask(Modpack pack, QString version)
 	{
@@ -102,6 +152,8 @@ namespace ModpacksCH
 					   << parse_error.offset
 					   << " reason: " << parse_error.errorString();
 			qWarning() << response;
+			jobPtr.reset();
+			emitFailed(tr("FTB sent back a pack version that could not be read."));
 			return;
 		}
 
@@ -111,8 +163,10 @@ namespace ModpacksCH
 		try {
 			ModpacksCH::loadVersion(version, obj);
 		} catch (const JSONValidationError& e) {
-			emitFailed(tr("Could not understand pack manifest:\n") + e.cause());
+			/* Reset first: once a task has reported, whoever owns it may
+			 * delete it, so nothing of it may be touched afterwards. */
 			jobPtr.reset();
+			emitFailed(tr("Could not understand pack manifest:\n") + e.cause());
 			return;
 		}
 		m_version = version;
@@ -122,8 +176,8 @@ namespace ModpacksCH
 
 	void PackInstallTask::onDownloadFailed(QString reason)
 	{
-		emitFailed(reason);
 		jobPtr.reset();
+		emitFailed(reason);
 	}
 
 	void PackInstallTask::downloadPack()
@@ -158,6 +212,9 @@ namespace ModpacksCH
 			}
 			qDebug() << "Will download" << file.url << "to" << path;
 			filesToCopy[path] = entry->getFullPath();
+			const QString key = QUrl(file.url).toString();
+			m_filesByUrl.insert(key, file);
+			m_targetByUrl.insert(key, path);
 
 			auto dl = Net::Download::makeCached(file.url, entry);
 			if (!file.sha1.isEmpty()) {
@@ -168,18 +225,21 @@ namespace ModpacksCH
 			jobPtr->addNetAction(dl);
 		}
 
-		connect(jobPtr.get(), &NetJob::succeeded, this, [&]() {
+		/* `this` as the context of every connection, and the job let go of
+		 * before the task reports: once it has, whoever owns the task may
+		 * delete it, and a handler touching it afterwards crashed the
+		 * launcher when a file failed to download. */
+		connect(jobPtr.get(), &NetJob::succeeded, this, [this]() {
 			abortable = false;
+			jobPtr.reset();
 			install();
-			jobPtr.reset();
 		});
-		connect(jobPtr.get(), &NetJob::failed, [&](QString reason) {
+		connect(jobPtr.get(), &NetJob::failed, this, [this](QString reason) {
 			abortable = false;
-			emitFailed(reason);
-			jobPtr.reset();
+			onModsDownloadFailed(reason);
 		});
-		connect(jobPtr.get(), &NetJob::progress,
-				[&](qint64 current, qint64 total) {
+		connect(jobPtr.get(), &NetJob::progress, this,
+				[this](qint64 current, qint64 total) {
 					abortable = true;
 					setProgress(current, total);
 				});
@@ -187,6 +247,70 @@ namespace ModpacksCH
 		propagateStepsFrom(jobPtr.get());
 
 		jobPtr->start();
+	}
+
+	void PackInstallTask::onModsDownloadFailed(const QString& reason)
+	{
+		/* An abort marks every file it stopped as failed: that is the user
+		 * calling the install off, not files to go and fetch by hand. */
+		const bool aborted = jobPtr && jobPtr->wasAborted();
+		const QStringList failed =
+			jobPtr && !aborted ? jobPtr->getFailedFiles() : QStringList();
+		jobPtr.reset();
+		if (aborted) {
+			emitAborted();
+			return;
+		}
+
+		QList<BlockedMod> blocked;
+		QStringList unrecoverable;
+		classifyFailedDownloads(failed, m_filesByUrl, m_targetByUrl, blocked,
+								unrecoverable);
+		if (failed.isEmpty()) {
+			/* Failed before any file did. */
+			emitFailed(reason);
+			return;
+		}
+		if (!unrecoverable.isEmpty()) {
+			emitFailed(undownloadableMessage(unrecoverable));
+			return;
+		}
+
+		/* All of them are CurseForge files their authors keep off
+		 * third-party downloads: the same question, and the same
+		 * handling, as a CurseForge pack's (InstanceImportTask). */
+		for (const auto& mod : blocked) {
+			filesToCopy.remove(mod.targetPath);
+		}
+		UiHost* host = LAUNCHER->uiHost();
+		if (host && host->resolveBlockedMods(
+						tr("Restricted Mods"),
+						tr("The following mods have restricted downloads "
+						   "and are not available through the API.\n"
+						   "Click the Download button next to each mod "
+						   "to open its download page in your browser.\n"
+						   "Once all files appear in your Downloads "
+						   "folder, click Continue."),
+						blocked)) {
+			const QString downloadDir = QStandardPaths::writableLocation(
+				QStandardPaths::DownloadLocation);
+			for (const auto& mod : blocked) {
+				if (!mod.found) {
+					continue;
+				}
+				QDir().mkpath(QFileInfo(mod.targetPath).absolutePath());
+				if (!QFile::copy(FS::PathCombine(downloadDir, mod.fileName),
+								 mod.targetPath)) {
+					logWarning(tr("Failed to copy %1 from downloads folder")
+								   .arg(mod.fileName));
+				}
+			}
+		} else {
+			logWarning(tr("User cancelled restricted mod downloads - %1 "
+						  "mod(s) will be missing")
+						   .arg(blocked.size()));
+		}
+		install();
 	}
 
 	void PackInstallTask::install()

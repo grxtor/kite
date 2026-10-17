@@ -134,11 +134,19 @@ static void loadVersionFile(ModpacksCH::VersionFile& a, QJsonObject& obj)
 	a.serverOnly = Json::requireBoolean(obj, "serveronly");
 	a.optional = Json::requireBoolean(obj, "optional");
 	a.updated = Json::requireInteger(obj, "updated");
+	// FTB writes these ids as strings ("446346"); accept numbers too.
+	if (obj.value("curseforge").isObject()) {
+		const auto cf = obj.value("curseforge").toObject();
+		auto asInt = [](const QJsonValue& v) {
+			return v.isString() ? v.toString().toInt() : v.toInt();
+		};
+		a.curseforgeProject = asInt(cf.value("project"));
+		a.curseforgeFile = asInt(cf.value("file"));
+	}
 	// Some files reference CurseForge mods with no direct download URL.
 	// Construct edge CDN URL from CurseForge file ID if available.
-	if (a.url.isEmpty() && obj.contains("curseforge")) {
-		auto cf = Json::requireObject(obj, "curseforge");
-		int cfFileId = Json::requireInteger(cf, "file");
+	if (a.url.isEmpty() && a.curseforgeFile > 0) {
+		int cfFileId = a.curseforgeFile;
 		// CurseForge edge CDN URL format: files/{first 4 digits}/{remaining
 		// digits}/{filename}
 		QString fileIdStr = QString::number(cfFileId);

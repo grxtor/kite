@@ -164,18 +164,25 @@ Item {
             // Search, loader, sort and import. One row while the search
             // field keeps a usable width; below that the loader/sort filters
             // move to a row of their own instead of squeezing the field to
-            // "Search mo…". Import stays at the row's end either way -- the
-            // same spot Library's "New instance" has.
+            // "Search mo…", and wrap once more when even their own row is too
+            // narrow for every provider. Import stays at the row's end either
+            // way -- the same spot Library's "New instance" has.
             Item {
                 id: toolbar
                 Layout.leftMargin: root.contentX
                 Layout.preferredWidth: root.contentWidth
-                Layout.preferredHeight: stacked ? Theme.control.height * 2 + rowSpacing : Theme.control.height
+                Layout.preferredHeight: stacked ? Theme.control.height + rowSpacing + filters.height : Theme.control.height
 
                 readonly property int spacing: Theme.space.md
                 readonly property int rowSpacing: Theme.space.sm
                 readonly property int searchMinWidth: 240
-                readonly property bool stacked: width < searchMinWidth + filters.implicitWidth
+                // The filters on one line, from the controls themselves:
+                // stacked, `filters` wraps, so its own size cannot say.
+                readonly property int filtersWidth: {
+                    var shown = [providerControl, loaderControl, sortBox].filter((c) => c.visible)
+                    return shown.reduce((sum, c) => sum + c.width, 0) + Math.max(0, shown.length - 1) * spacing
+                }
+                readonly property bool stacked: width < searchMinWidth + filtersWidth
                                                         + importButton.implicitWidth + spacing * 2
 
                 SearchBox {
@@ -189,10 +196,11 @@ Item {
                     onTextChanged: if (text.length === 0) debounce.restart()
                 }
 
-                Row {
+                Flow {
                     id: filters
                     x: toolbar.stacked ? 0 : importButton.x - toolbar.spacing - width
                     y: toolbar.stacked ? Theme.control.height + toolbar.rowSpacing : 0
+                    width: toolbar.stacked ? toolbar.width : toolbar.filtersWidth
                     spacing: toolbar.spacing
 
                     // Where to browse; only once there is somewhere else.
@@ -337,7 +345,8 @@ Item {
                                 // §5/§6); the full list is on the detail
                                 // view instead (see ModpackDetail.qml).
                                 categories: (model.categories || []).slice(0, 1)
-                                galleryUrl: model.galleryUrl
+                                // Not every provider has a cover (ATLauncher).
+                                galleryUrl: model.galleryUrl || ""
                                 accentColor: model.accentColor
                                 onClicked: root.open({ projectId: projectId, title: title, author: author,
                                                        description: description, logoUrl: logoUrl,

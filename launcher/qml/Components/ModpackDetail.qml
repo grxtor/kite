@@ -304,6 +304,17 @@ Item {
                 }
             }
 
+            // A failed install says so where the button that started it
+            // is, not only in the Install card further down; Install can be
+            // pressed again.
+            NoticeBar {
+                width: parent.width
+                visible: !!root.watcher && root.watcher.failed
+                text: root.watcher && root.watcher.error.length > 0
+                      ? qsTr("The install failed: %1").arg(root.watcher.error)
+                      : qsTr("The install failed.")
+            }
+
             Text {
                 width: parent.width
                 visible: text.length > 0
@@ -470,13 +481,27 @@ Item {
                     running: visible
                 }
 
-                Text {
+                // A read-only TextEdit, not a Text: the body loads its images
+                // from wherever the author linked them, and Text (Qt 6.11)
+                // crashed the launcher when one failed (a 404, a YouTube page
+                // in an <img>) while another was still loading. TextEdit
+                // loads them its own way and survives it. It has no
+                // linkColor (which never reached these formats anyway); an
+                // HTML body gets a style rule instead.
+                TextEdit {
                     width: parent.width
-                    text: root.detail ? (root.detail.body || "") : ""
-                    textFormat: root.bodyFormat === "html" ? Text.RichText : Text.MarkdownText
-                    wrapMode: Text.Wrap
+                    readOnly: true
+                    selectByMouse: false
+                    activeFocusOnPress: false
+                    text: {
+                        var body = root.detail ? (root.detail.body || "") : ""
+                        return root.bodyFormat === "html" && body.length > 0
+                               ? "<style>a { color: " + Theme.palette.accent + "; text-decoration: none; }</style>" + body
+                               : body
+                    }
+                    textFormat: root.bodyFormat === "html" ? TextEdit.RichText : TextEdit.MarkdownText
+                    wrapMode: TextEdit.Wrap
                     color: Theme.palette.textSecondary
-                    linkColor: Theme.palette.accent
                     font.family: Theme.font.family
                     font.pixelSize: Theme.type.body.pixelSize
                     onLinkActivated: (link) => Qt.openUrlExternally(link)

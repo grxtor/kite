@@ -22,12 +22,34 @@
 #pragma once
 
 #include "FTBPackManifest.h"
+#include "modplatform/BlockedMod.h"
+
+#include <QHash>
+#include <QList>
+#include <QStringList>
 
 #include "InstanceTask.h"
 #include "net/NetJob.h"
 
 namespace ModpacksCH
 {
+	/* Sorts the URLs a pack's download job could not fetch: a file FTB
+	 * serves from CurseForge's CDN (it has CurseForge ids) can be fetched
+	 * by hand, so it becomes a BlockedMod for the restricted-files
+	 * question, aimed at @p targets' path for it; anything else is named
+	 * in @p unrecoverable. @p files and @p targets are keyed by the
+	 * download URL as the job reports it. */
+	void classifyFailedDownloads(const QStringList& failedUrls,
+								 const QHash<QString, VersionFile>& files,
+								 const QHash<QString, QString>& targets,
+								 QList<BlockedMod>& blocked,
+								 QStringList& unrecoverable);
+
+	/* The failure message for files nothing can be done about: the first
+	 * few by name and a count of the rest, since a dropped connection
+	 * fails hundreds of them at once. */
+	QString undownloadableMessage(const QStringList& names);
+
 
 	class PackInstallTask : public InstanceTask
 	{
@@ -56,6 +78,9 @@ namespace ModpacksCH
 		void onDownloadFailed(QString reason);
 
 	  private:
+		/* Some files failed: hand the ones CurseForge restricts to the
+		 * user, as CurseForge packs do, or fail naming the rest. */
+		void onModsDownloadFailed(const QString& reason);
 		void downloadPack();
 		void install();
 
@@ -70,6 +95,10 @@ namespace ModpacksCH
 		Version m_version;
 
 		QMap<QString, QString> filesToCopy;
+		/* By download URL (as the job reports it): the file, and where it
+		 * goes in the staging folder. */
+		QHash<QString, VersionFile> m_filesByUrl;
+		QHash<QString, QString> m_targetByUrl;
 	};
 
 } // namespace ModpacksCH

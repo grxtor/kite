@@ -22,6 +22,7 @@
 #include <QJsonObject>
 #include <QTest>
 
+#include "modplatform/modpacksch/FTBPackInstallTask.h"
 #include "modplatform/modpacksch/FtbModpackModel.h"
 
 /* The static, network-free halves of FtbModpackModel: the catalogue index,
@@ -144,6 +145,68 @@ class FtbModpackModelTest : public QObject
 		/* A loader rules out only packs tagged with another one. */
 		QCOMPARE(FtbModpackModel::filterAndSort(packs, "", "neoforge", "plays"),
 				 (QList<int>{1, 2}));
+	}
+
+	/* What the install does with a file it could not fetch. */
+	void test_FailedDownloadsSplit()
+	{
+		QJsonObject obj{
+			{"id", 7}, {"parent", 35}, {"name", "3.6.0"}, {"type", "release"},
+			{"installs", 1}, {"plays", 1}, {"updated", 1}, {"refreshed", 1},
+			{"specs", QJsonObject{{"id", 1}, {"minimum", 1}, {"recommended", 1}}},
+			{"targets", QJsonArray{}},
+			{"files", QJsonArray{
+				QJsonObject{{"id", 1}, {"type", "mod"}, {"path", "./mods"},
+							{"name", "Computronics.jar"}, {"version", "1"},
+							{"url", "https://edge.forgecdn.net/files/3202/390/Computronics.jar"},
+							{"sha1", ""}, {"size", 1}, {"clientonly", false},
+							{"serveronly", false}, {"optional", false}, {"updated", 1},
+							{"curseforge", QJsonObject{{"project", "446346"}, {"file", "3202390"}}}},
+				QJsonObject{{"id", 2}, {"type", "mod"}, {"path", "./mods"},
+							{"name", "Other.jar"}, {"version", "1"},
+							{"url", "https://dist.modpacks.ch/Other.jar"},
+							{"sha1", ""}, {"size", 1}, {"clientonly", false},
+							{"serveronly", false}, {"optional", false}, {"updated", 1}}}}};
+		ModpacksCH::Version version;
+		ModpacksCH::loadVersion(version, obj);
+		QCOMPARE(version.files.size(), 2);
+		QCOMPARE(version.files.at(0).curseforgeProject, 446346);
+		QCOMPARE(version.files.at(0).curseforgeFile, 3202390);
+		QCOMPARE(version.files.at(1).curseforgeFile, 0);
+
+		QHash<QString, ModpacksCH::VersionFile> files;
+		QHash<QString, QString> targets;
+		for (const auto& file : version.files) {
+			files.insert(QUrl(file.url).toString(), file);
+			targets.insert(QUrl(file.url).toString(), "/staging/mods/" + file.name);
+		}
+
+		QList<BlockedMod> blocked;
+		QStringList unrecoverable;
+		ModpacksCH::classifyFailedDownloads(
+			{"https://edge.forgecdn.net/files/3202/390/Computronics.jar"}, files,
+			targets, blocked, unrecoverable);
+		QCOMPARE(blocked.size(), 1);
+		QCOMPARE(blocked.first().projectId, 446346);
+		QCOMPARE(blocked.first().fileName, QString("Computronics.jar"));
+		QCOMPARE(blocked.first().targetPath, QString("/staging/mods/Computronics.jar"));
+		QVERIFY(unrecoverable.isEmpty());
+
+		/* No CurseForge ids: nothing to send the user to. */
+		blocked.clear();
+		ModpacksCH::classifyFailedDownloads({"https://dist.modpacks.ch/Other.jar"},
+											files, targets, blocked, unrecoverable);
+		QVERIFY(blocked.isEmpty());
+		QCOMPARE(unrecoverable, QStringList{"Other.jar"});
+
+		/* What the user is told: a few names, then a count. */
+		QCOMPARE(ModpacksCH::undownloadableMessage({"a.jar"}),
+				 QString("Could not download a.jar."));
+		QCOMPARE(ModpacksCH::undownloadableMessage({"a.jar", "b.jar", "c.jar", "d.jar"}),
+				 QString("Could not download a.jar, b.jar, c.jar and 1 more file."));
+		QCOMPARE(ModpacksCH::undownloadableMessage(
+					 {"a.jar", "b.jar", "c.jar", "d.jar", "e.jar"}),
+				 QString("Could not download a.jar, b.jar, c.jar and 2 more files."));
 	}
 
 	void test_VersionEntries()
