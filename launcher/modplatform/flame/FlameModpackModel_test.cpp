@@ -127,14 +127,17 @@ class FlameModpackModelTest : public QObject
 	{
 		QCOMPARE(FlameModpackModel::parseBody("{\"data\": \"<p>Hello</p>\"}"),
 				 QString("<p>Hello</p>"));
-		/* What rich text cannot show goes; text and real links stay. */
+		/* Players, frames and scripts go; text, links and pictures stay
+		 * (RichBody lays the pictures out and loads only http(s) ones). */
 		const QString html =
 			"<p>Intro <a href=\"https://x\">site</a></p>"
 			"<a href=\"https://img\"><img src=\"https://cdn/a.png\" width=\"900\"></a>"
 			"<iframe src=\"https://www.youtube.com/embed/1\"></iframe>"
 			"<IMG SRC=\"https://cdn/b.gif\"/><script>alert(1)</script><p>End</p>";
 		QCOMPARE(FlameModpackModel::sanitizeBody(html),
-				 QString("<p>Intro <a href=\"https://x\">site</a></p><p>End</p>"));
+				 QString("<p>Intro <a href=\"https://x\">site</a></p>"
+						 "<a href=\"https://img\"><img src=\"https://cdn/a.png\" width=\"900\"></a>"
+						 "<IMG SRC=\"https://cdn/b.gif\"/><p>End</p>"));
 		QVERIFY(FlameModpackModel::parseBody("garbage").isEmpty());
 	}
 };

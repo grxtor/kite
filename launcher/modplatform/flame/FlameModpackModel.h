@@ -217,12 +217,11 @@ class FlameModpackModel : public QAbstractListModel
 	/* The description endpoint's reply -> its HTML, made safe to show
 	 * as rich text (sanitizeBody()). */
 	static QString parseBody(const QByteArray& bytes);
-	/* @p html without what a rich-text label cannot show and should not
-	 * fetch: images, embedded players and frames, scripts and styles,
-	 * and links left with nothing in them. CurseForge descriptions are
-	 * mostly large images and video embeds; QML's rich text would try to
-	 * load every one of them as an image. The pack's screenshots are in
-	 * the gallery instead. */
+	/* @p html without what a rich-text view cannot show and should not
+	 * fetch: embedded players and frames, scripts and styles, and links
+	 * left with nothing in them. Pictures stay -- CurseForge descriptions
+	 * are mostly pictures -- and RichBody lays them out; a video embed
+	 * would only be fetched as a broken image. */
 	static QString sanitizeBody(const QString& html);
 
   signals:

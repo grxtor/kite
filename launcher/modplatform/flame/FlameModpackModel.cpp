@@ -524,12 +524,13 @@ QString FlameModpackModel::sanitizeBody(const QString& html)
 		out.remove(QRegularExpression(
 			QStringLiteral("<%1\\b[^>]*/?>").arg(name), options));
 	}
-	/* Empty elements. */
-	for (const char* tag : {"img", "embed", "source"}) {
+	/* Empty elements. Not img: RichBody lays pictures out as blocks of
+	 * their own and loads only http(s) ones. */
+	for (const char* tag : {"embed", "source"}) {
 		out.remove(QRegularExpression(
 			QStringLiteral("<%1\\b[^>]*>").arg(QString::fromLatin1(tag)), options));
 	}
-	/* Links that only held an image. */
+	/* Links that only held an embed. */
 	out.remove(QRegularExpression(QStringLiteral("<a\\b[^>]*>\\s*</a\\s*>"), options));
 	return out.trimmed();
 }
