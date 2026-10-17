@@ -50,7 +50,7 @@ Item {
             case "row": return rowNode
             case "section": return sectionNode
             case "heading": return headingNode
-            case "text": return textNode
+            case "text": return root.props.format === "markdown" ? markdownNode : textNode
             case "separator": return separatorNode
             case "progress": return progressNode
             case "button": return buttonNode
@@ -138,12 +138,23 @@ Item {
             topPadding: root.inCard ? Theme.space.sm : 0
             bottomPadding: root.inCard ? Theme.space.sm : 0
             text: root.props.text || ""
-            textFormat: root.props.format === "markdown" ? Text.MarkdownText : Text.PlainText
+            textFormat: Text.PlainText
             wrapMode: Text.Wrap
             color: Theme.palette.textSecondary
-            linkColor: Theme.palette.accent
             font.family: Theme.font.family
             font.pixelSize: Theme.type.body.pixelSize
+        }
+    }
+
+    // Markdown may link images from anywhere; see RemoteRichText.
+    Component {
+        id: markdownNode
+        RemoteRichText {
+            leftPadding: root.pad
+            rightPadding: root.pad
+            topPadding: root.inCard ? Theme.space.sm : 0
+            bottomPadding: root.inCard ? Theme.space.sm : 0
+            source: root.props.text || ""
             onLinkActivated: (link) => root.send("click", link)
         }
     }

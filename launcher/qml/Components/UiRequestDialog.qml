@@ -533,17 +533,13 @@ Item {
             ScrollView {
                 width: parent.width
                 height: Math.min(260, notes.implicitHeight + Theme.space.md)
-                visible: notes.text.length > 0
-                Text {
+                visible: notes.source.length > 0
+                // Release notes may link images; see RemoteRichText.
+                RemoteRichText {
                     id: notes
                     width: parent.width
-                    text: root.request && root.request.updateInfo ? root.request.updateInfo.releaseNotes || "" : ""
-                    textFormat: Text.MarkdownText
-                    wrapMode: Text.Wrap
-                    color: Theme.palette.textSecondary
-                    linkColor: Theme.palette.accent
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    source: root.request && root.request.updateInfo ? root.request.updateInfo.releaseNotes || "" : ""
+                    pixelSize: Theme.type.label.pixelSize
                     onLinkActivated: (link) => Qt.openUrlExternally(link)
                 }
             }

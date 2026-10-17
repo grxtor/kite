@@ -481,29 +481,12 @@ Item {
                     running: visible
                 }
 
-                // A read-only TextEdit, not a Text: the body loads its images
-                // from wherever the author linked them, and Text (Qt 6.11)
-                // crashed the launcher when one failed (a 404, a YouTube page
-                // in an <img>) while another was still loading. TextEdit
-                // loads them its own way and survives it. It has no
-                // linkColor (which never reached these formats anyway); an
-                // HTML body gets a style rule instead.
-                TextEdit {
+                // Not a Text: the body links images from anywhere, and a
+                // failed one could crash Text (see RemoteRichText).
+                RemoteRichText {
                     width: parent.width
-                    readOnly: true
-                    selectByMouse: false
-                    activeFocusOnPress: false
-                    text: {
-                        var body = root.detail ? (root.detail.body || "") : ""
-                        return root.bodyFormat === "html" && body.length > 0
-                               ? "<style>a { color: " + Theme.palette.accent + "; text-decoration: none; }</style>" + body
-                               : body
-                    }
-                    textFormat: root.bodyFormat === "html" ? TextEdit.RichText : TextEdit.MarkdownText
-                    wrapMode: TextEdit.Wrap
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
+                    source: root.detail ? (root.detail.body || "") : ""
+                    format: root.bodyFormat === "html" ? "html" : "markdown"
                     onLinkActivated: (link) => Qt.openUrlExternally(link)
                 }
             }

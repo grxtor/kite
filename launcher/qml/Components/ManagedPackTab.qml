@@ -344,20 +344,15 @@ Item {
                         clip: true
                         ScrollBar.vertical: ScrollBar {}
 
-                        Text {
+                        // A changelog may link images; see RemoteRichText.
+                        RemoteRichText {
                             id: changelog
                             width: parent.width
-                            text: !changelogHost.selected
-                                  ? qsTr("The changelog of the version you pick shows up here.")
-                                  : changelogHost.selected.changelog.length > 0
-                                  ? changelogHost.selected.changelog
-                                  : qsTr("No changelog available for this version.")
-                            textFormat: Text.MarkdownText
-                            wrapMode: Text.Wrap
-                            color: Theme.palette.textSecondary
-                            linkColor: Theme.palette.accent
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.body.pixelSize
+                            source: !changelogHost.selected
+                                    ? qsTr("The changelog of the version you pick shows up here.")
+                                    : changelogHost.selected.changelog.length > 0
+                                    ? changelogHost.selected.changelog
+                                    : qsTr("No changelog available for this version.")
                             onLinkActivated: (link) => root.openChangelogLink(link)
                         }
                     }

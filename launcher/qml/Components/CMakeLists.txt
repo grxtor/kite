@@ -183,6 +183,7 @@ qt_add_qml_module(MeshMC_qml_components
         BackupsTab.qml
         DataPacksTab.qml
         ManagedPackTab.qml
+        RemoteRichText.qml
     RESOURCES
         icons/alert-triangle.svg
         icons/archive.svg
