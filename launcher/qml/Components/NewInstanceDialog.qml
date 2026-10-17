@@ -131,7 +131,13 @@ Dialog {
     parent: Overlay.overlay
     anchors.centerIn: parent
     width: Math.min(860, parent ? parent.width - Theme.space.xxl * 2 : 860)
-    height: Math.min(640, parent ? parent.height - Theme.space.xxl * 2 : 640)
+    // Taller windows get a taller version list (it fills the height), up
+    // to this; a short one scrolls the form.
+    readonly property int maxHeight: 760
+    height: Math.min(root.maxHeight, parent ? parent.height - Theme.space.xxl * 2 : root.maxHeight)
+    // The tabs belong to the title: right under it, not a padding's width
+    // further down like a dialog's body.
+    topPadding: 0
     modal: true
     closePolicy: root.creating ? Popup.NoAutoClose : Popup.CloseOnEscape
     title: root.mode === "import" ? qsTr("Import instance") : qsTr("New instance")
@@ -438,8 +444,17 @@ Dialog {
                 }
             }
 
-            // The last visible version fades into the list's own surface
-            // instead of being cut through mid-row.
+            // The first and last visible versions fade into the list's own
+            // surface instead of being cut through mid-row by its border.
+            ScrollFade {
+                anchors.left: versions.left
+                anchors.right: versions.right
+                anchors.top: versions.top
+                height: Theme.space.lg
+                atTop: true
+                flickable: versions
+                fadeTo: Theme.palette.surfaceSunken
+            }
             ScrollFade {
                 anchors.left: versions.left
                 anchors.right: versions.right
