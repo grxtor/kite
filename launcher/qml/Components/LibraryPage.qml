@@ -211,7 +211,7 @@ Item {
                     onSelectRequested: (id) => root.selectRequested(id)
                     onLaunchRequested: (id) => root.launchRequested(id)
                     onStopRequested: (id) => root.stopRequested(id)
-                    onMenuRequested: (id, running, name, iconKey, group) => instanceMenu.openFor(id, running, name, iconKey, group)
+                    onMenuRequested: (id, running, name, iconKey, group, anchor) => instanceMenu.openFor(id, running, name, iconKey, group, anchor)
                 }
             }
 
@@ -257,7 +257,7 @@ Item {
         property string gameFolder
         property string modsFolder
 
-        function openFor(id, running, name, iconKey, group) {
+        function openFor(id, running, name, iconKey, group, anchor) {
             var folders = root.library ? root.library.folders(id) : ({})
             gameFolder = folders.game && folders.game !== folders.instance ? folders.game : ""
             modsFolder = folders.mods || ""
@@ -280,7 +280,14 @@ Item {
                     item.icon.source = Icons.url("sliders")
                 }
             }
-            popup()
+            if (!anchor) {
+                popup()
+                return
+            }
+            // Under the ⋯ button and right-aligned to it, like the instance
+            // page's own ⋯, and held there while the menu settles its width.
+            popup(anchor, anchor.width - instanceMenu.width, anchor.height + Theme.space.xs)
+            instanceMenu.x = Qt.binding(() => anchor.width - instanceMenu.width)
         }
 
         MenuItem {

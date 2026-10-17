@@ -45,7 +45,9 @@ Item {
     signal doubleClicked()
     signal playRequested()
     signal stopRequested()
-    signal menuRequested()
+    // @p anchor: the ⋯ button when that asked, so the menu opens under it;
+    // null for a right-click or the Menu key, which open at the pointer.
+    signal menuRequested(Item anchor)
 
     readonly property bool hovered: forceHovered || hoverHandler.hovered
     readonly property bool launching: launchStatus.length > 0
@@ -67,7 +69,7 @@ Item {
     activeFocusOnTab: true
     Keys.onReturnPressed: root.playRequested()
     Keys.onSpacePressed: root.clicked()
-    Keys.onMenuPressed: root.menuRequested()
+    Keys.onMenuPressed: root.menuRequested(null)
 
     Accessible.role: Accessible.ListItem
     Accessible.name: root.name
@@ -99,7 +101,7 @@ Item {
         TapHandler {
             acceptedButtons: Qt.RightButton
             gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: { root.forceActiveFocus(); root.clicked(); root.menuRequested() }
+            onTapped: { root.forceActiveFocus(); root.clicked(); root.menuRequested(null) }
         }
 
         RowLayout {
@@ -206,6 +208,7 @@ Item {
                 Layout.preferredHeight: root.badgeSize
 
                 IconButton {
+                    id: moreButton
                     anchors.right: playButton.left
                     anchors.rightMargin: Theme.space.xs
                     anchors.verticalCenter: parent.verticalCenter
@@ -216,7 +219,7 @@ Item {
                     visible: opacity > 0
                     focusPolicy: Qt.NoFocus
                     Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
-                    onClicked: root.menuRequested()
+                    onClicked: root.menuRequested(moreButton)
                 }
 
                 // Where Play sits, across the whole slot.

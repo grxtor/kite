@@ -42,7 +42,7 @@ Column {
     signal selectRequested(string id)
     signal launchRequested(string id)
     signal stopRequested(string id)
-    signal menuRequested(string id, bool running, string name, string iconKey, string group)
+    signal menuRequested(string id, bool running, string name, string iconKey, string group, Item anchor)
     signal toggleRequested()
 
     // Rename/delete, offered only for a named group the page can manage.
@@ -341,9 +341,9 @@ Column {
                     onClicked: root.selectRequested(instanceId)
                     onPlayRequested: root.launchRequested(instanceId)
                     onStopRequested: root.stopRequested(instanceId)
-                    onMenuRequested: {
+                    onMenuRequested: (anchor) => {
                         root.selectRequested(instanceId)
-                        root.menuRequested(instanceId, isRunning, name, iconKey, root.group)
+                        root.menuRequested(instanceId, isRunning, name, iconKey, root.group, anchor)
                     }
                 }
             }
@@ -371,9 +371,9 @@ Column {
                     onClicked: root.selectRequested(instanceId)
                     onPlayRequested: root.launchRequested(instanceId)
                     onStopRequested: root.stopRequested(instanceId)
-                    onMenuRequested: {
+                    onMenuRequested: (anchor) => {
                         root.selectRequested(instanceId)
-                        root.menuRequested(instanceId, isRunning, name, iconKey, root.group)
+                        root.menuRequested(instanceId, isRunning, name, iconKey, root.group, anchor)
                     }
                 }
             }

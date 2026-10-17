@@ -33,7 +33,9 @@ T.Menu {
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
                              implicitContentHeight + topPadding + bottomPadding)
 
-    margins: 0
+    // Never flush against the window's edge: a menu opened near it is
+    // pushed in by this much.
+    margins: Theme.space.sm
     overlap: 1
     padding: Theme.space.xxs
 
