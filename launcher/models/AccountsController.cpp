@@ -421,6 +421,10 @@ QObject* AccountsController::skins(int row)
 		m_skins = new SkinsController(account, skinsDirectory(), this);
 		m_skinsAccountId = accountId;
 	}
+	/* The game's default skins, for the editor's own section: whichever
+	 * are not in the cache yet, tried again on every open (say, once the
+	 * network is back). */
+	DefaultSkins::instance()->fetchGallery();
 	return m_skins;
 }
 

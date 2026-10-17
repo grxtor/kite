@@ -389,6 +389,119 @@ class QmlModuleTest : public QObject
 		QVERIFY(sw->property("checked").toBool());
 	}
 
+	/* The skin editor's arm width radios show what the skin says, also
+	 * after a click: a click only asks the library for the change (refused
+	 * first, then taken), and on a default skin it picks that skin's other
+	 * texture instead of asking the library at all. */
+	void skinArmsRadiosFollowTheSkin()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(
+			"import QtQuick\n"
+			"import QtQuick.Controls\n"
+			"import MeshMC.Components\n"
+			"ApplicationWindow {\n"
+			"  width: 1000; height: 900\n"
+			"  property alias editor: editor\n"
+			"  property alias library: library\n"
+			"  QtObject { id: library\n"
+			"    property bool accept: false\n"
+			"    property int asked: 0\n"
+			"    property var skins: [{ name: 'Hero', path: '/hero.png', textureUrl: '',\n"
+			"      thumbnailUrl: '', bodyUrl: '', slim: false, worn: true }]\n"
+			"    property var defaultSkins: [{ name: 'Alex', slim: true, variants: [\n"
+			"      { name: 'Alex', path: '/alex-classic.png', slim: false, ready: true, worn: false },\n"
+			"      { name: 'Alex', path: '/alex-slim.png', slim: true, ready: true, worn: false } ] }]\n"
+			"    property bool defaultSkinsLoading: false\n"
+			"    function setSlim(name, slim) {\n"
+			"      asked++\n"
+			"      if (accept) skins = [Object.assign({}, skins[0], { slim: slim })]\n"
+			"    }\n"
+			"    function markWorn(name) {}\n"
+			"  }\n"
+			"  QtObject { id: accountsStub\n"
+			"    signal defaultSkinsRevisionChanged()\n"
+			"    property var accounts: null\n"
+			"    property string skinDemoPose: ''\n"
+			"    function accountSkinInfo(row) { return { valid: true, slim: false,\n"
+			"      hasSkin: false, currentCapeId: '', currentCapeUrl: '', capes: [] } }\n"
+			"    function skins(row) { return library }\n"
+			"  }\n"
+			"  SkinCapeEditor { id: editor; controller: accountsStub; row: -1 }\n"
+			"}\n",
+			QUrl(QStringLiteral("qrc:/test/SkinArms.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		std::unique_ptr<QObject> root(component.create());
+		QVERIFY2(root, qPrintable(component.errorString()));
+		auto* window = qobject_cast<QQuickWindow*>(root.get());
+		QVERIFY(window);
+		window->show();
+		QObject* editor = root->property("editor").value<QObject*>();
+		QObject* library = root->property("library").value<QObject*>();
+		QVERIFY(editor && library);
+		QVERIFY(QMetaObject::invokeMethod(editor, "open"));
+		QTRY_VERIFY(editor->property("opened").toBool());
+		// The review row (-1) opens on its first skin.
+		QCOMPARE(editor->property("selectedName").toString(), QStringLiteral("Hero"));
+
+		QQuickItem* classic = nullptr;
+		QQuickItem* slim = nullptr;
+		std::function<void(QQuickItem*)> find = [&](QQuickItem* item) {
+			for (const QMetaObject* mo = item->metaObject(); mo;
+				 mo = mo->superClass()) {
+				if (QByteArray(mo->className()) == "QQuickRadioButton") {
+					const QString text = item->property("text").toString();
+					if (text == QStringLiteral("Classic"))
+						classic = item;
+					else if (text == QStringLiteral("Slim"))
+						slim = item;
+					break;
+				}
+			}
+			for (QQuickItem* child : item->childItems())
+				find(child);
+		};
+		QQuickItem* top = window->contentItem();
+		while (top->parentItem())
+			top = top->parentItem();
+		find(top);
+		QVERIFY(classic && slim);
+		auto shows = [&](bool wantSlim) {
+			return classic->property("checked").toBool() == !wantSlim &&
+				   slim->property("checked").toBool() == wantSlim;
+		};
+		QVERIFY(shows(false));
+
+		// Refused: the radios stay on what the skin says.
+		QVERIFY(QMetaObject::invokeMethod(slim, "click"));
+		QCOMPARE(library->property("asked").toInt(), 1);
+		QVERIFY(shows(false));
+
+		// Taken: they follow the skin there, and back.
+		library->setProperty("accept", true);
+		QVERIFY(QMetaObject::invokeMethod(slim, "click"));
+		QVERIFY(shows(true));
+		QVERIFY(QMetaObject::invokeMethod(classic, "click"));
+		QVERIFY(shows(false));
+		QCOMPARE(library->property("asked").toInt(), 3);
+
+		// A default skin: shown with its own width (Alex is slim), and the
+		// radios swap its texture, the library left alone.
+		evaluate(editor, QStringLiteral("selectDefault(skins.defaultSkins[0])"));
+		auto selectedPath = [&] {
+			return evaluate(editor, QStringLiteral("selected ? selected.path : ''"))
+				.toString();
+		};
+		QCOMPARE(selectedPath(), QStringLiteral("/alex-slim.png"));
+		QVERIFY(shows(true));
+		QVERIFY(QMetaObject::invokeMethod(classic, "click"));
+		QCOMPARE(selectedPath(), QStringLiteral("/alex-classic.png"));
+		QVERIFY(shows(false));
+		QCOMPARE(library->property("asked").toInt(), 3);
+	}
+
 	/* QmlShell.news reaches the Home page's welcome card. */
 	void homeShowsTheNewestHeadline()
 	{

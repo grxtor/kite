@@ -148,17 +148,25 @@ bool SkinLibrary::adoptAccountSkin(QList<SkinEntry>& entries) const
 		return false;
 	}
 
+	const SkinEntry::Arms wornArms = armsFromVariant(worn.variant);
 	for (SkinEntry& existing : entries) {
 		if (existing.textureUrl() != worn.url) {
 			continue;
 		}
-		/* Already in the library. The file is right, but the cape and arm
-		 * width may have been changed elsewhere (in game, or on another
-		 * machine), so those come from the profile every time. */
+		/* Already in the library. The file is right, but the cape may have
+		 * been changed elsewhere (in game, or on another machine), so it
+		 * comes from the profile every time. The arm width only when the
+		 * profile's has changed since the library last saw it: every save
+		 * of the index rescans, so taking it each time would undo a width
+		 * the user has just picked here and not worn yet. */
 		existing.setCapeId(
 			m_account->accountData()->minecraftProfile.currentCape);
-		existing.setArms(armsFromVariant(worn.variant));
-		return false;
+		if (existing.wornArms() == wornArms) {
+			return false;
+		}
+		existing.setArms(wornArms);
+		existing.setWornArms(wornArms);
+		return true;
 	}
 
 	/* Not in the library yet -- save it under the profile name, which is
@@ -182,7 +190,8 @@ bool SkinLibrary::adoptAccountSkin(QList<SkinEntry>& entries) const
 	}
 
 	SkinEntry adopted(path);
-	adopted.setArms(armsFromVariant(worn.variant));
+	adopted.setArms(wornArms);
+	adopted.setWornArms(wornArms);
 	adopted.setCapeId(m_account->accountData()->minecraftProfile.currentCape);
 	adopted.setTextureUrl(worn.url);
 	entries.append(adopted);

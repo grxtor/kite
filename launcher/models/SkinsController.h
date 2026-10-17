@@ -53,6 +53,18 @@ class SkinsController : public QObject
 	 * now). */
 	Q_PROPERTY(QVariantList skins READ skins NOTIFY skinsChanged)
 	Q_PROPERTY(QString directory READ directory CONSTANT)
+	/* The game's nine default skins (DefaultSkins' gallery), apart from
+	 * the user's own: one map per character with name, slim (the arm width
+	 * it is drawn with by default) and variants -- [classic, slim], each a
+	 * map like a skin above (path, textureUrl, thumbnailUrl, bodyUrl, slim,
+	 * worn) plus ready, false until it has been downloaded (the urls are
+	 * empty until then). AccountsController::skins() starts the downloads
+	 * each time the editor opens (DefaultSkins::fetchGallery()). */
+	Q_PROPERTY(QVariantList defaultSkins READ defaultSkins NOTIFY
+				   defaultSkinsChanged)
+	/// Whether any default skin is still downloading.
+	Q_PROPERTY(bool defaultSkinsLoading READ defaultSkinsLoading NOTIFY
+				   defaultSkinsChanged)
 
   public:
 	/* @p directory is the skins folder; it is created if missing.
@@ -63,6 +75,8 @@ class SkinsController : public QObject
 
 	QVariantList skins() const;
 	QString directory() const;
+	QVariantList defaultSkins() const;
+	bool defaultSkinsLoading() const;
 
 	/* Copies a PNG (a path or a file url) into the library. Returns an
 	 * empty string, or why not, in words. */
@@ -98,8 +112,12 @@ class SkinsController : public QObject
 
   signals:
 	void skinsChanged();
+	void defaultSkinsChanged();
 
   private:
+	/// Whether the account wears the texture at @p url.
+	bool isWorn(const QString& url) const;
+
 	MinecraftAccountPtr m_account;
 	std::unique_ptr<SkinLibrary> m_library;
 };

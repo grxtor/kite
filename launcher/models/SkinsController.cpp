@@ -29,6 +29,7 @@
 
 #include "DesktopServices.h"
 #include "core/LauncherContext.h"
+#include "minecraft/skins/DefaultSkins.h"
 #include "minecraft/skins/ProfileSkinImport.h"
 #include "minecraft/skins/SkinEntry.h"
 #include "minecraft/skins/SkinLibrary.h"
@@ -174,6 +175,29 @@ namespace
 		shared_qobject_ptr<ProfileSkinImport> m_import;
 	};
 
+	/* The image urls of the skin PNG at @p path drawn with @p slim arms:
+	 * its normalised texture (for a 3D preview), its flat sprite and its
+	 * front view (for a flat one), through AccountFaceProvider. */
+	QVariantMap imageUrls(const QString& path, bool slim)
+	{
+		// Percent-encoded whole, slashes included, so a path with spaces or
+		// '#' survives the trip through an image:// url intact.
+		const QString encoded =
+			QString::fromLatin1(QUrl::toPercentEncoding(path));
+		return QVariantMap{
+			{ QStringLiteral("textureUrl"),
+			  QStringLiteral("image://accountface/skinfile/") + encoded },
+			{ QStringLiteral("thumbnailUrl"),
+			  (slim ? QStringLiteral("image://accountface/skinthumbslim/")
+					: QStringLiteral("image://accountface/skinthumb/")) +
+				  encoded },
+			{ QStringLiteral("bodyUrl"),
+			  (slim ? QStringLiteral("image://accountface/skinbodyslim/")
+					: QStringLiteral("image://accountface/skinbody/")) +
+				  encoded },
+		};
+	}
+
 	QObject* watch(Task* task, const QString& title, QObject* parent)
 	{
 		auto* watcher = new TaskWatcher(Task::Ptr(task), parent);
@@ -197,6 +221,15 @@ SkinsController::SkinsController(MinecraftAccountPtr account,
 			&SkinsController::skinsChanged);
 	connect(library, &QAbstractItemModel::dataChanged, this,
 			&SkinsController::skinsChanged);
+
+	connect(DefaultSkins::instance(), &DefaultSkins::galleryChanged, this,
+			&SkinsController::defaultSkinsChanged);
+	/* Which default skin is worn follows the profile (a refresh after
+	 * wearing one). */
+	if (m_account) {
+		connect(m_account.get(), &MinecraftAccount::changed, this,
+				&SkinsController::defaultSkinsChanged);
+	}
 }
 
 SkinsController::~SkinsController() = default;
@@ -213,31 +246,61 @@ QVariantList SkinsController::skins() const
 		if (!entry) {
 			continue;
 		}
-		// Percent-encoded whole, slashes included, so a path with spaces or
-		// '#' survives the trip through an image:// url intact.
-		const QString encoded =
-			QString::fromLatin1(QUrl::toPercentEncoding(entry->path()));
+		const bool slim = entry->arms() == SkinEntry::Arms::Slim;
+		QVariantMap skin = imageUrls(entry->path(), slim);
+		skin.insert(QStringLiteral("name"), name);
+		skin.insert(QStringLiteral("path"), entry->path());
+		skin.insert(QStringLiteral("url"), QUrl::fromLocalFile(entry->path()));
+		skin.insert(QStringLiteral("slim"), slim);
+		skin.insert(QStringLiteral("worn"), row == worn);
+		list.append(skin);
+	}
+	return list;
+}
+
+QVariantList SkinsController::defaultSkins() const
+{
+	QVariantList list;
+	for (const DefaultSkins::Character& character :
+		 DefaultSkins::characters()) {
+		QVariantList variants;
+		for (const bool slim : { false, true }) {
+			const QString path = DefaultSkins::galleryPath(character.name, slim);
+			const bool ready = QFileInfo::exists(path);
+			QVariantMap variant = ready ? imageUrls(path, slim) : QVariantMap();
+			variant.insert(QStringLiteral("name"), character.name);
+			variant.insert(QStringLiteral("path"), path);
+			variant.insert(QStringLiteral("slim"), slim);
+			variant.insert(QStringLiteral("ready"), ready);
+			variant.insert(
+				QStringLiteral("worn"),
+				isWorn(DefaultSkins::galleryUrl(character.name, slim)));
+			variants.append(variant);
+		}
 		list.append(QVariantMap{
-			{ QStringLiteral("name"), name },
-			{ QStringLiteral("path"), entry->path() },
-			{ QStringLiteral("url"), QUrl::fromLocalFile(entry->path()) },
-			{ QStringLiteral("textureUrl"),
-			  QStringLiteral("image://accountface/skinfile/") + encoded },
-			{ QStringLiteral("thumbnailUrl"),
-			  (entry->arms() == SkinEntry::Arms::Slim
-				   ? QStringLiteral("image://accountface/skinthumbslim/")
-				   : QStringLiteral("image://accountface/skinthumb/")) +
-				  encoded },
-			{ QStringLiteral("bodyUrl"),
-			  (entry->arms() == SkinEntry::Arms::Slim
-				   ? QStringLiteral("image://accountface/skinbodyslim/")
-				   : QStringLiteral("image://accountface/skinbody/")) +
-				  encoded },
-			{ QStringLiteral("slim"), entry->arms() == SkinEntry::Arms::Slim },
-			{ QStringLiteral("worn"), row == worn },
+			{ QStringLiteral("name"), character.name },
+			{ QStringLiteral("slim"), character.slim },
+			{ QStringLiteral("variants"), variants },
 		});
 	}
 	return list;
+}
+
+bool SkinsController::defaultSkinsLoading() const
+{
+	return DefaultSkins::instance()->galleryLoading();
+}
+
+bool SkinsController::isWorn(const QString& url) const
+{
+	if (!m_account || !m_account->accountData()) {
+		return false;
+	}
+	const Skin& worn = m_account->accountData()->minecraftProfile.skin;
+	/* By the texture's hash: the profile hands its url out over plain
+	 * http as often as not. */
+	return !worn.url.isEmpty() &&
+		   QUrl(worn.url).fileName() == QUrl(url).fileName();
 }
 
 QString SkinsController::directory() const

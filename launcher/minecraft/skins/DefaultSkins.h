@@ -20,7 +20,9 @@
 #pragma once
 
 #include <QImage>
+#include <QList>
 #include <QObject>
+#include <QSet>
 #include <QString>
 
 #include "minecraft/auth/MinecraftAccount.h"
@@ -43,6 +45,13 @@ class QNetworkReply;
  * read first. Until they are here -- no cache yet and no network --
  * texture() is null and callers keep their own fallback; loaded() says
  * when to look again.
+ *
+ * Separately, the gallery: the nine default skins the game ships since
+ * 1.19.3 (Steve, Alex, Ari, Efe, Kai, Makena, Noor, Sunny, Zuri), each drawn
+ * for both arm widths, which the skin editor offers next to the user's own
+ * skins as the official launcher does. Also Mojang's, also not shipped:
+ * fetched on demand from textures.minecraft.net (fetchGallery()) into
+ * cache/skins/default/<texture hash>.png and read from there on.
  *
  * Core: QtCore/QtGui/QtNetwork only, no QtWidgets, no ui/.
  */
@@ -84,14 +93,43 @@ class DefaultSkins : public QObject
 	/// For tests: puts @p image in place as if it had been downloaded.
 	void setTexture(bool slim, const QImage& image);
 
+	/// The textures.minecraft.net address of the Steve (classic) or Alex
+	/// (slim) default above -- the MHF_Steve/MHF_Alex skins, which the
+	/// profile parser also hands out for a player without a skin.
+	static QString fallbackUrl(bool slim);
+
+	/// One of the gallery's nine characters.
+	struct Character {
+		QString name;
+		/// The arm width the game draws it with by default.
+		bool slim = false;
+	};
+	/// The nine, in the order the game lists them.
+	static QList<Character> characters();
+	/// The textures.minecraft.net address of @p name drawn with slim or
+	/// classic arms; empty for a name that is not one of characters().
+	static QString galleryUrl(const QString& name, bool slim);
+	/// Where that texture is kept once downloaded (it exists from then on),
+	/// under the data folder, named by its hash; empty for an unknown name.
+	static QString galleryPath(const QString& name, bool slim);
+	/// Starts downloading whichever gallery textures the cache does not have
+	/// yet; galleryChanged() as each one lands or fails. A no-op for those
+	/// already on their way, and without a LauncherContext (tests).
+	void fetchGallery();
+	/// Whether any gallery download is still running.
+	bool galleryLoading() const;
+
   signals:
 	/// A texture arrived; anything drawn without it should be redrawn.
 	void loaded();
+	/// A gallery download started, landed or failed.
+	void galleryChanged();
 
   private:
 	explicit DefaultSkins(QObject* parent = nullptr);
 	void fetch(bool slim);
 	void onFinished(QNetworkReply* reply, bool slim);
+	void onGalleryFinished(QNetworkReply* reply, const QString& path);
 	/// Where the downloaded texture is kept, under the data folder.
 	static QString cachePath(bool slim);
 	bool loadCached(bool slim);
@@ -100,4 +138,6 @@ class DefaultSkins : public QObject
 	QImage m_slim;
 	bool m_fetchingClassic = false;
 	bool m_fetchingSlim = false;
+	/// galleryPath()s being downloaded right now.
+	QSet<QString> m_galleryFetching;
 };

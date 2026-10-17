@@ -17,6 +17,10 @@ import MeshMC.Theme
  *    over the launcher's skins folder): add a skin from a file, a link or
  *    another player's name, rename, delete, open the folder, set the arm
  *    width, and wear the selected one;
+ *  - the game's nine default skins under the user's own, as the official
+ *    launcher offers them (SkinsController.defaultSkins, downloaded on
+ *    first use): picked, previewed and worn the same way, the arm width
+ *    choosing which of its two textures;
  *  - the account's capes.
  * Uploads go through AccountsController (changeSkin/resetSkin/changeCape),
  * the same services the widget dialog used.
@@ -52,11 +56,12 @@ Dialog {
     property bool catAvailable: false
 
     // Sizes: the dialog, the preview column (a 1:2 player plus room to
-    // turn), the library box (two rows of tiles), and one skin tile.
+    // turn), the library box (a row of the user's tiles and a row of the
+    // default ones), and one skin tile.
     readonly property int preferredWidth: 840
     readonly property int previewWidth: 220
     readonly property int previewHeight: 300
-    readonly property int libraryHeight: 260
+    readonly property int libraryHeight: 320
     readonly property int tileWidth: 96
     readonly property int tileHeight: 120
     readonly property int spriteSize: 72
@@ -77,14 +82,46 @@ Dialog {
     // The account's skin library; null until opened on a real row.
     property var skins: null
     readonly property var skinList: root.skins ? root.skins.skins : []
-    // The library skin picked for the preview and "Wear", by name; empty
-    // shows what the account wears now.
+    readonly property var defaultList: root.skins ? root.skins.defaultSkins : []
+    // The skin picked for the preview and "Wear": a library skin by name,
+    // or a default one by name with the arm width it is shown with. Both
+    // empty shows what the account wears now.
     property string selectedName: ""
+    property string selectedDefault: ""
+    property bool defaultSlim: false
     readonly property var selected: {
+        if (root.selectedDefault.length > 0) {
+            for (var d = 0; d < root.defaultList.length; ++d)
+                if (root.defaultList[d].name === root.selectedDefault)
+                    return root.defaultList[d].variants[root.defaultSlim ? 1 : 0]
+            return null
+        }
         for (var i = 0; i < root.skinList.length; ++i)
             if (root.skinList[i].name === root.selectedName)
                 return root.skinList[i]
         return null
+    }
+    readonly property bool selectedReady: !!root.selected && root.selected.ready !== false
+    function selectLibrary(name) {
+        root.selectedDefault = ""
+        root.selectedName = root.selectedName === name ? "" : name
+    }
+    function selectDefault(character) {
+        root.selectedName = ""
+        if (root.selectedDefault === character.name) {
+            root.selectedDefault = ""
+            return
+        }
+        root.defaultSlim = character.slim
+        root.selectedDefault = character.name
+    }
+    // Whether any default skin is here, and whether more are on the way.
+    readonly property bool defaultsLoading: !!root.skins && root.skins.defaultSkinsLoading
+    readonly property bool anyDefaultReady: {
+        for (var i = 0; i < root.defaultList.length; ++i)
+            if (root.defaultList[i].variants[0].ready || root.defaultList[i].variants[1].ready)
+                return true
+        return false
     }
 
     // The cape on the preview: the account's current one.
@@ -109,6 +146,7 @@ Dialog {
         root.skins = root.controller ? root.controller.skins(root.row) : null
         // The review demo (row -1) shows its first skin straight away.
         root.selectedName = root.row === -1 && root.skinList.length > 0 ? root.skinList[0].name : ""
+        root.selectedDefault = ""
         root.watcher = null
         root.say("", false)
         root.showElytra = false
@@ -119,6 +157,11 @@ Dialog {
         if (pose === "cape" || pose === "elytra") {
             root.showElytra = pose === "elytra"
             Qt.callLater(preview.showBack)
+        }
+        // "accounts-demo=default": Alex from the default skins, scrolled to.
+        if (pose === "default" && root.defaultList.length > 1) {
+            root.selectDefault(root.defaultList[1])
+            Qt.callLater(skinGrid.positionViewAtEnd)
         }
     }
 
@@ -162,92 +205,25 @@ Dialog {
 
     function wearSelected() {
         var skin = root.selected
-        if (!skin)
+        if (!root.selectedReady)
             return
+        // A default skin is not in the library, so there is nothing to
+        // mark: the account's own refresh says it is worn.
+        var fromLibrary = root.selectedDefault.length === 0
         root.run(root.controller.changeSkin(root.row, skin.path, skin.slim),
                  qsTr("The skin could not be uploaded."),
                  function(ok) {
-                     if (ok && root.skins)
+                     if (ok && fromLibrary && root.skins)
                          root.skins.markWorn(skin.name)
                  })
     }
 
-    // One skin in the library: its sprite, its name, and a mark on the one
-    // the account wears. Click selects it; right click, or the ⋯ that shows
-    // on hover (over the sprite, so only while pointed at), opens actions.
-    component SkinTile: AbstractButton {
-        id: tile
-        required property var modelData
-        readonly property bool isSelected: root.selectedName === tile.modelData.name
-
-        implicitWidth: root.tileWidth
-        implicitHeight: root.tileHeight
-        hoverEnabled: true
-        Accessible.role: Accessible.RadioButton
-        Accessible.name: tile.modelData.name
-        Accessible.checked: tile.isSelected
-        onClicked: root.selectedName = tile.isSelected ? "" : tile.modelData.name
-
-        background: Rectangle {
-            radius: Theme.radius.md
-            color: tile.isSelected ? Theme.palette.accentSubtle
-                 : tile.hovered ? Theme.palette.hoverOverlay : "transparent"
-            border.width: 1
-            border.color: tile.isSelected ? Theme.palette.accent : Theme.palette.border
-            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-        }
-        contentItem: Item {
-            Image {
-                id: sprite
-                anchors.top: parent.top
-                anchors.topMargin: Theme.space.sm
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.spriteSize
-                height: root.spriteSize
-                source: tile.modelData.thumbnailUrl
-                sourceSize: Qt.size(root.spriteSize, root.spriteSize)
-                smooth: false
-                fillMode: Image.PreserveAspectFit
-            }
-            Text {
-                anchors.top: sprite.bottom
-                anchors.topMargin: Theme.space.xs
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.margins: Theme.space.xs
-                horizontalAlignment: Text.AlignHCenter
-                text: tile.modelData.name
-                elide: Text.ElideRight
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
-            }
-            MeshIcon {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.margins: Theme.space.xs
-                visible: tile.modelData.worn
-                iconName: "check"
-                size: Theme.icon.sm
-                color: Theme.palette.accent
-            }
-            IconButton {
-                id: moreButton
-                anchors.top: parent.top
-                anchors.right: parent.right
-                anchors.margins: Theme.space.xxs
-                size: Theme.control.heightSm
-                visible: tile.hovered || moreButton.hovered
-                iconName: "more"
-                tip: qsTr("More")
-                onClicked: skinMenu.openFor(tile.modelData.name, tile.modelData.worn)
-            }
-        }
-
-        TapHandler {
-            acceptedButtons: Qt.RightButton
-            onTapped: skinMenu.openFor(tile.modelData.name, tile.modelData.worn)
-        }
+    // A section's name inside the skin library box.
+    component LibrarySectionLabel: Text {
+        color: Theme.palette.textSecondary
+        font.family: Theme.font.family
+        font.pixelSize: Theme.type.label.pixelSize
+        font.weight: Theme.type.label.weight
     }
 
     contentItem: Item {
@@ -291,10 +267,10 @@ Dialog {
                                 anchors.fill: parent
                                 anchors.margins: Theme.space.md
                                 catAvailable: root.catAvailable
-                                skinTexture: root.selected ? root.selected.textureUrl
+                                skinTexture: root.selected ? root.selected.textureUrl || ""
                                              : root.info.hasSkin && root.accountId.length > 0
                                                ? "image://accountface/skin/" + root.accountId + "?rev=" + root.rev : ""
-                                flatSource: root.selected ? root.selected.bodyUrl
+                                flatSource: root.selected ? root.selected.bodyUrl || ""
                                             : root.accountId.length > 0
                                               ? "image://accountface/body/" + root.accountId + "?rev=" + root.rev : ""
                                 slim: root.selected ? root.selected.slim : root.info.slim
@@ -333,7 +309,7 @@ Dialog {
                             spacing: Theme.space.sm
                             Text {
                                 Layout.fillWidth: true
-                                text: qsTr("Your skins")
+                                text: qsTr("Skins")
                                 color: Theme.palette.textPrimary
                                 font.family: Theme.font.family
                                 font.pixelSize: Theme.type.title.pixelSize
@@ -361,18 +337,8 @@ Dialog {
                             radius: Theme.radius.lg
                             color: Theme.palette.surfaceSunken
 
-                            Text {
-                                anchors.centerIn: parent
-                                width: parent.width - Theme.space.xl * 2
-                                visible: root.skinList.length === 0
-                                horizontalAlignment: Text.AlignHCenter
-                                text: qsTr("No skins here yet. Add one from a file, a link or a player's name.")
-                                wrapMode: Text.Wrap
-                                color: Theme.palette.textTertiary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
-                            }
-
+                            // The user's skins, then the game's default ones
+                            // in the same scrolling box, as two sections.
                             GridView {
                                 id: skinGrid
                                 anchors.fill: parent
@@ -382,7 +348,79 @@ Dialog {
                                 cellHeight: root.tileHeight + Theme.space.sm
                                 model: root.skinList
                                 ScrollBar.vertical: ScrollBar {}
-                                delegate: SkinTile {}
+                                header: Column {
+                                    width: skinGrid.width
+                                    bottomPadding: Theme.space.sm
+                                    spacing: Theme.space.sm
+                                    LibrarySectionLabel { text: qsTr("Your skins") }
+                                    Text {
+                                        width: parent.width
+                                        visible: root.skinList.length === 0
+                                        text: qsTr("No skins here yet. Add one from a file, a link or a player's name.")
+                                        wrapMode: Text.Wrap
+                                        color: Theme.palette.textTertiary
+                                        font.family: Theme.font.family
+                                        font.pixelSize: Theme.type.label.pixelSize
+                                    }
+                                }
+                                delegate: SkinTile {
+                                    required property var modelData
+                                    width: root.tileWidth
+                                    height: root.tileHeight
+                                    spriteSize: root.spriteSize
+                                    name: modelData.name
+                                    spriteUrl: modelData.thumbnailUrl
+                                    worn: modelData.worn
+                                    selected: root.selectedDefault.length === 0 && root.selectedName === modelData.name
+                                    menuEnabled: true
+                                    onClicked: root.selectLibrary(modelData.name)
+                                    onMenuRequested: skinMenu.openFor(modelData.name, modelData.worn)
+                                }
+                                footer: Column {
+                                    width: skinGrid.width
+                                    topPadding: Theme.space.md
+                                    spacing: Theme.space.sm
+                                    Row {
+                                        spacing: Theme.space.sm
+                                        LibrarySectionLabel {
+                                            id: defaultsLabel
+                                            text: qsTr("Default skins")
+                                        }
+                                        Text {
+                                            anchors.baseline: defaultsLabel.baseline
+                                            visible: root.defaultsLoading || !root.anyDefaultReady
+                                            text: root.defaultsLoading ? qsTr("Downloading…")
+                                                                       : qsTr("They download when you are online.")
+                                            color: Theme.palette.textTertiary
+                                            font.family: Theme.font.family
+                                            font.pixelSize: Theme.type.caption.pixelSize
+                                        }
+                                    }
+                                    Flow {
+                                        width: parent.width
+                                        spacing: Theme.space.sm
+                                        Repeater {
+                                            model: root.defaultList
+                                            delegate: SkinTile {
+                                                id: defaultTile
+                                                required property var modelData
+                                                readonly property bool isSelected: root.selectedDefault === modelData.name
+                                                // Drawn with its own arm width, or the one
+                                                // picked for it while selected.
+                                                readonly property var shown: modelData.variants[(defaultTile.isSelected ? root.defaultSlim : modelData.slim) ? 1 : 0]
+                                                width: root.tileWidth
+                                                height: root.tileHeight
+                                                spriteSize: root.spriteSize
+                                                name: modelData.name
+                                                spriteUrl: defaultTile.shown.thumbnailUrl || ""
+                                                ready: defaultTile.shown.ready
+                                                worn: modelData.variants[0].worn || modelData.variants[1].worn
+                                                selected: defaultTile.isSelected
+                                                onClicked: root.selectDefault(modelData)
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             ScrollFade {
                                 anchors.left: parent.left
@@ -424,8 +462,14 @@ Dialog {
                                     autoExclusive: false
                                     checked: armsRadio.current
                                     onClicked: {
-                                        if (!armsRadio.current)
-                                            root.skins.setSlim(root.selectedName, modelData.slim)
+                                        // A default skin swaps to its other
+                                        // texture; a library one records it.
+                                        if (!armsRadio.current) {
+                                            if (root.selectedDefault.length > 0)
+                                                root.defaultSlim = modelData.slim
+                                            else
+                                                root.skins.setSlim(root.selectedName, modelData.slim)
+                                        }
                                         armsRadio.checked = Qt.binding(() => armsRadio.current)
                                     }
                                 }
@@ -440,7 +484,7 @@ Dialog {
                             Button {
                                 highlighted: true
                                 text: qsTr("Wear this skin")
-                                enabled: !!root.selected && !root.busy
+                                enabled: root.selectedReady && !root.busy
                                 onClicked: root.wearSelected()
                             }
                         }

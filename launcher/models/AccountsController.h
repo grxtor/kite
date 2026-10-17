@@ -143,7 +143,8 @@ class AccountsController : public QObject
 	/*!
 	 * The demo editor's starting view, from the route's
 	 * "accounts-demo=<pose>" step: "cape" shows the player from behind,
-	 * "elytra" also puts the elytra on; anything else is the front view.
+	 * "elytra" also puts the elytra on, "default" picks a default skin
+	 * (Alex) and scrolls to it; anything else is the front view.
 	 * Empty when skinDemoRequested() is false.
 	 */
 	QString skinDemoPose() const;
@@ -189,7 +190,8 @@ class AccountsController : public QObject
 	 * The skin library (SkinsController over the launcher's SkinsDir) for
 	 * row @p row's account: its skins, imports, rename and delete. One is
 	 * kept at a time; asking for another row replaces it. Null for a row
-	 * out of range.
+	 * out of range. Also starts downloading whichever of the game's default
+	 * skins are not cached yet (SkinsController::defaultSkins).
 	 */
 	Q_INVOKABLE QObject* skins(int row);
 

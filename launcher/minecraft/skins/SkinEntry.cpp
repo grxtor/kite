@@ -312,6 +312,14 @@ SkinEntry::SkinEntry(const QDir& libraryDir, const QJsonObject& record)
 		QLatin1String("SLIM")) {
 		m_arms = Arms::Slim;
 	}
+	/* Indexes written before "wornModel" kept the worn skin's width in step
+	 * with the profile on every rescan, so its own width is what was worn. */
+	const QString wornModel =
+		record.value(QStringLiteral("wornModel")).toString();
+	m_wornArms = wornModel.isEmpty()
+					 ? m_arms
+					 : (wornModel == QLatin1String("SLIM") ? Arms::Slim
+														   : Arms::Classic);
 
 	/* The index stores the display name, not a path: the library directory is
 	 * relocatable and the ".png" is an implementation detail of how entries
@@ -391,6 +399,9 @@ QJsonObject SkinEntry::toRecord() const
 	record[QStringLiteral("capeId")] = m_capeId;
 	record[QStringLiteral("url")] = m_textureUrl;
 	record[QStringLiteral("model")] = armsToken();
+	record[QStringLiteral("wornModel")] = m_wornArms == Arms::Slim
+											  ? QStringLiteral("SLIM")
+											  : QStringLiteral("CLASSIC");
 	return record;
 }
 

@@ -102,6 +102,16 @@ class SkinEntry
 		return m_textureUrl;
 	}
 
+	/* The arm width the account was last seen wearing this skin with, for
+	 * the entry whose textureUrl() the account wears. A rescan compares the
+	 * profile against it, not against arms(), so it can tell a change made
+	 * elsewhere (in game, on another machine) from a width picked here and
+	 * not worn yet. */
+	Arms wornArms() const
+	{
+		return m_wornArms;
+	}
+
 	/* @p image in the one shape every texture here has: 64x64, ARGB32,
 	 * base layer opaque, a legacy 64x32 skin widened (its left limbs
 	 * mirrored from the right). Anything that is not a skin comes back
@@ -133,6 +143,11 @@ class SkinEntry
 		m_textureUrl = url;
 	}
 
+	void setWornArms(Arms arms)
+	{
+		m_wornArms = arms;
+	}
+
 	/* Re-read the PNG from disk. Used when the directory watcher reports
 	 * that the file changed underneath us. */
 	void reload();
@@ -146,4 +161,5 @@ class SkinEntry
 	QString m_capeId;
 	Arms m_arms = Arms::Classic;
 	QString m_textureUrl;
+	Arms m_wornArms = Arms::Classic;
 };

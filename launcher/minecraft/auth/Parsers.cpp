@@ -24,6 +24,7 @@
 #include <QDebug>
 
 #include "Logging.h"
+#include "minecraft/skins/DefaultSkins.h"
 
 namespace Parsers
 {
@@ -375,19 +376,6 @@ namespace Parsers
 
 	namespace
 	{
-		/* Skins of the MHF_Steve and MHF_Alex accounts.
-		 *
-		 * The session server omits the SKIN texture entirely for players who
-		 * never set one, so there is no URL to read. These two are the
-		 * canonical default skins, and pointing at them is the only way to
-		 * show such a player as the game shows them. */
-		const char* const kDefaultSkinUrlClassic =
-			"https://textures.minecraft.net/texture/"
-			"1a4af718455d4aab528e7a61f86fa25e6a369d1768dcb13f7df319a713eb810b";
-		const char* const kDefaultSkinUrlSlim =
-			"https://textures.minecraft.net/texture/"
-			"83cee5ca6afcdb171285aa00e8049c297b2dbeba0efb8ff970a5677a1b644032";
-
 		/* Which of the two default skins a player without a custom one gets.
 		 *
 		 * The game decides this from the Java hashCode of the profile UUID:
@@ -506,8 +494,11 @@ namespace Parsers
 		const bool classic = defaultsToClassicModel(output.id);
 		skinOut.variant = classic ? QStringLiteral("CLASSIC")
 								  : QStringLiteral("SLIM");
-		skinOut.url = classic ? QLatin1String(kDefaultSkinUrlClassic)
-							  : QLatin1String(kDefaultSkinUrlSlim);
+		/* The session server omits the SKIN texture entirely for players
+		 * who never set one, so there is no URL to read: point at the
+		 * canonical default skins (MHF_Steve and MHF_Alex), the only way to
+		 * show such a player as the game shows them. */
+		skinOut.url = DefaultSkins::fallbackUrl(!classic);
 		/* The endpoint does not expose texture ids at all. Nothing downstream
 		 * of here needs one, so it is left empty rather than invented. */
 
