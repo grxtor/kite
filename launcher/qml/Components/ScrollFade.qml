@@ -21,8 +21,12 @@ Rectangle {
     property color fadeTo: Theme.palette.canvas
 
     height: Theme.space.xxl
+    // From originY, not 0: a ListView or GridView with a header starts its
+    // content above zero, and measured from zero the fade stayed on even
+    // with everything in view.
     visible: !!root.flickable
-             && root.flickable.contentY + root.flickable.height < root.flickable.contentHeight - 1
+             && root.flickable.contentY - root.flickable.originY + root.flickable.height
+                < root.flickable.contentHeight - 1
     gradient: Gradient {
         GradientStop { position: 0.0; color: Qt.rgba(root.fadeTo.r, root.fadeTo.g, root.fadeTo.b, 0) }
         GradientStop { position: 1.0; color: root.fadeTo }

@@ -27,15 +27,18 @@ import MeshMC.Theme
  *
  * One instance is shared by the whole page (see AccountsPage.qml); `row` is
  * set right before open() for whichever account was clicked. In a short
- * window the body scrolls, so Close stays on screen however many capes
- * the account owns.
+ * window the body scrolls, and the × in the title row stays on screen
+ * however many capes the account owns. No footer: a Close row of its own
+ * cost the height that left the capes under the body's scroll fade.
  */
 Dialog {
     id: root
     parent: Overlay.overlay
     anchors.centerIn: parent
     width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
-    height: Math.min(implicitHeight, parent ? parent.height - Theme.space.xxl * 2 : implicitHeight)
+    // The tallest the dialog may be: the window, less a margin.
+    readonly property real maxHeight: parent ? parent.height - Theme.space.xxl * 2 : implicitHeight
+    height: Math.min(implicitHeight, root.maxHeight)
     modal: true
     // Worded like the buttons that open it ("Skin and cape"), with the
     // player's name as part of the sentence rather than after a dash.
@@ -62,6 +65,19 @@ Dialog {
     readonly property int previewWidth: 220
     readonly property int previewHeight: 300
     readonly property int libraryHeight: 320
+    // The library box's height: libraryHeight at least, and on a taller
+    // window as tall as every tile needs, so the box scrolls (and cuts a
+    // row) only where the window is short. Worked out a step later, never
+    // inside a layout pass: the room depends on the dialog's own height,
+    // which depends on the box.
+    property real libraryRoom: libraryHeight
+    function fitLibrary() {
+        const needed = skinGrid.contentHeight + skinGrid.anchors.margins * 2
+        const room = root.maxHeight - (root.implicitHeight - libraryBox.height)
+        root.libraryRoom = Math.max(root.libraryHeight, Math.min(needed, room))
+    }
+    onMaxHeightChanged: Qt.callLater(root.fitLibrary)
+    onImplicitHeightChanged: Qt.callLater(root.fitLibrary)
     readonly property int tileWidth: 96
     readonly property int tileHeight: 120
     readonly property int spriteSize: 72
@@ -332,8 +348,9 @@ Dialog {
                         }
 
                         Rectangle {
+                            id: libraryBox
                             Layout.fillWidth: true
-                            Layout.preferredHeight: root.libraryHeight
+                            Layout.preferredHeight: root.libraryRoom
                             radius: Theme.radius.lg
                             color: Theme.palette.surfaceSunken
 
@@ -341,6 +358,7 @@ Dialog {
                             // in the same scrolling box, as two sections.
                             GridView {
                                 id: skinGrid
+                                onContentHeightChanged: Qt.callLater(root.fitLibrary)
                                 anchors.fill: parent
                                 anchors.margins: Theme.space.sm
                                 clip: true
@@ -556,13 +574,24 @@ Dialog {
         }
     }
 
-    footer: Row {
-        layoutDirection: Qt.RightToLeft
-        spacing: Theme.space.sm
-        padding: Theme.space.lg
-        topPadding: 0
-        Button {
-            text: qsTr("Close")
+    header: Item {
+        implicitHeight: titleRow.implicitHeight
+        DialogHeader {
+            id: titleRow
+            anchors.left: parent.left
+            anchors.right: closeButton.left
+            title: root.title
+        }
+        IconButton {
+            id: closeButton
+            anchors.right: parent.right
+            anchors.rightMargin: Theme.space.md
+            // On the title's line: DialogHeader's label sits below its
+            // own top padding.
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenterOffset: Theme.space.lg / 2
+            iconName: "x"
+            tip: qsTr("Close")
             onClicked: root.close()
         }
     }
