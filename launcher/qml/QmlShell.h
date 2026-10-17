@@ -462,6 +462,15 @@ class QmlShell : public QObject
 	 * does instead of inventing a parallel on-disk one. No-op for an
 	 * unknown id. */
 	Q_INVOKABLE void debugMarkInstanceCrashed(const QString& id);
+	/* Preview/dev-only: a real mouse click at window point "x,y" for
+	 * review snapshots (Main.qml's applyDevRoute(), "click=x,y[,right
+	 * [,delayMs]]"): the pointer moves there first, so hover-only controls
+	 * show up, then presses and releases through the window's normal
+	 * event delivery -- what a snapshot of "click the card's ⋯" needs to
+	 * catch a handler stealing the press. Starts after delayMs (default
+	 * 1000), once the page has laid out. "x,y,left,delayMs,dx,dy" drags by
+	 * (dx, dy) before letting go instead. */
+	Q_INVOKABLE void debugClick(const QString& spec);
 	/* Preview/dev-only, for review snapshots of questions only a real
 	 * launch would otherwise ask (Main.qml's applyDevRoute(), "ask=<kind>"):
 	 * "pickAccount" asks the launch account picker over the real account

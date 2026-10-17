@@ -197,6 +197,10 @@ ApplicationWindow {
                 SettingsStore.setValue("UiSidebarCollapsed", value === "collapsed")
             else if (key === "crashed")
                 root.call("debugMarkInstanceCrashed", value)
+            // A real click at window point "x,y[,right[,delayMs]]" -- see
+            // QmlShell::debugClick().
+            else if (key === "click")
+                root.call("debugClick", value)
             // Deterministic cat pose for review snapshots -- see
             // CatOverlay.qml's own `demo` property.
             // The icon picker, as the library's "Change icon" opens it.

@@ -20,12 +20,16 @@
 #include "qml/QmlShell.h"
 
 #include <QCoreApplication>
+#include <QCursor>
+#include <QElapsedTimer>
 #include <QDebug>
 #include <QEvent>
 #include <QFileInfo>
 #include <QHostInfo>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QMouseEvent>
+#include <QPointer>
 #include <QImage>
 #include <QTimer>
 #include <QQmlApplicationEngine>
@@ -383,6 +387,59 @@ void QmlShell::debugMarkInstanceCrashed(const QString& id)
 		return;
 	}
 	instance->setCrashed(true);
+}
+
+void QmlShell::debugClick(const QString& spec)
+{
+	const QStringList parts = spec.split(QLatin1Char(','));
+	if (parts.size() < 2 || !m_window) {
+		return;
+	}
+	const QPointF point(parts.at(0).toDouble(), parts.at(1).toDouble());
+	const Qt::MouseButton button = parts.size() > 2 && parts.at(2) == QLatin1String("right")
+									   ? Qt::RightButton
+									   : Qt::LeftButton;
+	const int delay = parts.size() > 3 ? parts.at(3).toInt() : 1000;
+	// "x,y,left,delay,dx,dy" drags by (dx, dy) in steps before letting go.
+	const QPointF offset = parts.size() > 5
+							   ? QPointF(parts.at(4).toDouble(), parts.at(5).toDouble())
+							   : QPointF();
+	const int steps = offset.isNull() ? 0 : 10;
+	// Long enough for a hover fade-in to finish before the press.
+	const int hoverMs = 400;
+	const int stepMs = 40;
+	QPointer<QQuickWindow> window = m_window;
+	auto at = [this, window](int ms, QEvent::Type type, QPointF pos, Qt::MouseButton which,
+							 Qt::MouseButtons held) {
+		QTimer::singleShot(ms, this, [window, type, pos, which, held] {
+			if (!window) {
+				return;
+			}
+			QMouseEvent event(type, pos, window->mapToGlobal(pos), which, held, Qt::NoModifier);
+			// Pointer handlers time taps and drags from these; a zero
+			// stamp on every event is not a click any handler recognises.
+			static QElapsedTimer clock;
+			if (!clock.isValid()) {
+				clock.start();
+			}
+			event.setTimestamp(quint64(clock.elapsed()) + 1);
+			QCoreApplication::sendEvent(window, &event);
+		});
+	};
+	QTimer::singleShot(delay, this, [window, point] {
+		// Menu.popup() with no position opens at the cursor.
+		if (window) {
+			QCursor::setPos(window->mapToGlobal(point).toPoint());
+		}
+	});
+	at(delay, QEvent::MouseMove, point, Qt::NoButton, Qt::NoButton);
+	at(delay + hoverMs, QEvent::MouseButtonPress, point, button, button);
+	for (int i = 1; i <= steps; ++i) {
+		at(delay + hoverMs + stepMs * i, QEvent::MouseMove, point + offset * (qreal(i) / steps),
+		   Qt::NoButton, button);
+	}
+	at(delay + hoverMs + stepMs * (steps + 1), QEvent::MouseButtonRelease, point + offset, button,
+	   Qt::NoButton);
 }
 
 void QmlShell::debugShowRequest(const QString& kind)
