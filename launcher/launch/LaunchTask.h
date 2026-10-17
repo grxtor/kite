@@ -131,7 +131,8 @@ class LaunchTask : public Task
 	 * task it wraps onto itself. This is what lets something outside the
 	 * step list (InstanceList's launch progress tracking, in particular)
 	 * watch the launch as a whole instead of having to know which step
-	 * is currently running.
+	 * is currently running. A step that names no stage of its own shows
+	 * as "Preparing to launch", with no progress.
 	 */
 	void startStep(const shared_qobject_ptr<LaunchStep>& step);
 

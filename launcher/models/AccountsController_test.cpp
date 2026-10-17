@@ -25,7 +25,9 @@
 #include <QUrl>
 
 #include "minecraft/auth/AccountList.h"
+#include "minecraft/auth/AuthSession.h"
 #include "minecraft/auth/MinecraftAccount.h"
+#include "minecraft/skins/DefaultSkins.h"
 #include "models/AccountsController.h"
 
 /*
@@ -400,6 +402,156 @@ class AccountsControllerTest : public QObject
 		QVERIFY(!controller.resetSkin(0));
 		QVERIFY(!controller.changeCape(5, "cape-1"));
 		QVERIFY(!controller.changeCape(0, "cape-1"));
+	}
+
+	// The Accounts page finds its hero by this id, and the account switcher
+	// (ProfileMenu) and "Use this account" both go through setDefault():
+	// all three must agree on one default after a switch.
+	void test_defaultAccountId_followsSetDefault()
+	{
+		auto list = shared_qobject_ptr<AccountList>(new AccountList());
+		AccountsController controller(list);
+		auto steve = MinecraftAccount::createOffline("Steve");
+		auto alex = MinecraftAccount::createOffline("Alex");
+		list->addAccount(steve);
+		list->addAccount(alex);
+		QVERIFY(controller.defaultAccountId().isEmpty());
+
+		controller.setDefault(0);
+		QCOMPARE(controller.defaultAccountId(), steve->internalId());
+		QSignalSpy spy(&controller, &AccountsController::defaultChanged);
+		controller.setDefault(1);
+		QCOMPARE(controller.defaultAccountId(), alex->internalId());
+		QCOMPARE(controller.defaultAccountId(),
+				 list->data(list->index(1), AccountList::AccountIdRole)
+					 .toString());
+		QVERIFY(spy.count() > 0);
+	}
+
+	// A view re-reads the isDefault role when dataChanged arrives, so by
+	// then the role must already report the new default -- otherwise the
+	// page keeps showing the old one after a switch.
+	void test_setDefault_isDefaultRole_isCurrentInDataChanged()
+	{
+		auto list = shared_qobject_ptr<AccountList>(new AccountList());
+		AccountsController controller(list);
+		list->addAccount(MinecraftAccount::createOffline("Steve"));
+		list->addAccount(MinecraftAccount::createOffline("Alex"));
+		controller.setDefault(0);
+
+		QHash<int, bool> seen;
+		connect(list.get(), &AccountList::dataChanged, this,
+				[&](const QModelIndex& from, const QModelIndex&) {
+					seen[from.row()] =
+						list->data(list->index(from.row()),
+								   AccountList::IsDefaultRole)
+							.toBool();
+				});
+		controller.setDefault(1);
+		QCOMPARE(seen.value(0, true), false);
+		QCOMPARE(seen.value(1, false), true);
+	}
+
+	// The game's rule (Java UUID.hashCode() parity), dashes or not.
+	void test_defaultSkins_isSlimFor_followsHashParity()
+	{
+		QVERIFY(!DefaultSkins::isSlimFor(
+			QStringLiteral("00000000-0000-0000-0000-000000000000")));
+		QVERIFY(DefaultSkins::isSlimFor(
+			QStringLiteral("00000000000000000000000000000001")));
+		// The high half folds in too: 1 in each half cancels out.
+		QVERIFY(!DefaultSkins::isSlimFor(
+			QStringLiteral("00000000000000010000000000000001")));
+		QVERIFY(DefaultSkins::isSlimFor(
+			QStringLiteral("00000001000000000000000000000000")));
+		// Not a UUID: classic, as in the game.
+		QVERIFY(!DefaultSkins::isSlimFor(QStringLiteral("Steve")));
+	}
+
+	// An offline account has no skin of its own, so it wears the game's
+	// default -- once that has been downloaded -- and is still not a valid
+	// target for skin or cape changes.
+	void test_accountSkinInfo_offlineAccount_wearsTheDefaultSkin()
+	{
+		auto list = shared_qobject_ptr<AccountList>(new AccountList());
+		AccountsController controller(list);
+		auto offline = MinecraftAccount::createOffline("Alex");
+		list->addAccount(offline);
+		// The game's pick for the UUID this account launches with.
+		const bool slim = DefaultSkins::isSlimFor(offline->gameUuid());
+		QCOMPARE(DefaultSkins::isSlim(offline), slim);
+
+		DefaultSkins::instance()->setTexture(slim, QImage());
+		QVariantMap info = controller.accountSkinInfo(0);
+		QVERIFY(!info.value("valid").toBool());
+		QVERIFY(!info.value("hasSkin").toBool());
+		QVERIFY(info.value("defaultSkin").toBool());
+		QCOMPARE(info.value("slim").toBool(), slim);
+
+		QSignalSpy spy(&controller,
+					   &AccountsController::defaultSkinsRevisionChanged);
+		QImage texture(64, 64, QImage::Format_ARGB32);
+		texture.fill(Qt::gray);
+		DefaultSkins::instance()->setTexture(slim, texture);
+		QCOMPARE(spy.count(), 1);
+		info = controller.accountSkinInfo(0);
+		QVERIFY(!info.value("valid").toBool());
+		QVERIFY(info.value("hasSkin").toBool());
+		QVERIFY(info.value("defaultSkin").toBool());
+		DefaultSkins::instance()->setTexture(slim, QImage());
+	}
+
+	// Vanilla's offline UUID: UUID.nameUUIDFromBytes("OfflinePlayer:" +
+	// name). The values are Java's own for these names.
+	void test_uuidFromUsername_matchesVanilla()
+	{
+		QCOMPARE(MinecraftAccount::uuidFromUsername(QStringLiteral("Notch")),
+				 QStringLiteral("b50ad385829d3141a2167e7d7539ba7f"));
+		QCOMPARE(MinecraftAccount::uuidFromUsername(QStringLiteral("Steve")),
+				 QStringLiteral("5627dd98e6be3c21b8a8e92344183641"));
+		QCOMPARE(MinecraftAccount::uuidFromUsername(QStringLiteral("Alex")),
+				 QStringLiteral("36532b5ec4423dbba24cc7e55d0f979a"));
+	}
+
+	// The same player every launch: two accounts made for one name (as a
+	// restart reloads it from accounts.json) launch with one UUID, though
+	// their internal ids differ -- and that UUID is what the game gets.
+	void test_offlineGameUuid_isStableAndLaunched()
+	{
+		auto first = MinecraftAccount::createOffline("Steve");
+		auto reloaded =
+			MinecraftAccount::loadFromJsonV3(first->saveToJson());
+		QVERIFY(reloaded);
+		QVERIFY(first->internalId() != reloaded->internalId());
+		QCOMPARE(first->gameUuid(), reloaded->gameUuid());
+		QCOMPARE(first->gameUuid(),
+				 MinecraftAccount::uuidFromUsername(QStringLiteral("Steve")));
+
+		auto session = std::make_shared<AuthSession>();
+		reloaded->fillSession(session);
+		QCOMPARE(session->uuid, first->gameUuid());
+	}
+
+	// The preview wears what the game will: Java's hashCode() parity of
+	// the launch UUID -- odd for "Steve" (slim, Alex's texture), even for
+	// "Alex" (classic, Steve's).
+	void test_defaultSkin_followsTheLaunchUuid()
+	{
+		auto steve = MinecraftAccount::createOffline("Steve");
+		auto alex = MinecraftAccount::createOffline("Alex");
+		QVERIFY(DefaultSkins::isSlim(steve));
+		QVERIFY(!DefaultSkins::isSlim(alex));
+		QCOMPARE(DefaultSkins::isSlim(steve),
+				 DefaultSkins::isSlimFor(steve->gameUuid()));
+
+		// A profile's own variant wins over the default.
+		auto msa = MinecraftAccount::createBlankMSA();
+		msa->accountData()->minecraftProfile.id =
+			QStringLiteral("00000000000000000000000000000001");
+		QVERIFY(DefaultSkins::isSlim(msa));
+		msa->accountData()->minecraftProfile.skin.variant =
+			QStringLiteral("CLASSIC");
+		QVERIFY(!DefaultSkins::isSlim(msa));
 	}
 };
 

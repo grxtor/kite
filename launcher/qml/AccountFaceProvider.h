@@ -75,14 +75,18 @@
  * LOOKUP. Looks the account up in LAUNCHER->accounts() (core/LauncherContext.h)
  * by profile id first, falling back to a linear scan by internalId():
  * AccountList exposes findAccountByProfileId() but no internal-id finder,
- * and offline accounts have no profile id at all. No matching account, no
- * skin data, or a LauncherContext that is not up yet (see
- * LauncherContext::instance()) all return a transparent pixmap rather than a
- * null one -- QML's own fallback avatar is what should show, not a
- * broken-image icon. That fallback matters most for the body: offline
- * accounts (and any account before its profile texture is fetched) have no
- * skin bytes at all, and the Accounts hero draws its own neutral silhouette
- * underneath the (then fully transparent) body image for exactly that case.
+ * and offline accounts have no profile id at all.
+ *
+ * DEFAULT SKINS. An account without skin bytes of its own -- every offline
+ * account, and a Microsoft account before its profile texture is fetched --
+ * is drawn in the game's default skin for that player (Steve or Alex, see
+ * DefaultSkins), for the face, the body and "skin/" alike, as the game
+ * would show it. Those textures are downloaded on first use; until they
+ * land (or without a network), and for no matching account or a
+ * LauncherContext that is not up yet (see LauncherContext::instance()), the
+ * result is a transparent pixmap rather than a null one -- QML's own
+ * fallback (an initial, the neutral figure) is what should show then, not a
+ * broken-image icon. DefaultSkins::loaded() says when to fetch again.
  */
 class AccountFaceProvider : public QQuickImageProvider
 {

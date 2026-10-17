@@ -305,7 +305,7 @@ Item {
             spacing: Theme.space.xs
 
             property int selected: 0
-            readonly property int faceSize: 28
+            readonly property int faceSize: 32
 
             function play() {
                 root.answer(() => root.request.chooseAccount(accountPicker.selected, makeDefaultBox.checked))
@@ -354,34 +354,12 @@ Item {
                     contentItem: RowLayout {
                         spacing: Theme.space.sm
 
-                        // The same face tile as the Accounts page's rows: the
-                        // name's initial, with the skin's face drawn over it.
-                        // An account without a skin comes back transparent,
-                        // so the initial shows through.
-                        Rectangle {
+                        // The player's head, as everywhere an account is
+                        // shown (PlayerHead): never a letter.
+                        PlayerHead {
                             Layout.leftMargin: Theme.space.sm
-                            Layout.preferredWidth: accountPicker.faceSize
-                            Layout.preferredHeight: accountPicker.faceSize
-                            radius: Theme.radius.sm
-                            color: Theme.palette.accentSubtle
-                            border.width: 1
-                            border.color: Theme.palette.border
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: String(modelData.name || "").charAt(0).toUpperCase()
-                                color: Theme.palette.accent
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
-                                font.weight: Font.Bold
-                            }
-                            Image {
-                                anchors.fill: parent
-                                anchors.margins: 1
-                                source: modelData.faceId ? "image://accountface/" + modelData.faceId : ""
-                                sourceSize: Qt.size(accountPicker.faceSize * 2, accountPicker.faceSize * 2)
-                                smooth: false
-                            }
+                            size: accountPicker.faceSize
+                            source: modelData.faceId ? "image://accountface/" + modelData.faceId : ""
                         }
                         Text {
                             Layout.fillWidth: true

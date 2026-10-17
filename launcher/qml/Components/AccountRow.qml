@@ -82,36 +82,12 @@ Item {
             anchors.rightMargin: Theme.space.md
             spacing: Theme.space.md
 
-            Rectangle {
-                id: face
-                Layout.preferredWidth: root.faceSize
-                Layout.preferredHeight: root.faceSize
-                // A Minecraft face is square; a circle would crop its
-                // corners. Same rounded square as the header's account
-                // button.
-                radius: Theme.radius.sm
-                color: Theme.palette.accentSubtle
-                border.width: 1
-                border.color: Theme.palette.border
-
-                Text {
-                    anchors.centerIn: parent
-                    text: root.shownName.charAt(0).toUpperCase()
-                    color: Theme.palette.accent
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Font.Bold
-                }
-                // Drawn over the initial; an account without a skin comes
-                // back transparent and the initial shows through.
-                Image {
-                    anchors.fill: parent
-                    anchors.margins: 1
-                    source: !root.hidden && root.accountId.length > 0
-                            ? "image://accountface/" + root.accountId + "?rev=" + root.rev : ""
-                    sourceSize: Qt.size(root.faceSize * 2, root.faceSize * 2)
-                    smooth: false
-                }
+            // The player's head: its skin, or the game's default for an
+            // account without one (see PlayerHead).
+            PlayerHead {
+                size: root.faceSize
+                source: !root.hidden && root.accountId.length > 0
+                        ? "image://accountface/" + root.accountId + "?rev=" + root.rev : ""
             }
 
             Column {

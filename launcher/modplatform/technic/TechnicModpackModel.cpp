@@ -385,7 +385,7 @@ TechnicModpackModel::Pack* TechnicModpackModel::packFor(const QString& slug)
 void TechnicModpackModel::applyDetail(const Pack& pack)
 {
 	m_detail->setTitle(pack.name);
-	m_detail->setBody(pack.description);
+	m_detail->setBody(pack.description, RichBody::Format::Html);
 	m_detail->setVersions(versionEntries(pack));
 	QVariantList gallery;
 	if (!pack.backgroundUrl.isEmpty()) {

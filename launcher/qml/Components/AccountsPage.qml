@@ -14,16 +14,24 @@ import MeshMC.Theme
  * owns the game first -- the same rule the classic page enforced.
  *
  * A hero at the top shows the account games actually launch with -- the
- * player in its skin, in 3D where Qt Quick3D draws (SkinPreview) -- the
- * same way the library's
+ * player in its skin (or the game's default Steve/Alex for an account
+ * without one), in 3D where Qt Quick3D draws (SkinPreview), and a Microsoft
+ * account's capes to wear in one click -- the same way the library's
  * ContinueCard/InstancePage hero leads with the instance that matters most.
  * Every other account is a compact row below it, as wide as the hero.
+ *
+ * "The default account" is one thing everywhere: the account switcher at
+ * the top right (ProfileMenu), "Use this account" here and in the rows all
+ * call AccountsController.setDefault(), games launch with
+ * AccountList::defaultAccount(), and the hero is whichever row
+ * AccountsController.defaultAccountId names.
  */
 Item {
     id: root
 
-    // AccountsController: accounts, hasDefault, setDefault, remove,
-    // refresh, addOffline, loginMicrosoft.
+    // AccountsController: accounts, hasDefault, defaultAccountId,
+    // setDefault, remove, refresh, addOffline, loginMicrosoft,
+    // accountSkinInfo, changeCape.
     property var controller: null
     // MicrosoftLoginController of the sign-in in progress, if any. Held
     // here, on a page that is never destroyed, for as long as it runs.
@@ -52,6 +60,12 @@ Item {
         target: root.accounts
         function onDataChanged() { root.imageRevision++ }
     }
+    // The game's default skins arriving redraws every account without a
+    // skin of its own (see DefaultSkins).
+    Connections {
+        target: root.controller
+        function onDefaultSkinsRevisionChanged() { root.imageRevision++ }
+    }
 
     function openSkinEditor(row, accountId, accountName) {
         if (!root.controller)
@@ -79,20 +93,23 @@ Item {
     }
 
     /*
-     * Which row is the default account, found by watching every row's own
-     * isDefault role rather than asking AccountList for one directly: it
-     * exposes the flag per row (for the list delegate below) but not as a
-     * "here is the default index" query of its own. A Repeater is the
+     * Which row is the default account: the one whose accountId is the
+     * controller's defaultAccountId -- the account games launch with, read
+     * straight from AccountList::defaultAccount() and notified the moment
+     * it moves -- rather than any row's own isDefault role. AccountList has
+     * no "here is the default row" query of its own, and a Repeater is the
      * cheapest way to look at every row without paging through count()/
      * data() by hand -- each probe is a zero-size Item, never drawn.
      */
+    readonly property string defaultAccountId: root.controller ? root.controller.defaultAccountId : ""
     property int defaultIndex: -1
     Repeater {
         model: root.accounts
         delegate: Item {
             id: probe
             required property int index
-            required property bool isDefault
+            readonly property bool isDefault: root.defaultAccountId.length > 0
+                                              && probe.accountId === root.defaultAccountId
             // Everything the hero card shows, so it can read this probe
             // instead of the list's currentItem -- which ListView does not
             // reliably create for a row it lays out collapsed.
@@ -114,10 +131,10 @@ Item {
             visible: false
             width: 0
             height: 0
-            // Re-asserts on either role change (isDefault flips, e.g. the
-            // previous default was just removed) or a plain row-index shift
-            // (an unrelated row above this one was removed/inserted) --
-            // either can leave a stale index behind otherwise.
+            // Re-asserts on either change (isDefault flips, e.g. another
+            // account was made default or this one was removed) or a plain
+            // row-index shift (an unrelated row above this one was removed/
+            // inserted) -- either can leave a stale index behind otherwise.
             function report() {
                 if (isDefault)
                     root.defaultIndex = index
@@ -156,11 +173,42 @@ Item {
     // Whether launcher/qml/Cat (Qt Quick3D) exists -- see SkinPreview.
     property bool catAvailable: false
     // The hero account's skin facts (AccountsController::accountSkinInfo):
-    // whether it has a skin at all, and its arm width. Re-read whenever the
-    // images are (imageRevision).
-    readonly property var heroSkin: root.controller && root.heroIsMSA && root.imageRevision >= 0
+    // whether there is a skin to draw (its own, or the game's default for
+    // it once downloaded), its arm width, and for a Microsoft account its
+    // capes. Re-read whenever the images are (imageRevision).
+    readonly property var heroSkin: root.controller && root.heroRow >= 0 && root.imageRevision >= 0
                                     ? root.controller.accountSkinInfo(root.heroRow) : ({})
+    readonly property var heroCapes: root.heroIsMSA && root.heroSkin.valid && root.heroSkin.capes
+                                     ? root.heroSkin.capes : []
     readonly property int heroHeight: 248
+    readonly property int heroPreviewWidth: 168
+    readonly property int heroPreviewHeight: 200
+
+    // The cape change started from the hero, if any: its tiles wait while
+    // it runs, and a failure is said under them.
+    property var capeWatcher: null
+    readonly property bool capeBusy: !!root.capeWatcher && root.capeWatcher.running
+    property string capeError: ""
+    onHeroAccountIdChanged: { root.capeWatcher = null; root.capeError = "" }
+    function wearCape(capeId) {
+        if (!root.controller || root.capeBusy)
+            return
+        root.capeError = ""
+        var w = root.controller.changeCape(root.heroRow, capeId)
+        if (!w) {
+            root.capeError = qsTr("The cape could not be changed.")
+            return
+        }
+        root.capeWatcher = w
+        w.finished.connect(function(ok) {
+            if (root.capeWatcher !== w)
+                return
+            if (!ok)
+                root.capeError = w.error.length > 0 ? w.error : qsTr("The cape could not be changed.")
+            else if (capeId.length > 0)
+                heroPreview.showBack()
+        })
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -216,26 +264,31 @@ Item {
             Layout.maximumWidth: Theme.layout.maxContentWidth
             Layout.alignment: Qt.AlignHCenter
             visible: !!root.heroItem
-            implicitHeight: root.heroHeight
+            // Taller only when the cape row needs the room.
+            implicitHeight: Math.max(root.heroHeight, heroContent.implicitHeight + Theme.space.xl * 2)
             radius: Theme.radius.xl
-            // A flat, bordered surface: the account's own rendered skin (or
-            // the default figure) is the hero's visual anchor, not a
+            // A flat, bordered surface: the player in the account's skin (or
+            // the game's default one) is the hero's visual anchor, not a
             // decorative wash or gradient.
             color: Theme.palette.surfaceRaised
             border.width: 1
             border.color: Theme.palette.border
 
             RowLayout {
+                id: heroContent
                 anchors.fill: parent
                 anchors.margins: Theme.space.xl
                 spacing: Theme.space.xl
 
-                // The player in the account's skin, turned by dragging where
-                // it is 3D; the neutral figure for an account without one
-                // (offline accounts, or before the profile has loaded).
+                // The player in the account's skin, with its cape, turned by
+                // dragging where it is 3D (the flat front view otherwise).
+                // An account without a skin of its own wears the game's
+                // default for it, as in game; the neutral figure only holds
+                // its place until that default has downloaded.
                 SkinPreview {
-                    Layout.preferredWidth: 168
-                    Layout.preferredHeight: 200
+                    id: heroPreview
+                    Layout.preferredWidth: root.heroPreviewWidth
+                    Layout.preferredHeight: root.heroPreviewHeight
                     Layout.alignment: Qt.AlignVCenter
                     catAvailable: root.catAvailable
                     skinTexture: root.heroSkin.hasSkin && root.heroAccountId.length > 0
@@ -286,7 +339,10 @@ Item {
                     Text {
                         Layout.fillWidth: true
                         visible: !root.heroIsMSA
-                        text: qsTr("Plays offline only: online-mode servers and skins need a Microsoft account.")
+                        // "Custom": the player already wears the game's
+                        // default skin here, offline or not. Short enough
+                        // to stay one line at the narrowest window.
+                        text: qsTr("Offline only: online-mode servers and custom skins need a Microsoft account.")
                         wrapMode: Text.Wrap
                         color: Theme.palette.textTertiary
                         font.family: Theme.font.family
@@ -330,6 +386,70 @@ Item {
                                 removeDialog.text = qsTr("Remove “%1” from MeshMC? You can sign in again at any time.").arg(root.heroName)
                                 removeDialog.open()
                             }
+                        }
+                    }
+
+                    // A Microsoft account's capes, worn with one click --
+                    // the same choice as in "Skin and cape", without opening
+                    // it. Compact tiles; each one's name shows on hover.
+                    Column {
+                        visible: root.heroCapes.length > 0
+                        topPadding: Theme.space.md
+                        spacing: Theme.space.sm
+
+                        Row {
+                            spacing: Theme.space.sm
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: qsTr("Cape")
+                                color: Theme.palette.textSecondary
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.type.label.pixelSize
+                                font.weight: Font.DemiBold
+                            }
+                            BusyIndicator {
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: root.capeBusy
+                                running: visible
+                                width: Theme.icon.sm
+                                height: Theme.icon.sm
+                            }
+                        }
+
+                        Flow {
+                            width: heroContent.width - root.heroPreviewWidth - heroContent.spacing
+                            spacing: Theme.space.sm
+
+                            CapeTile {
+                                compact: true
+                                label: qsTr("No cape")
+                                isNoCapeOption: true
+                                selected: !root.heroSkin.currentCapeId
+                                enabled: !root.capeBusy
+                                onClicked: if (!selected) root.wearCape("")
+                            }
+                            Repeater {
+                                model: root.heroCapes
+                                delegate: CapeTile {
+                                    required property var modelData
+                                    compact: true
+                                    label: modelData.alias
+                                    capeUrl: modelData.url
+                                    selected: modelData.id === root.heroSkin.currentCapeId
+                                    enabled: !root.capeBusy
+                                    onClicked: if (!selected) root.wearCape(modelData.id)
+                                }
+                            }
+                        }
+
+                        Text {
+                            width: heroContent.width - root.heroPreviewWidth - heroContent.spacing
+                            visible: root.capeError.length > 0
+                            text: root.capeError
+                            wrapMode: Text.Wrap
+                            color: Theme.palette.danger
+                            font.family: Theme.font.family
+                            font.pixelSize: Theme.type.caption.pixelSize
                         }
                     }
                 }

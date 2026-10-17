@@ -34,6 +34,7 @@ DirectJavaLaunch::DirectJavaLaunch(LaunchTask* parent) : LaunchStep(parent)
 
 void DirectJavaLaunch::executeTask()
 {
+	setStatus(tr("Starting Minecraft"));
 	auto instance = m_parent->instance();
 	std::shared_ptr<MinecraftInstance> minecraftInstance =
 		std::dynamic_pointer_cast<MinecraftInstance>(instance);
@@ -129,6 +130,10 @@ void DirectJavaLaunch::on_state(LoggedProcess::State state)
 						 MessageLevel::MeshMC);
 			m_parent->setPid(m_process.processId());
 			m_parent->instance()->setLastLaunch();
+			/* The game is up: nothing left to report, so no stage either.
+			 * (MeshMCPartLaunch says the same with readyForLaunch, which
+			 * the launch progress shown on the instance clears on.) */
+			setStatus(QString());
 			break;
 		default:
 			break;

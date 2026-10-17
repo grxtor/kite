@@ -66,6 +66,7 @@ bool fitsInLocal8bit(const QString& string)
 
 void MeshMCPartLaunch::executeTask()
 {
+	setStatus(tr("Starting Minecraft"));
 	auto instance = m_parent->instance();
 	std::shared_ptr<MinecraftInstance> minecraftInstance =
 		std::dynamic_pointer_cast<MinecraftInstance>(instance);

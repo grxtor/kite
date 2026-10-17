@@ -21,6 +21,7 @@
 
 #include "tasks/Task.h"
 
+#include <QRegularExpression>
 #include <QTimer>
 
 #include <algorithm>
@@ -68,7 +69,11 @@ void LaunchProgressTracker::stopWatching()
 
 void LaunchProgressTracker::onStatus(const QString& status)
 {
-	m_status = status;
+	/* Shown as a label ("Downloading assets"), not a log line: some steps
+	 * still word theirs "Doing something...". */
+	static const QRegularExpression trailingEllipsis(
+		QStringLiteral("\\s*(\\.\\.\\.|\u2026)\\s*$"));
+	m_status = status.trimmed().remove(trailingEllipsis);
 	scheduleEmit();
 }
 

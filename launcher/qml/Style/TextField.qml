@@ -33,6 +33,12 @@ T.TextField {
     placeholderTextColor: Theme.palette.textTertiary
     verticalAlignment: TextInput.AlignVCenter
 
+    // A field that isn't being edited shows the start of its text: setting
+    // a long value leaves the cursor, and so the scroll, at its end ("…EVERSE
+    // - Pokemon Adventure" instead of the name's beginning).
+    onActiveFocusChanged: if (!activeFocus) cursorPosition = 0
+    onTextChanged: if (!activeFocus) cursorPosition = 0
+
     PlaceholderText {
         id: placeholder
         x: control.leftPadding

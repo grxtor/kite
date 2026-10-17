@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
+import QtQuick.Controls
 import MeshMC.Theme
 
 /*
@@ -20,6 +21,9 @@ import MeshMC.Theme
  * texture inside a clipped Item instead: the image is drawn at a size and
  * offset that puts just that region inside the clip, and clip: true throws
  * the rest away.
+ *
+ * `compact` is the small tile of the Accounts page's hero: the cape alone,
+ * its name shown on hover instead of under it.
  */
 Item {
     id: root
@@ -31,12 +35,26 @@ Item {
     // SkinCapeEditor.qml. Every other tile is a cape the account owns,
     // whether or not its texture has resolved yet.
     property bool isNoCapeOption: false
+    property bool compact: false
     signal clicked()
 
     readonly property bool hasCape: root.capeUrl.length > 0
+    // The cape's front strip is 10x16 texture pixels; the thumbnail shows
+    // it at thumbScale screen pixels per texture pixel.
+    readonly property int stripWidth: 10
+    readonly property int stripHeight: 16
+    readonly property int thumbScale: root.compact ? 3 : 4
+    // The cloak shape for a cape not drawn yet, as a share of the thumbnail.
+    readonly property real silhouetteWidth: 0.85
+    readonly property real silhouetteHeight: 0.72
+    readonly property int compactPadding: Theme.space.sm
 
-    implicitWidth: 72
-    implicitHeight: 100
+    implicitWidth: root.compact ? root.stripWidth * root.thumbScale + root.compactPadding * 2 : 72
+    implicitHeight: root.compact ? root.stripHeight * root.thumbScale + root.compactPadding * 2 : 100
+
+    ToolTip.visible: root.compact && hover.hovered
+    ToolTip.delay: 400
+    ToolTip.text: root.label
 
     Rectangle {
         id: card
@@ -44,7 +62,8 @@ Item {
         radius: Theme.radius.md
         color: root.selected ? Theme.palette.accentSubtle : Theme.palette.surface
         border.width: root.selected ? 2 : 1
-        border.color: root.selected ? Theme.palette.accent : Theme.palette.border
+        border.color: root.selected ? Theme.palette.accent
+                    : hover.hovered && root.enabled ? Theme.palette.borderStrong : Theme.palette.border
 
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
@@ -53,16 +72,16 @@ Item {
     Item {
         id: thumb
         anchors.top: parent.top
-        anchors.topMargin: Theme.space.xs
+        anchors.topMargin: root.compact ? root.compactPadding : Theme.space.xs
         anchors.horizontalCenter: parent.horizontalCenter
-        width: 40
-        height: 64
+        width: root.stripWidth * root.thumbScale
+        height: root.stripHeight * root.thumbScale
         clip: true
         visible: root.hasCape
 
         // Scale the whole 64x32 texture up so its 10x16 front strip at
         // (1, 1) fills this item, then let clip: true crop away the rest.
-        readonly property real cropScale: width / 10
+        readonly property real cropScale: width / root.stripWidth
 
         Image {
             source: root.capeUrl
@@ -89,7 +108,7 @@ Item {
     Canvas {
         id: capeSilhouette
         anchors.centerIn: thumb
-        width: 34; height: 46
+        width: thumb.width * root.silhouetteWidth; height: thumb.height * root.silhouetteHeight
         visible: !root.hasCape && !root.isNoCapeOption
         onPaint: {
             const ctx = getContext("2d")
@@ -116,6 +135,7 @@ Item {
     }
 
     Text {
+        visible: !root.compact
         anchors.top: thumb.bottom
         anchors.topMargin: Theme.space.xs
         anchors.left: parent.left
@@ -129,6 +149,10 @@ Item {
         font.pixelSize: Theme.type.caption.pixelSize
     }
 
+    HoverHandler {
+        id: hover
+        cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+    }
     TapHandler {
         onTapped: root.clicked()
     }

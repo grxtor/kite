@@ -8,7 +8,7 @@ import MeshMC.Theme
 /*
  * The rail/list-nav selection grammar (design-plan.md Principle 6): a
  * surfaceRaised pill that slides between rows, plus a 3px accent bar pinned
- * to the host's own leading edge -- both siblings of whatever draws the rows
+ * to the pill's leading edge -- both siblings of whatever draws the rows
  * themselves (a NavItem only ever paints its own transient hover/press
  * state; the pill is what actually shows "this one is selected").
  *
@@ -35,6 +35,11 @@ Item {
     // that never collapse (Settings' section list) leave this false.
     property bool collapsed: false
     property int railSquare: 40
+    // Where the rows' icons are centred, from a row's left edge (NavItem's
+    // iconAxis): the collapsed square sits on that axis, not on the row's
+    // middle, so it neither moves nor jumps while the rail changes width.
+    // -1 centres it in the row instead.
+    property int railAxis: -1
 
     // Offset from this Item's own origin to where the hosted rows actually
     // start -- e.g. SidebarNav's rows sit inside a ColumnLayout with
@@ -69,7 +74,9 @@ Item {
         visible: !!root.target
         width: root.collapsed ? root.railSquare : root.targetW
         height: root.collapsed ? root.railSquare : root.targetH
-        x: root.targetX + (root.collapsed ? (root.targetW - width) / 2 : 0)
+        x: root.targetX + (!root.collapsed ? 0
+                           : root.railAxis >= 0 ? root.railAxis - root.railSquare / 2
+                           : (root.targetW - root.railSquare) / 2)
         y: root.targetY + (root.collapsed ? (root.targetH - height) / 2 : 0)
         radius: Theme.radius.md
         color: Theme.palette.surfaceRaised
@@ -79,9 +86,10 @@ Item {
         Behavior on width { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
     }
 
+    // On the pill's leading edge in both modes, as in the expanded rail.
     Rectangle {
         visible: !!root.target
-        x: root.targetX
+        x: pill.x
         y: root.targetY + (root.targetH - height) / 2
         width: 3
         height: root.targetH - root.barInset * 2 + 4

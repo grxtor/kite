@@ -126,6 +126,12 @@ Dialog {
         target: root.controller ? root.controller.accounts : null
         function onDataChanged() { root.reload() }
     }
+    // An account without a skin of its own shows the game's default once
+    // that has downloaded (see AccountsController::accountSkinInfo()).
+    Connections {
+        target: root.controller
+        function onDefaultSkinsRevisionChanged() { root.reload() }
+    }
 
     // Starts @p w; @p done(ok) runs once it ends.
     function run(w, failText, done) {

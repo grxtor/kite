@@ -20,6 +20,7 @@
 
 #include "MinecraftAccount.h"
 
+#include <QCryptographicHash>
 #include <QUuid>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -46,6 +47,28 @@ MinecraftAccountPtr MinecraftAccount::loadFromJsonV3(const QJsonObject& json)
 		return account;
 	}
 	return nullptr;
+}
+
+QString MinecraftAccount::gameUuid() const
+{
+	return isOffline() ? uuidFromUsername(data.offlineUsername)
+					   : data.profileId();
+}
+
+QString MinecraftAccount::uuidFromUsername(const QString& username)
+{
+	/* UUID.nameUUIDFromBytes(): the MD5 of the name, with the version
+	 * nibble set to 3 and the variant bits to IETF. */
+	constexpr int kVersionByte = 6;
+	constexpr int kVariantByte = 8;
+	QByteArray digest = QCryptographicHash::hash(
+		QStringLiteral("OfflinePlayer:%1").arg(username).toUtf8(),
+		QCryptographicHash::Md5);
+	digest[kVersionByte] = static_cast<char>(
+		(static_cast<quint8>(digest[kVersionByte]) & 0x0f) | 0x30);
+	digest[kVariantByte] = static_cast<char>(
+		(static_cast<quint8>(digest[kVariantByte]) & 0x3f) | 0x80);
+	return QUuid::fromRfc4122(digest).toString(QUuid::Id128);
 }
 
 MinecraftAccountPtr MinecraftAccount::createBlankMSA()
@@ -228,7 +251,7 @@ void MinecraftAccount::fillSession(AuthSessionPtr session)
 		session->wants_online = false;
 		session->player_name = data.offlineUsername;
 		session->username = data.offlineUsername;
-		session->uuid = data.internalId;
+		session->uuid = gameUuid();
 		session->session = "-";
 		session->user_type = "legacy";
 		return;

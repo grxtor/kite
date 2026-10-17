@@ -16,6 +16,11 @@ import MeshMC.Theme
  * Play lives on the cover and appears on hover (always while running, as
  * Stop); click selects, double-click plays, right-click or the "more"
  * button asks the page for the instance menu.
+ *
+ * While a launch runs, the launch takes Play's place, as on the play bar
+ * (PlayDock): the cover dims, its corner chip says "Starting…", a bar runs
+ * beside the icon chip where Play would be, and the line under the name
+ * gives the stage ("Downloading assets") and how far it is.
  */
 Item {
     id: root
@@ -140,20 +145,25 @@ Item {
                 Behavior on opacity { NumberAnimation { duration: Theme.motion.normal } }
             }
 
+            // Beside the icon chip, in the row Play takes otherwise, so
+            // nothing sits on top of it.
             LaunchProgressBar {
                 visible: root.launching
-                anchors.left: parent.left
+                anchors.left: iconBadge.right
                 anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.margins: Theme.space.sm
+                anchors.leftMargin: Theme.space.sm
+                anchors.rightMargin: Theme.space.sm
+                anchors.verticalCenter: iconBadge.verticalCenter
                 onMedia: true
                 progress: root.launchProgress
             }
 
             // Running: a chip in the corner, readable on any picture --
-            // Tag's on-media look, with a status dot.
+            // Tag's on-media look, with a status dot. "Starting…" until the
+            // game is actually up (an instance counts as running from the
+            // moment its launch begins).
             Rectangle {
-                visible: root.isRunning
+                visible: root.isRunning || root.launching
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.margins: Theme.space.sm
@@ -173,11 +183,11 @@ Item {
                         // A perfect circle, like Switch/Slider's own round
                         // parts: computed half-width, not a radius token.
                         width: root.runningDotSize; height: width; radius: width / 2
-                        color: Theme.palette.success
+                        color: root.launching ? Theme.palette.warning : Theme.palette.success
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: qsTr("Running")
+                        text: root.launching ? qsTr("Starting…") : qsTr("Running")
                         color: Theme.media.text
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.caption.pixelSize
@@ -186,18 +196,31 @@ Item {
                 }
             }
 
+            // On the picture, so on the running chip's dark glass: a bare
+            // icon in the theme's text colour vanishes on a bright cover.
             IconButton {
+                id: moreButton
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.margins: Theme.space.xs
+                anchors.margins: Theme.space.sm
                 size: Theme.control.heightSm
                 iconName: "more"
                 tip: qsTr("More")
+                icon.color: Theme.media.text
                 opacity: root.hovered ? 1 : 0
                 visible: opacity > 0
                 focusPolicy: Qt.NoFocus
                 Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
                 onClicked: root.menuRequested()
+
+                // Hover lights the rim, the one thing that changes.
+                background: Rectangle {
+                    radius: Theme.radius.sm
+                    color: Theme.media.chip
+                    border.width: 1
+                    border.color: moreButton.hovered ? Theme.media.textSecondary : Theme.media.chipBorder
+                    Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                }
             }
 
             // The instance icon, on every card in the same spot and on the
@@ -280,7 +303,7 @@ Item {
                 width: Math.min(implicitWidth, parent.width)
                 text: root.launching ? root.launchStatus : Format.versionLine(root.loader, root.gameVersion)
                 elide: Text.ElideRight
-                color: root.launching ? Theme.palette.accent : Theme.palette.textSecondary
+                color: root.launching ? Theme.palette.accentText : Theme.palette.textSecondary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize
                 font.weight: Font.Medium
@@ -291,9 +314,11 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 visible: text.length > 0 && versionText.implicitWidth + Theme.space.sm + implicitWidth <= parent.width
-                text: root.launching ? (root.launchProgress >= 0 ? Math.round(root.launchProgress * 100) + "%" : "")
+                text: root.launching ? (root.launchProgress >= 0 ? qsTr("%1%").arg(Math.round(root.launchProgress * 100)) : "")
                                      : Format.lastPlayed(root.lastLaunch)
-                color: root.launching ? Theme.palette.accent : Theme.palette.textTertiary
+                color: root.launching ? Theme.palette.accentText : Theme.palette.textTertiary
+                // Digits of one width, so the number does not jitter.
+                font.features: ({ "tnum": 1 })
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize
             }

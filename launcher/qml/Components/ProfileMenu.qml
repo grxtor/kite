@@ -74,6 +74,14 @@ Popup {
         }
     }
 
+    // One size for every head here, so the names share a column; a
+    // multiple of 8, the face's own pixel grid (see PlayerHead).
+    readonly property int headSize: 32
+    // Changes when the game's default skins arrive, so a skinless account's
+    // head is fetched again (AccountsController.defaultSkinsRevision).
+    readonly property int faceRevision: root.controller && root.controller.defaultSkinsRevision !== undefined
+                                        ? root.controller.defaultSkinsRevision : 0
+
     width: 300
     padding: Theme.space.xxs
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
@@ -90,36 +98,10 @@ Popup {
             Layout.rightMargin: Theme.space.md
             spacing: Theme.space.sm
 
-            Rectangle {
-                Layout.preferredWidth: 40
-                Layout.preferredHeight: 40
-                // A small square, like the account chip and the Accounts
-                // page: an account's face is never a circle in this app.
-                radius: Theme.radius.sm
-                color: Theme.palette.accentSubtle
-                border.width: 1
-                border.color: Theme.palette.border
-
-                Text {
-                    anchors.centerIn: parent
-                    visible: root.name.length > 0
-                    text: root.name.charAt(0).toUpperCase()
-                    color: Theme.palette.accent
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Font.Bold
-                }
-                // Drawn over the initial, not the other way around -- see
-                // ProfileButton's own face for why.
-                Image {
-                    id: headerFace
-                    anchors.fill: parent
-                    anchors.margins: 1
-                    source: root.avatarSource
-                    visible: root.avatarSource.length > 0
-                    smooth: false
-                    sourceSize: Qt.size(80, 80)
-                }
+            // The player's head, as on the button that opened this menu.
+            PlayerHead {
+                size: root.headSize
+                source: root.avatarSource
             }
 
             Column {
@@ -176,41 +158,18 @@ Popup {
                     root.close()
                 }
 
-                // The row's own face, not ItemDelegate's alpha-recoloured
-                // icon slot -- a skin texture must never be tinted like a
-                // line icon. Same size and fallback-initial treatment as the
-                // header row's face above, so an account without a loaded
-                // texture reads the same way everywhere in this menu instead
-                // of leaving a blank gap.
+                // The row's own head (PlayerHead), not ItemDelegate's
+                // alpha-recoloured icon slot -- a skin texture must never be
+                // tinted like a line icon.
                 contentItem: RowLayout {
                     spacing: Theme.space.sm
 
-                    Rectangle {
-                        Layout.preferredWidth: 40
-                        Layout.preferredHeight: 40
-                        radius: Theme.radius.sm
-                        color: Theme.palette.accentSubtle
-                        border.width: 1
-                        border.color: Theme.palette.border
-
-                        Text {
-                            anchors.centerIn: parent
-                            visible: switchRow.modelData.name.length > 0
-                            text: switchRow.modelData.name.charAt(0).toUpperCase()
-                            color: Theme.palette.accent
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.label.pixelSize
-                            font.weight: Font.Bold
-                        }
-                        Image {
-                            anchors.fill: parent
-                            anchors.margins: 1
-                            source: switchRow.modelData.accountId.length > 0
-                                    ? "image://accountface/" + switchRow.modelData.accountId : ""
-                            visible: switchRow.modelData.accountId.length > 0
-                            smooth: false
-                            sourceSize: Qt.size(80, 80)
-                        }
+                    PlayerHead {
+                        size: root.headSize
+                        source: switchRow.modelData.accountId.length > 0
+                                ? "image://accountface/" + switchRow.modelData.accountId
+                                  + "?rev=" + root.faceRevision
+                                : ""
                     }
                     Text {
                         Layout.fillWidth: true

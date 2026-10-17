@@ -64,7 +64,16 @@ Rectangle {
     // either way, so Settings never moves between pages.
     property bool barBeside: true
     readonly property int expandedWidth: 244
-    readonly property int railWidth: 72
+    // The rail's one vertical axis, from the inner column's left edge:
+    // every nav icon's centre (NavItem.iconAxis), the recent instances'
+    // icons, the brand mark, the collapse toggle and the selection square
+    // sit on it, collapsed or not. The icon rail is exactly the column's
+    // margins plus twice that wide, so on it the axis is also the middle --
+    // nothing has to move or re-anchor when the rail folds.
+    readonly property int railAxis: Theme.space.md + Theme.icon.md / 2
+    readonly property int railWidth: Theme.space.md * 2 + root.hairline + root.railAxis * 2
+    readonly property int hairline: 1
+    readonly property int brandExtent: Theme.control.heightSm + 2
 
     signal itemActivated(string id)
     signal recentActivated(string id)
@@ -102,7 +111,7 @@ Rectangle {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        width: 1
+        width: root.hairline
         color: Theme.palette.divider
     }
 
@@ -118,6 +127,7 @@ Rectangle {
         target: root.selectedNavItem
         collapsed: root.collapsed
         railSquare: root.railSquare
+        railAxis: root.railAxis
         // Rows live in two containers (the main column and the foot band),
         // so positions are summed up to this rail rather than read off one
         // layout.
@@ -131,31 +141,31 @@ Rectangle {
         anchors.top: parent.top
         anchors.bottom: footBand.top
         anchors.margins: Theme.space.md
-        anchors.rightMargin: Theme.space.md + 1
+        anchors.rightMargin: Theme.space.md + root.hairline
         spacing: Theme.space.xs
 
-        // Brand
+        // Brand: the mark centred on the rail axis in both modes, so it
+        // stays put while the rail folds and sits over the icons below.
         RowLayout {
             Layout.fillWidth: !root.collapsed
-            Layout.alignment: root.collapsed ? Qt.AlignHCenter : (Qt.AlignLeft | Qt.AlignVCenter)
+            Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
             // Centred on the same line as every page's title row (TopBar:
             // Theme.space.sm down, Theme.control.height tall), so the brand
             // and the page title read as one header across the window: the
             // column's own md top margin is pulled back up to sm.
             Layout.topMargin: Theme.space.sm - Theme.space.md
             Layout.preferredHeight: Theme.control.height
-            Layout.leftMargin: root.collapsed ? 0 : Theme.space.xs
+            Layout.leftMargin: root.railAxis - root.brandExtent / 2
             Layout.bottomMargin: Theme.space.xl
             spacing: Theme.space.sm + 2
 
             Image {
-                readonly property int extent: Theme.control.heightSm + 2
-                Layout.preferredWidth: extent
-                Layout.preferredHeight: extent
+                Layout.preferredWidth: root.brandExtent
+                Layout.preferredHeight: root.brandExtent
                 source: "qrc:/icons/multimc/scalable/instances/meshmc.svg"
                 // From a constant, not from width: the layout sizes this
                 // item from its implicit size, which sourceSize sets.
-                sourceSize: Qt.size(extent * 2, extent * 2)
+                sourceSize: Qt.size(root.brandExtent * 2, root.brandExtent * 2)
                 fillMode: Image.PreserveAspectFit
             }
 
@@ -169,7 +179,10 @@ Rectangle {
                 font.letterSpacing: -0.2
             }
 
-            Item { Layout.fillWidth: !root.collapsed }
+            // Gone, not just zero-width, on the icon rail: a visible spacer
+            // still takes the row's spacing, which pushed the mark off the
+            // nav icons' centre line.
+            Item { visible: !root.collapsed; Layout.fillWidth: true }
         }
 
         Repeater {
@@ -245,7 +258,7 @@ Rectangle {
         id: footBand
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.rightMargin: 1
+        anchors.rightMargin: root.hairline
         anchors.bottom: parent.bottom
         height: Theme.layout.barHeight
 

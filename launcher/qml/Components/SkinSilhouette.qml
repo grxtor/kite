@@ -6,8 +6,10 @@ import QtQuick
 import MeshMC.Theme
 
 /*
- * The default player figure: shown under a skin render while it loads, or in
- * place of one for an account with no skin (offline accounts). Drawn in the
+ * The placeholder player figure: shown under a skin render while it loads,
+ * or in place of one while there is no texture at all yet (an account
+ * without a skin of its own wears the game's default once that has
+ * downloaded -- see DefaultSkins -- so only before that). Drawn in the
  * game's own proportions -- an 8x8 head over an 8x12 torso, 4x12 arms at its
  * sides and two 4x12 legs, 16x32 in all, the same frame
  * AccountFaceProvider's body render fills -- so a real skin lands exactly on

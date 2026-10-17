@@ -69,12 +69,14 @@ void ModrinthModpackDetail::setTitle(const QString& title)
 	emit titleChanged();
 }
 
-void ModrinthModpackDetail::setBody(const QString& body)
+void ModrinthModpackDetail::setBody(const QString& body,
+									RichBody::Format format)
 {
 	if (m_body == body) {
 		return;
 	}
 	m_body = body;
+	m_bodyHtml = RichBody::toArticleHtml(body, format);
 	emit bodyChanged();
 }
 

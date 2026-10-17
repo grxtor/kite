@@ -116,8 +116,23 @@ Item {
     property string dockLaunchStatus: ""
     property real dockLaunchProgress: -1
 
+    // A launch shown without one running, for a dev-route snapshot of the
+    // launching state: { status: "Downloading assets", progress: 0.42 }
+    // (progress -1 for "no idea how far"). Null for the real thing.
+    property var previewLaunch: null
+
+    // The launch as shown: the instance's own, or the preview.
+    readonly property string launchStatus: root.previewLaunch ? String(root.previewLaunch.status || "")
+                                                              : root.dockLaunchStatus
+    readonly property real launchProgress: root.previewLaunch && root.previewLaunch.progress !== undefined
+                                           ? root.previewLaunch.progress : root.dockLaunchProgress
+    // What the launch is doing, as a label ("Downloading assets"): the
+    // stage the launch task names (LaunchTask, MinecraftUpdate), already
+    // without a trailing "..." (LaunchProgressTracker).
+    readonly property string launchStage: root.launchStatus
+
     readonly property bool hasInstance: root.dockInstanceId.length > 0
-    readonly property bool launching: root.dockLaunchStatus.length > 0
+    readonly property bool launching: root.launchStatus.length > 0
 
     Repeater {
         model: root.rowModel
@@ -191,19 +206,27 @@ Item {
         anchors.rightMargin: root.sideMargin
         spacing: Theme.space.md
 
+        // The instance this bar plays, as a dropdown button: icon, name and
+        // a chevron, inset the same on every side. Quiet like the account
+        // button (ProfileButton): no plate at rest, the shared hover tint on
+        // hover and while its list is open, the chevron turning over.
         AbstractButton {
             id: pickerButton
             Layout.alignment: Qt.AlignVCenter
-            implicitWidth: pickerRow.implicitWidth + Theme.space.md * 2
-            implicitHeight: Theme.control.heightLg + Theme.space.sm
+            // The icon tile's size; with the padding, the plate's height.
+            readonly property int tileSize: 40
+            padding: Theme.space.sm
+            implicitWidth: implicitContentWidth + leftPadding + rightPadding
+            implicitHeight: implicitContentHeight + topPadding + bottomPadding
             hoverEnabled: true
             Accessible.name: root.hasInstance ? qsTr("Change instance: %1").arg(root.dockName) : qsTr("Choose an instance")
 
             onClicked: picker.visible ? picker.close() : picker.open()
 
             background: Rectangle {
-                radius: Theme.radius.lg
-                color: pickerButton.hovered ? Theme.palette.hoverOverlay : "transparent"
+                radius: Theme.radius.md
+                color: pickerButton.down ? Theme.palette.pressedOverlay
+                     : pickerButton.hovered || picker.visible ? Theme.palette.hoverOverlay : "transparent"
                 Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
             }
 
@@ -212,8 +235,8 @@ Item {
                 spacing: Theme.space.sm
 
                 Rectangle {
-                    Layout.preferredWidth: 44
-                    Layout.preferredHeight: 44
+                    Layout.preferredWidth: pickerButton.tileSize
+                    Layout.preferredHeight: pickerButton.tileSize
                     radius: Theme.radius.sm
                     color: Format.shade(root.dockIconTint, Theme.dark ? 0.30 : 0.86, 0.55)
                     border.width: 1
@@ -221,8 +244,8 @@ Item {
 
                     Image {
                         anchors.centerIn: parent
-                        width: 30
-                        height: 30
+                        width: 28
+                        height: 28
                         visible: root.hasInstance
                         source: root.dockIconKey.length > 0 ? "image://instanceicon/" + root.dockIconKey : ""
                         sourceSize: Qt.size(width, height)
@@ -322,45 +345,68 @@ Item {
                 }
             }
 
-            Row {
+            // Launching, where Play was: what the launch is doing right
+            // now ("Downloading assets") and how far along it is, over a
+            // bar in the accent colour, and Cancel beside it -- the way a
+            // launcher's play button turns into a progress readout.
+            RowLayout {
                 id: launchingFace
+                readonly property int readoutWidth: 280
+                readonly property int barThickness: 6
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.space.md
+                spacing: Theme.space.lg
                 opacity: root.launching ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
 
-                Column {
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: Theme.space.xxs
-                    width: 220
+                Accessible.role: Accessible.ProgressBar
+                Accessible.name: root.launchProgress >= 0
+                                 ? qsTr("%1, %2 percent").arg(root.launchStage).arg(Math.round(root.launchProgress * 100))
+                                 : root.launchStage
 
-                    Text {
-                        width: parent.width
-                        text: root.dockLaunchProgress >= 0
-                              ? qsTr("%1, %2%").arg(root.dockLaunchStatus).arg(Math.round(root.dockLaunchProgress * 100))
-                              : root.dockLaunchStatus
-                        elide: Text.ElideRight
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
-                        font.weight: Font.Medium
+                ColumnLayout {
+                    Layout.preferredWidth: launchingFace.readoutWidth
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: Theme.space.sm
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Theme.space.sm
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: root.launchStage
+                            elide: Text.ElideRight
+                            color: Theme.palette.textPrimary
+                            font.family: Theme.font.family
+                            font.pixelSize: Theme.type.bodyStrong.pixelSize
+                            font.weight: Theme.type.bodyStrong.weight
+                        }
+                        // Only once the step says how far it is.
+                        Text {
+                            visible: root.launchProgress >= 0
+                            text: qsTr("%1%").arg(Math.round(root.launchProgress * 100))
+                            color: Theme.palette.textSecondary
+                            font.family: Theme.font.family
+                            font.pixelSize: Theme.type.label.pixelSize
+                            font.weight: Theme.type.label.weight
+                            // Digits of one width, so the number does not
+                            // jitter as it counts up.
+                            font.features: ({ "tnum": 1 })
+                        }
                     }
                     LaunchProgressBar {
-                        width: parent.width
-                        implicitHeight: 8
-                        segmented: true
-                        progress: root.dockLaunchProgress
+                        Layout.fillWidth: true
+                        implicitHeight: launchingFace.barThickness
+                        progress: root.launchProgress
                     }
                 }
 
-                IconButton {
-                    anchors.verticalCenter: parent.verticalCenter
-                    size: Theme.control.heightLg
-                    flat: false
-                    iconName: "x"
-                    tip: qsTr("Cancel")
+                Button {
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitHeight: Theme.control.heightLg
+                    text: qsTr("Cancel")
                     onClicked: root.cancelRequested(root.dockInstanceId)
                 }
             }
@@ -427,24 +473,24 @@ Item {
     // -- The instance picker -------------------------------------------------
     Popup {
         id: picker
-        x: Theme.space.xl + Theme.space.xs
-        y: -height - Theme.space.sm
+        // Over the button that opens it, left edges aligned, with a clear
+        // gap above the bar.
+        x: root.sideMargin
+        y: -height - Theme.space.md
         width: 360
-        // The list's own height already caps at listMaxHeight below; deriving
-        // this from that exact same expression (rather than a separate
-        // guessed constant) is what keeps the two from ever disagreeing --
-        // a popup capped shorter than the list it contains was exactly why
-        // the last row used to be sliced off mid-row. Tall enough for a
-        // realistic recent-instances list (7-8 rows at this row height)
-        // to show in full without scrolling at all; a library with more
-        // than that scrolls, and lands on a whole row at the bottom via
-        // the list's own matching topMargin/bottomMargin below.
-        readonly property int listMaxHeight: 360
+        // Every row is this tall: two lines (name, version) and the
+        // delegate's padding. Fixed, so the list can be sized in whole rows.
+        readonly property int rowHeight: Theme.control.heightLg + Theme.space.xs
+        // Seven rows at most, whole ones: a longer list scrolls, and its
+        // bottom edge fades (ScrollFade) rather than slicing a row.
+        readonly property int visibleRows: 7
+        readonly property int listMaxHeight: rowHeight * visibleRows + Theme.space.xs * 2
         // Search field + the ColumnLayout's own spacing + this popup's own
         // top/bottom padding -- everything in this popup that is not the
         // list itself.
         readonly property int chromeHeight: Theme.control.height + Theme.space.sm + padding * 2
-        height: chromeHeight + Math.min(listMaxHeight, Math.max(1, list.contentHeight))
+        height: chromeHeight + Math.min(listMaxHeight, Math.max(1, list.contentHeight
+                                                                  + list.topMargin + list.bottomMargin))
         padding: Theme.space.sm
         // Belt and braces alongside the height match above: nothing paints
         // past this popup's own rounded background.
@@ -454,7 +500,10 @@ Item {
         onOpened: {
             picker.savedFilter = root.instanceModel ? root.instanceModel.filterText : ""
             searchField.text = ""
-            searchField.forceActiveFocus()
+            // Ready to type into, but with the plain focused border, not the
+            // keyboard focus ring: nobody tabbed here. (The ring is for
+            // keyboard focus; see Style/TextField.qml.)
+            searchField.forceActiveFocus(Qt.MouseFocusReason)
         }
         onClosed: if (root.instanceModel) root.instanceModel.filterText = picker.savedFilter
 
@@ -468,106 +517,122 @@ Item {
                 onTextChanged: if (root.instanceModel) root.instanceModel.filterText = text
             }
 
-            ListView {
-                id: list
+            // The list, with a fade over its bottom edge while more rows
+            // wait below it.
+            Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: Math.min(picker.listMaxHeight, Math.max(1, contentHeight))
-                // Equal top and bottom breathing room, so a fully scrolled
-                // list ends with clear space under the last row instead of
-                // stopping exactly on its bottom edge.
-                topMargin: Theme.space.xs
-                bottomMargin: Theme.space.xs
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
-                // The default listing is most-recent-first; typing a search
-                // switches to the full library so an instance that has
-                // never been played can still be found.
-                model: searchField.text.length > 0 ? root.instanceModel : root.recentModel
-                ScrollBar.vertical: ScrollBar {}
+                Layout.preferredHeight: Math.min(picker.listMaxHeight, Math.max(1, list.contentHeight
+                                                                                  + list.topMargin + list.bottomMargin))
 
-                delegate: ItemDelegate {
-                    id: row
-                    required property string instanceId
-                    required property string name
-                    required property string iconKey
-                    required property bool isRunning
-                    required property string gameVersion
-                    required property string loader
-                    width: list.width
-                    hoverEnabled: true
-                    // The instance the bar plays right now -- which is the
-                    // selection when there is one, otherwise the most recent
-                    // -- so the list always shows where "Play" points.
-                    readonly property bool current: row.instanceId === root.dockInstanceId
-                    highlighted: row.current
+                ListView {
+                    id: list
+                    anchors.fill: parent
+                    // Equal top and bottom breathing room, so a fully scrolled
+                    // list ends with clear space under the last row instead of
+                    // stopping exactly on its bottom edge.
+                    topMargin: Theme.space.xs
+                    bottomMargin: Theme.space.xs
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    // The default listing is most-recent-first; typing a search
+                    // switches to the full library so an instance that has
+                    // never been played can still be found.
+                    model: searchField.text.length > 0 ? root.instanceModel : root.recentModel
+                    ScrollBar.vertical: ScrollBar {}
 
-                    onClicked: {
-                        root.selectRequested(row.instanceId)
-                        picker.close()
+                    delegate: ItemDelegate {
+                        id: row
+                        required property string instanceId
+                        required property string name
+                        required property string iconKey
+                        required property bool isRunning
+                        required property string gameVersion
+                        required property string loader
+                        width: list.width
+                        height: picker.rowHeight
+                        hoverEnabled: true
+                        // The instance the bar plays right now -- which is the
+                        // selection when there is one, otherwise the most recent
+                        // -- so the list always shows where "Play" points.
+                        readonly property bool current: row.instanceId === root.dockInstanceId
+                        highlighted: row.current
+
+                        onClicked: {
+                            root.selectRequested(row.instanceId)
+                            picker.close()
+                        }
+
+                        contentItem: RowLayout {
+                            spacing: Theme.space.sm
+
+                            Image {
+                                Layout.preferredWidth: 28
+                                Layout.preferredHeight: 28
+                                source: row.iconKey.length > 0 ? "image://instanceicon/" + row.iconKey : ""
+                                // A fixed size, not Qt.size(width, height): this
+                                // Image's own width/height come from Layout.
+                                // preferred* rather than a literal, and tying
+                                // sourceSize back to them is exactly the binding
+                                // loop QQuickImage warns about.
+                                sourceSize: Qt.size(56, 56)
+                                fillMode: Image.PreserveAspectFit
+                            }
+                            Column {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                spacing: 0
+
+                                Text {
+                                    width: parent.width
+                                    text: row.name
+                                    elide: Text.ElideRight
+                                    color: Theme.palette.textPrimary
+                                    font.family: Theme.font.family
+                                    font.pixelSize: Theme.type.body.pixelSize
+                                    font.weight: Font.Medium
+                                }
+                                Text {
+                                    width: parent.width
+                                    text: Format.versionLine(row.loader, row.gameVersion)
+                                    elide: Text.ElideRight
+                                    color: Theme.palette.textTertiary
+                                    font.family: Theme.font.family
+                                    font.pixelSize: Theme.type.caption.pixelSize
+                                }
+                            }
+                            Rectangle {
+                                visible: row.isRunning
+                                Layout.preferredWidth: 7
+                                Layout.preferredHeight: 7
+                                radius: 3.5
+                                color: Theme.palette.success
+                            }
+                            MeshIcon {
+                                visible: row.current
+                                iconName: "check"
+                                size: Theme.icon.sm
+                                color: Theme.palette.accentText
+                            }
+                        }
                     }
 
-                    contentItem: RowLayout {
-                        spacing: Theme.space.sm
+                    EmptyState {
+                        anchors.centerIn: parent
+                        visible: list.count === 0
+                        title: qsTr("No instances found")
+                        body: ""
+                        actionText: ""
 
-                        Image {
-                            Layout.preferredWidth: 28
-                            Layout.preferredHeight: 28
-                            source: row.iconKey.length > 0 ? "image://instanceicon/" + row.iconKey : ""
-                            // A fixed size, not Qt.size(width, height): this
-                            // Image's own width/height come from Layout.
-                            // preferred* rather than a literal, and tying
-                            // sourceSize back to them is exactly the binding
-                            // loop QQuickImage warns about.
-                            sourceSize: Qt.size(56, 56)
-                            fillMode: Image.PreserveAspectFit
-                        }
-                        Column {
-                            Layout.fillWidth: true
-                            Layout.minimumWidth: 0
-                            spacing: 0
-
-                            Text {
-                                width: parent.width
-                                text: row.name
-                                elide: Text.ElideRight
-                                color: Theme.palette.textPrimary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.body.pixelSize
-                                font.weight: Font.Medium
-                            }
-                            Text {
-                                width: parent.width
-                                text: Format.versionLine(row.loader, row.gameVersion)
-                                elide: Text.ElideRight
-                                color: Theme.palette.textTertiary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.caption.pixelSize
-                            }
-                        }
-                        Rectangle {
-                            visible: row.isRunning
-                            Layout.preferredWidth: 7
-                            Layout.preferredHeight: 7
-                            radius: 3.5
-                            color: Theme.palette.success
-                        }
-                        MeshIcon {
-                            visible: row.current
-                            iconName: "check"
-                            size: Theme.icon.sm
-                            color: Theme.palette.accentText
-                        }
+                        MeshIcon { iconName: "search"; size: 32; color: Theme.palette.textTertiary }
                     }
                 }
 
-                EmptyState {
-                    anchors.centerIn: parent
-                    visible: list.count === 0
-                    title: qsTr("No instances found")
-                    body: ""
-                    actionText: ""
-
-                    MeshIcon { iconName: "search"; size: 32; color: Theme.palette.textTertiary }
+                ScrollFade {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    flickable: list
+                    fadeTo: Theme.palette.surfaceOverlay
                 }
             }
         }

@@ -53,7 +53,8 @@ AbstractButton {
     background: Rectangle {
         width: control.compact ? control.railSquare : control.width
         height: control.compact ? control.railSquare : control.height
-        x: control.compact ? (control.width - width) / 2 : 0
+        // Centred on the icon (see `icon` below), not on the row.
+        x: control.compact ? Theme.space.md + Theme.icon.md / 2 - width / 2 : 0
         y: control.compact ? (control.height - height) / 2 : 0
         radius: Theme.radius.md
         color: control.down ? Theme.palette.pressedOverlay
@@ -67,9 +68,11 @@ AbstractButton {
     contentItem: Item {
         Item {
             id: icon
-            anchors.left: control.compact ? undefined : parent.left
+            // At the same x in both modes, never re-anchored: the icon rail
+            // is exactly as wide as this column (SidebarNav.railAxis), so
+            // it is centred there without moving while the rail folds.
+            anchors.left: parent.left
             anchors.leftMargin: Theme.space.md
-            anchors.horizontalCenter: control.compact ? parent.horizontalCenter : undefined
             anchors.verticalCenter: parent.verticalCenter
             width: Theme.icon.md
             height: Theme.icon.md

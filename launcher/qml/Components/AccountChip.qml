@@ -20,6 +20,8 @@ AbstractButton {
     property string avatarSource
 
     readonly property bool signedIn: name.length > 0
+    // A multiple of 8, the face's own pixel grid (see PlayerHead).
+    readonly property int headSize: 32
 
     implicitHeight: Theme.control.heightLg + Theme.space.md
     implicitWidth: 200
@@ -36,43 +38,15 @@ AbstractButton {
     }
 
     contentItem: Item {
-        Rectangle {
+        // The player's head; with no account, a quiet tile with the
+        // user glyph instead (there is no player to draw).
+        PlayerHead {
             id: avatar
             anchors.left: parent.left
-            anchors.leftMargin: Theme.space.sm + 2
+            anchors.leftMargin: Theme.space.sm
             anchors.verticalCenter: parent.verticalCenter
-            width: Theme.control.height - 4
-            height: width
-            radius: width / 2
-            color: control.signedIn ? Theme.palette.accentSubtle : Theme.palette.surfaceOverlay
-            border.width: 1
-            border.color: Theme.palette.border
-
-            Text {
-                anchors.centerIn: parent
-                visible: control.signedIn
-                text: control.name.charAt(0).toUpperCase()
-                color: Theme.palette.accent
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.title.pixelSize
-                font.weight: Font.Bold
-            }
-
-            Image {
-                id: avatarImage
-                anchors.fill: parent
-                anchors.margins: 1
-                // Drawn over the initial: an account without a skin comes
-                // back transparent and the initial shows through. Sampled
-                // well above display size and downscaled by the GPU
-                // (smooth: false keeps that downscale a crisp nearest-
-                // neighbour one) so the face stays sharp regardless of the
-                // chip's own size or the display's pixel ratio.
-                source: control.avatarSource
-                visible: control.signedIn && control.avatarSource.length > 0
-                smooth: false
-                sourceSize: Qt.size(64, 64)
-            }
+            size: control.headSize
+            source: control.signedIn ? control.avatarSource : ""
 
             MeshIcon {
                 anchors.centerIn: parent
@@ -85,7 +59,7 @@ AbstractButton {
 
         Column {
             anchors.left: avatar.right
-            anchors.leftMargin: Theme.space.sm + 2
+            anchors.leftMargin: Theme.space.sm
             anchors.right: chevron.left
             anchors.rightMargin: Theme.space.xs
             anchors.verticalCenter: parent.verticalCenter

@@ -112,6 +112,8 @@ set(CORE_SOURCES
     models/InstanceShortcutController.cpp
     models/LibraryController.h
     models/LibraryController.cpp
+    models/RichBody.h
+    models/RichBody.cpp
     modplatform/BlockedMod.h
 
     # LOGIC - Base classes and infrastructure
@@ -554,6 +556,8 @@ set(MINECRAFT_SOURCES
     minecraft/skins/SkinLibrary.h
     minecraft/skins/ProfileSkinImport.cpp
     minecraft/skins/ProfileSkinImport.h
+    minecraft/skins/DefaultSkins.cpp
+    minecraft/skins/DefaultSkins.h
 
     mojang/PackageManifest.h
     mojang/PackageManifest.cpp
@@ -1445,6 +1449,13 @@ add_unit_test(LaunchProgressTracker
     LIBS MeshMC_core
     )
 
+# The stage a launch reports per step (LaunchTask::startStep()), with
+# NullInstance and hand-made steps -- no game, no network.
+add_unit_test(LaunchTask
+    SOURCES launch/LaunchTask_test.cpp
+    LIBS MeshMC_core
+    )
+
 add_unit_test(IdSelectionModel
     SOURCES models/IdSelectionModel_test.cpp
     LIBS MeshMC_core
@@ -1591,6 +1602,13 @@ add_unit_test(TaskWatcher
 # ModrinthModpackModel::parseSearchResults().
 add_unit_test(ModrinthModpackModel
     SOURCES modplatform/modrinth/ModrinthModpackModel_test.cpp
+    LIBS MeshMC_core
+    )
+
+# A pack description (Markdown with raw HTML, or HTML) -> the plain article
+# HTML the Discover detail page shows; no network, no model.
+add_unit_test(RichBody
+    SOURCES models/RichBody_test.cpp
     LIBS MeshMC_core
     )
 

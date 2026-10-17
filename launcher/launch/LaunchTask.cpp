@@ -111,6 +111,12 @@ void LaunchTask::startStep(const shared_qobject_ptr<LaunchStep>& step)
 		connect(step.get(), &Task::status, this, &Task::setStatus);
 	m_stepProgressConnection =
 		connect(step.get(), &Task::progress, this, &Task::setProgress);
+	/* What the launch is doing, for a step that does not say: most steps
+	 * are quick and silent, and the last step's stage ("Downloading
+	 * assets", 100%) would otherwise stay up through them. A step with a
+	 * stage of its own sets it as it starts, right over this. */
+	setStatus(tr("Preparing to launch"));
+	setProgress(0, 0);
 	step->start();
 }
 

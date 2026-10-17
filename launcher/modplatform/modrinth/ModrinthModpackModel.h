@@ -27,6 +27,7 @@
 #include <net/NetJob.h>
 
 #include "modplatform/modrinth/ModrinthPackIndex.h"
+#include "models/RichBody.h"
 
 /* The version list and long description of one modpack, fetched lazily
  * once the user picks a row - the QML-facing, widget-free counterpart of
@@ -43,13 +44,14 @@ class ModrinthModpackDetail : public QObject
 	Q_OBJECT
 	Q_PROPERTY(QString projectId READ projectId NOTIFY projectIdChanged)
 	Q_PROPERTY(QString title READ title NOTIFY titleChanged)
-	/* The project's long description, as Modrinth serves it: Markdown,
-	 * not HTML - unlike ContentProviderModel::parseBodyResponse(), which
-	 * both providers it wraps do convert. Left as-is here because
-	 * nothing in the core can render Markdown; that is squarely a QML
-	 * concern (a Markdown-aware Text item, or a conversion done in QML/
-	 * JS) and does not belong in MeshMC_core. */
+	/* The project's long description, as the provider serves it:
+	 * Markdown from Modrinth (and FTB, ATLauncher), HTML from CurseForge
+	 * and Technic - see each model's `bodyFormat`. */
 	Q_PROPERTY(QString body READ body NOTIFY bodyChanged)
+	/* The same description as one plain HTML page, whatever format it
+	 * came in (RichBody::toArticleHtml()): what the detail page shows,
+	 * with RemoteRichText's `article` look. Changes with `body`. */
+	Q_PROPERTY(QString bodyHtml READ bodyHtml NOTIFY bodyChanged)
 	/* QVariantList of maps: id, name, versionNumber, gameVersions
 	 * (list), loaders (list), datePublished, downloadUrl, featured. */
 	Q_PROPERTY(QVariantList versions READ versions NOTIFY versionsChanged)
@@ -75,6 +77,10 @@ class ModrinthModpackDetail : public QObject
 	{
 		return m_body;
 	}
+	QString bodyHtml() const
+	{
+		return m_bodyHtml;
+	}
 	QVariantList versions() const
 	{
 		return m_versions;
@@ -97,7 +103,9 @@ class ModrinthModpackDetail : public QObject
 	 * it starts the two fetches. */
 	void reset(const QString& projectId);
 	void setTitle(const QString& title);
-	void setBody(const QString& body);
+	/* @p format: how the provider writes it (see `body`). */
+	void setBody(const QString& body,
+				 RichBody::Format format = RichBody::Format::Markdown);
 	void setVersions(const QVariantList& versions);
 	void setGallery(const QVariantList& gallery);
 	void setLoading(bool loading);
@@ -116,6 +124,7 @@ class ModrinthModpackDetail : public QObject
 	QString m_projectId;
 	QString m_title;
 	QString m_body;
+	QString m_bodyHtml;
 	QVariantList m_versions;
 	QVariantList m_gallery;
 	bool m_loading = false;

@@ -245,13 +245,15 @@ void AccountList::setDefaultAccount(MinecraftAccountPtr newAccount)
 			idx++;
 		}
 		if (currentDefaultAccount != newDefaultAccount) {
+			/* Set before the notifications: a view that re-reads the rows in
+			 * its dataChanged handler must already see the new default. */
+			m_defaultAccount = newDefaultAccount;
 			emit dataChanged(index(currentDefaultAccountIdx),
 							 index(currentDefaultAccountIdx,
 								   columnCount(QModelIndex()) - 1));
 			emit dataChanged(
 				index(newDefaultAccountIdx),
 				index(newDefaultAccountIdx, columnCount(QModelIndex()) - 1));
-			m_defaultAccount = newDefaultAccount;
 			onDefaultAccountChanged();
 		}
 	}

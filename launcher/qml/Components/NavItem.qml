@@ -18,9 +18,14 @@ AbstractButton {
     property string iconName
     property string label
     property bool selected: false
-    // Icon rail mode: centers the icon and drops the label, which shows as
-    // a tooltip instead.
+    // Icon rail mode: drops the label, which shows as a tooltip instead.
+    // The icon itself never moves: it sits on the same axis in both modes
+    // (iconAxis), and the collapsed rail is exactly twice that wide
+    // (SidebarNav.railWidth), so it is centred there without re-anchoring
+    // anything -- swapping anchors at runtime left the icon behind.
     property bool collapsed: false
+    // The icon's centre, from the row's left edge.
+    readonly property int iconAxis: Theme.space.md + Theme.icon.md / 2
 
     implicitHeight: Theme.control.height + Theme.space.xs
     implicitWidth: 200
@@ -34,16 +39,16 @@ AbstractButton {
     ToolTip.delay: 400
     ToolTip.text: control.label
 
-    // Collapsed: a compact square hugging just the icon rather than the
-    // whole stretched row -- the same square SidebarNav's own activeIndicator
-    // uses for the selected item (see its own comment), so hover and
-    // selection read as the same shape in the rail.
+    // Collapsed: a compact square centred on the icon rather than the
+    // whole stretched row -- the same square SidebarNav's selection
+    // indicator draws for the selected item (NavSelectionIndicator), so
+    // hover and selection read as the same shape in the rail.
     readonly property int railSquare: 40
 
     background: Rectangle {
         width: control.collapsed ? control.railSquare : control.width
         height: control.collapsed ? control.railSquare : control.height
-        x: control.collapsed ? (control.width - width) / 2 : 0
+        x: control.collapsed ? control.iconAxis - width / 2 : 0
         y: control.collapsed ? (control.height - height) / 2 : 0
         radius: Theme.radius.md
         color: control.down ? Theme.palette.pressedOverlay
@@ -65,9 +70,8 @@ AbstractButton {
         Row {
             id: iconRow
             anchors.verticalCenter: parent.verticalCenter
-            anchors.left: control.collapsed ? undefined : parent.left
-            anchors.horizontalCenter: control.collapsed ? parent.horizontalCenter : undefined
-            leftPadding: control.collapsed ? 0 : Theme.space.md
+            anchors.left: parent.left
+            leftPadding: control.iconAxis - Theme.icon.md / 2
             spacing: Theme.space.md
 
             MeshIcon {

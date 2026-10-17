@@ -78,7 +78,7 @@ ApplicationWindow {
             LauncherStore.playTime = root.shell.playTime
             LauncherStore.catPacks = root.shell.catPacks
             var mode = SettingsStore.string("UiThemeMode")
-            if (mode === "dark" || mode === "light")
+            if (mode === "dark" || mode === "light" || mode === "system")
                 Theme.mode = mode
             var scheme = SettingsStore.string("UiPalette")
             if (scheme === "amethyst" || scheme === "ember" || scheme === "diamond" || scheme === "grass")
@@ -143,6 +143,16 @@ ApplicationWindow {
             // "=profiler" opens that submenu as well.
             else if (key === "launchmenu")
                 Qt.callLater(playDock.openLaunchMenu, value)
+            // The play bar mid-launch, without a launch: "launching" shows
+            // "Downloading assets" at 42 %, "launching=<stage>:<0..1>" any
+            // stage and progress (-1 for no idea how far).
+            else if (key === "launching") {
+                var launchArgs = value.length > 0 ? value.split(":") : ["Downloading assets", "0.42"]
+                playDock.previewLaunch = {
+                    status: launchArgs[0],
+                    progress: launchArgs.length > 1 ? parseFloat(launchArgs[1]) : -1
+                }
+            }
             // The Export dialog over instance <id>, optionally on a format:
             // "export=fabric" or "export=fabric:modrinth".
             else if (key === "export") {
@@ -460,7 +470,9 @@ ApplicationWindow {
             // with the persisted manual toggle (see SidebarNav's own
             // collapseToggle), so a small window still forces the rail
             // regardless of what was last chosen.
-            collapsed: root.width < 1000 || SettingsStore.bool("UiSidebarCollapsed")
+            // Settings brings its own section list, so the app sidebar folds
+            // to its icon rail there instead of standing beside it.
+            collapsed: root.width < 1000 || root.page === "settings" || SettingsStore.bool("UiSidebarCollapsed")
             items: [
                 { id: "home", icon: "home", label: qsTr("Home") },
                 { id: "library", icon: "library", label: qsTr("Library") },
@@ -536,12 +548,9 @@ ApplicationWindow {
                     Accessible.name: qsTr("Sort instances by")
                 }
 
-                SegmentedControl {
+                // Grid or list: two icon buttons, the current view lit.
+                ViewModeToggle {
                     visible: root.page === "library"
-                    options: [
-                        { value: "grid", label: qsTr("Grid") },
-                        { value: "list", label: qsTr("List") }
-                    ]
                     current: libraryPage.viewMode
                     onActivated: (value) => libraryPage.viewMode = value
                 }

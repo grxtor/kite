@@ -83,6 +83,7 @@
 #include "minecraft/auth/AccountList.h"
 #include "minecraft/mod/ModIconCache.h"
 #include "minecraft/auth/MinecraftAccount.h"
+#include "minecraft/skins/DefaultSkins.h"
 
 namespace
 {
@@ -135,6 +136,9 @@ QmlShell::QmlShell(QObject* parent) : QObject(parent)
 	};
 	connect(accounts.get(), &AccountList::listChanged, this, bump);
 	connect(accounts.get(), &AccountList::defaultAccountChanged, this, bump);
+	/* An account without a skin of its own is drawn in the game's default
+	 * skin once DefaultSkins has downloaded it. */
+	connect(DefaultSkins::instance(), &DefaultSkins::loaded, this, bump);
 
 	// Once per run, like Application::createSetupWizard() used to compute
 	// this once before deciding whether to show the widget wizard.

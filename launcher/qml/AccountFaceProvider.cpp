@@ -25,6 +25,7 @@
 #include "core/LauncherContext.h"
 #include "minecraft/auth/AccountList.h"
 #include "minecraft/auth/MinecraftAccount.h"
+#include "minecraft/skins/DefaultSkins.h"
 #include "minecraft/skins/SkinEntry.h"
 
 namespace
@@ -114,6 +115,24 @@ MinecraftAccountPtr findAccount(AccountList* accounts, const QString& key)
 		}
 	}
 	return MinecraftAccountPtr();
+}
+
+// The skin @p account is drawn in: its own, or -- for an account without
+// one (offline accounts, a profile not fetched yet) -- the game's default
+// Steve or Alex (DefaultSkins::isSlim() says which).
+// Null only while that default is still being downloaded. @p slim gets the
+// arm width either way.
+QImage skinFor(const MinecraftAccountPtr& account, bool* slim)
+{
+	*slim = DefaultSkins::isSlim(account);
+	QImage skin;
+	if (skin.loadFromData(account->accountData()->minecraftProfile.skin.data,
+						  "PNG")) {
+		return skin;
+	}
+	DefaultSkins* defaults = DefaultSkins::instance();
+	defaults->ensureLoaded();
+	return defaults->texture(*slim);
 }
 } // namespace
 
@@ -246,10 +265,12 @@ QImage AccountFaceProvider::skinTexture(const QString& id)
 			context ? findAccount(context->accounts().get(),
 								  id.mid(kSkinTexturePrefix.length()))
 					: MinecraftAccountPtr();
-		QImage skin;
-		if (!account ||
-			!skin.loadFromData(account->accountData()->minecraftProfile.skin.data,
-							   "PNG")) {
+		if (!account) {
+			return QImage();
+		}
+		bool slim = false;
+		const QImage skin = skinFor(account, &slim);
+		if (skin.isNull()) {
 			return QImage();
 		}
 		const QImage texture = SkinEntry::normalisedTexture(skin);
@@ -323,14 +344,9 @@ QPixmap AccountFaceProvider::requestPixmap(const QString& id, QSize* size,
 		MinecraftAccountPtr account =
 			findAccount(context->accounts().get(), key);
 		if (account) {
-			QImage skin;
-			if (skin.loadFromData(
-					account->accountData()->minecraftProfile.skin.data,
-					"PNG")) {
-				const bool slim = account->accountData()
-									   ->minecraftProfile.skin.variant.compare(
-										   QLatin1String("SLIM"),
-										   Qt::CaseInsensitive) == 0;
+			bool slim = false;
+			const QImage skin = skinFor(account, &slim);
+			if (!skin.isNull()) {
 				const QImage composited =
 					wantsBody ? bodyFromSkin(skin, slim) : faceFromSkin(skin);
 				if (!composited.isNull()) {

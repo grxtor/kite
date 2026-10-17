@@ -6,23 +6,26 @@ import QtQuick
 import MeshMC.Theme
 
 /*
- * A thin bar for a launch in progress. `progress` 0..1 fills it; a negative
- * value means "busy, no idea how far" and runs a sliding segment instead.
+ * A thin bar for a launch, an install or a download in progress. `progress`
+ * 0..1 fills it; a negative value means "busy, no idea how far" and runs a
+ * sliding segment instead. Its thickness is its height: thin (4) by default,
+ * thicker where it is the main thing on show (the play bar's launch).
  */
 Rectangle {
     id: root
 
     property real progress: -1
     property bool onMedia: false
-    // The play bar's XP-bar-like look: thin ticks over the whole track
-    // rather than one smooth fill, evoking a game's own experience bar.
-    property bool segmented: false
     readonly property bool indeterminate: progress < 0
 
     implicitHeight: 4
     radius: height / 2
     clip: true
-    color: onMedia ? Qt.rgba(1, 1, 1, 0.18) : Theme.palette.surfaceOverlay
+    // The hairline colour as the track: translucent, so it reads on any
+    // surface, in both themes.
+    color: onMedia ? Qt.rgba(1, 1, 1, 0.18) : Theme.palette.border
+
+    Accessible.role: Accessible.ProgressBar
 
     Rectangle {
         id: fill
@@ -34,29 +37,6 @@ Rectangle {
         Behavior on width {
             enabled: !root.indeterminate
             NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing }
-        }
-    }
-
-    Row {
-        visible: root.segmented
-        anchors.fill: parent
-        spacing: 0
-
-        Repeater {
-            model: root.segmented ? 16 : 0
-            delegate: Item {
-                required property int index
-                width: root.width / 16
-                height: parent.height
-
-                Rectangle {
-                    visible: index < 15
-                    anchors.right: parent.right
-                    width: 1
-                    height: parent.height
-                    color: Qt.rgba(0, 0, 0, 0.25)
-                }
-            }
         }
     }
 

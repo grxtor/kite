@@ -48,7 +48,7 @@ void MinecraftUpdate::executeTask()
 {
 	// create folders
 	{
-		addTask(Task::Ptr(new FoldersTask(m_inst)));
+		addStage(Task::Ptr(new FoldersTask(m_inst)), tr("Preparing folders"));
 	}
 
 	// add metadata update task if necessary
@@ -57,26 +57,57 @@ void MinecraftUpdate::executeTask()
 		components->reload(Net::Mode::Online);
 		auto task = components->getCurrentTask();
 		if (task) {
-			addTask(task);
+			addStage(task, tr("Loading version info"));
 		}
 	}
 
 	// libraries download
 	{
-		addTask(Task::Ptr(new LibrariesTask(m_inst)));
+		addStage(Task::Ptr(new LibrariesTask(m_inst)),
+				 tr("Downloading libraries"));
 	}
 
 	// FML libraries download and copy into the instance
 	{
-		addTask(Task::Ptr(new FMLLibrariesTask(m_inst)));
+		addStage(Task::Ptr(new FMLLibrariesTask(m_inst)),
+				 tr("Downloading Forge libraries"));
 	}
 
 	// assets update
 	{
-		addTask(Task::Ptr(new AssetUpdateTask(m_inst)));
+		addStage(Task::Ptr(new AssetUpdateTask(m_inst)),
+				 tr("Downloading assets"));
 	}
 
 	SequentialTask::executeTask();
+}
+
+void MinecraftUpdate::addStage(Task::Ptr task, const QString& stage)
+{
+	m_stages.insert(task.get(), stage);
+	addTask(task);
+}
+
+void MinecraftUpdate::updateState()
+{
+	// Between two steps, and once the last one is done, the step that just
+	// ran keeps the word: there is no other step to name.
+	if (m_doing.isEmpty()) {
+		return;
+	}
+	// Sequential: the one step under way.
+	Task* current = m_doing.cbegin().key();
+	const QString stage = m_stages.value(current);
+	setStatus(stage.isEmpty() ? current->getStatus() : stage);
+	const qint64 total = current->getTotalProgress();
+	setProgress(total > 0 ? current->getProgress() : 0, qMax<qint64>(total, 0));
+}
+
+void MinecraftUpdate::subTaskProgress(Task::Ptr task, qint64 current,
+									  qint64 total)
+{
+	SequentialTask::subTaskProgress(task, current, total);
+	setProgress(current, total);
 }
 
 bool MinecraftUpdate::abort()

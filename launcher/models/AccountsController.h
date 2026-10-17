@@ -55,6 +55,15 @@ class AccountsController : public QObject
 	Q_PROPERTY(bool hasDefault READ hasDefault NOTIFY defaultChanged)
 	/// profileName() of the default account, or empty if there is none.
 	Q_PROPERTY(QString defaultName READ defaultName NOTIFY defaultChanged)
+	/// The default account's accountId role value (its profile id, or its
+	/// internal id when it has none), or empty if there is none. What a page
+	/// should compare rows against to find the account games launch with.
+	Q_PROPERTY(
+		QString defaultAccountId READ defaultAccountId NOTIFY defaultChanged)
+	/// Bumped whenever the game's default skins (DefaultSkins) arrive, so a
+	/// page drawing a skinless account can refetch its images.
+	Q_PROPERTY(int defaultSkinsRevision READ defaultSkinsRevision NOTIFY
+				   defaultSkinsRevisionChanged)
 	/// See skinDemoRequested() below.
 	Q_PROPERTY(bool skinDemoRequested READ skinDemoRequested CONSTANT)
 	/// See skinDemoPose() below.
@@ -67,6 +76,8 @@ class AccountsController : public QObject
 	QObject* accounts() const;
 	bool hasDefault() const;
 	QString defaultName() const;
+	QString defaultAccountId() const;
+	int defaultSkinsRevision() const;
 
 	/// Makes row @p row the default account. No-op if @p row is out of range.
 	Q_INVOKABLE void setDefault(int row);
@@ -103,14 +114,18 @@ class AccountsController : public QObject
 	/*!
 	 * Skin and cape state for row @p row's Microsoft profile, for the QML
 	 * skin/cape editor (see AccountsPage.qml): { "valid": bool, "slim":
-	 * bool, "hasSkin": bool, "currentCapeId": string, "currentCapeUrl":
-	 * string, "capes": [{ "id", "alias", "url" }] }. Each cape is listed
-	 * once, even when the stored profile repeats it.
-	 * "valid" is false -- and every other field is at its empty default --
+	 * bool, "hasSkin": bool, "defaultSkin": bool, "currentCapeId": string,
+	 * "currentCapeUrl": string, "capes": [{ "id", "alias", "url" }] }. Each
+	 * cape is listed once, even when the stored profile repeats it.
+	 * "valid" is false -- and the cape fields are at their empty default --
 	 * for a row out of range, an offline account, or an MSA account with no
-	 * profile data yet; the caller is expected to check it before reading
-	 * the rest, the same way it already checks the row's own isMSA role
-	 * before offering skin controls at all.
+	 * profile data yet; the caller is expected to check it before offering
+	 * skin or cape changes, the same way it already checks the row's own
+	 * isMSA role before offering skin controls at all.
+	 * "hasSkin" and "slim" describe what the player looks like for any row in
+	 * range, valid or not: its own skin, or -- with "defaultSkin" true -- the
+	 * game's default for it (Steve or Alex, see DefaultSkins), once that has
+	 * been downloaded. "hasSkin" is false only while there is nothing to draw.
 	 */
 	Q_INVOKABLE QVariantMap accountSkinInfo(int row) const;
 
@@ -179,8 +194,9 @@ class AccountsController : public QObject
 	Q_INVOKABLE QObject* skins(int row);
 
   signals:
-	/// hasDefault()/defaultName() moved.
+	/// hasDefault()/defaultName()/defaultAccountId() moved.
 	void defaultChanged();
+	void defaultSkinsRevisionChanged();
 
   private:
 	shared_qobject_ptr<AccountList> m_accounts;
@@ -188,6 +204,7 @@ class AccountsController : public QObject
 	 * QML gets it straight from here, with nothing to pin its ownership. */
 	QPointer<SkinsController> m_skins;
 	QString m_skinsAccountId;
+	int m_defaultSkinsRevision = 0;
 };
 
 /*

@@ -57,7 +57,8 @@ class LaunchProgressTracker : public QObject
 	/// progress()), announced right away rather than coalesced.
 	void clear();
 
-	/// Current human-readable status/step text; empty when idle.
+	/// Current human-readable status/step text, without a trailing "..."
+	/// (a label, not a log line); empty when idle.
 	QString status() const
 	{
 		return m_status;

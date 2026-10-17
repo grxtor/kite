@@ -115,6 +115,23 @@ class MinecraftAccount : public QObject, public Usable
 		return data.profileName();
 	}
 
+	/*!
+	 * The UUID the game is launched with (--uuid, AuthSession::uuid): the
+	 * Microsoft profile's id, or for an offline account uuidFromUsername()
+	 * of its name -- the same every launch, so the player's advancements,
+	 * statistics and pets in a world stay theirs, and the same id an
+	 * offline-mode server gives that name. Not internalId(): that is the
+	 * account list's own bookkeeping and is made up afresh every run.
+	 */
+	QString gameUuid() const;
+
+	/*!
+	 * Java's UUID.nameUUIDFromBytes("OfflinePlayer:" + @p username) -- the
+	 * version 3 UUID vanilla gives an offline player -- as 32 hex digits
+	 * without dashes, the form profile ids take.
+	 */
+	static QString uuidFromUsername(const QString& username);
+
 	bool isActive() const;
 
 	bool isMSA() const

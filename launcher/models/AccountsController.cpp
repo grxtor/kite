@@ -31,6 +31,7 @@
 #include "minecraft/services/CapeChange.h"
 #include "minecraft/services/SkinDelete.h"
 #include "minecraft/services/SkinUpload.h"
+#include "minecraft/skins/DefaultSkins.h"
 #include "minecraft/skins/SkinEntry.h"
 #include "models/SkinsController.h"
 #include "settings/SettingsObject.h"
@@ -94,6 +95,12 @@ AccountsController::AccountsController(shared_qobject_ptr<AccountList> accounts,
 			&AccountsController::defaultChanged);
 	connect(m_accounts.get(), &AccountList::defaultAccountChanged, this,
 			&AccountsController::defaultChanged);
+	/* A skinless account is drawn in the game's default skin once that
+	 * arrives (see accountSkinInfo()); the page refetches on this. */
+	connect(DefaultSkins::instance(), &DefaultSkins::loaded, this, [this] {
+		++m_defaultSkinsRevision;
+		emit defaultSkinsRevisionChanged();
+	});
 }
 
 QObject* AccountsController::accounts() const
@@ -110,6 +117,22 @@ QString AccountsController::defaultName() const
 {
 	auto account = m_accounts->defaultAccount();
 	return account ? account->profileName() : QString();
+}
+
+QString AccountsController::defaultAccountId() const
+{
+	/* The same value AccountList's AccountIdRole hands each row. */
+	auto account = m_accounts->defaultAccount();
+	if (!account) {
+		return QString();
+	}
+	return account->profileId().isEmpty() ? account->internalId()
+										  : account->profileId();
+}
+
+int AccountsController::defaultSkinsRevision() const
+{
+	return m_defaultSkinsRevision;
 }
 
 void AccountsController::setDefault(int row)
@@ -218,6 +241,7 @@ QVariantMap AccountsController::accountSkinInfo(int row) const
 	 * account before its profile has been fetched, have none, and a
 	 * preview then shows the neutral figure instead. */
 	info[QStringLiteral("hasSkin")] = false;
+	info[QStringLiteral("defaultSkin")] = false;
 	info[QStringLiteral("currentCapeId")] = QString();
 	info[QStringLiteral("currentCapeUrl")] = QString();
 	info[QStringLiteral("capes")] = QVariantList();
@@ -245,15 +269,29 @@ QVariantMap AccountsController::accountSkinInfo(int row) const
 		return info;
 	}
 	auto account = m_accounts->at(row);
-	if (!account || !account->isMSA() || !account->accountData()) {
+	if (!account || !account->accountData()) {
 		return info;
 	}
 
+	/* What the player looks like, for every account: its own skin, or the
+	 * game's default for it -- the same choice AccountFaceProvider makes
+	 * when it draws the skin. */
 	const MinecraftProfile& profile = account->accountData()->minecraftProfile;
+	const bool slim = DefaultSkins::isSlim(account);
+	info[QStringLiteral("slim")] = slim;
+	if (!profile.skin.data.isEmpty()) {
+		info[QStringLiteral("hasSkin")] = true;
+	} else {
+		DefaultSkins* defaults = DefaultSkins::instance();
+		defaults->ensureLoaded();
+		info[QStringLiteral("hasSkin")] = !defaults->texture(slim).isNull();
+		info[QStringLiteral("defaultSkin")] = true;
+	}
+
+	if (!account->isMSA()) {
+		return info;
+	}
 	info[QStringLiteral("valid")] = true;
-	info[QStringLiteral("hasSkin")] = !profile.skin.data.isEmpty();
-	info[QStringLiteral("slim")] =
-		profile.skin.variant == QLatin1String("SLIM");
 	info[QStringLiteral("currentCapeId")] = profile.currentCape;
 
 	/* Once per id: account files saved before Parsers::

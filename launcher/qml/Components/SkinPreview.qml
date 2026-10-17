@@ -10,8 +10,10 @@ import MeshMC.Theme
  * dragging, where the build has Qt Quick3D (the cat's module,
  * MeshMC_ENABLE_CAT -- `catAvailable`) and the window draws through a 3D
  * graphics API; otherwise the flat front view (`flatSource`, e.g.
- * image://accountface/body/<id>) over the neutral figure, which also
- * stands in for an account without a skin. Used by the skin editor and
+ * image://accountface/body/<id>) over the neutral figure, which only holds
+ * the place while there is no texture yet (an account without a skin of
+ * its own is drawn in the game's default one by AccountFaceProvider, once
+ * that has downloaded). Used by the skin editor and
  * the Accounts page's hero. showBack()/showFront() turn the 3D player
  * round (the flat view has no back, so there they do nothing).
  */

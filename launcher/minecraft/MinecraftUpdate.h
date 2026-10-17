@@ -22,6 +22,7 @@
 
 #include <QObject>
 #include <QList>
+#include <QHash>
 #include <QUrl>
 
 #include "net/NetJob.h"
@@ -35,6 +36,11 @@ class MinecraftInstance;
  * Brings an instance up to date: folders, metadata, libraries, FML libraries
  * and assets, in that order. Each of those shows up as its own line in the
  * progress dialog.
+ *
+ * Its own status and progress speak for the step under way -- its stage
+ * ("Downloading assets") and how far that step is -- rather than "Executing
+ * task 4 out of 5" over a count of steps: a launch relays them as they are
+ * (LaunchTask, InstanceList's launch progress) to the play bar.
  */
 class MinecraftUpdate : public SequentialTask
 {
@@ -50,7 +56,14 @@ class MinecraftUpdate : public SequentialTask
 
   protected:
 	void executeTask() override;
+	void updateState() override;
+	void subTaskProgress(Task::Ptr task, qint64 current,
+						 qint64 total) override;
 
   private:
+	/// Queues @p task as one stage of the update, named @p stage.
+	void addStage(Task::Ptr task, const QString& stage);
+
 	MinecraftInstance* m_inst = nullptr;
+	QHash<Task*, QString> m_stages;
 };

@@ -618,7 +618,7 @@ void FlameModpackModel::fetchDetailBody(const QString& projectId,
 		job->deleteLater();
 		if (generation == m_detailGeneration) {
 			m_bodyJob.reset();
-			m_detail->setBody(parseBody(*response));
+			m_detail->setBody(parseBody(*response), RichBody::Format::Html);
 		}
 		markDetailPartDone(generation, true);
 	});

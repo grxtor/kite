@@ -73,14 +73,32 @@ class LaunchProgressTrackerTest : public QObject
 
 		QSignalSpy changedSpy(&tracker, &LaunchProgressTracker::changed);
 
-		task.setStatus("Downloading assets...");
+		task.setStatus("Downloading assets");
 		QVERIFY(!changedSpy.isEmpty());
-		QCOMPARE(tracker.status(), QString("Downloading assets..."));
+		QCOMPARE(tracker.status(), QString("Downloading assets"));
 		// No progress reported yet -- still indeterminate.
 		QCOMPARE(tracker.progress(), -1.0);
 
 		task.setProgress(45, 100);
 		QCOMPARE(tracker.progress(), 0.45);
+	}
+
+	// A status worded as a log line ("Doing something...") reads as a
+	// label on the card and the play bar.
+	void test_status_dropsTrailingEllipsis()
+	{
+		LaunchProgressTracker tracker;
+		tracker.setMinIntervalMs(0);
+		FakeTask task;
+		task.start();
+		tracker.watch(&task);
+
+		task.setStatus("Updating assets index...");
+		QCOMPARE(tracker.status(), QString("Updating assets index"));
+		task.setStatus(QString::fromUtf8("Creating backup\u2026"));
+		QCOMPARE(tracker.status(), QString("Creating backup"));
+		task.setStatus("Checking Java");
+		QCOMPARE(tracker.status(), QString("Checking Java"));
 	}
 
 	void test_progress_isIndeterminate_whenTotalIsNotPositive()

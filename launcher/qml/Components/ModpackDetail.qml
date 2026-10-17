@@ -13,8 +13,9 @@ import MeshMC.Theme
  * instance. `pack` is the row that was opened (title, author, logo,
  * galleryUrl, accentColor...); `detail` is the model's lazily loaded body,
  * gallery and version list. Provider-neutral: Modrinth's and CurseForge's
- * models give the same roles and the same `detail` shape; only the body's
- * format differs (`bodyFormat`).
+ * models give the same roles and the same `detail` shape; only the raw
+ * body's format differs (`bodyFormat`), and the page reads `bodyHtml`, the
+ * same text every model already rewrote into one plain HTML article.
  *
  * Install is the page's one primary button and sits in the header, where a
  * launcher's project page puts it; the Install card below only holds what
@@ -30,6 +31,7 @@ Item {
     // the install survives leaving this page.
     property var installer: null
     // "markdown" (Modrinth) or "html" (CurseForge): how `detail.body` reads.
+    // The page itself shows `detail.bodyHtml`, which is HTML either way.
     property string bodyFormat: "markdown"
     // TaskWatcher of the install started from here, if any.
     property var watcher: null
@@ -38,6 +40,9 @@ Item {
     property int contentWidth: width - contentX * 2
     // A reading page: narrower than the results grid on a wide window.
     readonly property int maxReadingWidth: 960
+    // The description's own measure: lines of a comfortable length, and
+    // the width its pictures scale down to.
+    readonly property int textMeasure: 720
 
     signal backRequested()
     signal showInstanceRequested(string id)
@@ -460,10 +465,11 @@ Item {
                 }
             }
 
-            // About
+            // About: the pack's own page, as RichBody rewrote it (see
+            // RemoteRichText's `article`).
             Column {
                 width: parent.width
-                spacing: Theme.space.sm
+                spacing: Theme.space.md
                 visible: !!root.detail && ((root.detail.body || "").length > 0 || root.detail.loading)
 
                 // Same heading as the Install card's title, on the same
@@ -484,9 +490,10 @@ Item {
                 // Not a Text: the body links images from anywhere, and a
                 // failed one could crash Text (see RemoteRichText).
                 RemoteRichText {
-                    width: parent.width
-                    source: root.detail ? (root.detail.body || "") : ""
-                    format: root.bodyFormat === "html" ? "html" : "markdown"
+                    width: Math.min(parent.width, root.textMeasure)
+                    source: root.detail ? (root.detail.bodyHtml || "") : ""
+                    format: "html"
+                    article: true
                     onLinkActivated: (link) => Qt.openUrlExternally(link)
                 }
             }

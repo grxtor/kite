@@ -16,6 +16,11 @@ import MeshMC.Theme
  *
  * The trailing columns drop out at narrow widths rather than truncating into
  * nonsense; the name always keeps the room it needs to stay readable.
+ *
+ * While a launch runs it takes Play's place, as on the card and the play
+ * bar: a bar where Play sits, the stage ("Downloading assets") in the
+ * version column and how far it is in the last-played one, and the
+ * running dot in the warning colour until the game is actually up.
  */
 Item {
     id: root
@@ -126,20 +131,21 @@ Item {
 
                 // Pulsing while running, same treatment as the sidebar's
                 // Recent list -- one running-instance language everywhere.
+                // Amber while the launch is still starting the game.
                 Rectangle {
-                    visible: root.isRunning
+                    visible: root.isRunning || root.launching
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
                     anchors.margins: -Theme.space.xxs
                     width: root.runningDotSize
                     height: width
                     radius: width / 2
-                    color: Theme.palette.success
+                    color: root.launching ? Theme.palette.warning : Theme.palette.success
                     border.width: 2
                     border.color: surface.color
 
                     SequentialAnimation on opacity {
-                        running: root.isRunning
+                        running: root.isRunning || root.launching
                         loops: Animation.Infinite
                         NumberAnimation { from: 1.0; to: 0.45; duration: 900; easing.type: Easing.InOutSine }
                         NumberAnimation { from: 0.45; to: 1.0; duration: 900; easing.type: Easing.InOutSine }
@@ -164,7 +170,7 @@ Item {
                 Layout.minimumWidth: 0
                 text: root.launching ? root.launchStatus : Format.versionLine(root.loader, root.gameVersion)
                 elide: Text.ElideRight
-                color: root.launching ? Theme.palette.accent : Theme.palette.textSecondary
+                color: root.launching ? Theme.palette.accentText : Theme.palette.textSecondary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize
                 font.weight: Font.Medium
@@ -174,11 +180,14 @@ Item {
                 visible: root.showStatsColumns
                 Layout.preferredWidth: root.lastPlayedColumnWidth
                 horizontalAlignment: Text.AlignRight
-                text: Format.lastPlayed(root.lastLaunch)
+                text: !root.launching ? Format.lastPlayed(root.lastLaunch)
+                    : root.launchProgress >= 0 ? qsTr("%1%").arg(Math.round(root.launchProgress * 100)) : ""
                 elide: Text.ElideRight
-                color: Theme.palette.textTertiary
+                color: root.launching ? Theme.palette.accentText : Theme.palette.textTertiary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize
+                // Digits of one width, so the number does not jitter.
+                font.features: ({ "tnum": 1 })
             }
 
             Text {
@@ -203,11 +212,20 @@ Item {
                     size: Theme.control.height
                     iconName: "more"
                     tip: qsTr("More")
-                    opacity: root.hovered ? 1 : 0
+                    opacity: root.hovered && !root.launching ? 1 : 0
                     visible: opacity > 0
                     focusPolicy: Qt.NoFocus
                     Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
                     onClicked: root.menuRequested()
+                }
+
+                // Where Play sits, across the whole slot.
+                LaunchProgressBar {
+                    visible: root.launching
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    progress: root.launchProgress
                 }
 
                 PlayButton {

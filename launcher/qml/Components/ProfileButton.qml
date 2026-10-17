@@ -8,9 +8,11 @@ import MeshMC.Theme
 
 /*
  * The account, top-right on every page: the default account's Minecraft
- * face, its name and a chevron, opening ProfileMenu below it. With no
- * account there is nothing to open -- a plain "Sign in" button goes straight
- * to the Accounts page instead (see openAccountsRequested()), the same page
+ * head (PlayerHead), its name and a chevron, opening ProfileMenu below it.
+ * As quiet as the toolbar's other flat buttons -- no box of its own, only
+ * the hover plate -- so the head is what catches the eye. With no account
+ * there is nothing to open -- a plain "Sign in" button goes straight to the
+ * Accounts page instead (see openAccountsRequested()), the same page
  * ProfileMenu's own account actions land on.
  */
 AbstractButton {
@@ -25,6 +27,8 @@ AbstractButton {
 
     readonly property bool signedIn: control.name.length > 0
     readonly property int maxNameWidth: 130
+    // Three texels of the 8x8 face per pixel step: crisp at 1x and 2x.
+    readonly property int headSize: 24
 
     signal openAccountsRequested()
 
@@ -32,8 +36,9 @@ AbstractButton {
     // without a real click.
     function openMenu() { if (control.signedIn) menu.open() }
 
-    readonly property int hPadding: Theme.space.sm + 2
-    implicitWidth: contentRow.implicitWidth + hPadding * 2
+    leftPadding: control.signedIn ? Theme.space.sm : Theme.space.md
+    rightPadding: control.signedIn ? Theme.space.sm : Theme.space.md
+    implicitWidth: contentRow.implicitWidth + leftPadding + rightPadding
     implicitHeight: Theme.control.height
     hoverEnabled: true
 
@@ -41,25 +46,25 @@ AbstractButton {
 
     onClicked: control.signedIn ? menu.toggle() : control.openAccountsRequested()
 
-    // A small radius, not a pill: an account is picked here, and a lone
-    // capsule reads as a toggle rather than as "this is you".
+    // A flat button's plate: nothing at rest, the shared overlay on hover
+    // and while its menu is open. "Sign in" keeps a border, as the one
+    // thing to do here.
     background: Rectangle {
         radius: Theme.radius.md
         color: control.down ? Theme.palette.pressedOverlay
              : control.hovered || menu.visible ? Theme.palette.hoverOverlay : "transparent"
-        border.width: 1
-        border.color: control.hovered || menu.visible ? Theme.palette.borderStrong : Theme.palette.border
+        border.width: control.signedIn ? 0 : 1
+        border.color: Theme.palette.border
 
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
     // A plain Item, not the Row itself, is the contentItem: QQC2 stretches
     // contentItem to fill the button's whole content box, and a Row whose
     // own width is forced wider than its packed children just leaves the
-    // surplus as dead space after the last one (the chevron) -- exactly the
-    // gap this used to show. Centering the Row inside this wrapper instead
-    // keeps the Row itself sized to its content, so the pill hugs it.
+    // surplus as dead space after the last one (the chevron). Centering the
+    // Row inside this wrapper instead keeps the Row itself sized to its
+    // content, so the plate hugs it.
     contentItem: Item {
         implicitWidth: contentRow.implicitWidth
         implicitHeight: contentRow.implicitHeight
@@ -69,54 +74,11 @@ AbstractButton {
             anchors.centerIn: parent
             spacing: Theme.space.sm
 
-            Item {
-                id: face
+            PlayerHead {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: control.signedIn
-                width: Theme.control.height - 10
-                height: width
-
-                Rectangle {
-                    anchors.fill: parent
-                    // A small corner radius, not a full circle: the face
-                    // image is a plain square (Qt Quick clip only clips to
-                    // the bounding box, not to a rounded shape, so a fully
-                    // round container just let the image's square corners
-                    // poke out past it). A small radius keeps that overflow
-                    // imperceptible instead of fighting a shape the image
-                    // was never cut to.
-                    radius: Theme.radius.sm
-                    color: Theme.palette.accentSubtle
-                    border.width: 1
-                    border.color: Theme.palette.border
-
-                    Text {
-                        anchors.centerIn: parent
-                        visible: control.signedIn
-                        text: control.name.charAt(0).toUpperCase()
-                        color: Theme.palette.accent
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
-                        font.weight: Font.Bold
-                    }
-
-                    // Drawn over the initial, not the other way around: an
-                    // account without a skin (or one whose texture has not
-                    // loaded yet) comes back transparent, and the initial
-                    // shows through -- same idiom as the old sidebar chip
-                    // this replaces. Sampled well above display size and
-                    // downscaled by the GPU (smooth: false keeps that
-                    // downscale crisp).
-                    Image {
-                        id: faceImage
-                        anchors.fill: parent
-                        anchors.margins: 1
-                        source: control.signedIn ? control.avatarSource : ""
-                        visible: control.signedIn && control.avatarSource.length > 0
-                        smooth: false
-                        sourceSize: Qt.size(64, 64)
-                    }
-                }
+                size: control.headSize
+                source: control.signedIn ? control.avatarSource : ""
             }
 
             Text {
