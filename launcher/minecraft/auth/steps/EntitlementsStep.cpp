@@ -69,7 +69,7 @@ void EntitlementsStep::onRequestDone(QNetworkReply::NetworkError,
 	requestor->deleteLater();
 
 #ifndef NDEBUG
-	qCDebug(minecraftauthLog) << data;
+	qCDebug(minecraftauthLog) << Parsers::redactTokens(data);
 #endif
 
 	// TODO: check presence of same entitlementsRequestId?

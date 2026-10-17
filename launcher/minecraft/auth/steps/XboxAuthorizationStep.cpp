@@ -86,7 +86,7 @@ void XboxAuthorizationStep::onRequestDone(
 	requestor->deleteLater();
 
 #ifndef NDEBUG
-	qCDebug(minecraftauthLog) << data;
+	qCDebug(minecraftauthLog) << Parsers::redactTokens(data);
 #endif
 	if (error != QNetworkReply::NoError) {
 		qWarning() << "Reply error:" << error;

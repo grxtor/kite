@@ -100,12 +100,62 @@ namespace Parsers
 	// 2148916238 = child account not linked to a family
 	*/
 
+	namespace
+	{
+		bool isTokenKey(const QString& key)
+		{
+			static const QStringList keys = {
+				QStringLiteral("token"), QStringLiteral("access_token"),
+				QStringLiteral("refresh_token"), QStringLiteral("id_token"),
+				QStringLiteral("identitytoken")};
+			return keys.contains(key.toLower());
+		}
+
+		QJsonValue redacted(const QJsonValue& value)
+		{
+			if (value.isArray()) {
+				QJsonArray out;
+				for (const QJsonValue& item : value.toArray()) {
+					out.append(redacted(item));
+				}
+				return out;
+			}
+			if (!value.isObject()) {
+				return value;
+			}
+			QJsonObject out = value.toObject();
+			for (auto it = out.begin(); it != out.end(); ++it) {
+				it.value() = isTokenKey(it.key())
+								 ? QJsonValue(QStringLiteral("<redacted>"))
+								 : redacted(it.value());
+			}
+			return out;
+		}
+	} // namespace
+
+	QByteArray redactTokens(const QByteArray& data)
+	{
+		// Enough of an error page to tell what it was.
+		constexpr int maxRawBytes = 256;
+		QJsonParseError error;
+		const QJsonDocument doc = QJsonDocument::fromJson(data, &error);
+		if (error.error != QJsonParseError::NoError) {
+			return data.left(maxRawBytes);
+		}
+		if (doc.isArray()) {
+			return QJsonDocument(redacted(doc.array()).toArray())
+				.toJson(QJsonDocument::Compact);
+		}
+		return QJsonDocument(redacted(doc.object()).toObject())
+			.toJson(QJsonDocument::Compact);
+	}
+
 	bool parseXTokenResponse(QByteArray& data, Katabasis::Token& output,
 							 QString name)
 	{
 		qCDebug(minecraftauthLog) << "Parsing" << name << ":";
 #ifndef NDEBUG
-		qCDebug(minecraftauthLog) << data;
+		qCDebug(minecraftauthLog) << redactTokens(data);
 #endif
 		QJsonParseError jsonError;
 		QJsonDocument doc = QJsonDocument::fromJson(data, &jsonError);
@@ -172,7 +222,7 @@ namespace Parsers
 	{
 		qCDebug(minecraftauthLog) << "Parsing Minecraft profile...";
 #ifndef NDEBUG
-		qCDebug(minecraftauthLog) << data;
+		qCDebug(minecraftauthLog) << redactTokens(data);
 #endif
 
 		QJsonParseError jsonError;
@@ -263,7 +313,7 @@ namespace Parsers
 	{
 		qCDebug(minecraftauthLog) << "Parsing Minecraft entitlements...";
 #ifndef NDEBUG
-		qCDebug(minecraftauthLog) << data;
+		qCDebug(minecraftauthLog) << redactTokens(data);
 #endif
 
 		QJsonParseError jsonError;
@@ -301,7 +351,7 @@ namespace Parsers
 	{
 		qCDebug(minecraftauthLog) << "Parsing Rollout response...";
 #ifndef NDEBUG
-		qCDebug(minecraftauthLog) << data;
+		qCDebug(minecraftauthLog) << redactTokens(data);
 #endif
 
 		QJsonParseError jsonError;
@@ -338,7 +388,7 @@ namespace Parsers
 		QJsonParseError jsonError;
 		qCDebug(minecraftauthLog) << "Parsing Mojang response...";
 #ifndef NDEBUG
-		qCDebug(minecraftauthLog) << data;
+		qCDebug(minecraftauthLog) << redactTokens(data);
 #endif
 		QJsonDocument doc = QJsonDocument::fromJson(data, &jsonError);
 		if (jsonError.error) {

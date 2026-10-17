@@ -1590,6 +1590,12 @@ add_unit_test(SkinsController
     LIBS MeshMC_core
     )
 
+# Sign-in replies are logged with their tokens redacted.
+add_unit_test(AuthParsers
+    SOURCES minecraft/auth/Parsers_test.cpp
+    LIBS MeshMC_core
+    )
+
 add_unit_test(InstancePathProblems
     SOURCES core/InstancePathProblems_test.cpp
     LIBS MeshMC_core

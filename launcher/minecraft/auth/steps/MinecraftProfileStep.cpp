@@ -65,7 +65,7 @@ void MinecraftProfileStep::onRequestDone(QNetworkReply::NetworkError error,
 	requestor->deleteLater();
 
 #ifndef NDEBUG
-	qCDebug(minecraftauthLog) << data;
+	qCDebug(minecraftauthLog) << Parsers::redactTokens(data);
 #endif
 	if (error == QNetworkReply::ContentNotFoundError) {
 		// NOTE: Succeed even if we do not have a profile. This is a valid
@@ -82,7 +82,7 @@ void MinecraftProfileStep::onRequestDone(QNetworkReply::NetworkError error,
 		qWarning() << " Error string:       " << requestor->errorString_;
 
 		qWarning() << " Response:";
-		qWarning() << QString::fromUtf8(data);
+		qWarning() << Parsers::redactTokens(data);
 
 		emit finished(AccountTaskState::STATE_FAILED_SOFT,
 					  tr("Minecraft Java profile acquisition failed."));

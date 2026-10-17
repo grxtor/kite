@@ -51,4 +51,12 @@ namespace Parsers
 	bool parseMinecraftEntitlements(QByteArray& data,
 									MinecraftEntitlement& output);
 	bool parseRolloutResponse(QByteArray& data, bool& result);
+
+	/* @p data, a sign-in service's reply, made fit for the log: the value
+	 * of every token field (Token, access_token, refresh_token, id_token,
+	 * identityToken, at any depth, in any case) becomes "<redacted>", the
+	 * rest stays for debugging. A reply that is not JSON comes back as it
+	 * is, cut to its first 256 bytes. Logs get shared, by Log upload among
+	 * others, and a token in one signs its reader in as the player. */
+	QByteArray redactTokens(const QByteArray& data);
 } // namespace Parsers
