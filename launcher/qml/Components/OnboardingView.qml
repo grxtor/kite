@@ -293,7 +293,6 @@ Rectangle {
                             }
                             MemorySetting {
                                 label: qsTr("Maximum memory")
-                                hint: qsTr("How much memory games may use.")
                                 systemMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
                             }
                         }

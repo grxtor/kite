@@ -37,15 +37,10 @@ Column {
             label: qsTr("Maximum memory")
             systemMiB: root.systemMemoryMiB
         }
-        SettingNumber {
+        MemoryStartSetting {
             source: root.source
-            key: "MinMemAlloc"
             enabled: memory.overriding
             label: qsTr("Starting memory")
-            from: 128
-            to: root.source.number("MaxMemAlloc")
-            stepSize: 128
-            suffix: qsTr("MiB")
         }
         SettingNumber {
             source: root.source

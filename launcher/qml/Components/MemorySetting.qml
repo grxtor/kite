@@ -7,9 +7,12 @@ import QtQuick.Controls
 import MeshMC.Theme
 
 /*
- * Maximum memory as a slider over the RAM this machine actually has, with
- * the amount spelled out and a warning once it eats into what the system
- * needs itself. Saved when the slider is let go.
+ * Maximum memory: one slider whose track runs from the least the game can
+ * live with to the RAM this machine has, a soft band on the track marking
+ * what suits most modpacks, and a typed value beside it (MemoryField). A
+ * single hint line under the label says how much is installed, and turns
+ * into a warning once the amount eats into what the system needs itself.
+ * The slider saves when let go, the field when edited.
  *
  * The minimum can never end up above the maximum: lowering the maximum
  * below it pulls the minimum down too -- the widget page swapped the two
@@ -23,46 +26,77 @@ SettingRow {
     property var source: SettingsStore
     property string minKey: "MinMemAlloc"
     property int systemMiB: 8192
-    readonly property int step: 256
+    // Replaces the default hint line when a screen has something shorter to say.
+    property string hint
+    readonly property int step: 512
     readonly property int floor: 512
     readonly property int ceiling: Math.max(floor + step, Math.floor(systemMiB / step) * step)
     readonly property int stored: root.source.number(root.key)
+    // What the row shows right now: the knob's position while it is being
+    // dragged, what is saved otherwise.
+    readonly property int shown: slider.pressed ? Math.round(slider.value) : stored
     // Past three quarters of the machine's RAM the game starts competing
     // with the OS and everything else that's open.
     readonly property real comfortableShare: 0.75
-    readonly property bool tooMuch: slider.value > systemMiB * comfortableShare
+    readonly property bool tooMuch: shown > systemMiB * comfortableShare
+    // The band that suits most modpacks: up to 8 GB, never past the
+    // comfortable share, and from half of that (4 GB on a 16 GB machine).
+    readonly property int suitsHigh: Math.max(floor, Math.min(8192, Math.floor(ceiling * comfortableShare / step) * step))
+    readonly property int suitsLow: Math.max(floor, Math.min(4096, Math.floor(suitsHigh / 2 / step) * step))
 
-    // The slider and the system-memory bar under it share one width, and
-    // the amount sits in a fixed-width slot at the slider's right end, so
-    // "6 GiB" never shifts the slider as it grows to "12.5 GiB".
+    // The slider's track and the typed amount sit side by side in a fixed
+    // width, so the label column and the field line up with the other rows.
     readonly property int sliderWidth: 240
-    readonly property int valueWidth: 72
 
-    property string hint
-    // The label sits beside the slider, not centred on the slider and the
-    // bar under it together.
-    topAligned: true
-    controlLineHeight: sliderRow.height
-    description: tooMuch ? qsTr("That is most of this computer's %1 of memory; the system and other programs may slow down.").arg(describe(systemMiB))
-                         : hint
-
-    function describe(mib) {
-        return mib >= 1024 ? qsTr("%1 GiB").arg(Number(mib / 1024).toLocaleString(Qt.locale(), "f", mib % 1024 === 0 ? 0 : 1))
-                           : qsTr("%1 MiB").arg(mib)
+    function gib(mib) {
+        return Number(mib / 1024).toLocaleString(Qt.locale(), "f", mib % 1024 === 0 ? 0 : 1)
     }
 
-    Column {
-        width: sliderRow.width
-        spacing: Theme.space.xs
+    function save(mib) {
+        var max = Math.max(floor, Math.min(ceiling, mib))
+        root.source.setValue(root.key, max)
+        if (root.source.number(root.minKey) > max)
+            root.source.setValue(root.minKey, max)
+    }
 
-        Row {
-            id: sliderRow
-            spacing: Theme.space.md
+    description: tooMuch ? qsTr("That is most of this computer's %1 GB; the system and other programs may slow down.").arg(gib(systemMiB))
+               : hint.length > 0 ? hint
+               : qsTr("%1 GB installed. %2–%3 GB suits most modpacks.").arg(gib(systemMiB)).arg(gib(suitsLow)).arg(gib(suitsHigh))
+
+    Row {
+        spacing: Theme.space.md
+
+        Item {
+            id: sliderBox
+            anchors.verticalCenter: parent.verticalCenter
+            width: root.sliderWidth
+            height: slider.height
+
+            // The suggested range, a band slightly taller than the track so
+            // it frames it from behind. Positions follow the knob's centre,
+            // so the knob sits inside the band exactly while the value is
+            // in the suggested range.
+            Rectangle {
+                readonly property real travel: slider.availableWidth - Theme.icon.md
+                function at(mib) {
+                    return slider.leftPadding + Theme.icon.md / 2
+                           + travel * (mib - root.floor) / (root.ceiling - root.floor)
+                }
+                x: at(root.suitsLow)
+                width: at(root.suitsHigh) - x
+                anchors.verticalCenter: parent.verticalCenter
+                height: Theme.space.md
+                radius: Theme.radius.sm
+                color: Qt.alpha(Theme.palette.accent, 0.2)
+            }
 
             Slider {
                 id: slider
-                anchors.verticalCenter: parent.verticalCenter
-                width: root.sliderWidth
+                width: parent.width
+                // No side padding: the knob's edge lines up with the label
+                // above when the row stacks, and the field to its right.
+                leftPadding: 0
+                rightPadding: 0
                 from: root.floor
                 to: root.ceiling
                 stepSize: root.step
@@ -72,68 +106,21 @@ SettingRow {
                 onPressedChanged: {
                     if (pressed)
                         return
-                    var max = Math.round(value)
-                    root.source.setValue(root.key, max)
-                    if (root.source.number(root.minKey) > max)
-                        root.source.setValue(root.minKey, max)
+                    root.save(Math.round(value))
                     value = Qt.binding(() => root.stored)
                 }
             }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                width: root.valueWidth
-                horizontalAlignment: Text.AlignRight
-                text: root.describe(Math.round(slider.value))
-                color: root.tooMuch ? Theme.palette.warning : Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.bodyStrong.pixelSize
-                font.weight: Theme.type.bodyStrong.weight
-            }
         }
 
-        // How much of the machine's own RAM that allocation is, at a
-        // glance -- the slider alone says "2.5 GiB" but not "of how much".
-        // Inset by the slider's own padding so the bar starts and ends
-        // exactly where the slider's track does.
-        Column {
-            x: slider.leftPadding
-            width: slider.availableWidth
-            spacing: Theme.space.xs
-
-            Rectangle {
-                width: parent.width
-                height: Theme.space.xs
-                radius: Theme.radius.pill
-                color: Theme.palette.surfaceSunken
-
-                Rectangle {
-                    width: parent.width * Math.max(0, Math.min(1, slider.value / root.systemMiB))
-                    height: parent.height
-                    radius: parent.radius
-                    color: root.tooMuch ? Theme.palette.warning : Theme.palette.accent
-                    Behavior on width {
-                        NumberAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
-                    }
-                }
-
-                // Past this line the game starts competing with the OS for
-                // memory -- the same threshold `tooMuch` itself uses.
-                Rectangle {
-                    x: parent.width * root.comfortableShare - width / 2
-                    width: Theme.space.xxs
-                    height: parent.height
-                    color: Theme.palette.surface
-                    opacity: 0.7
-                }
-            }
-
-            Text {
-                text: qsTr("%1 system memory").arg(root.describe(root.systemMiB))
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
-            }
+        MemoryField {
+            anchors.verticalCenter: parent.verticalCenter
+            value: root.shown
+            from: root.floor
+            to: root.ceiling
+            step: root.step
+            color: root.tooMuch ? Theme.palette.warning : Theme.palette.textPrimary
+            Accessible.name: root.label
+            onCommitted: (mib) => root.save(mib)
         }
     }
 }

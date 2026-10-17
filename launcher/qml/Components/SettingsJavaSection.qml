@@ -44,17 +44,11 @@ SettingsScroll {
         title: qsTr("Memory")
         MemorySetting {
             label: qsTr("Maximum memory")
-            hint: qsTr("How much memory Minecraft may use. Big modpacks want 6–8 GiB; vanilla is happy with 2–4.")
             systemMiB: root.systemMemoryMiB
         }
-        SettingNumber {
-            key: "MinMemAlloc"
+        MemoryStartSetting {
             label: qsTr("Starting memory")
             description: qsTr("Memory reserved when the game starts. Never above the maximum.")
-            from: 128
-            to: SettingsStore.number("MaxMemAlloc")
-            stepSize: 128
-            suffix: qsTr("MiB")
         }
         SettingNumber {
             visible: javaPath.legacy

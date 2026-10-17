@@ -154,6 +154,8 @@ qt_add_qml_module(MeshMC_qml_components
         SettingsUpdatesSection.qml
         SettingsAboutSection.qml
         MemorySetting.qml
+        MemoryField.qml
+        MemoryStartSetting.qml
         SegmentedControl.qml
         EmptyState.qml
         SidebarNav.qml

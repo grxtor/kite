@@ -12,7 +12,7 @@ import MeshMC.Theme
  * that need the room; a row too narrow to give its text `labelMinWidth`
  * beside the control (a narrow window) does the same by itself. `topAligned` lines the text up with the control's
  * first line instead of centring both, for a control with more under that
- * line (MemorySetting's slider with its system-memory bar below); the label
+ * line (a slider with a hint below it); the label
  * centres on the first `controlLineHeight` pixels of the control.
  */
 Item {
