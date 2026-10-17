@@ -16,14 +16,17 @@ import MeshMC.Theme
  * call. The library itself is not repeated here: it is one click away in
  * the sidebar, which also lists the recent instances.
  *
- * NEWS. The banner is the news item itself -- its headline and date over
- * MeshMC's own rendered scene for the time of day, with Read more -- not a
- * greeting. It shows only news that is still news: a release post for the
- * version already running (or an older one) is skipped, and so is anything
- * older than `newsMaxAgeDays`. Without such an entry there is no banner at
- * all, and Home starts with "Jump back in". On a short window the banner
- * shrinks to one line (`compact`), so it never pushes the cards under the
- * play bar.
+ * HERO. Like the official launcher, Lunar and the CurseForge app, Home leads
+ * with art: MeshMC's own rendered scene for the time of day, full width. On
+ * it goes the news item itself (headline, date, Read more) when there is
+ * news worth showing, and otherwise the instance played last, with Open --
+ * never a greeting, and never a second Play (the play bar is the Play).
+ * Only news that is still news counts: a release post for the version
+ * already running (or an older one) is skipped, and so is anything older
+ * than `newsMaxAgeDays`. While the hero shows an instance, "Jump back in"
+ * starts with the one after it, so nothing is listed twice. On a short
+ * window the hero's type steps down a size (`compact`), so the cards stay
+ * above the play bar.
  *
  * Like every other page it sits under TopBar (title + account button), and
  * its content stops growing at Theme.layout.maxContentWidth and centres, so
@@ -48,9 +51,36 @@ Item {
     }
 
     /*
+     * A quiet fact on the hero's photo: a line icon and a few words, in the
+     * media colours (the clock for when, the hourglass for how long).
+     */
+    component HeroFact: Row {
+        property string iconName
+        property string text
+        spacing: Theme.space.xs
+        MeshIcon {
+            anchors.verticalCenter: parent.verticalCenter
+            iconName: parent.iconName
+            size: Theme.icon.sm
+            color: Theme.media.textSecondary
+        }
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: parent.text
+            color: Theme.media.textSecondary
+            font.family: Theme.font.family
+            font.pixelSize: Theme.type.label.pixelSize
+            font.weight: Font.Medium
+        }
+    }
+
+    // The hero's big title sits a touch tighter, like TopBar's page title.
+    readonly property real heroTracking: -0.4
+
+    /*
      * "More news ▾": the latest few headlines (`entries`, newest first),
-     * each opening its post. On the banner's photo (`onMedia`) or on the
-     * compact line. An inline component sees none of this file's ids, so
+     * each opening its post. On the hero's photo (`onMedia`) or on the
+     * page. An inline component sees none of this file's ids, so
      * the entries come in as a property.
      */
     component NewsMenuButton: AbstractButton {
@@ -116,7 +146,7 @@ Item {
     // QmlShell.news (NewsModel): MeshMC's news, newest first, or null.
     property var news: null
 
-    // "day", "golden" or "night" to pin the banner's scene (review
+    // "day", "golden" or "night" to pin the hero's scene (review
     // snapshots); empty follows the local clock.
     property string moodOverride: ""
 
@@ -188,7 +218,7 @@ Item {
         }
         return true
     }
-    // The newest entry still worth a banner, or null.
+    // The newest entry still worth the hero, or null.
     readonly property var featuredNews: {
         var now = Date.now()
         for (var i = 0; i < root.newsEntries.length; ++i) {
@@ -207,14 +237,30 @@ Item {
     readonly property string newsDate: root.hasNews && root.featuredNews.date
                                        ? Format.calendarDate(new Date(root.featuredNews.date)) : ""
 
-    // Below this page height the banner is a single line: the cards keep
-    // the room (860x540 leaves the page about 400px).
+    // The hero: MeshMC's own rendered scene for the time of day, as big
+    // clients lead with their art. On it, the news item when there is one,
+    // otherwise the instance played last (`featured`) with Open -- no Play:
+    // the play bar is the Play. Nothing to put on it, no hero.
+    // A share of the page height within bounds (about 220px at 1240x780,
+    // 300 on a 1080p window), and never shorter than its own words. Below `compactBelow` (860x540
+    // leaves the page about 400px) its type steps down a size, so Jump back
+    // in stays above the fold.
     readonly property int compactBelow: 560
     readonly property bool compact: root.height < root.compactBelow
-    // The full banner: a share of the page height, within bounds.
-    readonly property real bannerShare: 0.24
-    readonly property int bannerMinHeight: 148
-    readonly property int bannerMaxHeight: 200
+    readonly property real heroShare: 0.34
+    readonly property int heroMinHeight: 128
+    readonly property int heroMaxHeight: 300
+    readonly property int heroIconSize: root.compact ? 44 : 56
+    // The first "Jump back in" card, the most recently played instance,
+    // claims this (see the Repeater below); null with nothing played.
+    property Item featured: null
+    readonly property bool heroShowsInstance: !root.hasNews && !!root.featured && root.recentCount > 0
+    readonly property bool hasHero: root.hasNews || root.heroShowsInstance
+    // The hero's instance is not listed again right under it.
+    readonly property int jumpOffset: root.heroShowsInstance ? 1 : 0
+    readonly property int jumpAvailable: Math.max(0, root.recentCount - root.jumpOffset)
+    readonly property string featuredPlayTime: root.featured && SettingsStore.bool("ShowGameTime")
+                                               ? Format.playTime(root.featured.itemPlayTime) : ""
 
     // "Jump back in": as many whole cards as fit (up to three), stretched to
     // fill the row -- never a card sliced at the edge.
@@ -224,7 +270,7 @@ Item {
     readonly property int jumpSpacing: Theme.space.lg
     readonly property int jumpFit: Math.max(1, Math.min(root.jumpMax,
             Math.floor((root.contentWidth + root.jumpSpacing) / (root.jumpMinWidth + root.jumpSpacing))))
-    readonly property int jumpCount: Math.max(1, Math.min(root.jumpFit, root.recentCount))
+    readonly property int jumpCount: Math.max(1, Math.min(root.jumpFit, root.jumpAvailable))
     readonly property int jumpCardWidth: Math.min(root.jumpMaxWidth,
             Math.floor((root.contentWidth - root.jumpSpacing * (root.jumpFit - 1)) / root.jumpFit))
 
@@ -239,15 +285,15 @@ Item {
     readonly property int worldMax: root.worldColumns * root.worldRows
     readonly property int worldTileWidth: Math.floor((root.contentWidth - root.worldSpacing * (root.worldColumns - 1)) / root.worldColumns)
 
-    // Re-read once a minute so the banner's sky turns with the day while
-    // the launcher stays open; the timer only runs while Home is on screen.
+    // Re-read once a minute so the hero's sky turns with the day while the
+    // launcher stays open; the timer only runs while Home is on screen.
     property int hour: new Date().getHours()
     readonly property string mood: root.moodOverride.length > 0 ? root.moodOverride
                                                                 : PixelArt.homeMood(root.hour)
     Timer {
         interval: 60 * 1000
         repeat: true
-        running: root.visible && root.hasNews && root.moodOverride.length === 0
+        running: root.visible && root.hasHero && root.moodOverride.length === 0
         onTriggered: root.hour = new Date().getHours()
     }
 
@@ -273,127 +319,166 @@ Item {
             width: root.contentWidth
             spacing: Theme.space.xl
 
-            // -- News banner (full) ----------------------------------------
-            // The time of day's rendered scene, rounded like every other
-            // large surface, with the headline on its darker left side.
+            // -- Hero -------------------------------------------------------
+            // The time of day's rendered scene, full width and rounded like
+            // every other large surface, with the news or the last-played
+            // instance on its darker left side.
             Item {
-                id: banner
-                visible: root.hasNews && !root.compact
+                id: hero
+                visible: root.hasHero
                 width: parent.width
-                height: Math.round(Math.max(root.bannerMinHeight, bannerText.implicitHeight + Theme.space.xl * 2,
-                                            Math.min(root.bannerMaxHeight, root.height * root.bannerShare)))
+                height: Math.round(Math.max(root.heroMinHeight,
+                                            heroContent.implicitHeight + (root.compact ? Theme.space.lg : Theme.space.xl) * 2,
+                                            Math.min(root.heroMaxHeight, root.height * root.heroShare)))
 
                 CoverArt {
                     anchors.fill: parent
-                    source: banner.visible ? PixelArt.homeHeroUrl(root.mood) : ""
+                    source: hero.visible ? PixelArt.homeHeroUrl(root.mood) : ""
                     radius: Theme.radius.xl
                     scrim: "horizontal"
                     matte: Theme.palette.canvas
                 }
 
-                Column {
-                    id: bannerText
+                Item {
+                    id: heroContent
                     anchors.left: parent.left
-                    anchors.leftMargin: Theme.space.xxl
+                    anchors.leftMargin: root.compact ? Theme.space.xl : Theme.space.xxl
                     anchors.right: parent.horizontalCenter
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: Theme.space.xs
+                    implicitHeight: root.hasNews ? newsHero.implicitHeight : instanceHero.implicitHeight
+                    height: implicitHeight
 
-                    Text {
+                    // The news item: headline, date, Read more, More news.
+                    Column {
+                        id: newsHero
+                        visible: root.hasNews
                         width: parent.width
-                        text: root.hasNews ? root.featuredNews.title : ""
-                        wrapMode: Text.WordWrap
-                        maximumLineCount: 2
-                        elide: Text.ElideRight
-                        color: Theme.media.text
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.heading.pixelSize
-                        font.weight: Font.Bold
+                        spacing: Theme.space.xs
+
+                        Text {
+                            width: parent.width
+                            text: root.hasNews ? root.featuredNews.title : ""
+                            wrapMode: Text.WordWrap
+                            maximumLineCount: root.compact ? 1 : 2
+                            elide: Text.ElideRight
+                            color: Theme.media.text
+                            font.family: Theme.font.family
+                            font.pixelSize: root.compact ? Theme.type.heading.pixelSize : Theme.type.display.pixelSize
+                            font.weight: Font.Bold
+                            font.letterSpacing: root.heroTracking
+                        }
+                        Text {
+                            width: parent.width
+                            visible: text.length > 0
+                            text: root.newsDate
+                            color: Theme.media.textSecondary
+                            font.family: Theme.font.family
+                            font.pixelSize: Theme.type.label.pixelSize
+                        }
+                        Row {
+                            topPadding: root.compact ? Theme.space.sm : Theme.space.md
+                            spacing: Theme.space.md
+
+                            Button {
+                                text: qsTr("Read more")
+                                icon.source: Icons.url("external-link")
+                                onClicked: root.openNews()
+                            }
+                            NewsMenuButton {
+                                anchors.verticalCenter: parent.verticalCenter
+                                entries: root.newsEntries
+                                onMedia: true
+                            }
+                        }
                     }
-                    Text {
+
+                    // The instance played last: icon, name, what it runs,
+                    // Open, and when it was played.
+                    Column {
+                        id: instanceHero
+                        visible: root.heroShowsInstance
                         width: parent.width
-                        visible: text.length > 0
-                        text: root.newsDate
-                        color: Theme.media.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
-                    }
-                    Row {
-                        topPadding: Theme.space.sm
-                        spacing: Theme.space.md
+                        spacing: root.compact ? Theme.space.sm : Theme.space.md
 
-                        Button {
-                            text: qsTr("Read more")
-                            icon.source: Icons.url("external-link")
-                            onClicked: root.openNews()
+                        Row {
+                            width: parent.width
+                            spacing: Theme.space.md
+
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: root.heroIconSize
+                                height: root.heroIconSize
+                                radius: Theme.radius.sm
+                                color: Theme.media.chip
+                                border.width: 1
+                                border.color: Theme.media.chipBorder
+
+                                Image {
+                                    anchors.fill: parent
+                                    anchors.margins: Theme.space.xs
+                                    source: root.featured
+                                            ? "image://instanceicon/" + (root.featured.itemIconKey.length > 0 ? root.featured.itemIconKey : "default")
+                                            : ""
+                                    sourceSize: Qt.size(width * 2, height * 2)
+                                    fillMode: Image.PreserveAspectFit
+                                    smooth: true
+                                    mipmap: true
+                                    asynchronous: true
+                                }
+                            }
+                            Column {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: parent.width - root.heroIconSize - parent.spacing
+                                spacing: Theme.space.xxs
+
+                                Text {
+                                    width: parent.width
+                                    text: root.featured ? root.featured.itemName : ""
+                                    elide: Text.ElideRight
+                                    color: Theme.media.text
+                                    font.family: Theme.font.family
+                                    font.pixelSize: root.compact ? Theme.type.heading.pixelSize : Theme.type.display.pixelSize
+                                    font.weight: Font.Bold
+                                    font.letterSpacing: root.heroTracking
+                                }
+                                Text {
+                                    width: parent.width
+                                    text: root.featured ? Format.versionLine(root.featured.itemLoader, root.featured.itemVersion) : ""
+                                    elide: Text.ElideRight
+                                    color: Theme.media.textSecondary
+                                    font.family: Theme.font.family
+                                    font.pixelSize: Theme.type.label.pixelSize
+                                }
+                            }
                         }
-                        NewsMenuButton {
-                            anchors.verticalCenter: parent.verticalCenter
-                            entries: root.newsEntries
-                            onMedia: true
+
+                        Row {
+                            spacing: Theme.space.lg
+
+                            Button {
+                                text: qsTr("Open")
+                                icon.source: Icons.url("arrow-right")
+                                onClicked: if (root.featured) root.openInstanceRequested(root.featured.itemId)
+                            }
+                            // When (clock) -- or that it crashed -- and how
+                            // long (hourglass), quietly beside Open.
+                            Row {
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: Theme.space.md
+
+                                HeroFact {
+                                    iconName: root.featured && root.featured.itemCrashed ? "alert-triangle" : "clock"
+                                    text: !root.featured ? ""
+                                        : root.featured.itemCrashed ? qsTr("Crashed last time")
+                                        : Format.lastPlayed(root.featured.itemLastLaunch)
+                                }
+                                HeroFact {
+                                    visible: root.featuredPlayTime.length > 0
+                                    iconName: "hourglass"
+                                    text: root.featuredPlayTime
+                                }
+                            }
                         }
-                    }
-                }
-            }
-
-            // -- News line (compact) ---------------------------------------
-            // A short window: the same headline as one row on the page.
-            Rectangle {
-                visible: root.hasNews && root.compact
-                width: parent.width
-                height: Theme.control.heightLg + Theme.space.sm
-                radius: Theme.radius.lg
-                color: Theme.palette.surface
-                border.width: 1
-                border.color: Theme.palette.border
-
-                MeshIcon {
-                    id: compactIcon
-                    anchors.left: parent.left
-                    anchors.leftMargin: Theme.space.lg
-                    anchors.verticalCenter: parent.verticalCenter
-                    iconName: "bell"
-                    size: Theme.icon.sm
-                    color: Theme.palette.textTertiary
-                }
-                Text {
-                    id: compactTitle
-                    anchors.left: compactIcon.right
-                    anchors.leftMargin: Theme.space.sm
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: Math.min(implicitWidth, compactActions.x - x - compactDate.implicitWidth - Theme.space.md * 2)
-                    text: root.hasNews ? root.featuredNews.title : ""
-                    elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
-                    font.weight: Font.Medium
-                }
-                Text {
-                    id: compactDate
-                    anchors.left: compactTitle.right
-                    anchors.leftMargin: Theme.space.md
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: root.newsDate
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
-                }
-                Row {
-                    id: compactActions
-                    anchors.right: parent.right
-                    anchors.rightMargin: Theme.space.sm
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: Theme.space.xs
-
-                    NewsMenuButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        entries: root.newsEntries
-                    }
-                    Button {
-                        flat: true
-                        text: qsTr("Read more")
-                        onClicked: root.openNews()
                     }
                 }
             }
@@ -405,12 +490,12 @@ Item {
                 spacing: Theme.space.md
 
                 SectionHeading {
-                    visible: root.recentCount > 0
+                    visible: root.jumpAvailable > 0
                     text: qsTr("Jump back in")
                 }
 
                 Row {
-                    visible: root.recentCount > 0
+                    visible: root.jumpAvailable > 0
                     spacing: root.jumpSpacing
 
                     Repeater {
@@ -425,19 +510,36 @@ Item {
                         // of binding mode -- forwards each role into
                         // HomeJumpCard explicitly.
                         delegate: Item {
+                            id: slot
                             // The most recently played first (recentModel
-                            // already sorts that way), only as many as fit
-                            // whole.
-                            visible: model.index < root.jumpCount
+                            // already sorts that way), after the one the
+                            // hero shows, only as many as fit whole.
+                            readonly property int position: model.index - root.jumpOffset
+                            visible: slot.position >= 0 && slot.position < root.jumpCount
                             width: visible ? card.width : 0
                             height: visible ? card.height : 0
+
+                            // The first row is the hero's instance: what it
+                            // shows, live from the row.
+                            readonly property bool isFirst: model.index === 0
+                            readonly property string itemId: model.instanceId
+                            readonly property string itemName: model.name
+                            readonly property string itemIconKey: model.iconKey
+                            readonly property string itemVersion: model.gameVersion
+                            readonly property string itemLoader: model.loader
+                            readonly property var itemLastLaunch: model.lastLaunch
+                            readonly property var itemPlayTime: model.totalTimePlayed
+                            readonly property bool itemCrashed: model.hasCrashed
+                            function claimHero() { if (slot.isFirst) root.featured = slot }
+                            onIsFirstChanged: claimHero()
+                            Component.onCompleted: claimHero()
 
                             HomeJumpCard {
                                 id: card
                                 // The last card of a full row takes the
                                 // pixels the even split rounded away, so the
                                 // row ends exactly on the content edge.
-                                width: model.index === root.jumpFit - 1 && root.jumpCount === root.jumpFit
+                                width: slot.position === root.jumpFit - 1 && root.jumpCount === root.jumpFit
                                        && root.jumpCardWidth < root.jumpMaxWidth
                                        ? root.contentWidth - (root.jumpFit - 1) * (root.jumpCardWidth + root.jumpSpacing)
                                        : root.jumpCardWidth
