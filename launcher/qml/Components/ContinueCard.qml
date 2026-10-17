@@ -56,6 +56,18 @@ Rectangle {
     // (the instance page's own actions); otherwise it emits menuRequested().
     property bool showMenu: true
     property Menu menu: null
+    // The ⋯ button, which lives in a loaded actions row.
+    property Item menuAnchor: null
+    // Right-aligned under the ⋯ button, like any ⋯ menu, and held there:
+    // entries that show or hide as the menu opens change its width after
+    // it is placed, which used to push its right edge past the button.
+    function openMenu() {
+        const anchor = root.menuAnchor
+        if (!root.menu || !anchor)
+            return
+        root.menu.popup(anchor, anchor.width - root.menu.width, anchor.height + Theme.space.xs)
+        root.menu.x = Qt.binding(() => anchor.width - root.menu.width)
+    }
     // A one-line strip: title and tags beside the icon, actions on the
     // right -- for pages whose content needs the height (the instance
     // page's header).
@@ -281,6 +293,8 @@ Rectangle {
 
             IconButton {
                 id: menuButton
+                Component.onCompleted: root.menuAnchor = menuButton
+                Component.onDestruction: if (root.menuAnchor === menuButton) root.menuAnchor = null
                 visible: root.showMenu
                 size: root.slim ? Theme.control.height : Theme.control.heightLg
                 flat: false
@@ -293,9 +307,7 @@ Rectangle {
                     } else if (root.menu.visible) {
                         root.menu.close()
                     } else {
-                        // Right-aligned under the button, like any ⋯ menu.
-                        root.menu.popup(menuButton, menuButton.width - root.menu.width,
-                                        menuButton.height + Theme.space.xs)
+                        root.openMenu()
                     }
                 }
             }

@@ -129,7 +129,7 @@ Item {
     function openHeaderMenu() {
         reviewDelay.run(function () {
             if (root.headerCard)
-                instanceMenu.popup(root.headerCard, root.headerCard.width - instanceMenu.width, Theme.control.height)
+                root.headerCard.openMenu()
         })
     }
     Timer {
@@ -438,22 +438,26 @@ Item {
         readonly property bool offerManage: root.manageable || exportFlows.canExport || exportFlows.canCreateShortcut
 
         // A submenu has no `visible` of its own: its entry is a MenuItem Qt
-        // makes, found here by its subMenu.
-        onAboutToShow: {
+        // makes, found here by its subMenu. Kept in step ahead of opening:
+        // the ⋯ button places the menu by its width before aboutToShow, so
+        // an entry that appeared only then pushed the menu past the button.
+        function syncOptionsEntry() {
             for (var i = 0; i < instanceMenu.count; ++i) {
                 var item = instanceMenu.itemAt(i)
                 if (item && item.subMenu === playOptionsMenu) {
                     item.visible = instanceMenu.offerOptions
                     item.height = instanceMenu.offerOptions ? item.implicitHeight : 0
-                    // An icon like its neighbours', or its label would
-                    // start where theirs' icons do.
-                    item.icon.source = Icons.url("sliders")
                 }
             }
         }
+        onOfferOptionsChanged: syncOptionsEntry()
+        Component.onCompleted: syncOptionsEntry()
 
         LaunchOptionsMenu {
             id: playOptionsMenu
+            // An icon like its neighbours', or its label would start where
+            // theirs' icons do.
+            icon.source: Icons.url("sliders")
             instanceId: root.instanceId
             optionsFor: root.launchOptionsFor
             onLaunchModeRequested: (id, mode) => root.launchModeRequested(id, mode)

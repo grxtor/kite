@@ -34,7 +34,17 @@ T.MenuItem {
         display: control.display
         alignment: Qt.AlignLeft
 
-        icon: control.icon
+        // Field by field rather than `icon: control.icon`: a submenu's entry
+        // gets its Menu's icon wholesale, with no size or colour, and drew
+        // it at the SVG's own size in black-or-whatever -- "Play as" stood
+        // bigger than "Play offline" and its label started further right.
+        icon.source: control.icon.source
+        icon.name: control.icon.name
+        icon.width: Theme.icon.md
+        icon.height: Theme.icon.md
+        icon.color: control.subMenu ? (control.enabled ? Theme.palette.textPrimary : Theme.palette.textDisabled)
+                                    : control.icon.color
+        icon.cache: control.icon.cache
         text: control.text
         font.family: Theme.font.family
         font.pixelSize: Theme.type.body.pixelSize

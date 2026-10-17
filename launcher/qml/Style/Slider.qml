@@ -50,7 +50,9 @@ T.Slider {
         width: control.horizontal ? control.availableWidth : implicitWidth
         height: control.horizontal ? implicitHeight : control.availableHeight
         radius: Theme.radius.pill
-        color: Theme.palette.surfaceOverlay
+        // Same groove as Switch's off track: light mode's cards are white,
+        // and a surfaceOverlay groove all but vanished on them.
+        color: Theme.dark ? Theme.palette.surfaceOverlay : Theme.palette.textDisabled
         scale: control.horizontal && control.mirrored ? -1 : 1
 
         Rectangle {

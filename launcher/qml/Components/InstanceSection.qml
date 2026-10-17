@@ -80,6 +80,12 @@ Column {
         property string name
         property string iconKey
         anchors.fill: parent
+        // Under the card's own content. On top, it left the card's
+        // selection tap to take the ⋯ and Play buttons' clicks: ⋯ only
+        // selected the card and opened no menu. Its handler still sees a
+        // press that starts on them, so a drag can begin anywhere on the
+        // card.
+        z: -1
         enabled: dragSource.section.dragEnabled
 
         DragHandler {
