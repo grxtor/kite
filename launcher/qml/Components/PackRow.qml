@@ -12,8 +12,11 @@ import MeshMC.Theme
  * version, the on/off switch and the ⋯ menu; clicked, it opens the file's
  * details underneath -- description, authors, version, file, where it was
  * installed from -- the way ModFolderPage's info panel showed them.
+ *
+ * A row of a table, not a card of its own: rows share PackList's card and
+ * are split by hairlines; hover and ticked rows tint an inset strip.
  */
-Rectangle {
+Item {
     id: row
 
     // The PackList this row belongs to: selection, kind, lock state.
@@ -32,14 +35,33 @@ Rectangle {
     readonly property string source: model.source || ""
     readonly property bool selected: owner.isSelected(key)
     readonly property bool expanded: owner.expandedKey === key
+    // The last row draws no hairline under itself: the card's border ends it.
+    property bool lastRow: false
 
     height: header.height + (expanded ? details.implicitHeight + Theme.space.md : 0)
-    radius: Theme.radius.lg
-    color: row.selected ? Theme.palette.accentSubtle
-         : hover.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
-    border.width: 1
-    border.color: row.selected ? Theme.palette.accent : Theme.palette.border
     clip: true
+
+    Rectangle {
+        anchors.fill: parent
+        anchors.leftMargin: Theme.space.xs
+        anchors.rightMargin: Theme.space.xs
+        anchors.topMargin: Theme.space.xxs
+        anchors.bottomMargin: Theme.space.xxs
+        radius: Theme.radius.sm
+        color: row.selected ? Theme.palette.accentSubtle
+             : hover.hovered ? Theme.palette.surfaceRaised : "transparent"
+        Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
+    }
+    Rectangle {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: Theme.space.md
+        anchors.rightMargin: Theme.space.md
+        height: 1
+        color: Theme.palette.divider
+        visible: !row.lastRow
+    }
 
     // One "label  value" line of the details.
     component FactLabel: Text {
@@ -54,8 +76,6 @@ Rectangle {
         font.family: Theme.font.family
         font.pixelSize: Theme.type.caption.pixelSize
     }
-
-    Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
 
     HoverHandler { id: hover }
 

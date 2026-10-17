@@ -29,6 +29,7 @@ Item {
     readonly property var controller: root.details ? root.details.worldDataPacks : null
     readonly property bool unlocked: !!root.controller && root.controller.unlocked
     readonly property int count: list.count
+    readonly property string lockedReason: qsTr("The game is running. Data packs can be changed once it has closed.")
     readonly property int thumbSize: 36
     readonly property int pickerWidth: 220
 
@@ -56,35 +57,29 @@ Item {
         spacing: Theme.space.md
         visible: picker.count > 0
 
-        RowLayout {
+        TabToolbar {
             Layout.fillWidth: true
-            spacing: Theme.space.sm
 
-            Text {
-                text: qsTr("World:")
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-            }
-            ComboBox {
-                id: picker
-                Layout.preferredWidth: root.pickerWidth
-                model: root.worldsModel
-                textRole: "name"
-                onActivated: (index) => root.openWorld(index)
-                // The world list may still be loading when the controller
-                // arrives; open the default world as soon as there is one,
-                // or the toolbar would stay disabled with nothing to act on.
-                onCountChanged: if (root.controller && !root.controller.ready) root.openDefault()
-            }
-            Text {
-                Layout.fillWidth: true
-                text: !root.unlocked && root.controller ? qsTr("The game is running; data packs can be changed once it has closed.") : ""
-                color: Theme.palette.warning
-                elide: Text.ElideRight
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-            }
+            leading: [
+                Text {
+                    text: qsTr("World")
+                    color: Theme.palette.textSecondary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.label.pixelSize
+                },
+                ComboBox {
+                    id: picker
+                    Layout.preferredWidth: root.pickerWidth
+                    model: root.worldsModel
+                    textRole: "name"
+                    onActivated: (index) => root.openWorld(index)
+                    // The world list may still be loading when the controller
+                    // arrives; open the default world as soon as there is one,
+                    // or the toolbar would stay disabled with nothing to act on.
+                    onCountChanged: if (root.controller && !root.controller.ready) root.openDefault()
+                }
+            ]
+
             Button {
                 text: qsTr("Open folder")
                 icon.source: Icons.url("folder")
@@ -92,12 +87,21 @@ Item {
                 onClicked: root.openFolderRequested(root.controller ? root.controller.directory : "")
             }
             // Secondary: the play bar's Play is this page's primary action.
-            Button {
-                enabled: root.unlocked && root.controller && root.controller.ready
-                text: qsTr("Add from file…")
-                icon.source: Icons.url("plus")
-                onClicked: fileDialog.open()
+            HoverReason {
+                reason: root.lockedReason
+                Button {
+                    enabled: root.unlocked && root.controller && root.controller.ready
+                    text: qsTr("Add from file…")
+                    icon.source: Icons.url("plus")
+                    onClicked: fileDialog.open()
+                }
             }
+        }
+
+        NoticeBar {
+            Layout.fillWidth: true
+            visible: !root.unlocked && !!root.controller
+            text: root.lockedReason
         }
 
         ListView {
@@ -246,7 +250,7 @@ Item {
         upperThird: true
         visible: picker.count > 0 && list.count === 0
         title: qsTr("No data packs")
-        body: qsTr("Data packs change this world's recipes, loot and more. Add one with Add from file.")
+        body: qsTr("Data packs change this world's recipes, loot and more. Add a .zip to get started.")
         MeshIcon { iconName: "package"; size: 40; color: Theme.palette.textTertiary }
     }
 

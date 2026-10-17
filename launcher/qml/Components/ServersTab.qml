@@ -23,6 +23,7 @@ Item {
     property string serversDir: ""
     readonly property bool unlocked: !!root.model && !root.model.locked
     readonly property int count: list.count
+    readonly property string lockedReason: qsTr("The game is running. The server list can be changed once it has closed.")
     signal openFolderRequested(string path)
     signal joinRequested(string address)
 
@@ -61,32 +62,30 @@ Item {
         anchors.fill: parent
         spacing: Theme.space.md
 
-        RowLayout {
+        TabToolbar {
             Layout.fillWidth: true
-            spacing: Theme.space.sm
 
-            Text {
-                Layout.fillWidth: true
-                text: !root.unlocked && !!root.model
-                      ? qsTr("The game is running; the server list can be changed once it has closed.")
-                      : list.count > 0 ? qsTr("%1 servers").arg(list.count) : ""
-                color: root.unlocked ? Theme.palette.textTertiary : Theme.palette.warning
-                elide: Text.ElideRight
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-            }
             Button {
                 text: qsTr("Open folder")
                 icon.source: Icons.url("folder")
                 onClicked: root.openFolderRequested(root.serversDir)
             }
             // Secondary: the play bar's Play is this page's primary action.
-            Button {
-                enabled: root.unlocked
-                text: qsTr("Add server")
-                icon.source: Icons.url("plus")
-                onClicked: root.addServer()
+            HoverReason {
+                reason: root.lockedReason
+                Button {
+                    enabled: root.unlocked
+                    text: qsTr("Add server")
+                    icon.source: Icons.url("plus")
+                    onClicked: root.addServer()
+                }
             }
+        }
+
+        NoticeBar {
+            Layout.fillWidth: true
+            visible: !root.unlocked && !!root.model
+            text: root.lockedReason
         }
 
         ListView {
@@ -243,6 +242,8 @@ Item {
         property string name
         property string address
         property int acceptTextures: 0
+        // The resource pack choice being edited (one of root.packChoices).
+        property int packChoice: 0
 
         title: row < 0 ? qsTr("Add server") : qsTr("Edit server")
         parent: Overlay.overlay
@@ -258,7 +259,7 @@ Item {
             }
             nameField.text = name
             addressField.text = address
-            packsChoice.current = acceptTextures
+            packChoice = acceptTextures
             nameField.forceActiveFocus()
             nameField.selectAll()
         }
@@ -274,7 +275,7 @@ Item {
             }
             root.model.setName(target, nameField.text.trim())
             root.model.setAddress(target, addressField.text.trim())
-            root.model.setAcceptTextures(target, packsChoice.current)
+            root.model.setAcceptTextures(target, packChoice)
             list.positionViewAtIndex(target, ListView.Contain)
             close()
         }
@@ -303,10 +304,24 @@ Item {
 
             Item { width: 1; height: Theme.space.xs }
             FieldLabel { text: qsTr("Server resource packs") }
-            SegmentedControl {
-                id: packsChoice
-                options: root.packChoices
-                onActivated: (value) => current = value
+            Row {
+                spacing: Theme.space.lg
+                Repeater {
+                    model: root.packChoices
+                    delegate: RadioButton {
+                        required property var modelData
+                        text: modelData.label
+                        // The dialog owns the choice, so the group is not
+                        // exclusive by itself; a click sets it and puts the
+                        // binding back.
+                        autoExclusive: false
+                        checked: serverDialog.packChoice === modelData.value
+                        onClicked: {
+                            serverDialog.packChoice = modelData.value
+                            checked = Qt.binding(() => serverDialog.packChoice === modelData.value)
+                        }
+                    }
+                }
             }
         }
 
@@ -342,7 +357,7 @@ Item {
         upperThird: true
         visible: list.count === 0
         title: qsTr("No servers yet")
-        body: qsTr("Servers you add in game show up here, or add one with Add server.")
+        body: qsTr("Servers you add in game show up here. You can also add one yourself.")
         MeshIcon { iconName: "server"; size: 40; color: Theme.palette.textTertiary }
     }
 }

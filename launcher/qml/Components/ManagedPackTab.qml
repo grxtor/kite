@@ -13,19 +13,40 @@ import MeshMC.Theme
  * exist -- the widget-free replacement for ManagedPackPage, scoped to
  * instances with a catalogue id (see ManagedPackController's class
  * comment for what is deliberately not reproduced here).
+ *
+ * The page header already names the pack, so this tab starts at what the
+ * header cannot say: the installed version, a drop-down of the others with
+ * an Update button, and -- only once there is a version to read about --
+ * its changelog.
  */
 Item {
     id: root
 
     // InstanceDetails.managedPack (ManagedPackController), or null.
     property var controller: null
-    // The instance's icon key, so the header shows the same icon as the
-    // banner above it.
-    property string iconKey: ""
-    readonly property int iconTileSize: 40
     // The TaskWatcher of an update in progress, if any.
     property var watcher: null
     readonly property bool updating: !!root.watcher && root.watcher.running
+
+    readonly property var versions: root.controller ? root.controller.versions : []
+    readonly property bool hasVersions: !!root.controller && root.controller.hasPackId && root.versions.length > 0
+    // The version the drop-down shows, or null.
+    readonly property var picked: root.hasVersions && versionBox.currentIndex >= 0
+                                  && versionBox.currentIndex < root.versions.length
+                                  ? root.versions[versionBox.currentIndex] : null
+    // One line per version for the drop-down: its name, the Minecraft it is
+    // for, and a word where it is not a plain release or is the installed one.
+    readonly property var versionLabels: root.versions.map((v) => {
+        var label = String(v.name || v.label)
+        if (v.minecraft)
+            label = qsTr("%1, Minecraft %2").arg(label).arg(v.minecraft)
+        if (v.releaseType === "alpha")
+            label = qsTr("%1, alpha").arg(label)
+        else if (v.releaseType === "beta")
+            label = qsTr("%1, beta").arg(label)
+        return v.current ? qsTr("%1 (installed)").arg(label) : label
+    })
+    readonly property int versionBoxWidth: 360
 
     // Emitted once an update has landed on disk: this instance has just
     // been replaced, so the page showing it -- including this tab's own
@@ -113,59 +134,22 @@ Item {
         spacing: Theme.space.md
         visible: !!root.controller
 
-        RowLayout {
+        TabToolbar {
             Layout.fillWidth: true
-            spacing: Theme.space.md
 
-            Rectangle {
-                Layout.preferredWidth: root.iconTileSize
-                Layout.preferredHeight: root.iconTileSize
-                radius: Theme.radius.md
-                color: Theme.palette.surfaceSunken
-                Image {
-                    id: packIcon
-                    anchors.fill: parent
-                    source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
-                    sourceSize: Qt.size(width, height)
-                    fillMode: Image.PreserveAspectFit
-                }
-                MeshIcon {
-                    anchors.centerIn: parent
-                    visible: packIcon.status !== Image.Ready
-                    iconName: "package"
-                    size: Theme.icon.sm
-                    color: Theme.palette.textTertiary
-                }
-            }
-
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 2
-                // Filling, so the column (and not just its own content
-                // width) takes the row and "Website" sits at the right edge,
-                // over Reload.
+            leading: [
+                Tag { text: root.controller ? root.controller.providerLabel : "" },
                 Text {
                     Layout.fillWidth: true
                     elide: Text.ElideRight
-                    text: root.controller ? root.controller.packName : ""
-                    color: Theme.palette.textPrimary
+                    text: root.controller && root.controller.installedVersionName.length > 0
+                          ? qsTr("Installed %1").arg(root.controller.installedVersionName)
+                          : qsTr("Installed version unknown")
+                    color: Theme.palette.textSecondary
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Theme.type.title.weight
+                    font.pixelSize: Theme.type.body.pixelSize
                 }
-                RowLayout {
-                    spacing: Theme.space.sm
-                    Tag { text: root.controller ? root.controller.providerLabel : "" }
-                    Text {
-                        text: root.controller && root.controller.installedVersionName.length > 0
-                              ? qsTr("Installed: %1").arg(root.controller.installedVersionName)
-                              : qsTr("Installed version unknown")
-                        color: Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
-                    }
-                }
-            }
+            ]
 
             Button {
                 text: qsTr("Website")
@@ -244,137 +228,86 @@ Item {
             }
         }
 
+        Text {
+            Layout.fillWidth: true
+            visible: !!root.controller && root.controller.hasPackId && root.controller.error.length === 0
+                     && !root.controller.loading && root.versions.length === 0
+            wrapMode: Text.Wrap
+            text: qsTr("The catalogue lists no other versions of this pack.")
+            color: Theme.palette.textSecondary
+            font.family: Theme.font.family
+            font.pixelSize: Theme.type.body.pixelSize
+        }
+
+        // The other versions, as a drop-down: the newest is picked at first,
+        // so its changelog is there to read before updating to it.
         RowLayout {
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            visible: root.controller && root.controller.hasPackId
-            spacing: Theme.space.md
+            visible: root.hasVersions
+            spacing: Theme.space.sm
 
-            ListView {
-                id: list
-                Layout.preferredWidth: 280
-                Layout.fillHeight: true
+            Text {
+                text: qsTr("Update to")
+                color: Theme.palette.textSecondary
+                font.family: Theme.font.family
+                font.pixelSize: Theme.type.label.pixelSize
+            }
+            ComboBox {
+                id: versionBox
+                Layout.preferredWidth: root.versionBoxWidth
+                model: root.versionLabels
+                Accessible.name: qsTr("Version")
+            }
+            Item { Layout.fillWidth: true }
+            Button {
+                enabled: !root.updating && !!root.picked && root.picked.installable && !root.picked.current
+                // The tab's one main action, shown as such only while it
+                // would do something: a version other than the installed
+                // one is picked (the newest, by default, when there is
+                // an update).
+                highlighted: enabled
+                text: qsTr("Update")
+                icon.source: Icons.url("download")
+                onClicked: root.watcher = root.controller.updateToVersion(versionBox.currentIndex)
+            }
+        }
+
+        Rectangle {
+            id: changelogHost
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: root.hasVersions && !!root.picked
+            radius: Theme.radius.lg
+            color: Theme.palette.surfaceSunken
+            border.width: 1
+            border.color: Theme.palette.border
+
+            Flickable {
+                anchors.fill: parent
+                anchors.margins: Theme.space.md
+                contentWidth: width
+                contentHeight: changelog.implicitHeight
                 clip: true
-                spacing: Theme.space.xs
-                boundsBehavior: Flickable.StopAtBounds
-                model: root.controller ? root.controller.versions : []
-                // A plain initial value, not a lasting binding: tapping a
-                // row below assigns this directly, which is what a plain
-                // QML property assignment does to whatever binding came
-                // before it - exactly what is wanted here, since the
-                // newest version (index 0) is the right thing to default
-                // to only until the user actually picks one themselves.
-                currentIndex: (root.controller && root.controller.versions.length > 0) ? 0 : -1
                 ScrollBar.vertical: ScrollBar {}
 
-                delegate: Rectangle {
-                    id: verRow
-                    required property int index
-                    required property var modelData
-
-                    width: list.width - Theme.space.sm
-                    height: Theme.control.heightLg
-                    radius: Theme.radius.md
-                    color: list.currentIndex === index ? Theme.palette.surfaceRaised : "transparent"
-                    border.width: list.currentIndex === index ? 1 : 0
-                    border.color: Theme.palette.border
-
-                    TapHandler { onTapped: list.currentIndex = verRow.index }
-
-                    // The version, the Minecraft it is for under it, and a
-                    // tag only where it is not a plain release.
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: Theme.space.sm
-                        anchors.rightMargin: Theme.space.sm
-                        spacing: Theme.space.sm
-                        Column {
-                            Layout.fillWidth: true
-                            Text {
-                                width: parent.width
-                                text: verRow.modelData.name || verRow.modelData.label
-                                elide: Text.ElideRight
-                                color: verRow.modelData.installable ? Theme.palette.textPrimary : Theme.palette.textTertiary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
-                            }
-                            Text {
-                                width: parent.width
-                                visible: !!verRow.modelData.minecraft
-                                text: qsTr("Minecraft %1").arg(verRow.modelData.minecraft)
-                                elide: Text.ElideRight
-                                color: Theme.palette.textTertiary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.caption.pixelSize
-                            }
-                        }
-                        Tag {
-                            visible: verRow.modelData.releaseType === "beta" || verRow.modelData.releaseType === "alpha"
-                            text: verRow.modelData.releaseType === "alpha" ? qsTr("Alpha") : qsTr("Beta")
-                        }
-                        Tag { visible: verRow.modelData.current; text: qsTr("Current") }
-                    }
+                // A changelog may link images; see RemoteRichText.
+                RemoteRichText {
+                    id: changelog
+                    width: parent.width
+                    source: !root.picked ? ""
+                            : root.picked.changelog.length > 0
+                            ? root.picked.changelog
+                            : qsTr("No changelog available for this version.")
+                    onLinkActivated: (link) => root.openChangelogLink(link)
                 }
             }
+        }
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                spacing: Theme.space.sm
-
-                Rectangle {
-                    id: changelogHost
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    radius: Theme.radius.lg
-                    color: Theme.palette.surfaceSunken
-                    border.width: 1
-                    border.color: Theme.palette.border
-
-                    readonly property var selected: {
-                        const rows = root.controller ? root.controller.versions : []
-                        return list.currentIndex >= 0 && list.currentIndex < rows.length ? rows[list.currentIndex] : null
-                    }
-
-                    Flickable {
-                        anchors.fill: parent
-                        anchors.margins: Theme.space.md
-                        contentWidth: width
-                        contentHeight: changelog.implicitHeight
-                        clip: true
-                        ScrollBar.vertical: ScrollBar {}
-
-                        // A changelog may link images; see RemoteRichText.
-                        RemoteRichText {
-                            id: changelog
-                            width: parent.width
-                            source: !changelogHost.selected
-                                    ? qsTr("The changelog of the version you pick shows up here.")
-                                    : changelogHost.selected.changelog.length > 0
-                                    ? changelogHost.selected.changelog
-                                    : qsTr("No changelog available for this version.")
-                            onLinkActivated: (link) => root.openChangelogLink(link)
-                        }
-                    }
-                }
-
-                Button {
-                    Layout.alignment: Qt.AlignRight
-                    enabled: !root.updating && list.currentIndex >= 0 &&
-                             root.controller && root.controller.versions.length > 0 &&
-                             root.controller.versions[list.currentIndex] &&
-                             root.controller.versions[list.currentIndex].installable &&
-                             !root.controller.versions[list.currentIndex].current
-                    // The tab's one main action, shown as such only while it
-                    // would do something: a version other than the installed
-                    // one is picked (the newest, by default, when there is
-                    // an update).
-                    highlighted: enabled
-                    text: qsTr("Update to this version")
-                    icon.source: Icons.url("download")
-                    onClicked: root.watcher = root.controller.updateToVersion(list.currentIndex)
-                }
-            }
+        // Pushes the rows above to the top when there is no changelog box.
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: !changelogHost.visible
         }
     }
 
@@ -389,20 +322,6 @@ Item {
         anchors.centerIn: parent
         visible: root.controller && root.controller.loading
         running: visible
-    }
-
-    // Nothing to list (the catalogue could not be reached, or has no
-    // versions): said where the versions would be, over the list itself
-    // rather than its scrolling content.
-    EmptyState {
-        parent: list
-        upperThird: true
-        visible: list.visible && list.count === 0 && !!root.controller && !root.controller.loading
-        title: qsTr("No versions")
-        body: root.controller && root.controller.error.length > 0
-              ? qsTr("The versions show up here once they load.")
-              : qsTr("The catalogue lists no versions of this pack.")
-        MeshIcon { iconName: "layers"; size: 40; color: Theme.palette.textTertiary }
     }
 
     EmptyState {

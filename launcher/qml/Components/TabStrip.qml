@@ -17,11 +17,15 @@ import MeshMC.Theme
  * width, never on the selection, so the strip's order never changes under
  * the cursor: a tab picked from the menu stays in the menu, and the More
  * button takes its name ("Settings ▾") in the selected style instead.
+ *
+ * A tab given `more: true` lives in that menu at every width -- for the
+ * ones used less often (an instance's Version or Backups), so the strip
+ * keeps to the everyday tabs even on a wide window.
  */
 Item {
     id: root
 
-    // [{ id, label, count? }]
+    // [{ id, label, count?, more? }]
     property var tabs: []
     property string current
     signal activated(string id)
@@ -38,40 +42,54 @@ Item {
 
     Accessible.role: Accessible.PageTabList
 
-    // Width the More button needs to show any of the labels in tabs[first..]
-    // (or "More" itself), selected, so whichever of them gets picked fits.
-    function moreWidthFrom(first) {
+    // Width the More button needs to show any of the labels it may hold --
+    // the `more` tabs and the tabs at @p hiddenIndexes -- (or "More"
+    // itself), selected, so whichever of them gets picked fits.
+    function moreWidthFor(hiddenIndexes) {
         let label = Math.ceil(moreMetrics.advanceWidth)
-        for (let i = first; i < root.tabs.length; ++i)
-            label = Math.max(label, repeater.itemAt(i).selectedLabelWidth)
+        for (let i = 0; i < root.tabs.length; ++i) {
+            if (root.tabs[i].more === true || hiddenIndexes.indexOf(i) >= 0)
+                label = Math.max(label, repeater.itemAt(i).selectedLabelWidth)
+        }
         return label + moreRow.spacing + Theme.icon.sm
     }
 
     // Fits as many tabs as the width allows, in order, leaving room for a
-    // More button wide enough for the name of any tab it holds. The current
-    // tab plays no part, so selecting one never moves another.
+    // More button wide enough for the name of any tab it holds. `more` tabs
+    // always go to the menu. The current tab plays no part, so selecting
+    // one never moves another.
     function relayout() {
         const n = root.tabs.length
         if (root.width <= 0 || repeater.count !== n)
             return
         const gap = row.spacing
-        // ends[k]: width of tabs 0..k-1 laid out side by side.
+        // The tabs that may sit in the row, by index, and whether any must
+        // go to the menu whatever the width.
+        const free = []
+        for (let i = 0; i < n; ++i) {
+            if (root.tabs[i].more !== true)
+                free.push(i)
+        }
+        const anyPinned = free.length < n
+        // ends[k]: width of the first k free tabs laid out side by side.
         const ends = [0]
-        for (let i = 0; i < n; ++i)
-            ends.push(ends[i] + repeater.itemAt(i).implicitWidth + (i > 0 ? gap : 0))
+        for (let j = 0; j < free.length; ++j)
+            ends.push(ends[j] + repeater.itemAt(free[j]).implicitWidth + (j > 0 ? gap : 0))
 
-        let shown = n
-        if (ends[n] > root.width) {
+        let shown = free.length
+        if (ends[shown] + (anyPinned ? gap + root.moreWidthFor([]) : 0) > root.width) {
             shown = 0
-            for (let k = n - 1; k > 0; --k) {
-                if (ends[k] + gap + root.moreWidthFrom(k) <= root.width) {
+            for (let k = free.length - 1; k > 0; --k) {
+                if (ends[k] + gap + root.moreWidthFor(free.slice(k)) <= root.width) {
                     shown = k
                     break
                 }
             }
         }
 
-        const hidden = root.tabs.slice(shown).map((t) => t.id)
+        const hiddenFree = free.slice(shown)
+        const hidden = root.tabs.filter((t, i) => t.more === true || hiddenFree.indexOf(i) >= 0)
+                                .map((t) => t.id)
         if (JSON.stringify(hidden) !== JSON.stringify(root.overflowIds))
             root.overflowIds = hidden
     }

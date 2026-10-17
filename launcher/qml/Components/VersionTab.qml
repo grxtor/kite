@@ -15,7 +15,7 @@ import MeshMC.Theme
  * through PackProfile's own `task`, shown as a thin progress bar rather
  * than a blocking dialog. Each row's actions sit behind its ⋯ menu (also
  * on right-click); only the on/off switch stays out in the row. The
- * toolbar's "More" menu holds the rarer actions: an empty component,
+ * toolbar's "More" menu holds the rarer actions: reloading, an empty component,
  * jar mods, a replacement Minecraft.jar, downloading the game files again,
  * and the libraries and game folders.
  */
@@ -51,40 +51,15 @@ Item {
         anchors.fill: parent
         spacing: Theme.space.md
 
-        RowLayout {
+        TabToolbar {
             Layout.fillWidth: true
-            spacing: Theme.space.sm
 
-            Text {
-                Layout.fillWidth: true
-                text: list.count > 0 ? qsTr("%1 components").arg(list.count) : ""
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-            }
             Button {
                 enabled: !root.locked && !!root.components && !root.components.busy
                 text: qsTr("Change Minecraft version")
                 onClicked: minecraftVersionDialog.open()
             }
-            Button {
-                enabled: !root.locked && !!root.installer && !!root.components && !root.components.busy
-                text: qsTr("Install loader")
-                icon.source: Icons.url("download")
-                onClicked: {
-                    loaderInstallDialog.preselectUid = ""
-                    loaderInstallDialog.open()
-                }
-            }
-            IconButton {
-                flat: false
-                iconName: "refresh"
-                tip: qsTr("Reload")
-                enabled: !root.locked && !!root.components && !root.components.busy
-                onClicked: root.components.reloadProfile()
-            }
-            // "More ▾", last so its edge is the content edge: mirrored so
-            // the chevron follows the label.
+            // "More ▾": mirrored so the chevron follows the label.
             HoverReason {
                 visible: !!root.tools
                 reason: root.lockedReason
@@ -96,6 +71,23 @@ Item {
                     onClicked: moreMenu.popup(moreButton, moreButton.width - moreMenu.width, moreButton.height)
                 }
             }
+            // Secondary, like the rest of the toolbar: the play bar's Play
+            // is this page's one primary action.
+            Button {
+                enabled: !root.locked && !!root.installer && !!root.components && !root.components.busy
+                text: qsTr("Install loader")
+                icon.source: Icons.url("download")
+                onClicked: {
+                    loaderInstallDialog.preselectUid = ""
+                    loaderInstallDialog.open()
+                }
+            }
+        }
+
+        NoticeBar {
+            Layout.fillWidth: true
+            visible: root.locked && !!root.details
+            text: root.lockedReason
         }
 
         // The result of "Download all files" (progress, or why it failed) and
@@ -438,6 +430,13 @@ Item {
 
     Menu {
         id: moreMenu
+        MenuItem {
+            enabled: !root.locked && !!root.components && !root.components.busy
+            text: qsTr("Reload")
+            icon.source: Icons.url("refresh")
+            onTriggered: root.components.reloadProfile()
+        }
+        MenuSeparator {}
         MenuItem {
             enabled: !root.locked && !!root.components && !root.components.busy
             text: qsTr("Add empty component…")

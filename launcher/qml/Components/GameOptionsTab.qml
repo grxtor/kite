@@ -19,10 +19,10 @@ import MeshMC.Theme
  * read-only, since the game rewrites the file as it quits. Every raw key is
  * still there, searchable, behind "All options".
  *
- * A SettingsScroll, like the Settings tab beside it, so both open with the
- * same heading in the same place.
+ * A TabScroll, like the Settings tab beside it: no heading (the tab strip
+ * names the tab), one line of description, the page's full width.
  */
-SettingsScroll {
+TabScroll {
     id: root
 
     // KeyValueFilterModel over the instance's GameOptions (InstanceDetails.gameOptions).
@@ -34,7 +34,6 @@ SettingsScroll {
     readonly property var store: root.model ? root.model.sourceModel : null
     readonly property bool editable: !root.running && collector.count > 0
 
-    title: qsTr("Game options")
     description: collector.count === 0
                  ? qsTr("This instance has no options yet. Play it once and the game creates them.")
                  : root.running
@@ -119,7 +118,7 @@ SettingsScroll {
     // { title, rows: [spec] } -- a row only shows when its key is in this
     // options.txt (fancyGraphics is what versions before 1.16 wrote instead
     // of graphicsMode).
-    // (Not "groups": that is SettingsScroll's default property.)
+    // (Not "groups": that is TabScroll's default property.)
     readonly property var optionGroups: [
         { title: qsTr("Video"), rows: [
             root.chunks(qsTr("Render distance"), "renderDistance", 2),

@@ -11,7 +11,8 @@ import MeshMC.Theme
  * The game's output, live, plus (when the instance has any) its other log
  * files -- logs/*.log*, crash-reports/*.txt -- the widget-free replacement
  * for LogPage and OtherLogsPage, folded into one tab: both are "read a log",
- * just live vs. on disk. The on-disk side is OtherLogsView, which the
+ * just live vs. on disk. Which one is a single drop-down (LogSourcePicker,
+ * "Live game log" first). The on-disk side is OtherLogsView, which the
  * launcher's own logs in Settings use too.
  *
  * "Live" follows the newest line only while "Follow" is on -- scrolling up
@@ -20,7 +21,9 @@ import MeshMC.Theme
  *
  * Find marks every line that contains the text and steps through them; as
  * the log grows, the matches follow it. Upload sends the log to paste.ee
- * (the key set in Settings, Log upload), copies the link and says so.
+ * (the key set in Settings, Log upload), copies the link and says so. The
+ * whole toolbar is one row: log, find, then the actions; the rarer ones
+ * (wrap lines, clear) sit behind ⋯.
  */
 Item {
     id: root
@@ -46,6 +49,24 @@ Item {
     // Set by the live Upload button, so the Other logs view (which shares the
     // uploader) does not also announce the link.
     property bool uploading: false
+
+    // The log picker shrinks, down to this, before the row pushes past its
+    // column; the Copy and Upload buttons keep only their icons on a narrow
+    // tab (their label becomes the tooltip).
+    readonly property int pickerWidth: 200
+    readonly property int pickerMinWidth: 120
+    readonly property int compactBelow: 700
+    readonly property bool compact: root.width < root.compactBelow
+    // Whether there are log files on disk to pick instead of the live log.
+    readonly property bool hasFiles: !!root.otherLogs && livePicker.files.length > 0
+
+    // Shows the log file @p name.
+    function showFile(name) {
+        if (!root.otherLogs)
+            return
+        root.otherLogs.selectFile(name)
+        root.view = "other"
+    }
 
     readonly property int findDelayMs: 150
     // While the log grows, matches are refreshed this often at most.
@@ -131,17 +152,26 @@ Item {
             Layout.fillWidth: true
             spacing: Theme.space.sm
 
-            SegmentedControl {
-                visible: !!root.otherLogs
-                options: [
-                    { value: "live", label: qsTr("Live") },
-                    { value: "other", label: qsTr("Other logs") }
-                ]
-                current: root.view
-                onActivated: (value) => root.view = value
+            LogSourcePicker {
+                id: livePicker
+                visible: root.hasFiles
+                Layout.preferredWidth: root.pickerWidth
+                Layout.minimumWidth: root.pickerMinWidth
+                logs: root.otherLogs
+                live: true
+                onFileChosen: (name) => root.showFile(name)
             }
 
-            Item { Layout.fillWidth: true }
+            LogFindBar {
+                id: findBar
+                Layout.fillWidth: true
+                searchEnabled: !!root.model
+                matchCount: root.matches.length
+                current: root.current
+                onTextChanged: findDelay.restart()
+                onNext: root.step(1)
+                onPrevious: root.step(-1)
+            }
 
             Switch {
                 id: follow
@@ -152,6 +182,9 @@ Item {
                 enabled: !!root.model
                 text: qsTr("Copy all")
                 icon.source: Icons.url("copy")
+                display: root.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
+                ToolTip.visible: root.compact && hovered
+                ToolTip.text: text
                 onClicked: {
                     clipboard.copyText(root.log.text())
                     toast.show(qsTr("Log copied."), "success")
@@ -162,34 +195,42 @@ Item {
                 enabled: !!root.model && !!root.uploader && !root.uploader.busy
                 text: root.uploading ? qsTr("Uploading…") : qsTr("Upload")
                 icon.source: Icons.url("arrow-up")
+                display: root.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
+                ToolTip.visible: root.compact && hovered
+                ToolTip.text: text
                 onClicked: {
                     root.uploading = true
                     root.uploader.uploadText(root.log.text())
                 }
             }
-            // Bordered like the buttons beside it and like every other
-            // tab's toolbar, so the row ends flush with the panel below.
-            Button {
-                enabled: !!root.model
-                text: qsTr("Clear")
-                icon.source: Icons.url("x")
-                onClicked: {
-                    root.log.clear()
-                    root.matches = []
-                    root.current = -1
+            IconButton {
+                id: moreButton
+                flat: false
+                iconName: "more"
+                tip: qsTr("More")
+                onClicked: moreMenu.popup(moreButton, moreButton.width - moreMenu.width, moreButton.height)
+
+                Menu {
+                    id: moreMenu
+                    MenuItem {
+                        text: qsTr("Wrap lines")
+                        checkable: true
+                        checked: findBar.wrap
+                        onToggled: findBar.wrap = checked
+                    }
+                    MenuSeparator {}
+                    MenuItem {
+                        enabled: !!root.model
+                        text: qsTr("Clear log")
+                        icon.source: Icons.url("x")
+                        onTriggered: {
+                            root.log.clear()
+                            root.matches = []
+                            root.current = -1
+                        }
+                    }
                 }
             }
-        }
-
-        LogFindBar {
-            id: findBar
-            Layout.fillWidth: true
-            searchEnabled: !!root.model
-            matchCount: root.matches.length
-            current: root.current
-            onTextChanged: findDelay.restart()
-            onNext: root.step(1)
-            onPrevious: root.step(-1)
         }
 
         Rectangle {
@@ -226,20 +267,21 @@ Item {
     }
 
     OtherLogsView {
+        id: otherView
         anchors.fill: parent
         visible: root.view === "other"
         logs: root.otherLogs
         uploader: root.uploader
+        ownPicker: false
         onOpenFolderRequested: (path) => root.openFolderRequested(path)
 
-        SegmentedControl {
-            visible: !!root.otherLogs
-            options: [
-                { value: "live", label: qsTr("Live") },
-                { value: "other", label: qsTr("Other logs") }
-            ]
-            current: root.view
-            onActivated: (value) => root.view = value
+        LogSourcePicker {
+            Layout.preferredWidth: root.pickerWidth
+            Layout.minimumWidth: root.pickerMinWidth
+            logs: root.otherLogs
+            live: false
+            onLiveChosen: root.view = "live"
+            onFileChosen: (name) => root.showFile(name)
         }
     }
 

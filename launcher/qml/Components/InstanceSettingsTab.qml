@@ -10,9 +10,10 @@ import MeshMC.Theme
  * One instance's own settings: each group follows the launcher-wide value
  * until switched to "custom for this instance". Locked while the instance
  * runs -- the game already read these, a change now would silently do
- * nothing until the next launch.
+ * nothing until the next launch. A TabScroll: the tab strip names the tab,
+ * so there is no heading, and the groups run the page's full width.
  */
-SettingsScroll {
+TabScroll {
     id: root
 
     // SettingsAdapter over the instance's settings.
@@ -22,32 +23,17 @@ SettingsScroll {
     // PluginSurfaceModel for this instance's settings anchor, or null.
     property var pluginSurfaces: null
 
-    title: qsTr("Instance settings")
+    description: qsTr("Each group follows the launcher's settings until you switch it to custom for this instance.")
 
     SettingsSource {
         id: store
         adapter: root.adapter
     }
 
-    Rectangle {
+    NoticeBar {
         visible: root.running
         width: parent.width
-        height: lockedText.implicitHeight + Theme.space.md * 2
-        radius: Theme.radius.lg
-        color: Theme.palette.warningSubtle
-
-        Text {
-            id: lockedText
-            anchors.fill: parent
-            anchors.margins: Theme.space.md
-            text: qsTr("The game is running. Settings can be changed once it has closed.")
-            wrapMode: Text.Wrap
-            verticalAlignment: Text.AlignVCenter
-            color: Theme.palette.warning
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
-            font.weight: Font.Medium
-        }
+        text: qsTr("The game is running. Settings can be changed once it has closed.")
     }
 
     Column {

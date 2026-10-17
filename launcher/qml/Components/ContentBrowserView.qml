@@ -15,8 +15,12 @@ import MeshMC.Theme
  * narrows that, and adds categories and environment. Things already
  * installed say so.
  *
- * Results on the left, the picked project on the right with its versions,
- * the newest compatible one preselected. Install first works out what the
+ * Opened as a page of its own from the Content tab's "Add content" (see
+ * InstancePage); its back button, or Escape, returns to the list. A title
+ * and type chips on top, then where and what to search on one row; the
+ * results take the full width as one table, and picking one
+ * slides its versions in beside them (ContentProjectPanel), the newest
+ * compatible one preselected. Install first works out what the
  * project needs; when that is anything at all, InstallReviewDialog lists
  * it to untick before downloading (DownloadSummaryDialog's job). Installs
  * run side by side: each project keeps its own progress, shown on its row,
@@ -31,27 +35,25 @@ Item {
     // InstanceDetails, for its loaderInstaller (the "Install a loader"
     // action). Optional: without it that notice just has no button.
     property var details: null
+    // Back to the Content tab's list.
+    signal backRequested()
     property int selectedRow: -1
     property var selectedProject: null
     property int pickedVersion: -1
 
     readonly property var versions: browser && browser.versions ? browser.versions : []
-    // The sort box beside the search field.
-    readonly property int sortWidth: 200
-    // The search field is not worth having narrower than this; below it,
-    // it takes a row of its own above the sort box and Filters.
-    readonly property int searchMinWidth: 200
+    // The provider and sort boxes around the search field, and the least
+    // the field itself keeps.
+    readonly property int providerWidth: 150
+    readonly property int sortWidth: 190
+    readonly property int searchMinWidth: 160
     // The project panel's share of the row, between its own bounds, so on a
     // narrow window the results keep room for their names.
     readonly property real panelShare: 0.4
     readonly property int panelMinWidth: 300
     readonly property int panelMaxWidth: 440
-    // A result row, its logo, the selected project's logo, and the least
-    // the version list shrinks to under the project's header.
-    readonly property int resultHeight: 60
-    readonly property int resultLogoSize: 40
-    readonly property int projectLogoSize: 48
-    readonly property int versionListMinHeight: 160
+    // Room under the last result while more are being fetched.
+    readonly property int busyFooterHeight: 64
 
     // Every install started from here, by project key. A plain JS object
     // does not notify, so `downloadsRevision` is bumped on every change and
@@ -162,6 +164,25 @@ Item {
     function openFilters() {
         filterPopup.open()
     }
+    // A state for review snapshots (Main.qml's "review=<name>" route,
+    // through InstancePage): "browsepick" picks the first result once the
+    // search has answered.
+    function review(name) {
+        if (name === "browsepick")
+            reviewPick.restart()
+    }
+    Timer {
+        id: reviewPick
+        interval: Theme.motion.slow
+        repeat: true
+        onTriggered: {
+            const first = results.itemAtIndex(0)
+            if (first) {
+                stop()
+                first.clicked()
+            }
+        }
+    }
 
     function runSearch() {
         if (!root.browser)
@@ -183,8 +204,21 @@ Item {
         root.selectedRow = row
         root.selectedProject = project
         root.pickedVersion = -1
-        descriptionText.expanded = false
         root.browser.loadVersions(row)
+    }
+    function closeProject() {
+        root.installNote = ""
+        root.selectedRow = -1
+        root.selectedProject = null
+    }
+    // Opens on @p kind (the kind the Content tab showed) when it is one
+    // that can be browsed; searched again once shown.
+    function showKind(kind) {
+        if (!root.browser || !root.types.some((t) => t.value === kind) || root.browser.contentType === kind)
+            return
+        root.browser.contentType = kind
+        root.closeProject()
+        root.searched = false
     }
 
     onVersionsChanged: {
@@ -205,15 +239,27 @@ Item {
         anchors.fill: parent
         spacing: Theme.space.md
 
-        // What to look for, and where.
+        // What this page is, and what kind of thing to look for.
         RowLayout {
             Layout.fillWidth: true
-            spacing: Theme.space.md
+            Layout.preferredHeight: Theme.control.height
+            spacing: Theme.space.lg
 
-            SegmentedControl {
+            Text {
+                text: qsTr("Add content")
+                color: Theme.palette.textPrimary
+                font.family: Theme.font.family
+                font.pixelSize: Theme.type.heading.pixelSize
+                font.weight: Theme.type.heading.weight
+                Accessible.role: Accessible.Heading
+            }
+            ChipGroup {
                 options: root.types
                 current: root.browser ? root.browser.contentType : "mods"
-                onActivated: (value) => { root.browser.contentType = value; root.runSearch() }
+                onActivated: (value) => {
+                    root.browser.contentType = value
+                    root.runSearch()
+                }
             }
             Item { Layout.fillWidth: true }
             // Installs in flight, so a download started on another project
@@ -245,11 +291,6 @@ Item {
                     }
                 }
             }
-            SegmentedControl {
-                options: root.providers
-                current: root.browser ? root.browser.provider : "modrinth"
-                onActivated: (value) => { root.browser.provider = value; root.runSearch() }
-            }
         }
 
         // At most one: the game running, no loader for mods, or nowhere for
@@ -266,395 +307,179 @@ Item {
             onActionTriggered: loaderDialog.open()
         }
 
+        // Where to search, what for, in which order, narrowed how: one row
+        // at every width.
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Theme.space.md
+
+            ComboBox {
+                id: providerBox
+                Layout.preferredWidth: root.providerWidth
+                model: root.providers
+                textRole: "label"
+                valueRole: "value"
+                currentIndex: root.providers.findIndex((p) => p.value === (root.browser ? root.browser.provider : "modrinth"))
+                Accessible.name: qsTr("Search on")
+                onActivated: {
+                    root.browser.provider = currentValue
+                    currentIndex = Qt.binding(() => root.providers.findIndex((p) => p.value === (root.browser ? root.browser.provider : "modrinth")))
+                    root.runSearch()
+                }
+            }
+            SearchBox {
+                id: searchField
+                Layout.fillWidth: true
+                Layout.minimumWidth: root.searchMinWidth
+                placeholderText: qsTr("Search %1").arg(providerBox.currentText)
+                onTextEdited: debounce.restart()
+                onTextChanged: if (text.length === 0) debounce.restart()
+            }
+            ComboBox {
+                Layout.preferredWidth: root.sortWidth
+                visible: count > 0
+                model: root.browser && root.browser.sortOptions ? root.browser.sortOptions : []
+                textRole: "label"
+                valueRole: "id"
+                Accessible.name: qsTr("Sort by")
+                onActivated: { root.browser.sortIndex = currentValue; root.runSearch() }
+            }
+            Button {
+                id: filtersButton
+                readonly property int active: root.browser ? root.browser.activeFilterCount : 0
+                text: active > 0 ? qsTr("Filters (%1)").arg(active) : qsTr("Filters")
+                icon.source: Icons.url("filter")
+                onClicked: filterPopup.opened ? filterPopup.close() : filterPopup.open()
+
+                ContentFilterPopup {
+                    id: filterPopup
+                    browser: root.browser
+                    y: filtersButton.height + Theme.space.xs
+                    x: filtersButton.width - width
+                }
+            }
+        }
+
         RowLayout {
             id: panes
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: Theme.space.lg
 
-            // Results, with the search that drives them over them: the
-            // field spans exactly the list, and its top lines up with the
-            // project panel's.
-            ColumnLayout {
+            // The results: one table card, as tall as its rows up to the
+            // room there is.
+            Item {
+                id: resultsArea
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.preferredWidth: 3
                 Layout.minimumWidth: 0
-                spacing: Theme.space.md
 
-                GridLayout {
-                    id: searchRow
-                    // Search, sort and Filters on one row while they fit;
-                    // otherwise the search gets the full width above them.
-                    readonly property bool stacked: width < root.searchMinWidth + root.sortWidth
-                                                    + filtersButton.implicitWidth + columnSpacing * 2
-                    Layout.fillWidth: true
-                    columns: stacked ? 2 : 3
-                    columnSpacing: Theme.space.md
-                    rowSpacing: Theme.space.md
-
-                    SearchBox {
-                        id: searchField
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                        Layout.columnSpan: searchRow.stacked ? 2 : 1
-                        placeholderText: qsTr("Search")
-                        onTextEdited: debounce.restart()
-                        onTextChanged: if (text.length === 0) debounce.restart()
-                    }
-                    ComboBox {
-                        Layout.preferredWidth: root.sortWidth
-                        Layout.fillWidth: searchRow.stacked
-                        visible: count > 0
-                        model: root.browser && root.browser.sortOptions ? root.browser.sortOptions : []
-                        textRole: "label"
-                        valueRole: "id"
-                        onActivated: { root.browser.sortIndex = currentValue; root.runSearch() }
-                    }
-                    Button {
-                        id: filtersButton
-                        readonly property int active: root.browser ? root.browser.activeFilterCount : 0
-                        text: active > 0 ? qsTr("Filters (%1)").arg(active) : qsTr("Filters")
-                        icon.source: Icons.url("filter")
-                        onClicked: filterPopup.opened ? filterPopup.close() : filterPopup.open()
-
-                        ContentFilterPopup {
-                            id: filterPopup
-                            browser: root.browser
-                            y: filtersButton.height + Theme.space.xs
-                            x: filtersButton.width - width
-                        }
-                    }
-                }
-
-                ListView {
-                    id: results
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
+                Rectangle {
+                    id: resultsCard
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    height: Math.min(parent.height, results.contentHeight + results.topMargin + results.bottomMargin + border.width * 2)
+                    visible: results.count > 0 || (!!root.browser && root.browser.searching)
+                    radius: Theme.radius.lg
+                    color: Theme.palette.surface
+                    border.width: 1
+                    border.color: Theme.palette.border
                     clip: true
 
-                    // Parented to the view itself, not its scrolling
-                    // content, so it stays on the bottom edge.
-                    ScrollFade {
-                        parent: results
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.bottom: parent.bottom
-                        flickable: results
-                    }
-                    // The same row rhythm as every list tab (see PackList).
-                    spacing: Theme.space.sm
-                    boundsBehavior: Flickable.StopAtBounds
-                    model: root.browser ? root.browser.results : null
-                    ScrollBar.vertical: ScrollBar {}
-                    onAtYEndChanged: if (atYEnd && root.browser && root.browser.canFetchMore && !root.browser.searching)
-                                         root.browser.fetchMore()
+                    ListView {
+                        id: results
+                        anchors.fill: parent
+                        anchors.margins: resultsCard.border.width
+                        topMargin: Theme.space.xs
+                        bottomMargin: Theme.space.xs
+                        clip: true
+                        boundsBehavior: Flickable.StopAtBounds
+                        model: root.browser ? root.browser.results : null
+                        // Overlays the rows' right edge rather than reserving
+                        // a gutter beside them.
+                        ScrollBar.vertical: ScrollBar {}
+                        onAtYEndChanged: if (atYEnd && root.browser && root.browser.canFetchMore && !root.browser.searching)
+                                             root.browser.fetchMore()
 
-                    delegate: AbstractButton {
-                        id: row
-                        required property int index
-                        required property string title
-                        required property string description
-                        required property string author
-                        required property string logoUrl
-                        required property bool installed
-                        readonly property bool selected: root.selectedRow === index
-                        readonly property var download: root.downloadFor(root.projectKey(title, author))
-                        readonly property bool downloading: !!download && download.running
-                        readonly property bool checking: root.isChecking(root.projectKey(title, author))
-                        readonly property bool justInstalled: !!download && download.succeeded
-
-                        // Full width: the ScrollBar overlays the rows' right
-                        // edge rather than reserving a gutter beside them.
-                        width: results.width
-                        height: root.resultHeight
-                        // The icon sits as far in as on Content's rows, and
-                        // the text stops as far from the right border.
-                        leftPadding: Theme.space.md
-                        rightPadding: Theme.space.md
-                        hoverEnabled: true
-                        onClicked: root.select(index, { title: title, author: author, description: description, logoUrl: logoUrl, installed: installed })
-
-                        background: Rectangle {
-                            radius: Theme.radius.md
-                            color: row.selected ? Theme.palette.accentSubtle
-                                 : row.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
-                            border.width: 1
-                            border.color: row.selected ? Theme.palette.accent : Theme.palette.border
-                            Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
-
-                            // The download's progress along the row's foot.
-                            LaunchProgressBar {
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.bottom: parent.bottom
-                                anchors.margins: Theme.space.xs
-                                height: 3
-                                visible: row.downloading || row.checking
-                                progress: row.downloading && row.download ? row.download.progress : -1
-                            }
+                        delegate: ContentResultRow {
+                            owner: root
+                            width: ListView.view.width
+                            lastRow: index === ListView.view.count - 1
                         }
 
-                        contentItem: RowLayout {
-                            spacing: Theme.space.md
-                            Rectangle {
-                                Layout.preferredWidth: root.resultLogoSize
-                                Layout.preferredHeight: root.resultLogoSize
-                                radius: Theme.radius.md
-                                color: Theme.palette.surfaceSunken
-                                clip: true
-                                Image {
-                                    anchors.fill: parent
-                                    anchors.margins: 1
-                                    source: row.logoUrl
-                                    sourceSize: Qt.size(80, 80)
-                                    fillMode: Image.PreserveAspectCrop
-                                    asynchronous: true
-                                }
-                            }
-                            Column {
-                                Layout.fillWidth: true
-                                Layout.minimumWidth: 0
-                                spacing: 2
-                                Text {
-                                    width: parent.width
-                                    text: row.title
-                                    elide: Text.ElideRight
-                                    color: Theme.palette.textPrimary
-                                    font.family: Theme.font.family
-                                    font.pixelSize: Theme.type.body.pixelSize
-                                    font.weight: Font.DemiBold
-                                }
-                                Text {
-                                    width: parent.width
-                                    text: row.downloading ? (row.download.status || qsTr("Installing…"))
-                                        : row.checking ? qsTr("Checking what it needs…") : row.description
-                                    elide: Text.ElideRight
-                                    color: row.downloading || row.checking ? Theme.palette.accentText : Theme.palette.textTertiary
-                                    font.family: Theme.font.family
-                                    font.pixelSize: Theme.type.caption.pixelSize
-                                }
-                            }
-                            StatusBadge {
-                                visible: row.installed || row.justInstalled || (!!row.download && row.download.failed)
-                                tone: row.download && row.download.failed ? "danger" : "success"
-                                text: row.download && row.download.failed ? qsTr("Failed") : qsTr("Installed")
-                            }
-                        }
-                    }
-
-                    footer: Item {
-                        width: results.width
-                        height: root.browser && root.browser.searching ? 64 : Theme.space.md
-                        BusyIndicator {
-                            anchors.centerIn: parent
-                            running: !!root.browser && root.browser.searching
-                            visible: running
-                        }
-                    }
-
-                    EmptyState {
-                        anchors.centerIn: parent
-                        visible: root.searched && !!root.browser && !root.browser.searching && results.count === 0
-                        title: root.browser && root.browser.error.length > 0 ? qsTr("Search failed") : qsTr("Nothing found")
-                        body: root.browser && root.browser.error.length > 0 ? root.browser.error
-                                                                             : qsTr("Try other words, or the other platform.")
-                        MeshIcon { iconName: "search"; size: 40; color: Theme.palette.textTertiary }
-                    }
-                }
-            }
-
-            // Selected project: a compact header, then the versions, which
-            // get every pixel the header does not need.
-            Rectangle {
-                Layout.fillHeight: true
-                Layout.preferredWidth: Math.round(Math.min(root.panelMaxWidth,
-                                                           Math.max(root.panelMinWidth, panes.width * root.panelShare)))
-                radius: Theme.radius.lg
-                color: Theme.palette.surface
-                border.width: 1
-                border.color: Theme.palette.border
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: Theme.space.lg
-                    spacing: Theme.space.md
-                    visible: !!root.selectedProject
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: Theme.space.md
-                        Rectangle {
-                            Layout.preferredWidth: root.projectLogoSize
-                            Layout.preferredHeight: root.projectLogoSize
-                            radius: Theme.radius.md
-                            color: Theme.palette.surfaceSunken
-                            Image {
-                                anchors.fill: parent
-                                anchors.margins: 1
-                                source: root.selectedProject ? root.selectedProject.logoUrl : ""
-                                sourceSize: Qt.size(96, 96)
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                            }
-                        }
-                        Column {
-                            Layout.fillWidth: true
-                            Layout.minimumWidth: 0
-                            spacing: 2
-                            Text {
-                                width: parent.width
-                                text: root.selectedProject ? root.selectedProject.title : ""
-                                elide: Text.ElideRight
-                                color: Theme.palette.textPrimary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.title.pixelSize + 2
-                                font.weight: Font.Bold
-                            }
-                            Text {
-                                width: parent.width
-                                visible: text.length > 0
-                                text: root.selectedProject && root.selectedProject.author ? qsTr("by %1").arg(root.selectedProject.author) : ""
-                                elide: Text.ElideRight
-                                color: Theme.palette.textTertiary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
-                            }
-                        }
-                    }
-
-                    // Three lines, the rest on request: the version list is
-                    // what this panel is for.
-                    Text {
-                        id: descriptionText
-                        property bool expanded: false
-                        Layout.fillWidth: true
-                        visible: text.length > 0
-                        text: root.selectedProject ? root.selectedProject.description : ""
-                        wrapMode: Text.Wrap
-                        maximumLineCount: expanded ? 12 : 3
-                        elide: Text.ElideRight
-                        color: Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
-                        lineHeight: 1.25
-                        MouseArea {
-                            anchors.fill: parent
-                            enabled: descriptionText.truncated || descriptionText.expanded
-                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onClicked: descriptionText.expanded = !descriptionText.expanded
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Text {
-                            Layout.fillWidth: true
-                            text: qsTr("Versions")
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.bodyStrong.pixelSize
-                            font.weight: Font.Bold
-                        }
-                        Text {
-                            visible: root.versions.length > 0
-                            text: qsTr("%n available", "", root.versions.length)
-                            color: Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        Layout.minimumHeight: root.versionListMinHeight
-                        radius: Theme.radius.md
-                        color: Theme.palette.surfaceSunken
-                        border.width: 1
-                        border.color: Theme.palette.border
-
-                        ListView {
-                            id: versionList
-                            anchors.fill: parent
-                            anchors.margins: Theme.space.xs
-                            clip: true
-                            spacing: 2
-                            model: root.versions
-                            boundsBehavior: Flickable.StopAtBounds
-                            ScrollBar.vertical: ScrollBar {}
-
-                            delegate: VersionRow {
-                                required property int index
-                                required property var modelData
-                                width: versionList.width - Theme.space.sm
-                                entry: modelData
-                                picked: root.pickedVersion === index
-                                onClicked: root.pickedVersion = index
-                            }
-
+                        footer: Item {
+                            width: results.width
+                            height: root.browser && root.browser.searching ? root.busyFooterHeight : 0
                             BusyIndicator {
                                 anchors.centerIn: parent
-                                running: !!root.browser && root.browser.versionsLoading
+                                running: !!root.browser && root.browser.searching
                                 visible: running
                             }
                         }
                     }
 
-                    Text {
-                        Layout.fillWidth: true
-                        visible: text.length > 0
-                        readonly property var d: root.selectedDownload
-                        text: root.installNote.length > 0 ? root.installNote
-                            : root.selectedChecking ? qsTr("Checking what it needs…")
-                            : d && d.failed ? (d.error || qsTr("Install failed."))
-                            : d && d.succeeded ? qsTr("Installed.")
-                            : d ? (d.status || "") : ""
-                        wrapMode: Text.Wrap
-                        maximumLineCount: 2
-                        elide: Text.ElideRight
-                        color: root.installNote.length > 0 || (d && d.failed) ? Theme.palette.danger
-                             : d && d.succeeded && !root.selectedChecking ? Theme.palette.success : Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
-                    }
-                    LaunchProgressBar {
-                        Layout.fillWidth: true
-                        visible: root.selectedInstalling
-                        progress: root.selectedDownload ? root.selectedDownload.progress : -1
-                    }
-
-                    HoverReason {
-                        Layout.fillWidth: true
-                        reason: root.blockedReason
-                        Button {
-                            width: parent ? parent.width : implicitWidth
-                            highlighted: true
-                            enabled: !root.selectedInstalling && !root.selectedChecking && root.pickedVersion >= 0
-                                     && !!root.browser && root.blockedReason.length === 0
-                            text: root.selectedInstalling ? qsTr("Installing…")
-                                : root.selectedChecking ? qsTr("Checking…")
-                                : root.selectedProject && root.selectedProject.installed ? qsTr("Install this version")
-                                : qsTr("Install")
-                            icon.source: Icons.url("download")
-                            onClicked: root.install()
-                        }
+                    // On the card, not the scrolling rows, so it stays on
+                    // the card's bottom edge.
+                    ScrollFade {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        anchors.margins: resultsCard.border.width
+                        flickable: results
+                        fadeTo: Theme.palette.surface
+                        // Rounded like the card, or its square foot would cover the
+                        // card's bottom corners.
+                        radius: Theme.radius.lg
                     }
                 }
 
-                Text {
+                EmptyState {
                     anchors.centerIn: parent
-                    width: parent.width - Theme.space.xxl * 2
-                    horizontalAlignment: Text.AlignHCenter
-                    visible: !root.selectedProject
-                    text: qsTr("Pick something on the left to see its versions and install it. Anything it needs is listed before it downloads.")
-                    wrapMode: Text.Wrap
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    width: parent.width
+                    visible: root.searched && !!root.browser && !root.browser.searching && results.count === 0
+                    title: root.browser && root.browser.error.length > 0 ? qsTr("Search failed") : qsTr("Nothing found")
+                    body: root.browser && root.browser.error.length > 0 ? root.browser.error
+                                                                         : qsTr("Try other words, fewer filters, or the other site.")
+                    MeshIcon { iconName: "search"; size: 40; color: Theme.palette.textTertiary }
+                }
+            }
+
+            // The picked project, sliding in from the right; nothing is
+            // there until something is picked.
+            Item {
+                id: panelSlot
+                readonly property int fullWidth: Math.round(Math.min(root.panelMaxWidth,
+                                                                     Math.max(root.panelMinWidth, panes.width * root.panelShare)))
+                Layout.fillHeight: true
+                Layout.preferredWidth: root.selectedProject ? fullWidth : 0
+                visible: Layout.preferredWidth > 0
+                clip: true
+                Behavior on Layout.preferredWidth {
+                    NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing }
+                }
+
+                // At its full width throughout, pinned to the slot's right
+                // edge, so the slot's growth reveals it rather than
+                // squeezing its text.
+                ContentProjectPanel {
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    anchors.right: parent.right
+                    width: panelSlot.fullWidth
+                    owner: root
+                    visible: !!root.selectedProject
+                    onCloseRequested: root.closeProject()
                 }
             }
         }
+    }
+
+    // Escape closes the picked project first, then goes back.
+    Shortcut {
+        sequences: [StandardKey.Cancel]
+        enabled: root.visible && !filterPopup.opened && !reviewDialog.visible && !searchField.activeFocus
+        onActivated: root.selectedProject ? root.closeProject() : root.backRequested()
     }
 
     InstallReviewDialog {

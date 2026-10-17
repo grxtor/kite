@@ -15,9 +15,11 @@ import MeshMC.Theme
  * (when it is turned on in the instance's settings). One PackList reused
  * across all of them.
  *
- * A search narrows the list; ticking rows (see PackList) swaps in a bar of
- * actions for the selection -- enable, disable, remove, export -- in place
- * of nothing, the way a mail or file list does. "Export list…" writes the
+ * Filter chips pick the kind and a search narrows the list; ticking rows
+ * (see PackList) swaps in a bar of actions for the selection -- enable,
+ * disable, remove, export -- in place of nothing, the way a mail or file
+ * list does. "Add content" opens the browser for this kind in the tab's
+ * place (InstancePage); "Add from file…" sits in More. "Export list…" writes the
  * list as HTML, Markdown, CSV and more. "Check for updates", "Change
  * version…", "Verify dependencies" and "Reset metadata" run through
  * ContentUpdateFlows, with a progress notice while anything downloads.
@@ -35,7 +37,8 @@ Item {
     property var details: null
     property string kind: "mods"
     signal openFolderRequested(string path)
-    signal browseRequested()
+    // "Add content": browse for @p kind (InstancePage opens the browser).
+    signal browseRequested(string kind)
 
     readonly property var content: details ? details.content : null
     readonly property bool isMinecraft: !!details && details.isMinecraft
@@ -44,13 +47,13 @@ Item {
     readonly property var kindInfo: ({
         mods: { label: qsTr("Mods"), noun: qsTr("mods"), icon: "package",
                 emptyTitle: qsTr("No mods"),
-                emptyBody: qsTr("Drop .jar files here, add one from a file, or install a modpack from Discover.") },
+                emptyBody: qsTr("Find some with Add content, or drop .jar files here.") },
         coremods: { label: qsTr("Core mods"), noun: qsTr("core mods"), icon: "package",
                     emptyTitle: qsTr("No core mods"),
                     emptyBody: qsTr("Old Forge versions load these before other mods. Most mods go in Mods instead.") },
         resourcepacks: { label: qsTr("Resource packs"), noun: qsTr("resource packs"), icon: "image",
                          emptyTitle: qsTr("No resource packs"),
-                         emptyBody: qsTr("Change how the game looks: add one from a file, or browse for one.") },
+                         emptyBody: qsTr("Change how the game looks: find one with Add content, or drop a .zip here.") },
         shaderpacks: { label: qsTr("Shader packs"), noun: qsTr("shader packs"), icon: "layers",
                        emptyTitle: qsTr("No shader packs"),
                        emptyBody: qsTr("Needs a shader-capable renderer, such as Iris or OptiFine, to have any effect.") },
@@ -90,6 +93,13 @@ Item {
     // Every file of the current kind, searched or not (the tab's badge).
     readonly property int count: root.listModel ? root.listModel.totalCount : 0
 
+    // Shows @p kind when this instance has it (back from Add content, on
+    // whatever kind was browsed there).
+    function showKind(kind) {
+        if (root.kinds.some((k) => k.value === kind))
+            root.kind = kind
+    }
+
     // A kind that went away (data packs switched off) falls back to mods.
     onKindsChanged: {
         if (root.kinds.length > 0 && !root.kinds.some((k) => k.value === root.kind))
@@ -116,8 +126,8 @@ Item {
             fileDialog.open()
     }
     function browse() {
-        if (!root.needsLoaderFirst(() => root.browseRequested()))
-            root.browseRequested()
+        if (!root.needsLoaderFirst(() => root.browseRequested(root.kind)))
+            root.browseRequested(root.kind)
     }
 
     function fileName(url) {
@@ -166,154 +176,157 @@ Item {
         spacing: Theme.space.md
         visible: root.isMinecraft
 
-        RowLayout {
+        // The kind chips on the left of the search while everything fits on
+        // one row; below the search row otherwise (Modrinth App's order).
+        GridLayout {
             id: toolbar
             Layout.fillWidth: true
-            spacing: Theme.space.md
+            columnSpacing: Theme.space.md
+            rowSpacing: Theme.space.md
+            columns: oneRow ? 2 : 1
 
             readonly property int searchMinWidth: 200
-            readonly property int kindBoxWidth: 180
-            // Every kind as a segment while they fit beside a usable search
-            // field; a drop-down once they do not (legacy instances have
-            // up to five kinds). Measured against the tab's own width,
-            // which the toolbar's contents never feed back into.
-            readonly property int updatesIconWidth: root.updatable ? Theme.control.height + spacing : 0
-            readonly property bool kindsFit: root.width >= kindPicker.implicitWidth + searchMinWidth
-                                                           + updatesIconWidth
-                                                           + moreButton.implicitWidth + addReason.implicitWidth
-                                                           + spacing * 3
+            readonly property bool showKinds: root.kinds.length > 1
+            readonly property int kindsWidth: showKinds ? kindChips.implicitWidth + columnSpacing : 0
+            // The gap between the toolbar's controls (TabToolbar's).
+            readonly property int gap: Theme.space.sm
+            readonly property int updatesIconWidth: root.updatable ? Theme.control.height + gap : 0
+            // The actions row without the search field and the label of
+            // "Check for updates".
+            readonly property int actionsWidth: folderButton.implicitWidth + moreButton.implicitWidth
+                                                + addButton.implicitWidth + gap * 3
+            // Measured against the tab's own width, which the toolbar's
+            // contents never feed back into.
+            readonly property bool oneRow: root.width >= kindsWidth + searchMinWidth + updatesIconWidth + actionsWidth
+            readonly property real actionsRowWidth: oneRow ? root.width - kindsWidth : root.width
             // "Check for updates" spelled out when there is room for it as
             // well; just its icon (and tooltip) otherwise.
-            readonly property bool updatesLabelFits: kindsFit && root.width >= kindPicker.implicitWidth + searchMinWidth
-                                                                 + updatesMeasure.implicitWidth + spacing
-                                                                 + moreButton.implicitWidth + addReason.implicitWidth
-                                                                 + spacing * 3
+            readonly property bool updatesLabelFits: actionsRowWidth >= searchMinWidth + updatesMeasure.implicitWidth
+                                                                        + gap + actionsWidth
 
-            SegmentedControl {
-                id: kindPicker
-                visible: toolbar.kindsFit
+            ChipGroup {
+                id: kindChips
+                visible: toolbar.showKinds
+                Layout.row: toolbar.oneRow ? 0 : 1
+                Layout.column: 0
+                Layout.alignment: Qt.AlignVCenter
                 options: root.kinds.map((k) => ({ value: k.value, label: k.label }))
                 current: root.kind
                 onActivated: (value) => root.kind = value
             }
-            ComboBox {
-                id: kindBox
-                visible: !toolbar.kindsFit
-                Layout.preferredWidth: toolbar.kindBoxWidth
-                model: root.kinds
-                textRole: "label"
-                valueRole: "value"
-                currentIndex: root.kinds.findIndex((k) => k.value === root.kind)
-                Accessible.name: qsTr("Content type")
-                onActivated: {
-                    root.kind = currentValue
-                    currentIndex = Qt.binding(() => root.kinds.findIndex((k) => k.value === root.kind))
-                }
-            }
 
-            SearchBox {
-                id: searchField
+            // The toolbar every instance tab shares: search on the left;
+            // on the right the plain actions, More, and "Add content" last.
+            TabToolbar {
+                Layout.row: 0
+                Layout.column: toolbar.oneRow && toolbar.showKinds ? 1 : 0
                 Layout.fillWidth: true
-                Layout.minimumWidth: toolbar.searchMinWidth
-                placeholderText: qsTr("Search %1").arg(root.current.noun)
-            }
 
-            // Only measured, for updatesLabelFits.
-            Button {
-                id: updatesMeasure
-                visible: false
-                text: qsTr("Check for updates")
-                icon.source: Icons.url("refresh")
-            }
-            HoverReason {
-                visible: root.updatable
-                reason: root.lockedReason
+                leading: SearchBox {
+                    id: searchField
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: toolbar.searchMinWidth
+                    placeholderText: qsTr("Search %1").arg(root.current.noun)
+                }
+
+                // Only measured, for updatesLabelFits.
                 Button {
-                    enabled: root.unlocked && root.count > 0 && !root.flowsBusy
-                    display: toolbar.updatesLabelFits ? AbstractButton.TextBesideIcon : AbstractButton.IconOnly
+                    id: updatesMeasure
+                    visible: false
                     text: qsTr("Check for updates")
                     icon.source: Icons.url("refresh")
-                    ToolTip.visible: hovered && display === AbstractButton.IconOnly
-                    ToolTip.delay: 400
-                    ToolTip.text: text
-                    onClicked: root.withLoader(() => flows.checkUpdates([]))
                 }
-            }
-
-            // "More ▾": mirrored so the chevron follows the label.
-            Button {
-                id: moreButton
-                LayoutMirroring.enabled: true
-                text: qsTr("More")
-                icon.source: Icons.url("chevron-down")
-                onClicked: moreMenu.popup(moreButton, 0, moreButton.height)
-
-                Menu {
-                    id: moreMenu
-                    MenuItem {
-                        text: qsTr("Browse online…")
-                        icon.source: Icons.url("globe")
-                        onTriggered: root.browse()
-                    }
-                    MenuItem {
-                        text: qsTr("Open folder")
-                        icon.source: Icons.url("folder")
-                        onTriggered: root.openFolderRequested(root.content ? root.content.dir(root.kind) : "")
-                    }
-                    MenuItem {
-                        // A hidden item still takes its row in a Menu; zero it.
-                        visible: root.kind === "mods" || root.kind === "coremods"
-                        height: visible ? implicitHeight : 0
-                        text: qsTr("Open configs folder")
-                        icon.source: Icons.url("folder")
-                        onTriggered: root.openFolderRequested(root.content ? root.content.configsDir : "")
-                    }
-                    MenuSeparator {}
-                    MenuItem {
-                        visible: root.updatable
-                        height: visible ? implicitHeight : 0
+                HoverReason {
+                    visible: root.updatable
+                    reason: root.lockedReason
+                    Button {
                         enabled: root.unlocked && root.count > 0 && !root.flowsBusy
+                        display: toolbar.updatesLabelFits ? AbstractButton.TextBesideIcon : AbstractButton.IconOnly
                         text: qsTr("Check for updates")
                         icon.source: Icons.url("refresh")
-                        onTriggered: root.withLoader(() => flows.checkUpdates([]))
-                    }
-                    MenuItem {
-                        visible: root.kind === "mods"
-                        height: visible ? implicitHeight : 0
-                        enabled: root.unlocked && root.count > 0 && !root.flowsBusy
-                        text: qsTr("Verify dependencies")
-                        icon.source: Icons.url("layers")
-                        onTriggered: root.withLoader(() => flows.verifyDependencies())
-                    }
-                    MenuSeparator {
-                        visible: root.updatable
-                        height: visible ? implicitHeight : 0
-                    }
-                    MenuItem {
-                        enabled: root.listModel && root.listModel.count > 0
-                        text: qsTr("Select all")
-                        icon.source: Icons.url("check")
-                        onTriggered: packList.selectAll()
-                    }
-                    MenuItem {
-                        enabled: root.count > 0
-                        text: qsTr("Export list…")
-                        icon.source: Icons.url("list")
-                        onTriggered: root.exportList([])
+                        ToolTip.visible: hovered && display === AbstractButton.IconOnly
+                        ToolTip.delay: 400
+                        ToolTip.text: text
+                        onClicked: root.withLoader(() => flows.checkUpdates([]))
                     }
                 }
-            }
 
-            // Secondary, like the rest of the toolbar: the play bar's Play
-            // is this page's one primary action.
-            HoverReason {
-                id: addReason
-                reason: root.lockedReason
                 Button {
-                    enabled: root.unlocked
-                    text: qsTr("Add from file…")
+                    id: folderButton
+                    text: qsTr("Open folder")
+                    icon.source: Icons.url("folder")
+                    onClicked: root.openFolderRequested(root.content ? root.content.dir(root.kind) : "")
+                }
+
+                // "More ▾": mirrored so the chevron follows the label.
+                Button {
+                    id: moreButton
+                    LayoutMirroring.enabled: true
+                    text: qsTr("More")
+                    icon.source: Icons.url("chevron-down")
+                    onClicked: moreMenu.popup(moreButton, 0, moreButton.height)
+
+                    Menu {
+                        id: moreMenu
+                        MenuItem {
+                            enabled: root.unlocked
+                            text: qsTr("Add from file…")
+                            icon.source: Icons.url("file")
+                            onTriggered: root.addFromFile()
+                        }
+                        MenuItem {
+                            // A hidden item still takes its row in a Menu; zero it.
+                            visible: root.kind === "mods" || root.kind === "coremods"
+                            height: visible ? implicitHeight : 0
+                            text: qsTr("Open configs folder")
+                            icon.source: Icons.url("folder")
+                            onTriggered: root.openFolderRequested(root.content ? root.content.configsDir : "")
+                        }
+                        MenuSeparator {}
+                        MenuItem {
+                            visible: root.updatable
+                            height: visible ? implicitHeight : 0
+                            enabled: root.unlocked && root.count > 0 && !root.flowsBusy
+                            text: qsTr("Check for updates")
+                            icon.source: Icons.url("refresh")
+                            onTriggered: root.withLoader(() => flows.checkUpdates([]))
+                        }
+                        MenuItem {
+                            visible: root.kind === "mods"
+                            height: visible ? implicitHeight : 0
+                            enabled: root.unlocked && root.count > 0 && !root.flowsBusy
+                            text: qsTr("Verify dependencies")
+                            icon.source: Icons.url("layers")
+                            onTriggered: root.withLoader(() => flows.verifyDependencies())
+                        }
+                        MenuSeparator {
+                            visible: root.updatable || root.kind === "mods"
+                            height: visible ? implicitHeight : 0
+                        }
+                        MenuItem {
+                            enabled: root.listModel && root.listModel.count > 0
+                            text: qsTr("Select all")
+                            icon.source: Icons.url("check")
+                            onTriggered: packList.selectAll()
+                        }
+                        MenuItem {
+                            enabled: root.count > 0
+                            text: qsTr("Export list…")
+                            icon.source: Icons.url("list")
+                            onTriggered: root.exportList([])
+                        }
+                    }
+                }
+
+                // The tab's main action, last on the right like Modrinth
+                // App's "Add content" -- still a secondary button: the play
+                // bar's Play is this page's one primary action. Browsing
+                // works while the game runs; installing then waits.
+                Button {
+                    id: addButton
+                    text: qsTr("Add content")
                     icon.source: Icons.url("plus")
-                    onClicked: root.addFromFile()
+                    onClicked: root.browse()
                 }
             }
         }
@@ -408,8 +421,8 @@ Item {
         }
     }
 
-    // No button of its own: "Add from file…" is already in the toolbar
-    // right above it.
+    // No button of its own: "Add content" is already in the toolbar right
+    // above it.
     // EmptyState takes its title's width unless given one of its own.
     EmptyState {
         anchors.centerIn: parent

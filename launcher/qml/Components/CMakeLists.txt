@@ -116,11 +116,14 @@ qt_add_qml_module(MeshMC_qml_components
         WorldsTab.qml
         ScreenshotsTab.qml
         LogTab.qml
+        LogSourcePicker.qml
         LogLines.qml
         LogFindBar.qml
         OtherLogsView.qml
         ClipboardText.qml
+        TabScroll.qml
         TabStrip.qml
+        TabToolbar.qml
         StatTile.qml
         ConfirmDialog.qml
         DialogHeader.qml
@@ -188,6 +191,11 @@ qt_add_qml_module(MeshMC_qml_components
         RemoteRichText.qml
         PlayerHead.qml
         ViewModeToggle.qml
+        ChipGroup.qml
+        InstanceNotesTab.qml
+        LegacyUpgradeNotice.qml
+        ContentResultRow.qml
+        ContentProjectPanel.qml
     RESOURCES
         icons/alert-triangle.svg
         icons/archive.svg
@@ -208,9 +216,11 @@ qt_add_qml_module(MeshMC_qml_components
         icons/file.svg
         icons/filter.svg
         icons/folder.svg
+        icons/folder-input.svg
         icons/globe.svg
         icons/grid.svg
         icons/home.svg
+        icons/hourglass.svg
         icons/image.svg
         icons/info.svg
         icons/layers.svg

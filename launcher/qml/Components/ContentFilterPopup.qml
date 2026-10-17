@@ -15,6 +15,11 @@ import MeshMC.Theme
  * once, so there is no Apply. Groups a provider cannot answer (environment
  * and licence on CurseForge, loaders for resource packs) are left out
  * rather than shown doing nothing.
+ *
+ * One control per kind of choice, as in Modrinth's and Prism's filter
+ * lists: check boxes where several can be on (loaders, categories), radio
+ * buttons where exactly one is (where it runs), a drop-down for the long
+ * version list.
  */
 Popup {
     id: root
@@ -48,32 +53,9 @@ Popup {
             root.browser.loadFilterOptions()
     }
 
-    // A filter chip: a true toggle, so a pill.
-    component FilterChip: AbstractButton {
-        id: chip
-        checkable: true
-        hoverEnabled: true
-        implicitHeight: Theme.control.heightSm
-        implicitWidth: chipLabel.implicitWidth + Theme.space.md * 2
-        background: Rectangle {
-            radius: Theme.radius.pill
-            color: chip.checked ? Theme.palette.accentSubtle
-                 : chip.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
-            border.width: 1
-            border.color: chip.checked ? Theme.palette.accent : Theme.palette.border
-            Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
-        }
-        contentItem: Text {
-            id: chipLabel
-            text: chip.text
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            color: chip.checked ? Theme.palette.accentText : Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
-            font.weight: Theme.type.label.weight
-        }
-    }
+    // Loaders and categories list in two columns: short words, and a
+    // single column of twenty categories would make the panel scroll.
+    readonly property int optionColumns: 2
 
     component GroupTitle: Text {
         Layout.fillWidth: true
@@ -158,13 +140,19 @@ Popup {
                 visible: !!root.browser && root.browser.loaderFilterAvailable
                 spacing: Theme.space.sm
                 GroupTitle { text: qsTr("Loader") }
-                Flow {
+                GridLayout {
                     Layout.fillWidth: true
-                    spacing: Theme.space.xs
+                    columns: root.optionColumns
+                    columnSpacing: Theme.space.md
+                    rowSpacing: 0
                     Repeater {
                         model: root.browser ? root.browser.loaderOptions : []
-                        FilterChip {
+                        CheckBox {
+                            // The box on the group title's edge, not 4px in.
+                            leftPadding: 0
                             required property var modelData
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 1
                             text: modelData.label
                             checked: root.browser.loaderFilter.indexOf(modelData.id) >= 0
                             onToggled: {
@@ -174,14 +162,6 @@ Popup {
                         }
                     }
                 }
-                Text {
-                    Layout.fillWidth: true
-                    visible: !!root.browser && root.browser.loaderFilter.length === 0
-                    text: qsTr("Any loader")
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
-                }
             }
 
             ColumnLayout {
@@ -189,15 +169,32 @@ Popup {
                 visible: !!root.browser && root.browser.extendedFilters && root.browser.loaderFilterAvailable
                 spacing: Theme.space.sm
                 GroupTitle { text: qsTr("Runs on") }
-                SegmentedControl {
-                    options: [
-                        { value: "", label: qsTr("Any") },
-                        { value: "client", label: qsTr("Client") },
-                        { value: "server", label: qsTr("Server") },
-                        { value: "both", label: qsTr("Both") }
-                    ]
-                    current: root.browser ? root.browser.environmentFilter : ""
-                    onActivated: (value) => root.browser.environmentFilter = value
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: root.optionColumns
+                    columnSpacing: Theme.space.md
+                    rowSpacing: 0
+                    Repeater {
+                        model: [
+                            { value: "", label: qsTr("Anywhere") },
+                            { value: "client", label: qsTr("Client") },
+                            { value: "server", label: qsTr("Server") },
+                            { value: "both", label: qsTr("Client and server") }
+                        ]
+                        RadioButton {
+                            // The box on the group title's edge, not 4px in.
+                            leftPadding: 0
+                            required property var modelData
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 1
+                            text: modelData.label
+                            checked: !!root.browser && root.browser.environmentFilter === modelData.value
+                            onToggled: {
+                                root.browser.environmentFilter = modelData.value
+                                checked = Qt.binding(() => !!root.browser && root.browser.environmentFilter === modelData.value)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -205,13 +202,19 @@ Popup {
                 Layout.fillWidth: true
                 spacing: Theme.space.sm
                 GroupTitle { text: qsTr("Categories") }
-                Flow {
+                GridLayout {
                     Layout.fillWidth: true
-                    spacing: Theme.space.xs
+                    columns: root.optionColumns
+                    columnSpacing: Theme.space.md
+                    rowSpacing: 0
                     Repeater {
                         model: root.browser ? root.browser.categories : []
-                        FilterChip {
+                        CheckBox {
+                            // The box on the group title's edge, not 4px in.
+                            leftPadding: 0
                             required property var modelData
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 1
                             text: modelData.label
                             checked: root.browser.categoryFilter.indexOf(modelData.id) >= 0
                             onToggled: {
@@ -235,6 +238,8 @@ Popup {
                 Layout.fillWidth: true
                 spacing: Theme.space.xs
                 CheckBox {
+                    // The box on the group title's edge, not 4px in.
+                    leftPadding: 0
                     text: qsTr("Hide what is already installed")
                     checked: !!root.browser && root.browser.hideInstalled
                     onToggled: {
@@ -243,6 +248,8 @@ Popup {
                     }
                 }
                 CheckBox {
+                    // The box on the group title's edge, not 4px in.
+                    leftPadding: 0
                     visible: !!root.browser && root.browser.extendedFilters
                     text: qsTr("Open source only")
                     checked: !!root.browser && root.browser.openSourceOnly

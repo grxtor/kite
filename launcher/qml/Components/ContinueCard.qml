@@ -9,8 +9,8 @@ import MeshMC.Theme
 /*
  * The hero at the top of the library: one instance, big, with Play as the
  * obvious next step. Which instance that is -- the selected one, the one
- * played last, or simply the first -- is the page's decision; `overline`
- * says which, so the user is never left guessing why this one is shown.
+ * played last, or simply the first -- is the page's decision. No caps
+ * label over the name: the name and its tags say what it is.
  */
 Rectangle {
     id: root
@@ -33,7 +33,6 @@ Rectangle {
     readonly property bool launching: launchStatus.length > 0
     readonly property bool hasPhoto: coverImage.length > 0
 
-    property string overline: qsTr("Continue playing")
     property string editText: qsTr("Edit")
     // A shorter banner for pages where the content below matters more.
     property bool compact: false
@@ -52,8 +51,8 @@ Rectangle {
     property bool showMenu: true
     property Menu menu: null
     // A one-line strip: title and tags beside the icon, actions on the
-    // right -- for tabs whose content needs the height (the instance page
-    // outside its Overview).
+    // right -- for pages whose content needs the height (the instance
+    // page's header).
     property bool slim: false
     // Without Play there is no primary action to lead the row under the
     // title, so the remaining buttons sit on the right instead of trailing
@@ -161,19 +160,6 @@ Rectangle {
             spacing: root.slim ? Theme.space.xs : Theme.space.sm
 
             Text {
-                // Compact no longer blanks this outright: the page decides
-                // what, if anything, `overline` says (see the file
-                // comment), and an empty string already renders as nothing.
-                visible: root.overline.length > 0 && !root.slim
-                text: root.overline.toUpperCase()
-                color: Theme.palette.accent
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.overline.pixelSize
-                font.weight: Font.Bold
-                font.letterSpacing: Theme.type.overline.letterSpacing * 1.5
-            }
-
-            Text {
                 width: parent.width
                 text: root.name
                 elide: Text.ElideRight
@@ -200,6 +186,8 @@ Rectangle {
                     iconName: "cube"
                     onMedia: root.hasPhoto
                 }
+                // Clock = when it was last played, hourglass = for how
+                // long in all; the ▶ triangle only ever means Play.
                 Tag {
                     text: Format.lastPlayed(root.lastLaunch)
                     iconName: "clock"
@@ -211,7 +199,7 @@ Rectangle {
                                                      ? Format.playTime(root.totalTimePlayed) : ""
                     visible: played.length > 0
                     text: qsTr("%1 played").arg(played)
-                    iconName: "play"
+                    iconName: "hourglass"
                     onMedia: root.hasPhoto
                 }
             }

@@ -41,6 +41,18 @@ Item {
         var ms = new Date(String(timestampText).replace(" ", "T")).getTime()
         return isNaN(ms) ? timestampText : Format.lastPlayed(ms)
     }
+    // What a backup is called in the list. A backup made without a label is
+    // named after its creation time ("2026-09-18_09-00-00.zip"); that reads
+    // as a date and time instead of a file name. A labelled one keeps its
+    // label; either way ".zip" is not part of the name.
+    function backupTitle(name, timestampText) {
+        var bare = String(name).replace(/\.zip$/i, "")
+        if (!/^\d{4}-\d{2}-\d{2}[_ T-]\d{2}[-.:]\d{2}[-.:]\d{2}$/.test(bare))
+            return bare
+        var when = new Date(String(timestampText).replace(" ", "T"))
+        return isNaN(when.getTime()) ? bare
+               : qsTr("%1, %2").arg(Format.calendarDate(when)).arg(when.toLocaleTimeString(Qt.locale(), Locale.ShortFormat))
+    }
     function confirmRestore(row, name) {
         restoreConfirm.row = row
         restoreConfirm.text = qsTr("Replace this instance's current contents with the backup “%1”? This cannot be undone.").arg(name)
@@ -58,20 +70,9 @@ Item {
         anchors.fill: parent
         spacing: Theme.space.md
 
-        RowLayout {
+        TabToolbar {
             Layout.fillWidth: true
-            spacing: Theme.space.sm
 
-            Text {
-                Layout.fillWidth: true
-                text: root.running
-                      ? qsTr("The game is running; backups can be restored once it has closed.")
-                      : list.count > 0 ? qsTr("%1 backups").arg(list.count) : ""
-                color: root.running ? Theme.palette.warning : Theme.palette.textTertiary
-                elide: Text.ElideRight
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-            }
             Button {
                 enabled: !root.busy
                 text: qsTr("Import…")
@@ -85,6 +86,12 @@ Item {
                 icon.source: Icons.url("archive")
                 onClicked: labelPrompt.open()
             }
+        }
+
+        NoticeBar {
+            Layout.fillWidth: true
+            visible: root.running
+            text: qsTr("The game is running. Backups can be restored once it has closed.")
         }
 
         RowLayout {
@@ -138,6 +145,8 @@ Item {
                 required property string timestampText
                 required property string sizeText
 
+                readonly property string title: root.backupTitle(row.name, row.timestampText)
+
                 width: list.width
                 height: Theme.control.heightLg + Theme.space.md
                 radius: Theme.radius.lg
@@ -172,7 +181,7 @@ Item {
                         spacing: 1
                         Text {
                             width: parent.width
-                            text: row.name
+                            text: row.title
                             elide: Text.ElideRight
                             color: Theme.palette.textPrimary
                             font.family: Theme.font.family
@@ -194,7 +203,7 @@ Item {
                         enabled: !root.busy && !root.running
                         ToolTip.visible: hovered && root.running
                         ToolTip.text: qsTr("Close the game before restoring a backup.")
-                        onClicked: root.confirmRestore(row.index, row.name)
+                        onClicked: root.confirmRestore(row.index, row.title)
                     }
                     IconButton {
                         id: moreButton
@@ -221,7 +230,7 @@ Item {
                         icon.source: Icons.url("trash")
                         onTriggered: {
                             deleteConfirm.row = row.index
-                            deleteConfirm.text = qsTr("Delete the backup “%1”? This cannot be undone.").arg(row.name)
+                            deleteConfirm.text = qsTr("Delete the backup “%1”? This cannot be undone.").arg(row.title)
                             deleteConfirm.open()
                         }
                     }

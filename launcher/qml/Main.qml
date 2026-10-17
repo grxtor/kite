@@ -344,9 +344,14 @@ ApplicationWindow {
     // just crowd two already form-heavy pages. Home needs it too: its own
     // "Jump back in" cards deliberately use a secondary Play, and the dock's
     // Play is what keeps that page down to one accent-filled control.
+    // Discover is a store: its Install is the one primary action there, so
+    // the play bar (with its own green Play) stays away from it.
     function dockVisibleFor(page) {
-        return page === "home" || page === "library" || page === "discover" || page === "instance"
+        return page === "home" || page === "library" || page === "instance"
     }
+    // The same rule inside an instance: while Content shows its "Add content"
+    // browser, that page's Install is the primary action.
+    readonly property bool dockSuppressed: root.page === "instance" && !!instancePage && instancePage.browsing === true
 
     function instanceGroups() {
         var groups = root.shell && root.shell.groups ? root.shell.groups : []
@@ -482,7 +487,7 @@ ApplicationWindow {
                 { id: "settings", icon: "settings", label: qsTr("Settings") }
             ]
             currentId: root.page === "instance" ? "library" : root.page === "accounts" ? "" : root.page
-            barBeside: pageHost.dockVisible
+            barBeside: pageHost.dockVisible && !root.dockSuppressed
             recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
             onItemActivated: (id) => root.page = id
             onRecentActivated: (id) => {
@@ -797,7 +802,7 @@ ApplicationWindow {
             PlayDock {
                 id: playDock
                 Layout.fillWidth: true
-                visible: pageHost.dockVisible
+                visible: pageHost.dockVisible && !root.dockSuppressed
                 rowModel: root.shell && root.shell.heroModel ? root.shell.heroModel : null
                 instanceModel: root.instanceModel
                 recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null

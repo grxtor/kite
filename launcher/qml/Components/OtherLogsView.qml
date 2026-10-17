@@ -13,6 +13,9 @@ import MeshMC.Theme
  * on the Log tab and for the launcher's own logs in Settings -- both are an
  * OtherLogsModel, so both look and work the same.
  *
+ * The toolbar is one row, like the live log's: file, find, then the
+ * actions, with the rarer ones (wrap lines, reload, delete) behind ⋯.
+ *
  * Reading goes through LogLines like the live log does, so Find and Wrap
  * work the same on both. Selecting text with the mouse does not (it is a
  * list of lines, not one text); "Copy" takes the whole file.
@@ -29,8 +32,10 @@ Item {
     property bool selectFirst: false
 
     // Anything added inside this view's tag goes at the start of its toolbar
-    // (the Log tab puts its Live / Other logs switch there).
+    // (the Log tab puts its log picker there, with `ownPicker` off so the
+    // file picker below is not shown twice).
     default property alias leading: leadingRow.data
+    property bool ownPicker: true
 
     signal openFolderRequested(string path)
 
@@ -139,6 +144,7 @@ Item {
 
             ComboBox {
                 id: fileCombo
+                visible: root.ownPicker
                 Layout.preferredWidth: root.comboWidth
                 Layout.minimumWidth: root.comboMinWidth
                 model: root.logs
@@ -160,7 +166,21 @@ Item {
                 displayText: currentIndex < 0 && count > 0 ? qsTr("Choose a log file") : currentText
             }
 
-            Item { Layout.fillWidth: true }
+            LogFindBar {
+                id: findBar
+                Layout.fillWidth: true
+                visible: root.hasFile
+                matchCount: root.matches.length
+                current: root.current
+                onTextChanged: findDelay.restart()
+                onNext: root.step(1)
+                onPrevious: root.step(-1)
+            }
+
+            Item {
+                Layout.fillWidth: true
+                visible: !root.hasFile
+            }
 
             Button {
                 enabled: root.hasFile
@@ -197,13 +217,6 @@ Item {
                 onClicked: root.openFolderRequested(root.logs.path)
             }
             IconButton {
-                enabled: root.hasFile
-                flat: false
-                iconName: "refresh"
-                tip: qsTr("Reload")
-                onClicked: root.logs.reload()
-            }
-            IconButton {
                 id: moreButton
                 enabled: !!root.logs && fileCombo.count > 0
                 flat: false
@@ -213,6 +226,19 @@ Item {
 
                 Menu {
                     id: moreMenu
+                    MenuItem {
+                        text: qsTr("Wrap lines")
+                        checkable: true
+                        checked: findBar.wrap
+                        onToggled: findBar.wrap = checked
+                    }
+                    MenuItem {
+                        enabled: root.hasFile
+                        text: qsTr("Reload")
+                        icon.source: Icons.url("refresh")
+                        onTriggered: root.logs.reload()
+                    }
+                    MenuSeparator {}
                     MenuItem {
                         text: qsTr("Delete this file…")
                         icon.source: Icons.url("trash")
@@ -234,17 +260,6 @@ Item {
                     }
                 }
             }
-        }
-
-        LogFindBar {
-            id: findBar
-            Layout.fillWidth: true
-            visible: root.hasFile
-            matchCount: root.matches.length
-            current: root.current
-            onTextChanged: findDelay.restart()
-            onNext: root.step(1)
-            onPrevious: root.step(-1)
         }
 
         Rectangle {

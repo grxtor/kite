@@ -94,21 +94,9 @@ Item {
         anchors.fill: parent
         spacing: Theme.space.md
 
-        RowLayout {
+        TabToolbar {
             Layout.fillWidth: true
-            Text {
-                Layout.fillWidth: true
-                text: list.count > 0 ? qsTr("%1 worlds").arg(list.count) : ""
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-            }
-            Button {
-                enabled: !!root.details && !root.busy
-                text: qsTr("Add world")
-                icon.source: Icons.url("plus")
-                onClicked: root.guarded(() => addDialog.open())
-            }
+
             IconButton {
                 flat: false
                 iconName: "refresh"
@@ -119,6 +107,13 @@ Item {
                 text: qsTr("Open folder")
                 icon.source: Icons.url("folder")
                 onClicked: root.openFolderRequested(root.details ? root.details.worldsDir : "")
+            }
+            // Secondary: the play bar's Play is this page's primary action.
+            Button {
+                enabled: !!root.details && !root.busy
+                text: qsTr("Add world")
+                icon.source: Icons.url("plus")
+                onClicked: root.guarded(() => addDialog.open())
             }
         }
 
@@ -168,9 +163,8 @@ Item {
                 required property var seed
 
                 readonly property string displayName: cell.name.length > 0 ? cell.name : cell.folderName
-                // The folder's own name: the seed Home's world tiles and the
-                // overview use too, so a world without an icon shows the
-                // same scene everywhere. `folder` is the full path.
+                // The folder's own name, the title of a world without a
+                // level name. `folder` is the full path.
                 readonly property string folderName: String(cell.folder).split(/[\\/]/).pop()
                 readonly property string mode: String(cell.gameMode || "")
 
@@ -219,17 +213,15 @@ Item {
                                 asynchronous: true
                                 visible: status === Image.Ready
                             }
-                            // No icon: one of PixelArt's rendered scenes,
-                            // picked by the folder name (see folderName).
-                            Image {
-                                anchors.fill: parent
+                            // No icon.png: a neutral globe. A landscape
+                            // here would pass for a real view of the world,
+                            // and two worlds would share one.
+                            MeshIcon {
+                                anchors.centerIn: parent
                                 visible: !worldIcon.visible
-                                source: worldIcon.visible ? "" : PixelArt.worldUrlFor(cell.folderName)
-                                sourceSize: Qt.size(width * 2, height * 2)
-                                fillMode: Image.PreserveAspectCrop
-                                smooth: true
-                                mipmap: true
-                                asynchronous: true
+                                iconName: "globe"
+                                size: Theme.icon.md
+                                color: Theme.palette.textTertiary
                             }
                             CornerMatte {
                                 cornerRadius: thumb.radius

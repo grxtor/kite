@@ -16,8 +16,10 @@ import MeshMC.Theme
  * logo, a pack's pack.png); `kind` only picks the glyph shown when it has
  * none, and the noun used when confirming a delete.
  *
- * Laid out like every launcher's mod list: what it is on the left, its
- * on/off switch and a ⋯ menu (also on right-click) on the right. Clicking
+ * Laid out like every launcher's mod list: one table -- the rows on a single
+ * card, split by hairlines, as tall as they are up to the room there is --
+ * with what it is on the left, its on/off switch and a ⋯ menu (also on
+ * right-click) on the right. Clicking
  * a row opens its details (description, authors, version, where it came
  * from). Selecting works the way file lists do: hovering a row turns its
  * logo into a checkbox, and once anything is ticked every row shows one;
@@ -113,31 +115,51 @@ Item {
         root.expandedKey = ""
     }
 
-    ListView {
-        id: list
-        anchors.fill: parent
-        clip: true
-        // One rhythm for every list tab: Theme.space.sm between rows, rows
-        // inset by sm on the right and spaced md inside.
-        spacing: Theme.space.sm
-        boundsBehavior: Flickable.StopAtBounds
-        model: root.model
-        // Overlays the rows' right edge rather than reserving a gutter, so
-        // the rows end where the toolbar above them does.
-        ScrollBar.vertical: ScrollBar {}
-
-        delegate: PackRow {
-            owner: root
-            width: ListView.view.width
-        }
-    }
-
-    // Rows fade out at the fold instead of being sliced by the play bar.
-    ScrollFade {
+    Rectangle {
+        id: card
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        flickable: list
+        anchors.top: parent.top
+        height: Math.min(parent.height, list.contentHeight + list.topMargin + list.bottomMargin + border.width * 2)
+        visible: list.count > 0
+        radius: Theme.radius.lg
+        color: Theme.palette.surface
+        border.width: 1
+        border.color: Theme.palette.border
+        clip: true
+
+        ListView {
+            id: list
+            anchors.fill: parent
+            anchors.margins: card.border.width
+            topMargin: Theme.space.xs
+            bottomMargin: Theme.space.xs
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            model: root.model
+            // Overlays the rows' right edge rather than reserving a gutter, so
+            // the rows end where the toolbar above them does.
+            ScrollBar.vertical: ScrollBar {}
+
+            delegate: PackRow {
+                owner: root
+                width: ListView.view.width
+                lastRow: index === ListView.view.count - 1
+            }
+        }
+
+        // Rows fade out at the fold instead of being sliced by the play bar.
+        ScrollFade {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.margins: card.border.width
+            flickable: list
+            fadeTo: Theme.palette.surface
+            // Rounded like the card, or its square foot would cover the
+            // card's bottom corners.
+            radius: Theme.radius.lg
+        }
     }
 
     // A search that matches nothing; the folder itself is not empty

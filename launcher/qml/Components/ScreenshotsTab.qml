@@ -36,9 +36,21 @@ Item {
     // The narrowest a thumbnail gets before the grid drops a column.
     readonly property int minTileWidth: 240
     readonly property int gap: Theme.space.md
-    // Under each thumbnail: its name and date, two caption lines.
-    readonly property int captionSpacing: 1
-    readonly property int captionHeight: Theme.space.xs + Math.ceil(captionMetrics.height) * 2 + root.captionSpacing
+    // Under each thumbnail: one caption line.
+    readonly property int captionHeight: Theme.space.xs + Math.ceil(captionMetrics.height)
+
+    // What a screenshot is called under its thumbnail. The game names them
+    // after the moment they were taken ("2026-09-22_18.00.12.png"), which
+    // reads as a date and time; a screenshot renamed to anything else keeps
+    // its name. Never the file extension.
+    function captionOf(name) {
+        var bare = root.baseName(name)
+        var m = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})\.(\d{2})\.(\d{2})$/.exec(bare)
+        if (!m)
+            return bare
+        var taken = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6]))
+        return qsTr("%1, %2").arg(Format.calendarDate(taken)).arg(taken.toLocaleTimeString(Qt.locale(), Locale.ShortFormat))
+    }
 
     // The selected screenshots, by path: {path: true}. Paths rather than rows
     // because rows move when a file is added, renamed or deleted.
@@ -169,18 +181,17 @@ Item {
         anchors.fill: parent
         spacing: Theme.space.md
 
-        RowLayout {
+        TabToolbar {
             Layout.fillWidth: true
-            Text {
-                Layout.fillWidth: true
-                text: root.selectedCount > 0
-                      ? qsTr("%1 selected").arg(root.selectedCount)
-                      : (root.model && root.model.count > 0
-                         ? qsTr("%1 screenshots").arg(root.model.count) : "")
-                color: root.selectedCount > 0 ? Theme.palette.textSecondary : Theme.palette.textTertiary
+
+            leading: Text {
+                visible: root.selectedCount > 0
+                text: qsTr("%1 selected").arg(root.selectedCount)
+                color: Theme.palette.textSecondary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.label.pixelSize
             }
+
             Button {
                 visible: root.selectedCount > 0
                 text: qsTr("Clear selection")
@@ -419,30 +430,17 @@ Item {
                     }
                 }
 
-                Column {
+                Text {
                     anchors.top: frame.bottom
                     anchors.topMargin: Theme.space.xs
                     x: frame.x
                     width: frame.width
-                    spacing: root.captionSpacing
-
-                    Text {
-                        width: parent.width
-                        text: cell.name
-                        elide: Text.ElideMiddle
-                        color: Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.caption.pixelSize
-                        font.weight: Font.Medium
-                    }
-                    Text {
-                        width: parent.width
-                        text: Format.lastPlayed(cell.modified ? Number(cell.modified) : 0)
-                        elide: Text.ElideRight
-                        color: Theme.palette.textTertiary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.caption.pixelSize
-                    }
+                    text: root.captionOf(cell.name)
+                    elide: Text.ElideMiddle
+                    color: Theme.palette.textSecondary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.caption.pixelSize
+                    font.weight: Font.Medium
                 }
             }
         }
