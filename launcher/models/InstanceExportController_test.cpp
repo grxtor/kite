@@ -132,6 +132,7 @@ class InstanceExportControllerTest : public QObject
 		QVERIFY(writeFile(FS::PathCombine(root, "logs/latest.log")));
 		QVERIFY(writeFile(FS::PathCombine(root, "crash-reports/crash.txt")));
 		QVERIFY(writeFile(FS::PathCombine(root, ".DS_Store")));
+		QVERIFY(writeFile(FS::PathCombine(root, ".backups/old.zip")));
 		QVERIFY(writeFile(FS::PathCombine(root, ".packignore"), "skip\n"));
 
 		InstanceExportController controller(instance);
@@ -158,6 +159,8 @@ class InstanceExportControllerTest : public QObject
 		QVERIFY(!entries.contains("logs/latest.log"));
 		QVERIFY(!entries.contains("crash-reports/crash.txt"));
 		QVERIFY(!entries.contains(".DS_Store"));
+		// The instance's own backups are zips; they do not go in a zip.
+		QVERIFY(!entries.contains(".backups/old.zip"));
 	}
 
 	void uncheckingInTheTreeLeavesItOut()
@@ -167,6 +170,7 @@ class InstanceExportControllerTest : public QObject
 		QVERIFY(writeFile(FS::PathCombine(root, "keep.txt")));
 		QVERIFY(writeFile(FS::PathCombine(root, "sub/b.txt")));
 		QVERIFY(writeFile(FS::PathCombine(root, "logs/latest.log")));
+		QVERIFY(writeFile(FS::PathCombine(root, ".backups/old.zip")));
 
 		InstanceExportController controller(instance);
 		auto* model = qobject_cast<QAbstractItemModel*>(controller.files());
@@ -183,6 +187,7 @@ class InstanceExportControllerTest : public QObject
 		QVERIFY(childNamed(model, controller.filesRoot(), "keep.txt").isValid());
 		// Debris is hidden, not offered.
 		QVERIFY(!childNamed(model, controller.filesRoot(), "logs").isValid());
+		QVERIFY(!childNamed(model, controller.filesRoot(), ".backups").isValid());
 
 		const QModelIndex sub = childNamed(model, controller.filesRoot(), "sub");
 		QVERIFY(sub.data(dirRole).toBool());

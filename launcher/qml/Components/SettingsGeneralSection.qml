@@ -48,7 +48,7 @@ SettingsScroll {
         SettingSwitch {
             key: "BackupBeforeLaunch"
             label: qsTr("Back up before every launch")
-            description: qsTr("Keeps a “pre-launch” snapshot in the instance's .backups folder.")
+            description: qsTr("Saves a backup of the instance, shown in its Backups tab, just before the game starts.")
         }
     }
     SettingsGroup {

@@ -11,10 +11,10 @@ import QtQuick
  */
 SettingsScroll {
     title: qsTr("Custom commands")
-    description: qsTr("Shell commands run around every launch, launcher-wide.")
+    description: qsTr("Shell commands that run for every instance. Each instance can replace them in its own settings.")
     SettingsGroup {
         width: parent.width
-        description: qsTr("Run around every launch. Available variables: $INST_NAME, $INST_ID, $INST_DIR, $INST_MC_DIR, $INST_JAVA and $INST_JAVA_ARGS.")
+        description: qsTr("You can use $INST_NAME, $INST_ID, $INST_DIR, $INST_MC_DIR, $INST_JAVA and $INST_JAVA_ARGS in them.")
         SettingText {
             key: "PreLaunchCommand"
             label: qsTr("Before launch")

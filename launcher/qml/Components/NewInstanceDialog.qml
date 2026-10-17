@@ -52,6 +52,10 @@ Dialog {
 
     readonly property bool creating: !!watcher && watcher.running
     readonly property int loaderTileHeight: 96
+    // Rows of the version list that always stay visible; a shorter window
+    // scrolls the dialog instead of squeezing the list.
+    readonly property int versionListRows: 4
+    readonly property int versionListMinHeight: versionListRows * Theme.control.height + Theme.space.xs * 2 + 2
     readonly property int logoWell: Theme.control.heightLg
     readonly property int logoSize: Theme.control.height
     // Each loader wears the logo the launcher already ships for it (the
@@ -132,13 +136,9 @@ Dialog {
     closePolicy: root.creating ? Popup.NoAutoClose : Popup.CloseOnEscape
     title: root.mode === "import" ? qsTr("Import instance") : qsTr("New instance")
 
-    // MeshMC's own mark, small and quiet, leading the title -- the second
-    // of the two places design-plan.md §1 reuses it as a recurring tell.
-    // DialogHeader's plain row, the same geometry every other dialog's
-    // title has.
+    // The plain title every dialog has; no logo or icon tile in front.
     header: DialogHeader {
         title: root.title
-        brand: true
     }
 
     // root.mode itself is left alone here -- the integrator sets it right
@@ -182,18 +182,38 @@ Dialog {
         }
     }
 
-    contentItem: ColumnLayout {
+    // Scrolls when the window is too short for the whole form (860x540),
+    // so the version list never has to give up its rows to fit it.
+    contentItem: Flickable {
+        id: scroller
+        clip: true
+        contentWidth: width
+        contentHeight: body.height
+        boundsBehavior: Flickable.StopAtBounds
+        // Always showing while the form is taller than the dialog, so a
+        // short window says there is more (the loader tiles) below.
+        readonly property bool overflowing: body.implicitHeight > scroller.height
+        ScrollBar.vertical: ScrollBar {
+            policy: scroller.overflowing ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+        }
+
+    ColumnLayout {
+        id: body
+        // Leaves the always-on scroll bar its own strip instead of
+        // drawing it over the switches and the group field.
+        width: scroller.width - (scroller.overflowing ? Theme.space.md : 0)
+        height: Math.max(scroller.height, implicitHeight)
         spacing: Theme.space.lg
 
-        SegmentedControl {
-            Layout.alignment: Qt.AlignLeft
+        TabStrip {
+            Layout.fillWidth: true
             enabled: !root.creating
-            options: [
-                { value: "create", label: qsTr("Create") },
-                { value: "import", label: qsTr("Import") }
+            tabs: [
+                { id: "create", label: qsTr("Create") },
+                { id: "import", label: qsTr("Import") }
             ]
             current: root.mode
-            onActivated: (value) => root.mode = value
+            onActivated: (id) => root.mode = id
         }
 
         // Name and group
@@ -343,6 +363,8 @@ Dialog {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.minimumHeight: root.versionListMinHeight
+            Layout.preferredHeight: root.versionListMinHeight
             radius: Theme.radius.lg
             color: Theme.palette.surfaceSunken
             border.width: 1
@@ -383,7 +405,6 @@ Dialog {
                         spacing: Theme.space.md
                         Text {
                             Layout.leftMargin: Theme.space.md
-                            Layout.preferredWidth: 140
                             text: versionRow.version
                             color: versionRow.selected ? Theme.palette.accentText : Theme.palette.textPrimary
                             font.family: Theme.font.family
@@ -398,23 +419,12 @@ Dialog {
                             tone: versionRow.type === "snapshot" ? "warning" : "neutral"
                             text: root.typeLabel(versionRow.type)
                         }
-                        // The suggestion in the scheme's own accent -- the
-                        // palette has no blue outside the Diamond scheme.
-                        Rectangle {
+                        // The suggestion, in the same badge as the type
+                        // right after the version; neutral, so it does not
+                        // turn green on the green selected row.
+                        StatusBadge {
                             visible: versionRow.recommended
-                            implicitWidth: recommendedLabel.implicitWidth + Theme.space.sm * 2
-                            implicitHeight: recommendedLabel.implicitHeight + Theme.space.xxs * 2
-                            radius: Theme.radius.sm
-                            color: Theme.palette.accentSubtle
-                            Text {
-                                id: recommendedLabel
-                                anchors.centerIn: parent
-                                text: qsTr("Recommended")
-                                color: Theme.palette.accentText
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.caption.pixelSize
-                                font.weight: Font.Medium
-                            }
+                            text: qsTr("Recommended")
                         }
                         Item { Layout.fillWidth: true }
                         Text {
@@ -689,6 +699,7 @@ Dialog {
             onAccepted: root.setImportSource(selectedFile.toString())
         }
     }
+    } // scroller
 
     footer: RowLayout {
         spacing: Theme.space.sm

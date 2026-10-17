@@ -12,6 +12,7 @@ import MeshMC.Theme
  * of the five proxy settings changes, applyProxySettings() below pushes the
  * whole configuration to the network layer immediately, the same effect
  * ProxyPage::apply() had when the classic dialog's OK button was pressed.
+ * The group's description only ever says "Applied." after a change.
  */
 SettingsScroll {
     id: root
@@ -58,11 +59,11 @@ SettingsScroll {
     SettingsGroup {
         width: parent.width
         title: qsTr("Type")
-        description: root.justApplied ? qsTr("Applied.")
-                                       : qsTr("Changes apply immediately; there is no separate Apply button.")
+        description: root.justApplied ? qsTr("Applied.") : ""
         SettingChoice {
             key: "ProxyType"
             label: qsTr("Proxy type")
+            radio: true
             options: [
                 { value: "None", label: qsTr("None") },
                 { value: "Default", label: qsTr("System") },

@@ -62,11 +62,9 @@ SettingRow {
                 flat: false
                 onClicked: root.folder ? folderDialog.open() : fileDialog.open()
             }
-            IconButton {
+            Button {
                 visible: root.toolId.length > 0
-                iconName: "check"
-                tip: qsTr("Check")
-                flat: false
+                text: qsTr("Check")
                 onClicked: {
                     const adapter = root.source.adapter
                     const error = adapter ? adapter.checkExternalTool(root.toolId, field.text)

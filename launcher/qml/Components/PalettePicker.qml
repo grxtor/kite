@@ -140,12 +140,11 @@ Grid {
                         color: card.colors.accent
                         Text {
                             anchors.centerIn: parent
-                            text: qsTr("PLAY")
+                            text: qsTr("Play")
                             color: card.colors.textOnAccent
                             font.family: Theme.font.family
                             font.pixelSize: root.miniLabelSize
                             font.weight: Font.Bold
-                            font.letterSpacing: 1
                         }
                     }
                 }

@@ -422,6 +422,10 @@ void InstanceExportController::applyIgnoreLists()
 		 {"logs", "crash-reports", ".cache", ".fabric", ".quilt"}) {
 		paths.insert(FS::PathCombine(prefix, QString::fromLatin1(path)));
 	}
+	/* The instance's own backups are zip files already; shipping them
+	 * inside another zip doubles its size for nothing. They live beside
+	 * the game folder, so the path is the instance root's, not @c prefix. */
+	paths.insert(QStringLiteral(".backups"));
 	m_tree->ignoreFilesWithName() = {QStringLiteral(".DS_Store"),
 									 QStringLiteral("thumbs.db"),
 									 QStringLiteral("Thumbs.db")};

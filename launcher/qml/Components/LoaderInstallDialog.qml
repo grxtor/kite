@@ -30,7 +30,6 @@ Dialog {
 
     header: DialogHeader {
         title: root.title
-        icon: "download"
     }
 
     onOpened: {
@@ -60,13 +59,13 @@ Dialog {
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
-        SegmentedControl {
+        TabStrip {
             Layout.fillWidth: true
-            options: root.installer
-                     ? root.installer.loaders.map(function (l) { return { value: l.uid, label: l.brandName } })
-                     : []
+            tabs: root.installer
+                  ? root.installer.loaders.map(function (l) { return { id: l.uid, label: l.brandName } })
+                  : []
             current: root.installer ? root.installer.selectedUid : ""
-            onActivated: (value) => root.installer.selectLoader(value)
+            onActivated: (id) => root.installer.selectLoader(id)
         }
 
         Rectangle {
@@ -113,7 +112,6 @@ Dialog {
                         StatusBadge {
                             visible: cell.recommended
                             text: qsTr("Recommended")
-                            tone: "success"
                         }
                     }
                 }
@@ -162,6 +160,7 @@ Dialog {
         topPadding: 0
 
         Button {
+            highlighted: true
             text: qsTr("Install")
             enabled: list.currentIndex >= 0
             onClicked: root.doInstall(list.currentItem ? list.currentItem.versionId : "")

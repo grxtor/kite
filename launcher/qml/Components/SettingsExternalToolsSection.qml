@@ -39,8 +39,11 @@ SettingsScroll {
         }
     }
 
+    // MCEdit has not been updated since 2018; the group stays for anyone who
+    // already set a path, and is left out for everyone else.
     SettingsGroup {
         width: parent.width
+        visible: SettingsStore.string("MCEditPath").length > 0
         title: qsTr("MCEdit")
         description: qsTr("https://www.mcedit.net/")
         SettingPathField {

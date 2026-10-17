@@ -48,9 +48,9 @@ Dialog {
     readonly property int memoryMaxMiB: 65536
 
     readonly property var formats: [
-        { value: "zip", label: qsTr("Zip") },
-        { value: "modrinth", label: qsTr("Modrinth") },
-        { value: "curseforge", label: qsTr("CurseForge") }
+        { id: "zip", label: qsTr("Zip") },
+        { id: "modrinth", label: qsTr("Modrinth") },
+        { id: "curseforge", label: qsTr("CurseForge") }
     ]
 
     function start(fileUrl) {
@@ -76,7 +76,6 @@ Dialog {
 
     header: DialogHeader {
         title: root.title
-        icon: "archive"
     }
 
     onOpened: {
@@ -117,11 +116,12 @@ Dialog {
                 text: qsTr("The game is running. Files it is writing now may be left out or cut short, so quit it first for a clean export.")
             }
 
-            SegmentedControl {
+            TabStrip {
+                Layout.fillWidth: true
                 visible: !!root.controller && root.controller.packFormats
-                options: root.formats
+                tabs: root.formats
                 current: root.format
-                onActivated: (value) => root.controller.format = value
+                onActivated: (id) => root.controller.format = id
             }
 
             Text {

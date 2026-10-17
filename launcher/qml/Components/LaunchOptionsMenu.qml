@@ -89,10 +89,12 @@ Menu {
 
     MenuItem {
         text: qsTr("Play offline")
+        icon.source: Icons.url("play")
         onTriggered: root.launchModeRequested(root.instanceId, "offline")
     }
     MenuItem {
         text: qsTr("Play demo")
+        icon.source: Icons.url("clock")
         visible: root.supportsDemo
         height: visible ? implicitHeight : 0
         onTriggered: root.launchModeRequested(root.instanceId, "demo")
@@ -101,11 +103,15 @@ Menu {
     Menu {
         id: playAsMenu
         title: qsTr("Play as")
+        icon.source: Icons.url("user")
         Instantiator {
             model: root.accounts
             delegate: MenuItem {
                 required property var modelData
                 text: modelData.isDefault ? qsTr("%1 (default)").arg(modelData.name) : modelData.name
+                // The account's own head, in its own colours.
+                icon.source: "image://accountface/" + modelData.id
+                icon.color: "transparent"
                 onTriggered: root.launchAsRequested(root.instanceId, modelData.id)
             }
             onObjectAdded: (index, object) => playAsMenu.insertItem(index, object)
@@ -118,6 +124,7 @@ Menu {
     Menu {
         id: profilerMenu
         title: qsTr("Profiler")
+        icon.source: Icons.url("sliders")
         MenuItem {
             text: qsTr("None")
             checkable: true

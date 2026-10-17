@@ -30,20 +30,48 @@ namespace
 	using ContentListExport::Fields;
 	using ContentListExport::Item;
 
-	/* Backslash comes first on purpose: escaping it afterwards would
-	 * also escape the backslashes this loop has just added. */
-	const QLatin1String kMarkdownSpecials("\\`*_{}[]<>()#+-.!|");
-
+	/* Escapes only what would change the text's meaning where it sits in a
+	 * list line: a backslash, a backtick, `*`, brackets, `<` (a tag), and an
+	 * underscore at a word's edge. Dots, dashes, parentheses and the like
+	 * stay as they are: escaping every punctuation mark made a plain
+	 * "Entity Culling [1.7.2]" read as "[1\.7\.2]" in the preview and in
+	 * anything that does not render Markdown. An underscore between two
+	 * letters or digits ("mod_name_1") is not emphasis in CommonMark. A
+	 * leading "12." or "12)" would open a nested numbered list, so its dot
+	 * is escaped. */
 	QString markdownEscaped(const QString& text)
 	{
-		QString out = text;
-		for (const char c : kMarkdownSpecials) {
-			/* Assigned rather than constructed with parentheses: the
-			 * parenthesised form of this reads as a function
-			 * declaration taking a QLatin1Char, not as a variable. */
-			const QChar ch = QLatin1Char(c);
-			const QString escaped = QStringLiteral("\\") + ch;
-			out.replace(ch, escaped);
+		QString out;
+		out.reserve(text.size() + 4);
+		int digits = 0;
+		while (digits < text.size() && text.at(digits).isDigit()) {
+			++digits;
+		}
+		const bool startsNumbered =
+			digits > 0 && digits < text.size()
+			&& (text.at(digits) == QLatin1Char('.')
+				|| text.at(digits) == QLatin1Char(')'))
+			&& (digits + 1 == text.size() || text.at(digits + 1).isSpace());
+
+		for (int i = 0; i < text.size(); ++i) {
+			const QChar c = text.at(i);
+			bool escape = false;
+			if (c == QLatin1Char('\\') || c == QLatin1Char('`')
+				|| c == QLatin1Char('*') || c == QLatin1Char('[')
+				|| c == QLatin1Char(']') || c == QLatin1Char('<')) {
+				escape = true;
+			} else if (c == QLatin1Char('_')) {
+				const bool wordBefore = i > 0 && text.at(i - 1).isLetterOrNumber();
+				const bool wordAfter =
+					i + 1 < text.size() && text.at(i + 1).isLetterOrNumber();
+				escape = !(wordBefore && wordAfter);
+			} else if (startsNumbered && i == digits) {
+				escape = true;
+			}
+			if (escape) {
+				out += QLatin1Char('\\');
+			}
+			out += c;
 		}
 		return out;
 	}

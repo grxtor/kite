@@ -37,29 +37,23 @@ SettingsScroll {
 
         SettingRow {
             wide: true
-            label: qsTr("MeshMC key")
-            description: qsTr("12 MB upload limit.")
-            RadioButton {
-                ButtonGroup.group: keyGroup
-                checked: !root.ownKey
-                text: qsTr("Use the MeshMC key")
-                onToggled: if (checked) {
-                    root.ownKey = false
-                    SettingsStore.setValue("PasteEEAPIKey", root.meshmcKey)
-                }
-            }
-        }
-        SettingRow {
-            wide: true
-            label: qsTr("Your own key")
-            description: qsTr("12 MB upload limit. Get one at paste.ee.")
+            label: qsTr("Upload with")
             ColumnLayout {
                 width: parent.width
                 spacing: Theme.space.xs
                 RadioButton {
                     ButtonGroup.group: keyGroup
+                    checked: !root.ownKey
+                    text: qsTr("MeshMC's shared key (12 MB limit)")
+                    onToggled: if (checked) {
+                        root.ownKey = false
+                        SettingsStore.setValue("PasteEEAPIKey", root.meshmcKey)
+                    }
+                }
+                RadioButton {
+                    ButtonGroup.group: keyGroup
                     checked: root.ownKey
-                    text: qsTr("Use my own key")
+                    text: qsTr("My own key (12 MB limit, get one at paste.ee)")
                     onToggled: if (checked) root.ownKey = true
                 }
                 TextField {

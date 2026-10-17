@@ -15,7 +15,7 @@ import MeshMC.Theme
  * InstanceShortcutController's, over the same core code the widget dialog
  * uses.
  *
- * "Other…" asks where with a save dialog. The shortcut can also join a
+ * "Choose folder…" asks where with a save dialog. The shortcut can also join a
  * server and play as a given account. `created(message)` is the page's
  * cue for a toast; a failure stays here with the reason.
  */
@@ -57,7 +57,6 @@ Dialog {
 
     header: DialogHeader {
         title: root.title
-        icon: "external-link"
     }
 
     onOpened: {
@@ -102,10 +101,18 @@ Dialog {
             Layout.fillWidth: true
             spacing: Theme.space.xs
             FieldLabel { text: qsTr("Place it in") }
-            SegmentedControl {
-                options: root.locations
-                current: root.location
-                onActivated: (value) => root.location = value
+            ComboBox {
+                Layout.fillWidth: true
+                // "Other" is the one that asks for a folder afterwards.
+                model: root.locations.map((l) => ({
+                    value: l.value,
+                    label: l.value === "other" ? qsTr("Choose folder…") : l.label
+                }))
+                textRole: "label"
+                valueRole: "value"
+                currentIndex: indexOfValue(root.location)
+                onActivated: root.location = currentValue
+                Accessible.name: qsTr("Place it in")
             }
         }
 

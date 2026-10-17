@@ -1732,6 +1732,11 @@ add_unit_test(ContentUpdateController
     SOURCES models/ContentUpdateController_test.cpp
     LIBS MeshMC_core
     )
+# The Markdown export list escapes only what changes meaning in place.
+add_unit_test(ContentListExport
+    SOURCES modplatform/ContentListExport_test.cpp
+    LIBS MeshMC_core
+    )
 # WP1: a plain zip export of a NullInstance over a temp folder (ignore lists,
 # .packignore, unchecking through the tree model) and its failures; the pack
 # formats need a MinecraftInstance and the network. The shortcut test writes

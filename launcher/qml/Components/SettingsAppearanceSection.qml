@@ -134,6 +134,7 @@ SettingsScroll {
             label: qsTr("Mode")
             showDivider: true
             options: [
+                { value: "system", label: qsTr("System") },
                 { value: "dark", label: qsTr("Dark") },
                 { value: "light", label: qsTr("Light") }
             ]
