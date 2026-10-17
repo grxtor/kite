@@ -20,9 +20,18 @@ import QtQuick3D.Helpers
  * The second layer (hat, jacket, sleeves, trousers) is a slightly larger
  * box over each part, its transparent pixels cut out.
  *
+ * Lit the way the game shades a player: the top brightest, the side
+ * turned to the viewer a step darker, the sides turned away darker again
+ * and the underside darkest, so a skin reads as a solid figure rather than
+ * a flat cut-out; a soft shadow on the ground stands it on something. What
+ * is behind it (the backdrop that keeps a dark skin off a dark surface) is
+ * Components/SkinPreview.qml's.
+ *
  * Calm on purpose: it holds still at a three-quarter view until dragged,
  * and turns back to it on a double click. showBack() turns it round once,
- * for whoever just put a cape or the elytra on it.
+ * for whoever just put a cape or the elytra on it. No idle sway: an
+ * endless animation has no live state to be gated on here (Theme's
+ * motion contract).
  */
 Item {
     id: root
@@ -44,6 +53,45 @@ Item {
     // Theme import of its own).
     property int turnDuration: 0
     property int turnEasing: Easing.OutCubic
+    // The shadow under the feet, its alpha how dark it is in the middle;
+    // also set from the theme by Components/SkinPreview.qml.
+    property color shadowColor: Qt.rgba(0, 0, 0, 0.4)
+
+    // The camera looks at the middle of the figure (32 skin pixels tall,
+    // from y = -24 to 8) from a little above and far off, through a long
+    // lens: the top of the head and the shoulders just show, and the near
+    // parts are hardly bigger than the far ones.
+    readonly property real figureMiddle: -8
+    readonly property real cameraDistance: 150
+    readonly property real cameraElevation: 9
+    readonly property real cameraFieldOfView: 16
+    readonly property real degree: Math.PI / 180
+
+    // One light from above, a little in front and to the left, fixed to
+    // the view, plus an even ambient (an sRGB grey, as Qt takes it). Set
+    // by measuring renders of a plain grey skin, to the game's steps: the
+    // top at the skin's own colour, the side facing the viewer at 0.8 of
+    // it, the sides turned away at 0.6 and the underside, the ambient
+    // alone, at 0.45. The material brightens a face seen nearly edge-on,
+    // as the top is from this camera, so the light is lower than a plain
+    // cosine would put it.
+    readonly property real lightPitch: -43
+    readonly property real lightYaw: -9
+    readonly property real lightBrightness: 0.63
+    readonly property real ambientLight: 0.45
+
+    // The ground shadow: a disc a little wider than the feet, just under
+    // the trousers (which reach a quarter pixel below the feet), darkest
+    // in the middle and gone at its rim. Each ring is [distance from the
+    // middle, as a share of the radius; share of shadowColor's alpha].
+    readonly property real groundLevel: -24.3
+    readonly property real shadowRadius: 9
+    readonly property int shadowSegments: 48
+    readonly property var shadowRings: [[0, 1], [0.35, 0.85], [0.7, 0.35], [1, 0]]
+
+    // The cape hangs this far back from the shoulders, as in game when the
+    // player stands still.
+    readonly property real capeTilt: 6
 
     readonly property real restYaw: -25
     property real yaw: restYaw
@@ -123,6 +171,36 @@ Item {
         return { positions: positions, uvs: uvs, normals: normals, indexes: indexes }
     }
 
+    // A flat disc facing up, as ProceduralMesh arrays: a fan of `segments`
+    // wedges in the middle and a strip between each two `rings` after it,
+    // `colour` faded by each ring's share of its alpha. The fade is in the
+    // vertex colours, so there is no texture to blur or filter.
+    function shadowDisc(radius, segments, rings, colour) {
+        var positions = [], normals = [], colors = [], indexes = []
+        for (var r = 0; r < rings.length; ++r) {
+            var count = r === 0 ? 1 : segments
+            for (var s = 0; s < count; ++s) {
+                var angle = 2 * Math.PI * s / segments
+                var distance = radius * rings[r][0]
+                positions.push(Qt.vector3d(Math.cos(angle) * distance, 0, Math.sin(angle) * distance))
+                normals.push(Qt.vector3d(0, 1, 0))
+                colors.push(Qt.vector4d(colour.r, colour.g, colour.b, colour.a * rings[r][1]))
+            }
+        }
+        // Wound counter-clockwise seen from above, so it culls from below.
+        for (var w = 0; w < segments; ++w) {
+            var next = (w + 1) % segments
+            indexes.push(0, 1 + next, 1 + w)
+            for (var ring = 1; ring < rings.length - 1; ++ring) {
+                var inner = 1 + (ring - 1) * segments
+                var outer = inner + segments
+                indexes.push(inner + w, inner + next, outer + w,
+                             outer + w, inner + next, outer + next)
+            }
+        }
+        return { positions: positions, normals: normals, colors: colors, indexes: indexes }
+    }
+
     // A box as a Model. `material` decides the texture.
     component Box: Model {
         id: box
@@ -194,6 +272,16 @@ Item {
         cullMode: PrincipledMaterial.NoCulling
         baseColor: root.plainColor
     }
+    // The ground shadow: its own colours, blended, unlit, and only from
+    // above -- tilted to look from below the ground, it would cover the
+    // feet.
+    PrincipledMaterial {
+        id: shadowMaterial
+        lighting: PrincipledMaterial.NoLighting
+        vertexColorsEnabled: true
+        alphaMode: PrincipledMaterial.Blend
+        cullMode: PrincipledMaterial.BackFaceCulling
+    }
 
     View3D {
         id: view
@@ -201,39 +289,59 @@ Item {
         renderMode: View3D.Offscreen
         environment: SceneEnvironment {
             backgroundMode: SceneEnvironment.Transparent
-            antialiasingMode: SceneEnvironment.MSAA
-            antialiasingQuality: SceneEnvironment.High
+            // Supersampled, not MSAA: MSAA shades a pixel on a box's edge
+            // at the pixel's centre, which can lie off the face, and so
+            // picks the texel beside the face's own -- a dotted line of
+            // another part's colour along the edges (the shoes' along the
+            // trousers' rim, say).
+            antialiasingMode: SceneEnvironment.SSAA
+            antialiasingQuality: SceneEnvironment.VeryHigh
             // Linear, not the cat's None: None also skips the conversion
             // back to sRGB, which leaves every skin a few shades too dark.
             tonemapMode: SceneEnvironment.TonemapModeLinear
         }
 
-        // The whole figure, 32 skin pixels tall and centred on y = -8,
-        // fills the view's height with a little room to spare.
+        // The whole figure fills about three quarters of the view's height,
+        // with room for the shadow below and the hat above.
         PerspectiveCamera {
-            position: Qt.vector3d(0, -3, 84)
-            eulerRotation.x: -3.5
-            fieldOfView: 28
-            clipNear: 10
-            clipFar: 200
+            position: Qt.vector3d(0, root.figureMiddle + root.cameraDistance * Math.sin(root.cameraElevation * root.degree),
+                                  root.cameraDistance * Math.cos(root.cameraElevation * root.degree))
+            eulerRotation.x: -root.cameraElevation
+            fieldOfView: root.cameraFieldOfView
+            clipNear: root.cameraDistance / 2
+            clipFar: root.cameraDistance * 2
         }
-        // Fixed to the view, not the player: a key light from above and a
-        // little right of the camera, so whatever side is turned towards
-        // the viewer (the face, or the cape) is the brightest, and a soft
-        // fill from the left.
+        // Fixed to the view, not the player: turned round, its back (and
+        // the cape) is lit as its front was.
         DirectionalLight {
-            eulerRotation: Qt.vector3d(-30, 10, 0)
-            brightness: 0.95
-            ambientColor: Qt.rgba(0.22, 0.22, 0.24, 1)
-        }
-        DirectionalLight {
-            eulerRotation: Qt.vector3d(-10, -60, 0)
-            brightness: 0.25
+            eulerRotation.x: root.lightPitch
+            eulerRotation.y: root.lightYaw
+            brightness: root.lightBrightness
+            ambientColor: Qt.rgba(root.ambientLight, root.ambientLight, root.ambientLight, 1)
         }
 
+        // Turned about the player's own axis, then tilted about the view's
+        // horizontal one, so a tilt always leans it towards or away from
+        // the viewer. eulerRotation tilts first and then turns: on a player
+        // turned side-on, its tilt would lean it over sideways.
         Node {
-            eulerRotation.x: root.pitch
-            eulerRotation.y: root.yaw
+            rotation: Quaternion.fromAxisAndAngle(Qt.vector3d(1, 0, 0), root.pitch)
+                      .times(Quaternion.fromAxisAndAngle(Qt.vector3d(0, 1, 0), root.yaw))
+
+            // The shadow on the ground, turning and tilting with the player.
+            Model {
+                id: shadow
+                readonly property var disc: root.shadowDisc(root.shadowRadius, root.shadowSegments,
+                                                            root.shadowRings, root.shadowColor)
+                y: root.groundLevel
+                materials: [shadowMaterial]
+                geometry: ProceduralMesh {
+                    positions: shadow.disc.positions
+                    normals: shadow.disc.normals
+                    colors: shadow.disc.colors
+                    indexes: shadow.disc.indexes
+                }
+            }
 
             // Base layer. The legs meet edge to edge, as the arms meet the
             // body, not 0.1 in each as in the game: overlapping, each leg's
@@ -283,7 +391,7 @@ Item {
                 position: Qt.vector3d(0, 0, -2)
                 eulerRotation.y: 180
                 Node {
-                    eulerRotation.x: -10.8
+                    eulerRotation.x: -root.capeTilt
                     Box {
                         materials: [capeMaterial]
                         size: Qt.vector3d(10, 16, 1)

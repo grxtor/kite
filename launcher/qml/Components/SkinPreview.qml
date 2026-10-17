@@ -16,6 +16,9 @@ import MeshMC.Theme
  * that has downloaded). Used by the skin editor and
  * the Accounts page's hero. showBack()/showFront() turn the 3D player
  * round (the flat view has no back, so there they do nothing).
+ *
+ * Behind either view, a soft light: a black or dark skin on a dark surface
+ * would otherwise melt into it, only its light parts showing.
  */
 Item {
     id: root
@@ -40,6 +43,21 @@ Item {
                                    && GraphicsInfo.api !== GraphicsInfo.Software
                                    && GraphicsInfo.api !== GraphicsInfo.Unknown
 
+    // The light behind the player: the palette's lightest colour, strongest
+    // behind the figure and gone at the edges. Faint over the dark
+    // surfaces, where it does the work; stronger over the light ones,
+    // where it only brightens the sunken grey a little.
+    readonly property color glowColor: Theme.dark ? Theme.palette.textPrimary : Theme.palette.surfaceRaised
+    readonly property real glowOpacity: Theme.dark ? 0.4 : 0.8
+    // Its fade, (1 - t^flatness)^2 from the brightest point (t = 0) to
+    // the edge (t = 1), soft all the way with no ring where it turns;
+    // drawn as that many gradient stops. The brightest point sits below
+    // the middle by glowFocus of the radius, so the ground and the
+    // shadow under the feet are lit too.
+    readonly property real glowFlatness: 2
+    readonly property int glowStops: 16
+    readonly property real glowFocus: 0.25
+
     function showBack() {
         if (preview3d.item)
             preview3d.item.showBack()
@@ -47,6 +65,33 @@ Item {
     function showFront() {
         if (preview3d.item)
             preview3d.item.showFront()
+    }
+
+    Canvas {
+        id: glow
+        anchors.fill: parent
+        property color color: root.glowColor
+        property real opacityAtMiddle: root.glowOpacity
+        onColorChanged: requestPaint()
+        onOpacityAtMiddleChanged: requestPaint()
+        onWidthChanged: requestPaint()
+        onHeightChanged: requestPaint()
+        // A circle of the box's width, stretched to its height.
+        onPaint: {
+            const ctx = getContext("2d")
+            ctx.reset()
+            const radius = width / 2
+            ctx.translate(radius, height / 2)
+            ctx.scale(1, height / width)
+            const light = ctx.createRadialGradient(0, radius * root.glowFocus, 0, 0, 0, radius)
+            for (let i = 0; i <= root.glowStops; ++i) {
+                const t = i / root.glowStops
+                const fade = 1 - Math.pow(t, root.glowFlatness)
+                light.addColorStop(t, Qt.alpha(color, opacityAtMiddle * fade * fade))
+            }
+            ctx.fillStyle = light
+            ctx.fillRect(-radius, -radius, width, width)
+        }
     }
 
     Loader {
@@ -64,6 +109,7 @@ Item {
             // A cut instead of a turn with reduced motion on.
             item.turnDuration = Qt.binding(() => SettingsStore.bool("UiReduceMotion") ? 0 : Theme.motion.slow)
             item.turnEasing = Theme.motion.easing
+            item.shadowColor = Qt.binding(() => Theme.palette.shadow)
         }
     }
 

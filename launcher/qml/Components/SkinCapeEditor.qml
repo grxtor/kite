@@ -273,10 +273,33 @@ Dialog {
                         spacing: Theme.space.sm
 
                         Rectangle {
+                            id: previewStage
                             Layout.fillWidth: true
                             Layout.preferredHeight: root.previewHeight
                             radius: Theme.radius.lg
-                            color: Theme.palette.surfaceSunken
+                            // A lit stage, not a sunken well, so a dark skin
+                            // stands off it (SkinPreview adds the glow behind
+                            // the player), lighter at the top than at its
+                            // floor. In the dark theme its top is lighter than
+                            // the dialog around it, `lift` of the way to the
+                            // text colour; in the light one it is the sunken
+                            // grey, the floor `floorShade` darker.
+                            readonly property real lift: 0.08
+                            readonly property real floorShade: 0.05
+                            gradient: Gradient {
+                                GradientStop {
+                                    position: 0
+                                    color: Theme.dark ? Qt.tint(Theme.palette.surfaceOverlay,
+                                                                Qt.alpha(Theme.palette.textPrimary, previewStage.lift))
+                                                      : Theme.palette.surfaceSunken
+                                }
+                                GradientStop {
+                                    position: 1
+                                    color: Theme.dark ? Theme.palette.surfaceRaised
+                                                      : Qt.tint(Theme.palette.surfaceSunken,
+                                                                Qt.alpha(Theme.palette.textPrimary, previewStage.floorShade))
+                                }
+                            }
 
                             SkinPreview {
                                 id: preview
