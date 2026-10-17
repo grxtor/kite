@@ -8,10 +8,10 @@ import MeshMC.Theme
 
 /*
  * Maximum memory: one slider whose track runs from the least the game can
- * live with to the RAM this machine has, a soft band on the track marking
- * what suits most modpacks, and a typed value beside it (MemoryField). A
- * single hint line under the label says how much is installed, and turns
- * into a warning once the amount eats into what the system needs itself.
+ * live with to the RAM this machine has, and a typed value beside it
+ * (MemoryField). A single hint line under the label says how much is
+ * installed and what suits most modpacks, and turns into a warning once
+ * the amount eats into what the system needs itself.
  * The slider saves when let go, the field when edited.
  *
  * The minimum can never end up above the maximum: lowering the maximum
@@ -66,49 +66,28 @@ SettingRow {
     Row {
         spacing: Theme.space.md
 
-        Item {
-            id: sliderBox
+        // A plain track, like Modrinth App's and CurseForge's memory
+        // sliders: the suggested range is said in the hint line. A tinted
+        // band behind the knob read as a rendering glitch, not a range.
+        Slider {
+            id: slider
             anchors.verticalCenter: parent.verticalCenter
             width: root.sliderWidth
-            height: slider.height
-
-            // The suggested range, a band slightly taller than the track so
-            // it frames it from behind. Positions follow the knob's centre,
-            // so the knob sits inside the band exactly while the value is
-            // in the suggested range.
-            Rectangle {
-                readonly property real travel: slider.availableWidth - Theme.icon.md
-                function at(mib) {
-                    return slider.leftPadding + Theme.icon.md / 2
-                           + travel * (mib - root.floor) / (root.ceiling - root.floor)
-                }
-                x: at(root.suitsLow)
-                width: at(root.suitsHigh) - x
-                anchors.verticalCenter: parent.verticalCenter
-                height: Theme.space.md
-                radius: Theme.radius.sm
-                color: Qt.alpha(Theme.palette.accent, 0.2)
-            }
-
-            Slider {
-                id: slider
-                width: parent.width
-                // No side padding: the knob's edge lines up with the label
-                // above when the row stacks, and the field to its right.
-                leftPadding: 0
-                rightPadding: 0
-                from: root.floor
-                to: root.ceiling
-                stepSize: root.step
-                snapMode: Slider.SnapAlways
-                value: root.stored
-                Accessible.name: root.label
-                onPressedChanged: {
-                    if (pressed)
-                        return
-                    root.save(Math.round(value))
-                    value = Qt.binding(() => root.stored)
-                }
+            // No side padding: the knob's edge lines up with the label
+            // above when the row stacks, and the field to its right.
+            leftPadding: 0
+            rightPadding: 0
+            from: root.floor
+            to: root.ceiling
+            stepSize: root.step
+            snapMode: Slider.SnapAlways
+            value: root.stored
+            Accessible.name: root.label
+            onPressedChanged: {
+                if (pressed)
+                    return
+                root.save(Math.round(value))
+                value = Qt.binding(() => root.stored)
             }
         }
 
