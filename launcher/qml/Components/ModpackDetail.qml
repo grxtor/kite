@@ -66,13 +66,27 @@ Item {
         return ms > 0 ? Format.lastPlayed(ms) : ""
     }
 
+    // Loader ids as the projects spell their own names.
+    readonly property var loaderNames: ({ neoforge: "NeoForge", forge: "Forge", fabric: "Fabric",
+                                          quilt: "Quilt", liteloader: "LiteLoader" })
+
     function versionLabel(v) {
         var parts = []
         if (v.gameVersions && v.gameVersions.length > 0)
             parts.push(v.gameVersions[0])
         if (v.loaders && v.loaders.length > 0)
-            parts.push(v.loaders.map(l => l.charAt(0).toUpperCase() + l.slice(1)).join(", "))
-        return (v.versionNumber || v.name) + (parts.length > 0 ? " (" + parts.join(", ") + ")" : "")
+            parts.push(v.loaders.map(l => root.loaderNames[l] || (l.charAt(0).toUpperCase() + l.slice(1))).join(", "))
+        // Many packs number their versions with the pack's own name in front
+        // ("All the Mods 10-8.3"); repeating it on every row of the list only
+        // pushes the part that differs to the end. Show "8.3" instead.
+        var label = String(v.versionNumber || v.name || "")
+        var title = root.pack && root.pack.title ? String(root.pack.title) : ""
+        if (title.length > 0 && label.toLowerCase().startsWith(title.toLowerCase())) {
+            var rest = label.slice(title.length).replace(/^[\s\-_:v]+/i, "")
+            if (rest.length > 0)
+                label = rest
+        }
+        return label + (parts.length > 0 ? " (" + parts.join(", ") + ")" : "")
     }
 
     function install() {

@@ -111,10 +111,17 @@ T.ComboBox {
         }
     }
 
+    // How many rows the open list shows before it scrolls. A long list (a
+    // pack with sixty versions) used to grow to the full window height and
+    // cover the page; launchers keep a dropdown to a handful of rows.
+    property int maxVisibleRows: 8
+
     popup: T.Popup {
         y: control.height + Theme.space.xxs
         width: control.width
-        height: Math.min(contentItem.implicitHeight, control.Window.height - topMargin - bottomMargin)
+        height: Math.min(contentItem.implicitHeight + topPadding + bottomPadding,
+                         control.maxVisibleRows * Theme.control.height + topPadding + bottomPadding,
+                         control.Window.height - topMargin - bottomMargin)
         topMargin: Theme.space.sm
         bottomMargin: Theme.space.sm
         padding: Theme.space.xxs
