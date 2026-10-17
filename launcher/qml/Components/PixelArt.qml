@@ -16,10 +16,15 @@ import QtQuick
  * landscapeUrl() is the one callers reach for most: CoverArt's fallback art
  * -- the cover of an instance with no screenshot yet, on Library cards,
  * Home's jump cards, the instance page and PlayDock's bar -- picks one of 32
- * rendered voxel-world scenes (art/scenes/, see build.py there) by hashing
- * the instance/world id, so a given item always draws the same scene rather
- * than a new one on every repaint (design-plan.md §6 "fallback covers":
- * bounded and designed, not random-looking). The 32 differ in biome and in
+ * rendered voxel-world scenes (art/scenes/, see build.py there) for the
+ * instance, the same one on every repaint (design-plan.md §6 "fallback
+ * covers": bounded and designed, not random-looking). Hashing the id alone
+ * gave two instances of a nine-instance library the same scene more often
+ * than not, which reads as placeholder art; so once `instances` (the whole
+ * library) is set, the scenes are dealt out over it instead -- every id in
+ * a stable order takes its hashed scene, or the next one no earlier id has
+ * taken (see _assignScenes()). An id outside the library (a world, a
+ * preview) still just hashes. The 32 differ in biome and in
  * time of day or weather, so a grid of them never reads as one picture
  * repeated. Each scene exists at three crops -- "card", "band" and "strip"
  * -- because a 16:9 frame filled into a 12:1 dock bar only ever shows a
@@ -35,6 +40,8 @@ import QtQuick
  * for a Discover modpack with no gallery image: three generic 16:9 covers.
  */
 QtObject {
+    id: art
+
     readonly property int sceneCount: 32
     readonly property int packCoverCount: 3
     readonly property var worldBiomes: [
@@ -55,6 +62,44 @@ QtObject {
         return seed && seed.length > 0 ? seed : "mesh"
     }
 
+    // The whole library (InstanceList -- never a search-filtered view of
+    // it, or the scenes would move while searching). Set once by Main.qml.
+    property var instances: null
+    // instance id -> scene index, dealt out by _assignScenes(). Replaced,
+    // never changed in place, so every binding through landscapeUrl()
+    // re-reads it.
+    property var _sceneOf: ({})
+    readonly property Instantiator _idReader: Instantiator {
+        model: art.instances
+        delegate: QtObject {
+            required property string instanceId
+        }
+        onObjectAdded: Qt.callLater(art._assignScenes)
+        onObjectRemoved: Qt.callLater(art._assignScenes)
+    }
+    // Ids in sorted order, each to its hashed scene or, if an earlier id
+    // already has that one, the next free one. A library bigger than the
+    // set of scenes starts sharing again once every scene is taken.
+    function _assignScenes() {
+        var ids = []
+        for (var i = 0; i < _idReader.count; ++i) {
+            var entry = _idReader.objectAt(i)
+            if (entry && entry.instanceId.length > 0)
+                ids.push(entry.instanceId)
+        }
+        ids.sort()
+        var taken = {}
+        var sceneOf = {}
+        for (var j = 0; j < ids.length; ++j) {
+            var idx = _hash(ids[j]) % sceneCount
+            for (var tries = 0; taken[idx] && tries < sceneCount; ++tries)
+                idx = (idx + 1) % sceneCount
+            taken[idx] = true
+            sceneOf[ids[j]] = idx
+        }
+        art._sceneOf = sceneOf
+    }
+
     // "card" (about 16:9), "band" (about 5:1) or "strip" (about 12:1) --
     // whichever of the three scene crops a host of this width/height ratio
     // would crop the least.
@@ -66,7 +111,9 @@ QtObject {
     // stable pick rather than an empty source. @p shape is one of
     // shapeForAspect()'s three names (default "card").
     function landscapeUrl(seed, shape) {
-        var idx = _hash(_key(seed)) % sceneCount
+        var key = _key(seed)
+        var dealt = art._sceneOf[key]
+        var idx = dealt !== undefined ? dealt : _hash(key) % sceneCount
         return _root + "scenes/" + (shape || "card") + "/" + (idx < 10 ? "0" : "") + idx + ".jpg"
     }
 

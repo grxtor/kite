@@ -362,6 +362,17 @@ QVariant InstanceList::data(const QModelIndex& index, int role) const
 		case HasCrashedRole: {
 			return pdata->hasCrashed();
 		}
+		case PackArtRole: {
+			if (!pdata->isManagedPack()) {
+				return QString();
+			}
+			auto* context = LauncherContext::instance();
+			const QString key = pdata->iconKey();
+			if (context && context->icons()->iconFileExists(key)) {
+				return QStringLiteral("image://instanceicon/") + key;
+			}
+			return pdata->settings()->get("PackIconUrl").toString();
+		}
 		default:
 			break;
 	}
@@ -387,6 +398,7 @@ QHash<int, QByteArray> InstanceList::roleNames() const
 	roles.insert(LaunchProgressRole, "launchProgress");
 	roles.insert(CoverImageRole, "coverImage");
 	roles.insert(HasCrashedRole, "hasCrashed");
+	roles.insert(PackArtRole, "packArt");
 	return roles;
 }
 

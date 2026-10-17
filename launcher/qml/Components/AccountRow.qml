@@ -49,7 +49,9 @@ Item {
     function stateTone(key) {
         switch (key) {
         case "online": return "success"
-        case "working": return "info"
+        // A sign-in in progress is not news: no blue chip (as on the
+        // Accounts page's hero).
+        case "working": return "neutral"
         case "errored": case "gone": return "danger"
         case "expired": return "warning"
         default: return "neutral"
@@ -120,32 +122,45 @@ Item {
                 }
             }
 
-            // Icon actions are bordered squares, the same style and height
-            // as the hero card's (AccountsPage.qml) and as the text button
-            // beside them.
+            // The same actions, words and order as the hero card's
+            // (AccountsPage.qml): labelled buttons, and the rest behind ⋯
+            // rather than bare refresh and bin glyphs.
             Button {
                 visible: !root.isDefault
                 text: qsTr("Use this account")
                 onClicked: root.makeDefaultRequested()
             }
-            IconButton {
-                flat: false
-                iconName: "image"
-                tip: root.isMSA ? qsTr("Manage skin & cape") : qsTr("Skins need a Microsoft account")
+            Button {
+                // "and", not "&": a Button reads "&" as a keyboard
+                // mnemonic and underlines the next letter.
+                text: qsTr("Skin and cape")
+                icon.source: Icons.url("image")
                 onClicked: root.manageSkinRequested()
             }
             IconButton {
+                id: moreButton
                 flat: false
-                visible: root.isMSA
-                iconName: "refresh"
-                tip: qsTr("Sign in again")
-                onClicked: root.refreshRequested()
-            }
-            IconButton {
-                flat: false
-                iconName: "trash"
-                tip: qsTr("Remove account")
-                onClicked: root.removeRequested()
+                iconName: "more"
+                tip: qsTr("More")
+                onClicked: rowMenu.popup(moreButton, 0, moreButton.height + Theme.space.xs)
+
+                Menu {
+                    id: rowMenu
+                    MenuItem {
+                        // A hidden item still takes its row in a Menu;
+                        // zero it as well.
+                        visible: root.isMSA
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("Sign in again")
+                        icon.source: Icons.url("refresh")
+                        onTriggered: root.refreshRequested()
+                    }
+                    MenuItem {
+                        text: qsTr("Remove account\u2026")
+                        icon.source: Icons.url("trash")
+                        onTriggered: root.removeRequested()
+                    }
+                }
             }
         }
     }

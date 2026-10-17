@@ -13,19 +13,21 @@ import MeshMC.Theme
  * properties are filled from InstanceList's named roles the same way
  * InstanceCard's are.
  *
- * Play here is a plain neutral button, not the accent-filled PlayButton
- * used elsewhere: the Home page's one accent-filled control is the
- * persistent play bar's own Play (design-plan.md Principle 1). Clicking the
- * card body itself opens the instance page instead of playing it.
+ * Clicking the card opens the instance page. Play is the Library card's
+ * own icon-only PlayButton in the bottom-right corner, shown only on hover
+ * or keyboard focus (always, as Stop, while the game runs) -- at rest the
+ * page's one Play is the play bar's, not one per card (the Modrinth App's
+ * "Jump back in" works the same way).
  *
  * Two bands: a header at the top-left -- the instance's icon on a small
  * tile, its name, and its version as a caption line -- and a footer row of
- * facts (when last played, how long) level with Play, which owns the
- * bottom-right corner. The facts stay on one row short of Play, dropping
- * the least useful one on a narrow card. There is always a picture under
- * all of it -- a screenshot, or else one of CoverArt's rendered scenes --
- * behind CoverArt's horizontal scrim, so the text, tags and icon tile
- * always use the media colours, in either theme.
+ * facts: when it was last played (clock) or, after a crash, "Crashed last
+ * time" in that place, and how long it has been played (hourglass). The
+ * facts stay on one row short of Play's corner, dropping play time on a
+ * narrow card. There is always a picture under all of it -- the pack's own
+ * art, a screenshot, or else one of CoverArt's rendered scenes -- behind
+ * CoverArt's horizontal scrim, so the text, tags and icon tile always use
+ * the media colours, in either theme.
  */
 Item {
     id: root
@@ -43,8 +45,11 @@ Item {
     // Newest screenshot url (InstanceList's coverImage role), or "" -- same
     // source as InstanceCard's cover; CoverArt falls back to a rendered scene.
     required property string coverImage
+    // A platform pack's own picture (InstanceList's packArt role), or "";
+    // when set, the cover shows it ahead of any screenshot.
+    property string packArt: ""
     // Set by LaunchTask around the game process exit -- a calm reminder,
-    // not an alarm.
+    // not an alarm, but always shown (it takes the last-played tag's place).
     required property bool hasCrashed
 
     signal clicked()
@@ -52,6 +57,8 @@ Item {
     signal stopRequested()
 
     readonly property bool hovered: hoverHandler.hovered
+    // Play shows on hover or keyboard focus, and always while running.
+    readonly property bool showPlay: root.hovered || root.activeFocus || root.isRunning
     // Empty (so not shown) when "Show play time per instance" is off.
     readonly property string playTimeText: SettingsStore.bool("ShowGameTime")
                                            ? Format.playTime(root.totalTimePlayed) : ""
@@ -63,6 +70,7 @@ Item {
 
     activeFocusOnTab: true
     Keys.onReturnPressed: root.clicked()
+    Keys.onSpacePressed: root.isRunning ? root.stopRequested() : root.playRequested()
 
     Accessible.role: Accessible.ListItem
     Accessible.name: root.name
@@ -83,8 +91,8 @@ Item {
         Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
         // Declared before the cover/content below, same order InstanceCard
-        // uses, so the neutral Play button (a real child control further
-        // down) still gets first refusal on a press inside its own bounds.
+        // uses, so the Play button (a real child control further down)
+        // still gets first refusal on a press inside its own bounds.
         TapHandler {
             acceptedButtons: Qt.LeftButton
             gesturePolicy: TapHandler.ReleaseWithinBounds
@@ -98,6 +106,9 @@ Item {
             anchors.margins: card.border.width
             radius: card.radius
             source: root.coverImage
+            packArt: root.packArt
+            // The header's icon tile already shows the logo.
+            showLogo: false
             tint: root.iconTint
             // No icon from CoverArt: its badge sits under the scrim. The
             // header below draws the icon over it instead.
@@ -161,13 +172,15 @@ Item {
             }
         }
 
-        // -- Footer: facts, level with Play --------------------------------
-        // Always one row, stopping short of Play. The card's width is set by
-        // HomePage, so on a narrow card a fact that would not fit is dropped
-        // rather than wrapped: last played always shows, then the crash
-        // reminder if it fits, then play time (also on the instance page)
-        // if there is still room. Fitting is judged on implicitWidth, which does not
-        // depend on visibility, so the checks cannot feed back on themselves.
+        // -- Footer: facts, level with Play's corner -------------------------
+        // Always one row, stopping short of where Play appears on hover. The
+        // card's width is set by HomePage, so on a narrow card a fact that
+        // would not fit is dropped rather than wrapped: when it was last
+        // played always shows -- or, after a crash, "Crashed last time" in
+        // its place, which matters more -- then play time (also on the
+        // instance page) if there is still room. Fitting is judged on
+        // implicitWidth, which does not depend on visibility, so the checks
+        // cannot feed back on themselves.
         Row {
             id: facts
             anchors.left: parent.left
@@ -176,48 +189,50 @@ Item {
             spacing: Theme.space.xs
 
             readonly property real room: playButton.x - Theme.space.sm - facts.x
-            readonly property real crashWidth: facts.spacing + crashBadge.implicitWidth
-            readonly property bool showCrash: root.hasCrashed
-                && lastPlayedTag.implicitWidth + facts.crashWidth <= facts.room
+            readonly property real firstWidth: root.hasCrashed ? crashBadge.implicitWidth : lastPlayedTag.implicitWidth
             readonly property bool showPlayTime: root.playTimeText.length > 0
-                && lastPlayedTag.implicitWidth + (facts.showCrash ? facts.crashWidth : 0)
-                   + facts.spacing + playTimeTag.implicitWidth <= facts.room
+                && facts.firstWidth + facts.spacing + playTimeTag.implicitWidth <= facts.room
 
             Tag {
                 id: lastPlayedTag
+                visible: !root.hasCrashed
                 text: Format.lastPlayed(root.lastLaunch)
+                iconName: "clock"
                 onMedia: true
             }
-            // "2 h ago" / "Yesterday" says "when" on its own; the clock goes
-            // on the play time, which would otherwise read as a bare number.
+            // A tag like its neighbours, with the warning glyph: on a photo
+            // the danger colour's own text read as a thin red smudge, and in
+            // the light theme it is too dark for the glass chip.
+            Tag {
+                id: crashBadge
+                visible: root.hasCrashed
+                text: qsTr("Crashed last time")
+                iconName: "alert-triangle"
+                onMedia: true
+            }
+            // The hourglass is play time everywhere (the clock is "when").
             Tag {
                 id: playTimeTag
                 visible: facts.showPlayTime
                 text: root.playTimeText
-                iconName: "clock"
+                iconName: "hourglass"
                 onMedia: true
-            }
-            // The tags' height (its label centres itself), so it sits level
-            // with them.
-            StatusBadge {
-                id: crashBadge
-                visible: facts.showCrash
-                height: lastPlayedTag.height
-                tone: "danger"
-                text: qsTr("Crashed last time")
             }
         }
 
-        Button {
+        PlayButton {
             id: playButton
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             // The same lg inset as the header, so all four corners match.
             anchors.margins: Theme.space.lg
-            text: root.isRunning ? qsTr("Stop") : qsTr("Play")
-            icon.source: Icons.url(root.isRunning ? "stop" : "play")
+            running: root.isRunning
             enabled: root.isRunning || root.canLaunch
+            // A plain fade, like the Library card's (design-plan.md §4).
+            opacity: root.showPlay ? 1 : 0
+            visible: opacity > 0
             focusPolicy: Qt.NoFocus
+            Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
             onClicked: root.isRunning ? root.stopRequested() : root.playRequested()
         }
     }

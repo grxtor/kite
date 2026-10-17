@@ -200,6 +200,7 @@ qt_add_qml_module(MeshMC_qml_components
         icons/alert-triangle.svg
         icons/archive.svg
         icons/arrow-down.svg
+        icons/arrow-right.svg
         icons/arrow-up.svg
         icons/bell.svg
         icons/check.svg

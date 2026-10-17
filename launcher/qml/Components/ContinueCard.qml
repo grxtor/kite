@@ -28,10 +28,16 @@ Rectangle {
     // Newest screenshot url (InstanceList's coverImage role), or "" -- the
     // hero's own full-bleed backdrop, same source as InstanceCard's cover.
     required property string coverImage
+    // A platform pack's own logo (InstanceList's packArt role), or "": the
+    // backdrop then shows the pack's art (its colours as a wash) ahead of
+    // any screenshot, as Library and Home do (CoverArt). Not required, so a
+    // static review page need not pass it.
+    property string packArt: ""
     required property string launchStatus
     required property real launchProgress
     readonly property bool launching: launchStatus.length > 0
-    readonly property bool hasPhoto: coverImage.length > 0
+    // A picture under the text (screenshot or pack art): media colours.
+    readonly property bool hasPhoto: coverImage.length > 0 || art.hasPackArt
 
     property string editText: qsTr("Edit")
     // A shorter banner for pages where the content below matters more.
@@ -93,10 +99,12 @@ Rectangle {
         // The hero sits straight on the page.
         matte: Theme.palette.canvas
         source: root.coverImage
+        packArt: root.packArt
         tint: root.iconTint
         // The tile to the right already carries the icon; showing it again,
         // huge, in the backdrop would just be clutter.
         iconKey: ""
+        showLogo: false
         // Same id the instance's card and play-bar strip hash, so a
         // screenshot-less instance shows the same fallback scene everywhere.
         seed: root.instanceId

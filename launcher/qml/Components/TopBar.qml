@@ -8,7 +8,8 @@ import QtQuick.Layouts
 import MeshMC.Theme
 
 /*
- * Page header: title with an optional count and the account on one row,
+ * Page header: title with an optional count (and, on the Library, the total
+ * play time) and the account on one row,
  * a search field and whatever actions the page passes in as children on the
  * one below. It sits on the page itself rather than on its own band, so the
  * page reads as one surface.
@@ -18,6 +19,9 @@ Item {
 
     property string title: ""
     property int count: -1
+    // The library's total play time after the title and count (see
+    // TotalPlayTime; it hides itself while that setting is off).
+    property bool showPlayTime: false
     property string searchText: ""
     property string searchPlaceholder: qsTr("Search")
     property bool searchVisible: true
@@ -88,6 +92,12 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 visible: root.count >= 0
                 text: root.count
+            }
+
+            TotalPlayTime {
+                Layout.alignment: Qt.AlignVCenter
+                Layout.leftMargin: Theme.space.xs
+                wanted: root.showPlayTime
             }
 
             Item { Layout.fillWidth: true }

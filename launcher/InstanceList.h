@@ -160,7 +160,15 @@ class InstanceList : public QAbstractListModel
 		 * which InstanceList::propertiesChanged() (connected for every
 		 * instance in add()) turns into a row-wide dataChanged(); no
 		 * separate notification wiring is needed here. */
-		HasCrashedRole
+		HasCrashedRole,
+		/* The pack's own picture, for the cover (ahead of a screenshot)
+		 * of an instance installed from a platform (BaseInstance::
+		 * isManagedPack()): "image://instanceicon/<key>" when its icon is
+		 * an icon file (the pack's logo, which the install put in the
+		 * icons folder), else the logo's upstream URL (PackIconUrl), else
+		 * an empty string - as it is for every other instance, which
+		 * gets one of the rendered fallback scenes instead. */
+		PackArtRole
 	};
 	/*!
 	 * \brief Error codes returned by functions in the InstanceList class.

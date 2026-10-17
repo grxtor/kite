@@ -10,8 +10,9 @@ import MeshMC.Theme
 /*
  * Browse modpacks and install them as new instances, without leaving the
  * main window, from Modrinth, CurseForge, FTB, ATLauncher or Technic -- a
- * provider switch lists whichever of them the shell hands this page a
- * model for. A pack exported from anywhere else can still be imported
+ * provider drop-down lists whichever of them the shell hands this page a
+ * model for. One toolbar row and a table of results (ModpackCard rows), as
+ * on Modrinth and in the CurseForge app. A pack exported from anywhere else can still be imported
  * from its .zip via the New instance dialog's Import mode.
  *
  * `model` is the shell's ModrinthModpackModel; the others are
@@ -68,8 +69,19 @@ Item {
     readonly property int contentWidth: Math.max(0, Math.min(width - pagePadding * 2, Theme.layout.maxContentWidth))
     readonly property int contentX: Math.max(pagePadding, Math.round((width - contentWidth) / 2))
 
+    // The toolbar's sizes: the boxes keep a readable width and the search
+    // field takes the rest; on a narrow page the boxes step down first, so
+    // the field keeps room for its placeholder.
+    readonly property bool narrowToolbar: root.contentWidth < 820
+    readonly property int providerWidth: root.narrowToolbar ? 124 : 150
+    readonly property int sortWidth: root.narrowToolbar ? 164 : 190
+    readonly property int searchMinWidth: 160
+    readonly property int filterPanelWidth: 240
+    // Placeholder rows while the first page loads.
+    readonly property int skeletonRows: 6
+
     readonly property var loaders: [
-        { value: "", label: qsTr("Any") },
+        { value: "", label: qsTr("Any loader") },
         { value: "fabric", label: "Fabric" },
         { value: "forge", label: "Forge" },
         { value: "neoforge", label: "NeoForge" },
@@ -161,105 +173,131 @@ Item {
         ColumnLayout {
             spacing: Theme.space.lg
 
-            // Search, loader, sort and import. One row while the search
-            // field keeps a usable width; below that the loader/sort filters
-            // move to a row of their own instead of squeezing the field to
-            // "Search mo…", and wrap once more when even their own row is too
-            // narrow for every provider. Import stays at the row's end either
-            // way -- the same spot Library's "New instance" has.
-            Item {
+            // Where, what, in which order, narrowed how -- one row at every
+            // width, the same order as Add content's (ContentBrowserView):
+            // provider, search, sort, Filters; Import at the row's end, the
+            // spot Library's "New instance" has. The search field gives way
+            // first.
+            RowLayout {
                 id: toolbar
                 Layout.leftMargin: root.contentX
                 Layout.preferredWidth: root.contentWidth
-                Layout.preferredHeight: stacked ? Theme.control.height + rowSpacing + filters.height : Theme.control.height
+                Layout.maximumWidth: root.contentWidth
+                spacing: Theme.space.md
 
-                readonly property int spacing: Theme.space.md
-                readonly property int rowSpacing: Theme.space.sm
-                readonly property int searchMinWidth: 240
-                // The filters on one line, from the controls themselves:
-                // stacked, `filters` wraps, so its own size cannot say.
-                readonly property int filtersWidth: {
-                    var shown = [providerControl, loaderControl, sortBox].filter((c) => c.visible)
-                    return shown.reduce((sum, c) => sum + c.width, 0) + Math.max(0, shown.length - 1) * spacing
+                // Where to browse; only once there is somewhere else.
+                ComboBox {
+                    id: providerBox
+                    Layout.preferredWidth: root.providerWidth
+                    visible: root.providers.length > 1
+                    model: root.providers.map((p) => ({ value: p.value, label: p.label }))
+                    textRole: "label"
+                    valueRole: "value"
+                    currentIndex: root.providers.findIndex((p) => p.value === root.provider)
+                    Accessible.name: qsTr("Browse modpacks on")
+                    onActivated: {
+                        root.setProvider(currentValue)
+                        currentIndex = Qt.binding(() => root.providers.findIndex((p) => p.value === root.provider))
+                    }
                 }
-                readonly property bool stacked: width < searchMinWidth + filtersWidth
-                                                        + importButton.implicitWidth + spacing * 2
 
                 SearchBox {
                     id: searchField
-                    x: 0
-                    y: 0
-                    width: toolbar.stacked ? importButton.x - toolbar.spacing
-                                           : filters.x - toolbar.spacing
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: root.searchMinWidth
                     placeholderText: qsTr("Search modpacks on %1").arg(root.providerName)
                     onTextEdited: debounce.restart()
                     onTextChanged: if (text.length === 0) debounce.restart()
                 }
 
-                Flow {
-                    id: filters
-                    x: toolbar.stacked ? 0 : importButton.x - toolbar.spacing - width
-                    y: toolbar.stacked ? Theme.control.height + toolbar.rowSpacing : 0
-                    width: toolbar.stacked ? toolbar.width : toolbar.filtersWidth
-                    spacing: toolbar.spacing
-
-                    // Where to browse; only once there is somewhere else.
-                    SegmentedControl {
-                        id: providerControl
-                        visible: root.providers.length > 1
-                        options: root.providers.map((p) => ({ value: p.value, label: p.label }))
-                        current: root.current ? root.current.value : "modrinth"
-                        onActivated: (value) => root.setProvider(value)
+                ComboBox {
+                    id: sortBox
+                    Layout.preferredWidth: root.sortWidth
+                    // One sort is no choice (Technic).
+                    visible: count > 1
+                    model: root.active && root.active.sortOptions ? root.active.sortOptions : []
+                    textRole: "label"
+                    valueRole: "id"
+                    Accessible.name: qsTr("Sort modpacks by")
+                    // Each provider has its own sorts and its own pick;
+                    // re-read once the box has the new provider's entries
+                    // (indexOfValue() needs them in place).
+                    function syncSort() {
+                        currentIndex = root.active ? Math.max(0, indexOfValue(root.active.sort)) : 0
                     }
-
-                    SegmentedControl {
-                        id: loaderControl
-                        visible: root.loaderFilterAvailable
-                        options: root.loaders
-                        current: root.active ? root.active.loader : ""
-                        onActivated: (value) => {
-                            if (!root.active)
-                                return
-                            root.active.loader = value
-                            root.runSearch()
-                        }
+                    onCountChanged: syncSort()
+                    Component.onCompleted: syncSort()
+                    Connections {
+                        target: root
+                        function onActiveChanged() { Qt.callLater(sortBox.syncSort) }
                     }
+                    onActivated: {
+                        if (!root.active)
+                            return
+                        root.active.sort = currentValue
+                        root.runSearch()
+                    }
+                }
 
-                    ComboBox {
-                        id: sortBox
-                        readonly property int preferredWidth: 180
-                        width: preferredWidth
-                        // One sort is no choice (Technic).
-                        visible: count > 1
-                        model: root.active && root.active.sortOptions ? root.active.sortOptions : []
-                        textRole: "label"
-                        valueRole: "id"
-                        Accessible.name: qsTr("Sort modpacks by")
-                        // Each provider has its own sorts and its own pick;
-                        // re-read once the box has the new provider's entries
-                        // (indexOfValue() needs them in place).
-                        function syncSort() {
-                            currentIndex = root.active ? Math.max(0, indexOfValue(root.active.sort)) : 0
-                        }
-                        onCountChanged: syncSort()
-                        Component.onCompleted: syncSort()
-                        Connections {
-                            target: root
-                            function onActiveChanged() { Qt.callLater(sortBox.syncSort) }
-                        }
-                        onActivated: {
-                            if (!root.active)
-                                return
-                            root.active.sort = currentValue
-                            root.runSearch()
+                // The loader, behind Filters as on Add content -- one
+                // pattern for one kind of choice, not a second pill bar.
+                Button {
+                    id: filtersButton
+                    visible: root.loaderFilterAvailable
+                    readonly property bool narrowed: !!root.active && root.active.loader.length > 0
+                    text: narrowed ? qsTr("Filters (1)") : qsTr("Filters")
+                    icon.source: Icons.url("filter")
+                    onClicked: filterPopup.opened ? filterPopup.close() : filterPopup.open()
+
+                    Popup {
+                        id: filterPopup
+                        y: filtersButton.height + Theme.space.xs
+                        x: filtersButton.width - width
+                        width: root.filterPanelWidth
+                        padding: Theme.space.lg
+                        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+
+                        contentItem: ColumnLayout {
+                            spacing: Theme.space.xs
+
+                            Text {
+                                Layout.fillWidth: true
+                                Layout.bottomMargin: Theme.space.xs
+                                text: qsTr("Loader")
+                                color: Theme.palette.textPrimary
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.type.bodyStrong.pixelSize
+                                font.weight: Theme.type.bodyStrong.weight
+                            }
+                            Repeater {
+                                model: root.loaders
+                                delegate: RadioButton {
+                                    id: loaderRadio
+                                    required property var modelData
+                                    readonly property bool current: !!root.active && root.active.loader === modelData.value
+                                    Layout.fillWidth: true
+                                    text: modelData.label
+                                    // Checked follows the provider's own
+                                    // loader (each provider keeps its own); a
+                                    // click only asks, and puts the binding
+                                    // it breaks back.
+                                    autoExclusive: false
+                                    checked: loaderRadio.current
+                                    onClicked: {
+                                        if (!loaderRadio.current && root.active) {
+                                            root.active.loader = modelData.value
+                                            root.runSearch()
+                                        }
+                                        loaderRadio.checked = Qt.binding(() => loaderRadio.current)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
 
                 Button {
                     id: importButton
-                    x: toolbar.width - width
-                    y: 0
                     text: qsTr("Import")
                     icon.source: Icons.url("archive")
                     ToolTip.visible: hovered
@@ -269,9 +307,8 @@ Item {
                 }
             }
 
-            // Results, as a responsive card grid -- 2 to 4 columns
-            // depending on width, the same fill-the-row math LibraryPage
-            // uses for the instance grid.
+            // Results, as one table of rows (ModpackCard), like Modrinth's
+            // and the CurseForge app's lists.
             Flickable {
                 id: flick
                 Layout.fillWidth: true
@@ -287,53 +324,32 @@ Item {
                 onAtYEndChanged: if (atYEnd && root.active && root.active.canFetchMore && !root.active.searching)
                                      root.active.fetchMore()
 
-                readonly property int gutter: Theme.space.lg
-                readonly property int minCardWidth: 260
-                readonly property int maxCardWidth: 340
-                readonly property int gridWidth: root.contentWidth
-                readonly property int columns: Math.max(2, Math.min(4, columnsFor(gridWidth)))
-                readonly property int cardWidth: Math.floor((gridWidth - gutter * (columns - 1)) / columns)
-                // The last column takes the pixels flooring left over, so
-                // every row ends exactly on the toolbar's right edge.
-                readonly property int lastCardWidth: gridWidth - (columns - 1) * (cardWidth + gutter)
+                readonly property int placeholderRows: root.active && root.active.searching
+                                                       ? (root.active.count === 0 ? root.skeletonRows : 1) : 0
 
-                // Width of the card at grid slot `slot` (results first, then
-                // any loading placeholders after them).
-                function cardWidthAt(slot) {
-                    return slot % columns === columns - 1 ? lastCardWidth : cardWidth
-                }
-
-                function columnsFor(w) {
-                    var columns = Math.max(1, Math.floor((w + gutter) / (minCardWidth + gutter)))
-                    while ((w - gutter * (columns - 1)) / columns > maxCardWidth)
-                        columns++
-                    return columns
-                }
-
-                Item {
+                Rectangle {
                     id: content
                     x: root.contentX
-                    // Room above the first row for a card's focus ring,
-                    // which the flickable's clip would cut.
-                    y: Theme.space.sm
-                    width: flick.gridWidth
-                    height: grid.height
+                    width: root.contentWidth
+                    height: rows.height + border.width * 2 + Theme.space.xs * 2
+                    visible: resultsRepeater.count + flick.placeholderRows > 0
+                    radius: Theme.radius.lg
+                    color: Theme.palette.surface
+                    border.width: 1
+                    border.color: Theme.palette.border
 
-                    Grid {
-                        id: grid
-                        width: parent.width
-                        columns: flick.columns
-                        columnSpacing: flick.gutter
-                        rowSpacing: flick.gutter
+                    Column {
+                        id: rows
+                        x: content.border.width
+                        y: content.border.width + Theme.space.xs
+                        width: parent.width - content.border.width * 2
 
                         Repeater {
                             id: resultsRepeater
                             model: root.active
                             delegate: ModpackCard {
-                                width: flick.cardWidthAt(index)
-                                // From the common width (see ModpackCard's
-                                // coverHeight), not this card's own.
-                                coverHeight: Math.round(flick.cardWidth * coverRatio)
+                                width: rows.width
+                                lastRow: index === resultsRepeater.count - 1 && flick.placeholderRows === 0
                                 projectId: model.projectId
                                 title: model.title
                                 author: model.author
@@ -341,38 +357,27 @@ Item {
                                 logoUrl: model.logoUrl
                                 downloads: model.downloads
                                 updated: model.updated
-                                // One chip per grid card (design-plan.md
-                                // §5/§6); the full list is on the detail
-                                // view instead (see ModpackDetail.qml).
-                                categories: (model.categories || []).slice(0, 1)
+                                categories: model.categories || []
                                 // Not every provider has a cover (ATLauncher).
                                 galleryUrl: model.galleryUrl || ""
                                 accentColor: model.accentColor
                                 onClicked: root.open({ projectId: projectId, title: title, author: author,
                                                        description: description, logoUrl: logoUrl,
                                                        downloads: downloads, updated: updated,
-                                                       // The card's own `categories` is already
-                                                       // capped to one chip above -- the detail
-                                                       // view wants the model's full list.
                                                        categories: model.categories, galleryUrl: galleryUrl,
                                                        accentColor: accentColor })
                             }
                         }
 
-                        // A couple of rows of shimmering placeholders while
-                        // the first page is still loading, or one trailing
-                        // row while a further page is being fetched --
-                        // never a bare spinner.
+                        // Shimmering rows while the first page is still
+                        // loading, or one trailing row while a further page
+                        // is being fetched -- never a bare spinner.
                         Repeater {
-                            model: root.active && root.active.searching
-                                   ? (root.active.count === 0 ? flick.columns * 2 : flick.columns)
-                                   : 0
+                            model: flick.placeholderRows
                             delegate: ModpackCard {
                                 required property int index
-                                width: flick.cardWidthAt(resultsRepeater.count + index)
-                                // From the common width (see ModpackCard's
-                                // coverHeight), not this card's own.
-                                coverHeight: Math.round(flick.cardWidth * coverRatio)
+                                width: rows.width
+                                lastRow: index === flick.placeholderRows - 1
                                 skeleton: true
                             }
                         }

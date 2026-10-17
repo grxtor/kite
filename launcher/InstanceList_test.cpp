@@ -191,6 +191,45 @@ class InstanceListTest : public QObject
 				 false);
 	}
 
+	/* PackArtRole: empty for an instance not installed from a platform; for
+	 * a platform pack whose icon is not an icon file (no LauncherContext
+	 * here, so no icon list at all), the pack's upstream logo URL. */
+	void packArtRoleOnlyForPlatformPacks()
+	{
+		QTemporaryDir globalDir;
+		QVERIFY(globalDir.isValid());
+		QTemporaryDir instsDir;
+		QVERIFY(instsDir.isValid());
+		SettingsObjectPtr globalSettings = makeGlobalSettings(globalDir);
+
+		const QString plainRoot = QDir(instsDir.path()).filePath("plain");
+		const QString packRoot = QDir(instsDir.path()).filePath("pack");
+		QVERIFY(QDir().mkpath(plainRoot));
+		QVERIFY(QDir().mkpath(packRoot));
+		QVERIFY(writeFile(QDir(plainRoot).filePath("instance.cfg"),
+						   "InstanceType=NullTest\n",
+						   QDateTime::currentDateTime()));
+		QVERIFY(writeFile(QDir(packRoot).filePath("instance.cfg"),
+						   "InstanceType=NullTest\n"
+						   "PackProvider=modrinth\n"
+						   "PackIconUrl=https://cdn.example.org/icon.png\n",
+						   QDateTime::currentDateTime()));
+
+		InstanceList list(globalSettings, {instsDir.path()});
+		QCOMPARE(list.loadList(), InstanceList::NoError);
+
+		QCOMPARE(list.roleNames().value(InstanceList::PackArtRole),
+				 QByteArray("packArt"));
+		const QModelIndex plain = list.getInstanceIndexById("plain");
+		const QModelIndex pack = list.getInstanceIndexById("pack");
+		QVERIFY(plain.isValid());
+		QVERIFY(pack.isValid());
+		QCOMPARE(list.data(plain, InstanceList::PackArtRole).toString(),
+				 QString());
+		QCOMPARE(list.data(pack, InstanceList::PackArtRole).toString(),
+				 QStringLiteral("https://cdn.example.org/icon.png"));
+	}
+
 	void coverImageRoleScansAsynchronouslyAndCachesResult()
 	{
 		QTemporaryDir globalDir;

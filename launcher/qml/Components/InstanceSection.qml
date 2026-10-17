@@ -144,15 +144,19 @@ Column {
         }
     }
 
-    spacing: Theme.space.md
+    // No gap above the cards when there is no header to be apart from.
+    spacing: root.showHeader ? Theme.space.md : 0
 
+    // Always there, zero-height without a header (the ungrouped instances,
+    // as in MultiMC and Prism): the section's DropArea lives in it, and an
+    // ungrouped section must still take an instance dragged out of a group.
     Item {
-        visible: root.showHeader
         width: parent.width
-        height: Theme.control.height
+        height: root.showHeader ? Theme.control.height : 0
 
         AbstractButton {
             id: header
+            visible: root.showHeader
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             height: parent.height
@@ -204,6 +208,7 @@ Column {
         // On whole pixels: the header's text width is fractional, and a
         // hairline starting mid-pixel was drawn a pixel past its end.
         Rectangle {
+            visible: root.showHeader
             x: Math.ceil(header.width) + Theme.space.md
             y: Math.floor((parent.height - height) / 2)
             width: Math.max(0, (root.manageable ? groupMenuButton.x - Theme.space.sm : root.contentRight) - x)
@@ -213,7 +218,7 @@ Column {
 
         IconButton {
             id: groupMenuButton
-            visible: root.manageable
+            visible: root.manageable && root.showHeader
             x: root.contentRight - width
             anchors.verticalCenter: parent.verticalCenter
             size: Theme.control.heightSm
@@ -315,7 +320,11 @@ Column {
                 model: root.model
                 delegate: InstanceCard {
                     id: card
+                    // The row itself, for the one role InstanceCard does
+                    // not require (packArt).
+                    required property var model
                     width: root.cardWidth
+                    packArt: card.model.packArt || ""
                     selected: root.selectedId === instanceId
                     InstanceDrag {
                         section: root

@@ -156,7 +156,9 @@ Item {
     function stateTone(key) {
         switch (key) {
         case "online": return "success"
-        case "working": return "info"
+        // A sign-in in progress is not news: no blue chip (blue is in no
+        // other place in the Grass scheme).
+        case "working": return "neutral"
         case "errored": case "gone": return "danger"
         case "expired": return "warning"
         default: return "neutral"
@@ -350,8 +352,8 @@ Item {
                     }
 
                     // Theme.control.height like every other button on the
-                    // page; icon actions are the same bordered square as in
-                    // the rows below (AccountRow.qml).
+                    // page; the ⋯ is the same bordered square as the rows'
+                    // icon buttons below (AccountRow.qml).
                     Row {
                         topPadding: Theme.space.sm
                         spacing: Theme.space.sm
@@ -370,21 +372,35 @@ Item {
                             onClicked: root.heroIsMSA ? root.openSkinEditor(root.heroRow, root.heroAccountId, root.heroName)
                                                        : offlineSkinDialog.open()
                         }
+                        // The rest behind ⋯, each with its own words, rather
+                        // than bare refresh and bin glyphs beside "Skin and cape".
                         IconButton {
+                            id: heroMoreButton
                             flat: false
-                            visible: root.heroIsMSA
-                            iconName: "refresh"
-                            tip: qsTr("Sign in again")
-                            onClicked: root.controller.refresh(root.heroRow)
-                        }
-                        IconButton {
-                            flat: false
-                            iconName: "trash"
-                            tip: qsTr("Remove account")
-                            onClicked: {
-                                removeDialog.row = root.heroRow
-                                removeDialog.text = qsTr("Remove “%1” from MeshMC? You can sign in again at any time.").arg(root.heroName)
-                                removeDialog.open()
+                            iconName: "more"
+                            tip: qsTr("More")
+                            onClicked: heroMenu.popup(heroMoreButton, 0, heroMoreButton.height + Theme.space.xs)
+
+                            Menu {
+                                id: heroMenu
+                                MenuItem {
+                                    // A hidden item still takes its row in a
+                                    // Menu; zero it as well.
+                                    visible: root.heroIsMSA
+                                    height: visible ? implicitHeight : 0
+                                    text: qsTr("Sign in again")
+                                    icon.source: Icons.url("refresh")
+                                    onTriggered: root.controller.refresh(root.heroRow)
+                                }
+                                MenuItem {
+                                    text: qsTr("Remove account\u2026")
+                                    icon.source: Icons.url("trash")
+                                    onTriggered: {
+                                        removeDialog.row = root.heroRow
+                                        removeDialog.text = qsTr("Remove “%1” from MeshMC? You can sign in again at any time.").arg(root.heroName)
+                                        removeDialog.open()
+                                    }
+                                }
                             }
                         }
                     }

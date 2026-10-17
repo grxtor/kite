@@ -77,6 +77,10 @@ ApplicationWindow {
             LauncherStore.updates = root.shell.updateSettings
             LauncherStore.playTime = root.shell.playTime
             LauncherStore.catPacks = root.shell.catPacks
+            // The fallback covers are dealt out over the whole library, so no
+            // two instances share one (PixelArt needs the unfiltered list).
+            if (root.instanceModel && root.instanceModel.sourceModel)
+                PixelArt.instances = root.instanceModel.sourceModel
             var mode = SettingsStore.string("UiThemeMode")
             if (mode === "dark" || mode === "light" || mode === "system")
                 Theme.mode = mode
@@ -514,6 +518,8 @@ ApplicationWindow {
                 count: root.page === "library" && root.instanceModel && root.instanceModel.count !== undefined
                        ? root.instanceModel.count : -1
                 searchVisible: root.page === "library"
+                // The library title row also carries the total play time.
+                showPlayTime: root.page === "library"
                 searchPlaceholder: qsTr("Search instances")
                 onSearchTextChanged: root.instanceModel.filterText = searchText
 
@@ -622,7 +628,6 @@ ApplicationWindow {
                         instanceModel: root.instanceModel
                         recentWorldsModel: root.shell && root.shell.recentWorlds ? root.shell.recentWorlds : null
                         news: root.shell && root.shell.news ? root.shell.news : null
-                        accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
 
                         onLaunchRequested: (id) => root.launch(id)
                         onStopRequested: (id) => root.call("killInstance", id)
@@ -633,7 +638,6 @@ ApplicationWindow {
                         }
                         onCreateRequested: root.openNewInstance()
                         onDiscoverRequested: root.page = "discover"
-                        onLibraryRequested: root.page = "library"
                     }
 
                     LibraryPage {

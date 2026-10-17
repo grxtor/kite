@@ -324,7 +324,9 @@ static QString accountStateDisplayString(AccountState state)
 			return AccountList::tr("Online", "Account status");
 		}
 		case AccountState::Working: {
-			return AccountList::tr("Working", "Account status");
+			/* A token refresh or sign-in is running; say so in the user's
+			 * words rather than the enum's. */
+			return AccountList::tr("Signing in\u2026", "Account status");
 		}
 		case AccountState::Errored: {
 			return AccountList::tr("Errored", "Account status");

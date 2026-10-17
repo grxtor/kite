@@ -403,14 +403,32 @@ Dialog {
                                 font.family: Theme.font.family
                                 font.pixelSize: Theme.type.label.pixelSize
                             }
-                            SegmentedControl {
-                                enabled: !!root.selected && !root.busy
-                                options: [
-                                    { value: "classic", label: qsTr("Classic") },
-                                    { value: "slim", label: qsTr("Slim") }
+                            // Two radio buttons, as in the official
+                            // launcher's skin editor -- exactly one of two,
+                            // not a pill switch.
+                            Repeater {
+                                model: [
+                                    { slim: false, label: qsTr("Classic") },
+                                    { slim: true, label: qsTr("Slim") }
                                 ]
-                                current: (root.selected ? root.selected.slim : root.info.slim) ? "slim" : "classic"
-                                onActivated: (value) => root.skins.setSlim(root.selectedName, value === "slim")
+                                delegate: RadioButton {
+                                    id: armsRadio
+                                    required property var modelData
+                                    readonly property bool current: (root.selected ? root.selected.slim : root.info.slim) === modelData.slim
+                                    enabled: !!root.selected && !root.busy
+                                    text: modelData.label
+                                    // Checked follows the skin, not the
+                                    // click: a click only asks for the change,
+                                    // and the binding (which a click breaks)
+                                    // is put back each time.
+                                    autoExclusive: false
+                                    checked: armsRadio.current
+                                    onClicked: {
+                                        if (!armsRadio.current)
+                                            root.skins.setSlim(root.selectedName, modelData.slim)
+                                        armsRadio.checked = Qt.binding(() => armsRadio.current)
+                                    }
+                                }
                             }
                             Item { Layout.fillWidth: true }
                             Button {

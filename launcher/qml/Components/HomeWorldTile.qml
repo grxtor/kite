@@ -8,7 +8,7 @@ import MeshMC.Theme
 
 /*
  * One tile in the Home page's "Recent worlds" row: a world's own icon (or,
- * lacking one, one of PixelArt's rendered scenes), the world's name, which
+ * lacking one, a neutral globe -- the Worlds tab's own fallback), the world's name, which
  * instance it belongs to, and when it was last played. Used directly as a
  * Repeater delegate against the shell's recentWorlds model, so the required
  * properties are filled from RecentWorldsModel's roles.
@@ -57,8 +57,8 @@ AbstractButton {
             width: control.iconSize
             height: control.iconSize
             radius: Theme.radius.sm
-            // Only seen while the picture decodes.
-            color: Theme.palette.surfaceOverlay
+            // Behind the icon while it decodes, and behind the globe.
+            color: Theme.palette.surfaceSunken
             clip: true
 
             Image {
@@ -71,21 +71,15 @@ AbstractButton {
                 asynchronous: true
             }
 
-            // No world icon: one of PixelArt's square biome thumbnails,
-            // picked deterministically by this world's own folder name -- the
-            // same picture the instance page's Overview and Worlds tab show
-            // for it, so a world looks the same everywhere. Decoded at 2x for
-            // a retina display; a photo, so filtered and mipmapped rather
-            // than kept crisp like a real icon above.
-            Image {
-                anchors.fill: parent
+            // No icon.png: a neutral globe, as on the instance's Worlds
+            // tab. A landscape here would pass for a real view of the
+            // world, and two worlds would share one.
+            MeshIcon {
+                anchors.centerIn: parent
                 visible: !control.hasIcon
-                source: control.hasIcon ? "" : PixelArt.worldUrlFor(control.folderName)
-                sourceSize: Qt.size(width * 2, height * 2)
-                fillMode: Image.PreserveAspectCrop
-                smooth: true
-                mipmap: true
-                asynchronous: true
+                iconName: "globe"
+                size: Theme.icon.lg
+                color: Theme.palette.textTertiary
             }
         }
 

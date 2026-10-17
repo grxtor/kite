@@ -6,8 +6,11 @@ import QtQuick
 import MeshMC.Theme
 
 /*
- * Art behind one instance: its own newest screenshot when it has one, or --
- * when it does not -- one of PixelArt's rendered fallback scenes, picked
+ * Art behind one instance: for a pack installed from a platform, the pack's
+ * own logo (`packArt`, see PACK ART below) -- its identity, as on Modrinth,
+ * CurseForge and Prism, ahead of whatever screenshot was taken in it; else
+ * its own newest screenshot when it has one; else one of PixelArt's
+ * rendered fallback scenes, picked
  * deterministically from `seed` (an instance/world id) so a given item
  * always draws the same scene rather than a new one on every repaint.
  * Used as the whole cover of an InstanceCard and, full-bleed, behind
@@ -21,6 +24,14 @@ import MeshMC.Theme
  * instance without a screenshot looks like one that has one, only with a
  * stock scene in it.
  *
+ * PACK ART. A pack's logo is square and small, so it is not stretched over
+ * the cover: the cover is the logo's own colours as a soft wash (the logo
+ * decoded at a few pixels and scaled back up -- no blur shader on the Qt 6.4
+ * floor), and on a card-shaped cover the logo itself sits in the middle on a
+ * dark glass plate (unless the host turns `showLogo` off), the way the
+ * CurseForge app and Modrinth show an installed pack. A logo that cannot be
+ * loaded falls back to the screenshot or scene.
+ *
  * ROUNDED CORNERS. Rectangle's `clip` only clips to the bounding box, and
  * below Qt 6.5 there is no MultiEffect/ShaderEffect-free way to mask an
  * Image to a rounded shape. So the photo fills the whole item, square, and
@@ -33,6 +44,11 @@ Item {
 
     // Screenshot to show, or "" for the fallback scene.
     property url source: ""
+    // A platform pack's own logo (InstanceList's packArt role), or "".
+    property url packArt: ""
+    // Whether the logo itself sits on a card-shaped cover over its wash; a
+    // host that already shows the logo beside the name turns it off.
+    property bool showLogo: true
     // The instance's own icon tint (InstanceList's iconTint role), colouring
     // the plate shown while the art decodes.
     property color tint: Theme.palette.textTertiary
@@ -64,6 +80,12 @@ Item {
     property color matte: Theme.palette.canvas
 
     readonly property bool hasPhoto: root.source.toString().length > 0
+    readonly property bool hasPackArt: root.packArt.toString().length > 0 && packLogo.status !== Image.Error
+    // The wash decodes the logo this many pixels across: few enough that
+    // stretching it back up leaves only its colours.
+    readonly property int washDecode: 6
+    // The logo's plate on a card: this share of the cover's height.
+    readonly property real logoShare: 0.52
     // Which of PixelArt's three scene crops fits this item: "card" for a
     // grid card or tile, "band" for the instance page's hero, "strip" for the
     // dock bar.
@@ -90,9 +112,9 @@ Item {
     Image {
         id: photo
         anchors.fill: parent
-        visible: opacity > 0
+        visible: opacity > 0 && !root.hasPackArt
         opacity: 0
-        source: root.hasPhoto ? root.source : root.fallbackArt
+        source: root.hasPackArt ? "" : root.hasPhoto ? root.source : root.fallbackArt
         fillMode: Image.PreserveAspectCrop
         smooth: true
         mipmap: true
@@ -111,6 +133,52 @@ Item {
 
         Behavior on opacity { NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
         Behavior on scale { NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
+    }
+
+    // -- Pack art (see PACK ART in the file comment) ------------------------
+    Image {
+        id: packWash
+        anchors.fill: parent
+        visible: root.hasPackArt && status === Image.Ready
+        source: root.packArt
+        sourceSize: Qt.size(root.washDecode, root.washDecode)
+        fillMode: Image.PreserveAspectCrop
+        smooth: true
+        asynchronous: true
+        scale: root.hovered ? 1.04 : 1.0
+        Behavior on scale { NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
+    }
+    // Takes the wash down a step, so a white or neon logo's colours read
+    // as a backdrop rather than a glare -- except under the horizontal
+    // scrim, which already darkens the side the text is on; there the wash
+    // keeps its colour on the other side.
+    Rectangle {
+        anchors.fill: parent
+        visible: packWash.visible && root.scrim !== "horizontal"
+        color: Theme.media.chip
+    }
+    Rectangle {
+        id: logoPlate
+        visible: root.hasPackArt && root.showLogo && root.artShape === "card"
+        anchors.centerIn: parent
+        width: Math.round(root.height * root.logoShare)
+        height: width
+        radius: Theme.radius.lg
+        color: Theme.media.chip
+        border.width: 1
+        border.color: Theme.media.chipBorder
+
+        Image {
+            id: packLogo
+            anchors.fill: parent
+            anchors.margins: Theme.space.sm
+            source: root.packArt
+            sourceSize: Qt.size(width * 2, height * 2)
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            mipmap: true
+            asynchronous: true
+        }
     }
 
     // Theme.media.scrim rather than the palette's scrim: the text on top is

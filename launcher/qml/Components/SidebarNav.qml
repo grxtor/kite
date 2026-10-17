@@ -25,9 +25,10 @@ Rectangle {
     // restart; SidebarNav.collapsed itself still ORs this with the caller's
     // own narrow-window check (see Main.qml), so a small window keeps
     // auto-collapsing regardless of what was last chosen. Used in two
-    // places: beside Settings in the foot band when expanded, and just above
-    // the band on the icon rail, where the band has room for only the gear
-    // centred on the play bar's own line.
+    // places: at the end of the brand row when expanded (away from
+    // Settings, which it used to sit beside and read as part of), and just
+    // above the foot band on the icon rail, where the brand row has room for
+    // only the mark.
     component CollapseToggle: IconButton {
         size: Theme.control.heightSm
         iconName: "chevron-left"
@@ -183,6 +184,11 @@ Rectangle {
             // still takes the row's spacing, which pushed the mark off the
             // nav icons' centre line.
             Item { visible: !root.collapsed; Layout.fillWidth: true }
+
+            CollapseToggle {
+                visible: !root.collapsed
+                Layout.alignment: Qt.AlignVCenter
+            }
         }
 
         Repeater {
@@ -199,9 +205,9 @@ Rectangle {
             }
         }
 
-        // A quiet rule instead of a second "RECENT"-style label: the
-        // section below already names itself, this just says where the
-        // destinations end.
+        // A quiet rule where the destinations end, then the recent
+        // instances under a plain "Recent" -- sentence case in the tertiary
+        // text colour, not a letter-spaced caps overline.
         Rectangle {
             Layout.fillWidth: true
             Layout.topMargin: Theme.space.md
@@ -216,12 +222,11 @@ Rectangle {
             Layout.leftMargin: Theme.space.md
             Layout.bottomMargin: Theme.space.xs
             visible: recentRepeater.count > 0 && !root.collapsed
-            text: qsTr("RECENT")
+            text: qsTr("Recent")
             color: Theme.palette.textTertiary
             font.family: Theme.font.family
-            font.pixelSize: Theme.type.overline.pixelSize
-            font.weight: Theme.type.overline.weight
-            font.letterSpacing: Theme.type.overline.letterSpacing
+            font.pixelSize: Theme.type.caption.pixelSize
+            font.weight: Font.Medium
         }
 
         Repeater {
@@ -251,9 +256,10 @@ Rectangle {
     // The foot band: exactly the play bar's height (Theme.layout.barHeight),
     // with a top border in the same colour as the bar's own, so the rail's
     // foot and the bar read as one strip across the window instead of two
-    // dividers at different heights. Settings and the collapse toggle share
-    // its one row, centred like the bar's own content; on the icon rail the
-    // toggle moves just above the band (see CollapseToggle).
+    // dividers at different heights. Settings has its one row to itself,
+    // centred like the bar's own content (the collapse toggle lives in the
+    // brand row, or just above this band on the icon rail -- see
+    // CollapseToggle).
     Item {
         id: footBand
         anchors.left: parent.left
@@ -290,11 +296,6 @@ Rectangle {
                     collapsed: root.collapsed
                     onClicked: root.itemActivated(modelData.id)
                 }
-            }
-
-            CollapseToggle {
-                visible: !root.collapsed
-                Layout.alignment: Qt.AlignVCenter
             }
         }
     }

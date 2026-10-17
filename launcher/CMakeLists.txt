@@ -1580,6 +1580,11 @@ add_unit_test(NewsModel
     LIBS MeshMC_core
     )
 
+add_unit_test(NewsEntry
+    SOURCES news/NewsEntry_test.cpp
+    LIBS MeshMC_core
+    )
+
 add_unit_test(SkinsController
     SOURCES models/SkinsController_test.cpp
     LIBS MeshMC_core

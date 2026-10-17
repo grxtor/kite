@@ -11,6 +11,10 @@ import MeshMC.Theme
  * Pick an instance icon from every icon MeshMC knows -- the built-in set
  * and whatever is in the icons folder. New icons are added by dropping
  * images into that folder; the grid picks them up as they arrive.
+ *
+ * A plain grid of pictures, as in Prism: the icons' names are file keys
+ * ("ftb_logo", "enderpearl"), not words, so they are not shown -- only read
+ * out to a screen reader.
  */
 Dialog {
     id: root
@@ -57,23 +61,22 @@ Dialog {
         Component.onCompleted: refilter()
     }
 
+    // Each icon's picture, and the square cell around it.
+    readonly property int iconSize: 48
+    readonly property int cellSize: 72
+    readonly property int cellInset: Theme.space.xs
+
     contentItem: GridView {
         id: grid
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         model: shownIcons
-        // As many 88px columns as fit, then stretched to fill the row, so
+        // As many square cells as fit, then stretched to fill the row, so
         // the grid has no empty strip on its right.
-        readonly property int minCell: 88
-        readonly property int columns: Math.max(1, Math.floor(width / minCell))
+        readonly property int columns: Math.max(1, Math.floor(width / root.cellSize))
         cellWidth: Math.floor(width / columns)
-        // Rows likewise: as many 96px rows as the view shows, stretched so
-        // they fill it exactly -- at rest the view never ends on half a row.
-        readonly property int minRow: 96
-        readonly property int rows: Math.max(1, Math.floor(height / minRow))
-        cellHeight: Math.floor(height / rows)
+        cellHeight: root.cellSize
         ScrollBar.vertical: ScrollBar {}
-
     }
 
     Component {
@@ -94,40 +97,24 @@ Dialog {
 
             background: Rectangle {
                 anchors.fill: parent
-                anchors.margins: 4
-                radius: Theme.radius.md
+                anchors.margins: root.cellInset
+                radius: Theme.radius.sm
                 color: cell.selected ? Theme.palette.accentSubtle
                      : cell.hovered ? Theme.palette.hoverOverlay : "transparent"
                 border.width: cell.selected ? 2 : 0
                 border.color: Theme.palette.accent
             }
 
-            // Centred in the cell, which grows to fill whole rows.
             contentItem: Item {
-                Column {
-                anchors.centerIn: parent
-                width: cell.width
-                spacing: Theme.space.xs
                 Image {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: 48
-                    height: 48
+                    anchors.centerIn: parent
+                    width: root.iconSize
+                    height: root.iconSize
                     source: "image://instanceicon/" + cell.key
-                    sourceSize: Qt.size(96, 96)
+                    sourceSize: Qt.size(root.iconSize * 2, root.iconSize * 2)
                     fillMode: Image.PreserveAspectFit
                     smooth: true
                     mipmap: true
-                }
-                Text {
-                    width: cell.width - Theme.space.sm * 2
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    horizontalAlignment: Text.AlignHCenter
-                    text: cell.name
-                    elide: Text.ElideRight
-                    color: cell.selected ? Theme.palette.textPrimary : Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
-                }
                 }
             }
         }

@@ -132,19 +132,9 @@ Popup {
 
         MenuSeparator { Layout.fillWidth: true; visible: root.otherAccounts.length > 0 }
 
-        Text {
-            Layout.fillWidth: true
-            Layout.leftMargin: Theme.space.md
-            Layout.topMargin: Theme.space.xs
-            visible: root.otherAccounts.length > 0
-            text: qsTr("SWITCH ACCOUNT")
-            color: Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.overline.pixelSize
-            font.weight: Theme.type.overline.weight
-            font.letterSpacing: Theme.type.overline.letterSpacing
-        }
-
+        // The other accounts, one click to switch to -- each row is the
+        // player's head and name, which says what it does without a caps
+        // "SWITCH ACCOUNT" overline above it.
         Repeater {
             model: root.otherAccounts
             delegate: ItemDelegate {

@@ -263,6 +263,10 @@ Item {
             delegate: ContinueCard {
                 id: headerCard
                 required property string group
+                // The row itself, for the role ContinueCard does not
+                // require: the pack's own art for the backdrop.
+                required property var model
+                packArt: headerCard.model.packArt || ""
                 Layout.fillWidth: true
                 Layout.maximumWidth: Theme.layout.maxContentWidth
                 Layout.alignment: Qt.AlignHCenter

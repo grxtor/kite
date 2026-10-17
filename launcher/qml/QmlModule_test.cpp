@@ -399,8 +399,49 @@ class QmlModuleTest : public QObject
 			QStringLiteral("https://example.org/7"), QString(), QDateTime()) });
 		auto root = createRoot(engine, &shell);
 		QVERIFY(root);
-		QCOMPARE(evaluate(root.get(), QStringLiteral("homePage.newsLatest.title")).toString(),
-				 QStringLiteral("MeshMC 7 is out"));
+		// HomePage reads the model's rows once they settle (Qt.callLater).
+		QTRY_COMPARE(evaluate(root.get(), QStringLiteral("homePage.hasNews ? homePage.featuredNews.title : ''"))
+						 .toString(),
+					 QStringLiteral("MeshMC 7 is out"));
+	}
+
+	/* Home's banner is for news: a release post for the version running
+	 * (or older) is skipped, and nothing older than newsMaxAgeDays gets a
+	 * banner at all -- the feed is newest first, so a stale entry ends the
+	 * search. */
+	void homeSkipsOutdatedReleasesAndStaleNews()
+	{
+		const QString runningVersion = QCoreApplication::applicationVersion();
+		QCoreApplication::setApplicationVersion(QStringLiteral("11.0.0"));
+		const QDateTime now = QDateTime::currentDateTimeUtc();
+		auto post = [](const QString& title, const QDateTime& date) {
+			return std::make_shared<NewsEntry>(title, QString(), QStringLiteral("https://example.org/post"),
+											   QString(), date);
+		};
+
+		{
+			QQmlEngine engine;
+			FakeShell shell;
+			shell.m_news.setEntries({ post(QStringLiteral("MeshMC Release 12.1.0, now available"), now),
+									  post(QStringLiteral("MeshMC Release 11.0.0"), now.addDays(-1)) });
+			auto root = createRoot(engine, &shell);
+			QVERIFY(root);
+			QTRY_COMPARE(evaluate(root.get(), QStringLiteral("homePage.hasNews ? homePage.featuredNews.title : ''"))
+							 .toString(),
+						 QStringLiteral("MeshMC Release 12.1.0, now available"));
+		}
+		{
+			QQmlEngine engine;
+			FakeShell shell;
+			shell.m_news.setEntries({ post(QStringLiteral("MeshMC Release 11.0.0"), now),
+									  post(QStringLiteral("MeshMC Release 9.1.0, now available"), now.addDays(-2)),
+									  post(QStringLiteral("Welcome to MeshMC"), now.addDays(-200)) });
+			auto root = createRoot(engine, &shell);
+			QVERIFY(root);
+			QTRY_COMPARE(evaluate(root.get(), QStringLiteral("homePage.newsEntries.length")).toInt(), 3);
+			QCOMPARE(evaluate(root.get(), QStringLiteral("homePage.hasNews")).toBool(), false);
+		}
+		QCoreApplication::setApplicationVersion(runningVersion);
 	}
 
 	/* `meshmc --import` and the IPC "import" message reach QML as

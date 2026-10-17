@@ -178,8 +178,10 @@ Item {
                     required property string modelData
                     width: content.width
                     title: modelData.length > 0 ? modelData : qsTr("Ungrouped")
-                    // A library that never used groups gets no header at all.
-                    showHeader: root.groups.length > 1 || modelData.length > 0
+                    // Ungrouped instances get no header, as in MultiMC and
+                    // Prism: a named "Ungrouped" group read as one more
+                    // group the user had made.
+                    showHeader: modelData.length > 0
                     group: modelData
                     model: root.sectionModelFor(modelData)
                     columns: root.columns
@@ -187,7 +189,8 @@ Item {
                     gutter: root.gutter
                     selectedId: root.selectedId
                     viewMode: root.viewMode
-                    collapsed: !root.searching && root.collapsedGroups.indexOf(modelData) >= 0
+                    // Without a header there is nothing to unfold it with.
+                    collapsed: !root.searching && modelData.length > 0 && root.collapsedGroups.indexOf(modelData) >= 0
                     onToggleRequested: root.setCollapsed(modelData, root.collapsedGroups.indexOf(modelData) < 0)
                     manageable: !!root.library && modelData.length > 0
                     // Somewhere else to drop it only with two groups or more.
@@ -212,10 +215,6 @@ Item {
                 }
             }
 
-            // The classic window's status-bar total, as the library's quiet
-            // last line. It hides itself while the setting is off or
-            // nothing has been played.
-            TotalPlayTime {}
         }
     }
 
@@ -299,9 +298,10 @@ Item {
             onProfilerChosen: (id, key) => root.profilerChosen(id, key)
             onNavigateRequested: (target) => root.navigateRequested(target)
         }
+        // An arrow, "go to its page": the gear it had read as "settings".
         MenuItem {
             text: qsTr("Open")
-            icon.source: Icons.url("settings")
+            icon.source: Icons.url("arrow-right")
             onTriggered: root.editRequested(instanceMenu.targetId)
         }
         MenuItem {
@@ -321,7 +321,7 @@ Item {
             visible: instanceMenu.modsFolder.length > 0
             height: visible ? implicitHeight : 0
             text: qsTr("Open mods folder")
-            icon.source: Icons.url("package")
+            icon.source: Icons.url("folder")
             onTriggered: root.library.openFolder(instanceMenu.modsFolder)
         }
         MenuSeparator {}
@@ -335,9 +335,10 @@ Item {
             icon.source: Icons.url("image")
             onTriggered: root.iconRequested(instanceMenu.targetId, instanceMenu.targetIcon)
         }
+        // The instance page's ⋯ menu words it the same way.
         MenuItem {
-            text: qsTr("Move to group\u2026")
-            icon.source: Icons.url("layers")
+            text: qsTr("Change group\u2026")
+            icon.source: Icons.url("folder-input")
             onTriggered: root.groupRequested(instanceMenu.targetId, instanceMenu.targetGroup)
         }
         MenuItem {

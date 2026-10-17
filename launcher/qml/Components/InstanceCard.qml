@@ -7,8 +7,9 @@ import QtQuick.Controls
 import MeshMC.Theme
 
 /*
- * One instance in the library grid: a cover (its newest screenshot, or a
- * rendered scene -- see CoverArt.qml) with the instance's icon chip on it,
+ * One instance in the library grid: a cover (its pack's own logo, its
+ * newest screenshot, or a rendered scene -- see CoverArt.qml) with the
+ * instance's icon chip on it,
  * the name, and what it runs. Used directly as a delegate -- the
  * required properties are filled from InstanceList's named roles, so this
  * file never mentions role numbers.
@@ -37,6 +38,10 @@ Item {
     // Newest screenshot url (InstanceList's coverImage role), or "" when
     // the instance has none yet -- the cover's own art, see CoverArt.qml.
     required property string coverImage
+    // A platform pack's own logo (InstanceList's packArt role), shown ahead
+    // of any screenshot; "" for every other instance. Not required, so
+    // a static review page need not pass it -- InstanceSection forwards it.
+    property string packArt: ""
     // Empty while nothing is being launched; progress is 0..1, or negative
     // while the launch cannot say how far along it is.
     required property string launchStatus
@@ -125,6 +130,7 @@ Item {
                 anchors.fill: parent
                 radius: root.coverRadius
                 source: root.coverImage
+                packArt: root.packArt
                 tint: root.iconTint
                 // No iconKey: the card draws its own icon chip below, the
                 // same one whether the cover is a screenshot or a scene.
@@ -225,9 +231,12 @@ Item {
 
             // The instance icon, on every card in the same spot and on the
             // same chip -- screenshot or fallback scene, custom icon or the
-            // generic one.
+            // generic one. Not on a pack's own art: that cover is the logo
+            // already. (Kept in the layout either way; the launch bar is
+            // anchored to it.)
             Rectangle {
                 id: iconBadge
+                opacity: art.hasPackArt ? 0 : 1
                 anchors.left: parent.left
                 anchors.bottom: parent.bottom
                 anchors.margins: Theme.space.sm
