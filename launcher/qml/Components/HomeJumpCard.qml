@@ -25,7 +25,7 @@ import Kite.Theme
  * time" in that place, and how long it has been played (hourglass). The
  * facts stay on one row short of Play's corner, dropping play time on a
  * narrow card. There is always a picture under all of it -- the pack's own
- * art, a screenshot, or else one of CoverArt's rendered scenes -- behind
+ * art, a screenshot, or else CoverArt's calm plain surface -- behind
  * CoverArt's horizontal scrim, so the text, tags and icon tile always use
  * the media colours, in either theme.
  */
@@ -43,10 +43,10 @@ Item {
     required property string loader
     required property color iconTint
     // Newest screenshot url (InstanceList's coverImage role), or "" -- same
-    // source as InstanceCard's cover; CoverArt falls back to a rendered scene.
+    // source as InstanceCard's cover; CoverArt falls back to a plain surface.
     required property string coverImage
     // A platform pack's own picture (InstanceList's packArt role), or "";
-    // when set, the cover shows it ahead of any screenshot.
+    // when set, the cover shows it when there is no screenshot.
     property string packArt: ""
     // Set by LaunchTask around the game process exit -- a calm reminder,
     // not an alarm, but always shown (it takes the last-played tag's place).
@@ -109,11 +109,9 @@ Item {
             packArt: root.packArt
             // The header's icon tile already shows the logo.
             showLogo: false
-            tint: root.iconTint
-            // No icon from CoverArt: its badge sits under the scrim. The
-            // header below draws the icon over it instead.
-            iconKey: ""
-            seed: root.instanceId
+            // No glyph from CoverArt: the header below draws the
+            // instance's icon over it instead.
+            glyph: ""
             scrim: "horizontal"
             hovered: root.hovered
             // What is really behind the card's rounded corners: the page.

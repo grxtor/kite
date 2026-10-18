@@ -77,10 +77,6 @@ ApplicationWindow {
             LauncherStore.updates = root.shell.updateSettings
             LauncherStore.playTime = root.shell.playTime
             LauncherStore.catPacks = root.shell.catPacks
-            // The fallback covers are dealt out over the whole library, so no
-            // two instances share one (PixelArt needs the unfiltered list).
-            if (root.instanceModel && root.instanceModel.sourceModel)
-                PixelArt.instances = root.instanceModel.sourceModel
             var mode = SettingsStore.string("UiThemeMode")
             if (mode === "dark" || mode === "light" || mode === "system")
                 Theme.mode = mode
@@ -209,9 +205,6 @@ ApplicationWindow {
                 iconDialog.current = value.length > 0 ? value : "grass"
                 iconDialog.open()
             }
-            // Pins Home's header scene to "day", "golden" or "night".
-            else if (key === "mood")
-                homePage.moodOverride = value
             else if (key === "cat" && catLoader.item)
                 catLoader.item.demo = value
         }

@@ -6,23 +6,15 @@ import QtQuick
 import Kite.Theme
 
 /*
- * Art behind one instance: for a pack installed from a platform, the pack's
- * own logo (`packArt`, see PACK ART below) -- its identity, as on Modrinth,
- * CurseForge and Prism, ahead of whatever screenshot was taken in it; else
- * its own newest screenshot when it has one; else one of PixelArt's
- * rendered fallback scenes, picked
- * deterministically from `seed` (an instance/world id) so a given item
- * always draws the same scene rather than a new one on every repaint.
- * Used as the whole cover of an InstanceCard and, full-bleed, behind
- * ContinueCard, InstancePage's hero and PlayDock's bar. Every scene exists
- * at three crops (see `artShape`): filling a bar far wider than 16:9 with
- * the card crop would only show a thin slice of it, so a wide host is given
- * the crop made for its own shape instead.
+ * Art behind one instance: its own newest screenshot when it has one; else,
+ * for a pack installed from a platform, the pack's own logo (`packArt`, see
+ * PACK ART below); else a calm accent-tinted surface (PlaceholderSurface) with
+ * a Lucide glyph centred. Only real pictures ever show here -- never a
+ * stand-in scene. Used as the whole cover of an InstanceCard and, full-bleed,
+ * behind ContinueCard, InstancePage's hero and PlayDock's bar.
  *
- * The fallback scene goes through the very same Image as a screenshot --
- * same fade-in, hover zoom, decode size and scrims, no extra tint -- so an
- * instance without a screenshot looks like one that has one, only with a
- * stock scene in it.
+ * The surface is always painted underneath, so while a picture decodes -- or
+ * if its file turns out to be unreadable -- the slot already looks finished.
  *
  * PACK ART. A pack's logo is square and small, so it is not stretched over
  * the cover: the cover is the logo's own colours as a soft wash (the logo
@@ -30,7 +22,7 @@ import Kite.Theme
  * floor), and on a card-shaped cover the logo itself sits in the middle on a
  * dark glass plate (unless the host turns `showLogo` off), the way the
  * CurseForge app and Modrinth show an installed pack. A logo that cannot be
- * loaded falls back to the screenshot or scene.
+ * loaded falls back to the plain surface.
  *
  * ROUNDED CORNERS. Rectangle's `clip` only clips to the bounding box, and
  * below Qt 6.5 there is no MultiEffect/ShaderEffect-free way to mask an
@@ -42,26 +34,21 @@ import Kite.Theme
 Item {
     id: root
 
-    // Screenshot to show, or "" for the fallback scene.
+    // Screenshot to show, or "" for the plain surface.
     property url source: ""
     // A platform pack's own logo (InstanceList's packArt role), or "".
     property url packArt: ""
     // Whether the logo itself sits on a card-shaped cover over its wash; a
     // host that already shows the logo beside the name turns it off.
     property bool showLogo: true
-    // The instance's own icon tint (InstanceList's iconTint role), colouring
-    // the plate shown while the art decodes.
-    property color tint: Theme.palette.textTertiary
-    // The instance/world id driving which fallback scene is picked; falls
-    // back to `iconKey` (still deterministic, just coarser-grained) when a
-    // caller has no id of its own. Cards draw their own icon chip -- this
-    // item is only ever the picture.
-    property string iconKey: ""
-    property string seed: ""
+    // The Lucide glyph centred on the plain surface, "" for none -- for a
+    // host that already draws the instance's icon over the cover. Left out
+    // on a cover too short to hold it (the play bar's strip).
+    property string glyph: "image"
     property int radius: Theme.radius.lg
     // "none" | "bottom" | "horizontal" -- a dark fade so text/controls laid
     // over the art stay legible, whether that art is a real screenshot or
-    // the fallback scene. "bottom" suits a card (controls sit
+    // the plain surface. "bottom" suits a card (controls sit
     // at the cover's foot); "horizontal" suits a hero (the fade favours the
     // leading edge, where its text sits).
     property string scrim: "none"
@@ -80,41 +67,45 @@ Item {
     property color matte: Theme.palette.canvas
 
     readonly property bool hasPhoto: root.source.toString().length > 0
-    readonly property bool hasPackArt: root.packArt.toString().length > 0 && packLogo.status !== Image.Error
+    readonly property bool hasPackArt: !root.hasPhoto && root.packArt.toString().length > 0
+                                       && packLogo.status !== Image.Error
     // The wash decodes the logo this many pixels across: few enough that
     // stretching it back up leaves only its colours.
     readonly property int washDecode: 6
     // The logo's plate on a card: this share of the cover's height.
     readonly property real logoShare: 0.52
-    // Which of PixelArt's three scene crops fits this item: "card" for a
-    // grid card or tile, "band" for the instance page's hero, "strip" for the
-    // dock bar.
     readonly property real aspect: root.height > 0 ? root.width / root.height : 1
-    readonly property string artShape: PixelArt.shapeForAspect(root.aspect)
-    readonly property string fallbackKey: root.seed.length > 0 ? root.seed : root.iconKey
-    readonly property url fallbackArt: PixelArt.landscapeUrl(root.fallbackKey, root.artShape)
+    // A card or tile is about 16:9; the instance page's hero and the dock
+    // bar are far wider, and short.
+    readonly property bool cardShaped: root.aspect <= 3
+    readonly property int glyphSize: 40
+    readonly property int glyphMinHeight: 72
     // The zoomed photo would otherwise overshoot these bounds slightly.
     clip: true
 
-    // A plate in the instance's own tint: all that shows while the art
-    // decodes (or if a screenshot file turns out to be unreadable).
-    Rectangle {
+    // The calm surface every picture sits on; all that shows without one.
+    PlaceholderSurface {
         id: backdrop
         anchors.fill: parent
-        radius: root.radius
-        color: Format.shade(root.tint, Theme.dark ? 0.20 : 0.85, 0.5)
+
+        MeshIcon {
+            anchors.centerIn: parent
+            visible: root.glyph.length > 0 && !photo.visible && !packWash.visible
+                     && root.height >= root.glyphMinHeight
+            iconName: root.glyph
+            size: root.glyphSize
+            color: Theme.palette.textTertiary
+        }
     }
 
-    // The screenshot, or -- without one -- one of PixelArt's rendered
-    // scenes, deterministic per `seed` (see the file comment). Smooth and
-    // mipmapped either way: both are photographic images decoded at up to
-    // 2x their displayed size, so a 1x display draws them scaled down.
+    // The screenshot. Smooth and mipmapped: it is decoded at up to 2x its
+    // displayed size, so a 1x display draws it scaled down.
     Image {
         id: photo
         anchors.fill: parent
-        visible: opacity > 0 && !root.hasPackArt
+        visible: opacity > 0
         opacity: 0
-        source: root.hasPackArt ? "" : root.hasPhoto ? root.source : root.fallbackArt
+        source: root.hasPhoto ? root.source : ""
         fillMode: Image.PreserveAspectCrop
         smooth: true
         mipmap: true
@@ -140,7 +131,7 @@ Item {
         id: packWash
         anchors.fill: parent
         visible: root.hasPackArt && status === Image.Ready
-        source: root.packArt
+        source: root.hasPhoto ? "" : root.packArt
         sourceSize: Qt.size(root.washDecode, root.washDecode)
         fillMode: Image.PreserveAspectCrop
         smooth: true
@@ -159,7 +150,7 @@ Item {
     }
     Rectangle {
         id: logoPlate
-        visible: root.hasPackArt && root.showLogo && root.artShape === "card"
+        visible: root.hasPackArt && root.showLogo && root.cardShaped
         anchors.centerIn: parent
         width: Math.round(root.height * root.logoShare)
         height: width
@@ -172,7 +163,7 @@ Item {
             id: packLogo
             anchors.fill: parent
             anchors.margins: Theme.space.sm
-            source: root.packArt
+            source: root.hasPhoto ? "" : root.packArt
             sourceSize: Qt.size(width * 2, height * 2)
             fillMode: Image.PreserveAspectFit
             smooth: true
@@ -188,8 +179,8 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        // Not gated on hasPhoto: the fallback scene wants the same
-        // legibility fade a caller asks for over a real screenshot.
+        // Not gated on hasPhoto: text laid over the plain surface wants
+        // the same legibility fade a caller asks for over a screenshot.
         visible: root.scrim === "bottom"
         gradient: Gradient {
             GradientStop { position: 0.0; color: Qt.rgba(root.scrimOpaque.r, root.scrimOpaque.g, root.scrimOpaque.b, 0.18) }

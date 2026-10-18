@@ -284,9 +284,7 @@ Item {
                             required property var modelData
                             readonly property string worldName: modelData.name.length > 0 ? modelData.name
                                                                                            : worldRow.folderName
-                            // The folder's own name, the seed Home's world tiles
-                            // use too, so a world without an icon shows the same
-                            // scene on both pages.
+                            // The world's folder name, its fallback title.
                             readonly property string folderName: String(modelData.folder).split(/[\\/]/).pop()
                             readonly property string iconUrl: Format.fileUrl(modelData.iconFile)
 
@@ -310,15 +308,14 @@ Item {
                                     asynchronous: true
                                     visible: status === Image.Ready
                                 }
-                                Image {
-                                    anchors.fill: parent
+                                // No icon.png: a neutral globe, as on Home's
+                                // world tiles and the Worlds tab.
+                                MeshIcon {
+                                    anchors.centerIn: parent
                                     visible: !worldIcon.visible
-                                    source: worldIcon.visible ? "" : PixelArt.worldUrlFor(worldRow.folderName)
-                                    sourceSize: Qt.size(width * 2, height * 2)
-                                    fillMode: Image.PreserveAspectCrop
-                                    smooth: true
-                                    mipmap: true
-                                    asynchronous: true
+                                    iconName: "globe"
+                                    size: Theme.icon.lg
+                                    color: Theme.palette.textTertiary
                                 }
                                 CornerMatte {
                                     cornerRadius: worldThumb.radius

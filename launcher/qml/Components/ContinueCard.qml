@@ -29,8 +29,8 @@ Rectangle {
     // hero's own full-bleed backdrop, same source as InstanceCard's cover.
     required property string coverImage
     // A platform pack's own logo (InstanceList's packArt role), or "": the
-    // backdrop then shows the pack's art (its colours as a wash) ahead of
-    // any screenshot, as Library and Home do (CoverArt). Not required, so a
+    // backdrop then shows the pack's art (its colours as a wash) when there
+    // is no screenshot, as Library and Home do (CoverArt). Not required, so a
     // static review page need not pass it.
     property string packArt: ""
     required property string launchStatus
@@ -112,15 +112,13 @@ Rectangle {
         matte: Theme.palette.canvas
         source: root.coverImage
         packArt: root.packArt
-        tint: root.iconTint
-        // The tile to the right already carries the icon; showing it again,
-        // huge, in the backdrop would just be clutter.
-        iconKey: ""
+        // The tile to the right already carries the icon; showing a glyph
+        // as well, huge, in the backdrop would just be clutter.
+        glyph: ""
         showLogo: false
-        // Same id the instance's card and play-bar strip hash, so a
-        // screenshot-less instance shows the same fallback scene everywhere.
-        seed: root.instanceId
-        scrim: "horizontal"
+        // The plain surface carries the page's own text colours, so it
+        // needs no dark fade.
+        scrim: root.hasPhoto ? "horizontal" : "none"
     }
 
     Row {

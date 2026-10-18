@@ -7,8 +7,8 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One instance in the library grid: a cover (its pack's own logo, its
- * newest screenshot, or a rendered scene -- see CoverArt.qml) with the
+ * One instance in the library grid: a cover (its newest screenshot, its
+ * pack's own logo, or a plain surface -- see CoverArt.qml) with the
  * instance's icon chip on it,
  * the name, and what it runs. Used directly as a delegate -- the
  * required properties are filled from InstanceList's named roles, so this
@@ -38,8 +38,8 @@ Item {
     // Newest screenshot url (InstanceList's coverImage role), or "" when
     // the instance has none yet -- the cover's own art, see CoverArt.qml.
     required property string coverImage
-    // A platform pack's own logo (InstanceList's packArt role), shown ahead
-    // of any screenshot; "" for every other instance. Not required, so
+    // A platform pack's own logo (InstanceList's packArt role), shown when
+    // the instance has no screenshot; "" for every other instance. Not required, so
     // a static review page need not pass it -- InstanceSection forwards it.
     property string packArt: ""
     // Empty while nothing is being launched; progress is 0..1, or negative
@@ -64,8 +64,7 @@ Item {
     // One frame width for everything: the cover's inset from the card edge
     // and the text's, so the name lines up with the picture above it.
     readonly property int inset: Theme.space.sm
-    // The scenes' own "card" crop is 16:9 (PixelArt.qml); a screenshot is
-    // cropped to the same shape.
+    // A screenshot is cropped to 16:9.
     readonly property real coverRatio: 9 / 16
     readonly property int coverHeight: Math.round((width - inset * 2) * coverRatio)
     readonly property int coverRadius: Theme.radius.sm
@@ -133,10 +132,9 @@ Item {
                 radius: root.coverRadius
                 source: root.coverImage
                 packArt: root.packArt
-                tint: root.iconTint
-                // No iconKey: the card draws its own icon chip below, the
-                // same one whether the cover is a screenshot or a scene.
-                seed: root.instanceId
+                // The card draws its own icon chip below, the same one
+                // whether the cover is a screenshot, a pack's logo or the
+                // plain surface.
                 // Protects the running chip/more button up top and the
                 // play button/icon chip down below from a bright photo.
                 scrim: "bottom"
@@ -232,7 +230,7 @@ Item {
             }
 
             // The instance icon, on every card in the same spot and on the
-            // same chip -- screenshot or fallback scene, custom icon or the
+            // same chip -- screenshot or plain surface, custom icon or the
             // generic one. Not on a pack's own art: that cover is the logo
             // already. (Kept in the layout either way; the launch bar is
             // anchored to it.)

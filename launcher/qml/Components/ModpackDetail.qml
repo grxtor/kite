@@ -133,8 +133,8 @@ Item {
                 onClicked: root.backRequested()
             }
 
-            // Header: the gallery's own hero shot (or, without one, a
-            // rendered scene picked by project id) behind a bottom scrim,
+            // Header: the gallery's own hero shot (or, without one, a calm
+            // plain surface) behind a bottom scrim,
             // the logo, title/author, the headline stats and Install.
             Rectangle {
                 id: hero
@@ -144,18 +144,10 @@ Item {
                 clip: true
                 color: Theme.palette.surfaceSunken
 
-                Image {
+                PlaceholderSurface {
                     id: heroFallback
                     anchors.fill: parent
                     visible: backdrop.status !== Image.Ready
-                    source: visible ? PixelArt.landscapeUrl(root.pack.projectId || "",
-                                                            PixelArt.shapeForAspect(hero.width / Math.max(1, hero.height)))
-                                    : ""
-                    sourceSize: Qt.size(width * 2, height * 2)
-                    fillMode: Image.PreserveAspectCrop
-                    smooth: true
-                    mipmap: true
-                    asynchronous: true
                 }
 
                 Image {

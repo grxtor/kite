@@ -17,8 +17,8 @@ import Kite.Theme
  * the sidebar, which also lists the recent instances.
  *
  * HERO. Like the official launcher, Lunar and the CurseForge app, Home leads
- * with art: Kite's own rendered scene for the time of day, full width. On
- * it goes the news item itself (headline, date, Read more) when there is
+ * with a full-width banner: the played-last instance's own screenshot (or its
+ * pack's logo), else a calm plain surface. On it goes the news item itself (headline, date, Read more) when there is
  * news worth showing, and otherwise the instance played last, with Open --
  * never a greeting, and never a second Play (the play bar is the Play).
  * Only news that is still news counts: a release post for the version
@@ -146,10 +146,6 @@ Item {
     // QmlShell.news (NewsModel): Kite's news, newest first, or null.
     property var news: null
 
-    // "day", "golden" or "night" to pin the hero's scene (review
-    // snapshots); empty follows the local clock.
-    property string moodOverride: ""
-
     signal launchRequested(string id)
     signal stopRequested(string id)
     // Opens the instance page -- a Jump back in card.
@@ -237,8 +233,7 @@ Item {
     readonly property string newsDate: root.hasNews && root.featuredNews.date
                                        ? Format.calendarDate(new Date(root.featuredNews.date)) : ""
 
-    // The hero: Kite's own rendered scene for the time of day, as big
-    // clients lead with their art. On it, the news item when there is one,
+    // The hero: the banner big clients lead with. On it, the news item when there is one,
     // otherwise the instance played last (`featured`) with Open -- no Play:
     // the play bar is the Play. Nothing to put on it, no hero.
     // A share of the page height within bounds (about 220px at 1240x780,
@@ -285,18 +280,6 @@ Item {
     readonly property int worldMax: root.worldColumns * root.worldRows
     readonly property int worldTileWidth: Math.floor((root.contentWidth - root.worldSpacing * (root.worldColumns - 1)) / root.worldColumns)
 
-    // Re-read once a minute so the hero's sky turns with the day while the
-    // launcher stays open; the timer only runs while Home is on screen.
-    property int hour: new Date().getHours()
-    readonly property string mood: root.moodOverride.length > 0 ? root.moodOverride
-                                                                : PixelArt.homeMood(root.hour)
-    Timer {
-        interval: 60 * 1000
-        repeat: true
-        running: root.visible && root.hasHero && root.moodOverride.length === 0
-        onTriggered: root.hour = new Date().getHours()
-    }
-
     function openNews() {
         if (root.hasNews && root.featuredNews.link)
             Qt.openUrlExternally(root.featuredNews.link)
@@ -320,8 +303,9 @@ Item {
             spacing: Theme.space.xl
 
             // -- Hero -------------------------------------------------------
-            // The time of day's rendered scene, full width and rounded like
-            // every other large surface, with the news or the last-played
+            // The last-played instance's own screenshot or pack logo (the
+            // plain surface for news, or with neither), full width and
+            // rounded like every other large surface, with the news or the
             // instance on its darker left side.
             Item {
                 id: hero
@@ -333,7 +317,10 @@ Item {
 
                 CoverArt {
                     anchors.fill: parent
-                    source: hero.visible ? PixelArt.homeHeroUrl(root.mood) : ""
+                    source: root.heroShowsInstance ? root.featured.itemCoverImage : ""
+                    packArt: root.heroShowsInstance ? root.featured.itemPackArt : ""
+                    showLogo: false
+                    glyph: ""
                     radius: Theme.radius.xl
                     scrim: "horizontal"
                     matte: Theme.palette.canvas
@@ -530,6 +517,8 @@ Item {
                             readonly property var itemLastLaunch: model.lastLaunch
                             readonly property var itemPlayTime: model.totalTimePlayed
                             readonly property bool itemCrashed: model.hasCrashed
+                            readonly property string itemCoverImage: model.coverImage
+                            readonly property string itemPackArt: model.packArt || ""
                             function claimHero() { if (slot.isFirst) root.featured = slot }
                             onIsFirstChanged: claimHero()
                             Component.onCompleted: claimHero()
@@ -650,13 +639,10 @@ Item {
                 actionIcon: "plus"
                 onActionTriggered: root.createRequested()
 
-                Image {
-                    // Only fetched when the empty state is actually shown.
-                    source: root.hasLibrary ? "" : PixelArt.emptyUrl("no_instances")
-                    sourceSize: Qt.size(64, 64)
-                    width: 64
-                    height: 64
-                    smooth: false
+                MeshIcon {
+                    iconName: "cube"
+                    size: 40
+                    color: Theme.palette.textTertiary
                 }
             }
         }

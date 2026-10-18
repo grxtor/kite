@@ -17,17 +17,7 @@ qt_add_library(Kite_qml_components STATIC)
 # qt_add_qml_module, or Icons.qml registers as an ordinary re-instantiable
 # type and every "import Kite.Components" gets its own private instance
 # instead of the one Icons.url() is meant to be called on.
-set_source_files_properties(Icons.qml Format.qml SettingsStore.qml JavaStore.qml LauncherStore.qml PixelArt.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
-
-# The fallback cover scenes: 32 rendered scenes at three crops
-# (card/band/strip, see art/scenes/build.py), plus the world thumbnails
-# (art/worlds), generic modpack covers (art/packs) and empty-state
-# illustrations (art/empty/*.jpg), all built by art/scenes/build.py. Globbed
-# rather than listed line by line -- ~100 checked-in JPGs -- with
-# CONFIGURE_DEPENDS so rebuilding the set is picked up.
-file(GLOB KITE_ART_SCENES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
-    art/scenes/card/*.jpg art/scenes/band/*.jpg art/scenes/strip/*.jpg
-    art/worlds/*.jpg art/packs/*.jpg art/empty/*.jpg)
+set_source_files_properties(Icons.qml Format.qml SettingsStore.qml JavaStore.qml LauncherStore.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt_add_qml_module(Kite_qml_components
     URI Kite.Components
@@ -35,6 +25,7 @@ qt_add_qml_module(Kite_qml_components
     RESOURCE_PREFIX "/qt/qml"
     QML_FILES
         CoverArt.qml
+        PlaceholderSurface.qml
         InstanceCard.qml
         InstanceListRow.qml
         InstanceSection.qml
@@ -175,14 +166,11 @@ qt_add_qml_module(Kite_qml_components
         Gallery.qml
         MeshIcon.qml
         Icons.qml
-        PixelArt.qml
         HomePage.qml
         HomeJumpCard.qml
         HomeWorldTile.qml
         HoverReason.qml
         HomeLibraryTile.qml
-        AmbientPattern.qml
-        PageBackdrop.qml
         BrandMark.qml
         SkinSilhouette.qml
         ServersTab.qml
@@ -247,26 +235,6 @@ qt_add_qml_module(Kite_qml_components
         icons/user.svg
         icons/users.svg
         icons/x.svg
-        # Original pixel art (see art/generate.py) -- checked-in PNGs, never
-        # generated at build or run time.
-        art/blocks/cobblestone.png
-        art/blocks/deepslate.png
-        art/blocks/dirt.png
-        art/blocks/grass_side.png
-        art/blocks/grass_top.png
-        art/blocks/gravel.png
-        art/blocks/oak_planks.png
-        art/blocks/sand.png
-        art/blocks/stone.png
-        art/ambient/blocks_mask.png
-        ${KITE_ART_SCENES}
-        art/hero/home_hero.png
-        art/hero/home_day.jpg
-        art/hero/home_golden.jpg
-        art/hero/home_night.jpg
-        art/empty/no_instances.png
-        art/empty/no_worlds.png
-        art/empty/not_found.png
     IMPORTS
         Kite.Theme
 )
