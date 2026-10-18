@@ -27,8 +27,8 @@ Item {
     signal openFolderRequested(string path)
     signal joinRequested(string address)
 
-    readonly property int rowHeight: 64
-    readonly property int thumbSize: 40
+    readonly property int rowHeight: 72
+    readonly property int thumbSize: 44
     // The same frame InstanceListRow gives an instance icon.
     readonly property int thumbInset: Theme.space.xs
     // servers.dat's per-server resource pack choice, in its own order.
@@ -127,15 +127,17 @@ Item {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: Theme.space.md
-                    anchors.rightMargin: Theme.space.sm
+                    anchors.leftMargin: Theme.space.lg
+                    anchors.rightMargin: Theme.space.md
                     spacing: Theme.space.md
 
                     Rectangle {
                         Layout.preferredWidth: root.thumbSize
                         Layout.preferredHeight: root.thumbSize
-                        radius: Theme.radius.sm
+                        radius: Theme.radius.md
                         color: Theme.palette.surfaceSunken
+                        border.width: 1
+                        border.color: Theme.palette.border
                         Image {
                             id: favicon
                             anchors.fill: parent
@@ -148,7 +150,7 @@ Item {
                             anchors.centerIn: parent
                             visible: favicon.status !== Image.Ready
                             iconName: "server"
-                            size: Theme.icon.sm
+                            size: Theme.icon.md
                             color: Theme.palette.textTertiary
                         }
                     }
@@ -172,7 +174,7 @@ Item {
                             elide: Text.ElideRight
                             color: Theme.palette.textTertiary
                             font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
+                            font.pixelSize: Theme.type.label.pixelSize
                         }
                     }
 

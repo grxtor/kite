@@ -33,7 +33,8 @@ Item {
     // user why nothing happened.
     property string actionError: ""
 
-    readonly property int thumbSize: 36
+    readonly property int rowHeight: 72
+    readonly property int thumbSize: 44
 
     // BackupController's timestampText is "yyyy-MM-dd HH:mm:ss" local time;
     // read back into a date so it reads like every other date in the app.
@@ -148,7 +149,7 @@ Item {
                 readonly property string title: root.backupTitle(row.name, row.timestampText)
 
                 width: list.width
-                height: Theme.control.heightLg + Theme.space.md
+                height: root.rowHeight
                 radius: Theme.radius.lg
                 color: hover.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
                 border.width: 1
@@ -163,30 +164,32 @@ Item {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: Theme.space.md
-                    anchors.rightMargin: Theme.space.sm
+                    anchors.leftMargin: Theme.space.lg
+                    anchors.rightMargin: Theme.space.md
                     spacing: Theme.space.md
 
                     Rectangle {
                         Layout.preferredWidth: root.thumbSize
                         Layout.preferredHeight: root.thumbSize
-                        radius: Theme.radius.sm
+                        radius: Theme.radius.md
                         color: Theme.palette.surfaceSunken
-                        MeshIcon { anchors.centerIn: parent; iconName: "archive"; size: Theme.icon.sm; color: Theme.palette.textTertiary }
+                        border.width: 1
+                        border.color: Theme.palette.border
+                        MeshIcon { anchors.centerIn: parent; iconName: "archive"; size: Theme.icon.md; color: Theme.palette.textTertiary }
                     }
 
                     Column {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
-                        spacing: 1
+                        spacing: Theme.space.xxs
                         Text {
                             width: parent.width
                             text: row.title
                             elide: Text.ElideRight
                             color: Theme.palette.textPrimary
                             font.family: Theme.font.family
-                            font.pixelSize: Theme.type.body.pixelSize
-                            font.weight: Font.Medium
+                            font.pixelSize: Theme.type.bodyStrong.pixelSize
+                            font.weight: Theme.type.bodyStrong.weight
                         }
                         Text {
                             width: parent.width
@@ -194,7 +197,7 @@ Item {
                             elide: Text.ElideRight
                             color: Theme.palette.textTertiary
                             font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
+                            font.pixelSize: Theme.type.label.pixelSize
                         }
                     }
 

@@ -33,7 +33,8 @@ Item {
     // The TaskWatcher of "Download all files", while it runs and after it fails.
     property var downloadWatcher: null
     readonly property bool downloading: !!root.downloadWatcher && root.downloadWatcher.running
-    readonly property int rowHeight: 56
+    readonly property int rowHeight: 72
+    readonly property int thumbSize: 44
 
     // PackProfile reports its failures in launcher terms; the one a player
     // most often meets (the version metadata could not be fetched or
@@ -260,9 +261,25 @@ Item {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: Theme.space.md
-                anchors.rightMargin: Theme.space.sm
+                anchors.leftMargin: Theme.space.lg
+                anchors.rightMargin: Theme.space.md
                 spacing: Theme.space.md
+
+                // Minecraft itself, or the loader / library laid over it.
+                Rectangle {
+                    Layout.preferredWidth: root.thumbSize
+                    Layout.preferredHeight: root.thumbSize
+                    radius: Theme.radius.md
+                    color: Theme.palette.surfaceSunken
+                    border.width: 1
+                    border.color: Theme.palette.border
+                    MeshIcon {
+                        anchors.centerIn: parent
+                        iconName: row.uid === "net.minecraft" ? "cube" : "layers"
+                        size: Theme.icon.md
+                        color: Theme.palette.textTertiary
+                    }
+                }
 
                 MeshIcon {
                     visible: row.problemSeverity === "warning" || row.problemSeverity === "error"

@@ -194,38 +194,21 @@ Item {
             }
         }
 
-        RowLayout {
+        NoticeBar {
             Layout.fillWidth: true
-            visible: root.controller && !root.controller.hasPackId
-            Text {
-                Layout.fillWidth: true
-                wrapMode: Text.Wrap
-                text: qsTr("Kite does not have a catalogue id on record for this pack, so it cannot list other versions here. You can still update it from a pack file, or install the pack again from Discover for a specific version.")
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
-            }
+            visible: !!root.controller && !root.controller.hasPackId
+            tone: "info"
+            text: qsTr("Kite does not have a catalogue id on record for this pack, so it cannot list other versions here. You can still update it from a pack file, or install the pack again from Discover for a specific version.")
         }
 
-        RowLayout {
+        // What went wrong in plain words only: the catalogue's own message
+        // is a raw job string meant for the log, not the user.
+        NoticeBar {
             Layout.fillWidth: true
-            visible: root.controller && root.controller.hasPackId && root.controller.error.length > 0
-            spacing: Theme.space.sm
-            // What went wrong in plain words only: the catalogue's own
-            // message is a raw job string meant for the log, not the user.
-            Text {
-                Layout.fillWidth: true
-                text: qsTr("Could not load the versions of this pack. Check your connection, then reload.")
-                color: Theme.palette.danger
-                elide: Text.ElideRight
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-            }
-            Button {
-                text: qsTr("Reload")
-                icon.source: Icons.url("refresh")
-                onClicked: root.controller.reload()
-            }
+            visible: !!root.controller && root.controller.hasPackId && root.controller.error.length > 0
+            text: qsTr("Could not load the versions of this pack. Check your connection, then reload.")
+            actionText: qsTr("Reload")
+            onActionTriggered: root.controller.reload()
         }
 
         Text {
@@ -241,34 +224,46 @@ Item {
 
         // The other versions, as a drop-down: the newest is picked at first,
         // so its changelog is there to read before updating to it.
-        RowLayout {
+        Rectangle {
             Layout.fillWidth: true
             visible: root.hasVersions
-            spacing: Theme.space.sm
+            implicitHeight: updateRow.implicitHeight + Theme.space.md * 2
+            radius: Theme.radius.lg
+            color: Theme.palette.surface
+            border.width: 1
+            border.color: Theme.palette.border
 
-            Text {
-                text: qsTr("Update to")
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-            }
-            ComboBox {
-                id: versionBox
-                Layout.preferredWidth: root.versionBoxWidth
-                model: root.versionLabels
-                Accessible.name: qsTr("Version")
-            }
-            Item { Layout.fillWidth: true }
-            Button {
-                enabled: !root.updating && !!root.picked && root.picked.installable && !root.picked.current
-                // The tab's one main action, shown as such only while it
-                // would do something: a version other than the installed
-                // one is picked (the newest, by default, when there is
-                // an update).
-                highlighted: enabled
-                text: qsTr("Update")
-                icon.source: Icons.url("download")
-                onClicked: root.watcher = root.controller.updateToVersion(versionBox.currentIndex)
+            RowLayout {
+                id: updateRow
+                anchors.fill: parent
+                anchors.leftMargin: Theme.space.lg
+                anchors.rightMargin: Theme.space.md
+                spacing: Theme.space.sm
+
+                Text {
+                    text: qsTr("Update to")
+                    color: Theme.palette.textSecondary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.label.pixelSize
+                }
+                ComboBox {
+                    id: versionBox
+                    Layout.preferredWidth: root.versionBoxWidth
+                    model: root.versionLabels
+                    Accessible.name: qsTr("Version")
+                }
+                Item { Layout.fillWidth: true }
+                Button {
+                    enabled: !root.updating && !!root.picked && root.picked.installable && !root.picked.current
+                    // The tab's one main action, shown as such only while it
+                    // would do something: a version other than the installed
+                    // one is picked (the newest, by default, when there is
+                    // an update).
+                    highlighted: enabled
+                    text: qsTr("Update")
+                    icon.source: Icons.url("download")
+                    onClicked: root.watcher = root.controller.updateToVersion(versionBox.currentIndex)
+                }
             }
         }
 

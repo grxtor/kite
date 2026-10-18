@@ -16,13 +16,13 @@ import Kite.Theme
  * logo, a pack's pack.png); `kind` only picks the glyph shown when it has
  * none, and the noun used when confirming a delete.
  *
- * Laid out like every launcher's mod list: one table -- the rows on a single
- * card, split by hairlines, as tall as they are up to the room there is --
- * with what it is on the left, its on/off switch and a ⋯ menu (also on
- * right-click) on the right. Clicking
+ * Laid out like Modrinth App's content table: one rounded card with a sticky
+ * header (select all, Name, Version, Actions) over roomy rows split by
+ * hairlines, as tall as they are up to the room there is -- a tick box, the
+ * logo, what it is, its version (when there is room), its on/off switch and
+ * a ⋯ menu (also on right-click). Clicking
  * a row opens its details (description, authors, version, where it came
- * from). Selecting works the way file lists do: hovering a row turns its
- * logo into a checkbox, and once anything is ticked every row shows one;
+ * from). Selecting works the way file lists do: every row has its tick box;
  * Cmd/Ctrl-click toggles a row, Shift-click ticks a range. Rows are kept
  * by `key` (the file name, ".disabled" or not), so a selection survives
  * searching, sorting and switching files on and off.
@@ -52,11 +52,20 @@ Item {
     property string expandedKey: ""
 
     readonly property int count: list.count
-    readonly property int thumbSize: 36
+    readonly property int thumbSize: 44
     // The same frame InstanceListRow gives an instance icon.
-    readonly property int thumbInset: Theme.space.xs
-    // Details line up under the name, past the logo.
-    readonly property int detailsIndent: Theme.space.md + thumbSize + Theme.space.md
+    readonly property int thumbInset: Theme.space.xs + Theme.space.xxs
+    // The tick box column, and the table's columns: the header and every
+    // row are laid out from these, so they line up. Version only when the
+    // card is wide enough to spare it, as in Modrinth App's table.
+    readonly property int checkSize: 20
+    readonly property bool showVersionColumn: width >= 760
+    readonly property int versionColumnWidth: Math.round(width * 0.24)
+    // Switch and ⋯ menu on the right.
+    readonly property int actionsWidth: 40 + Theme.space.md + Theme.control.height
+    readonly property int rowPadding: Theme.space.lg
+    // Details line up under the name, past the tick box and the logo.
+    readonly property int detailsIndent: rowPadding + checkSize + Theme.space.md + thumbSize + Theme.space.md
 
     // Whether files of `kind` can come from a provider (ContentTab).
     property bool updatable: false
@@ -99,6 +108,7 @@ Item {
     function selectAll() {
         root.selectedKeys = root.model ? root.model.visibleKeys() : []
     }
+    readonly property bool allSelected: !!model && model.count > 0 && selectedKeys.length >= model.count
     function clearSelection() {
         root.selectedKeys = []
         root.anchorKey = ""
@@ -120,7 +130,8 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        height: Math.min(parent.height, list.contentHeight + list.topMargin + list.bottomMargin + border.width * 2)
+        height: Math.min(parent.height, tableHeader.height + list.contentHeight + list.topMargin
+                                        + list.bottomMargin + border.width * 2)
         visible: list.count > 0
         radius: Theme.radius.lg
         color: Theme.palette.surface
@@ -128,11 +139,93 @@ Item {
         border.color: Theme.palette.border
         clip: true
 
+        // The sticky header: select-all, then a label for each column.
+        Rectangle {
+            id: tableHeader
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: card.border.width
+            height: Theme.control.heightLg
+            // Rounded to sit in the card's corners (the card's clip is
+            // square); the strip below squares its foot again.
+            radius: card.radius - card.border.width
+            color: Theme.palette.surfaceRaised
+            z: 1
+
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                height: parent.radius
+                color: parent.color
+            }
+
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                height: 1
+                color: Theme.palette.divider
+            }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: root.rowPadding
+                anchors.rightMargin: root.rowPadding
+                spacing: Theme.space.md
+
+                CheckBox {
+                    Layout.preferredWidth: root.checkSize
+                    padding: 0
+                    tristate: true
+                    checkState: root.allSelected ? Qt.Checked
+                              : root.selecting ? Qt.PartiallyChecked : Qt.Unchecked
+                    Accessible.name: qsTr("Select all")
+                    onClicked: {
+                        if (root.selecting)
+                            root.clearSelection()
+                        else
+                            root.selectAll()
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: qsTr("Name")
+                    color: Theme.palette.textSecondary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.label.pixelSize
+                    font.weight: Font.DemiBold
+                }
+                Text {
+                    visible: root.showVersionColumn
+                    Layout.preferredWidth: root.versionColumnWidth
+                    text: qsTr("Version")
+                    color: Theme.palette.textSecondary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.label.pixelSize
+                    font.weight: Font.DemiBold
+                }
+                Text {
+                    Layout.preferredWidth: root.actionsWidth
+                    horizontalAlignment: Text.AlignRight
+                    text: qsTr("Actions")
+                    color: Theme.palette.textSecondary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.label.pixelSize
+                    font.weight: Font.DemiBold
+                }
+            }
+        }
+
         ListView {
             id: list
-            anchors.fill: parent
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: tableHeader.bottom
+            anchors.bottom: parent.bottom
             anchors.margins: card.border.width
-            topMargin: Theme.space.xs
+            anchors.topMargin: 0
             bottomMargin: Theme.space.xs
             clip: true
             boundsBehavior: Flickable.StopAtBounds

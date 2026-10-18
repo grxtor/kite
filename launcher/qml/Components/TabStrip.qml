@@ -7,9 +7,10 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Page tabs: labels on a hairline, the current one underlined in the
- * accent. For switching views of one thing (an instance's mods, worlds,
- * log...), where the sidebar's pill style would read as navigation away.
+ * Page tabs, Modrinth style: plain labels in a row, the current one on a
+ * soft pill (accentSubtle fill, accentText label) and the others with only a
+ * hover overlay. For switching views of one thing (an instance's mods,
+ * worlds, log...), where the sidebar's rail would read as navigation away.
  *
  * More tabs than fit (an instance page can carry fourteen) are never
  * clipped or scrolled: the ones that do not fit move, in order, into a
@@ -37,7 +38,10 @@ Item {
     // The current tab when it is one of those, so More can carry its name.
     readonly property var currentOverflowTab: root.overflowTabs.find((t) => t.id === root.current) || null
 
-    implicitHeight: Theme.control.heightLg
+    // A tab's pill: its label with this much air either side.
+    readonly property int pillPadding: Theme.space.md + Theme.space.xxs
+
+    implicitHeight: Theme.control.height
     implicitWidth: row.implicitWidth
 
     Accessible.role: Accessible.PageTabList
@@ -51,7 +55,7 @@ Item {
             if (root.tabs[i].more === true || hiddenIndexes.indexOf(i) >= 0)
                 label = Math.max(label, repeater.itemAt(i).selectedLabelWidth)
         }
-        return label + moreRow.spacing + Theme.icon.sm
+        return label + moreRow.spacing + Theme.icon.sm + root.pillPadding * 2
     }
 
     // Fits as many tabs as the width allows, in order, leaving room for a
@@ -109,18 +113,10 @@ Item {
         text: qsTr("More")
     }
 
-    Rectangle {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        height: 1
-        color: Theme.palette.divider
-    }
-
     Row {
         id: row
         height: parent.height
-        spacing: Theme.space.xl
+        spacing: Theme.space.xs
 
         Repeater {
             id: repeater
@@ -130,11 +126,14 @@ Item {
                 required property var modelData
                 readonly property bool selected: modelData.id === root.current
                 readonly property bool hasCount: modelData.count !== undefined && modelData.count >= 0
+                readonly property color inkColor: tab.selected ? Theme.palette.accentText
+                                                : tab.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
 
                 // A tab's slot is its label's width unselected, whether it
                 // is selected or not, so selecting one never nudges the tabs
                 // after it: the bolder selected label just runs a pixel or
-                // two into the gap. Its selected width sizes More's slot.
+                // two into the pill's padding. Its selected width sizes
+                // More's slot.
                 readonly property real labelWidth: Math.ceil(labelMetrics.advanceWidth)
                 readonly property real selectedLabelWidth: Math.ceil(selectedMetrics.advanceWidth)
 
@@ -144,6 +143,7 @@ Item {
                 // the label metrics, which keep it while hidden.
                 visible: root.overflowIds.indexOf(modelData.id) < 0
                 implicitWidth: labelWidth + (hasCount ? labelRow.spacing + countLabel.implicitWidth : 0)
+                               + root.pillPadding * 2
                 onImplicitWidthChanged: Qt.callLater(root.relayout)
 
                 TextMetrics {
@@ -168,13 +168,13 @@ Item {
                 contentItem: Row {
                     id: labelRow
                     spacing: Theme.space.sm
+                    leftPadding: root.pillPadding
                     Text {
                         id: label
                         anchors.verticalCenter: parent.verticalCenter
                         width: tab.labelWidth
                         text: tab.modelData.label
-                        color: tab.selected ? Theme.palette.textPrimary
-                             : tab.hovered ? Theme.palette.textSecondary : Theme.palette.textTertiary
+                        color: tab.inkColor
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.body.pixelSize
                         font.weight: tab.selected ? Font.DemiBold : Font.Medium
@@ -184,7 +184,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: tab.hasCount
                         text: tab.hasCount ? tab.modelData.count : ""
-                        color: Theme.palette.textTertiary
+                        color: tab.selected ? tab.inkColor : Theme.palette.textTertiary
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.caption.pixelSize
                         font.weight: Font.Medium
@@ -193,23 +193,19 @@ Item {
 
                 background: Item {
                     Rectangle {
-                        anchors.left: parent.left
-                        anchors.bottom: parent.bottom
-                        // Under the whole label, bolder than its slot.
-                        width: Math.max(parent.width, label.contentWidth)
-                        height: 2
-                        // xs (2) fully rounds a 2px-tall bar; token, not a
-                        // magic number.
-                        radius: Theme.radius.xs
-                        color: Theme.palette.accent
-                        visible: tab.selected
+                        anchors.fill: parent
+                        radius: Theme.radius.pill
+                        color: tab.selected ? Theme.palette.accentSubtle
+                             : tab.down ? Theme.palette.pressedOverlay
+                             : tab.hovered ? Theme.palette.hoverOverlay : "transparent"
+                        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                     }
                     Rectangle {
                         anchors.fill: parent
-                        anchors.margins: -Theme.space.xxs
-                        radius: Theme.radius.sm
+                        anchors.margins: -Theme.focus.offset
+                        radius: Theme.radius.pill
                         color: "transparent"
-                        border.width: 2
+                        border.width: Theme.focus.width
                         border.color: Theme.palette.focusRing
                         visible: tab.visualFocus
                     }
@@ -224,11 +220,11 @@ Item {
         AbstractButton {
             id: moreButton
             readonly property bool selected: root.currentOverflowTab !== null
-            readonly property color inkColor: selected ? Theme.palette.textPrimary
-                                            : hovered || moreMenu.visible ? Theme.palette.textSecondary
-                                            : Theme.palette.textTertiary
+            readonly property color inkColor: selected ? Theme.palette.accentText
+                                            : hovered || moreMenu.visible ? Theme.palette.textPrimary
+                                            : Theme.palette.textSecondary
             visible: root.overflowIds.length > 0
-            implicitWidth: moreLabel.implicitWidth + moreRow.spacing + Theme.icon.sm
+            implicitWidth: moreLabel.implicitWidth + moreRow.spacing + Theme.icon.sm + root.pillPadding * 2
             height: row.height
             hoverEnabled: true
             Accessible.role: Accessible.ButtonMenu
@@ -238,6 +234,7 @@ Item {
             contentItem: Row {
                 id: moreRow
                 spacing: Theme.space.xs
+                leftPadding: root.pillPadding
                 Text {
                     id: moreLabel
                     anchors.verticalCenter: parent.verticalCenter
@@ -256,22 +253,21 @@ Item {
             }
 
             background: Item {
-                // The same underline a selected tab has.
+                // The same soft pill a selected tab has.
                 Rectangle {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    height: 2
-                    radius: Theme.radius.xs
-                    color: Theme.palette.accent
-                    visible: moreButton.selected
+                    anchors.fill: parent
+                    radius: Theme.radius.pill
+                    color: moreButton.selected ? Theme.palette.accentSubtle
+                         : moreButton.down ? Theme.palette.pressedOverlay
+                         : moreButton.hovered || moreMenu.visible ? Theme.palette.hoverOverlay : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                 }
                 Rectangle {
                     anchors.fill: parent
-                    anchors.margins: -Theme.space.xxs
-                    radius: Theme.radius.sm
+                    anchors.margins: -Theme.focus.offset
+                    radius: Theme.radius.pill
                     color: "transparent"
-                    border.width: 2
+                    border.width: Theme.focus.width
                     border.color: Theme.palette.focusRing
                     visible: moreButton.visualFocus
                 }

@@ -78,8 +78,8 @@ Item {
         toast.show(qsTr("That is not a Minecraft world. Pick a .zip with a world in it."), "danger")
     }
 
-    readonly property int rowHeight: 76
-    readonly property int thumbSize: 52
+    readonly property int rowHeight: 72
+    readonly property int thumbSize: 44
     // The game modes worth a tag. WorldList reports a level.dat without one
     // as "Undefined" (or "Unknown (n)"), which says nothing to a player, so
     // anything else is simply left out.
@@ -189,15 +189,15 @@ Item {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: Theme.space.md
-                        anchors.rightMargin: Theme.space.sm
+                        anchors.leftMargin: Theme.space.lg
+                        anchors.rightMargin: Theme.space.md
                         spacing: Theme.space.md
 
                         Rectangle {
                             id: thumb
                             Layout.preferredWidth: root.thumbSize
                             Layout.preferredHeight: root.thumbSize
-                            radius: Theme.radius.sm
+                            radius: Theme.radius.md
                             color: Theme.palette.surfaceSunken
                             clip: true
 

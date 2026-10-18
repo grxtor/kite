@@ -23,13 +23,13 @@ AbstractButton {
     property bool picked: false
     property bool installed: false
 
-    readonly property int rowHeight: 40
+    readonly property int rowHeight: 48
 
     height: root.rowHeight
     hoverEnabled: true
 
     background: Rectangle {
-        radius: Theme.radius.sm
+        radius: Theme.radius.md
         color: root.picked ? Theme.palette.accentSubtle
              : root.hovered ? Theme.palette.hoverOverlay : "transparent"
         border.width: root.picked ? 1 : 0

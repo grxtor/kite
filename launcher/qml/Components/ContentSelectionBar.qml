@@ -9,7 +9,8 @@ import Kite.Theme
 
 /*
  * The bar ContentTab shows over its list while rows are ticked: how many,
- * tick or untick all of them, and what can be done with them. Its
+ * tick or untick all of them, and what can be done with them. Tinted with
+ * the accent, so it reads as belonging to the ticked rows below; its
  * checkbox sits in the rows' own checkbox column. Enable, Disable and
  * Remove are off while the game holds the files (with the reason on
  * hover); Export always works. Its ⋯ menu checks just these for updates
@@ -44,19 +45,19 @@ Rectangle {
 
     implicitHeight: Theme.control.height + Theme.space.sm * 2
     radius: Theme.radius.lg
-    color: Theme.palette.surfaceRaised
+    color: Theme.palette.accentSubtle
     border.width: 1
-    border.color: Theme.palette.border
+    border.color: Theme.palette.accent
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: Theme.space.md
+        anchors.leftMargin: root.list ? root.list.rowPadding : Theme.space.lg
         anchors.rightMargin: Theme.space.sm
         spacing: Theme.space.sm
 
         Item {
-            Layout.preferredWidth: root.list ? root.list.thumbSize : 0
-            Layout.preferredHeight: root.list ? root.list.thumbSize : 0
+            Layout.preferredWidth: root.list ? root.list.checkSize : 0
+            Layout.preferredHeight: root.list ? root.list.checkSize : 0
             CheckBox {
                 anchors.centerIn: parent
                 padding: 0

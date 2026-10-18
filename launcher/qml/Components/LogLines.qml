@@ -45,7 +45,7 @@ Item {
         switch (level) {
         case 2: case 8: case 9: return Theme.palette.danger   // StdErr, Error, Fatal
         case 7: return Theme.palette.warning                  // Warning
-        case 3: return Theme.palette.accent                   // Kite
+        case 3: return Theme.palette.accentText               // Kite
         case 4: return Theme.palette.textTertiary             // Debug
         default: return Theme.palette.textSecondary
         }
@@ -118,7 +118,8 @@ Item {
                 wrapMode: root.wrap ? Text.WrapAnywhere : Text.NoWrap
                 color: row.model.level !== undefined ? root.levelColor(row.model.level) : Theme.palette.textSecondary
                 font.family: Theme.font.mono
-                font.pixelSize: Theme.type.label.pixelSize - 1
+                font.pixelSize: Theme.type.label.pixelSize
+                lineHeight: Theme.type.label.lineHeight
                 textFormat: Text.PlainText
 
                 onImplicitWidthChanged: if (!root.wrap && implicitWidth > root.widest) root.widest = implicitWidth

@@ -244,7 +244,7 @@ Item {
             LogLines {
                 id: lines
                 anchors.fill: parent
-                anchors.margins: Theme.space.sm
+                anchors.margins: Theme.space.md
                 model: root.model
                 wrap: findBar.wrap
                 follow: follow.checked

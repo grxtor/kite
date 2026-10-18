@@ -8,12 +8,12 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One instance, opened from the library: a one-line banner -- what it is
- * and what it runs, with its own actions behind one ⋯ menu -- over tabs for
- * what is inside it. Play/Stop no longer live on the banner; the persistent
- * play bar plays and stops whatever instance this page has open instead. On
- * a wide window the banner, tabs and tab content stop at
- * Theme.layout.maxContentWidth and centre.
+ * One instance, opened from the library: a header -- its icon, its name in
+ * Montserrat, what it runs and when it was played -- with Play (primary),
+ * Settings and a ⋯ menu for its other actions, over tabs for what is inside
+ * it. The persistent play bar still plays and stops whatever instance this
+ * page has open too. On a wide window the header, tabs and tab content stop
+ * at Theme.layout.maxContentWidth and centre.
  *
  * Laid out the way Modrinth App and CurseForge lay out an instance: it opens
  * on its Content, and the tabs used every day (Content, Worlds, Screenshots,
@@ -49,9 +49,11 @@ Item {
     readonly property var pagePlugins: pluginSurfacesFor && instanceId.length > 0 ? pluginSurfacesFor(1, instanceId) : null
     readonly property var settingsPlugins: pluginSurfacesFor && instanceId.length > 0 ? pluginSurfacesFor(2, instanceId) : null
 
-    // Play/Stop no longer round-trip through this page: the persistent play
-    // bar plays and stops whatever instance is open (see Main.qml).
+    // The header carries its own Play/Stop next to the persistent play bar's.
     signal backRequested()
+    // The header's Play and Stop, for the instance this page has open.
+    signal playRequested(string id)
+    signal stopRequested(string id)
     signal openPathRequested(string path)
     // Bubbles up from the Servers tab's "Join" button - see Main.qml.
     signal joinServerRequested(string id, string address)
@@ -145,6 +147,8 @@ Item {
 
     // The header delegate below, for the menu's name/icon/group.
     property var headerCard: null
+    readonly property int headerIconSize: 64
+    readonly property int headerActionSize: Theme.control.heightLg + Theme.space.xs
     // Whether the opened instance's game is running (from the header model).
     property bool running: false
 
@@ -212,83 +216,74 @@ Item {
         // (see TopBar.qml): this page has no TopBar of its own, but the
         // account still has to land in the same pixel spot switching to and
         // from a page that does.
-        anchors.topMargin: Theme.space.sm
+        anchors.topMargin: Theme.space.xl
         anchors.bottomMargin: Theme.space.lg
         spacing: Theme.space.md
 
+        // Only in Add content: the shell's top bar names the way back to the
+        // library, but not out of the browser to this instance's Content.
         RowLayout {
             Layout.fillWidth: true
-            // Capped and centred like the banner and tabs below, so on a wide
-            // window the account lands where every other page puts it.
             Layout.maximumWidth: Theme.layout.maxContentWidth
             Layout.alignment: Qt.AlignHCenter
-            // Theme.control.height, matching TopBar.titleRowHeight -- see
-            // the topMargin comment above.
             Layout.preferredHeight: Theme.control.height
+            visible: root.browsing
             spacing: Theme.space.sm
 
-            // Back to the library -- or, from Add content, back to this
-            // instance's Content.
             Button {
                 flat: true
-                text: root.browsing && root.headerCard ? root.headerCard.name : qsTr("Library")
+                text: root.headerCard ? root.headerCard.name : qsTr("Content")
                 icon.source: Icons.url("chevron-left")
                 leftPadding: Theme.space.sm
                 // Pulled out by its padding and the empty third of the
                 // chevron's square left of its stroke, so the ink starts on
-                // the banner's and tabs' edge -- the same rule as Discover's
-                // "Back to results".
+                // the tabs' edge -- the same rule as Discover's "Back to
+                // results".
                 Layout.leftMargin: -(leftPadding + Math.round(Theme.icon.sm / 3))
-                // A long instance name gives way before the account does.
+                // A long instance name gives way before the page does.
                 Layout.maximumWidth: Math.round(root.width / 2)
-                onClicked: root.browsing ? root.leaveBrowse() : root.backRequested()
+                onClicked: root.leaveBrowse()
             }
-
             Item { Layout.fillWidth: true }
-
-            // No TopBar reaches this page (see Main.qml) -- the account
-            // still needs the same consistent top-right spot every other
-            // page gives it.
-            ProfileButton {
-                name: root.accountName
-                kind: root.accountKind
-                avatarSource: root.accountAvatarSource
-                controller: root.accountsController
-                onOpenAccountsRequested: root.openAccountsRequested()
-            }
         }
 
         Repeater {
             model: root.headerModel
-            delegate: ContinueCard {
+            delegate: Item {
                 id: headerCard
-                required property string group
-                // The row itself, for the role ContinueCard does not
-                // require: the pack's own art for the backdrop.
                 required property var model
-                packArt: headerCard.model.packArt || ""
+                readonly property string name: model.name || ""
+                readonly property string iconKey: model.iconKey || ""
+                readonly property string group: model.group || ""
+                readonly property bool isRunning: !!model.isRunning
+                readonly property string launchStatus: model.launchStatus || ""
+                readonly property real launchProgress: model.launchProgress === undefined ? -1 : model.launchProgress
+                readonly property bool launching: launchStatus.length > 0
+                // Hidden while "Show play time per instance" is off.
+                readonly property string played: SettingsStore.bool("ShowGameTime")
+                                                 ? Format.playTime(model.totalTimePlayed) : ""
+                readonly property color tint: model.iconTint
+
                 Layout.fillWidth: true
                 Layout.maximumWidth: Theme.layout.maxContentWidth
                 Layout.alignment: Qt.AlignHCenter
-                // One line -- icon, name, tags, ⋯ -- like Modrinth App's
-                // instance header: every tab's own content needs the room,
-                // most of all at the smallest window.
-                compact: true
-                slim: true
+                Layout.topMargin: Theme.space.xs
+                implicitHeight: headerRow.implicitHeight
                 // Add content is a page of its own (see the file comment).
                 visible: !root.browsing
-                // The persistent play bar plays/stops the opened instance
-                // now; this header no longer needs its own Play/Stop too.
-                showPlay: false
-                // The "Classic editor" button that used to sit here opened
-                // a widget InstanceWindow, which the QML shell must never
-                // do -- this page's own tabs (Servers, Backups, Worlds,
-                // Managed pack, ...) now cover everything it did instead.
-                showEdit: false
-                // Folder and the rest live together in one ⋯ menu.
-                showFolder: false
-                menu: instanceMenu
                 Component.onDestruction: if (root.headerCard === headerCard) root.headerCard = null
+
+                // Right-aligned under the ⋯ button, like any ⋯ menu, and held
+                // there: entries that show or hide as the menu opens change
+                // its width after it is placed, which used to push its right
+                // edge past the button.
+                function openMenu() {
+                    if (!moreButton)
+                        return
+                    instanceMenu.popup(moreButton, moreButton.width - instanceMenu.width,
+                                       moreButton.height + Theme.space.xs)
+                    instanceMenu.x = Qt.binding(() => moreButton.width - instanceMenu.width)
+                }
 
                 // The settings tab needs to know whether the game runs, and
                 // this delegate is the only place the header model's roles
@@ -298,6 +293,156 @@ Item {
                     root.running = isRunning
                 }
                 onIsRunningChanged: root.running = isRunning
+
+                // One loader / version / time fact of the meta row.
+                component MetaItem: Row {
+                    property string iconName
+                    property string text
+                    spacing: Theme.space.xs
+                    MeshIcon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        iconName: parent.iconName
+                        size: Theme.icon.sm
+                        color: Theme.palette.textTertiary
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: parent.text
+                        color: Theme.palette.textSecondary
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.type.label.pixelSize
+                        font.weight: Font.Medium
+                    }
+                }
+
+                RowLayout {
+                    id: headerRow
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    spacing: Theme.space.lg
+
+                    // The instance's identity: its own icon on a tint of its
+                    // colour, a card corner (lg), never a pill.
+                    Rectangle {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredWidth: root.headerIconSize
+                        Layout.preferredHeight: root.headerIconSize
+                        radius: Theme.radius.lg
+                        border.width: 1
+                        border.color: Theme.palette.border
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: Format.shade(headerCard.tint, Theme.dark ? 0.34 : 0.84, 0.55) }
+                            GradientStop { position: 1.0; color: Format.shade(headerCard.tint, Theme.dark ? 0.18 : 0.72, 0.55) }
+                        }
+                        Image {
+                            anchors.centerIn: parent
+                            width: Math.round(parent.width * 0.7)
+                            height: width
+                            source: headerCard.iconKey.length > 0 ? "image://instanceicon/" + headerCard.iconKey : ""
+                            sourceSize: Qt.size(width, height)
+                            fillMode: Image.PreserveAspectFit
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: Theme.space.xs
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: headerCard.name
+                            elide: Text.ElideRight
+                            color: Theme.palette.textPrimary
+                            font.family: Theme.font.heading
+                            font.pixelSize: Theme.type.display.pixelSize - Theme.space.xs
+                            font.weight: Font.DemiBold
+                        }
+
+                        Flow {
+                            Layout.fillWidth: true
+                            spacing: Theme.space.xs
+                            // Items wrap onto a second line in a narrow window
+                            // rather than being cut off.
+                            MetaItem {
+                                text: headerCard.model.loader.length > 0 ? headerCard.model.loader : qsTr("Vanilla")
+                                iconName: "layers"
+                                rightPadding: Theme.space.md
+                            }
+                            MetaItem {
+                                visible: headerCard.model.gameVersion.length > 0
+                                text: headerCard.model.gameVersion
+                                iconName: "cube"
+                                rightPadding: Theme.space.md
+                            }
+                            // Clock = when it was last played, hourglass = for
+                            // how long in all; the ▶ triangle only ever means Play.
+                            MetaItem {
+                                text: Format.lastPlayed(headerCard.model.lastLaunch)
+                                iconName: "clock"
+                                rightPadding: Theme.space.md
+                            }
+                            MetaItem {
+                                visible: headerCard.played.length > 0
+                                text: qsTr("%1 played").arg(headerCard.played)
+                                iconName: "hourglass"
+                            }
+                        }
+
+                        ColumnLayout {
+                            visible: headerCard.launching
+                            Layout.preferredWidth: 320
+                            spacing: Theme.space.xs
+                            Text {
+                                Layout.fillWidth: true
+                                text: headerCard.launchProgress >= 0
+                                      ? qsTr("%1, %2%").arg(headerCard.launchStatus).arg(Math.round(headerCard.launchProgress * 100))
+                                      : headerCard.launchStatus
+                                elide: Text.ElideRight
+                                color: Theme.palette.textSecondary
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.type.label.pixelSize
+                            }
+                            LaunchProgressBar {
+                                Layout.fillWidth: true
+                                progress: headerCard.launchProgress
+                            }
+                        }
+                    }
+
+                    // Play first and biggest; Settings and ⋯ quieter beside it.
+                    Row {
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: Theme.space.sm
+
+                        PlayButton {
+                            round: false
+                            size: root.headerActionSize
+                            running: headerCard.isRunning
+                            busy: headerCard.launching
+                            enabled: !headerCard.launching && (headerCard.isRunning || !!headerCard.model.canLaunch)
+                            onClicked: headerCard.isRunning ? root.stopRequested(root.instanceId)
+                                                             : root.playRequested(root.instanceId)
+                        }
+                        IconButton {
+                            visible: !root.isLegacy
+                            size: root.headerActionSize
+                            flat: false
+                            iconName: "settings"
+                            tip: qsTr("Instance settings")
+                            onClicked: root.tab = "settings"
+                        }
+                        IconButton {
+                            id: moreButton
+                            size: root.headerActionSize
+                            iconName: "more"
+                            tip: qsTr("More")
+                            Accessible.role: Accessible.ButtonMenu
+                            onClicked: instanceMenu.visible ? instanceMenu.close() : headerCard.openMenu()
+                        }
+                    }
+                }
             }
         }
 
@@ -311,6 +456,7 @@ Item {
         }
 
         TabStrip {
+            Layout.topMargin: Theme.space.xs
             Layout.fillWidth: true
             Layout.maximumWidth: Theme.layout.maxContentWidth
             Layout.alignment: Qt.AlignHCenter

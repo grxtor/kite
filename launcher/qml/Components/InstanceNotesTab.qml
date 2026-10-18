@@ -74,12 +74,13 @@ Item {
         radius: Theme.radius.lg
         color: Theme.palette.surface
         border.width: 1
-        border.color: area.activeFocus ? Theme.palette.borderStrong : Theme.palette.border
+        border.color: area.activeFocus ? Theme.palette.accent : Theme.palette.border
+        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast } }
 
         ScrollView {
             id: scroll
             anchors.fill: parent
-            anchors.margins: Theme.space.xs
+            anchors.margins: Theme.space.sm
 
             TextArea {
                 id: area
@@ -87,6 +88,7 @@ Item {
                 wrapMode: TextEdit.Wrap
                 selectByMouse: true
                 background: null
+                padding: Theme.space.md
                 color: Theme.palette.textPrimary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.body.pixelSize

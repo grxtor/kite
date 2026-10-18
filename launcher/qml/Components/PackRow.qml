@@ -8,13 +8,14 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One row of PackList: logo (or, while selecting, a checkbox), name and
- * version, the on/off switch and the ⋯ menu; clicked, it opens the file's
- * details underneath -- description, authors, version, file, where it was
+ * One row of PackList: a tick box, the logo, name and where it is from, its
+ * version and file (when the table has room for that column), the on/off
+ * switch and the ⋯ menu; clicked, it opens the file's details
+ * underneath -- description, authors, version, file, where it was
  * installed from -- the way ModFolderPage's info panel showed them.
  *
  * A row of a table, not a card of its own: rows share PackList's card and
- * are split by hairlines; hover and ticked rows tint an inset strip.
+ * are split by hairlines; hover and ticked rows tint their whole width.
  */
 Item {
     id: row
@@ -39,15 +40,16 @@ Item {
     property bool lastRow: false
 
     height: header.height + (expanded ? details.implicitHeight + Theme.space.md : 0)
+    // "Mod Menu · Modrinth": who made it and where it came from.
+    readonly property string byline: {
+        const authors = (model.authors || []).join(", ")
+        return authors.length > 0 && source.length > 0 ? qsTr("%1 · %2").arg(authors).arg(source)
+             : authors.length > 0 ? authors : source
+    }
     clip: true
 
     Rectangle {
         anchors.fill: parent
-        anchors.leftMargin: Theme.space.xs
-        anchors.rightMargin: Theme.space.xs
-        anchors.topMargin: Theme.space.xxs
-        anchors.bottomMargin: Theme.space.xxs
-        radius: Theme.radius.sm
         color: row.selected ? Theme.palette.accentSubtle
              : hover.hovered ? Theme.palette.surfaceRaised : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
@@ -56,8 +58,6 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.leftMargin: Theme.space.md
-        anchors.rightMargin: Theme.space.md
         height: 1
         color: Theme.palette.divider
         visible: !row.lastRow
@@ -104,27 +104,39 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        height: Theme.control.heightLg + Theme.space.md
+        height: owner.thumbSize + Theme.space.md * 2
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: Theme.space.md
-            anchors.rightMargin: Theme.space.sm
+            anchors.leftMargin: owner.rowPadding
+            anchors.rightMargin: owner.rowPadding
             spacing: Theme.space.md
 
+            CheckBox {
+                id: check
+                Layout.preferredWidth: owner.checkSize
+                padding: 0
+                checked: row.selected
+                Accessible.name: qsTr("Select %1").arg(row.name)
+                onToggled: {
+                    owner.toggle(row.key)
+                    checked = Qt.binding(() => row.selected)
+                }
+            }
+
             // The file's own logo when it has one; otherwise (and
-            // while it loads) the kind's glyph. Hovering, or any
-            // row being ticked, swaps it for the checkbox.
+            // while it loads) the kind's glyph.
             Item {
                 Layout.preferredWidth: owner.thumbSize
                 Layout.preferredHeight: owner.thumbSize
+                opacity: row.itemEnabled ? 1 : Theme.opacity.disabled
 
                 Rectangle {
                     anchors.fill: parent
-                    visible: !check.visible
-                    radius: Theme.radius.sm
+                    radius: Theme.radius.md
                     color: Theme.palette.surfaceSunken
-                    opacity: row.itemEnabled ? 1 : Theme.opacity.disabled
+                    border.width: 1
+                    border.color: Theme.palette.border
                     Image {
                         id: logo
                         anchors.fill: parent
@@ -139,21 +151,8 @@ Item {
                         anchors.centerIn: parent
                         visible: logo.status !== Image.Ready
                         iconName: owner.iconName
-                        size: Theme.icon.sm
+                        size: Theme.icon.md
                         color: Theme.palette.textTertiary
-                    }
-                }
-
-                CheckBox {
-                    id: check
-                    anchors.centerIn: parent
-                    padding: 0
-                    visible: owner.selecting || hover.hovered || activeFocus
-                    checked: row.selected
-                    Accessible.name: qsTr("Select %1").arg(row.name)
-                    onToggled: {
-                        owner.toggle(row.key)
-                        checked = Qt.binding(() => row.selected)
                     }
                 }
             }
@@ -161,29 +160,61 @@ Item {
             Column {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
-                spacing: 1
+                spacing: Theme.space.xxs
+                opacity: row.itemEnabled ? 1 : Theme.opacity.disabled + 0.2
                 Text {
                     width: parent.width
                     text: row.name
                     elide: Text.ElideRight
-                    color: row.itemEnabled ? Theme.palette.textPrimary : Theme.palette.textTertiary
+                    color: Theme.palette.textPrimary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.body.pixelSize
+                    font.weight: Font.DemiBold
+                }
+                // Who made it and where from -- or, with no Version column
+                // (a narrow table), its version.
+                Text {
+                    width: parent.width
+                    visible: text.length > 0
+                    text: owner.showVersionColumn ? row.byline
+                          : (row.version ? String(row.version) : row.byline)
+                    elide: Text.ElideRight
+                    color: Theme.palette.textTertiary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.label.pixelSize
+                }
+            }
+
+            // Version, over the file it comes from.
+            Column {
+                visible: owner.showVersionColumn
+                Layout.preferredWidth: owner.versionColumnWidth
+                Layout.maximumWidth: owner.versionColumnWidth
+                spacing: Theme.space.xxs
+                opacity: row.itemEnabled ? 1 : Theme.opacity.disabled + 0.2
+                Text {
+                    width: parent.width
+                    visible: text.length > 0
+                    text: row.version ? String(row.version) : ""
+                    elide: Text.ElideRight
+                    color: Theme.palette.textPrimary
                     font.family: Theme.font.family
                     font.pixelSize: Theme.type.body.pixelSize
                     font.weight: Font.Medium
                 }
                 Text {
                     width: parent.width
-                    visible: text.length > 0
-                    text: row.version ? String(row.version) : ""
-                    elide: Text.ElideRight
+                    text: row.model.fileName || ""
+                    elide: Text.ElideMiddle
                     color: Theme.palette.textTertiary
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
+                    font.pixelSize: Theme.type.label.pixelSize
                 }
             }
 
             HoverReason {
                 reason: owner.unlocked ? "" : owner.lockedReason
+                Layout.preferredWidth: 40
                 Switch {
                     checked: row.itemEnabled
                     enabled: owner.unlocked

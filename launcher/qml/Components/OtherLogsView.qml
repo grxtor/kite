@@ -272,7 +272,7 @@ Item {
 
             LogLines {
                 anchors.fill: parent
-                anchors.margins: Theme.space.sm
+                anchors.margins: Theme.space.md
                 visible: root.hasFile
                 model: root.lines
                 wrap: findBar.wrap
