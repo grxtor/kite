@@ -6,6 +6,9 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
+// A small raised card rather than a dark chip: tooltipBackground (the
+// raised surface in Amethyst), the hairline border and the md shadow, like
+// a menu without the glass edge.
 T.ToolTip {
     id: control
 
@@ -18,7 +21,10 @@ T.ToolTip {
                              implicitContentHeight + topPadding + bottomPadding)
 
     margins: Theme.space.xs
-    padding: Theme.space.sm
+    topPadding: Theme.space.xs + Theme.space.xxs
+    bottomPadding: Theme.space.xs + Theme.space.xxs
+    leftPadding: Theme.space.sm + Theme.space.xxs
+    rightPadding: Theme.space.sm + Theme.space.xxs
 
     closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutsideParent | T.Popup.CloseOnReleaseOutsideParent
 
@@ -32,14 +38,23 @@ T.ToolTip {
     contentItem: Text {
         text: control.text
         font.family: Theme.font.family
-        font.pixelSize: Theme.type.caption.pixelSize
-        font.weight: Theme.type.caption.weight
+        font.pixelSize: Theme.type.label.pixelSize
+        font.weight: Theme.type.body.weight
         wrapMode: Text.Wrap
         color: Theme.palette.tooltipText
     }
 
     background: Rectangle {
-        radius: Theme.radius.sm
+        // md rather than the menus' lg: on a one-line tooltip lg already
+        // reads as a pill.
+        radius: Theme.radius.md
         color: Theme.palette.tooltipBackground
+        border.width: 1
+        border.color: Theme.palette.border
+
+        PopupShadow {
+            radius: parent.radius
+            level: Theme.elevation.md
+        }
     }
 }

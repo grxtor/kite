@@ -6,6 +6,8 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
+// A row of Modrinth-style tabs (see TabButton.qml): no strip of its own and
+// no rule underneath -- the active tab's soft pill is the whole marker.
 T.TabBar {
     id: control
 
@@ -14,7 +16,7 @@ T.TabBar {
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
                              implicitContentHeight + topPadding + bottomPadding)
 
-    spacing: Theme.space.sm
+    spacing: Theme.space.xs
 
     contentItem: ListView {
         model: control.contentModel
@@ -32,19 +34,5 @@ T.TabBar {
         preferredHighlightEnd: width - Theme.control.heightLg
     }
 
-    background: Rectangle {
-        color: "transparent"
-
-        // One hairline for the whole bar rather than each TabButton drawing
-        // its own bottom border -- otherwise adjoining tabs would double up
-        // the line at the seam and it would read thicker than every other
-        // divider in the UI.
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            height: 1
-            color: Theme.palette.divider
-        }
-    }
+    background: Item { }
 }

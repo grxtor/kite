@@ -6,6 +6,9 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
+// Off is a calm grey box, on is the accent with a white tick -- the toggle
+// grammar Switch and RadioButton share (phase-02 brief). No outline: the
+// grey fill is the box, the way Modrinth's own checkboxes read.
 T.CheckBox {
     id: control
 
@@ -20,8 +23,8 @@ T.CheckBox {
 
     indicator: Rectangle {
         id: box
-        implicitWidth: Theme.icon.lg
-        implicitHeight: Theme.icon.lg
+        implicitWidth: Theme.icon.md - Theme.space.xxs
+        implicitHeight: Theme.icon.md - Theme.space.xxs
 
         x: control.text ? (control.mirrored ? control.width - width - control.rightPadding : control.leftPadding) : control.leftPadding + (control.availableWidth - width) / 2
         y: control.topPadding + (control.availableHeight - height) / 2
@@ -31,26 +34,23 @@ T.CheckBox {
         // colour below and which of the two overlay/tint strategies applies.
         readonly property bool boxChecked: control.checkState !== Qt.Unchecked
 
-        radius: Theme.radius.sm
+        radius: Theme.radius.indicator
         color: box.boxChecked
             ? (control.down ? Theme.palette.accentPressed : control.hovered ? Theme.palette.accentHover : Theme.palette.accent)
-            : Theme.palette.surfaceRaised
-        border.width: box.boxChecked ? 0 : 1
-        border.color: Theme.palette.border
-        opacity: control.enabled ? 1.0 : 0.45
+            : (control.down ? Theme.neutral.trackHover : control.hovered ? Theme.neutral.trackHover : Theme.neutral.track)
+        opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         Behavior on color {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
         }
 
+        // Pressing an unchecked box darkens it one more step, the way the
+        // checked one drops to accentPressed.
         Rectangle {
-            // The unchecked box has no dedicated hover/press colour, so it
-            // uses the generic overlay tokens instead; the checked (accent)
-            // box already darkens via accentHover/accentPressed above.
             anchors.fill: parent
             radius: parent.radius
-            visible: !box.boxChecked
-            color: control.down ? Theme.palette.pressedOverlay : control.hovered ? Theme.palette.hoverOverlay : "transparent"
+            visible: !box.boxChecked && control.down
+            color: Theme.palette.pressedOverlay
         }
 
         CheckMark {
@@ -62,9 +62,6 @@ T.CheckBox {
         }
 
         FocusRing {
-            anchors.fill: parent
-            anchors.margins: -Theme.space.xxs
-            radius: parent.radius + Theme.space.xxs
             visible: control.visualFocus
         }
     }

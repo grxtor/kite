@@ -23,8 +23,8 @@ T.Dialog {
                              + (implicitHeaderHeight > 0 ? implicitHeaderHeight + spacing : 0)
                              + (implicitFooterHeight > 0 ? implicitFooterHeight + spacing : 0))
 
-    padding: Theme.space.lg
-    spacing: Theme.space.md
+    padding: Theme.space.xl
+    spacing: Theme.space.lg
 
     enter: Transition {
         NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
@@ -34,13 +34,11 @@ T.Dialog {
         NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
     }
 
-    background: Rectangle {
+    // The popup glass treatment at the largest corner and the deepest
+    // shadow (Theme.elevation.lg).
+    background: GlassSurface {
         radius: Theme.radius.xl
-        color: Theme.palette.surfaceOverlay
-        border.width: 1
-        border.color: Theme.palette.border
-
-        PopupShadow { radius: parent.radius }
+        level: Theme.elevation.lg
     }
 
     header: Label {
@@ -50,7 +48,7 @@ T.Dialog {
         font.pixelSize: Theme.type.title.pixelSize
         font.family: Theme.font.heading
         font.weight: Theme.type.title.weight
-        padding: Theme.space.lg
+        padding: Theme.space.xl
         bottomPadding: 0
     }
 

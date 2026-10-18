@@ -19,11 +19,11 @@ T.ScrollBar {
     minimumSize: orientation === Qt.Horizontal ? height / width : width / height
 
     contentItem: Rectangle {
-        implicitWidth: control.interactive ? Theme.space.sm : Theme.space.xxs
-        implicitHeight: control.interactive ? Theme.space.sm : Theme.space.xxs
+        implicitWidth: control.interactive ? Theme.space.xs + Theme.space.xxs : Theme.space.xxs
+        implicitHeight: control.interactive ? Theme.space.xs + Theme.space.xxs : Theme.space.xxs
 
         radius: width / 2
-        color: control.pressed ? Theme.palette.textTertiary : Theme.palette.borderStrong
+        color: control.pressed || control.hovered ? Theme.palette.textTertiary : Theme.palette.borderStrong
         opacity: 0.0
 
         states: State {

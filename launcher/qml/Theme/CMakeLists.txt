@@ -26,6 +26,12 @@ qt_add_qml_module(Kite_qml_theme
     RESOURCE_PREFIX "/qt/qml"
     QML_FILES
         Theme.qml
+        # The soft drop shadow Theme.elevation describes, here rather than
+        # in Kite.Style so Kite.Components' cards can lift with it too.
+        Shadow.qml
+        # The glass surface (Theme.glass) for the sidebar, play bar and
+        # popups, for the same reason.
+        GlassSurface.qml
     SOURCES
         ThemeService.h
         ThemeService.cpp

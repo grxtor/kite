@@ -61,6 +61,9 @@ class ThemeTest : public QObject
 							   "    property int spaceMd: Theme.space.md\n"
 							   "    property int bodyPixelSize: Theme.type.body.pixelSize\n"
 							   "    property int radiusMd: Theme.radius.md\n"
+							   "    property int radiusLg: Theme.radius.lg\n"
+							   "    property int controlHeightSm: Theme.control.heightSm\n"
+							   "    property color surfaceHover: Theme.palette.surfaceHover\n"
 							   "    property bool dark: Theme.dark\n"
 							   "    property color canvasColor: Theme.palette.canvas\n"
 							   "    // Exposed so the test can reach the singletons from C++\n"
@@ -79,7 +82,11 @@ class ThemeTest : public QObject
 		// The plain constants: exactly the values Theme.qml declares.
 		QCOMPARE(root->property("spaceMd").toInt(), 12);
 		QCOMPARE(root->property("bodyPixelSize").toInt(), 14);
-		QCOMPARE(root->property("radiusMd").toInt(), 8);
+		// The phase-02 "soft" scale: sm 8 / md 10 / lg 14 / xl 18, controls
+		// sm 30 / md 36 / lg 44.
+		QCOMPARE(root->property("radiusMd").toInt(), 10);
+		QCOMPARE(root->property("radiusLg").toInt(), 14);
+		QCOMPARE(root->property("controlHeightSm").toInt(), 30);
 
 		// The colour tokens: not merely "some colour", but the one
 		// ThemePalette hands out for whichever theme is active -- proving
@@ -87,14 +94,17 @@ class ThemeTest : public QObject
 		//
 		// The launcher starts dark whatever the OS prefers -- that is the
 		// documented default -- so this holds on a light test runner too.
-		// A fresh ThemeService also starts on the Grass scheme (see its own
-		// m_scheme default), not Amethyst/meshDark() -- this deliberately
-		// does not use meshDark() here, unlike the same check further down
-		// for "ember", so a future default-scheme change fails loudly here
-		// instead of this assertion silently checking the wrong palette.
+		// A fresh ThemeService also starts on the Amethyst scheme (see its
+		// own m_scheme default) -- named explicitly through forScheme()
+		// rather than meshDark(), so a future default-scheme change fails
+		// loudly here instead of this assertion silently checking the wrong
+		// palette.
 		QCOMPARE(root->property("dark").toBool(), true);
 		QCOMPARE(root->property("accent").value<QColor>(),
-				 ThemePalette::forScheme(ThemePalette::Scheme::Grass, true).accent);
+				 ThemePalette::forScheme(ThemePalette::Scheme::Amethyst, true).accent);
+		// surfaceHover is the newest palette role; it reaches QML too.
+		QCOMPARE(root->property("surfaceHover").value<QColor>(),
+				 ThemePalette::forScheme(ThemePalette::Scheme::Amethyst, true).surfaceHover);
 
 		auto* service = qobject_cast<ThemeService*>(
 			root->property("serviceRef").value<QObject*>());
@@ -110,14 +120,14 @@ class ThemeTest : public QObject
 		QCOMPARE(toLight.count(), 1);
 		QCOMPARE(root->property("dark").toBool(), false);
 		QCOMPARE(root->property("canvasColor").value<QColor>(),
-				 ThemePalette::forScheme(ThemePalette::Scheme::Grass, false).canvas);
+				 ThemePalette::forScheme(ThemePalette::Scheme::Amethyst, false).canvas);
 
 		QSignalSpy toDark(service, &ThemeService::changed);
 		themeRef->setProperty("mode", QStringLiteral("dark"));
 		QCOMPARE(toDark.count(), 1);
 		QCOMPARE(root->property("dark").toBool(), true);
 		QCOMPARE(root->property("canvasColor").value<QColor>(),
-				 ThemePalette::forScheme(ThemePalette::Scheme::Grass, true).canvas);
+				 ThemePalette::forScheme(ThemePalette::Scheme::Amethyst, true).canvas);
 
 		// The colour scheme swaps independently of the mode, also as one
 		// announced unit; an unknown name changes nothing.

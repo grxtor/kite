@@ -11,14 +11,28 @@ import Kite.Theme
 // because visualFocus is false for a focus gained by mouse/touch press and
 // true only for keyboard/programmatic focus. That is what keeps the ring from
 // flashing on every click, which is the usual complaint about focus rings.
+//
+// Place it as a child of the control's background Rectangle: it follows
+// that shape on its own, standing Theme.focus.offset clear of it. A text
+// field sets `halo` instead and shows it on any focus: the same accent,
+// softened to Theme.focus.haloOpacity and hugging the field's own edge.
 Rectangle {
     id: ring
 
-    // Callers place this as a sibling on top of (or inset from) the control's
-    // background and set radius/anchors to match its shape.
+    property bool halo: false
+    // The corner of the shape this ring goes around; the parent's own when
+    // it has one.
+    property real baseRadius: parent && parent.radius !== undefined ? parent.radius : 0
+    readonly property real reach: Theme.focus.width + (halo ? 0 : Theme.focus.offset)
+
+    anchors.fill: parent
+    anchors.margins: -reach
+    radius: baseRadius + reach
     color: "transparent"
-    border.width: 2
-    border.color: Theme.palette.focusRing
+    border.width: Theme.focus.width
+    border.color: halo ? Qt.rgba(Theme.palette.focusRing.r, Theme.palette.focusRing.g,
+                                 Theme.palette.focusRing.b, Theme.focus.haloOpacity)
+                       : Theme.palette.focusRing
     antialiasing: true
 
     // The ring fades in/out with the rest of the style's state changes rather

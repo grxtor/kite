@@ -25,16 +25,37 @@ T.ComboBox {
 
     // This ComboBox uses our own ItemDelegate.qml (same directory, so no
     // import needed) for popup rows instead of Basic's, otherwise every row
-    // would suddenly look unstyled next to a themed field.
+    // would suddenly look unstyled next to a themed field. The rows read
+    // like Menu's: the chosen value carries the soft accent pill (the tab
+    // grammar), the row under the pointer or the keyboard a neutral overlay.
     delegate: ItemDelegate {
+        id: row
         required property var model
         required property int index
+        readonly property bool chosen: control.currentIndex === index
 
         width: ListView.view.width
         text: model[control.textRole]
-        font.weight: control.currentIndex === index ? Theme.type.bodyStrong.weight : Theme.type.body.weight
+        font.weight: chosen ? Theme.type.bodyStrong.weight : Theme.type.body.weight
         highlighted: control.highlightedIndex === index
         hoverEnabled: control.hoverEnabled
+
+        contentItem: Text {
+            text: row.text
+            font: row.font
+            color: row.chosen ? Theme.palette.accentText : Theme.palette.textPrimary
+            elide: Text.ElideRight
+            verticalAlignment: Text.AlignVCenter
+        }
+
+        background: Rectangle {
+            implicitHeight: Theme.control.menuItemHeight
+            radius: Theme.radius.sm
+            color: row.chosen ? Theme.palette.accentSubtle
+                 : row.down ? Theme.palette.pressedOverlay
+                 : row.highlighted ? Theme.palette.hoverOverlay
+                 : "transparent"
+        }
     }
 
     indicator: Chevron {
@@ -78,7 +99,7 @@ T.ComboBox {
         font.family: Theme.font.family
         font.pixelSize: Theme.type.body.pixelSize
         font.weight: Theme.type.body.weight
-        color: Theme.palette.textPrimary
+        color: control.enabled ? Theme.palette.textPrimary : Theme.palette.textDisabled
         selectionColor: Theme.palette.selection
         selectedTextColor: Theme.palette.selectionText
         verticalAlignment: Text.AlignVCenter
@@ -86,28 +107,34 @@ T.ComboBox {
         background: Item {}
     }
 
+    // The field look (see TextField.qml). Open, it keeps the accent edge a
+    // focused field has, so the list visibly belongs to this box.
     background: Rectangle {
         implicitWidth: Theme.control.heightLg * 4
         implicitHeight: Theme.control.height
         radius: Theme.radius.md
-        color: control.down ? Theme.palette.pressedOverlay : Theme.palette.surfaceRaised
+        color: Theme.palette.surface
         border.width: 1
-        // The one control in the style with no hover feedback at all --
-        // single property (border colour only, matching TextField.qml's
-        // idiom), not also brightening the fill, per Theme.motion's
-        // one-property hover contract.
-        border.color: (control.activeFocus || control.hovered) ? Theme.palette.borderStrong : Theme.palette.border
-        opacity: control.enabled ? 1.0 : 0.45
+        border.color: control.popup.visible || (control.editable && control.activeFocus) ? Theme.palette.accent
+                    : control.hovered && control.enabled ? Theme.neutral.borderHover : Theme.palette.border
+        opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         Behavior on border.color {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
         }
 
-        FocusRing {
+        // The press itself, under the text: a quick neutral overlay.
+        Rectangle {
             anchors.fill: parent
-            anchors.margins: -Theme.space.xxs
-            radius: parent.radius + Theme.space.xxs
-            visible: control.visualFocus
+            radius: parent.radius
+            color: control.pressed ? Theme.palette.pressedOverlay : "transparent"
+        }
+
+        // A typed-into (editable) combo is a text field and shows the halo
+        // on any focus; a plain one is a button, so keyboard focus only.
+        FocusRing {
+            halo: true
+            visible: control.visualFocus || (control.editable && control.activeFocus)
         }
     }
 
@@ -117,14 +144,14 @@ T.ComboBox {
     property int maxVisibleRows: 8
 
     popup: T.Popup {
-        y: control.height + Theme.space.xxs
+        y: control.height + Theme.space.xs
         width: control.width
         height: Math.min(contentItem.implicitHeight + topPadding + bottomPadding,
-                         control.maxVisibleRows * Theme.control.height + topPadding + bottomPadding,
+                         control.maxVisibleRows * Theme.control.menuItemHeight + topPadding + bottomPadding,
                          control.Window.height - topMargin - bottomMargin)
         topMargin: Theme.space.sm
         bottomMargin: Theme.space.sm
-        padding: Theme.space.xxs
+        padding: Theme.space.xs
 
         // This popup is built inline rather than reused from Popup.qml (the
         // ListView content needs control.delegateModel wired in), so it
@@ -146,13 +173,10 @@ T.ComboBox {
             T.ScrollIndicator.vertical: ScrollIndicator { }
         }
 
-        background: Rectangle {
+        // The popup glass treatment Menu.qml uses.
+        background: GlassSurface {
             radius: Theme.radius.lg
-            color: Theme.palette.surfaceOverlay
-            border.width: 1
-            border.color: Theme.palette.border
-
-            PopupShadow { radius: parent.radius }
+            level: Theme.elevation.md
         }
     }
 }

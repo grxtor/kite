@@ -48,7 +48,7 @@ T.ToolButton {
         implicitHeight: Theme.control.height
         radius: Theme.radius.md
         color: (control.checked || control.highlighted) ? Theme.palette.accentSubtle : "transparent"
-        opacity: control.enabled ? 1.0 : 0.45
+        opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         Rectangle {
             anchors.fill: parent
@@ -60,9 +60,6 @@ T.ToolButton {
         }
 
         FocusRing {
-            anchors.fill: parent
-            anchors.margins: -Theme.space.xxs
-            radius: parent.radius + Theme.space.xxs
             visible: control.visualFocus
         }
     }

@@ -37,7 +37,7 @@ T.Menu {
     // pushed in by this much.
     margins: Theme.space.sm
     overlap: 1
-    padding: Theme.space.xxs
+    padding: Theme.space.xs
 
     delegate: MenuItem { }
 
@@ -53,13 +53,12 @@ T.Menu {
         T.ScrollIndicator.vertical: ScrollIndicator { }
     }
 
-    background: Rectangle {
+    // The popup glass treatment (Theme.glass): a barely see-through
+    // surfaceOverlay, the hairline border, a light top edge and the md
+    // shadow.
+    background: GlassSurface {
         radius: Theme.radius.lg
-        color: Theme.palette.surfaceOverlay
-        border.width: 1
-        border.color: Theme.palette.border
-
-        PopupShadow { radius: parent.radius }
+        level: Theme.elevation.md
     }
 
     enter: Transition {

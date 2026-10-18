@@ -14,7 +14,10 @@ import QtQuick
  * QML singleton, registered alongside this file in C++ -- so the palette-swap
  * logic lives in exactly one place and this file only has to relay it.
  * Everything below that (space, radius, control, icon, motion, font, type) is
- * a plain constant this file alone owns.
+ * a plain constant this file alone owns; focus, elevation, glass and neutral
+ * are the few values derived from the palette and the mode here, for the
+ * states and surfaces the palette has no role of its own for. Shadow.qml and
+ * GlassSurface.qml, in this module too, draw the elevation and glass ones.
  */
 QtObject {
     id: root
@@ -42,22 +45,24 @@ QtObject {
     }
 
     // Contract: `pill` is reserved for genuine toggle/chip affordances
-    // (a switch track, a filter chip) -- never for the Play verb or an
-    // instance's own identity (cover corners, the icon picker, PlayButton's
-    // wide hero shape), which are capped at `md`/`lg` instead. A blocky game
-    // launcher asking to look professional doesn't have to be as rounded as
-    // a fintech app; see design-plan.md §1/§2.7.
-    // Three corner sizes in practice: 6 for controls and small tiles (sm and
-    // md are the same value, md kept as the controls' name), 12 for cards,
-    // 16 for large surfaces (dialogs, heroes). xs is for hairline details
-    // only. Never arithmetic on these (no `md + 2`): an off-scale corner is
-    // exactly the inconsistency this scale exists to prevent.
+    // (a switch track, a filter chip, a tab's soft pill) -- never for the
+    // Play verb or an instance's own identity (cover corners, the icon
+    // picker, PlayButton's wide hero shape), which are capped at `md`/`lg`
+    // instead.
+    // The phase-02 "soft" scale (designs/redesign-brief.md): 8 for small
+    // pieces (menu rows, tiles, tags), 10 for controls (buttons, fields),
+    // 14 for cards, menus and popovers, 18 for dialogs and other large
+    // surfaces. xs is for hairline details only, `indicator` for the small
+    // square boxes a 10 would turn into circles (a checkbox). Never
+    // arithmetic on these (no `md + 2`): an off-scale corner is exactly the
+    // inconsistency this scale exists to prevent.
     readonly property QtObject radius: QtObject {
         readonly property int xs: 2
-        readonly property int sm: 6
-        readonly property int md: 6
-        readonly property int lg: 12
-        readonly property int xl: 16
+        readonly property int indicator: 5
+        readonly property int sm: 8
+        readonly property int md: 10
+        readonly property int lg: 14
+        readonly property int xl: 18
         readonly property int pill: 999
     }
 
@@ -71,10 +76,88 @@ QtObject {
         readonly property int barHeight: 84
     }
 
+    // Control heights: sm for dense rows and toolbars, the default for
+    // ordinary buttons and fields, lg for a page's main action (Play is lg
+    // or larger).
     readonly property QtObject control: QtObject {
-        readonly property int heightSm: 28
+        readonly property int heightSm: 30
         readonly property int height: 36
         readonly property int heightLg: 44
+        // A menu row (Menu/MenuItem): denser than a button, roomier than a
+        // list line.
+        readonly property int menuItemHeight: 32
+    }
+
+    // Keyboard focus and a focused field -- see Style/FocusRing.qml. A
+    // keyboard ring stands `offset` clear of the control, solid
+    // palette.focusRing; a focused text field instead wears a soft halo
+    // (the same colour at haloOpacity) hugging its accent border.
+    readonly property QtObject focus: QtObject {
+        readonly property int width: 2
+        readonly property int offset: 2
+        readonly property real haloOpacity: 0.45
+    }
+
+    // Soft drop shadows (Theme/Shadow.qml draws them): y offset, blur
+    // reach and strength. sm lifts a hovered card, md carries menus,
+    // tooltips and popovers, lg carries dialogs. Light mode needs far less
+    // strength for the same lift.
+    readonly property QtObject elevation: QtObject {
+        // A trace of the neutrals' violet in light mode keeps the shadow
+        // from reading as grey dirt under a white card.
+        readonly property color color: root.dark ? "#000000" : "#1A1230"
+        readonly property QtObject sm: QtObject {
+            readonly property int y: 2
+            readonly property int blur: 10
+            readonly property real strength: root.dark ? 0.34 : 0.08
+        }
+        readonly property QtObject md: QtObject {
+            readonly property int y: 6
+            readonly property int blur: 20
+            readonly property real strength: root.dark ? 0.42 : 0.10
+        }
+        readonly property QtObject lg: QtObject {
+            readonly property int y: 14
+            readonly property int blur: 36
+            readonly property real strength: root.dark ? 0.52 : 0.16
+        }
+        // The one glow the brief allows: a primary button under the
+        // pointer, drawn in palette.accent rather than `color`.
+        readonly property QtObject glow: QtObject {
+            readonly property int y: 3
+            readonly property int blur: 16
+            readonly property real strength: root.dark ? 0.34 : 0.24
+        }
+    }
+
+    /* Glass is an accent, not the style: only the sidebar, the bottom play
+     * bar and popups/dialogs use it -- a 1 px light line along the top edge
+     * and a faint sheen down from it, over a surface that is slightly
+     * translucent where only the canvas sits behind it (sidebar, play bar).
+     * Popups stay opaque: with no blur to give (the 6.4 floor has none) a
+     * see-through menu only shows the text behind it as ghosting. */
+    readonly property QtObject glass: QtObject {
+        // The sidebar and the play bar.
+        readonly property color fill: Qt.rgba(root.palette.surface.r, root.palette.surface.g,
+                                              root.palette.surface.b, root.dark ? 0.88 : 0.86)
+        // Menus, popups and dialogs.
+        readonly property color popup: root.palette.surfaceOverlay
+        // The top-edge highlight, and the sheen that fades down from it.
+        readonly property color highlight: root.dark ? Qt.rgba(1, 1, 1, 0.07) : Qt.rgba(1, 1, 1, 0.9)
+        readonly property color sheen: root.dark ? Qt.rgba(1, 1, 1, 0.025) : Qt.rgba(1, 1, 1, 0)
+        readonly property color border: root.palette.border
+    }
+
+    // Neutral state colours that are not a palette role of their own:
+    // translucent, so they read the same on canvas, a card or a dialog.
+    readonly property QtObject neutral: QtObject {
+        // The calm grey of an "off" or empty track: a switch that is off,
+        // a slider's groove, a progress bar's track.
+        readonly property color track: root.dark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0.09, 0.07, 0.16, 0.16)
+        readonly property color trackHover: root.dark ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(0.09, 0.07, 0.16, 0.24)
+        // An outlined control's edge under the pointer: one step over
+        // palette.border, well short of borderStrong's 3:1.
+        readonly property color borderHover: root.dark ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(0, 0, 0, 0.22)
     }
 
     readonly property QtObject icon: QtObject {
@@ -103,7 +186,8 @@ QtObject {
     /* Motion contract: a hover/press transition changes exactly one visual
      * property over `fast` -- colour, or a single small scale/translate,
      * never both, and never an overshoot easing (Easing.OutBack) on a
-     * hover-triggered transform. An idle animation loop (Animation.Infinite)
+     * hover-triggered transform. The one exception is the primary button's
+     * glow (elevation.glow), which fades in alongside its colour. An idle animation loop (Animation.Infinite)
      * is only ever gated on a real busy/live state property -- the way
      * RecentItem.qml/InstanceListRow.qml gate their pulse on `isRunning`,
      * PlayDock.qml on `dockRunning`, and Skeleton.qml on its own visibility
@@ -115,7 +199,9 @@ QtObject {
      *   - rail/list nav (SidebarNav, and anything reusing its mechanism,
      *     e.g. Settings' section list): a sliding surfaceRaised pill plus a
      *     3px accent bar pinned to the leading edge.
-     *   - tab strip (TabStrip): an accent underline beneath the active tab.
+     *   - tab strip (TabStrip, TabBar/TabButton): a soft pill behind the
+     *     active tab -- accentSubtle fill, accentText label -- the rest plain
+     *     text with a hover overlay (Modrinth's tabs; phase-02 brief).
      *   - swatch/tile picker (PalettePicker and similar): an accent ring
      *     around the selected tile.
      *   - segmented control (SegmentedControl): a raised fill on the

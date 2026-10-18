@@ -23,13 +23,10 @@ T.Popup {
         NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
     }
 
-    background: Rectangle {
+    // The popup glass treatment Menu.qml uses.
+    background: GlassSurface {
         radius: Theme.radius.lg
-        color: Theme.palette.surfaceOverlay
-        border.width: 1
-        border.color: Theme.palette.border
-
-        PopupShadow { radius: parent.radius }
+        level: Theme.elevation.md
     }
 
     T.Overlay.modal: Rectangle {

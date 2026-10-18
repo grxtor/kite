@@ -6,11 +6,12 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
-// One pill-shaped field with plus/minus zones at either end, rather than
-// Basic's two separately-coloured indicator boxes bolted onto a third box --
-// that reads as three widgets; this reads as one control with two active
-// edges, closer to the calmer, single-surface language the rest of the style
-// uses for fields.
+// One field (the look TextField.qml sets) with minus/plus buttons inset at
+// either end, rather than Basic's two separately-coloured indicator boxes
+// bolted onto a third box -- that reads as three widgets; this reads as one
+// control with two active edges. Each button is a small rounded hover
+// target inside the field's own corners, so its hover never squares off
+// the field's rounding.
 T.SpinBox {
     id: control
 
@@ -49,73 +50,81 @@ T.SpinBox {
         inputMethodHints: control.inputMethodHints
     }
 
-    up.indicator: Rectangle {
+    up.indicator: SpinStep {
         x: control.mirrored ? 0 : control.width - width
         height: control.height
         implicitWidth: Theme.control.height
         implicitHeight: Theme.control.height
-        color: control.up.pressed ? Theme.palette.pressedOverlay : control.up.hovered ? Theme.palette.hoverOverlay : "transparent"
-
-        Rectangle {
-            x: 0
-            width: 1
-            height: parent.height
-            color: Theme.palette.divider
-        }
-
-        Rectangle {
-            anchors.centerIn: parent
-            width: Theme.icon.sm
-            height: 2
-            radius: 1
-            color: control.enabled ? Theme.palette.textSecondary : Theme.palette.textDisabled
-        }
-        Rectangle {
-            anchors.centerIn: parent
-            width: 2
-            height: Theme.icon.sm
-            radius: 1
-            color: control.enabled ? Theme.palette.textSecondary : Theme.palette.textDisabled
-        }
+        plus: true
+        pressed: control.up.pressed
+        hovered: control.up.hovered
     }
 
-    down.indicator: Rectangle {
+    down.indicator: SpinStep {
         x: control.mirrored ? control.width - width : 0
         height: control.height
         implicitWidth: Theme.control.height
         implicitHeight: Theme.control.height
-        color: control.down.pressed ? Theme.palette.pressedOverlay : control.down.hovered ? Theme.palette.hoverOverlay : "transparent"
-
-        Rectangle {
-            x: parent.width - 1
-            width: 1
-            height: parent.height
-            color: Theme.palette.divider
-        }
-
-        Rectangle {
-            anchors.centerIn: parent
-            width: Theme.icon.sm
-            height: 2
-            radius: 1
-            color: control.enabled ? Theme.palette.textSecondary : Theme.palette.textDisabled
-        }
+        pressed: control.down.pressed
+        hovered: control.down.hovered
     }
 
     background: Rectangle {
         implicitWidth: Theme.control.heightLg * 3
+        implicitHeight: Theme.control.height
         radius: Theme.radius.md
-        color: Theme.palette.surfaceSunken
+        color: Theme.palette.surface
         border.width: 1
-        border.color: control.activeFocus ? Theme.palette.borderStrong : Theme.palette.border
-        opacity: control.enabled ? 1.0 : 0.45
-        clip: true
+        border.color: control.activeFocus && control.editable ? Theme.palette.accent
+                    : control.hovered && control.enabled ? Theme.neutral.borderHover : Theme.palette.border
+        opacity: control.enabled ? 1.0 : Theme.opacity.disabled
+
+        Behavior on border.color {
+            ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+        }
 
         FocusRing {
+            halo: true
+            visible: control.visualFocus || (control.editable && control.activeFocus)
+        }
+    }
+
+    // One end's button: an inset rounded hover target with a minus or plus.
+    // T.SpinBox itself switches an indicator's `enabled` off at the end of
+    // the range, which is what greys the glyph out there.
+    component SpinStep: Item {
+        id: step
+
+        property bool plus: false
+        property bool pressed: false
+        property bool hovered: false
+
+        Rectangle {
             anchors.fill: parent
-            anchors.margins: -Theme.space.xxs
-            radius: parent.radius + Theme.space.xxs
-            visible: control.visualFocus
+            anchors.margins: Theme.space.xs
+            radius: Theme.radius.sm
+            color: step.pressed ? Theme.palette.pressedOverlay
+                 : step.hovered && step.enabled ? Theme.palette.hoverOverlay : "transparent"
+
+            Behavior on color {
+                ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+            }
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: Theme.icon.sm - Theme.space.xxs
+            height: 2
+            radius: 1
+            color: step.enabled ? Theme.palette.textSecondary : Theme.palette.textDisabled
+        }
+        Rectangle {
+            visible: step.plus
+            anchors.centerIn: parent
+            width: 2
+            height: Theme.icon.sm - Theme.space.xxs
+            radius: 1
+            color: step.enabled ? Theme.palette.textSecondary : Theme.palette.textDisabled
         }
     }
 }

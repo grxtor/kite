@@ -7,9 +7,10 @@ import QtQuick.Controls.impl
 import QtQuick.Templates as T
 import Kite.Theme
 
-// Inputs sit in a sunken surface rather than behind a heavy border, per the
-// brief's "surfaces separated by lightness rather than by lines" -- the
-// field reads as a recess in the panel, not a boxed-off widget.
+// The field look every input in this style shares (TextField, TextArea,
+// ComboBox, SpinBox): the surface fill, the hairline border, radius md;
+// under the pointer the border steps up, and focused it turns accent with a
+// soft 2 px accent halo around it (the phase-02 brief).
 T.TextField {
     id: control
 
@@ -59,27 +60,21 @@ T.TextField {
         implicitWidth: Theme.control.heightLg * 4
         implicitHeight: Theme.control.height
         radius: Theme.radius.md
-        color: Theme.palette.surfaceRaised
+        color: Theme.palette.surface
         border.width: 1
-        // An accent border on activeFocus tells a mouse user they landed in
-        // the field; the outset ring below is the separate, keyboard-only
-        // affordance the brief asks for.
         border.color: control.activeFocus ? Theme.palette.accent
-                    : control.hovered ? Theme.palette.borderStrong : Theme.palette.border
+                    : control.hovered && control.enabled ? Theme.neutral.borderHover : Theme.palette.border
         opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         Behavior on border.color {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
         }
 
+        // A field shows its halo however it got focus: typing is about to
+        // land here either way, so a click deserves the cue as much as Tab.
         FocusRing {
-            anchors.fill: parent
-            anchors.margins: -Theme.space.xxs
-            radius: parent.radius + Theme.space.xxs
-            // T.TextField has no visualFocus (it isn't Control-derived, so it
-            // never gained the property) -- this is the same "keyboard, not
-            // mouse" test Control computes internally.
-            visible: control.activeFocus && control.focusReason !== Qt.MouseFocusReason
+            halo: true
+            visible: control.activeFocus && !control.readOnly
         }
     }
 }

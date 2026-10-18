@@ -6,6 +6,9 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
+// Accent when on, a calm grey track when off (phase-02 brief); the knob is
+// white in both, with a hairline shadow so it still reads on light mode's
+// pale grey track.
 T.Switch {
     id: control
 
@@ -26,8 +29,8 @@ T.Switch {
 
     indicator: Rectangle {
         id: track
-        implicitWidth: Theme.icon.lg * 2
-        implicitHeight: Theme.icon.lg
+        implicitWidth: Theme.icon.lg + Theme.space.lg
+        implicitHeight: Theme.icon.md + Theme.space.xxs
 
         x: control.text ? (control.mirrored ? control.width - width - control.rightPadding : control.leftPadding) : control.leftPadding + (control.availableWidth - width) / 2
         y: control.topPadding + (control.availableHeight - height) / 2
@@ -35,12 +38,9 @@ T.Switch {
         radius: Theme.radius.pill
         color: control.checked
             ? (control.down ? Theme.palette.accentPressed : control.hovered ? Theme.palette.accentHover : Theme.palette.accent)
-            // Light mode's raised surfaces are white, like the knob; a mid
-            // grey track keeps the white knob visible on a white card.
-            : (Theme.dark ? Theme.palette.surfaceOverlay : Theme.palette.textDisabled)
-        border.width: control.checked ? 0 : 1
-        // Off has to read as a control, not as an empty slot.
-        border.color: control.hovered ? Theme.palette.borderStrong : Theme.palette.border
+            // Translucent, so the same grey reads on canvas, a card or a
+            // dialog; under the pointer it steps up like a field's border.
+            : (control.hovered || control.down ? Theme.neutral.trackHover : Theme.neutral.track)
         opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         Behavior on color {
@@ -49,17 +49,20 @@ T.Switch {
 
         Rectangle {
             id: thumb
-            width: track.height - Theme.space.xxs * 2
+            readonly property real inset: Theme.space.xxs + 1
+            width: track.height - inset * 2
             height: width
             radius: width / 2
             y: (track.height - height) / 2
-            x: Math.max(Theme.space.xxs, Math.min(track.width - width - Theme.space.xxs,
-                                                    control.visualPosition * (track.width - width)))
+            x: Math.max(inset, Math.min(track.width - width - inset,
+                                        control.visualPosition * (track.width - width)))
             // Always white, in every scheme and both themes: the track says
             // on/off, the knob is just the thing you drag. A knob that also
             // changed colour (dark on green, light on grey, inverted in light
             // mode) read as a second, competing state.
             color: Theme.media.text
+            border.width: Theme.dark ? 0 : 1
+            border.color: Qt.rgba(0, 0, 0, 0.08)
 
             // No Behavior while the thumb is actively being dragged, so it
             // tracks the pointer 1:1; the animation is only for the
@@ -72,9 +75,6 @@ T.Switch {
         }
 
         FocusRing {
-            anchors.fill: parent
-            anchors.margins: -Theme.space.xxs
-            radius: parent.radius
             visible: control.visualFocus
         }
     }

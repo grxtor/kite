@@ -55,6 +55,7 @@ class ThemePalette
 	Q_PROPERTY(QColor surfaceRaised MEMBER surfaceRaised)
 	Q_PROPERTY(QColor surfaceOverlay MEMBER surfaceOverlay)
 	Q_PROPERTY(QColor surfaceSunken MEMBER surfaceSunken)
+	Q_PROPERTY(QColor surfaceHover MEMBER surfaceHover)
 
 	Q_PROPERTY(QColor textPrimary MEMBER textPrimary)
 	Q_PROPERTY(QColor textSecondary MEMBER textSecondary)
@@ -102,6 +103,10 @@ class ThemePalette
 	QColor surfaceRaised;
 	QColor surfaceOverlay;
 	QColor surfaceSunken;
+	/* The fill a card or row on canvas/surface takes under the pointer --
+	 * one soft step up, never a different hue. Controls that already sit
+	 * on surfaceRaised (a secondary button) use hoverOverlay instead. */
+	QColor surfaceHover;
 
 	QColor textPrimary;
 	QColor textSecondary;
@@ -176,12 +181,13 @@ class ThemePalette
 
 	/* The launcher's colour schemes. Each is one accent over its own set
 	 * of neutrals, in a dark and a light variant; the user picks the
-	 * scheme and the mode independently. Grass is the default (Amethyst
-	 * was, until the purple read as the app's whole identity rather than
-	 * one choice among several -- see ThemeService's own default). */
+	 * scheme and the mode independently. Amethyst is the default again
+	 * (phase 02): the violet comes from Kite's own logo, and its neutrals
+	 * now carry a trace of that violet so the accent belongs to them --
+	 * see ThemeService's own default and the UiPalette setting. */
 	enum class Scheme
 	{
-		Amethyst, // hue-less graphite, electric violet
+		Amethyst, // violet-black neutrals, electric violet
 		Ember,	  // warm charcoal, lava orange
 		Diamond,  // cool navy, diamond blue
 		Grass	  // hue-less graphite, Minecraft-grass green

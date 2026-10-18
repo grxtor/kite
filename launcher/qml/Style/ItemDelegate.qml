@@ -22,7 +22,8 @@ T.ItemDelegate {
 
     icon.width: Theme.icon.md
     icon.height: Theme.icon.md
-    icon.color: control.highlighted ? Theme.palette.accentText : Theme.palette.textPrimary
+    icon.color: !control.enabled ? Theme.palette.textDisabled
+              : control.highlighted ? Theme.palette.accentText : Theme.palette.textPrimary
 
     contentItem: IconLabel {
         spacing: control.spacing
@@ -35,7 +36,7 @@ T.ItemDelegate {
         font.family: Theme.font.family
         font.pixelSize: Theme.type.body.pixelSize
         font.weight: Theme.type.body.weight
-        color: control.highlighted ? Theme.palette.accentText : Theme.palette.textPrimary
+        color: control.icon.color
     }
 
     background: Rectangle {
@@ -50,10 +51,12 @@ T.ItemDelegate {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
         }
 
+        // Inside the row rather than around it: rows sit edge to edge in a
+        // list, and an outset ring would be clipped by its neighbours.
         FocusRing {
-            anchors.fill: parent
             anchors.margins: Theme.space.xxs
-            radius: Theme.radius.sm
+            baseRadius: Math.max(0, Theme.radius.sm - Theme.space.xxs * 2)
+            halo: true
             visible: control.visualFocus
         }
     }

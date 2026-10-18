@@ -83,9 +83,9 @@ class ThemeService : public QObject
 	 * the OS instead, and is one setting away. */
 	QString m_mode = QStringLiteral("dark");
 	bool m_dark = true;
-	// Grass is the app's default scheme (see ThemePalette.h); this fallback
-	// only matters before Main.qml's own Component.onCompleted applies the
-	// persisted "UiPalette" setting (or for a consumer that never does, e.g.
-	// a unit test constructing ThemeService directly).
-	ThemePalette::Scheme m_scheme = ThemePalette::Scheme::Grass;
+	// Amethyst is the app's default scheme (see ThemePalette.h); this
+	// fallback only matters before Main.qml's own Component.onCompleted
+	// applies the persisted "UiPalette" setting (or for a consumer that never
+	// does, e.g. a unit test constructing ThemeService directly).
+	ThemePalette::Scheme m_scheme = ThemePalette::Scheme::Amethyst;
 };

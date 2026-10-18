@@ -21,7 +21,7 @@ T.ProgressBar {
 
     contentItem: Item {
         implicitWidth: Theme.control.heightLg * 4
-        implicitHeight: Theme.space.xs
+        implicitHeight: Theme.space.xs + Theme.space.xxs
 
         Rectangle {
             id: determinateFill
@@ -29,7 +29,9 @@ T.ProgressBar {
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            width: parent.width * control.position
+            // Never thinner than its own height, so a barely started bar
+            // still shows a round dot of progress rather than a sliver.
+            width: control.position > 0 ? Math.max(height, parent.width * control.position) : 0
             radius: Theme.radius.pill
             color: control.enabled ? Theme.palette.accent : Theme.palette.textDisabled
 
@@ -69,10 +71,11 @@ T.ProgressBar {
         }
     }
 
+    // The calm grey track Switch and Slider share.
     background: Rectangle {
         implicitWidth: Theme.control.heightLg * 4
-        implicitHeight: Theme.space.xs
+        implicitHeight: Theme.space.xs + Theme.space.xxs
         radius: Theme.radius.pill
-        color: Theme.palette.surfaceRaised
+        color: Theme.neutral.track
     }
 }

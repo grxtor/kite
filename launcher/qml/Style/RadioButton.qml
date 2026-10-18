@@ -6,6 +6,8 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
+// Same grammar as CheckBox: a calm grey dot off, the accent with a white
+// centre on.
 T.RadioButton {
     id: control
 
@@ -20,8 +22,8 @@ T.RadioButton {
 
     indicator: Rectangle {
         id: ring
-        implicitWidth: Theme.icon.lg
-        implicitHeight: Theme.icon.lg
+        implicitWidth: Theme.icon.md - Theme.space.xxs
+        implicitHeight: Theme.icon.md - Theme.space.xxs
 
         x: control.text ? (control.mirrored ? control.width - width - control.rightPadding : control.leftPadding) : control.leftPadding + (control.availableWidth - width) / 2
         y: control.topPadding + (control.availableHeight - height) / 2
@@ -29,10 +31,8 @@ T.RadioButton {
         radius: width / 2
         color: control.checked
             ? (control.down ? Theme.palette.accentPressed : control.hovered ? Theme.palette.accentHover : Theme.palette.accent)
-            : Theme.palette.surfaceRaised
-        border.width: control.checked ? 0 : 1
-        border.color: Theme.palette.border
-        opacity: control.enabled ? 1.0 : 0.45
+            : (control.down || control.hovered ? Theme.neutral.trackHover : Theme.neutral.track)
+        opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         Behavior on color {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
@@ -41,13 +41,13 @@ T.RadioButton {
         Rectangle {
             anchors.fill: parent
             radius: parent.radius
-            visible: !control.checked
-            color: control.down ? Theme.palette.pressedOverlay : control.hovered ? Theme.palette.hoverOverlay : "transparent"
+            visible: !control.checked && control.down
+            color: Theme.palette.pressedOverlay
         }
 
         Rectangle {
             anchors.centerIn: parent
-            width: parent.width - Theme.space.sm * 2
+            width: Math.round(parent.width * 0.4)
             height: width
             radius: width / 2
             color: Theme.palette.textOnAccent
@@ -55,9 +55,6 @@ T.RadioButton {
         }
 
         FocusRing {
-            anchors.fill: parent
-            anchors.margins: -Theme.space.xxs
-            radius: parent.radius + Theme.space.xxs
             visible: control.visualFocus
         }
     }

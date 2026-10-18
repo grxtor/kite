@@ -17,5 +17,7 @@ T.Label {
     font.weight: Theme.type.body.weight
 
     color: control.enabled ? Theme.palette.textPrimary : Theme.palette.textDisabled
-    linkColor: Theme.palette.accent
+    // accentText, not accent: a link is the accent used as text, which is
+    // the shade the palette guarantees to read on its surfaces.
+    linkColor: Theme.palette.accentText
 }

@@ -16,11 +16,15 @@ T.MenuItem {
                              implicitContentHeight + topPadding + bottomPadding,
                              implicitIndicatorHeight + topPadding + bottomPadding)
 
-    padding: Theme.space.sm
-    spacing: Theme.space.sm
+    // 32 px rows (Theme.control.menuItemHeight) with 16 px icons on one
+    // column, the text after them on another, whether or not a row has an
+    // icon of its own.
+    verticalPadding: Theme.space.xs
+    horizontalPadding: Theme.space.md - Theme.space.xxs
+    spacing: Theme.space.sm + Theme.space.xxs
 
-    icon.width: Theme.icon.md
-    icon.height: Theme.icon.md
+    icon.width: Theme.icon.sm
+    icon.height: Theme.icon.sm
     icon.color: control.enabled ? Theme.palette.textPrimary : Theme.palette.textDisabled
 
     contentItem: IconLabel {
@@ -40,8 +44,8 @@ T.MenuItem {
         // bigger than "Play offline" and its label started further right.
         icon.source: control.icon.source
         icon.name: control.icon.name
-        icon.width: Theme.icon.md
-        icon.height: Theme.icon.md
+        icon.width: Theme.icon.sm
+        icon.height: Theme.icon.sm
         icon.color: control.subMenu ? (control.enabled ? Theme.palette.textPrimary : Theme.palette.textDisabled)
                                     : control.icon.color
         icon.cache: control.icon.cache
@@ -57,7 +61,7 @@ T.MenuItem {
         y: control.topPadding + (control.availableHeight - height) / 2
         width: Theme.icon.sm
         height: Theme.icon.sm
-        color: Theme.palette.accent
+        color: Theme.palette.accentText
         visible: control.checkable && control.checked
     }
 
@@ -66,7 +70,7 @@ T.MenuItem {
         y: control.topPadding + (control.availableHeight - height) / 2
         width: Theme.icon.sm
         height: Theme.icon.sm
-        color: Theme.palette.textSecondary
+        color: Theme.palette.textTertiary
         direction: 1
         visible: control.subMenu
     }
@@ -74,14 +78,15 @@ T.MenuItem {
     // No width of its own: an entry is as wide as what it says, and the
     // Menu sets the floor (see Menu.qml's minimumWidth).
     background: Rectangle {
-        implicitHeight: Theme.control.height
-        x: Theme.space.xxs
-        y: Theme.space.xxs / 2
-        width: control.width - Theme.space.xxs * 2
-        height: control.height - Theme.space.xxs
+        implicitHeight: Theme.control.menuItemHeight
         radius: Theme.radius.sm
-        color: control.down ? Theme.palette.pressedOverlay
+        color: !control.enabled ? "transparent"
+             : control.down ? Theme.palette.pressedOverlay
              : (control.highlighted || control.hovered) ? Theme.palette.hoverOverlay
              : "transparent"
+
+        Behavior on color {
+            ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+        }
     }
 }
