@@ -136,7 +136,7 @@ ApplicationWindow {
             else if (key === "gallery")
                 galleryLoader.active = true
             else if (key === "profilemenu")
-                Qt.callLater(() => topBar.openProfileMenu())
+                Qt.callLater(() => sidebar.openProfileMenu())
             else if (key === "picker")
                 Qt.callLater(() => playDock.openPicker())
             // The play bar's Play options menu, open; "launchmenu=playAs" or
@@ -480,12 +480,12 @@ ApplicationWindow {
     // the canvas is ever behind the shell, so glass over the canvas and this
     // tint of it are the same colour.
     readonly property color shellColor: Qt.tint(Theme.palette.canvas, Theme.glass.fill)
-    // The panel's corner: Modrinth's 20 px "inset window" corner, a step
-    // past radius.xl -- the one surface bigger than a dialog.
-    readonly property int panelRadius: 20
-    // The top bar: one control-height row with space.sm above and below, the
-    // same line the sidebar's brand row sits on.
-    readonly property int shellBarHeight: Theme.control.height + Theme.space.sm * 2
+    // The panel's corner: Modrinth's "inset window" corner, the dialog's
+    // radius.xl -- the one surface as big as a dialog.
+    readonly property int panelRadius: Theme.radius.xl
+    // The top bar: Modrinth's 48, one rail square tall -- the same line the
+    // sidebar's brand band sits on.
+    readonly property int shellBarHeight: Theme.control.heightLg
 
     Rectangle {
         anchors.fill: parent
@@ -498,38 +498,50 @@ ApplicationWindow {
         }
     }
 
+    // The rail's destinations. Home and Library become one page (designs/
+    // phase3-scale.md, decision 1), so the rail has no Library of its own;
+    // page=library still routes, and lights Home, until that lands.
+    readonly property var navItems: [
+        { id: "home", icon: "home", label: qsTr("Home") },
+        { id: "discover", icon: "compass", label: qsTr("Discover") }
+    ]
+
     SidebarNav {
         id: sidebar
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: implicitWidth
-        // An icon rail below this saves real width for the content
-        // pages on the launcher's own minimum-width window, rather than
-        // squeezing the library grid down to one column behind it. ORed
-        // with the persisted manual toggle (see SidebarNav's own
-        // collapseToggle), so a small window still forces the rail
-        // regardless of what was last chosen.
-        // Settings brings its own section list, so the app sidebar folds
-        // to its icon rail there instead of standing beside it.
+        bandHeight: root.shellBarHeight
+        // The icon rail (Modrinth's) unless the labelled sidebar was asked
+        // for -- the persisted toggle (SidebarNav's own CollapseToggle). A
+        // narrow window keeps the rail regardless, rather than squeezing the
+        // pages behind a labelled sidebar; so does Settings, which brings
+        // its own section list.
         collapsed: root.width < 1000 || root.page === "settings" || SettingsStore.bool("UiSidebarCollapsed")
-        items: [
-            { id: "home", icon: "home", label: qsTr("Home") },
-            { id: "library", icon: "library", label: qsTr("Library") },
-            { id: "discover", icon: "compass", label: qsTr("Discover") }
-        ]
+        items: root.navItems
         footerItems: [
             { id: "settings", icon: "settings", label: qsTr("Settings") }
         ]
-        currentId: root.page === "instance" ? "library" : root.page === "accounts" ? "" : root.page
+        // A page the rail does not list lights the place it is reached from:
+        // Home for the library and an instance (the breadcrumb's root too),
+        // unless that instance's own tile is in the rail (currentInstanceId).
+        currentId: root.navItems.some(item => item.id === root.page)
+                   || root.page === "settings" || root.page === "accounts" ? root.page : "home"
+        currentInstanceId: root.page === "instance" ? root.openedInstanceId : ""
         barBeside: playDock.visible
         recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
         onItemActivated: (id) => root.page = id
-        onRecentActivated: (id) => {
-            root.page = "library"
-            root.selectedId = id
-        }
+        // A recent instance opens its own page, as a library card does.
+        onRecentActivated: (id) => root.openInstance(id)
         onRecentPlayRequested: (id) => root.launch(id)
+        onNewInstanceRequested: root.openNewInstance()
+
+        accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
+        accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
+        accountAvatarSource: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
+        accountsController: root.shell && root.shell.accountsController ? root.shell.accountsController : null
+        onOpenAccountsRequested: root.page = "accounts"
     }
 
     // The open instance's name, for the top bar's trail: read out of the
@@ -545,9 +557,9 @@ ApplicationWindow {
         }
     }
 
-    // On every page, the instance page too: where you are, and the account.
-    // Inside an instance the title is a trail back up -- Library, the
-    // instance, and "Add content" while that is open.
+    // On every page, the instance page too: where you are. Inside an
+    // instance the title is a trail back up -- Home, the instance, and "Add
+    // content" while that is open.
     TopBar {
         id: topBar
         anchors.left: sidebar.right
@@ -561,11 +573,16 @@ ApplicationWindow {
              : root.page === "accounts" ? qsTr("Accounts")
              : root.page === "instance" ? (instancePage.browsing ? qsTr("Add content") : root.openedName)
              : qsTr("Library")
+        iconName: root.page === "settings" ? "settings"
+                : root.page === "discover" ? "compass"
+                : root.page === "accounts" ? "user"
+                : root.page === "library" ? "library"
+                : "home"
         trail: root.page !== "instance" ? []
-             : instancePage.browsing ? [qsTr("Library"), root.openedName] : [qsTr("Library")]
+             : instancePage.browsing ? [qsTr("Home"), root.openedName] : [qsTr("Home")]
         onTrailActivated: (index) => {
             if (index === 0)
-                root.page = "library"
+                root.page = "home"
             else
                 instancePage.leaveBrowse()
         }
@@ -573,12 +590,6 @@ ApplicationWindow {
                ? root.instanceModel.count : -1
         // The library title row also carries the total play time.
         showPlayTime: root.page === "library"
-
-        accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
-        accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
-        accountAvatarSource: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
-        accountsController: root.shell && root.shell.accountsController ? root.shell.accountsController : null
-        onOpenAccountsRequested: root.page = "accounts"
     }
 
     // The page area. Clipped, and its rounded rectangle runs on past the
@@ -821,7 +832,8 @@ ApplicationWindow {
                         accountAvatarSource: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
                         accountsController: root.shell && root.shell.accountsController ? root.shell.accountsController : null
                         onOpenAccountsRequested: root.page = "accounts"
-                        onBackRequested: root.page = "library"
+                        // Back to where the breadcrumb's root points (Home).
+                        onBackRequested: root.page = "home"
                         // The header's own Play and Stop: the one Play on
                         // this page, the play bar stays away (dockVisibleFor).
                         onPlayRequested: (id) => root.launch(id)

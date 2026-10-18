@@ -37,7 +37,11 @@ Item {
 
     default property alias illustration: illustrationSlot.data
 
-    implicitWidth: root.upperThird && root.parent ? root.parent.width : column.implicitWidth
+    // A fixed reading width, not the column's implicit one: the column is
+    // as wide as this item (below), so taking its width from the column made
+    // the pair settle on nothing and the body wrapped a word per line.
+    readonly property int readingWidth: 320
+    implicitWidth: root.upperThird && root.parent ? root.parent.width : root.readingWidth
     implicitHeight: root.upperThird && root.parent ? root.parent.height : column.implicitHeight
 
     Column {
@@ -50,7 +54,7 @@ Item {
         y: root.upperThird ? Math.max(0, Math.round(parent.height * 0.30 - height / 2))
                             : Math.round((parent.height - height) / 2)
         spacing: Theme.space.md
-        width: Math.min(320, root.width)
+        width: Math.min(root.readingWidth, root.width)
 
         Item {
             id: illustrationSlot

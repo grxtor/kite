@@ -905,7 +905,7 @@ void Application::initSettings()
 	m_settings->registerSetting("UiPalette", QString("amethyst"));
 	// The QML interface's font (Settings > Appearance).
 	m_settings->registerSetting("UiFontFamily", QString("Inter"));
-	m_settings->registerSetting("UiSidebarCollapsed", false);
+	m_settings->registerSetting("UiSidebarCollapsed", true);
 	// Stops decorative loops (Play sheen, the cat's idle moves) for people
 	// who find motion distracting.
 	m_settings->registerSetting("UiReduceMotion", false);

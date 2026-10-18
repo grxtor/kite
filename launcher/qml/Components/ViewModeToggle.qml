@@ -39,8 +39,9 @@ Row {
             padding: 0
             display: AbstractButton.IconOnly
             icon.source: Icons.url(option.modelData.icon)
-            icon.width: Theme.icon.md
-            icon.height: Theme.icon.md
+            // IconButton's glyph size, so the toolbar's icons match.
+            icon.width: Theme.icon.sm + 2
+            icon.height: Theme.icon.sm + 2
             // Mirrors `active` for the look and for accessibility; the
             // button must not toggle it itself, which would drop the binding.
             checked: option.active

@@ -115,7 +115,6 @@ Item {
     property var dockTotalTimePlayed: 0
     property string dockGameVersion: ""
     property string dockLoader: ""
-    property color dockIconTint: Theme.palette.textTertiary
     property string dockLaunchStatus: ""
     property real dockLaunchProgress: -1
 
@@ -149,7 +148,6 @@ Item {
             required property var totalTimePlayed
             required property string gameVersion
             required property string loader
-            required property color iconTint
             required property string launchStatus
             required property real launchProgress
             visible: false
@@ -165,7 +163,6 @@ Item {
                 root.dockTotalTimePlayed = probe.totalTimePlayed
                 root.dockGameVersion = probe.gameVersion
                 root.dockLoader = probe.loader
-                root.dockIconTint = probe.iconTint
                 root.dockLaunchStatus = probe.launchStatus
                 root.dockLaunchProgress = probe.launchProgress
             }
@@ -177,7 +174,6 @@ Item {
             onTotalTimePlayedChanged: sync()
             onGameVersionChanged: sync()
             onLoaderChanged: sync()
-            onIconTintChanged: sync()
             onLaunchStatusChanged: sync()
             onLaunchProgressChanged: sync()
         }
@@ -186,9 +182,10 @@ Item {
     // id yet): fall back to blank rather than stale leftovers.
     onRowModelChanged: if (!rowModel) { dockInstanceId = ""; dockName = "" }
 
-    // Play and its neighbours: the 48 px the brief asks of the main action,
-    // and a width that makes it the bar's anchor rather than one more button.
-    readonly property int playHeight: 48
+    // Play and its neighbours: the large control height the brief asks of
+    // the main action, and a width that makes it the bar's anchor rather
+    // than one more button.
+    readonly property int playHeight: Theme.control.heightLg
     readonly property int playWidth: 176
 
     // The same column the page above uses (TopBar's rule), so Play's right
@@ -231,18 +228,21 @@ Item {
                 id: pickerRow
                 spacing: Theme.space.sm
 
+                // A neutral tile, the icon filling about 80 % of it -- the
+                // same tile every instance icon sits on (designs/
+                // phase3-scale.md, decision 3), never one tinted from it.
                 Rectangle {
                     Layout.preferredWidth: pickerButton.tileSize
                     Layout.preferredHeight: pickerButton.tileSize
-                    radius: Theme.radius.sm
-                    color: Format.shade(root.dockIconTint, Theme.dark ? 0.30 : 0.86, 0.55)
+                    radius: Theme.radius.md
+                    color: Theme.palette.surfaceRaised
                     border.width: 1
                     border.color: Theme.palette.border
 
                     Image {
                         anchors.centerIn: parent
-                        width: 32
-                        height: 32
+                        width: Math.round(pickerButton.tileSize * 0.8)
+                        height: width
                         visible: root.hasInstance
                         source: root.dockIconKey.length > 0 ? "image://instanceicon/" + root.dockIconKey : ""
                         sourceSize: Qt.size(width, height)

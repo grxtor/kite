@@ -6,8 +6,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The rail/list-nav selection grammar: a soft accent-tinted pill
- * (accentSubtle) that slides between rows, the selected row's own icon and
+ * The rail/list-nav selection grammar: a soft accent-tinted shape
+ * (accentSubtle) that slides between rows -- a rounded square on the icon
+ * rail, a full-width pill in a labelled list -- the selected row's own icon and
  * label turning accentText (NavItem) -- Modrinth's nav and settings list.
  * A sibling of whatever draws the rows themselves (a NavItem only ever
  * paints its own transient hover/press state; the pill is what actually
@@ -35,7 +36,10 @@ Item {
     // square, rather than a bar stretched to the row's full width. Hosts
     // that never collapse (Settings' section list) leave this false.
     property bool collapsed: false
-    property int railSquare: 40
+    property int railSquare: Theme.control.height
+    // The rows' own hover corner (NavItem.cornerRadius), so hover and
+    // selection are the same shape.
+    property int cornerRadius: Theme.radius.md
     // Where the rows' icons are centred, from a row's left edge (NavItem's
     // iconAxis): the collapsed square sits on that axis, not on the row's
     // middle, so it neither moves nor jumps while the rail changes width.
@@ -79,11 +83,12 @@ Item {
                            : root.railAxis >= 0 ? root.railAxis - root.railSquare / 2
                            : (root.targetW - root.railSquare) / 2)
         y: root.targetY + (root.collapsed ? (root.targetH - height) / 2 : 0)
-        radius: Theme.radius.md
+        radius: root.cornerRadius
         color: Theme.palette.accentSubtle
 
         Behavior on x { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on width { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        Behavior on height { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
     }
 }

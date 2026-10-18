@@ -34,6 +34,9 @@ QtObject {
     onSchemeChanged: ThemeService.scheme = scheme
     function previewPalette(name) { return ThemeService.previewPalette(name) }
 
+    // Modrinth's own rhythm (0.5 / 0.75 / 1 / 1.5 rem), measured off its
+    // app at 1x: the phase-3 scale pass kept these as they were and grew the
+    // type, the controls and the icons around them instead.
     readonly property QtObject space: QtObject {
         readonly property int xxs: 2
         readonly property int xs: 4
@@ -49,10 +52,10 @@ QtObject {
     // Play verb or an instance's own identity (cover corners, the icon
     // picker, PlayButton's wide hero shape), which are capped at `md`/`lg`
     // instead.
-    // The phase-02 "soft" scale (designs/redesign-brief.md): 8 for small
-    // pieces (menu rows, tiles, tags), 10 for controls (buttons, fields),
-    // 14 for cards, menus and popovers, 18 for dialogs and other large
-    // surfaces. xs is for hairline details only, `indicator` for the small
+    // The "soft" scale, grown with the phase-3 controls (designs/
+    // phase3-scale.md): 8 for small pieces (menu rows, tiles, tags), 12 for
+    // controls (buttons, fields), 16 for cards, menus and popovers, 20 for
+    // dialogs and other large surfaces. xs is for hairline details only, `indicator` for the small
     // square boxes a 10 would turn into circles (a checkbox). Never
     // arithmetic on these (no `md + 2`): an off-scale corner is exactly the
     // inconsistency this scale exists to prevent.
@@ -60,9 +63,9 @@ QtObject {
         readonly property int xs: 2
         readonly property int indicator: 5
         readonly property int sm: 8
-        readonly property int md: 10
-        readonly property int lg: 14
-        readonly property int xl: 18
+        readonly property int md: 12
+        readonly property int lg: 16
+        readonly property int xl: 20
         readonly property int pill: 999
     }
 
@@ -78,14 +81,15 @@ QtObject {
 
     // Control heights: sm for dense rows and toolbars, the default for
     // ordinary buttons and fields, lg for a page's main action (Play is lg
-    // or larger).
+    // or larger). Modrinth's scale: its buttons and search fields stand
+    // 36-40 px tall at 1x, a nav item 48.
     readonly property QtObject control: QtObject {
-        readonly property int heightSm: 30
-        readonly property int height: 36
-        readonly property int heightLg: 44
+        readonly property int heightSm: 32
+        readonly property int height: 40
+        readonly property int heightLg: 48
         // A menu row (Menu/MenuItem): denser than a button, roomier than a
         // list line.
-        readonly property int menuItemHeight: 32
+        readonly property int menuItemHeight: 36
     }
 
     // Keyboard focus and a focused field -- see Style/FocusRing.qml. A
@@ -153,10 +157,13 @@ QtObject {
         readonly property color borderHover: root.dark ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(0, 0, 0, 0.22)
     }
 
+    // sm beside a line of text (a button's glyph, a meta line's clock), md
+    // for a control's own icon (a nav item, a toolbar toggle), lg for a
+    // picture-like icon (an instance in the rail).
     readonly property QtObject icon: QtObject {
-        readonly property int sm: 16
-        readonly property int md: 20
-        readonly property int lg: 24
+        readonly property int sm: 18
+        readonly property int md: 22
+        readonly property int lg: 26
     }
 
     readonly property QtObject opacity: QtObject {
@@ -190,8 +197,9 @@ QtObject {
      * Selection grammar: one documented look per control class, not one
      * grammar total and not accidental variety --
      *   - rail/list nav (SidebarNav, and anything reusing its mechanism,
-     *     e.g. Settings' section list): a sliding accentSubtle pill with an
-     *     accentText icon and label.
+     *     e.g. Settings' section list): a sliding accentSubtle shape -- a
+     *     rounded square on the icon rail, a full-width pill in a labelled
+     *     list -- with an accentText icon and label.
      *   - tab strip (TabStrip, TabBar/TabButton): a soft pill behind the
      *     active tab -- accentSubtle fill, accentText label -- the rest plain
      *     text with a hover overlay (Modrinth's tabs; phase-02 brief).
@@ -284,14 +292,20 @@ QtObject {
                                        : "DejaVu Sans Mono"
     }
 
-    // Contract: heading (20) and display (28) are page-header ceilings, not
+    // Modrinth's scale (designs/phase3-scale.md, measured off its app at
+    // 1x): a section heading ("Jump in", "Library") 24, a list's headline
+    // (a Discover result) 20, a row or card title 17, body and meta lines 15, labels and buttons 14-15, and nothing a
+    // user has to read under 13 (caption). overline, the one size below
+    // that, is for a caps tag only and has no call site today.
+    //
+    // Contract: heading (24) and display (30) are page-header ceilings, not
     // hero sizes -- a page that reads as "huge header, tiny work area" is a
     // per-page layout bug to fix at the call site, never a reason to raise
     // these numbers further. Caps + letter-spacing stay allowed only on
     // `overline`.
     readonly property QtObject type: QtObject {
         readonly property QtObject caption: QtObject {
-            readonly property int pixelSize: 12
+            readonly property int pixelSize: 13
             readonly property int weight: Font.Normal
             readonly property real lineHeight: 1.33
             // lineHeight is a multiplier for Text; this is the same line in pixels,
@@ -300,7 +314,7 @@ QtObject {
         }
         // Small uppercase section labels ("RECENT", "CONTINUE PLAYING").
         readonly property QtObject overline: QtObject {
-            readonly property int pixelSize: 11
+            readonly property int pixelSize: 12
             readonly property int weight: Font.DemiBold
             readonly property real lineHeight: 1.30
             readonly property real letterSpacing: 0.8
@@ -309,7 +323,7 @@ QtObject {
             readonly property real lineHeightPx: pixelSize * lineHeight
         }
         readonly property QtObject label: QtObject {
-            readonly property int pixelSize: 13
+            readonly property int pixelSize: 14
             readonly property int weight: Font.Medium
             readonly property real lineHeight: 1.30
             // lineHeight is a multiplier for Text; this is the same line in pixels,
@@ -317,7 +331,7 @@ QtObject {
             readonly property real lineHeightPx: pixelSize * lineHeight
         }
         readonly property QtObject body: QtObject {
-            readonly property int pixelSize: 14
+            readonly property int pixelSize: 15
             readonly property int weight: Font.Normal
             readonly property real lineHeight: 1.45
             // lineHeight is a multiplier for Text; this is the same line in pixels,
@@ -325,7 +339,7 @@ QtObject {
             readonly property real lineHeightPx: pixelSize * lineHeight
         }
         readonly property QtObject bodyStrong: QtObject {
-            readonly property int pixelSize: 14
+            readonly property int pixelSize: 15
             readonly property int weight: Font.DemiBold
             readonly property real lineHeight: 1.45
             // lineHeight is a multiplier for Text; this is the same line in pixels,
@@ -333,15 +347,26 @@ QtObject {
             readonly property real lineHeightPx: pixelSize * lineHeight
         }
         readonly property QtObject title: QtObject {
-            readonly property int pixelSize: 16
+            readonly property int pixelSize: 17
             readonly property int weight: Font.DemiBold
             readonly property real lineHeight: 1.35
             // lineHeight is a multiplier for Text; this is the same line in pixels,
             // for anything that has to reserve room for text before it exists.
             readonly property real lineHeightPx: pixelSize * lineHeight
         }
-        readonly property QtObject heading: QtObject {
+        // A list's own headline: a Discover result's name, a project
+        // panel's subsection -- louder than a row title, short of a page
+        // section's heading.
+        readonly property QtObject subheading: QtObject {
             readonly property int pixelSize: 20
+            readonly property int weight: Font.Bold
+            readonly property real lineHeight: 1.3
+            // lineHeight is a multiplier for Text; this is the same line in pixels,
+            // for anything that has to reserve room for text before it exists.
+            readonly property real lineHeightPx: pixelSize * lineHeight
+        }
+        readonly property QtObject heading: QtObject {
+            readonly property int pixelSize: 24
             readonly property int weight: Font.DemiBold
             readonly property real lineHeight: 1.25
             // lineHeight is a multiplier for Text; this is the same line in pixels,
@@ -349,7 +374,7 @@ QtObject {
             readonly property real lineHeightPx: pixelSize * lineHeight
         }
         readonly property QtObject display: QtObject {
-            readonly property int pixelSize: 28
+            readonly property int pixelSize: 30
             readonly property int weight: Font.Bold
             readonly property real lineHeight: 1.15
             // lineHeight is a multiplier for Text; this is the same line in pixels,
@@ -360,7 +385,7 @@ QtObject {
         // the page-header ceiling above because it is part of the picture,
         // not a header over a work area.
         readonly property QtObject banner: QtObject {
-            readonly property int pixelSize: 32
+            readonly property int pixelSize: 36
             readonly property int weight: Font.Bold
             readonly property real lineHeight: 1.1
             readonly property real lineHeightPx: pixelSize * lineHeight

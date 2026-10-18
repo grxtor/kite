@@ -8,12 +8,14 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The shell's top bar: where you are on the left -- the page's title, with
- * an optional count (and, on the Library, the total play time), or inside
- * an instance a trail back up ("Library › Fabric Optimized") -- and the
- * account on the right, the same spot on every page. It sits on the shell
- * surface beside the sidebar's brand row, the two forming one band, so it
- * draws no background of its own.
+ * The shell's top bar, Modrinth's: where you are -- the page's icon and
+ * name, with an optional count (and, on the Library, the total play time),
+ * or inside an instance a trail back up ("Home › Fabric Optimized"). A
+ * breadcrumb at title size, not a page heading: the page's own section
+ * headings carry the hierarchy below it. The account lives at the foot of
+ * the sidebar (ProfileButton). It sits on the shell surface beside the
+ * sidebar's brand band, the two forming one band, so it draws no background
+ * of its own.
  *
  * Its optional second row, a search field and the actions passed in as
  * children (a PageToolbar), is for a TopBar used on its own; the shell keeps
@@ -24,6 +26,8 @@ Item {
     id: root
 
     property string title: ""
+    // The page's own icon (a MeshIcon name), before the trail or the title.
+    property string iconName: ""
     property int count: -1
     // The library's total play time after the title and count (see
     // TotalPlayTime; it hides itself while that setting is off).
@@ -37,21 +41,9 @@ Item {
     property alias searchPlaceholder: toolbar.searchPlaceholder
     property bool searchVisible: true
 
-    // The account, on the title row's right, vertically centred on the
-    // title -- the same spot on every page (see ProfileButton).
-    // AccountsController: accounts, setDefault, remove.
-    property string accountName: ""
-    property string accountKind: ""
-    property string accountAvatarSource: ""
-    property var accountsController: null
-    // "Skin and cape", "Manage accounts", "Add account" and the signed-out
-    // "Sign in" button all land on the same place -- the Accounts page,
-    // which already has the add/sign-in flow this never reimplements.
-    signal openAccountsRequested()
-
     default property alias actions: toolbar.actions
 
-    readonly property int titleRowHeight: Theme.control.height
+    readonly property int titleRowHeight: Theme.control.heightSm
     readonly property int toolbarRowHeight: Theme.control.heightLg
     implicitHeight: Theme.space.sm + titleRowHeight
                     + (root.searchVisible ? Theme.space.xs + toolbarRowHeight : 0)
@@ -59,18 +51,18 @@ Item {
 
     function focusSearch() { toolbar.focusSearch() }
 
-    // For a dev-route snapshot ("profilemenu") that needs the dropdown open
-    // without a real click.
-    function openProfileMenu() { profileButton.openMenu() }
-
     // The same column every page's content uses: the page padding, or on a
     // wide window whatever centres a Theme.layout.maxContentWidth column --
-    // so the title and the account stay aligned with the page below them.
+    // so the title stays aligned with the page below it.
     readonly property int sideMargin: Math.max(Theme.space.xl + Theme.space.xs,
                                                Math.round((root.width - Theme.layout.maxContentWidth) / 2))
 
-    // One step of the trail: the heading face, quieter than the title, and
-    // a link back to that level.
+    // The trail and the title share one face and size; a step is only
+    // quieter, and a link back to that level.
+    readonly property int titleSize: Theme.type.title.pixelSize
+
+    // One step of the trail: quieter than the title, and a link back to
+    // that level.
     component TrailStep: AbstractButton {
         id: step
         required property string label
@@ -90,10 +82,10 @@ Item {
             width: Math.min(implicitWidth, step.width)
             text: step.label
             elide: Text.ElideRight
-            color: step.hovered || step.visualFocus ? Theme.palette.textPrimary : Theme.palette.textTertiary
+            color: step.hovered || step.visualFocus ? Theme.palette.textPrimary : Theme.palette.textSecondary
             font.family: Theme.font.heading
-            font.pixelSize: Theme.type.heading.pixelSize
-            font.weight: Theme.type.heading.weight
+            font.pixelSize: root.titleSize
+            font.weight: Font.DemiBold
             Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         }
     }
@@ -110,6 +102,14 @@ Item {
             Layout.rightMargin: root.sideMargin
             Layout.preferredHeight: root.titleRowHeight
             spacing: Theme.space.sm
+
+            MeshIcon {
+                Layout.alignment: Qt.AlignVCenter
+                visible: root.iconName.length > 0
+                iconName: root.iconName
+                size: Theme.icon.md
+                color: root.trail.length > 0 ? Theme.palette.textSecondary : Theme.palette.textPrimary
+            }
 
             Repeater {
                 model: root.trail
@@ -130,7 +130,7 @@ Item {
                     MeshIcon {
                         Layout.alignment: Qt.AlignVCenter
                         iconName: "chevron-right"
-                        size: Theme.icon.md
+                        size: Theme.icon.sm
                         color: Theme.palette.textTertiary
                     }
                 }
@@ -139,15 +139,14 @@ Item {
             Text {
                 Layout.alignment: Qt.AlignVCenter
                 // Its own width, down to nothing under pressure: a long
-                // instance name elides before the account moves.
+                // instance name elides before the row overflows.
                 Layout.minimumWidth: 0
                 text: root.title
                 elide: Text.ElideRight
                 color: Theme.palette.textPrimary
                 font.family: Theme.font.heading
-                font.pixelSize: Theme.type.heading.pixelSize
-                font.weight: Font.Bold
-                font.letterSpacing: -0.2
+                font.pixelSize: root.titleSize
+                font.weight: Font.DemiBold
             }
 
             Tag {
@@ -164,16 +163,6 @@ Item {
             }
 
             Item { Layout.fillWidth: true }
-
-            ProfileButton {
-                id: profileButton
-                Layout.alignment: Qt.AlignVCenter
-                name: root.accountName
-                kind: root.accountKind
-                avatarSource: root.accountAvatarSource
-                controller: root.accountsController
-                onOpenAccountsRequested: root.openAccountsRequested()
-            }
         }
 
         PageToolbar {

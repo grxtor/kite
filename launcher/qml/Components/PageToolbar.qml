@@ -7,11 +7,12 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * A page's toolbar: a search field and whatever actions the page passes in
- * as children, on the same column as the page's own content. The search
- * field gives up its width first under pressure -- the actions keep their
- * own size, since a squeezed combo box or labelled button reads as broken
- * where a narrower search field still reads as a search field.
+ * A page's toolbar: a wide search field and whatever actions the page
+ * passes in as children after it, on the same column as the page's own
+ * content -- Modrinth's library toolbar. The search field takes the width
+ * the actions leave, and gives it up first under pressure -- the actions
+ * keep their own size, since a squeezed combo box or labelled button reads
+ * as broken where a narrower search field still reads as a search field.
  *
  * The Library's sits at the top of the page area (Main.qml); TopBar uses
  * one as its own optional second row.
@@ -49,7 +50,6 @@ Item {
             visible: root.searchVisible
             Layout.fillWidth: true
             Layout.minimumWidth: 120
-            Layout.maximumWidth: 320
             placeholderText: root.searchPlaceholder
 
             // TextField.text is a plain notifying property, not a
@@ -69,7 +69,8 @@ Item {
             }
         }
 
-        Item { Layout.fillWidth: true }
+        // Only without a search field: the actions still sit on the right.
+        Item { Layout.fillWidth: true; visible: !root.searchVisible }
 
         Row {
             id: actionsRow

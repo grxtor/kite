@@ -39,7 +39,7 @@ Rectangle {
         }
     }
 
-    radius: Theme.radius.indicator
+    radius: Theme.radius.sm
     color: root.toneBackgroundColor()
     implicitWidth: Math.ceil(label.implicitWidth) + Theme.space.sm * 2
     implicitHeight: Math.ceil(Theme.type.caption.lineHeightPx) + Theme.space.xs * 2

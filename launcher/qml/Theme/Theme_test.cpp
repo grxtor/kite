@@ -60,9 +60,14 @@ class ThemeTest : public QObject
 							   "    property color accent: Theme.palette.accent\n"
 							   "    property int spaceMd: Theme.space.md\n"
 							   "    property int bodyPixelSize: Theme.type.body.pixelSize\n"
+							   "    property int headingPixelSize: Theme.type.heading.pixelSize\n"
+							   "    property int subheadingPixelSize: Theme.type.subheading.pixelSize\n"
+							   "    property int captionPixelSize: Theme.type.caption.pixelSize\n"
 							   "    property int radiusMd: Theme.radius.md\n"
 							   "    property int radiusLg: Theme.radius.lg\n"
 							   "    property int controlHeightSm: Theme.control.heightSm\n"
+							   "    property int controlHeight: Theme.control.height\n"
+							   "    property int controlHeightLg: Theme.control.heightLg\n"
 							   "    property color surfaceHover: Theme.palette.surfaceHover\n"
 							   "    property bool dark: Theme.dark\n"
 							   "    property color canvasColor: Theme.palette.canvas\n"
@@ -81,12 +86,18 @@ class ThemeTest : public QObject
 
 		// The plain constants: exactly the values Theme.qml declares.
 		QCOMPARE(root->property("spaceMd").toInt(), 12);
-		QCOMPARE(root->property("bodyPixelSize").toInt(), 14);
-		// The phase-02 "soft" scale: sm 8 / md 10 / lg 14 / xl 18, controls
-		// sm 30 / md 36 / lg 44.
-		QCOMPARE(root->property("radiusMd").toInt(), 10);
-		QCOMPARE(root->property("radiusLg").toInt(), 14);
-		QCOMPARE(root->property("controlHeightSm").toInt(), 30);
+		// The phase-3 Modrinth scale (designs/phase3-scale.md): body 15,
+		// subheading 20, heading 24, nothing a user reads under 13; radii sm 8 / md 12 /
+		// lg 16 / xl 20, controls sm 32 / md 40 / lg 48.
+		QCOMPARE(root->property("bodyPixelSize").toInt(), 15);
+		QCOMPARE(root->property("headingPixelSize").toInt(), 24);
+		QCOMPARE(root->property("subheadingPixelSize").toInt(), 20);
+		QCOMPARE(root->property("captionPixelSize").toInt(), 13);
+		QCOMPARE(root->property("radiusMd").toInt(), 12);
+		QCOMPARE(root->property("radiusLg").toInt(), 16);
+		QCOMPARE(root->property("controlHeightSm").toInt(), 32);
+		QCOMPARE(root->property("controlHeight").toInt(), 40);
+		QCOMPARE(root->property("controlHeightLg").toInt(), 48);
 
 		// The colour tokens: not merely "some colour", but the one
 		// ThemePalette hands out for whichever theme is active -- proving

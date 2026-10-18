@@ -8,10 +8,10 @@ import Kite.Theme
 
 /*
  * One destination in the sidebar. The selected fill itself is a single
- * shared pill SidebarNav slides between items (NavSelectionIndicator) --
+ * shared shape SidebarNav slides between items (NavSelectionIndicator) --
  * this control only ever draws its own transient hover/press state, so the
- * pill shows through untouched wherever it sits. Selected, its icon and
- * label take accentText over that accent-tinted pill.
+ * shape shows through untouched wherever it sits. Selected, its icon and
+ * label take accentText over that accent-tinted fill.
  */
 AbstractButton {
     id: control
@@ -19,16 +19,28 @@ AbstractButton {
     property string iconName
     property string label
     property bool selected: false
-    // Icon rail mode: drops the label, which shows as a tooltip instead.
-    // The icon itself never moves: it sits on the same axis in both modes
-    // (iconAxis), and the collapsed rail is exactly twice that wide
-    // (SidebarNav.railWidth), so it is centred there without re-anchoring
-    // anything -- swapping anchors at runtime left the icon behind.
+    // Icon rail mode: drops the label, which shows as a tooltip to the
+    // right instead (Modrinth's rail). The icon itself never moves: it sits
+    // on the same axis in both modes (iconAxis), and the collapsed rail is
+    // exactly twice that wide (SidebarNav.railWidth), so it is centred there
+    // without re-anchoring anything -- swapping anchors at runtime left the
+    // icon behind.
     property bool collapsed: false
-    // The icon's centre, from the row's left edge.
-    readonly property int iconAxis: Theme.space.md + Theme.icon.md / 2
+    // The icon's centre, from the row's left edge. SidebarNav sets its own
+    // (half its rail square); Settings' section list keeps this default.
+    property int iconAxis: Theme.space.md + Theme.icon.md / 2
+    // Where the label starts, from the row's left edge: right after the
+    // icon by default; SidebarNav lines it up with its recent instances'
+    // names instead, whose picture is wider than a glyph.
+    property int labelX: control.iconAxis + Theme.icon.md / 2 + Theme.space.md
+    // Collapsed: a compact square centred on the icon rather than the
+    // whole stretched row -- the same square SidebarNav's selection
+    // indicator draws for the selected item (NavSelectionIndicator), so
+    // hover and selection read as the same shape in the rail.
+    property int railSquare: Theme.control.height
+    property int cornerRadius: Theme.radius.md
 
-    implicitHeight: Theme.control.height + Theme.space.xs
+    implicitHeight: Theme.control.height
     implicitWidth: 200
     hoverEnabled: true
     focusPolicy: Qt.TabFocus
@@ -36,22 +48,22 @@ AbstractButton {
     Accessible.role: Accessible.PageTab
     Accessible.name: label
 
-    ToolTip.visible: control.collapsed && control.hovered
-    ToolTip.delay: 400
-    ToolTip.text: control.label
-
-    // Collapsed: a compact square centred on the icon rather than the
-    // whole stretched row -- the same square SidebarNav's selection
-    // indicator draws for the selected item (NavSelectionIndicator), so
-    // hover and selection read as the same shape in the rail.
-    readonly property int railSquare: 40
+    // Beside the rail rather than over it: above, it would cover the item
+    // the pointer is moving to next.
+    ToolTip {
+        visible: control.collapsed && control.hovered && control.label.length > 0
+        delay: 400
+        text: control.label
+        x: control.width + Theme.space.md
+        y: Math.round((control.height - implicitHeight) / 2)
+    }
 
     background: Rectangle {
         width: control.collapsed ? control.railSquare : control.width
         height: control.collapsed ? control.railSquare : control.height
         x: control.collapsed ? control.iconAxis - width / 2 : 0
         y: control.collapsed ? (control.height - height) / 2 : 0
-        radius: Theme.radius.md
+        radius: control.cornerRadius
         color: control.down ? Theme.palette.pressedOverlay
              : control.hovered ? Theme.palette.hoverOverlay : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
@@ -67,32 +79,29 @@ AbstractButton {
         }
     }
 
+    readonly property color ink: control.selected ? Theme.palette.accentText
+                               : control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
+
     contentItem: Item {
-        Row {
-            id: iconRow
+        MeshIcon {
+            x: control.iconAxis - width / 2 - control.leftPadding
             anchors.verticalCenter: parent.verticalCenter
-            anchors.left: parent.left
-            leftPadding: control.iconAxis - Theme.icon.md / 2
-            spacing: Theme.space.md
+            iconName: control.iconName
+            size: Theme.icon.md
+            color: control.ink
+        }
 
-            MeshIcon {
-                anchors.verticalCenter: parent.verticalCenter
-                iconName: control.iconName
-                size: Theme.icon.md
-                color: control.selected ? Theme.palette.accentText
-                     : control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                visible: !control.collapsed
-                text: control.label
-                color: control.selected ? Theme.palette.accentText
-                     : control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
-                font.weight: control.selected ? Font.DemiBold : Font.Medium
-            }
+        Text {
+            x: control.labelX - control.leftPadding
+            width: Math.max(0, parent.width - x)
+            anchors.verticalCenter: parent.verticalCenter
+            visible: !control.collapsed
+            text: control.label
+            elide: Text.ElideRight
+            color: control.ink
+            font.family: Theme.font.family
+            font.pixelSize: Theme.type.body.pixelSize
+            font.weight: control.selected ? Font.DemiBold : Font.Medium
         }
     }
 }

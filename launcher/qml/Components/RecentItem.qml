@@ -7,11 +7,12 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One recently played instance in the sidebar: a click selects it, the
- * play button that appears on hover launches it straight away. In the
- * collapsed icon rail (`compact`) it shrinks to just the icon, with the
- * name as a tooltip and the play button dropped -- there is no room left
- * for it, and a click already opens the instance.
+ * One recently played instance in the sidebar: its icon on a small neutral
+ * tile (the instance's own picture, Modrinth's rail), the name beside it in
+ * the labelled sidebar. A click opens the instance; in the labelled sidebar
+ * a play button appears on hover and launches it straight away. On the
+ * icon rail (`compact`) the name is a tooltip and there is no play button
+ * -- there is no room for it, and a click already opens the instance.
  */
 AbstractButton {
     id: control
@@ -41,66 +42,79 @@ AbstractButton {
 
     Accessible.name: name
 
-    ToolTip.visible: control.compact && control.hovered
-    ToolTip.delay: 400
-    ToolTip.text: control.name
+    // Beside the rail, as NavItem's.
+    ToolTip {
+        visible: control.compact && control.hovered
+        delay: 400
+        text: control.name
+        x: control.width + Theme.space.md
+        y: Math.round((control.height - implicitHeight) / 2)
+    }
 
-    // Compact (icon rail): a square hugging just the icon, the same shape
-    // and size as NavItem's own rail square, so hover reads the same way on
-    // every item in the rail.
-    readonly property int railSquare: 40
-    // The icon's centre, from the row's left edge: NavItem's own axis, so
-    // the instance icons sit under the destinations' glyphs in both modes.
-    readonly property int iconAxis: Theme.space.md + Theme.icon.md / 2
-    // A step over the nav glyphs: an instance icon is a picture, and reads
-    // by its picture rather than by a line shape.
-    readonly property int iconSize: Theme.icon.lg
+    // The same square, axis and label column as the NavItems above it
+    // (SidebarNav sets all three), so the rail reads as one column and
+    // hover is the same shape on every item.
+    property int railSquare: Theme.control.height
+    property int cornerRadius: Theme.radius.md
+    property int iconAxis: Theme.space.md + Theme.icon.md / 2
+    property int labelX: control.iconAxis + control.tileSize / 2 + Theme.space.sm
+    // The tile is a step bigger than a nav glyph: an instance icon is a
+    // picture and reads by its picture rather than by a line shape. The icon
+    // fills about 80 % of it, the share a card's cover gives its icon
+    // (designs/phase3-scale.md, decision 3).
+    readonly property int tileSize: Theme.control.heightSm
+    readonly property int pictureSize: Math.round(control.tileSize * 0.8)
 
     background: Rectangle {
         width: control.compact ? control.railSquare : control.width
         height: control.compact ? control.railSquare : control.height
-        // Centred on the icon (see `icon` below), not on the row.
+        // Centred on the icon (see `tile` below), not on the row.
         x: control.compact ? control.iconAxis - width / 2 : 0
         y: control.compact ? (control.height - height) / 2 : 0
-        radius: Theme.radius.md
+        radius: control.cornerRadius
         color: control.down ? Theme.palette.pressedOverlay
              : control.hovered ? Theme.palette.hoverOverlay : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
-    // Icon and name on the same columns as NavItem's icon and label above
-    // (centred on the same axis, the label where NavItem's starts), so the
-    // Recent list reads as part of the same sidebar.
     contentItem: Item {
-        Item {
-            id: icon
+        Rectangle {
+            id: tile
             // At the same x in both modes, never re-anchored: the icon rail
             // is exactly as wide as this column (SidebarNav.railAxis), so
             // it is centred there without moving while the rail folds.
-            anchors.left: parent.left
-            anchors.leftMargin: control.iconAxis - width / 2
+            x: control.iconAxis - width / 2 - control.leftPadding
             anchors.verticalCenter: parent.verticalCenter
-            width: control.iconSize
-            height: control.iconSize
+            width: control.tileSize
+            height: control.tileSize
+            radius: Theme.radius.md
+            color: Theme.palette.surfaceRaised
+            border.width: 1
+            border.color: Theme.palette.border
 
             Image {
-                anchors.fill: parent
+                anchors.centerIn: parent
+                width: control.pictureSize
+                height: control.pictureSize
                 source: "image://instanceicon/" + (control.iconKey.length > 0 ? control.iconKey : "default")
-                sourceSize: Qt.size(width, height)
+                sourceSize: Qt.size(width * 2, height * 2)
                 fillMode: Image.PreserveAspectFit
             }
 
             // Pulses rather than sitting static, so a glance at the rail
-            // says "still running" instead of just "ran once".
+            // says "still running" instead of just "ran once". Ringed in the
+            // shell's own surface so it stays a dot over any icon.
             Rectangle {
                 visible: control.isRunning
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                anchors.margins: -2
-                width: 8
+                anchors.margins: -Theme.space.xxs
+                width: Theme.space.md
                 height: width
                 radius: width / 2
                 color: Theme.palette.success
+                border.width: Theme.space.xxs
+                border.color: Theme.palette.surface
 
                 SequentialAnimation on opacity {
                     running: control.isRunning && control.motionEnabled
@@ -114,7 +128,7 @@ AbstractButton {
         Text {
             visible: !control.compact
             anchors.left: parent.left
-            anchors.leftMargin: control.iconAxis + Theme.icon.md / 2 + Theme.space.md
+            anchors.leftMargin: control.labelX - control.leftPadding
             anchors.right: trailing.left
             anchors.rightMargin: Theme.space.xs
             anchors.verticalCenter: parent.verticalCenter
@@ -122,7 +136,7 @@ AbstractButton {
             elide: Text.ElideRight
             color: control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
             font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            font.pixelSize: Theme.type.body.pixelSize
             font.weight: Font.Medium
         }
 
@@ -130,7 +144,7 @@ AbstractButton {
             id: trailing
             visible: !control.compact
             anchors.right: parent.right
-            anchors.rightMargin: Theme.space.xxs
+            anchors.rightMargin: Theme.space.xs
             anchors.verticalCenter: parent.verticalCenter
             width: Theme.control.heightSm
             height: width
