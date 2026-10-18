@@ -8,11 +8,17 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Page header: title with an optional count (and, on the Library, the total
- * play time) and the account on one row,
- * a search field and whatever actions the page passes in as children on the
- * one below. It sits on the page itself rather than on its own band, so the
- * page reads as one surface.
+ * The shell's top bar: where you are on the left -- the page's title, with
+ * an optional count (and, on the Library, the total play time), or inside
+ * an instance a trail back up ("Library › Fabric Optimized") -- and the
+ * account on the right, the same spot on every page. It sits on the shell
+ * surface beside the sidebar's brand row, the two forming one band, so it
+ * draws no background of its own.
+ *
+ * Its optional second row, a search field and the actions passed in as
+ * children (a PageToolbar), is for a TopBar used on its own; the shell keeps
+ * that row off (searchVisible: false) and puts the Library's toolbar inside
+ * the page area instead.
  */
 Item {
     id: root
@@ -22,8 +28,13 @@ Item {
     // The library's total play time after the title and count (see
     // TotalPlayTime; it hides itself while that setting is off).
     property bool showPlayTime: false
-    property string searchText: ""
-    property string searchPlaceholder: qsTr("Search")
+    // The way back up, before the title: labels, outermost first. Each one
+    // is clickable (trailActivated(index)); the title itself is not.
+    property var trail: []
+    signal trailActivated(int index)
+
+    property alias searchText: toolbar.searchText
+    property alias searchPlaceholder: toolbar.searchPlaceholder
     property bool searchVisible: true
 
     // The account, on the title row's right, vertically centred on the
@@ -38,22 +49,15 @@ Item {
     // which already has the add/sign-in flow this never reimplements.
     signal openAccountsRequested()
 
-    default property alias actions: actionsRow.data
+    default property alias actions: toolbar.actions
 
     readonly property int titleRowHeight: Theme.control.height
     readonly property int toolbarRowHeight: Theme.control.heightLg
-    // The toolbar row collapses to nothing on a page with no search/actions
-    // (Settings, Discover, Accounts) rather than leaving an empty gap under
-    // the title -- same total height those pages had before the account
-    // moved out of their toolbar row and in with the title.
     implicitHeight: Theme.space.sm + titleRowHeight
                     + (root.searchVisible ? Theme.space.xs + toolbarRowHeight : 0)
                     + Theme.space.sm
 
-    function focusSearch() {
-        searchField.forceActiveFocus()
-        searchField.selectAll()
-    }
+    function focusSearch() { toolbar.focusSearch() }
 
     // For a dev-route snapshot ("profilemenu") that needs the dropdown open
     // without a real click.
@@ -61,35 +65,94 @@ Item {
 
     // The same column every page's content uses: the page padding, or on a
     // wide window whatever centres a Theme.layout.maxContentWidth column --
-    // so the title and toolbar stay aligned with the cards below them.
+    // so the title and the account stay aligned with the page below them.
     readonly property int sideMargin: Math.max(Theme.space.xl + Theme.space.xs,
                                                Math.round((root.width - Theme.layout.maxContentWidth) / 2))
 
+    // One step of the trail: the heading face, quieter than the title, and
+    // a link back to that level.
+    component TrailStep: AbstractButton {
+        id: step
+        required property string label
+        required property int index
+        hoverEnabled: true
+        focusPolicy: Qt.TabFocus
+        implicitWidth: stepText.implicitWidth
+        implicitHeight: stepText.implicitHeight
+        Accessible.role: Accessible.Link
+        Accessible.name: step.label
+        onClicked: root.trailActivated(step.index)
+
+        contentItem: Item {}
+        Text {
+            id: stepText
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.min(implicitWidth, step.width)
+            text: step.label
+            elide: Text.ElideRight
+            color: step.hovered || step.visualFocus ? Theme.palette.textPrimary : Theme.palette.textTertiary
+            font.family: Theme.font.heading
+            font.pixelSize: Theme.type.heading.pixelSize
+            font.weight: Theme.type.heading.weight
+            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
-        anchors.leftMargin: root.sideMargin
-        anchors.rightMargin: root.sideMargin
         anchors.topMargin: Theme.space.sm
         anchors.bottomMargin: Theme.space.sm
         spacing: Theme.space.xs
 
         RowLayout {
             Layout.fillWidth: true
+            Layout.leftMargin: root.sideMargin
+            Layout.rightMargin: root.sideMargin
             Layout.preferredHeight: root.titleRowHeight
-            spacing: Theme.space.md
+            spacing: Theme.space.sm
+
+            Repeater {
+                model: root.trail
+                delegate: RowLayout {
+                    id: crumb
+                    required property var modelData
+                    required property int index
+                    Layout.minimumWidth: 0
+                    spacing: Theme.space.sm
+
+                    TrailStep {
+                        Layout.alignment: Qt.AlignVCenter
+                        // Long names give way before the title does.
+                        Layout.maximumWidth: 220
+                        label: crumb.modelData
+                        index: crumb.index
+                    }
+                    MeshIcon {
+                        Layout.alignment: Qt.AlignVCenter
+                        iconName: "chevron-right"
+                        size: Theme.icon.md
+                        color: Theme.palette.textTertiary
+                    }
+                }
+            }
 
             Text {
                 Layout.alignment: Qt.AlignVCenter
+                // Its own width, down to nothing under pressure: a long
+                // instance name elides before the account moves.
+                Layout.minimumWidth: 0
                 text: root.title
+                elide: Text.ElideRight
                 color: Theme.palette.textPrimary
                 font.family: Theme.font.heading
-                font.pixelSize: Theme.type.heading.pixelSize + 4
+                font.pixelSize: Theme.type.heading.pixelSize
                 font.weight: Font.Bold
-                font.letterSpacing: -0.3
+                font.letterSpacing: -0.2
             }
 
             Tag {
                 Layout.alignment: Qt.AlignVCenter
+                Layout.leftMargin: Theme.space.xs
                 visible: root.count >= 0
                 text: root.count
             }
@@ -113,45 +176,11 @@ Item {
             }
         }
 
-        // The search field gives up its width first under pressure --
-        // sort/view/New instance keep their own size, since shrinking a
-        // combo box or a labelled button reads as broken where a narrower
-        // search field still reads as a search field.
-        RowLayout {
+        PageToolbar {
+            id: toolbar
             visible: root.searchVisible
             Layout.fillWidth: true
             Layout.preferredHeight: root.toolbarRowHeight
-            spacing: Theme.space.md
-
-            SearchBox {
-                id: searchField
-                Layout.fillWidth: true
-                Layout.minimumWidth: 120
-                Layout.maximumWidth: 300
-                placeholderText: root.searchPlaceholder
-
-                // TextField.text is a plain notifying property, not a
-                // bindable one -- typing into it would otherwise permanently
-                // sever a plain "text: root.searchText" binding. Both
-                // directions are wired explicitly instead so external resets
-                // of searchText still take.
-                onTextChanged: if (text !== root.searchText) root.searchText = text
-                Component.onCompleted: text = root.searchText
-
-                Connections {
-                    target: root
-                    function onSearchTextChanged() {
-                        if (searchField.text !== root.searchText)
-                            searchField.text = root.searchText
-                    }
-                }
-            }
-
-            Row {
-                id: actionsRow
-                // The same gap as between the search field and these actions.
-                spacing: Theme.space.md
-            }
         }
     }
 }

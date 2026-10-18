@@ -161,6 +161,7 @@ qt_add_qml_module(Kite_qml_components
         ProfileMenu.qml
         PlayDock.qml
         TopBar.qml
+        PageToolbar.qml
         SectionHeader.qml
         StatusBadge.qml
         Gallery.qml

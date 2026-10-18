@@ -340,18 +340,18 @@ ApplicationWindow {
                 ? root.shell.launchOptions(id) : ({})
     }
 
-    // Home/Library/Discover/Instance keep the play bar; Settings/Accounts
-    // hide it -- no "instance to play" on either, and the extra chrome would
-    // just crowd two already form-heavy pages. Home needs it too: its own
-    // "Jump back in" cards deliberately use a secondary Play, and the dock's
-    // Play is what keeps that page down to one accent-filled control.
-    // Discover is a store: its Install is the one primary action there, so
-    // the play bar (with its own green Play) stays away from it.
+    // Home and Library keep the play bar; Settings/Accounts hide it -- no
+    // "instance to play" on either, and the extra chrome would just crowd
+    // two already form-heavy pages. Discover is a store: its Install is the
+    // one primary action there, so the play bar stays away from it. The
+    // instance page has its own Play in its header (Modrinth's), for the
+    // very instance the bar would show, so the bar would only repeat it.
     function dockVisibleFor(page) {
-        return page === "home" || page === "library" || page === "instance"
+        return page === "home" || page === "library"
     }
-    // The same rule inside an instance: while Content shows its "Add content"
-    // browser, that page's Install is the primary action.
+    // Inside an instance, while Content shows its "Add content" browser,
+    // that page's Install is the primary action. Moot while the instance
+    // page has no bar at all, kept so bringing the bar back there keeps it.
     readonly property bool dockSuppressed: root.page === "instance" && !!instancePage && instancePage.browsing === true
 
     function instanceGroups() {
@@ -366,7 +366,7 @@ ApplicationWindow {
 
     Shortcut {
         sequences: [StandardKey.Find]
-        onActivated: topBar.focusSearch()
+        onActivated: libraryToolbar.focusSearch()
     }
     // A page's link to Settings > Java (InstanceJavaSettings.qml), sent
     // through the JavaStore singleton the Java rows already share.
@@ -463,72 +463,172 @@ ApplicationWindow {
         }
     }
 
-    RowLayout {
-        anchors.fill: parent
-        spacing: 0
+    /*
+     * The shell, Modrinth's frame: the sidebar, the top bar and -- on the
+     * pages that have one -- the play bar are one surface (the brief's glass:
+     * a hair lighter than the canvas, with a 1 px light line along its top),
+     * and the page sits in an inset panel on the canvas, its left corners
+     * rounded and a hairline round it, like a sheet laid into the frame.
+     *
+     * The panel is the page area, and everything inside it is the page's
+     * own: the panel adds no padding, so a page pads itself (its content
+     * scrolls up to the panel's top edge) and keeps its side margins as
+     * before. Only the Library has a strip of the shell's inside the panel,
+     * its toolbar (search, sort, view, New instance), above the page.
+     */
+    // Opaque, so the panel's corner matte can match it exactly: nothing but
+    // the canvas is ever behind the shell, so glass over the canvas and this
+    // tint of it are the same colour.
+    readonly property color shellColor: Qt.tint(Theme.palette.canvas, Theme.glass.fill)
+    // The panel's corner: Modrinth's 20 px "inset window" corner, a step
+    // past radius.xl -- the one surface bigger than a dialog.
+    readonly property int panelRadius: 20
+    // The top bar: one control-height row with space.sm above and below, the
+    // same line the sidebar's brand row sits on.
+    readonly property int shellBarHeight: Theme.control.height + Theme.space.sm * 2
 
-        SidebarNav {
-            Layout.fillHeight: true
-            Layout.preferredWidth: implicitWidth
-            // An icon rail below this saves real width for the content
-            // pages on the launcher's own minimum-width window, rather than
-            // squeezing the library grid down to one column behind it. ORed
-            // with the persisted manual toggle (see SidebarNav's own
-            // collapseToggle), so a small window still forces the rail
-            // regardless of what was last chosen.
-            // Settings brings its own section list, so the app sidebar folds
-            // to its icon rail there instead of standing beside it.
-            collapsed: root.width < 1000 || root.page === "settings" || SettingsStore.bool("UiSidebarCollapsed")
-            items: [
-                { id: "home", icon: "home", label: qsTr("Home") },
-                { id: "library", icon: "library", label: qsTr("Library") },
-                { id: "discover", icon: "compass", label: qsTr("Discover") }
-            ]
-            footerItems: [
-                { id: "settings", icon: "settings", label: qsTr("Settings") }
-            ]
-            currentId: root.page === "instance" ? "library" : root.page === "accounts" ? "" : root.page
-            barBeside: pageHost.dockVisible && !root.dockSuppressed
-            recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
-            onItemActivated: (id) => root.page = id
-            onRecentActivated: (id) => {
+    Rectangle {
+        anchors.fill: parent
+        color: root.shellColor
+
+        Rectangle {
+            width: parent.width
+            height: 1
+            color: Theme.glass.highlight
+        }
+    }
+
+    SidebarNav {
+        id: sidebar
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: implicitWidth
+        // An icon rail below this saves real width for the content
+        // pages on the launcher's own minimum-width window, rather than
+        // squeezing the library grid down to one column behind it. ORed
+        // with the persisted manual toggle (see SidebarNav's own
+        // collapseToggle), so a small window still forces the rail
+        // regardless of what was last chosen.
+        // Settings brings its own section list, so the app sidebar folds
+        // to its icon rail there instead of standing beside it.
+        collapsed: root.width < 1000 || root.page === "settings" || SettingsStore.bool("UiSidebarCollapsed")
+        items: [
+            { id: "home", icon: "home", label: qsTr("Home") },
+            { id: "library", icon: "library", label: qsTr("Library") },
+            { id: "discover", icon: "compass", label: qsTr("Discover") }
+        ]
+        footerItems: [
+            { id: "settings", icon: "settings", label: qsTr("Settings") }
+        ]
+        currentId: root.page === "instance" ? "library" : root.page === "accounts" ? "" : root.page
+        barBeside: playDock.visible
+        recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
+        onItemActivated: (id) => root.page = id
+        onRecentActivated: (id) => {
+            root.page = "library"
+            root.selectedId = id
+        }
+        onRecentPlayRequested: (id) => root.launch(id)
+    }
+
+    // The open instance's name, for the top bar's trail: read out of the
+    // instance page's own one-row model, the way PlayDock reads its row.
+    property string openedName: ""
+    Repeater {
+        model: root.shell && root.shell.instancePageModel ? root.shell.instancePageModel : null
+        delegate: Item {
+            required property string name
+            visible: false
+            onNameChanged: root.openedName = name
+            Component.onCompleted: root.openedName = name
+        }
+    }
+
+    // On every page, the instance page too: where you are, and the account.
+    // Inside an instance the title is a trail back up -- Library, the
+    // instance, and "Add content" while that is open.
+    TopBar {
+        id: topBar
+        anchors.left: sidebar.right
+        anchors.right: parent.right
+        anchors.top: parent.top
+        height: root.shellBarHeight
+        searchVisible: false
+        title: root.page === "home" ? qsTr("Home")
+             : root.page === "settings" ? qsTr("Settings")
+             : root.page === "discover" ? qsTr("Discover")
+             : root.page === "accounts" ? qsTr("Accounts")
+             : root.page === "instance" ? (instancePage.browsing ? qsTr("Add content") : root.openedName)
+             : qsTr("Library")
+        trail: root.page !== "instance" ? []
+             : instancePage.browsing ? [qsTr("Library"), root.openedName] : [qsTr("Library")]
+        onTrailActivated: (index) => {
+            if (index === 0)
                 root.page = "library"
-                root.selectedId = id
-            }
-            onRecentPlayRequested: (id) => root.launch(id)
+            else
+                instancePage.leaveBrowse()
+        }
+        count: root.page === "library" && root.instanceModel && root.instanceModel.count !== undefined
+               ? root.instanceModel.count : -1
+        // The library title row also carries the total play time.
+        showPlayTime: root.page === "library"
+
+        accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
+        accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
+        accountAvatarSource: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
+        accountsController: root.shell && root.shell.accountsController ? root.shell.accountsController : null
+        onOpenAccountsRequested: root.page = "accounts"
+    }
+
+    // The page area. Clipped, and its rounded rectangle runs on past the
+    // right edge -- and past the bottom while no play bar sits under it --
+    // so only the corners against the shell round off.
+    Item {
+        id: panel
+        anchors.left: sidebar.right
+        anchors.right: parent.right
+        anchors.top: topBar.bottom
+        anchors.bottom: playDock.visible ? playDock.top : parent.bottom
+        clip: true
+
+        readonly property int overhangBottom: playDock.visible ? 0 : root.panelRadius
+
+        Rectangle {
+            id: panelFill
+            width: parent.width + root.panelRadius
+            height: parent.height + panel.overhangBottom
+            radius: root.panelRadius
+            color: Theme.palette.canvas
         }
 
         ColumnLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+            anchors.fill: parent
+            // Inside the hairline, which the matte below redraws over the
+            // page; nothing on the right (the window edge) or at the bottom
+            // without a play bar.
+            anchors.leftMargin: 1
+            anchors.topMargin: 1
+            anchors.bottomMargin: panel.overhangBottom > 0 ? 0 : 1
             spacing: 0
 
-            TopBar {
-                id: topBar
+            // The library's toolbar: the search field gives up its width
+            // first under pressure -- sort/view/New instance keep their own
+            // size, since shrinking a combo box or a labelled button reads
+            // as broken where a narrower search field still reads as a
+            // search field.
+            PageToolbar {
+                id: libraryToolbar
                 Layout.fillWidth: true
-                // The instance page has its own banner and way back.
-                visible: root.page !== "instance"
-                title: root.page === "home" ? qsTr("Home")
-                     : root.page === "settings" ? qsTr("Settings")
-                     : root.page === "discover" ? qsTr("Discover")
-                     : root.page === "accounts" ? qsTr("Accounts") : qsTr("Library")
-                count: root.page === "library" && root.instanceModel && root.instanceModel.count !== undefined
-                       ? root.instanceModel.count : -1
-                searchVisible: root.page === "library"
-                // The library title row also carries the total play time.
-                showPlayTime: root.page === "library"
+                // The panel adds no padding, so this does its own; the page
+                // under it pads its own top as every page does.
+                Layout.topMargin: Theme.space.xl
+                visible: root.page === "library"
                 searchPlaceholder: qsTr("Search instances")
                 onSearchTextChanged: root.instanceModel.filterText = searchText
 
-                accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
-                accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
-                accountAvatarSource: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
-                accountsController: root.shell && root.shell.accountsController ? root.shell.accountsController : null
-                onOpenAccountsRequested: root.page = "accounts"
-
                 ComboBox {
                     id: sortCombo
-                    visible: root.page === "library"
                     implicitWidth: 152
                     model: [
                         { value: "Name", label: qsTr("Name") },
@@ -558,13 +658,11 @@ ApplicationWindow {
 
                 // Grid or list: two icon buttons, the current view lit.
                 ViewModeToggle {
-                    visible: root.page === "library"
                     current: libraryPage.viewMode
                     onActivated: (value) => libraryPage.viewMode = value
                 }
 
                 Button {
-                    visible: root.page === "library"
                     text: qsTr("New instance")
                     icon.source: Icons.url("plus")
                     onClicked: root.openNewInstance()
@@ -645,7 +743,7 @@ ApplicationWindow {
                             return root.shell && typeof root.shell.sectionModel === "function"
                                     ? root.shell.sectionModel(group) : null
                         }
-                        searchText: topBar.searchText
+                        searchText: libraryToolbar.searchText
                         selectedId: root.selectedId
                         // Groups, undo delete and Duplicate with its own
                         // dialog (LibraryController).
@@ -661,7 +759,7 @@ ApplicationWindow {
                         onIconRequested: (id, iconKey) => root.askIcon(id, iconKey)
                         onGroupRequested: (id, group) => root.askGroup(id, group)
                         onDeleteRequested: (id, name) => root.askDelete(id, name)
-                        onClearSearchRequested: topBar.searchText = ""
+                        onClearSearchRequested: libraryToolbar.searchText = ""
                         exportControllerFor: function (id) {
                             return root.shell && typeof root.shell.exportController === "function"
                                    ? root.shell.exportController(id) : null
@@ -724,6 +822,10 @@ ApplicationWindow {
                         accountsController: root.shell && root.shell.accountsController ? root.shell.accountsController : null
                         onOpenAccountsRequested: root.page = "accounts"
                         onBackRequested: root.page = "library"
+                        // The header's own Play and Stop: the one Play on
+                        // this page, the play bar stays away (dockVisibleFor).
+                        onPlayRequested: (id) => root.launch(id)
+                        onStopRequested: (id) => root.call("killInstance", id)
                         // The header's ⋯ menu manages the instance with the
                         // same dialogs as the library's own card menu.
                         manageable: true
@@ -790,35 +892,51 @@ ApplicationWindow {
                     source: active ? "qrc:/qt/qml/Kite/Components/CatPicture.qml" : ""
                 }
             }
+        }
 
-            // A genuine row below the page area, not a floating overlay: the
-            // StackLayout above shrinks by exactly this bar's height
-            // whenever it is visible, so it can never cover a page's
-            // content -- including Discover's, whose QML this change does
-            // not own. visible follows pageHost.dockVisible rather than
-            // root.page directly, so it appears/disappears at the same
-            // invisible mid-fade instant the page itself swaps at, instead
-            // of jumping the layout while the outgoing page is still
-            // visible.
-            PlayDock {
-                id: playDock
-                Layout.fillWidth: true
-                visible: pageHost.dockVisible && !root.dockSuppressed
-                rowModel: root.shell && root.shell.heroModel ? root.shell.heroModel : null
-                instanceModel: root.instanceModel
-                recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
-                selectedId: root.selectedId
-                onSelectRequested: (id) => root.selectedId = id
-                onLaunchRequested: (id) => root.launch(id)
-                onStopRequested: (id) => root.call("killInstance", id)
-                onCancelRequested: (id) => root.call("killInstance", id)
-                launchOptionsFor: function (id) { return root.launchOptions(id) }
-                onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
-                onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
-                onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
-                onNavigateRequested: (target) => root.navigate(target)
+        // Over the page: the shell's colour outside the rounded corners, so
+        // nothing a page draws edge to edge (a scroll fade, a band) squares
+        // them off, and the hairline on top of that.
+        Item {
+            width: panelFill.width
+            height: panelFill.height
+
+            CornerMatte {
+                matte: root.shellColor
+                cornerRadius: root.panelRadius
+                outline: Theme.palette.border
             }
         }
+    }
+
+    // Part of the frame, under the panel, not a floating overlay: the page
+    // area above shrinks by exactly this bar's height whenever it is
+    // visible, so it can never cover a page's content -- including
+    // Discover's, whose QML this change does not own. visible follows
+    // pageHost.dockVisible rather than root.page directly, so it
+    // appears/disappears at the same invisible mid-fade instant the page
+    // itself swaps at, instead of jumping the layout while the outgoing
+    // page is still visible.
+    PlayDock {
+        id: playDock
+        anchors.left: sidebar.right
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: implicitHeight
+        visible: pageHost.dockVisible && !root.dockSuppressed
+        rowModel: root.shell && root.shell.heroModel ? root.shell.heroModel : null
+        instanceModel: root.instanceModel
+        recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
+        selectedId: root.selectedId
+        onSelectRequested: (id) => root.selectedId = id
+        onLaunchRequested: (id) => root.launch(id)
+        onStopRequested: (id) => root.call("killInstance", id)
+        onCancelRequested: (id) => root.call("killInstance", id)
+        launchOptionsFor: function (id) { return root.launchOptions(id) }
+        onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
+        onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
+        onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+        onNavigateRequested: (target) => root.navigate(target)
     }
 
     NewInstanceDialog {
@@ -897,6 +1015,8 @@ ApplicationWindow {
 
     Toast {
         id: toast
+        // Over the page, clear of the play bar when there is one.
+        anchors.bottomMargin: (playDock.visible ? playDock.height : 0) + Theme.space.xl
     }
 
     // Questions the core asks while it works, and its "please wait".

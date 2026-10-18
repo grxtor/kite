@@ -6,7 +6,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * Small text pill for a status word ("Beta", "Modded", "Update available"...).
+ * Small tinted chip for a status word ("Beta", "Modded", "Update
+ * available"...), the same height and corners as Tag so the two line up
+ * side by side.
  * "neutral" has no matching pair in the token contract (every other tone is
  * <tone>/<tone>Subtle), so it falls back to the general-purpose
  * surfaceOverlay/textSecondary tokens rather than a made-up colour.
@@ -37,10 +39,10 @@ Rectangle {
         }
     }
 
-    radius: Theme.radius.pill
+    radius: Theme.radius.indicator
     color: root.toneBackgroundColor()
-    implicitWidth: label.implicitWidth + Theme.space.sm * 2
-    implicitHeight: label.implicitHeight + Theme.space.xxs * 2
+    implicitWidth: Math.ceil(label.implicitWidth) + Theme.space.sm * 2
+    implicitHeight: Math.ceil(Theme.type.caption.lineHeightPx) + Theme.space.xs * 2
 
     Text {
         id: label
@@ -49,6 +51,6 @@ Rectangle {
         color: root.toneTextColor()
         font.family: Theme.font.family
         font.pixelSize: Theme.type.caption.pixelSize
-        font.weight: Theme.type.caption.weight
+        font.weight: Font.Medium
     }
 }

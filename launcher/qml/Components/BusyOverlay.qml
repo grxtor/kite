@@ -39,14 +39,13 @@ Rectangle {
         onWheel: (wheel) => wheel.accepted = true
     }
 
-    Rectangle {
+    // Dialog-shaped, so it wears the dialogs' glass and shadow.
+    GlassSurface {
         anchors.centerIn: parent
         width: Math.min(360, parent.width - Theme.space.xxl * 2)
         height: column.implicitHeight + Theme.space.xl * 2
         radius: Theme.radius.xl
-        color: Theme.palette.surfaceRaised
-        border.width: 1
-        border.color: Theme.palette.border
+        level: Theme.elevation.lg
 
         Column {
             id: column

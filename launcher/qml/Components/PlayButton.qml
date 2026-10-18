@@ -12,19 +12,17 @@ import Kite.Theme
  * the danger colour, so the two can never be confused at a glance.
  *
  * `hero` marks the bottom play bar's own instance of this button: the only
- * thing it still changes is a short burst of pixel squares on click. Hover
- * and press everywhere -- hero or not -- only ever change this button's own
- * fill colour, one property, over Theme.motion.fast; an earlier pass added
- * a hover scale, a layered glow, bevel hairlines and an idle glint sweep,
- * which read as exactly the kind of "flat-and-purple, gradient-happy,
- * hovers-do-something-weird" look this app is deliberately not going for.
+ * thing it still changes is a short burst of pixel squares on click.
  *
- * Flat, like every primary button (Style/Button.qml): one fill, a white
- * label, a lighter fill on hover and a darker one when pressed. The
- * block bevel and top gloss an earlier pass gave it read as dated next to
- * the rendered artwork. Corners are Theme.radius.md in both shapes; the
- * icon-only (`round`) variant is a rounded square, not a circle -- like the
- * rest of an instance's identity it stays off the pill radius.
+ * It looks like the Style Button's primary variant (Style/Button.qml): the
+ * accent fill with its barely visible top-to-bottom tint, a lighter fill on
+ * hover and a darker one when pressed, and on hover the one soft violet
+ * glow the brief allows (Theme.elevation.glow). Stop is the danger fill
+ * with the same rule as a danger Button's label: the dark theme's light
+ * coral takes the canvas' near-black, which reads on it where white did
+ * not (2.6:1). Corners are Theme.radius.md in both shapes; the icon-only
+ * (`round`) variant is a rounded square, not a circle -- like the rest of
+ * an instance's identity it stays off the pill radius.
  */
 AbstractButton {
     id: control
@@ -57,13 +55,35 @@ AbstractButton {
     // hover, a darker one when pressed, animated over Theme.motion.fast --
     // see the file comment.
     readonly property color fill: running
-        ? (down ? Qt.darker(Theme.palette.danger, 1.15) : hovered ? Qt.lighter(Theme.palette.danger, 1.08) : Theme.palette.danger)
+        ? (down ? Qt.darker(Theme.palette.danger, 1.12) : hovered ? Qt.lighter(Theme.palette.danger, 1.08) : Theme.palette.danger)
         : (down ? Theme.palette.accentPressed : hovered ? Theme.palette.accentHover : Theme.palette.accent)
+    // The label and the glyph, as a filled Style Button picks them.
+    readonly property color ink: running && Theme.dark ? Theme.palette.canvas : Theme.palette.textOnAccent
 
     background: Rectangle {
+        id: plate
         radius: Theme.radius.md
         color: control.fill
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+
+        // The primary button's soft violet glow, on hover only.
+        Shadow {
+            radius: plate.radius
+            level: Theme.elevation.glow
+            color: Theme.palette.accent
+            opacity: !control.running && control.enabled && control.hovered && !control.down ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        }
+
+        // The barely visible top-to-bottom tint every filled button has.
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.10) }
+                GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0.0) }
+            }
+        }
 
         // Keyboard focus ring, outset so it never competes with the fill.
         Rectangle {
@@ -87,7 +107,7 @@ AbstractButton {
                 visible: !control.busy
                 iconName: control.running ? "stop" : "play"
                 size: control.round ? Math.round(control.size * 0.42) : Theme.icon.md - 2
-                color: Theme.palette.textOnAccent
+                color: control.ink
             }
 
             Text {
@@ -95,8 +115,9 @@ AbstractButton {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: !control.round
                 text: control.text
-                color: Theme.palette.textOnAccent
-                font.family: Theme.font.heading
+                color: control.ink
+                // A label, so Inter (the brief keeps Montserrat to titles).
+                font.family: Theme.font.family
                 font.pixelSize: Theme.type.title.pixelSize
                 font.weight: Font.Bold
             }

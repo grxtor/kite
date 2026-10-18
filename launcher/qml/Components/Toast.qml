@@ -15,7 +15,7 @@ import Kite.Theme
  * never goes while the pointer is on it: an action pulled away mid-reach is
  * worse than none.
  */
-Rectangle {
+GlassSurface {
     id: root
 
     property string tone: "neutral" // neutral | success | danger
@@ -48,13 +48,10 @@ Rectangle {
     anchors.bottomMargin: Theme.space.xl
     width: Math.min(row.implicitWidth + Theme.space.lg * 2, parent.width - Theme.space.xxl * 2)
     height: Theme.control.heightLg
+    // A popup: the glass treatment and a menu's soft shadow. The tone shows
+    // in the icon alone, not in a coloured stripe down one side.
     radius: Theme.radius.lg
-    color: Theme.palette.surfaceOverlay
-    border.width: 1
-    border.color: Theme.palette.borderStrong
-    // Without this the accent bar's square corners would poke out past
-    // root's own rounded ones.
-    clip: true
+    level: Theme.elevation.md
     opacity: shown ? 1 : 0
     visible: opacity > 0
     z: 1000
@@ -89,20 +86,11 @@ Rectangle {
     }
 
     readonly property color toneColor: tone === "danger" ? Theme.palette.danger
-                                       : tone === "success" ? Theme.palette.success : Theme.palette.accent
-
-    Rectangle {
-        anchors.left: parent.left
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        width: 4
-        color: root.toneColor
-    }
+                                       : tone === "success" ? Theme.palette.success : Theme.palette.accentText
 
     Row {
         id: row
         anchors.centerIn: parent
-        anchors.horizontalCenterOffset: Theme.space.xs
         spacing: Theme.space.sm
 
         MeshIcon {
@@ -131,7 +119,7 @@ Rectangle {
 
             contentItem: Text {
                 text: root.actionText
-                color: actionButton.hovered ? Theme.palette.accentHover : Theme.palette.accent
+                color: actionButton.hovered ? Theme.palette.textPrimary : Theme.palette.accentText
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.body.pixelSize
                 font.weight: Font.DemiBold

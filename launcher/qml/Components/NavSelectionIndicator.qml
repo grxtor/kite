@@ -6,11 +6,12 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The rail/list-nav selection grammar (design-plan.md Principle 6): a
- * surfaceRaised pill that slides between rows, plus a 3px accent bar pinned
- * to the pill's leading edge -- both siblings of whatever draws the rows
- * themselves (a NavItem only ever paints its own transient hover/press
- * state; the pill is what actually shows "this one is selected").
+ * The rail/list-nav selection grammar: a soft accent-tinted pill
+ * (accentSubtle) that slides between rows, the selected row's own icon and
+ * label turning accentText (NavItem) -- Modrinth's nav and settings list.
+ * A sibling of whatever draws the rows themselves (a NavItem only ever
+ * paints its own transient hover/press state; the pill is what actually
+ * shows "this one is selected").
  *
  * Extracted out of SidebarNav.qml so every rail/list-nav host shares one
  * mechanism instead of each re-deriving the same geometry: SidebarNav uses
@@ -47,7 +48,7 @@ Item {
     // to land on them; a host with no such margin leaves these at 0.
     property int insetX: 0
     property int insetY: 0
-    // How far the accent bar stops short of the row's top and bottom.
+    // Unused since the accent bar went; still accepted from older hosts.
     property int barInset: root.insetY
 
     // When set, the target's position is found by adding up its own and its
@@ -79,23 +80,10 @@ Item {
                            : (root.targetW - root.railSquare) / 2)
         y: root.targetY + (root.collapsed ? (root.targetH - height) / 2 : 0)
         radius: Theme.radius.md
-        color: Theme.palette.surfaceRaised
+        color: Theme.palette.accentSubtle
 
         Behavior on x { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on width { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-    }
-
-    // On the pill's leading edge in both modes, as in the expanded rail.
-    Rectangle {
-        visible: !!root.target
-        x: pill.x
-        y: root.targetY + (root.targetH - height) / 2
-        width: 3
-        height: root.targetH - root.barInset * 2 + 4
-        radius: Theme.radius.xs
-        color: Theme.palette.accent
-
-        Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
     }
 }

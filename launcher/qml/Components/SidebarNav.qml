@@ -9,9 +9,12 @@ import Kite.Theme
 
 /*
  * The left rail: brand, the main destinations, the last few instances
- * played, and the account. Pages that open elsewhere (Settings, for now a
- * dialog) are still listed here -- where they open is the shell's business,
- * not the rail's.
+ * played, and Settings at its foot. Pages that open elsewhere are still
+ * listed here -- where they open is the shell's business, not the rail's.
+ *
+ * Part of the shell surface (Main.qml paints it, with the top bar and the
+ * play bar), so the rail draws no background or edge of its own: the page
+ * panel's hairline beside it is the edge.
  *
  * Below `collapseWidth` the rail folds down to an icon-only strip (labels
  * become tooltips); the caller drives that from the window's own width via
@@ -60,9 +63,10 @@ Rectangle {
     property string accountAvatarSource: ""
 
     property bool collapsed: false
-    // Whether the play bar is showing beside the foot band: its top border
-    // only makes sense continuing the bar's own. The band keeps its height
-    // either way, so Settings never moves between pages.
+    // Whether the play bar is showing beside the foot band. The band keeps
+    // its height either way, so Settings never moves between pages; the
+    // shell has no rule there any more (the page panel's own edge separates
+    // the two), so this no longer changes anything here.
     property bool barBeside: true
     readonly property int expandedWidth: 244
     // The rail's one vertical axis, from the inner column's left edge:
@@ -72,9 +76,9 @@ Rectangle {
     // margins plus twice that wide, so on it the axis is also the middle --
     // nothing has to move or re-anchor when the rail folds.
     readonly property int railAxis: Theme.space.md + Theme.icon.md / 2
-    readonly property int railWidth: Theme.space.md * 2 + root.hairline + root.railAxis * 2
-    readonly property int hairline: 1
-    readonly property int brandExtent: Theme.control.heightSm + 2
+    readonly property int railWidth: Theme.space.md * 2 + root.railAxis * 2
+    // The Kite mark: a fixed size, not one derived from a control height.
+    readonly property int brandExtent: 30
 
     signal itemActivated(string id)
     signal recentActivated(string id)
@@ -103,18 +107,9 @@ Rectangle {
     }
 
     implicitWidth: collapsed ? railWidth : expandedWidth
-    color: Theme.palette.surface
+    color: "transparent"
 
     Behavior on implicitWidth { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-
-    // Hairline against the page, instead of a contrasting fill.
-    Rectangle {
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        width: root.hairline
-        color: Theme.palette.divider
-    }
 
     // The selected destination's fill, as one pill that slides from the
     // previous item to the new one instead of each item owning its own
@@ -142,7 +137,6 @@ Rectangle {
         anchors.top: parent.top
         anchors.bottom: footBand.top
         anchors.margins: Theme.space.md
-        anchors.rightMargin: Theme.space.md + root.hairline
         spacing: Theme.space.xs
 
         // Brand: the mark centred on the rail axis in both modes, so it
@@ -254,27 +248,16 @@ Rectangle {
     }
 
     // The foot band: exactly the play bar's height (Theme.layout.barHeight),
-    // with a top border in the same colour as the bar's own, so the rail's
-    // foot and the bar read as one strip across the window instead of two
-    // dividers at different heights. Settings has its one row to itself,
-    // centred like the bar's own content (the collapse toggle lives in the
-    // brand row, or just above this band on the icon rail -- see
-    // CollapseToggle).
+    // so Settings sits on the same line as the bar's own content and the
+    // rail's foot and the bar read as one strip across the window. Settings
+    // has its one row to itself (the collapse toggle lives in the brand row,
+    // or just above this band on the icon rail -- see CollapseToggle).
     Item {
         id: footBand
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.rightMargin: root.hairline
         anchors.bottom: parent.bottom
         height: Theme.layout.barHeight
-
-        Rectangle {
-            anchors.top: parent.top
-            width: parent.width
-            height: 1
-            visible: root.barBeside
-            color: Theme.palette.border
-        }
 
         RowLayout {
             anchors.left: parent.left

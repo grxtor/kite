@@ -79,14 +79,32 @@ Rectangle {
         anchors.fill: parent
         spacing: 0
 
-        // Brand side: who we are and where we are in the flow.
+        // Brand side: who we are and where we are in the flow, on a calm
+        // violet sky -- the accent washed over the surface, strongest at
+        // the top and gone by the foot, low enough in contrast that the
+        // text over it reads as on any other surface. The logo's own violet,
+        // not a picture: no shapes, no glow.
         Rectangle {
+            id: sky
             Layout.fillHeight: true
             Layout.preferredWidth: Math.min(380, root.width * 0.34)
+
+            function wash(strength) {
+                var a = Theme.palette.accent
+                return Qt.tint(Theme.palette.surface, Qt.rgba(a.r, a.g, a.b, strength))
+            }
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(0, 0.9, 1, Theme.dark ? 0.16 : 0.22) }
-                GradientStop { position: 0.55; color: Theme.palette.surface }
-                GradientStop { position: 1.0; color: Qt.rgba(1, 0, 0.24, Theme.dark ? 0.12 : 0.14) }
+                GradientStop { position: 0.0; color: sky.wash(Theme.dark ? 0.20 : 0.13) }
+                GradientStop { position: 0.45; color: sky.wash(Theme.dark ? 0.08 : 0.05) }
+                GradientStop { position: 1.0; color: Theme.palette.surface }
+            }
+
+            // The edge against the step, as the shell's own hairlines.
+            Rectangle {
+                anchors.right: parent.right
+                width: 1
+                height: parent.height
+                color: Theme.palette.border
             }
 
             ColumnLayout {
@@ -152,7 +170,7 @@ Rectangle {
                                     visible: parent.parent.doneStep
                                     iconName: "check"
                                     size: Theme.icon.sm
-                                    color: Theme.palette.accent
+                                    color: Theme.palette.accentText
                                 }
                             }
                             Text {
@@ -198,7 +216,7 @@ Rectangle {
                     wrapMode: Text.Wrap
                     text: root.step === "language" ? qsTr("Kite switches as soon as you pick one. You can change it later in Settings.")
                         : root.step === "java" ? qsTr("Minecraft runs on Java. Pick an installed one, or let Kite download the right version for each game automatically.")
-                        : root.step === "account" ? qsTr("Use the Microsoft account that owns Minecraft. You can also do this later from the sidebar.")
+                        : root.step === "account" ? qsTr("Use the Microsoft account that owns Minecraft. You can also do this later from the account button at the top right.")
                         : qsTr("Create an instance, or find a modpack in Discover.")
                     color: Theme.palette.textSecondary
                     font.family: Theme.font.family
@@ -262,7 +280,7 @@ Rectangle {
                                             // One edge for every name, right-to-left scripts too.
                                             horizontalAlignment: Text.AlignLeft
                                             elide: Text.ElideRight
-                                            color: languageRow.chosen ? Theme.palette.accent : Theme.palette.textPrimary
+                                            color: languageRow.chosen ? Theme.palette.accentText : Theme.palette.textPrimary
                                             font.family: Theme.font.family
                                             font.pixelSize: Theme.type.body.pixelSize
                                             font.weight: languageRow.chosen ? Font.DemiBold : Font.Normal
@@ -352,7 +370,7 @@ Rectangle {
                                             spacing: 2
                                             Text {
                                                 text: qsTr("Java %1").arg(String(javaRow.version))
-                                                color: javaRow.chosen ? Theme.palette.accent : Theme.palette.textPrimary
+                                                color: javaRow.chosen ? Theme.palette.accentText : Theme.palette.textPrimary
                                                 font.family: Theme.font.family
                                                 font.pixelSize: Theme.type.body.pixelSize
                                                 font.weight: Font.DemiBold
@@ -377,7 +395,7 @@ Rectangle {
                                 }
                                 BusyIndicator {
                                     anchors.centerIn: parent
-                                    running: !!root.shell && root.shell.javaDetecting
+                                    running: !!root.shell && !!root.shell.javaDetecting
                                     visible: running
                                 }
                                 Text {

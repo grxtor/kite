@@ -8,9 +8,10 @@ import Kite.Theme
 
 /*
  * One destination in the sidebar. The selected fill itself is a single
- * shared pill SidebarNav slides between items (see its activeIndicator) --
+ * shared pill SidebarNav slides between items (NavSelectionIndicator) --
  * this control only ever draws its own transient hover/press state, so the
- * pill shows through untouched wherever it sits.
+ * pill shows through untouched wherever it sits. Selected, its icon and
+ * label take accentText over that accent-tinted pill.
  */
 AbstractButton {
     id: control
@@ -78,7 +79,7 @@ AbstractButton {
                 anchors.verticalCenter: parent.verticalCenter
                 iconName: control.iconName
                 size: Theme.icon.md
-                color: control.selected ? Theme.palette.accent
+                color: control.selected ? Theme.palette.accentText
                      : control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
             }
 
@@ -86,7 +87,8 @@ AbstractButton {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: !control.collapsed
                 text: control.label
-                color: control.selected || control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
+                color: control.selected ? Theme.palette.accentText
+                     : control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.body.pixelSize
                 font.weight: control.selected ? Font.DemiBold : Font.Medium

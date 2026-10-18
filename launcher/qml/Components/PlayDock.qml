@@ -14,23 +14,26 @@ import Kite.Theme
  * "Continue playing" hero -- one always-there place to press Play instead
  * of one that only showed up on the Library page.
  *
- * This is a genuine row in Main.qml's own layout, not a floating overlay:
- * StackLayout's page area shrinks by exactly this bar's height whenever it
- * is visible, so it can never cover a page's content, on any page -- including
- * ones this change does not own the QML of (Discover).
+ * Part of the shell's frame (Main.qml), under the page panel rather than
+ * floating over it: the page area shrinks by exactly this bar's height
+ * whenever it is visible, so it can never cover a page's content. The
+ * shell paints the surface (the brief's glass, shared with the sidebar and
+ * the top bar) and the panel's rounded edge above is the divider, so the
+ * bar draws no background of its own.
  *
  * `rowModel` is the shell's heroModel, freed up by removing the library's
  * own hero card; Main.qml points its instanceId at whichever instance this
  * bar should show (see its own dockInstanceId).
  *
- * Beside Play, a chevron opens the other ways to play the same instance
- * (LaunchOptionsMenu: offline, demo, as another account, a profiler); its
- * choices leave here as signals, like Play itself.
+ * Play is the one dominant control: 48 px tall, the widest thing in the
+ * bar, the primary fill. Beside it, a separate ▾ opens the other ways to play the same
+ * instance (LaunchOptionsMenu: offline, demo, as another account, a
+ * profiler) -- Lunar's launch button and its version arrow; its choices
+ * leave here as signals, like Play itself.
  *
- * A plain surface with a hairline border on top, on every page -- no
- * picture behind the controls. The pages above already carry the artwork
- * (Home's header, the cards' covers); a third picture under the bar's own
- * text and Play button only made both harder to read.
+ * No picture behind the controls: the pages above already carry the
+ * artwork, and a picture under the bar's own text and Play button only made
+ * both harder to read.
  */
 Item {
     id: root
@@ -183,16 +186,10 @@ Item {
     // id yet): fall back to blank rather than stale leftovers.
     onRowModelChanged: if (!rowModel) { dockInstanceId = ""; dockName = "" }
 
-    Rectangle {
-        anchors.fill: parent
-        color: Theme.palette.surface
-    }
-    Rectangle {
-        anchors.top: parent.top
-        width: parent.width
-        height: 1
-        color: Theme.palette.border
-    }
+    // Play and its neighbours: the 48 px the brief asks of the main action,
+    // and a width that makes it the bar's anchor rather than one more button.
+    readonly property int playHeight: 48
+    readonly property int playWidth: 176
 
     // The same column the page above uses (TopBar's rule), so Play's right
     // edge is the content's right edge and the bar centres with the page on
@@ -214,7 +211,7 @@ Item {
             id: pickerButton
             Layout.alignment: Qt.AlignVCenter
             // The icon tile's size; with the padding, the plate's height.
-            readonly property int tileSize: 40
+            readonly property int tileSize: 44
             padding: Theme.space.sm
             implicitWidth: implicitContentWidth + leftPadding + rightPadding
             implicitHeight: implicitContentHeight + topPadding + bottomPadding
@@ -244,8 +241,8 @@ Item {
 
                     Image {
                         anchors.centerIn: parent
-                        width: 28
-                        height: 28
+                        width: 32
+                        height: 32
                         visible: root.hasInstance
                         source: root.dockIconKey.length > 0 ? "image://instanceicon/" + root.dockIconKey : ""
                         sourceSize: Qt.size(width, height)
@@ -270,7 +267,7 @@ Item {
                     spacing: 1
 
                     Text {
-                        Layout.maximumWidth: 190
+                        Layout.maximumWidth: 240
                         text: root.hasInstance ? root.dockName : qsTr("Choose an instance")
                         elide: Text.ElideRight
                         color: Theme.palette.textPrimary
@@ -280,10 +277,12 @@ Item {
                     }
                     Text {
                         id: subtitle
-                        Layout.maximumWidth: 190
+                        Layout.maximumWidth: 240
                         visible: root.hasInstance && subtitle.text.length > 0
+                        readonly property string played: Format.playTime(root.dockTotalTimePlayed)
                         text: [Format.versionLine(root.dockLoader, root.dockGameVersion),
-                               Format.playTime(root.dockTotalTimePlayed)].filter(s => s.length > 0).join(", ")
+                               played.length > 0 ? qsTr("%1 played").arg(played) : ""]
+                              .filter(s => s.length > 0).join("  ·  ")
                         elide: Text.ElideRight
                         color: Theme.palette.textSecondary
                         font.family: Theme.font.family
@@ -311,11 +310,11 @@ Item {
         Item {
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredWidth: Math.max(readyFace.implicitWidth, launchingFace.implicitWidth, runningFace.implicitWidth)
-            Layout.preferredHeight: Theme.control.heightLg + 6
+            Layout.preferredHeight: root.playHeight
 
-            // Play, and beside it the chevron for the other ways to play:
-            // a secondary (bordered) button, so Play stays the one primary
-            // action on screen.
+            // Play, and beside it the ▾ for the other ways to play: a
+            // secondary (bordered) button of the same height, so Play stays
+            // the one primary action on screen.
             Row {
                 id: readyFace
                 anchors.right: parent.right
@@ -329,16 +328,19 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     hero: true
                     round: false
-                    size: Theme.control.heightLg + 6
+                    size: root.playHeight
+                    implicitWidth: root.playWidth
                     enabled: root.hasInstance && root.dockCanLaunch
                     onClicked: root.launchRequested(root.dockInstanceId)
                 }
                 IconButton {
                     id: moreButton
                     anchors.verticalCenter: parent.verticalCenter
-                    size: Theme.control.heightLg + 6
+                    size: root.playHeight
                     flat: false
                     iconName: "chevron-down"
+                    icon.width: Theme.icon.md
+                    icon.height: Theme.icon.md
                     tip: qsTr("More ways to play")
                     enabled: root.hasInstance && root.dockCanLaunch
                     onClicked: launchMenu.visible ? launchMenu.close() : root.openLaunchMenu()
@@ -405,7 +407,7 @@ Item {
 
                 Button {
                     Layout.alignment: Qt.AlignVCenter
-                    implicitHeight: Theme.control.heightLg
+                    buttonSize: "lg"
                     text: qsTr("Cancel")
                     onClicked: root.cancelRequested(root.dockInstanceId)
                 }
@@ -452,7 +454,8 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     hero: true
                     round: false
-                    size: Theme.control.heightLg + 6
+                    size: root.playHeight
+                    implicitWidth: root.playWidth
                     running: true
                     onClicked: root.stopRequested(root.dockInstanceId)
                 }

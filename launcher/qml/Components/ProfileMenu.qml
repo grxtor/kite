@@ -179,7 +179,7 @@ Popup {
                         visible: switchRow.modelData.isDefault === true
                         iconName: "check"
                         size: Theme.icon.sm
-                        color: Theme.palette.accent
+                        color: Theme.palette.accentText
                     }
                 }
             }

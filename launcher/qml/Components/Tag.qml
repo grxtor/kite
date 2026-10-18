@@ -8,8 +8,9 @@ import Kite.Theme
 /*
  * A small neutral chip for facts about something ("Fabric", "1.21.4",
  * "9"). StatusBadge is the coloured, stateful sibling; this one never
- * signals state, so it has no tone. Corners use radius.sm, the tile radius,
- * rather than a pill.
+ * signals state, so it has no tone, and the two share one height so they
+ * line up in a row. Corners use radius.indicator: on a chip this small even
+ * radius.sm reads as a pill.
  */
 Rectangle {
     id: root
@@ -21,10 +22,11 @@ Rectangle {
     property bool onMedia: false
 
     // Whole pixels, so a row of tags keeps its gaps exact and 1px borders
-    // stay sharp.
+    // stay sharp. The height is the caption line and its padding, not a
+    // fraction of a control height, so it holds still when those change.
     implicitWidth: Math.ceil(row.implicitWidth) + Theme.space.sm * 2
-    implicitHeight: Theme.control.heightSm - Theme.space.xs
-    radius: Theme.radius.sm
+    implicitHeight: Math.ceil(Theme.type.caption.lineHeightPx) + Theme.space.xs * 2
+    radius: Theme.radius.indicator
     color: root.onMedia ? Theme.media.chip : Theme.palette.surfaceOverlay
     border.width: 1
     border.color: root.onMedia ? Theme.media.chipBorder : Theme.palette.border

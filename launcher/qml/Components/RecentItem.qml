@@ -49,12 +49,18 @@ AbstractButton {
     // and size as NavItem's own rail square, so hover reads the same way on
     // every item in the rail.
     readonly property int railSquare: 40
+    // The icon's centre, from the row's left edge: NavItem's own axis, so
+    // the instance icons sit under the destinations' glyphs in both modes.
+    readonly property int iconAxis: Theme.space.md + Theme.icon.md / 2
+    // A step over the nav glyphs: an instance icon is a picture, and reads
+    // by its picture rather than by a line shape.
+    readonly property int iconSize: Theme.icon.lg
 
     background: Rectangle {
         width: control.compact ? control.railSquare : control.width
         height: control.compact ? control.railSquare : control.height
         // Centred on the icon (see `icon` below), not on the row.
-        x: control.compact ? Theme.space.md + Theme.icon.md / 2 - width / 2 : 0
+        x: control.compact ? control.iconAxis - width / 2 : 0
         y: control.compact ? (control.height - height) / 2 : 0
         radius: Theme.radius.md
         color: control.down ? Theme.palette.pressedOverlay
@@ -63,7 +69,7 @@ AbstractButton {
     }
 
     // Icon and name on the same columns as NavItem's icon and label above
-    // (an icon.md glyph at space.md, the label space.md after it), so the
+    // (centred on the same axis, the label where NavItem's starts), so the
     // Recent list reads as part of the same sidebar.
     contentItem: Item {
         Item {
@@ -72,10 +78,10 @@ AbstractButton {
             // is exactly as wide as this column (SidebarNav.railAxis), so
             // it is centred there without moving while the rail folds.
             anchors.left: parent.left
-            anchors.leftMargin: Theme.space.md
+            anchors.leftMargin: control.iconAxis - width / 2
             anchors.verticalCenter: parent.verticalCenter
-            width: Theme.icon.md
-            height: Theme.icon.md
+            width: control.iconSize
+            height: control.iconSize
 
             Image {
                 anchors.fill: parent
@@ -107,8 +113,8 @@ AbstractButton {
 
         Text {
             visible: !control.compact
-            anchors.left: icon.right
-            anchors.leftMargin: Theme.space.md
+            anchors.left: parent.left
+            anchors.leftMargin: control.iconAxis + Theme.icon.md / 2 + Theme.space.md
             anchors.right: trailing.left
             anchors.rightMargin: Theme.space.xs
             anchors.verticalCenter: parent.verticalCenter
