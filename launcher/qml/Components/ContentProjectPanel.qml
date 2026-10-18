@@ -50,20 +50,29 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.space.md
-            Rectangle {
+            Item {
                 Layout.preferredWidth: root.logoSize
                 Layout.preferredHeight: root.logoSize
                 Layout.alignment: Qt.AlignTop
-                radius: Theme.radius.sm
-                color: Theme.palette.surfaceSunken
-                clip: true
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Theme.radius.md
+                    color: Theme.palette.surfaceSunken
+                }
                 Image {
                     anchors.fill: parent
-                    anchors.margins: 1
                     source: root.project ? root.project.logoUrl : ""
                     sourceSize: Qt.size(root.logoSourceSize, root.logoSourceSize)
                     fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    mipmap: true
                     asynchronous: true
+                }
+                // Rounded like Discover's logos, in the panel's colour.
+                CornerMatte {
+                    cornerRadius: Theme.radius.md
+                    matte: root.color
                 }
             }
             ColumnLayout {

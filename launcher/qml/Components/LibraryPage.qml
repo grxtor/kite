@@ -91,12 +91,15 @@ Item {
     }
 
     readonly property int pagePadding: Theme.space.xl + Theme.space.xs
-    readonly property int gutter: Theme.space.lg
+    readonly property int emptyStateWidth: 400
+    // Modrinth App's grid: a 12px gap between cards.
+    readonly property int gutter: Theme.space.md
     // Cards grow to fill the row between these, adding a column once there
     // is room for one more at the minimum -- so the row is always full
-    // width, never a strip of small cards with the rest of it empty.
-    readonly property int minCardWidth: 220
-    readonly property int maxCardWidth: 320
+    // width, never a strip of small cards with the rest of it empty. Narrow
+    // enough that a card is mostly its icon square, like Modrinth's.
+    readonly property int minCardWidth: 168
+    readonly property int maxCardWidth: 216
     // On a wide window the content stops at Theme.layout.maxContentWidth
     // and centres (TopBar uses the same rule, so its title and toolbar stay
     // over the cards' left edge).
@@ -167,9 +170,11 @@ Item {
         Column {
             id: content
             x: root.contentX
-            y: Theme.space.xs
+            // Clear of the toolbar above the page (Main.qml); the shell's
+            // panel adds no padding of its own.
+            y: Theme.space.lg
             width: root.contentWidth
-            spacing: Theme.space.xl + Theme.space.sm
+            spacing: Theme.space.xl
 
             Repeater {
                 id: sections
@@ -228,6 +233,8 @@ Item {
 
     EmptyState {
         anchors.centerIn: parent
+        // A readable measure for the body text; EmptyState caps it.
+        width: Math.min(root.width - root.pagePadding * 2, root.emptyStateWidth)
         visible: root.instanceCount === 0
         title: root.searching ? qsTr("No instances match “%1”").arg(root.searchText)
                               : qsTr("No instances yet")

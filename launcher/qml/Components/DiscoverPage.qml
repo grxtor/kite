@@ -66,6 +66,7 @@ Item {
     // Theme.layout.maxContentWidth and centres on a wide window, under the
     // TopBar title that follows the same rule.
     readonly property int pagePadding: Theme.space.xl + Theme.space.xs
+    readonly property int emptyStateWidth: 400
     readonly property int contentWidth: Math.max(0, Math.min(width - pagePadding * 2, Theme.layout.maxContentWidth))
     readonly property int contentX: Math.max(pagePadding, Math.round((width - contentWidth) / 2))
 
@@ -180,6 +181,8 @@ Item {
             // first.
             RowLayout {
                 id: toolbar
+                // The shell's panel adds no padding; the page pads itself.
+                Layout.topMargin: Theme.space.xl
                 Layout.leftMargin: root.contentX
                 Layout.preferredWidth: root.contentWidth
                 Layout.maximumWidth: root.contentWidth
@@ -307,8 +310,7 @@ Item {
                 }
             }
 
-            // Results, as one table of rows (ModpackCard), like Modrinth's
-            // and the CurseForge app's lists.
+            // Results: a list of cards (ModpackCard), like Modrinth App's.
             Flickable {
                 id: flick
                 Layout.fillWidth: true
@@ -327,59 +329,46 @@ Item {
                 readonly property int placeholderRows: root.active && root.active.searching
                                                        ? (root.active.count === 0 ? root.skeletonRows : 1) : 0
 
-                Rectangle {
+                // One card per pack with a 12px gap, as Modrinth App
+                // lists its search results.
+                Column {
                     id: content
                     x: root.contentX
                     width: root.contentWidth
-                    height: rows.height + border.width * 2 + Theme.space.xs * 2
-                    visible: resultsRepeater.count + flick.placeholderRows > 0
-                    radius: Theme.radius.lg
-                    color: Theme.palette.surface
-                    border.width: 1
-                    border.color: Theme.palette.border
+                    spacing: Theme.space.md
 
-                    Column {
-                        id: rows
-                        x: content.border.width
-                        y: content.border.width + Theme.space.xs
-                        width: parent.width - content.border.width * 2
-
-                        Repeater {
-                            id: resultsRepeater
-                            model: root.active
-                            delegate: ModpackCard {
-                                width: rows.width
-                                lastRow: index === resultsRepeater.count - 1 && flick.placeholderRows === 0
-                                projectId: model.projectId
-                                title: model.title
-                                author: model.author
-                                description: model.description
-                                logoUrl: model.logoUrl
-                                downloads: model.downloads
-                                updated: model.updated
-                                categories: model.categories || []
-                                // Not every provider has a cover (ATLauncher).
-                                galleryUrl: model.galleryUrl || ""
-                                accentColor: model.accentColor
-                                onClicked: root.open({ projectId: projectId, title: title, author: author,
-                                                       description: description, logoUrl: logoUrl,
-                                                       downloads: downloads, updated: updated,
-                                                       categories: model.categories, galleryUrl: galleryUrl,
-                                                       accentColor: accentColor })
-                            }
+                    Repeater {
+                        id: resultsRepeater
+                        model: root.active
+                        delegate: ModpackCard {
+                            width: content.width
+                            projectId: model.projectId
+                            title: model.title
+                            author: model.author
+                            description: model.description
+                            logoUrl: model.logoUrl
+                            downloads: model.downloads
+                            updated: model.updated
+                            categories: model.categories || []
+                            // Not every provider has a cover (ATLauncher).
+                            galleryUrl: model.galleryUrl || ""
+                            accentColor: model.accentColor
+                            onClicked: root.open({ projectId: projectId, title: title, author: author,
+                                                   description: description, logoUrl: logoUrl,
+                                                   downloads: downloads, updated: updated,
+                                                   categories: model.categories, galleryUrl: galleryUrl,
+                                                   accentColor: accentColor })
                         }
+                    }
 
-                        // Shimmering rows while the first page is still
-                        // loading, or one trailing row while a further page
-                        // is being fetched -- never a bare spinner.
-                        Repeater {
-                            model: flick.placeholderRows
-                            delegate: ModpackCard {
-                                required property int index
-                                width: rows.width
-                                lastRow: index === flick.placeholderRows - 1
-                                skeleton: true
-                            }
+                    // Shimmering cards while the first page is still
+                    // loading, or one trailing card while a further page
+                    // is being fetched -- never a bare spinner.
+                    Repeater {
+                        model: flick.placeholderRows
+                        delegate: ModpackCard {
+                            width: content.width
+                            skeleton: true
                         }
                     }
                 }
@@ -413,6 +402,7 @@ Item {
 
     EmptyState {
         anchors.centerIn: parent
+        width: Math.min(parent.width - root.pagePadding * 2, root.emptyStateWidth)
         visible: root.searched && !root.keyMissing && !root.openedPack && !!root.active
                  && !root.active.searching && root.active.count === 0
         title: root.active && root.active.error.length > 0 ? qsTr("Couldn't reach %1").arg(root.providerName)
@@ -438,7 +428,7 @@ Item {
     // key.)
     EmptyState {
         anchors.centerIn: parent
-        width: parent.width
+        width: Math.min(parent.width - root.pagePadding * 2, root.emptyStateWidth)
         visible: root.keyMissing && !root.openedPack
         title: qsTr("CurseForge isn't available")
         body: qsTr("This build has no CurseForge API key, so its modpacks can't be browsed here. Modrinth works as usual.")

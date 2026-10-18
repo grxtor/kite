@@ -39,26 +39,31 @@ AbstractButton {
     readonly property int logoSize: 40
     // Pixels of the logo image asked for: twice its size, for HiDPI.
     readonly property int logoSourceSize: logoSize * 2
-    readonly property int rowHeight: 60
+    // Tall enough that the logo's rounded corners (CornerMatte) stay
+    // inside the row's hover strip.
+    readonly property int rowHeight: 64
 
     implicitHeight: rowHeight
-    // The logo sits as far in as on Content's rows.
-    leftPadding: Theme.space.md
+    // Far enough in that the logo's corner matte stays inside the strip.
+    leftPadding: Theme.space.lg
     rightPadding: Theme.space.md
     hoverEnabled: true
     onClicked: owner.select(index, { title: title, author: author, description: description,
                                      logoUrl: logoUrl, installed: installed })
 
     background: Item {
+        // Opaque at rest too (the results card's own surface), so the
+        // logo's corner matte can always paint in exactly this colour.
         Rectangle {
+            id: strip
             anchors.fill: parent
             anchors.leftMargin: Theme.space.xs
             anchors.rightMargin: Theme.space.xs
             anchors.topMargin: Theme.space.xxs
             anchors.bottomMargin: Theme.space.xxs
             radius: Theme.radius.sm
-            color: row.selected ? Theme.palette.accentSubtle
-                 : row.hovered ? Theme.palette.surfaceRaised : "transparent"
+            color: row.selected ? Qt.tint(Theme.palette.surface, Theme.palette.accentSubtle)
+                 : row.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
             Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
         }
         Rectangle {
@@ -88,19 +93,28 @@ AbstractButton {
     contentItem: RowLayout {
         spacing: Theme.space.md
 
-        Rectangle {
+        Item {
             Layout.preferredWidth: row.logoSize
             Layout.preferredHeight: row.logoSize
-            radius: Theme.radius.sm
-            color: Theme.palette.surfaceSunken
-            clip: true
+
+            Rectangle {
+                anchors.fill: parent
+                radius: Theme.radius.sm
+                color: Theme.palette.surfaceSunken
+            }
             Image {
                 anchors.fill: parent
-                anchors.margins: 1
                 source: row.logoUrl
                 sourceSize: Qt.size(row.logoSourceSize, row.logoSourceSize)
                 fillMode: Image.PreserveAspectCrop
+                smooth: true
+                mipmap: true
                 asynchronous: true
+            }
+            // Rounded like Discover's logos, in the strip's own colour.
+            CornerMatte {
+                cornerRadius: Theme.radius.sm
+                matte: strip.color
             }
         }
 

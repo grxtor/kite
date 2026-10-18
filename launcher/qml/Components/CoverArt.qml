@@ -8,10 +8,11 @@ import Kite.Theme
 /*
  * Art behind one instance: its own newest screenshot when it has one; else,
  * for a pack installed from a platform, the pack's own logo (`packArt`, see
- * PACK ART below); else a calm accent-tinted surface (PlaceholderSurface) with
- * a Lucide glyph centred. Only real pictures ever show here -- never a
- * stand-in scene. Used as the whole cover of an InstanceCard and, full-bleed,
- * behind ContinueCard, InstancePage's hero and PlayDock's bar.
+ * PACK ART below); else a calm accent-tinted surface (PlaceholderSurface),
+ * with a Lucide glyph centred only if the host asks for one. Only real
+ * pictures ever show here -- never a stand-in scene, and never an "image"
+ * glyph, which reads as a broken picture. Used full-bleed behind the Home
+ * page's header and ContinueCard.
  *
  * The surface is always painted underneath, so while a picture decodes -- or
  * if its file turns out to be unreadable -- the slot already looks finished.
@@ -41,10 +42,9 @@ Item {
     // Whether the logo itself sits on a card-shaped cover over its wash; a
     // host that already shows the logo beside the name turns it off.
     property bool showLogo: true
-    // The Lucide glyph centred on the plain surface, "" for none -- for a
-    // host that already draws the instance's icon over the cover. Left out
-    // on a cover too short to hold it (the play bar's strip).
-    property string glyph: "image"
+    // A Lucide glyph centred on the plain surface, or "" (the default) for
+    // none. Left out on a cover too short to hold it.
+    property string glyph: ""
     property int radius: Theme.radius.lg
     // "none" | "bottom" | "horizontal" -- a dark fade so text/controls laid
     // over the art stay legible, whether that art is a real screenshot or

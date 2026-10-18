@@ -104,7 +104,7 @@ TextEdit {
         root.textFormat = root.format === "html" ? TextEdit.RichText : TextEdit.MarkdownText
         // linkColor does not reach RichText; a style rule does.
         const style = root.article ? root.articleStyle
-                    : "<style>a { color: " + Theme.palette.accent + "; text-decoration: none; }</style>"
+                    : "<style>a { color: " + root.cssColor(Theme.palette.accentText) + "; text-decoration: none; }</style>"
         root.text = root.format === "html" && root.source.length > 0
                     ? style + root.source
                     : root.source

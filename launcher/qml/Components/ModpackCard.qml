@@ -8,23 +8,23 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One modpack in Discover's results: a row of the results table, the way
- * Modrinth and the CurseForge app list packs -- the logo, "Title by author",
- * the one-line pitch and up to three categories, with the download count
- * and when it was last updated on the right. Rows share one card and are
- * split by hairlines; hover tints an inset strip, as Add content's rows do
- * (ContentResultRow.qml). The whole row opens the pack's detail page --
- * nothing here installs directly, since installing means picking a version
- * first (see ModpackDetail.qml). The gallery shot is the detail page's;
- * a list of 16:9 covers showed three packs to a screen.
+ * One modpack in Discover's results, laid out like a Modrinth App search
+ * result: a card of its own with the pack's logo, "Title by author", the
+ * pitch over up to two lines and its categories as tags, with the download
+ * count and when it was last updated on the right. The whole card opens the
+ * pack's page -- nothing here installs directly, since installing means
+ * picking a version first (see ModpackDetail.qml). The gallery shot is the
+ * pack page's; a list of 16:9 covers showed three packs to a screen.
  *
- * Every row is the same height: one title line, one pitch line, one tag
- * line, whatever the pack has to say, so the table reads as a table.
+ * Every card is the same height: one title line, two pitch lines, one tag
+ * line, whatever the pack has to say, so the list keeps an even rhythm.
+ * Hover lifts it like every other card: one step lighter and a small
+ * shadow.
  *
  * `skeleton: true` swaps every field for a shimmering Skeleton block in
- * the same geometry, for the loading rows DiscoverPage shows before a page
+ * the same geometry, for the loading cards DiscoverPage shows before a page
  * of results comes back. That is also why every property below has a plain
- * default rather than being `required`: a skeleton row is not bound to a
+ * default rather than being `required`: a skeleton card is not bound to a
  * model row at all.
  */
 AbstractButton {
@@ -39,30 +39,28 @@ AbstractButton {
     // The provider's last-modified date, ISO 8601 -- may be empty.
     property string updated: ""
     property var categories: []
-    // The detail page's cover; carried for it, not shown in the row.
+    // The pack page's cover; carried for it, not shown on the card.
     property string galleryUrl: ""
     // A colour, or undefined/null when the provider has none for this
     // project (CurseForge never does) -- see the models' accentColor role.
     property var accentColor: undefined
     property bool skeleton: false
-    // The last row draws no hairline under itself: the card's border ends it.
+    // Kept for callers of the old table layout; a card ends itself.
     property bool lastRow: false
 
-    readonly property int logoSize: 64
+    // Modrinth's list result has a 100px icon on a 16px base; this is the
+    // same share of Kite's 14px one.
+    readonly property int logoSize: 88
     readonly property int logoSourceSize: logoSize * 2
     readonly property int statsWidth: 148
-    readonly property int maxTags: 3
+    readonly property int maxTags: 4
     readonly property real titleLine: Theme.type.title.lineHeightPx
-    readonly property real pitchLine: Theme.type.label.lineHeightPx
-    readonly property int tagRowHeight: Theme.control.heightSm - Theme.space.xs
-    // What a logo shows until its picture arrives: one neutral step off the
-    // card's own surface in either theme.
-    readonly property color placeholderColor: Theme.dark ? Theme.palette.surfaceRaised
-                                                         : Theme.palette.surfaceSunken
+    readonly property real pitchLine: Theme.type.body.lineHeightPx
+    readonly property int pitchLines: 2
 
     // When the pack last changed, always as an age ("today", "5 days ago",
-    // "3 months ago", "2 years ago") after "Updated", so every row in the
-    // table says it the same way -- Format.lastPlayed() switches to a
+    // "3 months ago", "2 years ago") after "Updated", so every card in the
+    // list says it the same way -- Format.lastPlayed() switches to a
     // calendar date after a month, which put "5 days ago" and "Dec 13, 2025"
     // in one column.
     readonly property string updatedText: {
@@ -88,9 +86,8 @@ AbstractButton {
         return word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word
     }
 
-    implicitHeight: root.logoSize + Theme.space.md * 2
-    leftPadding: Theme.space.md
-    rightPadding: Theme.space.lg
+    implicitHeight: root.logoSize + Theme.space.lg * 2
+    padding: Theme.space.lg
     hoverEnabled: !root.skeleton
     enabled: !root.skeleton
     focusPolicy: Qt.TabFocus
@@ -99,47 +96,59 @@ AbstractButton {
     Accessible.name: root.title
     Accessible.description: root.description
 
-    background: Item {
-        Rectangle {
-            anchors.fill: parent
-            anchors.leftMargin: Theme.space.xs
-            anchors.rightMargin: Theme.space.xs
-            anchors.topMargin: Theme.space.xxs
-            anchors.bottomMargin: Theme.space.xxs
-            radius: Theme.radius.sm
-            color: root.down ? Theme.palette.pressedOverlay
-                 : root.hovered ? Theme.palette.surfaceRaised : "transparent"
-            border.width: root.visualFocus ? 2 : 0
-            border.color: Theme.palette.focusRing
-            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-        }
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            anchors.leftMargin: Theme.space.md
-            anchors.rightMargin: Theme.space.md
-            height: 1
-            color: Theme.palette.divider
-            visible: !root.lastRow
+    background: Rectangle {
+        id: card
+        radius: Theme.radius.lg
+        color: root.down ? Theme.palette.surfaceRaised
+             : root.hovered ? Theme.palette.surfaceHover : Theme.palette.surface
+        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+
+        Shadow {
+            radius: card.radius
+            level: Theme.elevation.sm
+            opacity: root.hovered ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         }
     }
 
+    // The hairline (or the focus ring), over the content so the logo's
+    // corner matte never paints across it.
+    Rectangle {
+        anchors.fill: parent
+        z: 1
+        radius: Theme.radius.lg
+        color: "transparent"
+        border.width: root.visualFocus ? Theme.focus.width : 1
+        border.color: root.visualFocus ? Theme.palette.focusRing
+                    : root.hovered ? Theme.neutral.borderHover : Theme.palette.border
+        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+    }
+
+    // Sets the tag row's height without depending on Tag's own sizing.
+    Tag {
+        id: tagProbe
+        visible: false
+        text: "M"
+    }
+
     contentItem: RowLayout {
-        spacing: Theme.space.md
+        spacing: Theme.space.lg
 
         // -- Logo ------------------------------------------------------------
-        Rectangle {
+        Item {
             Layout.preferredWidth: root.logoSize
             Layout.preferredHeight: root.logoSize
-            Layout.alignment: Qt.AlignVCenter
-            radius: Theme.radius.sm
-            color: root.placeholderColor
-            clip: true
+            Layout.alignment: Qt.AlignTop
 
+            Rectangle {
+                anchors.fill: parent
+                radius: Theme.radius.lg
+                color: Theme.dark ? Theme.palette.surfaceRaised : Theme.palette.surfaceSunken
+                visible: !root.skeleton
+            }
             Skeleton {
                 anchors.fill: parent
-                radius: Theme.radius.sm
+                radius: Theme.radius.lg
                 visible: root.skeleton
             }
             Image {
@@ -162,13 +171,19 @@ AbstractButton {
                 size: Theme.icon.lg
                 color: Theme.palette.textTertiary
             }
+            // Rounds the logo in the card's own colour.
+            CornerMatte {
+                visible: logoImg.visible
+                cornerRadius: Theme.radius.lg
+                matte: card.color
+            }
         }
 
         // -- Title, pitch, categories ----------------------------------------
         ColumnLayout {
             Layout.fillWidth: true
             Layout.minimumWidth: 0
-            Layout.alignment: Qt.AlignVCenter
+            Layout.alignment: Qt.AlignTop
             spacing: Theme.space.xxs
 
             // "Fabulously Optimized by robotkoer", the way Modrinth names a
@@ -204,7 +219,7 @@ AbstractButton {
                     visible: !root.skeleton && root.author.length > 0 && width > 0
                     text: qsTr("by %1").arg(root.author)
                     elide: Text.ElideRight
-                    color: Theme.palette.textTertiary
+                    color: Theme.palette.textSecondary
                     font.family: Theme.font.family
                     font.pixelSize: Theme.type.label.pixelSize
                 }
@@ -219,35 +234,38 @@ AbstractButton {
 
             Item {
                 Layout.fillWidth: true
-                implicitHeight: root.pitchLine
+                implicitHeight: root.pitchLine * root.pitchLines
 
                 Text {
                     anchors.fill: parent
                     visible: !root.skeleton
-                    verticalAlignment: Text.AlignVCenter
                     text: root.description
-                    maximumLineCount: 1
+                    wrapMode: Text.Wrap
+                    maximumLineCount: root.pitchLines
                     elide: Text.ElideRight
+                    // Exactly the reserved line, so two lines always fit.
+                    lineHeightMode: Text.FixedHeight
+                    lineHeight: root.pitchLine
                     color: Theme.palette.textSecondary
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    font.pixelSize: Theme.type.body.pixelSize
                 }
                 Skeleton {
-                    anchors.verticalCenter: parent.verticalCenter
+                    y: (root.pitchLine - height) / 2
                     width: parent.width * 0.7
-                    height: Theme.type.label.pixelSize
+                    height: Theme.type.body.pixelSize
                     radius: Theme.radius.sm
                     visible: root.skeleton
                 }
             }
 
-            // Always reserved, so a pack without categories keeps the row
+            // Always reserved, so a pack without categories keeps the card
             // height. Clipped at the column's edge rather than measured: a
-            // third tag that does not fit is simply not drawn.
+            // tag that does not fit is simply not drawn.
             Item {
                 Layout.fillWidth: true
                 Layout.topMargin: Theme.space.xxs
-                implicitHeight: root.tagRowHeight
+                implicitHeight: tagProbe.implicitHeight
                 clip: true
 
                 Row {
@@ -267,7 +285,7 @@ AbstractButton {
         // -- Downloads and last update ---------------------------------------
         ColumnLayout {
             Layout.preferredWidth: root.statsWidth
-            Layout.alignment: Qt.AlignVCenter
+            Layout.alignment: Qt.AlignTop
             spacing: Theme.space.xs
 
             Row {
@@ -279,30 +297,40 @@ AbstractButton {
                     anchors.verticalCenter: parent.verticalCenter
                     iconName: "download"
                     size: Theme.icon.sm
-                    color: Theme.palette.textTertiary
+                    color: Theme.palette.textSecondary
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: qsTr("%1 downloads").arg(Format.compactNumber(root.downloads))
-                    color: Theme.palette.textSecondary
+                    color: Theme.palette.textPrimary
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
-                    font.weight: Font.Medium
+                    font.pixelSize: Theme.type.label.pixelSize
+                    font.weight: Font.DemiBold
                 }
             }
-            Text {
+            Row {
                 Layout.alignment: Qt.AlignRight
                 visible: !root.skeleton && root.updatedText.length > 0
-                text: qsTr("Updated %1").arg(root.updatedText)
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                spacing: Theme.space.xs
+                MeshIcon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    iconName: "clock"
+                    size: Theme.icon.sm
+                    color: Theme.palette.textTertiary
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Updated %1").arg(root.updatedText)
+                    color: Theme.palette.textSecondary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.label.pixelSize
+                }
             }
             Skeleton {
                 Layout.alignment: Qt.AlignRight
                 visible: root.skeleton
                 width: root.statsWidth / 2
-                height: Theme.type.caption.pixelSize
+                height: Theme.type.label.pixelSize
                 radius: Theme.radius.sm
             }
         }

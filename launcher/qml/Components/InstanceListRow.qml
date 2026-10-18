@@ -8,11 +8,13 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One instance in the library's list view: a dense row instead of
- * InstanceCard's cover art, for a library that would rather scan names than
- * browse thumbnails. Same roles and signals as InstanceCard (it is bound to
- * the same per-group model), so the two delegates are interchangeable from
- * InstanceSection's point of view -- only the layout differs.
+ * One instance in the library's list view: InstanceCard laid out as a row,
+ * for a library that would rather scan names than browse icons. Same roles
+ * and signals as InstanceCard (it is bound to the same per-group model), so
+ * the two delegates are interchangeable from InstanceSection's point of
+ * view -- and the same grammar: the icon on the calm accent-tinted square
+ * (or the pack's own logo across it), the same surface, hover lift,
+ * selected ring, and Play fading in on hover.
  *
  * The trailing columns drop out at narrow widths rather than truncating into
  * nonsense; the name always keeps the room it needs to stay readable.
@@ -37,6 +39,9 @@ Item {
     required property color iconTint
     required property string launchStatus
     required property real launchProgress
+    // A platform pack's own logo (InstanceList's packArt role), shown across
+    // the icon square as on the grid card; "" for every other instance.
+    property string packArt: ""
 
     property bool selected: false
     property bool forceHovered: false
@@ -51,10 +56,11 @@ Item {
 
     readonly property bool hovered: forceHovered || hoverHandler.hovered
     readonly property bool launching: launchStatus.length > 0
-    // The same icon chip InstanceCard puts on its cover: 32px of icon on a
-    // 4px frame.
-    readonly property int badgeSize: 40
-    readonly property int badgeInset: Theme.space.xs
+    readonly property bool showsPackArt: root.packArt.length > 0 && packLogo.status === Image.Ready
+    // The icon square, and the share of it the icon fills -- the grid
+    // card's own proportions, smaller.
+    readonly property int squareSize: 40
+    readonly property int iconSize: 28
     readonly property int runningDotSize: 9
     readonly property string iconSource: "image://instanceicon/" + (root.iconKey.length > 0 ? root.iconKey : "default")
     readonly property int versionColumnWidth: 150
@@ -64,7 +70,9 @@ Item {
     readonly property bool showStatsColumns: width > 620
 
     implicitWidth: 400
-    implicitHeight: badgeSize + Theme.space.sm * 2
+    // Modrinth App's compact row: about 64px. The square's inset is also
+    // what keeps the logo's corner matte inside the row.
+    implicitHeight: squareSize + Theme.space.md * 2
 
     activeFocusOnTab: true
     Keys.onReturnPressed: root.playRequested()
@@ -77,20 +85,21 @@ Item {
 
     HoverHandler { id: hoverHandler }
 
-    // A card like InstanceCard, only flat: the same surface, border and
-    // selected/hover grammar, so switching Grid/List changes the layout and
-    // nothing else.
     Rectangle {
         id: surface
         anchors.fill: parent
         radius: Theme.radius.lg
-        color: Theme.palette.surface
-        // Hover changes this one property, as on the grid card.
-        border.width: root.selected ? 2 : 1
-        border.color: root.selected ? Theme.palette.accent
-                    : root.hovered ? Theme.palette.borderStrong : Theme.palette.border
+        // The grid card's hover: one step lighter and a small shadow.
+        color: root.hovered ? Theme.palette.surfaceHover : Theme.palette.surface
 
-        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+
+        Shadow {
+            radius: surface.radius
+            level: Theme.elevation.sm
+            opacity: root.hovered ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        }
 
         TapHandler {
             acceptedButtons: Qt.LeftButton
@@ -106,22 +115,23 @@ Item {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: Theme.space.sm
-            anchors.rightMargin: Theme.space.sm
+            anchors.leftMargin: Theme.space.md
+            anchors.rightMargin: Theme.space.md
             spacing: Theme.space.md
 
-            Rectangle {
-                Layout.preferredWidth: root.badgeSize
-                Layout.preferredHeight: root.badgeSize
-                radius: Theme.radius.sm
-                color: Theme.palette.surfaceRaised
-                border.width: 1
-                border.color: Theme.palette.border
+            Item {
+                Layout.preferredWidth: root.squareSize
+                Layout.preferredHeight: root.squareSize
 
-                Image {
-                    id: icon
+                PlaceholderSurface {
                     anchors.fill: parent
-                    anchors.margins: root.badgeInset
+                    radius: Theme.radius.sm
+                }
+                Image {
+                    anchors.centerIn: parent
+                    visible: !root.showsPackArt
+                    width: root.iconSize
+                    height: root.iconSize
                     source: root.iconSource
                     sourceSize: Qt.size(width, height)
                     fillMode: Image.PreserveAspectFit
@@ -129,6 +139,22 @@ Item {
                     // scaling the scene graph does stays clean.
                     smooth: true
                     mipmap: true
+                }
+                Image {
+                    id: packLogo
+                    anchors.fill: parent
+                    visible: root.showsPackArt
+                    source: root.packArt
+                    sourceSize: Qt.size(width * 2, height * 2)
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    mipmap: true
+                    asynchronous: true
+                }
+                CornerMatte {
+                    visible: root.showsPackArt
+                    cornerRadius: Theme.radius.sm
+                    matte: surface.color
                 }
 
                 // Pulsing while running, same treatment as the sidebar's
@@ -156,6 +182,7 @@ Item {
             }
 
             Text {
+                id: nameText
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
                 text: root.name
@@ -164,6 +191,11 @@ Item {
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.bodyStrong.pixelSize
                 font.weight: Theme.type.bodyStrong.weight
+
+                HoverHandler { id: nameHover; enabled: nameText.truncated }
+                ToolTip.visible: nameText.truncated && nameHover.hovered
+                ToolTip.delay: 500
+                ToolTip.text: root.name
             }
 
             Text {
@@ -201,11 +233,12 @@ Item {
                 color: Theme.palette.textTertiary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize
+                font.features: ({ "tnum": 1 })
             }
 
             Item {
                 Layout.preferredWidth: Theme.control.height * 2 + Theme.space.xs
-                Layout.preferredHeight: root.badgeSize
+                Layout.preferredHeight: root.squareSize
 
                 IconButton {
                     id: moreButton
@@ -249,14 +282,25 @@ Item {
         }
     }
 
+    // The hairline, over everything so the logo's corner matte never
+    // paints across it. Selected: a 2px accent ring.
     Rectangle {
-        // Keyboard focus ring, outset like InstanceCard's: 4px out from a
-        // 12px corner is a 16px corner.
+        anchors.fill: surface
+        radius: surface.radius
+        color: "transparent"
+        border.width: root.selected ? 2 : 1
+        border.color: root.selected ? Theme.palette.accent
+                    : root.hovered ? Theme.neutral.borderHover : Theme.palette.border
+        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+    }
+
+    Rectangle {
+        // Keyboard focus ring, outset like InstanceCard's.
         anchors.fill: surface
         anchors.margins: -Theme.space.xs
-        radius: Theme.radius.xl
+        radius: surface.radius + Theme.space.xs
         color: "transparent"
-        border.width: 2
+        border.width: Theme.focus.width
         border.color: Theme.palette.focusRing
         visible: root.activeFocus && !root.selected
     }

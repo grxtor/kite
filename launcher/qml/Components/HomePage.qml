@@ -16,17 +16,21 @@ import Kite.Theme
  * call. The library itself is not repeated here: it is one click away in
  * the sidebar, which also lists the recent instances.
  *
- * HERO. Like the official launcher, Lunar and the CurseForge app, Home leads
- * with a full-width banner: the played-last instance's own screenshot (or its
- * pack's logo), else a calm plain surface. On it goes the news item itself (headline, date, Read more) when there is
- * news worth showing, and otherwise the instance played last, with Open --
- * never a greeting, and never a second Play (the play bar is the Play).
- * Only news that is still news counts: a release post for the version
+ * Laid out like Modrinth App's Home: rows, not covers. "Jump back in" is a
+ * list of 80px rows (HomeJumpCard) with Play on each, and "Recent worlds"
+ * uses the same row grammar (HomeWorldTile).
+ *
+ * HEADER. Only real art earns a picture: when the instance played last has
+ * a screenshot of its own, it leads the page as a banner (its name, what it
+ * runs, Play and Open) and "Jump back in" starts with the one after it, so
+ * nothing is listed twice. Without one there is no banner at all -- never
+ * a big empty surface -- and that instance is simply the first row.
+ *
+ * NEWS. Kite's own news is a compact card above "Jump back in": the
+ * headline, its date, Read more and, with more than one post, a "More news"
+ * menu. Only news that is still news counts: a release post for the version
  * already running (or an older one) is skipped, and so is anything older
- * than `newsMaxAgeDays`. While the hero shows an instance, "Jump back in"
- * starts with the one after it, so nothing is listed twice. On a short
- * window the hero's type steps down a size (`compact`), so the cards stay
- * above the play bar.
+ * than `newsMaxAgeDays`.
  *
  * Like every other page it sits under TopBar (title + account button), and
  * its content stops growing at Theme.layout.maxContentWidth and centres, so
@@ -46,13 +50,13 @@ Item {
         verticalAlignment: Text.AlignVCenter
         color: Theme.palette.textPrimary
         font.family: Theme.font.heading
-        font.pixelSize: Theme.type.title.pixelSize + 1
-        font.weight: Font.Bold
+        font.pixelSize: Theme.type.heading.pixelSize
+        font.weight: Theme.type.heading.weight
     }
 
     /*
-     * A quiet fact on the hero's photo: a line icon and a few words, in the
-     * media colours (the clock for when, the hourglass for how long).
+     * A quiet fact on the header's photo: a line icon and a few words, in
+     * the media colours (the clock for when, the hourglass for how long).
      */
     component HeroFact: Row {
         property string iconName
@@ -74,39 +78,37 @@ Item {
         }
     }
 
-    // The hero's big title sits a touch tighter, like TopBar's page title.
-    readonly property real heroTracking: -0.4
-
     /*
      * "More news ▾": the latest few headlines (`entries`, newest first),
-     * each opening its post. On the hero's photo (`onMedia`) or on the
-     * page. An inline component sees none of this file's ids, so
-     * the entries come in as a property.
+     * each opening its post. An inline component sees none of this file's
+     * ids, so the entries come in as a property.
      */
     component NewsMenuButton: AbstractButton {
         id: moreNews
         property var entries: []
-        property bool onMedia: false
         readonly property int maxEntries: 8
         visible: moreNews.entries.length > 1
-        implicitWidth: moreRow.implicitWidth
+        implicitWidth: moreRow.implicitWidth + Theme.space.sm * 2
         implicitHeight: Theme.control.heightSm
         hoverEnabled: true
         Accessible.name: qsTr("More news")
         onClicked: newsMenu.popup(moreNews, 0, moreNews.height)
 
-        readonly property color restColor: moreNews.onMedia ? Theme.media.textSecondary : Theme.palette.textSecondary
-        readonly property color hoverColor: moreNews.onMedia ? Theme.media.text : Theme.palette.textPrimary
-
+        background: Rectangle {
+            radius: Theme.radius.sm
+            color: moreNews.down ? Theme.palette.pressedOverlay
+                 : moreNews.hovered ? Theme.palette.hoverOverlay : "transparent"
+            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        }
         contentItem: Item {
             Row {
                 id: moreRow
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.centerIn: parent
                 spacing: Theme.space.xxs
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: qsTr("More news")
-                    color: moreNews.hovered ? moreNews.hoverColor : moreNews.restColor
+                    color: moreNews.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
                     font.family: Theme.font.family
                     font.pixelSize: Theme.type.label.pixelSize
                     Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
@@ -115,7 +117,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     iconName: "chevron-down"
                     size: Theme.icon.sm
-                    color: moreNews.restColor
+                    color: Theme.palette.textSecondary
                 }
             }
         }
@@ -136,7 +138,7 @@ Item {
     }
 
     // Most recently played instances first; never-played ones left out
-    // (QmlShell.recentModel) -- "Jump back in" takes its first three.
+    // (QmlShell.recentModel) -- "Jump back in" takes the first few.
     property var recentModel: null
     // Every instance, for the empty-library check.
     property var instanceModel: null
@@ -148,14 +150,15 @@ Item {
 
     signal launchRequested(string id)
     signal stopRequested(string id)
-    // Opens the instance page -- a Jump back in card.
+    // Opens the instance page -- a Jump back in row, or the header.
     signal openInstanceRequested(string id)
-    // Opens the instance page on its Worlds tab -- a Recent worlds tile.
+    // Opens the instance page on its Worlds tab -- a Recent worlds row.
     signal openInstanceWorldsRequested(string id)
     signal createRequested()
     signal discoverRequested()
 
     readonly property int pagePadding: Theme.space.xl + Theme.space.xs
+    readonly property int emptyStateWidth: 400
     readonly property int libraryCount: root.instanceModel && root.instanceModel.count !== undefined ? root.instanceModel.count : 0
     readonly property int recentCount: root.recentModel && root.recentModel.count !== undefined ? root.recentModel.count : 0
     readonly property bool hasLibrary: root.libraryCount > 0
@@ -214,7 +217,7 @@ Item {
         }
         return true
     }
-    // The newest entry still worth the hero, or null.
+    // The newest entry still worth showing, or null.
     readonly property var featuredNews: {
         var now = Date.now()
         for (var i = 0; i < root.newsEntries.length; ++i) {
@@ -233,61 +236,54 @@ Item {
     readonly property string newsDate: root.hasNews && root.featuredNews.date
                                        ? Format.calendarDate(new Date(root.featuredNews.date)) : ""
 
-    // The hero: the banner big clients lead with. On it, the news item when there is one,
-    // otherwise the instance played last (`featured`) with Open -- no Play:
-    // the play bar is the Play. Nothing to put on it, no hero.
-    // A share of the page height within bounds (about 220px at 1240x780,
-    // 300 on a 1080p window), and never shorter than its own words. Below `compactBelow` (860x540
-    // leaves the page about 400px) its type steps down a size, so Jump back
-    // in stays above the fold.
-    readonly property int compactBelow: 560
-    readonly property bool compact: root.height < root.compactBelow
-    readonly property real heroShare: 0.34
-    readonly property int heroMinHeight: 128
-    readonly property int heroMaxHeight: 300
-    readonly property int heroIconSize: root.compact ? 44 : 56
-    // The first "Jump back in" card, the most recently played instance,
-    // claims this (see the Repeater below); null with nothing played.
-    property Item featured: null
-    readonly property bool heroShowsInstance: !root.hasNews && !!root.featured && root.recentCount > 0
-    readonly property bool hasHero: root.hasNews || root.heroShowsInstance
-    // The hero's instance is not listed again right under it.
-    readonly property int jumpOffset: root.heroShowsInstance ? 1 : 0
-    readonly property int jumpAvailable: Math.max(0, root.recentCount - root.jumpOffset)
-    readonly property string featuredPlayTime: root.featured && SettingsStore.bool("ShowGameTime")
-                                               ? Format.playTime(root.featured.itemPlayTime) : ""
-
-    // "Jump back in": as many whole cards as fit (up to three), stretched to
-    // fill the row -- never a card sliced at the edge.
-    readonly property int jumpMax: 3
-    readonly property int jumpMinWidth: 300
-    readonly property int jumpMaxWidth: 440
-    readonly property int jumpSpacing: Theme.space.lg
-    readonly property int jumpFit: Math.max(1, Math.min(root.jumpMax,
-            Math.floor((root.contentWidth + root.jumpSpacing) / (root.jumpMinWidth + root.jumpSpacing))))
-    readonly property int jumpCount: Math.max(1, Math.min(root.jumpFit, root.jumpAvailable))
-    readonly property int jumpCardWidth: Math.min(root.jumpMaxWidth,
-            Math.floor((root.contentWidth - root.jumpSpacing * (root.jumpFit - 1)) / root.jumpFit))
-
-    // "Recent worlds": rows of as many whole tiles as fit -- two rows, or
-    // one on a short window.
-    readonly property bool hasWorlds: worldsRepeater.count > 0
-    readonly property int worldMinWidth: 200
-    readonly property int worldSpacing: Theme.space.lg
-    readonly property int worldColumns: Math.max(1, Math.floor((root.contentWidth + root.worldSpacing)
-                                                               / (root.worldMinWidth + root.worldSpacing)))
-    readonly property int worldRows: root.compact ? 1 : 2
-    readonly property int worldMax: root.worldColumns * root.worldRows
-    readonly property int worldTileWidth: Math.floor((root.contentWidth - root.worldSpacing * (root.worldColumns - 1)) / root.worldColumns)
-
     function openNews() {
         if (root.hasNews && root.featuredNews.link)
             Qt.openUrlExternally(root.featuredNews.link)
     }
 
+    // -- Header -----------------------------------------------------------
+    // The first "Jump back in" row, the most recently played instance,
+    // claims this (see the Repeater below); null with nothing played.
+    property Item featured: null
+    // Only a real screenshot earns the header.
+    readonly property bool hasHero: !!root.featured && root.recentCount > 0
+                                    && root.featured.itemCoverImage.length > 0
+    // A share of the page height within bounds, never shorter than its own
+    // words.
+    readonly property real heroShare: 0.3
+    readonly property int heroMinHeight: 176
+    readonly property int heroMaxHeight: 260
+    readonly property int heroIconSize: 56
+    readonly property string featuredPlayTime: root.featured && SettingsStore.bool("ShowGameTime")
+                                               ? Format.playTime(root.featured.itemPlayTime) : ""
+
+    // -- Jump back in -----------------------------------------------------
+    // Up to five rows, as in Modrinth App, the header's instance not
+    // listed again under it. One column, two on a window wide enough that
+    // each row keeps a readable width.
+    readonly property int jumpOffset: root.hasHero ? 1 : 0
+    readonly property int jumpMax: 5
+    readonly property int jumpCount: Math.max(0, Math.min(root.jumpMax, root.recentCount - root.jumpOffset))
+    readonly property int rowGap: Theme.space.md
+    readonly property int rowMinWidth: 540
+    readonly property int jumpColumns: root.contentWidth >= root.rowMinWidth * 2 + root.rowGap ? 2 : 1
+    readonly property int jumpRowWidth: Math.floor((root.contentWidth - root.rowGap * (root.jumpColumns - 1)) / root.jumpColumns)
+
+    // -- Recent worlds ----------------------------------------------------
+    // As many columns as fit at a readable width; two rows of them, or one
+    // on a short window.
+    readonly property bool hasWorlds: worldsRepeater.count > 0
+    readonly property int worldMinWidth: 300
+    readonly property int worldColumns: Math.max(1, Math.floor((root.contentWidth + root.rowGap) / (root.worldMinWidth + root.rowGap)))
+    readonly property int compactBelow: 560
+    readonly property int worldRows: root.height < root.compactBelow ? 1 : 2
+    readonly property int worldMax: root.worldColumns * root.worldRows
+    readonly property int worldWidth: Math.floor((root.contentWidth - root.rowGap * (root.worldColumns - 1)) / root.worldColumns)
+
     Flickable {
         id: flick
         anchors.fill: parent
+        visible: root.hasLibrary
         contentWidth: width
         contentHeight: content.y + content.height + Theme.space.xxl
         boundsBehavior: Flickable.StopAtBounds
@@ -298,192 +294,234 @@ Item {
         Column {
             id: content
             x: root.contentX
-            y: Theme.space.xs
+            // The shell's panel adds no padding; the page pads itself.
+            y: Theme.space.xl
             width: root.contentWidth
             spacing: Theme.space.xl
 
-            // -- Hero -------------------------------------------------------
-            // The last-played instance's own screenshot or pack logo (the
-            // plain surface for news, or with neither), full width and
-            // rounded like every other large surface, with the news or the
-            // instance on its darker left side.
+            // -- Header -----------------------------------------------------
+            // The played-last instance's own newest screenshot, full width
+            // and rounded like every other large surface, with the instance
+            // on its darker left side.
             Item {
                 id: hero
                 visible: root.hasHero
                 width: parent.width
                 height: Math.round(Math.max(root.heroMinHeight,
-                                            heroContent.implicitHeight + (root.compact ? Theme.space.lg : Theme.space.xl) * 2,
+                                            heroContent.implicitHeight + Theme.space.xl * 2,
                                             Math.min(root.heroMaxHeight, root.height * root.heroShare)))
 
                 CoverArt {
                     anchors.fill: parent
-                    source: root.heroShowsInstance ? root.featured.itemCoverImage : ""
-                    packArt: root.heroShowsInstance ? root.featured.itemPackArt : ""
-                    showLogo: false
+                    source: root.hasHero ? root.featured.itemCoverImage : ""
                     glyph: ""
+                    showLogo: false
                     radius: Theme.radius.xl
                     scrim: "horizontal"
                     matte: Theme.palette.canvas
                 }
 
-                Item {
+                Column {
                     id: heroContent
                     anchors.left: parent.left
-                    anchors.leftMargin: root.compact ? Theme.space.xl : Theme.space.xxl
+                    anchors.leftMargin: Theme.space.xxl
                     anchors.right: parent.horizontalCenter
                     anchors.verticalCenter: parent.verticalCenter
-                    implicitHeight: root.hasNews ? newsHero.implicitHeight : instanceHero.implicitHeight
-                    height: implicitHeight
+                    spacing: Theme.space.lg
 
-                    // The news item: headline, date, Read more, More news.
-                    Column {
-                        id: newsHero
-                        visible: root.hasNews
+                    Row {
                         width: parent.width
-                        spacing: Theme.space.xs
+                        spacing: Theme.space.md
 
-                        Text {
-                            width: parent.width
-                            text: root.hasNews ? root.featuredNews.title : ""
-                            wrapMode: Text.WordWrap
-                            maximumLineCount: root.compact ? 1 : 2
-                            elide: Text.ElideRight
-                            color: Theme.media.text
-                            font.family: Theme.font.family
-                            font.pixelSize: root.compact ? Theme.type.heading.pixelSize : Theme.type.display.pixelSize
-                            font.weight: Font.Bold
-                            font.letterSpacing: root.heroTracking
-                        }
-                        Text {
-                            width: parent.width
-                            visible: text.length > 0
-                            text: root.newsDate
-                            color: Theme.media.textSecondary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.label.pixelSize
-                        }
-                        Row {
-                            topPadding: root.compact ? Theme.space.sm : Theme.space.md
-                            spacing: Theme.space.md
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: root.heroIconSize
+                            height: root.heroIconSize
+                            radius: Theme.radius.md
+                            color: Theme.media.chip
+                            border.width: 1
+                            border.color: Theme.media.chipBorder
 
-                            Button {
-                                text: qsTr("Read more")
-                                icon.source: Icons.url("external-link")
-                                onClicked: root.openNews()
+                            Image {
+                                anchors.fill: parent
+                                anchors.margins: Theme.space.sm
+                                source: root.featured
+                                        ? "image://instanceicon/" + (root.featured.itemIconKey.length > 0 ? root.featured.itemIconKey : "default")
+                                        : ""
+                                sourceSize: Qt.size(width * 2, height * 2)
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                                mipmap: true
+                                asynchronous: true
                             }
-                            NewsMenuButton {
-                                anchors.verticalCenter: parent.verticalCenter
-                                entries: root.newsEntries
-                                onMedia: true
+                        }
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width - root.heroIconSize - parent.spacing
+                            spacing: Theme.space.xxs
+
+                            Text {
+                                width: parent.width
+                                text: root.featured ? root.featured.itemName : ""
+                                elide: Text.ElideRight
+                                color: Theme.media.text
+                                font.family: Theme.font.heading
+                                font.pixelSize: Theme.type.display.pixelSize
+                                font.weight: Theme.type.display.weight
+                            }
+                            Text {
+                                width: parent.width
+                                text: root.featured ? Format.versionLine(root.featured.itemLoader, root.featured.itemVersion) : ""
+                                elide: Text.ElideRight
+                                color: Theme.media.textSecondary
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.type.label.pixelSize
                             }
                         }
                     }
 
-                    // The instance played last: icon, name, what it runs,
-                    // Open, and when it was played.
-                    Column {
-                        id: instanceHero
-                        visible: root.heroShowsInstance
-                        width: parent.width
-                        spacing: root.compact ? Theme.space.sm : Theme.space.md
+                    Row {
+                        spacing: Theme.space.sm
 
-                        Row {
-                            width: parent.width
-                            spacing: Theme.space.md
-
-                            Rectangle {
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: root.heroIconSize
-                                height: root.heroIconSize
-                                radius: Theme.radius.sm
-                                color: Theme.media.chip
-                                border.width: 1
-                                border.color: Theme.media.chipBorder
-
-                                Image {
-                                    anchors.fill: parent
-                                    anchors.margins: Theme.space.xs
-                                    source: root.featured
-                                            ? "image://instanceicon/" + (root.featured.itemIconKey.length > 0 ? root.featured.itemIconKey : "default")
-                                            : ""
-                                    sourceSize: Qt.size(width * 2, height * 2)
-                                    fillMode: Image.PreserveAspectFit
-                                    smooth: true
-                                    mipmap: true
-                                    asynchronous: true
-                                }
-                            }
-                            Column {
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: parent.width - root.heroIconSize - parent.spacing
-                                spacing: Theme.space.xxs
-
-                                Text {
-                                    width: parent.width
-                                    text: root.featured ? root.featured.itemName : ""
-                                    elide: Text.ElideRight
-                                    color: Theme.media.text
-                                    font.family: Theme.font.family
-                                    font.pixelSize: root.compact ? Theme.type.heading.pixelSize : Theme.type.display.pixelSize
-                                    font.weight: Font.Bold
-                                    font.letterSpacing: root.heroTracking
-                                }
-                                Text {
-                                    width: parent.width
-                                    text: root.featured ? Format.versionLine(root.featured.itemLoader, root.featured.itemVersion) : ""
-                                    elide: Text.ElideRight
-                                    color: Theme.media.textSecondary
-                                    font.family: Theme.font.family
-                                    font.pixelSize: Theme.type.label.pixelSize
-                                }
+                        PlayButton {
+                            round: false
+                            size: Theme.control.heightLg
+                            running: !!root.featured && root.featured.itemRunning
+                            enabled: !!root.featured && (root.featured.itemRunning || root.featured.itemCanLaunch)
+                            onClicked: {
+                                if (!root.featured)
+                                    return
+                                if (root.featured.itemRunning)
+                                    root.stopRequested(root.featured.itemId)
+                                else
+                                    root.launchRequested(root.featured.itemId)
                             }
                         }
-
+                        Button {
+                            anchors.verticalCenter: parent.verticalCenter
+                            buttonSize: "lg"
+                            text: qsTr("Open")
+                            onClicked: if (root.featured) root.openInstanceRequested(root.featured.itemId)
+                        }
+                        // When (clock) -- or that it crashed -- and how
+                        // long (hourglass), quietly beside the buttons.
                         Row {
-                            spacing: Theme.space.lg
+                            anchors.verticalCenter: parent.verticalCenter
+                            leftPadding: Theme.space.sm
+                            spacing: Theme.space.md
 
-                            Button {
-                                text: qsTr("Open")
-                                icon.source: Icons.url("arrow-right")
-                                onClicked: if (root.featured) root.openInstanceRequested(root.featured.itemId)
+                            HeroFact {
+                                iconName: root.featured && root.featured.itemCrashed ? "alert-triangle" : "clock"
+                                text: !root.featured ? ""
+                                    : root.featured.itemCrashed ? qsTr("Crashed last time")
+                                    : Format.lastPlayed(root.featured.itemLastLaunch)
                             }
-                            // When (clock) -- or that it crashed -- and how
-                            // long (hourglass), quietly beside Open.
-                            Row {
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: Theme.space.md
-
-                                HeroFact {
-                                    iconName: root.featured && root.featured.itemCrashed ? "alert-triangle" : "clock"
-                                    text: !root.featured ? ""
-                                        : root.featured.itemCrashed ? qsTr("Crashed last time")
-                                        : Format.lastPlayed(root.featured.itemLastLaunch)
-                                }
-                                HeroFact {
-                                    visible: root.featuredPlayTime.length > 0
-                                    iconName: "hourglass"
-                                    text: root.featuredPlayTime
-                                }
+                            HeroFact {
+                                visible: root.featuredPlayTime.length > 0
+                                iconName: "hourglass"
+                                text: root.featuredPlayTime
                             }
                         }
                     }
                 }
             }
 
+            // -- News -------------------------------------------------------
+            // A compact card: no picture of its own to show, so none.
+            Rectangle {
+                id: newsCard
+                visible: root.hasNews
+                width: parent.width
+                height: Theme.space.md * 2 + newsIcon.height
+                radius: Theme.radius.lg
+                color: Theme.palette.surface
+                border.width: 1
+                border.color: Theme.palette.border
+
+                // Kite's own mark: the news is Kite's.
+                Item {
+                    id: newsIcon
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.space.lg
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 48
+                    height: 48
+
+                    PlaceholderSurface {
+                        anchors.fill: parent
+                        radius: Theme.radius.md
+                    }
+                    Image {
+                        anchors.centerIn: parent
+                        width: Theme.icon.lg + Theme.space.xs
+                        height: width
+                        source: "image://instanceicon/kite"
+                        sourceSize: Qt.size(width, height)
+                        smooth: true
+                        mipmap: true
+                    }
+                }
+
+                Column {
+                    anchors.left: newsIcon.right
+                    anchors.leftMargin: Theme.space.md
+                    anchors.right: newsActions.left
+                    anchors.rightMargin: Theme.space.lg
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Theme.space.xxs
+
+                    Text {
+                        width: parent.width
+                        text: root.hasNews ? root.featuredNews.title : ""
+                        elide: Text.ElideRight
+                        color: Theme.palette.textPrimary
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.type.title.pixelSize
+                        font.weight: Theme.type.title.weight
+                    }
+                    Text {
+                        width: parent.width
+                        text: root.newsDate.length > 0 ? qsTr("Kite news  •  %1").arg(root.newsDate) : qsTr("Kite news")
+                        elide: Text.ElideRight
+                        color: Theme.palette.textSecondary
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.type.label.pixelSize
+                    }
+                }
+
+                Row {
+                    id: newsActions
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.space.lg
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Theme.space.sm
+
+                    NewsMenuButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        entries: root.newsEntries
+                    }
+                    Button {
+                        text: qsTr("Read more")
+                        icon.source: Icons.url("external-link")
+                        onClicked: root.openNews()
+                    }
+                }
+            }
+
             // -- Jump back in ----------------------------------------------
             Column {
-                visible: root.hasLibrary
+                visible: root.jumpCount > 0
                 width: parent.width
                 spacing: Theme.space.md
 
                 SectionHeading {
-                    visible: root.jumpAvailable > 0
                     text: qsTr("Jump back in")
                 }
 
-                Row {
-                    visible: root.jumpAvailable > 0
-                    spacing: root.jumpSpacing
+                Grid {
+                    columns: root.jumpColumns
+                    columnSpacing: root.rowGap
+                    rowSpacing: root.rowGap
 
                     Repeater {
                         model: root.recentModel
@@ -500,13 +538,13 @@ Item {
                             id: slot
                             // The most recently played first (recentModel
                             // already sorts that way), after the one the
-                            // hero shows, only as many as fit whole.
+                            // header shows.
                             readonly property int position: model.index - root.jumpOffset
                             visible: slot.position >= 0 && slot.position < root.jumpCount
-                            width: visible ? card.width : 0
-                            height: visible ? card.height : 0
+                            width: visible ? row.width : 0
+                            height: visible ? row.height : 0
 
-                            // The first row is the hero's instance: what it
+                            // The first row is the header's instance: what it
                             // shows, live from the row.
                             readonly property bool isFirst: model.index === 0
                             readonly property string itemId: model.instanceId
@@ -517,21 +555,17 @@ Item {
                             readonly property var itemLastLaunch: model.lastLaunch
                             readonly property var itemPlayTime: model.totalTimePlayed
                             readonly property bool itemCrashed: model.hasCrashed
+                            readonly property bool itemRunning: model.isRunning
+                            readonly property bool itemCanLaunch: model.canLaunch
                             readonly property string itemCoverImage: model.coverImage
-                            readonly property string itemPackArt: model.packArt || ""
                             function claimHero() { if (slot.isFirst) root.featured = slot }
                             onIsFirstChanged: claimHero()
                             Component.onCompleted: claimHero()
+                            Component.onDestruction: if (root.featured === slot) root.featured = null
 
                             HomeJumpCard {
-                                id: card
-                                // The last card of a full row takes the
-                                // pixels the even split rounded away, so the
-                                // row ends exactly on the content edge.
-                                width: slot.position === root.jumpFit - 1 && root.jumpCount === root.jumpFit
-                                       && root.jumpCardWidth < root.jumpMaxWidth
-                                       ? root.contentWidth - (root.jumpFit - 1) * (root.jumpCardWidth + root.jumpSpacing)
-                                       : root.jumpCardWidth
+                                id: row
+                                width: root.jumpRowWidth
                                 instanceId: model.instanceId
                                 name: model.name
                                 iconKey: model.iconKey
@@ -552,32 +586,48 @@ Item {
                         }
                     }
                 }
+            }
 
-                // The library has instances but none has ever been played:
-                // never dress one of them up as "continue playing".
-                Row {
-                    visible: root.recentCount === 0
-                    spacing: Theme.space.sm
+            // The library has instances but none has ever been played:
+            // never dress one of them up as "continue playing".
+            Rectangle {
+                visible: root.recentCount === 0
+                width: parent.width
+                height: Theme.space.md * 2 + Theme.control.height
+                radius: Theme.radius.lg
+                color: Theme.palette.surface
+                border.width: 1
+                border.color: Theme.palette.border
 
-                    MeshIcon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: "compass"
-                        size: Theme.icon.md
-                        color: Theme.palette.textTertiary
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: qsTr("New here? Start with Discover.")
-                        color: Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.body.pixelSize
-                    }
-                    Button {
-                        anchors.verticalCenter: parent.verticalCenter
-                        flat: true
-                        text: qsTr("Discover")
-                        onClicked: root.discoverRequested()
-                    }
+                MeshIcon {
+                    id: firstPlayIcon
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.space.lg
+                    anchors.verticalCenter: parent.verticalCenter
+                    iconName: "compass"
+                    size: Theme.icon.md
+                    color: Theme.palette.textTertiary
+                }
+                Text {
+                    anchors.left: firstPlayIcon.right
+                    anchors.leftMargin: Theme.space.sm
+                    anchors.right: discoverButton.left
+                    anchors.rightMargin: Theme.space.md
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Nothing played yet. Pick an instance in your library, or find a modpack in Discover.")
+                    elide: Text.ElideRight
+                    color: Theme.palette.textSecondary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.body.pixelSize
+                }
+                Button {
+                    id: discoverButton
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.space.md
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Discover")
+                    icon.source: Icons.url("compass")
+                    onClicked: root.discoverRequested()
                 }
             }
 
@@ -585,7 +635,7 @@ Item {
             // Hidden entirely when there is nothing to show -- no empty
             // section, no placeholder; the instance page has every world.
             Column {
-                visible: root.hasLibrary && root.hasWorlds
+                visible: root.hasWorlds
                 width: parent.width
                 spacing: Theme.space.md
 
@@ -595,13 +645,13 @@ Item {
 
                 Grid {
                     columns: root.worldColumns
-                    columnSpacing: root.worldSpacing
-                    rowSpacing: root.worldSpacing
+                    columnSpacing: root.rowGap
+                    rowSpacing: root.rowGap
 
                     Repeater {
                         id: worldsRepeater
                         model: root.recentWorldsModel
-                        // Wrapped for the same reason as the jump cards:
+                        // Wrapped for the same reason as the jump rows:
                         // HomeWorldTile's required properties would hide
                         // `index` from a direct delegate.
                         delegate: Item {
@@ -611,11 +661,7 @@ Item {
 
                             HomeWorldTile {
                                 id: tile
-                                // The last column takes the rounding
-                                // remainder, so the row ends on the edge.
-                                width: model.index % root.worldColumns === root.worldColumns - 1
-                                       ? root.contentWidth - (root.worldColumns - 1) * (root.worldTileWidth + root.worldSpacing)
-                                       : root.worldTileWidth
+                                width: root.worldWidth
                                 worldName: model.worldName
                                 folderName: model.folderName
                                 iconUrl: model.iconUrl
@@ -628,23 +674,6 @@ Item {
                     }
                 }
             }
-
-            // Nothing in the library yet: the way in sits right at the top.
-            EmptyState {
-                visible: !root.hasLibrary
-                width: parent.width
-                title: qsTr("Your library is empty")
-                body: qsTr("An instance is one Minecraft setup: a version, a mod loader and its mods. Create one to start playing.")
-                actionText: qsTr("Create your first instance")
-                actionIcon: "plus"
-                onActionTriggered: root.createRequested()
-
-                MeshIcon {
-                    iconName: "cube"
-                    size: 40
-                    color: Theme.palette.textTertiary
-                }
-            }
         }
     }
 
@@ -652,6 +681,26 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
+        visible: root.hasLibrary
         flickable: flick
+    }
+
+    // Nothing in the library yet: the way in, in the middle of the page.
+    EmptyState {
+        anchors.centerIn: parent
+        // A readable measure for the body text; EmptyState caps it.
+        width: Math.min(root.width - root.pagePadding * 2, root.emptyStateWidth)
+        visible: !root.hasLibrary
+        title: qsTr("Your library is empty")
+        body: qsTr("An instance is one Minecraft setup: a version, a mod loader and its mods. Create one to start playing, or find a modpack in Discover.")
+        actionText: qsTr("Create your first instance")
+        actionIcon: "plus"
+        onActionTriggered: root.createRequested()
+
+        MeshIcon {
+            iconName: "cube"
+            size: 40
+            color: Theme.palette.textTertiary
+        }
     }
 }

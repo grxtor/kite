@@ -27,8 +27,8 @@ Column {
     property bool showHeader: true
     property var model: null
     property int columns: 4
-    property real cardWidth: 208
-    property int gutter: Theme.space.lg
+    property real cardWidth: 180
+    property int gutter: Theme.space.md
     property string selectedId
     property bool collapsed: false
     // "grid" (InstanceCard tiles) or "list" (dense InstanceListRow rows).
@@ -150,25 +150,32 @@ Column {
         }
     }
 
+    // Modrinth App's group header height.
+    readonly property int headerHeight: 40
+
     // No gap above the cards when there is no header to be apart from.
     spacing: root.showHeader ? Theme.space.md : 0
 
     // Always there, zero-height without a header (the ungrouped instances,
     // as in MultiMC and Prism): the section's DropArea lives in it, and an
     // ungrouped section must still take an instance dragged out of a group.
+    // Modrinth App's group header: 40px, a fold chevron leading the name
+    // and its count, the group's ⋯ at the far right, and a hairline under
+    // the whole row.
     Item {
         width: parent.width
-        height: root.showHeader ? Theme.control.height : 0
+        height: root.showHeader ? root.headerHeight : 0
 
         AbstractButton {
             id: header
             visible: root.showHeader
             anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            height: parent.height
+            anchors.top: parent.top
+            anchors.bottom: divider.top
             width: headerRow.implicitWidth
             hoverEnabled: true
             Accessible.name: root.title
+            Accessible.description: root.collapsed ? qsTr("Collapsed") : qsTr("Expanded")
             onClicked: root.toggleRequested()
 
             TapHandler {
@@ -177,12 +184,21 @@ Column {
                 onTapped: groupMenu.popup()
             }
 
-            // The title first, flush with the page title and the cards'
-            // left edge; the fold chevron trails the count rather than
-            // pushing the title in by its own width.
+            // The chevron flush with the cards' left edge; the hover plate
+            // reaches a little past the row on both sides.
             contentItem: Row {
                 id: headerRow
                 spacing: Theme.space.sm
+
+                MeshIcon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    iconName: "chevron-down"
+                    size: Theme.icon.md
+                    rotation: root.collapsed ? -90 : 0
+                    color: header.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
+                    Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+                    Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                }
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -190,7 +206,7 @@ Column {
                     color: Theme.palette.textPrimary
                     font.family: Theme.font.heading
                     font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Font.Bold
+                    font.weight: Theme.type.title.weight
                 }
 
                 Tag {
@@ -198,39 +214,40 @@ Column {
                     visible: !!root.model
                     text: root.model ? String(root.model.count) : ""
                 }
-
-                MeshIcon {
-                    anchors.verticalCenter: parent.verticalCenter
-                    iconName: "chevron-down"
-                    size: Theme.icon.sm
-                    rotation: root.collapsed ? -90 : 0
-                    color: header.hovered ? Theme.palette.textPrimary : Theme.palette.textTertiary
-                    Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-                }
             }
-            background: Item {}
-        }
-
-        // On whole pixels: the header's text width is fractional, and a
-        // hairline starting mid-pixel was drawn a pixel past its end.
-        Rectangle {
-            visible: root.showHeader
-            x: Math.ceil(header.width) + Theme.space.md
-            y: Math.floor((parent.height - height) / 2)
-            width: Math.max(0, (root.manageable ? groupMenuButton.x - Theme.space.sm : root.contentRight) - x)
-            height: 1
-            color: Theme.palette.divider
+            background: Rectangle {
+                x: -Theme.space.sm
+                y: Theme.space.xs
+                width: parent.width + Theme.space.sm * 2
+                height: parent.height - Theme.space.xs * 2
+                radius: Theme.radius.sm
+                color: header.down ? Theme.palette.pressedOverlay
+                     : header.hovered ? Theme.palette.hoverOverlay : "transparent"
+                border.width: header.visualFocus ? Theme.focus.width : 0
+                border.color: Theme.palette.focusRing
+                Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+            }
         }
 
         IconButton {
             id: groupMenuButton
             visible: root.manageable && root.showHeader
             x: root.contentRight - width
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenter: header.verticalCenter
             size: Theme.control.heightSm
             iconName: "more"
             tip: qsTr("Group options")
             onClicked: root.openGroupMenu()
+        }
+
+        // Under the whole row, ending where the cards end.
+        Rectangle {
+            id: divider
+            visible: root.showHeader
+            anchors.bottom: parent.bottom
+            width: root.contentRight
+            height: 1
+            color: Theme.palette.divider
         }
 
         // The whole section is the target, header and cards alike, and a
@@ -360,7 +377,11 @@ Column {
                 model: root.model
                 delegate: InstanceListRow {
                     id: row
+                    // The row itself, for the one role InstanceListRow
+                    // does not require (packArt).
+                    required property var model
                     width: body.width
+                    packArt: row.model.packArt || ""
                     selected: root.selectedId === instanceId
                     InstanceDrag {
                         section: root
