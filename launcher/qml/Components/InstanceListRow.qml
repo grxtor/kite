@@ -12,7 +12,7 @@ import Kite.Theme
  * for a library that would rather scan names than browse icons. Same roles
  * and signals as InstanceCard (it is bound to the same per-group model), so
  * the two delegates are interchangeable from InstanceSection's point of
- * view -- and the same grammar: the icon on the calm accent-tinted square
+ * view -- and the same grammar: the icon on the calm neutral square
  * (or the pack's own logo across it), the same surface, hover lift,
  * selected ring, and Play fading in on hover.
  *
@@ -204,7 +204,7 @@ Item {
                 Layout.minimumWidth: 0
                 text: root.launching ? root.launchStatus : Format.versionLine(root.loader, root.gameVersion)
                 elide: Text.ElideRight
-                color: root.launching ? Theme.palette.accentText : Theme.palette.textSecondary
+                color: Theme.palette.textSecondary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize
                 font.weight: Font.Medium
@@ -217,7 +217,7 @@ Item {
                 text: !root.launching ? Format.lastPlayed(root.lastLaunch)
                     : root.launchProgress >= 0 ? qsTr("%1%").arg(Math.round(root.launchProgress * 100)) : ""
                 elide: Text.ElideRight
-                color: root.launching ? Theme.palette.accentText : Theme.palette.textTertiary
+                color: root.launching ? Theme.palette.textSecondary : Theme.palette.textTertiary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize
                 // Digits of one width, so the number does not jitter.

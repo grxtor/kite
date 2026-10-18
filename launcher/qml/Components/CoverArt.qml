@@ -8,7 +8,7 @@ import Kite.Theme
 /*
  * Art behind one instance: its own newest screenshot when it has one; else,
  * for a pack installed from a platform, the pack's own logo (`packArt`, see
- * PACK ART below); else a calm accent-tinted surface (PlaceholderSurface),
+ * PACK ART below); else a calm neutral surface (PlaceholderSurface),
  * with a Lucide glyph centred only if the host asks for one. Only real
  * pictures ever show here -- never a stand-in scene, and never an "image"
  * glyph, which reads as a broken picture. Used full-bleed behind the Home
@@ -87,6 +87,8 @@ Item {
     PlaceholderSurface {
         id: backdrop
         anchors.fill: parent
+        // Full-bleed: the host draws the edge.
+        border.width: 0
 
         MeshIcon {
             anchors.centerIn: parent

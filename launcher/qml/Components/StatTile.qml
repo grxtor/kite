@@ -54,12 +54,12 @@ Item {
                 width: Theme.icon.md + Theme.space.xs
                 height: width
                 radius: Theme.radius.sm
-                color: Theme.palette.accentSubtle
+                color: Theme.palette.surfaceRaised
                 MeshIcon {
                     anchors.centerIn: parent
                     iconName: root.iconName
                     size: Theme.icon.sm
-                    color: Theme.palette.accentText
+                    color: Theme.palette.textSecondary
                 }
             }
 

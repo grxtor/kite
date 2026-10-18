@@ -203,7 +203,7 @@ Item {
             id: column
             x: root.contentX
             // The shell's panel adds no padding; the page pads itself.
-            y: Theme.space.lg
+            y: Theme.space.xl
             width: root.contentWidth
             spacing: Theme.space.xl
 

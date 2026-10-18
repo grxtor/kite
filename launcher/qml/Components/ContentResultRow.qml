@@ -62,8 +62,10 @@ AbstractButton {
             anchors.topMargin: Theme.space.xxs
             anchors.bottomMargin: Theme.space.xxs
             radius: Theme.radius.sm
-            color: row.selected ? Qt.tint(Theme.palette.surface, Theme.palette.accentSubtle)
-                 : row.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
+            // Picked: a raised fill with an accent edge, no tinted fill.
+            color: row.selected || row.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
+            border.width: row.selected ? 1 : 0
+            border.color: Theme.palette.accent
             Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
         }
         Rectangle {
@@ -157,7 +159,7 @@ AbstractButton {
                 text: row.downloading ? (row.download.status || qsTr("Installing…"))
                     : row.checking ? qsTr("Checking what it needs…") : row.description
                 elide: Text.ElideRight
-                color: row.downloading || row.checking ? Theme.palette.accentText : Theme.palette.textTertiary
+                color: row.downloading || row.checking ? Theme.palette.textSecondary : Theme.palette.textTertiary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize
             }

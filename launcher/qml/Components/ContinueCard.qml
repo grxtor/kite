@@ -7,10 +7,14 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The hero at the top of the library: one instance, big, with Play as the
- * obvious next step. Which instance that is -- the selected one, the one
- * played last, or simply the first -- is the page's decision. No caps
- * label over the name: the name and its tags say what it is.
+ * One instance as a banner, with Play as the obvious next step: its newest
+ * screenshot (or pack art, or a plain surface -- see CoverArt.qml) behind
+ * its icon tile, name, facts and actions. No caps label over the name: the
+ * name and its tags say what it is.
+ *
+ * Only the design gallery (Gallery.qml) shows it now: the library leads
+ * with the play bar instead, the instance page has its own header, and
+ * Home puts the played-last instance in a header of its own.
  */
 Rectangle {
     id: root
@@ -26,12 +30,11 @@ Rectangle {
     required property string loader
     required property color iconTint
     // Newest screenshot url (InstanceList's coverImage role), or "" -- the
-    // hero's own full-bleed backdrop, same source as InstanceCard's cover.
+    // banner's own full-bleed backdrop.
     required property string coverImage
     // A platform pack's own logo (InstanceList's packArt role), or "": the
-    // backdrop then shows the pack's art (its colours as a wash) when there
-    // is no screenshot, as Library and Home do (CoverArt). Not required, so a
-    // static review page need not pass it.
+    // backdrop shows the pack's art when there is no screenshot (CoverArt).
+    // Not required, so a static review page need not pass it.
     property string packArt: ""
     required property string launchStatus
     required property real launchProgress
@@ -39,52 +42,11 @@ Rectangle {
     // A picture under the text (screenshot or pack art): media colours.
     readonly property bool hasPhoto: coverImage.length > 0 || art.hasPackArt
 
-    property string editText: qsTr("Edit")
-    // A shorter banner for pages where the content below matters more.
-    property bool compact: false
-    // False on the instance page: the persistent play bar plays and stops
-    // the opened instance now, so its own header no longer needs a second
-    // Play/Stop control.
-    property bool showPlay: true
-    // False on the instance page: its own tabs (Servers, Backups, Worlds,
-    // Managed pack, ...) now cover everything the widget "Classic editor"
-    // opened, so that button is gone there -- see InstancePage.qml.
-    property bool showEdit: true
-    // The folder button; off where the folder already sits in `menu`.
-    property bool showFolder: true
-    // The ⋯ button. With `menu` set it opens that menu right under itself
-    // (the instance page's own actions); otherwise it emits menuRequested().
-    property bool showMenu: true
-    property Menu menu: null
-    // The ⋯ button, which lives in a loaded actions row.
-    property Item menuAnchor: null
-    // Right-aligned under the ⋯ button, like any ⋯ menu, and held there:
-    // entries that show or hide as the menu opens change its width after
-    // it is placed, which used to push its right edge past the button.
-    function openMenu() {
-        const anchor = root.menuAnchor
-        if (!root.menu || !anchor)
-            return
-        root.menu.popup(anchor, anchor.width - root.menu.width, anchor.height + Theme.space.xs)
-        root.menu.x = Qt.binding(() => anchor.width - root.menu.width)
-    }
-    // A one-line strip: title and tags beside the icon, actions on the
-    // right -- for pages whose content needs the height (the instance
-    // page's header).
-    property bool slim: false
-    // Without Play there is no primary action to lead the row under the
-    // title, so the remaining buttons sit on the right instead of trailing
-    // the tags on a line of their own.
-    readonly property bool actionsBeside: root.slim || !root.showPlay
-
-    // Sizes of the banner and its icon tile in each of the three modes.
-    readonly property int minHeight: compact ? 184 : 240
-    readonly property int tileSize: slim ? 56 : compact ? 96 : 124
-    readonly property int tileIconSize: slim ? 40 : compact ? 68 : 88
-    // How far the tile's soft shadow spreads past the tile, and how far it
-    // drops below it.
-    readonly property int shadowSpread: 3
-    readonly property int shadowDrop: 1
+    readonly property int minHeight: 240
+    readonly property int tileSize: 124
+    readonly property int tileIconSize: 88
+    // The launch line's longest reading width.
+    readonly property int launchWidth: 360
 
     signal playRequested()
     signal stopRequested()
@@ -92,14 +54,9 @@ Rectangle {
     signal folderRequested()
     signal menuRequested()
 
-    implicitHeight: slim ? content.implicitHeight + Theme.space.lg * 2
-                         : Math.max(root.minHeight, content.implicitHeight + (compact ? Theme.space.xl : Theme.space.xxl) * 2)
-    Behavior on implicitHeight { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+    implicitHeight: Math.max(root.minHeight, content.implicitHeight + Theme.space.xxl * 2)
     radius: Theme.radius.xl
-    border.width: 1
-    border.color: Theme.palette.border
-    // Hidden behind the full-bleed CoverArt below, which also covers this
-    // rectangle's own border -- see `outline` for the one that shows.
+    // Hidden behind the full-bleed CoverArt below; `outline` draws the edge.
     color: Theme.palette.surface
     // CoverArt's hover zoom would otherwise poke past the rounded corner.
     clip: true
@@ -108,13 +65,11 @@ Rectangle {
         id: art
         anchors.fill: parent
         radius: root.radius
-        // The hero sits straight on the page.
+        // The banner sits straight on the page.
         matte: Theme.palette.canvas
         source: root.coverImage
         packArt: root.packArt
-        // The tile to the right already carries the icon; showing a glyph
-        // as well, huge, in the backdrop would just be clutter.
-        glyph: ""
+        // The tile already carries the icon.
         showLogo: false
         // The plain surface carries the page's own text colours, so it
         // needs no dark fade.
@@ -124,58 +79,37 @@ Rectangle {
     Row {
         id: content
         anchors.left: parent.left
-        anchors.leftMargin: root.slim ? Theme.space.lg : Theme.space.xxl
         anchors.right: parent.right
-        anchors.rightMargin: root.actionsBeside ? besideActions.width + Theme.space.lg * 2 : Theme.space.xxl
+        anchors.leftMargin: Theme.space.xxl
+        anchors.rightMargin: Theme.space.xxl
         anchors.verticalCenter: parent.verticalCenter
-        spacing: root.slim ? Theme.space.md : Theme.space.xl
+        spacing: Theme.space.xl
 
-        Item {
+        // The instance's identity on the same neutral tile its library
+        // card uses.
+        PlaceholderSurface {
             id: tile
             anchors.verticalCenter: parent.verticalCenter
             width: root.tileSize
             height: width
+            radius: Theme.radius.lg
 
-            // A soft shadow: a larger, blurred-by-opacity copy of the tile
-            // offset below it -- the layered-rectangle trick this codebase
-            // uses in place of a drop-shadow effect. Needed now that the
-            // tile can sit over a photo instead of always the flat surface
-            // colour, so it still reads as raised.
-            Rectangle {
-                anchors.fill: parent
-                anchors.margins: -root.shadowSpread
-                anchors.topMargin: root.shadowDrop
-                radius: Theme.radius.lg
-                color: Qt.rgba(0, 0, 0, Theme.dark ? 0.35 : 0.22)
-            }
-
-            // The instance's identity, so a card corner (lg), never pill or
-            // hero-sized.
-            Rectangle {
-                anchors.fill: parent
-                radius: Theme.radius.lg
-                border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.08)
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: Format.shade(root.iconTint, Theme.dark ? 0.34 : 0.84, 0.55) }
-                    GradientStop { position: 1.0; color: Format.shade(root.iconTint, Theme.dark ? 0.18 : 0.72, 0.55) }
-                }
-
-                Image {
-                    anchors.centerIn: parent
-                    width: root.tileIconSize
-                    height: width
-                    source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
-                    sourceSize: Qt.size(width, height)
-                    fillMode: Image.PreserveAspectFit
-                }
+            Image {
+                anchors.centerIn: parent
+                width: root.tileIconSize
+                height: width
+                source: "image://instanceicon/" + (root.iconKey.length > 0 ? root.iconKey : "default")
+                sourceSize: Qt.size(width, height)
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                mipmap: true
             }
         }
 
         Column {
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width - tile.width - parent.spacing
-            spacing: root.slim ? Theme.space.xs : Theme.space.sm
+            spacing: Theme.space.sm
 
             Text {
                 width: parent.width
@@ -184,10 +118,9 @@ Rectangle {
                 // Over the photo's dark fade the text is light in both
                 // themes; see Theme.media.
                 color: root.hasPhoto ? Theme.media.text : Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: root.slim ? Theme.type.heading.pixelSize : Theme.type.display.pixelSize
-                font.weight: Font.Bold
-                font.letterSpacing: -0.5
+                font.family: Theme.font.heading
+                font.pixelSize: Theme.type.display.pixelSize
+                font.weight: Theme.type.display.weight
             }
 
             Row {
@@ -222,18 +155,44 @@ Rectangle {
                 }
             }
 
-            // Zero height, but the column's spacing around it doubles the
-            // gap between the tags and the buttons.
-            Item { width: 1; height: 0; visible: !root.actionsBeside }
-            Loader {
-                active: !root.actionsBeside
-                visible: active
-                sourceComponent: actionsComponent
+            Row {
+                topPadding: Theme.space.sm
+                spacing: Theme.space.sm
+
+                PlayButton {
+                    round: false
+                    size: Theme.control.heightLg
+                    running: root.isRunning
+                    busy: root.launching
+                    enabled: !root.launching && (root.isRunning || root.canLaunch)
+                    onClicked: root.isRunning ? root.stopRequested() : root.playRequested()
+                }
+                Button {
+                    buttonSize: "lg"
+                    text: qsTr("Edit")
+                    icon.source: Icons.url("settings")
+                    onClicked: root.editRequested()
+                }
+                IconButton {
+                    size: Theme.control.heightLg
+                    flat: false
+                    iconName: "folder"
+                    tip: qsTr("Open folder")
+                    onClicked: root.folderRequested()
+                }
+                IconButton {
+                    size: Theme.control.heightLg
+                    flat: false
+                    iconName: "more"
+                    tip: qsTr("More")
+                    Accessible.role: Accessible.ButtonMenu
+                    onClicked: root.menuRequested()
+                }
             }
 
             Column {
                 visible: root.launching
-                width: Math.min(parent.width, 360)
+                width: Math.min(parent.width, root.launchWidth)
                 spacing: Theme.space.xs
 
                 Text {
@@ -246,7 +205,6 @@ Rectangle {
                     font.family: Theme.font.family
                     font.pixelSize: Theme.type.label.pixelSize
                 }
-
                 LaunchProgressBar {
                     width: parent.width
                     progress: root.launchProgress
@@ -255,77 +213,9 @@ Rectangle {
         }
     }
 
-    // The actions, below the title when Play leads them, on the right
-    // otherwise (see actionsBeside).
-    Component {
-        id: actionsComponent
-        Row {
-            spacing: Theme.space.sm
-
-            PlayButton {
-                visible: root.showPlay
-                round: false
-                size: Theme.control.heightLg
-                running: root.isRunning
-                busy: root.launching
-                enabled: !root.launching && (root.isRunning || root.canLaunch)
-                onClicked: root.isRunning ? root.stopRequested() : root.playRequested()
-            }
-
-            Button {
-                visible: root.showEdit
-                height: Theme.control.heightLg
-                text: root.editText
-                icon.source: Icons.url("settings")
-                onClicked: root.editRequested()
-            }
-
-            IconButton {
-                visible: root.showFolder
-                size: Theme.control.heightLg
-                flat: false
-                iconName: "folder"
-                tip: qsTr("Open folder")
-                onClicked: root.folderRequested()
-            }
-
-            IconButton {
-                id: menuButton
-                Component.onCompleted: root.menuAnchor = menuButton
-                Component.onDestruction: if (root.menuAnchor === menuButton) root.menuAnchor = null
-                visible: root.showMenu
-                size: root.slim ? Theme.control.height : Theme.control.heightLg
-                flat: false
-                iconName: "more"
-                tip: qsTr("More")
-                Accessible.role: Accessible.ButtonMenu
-                onClicked: {
-                    if (!root.menu) {
-                        root.menuRequested()
-                    } else if (root.menu.visible) {
-                        root.menu.close()
-                    } else {
-                        root.openMenu()
-                    }
-                }
-            }
-        }
-    }
-
-    Loader {
-        id: besideActions
-        active: root.actionsBeside
-        visible: active
-        anchors.right: parent.right
-        anchors.rightMargin: root.slim ? Theme.space.lg : Theme.space.xl
-        anchors.verticalCenter: parent.verticalCenter
-        sourceComponent: actionsComponent
-    }
-
     // Drawn last: children paint over the root's own border, and the art
     // fills the whole card.
     Rectangle {
-        id: outline
         anchors.fill: parent
         radius: root.radius
         color: "transparent"

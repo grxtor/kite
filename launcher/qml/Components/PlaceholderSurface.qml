@@ -6,31 +6,20 @@ import Kite.Theme
 
 /*
  * What a picture slot shows when there is no real picture to put in it: a
- * calm, low-contrast surface tinted with the palette's accent, and -- when
- * the host gives one -- a single glyph or icon centred on it. Built only from
- * Theme.palette tokens, so it follows whichever scheme and theme are active;
- * nothing here is an image.
+ * calm, neutral tile one step off the surface it sits on, with a hairline,
+ * and -- when the host gives one -- the instance's icon or a single glyph
+ * centred on it. No accent tint and no gradient: the accent is kept for
+ * actions, selection and links. Built only from Theme.palette tokens, so it
+ * follows whichever scheme and theme are active; nothing here is an image.
  *
  * Whatever goes in the middle is a child of this item (the default property),
- * and is centred by the host: CoverArt puts the instance's icon there, a
- * Discover pack header a Lucide glyph.
+ * and is centred by the host: InstanceCard and the Home rows put the
+ * instance's icon there.
  */
 Rectangle {
-    id: root
-
-    // How much accent each end of the surface carries, over the raised
-    // (top) and sunken (bottom) surface colours.
-    readonly property real topTint: Theme.dark ? 0.16 : 0.14
-    readonly property real bottomTint: Theme.dark ? 0.05 : 0.06
-
-    gradient: Gradient {
-        GradientStop {
-            position: 0.0
-            color: Qt.tint(Theme.palette.surfaceRaised, Qt.alpha(Theme.palette.accent, root.topTint))
-        }
-        GradientStop {
-            position: 1.0
-            color: Qt.tint(Theme.palette.surfaceSunken, Qt.alpha(Theme.palette.accent, root.bottomTint))
-        }
-    }
+    // A raised step in the dark theme; in the light one the cards are
+    // already white, so the tile steps down instead.
+    color: Theme.dark ? Theme.palette.surfaceRaised : Theme.palette.surfaceSunken
+    border.width: 1
+    border.color: Theme.palette.border
 }

@@ -271,11 +271,12 @@ Column {
                 drop.accept()
             }
 
+            // A neutral wash with an accent edge: no tinted fills.
             Rectangle {
                 anchors.fill: parent
                 visible: dropArea.wanted
                 radius: Theme.radius.lg
-                color: Theme.palette.accentSubtle
+                color: Theme.palette.hoverOverlay
                 border.width: 1
                 border.color: Theme.palette.accent
             }

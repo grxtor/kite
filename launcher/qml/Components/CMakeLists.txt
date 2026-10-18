@@ -169,6 +169,7 @@ qt_add_qml_module(Kite_qml_components
         Icons.qml
         HomePage.qml
         HomeJumpCard.qml
+        QuietPlayButton.qml
         HomeWorldTile.qml
         HoverReason.qml
         HomeLibraryTile.qml

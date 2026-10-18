@@ -270,7 +270,9 @@ Item {
                 implicitHeight: Theme.control.heightSm
                 // A status chip, not a toggle: control corners, not a pill.
                 radius: Theme.radius.sm
-                color: Theme.palette.accentSubtle
+                color: Theme.palette.surfaceRaised
+                border.width: 1
+                border.color: Theme.palette.border
                 Row {
                     id: downloadsRow
                     anchors.centerIn: parent
@@ -284,7 +286,7 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: qsTr("%n installing", "", root.activeDownloads)
-                        color: Theme.palette.accentText
+                        color: Theme.palette.textPrimary
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.label.pixelSize
                         font.weight: Font.DemiBold

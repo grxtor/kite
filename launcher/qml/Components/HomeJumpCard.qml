@@ -11,7 +11,8 @@ import Kite.Theme
  * One "Jump back in" row on the Home page, as in Modrinth App: an 80px row
  * with the instance's icon square (the library card's, smaller), its name,
  * one line of what it runs and when it was last played, how long it has
- * been played, and Play. Used through a wrapper against the shell's
+ * been played, and Play -- a secondary one (QuietPlayButton): the play
+ * bar's is the page's one primary button. Used through a wrapper against the shell's
  * recentModel, with the same named roles InstanceCard reads.
  *
  * Clicking the row opens the instance page; Play plays it (Stop while it
@@ -208,10 +209,9 @@ Item {
                 }
             }
 
-            PlayButton {
+            // Secondary: on Home the play bar's Play is the one primary.
+            QuietPlayButton {
                 Layout.leftMargin: Theme.space.sm
-                round: false
-                size: Theme.control.height
                 running: root.isRunning
                 enabled: root.isRunning || root.canLaunch
                 focusPolicy: Qt.NoFocus

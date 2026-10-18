@@ -8,8 +8,8 @@ import Kite.Theme
 
 /*
  * One instance in the library grid, the way Modrinth App's library shows
- * one: a large square with the instance's icon on a calm accent-tinted
- * surface (PlaceholderSurface), then the name and what it runs. A pack
+ * one: a large square with the instance's icon on a calm neutral tile
+ * (PlaceholderSurface), then the name and what it runs. A pack
  * installed from a platform shows its own logo across the whole square
  * instead. Most instances have no screenshot, so the card is built around
  * the icon, never around an empty cover.
@@ -340,7 +340,7 @@ Item {
                 width: Math.min(implicitWidth, parent.width)
                 text: root.launching ? root.launchStatus : Format.versionLine(root.loader, root.gameVersion)
                 elide: Text.ElideRight
-                color: root.launching ? Theme.palette.accentText : Theme.palette.textSecondary
+                color: Theme.palette.textSecondary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.caption.pixelSize
                 font.weight: Font.Medium
@@ -352,7 +352,7 @@ Item {
                 visible: text.length > 0 && versionText.implicitWidth + Theme.space.sm + implicitWidth <= parent.width
                 text: root.launching ? (root.launchProgress >= 0 ? qsTr("%1%").arg(Math.round(root.launchProgress * 100)) : "")
                                      : Format.lastPlayed(root.lastLaunch)
-                color: root.launching ? Theme.palette.accentText : Theme.palette.textTertiary
+                color: root.launching ? Theme.palette.textSecondary : Theme.palette.textTertiary
                 // Digits of one width, so the number does not jitter.
                 font.features: ({ "tnum": 1 })
                 font.family: Theme.font.family

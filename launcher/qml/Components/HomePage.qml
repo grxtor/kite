@@ -18,7 +18,9 @@ import Kite.Theme
  *
  * Laid out like Modrinth App's Home: rows, not covers. "Jump back in" is a
  * list of 80px rows (HomeJumpCard) with Play on each, and "Recent worlds"
- * uses the same row grammar (HomeWorldTile).
+ * uses the same row grammar (HomeWorldTile). Those Plays are secondary
+ * (QuietPlayButton): the play bar's Play is the page's one primary button,
+ * Lunar's single dominant launch.
  *
  * HEADER. Only real art earns a picture: when the instance played last has
  * a screenshot of its own, it leads the page as a banner (its name, what it
@@ -383,9 +385,10 @@ Item {
                     Row {
                         spacing: Theme.space.sm
 
-                        PlayButton {
-                            round: false
-                            size: Theme.control.heightLg
+                        // Secondary, like the rows': the play bar's Play is
+                        // the page's one primary button.
+                        QuietPlayButton {
+                            buttonSize: "lg"
                             running: !!root.featured && root.featured.itemRunning
                             enabled: !!root.featured && (root.featured.itemRunning || root.featured.itemCanLaunch)
                             onClicked: {
@@ -398,7 +401,6 @@ Item {
                             }
                         }
                         Button {
-                            anchors.verticalCenter: parent.verticalCenter
                             buttonSize: "lg"
                             text: qsTr("Open")
                             onClicked: if (root.featured) root.openInstanceRequested(root.featured.itemId)
