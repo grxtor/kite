@@ -87,7 +87,7 @@ AbstractButton {
             visible: tile.worn
             iconName: "check"
             size: Theme.icon.sm
-            color: Theme.palette.accent
+            color: Theme.palette.accentText
         }
         IconButton {
             id: moreButton

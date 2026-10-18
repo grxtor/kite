@@ -286,6 +286,8 @@ Dialog {
                             // grey, the floor `floorShade` darker.
                             readonly property real lift: 0.08
                             readonly property real floorShade: 0.05
+                            border.width: 1
+                            border.color: Theme.palette.border
                             gradient: Gradient {
                                 GradientStop {
                                     position: 0
@@ -356,6 +358,7 @@ Dialog {
                             }
                             Button {
                                 id: addButton
+                                variant: "secondary"
                                 text: qsTr("Add skin")
                                 icon.source: Icons.url("plus")
                                 enabled: !!root.skins && !root.busy
@@ -376,6 +379,8 @@ Dialog {
                             Layout.preferredHeight: root.libraryRoom
                             radius: Theme.radius.lg
                             color: Theme.palette.surfaceSunken
+                            border.width: 1
+                            border.color: Theme.palette.border
 
                             // The user's skins, then the game's default ones
                             // in the same scrolling box, as two sections.
@@ -517,13 +522,13 @@ Dialog {
                             }
                             Item { Layout.fillWidth: true }
                             Button {
-                                flat: true
+                                variant: "ghost"
                                 text: qsTr("Reset skin")
                                 enabled: !root.busy
                                 onClicked: root.run(root.controller.resetSkin(root.row), qsTr("The skin could not be reset."))
                             }
                             Button {
-                                highlighted: true
+                                variant: "primary"
                                 text: qsTr("Wear this skin")
                                 enabled: root.selectedReady && !root.busy
                                 onClicked: root.wearSelected()

@@ -9,9 +9,9 @@ import Kite.Theme
 
 /*
  * One account in the Accounts page's "other accounts" list: face, name,
- * what kind it is and whether it still works, and the account actions. The
- * default account -- the one games launch with -- gets the accent border;
- * any other can be made default in one click.
+ * what kind it is and whether it still works, and the account actions --
+ * "Use this account" to make it the one games launch with, the rest behind
+ * ⋯.
  *
  * The page hides whichever row is shown big in its hero instead (see
  * `hidden`), so this file never needs to know what a hero is.
@@ -42,8 +42,8 @@ Item {
     signal manageSkinRequested()
 
     readonly property string shownName: profileName.length > 0 ? profileName : name
-    readonly property int faceSize: 40
-    readonly property int rowHeight: 72
+    readonly property int faceSize: 48
+    readonly property int rowHeight: 80
     readonly property bool hovered: !root.hidden && hoverHandler.hovered
 
     function stateTone(key) {
@@ -70,18 +70,19 @@ Item {
         width: parent.width
         height: parent.height
         radius: Theme.radius.lg
-        color: root.isDefault ? Theme.palette.surfaceRaised : Theme.palette.surface
-        border.width: root.isDefault ? 2 : 1
-        // Hover changes the border alone -- no lift, no second property.
-        border.color: root.isDefault ? Theme.palette.accent
-                    : root.hovered ? Theme.palette.borderStrong : Theme.palette.border
+        // The plain card look: surface plus border, one step lighter under
+        // the pointer. Hover changes the fill alone -- no lift, no second
+        // property.
+        color: root.hovered ? Theme.palette.surfaceHover : Theme.palette.surface
+        border.width: 1
+        border.color: Theme.palette.border
 
-        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: Theme.space.md
-            anchors.rightMargin: Theme.space.md
+            anchors.leftMargin: Theme.space.lg
+            anchors.rightMargin: Theme.space.lg
             spacing: Theme.space.md
 
             // The player's head: its skin, or the game's default for an
@@ -122,20 +123,14 @@ Item {
                 }
             }
 
-            // The same actions, words and order as the hero card's
-            // (AccountsPage.qml): labelled buttons, and the rest behind ⋯
-            // rather than bare refresh and bin glyphs.
+            // "Use this account" stays a button; everything else opens
+            // from behind ⋯, each with its own words rather than bare
+            // refresh and bin glyphs.
             Button {
                 visible: !root.isDefault
+                variant: "secondary"
                 text: qsTr("Use this account")
                 onClicked: root.makeDefaultRequested()
-            }
-            Button {
-                // "and", not "&": a Button reads "&" as a keyboard
-                // mnemonic and underlines the next letter.
-                text: qsTr("Skin and cape")
-                icon.source: Icons.url("image")
-                onClicked: root.manageSkinRequested()
             }
             IconButton {
                 id: moreButton
@@ -146,6 +141,13 @@ Item {
 
                 Menu {
                     id: rowMenu
+                    MenuItem {
+                        // "and", not "&": a MenuItem reads "&" as a
+                        // keyboard mnemonic too.
+                        text: qsTr("Skin and cape")
+                        icon.source: Icons.url("image")
+                        onTriggered: root.manageSkinRequested()
+                    }
                     MenuItem {
                         // A hidden item still takes its row in a Menu;
                         // zero it as well.

@@ -214,6 +214,8 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
+        // The page area gives no padding of its own.
+        anchors.topMargin: Theme.space.xl
         anchors.leftMargin: Theme.space.xl + Theme.space.xs
         anchors.rightMargin: Theme.space.xl + Theme.space.xs
         anchors.bottomMargin: Theme.space.lg
@@ -244,16 +246,17 @@ Item {
                 font.pixelSize: Theme.type.label.pixelSize
             }
             // Signing in with Microsoft is what this page is for, so it is
-            // the one accent-filled action and comes first -- except while
-            // the hero offers "Use this account" (no default chosen yet),
-            // which is then the screen's one primary action instead.
+            // the primary action and comes first -- except while the hero
+            // offers "Use this account" (no default chosen yet), which is
+            // then the screen's one primary action instead.
             Button {
-                highlighted: !root.heroItem || root.heroIsDefault
+                variant: (!root.heroItem || root.heroIsDefault) ? "primary" : "secondary"
                 text: qsTr("Sign in with Microsoft")
                 icon.source: Icons.url("user")
                 onClicked: root.startMicrosoftLogin()
             }
             Button {
+                variant: "secondary"
                 text: qsTr("Add offline account")
                 onClicked: offlineDialog.open()
             }
@@ -268,11 +271,12 @@ Item {
             visible: !!root.heroItem
             // Taller only when the cape row needs the room.
             implicitHeight: Math.max(root.heroHeight, heroContent.implicitHeight + Theme.space.xl * 2)
-            radius: Theme.radius.xl
-            // A flat, bordered surface: the player in the account's skin (or
-            // the game's default one) is the hero's visual anchor, not a
-            // decorative wash or gradient.
-            color: Theme.palette.surfaceRaised
+            radius: Theme.radius.lg
+            // The plain card look: surface plus border, like every other
+            // card. The player in the account's skin (or the game's default
+            // one) is the hero's visual anchor, not a decorative wash or
+            // gradient.
+            color: Theme.palette.surface
             border.width: 1
             border.color: Theme.palette.border
 
@@ -360,11 +364,12 @@ Item {
 
                         Button {
                             visible: !root.heroIsDefault
-                            highlighted: true
+                            variant: "primary"
                             text: qsTr("Use this account")
                             onClicked: root.controller.setDefault(root.heroRow)
                         }
                         Button {
+                            variant: "secondary"
                             // "and", not "&": a Button reads "&" as a
                             // keyboard mnemonic and underlines the next letter.
                             text: qsTr("Skin and cape")
@@ -494,7 +499,7 @@ Item {
                 id: list
                 anchors.fill: parent
                 clip: true
-                spacing: Theme.space.sm
+                spacing: Theme.space.md
                 boundsBehavior: Flickable.StopAtBounds
                 model: root.accounts
                 currentIndex: root.heroIndex
@@ -543,7 +548,7 @@ Item {
                     anchors.centerIn: parent
                     width: root.avatarRingSize; height: root.avatarRingSize
                     radius: width / 2
-                    color: Theme.palette.accent
+                    color: Theme.palette.accentText
                     opacity: root.avatarRingOpacity
                 }
                 Rectangle {
@@ -552,13 +557,13 @@ Item {
                     radius: width / 2
                     color: Theme.palette.accentSubtle
                 }
-                MeshIcon { anchors.centerIn: parent; iconName: "user"; size: root.avatarIconSize; color: Theme.palette.accent }
+                MeshIcon { anchors.centerIn: parent; iconName: "user"; size: root.avatarIconSize; color: Theme.palette.accentText }
             }
         }
 
         Button {
             anchors.horizontalCenter: parent.horizontalCenter
-            flat: true
+            variant: "ghost"
             text: qsTr("Add offline account")
             onClicked: offlineDialog.open()
         }
@@ -621,7 +626,7 @@ Item {
             Button {
                 id: addButton
                 text: qsTr("Add account")
-                highlighted: true
+                variant: "primary"
                 enabled: usernameField.text.trim().length > 0
                 onClicked: {
                     if (root.controller && root.controller.addOffline(usernameField.text))
@@ -632,7 +637,7 @@ Item {
             }
             Button {
                 text: qsTr("Cancel")
-                flat: true
+                variant: "ghost"
                 onClicked: offlineDialog.close()
             }
         }
@@ -701,13 +706,13 @@ Item {
             topPadding: 0
             Button {
                 visible: loginDialog.done
-                highlighted: true
+                variant: "primary"
                 text: qsTr("Done")
                 onClicked: { loginDialog.close(); root.login = null }
             }
             Button {
                 visible: loginDialog.failed
-                highlighted: true
+                variant: "primary"
                 text: qsTr("Try again")
                 onClicked: { root.login = root.controller.loginMicrosoft() }
             }
@@ -720,7 +725,7 @@ Item {
             }
             Button {
                 visible: !loginDialog.done
-                flat: true
+                variant: "ghost"
                 text: qsTr("Cancel")
                 onClicked: {
                     if (root.login && root.login.running)
