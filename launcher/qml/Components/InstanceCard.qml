@@ -8,11 +8,12 @@ import Kite.Theme
 
 /*
  * One instance in the library grid, the way Modrinth App's library shows
- * one: a large square with the instance's icon on a calm neutral tile
- * (PlaceholderSurface), then the name and what it runs. A pack
- * installed from a platform shows its own logo across the whole square
- * instead. Most instances have no screenshot, so the card is built around
- * the icon, never around an empty cover.
+ * one: a large square, a small inset from the card's edge, with the
+ * instance's icon all but filling a calm neutral tile (PlaceholderSurface),
+ * then the name and what it runs. A pack installed from a platform shows
+ * its own logo across the whole square instead. Most instances have no
+ * screenshot, so the card is built around the icon, never around an empty
+ * cover.
  *
  * A real screenshot (InstanceList's coverImage role) is a hover preview: it
  * fades in over the square while the pointer is on the card, so the grid
@@ -74,17 +75,18 @@ Item {
     // The pack's logo, once it has really loaded; until then (or if it
     // cannot load) the icon stays on the plain surface.
     readonly property bool showsPackArt: root.packArt.length > 0 && packLogo.status === Image.Ready
-    // One inset for everything: the square's distance from the card edge
-    // and the text's, so the name lines up with the square above it.
-    readonly property int inset: Theme.space.md
+    // The square sits a small inset from the card's edge, as Modrinth's
+    // picture does; the text sits a little further in, under its edge.
+    readonly property int inset: Theme.space.sm
+    readonly property int textInset: Theme.space.md
     readonly property int squareSize: Math.max(0, width - inset * 2)
-    // The icon fills this share of the square: big enough to be the
-    // card's picture, with the calm surface still framing it.
-    readonly property real iconShare: 0.5
+    // The icon all but fills the square (Modrinth's picture fills its own):
+    // the card's picture, with only a rim of the calm tile around it.
+    readonly property real iconShare: 0.82
     readonly property int iconSize: Math.round(squareSize * iconShare)
     readonly property int squareRadius: Theme.radius.md
     // Play and ⋯ on the square, and their distance from its corners.
-    readonly property int playSize: 40
+    readonly property int playSize: Theme.control.height
     readonly property int cornerInset: Theme.space.sm
     readonly property int runningDotSize: 7
     // A key the instanceicon provider resolves to its generic icon, so the
@@ -92,8 +94,8 @@ Item {
     readonly property string iconSource: "image://instanceicon/" + (root.iconKey.length > 0 ? root.iconKey : "default")
 
     implicitWidth: 180
-    implicitHeight: inset + squareSize + Theme.space.sm + Theme.type.bodyStrong.lineHeightPx
-                    + Theme.type.caption.lineHeightPx + inset
+    implicitHeight: inset + squareSize + Theme.space.sm + Theme.type.title.lineHeightPx
+                    + Theme.type.label.lineHeightPx + textInset
 
     activeFocusOnTab: true
     Keys.onReturnPressed: root.playRequested()
@@ -304,16 +306,16 @@ Item {
             anchors.topMargin: Theme.space.sm
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.leftMargin: root.inset
-            anchors.rightMargin: root.inset
-            height: Theme.type.bodyStrong.lineHeightPx
+            anchors.leftMargin: root.textInset
+            anchors.rightMargin: root.textInset
+            height: Theme.type.title.lineHeightPx
             verticalAlignment: Text.AlignVCenter
             text: root.name
             elide: Text.ElideRight
             color: Theme.palette.textPrimary
             font.family: Theme.font.family
-            font.pixelSize: Theme.type.bodyStrong.pixelSize
-            font.weight: Theme.type.bodyStrong.weight
+            font.pixelSize: Theme.type.title.pixelSize
+            font.weight: Theme.type.title.weight
 
             HoverHandler { id: titleHover; enabled: title.truncated }
             ToolTip.visible: title.truncated && titleHover.hovered
@@ -321,17 +323,16 @@ Item {
             ToolTip.text: root.name
         }
 
-        // What it runs on the left, when it was last played on the right.
-        // The version always gets its full width; the date is the part
-        // that gives way -- dropped outright rather than squeezing the
-        // version down to "NeoForge 1.2…" (it is still in the list view
-        // and on the instance page).
+        // What it runs -- loader and version, nothing else, as Modrinth's
+        // card says it (when it was last played is in the list view, on
+        // Continue playing and on the instance page). While a launch runs: its stage
+        // on the left, how far on the right.
         Item {
             id: meta
             anchors.top: title.bottom
             anchors.left: title.left
             anchors.right: title.right
-            height: Theme.type.caption.lineHeightPx
+            height: Theme.type.label.lineHeightPx
 
             Text {
                 id: versionText
@@ -342,21 +343,19 @@ Item {
                 elide: Text.ElideRight
                 color: Theme.palette.textSecondary
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
-                font.weight: Font.Medium
+                font.pixelSize: Theme.type.label.pixelSize
             }
 
             Text {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 visible: text.length > 0 && versionText.implicitWidth + Theme.space.sm + implicitWidth <= parent.width
-                text: root.launching ? (root.launchProgress >= 0 ? qsTr("%1%").arg(Math.round(root.launchProgress * 100)) : "")
-                                     : Format.lastPlayed(root.lastLaunch)
-                color: root.launching ? Theme.palette.textSecondary : Theme.palette.textTertiary
+                text: root.launching && root.launchProgress >= 0 ? qsTr("%1%").arg(Math.round(root.launchProgress * 100)) : ""
+                color: Theme.palette.textSecondary
                 // Digits of one width, so the number does not jitter.
                 font.features: ({ "tnum": 1 })
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                font.pixelSize: Theme.type.label.pixelSize
             }
         }
     }

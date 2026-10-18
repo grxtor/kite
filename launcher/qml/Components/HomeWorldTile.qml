@@ -7,16 +7,15 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One world in the Home page's "Recent worlds": the same 80px row grammar
- * as "Jump back in" (HomeJumpCard) -- the world's own icon (or, lacking one,
- * a neutral globe on the calm surface, the Worlds tab's own fallback), the
- * world's name, and which instance it belongs to with when it was last
- * played. Used directly as a Repeater delegate against the shell's
- * recentWorlds model, so the required properties are filled from
- * RecentWorldsModel's roles.
+ * One world in "Recent worlds" on Home's side panel: a compact list row --
+ * the world's own icon (or, lacking one, a neutral globe on the calm
+ * surface, the Worlds tab's own fallback), the world's name, and which
+ * instance it belongs to with when it was last played. Filled from the
+ * shell's recentWorlds model (RecentWorldsModel's roles).
  *
- * Clicking it opens that instance's Worlds tab. Hover lifts it like every
- * other card: one step lighter and a small shadow.
+ * Clicking it opens that instance's Worlds tab. A row in a list rather than
+ * a card of its own: no fill or border at rest, the hover overlay under the
+ * pointer.
  */
 AbstractButton {
     id: control
@@ -29,15 +28,15 @@ AbstractButton {
     required property string instanceName
 
     readonly property bool hasIcon: control.iconUrl.length > 0 && worldIcon.status !== Image.Error
-    // The row and its icon square, as on "Jump back in".
-    readonly property int rowHeight: 80
-    readonly property int squareSize: 48
+    // A compact row: a control-high icon square and a little air.
+    readonly property int squareSize: Theme.control.height
+    readonly property int rowHeight: control.squareSize + Theme.space.sm * 2
 
-    implicitWidth: 320
+    implicitWidth: 280
     implicitHeight: control.rowHeight
     hoverEnabled: true
-    leftPadding: Theme.space.lg
-    rightPadding: Theme.space.lg
+    leftPadding: Theme.space.sm
+    rightPadding: Theme.space.sm
 
     Accessible.name: qsTr("%1, in %2").arg(control.worldName).arg(control.instanceName)
 
@@ -45,22 +44,21 @@ AbstractButton {
     ToolTip.delay: 500
     ToolTip.text: qsTr("%1 — %2").arg(control.worldName).arg(control.instanceName)
 
+    // The panel's own colour under it at rest (the icon's corner matte
+    // paints in it), the hover and press overlays over that.
     background: Rectangle {
         id: card
-        radius: Theme.radius.lg
-        color: control.down ? Theme.palette.surfaceRaised
-             : control.hovered ? Theme.palette.surfaceHover : Theme.palette.surface
-        border.width: control.visualFocus ? Theme.focus.width : 1
-        border.color: control.visualFocus ? Theme.palette.focusRing
-                    : control.hovered ? Theme.neutral.borderHover : Theme.palette.border
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        radius: Theme.radius.md
+        color: Theme.palette.canvas
+        border.width: control.visualFocus ? Theme.focus.width : 0
+        border.color: Theme.palette.focusRing
 
-        Shadow {
-            radius: card.radius
-            level: Theme.elevation.sm
-            opacity: control.hovered ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: control.down ? Theme.palette.pressedOverlay
+                 : control.hovered ? Theme.palette.hoverOverlay : "transparent"
+            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         }
     }
 
@@ -101,7 +99,7 @@ AbstractButton {
                 anchors.centerIn: parent
                 visible: !control.hasIcon
                 iconName: "globe"
-                size: Theme.icon.lg
+                size: Theme.icon.md
                 color: Theme.palette.textTertiary
             }
         }
@@ -120,8 +118,8 @@ AbstractButton {
                 elide: Text.ElideRight
                 color: Theme.palette.textPrimary
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.title.pixelSize
-                font.weight: Theme.type.title.weight
+                font.pixelSize: Theme.type.bodyStrong.pixelSize
+                font.weight: Theme.type.bodyStrong.weight
             }
 
             // "Hardcore Survival • 1 h ago"

@@ -150,8 +150,8 @@ Column {
         }
     }
 
-    // Modrinth App's group header height.
-    readonly property int headerHeight: 40
+    // Modrinth App's group header height: a control's.
+    readonly property int headerHeight: Theme.control.height
 
     // No gap above the cards when there is no header to be apart from.
     spacing: root.showHeader ? Theme.space.md : 0

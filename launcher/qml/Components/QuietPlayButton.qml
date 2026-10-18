@@ -7,11 +7,11 @@ import Kite.Theme
 
 /*
  * Play (or Stop, while the game runs) as a secondary button, for a page
- * whose one primary Play is the play bar's (PlayDock) -- the Home page's
- * "Jump back in" rows and its header. The Style Button's secondary look,
- * with the play triangle and label turning to the accent on hover, so it
- * still reads as the thing to press. Stop keeps the danger colour on its
- * glyph and label, so the two can never be confused at a glance.
+ * whose one primary Play is elsewhere -- the Home page's "Continue
+ * playing" rows, under the hero's. The Style Button's secondary look with a
+ * bold label, the play triangle and label turning to the accent on hover,
+ * so it still reads as the thing to press. Stop keeps the danger colour on
+ * its glyph and label, so the two can never be confused at a glance.
  */
 Button {
     id: control
@@ -51,7 +51,7 @@ Button {
                 color: control.ink
                 font.family: Theme.font.family
                 font.pixelSize: control.sizeFont
-                font.weight: Font.DemiBold
+                font.weight: Font.Bold
                 Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
             }
         }

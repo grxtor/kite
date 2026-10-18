@@ -169,6 +169,16 @@ qt_add_qml_module(Kite_qml_components
         Icons.qml
         HomePage.qml
         HomeJumpCard.qml
+        HomeLibraryToolbar.qml
+        HomeNews.qml
+        GettingStartedCard.qml
+        LibrarySections.qml
+        InstanceMenu.qml
+        HomeSidePanel.qml
+        HomeSectionTitle.qml
+        HomeHero.qml
+        HomeContinuePlaying.qml
+        HomePanelHeading.qml
         QuietPlayButton.qml
         HomeWorldTile.qml
         HoverReason.qml

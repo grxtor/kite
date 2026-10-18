@@ -8,16 +8,19 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One "Jump back in" row on the Home page, as in Modrinth App: an 80px row
- * with the instance's icon square (the library card's, smaller), its name,
- * one line of what it runs and when it was last played, how long it has
- * been played, and Play -- a secondary one (QuietPlayButton): the play
- * bar's is the page's one primary button. Used through a wrapper against the shell's
- * recentModel, with the same named roles InstanceCard reads.
+ * One "Continue playing" row on the Home page, under the hero: a compact
+ * 64px row with the instance's icon square (the library card's, smaller),
+ * its name -- and
+ * a "New" chip until it has been played -- one line of what it runs and
+ * when it was last played, how long it has been played, Play and ⋯. Play is
+ * a secondary one (QuietPlayButton): the play bar's is the page's one
+ * primary button. Used through a wrapper against the shell's recentModel,
+ * with the same named roles InstanceCard reads.
  *
  * Clicking the row opens the instance page; Play plays it (Stop while it
- * runs). After a crash the sub-line says "Crashed last time" in place of
- * when -- a calm reminder, not an alarm.
+ * runs); ⋯ or a right-click asks the page for the instance menu. After a
+ * crash the sub-line says "Crashed last time" in place of when -- a calm
+ * reminder, not an alarm.
  */
 Item {
     id: root
@@ -45,15 +48,22 @@ Item {
     signal clicked()
     signal playRequested()
     signal stopRequested()
+    // @p anchor: the ⋯ button when that asked, so the menu opens under it;
+    // null for a right-click, which opens it at the pointer.
+    signal menuRequested(Item anchor)
 
     readonly property bool hovered: hoverHandler.hovered
     readonly property bool showsPackArt: root.packArt.length > 0 && packLogo.status === Image.Ready
-    // Modrinth App's row: 80px, a 48px icon square.
-    readonly property int rowHeight: 80
-    readonly property int squareSize: 48
-    readonly property int iconSize: 32
+    // Never launched: the row says so with a "New" chip.
+    readonly property bool isNew: !(Number(root.lastLaunch) > 0)
+    // Compact, a step below the hero: a 64px row, a 40px icon square the
+    // icon all but fills, as the library card's does.
+    readonly property int rowHeight: Theme.control.heightLg + Theme.space.lg
+    readonly property int squareSize: Theme.control.height
+    readonly property real iconShare: 0.84
+    readonly property int iconSize: Math.round(root.squareSize * root.iconShare)
     // Empty (so not shown) when "Show play time per instance" is off.
-    readonly property string playTimeText: SettingsStore.bool("ShowGameTime")
+    readonly property string playTimeText: SettingsStore.bool("ShowGameTime") && !root.isNew
                                            ? Format.playTime(root.totalTimePlayed) : ""
     readonly property string versionText: Format.versionLine(root.loader, root.gameVersion)
     // Play time is the part that gives way on a narrow row.
@@ -65,6 +75,7 @@ Item {
     activeFocusOnTab: true
     Keys.onReturnPressed: root.clicked()
     Keys.onSpacePressed: root.isRunning ? root.stopRequested() : root.playRequested()
+    Keys.onMenuPressed: root.menuRequested(null)
 
     Accessible.role: Accessible.ListItem
     Accessible.name: root.name
@@ -94,11 +105,16 @@ Item {
             gesturePolicy: TapHandler.ReleaseWithinBounds
             onTapped: { root.forceActiveFocus(); root.clicked() }
         }
+        TapHandler {
+            acceptedButtons: Qt.RightButton
+            gesturePolicy: TapHandler.ReleaseWithinBounds
+            onTapped: { root.forceActiveFocus(); root.menuRequested(null) }
+        }
 
         RowLayout {
             anchors.fill: parent
             anchors.leftMargin: Theme.space.lg
-            anchors.rightMargin: Theme.space.lg
+            anchors.rightMargin: Theme.space.md
             spacing: Theme.space.md
 
             Item {
@@ -143,14 +159,48 @@ Item {
                 Layout.minimumWidth: 0
                 spacing: Theme.space.xxs
 
-                Text {
+                // The name, and "New" beside it until the first launch.
+                // Placed by hand: a layout sizing the name from its own
+                // width loops.
+                Item {
                     Layout.fillWidth: true
-                    text: root.name
-                    elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Theme.type.title.weight
+                    implicitHeight: Theme.type.title.lineHeightPx
+
+                    Text {
+                        id: nameText
+                        width: Math.min(implicitWidth, parent.width - (newChip.visible ? newChip.width + Theme.space.sm : 0))
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.name
+                        elide: Text.ElideRight
+                        color: Theme.palette.textPrimary
+                        font.family: Theme.font.heading
+                        font.pixelSize: Theme.type.title.pixelSize
+                        font.weight: Theme.type.title.weight
+                    }
+                    // The accent as an outline and its text colour: no
+                    // tinted fill.
+                    Rectangle {
+                        id: newChip
+                        visible: root.isNew
+                        x: nameText.width + Theme.space.sm
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.ceil(newLabel.implicitWidth) + Theme.space.sm * 2
+                        height: Math.ceil(Theme.type.caption.lineHeightPx) + Theme.space.xxs * 2
+                        radius: Theme.radius.indicator
+                        color: "transparent"
+                        border.width: 1
+                        border.color: Theme.palette.accent
+
+                        Text {
+                            id: newLabel
+                            anchors.centerIn: parent
+                            text: qsTr("New")
+                            color: Theme.palette.accentText
+                            font.family: Theme.font.family
+                            font.pixelSize: Theme.type.caption.pixelSize
+                            font.weight: Font.DemiBold
+                        }
+                    }
                 }
 
                 // "Fabric 1.21.4 • 3 days ago", or the crash in place of
@@ -216,6 +266,16 @@ Item {
                 enabled: root.isRunning || root.canLaunch
                 focusPolicy: Qt.NoFocus
                 onClicked: root.isRunning ? root.stopRequested() : root.playRequested()
+            }
+
+            IconButton {
+                id: moreButton
+                Layout.leftMargin: -Theme.space.xs
+                size: Theme.control.heightSm
+                iconName: "more"
+                tip: qsTr("More")
+                focusPolicy: Qt.NoFocus
+                onClicked: root.menuRequested(moreButton)
             }
         }
     }

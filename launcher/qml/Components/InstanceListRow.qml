@@ -58,20 +58,21 @@ Item {
     readonly property bool launching: launchStatus.length > 0
     readonly property bool showsPackArt: root.packArt.length > 0 && packLogo.status === Image.Ready
     // The icon square, and the share of it the icon fills -- the grid
-    // card's own proportions, smaller.
-    readonly property int squareSize: 40
-    readonly property int iconSize: 28
+    // card's own proportions, smaller: a 48px square.
+    readonly property int squareSize: Theme.control.heightLg
+    readonly property real iconShare: 0.84
+    readonly property int iconSize: Math.round(squareSize * iconShare)
     readonly property int runningDotSize: 9
     readonly property string iconSource: "image://instanceicon/" + (root.iconKey.length > 0 ? root.iconKey : "default")
-    readonly property int versionColumnWidth: 150
-    readonly property int lastPlayedColumnWidth: 92
-    readonly property int playTimeColumnWidth: 72
-    readonly property bool showVersionColumn: width > 460
-    readonly property bool showStatsColumns: width > 620
+    readonly property int versionColumnWidth: 168
+    readonly property int lastPlayedColumnWidth: 104
+    readonly property int playTimeColumnWidth: 84
+    readonly property bool showVersionColumn: width > 480
+    readonly property bool showStatsColumns: width > 660
 
     implicitWidth: 400
-    // Modrinth App's compact row: about 64px. The square's inset is also
-    // what keeps the logo's corner matte inside the row.
+    // About 72px, between Home's compact rows and its cards. The square's
+    // inset is also what keeps the logo's corner matte inside the row.
     implicitHeight: squareSize + Theme.space.md * 2
 
     activeFocusOnTab: true
@@ -117,7 +118,7 @@ Item {
             anchors.fill: parent
             anchors.leftMargin: Theme.space.md
             anchors.rightMargin: Theme.space.md
-            spacing: Theme.space.md
+            spacing: Theme.space.lg
 
             Item {
                 Layout.preferredWidth: root.squareSize
@@ -125,7 +126,7 @@ Item {
 
                 PlaceholderSurface {
                     anchors.fill: parent
-                    radius: Theme.radius.sm
+                    radius: Theme.radius.md
                 }
                 Image {
                     anchors.centerIn: parent
@@ -153,7 +154,7 @@ Item {
                 }
                 CornerMatte {
                     visible: root.showsPackArt
-                    cornerRadius: Theme.radius.sm
+                    cornerRadius: Theme.radius.md
                     matte: surface.color
                 }
 
@@ -189,8 +190,8 @@ Item {
                 elide: Text.ElideRight
                 color: Theme.palette.textPrimary
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.bodyStrong.pixelSize
-                font.weight: Theme.type.bodyStrong.weight
+                font.pixelSize: Theme.type.title.pixelSize
+                font.weight: Theme.type.title.weight
 
                 HoverHandler { id: nameHover; enabled: nameText.truncated }
                 ToolTip.visible: nameText.truncated && nameHover.hovered
@@ -206,8 +207,7 @@ Item {
                 elide: Text.ElideRight
                 color: Theme.palette.textSecondary
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
-                font.weight: Font.Medium
+                font.pixelSize: Theme.type.label.pixelSize
             }
 
             Text {
@@ -219,7 +219,7 @@ Item {
                 elide: Text.ElideRight
                 color: root.launching ? Theme.palette.textSecondary : Theme.palette.textTertiary
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                font.pixelSize: Theme.type.label.pixelSize
                 // Digits of one width, so the number does not jitter.
                 font.features: ({ "tnum": 1 })
             }
@@ -232,7 +232,7 @@ Item {
                 text: Format.playTime(root.totalTimePlayed)
                 color: Theme.palette.textTertiary
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                font.pixelSize: Theme.type.label.pixelSize
                 font.features: ({ "tnum": 1 })
             }
 

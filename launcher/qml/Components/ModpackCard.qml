@@ -48,13 +48,17 @@ AbstractButton {
     // Kept for callers of the old table layout; a card ends itself.
     property bool lastRow: false
 
-    // Modrinth's list result has a 100px icon on a 16px base; this is the
-    // same share of Kite's 14px one.
-    readonly property int logoSize: 88
+    // Modrinth's list result has a 100px icon on a 16px base: two of
+    // Kite's large controls, at its 15px one.
+    readonly property int logoSize: Theme.control.heightLg * 2
     readonly property int logoSourceSize: logoSize * 2
-    readonly property int statsWidth: 148
+    readonly property int statsWidth: 168
+    // Roomier than a list row: Modrinth's result cards breathe.
+    readonly property int cardPadding: Theme.space.lg + Theme.space.xs
     readonly property int maxTags: 4
-    readonly property real titleLine: Theme.type.title.lineHeightPx
+    // A result's title a step above a card title: the subheading.
+    readonly property int titleSize: Theme.type.subheading.pixelSize
+    readonly property real titleLine: Theme.type.subheading.lineHeightPx
     readonly property real pitchLine: Theme.type.body.lineHeightPx
     readonly property int pitchLines: 2
 
@@ -86,8 +90,9 @@ AbstractButton {
         return word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word
     }
 
-    implicitHeight: root.logoSize + Theme.space.lg * 2
-    padding: Theme.space.lg
+    // The logo's height, or the words' if they run taller.
+    implicitHeight: Math.max(root.logoSize, textColumn.implicitHeight) + root.cardPadding * 2
+    padding: root.cardPadding
     hoverEnabled: !root.skeleton
     enabled: !root.skeleton
     focusPolicy: Qt.TabFocus
@@ -132,7 +137,7 @@ AbstractButton {
     }
 
     contentItem: RowLayout {
-        spacing: Theme.space.lg
+        spacing: Theme.space.lg + Theme.space.xs
 
         // -- Logo ------------------------------------------------------------
         Item {
@@ -181,6 +186,7 @@ AbstractButton {
 
         // -- Title, pitch, categories ----------------------------------------
         ColumnLayout {
+            id: textColumn
             Layout.fillWidth: true
             Layout.minimumWidth: 0
             Layout.alignment: Qt.AlignTop
@@ -204,8 +210,8 @@ AbstractButton {
                     elide: Text.ElideRight
                     color: Theme.palette.textPrimary
                     font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Font.Bold
+                    font.pixelSize: root.titleSize
+                    font.weight: Theme.type.subheading.weight
 
                     HoverHandler { id: titleHover; enabled: titleText.truncated }
                     ToolTip.visible: titleText.truncated && titleHover.hovered
@@ -226,7 +232,7 @@ AbstractButton {
                 Skeleton {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width * 0.4
-                    height: Theme.type.title.pixelSize
+                    height: root.titleSize
                     radius: Theme.radius.sm
                     visible: root.skeleton
                 }
