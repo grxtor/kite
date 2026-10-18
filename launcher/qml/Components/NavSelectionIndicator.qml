@@ -91,4 +91,22 @@ Item {
         Behavior on width { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on height { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
     }
+
+    // Kite's own mark on the selection: a small accent diamond -- the
+    // kite's tip -- pinned half over the shape's leading edge. It rides with
+    // the shape, so it slides between rows too. Only ever on the selected
+    // row; nothing else in the app wears it as decoration.
+    property bool showMark: true
+    Rectangle {
+        id: mark
+        readonly property int side: 8
+        visible: root.showMark && pill.visible
+        width: side
+        height: side
+        rotation: 45
+        antialiasing: true
+        color: Theme.palette.accent
+        x: pill.x - width / 2
+        y: pill.y + (pill.height - height) / 2
+    }
 }

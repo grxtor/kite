@@ -367,7 +367,9 @@ QtObject {
         }
         readonly property QtObject heading: QtObject {
             readonly property int pixelSize: 24
-            readonly property int weight: Font.DemiBold
+            // Bold: Montserrat's heavy cut is Kite's voice (Modrinth sets
+            // its headings in a semibold sans).
+            readonly property int weight: Font.Bold
             readonly property real lineHeight: 1.25
             // lineHeight is a multiplier for Text; this is the same line in pixels,
             // for anything that has to reserve room for text before it exists.
