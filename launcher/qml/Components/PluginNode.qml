@@ -326,7 +326,7 @@ Item {
                     onDoubleClicked: root.send("activate", modelData.id)
                     background: Rectangle {
                         radius: Theme.radius.sm
-                        color: listRow.selected ? Theme.palette.accentSubtle
+                        color: listRow.selected ? Theme.palette.surfaceHover
                              : listRow.hovered ? Theme.palette.hoverOverlay : "transparent"
                     }
                     contentItem: Row {
@@ -361,7 +361,7 @@ Item {
                 x: root.pad
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.props.text || root.props.href || ""
-                color: Theme.palette.accent
+                color: Theme.palette.accentText
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.body.pixelSize
                 font.underline: linkHover.hovered

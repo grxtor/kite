@@ -95,12 +95,12 @@ SettingsScroll {
             padding: Theme.space.lg
             // linkColor does not reach RichText; a style rule does.
             text: root.about && root.about.creditsHtml.length > 0
-                  ? "<style>a { color: " + Theme.palette.accent + "; text-decoration: none; }</style>"
+                  ? "<style>a { color: " + Theme.palette.accentText + "; text-decoration: none; }</style>"
                     + root.about.creditsHtml : ""
             textFormat: Text.RichText
             wrapMode: Text.Wrap
             color: Theme.palette.textSecondary
-            linkColor: Theme.palette.accent
+            linkColor: Theme.palette.accentText
             font.family: Theme.font.family
             font.pixelSize: Theme.type.label.pixelSize
             onLinkActivated: (link) => Qt.openUrlExternally(link)
@@ -130,7 +130,7 @@ SettingsScroll {
                 textFormat: Text.MarkdownText
                 wrapMode: Text.Wrap
                 color: Theme.palette.textSecondary
-                linkColor: Theme.palette.accent
+                linkColor: Theme.palette.accentText
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.label.pixelSize
                 onLinkActivated: (link) => Qt.openUrlExternally(link)

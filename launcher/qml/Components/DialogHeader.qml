@@ -27,12 +27,12 @@ Item {
     readonly property bool toned: root.icon.length > 0
                                   && !Qt.colorEqual(root.iconColor, Theme.palette.accent)
 
-    implicitHeight: Theme.space.lg + Math.max(Theme.icon.md, label.implicitHeight)
+    implicitHeight: Theme.space.xl + Math.max(Theme.icon.md, label.implicitHeight)
 
     MeshIcon {
         id: glyph
         visible: root.toned
-        x: Theme.space.lg
+        x: Theme.space.xl
         anchors.verticalCenter: label.verticalCenter
         iconName: root.icon
         size: Theme.icon.md
@@ -41,11 +41,11 @@ Item {
 
     Label {
         id: label
-        y: Theme.space.lg
+        y: Theme.space.xl
         anchors.left: root.toned ? glyph.right : parent.left
-        anchors.leftMargin: root.toned ? Theme.space.sm : Theme.space.lg
+        anchors.leftMargin: root.toned ? Theme.space.sm : Theme.space.xl
         anchors.right: parent.right
-        anchors.rightMargin: Theme.space.lg
+        anchors.rightMargin: Theme.space.xl
         text: root.title
         elide: Label.ElideRight
         font.pixelSize: Theme.type.title.pixelSize

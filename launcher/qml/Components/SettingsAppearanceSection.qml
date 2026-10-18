@@ -50,7 +50,7 @@ SettingsScroll {
             width: tile.swatchSize
             height: tile.swatchSize
             radius: Theme.radius.md
-            color: tile.selected ? Theme.palette.accentSubtle : Theme.palette.surface
+            color: tile.selected ? Theme.palette.surfaceHover : Theme.palette.surface
             border.width: tile.selected ? 2 : 1
             border.color: tile.selected ? Theme.palette.accent : Theme.palette.border
 

@@ -27,6 +27,8 @@ Dialog {
     width: Math.min(600, parent ? parent.width - Theme.space.xxl * 2 : 600)
     height: Math.min(520, parent ? parent.height - Theme.space.xxl * 2 : 520)
     modal: true
+    // The title row sets the inset; the gap under it is the dialog's own spacing.
+    topPadding: 0
     title: qsTr("Choose Java")
 
     header: DialogHeader {
@@ -73,7 +75,7 @@ Dialog {
                         spacing: 2
                         Text {
                             text: qsTr("Java %1").arg(String(row.version))
-                            color: row.chosen ? Theme.palette.accent : Theme.palette.textPrimary
+                            color: row.chosen ? Theme.palette.accentText : Theme.palette.textPrimary
                             font.family: Theme.font.family
                             font.pixelSize: Theme.type.body.pixelSize
                             font.weight: Font.DemiBold
@@ -118,8 +120,8 @@ Dialog {
     footer: RowLayout {
         spacing: Theme.space.sm
         Button {
-            Layout.leftMargin: Theme.space.lg
-            Layout.bottomMargin: Theme.space.lg
+            Layout.leftMargin: Theme.space.xl
+            Layout.bottomMargin: Theme.space.xl
             flat: true
             text: qsTr("Detect again")
             icon.source: Icons.url("refresh")
@@ -128,8 +130,8 @@ Dialog {
         }
         Item { Layout.fillWidth: true }
         Button {
-            Layout.rightMargin: Theme.space.lg
-            Layout.bottomMargin: Theme.space.lg
+            Layout.rightMargin: Theme.space.xl
+            Layout.bottomMargin: Theme.space.xl
             text: qsTr("Close")
             onClicked: root.close()
         }

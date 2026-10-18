@@ -69,6 +69,8 @@ Dialog {
     width: Math.min(root.dialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.dialogWidth)
     height: Math.min(root.dialogHeight, parent ? parent.height - Theme.space.xxl * 2 : root.dialogHeight)
     modal: true
+    // The title row sets the inset; the gap under it is the dialog's own spacing.
+    topPadding: 0
     // Typing in a form is not something a stray click outside should
     // throw away, and an export in progress only stops through its button.
     closePolicy: root.exporting ? Popup.NoAutoClose : Popup.CloseOnEscape
@@ -412,7 +414,7 @@ Dialog {
     footer: Row {
         layoutDirection: Qt.RightToLeft
         spacing: Theme.space.sm
-        padding: Theme.space.lg
+        padding: Theme.space.xl
         topPadding: 0
 
         Button {
@@ -427,7 +429,6 @@ Dialog {
         }
         Button {
             visible: !root.exporting
-            flat: true
             text: qsTr("Cancel")
             onClicked: root.close()
         }

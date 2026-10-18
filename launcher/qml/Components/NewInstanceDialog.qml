@@ -403,7 +403,7 @@ Dialog {
 
                     background: Rectangle {
                         radius: Theme.radius.md
-                        color: versionRow.selected ? Theme.palette.accentSubtle
+                        color: versionRow.selected ? Theme.palette.surfaceHover
                              : versionRow.hovered ? Theme.palette.hoverOverlay : "transparent"
                     }
 
@@ -720,8 +720,8 @@ Dialog {
         spacing: Theme.space.sm
 
         Column {
-            Layout.leftMargin: Theme.space.lg
-            Layout.bottomMargin: Theme.space.lg
+            Layout.leftMargin: Theme.space.xl
+            Layout.bottomMargin: Theme.space.xl
             Layout.fillWidth: true
             visible: root.creating || (!!root.watcher && root.watcher.failed)
             spacing: Theme.space.xs
@@ -743,18 +743,17 @@ Dialog {
             }
         }
 
-        Item { Layout.fillWidth: true; Layout.leftMargin: Theme.space.lg; visible: !root.creating && !(root.watcher && root.watcher.failed) }
+        Item { Layout.fillWidth: true; Layout.leftMargin: Theme.space.xl; visible: !root.creating && !(root.watcher && root.watcher.failed) }
 
         Button {
-            Layout.bottomMargin: Theme.space.lg
-            flat: true
+            Layout.bottomMargin: Theme.space.xl
             text: qsTr("Cancel")
             enabled: !root.creating
             onClicked: root.close()
         }
         Button {
-            Layout.rightMargin: Theme.space.lg
-            Layout.bottomMargin: Theme.space.lg
+            Layout.rightMargin: Theme.space.xl
+            Layout.bottomMargin: Theme.space.xl
             highlighted: true
             visible: root.mode !== "import"
             text: root.creating ? qsTr("Creating…") : qsTr("Create")
@@ -767,8 +766,8 @@ Dialog {
             }
         }
         Button {
-            Layout.rightMargin: Theme.space.lg
-            Layout.bottomMargin: Theme.space.lg
+            Layout.rightMargin: Theme.space.xl
+            Layout.bottomMargin: Theme.space.xl
             highlighted: true
             visible: root.mode === "import"
             text: root.creating ? qsTr("Importing…") : qsTr("Import")

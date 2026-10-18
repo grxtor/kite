@@ -111,7 +111,7 @@ Dialog {
     footer: Row {
         layoutDirection: Qt.RightToLeft
         spacing: Theme.space.sm
-        padding: Theme.space.lg
+        padding: Theme.space.xl
         topPadding: 0
         Button {
             text: root.confirmText
@@ -121,7 +121,6 @@ Dialog {
         }
         Button {
             text: qsTr("Cancel")
-            flat: true
             onClicked: root.close()
         }
     }

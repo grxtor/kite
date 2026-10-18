@@ -50,6 +50,8 @@ Dialog {
     width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
     height: Math.min(root.maxHeight, implicitHeight, parent ? parent.height - Theme.space.xxl * 2 : root.maxHeight)
     modal: true
+    // The title row sets the inset; the gap under it is the dialog's own spacing.
+    topPadding: 0
     closePolicy: Popup.CloseOnEscape
     title: qsTr("Updates")
 
@@ -133,15 +135,15 @@ Dialog {
     }
 
     footer: Item {
-        implicitHeight: footerRow.implicitHeight + Theme.space.lg
+        implicitHeight: footerRow.implicitHeight + Theme.space.xl
 
         RowLayout {
             id: footerRow
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.leftMargin: Theme.space.lg
-            anchors.rightMargin: Theme.space.lg
+            anchors.leftMargin: Theme.space.xl
+            anchors.rightMargin: Theme.space.xl
             spacing: Theme.space.sm
 
             CheckBox {
@@ -157,7 +159,6 @@ Dialog {
             }
             Item { Layout.fillWidth: true }
             Button {
-                flat: true
                 text: root.checking || root.count > 0 ? qsTr("Cancel") : qsTr("Close")
                 onClicked: root.close()
             }

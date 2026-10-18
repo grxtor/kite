@@ -67,6 +67,8 @@ Item {
                     || kind === "optionalMods" ? 620 : 460,
                     parent ? parent.width - Theme.space.xxl * 2 : 460)
     modal: true
+    // The title row sets the inset; the gap under it is the dialog's own spacing.
+    topPadding: 0
     closePolicy: Popup.CloseOnEscape
     title: request ? request.title : ""
 
@@ -114,7 +116,7 @@ Item {
             textFormat: Text.AutoText
             wrapMode: Text.Wrap
             color: Theme.palette.textSecondary
-            linkColor: Theme.palette.accent
+            linkColor: Theme.palette.accentText
             font.family: Theme.font.family
             font.pixelSize: Theme.type.body.pixelSize
             lineHeight: 1.3
@@ -344,7 +346,7 @@ Item {
 
                     background: Rectangle {
                         radius: Theme.radius.md
-                        color: accountRow.selected ? Theme.palette.accentSubtle
+                        color: accountRow.selected ? Theme.palette.surfaceHover
                              : accountRow.hovered ? Theme.palette.hoverOverlay : "transparent"
                         border.width: 1
                         border.color: accountRow.selected ? Theme.palette.accent : Theme.palette.border
@@ -377,7 +379,7 @@ Item {
                             Layout.rightMargin: Theme.space.sm
                             iconName: "check"
                             size: Theme.icon.sm
-                            color: Theme.palette.accent
+                            color: Theme.palette.accentText
                             opacity: accountRow.selected ? 1 : 0
                         }
                     }
@@ -527,7 +529,7 @@ Item {
     footer: Row {
         layoutDirection: Qt.RightToLeft
         spacing: Theme.space.sm
-        padding: Theme.space.lg
+        padding: Theme.space.xl
         topPadding: 0
 
         // choose: one button per action, the first as the primary.
@@ -584,7 +586,6 @@ Item {
         }
         Button {
             visible: root.kind === "profileSetup"
-            flat: true
             enabled: !(root.request && root.request.profileSubmitting)
             text: qsTr("Cancel")
             onClicked: root.answer(() => root.request.reject())
@@ -604,7 +605,6 @@ Item {
         }
         Button {
             visible: root.kind !== "message" && root.kind !== "update" && root.kind !== "profileSetup" && root.kind !== "filePicker"
-            flat: true
             text: root.request && root.request.rejectLabel.length > 0 ? root.request.rejectLabel : qsTr("Cancel")
             onClicked: root.answer(() => root.request.reject())
         }

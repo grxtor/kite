@@ -83,6 +83,8 @@ Dialog {
     width: Math.min(640, parent ? parent.width - Theme.space.xxl * 2 : 640)
     height: Math.min(620, parent ? parent.height - Theme.space.xxl * 2 : 620)
     modal: true
+    // The title row sets the inset; the gap under it is the dialog's own spacing.
+    topPadding: 0
     title: root.keys.length > 0 ? qsTr("Export %1 selected").arg(root.keys.length) : qsTr("Export list")
 
     header: DialogHeader {
@@ -235,7 +237,7 @@ Dialog {
     footer: Row {
         layoutDirection: Qt.RightToLeft
         spacing: Theme.space.sm
-        padding: Theme.space.lg
+        padding: Theme.space.xl
         topPadding: 0
 
         Button {
@@ -262,7 +264,6 @@ Dialog {
             }
         }
         Button {
-            flat: true
             text: qsTr("Cancel")
             onClicked: root.close()
         }

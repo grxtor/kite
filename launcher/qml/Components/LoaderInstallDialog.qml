@@ -26,6 +26,8 @@ Dialog {
     width: Math.min(680, parent ? parent.width - Theme.space.xxl * 2 : 680)
     height: Math.min(600, parent ? parent.height - Theme.space.xxl * 2 : 600)
     modal: true
+    // The title row sets the inset; the gap under it is the dialog's own spacing.
+    topPadding: 0
     title: qsTr("Install a mod loader")
 
     header: DialogHeader {
@@ -156,7 +158,7 @@ Dialog {
     footer: Row {
         layoutDirection: Qt.RightToLeft
         spacing: Theme.space.sm
-        padding: Theme.space.lg
+        padding: Theme.space.xl
         topPadding: 0
 
         Button {
@@ -167,7 +169,6 @@ Dialog {
         }
         Button {
             text: qsTr("Cancel")
-            flat: true
             onClicked: root.close()
         }
     }

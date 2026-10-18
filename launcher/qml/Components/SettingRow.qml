@@ -31,7 +31,7 @@ Item {
                                     || layout.width - controlSlot.implicitWidth - layout.columnSpacing < root.labelMinWidth
 
     width: parent ? parent.width : implicitWidth
-    implicitHeight: Math.max(Theme.control.heightLg + Theme.space.md,
+    implicitHeight: Math.max(Theme.control.heightLg + Theme.space.lg + Theme.space.xs,
                              layout.implicitHeight + Theme.space.lg * 2)
     opacity: enabled ? 1 : Theme.opacity.disabled
 
@@ -73,7 +73,7 @@ Item {
                 color: Theme.palette.textPrimary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.body.pixelSize
-                font.weight: Font.Medium
+                font.weight: Font.DemiBold
             }
 
             Text {

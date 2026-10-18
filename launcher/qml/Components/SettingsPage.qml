@@ -89,6 +89,8 @@ Item {
 
     RowLayout {
         anchors.fill: parent
+        // The page area adds no padding of its own (the shell's inset panel).
+        anchors.topMargin: Theme.space.xl
         anchors.leftMargin: Theme.space.xl + Theme.space.xs
         anchors.rightMargin: Theme.space.xl + Theme.space.xs
         spacing: Theme.space.xl
@@ -138,6 +140,14 @@ Item {
                     }
                 }
             }
+        }
+
+        // A hairline between the section list and the section, as in
+        // Modrinth's settings.
+        Rectangle {
+            Layout.fillHeight: true
+            Layout.preferredWidth: 1
+            color: Theme.palette.divider
         }
 
         StackLayout {

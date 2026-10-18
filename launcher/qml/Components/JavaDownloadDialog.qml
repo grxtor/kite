@@ -28,6 +28,8 @@ Dialog {
     anchors.centerIn: parent
     width: Math.min(520, parent ? parent.width - Theme.space.xxl * 2 : 520)
     modal: true
+    // The title row sets the inset; the gap under it is the dialog's own spacing.
+    topPadding: 0
     closePolicy: root.busy ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnPressOutside
     title: qsTr("Download Java")
 
@@ -188,15 +190,14 @@ Dialog {
         spacing: Theme.space.sm
         Item { Layout.fillWidth: true }
         Button {
-            Layout.bottomMargin: Theme.space.lg
+            Layout.bottomMargin: Theme.space.xl
             visible: !root.done
             text: qsTr("Cancel")
-            flat: true
             onClicked: root.close()
         }
         Button {
-            Layout.bottomMargin: Theme.space.lg
-            Layout.rightMargin: Theme.space.lg
+            Layout.bottomMargin: Theme.space.xl
+            Layout.rightMargin: Theme.space.xl
             visible: !root.done
             highlighted: true
             text: !!root.download && root.download.alreadyInstalled ? qsTr("Download again") : qsTr("Download")
@@ -204,15 +205,14 @@ Dialog {
             onClicked: root.download.download()
         }
         Button {
-            Layout.bottomMargin: Theme.space.lg
+            Layout.bottomMargin: Theme.space.xl
             visible: root.done
             text: qsTr("Close")
-            flat: true
             onClicked: root.close()
         }
         Button {
-            Layout.bottomMargin: Theme.space.lg
-            Layout.rightMargin: Theme.space.lg
+            Layout.bottomMargin: Theme.space.xl
+            Layout.rightMargin: Theme.space.xl
             visible: root.done
             highlighted: true
             text: qsTr("Use this Java")

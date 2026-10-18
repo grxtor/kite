@@ -30,6 +30,8 @@ Dialog {
     width: Math.min(640, parent ? parent.width - Theme.space.xxl * 2 : 640)
     height: Math.min(520, parent ? parent.height - Theme.space.xxl * 2 : 520)
     modal: true
+    // The title row sets the inset; the gap under it is the dialog's own spacing.
+    topPadding: 0
     title: qsTr("Choose an icon")
 
     header: DialogHeader {
@@ -99,7 +101,7 @@ Dialog {
                 anchors.fill: parent
                 anchors.margins: root.cellInset
                 radius: Theme.radius.sm
-                color: cell.selected ? Theme.palette.accentSubtle
+                color: cell.selected ? Theme.palette.surfaceHover
                      : cell.hovered ? Theme.palette.hoverOverlay : "transparent"
                 border.width: cell.selected ? 2 : 0
                 border.color: Theme.palette.accent
@@ -122,7 +124,7 @@ Dialog {
 
     footer: Row {
         spacing: Theme.space.sm
-        padding: Theme.space.lg
+        padding: Theme.space.xl
         topPadding: Theme.space.sm
         layoutDirection: Qt.RightToLeft
 
@@ -133,7 +135,6 @@ Dialog {
         }
         Button {
             text: qsTr("Cancel")
-            flat: true
             onClicked: root.close()
         }
         Button {

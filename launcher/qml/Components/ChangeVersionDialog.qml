@@ -38,6 +38,8 @@ Dialog {
     width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
     height: Math.min(root.preferredHeight, parent ? parent.height - Theme.space.xxl * 2 : root.preferredHeight)
     modal: true
+    // The title row sets the inset; the gap under it is the dialog's own spacing.
+    topPadding: 0
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     title: root.controller ? qsTr("Change version of %1").arg(root.controller.versionsTitle) : ""
 
@@ -118,7 +120,7 @@ Dialog {
     footer: Row {
         layoutDirection: Qt.RightToLeft
         spacing: Theme.space.sm
-        padding: Theme.space.lg
+        padding: Theme.space.xl
         topPadding: 0
 
         Button {
@@ -134,7 +136,6 @@ Dialog {
             }
         }
         Button {
-            flat: true
             text: qsTr("Cancel")
             onClicked: root.close()
         }

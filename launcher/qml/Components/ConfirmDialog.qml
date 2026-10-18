@@ -26,6 +26,8 @@ Dialog {
     anchors.centerIn: parent
     width: Math.min(440, parent ? parent.width - Theme.space.xxl * 2 : 440)
     modal: true
+    // The title row sets the inset; the gap under it is the dialog's own spacing.
+    topPadding: 0
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     header: DialogHeader {
@@ -46,7 +48,7 @@ Dialog {
     footer: Row {
         layoutDirection: Qt.RightToLeft
         spacing: Theme.space.sm
-        padding: Theme.space.lg
+        padding: Theme.space.xl
         topPadding: 0
 
         Button {
@@ -60,7 +62,6 @@ Dialog {
         }
         Button {
             text: qsTr("Cancel")
-            flat: true
             onClicked: root.close()
         }
     }
