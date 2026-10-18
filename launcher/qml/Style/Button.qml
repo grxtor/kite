@@ -8,8 +8,8 @@ import QtQuick.Templates as T
 import Kite.Theme
 
 // Four variants, Modrinth-style:
-//   primary   -> accent fill, a barely visible top-to-bottom tint, and the
-//                one glow the brief allows (a soft violet one, on hover)
+//   primary   -> accent fill and a barely visible top-to-bottom tint; hover
+//                is the lighter accent fill (no glow anywhere in the app)
 //   secondary -> surfaceRaised plus the hairline border (the default)
 //   ghost     -> transparent, only a hover/press overlay
 //   danger    -> the danger red, filled, for a destructive confirmation
@@ -133,18 +133,6 @@ T.Button {
 
         Behavior on color {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
-        }
-
-        // The primary button's soft violet glow, the only glow in the app.
-        Shadow {
-            radius: background.radius
-            level: Theme.elevation.glow
-            color: Theme.palette.accent
-            opacity: control.primaryLook && control.resolvedVariant === "primary"
-                     && control.hovered && !control.down ? 1 : 0
-            Behavior on opacity {
-                NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing }
-            }
         }
 
         // The barely visible top-to-bottom tint on a filled button.

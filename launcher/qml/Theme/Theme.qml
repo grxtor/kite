@@ -73,7 +73,7 @@ QtObject {
         readonly property int maxContentWidth: 1280
         // The bottom play bar's height -- and the sidebar's foot band, which
         // matches it so their top edges form one line across the window.
-        readonly property int barHeight: 84
+        readonly property int barHeight: 72
     }
 
     // Control heights: sm for dense rows and toolbars, the default for
@@ -120,13 +120,6 @@ QtObject {
             readonly property int y: 14
             readonly property int blur: 36
             readonly property real strength: root.dark ? 0.52 : 0.16
-        }
-        // The one glow the brief allows: a primary button under the
-        // pointer, drawn in palette.accent rather than `color`.
-        readonly property QtObject glow: QtObject {
-            readonly property int y: 3
-            readonly property int blur: 16
-            readonly property real strength: root.dark ? 0.34 : 0.24
         }
     }
 
@@ -186,8 +179,8 @@ QtObject {
     /* Motion contract: a hover/press transition changes exactly one visual
      * property over `fast` -- colour, or a single small scale/translate,
      * never both, and never an overshoot easing (Easing.OutBack) on a
-     * hover-triggered transform. The one exception is the primary button's
-     * glow (elevation.glow), which fades in alongside its colour. An idle animation loop (Animation.Infinite)
+     * hover-triggered transform. There is no glow: a primary button's hover
+     * is its lighter fill alone. An idle animation loop (Animation.Infinite)
      * is only ever gated on a real busy/live state property -- the way
      * RecentItem.qml/InstanceListRow.qml gate their pulse on `isRunning`,
      * PlayDock.qml on `dockRunning`, and Skeleton.qml on its own visibility
@@ -197,8 +190,8 @@ QtObject {
      * Selection grammar: one documented look per control class, not one
      * grammar total and not accidental variety --
      *   - rail/list nav (SidebarNav, and anything reusing its mechanism,
-     *     e.g. Settings' section list): a sliding surfaceRaised pill plus a
-     *     3px accent bar pinned to the leading edge.
+     *     e.g. Settings' section list): a sliding accentSubtle pill with an
+     *     accentText icon and label.
      *   - tab strip (TabStrip, TabBar/TabButton): a soft pill behind the
      *     active tab -- accentSubtle fill, accentText label -- the rest plain
      *     text with a hover overlay (Modrinth's tabs; phase-02 brief).

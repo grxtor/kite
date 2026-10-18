@@ -79,23 +79,16 @@ Rectangle {
         anchors.fill: parent
         spacing: 0
 
-        // Brand side: who we are and where we are in the flow, on a calm
-        // violet sky -- the accent washed over the surface, strongest at
-        // the top and gone by the foot, low enough in contrast that the
-        // text over it reads as on any other surface. The logo's own violet,
-        // not a picture: no shapes, no glow.
+        // Brand side: who we are and where we are in the flow, on a plain
+        // raised surface fading into the page's own. Neutral on purpose:
+        // the logo carries the violet, the backdrop doesn't tint toward it.
         Rectangle {
             id: sky
             Layout.fillHeight: true
             Layout.preferredWidth: Math.min(380, root.width * 0.34)
 
-            function wash(strength) {
-                var a = Theme.palette.accent
-                return Qt.tint(Theme.palette.surface, Qt.rgba(a.r, a.g, a.b, strength))
-            }
             gradient: Gradient {
-                GradientStop { position: 0.0; color: sky.wash(Theme.dark ? 0.20 : 0.13) }
-                GradientStop { position: 0.45; color: sky.wash(Theme.dark ? 0.08 : 0.05) }
+                GradientStop { position: 0.0; color: Theme.palette.surfaceRaised }
                 GradientStop { position: 1.0; color: Theme.palette.surface }
             }
 

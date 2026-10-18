@@ -16,8 +16,7 @@ import Kite.Theme
  *
  * It looks like the Style Button's primary variant (Style/Button.qml): the
  * accent fill with its barely visible top-to-bottom tint, a lighter fill on
- * hover and a darker one when pressed, and on hover the one soft violet
- * glow the brief allows (Theme.elevation.glow). Stop is the danger fill
+ * hover and a darker one when pressed, and no glow. Stop is the danger fill
  * with the same rule as a danger Button's label: the dark theme's light
  * coral takes the canvas' near-black, which reads on it where white did
  * not (2.6:1). Corners are Theme.radius.md in both shapes; the icon-only
@@ -65,15 +64,6 @@ AbstractButton {
         radius: Theme.radius.md
         color: control.fill
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-
-        // The primary button's soft violet glow, on hover only.
-        Shadow {
-            radius: plate.radius
-            level: Theme.elevation.glow
-            color: Theme.palette.accent
-            opacity: !control.running && control.enabled && control.hovered && !control.down ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-        }
 
         // The barely visible top-to-bottom tint every filled button has.
         Rectangle {

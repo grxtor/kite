@@ -278,8 +278,7 @@ Dialog {
                             Layout.preferredHeight: root.previewHeight
                             radius: Theme.radius.lg
                             // A lit stage, not a sunken well, so a dark skin
-                            // stands off it (SkinPreview adds the glow behind
-                            // the player), lighter at the top than at its
+                            // stands off it, lighter at the top than at its
                             // floor. In the dark theme its top is lighter than
                             // the dialog around it, `lift` of the way to the
                             // text colour; in the light one it is the sunken
