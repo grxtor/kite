@@ -38,8 +38,8 @@ Dialog {
     }
 
     // The built-in *_legacy icons are the old pixel-art set, kept on disk
-    // for instances that still name them; offered here next to the rendered
-    // set they would only make the grid look mismatched. The *_mark icons are
+    // for instances that still name them; offered here next to the flat set
+    // they would only list every icon twice. The *_mark icons are
     // the loader marks the New instance dialog's loader row uses, duplicates
     // of the forge/quilt icons already listed. Both stay out of the picker;
     // an instance already using one keeps it.

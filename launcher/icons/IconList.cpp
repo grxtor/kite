@@ -34,36 +34,6 @@
 
 #define MAX_SIZE 1024
 
-namespace
-{
-/* Rendered artwork for builtin keys: one 256 px PNG per key, same names as
- * the old pixel-art set (grass, tnt, creeper...), so every instance that
- * stores one of those keys picks the new look up with no migration.
- *
- * The folder is listed in multimc.qrc but deliberately NOT in index.theme.
- * Inside an icon theme Qt mixes the PNG and SVG entries of a name and picks
- * one per requested size and device pixel ratio; at some sizes the old
- * scalable/instances SVG (or flame's 32/128 px PNGs) would still win. A
- * builtin key with a file here therefore holds QIcon(file) directly --
- * QIcon smooth-downscales its single 256 px image to whatever size is asked
- * for -- and only keys without one keep going through QIcon::fromTheme().
- * The path is not stored as the icon's filename, so getFilePath() of a
- * builtin stays empty exactly as before (export, plugins). A user icon of
- * the same key (IconType::FileBased) still outranks either. */
-const QString kRenderedBuiltinDir =
-	QStringLiteral(":/icons/multimc/256x256/instances/");
-
-void setBuiltinImage(MMCIcon& entry, const QString& key)
-{
-	const QString rendered = kRenderedBuiltinDir + key + QStringLiteral(".png");
-	if (QFile::exists(rendered)) {
-		entry.replace(Builtin, QIcon(rendered));
-	} else {
-		entry.replace(Builtin, key);
-	}
-}
-} // namespace
-
 IconList::IconList(const QStringList& builtinPaths, QString path,
 				   QObject* parent)
 	: QAbstractListModel(parent)
@@ -359,7 +329,7 @@ bool IconList::addThemeIcon(const QString& key)
 	auto iter = name_index.find(key);
 	if (iter != name_index.end()) {
 		auto& oldOne = icons[*iter];
-		setBuiltinImage(oldOne, key);
+		oldOne.replace(Builtin, key);
 		dataChanged(index(*iter), index(*iter));
 		return true;
 	} else {
@@ -369,7 +339,7 @@ bool IconList::addThemeIcon(const QString& key)
 			MMCIcon mmc_icon;
 			mmc_icon.m_name = key;
 			mmc_icon.m_key = key;
-			setBuiltinImage(mmc_icon, key);
+			mmc_icon.replace(Builtin, key);
 			icons.push_back(mmc_icon);
 			name_index[key] = icons.size() - 1;
 		}
