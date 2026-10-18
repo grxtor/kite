@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -80,8 +81,8 @@ class LauncherContext
 	virtual shared_qobject_ptr<AccountList> accounts() const = 0;
 	/* Not const: Application::translations() is loaded once during startup
 	 * and just returns it, but Application::javalist() builds its
-	 * JavaInstallList lazily on first call. Needed by QmlShell (MeshMC_qml,
-	 * which links this core and not Application/MeshMC_logic) for the QML
+	 * JavaInstallList lazily on first call. Needed by QmlShell (Kite_qml,
+	 * which links this core and not Application/Kite_logic) for the QML
 	 * shell's own onboarding -- see QmlShell::languages()/javaInstalls(). */
 	virtual std::shared_ptr<TranslationsModel> translations() = 0;
 	virtual std::shared_ptr<JavaInstallList> javalist() = 0;
@@ -98,14 +99,14 @@ class LauncherContext
 	 * (QNetworkProxy::setApplicationProxy() and friends), the same way the
 	 * widget ProxyPage's apply button does. @p proxyTypeStr is one of
 	 * "None", "Default", "SOCKS5", "HTTP". Needed by QmlShell, which
-	 * cannot see Application/QNetworkProxy from MeshMC_qml -- see
+	 * cannot see Application/QNetworkProxy from Kite_qml -- see
 	 * QmlShell::applyProxySettings(). */
 	virtual void updateProxySettings(QString proxyTypeStr, QString addr,
 									 int port, QString user,
 									 QString password) = 0;
 
 	/* Null when no plugin host is present -- plugins are an optional build
-	 * (MeshMC_PLUGINS, OFF by default). Core code calls through this rather
+	 * (Kite_PLUGINS, OFF by default). Core code calls through this rather
 	 * than reaching PluginManager directly, because PluginManager renders
 	 * plugin-supplied user interface and therefore pulls in QtWidgets. */
 	virtual AuthRequestDecorator* authRequestDecorator() const = 0;

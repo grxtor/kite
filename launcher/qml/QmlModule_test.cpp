@@ -1,8 +1,8 @@
-/* SPDX-FileCopyrightText: 2026 Project Tick
- * SPDX-FileContributor: Project Tick
+/* SPDX-FileCopyrightText: 2026 grxtor
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * Copyright (C) 2026 Project Tick
+ * Copyright (C) 2026 grxtor
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ class QmlModuleTest : public QObject
 	{
 		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
 		QQmlComponent component(
-			&engine, QUrl(QStringLiteral("qrc:/qt/qml/MeshMC/Main.qml")));
+			&engine, QUrl(QStringLiteral("qrc:/qt/qml/Kite/Main.qml")));
 		if (!component.isReady()) {
 			qWarning() << component.errorString();
 			return nullptr;
@@ -158,7 +158,7 @@ class QmlModuleTest : public QObject
 	 * application. */
 	void initTestCase()
 	{
-		QQuickStyle::setStyle(QStringLiteral("MeshMC.Style"));
+		QQuickStyle::setStyle(QStringLiteral("Kite.Style"));
 	}
 
 	void rootComponentInstantiates()
@@ -167,7 +167,7 @@ class QmlModuleTest : public QObject
 		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
 
 		QQmlComponent component(
-			&engine, QUrl(QStringLiteral("qrc:/qt/qml/MeshMC/Main.qml")));
+			&engine, QUrl(QStringLiteral("qrc:/qt/qml/Kite/Main.qml")));
 
 		QVERIFY2(!component.isError(), qPrintable(component.errorString()));
 		QVERIFY2(component.isReady(),
@@ -195,7 +195,7 @@ class QmlModuleTest : public QObject
 		/* Guards against the component resolving to something default
 		 * constructed: the property only exists on our Main.qml. */
 		QCOMPARE(root->property("moduleName").toString(),
-				 QStringLiteral("MeshMC"));
+				 QStringLiteral("Kite"));
 	}
 
 	/* navigate() is how pages link across the app: whole paths and the
@@ -307,7 +307,7 @@ class QmlModuleTest : public QObject
 		// rest of this file at one.
 		component.setData(
 			"import QtQuick\n"
-			"import MeshMC.Components\n"
+			"import Kite.Components\n"
 			"SettingsPluginsListSection {\n"
 			"  width: 800; height: 600\n"
 			"  pluginList: ListModel {\n"
@@ -354,7 +354,7 @@ class QmlModuleTest : public QObject
 		QQmlComponent component(&engine);
 		component.setData(
 			"import QtQuick\n"
-			"import MeshMC.Components\n"
+			"import Kite.Components\n"
 			"SettingsPluginsListSection {\n"
 			"  width: 800; height: 600\n"
 			"  pluginList: ListModel {\n"
@@ -401,7 +401,7 @@ class QmlModuleTest : public QObject
 		component.setData(
 			"import QtQuick\n"
 			"import QtQuick.Controls\n"
-			"import MeshMC.Components\n"
+			"import Kite.Components\n"
 			"ApplicationWindow {\n"
 			"  width: 1000; height: 900\n"
 			"  property alias editor: editor\n"
@@ -508,14 +508,14 @@ class QmlModuleTest : public QObject
 		QQmlEngine engine;
 		FakeShell shell;
 		shell.m_news.setEntries({ std::make_shared<NewsEntry>(
-			QStringLiteral("MeshMC 7 is out"), QString(),
+			QStringLiteral("Kite 7 is out"), QString(),
 			QStringLiteral("https://example.org/7"), QString(), QDateTime()) });
 		auto root = createRoot(engine, &shell);
 		QVERIFY(root);
 		// HomePage reads the model's rows once they settle (Qt.callLater).
 		QTRY_COMPARE(evaluate(root.get(), QStringLiteral("homePage.hasNews ? homePage.featuredNews.title : ''"))
 						 .toString(),
-					 QStringLiteral("MeshMC 7 is out"));
+					 QStringLiteral("Kite 7 is out"));
 	}
 
 	/* Home's banner is for news: a release post for the version running
@@ -535,20 +535,20 @@ class QmlModuleTest : public QObject
 		{
 			QQmlEngine engine;
 			FakeShell shell;
-			shell.m_news.setEntries({ post(QStringLiteral("MeshMC Release 12.1.0, now available"), now),
-									  post(QStringLiteral("MeshMC Release 11.0.0"), now.addDays(-1)) });
+			shell.m_news.setEntries({ post(QStringLiteral("Kite Release 12.1.0, now available"), now),
+									  post(QStringLiteral("Kite Release 11.0.0"), now.addDays(-1)) });
 			auto root = createRoot(engine, &shell);
 			QVERIFY(root);
 			QTRY_COMPARE(evaluate(root.get(), QStringLiteral("homePage.hasNews ? homePage.featuredNews.title : ''"))
 							 .toString(),
-						 QStringLiteral("MeshMC Release 12.1.0, now available"));
+						 QStringLiteral("Kite Release 12.1.0, now available"));
 		}
 		{
 			QQmlEngine engine;
 			FakeShell shell;
-			shell.m_news.setEntries({ post(QStringLiteral("MeshMC Release 11.0.0"), now),
-									  post(QStringLiteral("MeshMC Release 9.1.0, now available"), now.addDays(-2)),
-									  post(QStringLiteral("Welcome to MeshMC"), now.addDays(-200)) });
+			shell.m_news.setEntries({ post(QStringLiteral("Kite Release 11.0.0"), now),
+									  post(QStringLiteral("Kite Release 9.1.0, now available"), now.addDays(-2)),
+									  post(QStringLiteral("Welcome to Kite"), now.addDays(-200)) });
 			auto root = createRoot(engine, &shell);
 			QVERIFY(root);
 			QTRY_COMPARE(evaluate(root.get(), QStringLiteral("homePage.newsEntries.length")).toInt(), 3);
@@ -557,7 +557,7 @@ class QmlModuleTest : public QObject
 		QCoreApplication::setApplicationVersion(runningVersion);
 	}
 
-	/* `meshmc --import` and the IPC "import" message reach QML as
+	/* `kite --import` and the IPC "import" message reach QML as
 	 * QmlShell::importRequested(): the New instance dialog opens in import
 	 * mode with the source already filled in (the A9/A10 fix). The
 	 * stand-in controller is a bare QObject, so the dialog logs TypeErrors

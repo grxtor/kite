@@ -1,16 +1,16 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * Which Java runs the game, in one row: a path field, "Choose…" (the
- * installs MeshMC found), Browse, and Test, which runs the Java the way the
+ * installs Kite found), Browse, and Test, which runs the Java the way the
  * launcher does (with the JVM arguments and memory of `source`) and shows
  * what came back right under the field.
  *

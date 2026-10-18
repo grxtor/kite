@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * MercurialVersioning - MMCO plugin written in PLAIN C.
@@ -146,9 +147,9 @@ static int snapshot(const char* root, const char* message)
 	commit[1] = "-m";
 	commit[2] = message;
 	commit[3] = "-u";
-	commit[4] = "MeshMC <meshmc@localhost>";
+	commit[4] = "Kite <kite@localhost>";
 	commit[5] = "--config";
-	commit[6] = "ui.username=MeshMC <meshmc@localhost>";
+	commit[6] = "ui.username=Kite <kite@localhost>";
 
 	{
 		int code = run_hg(root, commit, 7, NULL, 0);

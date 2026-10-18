@@ -23,7 +23,7 @@
     <key>CFBundleIconFile</key>
     <string>${MACOSX_BUNDLE_ICON_FILE}</string>
     <key>CFBundleIconName</key>
-    <string>${MeshMC_Name}</string>
+    <string>${Kite_Name}</string>
     <key>CFBundleIdentifier</key>
     <string>${MACOSX_BUNDLE_GUI_IDENTIFIER}</string>
     <key>CFBundleInfoDictionaryVersion</key>
@@ -87,10 +87,10 @@
         </dict>
         <dict>
             <key>CFBundleURLName</key>
-            <string>${MeshMC_Name}</string>
+            <string>${Kite_Name}</string>
             <key>CFBundleURLSchemes</key>
             <array>
-            <string>meshmc</string>
+            <string>kite</string>
             <string>${MACOSX_BUNDLE_EXECUTABLE_NAME}</string>
             </array>
         </dict>

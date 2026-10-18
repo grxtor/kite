@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Project Tick
+# SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 #
 # MMCOSign.cmake — attach a GPG signature trailer to a built .mmco
@@ -15,7 +16,7 @@
 # The signing pipeline has TWO stages:
 #
 #   1. POST_BUILD custom command — signs the staged .mmco under
-#      ${MESHMC_PLUGIN_STAGING_DIR} so the in-tree run finds a signed
+#      ${KITE_PLUGIN_STAGING_DIR} so the in-tree run finds a signed
 #      plugin straight out of the build directory.
 #
 #   2. install(CODE …) hook — re-signs the *installed* copy after
@@ -30,28 +31,28 @@
 # modules at runtime.
 #
 # Re-signing at install time can be suppressed with the environment
-# variable MESHMC_SKIP_INSTALL_RESIGN=1 — useful for distro packagers
+# variable KITE_SKIP_INSTALL_RESIGN=1 — useful for distro packagers
 # who don't have the upstream signing key handy. The installed plugin
 # will then fail signature verification at runtime (which is the
 # correct fail-safe behaviour for a plugin without a valid trailer).
 #
 # Cache-driven workflow for CI / release builds:
 #
-#   cmake -DMeshMC_PLUGIN_SIGNING_KEY=<fpr>             \
-#         -DMeshMC_PLUGIN_SIGNING_HOMEDIR=<dir>         \
-#         -DMeshMC_PLUGIN_SIGN_ALL=ON                   \
+#   cmake -DKite_PLUGIN_SIGNING_KEY=<fpr>             \
+#         -DKite_PLUGIN_SIGNING_HOMEDIR=<dir>         \
+#         -DKite_PLUGIN_SIGN_ALL=ON                   \
 #         ...
 #
-# When MeshMC_PLUGIN_SIGN_ALL is ON, plugins/CMakeLists.txt walks every
+# When Kite_PLUGIN_SIGN_ALL is ON, plugins/CMakeLists.txt walks every
 # in-tree .mmco target and calls mmco_sign_plugin() on it automatically.
 
 include_guard(GLOBAL)
 
-set(MeshMC_PLUGIN_SIGNING_KEY "" CACHE STRING
+set(Kite_PLUGIN_SIGNING_KEY "" CACHE STRING
     "Default GPG key fingerprint used to sign .mmco plugins. Empty disables signing.")
-set(MeshMC_PLUGIN_SIGNING_HOMEDIR "" CACHE PATH
+set(Kite_PLUGIN_SIGNING_HOMEDIR "" CACHE PATH
     "Optional GnuPG home directory used when signing .mmco plugins.")
-set(MeshMC_PLUGIN_SIGN_ALL OFF CACHE BOOL
+set(Kite_PLUGIN_SIGN_ALL OFF CACHE BOOL
     "If ON, every in-tree .mmco plugin is automatically signed POST_BUILD.")
 
 find_package(Python3 COMPONENTS Interpreter QUIET)
@@ -64,10 +65,10 @@ function(mmco_sign_plugin target)
                           "${_multi_value}" ${ARGN})
 
     if(NOT _arg_KEY)
-        set(_arg_KEY "${MeshMC_PLUGIN_SIGNING_KEY}")
+        set(_arg_KEY "${Kite_PLUGIN_SIGNING_KEY}")
     endif()
     if(NOT _arg_HOMEDIR)
-        set(_arg_HOMEDIR "${MeshMC_PLUGIN_SIGNING_HOMEDIR}")
+        set(_arg_HOMEDIR "${Kite_PLUGIN_SIGNING_HOMEDIR}")
     endif()
 
     if(NOT _arg_KEY)
@@ -98,8 +99,8 @@ function(mmco_sign_plugin target)
 
     # ─── 1. Build-tree signing (POST_BUILD) ─────────────────────────
     #
-    # Sign the staged artefact under ${MESHMC_PLUGIN_STAGING_DIR} so
-    # the in-tree run (e.g. `./build/launcher/meshmc`) can discover
+    # Sign the staged artefact under ${KITE_PLUGIN_STAGING_DIR} so
+    # the in-tree run (e.g. `./build/launcher/kite`) can discover
     # signed plugins straight out of the build directory.
     set(_cmd
         "${Python3_EXECUTABLE}" "${_script}"
@@ -140,7 +141,7 @@ function(mmco_sign_plugin target)
     # and invokes mmco_sign.py against it in place.
     #
     # Skipping the re-sign is supported via the environment variable
-    # MESHMC_SKIP_INSTALL_RESIGN=1 — useful when packagers don't have
+    # KITE_SKIP_INSTALL_RESIGN=1 — useful when packagers don't have
     # the signing key handy. The launcher will then reject the
     # installed plugin as BadSignature at load time, which is the
     # correct fail-safe.
@@ -157,7 +158,7 @@ function(mmco_sign_plugin target)
     # MMCO_MODULES_DEST_DIR is platform-aware:
     #   Linux    -> bin/mmcmodules
     #   Windows  -> ./mmcmodules
-    #   macOS    -> MeshMC.app/Contents/PlugIns/mmcmodules
+    #   macOS    -> Kite.app/Contents/PlugIns/mmcmodules
     # The macOS branch deliberately routes around Contents/MacOS to
     # avoid colliding with Apple's `codesign --strict` subcomponent
     # treatment of Mach-O files found there.
@@ -194,10 +195,10 @@ function(mmco_sign_plugin target)
                 \"mmco_sign_plugin(${target}): installed file '\${_mmco_resign_path}' \"
                 \"not found; signature will not be re-applied. The build-tree \"
                 \"signature is now stale.\")
-        elseif(DEFINED ENV{MESHMC_SKIP_INSTALL_RESIGN}
-               AND \"\$ENV{MESHMC_SKIP_INSTALL_RESIGN}\" STREQUAL \"1\")
+        elseif(DEFINED ENV{KITE_SKIP_INSTALL_RESIGN}
+               AND \"\$ENV{KITE_SKIP_INSTALL_RESIGN}\" STREQUAL \"1\")
             message(STATUS
-                \"mmco_sign_plugin(${target}): MESHMC_SKIP_INSTALL_RESIGN=1, leaving \"
+                \"mmco_sign_plugin(${target}): KITE_SKIP_INSTALL_RESIGN=1, leaving \"
                 \"build-time trailer attached to '\${_mmco_resign_path}' \"
                 \"(the launcher will reject it as BadSignature).\")
         else()
@@ -220,7 +221,7 @@ function(mmco_sign_plugin target)
                 message(FATAL_ERROR
                     \"mmco_sign_plugin(${target}): re-signing the installed copy \"
                     \"failed (exit \${_mmco_resign_rc}). Set \"
-                    \"MESHMC_SKIP_INSTALL_RESIGN=1 to override (the installed plugin \"
+                    \"KITE_SKIP_INSTALL_RESIGN=1 to override (the installed plugin \"
                     \"will then fail signature verification at runtime).\")
             endif()
         endif()

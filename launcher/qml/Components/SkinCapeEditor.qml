@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * Skins and capes for one Microsoft account, opened from AccountsPage --
@@ -350,7 +350,7 @@ Dialog {
                                 Layout.fillWidth: true
                                 text: qsTr("Skins")
                                 color: Theme.palette.textPrimary
-                                font.family: Theme.font.family
+                                font.family: Theme.font.heading
                                 font.pixelSize: Theme.type.title.pixelSize
                                 font.weight: Theme.type.title.weight
                             }
@@ -558,7 +558,7 @@ Dialog {
                 Text {
                     text: qsTr("Capes")
                     color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
+                    font.family: Theme.font.heading
                     font.pixelSize: Theme.type.title.pixelSize
                     font.weight: Theme.type.title.weight
                 }

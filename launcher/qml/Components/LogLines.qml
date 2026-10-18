@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * Log lines in a scrolling list, shared by the live log, an instance's
@@ -45,7 +45,7 @@ Item {
         switch (level) {
         case 2: case 8: case 9: return Theme.palette.danger   // StdErr, Error, Fatal
         case 7: return Theme.palette.warning                  // Warning
-        case 3: return Theme.palette.accent                   // MeshMC
+        case 3: return Theme.palette.accent                   // Kite
         case 4: return Theme.palette.textTertiary             // Debug
         default: return Theme.palette.textSecondary
         }

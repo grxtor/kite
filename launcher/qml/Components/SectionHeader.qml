@@ -1,9 +1,9 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * A group's title row: name, an optional item count, and -- when the group
@@ -32,7 +32,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             text: root.title
             color: Theme.palette.textPrimary
-            font.family: Theme.font.family
+            font.family: Theme.font.heading
             font.pixelSize: Theme.type.title.pixelSize
             font.weight: Font.Bold
         }

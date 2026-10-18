@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * Where this instance's modpack came from, and what other versions of it
@@ -200,7 +200,7 @@ Item {
             Text {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
-                text: qsTr("MeshMC does not have a catalogue id on record for this pack, so it cannot list other versions here. You can still update it from a pack file, or install the pack again from Discover for a specific version.")
+                text: qsTr("Kite does not have a catalogue id on record for this pack, so it cannot list other versions here. You can still update it from a pack file, or install the pack again from Discover for a specific version.")
                 color: Theme.palette.textSecondary
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.body.pixelSize
@@ -329,7 +329,7 @@ Item {
         upperThird: true
         visible: !root.controller
         title: qsTr("Not a managed pack")
-        body: qsTr("This instance was not installed from a catalogue MeshMC recognises.")
+        body: qsTr("This instance was not installed from a catalogue Kite recognises.")
         MeshIcon { iconName: "package"; size: 40; color: Theme.palette.textTertiary }
     }
 }

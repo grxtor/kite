@@ -7,16 +7,16 @@ set(CMAKE_JAVA_JAR_ENTRY_POINT org.multimc.EntryPoint)
 set(CMAKE_JAVA_COMPILE_FLAGS -target 7 -source 7 -Xlint:deprecation -Xlint:unchecked)
 
 set(SRC
-    org/projecttick/EntryPoint.java
-    org/projecttick/MeshMC.java
-    org/projecttick/LegacyFrame.java
-    org/projecttick/NotFoundException.java
-    org/projecttick/ParamBucket.java
-    org/projecttick/ParseException.java
-    org/projecttick/Utils.java
-    org/projecttick/onesix/OneSixLauncher.java
-    org/projecttick/modern/ModernLauncher.java
-    net/minecraft/MeshMC.java
+    io/github/grxtor/EntryPoint.java
+    io/github/grxtor/Kite.java
+    io/github/grxtor/LegacyFrame.java
+    io/github/grxtor/NotFoundException.java
+    io/github/grxtor/ParamBucket.java
+    io/github/grxtor/ParseException.java
+    io/github/grxtor/Utils.java
+    io/github/grxtor/onesix/OneSixLauncher.java
+    io/github/grxtor/modern/ModernLauncher.java
+    net/minecraft/Kite.java
 )
 add_jar(NewLaunch ${SRC})
 install_jar(NewLaunch "${JARS_DEST_DIR}")

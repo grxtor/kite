@@ -14,13 +14,13 @@
       "generator": "Ninja Multi-Config",
       "toolchainFile": "cmake/vcpkg/scripts/buildsystems/vcpkg.cmake",
       "cacheVariables": {
-        "MeshMC_QT_VERSION_MAJOR": "6",
-        "MeshMC_BUILD_ARTIFACT": "$penv{ARTIFACT_NAME}",
-        "MeshMC_BUILD_PLATFORM": "$penv{BUILD_PLATFORM}",
-        "MeshMC_UPDATE_CHANNEL": "$penv{UPDATE_CHANNEL}",
-        "MeshMC_DISABLE_JAVA_DOWNLOADER": "OFF",
-        "MeshMC_PLUGINS": "ON",
-        "MeshMC_STAGING_PLUGINS": "OFF",
+        "Kite_QT_VERSION_MAJOR": "6",
+        "Kite_BUILD_ARTIFACT": "$penv{ARTIFACT_NAME}",
+        "Kite_BUILD_PLATFORM": "$penv{BUILD_PLATFORM}",
+        "Kite_UPDATE_CHANNEL": "$penv{UPDATE_CHANNEL}",
+        "Kite_DISABLE_JAVA_DOWNLOADER": "OFF",
+        "Kite_PLUGINS": "ON",
+        "Kite_STAGING_PLUGINS": "OFF",
         "ENABLE_LTO": "ON"
       }
     },

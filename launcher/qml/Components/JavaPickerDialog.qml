@@ -1,15 +1,15 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import MeshMC.Theme
+import Kite.Theme
 
 /*
- * Pick one of the Java installs MeshMC found on this computer (the same
- * list the first-run setup shows, plus the runtimes MeshMC downloaded
+ * Pick one of the Java installs Kite found on this computer (the same
+ * list the first-run setup shows, plus the runtimes Kite downloaded
  * itself). Choosing a row emits picked() and closes; the caller decides
  * what to do with the path.
  */

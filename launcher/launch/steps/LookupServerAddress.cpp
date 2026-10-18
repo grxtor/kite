@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -65,7 +66,7 @@ void LookupServerAddress::on_dnsLookupFinished()
 		emit logLine(QString("Failed to resolve server address (this is NOT an "
 							 "error!) %1: %2\n")
 						 .arg(m_dnsLookup->name(), m_dnsLookup->errorString()),
-					 MessageLevel::MeshMC);
+					 MessageLevel::Kite);
 		resolve(m_lookupAddress,
 				25565); // Technically the task failed, however, we don't abort
 						// the launch and leave it up to minecraft to fail (or
@@ -93,7 +94,7 @@ void LookupServerAddress::on_dnsLookupFinished()
 	emit logLine(QString("Resolved server address %1 to %2 with port %3\n")
 					 .arg(m_dnsLookup->name(), firstRecord.target(),
 						  QString::number(port)),
-				 MessageLevel::MeshMC);
+				 MessageLevel::Kite);
 	resolve(firstRecord.target(), port);
 }
 

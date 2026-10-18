@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * The left rail: brand, the main destinations, the last few instances
@@ -163,7 +163,7 @@ Rectangle {
             Image {
                 Layout.preferredWidth: root.brandExtent
                 Layout.preferredHeight: root.brandExtent
-                source: "qrc:/icons/multimc/scalable/instances/meshmc.svg"
+                source: "qrc:/icons/multimc/scalable/instances/kite.svg"
                 // From a constant, not from width: the layout sizes this
                 // item from its implicit size, which sourceSize sets.
                 sourceSize: Qt.size(root.brandExtent * 2, root.brandExtent * 2)
@@ -172,9 +172,9 @@ Rectangle {
 
             Text {
                 visible: !root.collapsed
-                text: "MeshMC"
+                text: "Kite"
                 color: Theme.palette.textPrimary
-                font.family: Theme.font.family
+                font.family: Theme.font.heading
                 font.pixelSize: Theme.type.title.pixelSize + 2
                 font.weight: Font.Bold
                 font.letterSpacing: -0.2

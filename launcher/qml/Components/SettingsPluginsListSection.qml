@@ -1,13 +1,13 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
-import MeshMC.Theme
+import Kite.Theme
 
 /*
- * The "Installed plugins" section of SettingsPage.qml: every plugin MeshMC
+ * The "Installed plugins" section of SettingsPage.qml: every plugin Kite
  * found, whether it loaded (or why not), its signature, and a switch to
  * turn it on or off from the next start -- the widget PluginsDialog. Not
  * the same as the "Plugins" section (SettingsPluginsSection.qml), which
@@ -24,7 +24,7 @@ SettingsScroll {
     readonly property int count: root.pluginList ? root.pluginList.count : 0
 
     title: qsTr("Installed plugins")
-    description: qsTr("Plugins add features to MeshMC. Turning one on or off takes effect the next time MeshMC starts.")
+    description: qsTr("Plugins add features to Kite. Turning one on or off takes effect the next time Kite starts.")
 
     Text {
         width: parent.width
@@ -40,7 +40,7 @@ SettingsScroll {
         width: parent.width
         visible: root.count > 0
         description: root.pluginList && root.pluginList.restartNeeded
-                     ? qsTr("Restart MeshMC to apply your changes.") : ""
+                     ? qsTr("Restart Kite to apply your changes.") : ""
 
         Repeater {
             model: root.pluginList

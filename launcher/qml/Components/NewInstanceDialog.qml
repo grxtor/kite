@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Layouts
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * A new instance, in one of two modes:
@@ -44,7 +44,7 @@ Dialog {
     // Raw text of the chosen file/URL in import mode.
     property string importSource: ""
     // What import mode's file/URL field starts with when the dialog opens:
-    // a file or link handed in from outside (`meshmc --import`, see
+    // a file or link handed in from outside (`kite --import`, see
     // Main.qml's openImport()); empty for a dialog opened from a button.
     property string presetSource: ""
 
@@ -348,7 +348,7 @@ Dialog {
                 Layout.fillWidth: true
                 text: qsTr("Minecraft version")
                 color: Theme.palette.textPrimary
-                font.family: Theme.font.family
+                font.family: Theme.font.heading
                 font.pixelSize: Theme.type.title.pixelSize
                 font.weight: Font.Bold
             }
@@ -493,7 +493,7 @@ Dialog {
                 Text {
                     text: qsTr("Mod loader")
                     color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
+                    font.family: Theme.font.heading
                     font.pixelSize: Theme.type.title.pixelSize
                     font.weight: Font.Bold
                 }

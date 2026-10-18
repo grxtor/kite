@@ -1,10 +1,11 @@
 /*
  * SPDX-License-Identifier: Apache-2.0
  * SPDX-FileCopyrightText: Project Tick
+ * SPDX-FileContributor: grxtor
  *
  * mangohud_detect.h — Compile-time / runtime detection helpers for MangoHud.
  *
- * Vendored / authored for MeshMC LinuxPerf plugin.
+ * Vendored / authored for Kite LinuxPerf plugin.
  *
  * MangoHud (https://github.com/flightlessmango/MangoHud) does not expose a
  * public C API header for launchers. Integration is exclusively via:

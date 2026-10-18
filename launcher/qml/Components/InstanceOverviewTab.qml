@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * The instance at a glance: its recent screenshots and worlds, what is
@@ -117,7 +117,7 @@ Item {
                     text: card.title
                     elide: Text.ElideRight
                     color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
+                    font.family: Theme.font.heading
                     font.pixelSize: Theme.type.title.pixelSize
                     font.weight: Theme.type.title.weight
                 }
@@ -169,7 +169,7 @@ Item {
                     title: qsTr("Upgrade is required")
 
                     Hint {
-                        text: qsTr("MeshMC now runs old Minecraft versions in its newer instance format, and the old (legacy) format is switched off, so this instance has to be upgraded before it can be played.")
+                        text: qsTr("Kite now runs old Minecraft versions in its newer instance format, and the old (legacy) format is switched off, so this instance has to be upgraded before it can be played.")
                     }
                     Hint {
                         text: qsTr("The upgrade makes a copy of this instance in the new format. The original stays as it is, in case anything goes wrong.")

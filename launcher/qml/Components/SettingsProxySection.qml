@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import MeshMC.Theme
+import Kite.Theme
 
 /*
- * How MeshMC itself reaches the internet -- the QML equivalent of the
+ * How Kite itself reaches the internet -- the QML equivalent of the
  * classic ProxyPage. Every field saves as it is set, same as the rest of
  * this window, so there is no separate Apply button; instead, whenever one
  * of the five proxy settings changes, applyProxySettings() below pushes the
@@ -18,7 +18,7 @@ SettingsScroll {
     id: root
 
     title: qsTr("Proxy")
-    description: qsTr("How MeshMC reaches the internet. Only MeshMC's own downloads use it; Minecraft ignores proxy settings.")
+    description: qsTr("How Kite reaches the internet. Only Kite's own downloads use it; Minecraft ignores proxy settings.")
 
     readonly property string proxyType: SettingsStore.string("ProxyType")
     readonly property bool needsAddress: root.proxyType === "SOCKS5" || root.proxyType === "HTTP"
@@ -94,7 +94,7 @@ SettingsScroll {
         width: parent.width
         visible: root.needsAddress
         title: qsTr("Authentication")
-        description: qsTr("Stored in plain text in MeshMC's configuration file.")
+        description: qsTr("Stored in plain text in Kite's configuration file.")
         SettingText {
             key: "ProxyUser"
             label: qsTr("Username")

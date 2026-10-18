@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -315,8 +316,8 @@ ReleaseArchive::Result ReleaseArchive::extract(const QString& archivePath,
 
 		// A hardlink entry carries no data of its own -- it names another
 		// entry, which tar always stores first. This is not an exotic case:
-		// the Linux portable bundle is a sharun bundle, where bin/meshmc,
-		// bin/meshmc-updater and sharun are all hardlinks to a single
+		// the Linux portable bundle is a sharun bundle, where bin/kite,
+		// bin/kite-updater and sharun are all hardlinks to a single
 		// multi-call loader.
 		if (const char* hardlink =
 				entryString(archive_entry_hardlink_utf8(entry),

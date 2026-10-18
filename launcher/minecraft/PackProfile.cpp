@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -445,7 +446,7 @@ static void upgradeDeprecatedFiles(QString root, QString instanceName)
  */
 bool PackProfile::migratePreComponentConfig()
 {
-	// upgrade the very old files from the beginnings of MeshMC
+	// upgrade the very old files from the beginnings of Kite
 	upgradeDeprecatedFiles(d->m_instance->instanceRoot(),
 						   d->m_instance->name());
 
@@ -1130,7 +1131,7 @@ bool PackProfile::installJarMods_internal(QStringList filepaths)
 		auto uuid = QUuid::createUuid();
 		QString id = uuid.toString().remove('{').remove('}');
 		QString target_filename = id + ".jar";
-		QString target_id = "org.projecttick.jarmod." + id;
+		QString target_id = "io.github.grxtor.jarmod." + id;
 		QString target_name = sourceInfo.completeBaseName() + " (jar mod)";
 		QString finalPath =
 			FS::PathCombine(d->m_instance->jarModsDir(), target_filename);
@@ -1148,7 +1149,7 @@ bool PackProfile::installJarMods_internal(QStringList filepaths)
 		auto f = std::make_shared<VersionFile>();
 		auto jarMod = std::make_shared<Library>();
 		jarMod->setRawName(
-			GradleSpecifier("org.projecttick.jarmods:" + id + ":1"));
+			GradleSpecifier("io.github.grxtor.jarmods:" + id + ":1"));
 		jarMod->setFilename(target_filename);
 		jarMod->setDisplayName(sourceInfo.completeBaseName());
 		jarMod->setHint("local");
@@ -1186,7 +1187,7 @@ bool PackProfile::installCustomJar_internal(QString filepath)
 		return false;
 	}
 
-	auto specifier = GradleSpecifier("org.projecttick:customjar:1");
+	auto specifier = GradleSpecifier("io.github.grxtor:customjar:1");
 	QFileInfo sourceInfo(filepath);
 	QString target_filename = specifier.getFileName();
 	QString target_id = specifier.artifactId();

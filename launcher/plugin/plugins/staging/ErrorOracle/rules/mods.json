@@ -34,7 +34,7 @@
         "java\\.util\\.zip\\.ZipException",
         "Could not find or load main class.*from jar"
       ],
-      "advice": "One of the jars in `mods/`, `coremods/`, or the loader itself is corrupted. The launcher log usually names it on the previous line. Re-download just that file, or delete the `libraries/` folder and let MeshMC re-fetch.",
+      "advice": "One of the jars in `mods/`, `coremods/`, or the loader itself is corrupted. The launcher log usually names it on the previous line. Re-download just that file, or delete the `libraries/` folder and let Kite re-fetch.",
       "tags": ["mods", "download"]
     },
     {

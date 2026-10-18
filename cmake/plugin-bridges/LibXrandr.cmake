@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Project Tick
+# SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 #
 # libXrandr plugin bridge — exposes bundled libXrandr headers for the
@@ -7,9 +8,9 @@
 # systems and inside Flatpak sandboxes that don't expose the X libs.
 #
 # Public targets:
-#   MeshMCPlugins::LibXrandrHeaders — INTERFACE with the include dir.
+#   KitePlugins::LibXrandrHeaders — INTERFACE with the include dir.
 
-if(TARGET MeshMCPlugins::LibXrandrHeaders)
+if(TARGET KitePlugins::LibXrandrHeaders)
     return()
 endif()
 
@@ -24,8 +25,8 @@ if(NOT EXISTS "${_libXrandr_root}/include/X11/extensions/Xrandr.h")
     return()
 endif()
 
-add_library(MeshMCPlugins::LibXrandrHeaders INTERFACE IMPORTED GLOBAL)
-target_include_directories(MeshMCPlugins::LibXrandrHeaders INTERFACE
+add_library(KitePlugins::LibXrandrHeaders INTERFACE IMPORTED GLOBAL)
+target_include_directories(KitePlugins::LibXrandrHeaders INTERFACE
     ${_libXrandr_root}/include
 )
 

@@ -23,7 +23,7 @@ REPO=$(git -C "$ROOT" rev-parse --show-toplevel)
 # Override with e.g. SRC_DIRS="launcher" ./update.sh
 SRC_DIRS=${SRC_DIRS:-"$REPO/launcher $REPO/launcher/plugin/plugins $REPO/launcher/crashreporter $REPO/launcher/updater"}
 
-# plugins/staging/ is gated behind the MeshMC_STAGING_PLUGINS option (off by
+# plugins/staging/ is gated behind the Kite_STAGING_PLUGINS option (off by
 # default), so those strings are not shipped and must not reach translators.
 EXCLUDE_RE=${EXCLUDE_RE:-^plugins/staging/}
 

@@ -35,7 +35,7 @@
         "java\\.net\\.ConnectException",
         "java\\.net\\.UnknownHostException"
       ],
-      "advice": "MeshMC couldn't reach one of Minecraft's asset CDNs. Check your network connection or proxy. Some corporate firewalls block `resources.download.minecraft.net` and `libraries.minecraft.net` — add those to the allow-list.",
+      "advice": "Kite couldn't reach one of Minecraft's asset CDNs. Check your network connection or proxy. Some corporate firewalls block `resources.download.minecraft.net` and `libraries.minecraft.net` — add those to the allow-list.",
       "tags": ["network", "download"]
     }
   ]

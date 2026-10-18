@@ -21,7 +21,7 @@ mainClass net.minecraft.launchwrapper.Launch
 param --username
 param CENSORED
 param --version
-param MeshMC
+param Kite
 param --gameDir
 param /home/peterix/minecraft/FTB/17ForgeTest/minecraft
 param --assetsDir
@@ -38,7 +38,7 @@ param --userType
 param mojang
 param --tweakClass
 param cpw.mods.fml.common.launcher.FMLTweaker
-windowTitle MeshMC: 172ForgeTest
+windowTitle Kite: 172ForgeTest
 windowParams 854x480
 userName CENSORED
 sessionId token:CENSORED:CENSORED

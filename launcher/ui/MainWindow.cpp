@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -93,7 +94,7 @@
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/dialogs/AboutDialog.h"
 #include "ui/dialogs/NewsViewerDialog.h"
-#include "ui/dialogs/MeshMCLogsDialog.h"
+#include "ui/dialogs/KiteLogsDialog.h"
 #include "ui/dialogs/PluginsDialog.h"
 #include "ui/dialogs/VersionSelectDialog.h"
 #include "ui/dialogs/CustomMessageBox.h"
@@ -192,7 +193,7 @@ namespace
 void MainWindow::applyThemedIcons()
 {
 	for (QAction* action : findChildren<QAction*>()) {
-		const QString iconName = action->property("meshmcIcon").toString();
+		const QString iconName = action->property("kiteIcon").toString();
 		if (iconName.isEmpty()) {
 			continue;
 		}
@@ -347,9 +348,9 @@ void MainWindow::setupUi()
 #endif
 
 	setWindowIcon(APPLICATION->getThemedIcon("logo"));
-	setWindowTitle(BuildConfig.MESHMC_DISPLAYNAME);
+	setWindowTitle(BuildConfig.KITE_DISPLAYNAME);
 #ifndef QT_NO_ACCESSIBILITY
-	setAccessibleName(BuildConfig.MESHMC_NAME);
+	setAccessibleName(BuildConfig.KITE_NAME);
 #endif
 	applyThemedIcons();
 
@@ -648,7 +649,7 @@ void MainWindow::retranslateUi()
 {
 	ui->retranslateUi(this);
 
-	const QString appName = BuildConfig.MESHMC_NAME;
+	const QString appName = BuildConfig.KITE_NAME;
 	for (QAction* action : findChildren<QAction*>()) {
 		if (action->text().contains(QLatin1String("%1")))
 			action->setText(action->text().arg(appName));
@@ -656,8 +657,8 @@ void MainWindow::retranslateUi()
 			action->setToolTip(action->toolTip().arg(appName));
 	}
 
-	QString winTitle = tr("%1 - Version %2", "MeshMC - Version X")
-						   .arg(BuildConfig.MESHMC_DISPLAYNAME,
+	QString winTitle = tr("%1 - Version %2", "Kite - Version X")
+						   .arg(BuildConfig.KITE_DISPLAYNAME,
 								BuildConfig.printableVersionString());
 	if (!BuildConfig.BUILD_PLATFORM.isEmpty()) {
 		winTitle += tr(" on %1", "on platform, as in operating system")
@@ -788,7 +789,7 @@ void MainWindow::showInstanceContextMenu(const QPoint& pos)
 	} else {
 		auto group = view->groupNameAt(pos);
 
-		QAction* actionVoid = new QAction(BuildConfig.MESHMC_NAME, this);
+		QAction* actionVoid = new QAction(BuildConfig.KITE_NAME, this);
 		actionVoid->setEnabled(false);
 
 		QAction* actionCreateInstance =
@@ -1270,7 +1271,7 @@ void MainWindow::finalizeInstance(InstancePtr inst)
 	} else {
 		CustomMessageBox::selectable(
 			this, tr("Error"),
-			tr("MeshMC cannot download Minecraft or update instances unless "
+			tr("Kite cannot download Minecraft or update instances unless "
 			   "you have at least "
 			   "one account added.\nPlease add your Mojang or Minecraft "
 			   "account."),
@@ -1654,9 +1655,9 @@ void MainWindow::on_actionPlugins_triggered()
 	dialog.exec();
 }
 
-void MainWindow::on_actionMeshMCLogs_triggered()
+void MainWindow::on_actionKiteLogs_triggered()
 {
-	MeshMCLogsDialog dialog(this);
+	KiteLogsDialog dialog(this);
 	dialog.exec();
 }
 

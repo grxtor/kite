@@ -5,25 +5,25 @@ body:
 - type: markdown
   attributes:
     value: |
-      ### Use this form to suggest a feature for MeshMC.
+      ### Use this form to suggest a feature for Kite.
 - type: input
   attributes:
     label: Role
-    description: In what way do you use MeshMC that needs this feature?
+    description: In what way do you use Kite that needs this feature?
     placeholder: I play modded Minecraft.
   validations:
     required: true
 - type: input
   attributes:
     label: Suggestion
-    description: What do you want MeshMC to do?
+    description: What do you want Kite to do?
     placeholder: I want the cat button to meow.
   validations:
     required: true
 - type: input
   attributes:
     label: Benefit
-    description: Why do you need MeshMC to do this?
+    description: Why do you need Kite to do this?
     placeholder: so that I can always hear a cat when I need to.
   validations:
     required: true

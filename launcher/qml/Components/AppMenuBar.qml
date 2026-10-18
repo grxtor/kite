@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
@@ -70,7 +70,7 @@ MenuBar {
         }
         MenuItem {
             // Moved into the application menu by macOS.
-            text: qsTr("About MeshMC")
+            text: qsTr("About Kite")
             onTriggered: root.navigateRequested("settings/about")
         }
     }

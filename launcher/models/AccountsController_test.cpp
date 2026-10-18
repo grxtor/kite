@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -248,7 +249,7 @@ class AccountsControllerTest : public QObject
 		// Row 0 exists, but is offline, not a Microsoft account.
 		QVERIFY(!controller.accountSkinInfo(0).value("valid").toBool());
 		// -1 without the demo route set is just another out-of-range row.
-		qunsetenv("MESHMC_QML_ROUTE");
+		qunsetenv("KITE_QML_ROUTE");
 		QVERIFY(!controller.skinDemoRequested());
 		QVERIFY(!controller.accountSkinInfo(-1).value("valid").toBool());
 	}
@@ -262,14 +263,14 @@ class AccountsControllerTest : public QObject
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());
 		AccountsController controller(list);
 
-		qputenv("MESHMC_QML_ROUTE", "page=accounts;accounts-demo=msa");
+		qputenv("KITE_QML_ROUTE", "page=accounts;accounts-demo=msa");
 		QVERIFY(controller.skinDemoRequested());
 
 		const QVariantMap demo = controller.accountSkinInfo(-1);
 		QVERIFY(demo.value("valid").toBool());
 		QCOMPARE(demo.value("capes").toList().size(), 2);
 
-		qunsetenv("MESHMC_QML_ROUTE");
+		qunsetenv("KITE_QML_ROUTE");
 	}
 
 	void test_accountSkinInfo_msaAccount_readsProfile()
@@ -336,12 +337,12 @@ class AccountsControllerTest : public QObject
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());
 		AccountsController controller(list);
 
-		qputenv("MESHMC_QML_ROUTE", "page=accounts;accounts-demo=elytra;size=1240x780");
+		qputenv("KITE_QML_ROUTE", "page=accounts;accounts-demo=elytra;size=1240x780");
 		QCOMPARE(controller.skinDemoPose(), QStringLiteral("elytra"));
-		qputenv("MESHMC_QML_ROUTE", "page=accounts;accounts-demo");
+		qputenv("KITE_QML_ROUTE", "page=accounts;accounts-demo");
 		QVERIFY(controller.skinDemoRequested());
 		QCOMPARE(controller.skinDemoPose(), QString());
-		qunsetenv("MESHMC_QML_ROUTE");
+		qunsetenv("KITE_QML_ROUTE");
 		QCOMPARE(controller.skinDemoPose(), QString());
 	}
 

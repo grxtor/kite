@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0 */
 
 #include "AnalysisPage.h"
@@ -424,10 +425,10 @@ void AnalysisPageController::onPromoteClicked()
 	// Persist into a user rules pack we control.
 	QString userRulesDir =
 		QString::fromUtf8(/* set by ErrorOraclePlugin.cpp's mmco_init() */
-						  qgetenv("MESHMC_USER_RULES_DIR"));
+						  qgetenv("KITE_USER_RULES_DIR"));
 	if (userRulesDir.isEmpty())
 		userRulesDir =
-			QDir::homePath() + "/.local/share/meshmc/errororacle/userrules";
+			QDir::homePath() + "/.local/share/kite/errororacle/userrules";
 	QDir().mkpath(userRulesDir);
 
 	QString fileName = "promoted-" + m_currentFingerprint + ".json";

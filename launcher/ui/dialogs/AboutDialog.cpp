@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -44,7 +45,7 @@ namespace
 		dataFile.close();
 
 		return fileContent.arg(
-			QObject::tr("%1 Developers").arg(BuildConfig.MESHMC_DISPLAYNAME),
+			QObject::tr("%1 Developers").arg(BuildConfig.KITE_DISPLAYNAME),
 			QObject::tr("MultiMC Developers"));
 	}
 
@@ -70,7 +71,7 @@ AboutDialog::AboutDialog(QWidget* parent)
 {
 	ui->setupUi(this);
 
-	QString launcherName = BuildConfig.MESHMC_DISPLAYNAME;
+	QString launcherName = BuildConfig.KITE_DISPLAYNAME;
 
 	setWindowTitle(tr("About %1").arg(launcherName));
 
@@ -119,9 +120,9 @@ AboutDialog::AboutDialog(QWidget* parent)
 
 	
     ui->redistributionText->setHtml(tr(
-"<p>We keep <b>MeshMC</b> open source because we believe it's important to be able to see the source code of a project like this, and we do this using the Apache license.</p>\n"
-"<p>One reason we use the Apache license is that we don't want people using the name <b>MeshMC</b> when they fork the project. "
-"This means people should examine the source code and remove all references to <b>MeshMC</b>, including the project icon and window titles (the title should not contain the phrase <b>MeshMC-fork</b>). "
+"<p>We keep <b>Kite</b> open source because we believe it's important to be able to see the source code of a project like this, and we do this using the Apache license.</p>\n"
+"<p>One reason we use the Apache license is that we don't want people using the name <b>Kite</b> when they fork the project. "
+"This means people should examine the source code and remove all references to <b>Kite</b>, including the project icon and window titles (the title should not contain the phrase <b>Kite-fork</b>). "
 "The Apache license covers reasonable use of the name; mentioning the project's origins in the About dialog and license is acceptable. However, it must be explicitly stated that the project is a fork, "
 "which does not mean you have our approval.</p>\n<p>However, we give you the freedom to distribute this project as you wish, in any non-exclusive way, without changing its functionality, on a voluntary "
 "basis to package managers, without expecting any financial gain. Take the project and distribute it wherever people can reach it. But abide by our restrictions."
@@ -129,10 +130,10 @@ AboutDialog::AboutDialog(QWidget* parent)
 
 	QString urlText(
 		"<html><head/><body><p><a href=\"%1\">%1</a></p></body></html>");
-	ui->urlLabel->setText(urlText.arg(BuildConfig.MESHMC_GIT));
+	ui->urlLabel->setText(urlText.arg(BuildConfig.KITE_GIT));
 
 	QString copyText("© 2026 %1");
-	ui->copyLabel->setText(copyText.arg(BuildConfig.MESHMC_COPYRIGHT));
+	ui->copyLabel->setText(copyText.arg(BuildConfig.KITE_COPYRIGHT));
 
 	connect(ui->closeButton, &QPushButton::clicked, this, &AboutDialog::close);
 

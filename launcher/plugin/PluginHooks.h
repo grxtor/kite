@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -22,10 +23,10 @@
 #include <cstdint>
 
 /*
- * Hook points where plugins can intercept or extend MeshMC behaviour.
+ * Hook points where plugins can intercept or extend Kite behaviour.
  *
  * Hooks follow the observer pattern: plugins register callbacks for
- * specific hook IDs, and MeshMC dispatches to all registered callbacks
+ * specific hook IDs, and Kite dispatches to all registered callbacks
  * when the corresponding event occurs.
  *
  * Hook callbacks receive a generic void* payload whose concrete type
@@ -65,7 +66,7 @@ enum MMCOHookId : uint32_t {
 	 *
 	 * Fires just before the Application's global settings dialog is
 	 * built. Plugins that mutate the dialog's pages on every open
-	 * (e.g. to inject a checkbox into the MeshMCPage) hook here and
+	 * (e.g. to inject a checkbox into the KitePage) hook here and
 	 * schedule a deferred QTimer::singleShot(0, …) to do the actual
 	 * widget walk on the next event-loop turn (after the dialog's
 	 * own setupUi has run).  Payload: nullptr. */
@@ -302,7 +303,7 @@ struct MMCOGlobalSettingsPagesEvent {
  * NOT take ownership of them or delete them. Cast them through Qt's
  * normal qobject_cast<>() to the documented concrete type.
  *
- * Under the QML shell (MESHMC_QML_UI / MeshMC_QML_UI) there is no
+ * Under the QML shell (KITE_QML_UI / Kite_QML_UI) there is no
  * MainWindow and none of these widgets exist: the hook still fires once,
  * right after the shell's root window is shown, but every field below is
  * null. Use main_window_show/hide/is_visible and

@@ -1,5 +1,5 @@
 name: Package for Windows
-description: Create a Windows package for MeshMC
+description: Create a Windows package for Kite
 
 inputs:
   version:
@@ -82,7 +82,7 @@ runs:
         if (Get-Content $env:CODESIGN_CERT_PATH){
           cd ${{ env.INSTALL_DIR }}
             # We ship the exact same executable for portable and non-portable editions, so signing just once is fine
-            SignTool sign /fd sha256 /td sha256 /f $env:CODESIGN_CERT_PATH /p '${{ inputs.windows-codesign-password }}' /tr http://timestamp.digicert.com meshmc.exe meshmc-updater.exe meshmc-crashreporter.exe
+            SignTool sign /fd sha256 /td sha256 /f $env:CODESIGN_CERT_PATH /p '${{ inputs.windows-codesign-password }}' /tr http://timestamp.digicert.com kite.exe kite-updater.exe kite-crashreporter.exe
         } else {
           ":warning: Skipped code signing for Windows, as certificate was not present." >> $env:GITHUB_STEP_SUMMARY
         }
@@ -149,7 +149,7 @@ runs:
       shell: pwsh
       env:
         CODESIGN_CERT_PATH: ${{ github.workspace }}/codesign.pfx
-        INSTALLER_PATH: ${{ github.workspace }}/MeshMC-Setup.exe
+        INSTALLER_PATH: ${{ github.workspace }}/Kite-Setup.exe
       run: |
           if (Get-Content $env:CODESIGN_CERT_PATH){
             SignTool sign /fd sha256 /td sha256 /f $env:CODESIGN_CERT_PATH /p '${{ inputs.windows-codesign-password }}' /tr http://timestamp.digicert.com $env:INSTALLER_PATH
@@ -160,17 +160,17 @@ runs:
     - name: Upload binary zip
       uses: actions/upload-artifact@v7
       with:
-        name: MeshMC-${{ inputs.artifact-name }}-${{ inputs.version }}-${{ inputs.build-type }}-Qt${{ inputs.qt-major }}
+        name: Kite-${{ inputs.artifact-name }}-${{ inputs.version }}-${{ inputs.build-type }}-Qt${{ inputs.qt-major }}
         path: ${{ github.workspace }}/install/**
 
     - name: Upload portable zip
       uses: actions/upload-artifact@v7
       with:
-        name: MeshMC-${{ inputs.artifact-name }}-Portable-Qt${{ inputs.qt-major }}-${{ inputs.version }}-${{ inputs.build-type }}
+        name: Kite-${{ inputs.artifact-name }}-Portable-Qt${{ inputs.qt-major }}-${{ inputs.version }}-${{ inputs.build-type }}
         path: ${{ github.workspace }}/install-portable/**
 
     - name: Upload installer
       uses: actions/upload-artifact@v7
       with:
-        name: MeshMC-${{ inputs.artifact-name }}-Setup-Qt${{ inputs.qt-major }}-${{ inputs.version }}-${{ inputs.build-type }}
-        path: ${{ github.workspace }}/MeshMC-Setup.exe
+        name: Kite-${{ inputs.artifact-name }}-Setup-Qt${{ inputs.qt-major }}-${{ inputs.version }}-${{ inputs.build-type }}
+        path: ${{ github.workspace }}/Kite-Setup.exe

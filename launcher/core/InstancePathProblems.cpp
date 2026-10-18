@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -33,9 +34,9 @@ QList<InstancePathProblem> instancePathProblems(const QStringList& folders,
 	const QString tempFolderText = QCoreApplication::translate(
 		"MainWindow",
 		"This is a problem: <br/>"
-		" - MeshMC will likely be deleted without warning "
+		" - Kite will likely be deleted without warning "
 		"by the operating system <br/>"
-		" - close MeshMC now and extract it to a real "
+		" - close Kite now and extract it to a real "
 		"location, not a temporary folder");
 
 	QList<InstancePathProblem> problems;
@@ -53,7 +54,7 @@ QList<InstancePathProblem> instancePathProblems(const QStringList& folders,
 					  "You have now two options: <br/>"
 					  " - change the instance folder in the settings <br/>"
 					  " - move this installation of %1 to a different folder")
-					  .arg(BuildConfig.MESHMC_NAME) });
+					  .arg(BuildConfig.KITE_NAME) });
 		}
 
 		const QString absolute = QDir(folder).absolutePath();
@@ -63,7 +64,7 @@ QList<InstancePathProblem> instancePathProblems(const QStringList& folders,
 				  QCoreApplication::translate(
 					  "MainWindow",
 					  "Your instance folder \'%1\' contains \'Rar$\' - that "
-					  "means you haven't extracted MeshMC archive!")
+					  "means you haven't extracted Kite archive!")
 					  .arg(folder),
 				  tempFolderText });
 		} else if (absolute.startsWith(tempPath) ||

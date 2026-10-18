@@ -222,18 +222,18 @@ set(CORE_SOURCES
 
 add_unit_test(FileSystem
     SOURCES FileSystem_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     DATA testdata
     )
 
 add_unit_test(GZip
     SOURCES GZip_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 add_unit_test(MMCZip
     SOURCES MMCZip_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 set(PATHMATCHER_SOURCES
@@ -271,7 +271,7 @@ set(NET_SOURCES
 
 add_unit_test(FileSink
     SOURCES net/FileSink_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 # Game launch logic
@@ -307,7 +307,7 @@ set(LAUNCH_SOURCES
 # Detected before the source list below, because whether MacSparkleUpdater can
 # be compiled at all depends on the framework being present -- and a source
 # file that needs headers we do not have is a build failure, not a fallback.
-set(MeshMC_SPARKLE_ENABLED OFF)
+set(Kite_SPARKLE_ENABLED OFF)
 if(APPLE AND NOT "${MACOSX_SPARKLE_UPDATE_PUBLIC_KEY}" STREQUAL "" AND NOT "${MACOSX_SPARKLE_UPDATE_FEED_URL}" STREQUAL "")
     if(NOT EXISTS "${MACOSX_SPARKLE_DIR}/Sparkle.framework")
         message(STATUS "Downloading Sparkle from ${MACOSX_SPARKLE_DOWNLOAD_URL}")
@@ -319,7 +319,7 @@ if(APPLE AND NOT "${MACOSX_SPARKLE_UPDATE_PUBLIC_KEY}" STREQUAL "" AND NOT "${MA
 
     find_library(SPARKLE_FRAMEWORK Sparkle PATHS "${MACOSX_SPARKLE_DIR}" NO_DEFAULT_PATH)
     if(SPARKLE_FRAMEWORK)
-        set(MeshMC_SPARKLE_ENABLED ON)
+        set(Kite_SPARKLE_ENABLED ON)
         message(STATUS "Sparkle updater: ${SPARKLE_FRAMEWORK}")
     else()
         # Not fatal: a build without Sparkle simply has no updater on macOS,
@@ -331,7 +331,7 @@ endif()
 # Updater, launcher side.
 #
 # The launcher never checks for updates itself: it drives the standalone
-# meshmc-updater executable (built below) so that there is exactly one
+# kite-updater executable (built below) so that there is exactly one
 # implementation of "which release applies to this install". macOS is the
 # exception -- there Sparkle replaces the whole .app bundle, signature check
 # included, and reimplementing that would mean reimplementing code signing.
@@ -342,7 +342,7 @@ set(UPDATE_SOURCES
 )
 
 if(APPLE)
-    if(MeshMC_SPARKLE_ENABLED)
+    if(Kite_SPARKLE_ENABLED)
         list(APPEND UPDATE_SOURCES
             updater/MacSparkleUpdater.h
             updater/MacSparkleUpdater.mm
@@ -350,8 +350,8 @@ if(APPLE)
     endif()
 else()
     list(APPEND UPDATE_SOURCES
-        updater/MeshMCExternalUpdater.h
-        updater/MeshMCExternalUpdater.cpp
+        updater/KiteExternalUpdater.h
+        updater/KiteExternalUpdater.cpp
     )
 endif()
 
@@ -418,8 +418,8 @@ set(MINECRAFT_SOURCES
     minecraft/auth/steps/EntitlementsStep.h
     minecraft/auth/steps/GetSkinStep.cpp
     minecraft/auth/steps/GetSkinStep.h
-    minecraft/auth/steps/MeshMCLoginStep.cpp
-    minecraft/auth/steps/MeshMCLoginStep.h
+    minecraft/auth/steps/KiteLoginStep.cpp
+    minecraft/auth/steps/KiteLoginStep.h
     minecraft/auth/steps/MinecraftProfileStep.cpp
     minecraft/auth/steps/MinecraftProfileStep.h
     minecraft/auth/steps/MSAStep.cpp
@@ -452,8 +452,8 @@ set(MINECRAFT_SOURCES
     minecraft/launch/DirectJavaLaunch.h
     minecraft/launch/ExtractNatives.cpp
     minecraft/launch/ExtractNatives.h
-    minecraft/launch/MeshMCPartLaunch.cpp
-    minecraft/launch/MeshMCPartLaunch.h
+    minecraft/launch/KitePartLaunch.cpp
+    minecraft/launch/KitePartLaunch.h
     minecraft/launch/MinecraftServerTarget.cpp
     minecraft/launch/MinecraftServerTarget.h
     minecraft/launch/PrintInstanceInfo.cpp
@@ -565,14 +565,14 @@ set(MINECRAFT_SOURCES
 
 add_unit_test(GradleSpecifier
     SOURCES minecraft/GradleSpecifier_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 add_executable(PackageManifest
     mojang/PackageManifest_test.cpp
 )
 target_link_libraries(PackageManifest
-    MeshMC_logic
+    Kite_logic
     Qt${QT_VERSION_MAJOR}::Test
 )
 target_include_directories(PackageManifest
@@ -586,27 +586,27 @@ add_test(
 
 add_unit_test(MojangVersionFormat
     SOURCES minecraft/MojangVersionFormat_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     DATA minecraft/testdata
     )
 
 add_unit_test(Library
     SOURCES minecraft/Library_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 # Launch preflight: an offline account may still download the game's files, and
 # a failed offline metadata load fails the launch with a reason.
 add_unit_test(LaunchPreflight
     SOURCES minecraft/LaunchPreflight_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # FIXME: shares data with FileSystem test
 add_unit_test(ModFolderModel
     SOURCES minecraft/mod/ModFolderModel_test.cpp
     DATA testdata
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 # Builds its jars and pack folders in a temp directory, so it needs no
@@ -614,24 +614,24 @@ add_unit_test(ModFolderModel
 # iconUrl role ModFolderModel derives from it.
 add_unit_test(LocalModParseTask
     SOURCES minecraft/mod/LocalModParseTask_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 # options.txt editing against a temp file: one line changed in place, the
 # rest (unknown keys, order, the game's own later writes) left alone.
 add_unit_test(GameOptions
     SOURCES minecraft/gameoptions/GameOptions_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 add_unit_test(ParseUtils
     SOURCES minecraft/ParseUtils_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 add_unit_test(World
     SOURCES minecraft/World_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 # the screenshots feature
@@ -647,7 +647,7 @@ set(SCREENSHOTS_SOURCES
 
 add_unit_test(ScreenshotListModel
     SOURCES screenshots/ScreenshotListModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 set(TASKS_SOURCES
@@ -680,7 +680,7 @@ set(SETTINGS_SOURCES
 
 add_unit_test(INIFile
     SOURCES settings/INIFile_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 set(JAVA_SOURCES
@@ -700,7 +700,7 @@ set(JAVA_SOURCES
     java/JavaArgs.cpp
 )
 
-if(NOT MeshMC_DISABLE_JAVA_DOWNLOADER)
+if(NOT Kite_DISABLE_JAVA_DOWNLOADER)
     list(APPEND JAVA_SOURCES
         java/download/JavaRuntime.h
         java/download/JavaDownloadTask.h
@@ -710,7 +710,7 @@ endif()
 
 add_unit_test(JavaVersion
     SOURCES java/JavaVersion_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 set(TRANSLATIONS_SOURCES
@@ -724,7 +724,7 @@ set(TRANSLATIONS_SOURCES
 # network, same reasoning as the IconList test below.
 add_unit_test(TranslationsModel
     SOURCES translations/TranslationsModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 set(TOOLS_SOURCES
@@ -860,7 +860,7 @@ set(CONTENT_DOWNLOAD_SOURCES
 
 add_unit_test(PackContents
     SOURCES modplatform/PackContents_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 set(PLUGIN_SOURCES
@@ -894,7 +894,7 @@ set(PLUGIN_SOURCES
 
 add_unit_test(Index
     SOURCES meta/Index_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 ################################ COMPILE ################################
@@ -931,7 +931,7 @@ set(LOGIC_SOURCES
     ${CONTENT_DOWNLOAD_SOURCES}
 )
 
-SET(MESHMC_SOURCES
+SET(KITE_SOURCES
     # Application base
     Application.h
     Application.cpp
@@ -962,7 +962,7 @@ SET(MESHMC_SOURCES
     resources/breeze_dark/breeze_dark.qrc
     resources/breeze_light/breeze_light.qrc
     resources/shaders/shaders.qrc
-    ${CMAKE_BINARY_DIR}/${MeshMC_AppBinaryName}.qrc
+    ${CMAKE_BINARY_DIR}/${Kite_AppBinaryName}.qrc
 
     # Icons
 
@@ -1081,8 +1081,8 @@ SET(MESHMC_SOURCES
     ui/pages/global/LanguagePage.h
     ui/pages/global/MinecraftPage.cpp
     ui/pages/global/MinecraftPage.h
-    ui/pages/global/MeshMCPage.cpp
-    ui/pages/global/MeshMCPage.h
+    ui/pages/global/KitePage.cpp
+    ui/pages/global/KitePage.h
     ui/pages/global/ProxyPage.cpp
     ui/pages/global/ProxyPage.h
     ui/pages/global/PasteEEPage.cpp
@@ -1195,8 +1195,8 @@ SET(MESHMC_SOURCES
     ui/dialogs/ModUpdateDialog.h
     ui/dialogs/ExportListDialog.cpp
     ui/dialogs/ExportListDialog.h
-    ui/dialogs/MeshMCLogsDialog.cpp
-    ui/dialogs/MeshMCLogsDialog.h
+    ui/dialogs/KiteLogsDialog.cpp
+    ui/dialogs/KiteLogsDialog.h
     ui/dialogs/UntrustedModsDialog.cpp
     ui/dialogs/UntrustedModsDialog.h
 
@@ -1260,11 +1260,11 @@ SET(MESHMC_SOURCES
     ui/instanceview/VisualGroup.h
 )
 
-set(MESHMC_UI_FILES
+set(KITE_UI_FILES
     ui/pages/global/AccountListPage.ui
     ui/pages/global/AppearancePage.ui
     ui/pages/global/JavaPage.ui
-    ui/pages/global/MeshMCPage.ui
+    ui/pages/global/KitePage.ui
     ui/pages/global/PasteEEPage.ui
     ui/pages/global/ProxyPage.ui
     ui/pages/global/MinecraftPage.ui
@@ -1299,7 +1299,7 @@ set(MESHMC_UI_FILES
     ui/dialogs/NewInstanceDialog.ui
     ui/dialogs/NotificationDialog.ui
     ui/dialogs/UpdateAvailableDialog.ui
-    ui/dialogs/MeshMCLogsDialog.ui
+    ui/dialogs/KiteLogsDialog.ui
     ui/dialogs/PluginsDialog.ui
     ui/dialogs/NewComponentDialog.ui
     ui/dialogs/ProfileSelectDialog.ui
@@ -1321,7 +1321,7 @@ set(MESHMC_UI_FILES
 # form in the same directory would declare two rules generating the same
 # ui_*.h, which CMake rejects. Listing the generated sources in both targets
 # is fine -- the rule stays single, and each target simply depends on it.
-set(MESHMC_SHARED_UI_FILES
+set(KITE_SHARED_UI_FILES
     ui/dialogs/ProgressDialog.ui
     ui/widgets/TaskStepProgressBar.ui
 )
@@ -1329,24 +1329,24 @@ set(MESHMC_SHARED_UI_FILES
 # qt6_wrap_ui explicitly rather than the versionless qt_wrap_ui: the latter is
 # a no-op unless QT_DEFAULT_MAJOR_VERSION happens to be set, which would
 # silently generate no ui_*.h headers at all.
-qt6_wrap_ui(MESHMC_UI ${MESHMC_UI_FILES})
-qt6_wrap_ui(MESHMC_SHARED_UI ${MESHMC_SHARED_UI_FILES})
+qt6_wrap_ui(KITE_UI ${KITE_UI_FILES})
+qt6_wrap_ui(KITE_SHARED_UI ${KITE_SHARED_UI_FILES})
 
-if(NOT MeshMC_DISABLE_JAVA_DOWNLOADER)
-    list(APPEND MESHMC_SOURCES
+if(NOT Kite_DISABLE_JAVA_DOWNLOADER)
+    list(APPEND KITE_SOURCES
         ui/dialogs/JavaDownloadDialog.cpp
         ui/dialogs/JavaDownloadDialog.h
     )
 endif()
 
 if (APPLE)
-    set(MESHMC_SOURCES
-        ${MESHMC_SOURCES}
+    set(KITE_SOURCES
+        ${KITE_SOURCES}
         ui/themes/ThemeManager.mm
     )
 endif()
 
-set(MESHMC_QRC_FILES
+set(KITE_QRC_FILES
     resources/backgrounds/backgrounds.qrc
     resources/multimc/multimc.qrc
     resources/pe_dark/pe_dark.qrc
@@ -1361,77 +1361,77 @@ set(MESHMC_QRC_FILES
     resources/breeze_dark/breeze_dark.qrc
     resources/breeze_light/breeze_light.qrc
     resources/shaders/shaders.qrc
-    ${CMAKE_BINARY_DIR}/${MeshMC_AppBinaryName}.qrc
+    ${CMAKE_BINARY_DIR}/${Kite_AppBinaryName}.qrc
 )
 
-# Same reasoning as MESHMC_UI above: never rely on the versionless wrapper.
-qt6_add_resources(MESHMC_RESOURCES ${MESHMC_QRC_FILES})
+# Same reasoning as KITE_UI above: never rely on the versionless wrapper.
+qt6_add_resources(KITE_RESOURCES ${KITE_QRC_FILES})
 
 ######## Windows resource files ########
 if(WIN32)
-    set(MESHMC_RCS ${CMAKE_BINARY_DIR}/${MeshMC_AppBinaryName}.rc)
+    set(KITE_RCS ${CMAKE_BINARY_DIR}/${Kite_AppBinaryName}.rc)
 endif()
 
 # Add executable
 # The launcher is two libraries.
 #
-# MeshMC_core is everything that works without a user interface: instances,
+# Kite_core is everything that works without a user interface: instances,
 # downloads, authentication, mod platforms, settings. It must not link
 # QtWidgets -- that is what lets a QML shell reuse it -- and it is not allowed
 # to know the plugin host or anything under ui/ exists.
 #
-# MeshMC_logic is the plugin host and the widget user interface, built on top
+# Kite_logic is the plugin host and the widget user interface, built on top
 # of the core. It keeps its old name so the application and the unit tests that
 # link it need no change. The plugin host sits here rather than in the core for
 # now: PluginManager renders plugin-supplied widgets and includes MainWindow, so
 # it and the widget UI depend on each other until the declarative plugin ABI
 # replaces that.
-add_library(MeshMC_core STATIC ${LOGIC_SOURCES})
-add_library(MeshMC_logic STATIC ${PLUGIN_SOURCES} ${MESHMC_SOURCES} ${MESHMC_UI} ${MESHMC_SHARED_UI} ${MESHMC_RESOURCES})
-target_link_libraries(MeshMC_logic MeshMC_core)
+add_library(Kite_core STATIC ${LOGIC_SOURCES})
+add_library(Kite_logic STATIC ${PLUGIN_SOURCES} ${KITE_SOURCES} ${KITE_UI} ${KITE_SHARED_UI} ${KITE_RESOURCES})
+target_link_libraries(Kite_logic Kite_core)
 
-# Declared after MeshMC_logic because it links against it.
+# Declared after Kite_logic because it links against it.
 add_unit_test(CustomTheme
     SOURCES ui/themes/CustomTheme_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
-# MeshMC_logic: the plugin host lives there until the declarative plugin ABI
+# Kite_logic: the plugin host lives there until the declarative plugin ABI
 # lets it move out of the widget UI's target.
 add_unit_test(PluginLoader
     SOURCES plugin/PluginLoader_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 add_unit_test(PluginUiRenderer
     SOURCES plugin/PluginUiRenderer_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 add_unit_test(PluginSurfaceModel
     SOURCES plugin/PluginSurfaceModel_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 add_unit_test(PluginListModel
     SOURCES plugin/PluginListModel_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 add_unit_test(Contrast
     SOURCES theme/Contrast_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
-# Links the core alone, not MeshMC_logic: the palette is core and this proves it.
+# Links the core alone, not Kite_logic: the palette is core and this proves it.
 add_unit_test(ThemePalette
     SOURCES theme/ThemePalette_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 add_unit_test(InstanceFilterModel
     SOURCES models/InstanceFilterModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # Mostly exercises InstanceList::newestScreenshotUrl() directly (see
@@ -1441,29 +1441,29 @@ add_unit_test(InstanceFilterModel
 # fixture (InstanceList + NullInstance) instead.
 add_unit_test(InstanceList
     SOURCES InstanceList_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 add_unit_test(LaunchProgressTracker
     SOURCES launch/LaunchProgressTracker_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # The stage a launch reports per step (LaunchTask::startStep()), with
 # NullInstance and hand-made steps -- no game, no network.
 add_unit_test(LaunchTask
     SOURCES launch/LaunchTask_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 add_unit_test(IdSelectionModel
     SOURCES models/IdSelectionModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 add_unit_test(SettingsAdapter
     SOURCES models/SettingsAdapter_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # Exercises only InstanceLogBridge: a full MinecraftInstance (needed for
@@ -1473,7 +1473,7 @@ add_unit_test(SettingsAdapter
 # hand.
 add_unit_test(InstanceLogBridge
     SOURCES models/InstanceDetails_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # Covers what is testable without a LauncherContext or network: AccountList's
@@ -1483,7 +1483,7 @@ add_unit_test(InstanceLogBridge
 # LAUNCHER->network() (via MSAStep) and is not exercised here.
 add_unit_test(AccountsController
     SOURCES models/AccountsController_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # Covers what is testable without a LauncherContext or network: the two
@@ -1494,7 +1494,7 @@ add_unit_test(AccountsController
 # need LAUNCHER->metadataIndex()/instances() and are not exercised here.
 add_unit_test(NewInstanceController
     SOURCES models/NewInstanceController_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # Needs neither a BaseInstance nor a LauncherContext - only a directory to
@@ -1506,7 +1506,7 @@ add_unit_test(NewInstanceController
 # exercises InstanceLogBridge.
 add_unit_test(ServersListModel
     SOURCES models/ServersListModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # JavaController/JavaDownloadController: the pure parts (JVM-argument check,
@@ -1515,11 +1515,11 @@ add_unit_test(ServersListModel
 # needs a LauncherContext and the network, so those are not exercised here.
 add_unit_test(JavaController
     SOURCES models/JavaController_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 add_unit_test(JavaDownloadController
     SOURCES models/JavaDownloadController_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # FolderSettingsController: the path rules ("!" in a path, Flatpak portal
@@ -1527,28 +1527,28 @@ add_unit_test(JavaDownloadController
 # through UiHost and writes settings, which need a LauncherContext.
 add_unit_test(FolderSettingsController
     SOURCES models/FolderSettingsController_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 # UpdateSettingsController against a fake updater backend.
 add_unit_test(UpdateSettingsController
     SOURCES models/UpdateSettingsController_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 add_unit_test(PlayTimeSummary
     SOURCES models/PlayTimeSummary_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 # ComponentTools: the uid/name rules for a new component and the file
 # filtering, plus every action refusing politely without an instance.
 add_unit_test(ComponentTools
     SOURCES models/ComponentTools_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 # CatPackList: discovery of built-in, loose and manifest packs against a
 # temporary folder, and the seasonal pictures.
 add_unit_test(CatPackList
     SOURCES models/CatPackList_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # Exercises only providerFromString() - the one static, instance-free helper
@@ -1557,7 +1557,7 @@ add_unit_test(CatPackList
 # models/ContentBrowser_test.cpp only exercises its own static helpers.
 add_unit_test(ManagedPackController
     SOURCES models/ManagedPackController_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # Exercises RecentWorldsModel::scan() - the static, pure worker a rescan
@@ -1567,45 +1567,45 @@ add_unit_test(ManagedPackController
 # HasCrashedRole tests) - that needs no real MinecraftInstance either.
 add_unit_test(RecentWorldsModel
     SOURCES models/RecentWorldsModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 add_unit_test(AboutInfo
     SOURCES models/AboutInfo_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 add_unit_test(NewsModel
     SOURCES models/NewsModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 add_unit_test(NewsEntry
     SOURCES news/NewsEntry_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 add_unit_test(SkinsController
     SOURCES models/SkinsController_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # Sign-in replies are logged with their tokens redacted.
 add_unit_test(AuthParsers
     SOURCES minecraft/auth/Parsers_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 add_unit_test(InstancePathProblems
     SOURCES core/InstancePathProblems_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # A trivial Task subclass drives status/progress/success/failure by hand;
 # no LauncherContext or network needed.
 add_unit_test(TaskWatcher
     SOURCES tasks/TaskWatcher_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # Exercises only the static JSON parsing helpers (canned search/version
@@ -1613,37 +1613,37 @@ add_unit_test(TaskWatcher
 # ModrinthModpackModel::parseSearchResults().
 add_unit_test(ModrinthModpackModel
     SOURCES modplatform/modrinth/ModrinthModpackModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # A pack description (Markdown with raw HTML, or HTML) -> the plain article
 # HTML the Discover detail page shows; no network, no model.
 add_unit_test(RichBody
     SOURCES models/RichBody_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # WP8: the same static, network-free halves for CurseForge - canned search,
 # file list and description replies, and the search URL's filters.
 add_unit_test(FlameModpackModel
     SOURCES modplatform/flame/FlameModpackModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 add_unit_test(FtbModpackModel
     SOURCES modplatform/modpacksch/FtbModpackModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 add_unit_test(AtlModpackModel
     SOURCES modplatform/atlauncher/AtlModpackModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 add_unit_test(AtlOptionalModsModel
     SOURCES models/AtlOptionalModsModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 add_unit_test(TechnicModpackModel
     SOURCES modplatform/technic/TechnicModpackModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # Exercises only ContentBrowser's static, network-free helpers
@@ -1653,7 +1653,7 @@ add_unit_test(TechnicModpackModel
 # InstanceLogBridge.
 add_unit_test(ContentBrowser
     SOURCES models/ContentBrowser_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # install() itself needs a PackProfile, which needs a MinecraftInstance -
@@ -1666,52 +1666,52 @@ add_unit_test(ContentBrowser
 # instead.
 add_unit_test(LoaderInstaller
     SOURCES models/LoaderInstaller_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 add_unit_test(OtherLogsModel
     SOURCES models/OtherLogsModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # WP7: request composition (key resolution, size limits, .gz reading) and the
 # no-network error path; the PasteUpload round trip itself needs the network.
 add_unit_test(LogUploader
     SOURCES models/LogUploader_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # The launcher's own logs: only the data folder itself is listed (not the
 # instances under it), delete-all leaves everything else alone.
 add_unit_test(LauncherLogs
     SOURCES models/LauncherLogs_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # The Imgur upload's link composition and its refusal paths; the upload itself
 # needs the network and a client id.
 add_unit_test(ScreenshotUploader
     SOURCES models/ScreenshotUploader_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # World install from a generated zip (a minimal level.dat), and MCEdit lookup.
 add_unit_test(WorldTools
     SOURCES models/WorldTools_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # Legacy instance upgrade: recognising a LegacyInstance, naming the copy,
 # refusing anything else. The copy itself is LegacyUpgradeTask's.
 add_unit_test(LegacyUpgrade
     SOURCES models/LegacyUpgrade_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # Log "Find": matching rows of a list model, including a real LogModel.
 add_unit_test(LogFind
     SOURCES models/LogFind_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # Exercised against a real GameOptions (a temp options.txt, no instance
@@ -1720,7 +1720,7 @@ add_unit_test(LogFind
 # this filter is built for.
 add_unit_test(KeyValueFilterModel
     SOURCES models/KeyValueFilterModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 # WP2b: the content list search proxy and list export, driven against a real
@@ -1730,23 +1730,23 @@ add_unit_test(KeyValueFilterModel
 # helpers only, the same reason ContentBrowser_test.cpp is.
 add_unit_test(ContentFilterModel
     SOURCES models/ContentFilterModel_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 add_unit_test(ContentInstallReview
     SOURCES models/ContentInstallReview_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 # WP2a: the update list, the selection filter for a check, which recorded
 # files the dependency check asks about, and forgetting origins on a temp
 # folder. The checks and downloads themselves ask a provider.
 add_unit_test(ContentUpdateController
     SOURCES models/ContentUpdateController_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 # The Markdown export list escapes only what changes meaning in place.
 add_unit_test(ContentListExport
     SOURCES modplatform/ContentListExport_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 # WP1: a plain zip export of a NullInstance over a temp folder (ignore lists,
 # .packignore, unchecking through the tree model) and its failures; the pack
@@ -1754,11 +1754,11 @@ add_unit_test(ContentListExport
 # into a temp folder only, with a stand-in LauncherContext for the icon list.
 add_unit_test(InstanceExportController
     SOURCES models/InstanceExportController_test.cpp
-    LIBS MeshMC_core Qt${QT_VERSION_MAJOR}::Gui
+    LIBS Kite_core Qt${QT_VERSION_MAJOR}::Gui
     )
 add_unit_test(InstanceShortcutController
     SOURCES models/InstanceShortcutController_test.cpp
-    LIBS MeshMC_core Qt${QT_VERSION_MAJOR}::Gui
+    LIBS Kite_core Qt${QT_VERSION_MAJOR}::Gui
     )
 # WP11: groups (rename, delete, fold, move), folders and a duplicate with
 # options, against a real InstanceList of NullInstances in a temp folder.
@@ -1766,12 +1766,12 @@ add_unit_test(InstanceShortcutController
 # would fill the user's own.
 add_unit_test(LibraryController
     SOURCES models/LibraryController_test.cpp
-    LIBS MeshMC_core
+    LIBS Kite_core
     )
 
 add_unit_test(IconTheme
     SOURCES ui/themes/IconTheme_test.cpp
-    LIBS MeshMC_logic
+    LIBS Kite_logic
     )
 
 # Model bookkeeping only (roleNames(), builtin vs. file-based) -- no
@@ -1779,11 +1779,11 @@ add_unit_test(IconTheme
 # since addThemeIcon()/addIcon() never render anything.
 add_unit_test(IconList
     SOURCES icons/IconList_test.cpp
-    LIBS MeshMC_core Qt${QT_VERSION_MAJOR}::Gui
+    LIBS Kite_core Qt${QT_VERSION_MAJOR}::Gui
     )
 
 target_compile_definitions(IconTheme_test PRIVATE
-    MESHMC_MAINWINDOW_UI_PATH="${CMAKE_CURRENT_SOURCE_DIR}/ui/MainWindow.ui")
+    KITE_MAINWINDOW_UI_PATH="${CMAKE_CURRENT_SOURCE_DIR}/ui/MainWindow.ui")
 
 set_tests_properties(IconTheme PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_PLATFORMTHEME="
@@ -1793,9 +1793,9 @@ set_tests_properties(IconTheme PROPERTIES
 # "InstanceList.h"), so that directory is part of the core's interface. Stated
 # here rather than left to CMAKE_INCLUDE_CURRENT_DIR, which only covers targets
 # declared in this directory -- the QML module is declared in launcher/qml/.
-target_include_directories(MeshMC_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(Kite_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(MeshMC_core PUBLIC
+target_link_libraries(Kite_core PUBLIC
     classparser
     nbt++
     ZLIB::ZLIB
@@ -1804,8 +1804,8 @@ target_link_libraries(MeshMC_core PUBLIC
     Katabasis
 )
 
-if(MeshMC_DISABLE_JAVA_DOWNLOADER)
-    target_compile_definitions(MeshMC_core PUBLIC MeshMC_DISABLE_JAVA_DOWNLOADER)
+if(Kite_DISABLE_JAVA_DOWNLOADER)
+    target_compile_definitions(Kite_core PUBLIC Kite_DISABLE_JAVA_DOWNLOADER)
 endif()
 
 # Keep the function/line of every log message in *all* configurations. Qt only
@@ -1816,8 +1816,8 @@ endif()
 # ones in the application target.
 # Cost, knowingly accepted: __FILE__ is baked into the binary for each
 # translation unit that logs, so the binary grows and carries build paths.
-target_compile_definitions(MeshMC_core PUBLIC QT_MESSAGELOGCONTEXT)
-target_link_libraries(MeshMC_core PUBLIC
+target_compile_definitions(Kite_core PUBLIC QT_MESSAGELOGCONTEXT)
+target_link_libraries(Kite_core PUBLIC
     Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Xml
     Qt${QT_VERSION_MAJOR}::Network
@@ -1830,42 +1830,42 @@ target_link_libraries(MeshMC_core PUBLIC
     LocalPeer::LocalPeer
 )
 
-# QtWidgets is linked here and only here. See MeshMC_core_link_check below for
+# QtWidgets is linked here and only here. See Kite_core_link_check below for
 # how that is enforced rather than merely intended.
-target_link_libraries(MeshMC_logic Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(Kite_logic Qt${QT_VERSION_MAJOR}::Widgets)
 
 # Application decides at startup whether to show MainWindow or the QML shell,
 # so it needs the shell compiled in either way. See useQmlShell().
-target_link_libraries(MeshMC_logic MeshMC_qml)
-if(MeshMC_QML_UI)
-    target_compile_definitions(MeshMC_logic PRIVATE MESHMC_QML_UI_DEFAULT)
+target_link_libraries(Kite_logic Kite_qml)
+if(Kite_QML_UI)
+    target_compile_definitions(Kite_logic PRIVATE KITE_QML_UI_DEFAULT)
 endif()
 
-target_link_libraries(MeshMC_logic Qt6::OpenGL)
+target_link_libraries(Kite_logic Qt6::OpenGL)
 
 # Plugin system needs dlopen/dlsym on Unix
 if(UNIX AND NOT APPLE)
-    target_link_libraries(MeshMC_logic ${CMAKE_DL_LIBS})
+    target_link_libraries(Kite_logic ${CMAKE_DL_LIBS})
 endif()
 
 # GpgME (C++ bindings) — MMCO plugin signature verification.
-# Only linked when MeshMC_PLUGIN_SIGNATURES is ON (default off on MSVC,
+# Only linked when Kite_PLUGIN_SIGNATURES is ON (default off on MSVC,
 # because upstream gpgme does not support MSVC). When disabled,
 # PluginSignature.cpp compiles into a stub that reports every module
 # as unsigned and never tries to include any gpgme++ headers.
-if(MeshMC_PLUGIN_SIGNATURES)
+if(Kite_PLUGIN_SIGNATURES)
     # Gpgmepp or GpgmeppStatic, depending on the linkage of the installation
     # that was found; resolved in the top-level CMakeLists.
-    target_link_libraries(MeshMC_logic ${MeshMC_GpgmeppTarget})
-    target_compile_definitions(MeshMC_logic PRIVATE MESHMC_PLUGIN_SIGNATURES=1)
+    target_link_libraries(Kite_logic ${Kite_GpgmeppTarget})
+    target_compile_definitions(Kite_logic PRIVATE KITE_PLUGIN_SIGNATURES=1)
 else()
-    target_compile_definitions(MeshMC_logic PRIVATE MESHMC_PLUGIN_SIGNATURES=0)
+    target_compile_definitions(Kite_logic PRIVATE KITE_PLUGIN_SIGNATURES=0)
 endif()
 
 if(APPLE)
     # PUBLIC on the core: MacSparkleUpdater.mm is core and imports Cocoa, and
-    # ThemeManager.mm in MeshMC_logic inherits it from there.
-    target_link_libraries(MeshMC_core PUBLIC
+    # ThemeManager.mm in Kite_logic inherits it from there.
+    target_link_libraries(Kite_core PUBLIC
         "-framework AppKit"
         "-framework Foundation"
         objc
@@ -1874,13 +1874,13 @@ if(APPLE)
     set(CMAKE_INSTALL_RPATH "@loader_path/../Frameworks/")
 endif()
 
-if(MeshMC_SPARKLE_ENABLED)
+if(Kite_SPARKLE_ENABLED)
     # PUBLIC: Application.cpp decides which updater to construct on the
     # strength of this define, and it is compiled into the application target
     # as well as into the logic library.
-    target_compile_definitions(MeshMC_core PUBLIC MESHMC_SPARKLE_ENABLED)
-    target_include_directories(MeshMC_core PRIVATE "${MACOSX_SPARKLE_DIR}")
-    target_link_libraries(MeshMC_core PUBLIC ${SPARKLE_FRAMEWORK})
+    target_compile_definitions(Kite_core PUBLIC KITE_SPARKLE_ENABLED)
+    target_include_directories(Kite_core PRIVATE "${MACOSX_SPARKLE_DIR}")
+    target_link_libraries(Kite_core PUBLIC ${SPARKLE_FRAMEWORK})
 
     # Sparkle has to ship inside the bundle: it is loaded at runtime, and it
     # is what checks the signature of the update it installs.
@@ -1891,10 +1891,10 @@ endif()
 
 ######## The core must link without QtWidgets ########
 
-# Not linking Qt::Widgets into MeshMC_core is not enough on its own to keep
+# Not linking Qt::Widgets into Kite_core is not enough on its own to keep
 # widgets out of it. A static library is never linked by itself -- unresolved
 # symbols are left for the final executable, which does link QtWidgets through
-# MeshMC_logic -- and on macOS all Qt frameworks sit in one directory, so
+# Kite_logic -- and on macOS all Qt frameworks sit in one directory, so
 # #include <QtWidgets/QWidget> resolves through the framework search path even
 # without the target. Either way a widget dependency would slip in unnoticed.
 #
@@ -1903,13 +1903,13 @@ endif()
 # is given nothing that could satisfy a QtWidgets symbol. If any core object
 # needs one, this target fails to link and the build breaks, on every platform,
 # in CI and locally alike. It is part of `all` on purpose.
-add_executable(MeshMC_core_link_check core/CoreLinkCheck.cpp)
-target_link_libraries(MeshMC_core_link_check PRIVATE
-    "$<LINK_LIBRARY:WHOLE_ARCHIVE,MeshMC_core>")
+add_executable(Kite_core_link_check core/CoreLinkCheck.cpp)
+target_link_libraries(Kite_core_link_check PRIVATE
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,Kite_core>")
 
 # Listed as a test as well, so the invariant has a name in the ctest output
 # and is not only visible as a link step when it fails.
-add_test(NAME CoreLinksWithoutQtWidgets COMMAND MeshMC_core_link_check)
+add_test(NAME CoreLinksWithoutQtWidgets COMMAND Kite_core_link_check)
 
 ######## QML user interface module ########
 
@@ -1923,111 +1923,111 @@ add_subdirectory(qml)
 # Proves the QML toolchain end to end: module built, resources at the expected
 # prefix, engine can instantiate the root component. All three fail silently
 # otherwise -- a green build and an application that renders nothing.
-# MeshMC_qml is linked explicitly: it carries the compiled .qml resources and
+# Kite_qml is linked explicitly: it carries the compiled .qml resources and
 # puts the module plugins in the link closure, which is where
 # qt_import_qml_plugins looks for them. Relying on qmlimportscanner to find
 # them from the test's sources alone worked on macOS but left Main.qml out of
 # the resources on Linux.
 add_unit_test(QmlModule
     SOURCES qml/QmlModule_test.cpp
-    LIBS MeshMC_qml Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
+    LIBS Kite_qml Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
     )
 
 # qt_add_qml_module builds the module as a static library plus a separate QML
 # plugin, and the engine refuses the module without it. qt_add_executable would
 # emit the import automatically during finalization, but add_unit_test uses a
 # plain add_executable, so it has to be asked for by hand -- otherwise the test
-# links and then fails at runtime with 'plugin "MeshMC_qmlplugin" not found'.
+# links and then fails at runtime with 'plugin "Kite_qmlplugin" not found'.
 qt_import_qml_plugins(QmlModule_test)
 
-# MeshMC_logic rather than the core: the built-in icons are compiled from
-# multimc.qrc into MeshMC_logic, and a test where every key falls back to the
+# Kite_logic rather than the core: the built-in icons are compiled from
+# multimc.qrc into Kite_logic, and a test where every key falls back to the
 # default icon would prove nothing.
 add_unit_test(InstanceIconProvider
     SOURCES qml/InstanceIconProvider_test.cpp
-    LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
+    LIBS Kite_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 
 # Exercises only AccountFaceProvider::faceFromSkin(), the pure compositing
 # helper -- requestPixmap() itself needs a real LauncherContext/AccountList,
-# which is neither cheap nor hermetic to fake here. MeshMC_logic (rather than
-# just MeshMC_core) because AccountFaceProvider.cpp lives in MeshMC_qml,
-# which MeshMC_logic links.
+# which is neither cheap nor hermetic to fake here. Kite_logic (rather than
+# just Kite_core) because AccountFaceProvider.cpp lives in Kite_qml,
+# which Kite_logic links.
 add_unit_test(AccountFaceProvider
     SOURCES qml/AccountFaceProvider_test.cpp
-    LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
+    LIBS Kite_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 
 add_unit_test(ScreenshotThumbnailProvider
     SOURCES qml/ScreenshotThumbnailProvider_test.cpp
-    LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
+    LIBS Kite_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 
 add_unit_test(ModIconProvider
     SOURCES qml/ModIconProvider_test.cpp
-    LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
+    LIBS Kite_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 
 # Exercises only sanitizedInstanceName(), the free-standing helper
 # renameInstance()/duplicateInstance() build on -- the rest of QmlShell needs
 # a real LauncherContext, same reason NewInstanceController_test.cpp only
-# covers composeSuggestedInstanceName(). MeshMC_logic because QmlShell.cpp
-# lives in MeshMC_qml, which MeshMC_logic links.
+# covers composeSuggestedInstanceName(). Kite_logic because QmlShell.cpp
+# lives in Kite_qml, which Kite_logic links.
 add_unit_test(QmlShell
     SOURCES qml/QmlShell_test.cpp
-    LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
+    LIBS Kite_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 
 # Drives QmlUiHost headlessly: answers a pending request from a queued
 # QTimer the way QML would, and checks cancellation (quit and this object's
-# own destruction) and busy nesting. MeshMC_logic because QmlUiHost.cpp
-# lives in MeshMC_qml, which MeshMC_logic links.
+# own destruction) and busy nesting. Kite_logic because QmlUiHost.cpp
+# lives in Kite_qml, which Kite_logic links.
 add_unit_test(QmlUiHost
     SOURCES qml/QmlUiHost_test.cpp
-    LIBS MeshMC_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
+    LIBS Kite_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 
-add_executable(${MeshMC_Name} MACOSX_BUNDLE WIN32 main.cpp ${MESHMC_RCS})
+add_executable(${Kite_Name} MACOSX_BUNDLE WIN32 main.cpp ${KITE_RCS})
 # Keyword signature: qt_import_qml_plugins below links with PRIVATE, and CMake
 # refuses to mix the two forms on one target.
-target_link_libraries(${MeshMC_Name} PRIVATE MeshMC_logic)
+target_link_libraries(${Kite_Name} PRIVATE Kite_logic)
 
-# Same reason as QmlModule_test: MeshMC_qml is a static QML module with a
+# Same reason as QmlModule_test: Kite_qml is a static QML module with a
 # separate plugin, and a plain add_executable does not import it. Without this
-# the launcher links and then fails at runtime with 'plugin "MeshMC_qmlplugin"
+# the launcher links and then fails at runtime with 'plugin "Kite_qmlplugin"
 # not found' the moment the QML shell loads.
-qt_import_qml_plugins(${MeshMC_Name})
+qt_import_qml_plugins(${Kite_Name})
 
 # Export all symbols so dlopen()'ed .mmco plugins can resolve launcher symbols at runtime
-set_target_properties(${MeshMC_Name} PROPERTIES ENABLE_EXPORTS ON)
+set_target_properties(${Kite_Name} PROPERTIES ENABLE_EXPORTS ON)
 
 if(MSVC)
-    target_link_options(${MeshMC_Name} PRIVATE "/MANIFEST:NO")
+    target_link_options(${Kite_Name} PRIVATE "/MANIFEST:NO")
 endif()
 
-if(DEFINED MeshMC_AppBinaryName)
-    set_target_properties(${MeshMC_Name} PROPERTIES OUTPUT_NAME "${MeshMC_AppBinaryName}")
+if(DEFINED Kite_AppBinaryName)
+    set_target_properties(${Kite_Name} PROPERTIES OUTPUT_NAME "${Kite_AppBinaryName}")
 endif()
 if(APPLE)
-    set_target_properties(${MeshMC_Name} PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/MacOSXBundleInfo.plist.in")
+    set_target_properties(${Kite_Name} PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/MacOSXBundleInfo.plist.in")
 endif()
-if(DEFINED MeshMC_BINARY_RPATH)
-    SET_TARGET_PROPERTIES(${MeshMC_Name} PROPERTIES INSTALL_RPATH "${MeshMC_BINARY_RPATH}")
+if(DEFINED Kite_BINARY_RPATH)
+    SET_TARGET_PROPERTIES(${Kite_Name} PROPERTIES INSTALL_RPATH "${Kite_BINARY_RPATH}")
 endif()
 
-if(DEFINED MeshMC_APP_BINARY_DEFS)
-    target_compile_definitions(${MeshMC_Name} PRIVATE ${MeshMC_APP_BINARY_DEFS})
-    target_compile_definitions(MeshMC_logic PRIVATE ${MeshMC_APP_BINARY_DEFS})
+if(DEFINED Kite_APP_BINARY_DEFS)
+    target_compile_definitions(${Kite_Name} PRIVATE ${Kite_APP_BINARY_DEFS})
+    target_compile_definitions(Kite_logic PRIVATE ${Kite_APP_BINARY_DEFS})
 endif()
 
 if(APPLE)
     # CMake derives an app bundle's *directory* name from the target's
     # OUTPUT_NAME, and there is no property to decouple the two: with
-    # OUTPUT_NAME "meshmc" the only thing install(TARGETS ... BUNDLE) can
-    # produce is "meshmc.app" (RUNTIME DESTINATION is silently ignored for
+    # OUTPUT_NAME "kite" the only thing install(TARGETS ... BUNDLE) can
+    # produce is "kite.app" (RUNTIME DESTINATION is silently ignored for
     # bundle targets, and omitting BUNDLE DESTINATION is a hard error).
     #
-    # Everything else, however, installs into "MeshMC.app": BINARY_DEST_DIR,
+    # Everything else, however, installs into "Kite.app": BINARY_DEST_DIR,
     # FRAMEWORK_DEST_DIR, RESOURCES_DEST_DIR, JARS_DEST_DIR, the MMCO_*
     # directories, the .icns/Assets.car rules in the top-level CMakeLists,
     # the qt_deploy_runtime_dependencies() call below and the macOS
@@ -2038,17 +2038,17 @@ if(APPLE)
     # a bundle.
     #
     # Install the bundle into a staging directory (a name that cannot
-    # collide with MeshMC.app under either casing rule) and merge it into
+    # collide with Kite.app under either casing rule) and merge it into
     # place. The staging hop is not cosmetic: install(TARGETS) is what
     # rewrites the build RPATH into INSTALL_RPATH via install_name_tool,
     # and it only does that for the copy it makes itself. Copying the
     # build-tree bundle directly would ship a binary still pointing at the
     # build directory.
-    set(MeshMC_BundleStagingDir "_meshmc_bundle_staging")
+    set(Kite_BundleStagingDir "_kite_bundle_staging")
 
-    install(TARGETS ${MeshMC_Name}
+    install(TARGETS ${Kite_Name}
         RUNTIME_DEPENDENCY_SET LAUNCHER_DEPENDENCY_SET
-        BUNDLE DESTINATION "${MeshMC_BundleStagingDir}"
+        BUNDLE DESTINATION "${Kite_BundleStagingDir}"
         LIBRARY DESTINATION ${LIBRARY_DEST_DIR}
     )
 
@@ -2056,21 +2056,21 @@ if(APPLE)
     # below, which expects the binary to already sit at
     # ${BINARY_DEST_DIR}/$<TARGET_FILE_NAME>.
     install(CODE "
-        set(_meshmc_prefix \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}\")
-        set(_meshmc_staging \"\${_meshmc_prefix}/${MeshMC_BundleStagingDir}\")
-        set(_meshmc_staged_bundle \"\${_meshmc_staging}/$<TARGET_BUNDLE_DIR_NAME:${MeshMC_Name}>\")
-        set(_meshmc_bundle \"\${_meshmc_prefix}/${MeshMC_Name}.app\")
-        if(NOT IS_DIRECTORY \"\${_meshmc_staged_bundle}\")
+        set(_kite_prefix \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}\")
+        set(_kite_staging \"\${_kite_prefix}/${Kite_BundleStagingDir}\")
+        set(_kite_staged_bundle \"\${_kite_staging}/$<TARGET_BUNDLE_DIR_NAME:${Kite_Name}>\")
+        set(_kite_bundle \"\${_kite_prefix}/${Kite_Name}.app\")
+        if(NOT IS_DIRECTORY \"\${_kite_staged_bundle}\")
             message(FATAL_ERROR
-                \"Staged app bundle '\${_meshmc_staged_bundle}' is missing; \"
-                \"cannot assemble ${MeshMC_Name}.app\")
+                \"Staged app bundle '\${_kite_staged_bundle}' is missing; \"
+                \"cannot assemble ${Kite_Name}.app\")
         endif()
-        message(STATUS \"Merging \${_meshmc_staged_bundle} into \${_meshmc_bundle}\")
-        file(COPY \"\${_meshmc_staged_bundle}/\" DESTINATION \"\${_meshmc_bundle}\")
-        file(REMOVE_RECURSE \"\${_meshmc_staging}\")
+        message(STATUS \"Merging \${_kite_staged_bundle} into \${_kite_bundle}\")
+        file(COPY \"\${_kite_staged_bundle}/\" DESTINATION \"\${_kite_bundle}\")
+        file(REMOVE_RECURSE \"\${_kite_staging}\")
     ")
 else()
-    install(TARGETS ${MeshMC_Name}
+    install(TARGETS ${Kite_Name}
         RUNTIME_DEPENDENCY_SET LAUNCHER_DEPENDENCY_SET
         BUNDLE DESTINATION ${BUNDLE_DEST_DIR}
         LIBRARY DESTINATION ${LIBRARY_DEST_DIR}
@@ -2091,7 +2091,7 @@ if(NOT APPLE)
         updater/meshupdater/SelectReleaseDialog.ui
     )
 
-    # Never the versionless wrapper, for the same reason as MESHMC_UI above.
+    # Never the versionless wrapper, for the same reason as KITE_UI above.
     qt6_wrap_ui(MESHUPDATER_UI ${MESHUPDATER_UI_FILES})
 
     set(MESHUPDATER_SOURCES
@@ -2128,17 +2128,17 @@ if(NOT APPLE)
         tasks/Task.cpp
 
         # The download uses the launcher's own progress dialog, so it looks
-        # like every other download MeshMC does.
+        # like every other download Kite does.
         ui/dialogs/ProgressDialog.h
         ui/dialogs/ProgressDialog.cpp
         ui/widgets/TaskStepProgressBar.h
         ui/widgets/TaskStepProgressBar.cpp
     )
 
-    add_library(meshmc_updater_logic STATIC ${MESHUPDATER_SOURCES} ${MESHUPDATER_UI} ${MESHMC_SHARED_UI})
-    target_include_directories(meshmc_updater_logic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-    target_compile_definitions(meshmc_updater_logic PUBLIC QT_MESSAGELOGCONTEXT)
-    target_link_libraries(meshmc_updater_logic
+    add_library(kite_updater_logic STATIC ${MESHUPDATER_SOURCES} ${MESHUPDATER_UI} ${KITE_SHARED_UI})
+    target_include_directories(kite_updater_logic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    target_compile_definitions(kite_updater_logic PUBLIC QT_MESSAGELOGCONTEXT)
+    target_link_libraries(kite_updater_logic
         Qt${QT_VERSION_MAJOR}::Core
         Qt${QT_VERSION_MAJOR}::Gui
         Qt${QT_VERSION_MAJOR}::Widgets
@@ -2150,43 +2150,43 @@ if(NOT APPLE)
 
     # WIN32: no console window while updating. Diagnostics go to the log file,
     # and --debug borrows the parent console when there is one.
-    add_executable(meshmc-updater WIN32 updater/meshupdater/updater_main.cpp)
+    add_executable(kite-updater WIN32 updater/meshupdater/updater_main.cpp)
     if(WIN32)
-        target_sources(meshmc-updater PRIVATE updater/meshupdater/updater.exe.manifest)
+        target_sources(kite-updater PRIVATE updater/meshupdater/updater.exe.manifest)
     endif()
-    target_link_libraries(meshmc-updater meshmc_updater_logic)
+    target_link_libraries(kite-updater kite_updater_logic)
 
     if(MSVC)
         # The manifest above is embedded explicitly; letting the linker
         # generate one as well is an error.
-        target_link_options(meshmc-updater PRIVATE "/MANIFEST:NO")
+        target_link_options(kite-updater PRIVATE "/MANIFEST:NO")
     endif()
 
-    if(DEFINED MeshMC_BINARY_RPATH)
-        set_target_properties(meshmc-updater PROPERTIES INSTALL_RPATH "${MeshMC_BINARY_RPATH}")
+    if(DEFINED Kite_BINARY_RPATH)
+        set_target_properties(kite-updater PROPERTIES INSTALL_RPATH "${Kite_BINARY_RPATH}")
     endif()
 
-    # Next to the launcher, which is where MeshMCExternalUpdater looks for it
+    # Next to the launcher, which is where KiteExternalUpdater looks for it
     # -- and where Application::updaterEnabled() checks before offering
     # updates at all.
-    install(TARGETS meshmc-updater
+    install(TARGETS kite-updater
         RUNTIME DESTINATION "${BINARY_DEST_DIR}"
     )
 
     add_unit_test(AssetMatcher
         SOURCES updater/meshupdater/AssetMatcher_test.cpp
-        LIBS meshmc_updater_logic
+        LIBS kite_updater_logic
         )
 
     add_unit_test(ReleaseArchive
         SOURCES updater/meshupdater/ReleaseArchive_test.cpp
-        LIBS meshmc_updater_logic LibArchive::LibArchive
+        LIBS kite_updater_logic LibArchive::LibArchive
         )
 
     # The file the two passes of an install hand over through.
     add_unit_test(UpdateLockFile
         SOURCES updater/UpdateLockFile_test.cpp
-        LIBS meshmc_updater_logic
+        LIBS kite_updater_logic
         )
 endif()
 
@@ -2273,9 +2273,9 @@ if(WIN32 OR (UNIX AND APPLE))
         # --release even when the app itself is built in Debug mode.
         #
         # --qmldir points windeployqt at our QML sources so qmlimportscanner
-        # can see what our own qt_add_qml_module() modules import (MeshMC,
-        # MeshMC.Theme, MeshMC.Style and MeshMC.Components are compiled into
-        # meshmc.exe as static QML modules, but the Qt-provided modules they
+        # can see what our own qt_add_qml_module() modules import (Kite,
+        # Kite.Theme, Kite.Style and Kite.Components are compiled into
+        # kite.exe as static QML modules, but the Qt-provided modules they
         # import -- QtQuick, QtQuick.Controls, QtQml, ... -- are not, and
         # still have to be deployed as plugins). --no-quick-import used to be
         # passed here, which skipped QML deployment entirely and left the
@@ -2332,8 +2332,8 @@ if(WIN32 OR (UNIX AND APPLE))
         # qt_deploy_runtime_dependencies() below only follows *linked*
         # libraries and Qt's regular (dlopen()'d-by-plugin-type) plugins; it
         # does not know about QML modules, which are dlopen()'d by URI at
-        # run time. Our own modules (MeshMC, MeshMC.Theme, MeshMC.Style,
-        # MeshMC.Components) are compiled into meshmc itself via
+        # run time. Our own modules (Kite, Kite.Theme, Kite.Style,
+        # Kite.Components) are compiled into kite itself via
         # qt_import_qml_plugins() and need nothing here. The modules those
         # import from Qt -- QtQuick, QtQuick.Controls, QtQml, ... -- are not
         # compiled in and are otherwise entirely missing from the bundle.
@@ -2345,7 +2345,7 @@ if(WIN32 OR (UNIX AND APPLE))
         # below so its ADDITIONAL_LIBRARIES can include these plugins: each
         # one has its own dependencies (e.g. libqtquickcontrols2plugin.dylib
         # needs QtQuickControls2Impl.framework) that nothing linked into
-        # meshmc itself pulls in, and qt_deploy_runtime_dependencies is the
+        # kite itself pulls in, and qt_deploy_runtime_dependencies is the
         # tool that already knows how to resolve and copy those correctly
         # (whole .framework bundles, symlink chains and all) rather than
         # reimplementing that here.
@@ -2362,7 +2362,7 @@ if(WIN32 OR (UNIX AND APPLE))
                 "${QT_LIBEXECS_DIR} and Qt${QT_VERSION_MAJOR}_DIR="
                 "${Qt${QT_VERSION_MAJOR}_DIR}/../..). It ships with Qt's "
                 "qtdeclarative tools and is required to know which Qt QML "
-                "modules to bundle into ${MeshMC_Name}.app.")
+                "modules to bundle into ${Kite_Name}.app.")
         endif()
 
         execute_process(
@@ -2381,27 +2381,27 @@ if(WIN32 OR (UNIX AND APPLE))
         # Pull "relativePath" out of the scanner's JSON by hand rather than
         # depending on CMake 3.19's string(JSON ...), which the floor here
         # does not guarantee. Modules the scanner could not resolve on disk
-        # (our own MeshMC.* modules, looked up only via -importPath) have no
+        # (our own Kite.* modules, looked up only via -importPath) have no
         # "relativePath" key at all, so they never match and are correctly
         # left out -- they are compiled in, not deployed.
         string(REGEX MATCHALL "\"relativePath\": *\"[^\"]*\""
             _qml_relpath_matches "${_qml_scan_json}")
-        set(MESHMC_QT_QML_MODULES "")
+        set(KITE_QT_QML_MODULES "")
         foreach(_qml_match IN LISTS _qml_relpath_matches)
             string(REGEX REPLACE "\"relativePath\": *\"([^\"]*)\"" "\\1"
                 _qml_relpath "${_qml_match}")
-            list(APPEND MESHMC_QT_QML_MODULES "${_qml_relpath}")
+            list(APPEND KITE_QT_QML_MODULES "${_qml_relpath}")
         endforeach()
-        list(REMOVE_DUPLICATES MESHMC_QT_QML_MODULES)
+        list(REMOVE_DUPLICATES KITE_QT_QML_MODULES)
 
-        if(NOT MESHMC_QT_QML_MODULES)
+        if(NOT KITE_QT_QML_MODULES)
             message(FATAL_ERROR
                 "qmlimportscanner reported no deployable Qt QML modules for "
                 "launcher/qml. qt.conf's QmlImports would point at an empty "
                 "directory and the QML shell would fail to load QtQuick at "
                 "startup, so this is a hard error rather than a warning.")
         endif()
-        message(STATUS "Qt QML modules to bundle into ${MeshMC_Name}.app: ${MESHMC_QT_QML_MODULES}")
+        message(STATUS "Qt QML modules to bundle into ${Kite_Name}.app: ${KITE_QT_QML_MODULES}")
 
         # Destination-relative path of each module's plugin binary (if any),
         # once copied below -- NOT the original file under $QT_QML_DIR.
@@ -2413,24 +2413,24 @@ if(WIN32 OR (UNIX AND APPLE))
         # machinery against files in the Qt installation itself -- rewriting
         # a shared, developer-machine-wide Qt install as a side effect of
         # packaging our own app is not something a build should ever do.
-        set(MESHMC_QT_QML_PLUGIN_FILES "")
-        foreach(_qml_module IN LISTS MESHMC_QT_QML_MODULES)
+        set(KITE_QT_QML_PLUGIN_FILES "")
+        foreach(_qml_module IN LISTS KITE_QT_QML_MODULES)
             file(GLOB _qml_module_plugin_libs "${QT_QML_DIR}/${_qml_module}/*.dylib")
             foreach(_qml_module_plugin_lib IN LISTS _qml_module_plugin_libs)
                 get_filename_component(_qml_plugin_name "${_qml_module_plugin_lib}" NAME)
-                list(APPEND MESHMC_QT_QML_PLUGIN_FILES "${QML_DEST_DIR}/${_qml_module}/${_qml_plugin_name}")
+                list(APPEND KITE_QT_QML_PLUGIN_FILES "${QML_DEST_DIR}/${_qml_module}/${_qml_plugin_name}")
             endforeach()
         endforeach()
 
         # Pre-render as one quoted argument per line, same reason as
         # WINDEPLOYQT_OPTIONS_CODE above: splicing the list directly into the
         # CONTENT string would paste it in semicolon-separated.
-        set(MESHMC_QT_QML_PLUGIN_FILES_CODE "")
-        foreach(_qml_plugin_file IN LISTS MESHMC_QT_QML_PLUGIN_FILES)
-            string(APPEND MESHMC_QT_QML_PLUGIN_FILES_CODE "\n                    \"${_qml_plugin_file}\"")
+        set(KITE_QT_QML_PLUGIN_FILES_CODE "")
+        foreach(_qml_plugin_file IN LISTS KITE_QT_QML_PLUGIN_FILES)
+            string(APPEND KITE_QT_QML_PLUGIN_FILES_CODE "\n                    \"${_qml_plugin_file}\"")
         endforeach()
 
-        foreach(_qml_module IN LISTS MESHMC_QT_QML_MODULES)
+        foreach(_qml_module IN LISTS KITE_QT_QML_MODULES)
             # Copy only the files ${_qml_module} owns directly (its qmldir,
             # plugin binary, any local .qml/.qmltypes) -- not recursively.
             # $QT_QML_DIR nests *other*, unrelated QML modules as
@@ -2448,7 +2448,7 @@ if(WIN32 OR (UNIX AND APPLE))
             #
             # Runs ahead of the qt_deploy_runtime_dependencies() script below
             # (registered via install(SCRIPT), further down) so that by the
-            # time it inspects ${MESHMC_QT_QML_PLUGIN_FILES}, those files
+            # time it inspects ${KITE_QT_QML_PLUGIN_FILES}, those files
             # already exist at their *installed* location -- install rules
             # run in registration order within a directory.
             install(CODE "
@@ -2471,26 +2471,26 @@ if(WIN32 OR (UNIX AND APPLE))
         # follows *linked* libraries and Qt's regular
         # (dlopen()'d-by-plugin-type) plugins; it does not know about QML
         # modules, which are dlopen()'d by URI at run time. Our own modules
-        # (MeshMC, MeshMC.Theme, MeshMC.Style, MeshMC.Components) are
-        # compiled into meshmc itself via qt_import_qml_plugins() and need
+        # (Kite, Kite.Theme, Kite.Style, Kite.Components) are
+        # compiled into kite itself via qt_import_qml_plugins() and need
         # nothing here. The Qt QML plugins copied in just above are not
         # compiled in, though, and have dependencies of their own (e.g.
         # libqtquickcontrols2plugin.dylib needs QtQuickControls2Impl.framework)
-        # that nothing linked into meshmc itself pulls in -- ADDITIONAL_LIBRARIES
+        # that nothing linked into kite itself pulls in -- ADDITIONAL_LIBRARIES
         # is what makes qt_deploy_runtime_dependencies also resolve and copy
         # those (whole .framework bundles, symlink chains and all) rather
         # than reimplementing that here.
         qt_generate_deploy_script(
-            TARGET ${MeshMC_Name}
+            TARGET ${Kite_Name}
             OUTPUT_SCRIPT QT_DEPLOY_SCRIPT
             CONTENT "
             qt_deploy_runtime_dependencies(
-                EXECUTABLE ${BINARY_DEST_DIR}/$<TARGET_FILE_NAME:${MeshMC_Name}>
+                EXECUTABLE ${BINARY_DEST_DIR}/$<TARGET_FILE_NAME:${Kite_Name}>
                 BIN_DIR ${BINARY_DEST_DIR}
                 LIBEXEC_DIR ${BINARY_DEST_DIR}
                 LIB_DIR ${LIBRARY_DEST_DIR}
                 PLUGINS_DIR ${PLUGIN_DEST_DIR}
-                ADDITIONAL_LIBRARIES${MESHMC_QT_QML_PLUGIN_FILES_CODE}
+                ADDITIONAL_LIBRARIES${KITE_QT_QML_PLUGIN_FILES_CODE}
                 NO_OVERWRITE
                 NO_TRANSLATIONS
                 NO_COMPILER_RUNTIME
@@ -2500,7 +2500,7 @@ if(WIN32 OR (UNIX AND APPLE))
             SCRIPT ${QT_DEPLOY_SCRIPT}
         )
 
-        foreach(_qml_module IN LISTS MESHMC_QT_QML_MODULES)
+        foreach(_qml_module IN LISTS KITE_QT_QML_MODULES)
             # Each plugin .dylib in ${_qml_module} carries an @loader_path
             # (or @rpath) reference to sibling Qt frameworks, resolved
             # relative to *its original location* inside the Qt install
@@ -2577,7 +2577,7 @@ if(WIN32 OR (UNIX AND APPLE))
                     --dir \"\${CMAKE_INSTALL_PREFIX}/${BINARY_DEST_DIR}\"
                     --libdir \"\${CMAKE_INSTALL_PREFIX}/${LIBRARY_DEST_DIR}\"
                     --plugindir \"\${CMAKE_INSTALL_PREFIX}/${PLUGIN_DEST_DIR}\"
-                    \"\${CMAKE_INSTALL_PREFIX}/${BINARY_DEST_DIR}/$<TARGET_FILE_NAME:${MeshMC_Name}>\"
+                    \"\${CMAKE_INSTALL_PREFIX}/${BINARY_DEST_DIR}/$<TARGET_FILE_NAME:${Kite_Name}>\"
                 RESULT_VARIABLE _deploy_result
             )
             if(NOT _deploy_result EQUAL 0)
@@ -2598,18 +2598,18 @@ if(WIN32 OR (UNIX AND APPLE))
         # (MSYS2's Qt wants the 3.x ABI), and picking up whatever happens to sit
         # in a bin directory is how you end up shipping a DLL Qt cannot use.
         # CI passes the exact files.
-        if(MeshMC_BUNDLE_OPENSSL_LIBS)
-            foreach(_openssl_lib IN LISTS MeshMC_BUNDLE_OPENSSL_LIBS)
+        if(Kite_BUNDLE_OPENSSL_LIBS)
+            foreach(_openssl_lib IN LISTS Kite_BUNDLE_OPENSSL_LIBS)
                 if(NOT EXISTS "${_openssl_lib}")
                     message(FATAL_ERROR
-                        "MeshMC_BUNDLE_OPENSSL_LIBS lists '${_openssl_lib}', "
+                        "Kite_BUNDLE_OPENSSL_LIBS lists '${_openssl_lib}', "
                         "which does not exist. Shipping the package without it "
                         "would leave the launcher unable to make any HTTPS "
                         "request, so this is a hard error rather than a warning.")
                 endif()
                 message(STATUS "Bundling OpenSSL runtime: ${_openssl_lib}")
             endforeach()
-            install(FILES ${MeshMC_BUNDLE_OPENSSL_LIBS} DESTINATION ${BINARY_DEST_DIR})
+            install(FILES ${Kite_BUNDLE_OPENSSL_LIBS} DESTINATION ${BINARY_DEST_DIR})
         endif()
     endif()
 

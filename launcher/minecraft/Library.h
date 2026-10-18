@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -178,7 +179,7 @@ class Library
 									   const QString& overridePath) const;
 
   private: /* methods */
-	/// the default storage prefix used by MeshMC
+	/// the default storage prefix used by Kite
 	static QString defaultStoragePrefix();
 
 	/// Get the prefix - root of the storage to be used
@@ -199,24 +200,24 @@ class Library
 	/// DEPRECATED URL prefix of the maven repo where the file can be downloaded
 	QString m_repositoryURL;
 
-	/// DEPRECATED: MeshMC-specific absolute URL. takes precedence over the
+	/// DEPRECATED: Kite-specific absolute URL. takes precedence over the
 	/// implicit maven repo URL, if defined
 	QString m_absoluteURL;
 
-	/// MeshMC extension - filename override
+	/// Kite extension - filename override
 	QString m_filename;
 
-	/// DEPRECATED MeshMC extension - display name
+	/// DEPRECATED Kite extension - display name
 	QString m_displayname;
 
 	/**
-	 * MeshMC-specific type hint - modifies how the library is treated
+	 * Kite-specific type hint - modifies how the library is treated
 	 */
 	QString m_hint;
 
 	/**
-	 * storage - by default the local libraries folder in meshmc, but could be
-	 * elsewhere MeshMC specific, because of FTB.
+	 * storage - by default the local libraries folder in kite, but could be
+	 * elsewhere Kite specific, because of FTB.
 	 */
 	QString m_storagePrefix;
 

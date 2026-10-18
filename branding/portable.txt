@@ -1,4 +1,4 @@
-This file enables the portable mode for MeshMC.
+This file enables the portable mode for Kite.
 
-If this file is present in the root directory of MeshMC, it will store all data here. Otherwise it will store your data in your appdata directory.
-You can safely delete this file, if you don't want MeshMC to store your data here.
+If this file is present in the root directory of Kite, it will store all data here. Otherwise it will store your data in your appdata directory.
+You can safely delete this file, if you don't want Kite to store your data here.

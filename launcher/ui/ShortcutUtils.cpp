@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -71,7 +72,7 @@ namespace ShortcutUtils
 		 * reproduced with Qt 6.11 on the offscreen platform, so rather
 		 * than trust either answer the icon is simply put back: restoring
 		 * one that never changed costs nothing. It is the window's icon
-		 * and not the application's, because MeshMC only ever sets the
+		 * and not the application's, because Kite only ever sets the
 		 * former. */
 		bool run(const Shortcut& shortcut,
 				 const std::function<InstanceShortcuts::Result()>& write)

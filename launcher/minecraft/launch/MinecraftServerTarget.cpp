@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -37,7 +38,7 @@ MinecraftServerTarget MinecraftServerTarget::parse(const QString& fullAddress,
 
 	// The logic below replicates the exact logic minecraft uses for parsing
 	// server addresses. While the conversion is not lossless and eats errors,
-	// it ensures the same behavior within Minecraft and MeshMC when entering
+	// it ensures the same behavior within Minecraft and Kite when entering
 	// server addresses.
 	if (fullAddress.startsWith("[")) {
 		int bracket = fullAddress.indexOf("]");

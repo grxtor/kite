@@ -1,8 +1,8 @@
-/* SPDX-FileCopyrightText: 2026 Project Tick
- * SPDX-FileContributor: Project Tick
+/* SPDX-FileCopyrightText: 2026 grxtor
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * Copyright (C) 2026 Project Tick
+ * Copyright (C) 2026 grxtor
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ constexpr int kDefaultIconExtent = 64;
  * easy to skip silently:
  *
  *  - Q_INIT_RESOURCE(multimc) in main(), because the compiled "multimc"
- *    resource lives inside the MeshMC_logic static library and nothing else
+ *    resource lives inside the Kite_logic static library and nothing else
  *    in this test binary forces the linker to keep those object files.
  *  - QIcon::setThemeName("multimc") over a search path that includes
  *    ":/icons", because IconList's Builtin icons resolve through
@@ -173,7 +173,7 @@ int main(int argc, char* argv[])
 
 	QGuiApplication app(argc, argv);
 
-	/* The compiled "multimc" resource sits in MeshMC_logic, a static
+	/* The compiled "multimc" resource sits in Kite_logic, a static
 	 * library; without a symbol reference into it, the linker drops the
 	 * object that registers it, and every builtinPaths lookup below would
 	 * silently come back empty. main.cpp does the same for the launcher

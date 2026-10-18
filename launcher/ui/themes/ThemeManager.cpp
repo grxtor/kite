@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -340,7 +341,7 @@ namespace
  * Reads `<dir>/index.theme` into \a out.
  *
  * The freedesktop `[Icon Theme] Name` key supplies the display name. Family
- * and variant are MeshMC extensions (`X-MeshMC-Family` / `X-MeshMC-Variant`):
+ * and variant are Kite extensions (`X-Kite-Family` / `X-Kite-Variant`):
  * two folders sharing a family but differing in variant are treated as the
  * dark and light flavours of one theme and picked automatically, matching how
  * the built-in Flat and Breeze themes behave.
@@ -360,9 +361,9 @@ bool readIconThemeIndex(const QDir& dir, IconThemeEntry& out)
 	index.beginGroup(QStringLiteral("Icon Theme"));
 	const QString name = index.value(QStringLiteral("Name")).toString();
 	const QString family =
-		index.value(QStringLiteral("X-MeshMC-Family")).toString();
+		index.value(QStringLiteral("X-Kite-Family")).toString();
 	const QString variant =
-		index.value(QStringLiteral("X-MeshMC-Variant")).toString();
+		index.value(QStringLiteral("X-Kite-Variant")).toString();
 	index.endGroup();
 
 	if (name.isEmpty()) {

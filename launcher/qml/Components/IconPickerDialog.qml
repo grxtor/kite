@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQml.Models
-import MeshMC.Theme
+import Kite.Theme
 
 /*
- * Pick an instance icon from every icon MeshMC knows -- the built-in set
+ * Pick an instance icon from every icon Kite knows -- the built-in set
  * and whatever is in the icons folder. New icons are added by dropping
  * images into that folder; the grid picks them up as they arrive.
  *

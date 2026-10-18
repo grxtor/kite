@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -76,7 +77,7 @@ static QString uploadToPasteEE(QNetworkAccessManager* nam, const QString& text,
 	sectionArray.append(sectionObject);
 
 	QJsonObject topLevelObj;
-	topLevelObj.insert("description", "MeshMC Crash Log");
+	topLevelObj.insert("description", "Kite Crash Log");
 	topLevelObj.insert("sections", sectionArray);
 
 	QJsonDocument docOut;
@@ -93,7 +94,7 @@ static QString uploadToPasteEE(QNetworkAccessManager* nam, const QString& text,
 
 	QNetworkRequest request(QUrl("https://api.paste.ee/v1/pastes"));
 	request.setHeader(QNetworkRequest::UserAgentHeader,
-					  "MeshMC-CrashReporter/1.0");
+					  "Kite-CrashReporter/1.0");
 	request.setHeader(QNetworkRequest::ContentTypeHeader,
 					  "application/json; charset=utf-8");
 	if (apiKey != "public" && !apiKey.isEmpty()) {
@@ -144,19 +145,19 @@ static QString uploadToPasteEE(QNetworkAccessManager* nam, const QString& text,
 int main(int argc, char* argv[])
 {
 	QApplication app(argc, argv);
-	app.setApplicationName("meshmc-crashreporter");
+	app.setApplicationName("kite-crashreporter");
 	app.setApplicationVersion("1.0");
 
 	QCommandLineParser parser;
-	parser.setApplicationDescription("MeshMC Crash Reporter");
+	parser.setApplicationDescription("Kite Crash Reporter");
 	parser.addHelpOption();
 
 	QCommandLineOption logDirOption(
-		"logdir", "Directory containing MeshMC log files.", "directory");
+		"logdir", "Directory containing Kite log files.", "directory");
 	parser.addOption(logDirOption);
 
 	QCommandLineOption baseNameOption(
-		"name", "Base name for log files (default: MeshMC).", "name", "MeshMC");
+		"name", "Base name for log files (default: Kite).", "name", "Kite");
 	parser.addOption(baseNameOption);
 
 	QCommandLineOption apiKeyOption(
@@ -176,8 +177,8 @@ int main(int argc, char* argv[])
 	// Read the crash log
 	QString logContent = readLogFile(logDir, baseName);
 	if (logContent.isEmpty()) {
-		QMessageBox::warning(nullptr, "MeshMC Crash Reporter",
-							 "Could not read MeshMC log file.\n"
+		QMessageBox::warning(nullptr, "Kite Crash Reporter",
+							 "Could not read Kite log file.\n"
 							 "The crash reporter cannot proceed.");
 		return 1;
 	}
@@ -311,7 +312,7 @@ int main(int argc, char* argv[])
 	QString pasteLink = uploadToPasteEE(&nam, logContent, apiKey);
 	if (pasteLink.isEmpty()) {
 		QMessageBox::warning(
-			nullptr, "MeshMC Crash Reporter",
+			nullptr, "Kite Crash Reporter",
 			"Failed to upload crash log to paste.ee.\n"
 			"Please manually share the log file located at:\n" +
 				QDir(logDir).absoluteFilePath(

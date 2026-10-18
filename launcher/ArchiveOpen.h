@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -36,11 +37,11 @@
  * not UTF-8. So `path.toUtf8()` is the one encoding those functions are
  * guaranteed to get wrong there: a perfectly ordinary
  *
- *     C:\Users\Şafak\AppData\Roaming\MeshMC\instances\...
+ *     C:\Users\Şafak\AppData\Roaming\Kite\instances\...
  *
  * arrives mangled and the open fails with "No such file or directory",
  * for no reason other than the letter in the user's name. Every archive
- * MeshMC touches lives under the data directory, which lives under the
+ * Kite touches lives under the data directory, which lives under the
  * user profile, so this is not an edge case for the people it hits -- it
  * is every zip they ever open: instance import and export, modded jar
  * creation, and the update they are being offered.

@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * The accounts games are launched with. Microsoft sign-in happens in the
@@ -78,7 +78,7 @@ Item {
 
     // qml-preview-tools has only offline accounts to snapshot with, so no
     // real row's isMSA role ever lets the skin/cape editor open on its own;
-    // MESHMC_QML_ROUTE containing "accounts-demo" opens it anyway, filled
+    // KITE_QML_ROUTE containing "accounts-demo" opens it anyway, filled
     // with AccountsController::accountSkinInfo(-1)'s canned demo data. See
     // AccountsController::skinDemoRequested()'s own comment for why -1.
     Component.onCompleted: {
@@ -312,7 +312,7 @@ Item {
                         text: root.heroName
                         elide: Text.ElideRight
                         color: Theme.palette.textPrimary
-                        font.family: Theme.font.family
+                        font.family: Theme.font.heading
                         font.pixelSize: Theme.type.display.pixelSize
                         font.weight: Theme.type.display.weight
                     }
@@ -397,7 +397,7 @@ Item {
                                     icon.source: Icons.url("trash")
                                     onTriggered: {
                                         removeDialog.row = root.heroRow
-                                        removeDialog.text = qsTr("Remove “%1” from MeshMC? You can sign in again at any time.").arg(root.heroName)
+                                        removeDialog.text = qsTr("Remove “%1” from Kite? You can sign in again at any time.").arg(root.heroName)
                                         removeDialog.open()
                                     }
                                 }
@@ -509,7 +509,7 @@ Item {
                     onManageSkinRequested: isMSA ? root.openSkinEditor(index, accountId, shownName) : offlineSkinDialog.open()
                     onRemoveRequested: {
                         removeDialog.row = index
-                        removeDialog.text = qsTr("Remove “%1” from MeshMC? You can sign in again at any time.").arg(shownName)
+                        removeDialog.text = qsTr("Remove “%1” from Kite? You can sign in again at any time.").arg(shownName)
                         removeDialog.open()
                     }
                 }

@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -71,7 +72,7 @@ class NewsEntry : public QObject
 	/*!
 	 * Which of NewsChecker's feeds this entry came from. 0 is the
 	 * launcher's own feed; anything higher is an extra feed configured
-	 * at build time via MeshMC_NEWS_EXTRA_FEEDS. Set by NewsChecker
+	 * at build time via Kite_NEWS_EXTRA_FEEDS. Set by NewsChecker
 	 * after parsing, not by fromXmlElement() — the XML says nothing
 	 * about where it was downloaded from.
 	 */

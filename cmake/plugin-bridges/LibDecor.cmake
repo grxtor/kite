@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Project Tick
+# SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 #
 # libdecor plugin bridge — exposes the bundled libdecor headers so the
@@ -19,10 +20,10 @@
 #     version the host happens to install.
 #
 # Public targets:
-#   MeshMCPlugins::LibDecorHeaders — INTERFACE target carrying just the
+#   KitePlugins::LibDecorHeaders — INTERFACE target carrying just the
 #                                    include directory.
 
-if(TARGET MeshMCPlugins::LibDecorHeaders)
+if(TARGET KitePlugins::LibDecorHeaders)
     return()
 endif()
 
@@ -37,8 +38,8 @@ if(NOT EXISTS "${_libdecor_root}/src/libdecor.h")
     return()
 endif()
 
-add_library(MeshMCPlugins::LibDecorHeaders INTERFACE IMPORTED GLOBAL)
-target_include_directories(MeshMCPlugins::LibDecorHeaders INTERFACE
+add_library(KitePlugins::LibDecorHeaders INTERFACE IMPORTED GLOBAL)
+target_include_directories(KitePlugins::LibDecorHeaders INTERFACE
     ${_libdecor_root}/src
 )
 

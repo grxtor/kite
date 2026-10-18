@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -186,13 +187,13 @@ QProcessEnvironment CleanEnviroment()
 			qCDebug(javaLog) << "Env: ignoring" << key << value;
 			continue;
 		}
-		// filter MeshMC-related things
+		// filter Kite-related things
 		if (key.startsWith("QT_")) {
 			qCDebug(javaLog) << "Env: ignoring" << key << value;
 			continue;
 		}
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
-		// Do not pass LD_* variables to java. They were intended for MeshMC
+		// Do not pass LD_* variables to java. They were intended for Kite
 		if (key.startsWith("LD_")) {
 			qCDebug(javaLog) << "Env: ignoring" << key << value;
 			continue;
@@ -454,7 +455,7 @@ QList<QString> JavaUtils::FindJavaPaths()
 	java_candidates.append(ZULU32s);
 	java_candidates.append(LIBERICA32s);
 
-	// Scan MeshMC's managed java directory
+	// Scan Kite's managed java directory
 	// ({workdir}/java/{vendor}/{version}/bin/javaw.exe)
 	QString managedJavaDir = JavaUtils::managedJavaRoot();
 	QDir managedDir(managedJavaDir);
@@ -555,7 +556,7 @@ QList<QString> JavaUtils::FindJavaPaths()
 	scanJavaDir("/usr/lib/jvm");
 	scanJavaDir("/usr/lib64/jvm");
 	scanJavaDir("/usr/lib32/jvm");
-	// javas stored in MeshMC's folder (recursive scan for managed
+	// javas stored in Kite's folder (recursive scan for managed
 	// java/{vendor}/{name}/... structure)
 	{
 		QDir javaBaseDir(JavaUtils::managedJavaRoot());

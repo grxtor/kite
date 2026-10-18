@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -19,7 +20,7 @@
  */
 
 #include <QFileInfo>
-#include <minecraft/launch/MeshMCPartLaunch.h>
+#include <minecraft/launch/KitePartLaunch.h>
 #include <QDir>
 #include <settings/Setting.h>
 

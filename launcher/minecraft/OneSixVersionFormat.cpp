@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -337,7 +338,7 @@ LibraryPtr OneSixVersionFormat::plusJarModFromJson(ProblemContainer& problems,
 	// just make up something unique on the spot for the library name.
 	auto uuid = QUuid::createUuid();
 	QString id = uuid.toString().remove('{').remove('}');
-	out->setRawName(GradleSpecifier("org.projecttick.jarmods:" + id + ":1"));
+	out->setRawName(GradleSpecifier("io.github.grxtor.jarmods:" + id + ":1"));
 
 	// filename override is the old name
 	out->setFilename(libObj.value("name").toString());

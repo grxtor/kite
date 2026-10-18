@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -226,19 +227,19 @@ QByteArray Packwiz::serialize(const ModMetadataIndex::Entry& entry)
 	}
 
 	if (!entry.slug.isEmpty()) {
-		root.insert_or_assign("x-meshmc-slug", entry.slug.toStdString());
+		root.insert_or_assign("x-kite-slug", entry.slug.toStdString());
 	}
 	if (!wroteUpdate && !entry.platform.isEmpty()) {
 		/* Manually added files are recorded as "local", and they have no
 		 * update source to describe. */
-		root.insert_or_assign("x-meshmc-platform",
+		root.insert_or_assign("x-kite-platform",
 							  entry.platform.toStdString());
 		if (!entry.projectId.isEmpty()) {
-			root.insert_or_assign("x-meshmc-project-id",
+			root.insert_or_assign("x-kite-project-id",
 								  entry.projectId.toStdString());
 		}
 		if (!entry.versionId.isEmpty()) {
-			root.insert_or_assign("x-meshmc-version-id",
+			root.insert_or_assign("x-kite-version-id",
 								  entry.versionId.toStdString());
 		}
 	}
@@ -247,24 +248,24 @@ QByteArray Packwiz::serialize(const ModMetadataIndex::Entry& entry)
 	 * and the format has nowhere else to put it - packwiz's own provider
 	 * tables take ids. */
 	if (!entry.versionNumber.isEmpty()) {
-		root.insert_or_assign("x-meshmc-version-number",
+		root.insert_or_assign("x-kite-version-number",
 							  entry.versionNumber.toStdString());
 	}
 	if (curseForge && !entry.downloadUrl.isEmpty()) {
-		root.insert_or_assign("x-meshmc-download-url",
+		root.insert_or_assign("x-kite-download-url",
 							  entry.downloadUrl.toStdString());
 	}
 	if (entry.isDependency) {
-		root.insert_or_assign("x-meshmc-dependency", true);
+		root.insert_or_assign("x-kite-dependency", true);
 	}
 	if (entry.fileSize > 0) {
-		root.insert_or_assign("x-meshmc-file-size",
+		root.insert_or_assign("x-kite-file-size",
 							  static_cast<std::int64_t>(entry.fileSize));
 	}
 	const QDateTime stamp = entry.installedAt.isValid()
 								? entry.installedAt
 								: QDateTime::currentDateTimeUtc();
-	root.insert_or_assign("x-meshmc-installed-at",
+	root.insert_or_assign("x-kite-installed-at",
 						  stamp.toString(Qt::ISODate).toStdString());
 
 	std::stringstream stream;
@@ -312,7 +313,7 @@ ModMetadataIndex::Entry Packwiz::parse(const QByteArray& bytes,
 		}
 	}
 	if (entry.downloadUrl.isEmpty()) {
-		entry.downloadUrl = nodeString(table["x-meshmc-download-url"]);
+		entry.downloadUrl = nodeString(table["x-kite-download-url"]);
 	}
 
 	const ConstNode update = table["update"];
@@ -325,24 +326,24 @@ ModMetadataIndex::Entry Packwiz::parse(const QByteArray& bytes,
 		entry.projectId = nodeId((*provider)["mod-id"]);
 		entry.versionId = nodeId((*provider)["version"]);
 	} else {
-		entry.platform = nodeString(table["x-meshmc-platform"]);
-		entry.projectId = nodeString(table["x-meshmc-project-id"]);
-		entry.versionId = nodeString(table["x-meshmc-version-id"]);
+		entry.platform = nodeString(table["x-kite-platform"]);
+		entry.projectId = nodeString(table["x-kite-project-id"]);
+		entry.versionId = nodeString(table["x-kite-version-id"]);
 	}
 
-	entry.versionNumber = nodeString(table["x-meshmc-version-number"]);
+	entry.versionNumber = nodeString(table["x-kite-version-number"]);
 
-	entry.slug = nodeString(table["x-meshmc-slug"]);
+	entry.slug = nodeString(table["x-kite-slug"]);
 	if (entry.slug.isEmpty()) {
 		/* How every reader of this format gets the slug for a file it did
 		 * not write itself: it is the sidecar's own name. */
 		entry.slug = slugHint;
 	}
 	entry.isDependency =
-		table["x-meshmc-dependency"].value<bool>().value_or(false);
+		table["x-kite-dependency"].value<bool>().value_or(false);
 	entry.fileSize = static_cast<qint64>(
-		table["x-meshmc-file-size"].value<std::int64_t>().value_or(0));
-	const QString stamp = nodeString(table["x-meshmc-installed-at"]);
+		table["x-kite-file-size"].value<std::int64_t>().value_or(0));
+	const QString stamp = nodeString(table["x-kite-installed-at"]);
 	if (!stamp.isEmpty()) {
 		entry.installedAt = QDateTime::fromString(stamp, Qt::ISODate);
 	}

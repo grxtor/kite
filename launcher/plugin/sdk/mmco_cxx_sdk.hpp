@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -16,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * MeshMC Plugin SDK - C++ single-include header for .mmco module development.
+ * Kite Plugin SDK - C++ single-include header for .mmco module development.
  *
  * This is the header C++ plugins include. It pulls in the canonical,
  * language-neutral C ABI from mmco_c_sdk.h (the full data-plane API,
@@ -37,7 +38,7 @@
  *   3. Compile as a shared library with the .mmco extension.
  *
  * Plugins MUST NOT:
- *   - Directly #include Qt or MeshMC headers (use this SDK header instead)
+ *   - Directly #include Qt or Kite headers (use this SDK header instead)
  *   - Fork or exec processes
  *
  * Plugins CAN:
@@ -64,11 +65,11 @@
 #include "mmco_c_sdk.h"
 
 /* ── Qt facilities available to C++ plugins ─────────────────────────── */
-/* ABI 5 dropped the Qt::Widgets link from MeshMC::SDK (see
+/* ABI 5 dropped the Qt::Widgets link from Kite::SDK (see
  * plugin-abi5-spec.md §4 step 3 and sdk/CMakeLists.txt): every ui_ and
  * tray_menu_ call a plugin used to build QWidget/QMenu/QAction trees
  * with by hand is gone, replaced by ui_surface_create's "mmco-ui/1"
- * JSON documents (rendered host-side, MeshMC_logic-only, by
+ * JSON documents (rendered host-side, Kite_logic-only, by
  * PluginUiRenderer) and tray_set_menu's JSON menu doc. Only QtCore and
  * QtGui headers are pulled in below; a plugin that still needs a
  * genuine QWidget (e.g. to parent a native dialog some other way) must

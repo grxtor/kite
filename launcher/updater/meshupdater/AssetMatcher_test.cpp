@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -44,7 +45,7 @@
  *
  *   - Qt5 and Qt6 are two complete lines in the same release
  *   - the words come in a different order on either side, e.g. the build
- *     "Windows-MinGW-w64-Qt6" is published as "MeshMC-Windows-MinGW-Qt6-w64-"
+ *     "Windows-MinGW-w64-Qt6" is published as "Kite-Windows-MinGW-Qt6-w64-"
  *   - Windows ships three packages per line (portable, installer, plain)
  *   - macOS says "Intel"/"ARM" where Linux says "x86_64"/"aarch64"
  *   - the AppImages put the architecture after the Qt version, the Linux
@@ -70,37 +71,37 @@ class AssetMatcherTest : public QObject
 	{
 		const QString v = version();
 		return {
-			QStringLiteral("MeshMC-Linux-Qt5-x86_64.AppImage"),
-			QStringLiteral("MeshMC-Linux-Qt5-x86_64.AppImage.zsync"),
-			QStringLiteral("MeshMC-Linux-Qt6-x86_64.AppImage"),
-			QStringLiteral("MeshMC-Linux-Qt6-x86_64.AppImage.zsync"),
-			QStringLiteral("MeshMC-Linux-Qt6-aarch64.AppImage"),
-			QStringLiteral("MeshMC-Linux-Qt6-aarch64.AppImage.zsync"),
-			QStringLiteral("MeshMC-Linux-Qt5-Portable-%1.tar.gz").arg(v),
-			QStringLiteral("MeshMC-Linux-Qt6-Portable-%1.tar.gz").arg(v),
-			QStringLiteral("MeshMC-Linux-aarch64-Qt6-Portable-%1.tar.gz").arg(v),
-			QStringLiteral("MeshMC-Windows-MinGW-Qt5-w64-%1.zip").arg(v),
-			QStringLiteral("MeshMC-Windows-MinGW-Qt5-w64-Portable-%1.zip").arg(v),
-			QStringLiteral("MeshMC-Windows-MinGW-Qt5-w64-Setup-%1.exe").arg(v),
-			QStringLiteral("MeshMC-Windows-MinGW-Qt6-w64-%1.zip").arg(v),
-			QStringLiteral("MeshMC-Windows-MinGW-Qt6-w64-Portable-%1.zip").arg(v),
-			QStringLiteral("MeshMC-Windows-MinGW-Qt6-w64-Setup-%1.exe").arg(v),
-			QStringLiteral("MeshMC-Windows-MSVC-Qt6-arm64-%1.zip").arg(v),
-			QStringLiteral("MeshMC-Windows-MSVC-Qt6-arm64-Portable-%1.zip").arg(v),
-			QStringLiteral("MeshMC-Windows-MSVC-Qt6-arm64-Setup-%1.exe").arg(v),
-			QStringLiteral("MeshMC-Windows-MSVC-Qt5-%1.zip").arg(v),
-			QStringLiteral("MeshMC-Windows-MSVC-Qt5-Portable-%1.zip").arg(v),
-			QStringLiteral("MeshMC-Windows-MSVC-Qt5-Setup-%1.exe").arg(v),
-			QStringLiteral("MeshMC-Windows-MSVC-Qt6-%1.zip").arg(v),
-			QStringLiteral("MeshMC-Windows-MSVC-Qt6-Portable-%1.zip").arg(v),
-			QStringLiteral("MeshMC-Windows-MSVC-Qt6-Setup-%1.exe").arg(v),
-			QStringLiteral("MeshMC-macOS-Intel-Qt5-%1.zip").arg(v),
-			QStringLiteral("MeshMC-macOS-Intel-Qt5-%1.dmg").arg(v),
-			QStringLiteral("MeshMC-macOS-Intel-Qt6-%1.zip").arg(v),
-			QStringLiteral("MeshMC-macOS-Intel-Qt6-%1.dmg").arg(v),
-			QStringLiteral("MeshMC-macOS-ARM-Qt6-%1.zip").arg(v),
-			QStringLiteral("MeshMC-macOS-ARM-Qt6-%1.dmg").arg(v),
-			QStringLiteral("MeshMC-%1.tar.gz").arg(v),
+			QStringLiteral("Kite-Linux-Qt5-x86_64.AppImage"),
+			QStringLiteral("Kite-Linux-Qt5-x86_64.AppImage.zsync"),
+			QStringLiteral("Kite-Linux-Qt6-x86_64.AppImage"),
+			QStringLiteral("Kite-Linux-Qt6-x86_64.AppImage.zsync"),
+			QStringLiteral("Kite-Linux-Qt6-aarch64.AppImage"),
+			QStringLiteral("Kite-Linux-Qt6-aarch64.AppImage.zsync"),
+			QStringLiteral("Kite-Linux-Qt5-Portable-%1.tar.gz").arg(v),
+			QStringLiteral("Kite-Linux-Qt6-Portable-%1.tar.gz").arg(v),
+			QStringLiteral("Kite-Linux-aarch64-Qt6-Portable-%1.tar.gz").arg(v),
+			QStringLiteral("Kite-Windows-MinGW-Qt5-w64-%1.zip").arg(v),
+			QStringLiteral("Kite-Windows-MinGW-Qt5-w64-Portable-%1.zip").arg(v),
+			QStringLiteral("Kite-Windows-MinGW-Qt5-w64-Setup-%1.exe").arg(v),
+			QStringLiteral("Kite-Windows-MinGW-Qt6-w64-%1.zip").arg(v),
+			QStringLiteral("Kite-Windows-MinGW-Qt6-w64-Portable-%1.zip").arg(v),
+			QStringLiteral("Kite-Windows-MinGW-Qt6-w64-Setup-%1.exe").arg(v),
+			QStringLiteral("Kite-Windows-MSVC-Qt6-arm64-%1.zip").arg(v),
+			QStringLiteral("Kite-Windows-MSVC-Qt6-arm64-Portable-%1.zip").arg(v),
+			QStringLiteral("Kite-Windows-MSVC-Qt6-arm64-Setup-%1.exe").arg(v),
+			QStringLiteral("Kite-Windows-MSVC-Qt5-%1.zip").arg(v),
+			QStringLiteral("Kite-Windows-MSVC-Qt5-Portable-%1.zip").arg(v),
+			QStringLiteral("Kite-Windows-MSVC-Qt5-Setup-%1.exe").arg(v),
+			QStringLiteral("Kite-Windows-MSVC-Qt6-%1.zip").arg(v),
+			QStringLiteral("Kite-Windows-MSVC-Qt6-Portable-%1.zip").arg(v),
+			QStringLiteral("Kite-Windows-MSVC-Qt6-Setup-%1.exe").arg(v),
+			QStringLiteral("Kite-macOS-Intel-Qt5-%1.zip").arg(v),
+			QStringLiteral("Kite-macOS-Intel-Qt5-%1.dmg").arg(v),
+			QStringLiteral("Kite-macOS-Intel-Qt6-%1.zip").arg(v),
+			QStringLiteral("Kite-macOS-Intel-Qt6-%1.dmg").arg(v),
+			QStringLiteral("Kite-macOS-ARM-Qt6-%1.zip").arg(v),
+			QStringLiteral("Kite-macOS-ARM-Qt6-%1.dmg").arg(v),
+			QStringLiteral("Kite-%1.tar.gz").arg(v),
 		};
 	}
 
@@ -205,33 +206,33 @@ class AssetMatcherTest : public QObject
 		// -- Linux tarballs: architecture before the Qt version -----------
 		QTest::newRow("Linux x86_64 Qt5 portable")
 			<< "Linux-Qt5" << true << false << false
-			<< QStringLiteral("MeshMC-Linux-Qt5-Portable-%1.tar.gz").arg(v);
+			<< QStringLiteral("Kite-Linux-Qt5-Portable-%1.tar.gz").arg(v);
 		QTest::newRow("Linux x86_64 Qt6 portable")
 			<< "Linux-Qt6" << true << false << false
-			<< QStringLiteral("MeshMC-Linux-Qt6-Portable-%1.tar.gz").arg(v);
+			<< QStringLiteral("Kite-Linux-Qt6-Portable-%1.tar.gz").arg(v);
 		QTest::newRow("Linux aarch64 Qt6 portable")
 			<< "Linux-aarch64-Qt6" << true << false << true
-			<< QStringLiteral("MeshMC-Linux-aarch64-Qt6-Portable-%1.tar.gz")
+			<< QStringLiteral("Kite-Linux-aarch64-Qt6-Portable-%1.tar.gz")
 				   .arg(v);
 
 		// -- AppImages: architecture after the Qt version -----------------
 		QTest::newRow("Linux x86_64 Qt5 AppImage")
 			<< "Linux-Qt5" << false << true << false
-			<< "MeshMC-Linux-Qt5-x86_64.AppImage";
+			<< "Kite-Linux-Qt5-x86_64.AppImage";
 		QTest::newRow("Linux x86_64 Qt6 AppImage")
 			<< "Linux-Qt6" << false << true << false
-			<< "MeshMC-Linux-Qt6-x86_64.AppImage";
+			<< "Kite-Linux-Qt6-x86_64.AppImage";
 		QTest::newRow("Linux aarch64 Qt6 AppImage")
 			<< "Linux-aarch64-Qt6" << false << true << true
-			<< "MeshMC-Linux-Qt6-aarch64.AppImage";
+			<< "Kite-Linux-Qt6-aarch64.AppImage";
 
 		// -- Windows MSVC -------------------------------------------------
 		QTest::newRow("Windows MSVC Qt5 portable")
 			<< "Windows-MSVC-Qt5" << true << false << false
-			<< QStringLiteral("MeshMC-Windows-MSVC-Qt5-Portable-%1.zip").arg(v);
+			<< QStringLiteral("Kite-Windows-MSVC-Qt5-Portable-%1.zip").arg(v);
 		QTest::newRow("Windows MSVC Qt6 portable")
 			<< "Windows-MSVC-Qt6" << true << false << false
-			<< QStringLiteral("MeshMC-Windows-MSVC-Qt6-Portable-%1.zip").arg(v);
+			<< QStringLiteral("Kite-Windows-MSVC-Qt6-Portable-%1.zip").arg(v);
 
 		// A non-portable Windows installation gets the installer, never the
 		// plain archive: the installer owns the uninstall entry and the
@@ -239,18 +240,18 @@ class AssetMatcherTest : public QObject
 		// pointing at the old version.
 		QTest::newRow("Windows MSVC Qt5 installed")
 			<< "Windows-MSVC-Qt5" << false << false << false
-			<< QStringLiteral("MeshMC-Windows-MSVC-Qt5-Setup-%1.exe").arg(v);
+			<< QStringLiteral("Kite-Windows-MSVC-Qt5-Setup-%1.exe").arg(v);
 		QTest::newRow("Windows MSVC Qt6 installed")
 			<< "Windows-MSVC-Qt6" << false << false << false
-			<< QStringLiteral("MeshMC-Windows-MSVC-Qt6-Setup-%1.exe").arg(v);
+			<< QStringLiteral("Kite-Windows-MSVC-Qt6-Setup-%1.exe").arg(v);
 
 		QTest::newRow("Windows MSVC arm64 Qt6 portable")
 			<< "Windows-MSVC-arm64-Qt6" << true << false << true
-			<< QStringLiteral("MeshMC-Windows-MSVC-Qt6-arm64-Portable-%1.zip")
+			<< QStringLiteral("Kite-Windows-MSVC-Qt6-arm64-Portable-%1.zip")
 				   .arg(v);
 		QTest::newRow("Windows MSVC arm64 Qt6 installed")
 			<< "Windows-MSVC-arm64-Qt6" << false << false << true
-			<< QStringLiteral("MeshMC-Windows-MSVC-Qt6-arm64-Setup-%1.exe")
+			<< QStringLiteral("Kite-Windows-MSVC-Qt6-arm64-Setup-%1.exe")
 				   .arg(v);
 
 		// -- Windows MinGW: the build says "w64-Qt6", the file says
@@ -258,31 +259,31 @@ class AssetMatcherTest : public QObject
 		//    nothing here, which is why the words are matched as a set.
 		QTest::newRow("Windows MinGW Qt5 portable")
 			<< "Windows-MinGW-w64-Qt5" << true << false << false
-			<< QStringLiteral("MeshMC-Windows-MinGW-Qt5-w64-Portable-%1.zip")
+			<< QStringLiteral("Kite-Windows-MinGW-Qt5-w64-Portable-%1.zip")
 				   .arg(v);
 		QTest::newRow("Windows MinGW Qt6 portable")
 			<< "Windows-MinGW-w64-Qt6" << true << false << false
-			<< QStringLiteral("MeshMC-Windows-MinGW-Qt6-w64-Portable-%1.zip")
+			<< QStringLiteral("Kite-Windows-MinGW-Qt6-w64-Portable-%1.zip")
 				   .arg(v);
 		QTest::newRow("Windows MinGW Qt5 installed")
 			<< "Windows-MinGW-w64-Qt5" << false << false << false
-			<< QStringLiteral("MeshMC-Windows-MinGW-Qt5-w64-Setup-%1.exe")
+			<< QStringLiteral("Kite-Windows-MinGW-Qt5-w64-Setup-%1.exe")
 				   .arg(v);
 		QTest::newRow("Windows MinGW Qt6 installed")
 			<< "Windows-MinGW-w64-Qt6" << false << false << false
-			<< QStringLiteral("MeshMC-Windows-MinGW-Qt6-w64-Setup-%1.exe")
+			<< QStringLiteral("Kite-Windows-MinGW-Qt6-w64-Setup-%1.exe")
 				   .arg(v);
 
 		// -- macOS: the .zip is the update, the .dmg is for a human -------
 		QTest::newRow("macOS Intel Qt5")
 			<< "macOS-Intel-Qt5" << false << false << false
-			<< QStringLiteral("MeshMC-macOS-Intel-Qt5-%1.zip").arg(v);
+			<< QStringLiteral("Kite-macOS-Intel-Qt5-%1.zip").arg(v);
 		QTest::newRow("macOS Intel Qt6")
 			<< "macOS-Intel-Qt6" << false << false << false
-			<< QStringLiteral("MeshMC-macOS-Intel-Qt6-%1.zip").arg(v);
+			<< QStringLiteral("Kite-macOS-Intel-Qt6-%1.zip").arg(v);
 		QTest::newRow("macOS ARM Qt6")
 			<< "macOS-ARM-Qt6" << false << false << true
-			<< QStringLiteral("MeshMC-macOS-ARM-Qt6-%1.zip").arg(v);
+			<< QStringLiteral("Kite-macOS-ARM-Qt6-%1.zip").arg(v);
 	}
 
 	void tst_Release()
@@ -416,7 +417,7 @@ class AssetMatcherTest : public QObject
 	{
 		for (const AssetMatcher::Installation& what : everyBuild()) {
 			QVERIFY2(!pickedNames(what).contains(
-						 QStringLiteral("MeshMC-%1.tar.gz").arg(version())),
+						 QStringLiteral("Kite-%1.tar.gz").arg(version())),
 					 qPrintable(what.buildArtifact));
 		}
 	}
@@ -453,17 +454,17 @@ class AssetMatcherTest : public QObject
 		QTest::addColumn<QString>("lowerName");
 		QTest::addColumn<int>("expected");
 
-		QTest::newRow("linux tarball") << "meshmc-linux-qt6-portable-v11.0.0.tar.gz" << 6;
-		QTest::newRow("linux qt5 tarball") << "meshmc-linux-qt5-portable-v11.0.0.tar.gz" << 5;
-		QTest::newRow("windows package") << "meshmc-windows-msvc-qt6-portable-v11.0.0.zip" << 6;
-		QTest::newRow("appimage") << "meshmc-linux-qt6-x86_64.appimage" << 6;
-		QTest::newRow("macos") << "meshmc-macos-arm-qt6-v11.0.0.zip" << 6;
+		QTest::newRow("linux tarball") << "kite-linux-qt6-portable-v11.0.0.tar.gz" << 6;
+		QTest::newRow("linux qt5 tarball") << "kite-linux-qt5-portable-v11.0.0.tar.gz" << 5;
+		QTest::newRow("windows package") << "kite-windows-msvc-qt6-portable-v11.0.0.zip" << 6;
+		QTest::newRow("appimage") << "kite-linux-qt6-x86_64.appimage" << 6;
+		QTest::newRow("macos") << "kite-macos-arm-qt6-v11.0.0.zip" << 6;
 		QTest::newRow("artifact name") << "windows-mingw-w64-qt6" << 6;
 		QTest::newRow("source tarball states nothing")
-			<< "meshmc-v11.0.0.tar.gz" << 0;
+			<< "kite-v11.0.0.tar.gz" << 0;
 		// The separator is part of the pattern, so a word merely containing
 		// "qt" followed by digits is not a Qt version.
-		QTest::newRow("no separator, no version") << "meshmcqt6.zip" << 0;
+		QTest::newRow("no separator, no version") << "kiteqt6.zip" << 0;
 	}
 
 	void tst_QtMajorFromName()
@@ -484,7 +485,7 @@ class AssetMatcherTest : public QObject
 	void tst_UnstatedQtIsAccepted()
 	{
 		const QList<GitHubReleaseAsset> untagged = assetsFrom(
-			{QStringLiteral("MeshMC-Windows-MSVC-Portable-v11.0.0.zip")});
+			{QStringLiteral("Kite-Windows-MSVC-Portable-v11.0.0.zip")});
 
 		QCOMPARE(AssetMatcher::select(
 					 untagged, install(QStringLiteral("Windows-MSVC-Qt6"), true,
@@ -504,7 +505,7 @@ class AssetMatcherTest : public QObject
 	void tst_LegacyLineIsNotOfferedToAnOrdinaryBuild()
 	{
 		const QList<GitHubReleaseAsset> legacy = assetsFrom(
-			{QStringLiteral("MeshMC-Windows-MSVC-Qt5-Legacy-Portable-v11.0.0.zip")});
+			{QStringLiteral("Kite-Windows-MSVC-Qt5-Legacy-Portable-v11.0.0.zip")});
 
 		QVERIFY(AssetMatcher::select(
 					legacy, install(QStringLiteral("Windows-MSVC-Qt5"), true,

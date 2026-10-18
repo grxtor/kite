@@ -1,13 +1,13 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
-import MeshMC.Theme
+import Kite.Theme
 
 /*
- * The "About" section of SettingsPage.qml: which MeshMC this is, where to
+ * The "About" section of SettingsPage.qml: which Kite this is, where to
  * get help, the credits and the licences -- the widget About dialog plus
  * the Help menu's links, all from QmlShell.about (AboutInfo, read from the
  * build itself). The licence text is long, so it only loads on request.
@@ -40,7 +40,7 @@ SettingsScroll {
     }
 
     title: qsTr("About")
-    description: qsTr("The version you are running, where to get help, and the people and licences behind MeshMC.")
+    description: qsTr("The version you are running, where to get help, and the people and licences behind Kite.")
 
     SettingsGroup {
         width: parent.width
@@ -113,7 +113,7 @@ SettingsScroll {
         title: qsTr("Licences")
         description: root.about ? root.about.copyright : ""
         SettingRow {
-            label: qsTr("MeshMC and the libraries it uses")
+            label: qsTr("Kite and the libraries it uses")
             description: qsTr("The full text of every licence.")
             Button {
                 text: root.licencesOpen ? qsTr("Hide") : qsTr("Show")

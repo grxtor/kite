@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Layouts
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * Launcher settings. Every change is saved the moment it is made -- there
@@ -30,7 +30,7 @@ Item {
     property var selectLanguage: null
     property string section: "general"
     // Whether launcher/qml/Cat was built at all (Main.qml's own
-    // catAvailable, in turn MESHMC_HAS_CAT) -- passed on to the Appearance
+    // catAvailable, in turn KITE_HAS_CAT) -- passed on to the Appearance
     // section, which hides its Cat group without it.
     property bool catAvailable: false
     // QmlShell.about (AboutInfo) for the About section, and the

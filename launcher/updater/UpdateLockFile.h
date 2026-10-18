@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -26,22 +27,22 @@ namespace UpdateLockFile
 {
 
 	//! Marker file names, relative to the data directory.
-	inline constexpr auto kLockFileName = ".meshmc_update.lock";
-	inline constexpr auto kFailMarkerName = ".meshmc_update.fail";
-	inline constexpr auto kSuccessMarkerName = ".meshmc_update.success";
-	inline constexpr auto kChangelogName = ".meshmc_update.changelog";
+	inline constexpr auto kLockFileName = ".kite_update.lock";
+	inline constexpr auto kFailMarkerName = ".kite_update.fail";
+	inline constexpr auto kSuccessMarkerName = ".kite_update.success";
+	inline constexpr auto kChangelogName = ".kite_update.changelog";
 
 	//! Left in the unpacked release, telling the second stage where to install.
-	inline constexpr auto kUnpackMarkerName = ".meshmc_updater_unpack.marker";
+	inline constexpr auto kUnpackMarkerName = ".kite_updater_unpack.marker";
 
 	//! Records where the pre-update installation was copied to.
-	inline constexpr auto kBackupMarkerName = ".meshmc_update_backup_path.txt";
+	inline constexpr auto kBackupMarkerName = ".kite_update_backup_path.txt";
 
 	//! Where the unpacked release is staged, under the data directory.
-	inline constexpr auto kStagingDirName = "meshmc_update_release";
+	inline constexpr auto kStagingDirName = "kite_update_release";
 
 	//! The updater's own narrative of the last attempt, under logs/.
-	inline constexpr auto kUpdateLogName = "meshmc_update.log";
+	inline constexpr auto kUpdateLogName = "kite_update.log";
 
 	struct Contents {
 		QDateTime timestamp;

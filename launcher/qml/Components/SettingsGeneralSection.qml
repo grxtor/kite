@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
@@ -7,7 +7,7 @@ import QtQuick.Controls
 
 /*
  * The "General" section of SettingsPage.qml: how the library sorts, what a
- * new instance starts out with, where MeshMC keeps its folders (and which
+ * new instance starts out with, where Kite keeps its folders (and which
  * other folders it looks in for instances), and the news notices.
  */
 SettingsScroll {
@@ -17,7 +17,7 @@ SettingsScroll {
     signal openPathRequested(string path)
 
     title: qsTr("General")
-    description: qsTr("How the library sorts, where new instances start out, and where MeshMC keeps its folders.")
+    description: qsTr("How the library sorts, where new instances start out, and where Kite keeps its folders.")
     SettingsGroup {
         width: parent.width
         title: qsTr("Library")
@@ -54,7 +54,7 @@ SettingsScroll {
     SettingsGroup {
         width: parent.width
         title: qsTr("Folders")
-        description: qsTr("Relative paths are inside MeshMC's data folder. Changing a folder does not move what is already in it.")
+        description: qsTr("Relative paths are inside Kite's data folder. Changing a folder does not move what is already in it.")
         Repeater {
             model: [
                 { key: "InstanceDir", label: qsTr("Instances") },
@@ -80,7 +80,7 @@ SettingsScroll {
         title: qsTr("Notifications")
         SettingRow {
             label: qsTr("Show notices again")
-            description: qsTr("News and announcements you have already seen come back the next time MeshMC checks.")
+            description: qsTr("News and announcements you have already seen come back the next time Kite checks.")
             enabled: SettingsStore.string("ShownNotifications").length > 0
             Button {
                 text: qsTr("Reset")

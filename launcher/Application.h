@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -382,7 +383,7 @@ class Application : public QApplication, public LauncherContext
 	std::unique_ptr<PluginManager> m_pluginManager;
 
 	/* Built alongside m_pluginManager, so it is null in builds without the
-	 * plugin host (MeshMC_PLUGINS is OFF by default). */
+	 * plugin host (Kite_PLUGINS is OFF by default). */
 	std::unique_ptr<AuthRequestDecorator> m_authRequestDecorator;
 
 	/* Built before anything that could ask the user a question, because

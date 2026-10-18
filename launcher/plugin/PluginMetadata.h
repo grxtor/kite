@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -62,7 +63,7 @@ enum class PluginDisableReason {
 						  MMCO_ABI_VERSION_MIN -- the module predates a
 						  floor raise and needs the author to update it */
 	AbiTooNew,		   /* Built against an ABI newer than
-						  MMCO_ABI_VERSION -- built for a MeshMC newer
+						  MMCO_ABI_VERSION -- built for a Kite newer
 						  than this one */
 };
 
@@ -85,7 +86,7 @@ inline QString pluginDisableReasonLabel(PluginDisableReason reason)
 		case PluginDisableReason::DependencyCycle:
 			return QObject::tr("Dependency cycle");
 		case PluginDisableReason::SupersededByCore:
-			return QObject::tr("Built into MeshMC");
+			return QObject::tr("Built into Kite");
 		case PluginDisableReason::AbiTooOld:
 			return QObject::tr("Plugin ABI too old");
 		case PluginDisableReason::AbiTooNew:

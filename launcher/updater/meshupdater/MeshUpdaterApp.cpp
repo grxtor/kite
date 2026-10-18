@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -262,9 +263,9 @@ namespace
 	QString installStageAgentName()
 	{
 #if defined(Q_OS_WIN32)
-		return QStringLiteral("meshmc-update-stage2.exe");
+		return QStringLiteral("kite-update-stage2.exe");
 #else
-		return QStringLiteral("meshmc-update-stage2");
+		return QStringLiteral("kite-update-stage2");
 #endif
 	}
 
@@ -275,7 +276,7 @@ namespace
 	 * what the second pass overwrites, and a program cannot be run from
 	 * underneath itself.
 	 */
-	inline constexpr auto kInstallStageDirName = "meshmc_update_stage2";
+	inline constexpr auto kInstallStageDirName = "kite_update_stage2";
 
 	//! How long a candidate for the second pass gets to answer --self-test.
 	constexpr int kSelfTestTimeoutMs = 15000;
@@ -410,15 +411,15 @@ bool MeshUpdaterApp::handleSelfTest(int argc, char** argv)
 
 MeshUpdaterApp::MeshUpdaterApp(int& argc, char** argv) : QApplication(argc, argv)
 {
-	setOrganizationName(BuildConfig.MESHMC_NAME);
-	setOrganizationDomain(BuildConfig.MESHMC_DOMAIN);
-	setApplicationName(BuildConfig.MESHMC_NAME + QStringLiteral("Updater"));
+	setOrganizationName(BuildConfig.KITE_NAME);
+	setOrganizationDomain(BuildConfig.KITE_DOMAIN);
+	setApplicationName(BuildConfig.KITE_NAME + QStringLiteral("Updater"));
 	setApplicationVersion(BuildConfig.printableVersionString() +
 						  QLatin1Char('\n') + BuildConfig.GIT_COMMIT);
 
 	QCommandLineParser parser;
 	parser.setApplicationDescription(
-		tr("Installs %1 updates.").arg(BuildConfig.MESHMC_DISPLAYNAME));
+		tr("Installs %1 updates.").arg(BuildConfig.KITE_DISPLAYNAME));
 	parser.addOptions({
 		{{QStringLiteral("d"), QStringLiteral("dir")},
 		 tr("Use a custom path as application root (use '.' for current "
@@ -606,7 +607,7 @@ MeshUpdaterApp::~MeshUpdaterApp()
 
 QString MeshUpdaterApp::launcherBinaryName() const
 {
-	QString name = BuildConfig.MESHMC_BINARY;
+	QString name = BuildConfig.KITE_BINARY;
 #if defined(Q_OS_WIN32)
 	name.append(QLatin1String(".exe"));
 #endif
@@ -616,9 +617,9 @@ QString MeshUpdaterApp::launcherBinaryName() const
 QString MeshUpdaterApp::updaterBinaryName() const
 {
 #if defined(Q_OS_WIN32)
-	return QStringLiteral("meshmc-updater.exe");
+	return QStringLiteral("kite-updater.exe");
 #else
-	return QStringLiteral("bin/meshmc-updater");
+	return QStringLiteral("bin/kite-updater");
 #endif
 }
 
@@ -652,7 +653,7 @@ bool MeshUpdaterApp::resolvePaths(const QString& dirOption)
 	} else if (const QString fromEnvironment =
 				   QProcessEnvironment::systemEnvironment().value(
 					   QStringLiteral("%1_DATA_DIR")
-						   .arg(BuildConfig.MESHMC_NAME.toUpper()));
+						   .arg(BuildConfig.KITE_NAME.toUpper()));
 			   !fromEnvironment.isEmpty()) {
 		m_dataPath = QDir(fromEnvironment).absolutePath();
 	} else if (m_isPortable) {
@@ -688,7 +689,7 @@ bool MeshUpdaterApp::startLogging()
 	// their logs apart means the install log is not buried under a day's worth
 	// of hourly checks.
 	const QString base =
-		QDir(logDir).absoluteFilePath(BuildConfig.MESHMC_NAME +
+		QDir(logDir).absoluteFilePath(BuildConfig.KITE_NAME +
 									  QStringLiteral("Updater") +
 									  (m_checkOnly ? QStringLiteral("-CheckOnly")
 												   : QString()) +
@@ -748,7 +749,7 @@ bool MeshUpdaterApp::startLogging()
 void MeshUpdaterApp::logStartupInfo(const QString& adjustedBy,
 									const QString& binPath)
 {
-	qDebug().noquote() << BuildConfig.MESHMC_DISPLAYNAME << "Updater";
+	qDebug().noquote() << BuildConfig.KITE_DISPLAYNAME << "Updater";
 	qDebug().noquote() << "Version               :"
 					   << BuildConfig.printableVersionString();
 	qDebug().noquote() << "Git commit            :" << BuildConfig.GIT_COMMIT;
@@ -1010,7 +1011,7 @@ void MeshUpdaterApp::run()
 	if (m_checkOnly) {
 		// The launcher parses exactly these three labelled lines and treats
 		// the rest of stdout as release notes. Keep them in step with
-		// MeshMCExternalUpdater::checkForUpdates().
+		// KiteExternalUpdater::checkForUpdates().
 		m_status = Succeeded;
 		if (!updateNeeded) {
 			qDebug() << "No update needed.";
@@ -1048,7 +1049,7 @@ void MeshUpdaterApp::run()
 			   "\n"
 			   "Checking for updates works, but installing them here does "
 			   "not.")
-				.arg(BuildConfig.MESHMC_DISPLAYNAME, BuildConfig.MESHMC_APPID));
+				.arg(BuildConfig.KITE_DISPLAYNAME, BuildConfig.KITE_APPID));
 		return;
 	}
 
@@ -1419,7 +1420,7 @@ void MeshUpdaterApp::unpackAndHandOff(const QString& archivePath)
 			   "Your installation has not been changed.\n"
 			   "The updater log has the details:\n"
 			   "%3")
-				.arg(BuildConfig.MESHMC_DISPLAYNAME,
+				.arg(BuildConfig.KITE_DISPLAYNAME,
 					 QDir::toNativeSeparators(stagedLauncher),
 					 QDir::toNativeSeparators(m_updateLogPath)));
 		return;
@@ -1525,7 +1526,7 @@ void MeshUpdaterApp::unpackAndHandOff(const QString& archivePath)
 					 "previous installation was backed up, and the updater "
 					 "log has the details:\n"
 					 "%2")
-					  .arg(BuildConfig.MESHMC_DISPLAYNAME,
+					  .arg(BuildConfig.KITE_DISPLAYNAME,
 						   QDir::toNativeSeparators(m_updateLogPath))
 				: tr("The second pass of the update stopped before it began "
 					 "installing.\n"
@@ -2144,7 +2145,7 @@ QStringList MeshUpdaterApp::installedFileList(const QDir& root) const
 
 	if (QFileInfo(manifestPath).isFile()) {
 		// The packaging writes this, so it is the authority on which files
-		// belong to MeshMC -- and, just as importantly, which files in the
+		// belong to Kite -- and, just as importantly, which files in the
 		// same directory belong to the user.
 		QStringList entries;
 		const QStringList lines =
@@ -2168,8 +2169,8 @@ QStringList MeshUpdaterApp::installedFileList(const QDir& root) const
 	return {
 		QStringLiteral("jars"),
 		launcherBinaryName(),
-		QStringLiteral("meshmc-updater.exe"),
-		QStringLiteral("meshmc-crashreporter.exe"),
+		QStringLiteral("kite-updater.exe"),
+		QStringLiteral("kite-crashreporter.exe"),
 		QStringLiteral("qtlogging.ini"),
 		QStringLiteral("qt.conf"),
 		QStringLiteral("imageformats"),
@@ -2193,7 +2194,7 @@ QStringList MeshUpdaterApp::installedFileList(const QDir& root) const
 		QStringLiteral("plugins"),
 		QStringLiteral("shared"),
 		QStringLiteral("sharun"),
-		BuildConfig.MESHMC_DISPLAYNAME,
+		BuildConfig.KITE_DISPLAYNAME,
 	};
 #endif
 }

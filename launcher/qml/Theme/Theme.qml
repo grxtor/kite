@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 pragma Singleton
@@ -131,7 +131,7 @@ QtObject {
         readonly property int easing: Easing.OutCubic
     }
 
-    // Inter 4.1 static TTFs, bundled as MeshMC.Theme module resources
+    // Inter 4.1 static TTFs, bundled as Kite.Theme module resources
     // (Theme/CMakeLists.txt) rather than probed for as a system font: the
     // whole type scale below is only true on a machine that happens to
     // already have Inter installed, unless the app ships its own copy.
@@ -142,21 +142,38 @@ QtObject {
                                         && _interSemiBold.status === FontLoader.Ready
                                         && _interBold.status === FontLoader.Ready
     property FontLoader _interRegular: FontLoader {
-        source: "qrc:/qt/qml/MeshMC/Theme/fonts/inter/Inter-Regular.ttf"
+        source: "qrc:/qt/qml/Kite/Theme/fonts/inter/Inter-Regular.ttf"
     }
     property FontLoader _interMedium: FontLoader {
-        source: "qrc:/qt/qml/MeshMC/Theme/fonts/inter/Inter-Medium.ttf"
+        source: "qrc:/qt/qml/Kite/Theme/fonts/inter/Inter-Medium.ttf"
     }
     property FontLoader _interSemiBold: FontLoader {
-        source: "qrc:/qt/qml/MeshMC/Theme/fonts/inter/Inter-SemiBold.ttf"
+        source: "qrc:/qt/qml/Kite/Theme/fonts/inter/Inter-SemiBold.ttf"
     }
     property FontLoader _interBold: FontLoader {
-        source: "qrc:/qt/qml/MeshMC/Theme/fonts/inter/Inter-Bold.ttf"
+        source: "qrc:/qt/qml/Kite/Theme/fonts/inter/Inter-Bold.ttf"
+    }
+    // Montserrat, Kite's brand face, for headings only: it is too wide for
+    // the small body and label sizes, which stay on Inter.
+    readonly property bool _montserratReady: _montserratRegular.status === FontLoader.Ready
+                                             && _montserratSemiBold.status === FontLoader.Ready
+                                             && _montserratBold.status === FontLoader.Ready
+    property FontLoader _montserratRegular: FontLoader {
+        source: "qrc:/qt/qml/Kite/Theme/fonts/montserrat/Montserrat-Regular.ttf"
+    }
+    property FontLoader _montserratSemiBold: FontLoader {
+        source: "qrc:/qt/qml/Kite/Theme/fonts/montserrat/Montserrat-SemiBold.ttf"
+    }
+    property FontLoader _montserratBold: FontLoader {
+        source: "qrc:/qt/qml/Kite/Theme/fonts/montserrat/Montserrat-Bold.ttf"
     }
     Component.onCompleted: {
         if (!root._interReady)
             console.warn("Theme: bundled Inter failed to load, falling back to",
                           Qt.application.font.family)
+        if (!root._montserratReady)
+            console.warn("Theme: bundled Montserrat failed to load; headings use",
+                          root.font.family)
     }
 
     // The interface font the user picked, by family name; empty or "Inter"
@@ -176,6 +193,11 @@ QtObject {
                                          && Qt.fontFamilies().indexOf(root.customFamily) >= 0
                                          ? root.customFamily
                                          : root._interReady ? "Inter" : Qt.application.font.family
+        // Titles, headings and display text. A font the user picked in
+        // Settings wins here too, so the whole interface stays in one face.
+        readonly property string heading: family !== "Inter" && family !== Qt.application.font.family
+                                          ? family
+                                          : root._montserratReady ? "Montserrat" : family
         readonly property string mono: Qt.fontFamilies().indexOf("JetBrains Mono") >= 0
                                        ? "JetBrains Mono"
                                        : Qt.platform.os === "osx" ? "Menlo"

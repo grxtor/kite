@@ -8,7 +8,7 @@ msgstr ""
 "X-Crowdin-Project: projtlauncher\n"
 "X-Crowdin-Project-ID: 863014\n"
 "X-Crowdin-Language: el\n"
-"X-Crowdin-File: /[Project-Tick.MeshMC] develop/launcher/locale/template.pot\n"
+"X-Crowdin-File: /[Project-Tick.Kite] develop/launcher/locale/template.pot\n"
 "X-Crowdin-File-ID: 95\n"
 "Project-Id-Version: projtlauncher\n"
 "Language-Team: Greek\n"
@@ -223,8 +223,8 @@ msgstr "Κανάλι Ενημέρωσης"
 
 #: launcher/ui/dialogs/AboutDialog.cpp:121
 msgctxt "AboutDialog|"
-msgid "<p>We keep <b>MeshMC</b> open source because we believe it's important to be able to see the source code of a project like this, and we do this using the Apache license.</p>\n"
-"<p>One reason we use the Apache license is that we don't want people using the name <b>MeshMC</b> when they fork the project. This means people should examine the source code and remove all references to <b>MeshMC</b>, including the project icon and window titles (the title should not contain the phrase <b>MeshMC-fork</b>). The Apache license covers reasonable use of the name; mentioning the project's origins in the About dialog and license is acceptable. However, it must be explicitly stated that the project is a fork, which does not mean you have our approval.</p>\n"
+msgid "<p>We keep <b>Kite</b> open source because we believe it's important to be able to see the source code of a project like this, and we do this using the Apache license.</p>\n"
+"<p>One reason we use the Apache license is that we don't want people using the name <b>Kite</b> when they fork the project. This means people should examine the source code and remove all references to <b>Kite</b>, including the project icon and window titles (the title should not contain the phrase <b>Kite-fork</b>). The Apache license covers reasonable use of the name; mentioning the project's origins in the About dialog and license is acceptable. However, it must be explicitly stated that the project is a fork, which does not mean you have our approval.</p>\n"
 "<p>However, we give you the freedom to distribute this project as you wish, in any non-exclusive way, without changing its functionality, on a voluntary basis to package managers, without expecting any financial gain. Take the project and distribute it wherever people can reach it. But abide by our restrictions."
 msgstr ""
 
@@ -377,10 +377,10 @@ msgstr "Λογαριασμοί Microsoft δεν είναι διαθέσιμοι"
 
 #: launcher/ui/pages/global/AccountListPage.cpp:126
 msgctxt "AccountListPage|"
-msgid "Microsoft accounts are only usable on macOS 10.13 or newer, with fully updated MeshMC.\n\n"
-"Please update both your operating system and MeshMC."
-msgstr "Οι λογαριασμοί της Microsoft είναι χρησιμοποιήσιμοι μόνο σε macOS 10.13 ή νεότερα, με πλήρως ενημερωμένο MeshMC.\n\n"
-"Παρακαλούμε ενημερώστε τόσο το λειτουργικό σας σύστημα όσο και το MeshMC."
+msgid "Microsoft accounts are only usable on macOS 10.13 or newer, with fully updated Kite.\n\n"
+"Please update both your operating system and Kite."
+msgstr "Οι λογαριασμοί της Microsoft είναι χρησιμοποιήσιμοι μόνο σε macOS 10.13 ή νεότερα, με πλήρως ενημερωμένο Kite.\n\n"
+"Παρακαλούμε ενημερώστε τόσο το λειτουργικό σας σύστημα όσο και το Kite."
 
 #: launcher/ui/pages/global/AccountListPage.cpp:134
 msgctxt "AccountListPage|"
@@ -646,7 +646,7 @@ msgstr "Παρακολουθούμε μερικά ανώνυμα στατιστ�
 
 #: launcher/ui/setupwizard/AnalyticsWizardPage.cpp:66
 msgctxt "AnalyticsWizardPage|"
-msgid "<html><body><p>MeshMC sends anonymous usage statistics on every start of the application. This helps us decide what platforms and issues to focus on.</p><p>The data is processed by Google Analytics, see their <a href=\"https://support.google.com/analytics/answer/6004245?hl=en\">article on the matter</a>.</p><p>The following data is collected:</p><ul><li>A random unique ID of the installation.<br />It is stored in the application settings file.</li><li>Anonymized (partial) IP address.</li><li>MeshMC version.</li><li>Operating system name, version and architecture.</li><li>CPU architecture (kernel architecture on linux).</li><li>Size of system memory.</li><li>Java version, architecture and memory settings.</li></ul><p>If we change the tracked information, you will see this page again.</p></body></html>"
+msgid "<html><body><p>Kite sends anonymous usage statistics on every start of the application. This helps us decide what platforms and issues to focus on.</p><p>The data is processed by Google Analytics, see their <a href=\"https://support.google.com/analytics/answer/6004245?hl=en\">article on the matter</a>.</p><p>The following data is collected:</p><ul><li>A random unique ID of the installation.<br />It is stored in the application settings file.</li><li>Anonymized (partial) IP address.</li><li>Kite version.</li><li>Operating system name, version and architecture.</li><li>CPU architecture (kernel architecture on linux).</li><li>Size of system memory.</li><li>Java version, architecture and memory settings.</li></ul><p>If we change the tracked information, you will see this page again.</p></body></html>"
 msgstr ""
 
 #: launcher/ui/setupwizard/AnalyticsWizardPage.cpp:85
@@ -710,13 +710,13 @@ msgctxt "Application|"
 msgid "Settings"
 msgstr "Ρυθμίσεις"
 
-#: launcher/updater/MeshMCUpdater/ApplyStage.cpp:66
+#: launcher/updater/KiteUpdater/ApplyStage.cpp:66
 #, qt-format
 msgctxt "ApplyStage|"
 msgid "The first stage of the update did not exit (pid %1). Nothing has been changed."
 msgstr "Το πρώτο στάδιο της ενημέρωσης δεν τερματίστηκε (pid %1). Τίποτα δεν έχει αλλάξει."
 
-#: launcher/updater/MeshMCUpdater/ApplyStage.cpp:84
+#: launcher/updater/KiteUpdater/ApplyStage.cpp:84
 #, qt-format
 msgctxt "ApplyStage|"
 msgid "The unpacked update contains no files:\n"
@@ -724,7 +724,7 @@ msgid "The unpacked update contains no files:\n"
 msgstr "Η αποσυμπιεσμένη ενημέρωση δεν περιέχει αρχεία:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/ApplyStage.cpp:141
+#: launcher/updater/KiteUpdater/ApplyStage.cpp:141
 #, qt-format
 msgctxt "ApplyStage|"
 msgid "Cannot create the backup directory:\n"
@@ -732,7 +732,7 @@ msgid "Cannot create the backup directory:\n"
 msgstr "Αδυναμία δημιουργίας αντιγράφου ασφαλείας:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/ApplyStage.cpp:157
+#: launcher/updater/KiteUpdater/ApplyStage.cpp:157
 #, qt-format
 msgctxt "ApplyStage|"
 msgid "Could not back up the current version before updating.\n\n"
@@ -740,7 +740,7 @@ msgid "Could not back up the current version before updating.\n\n"
 "Nothing has been changed."
 msgstr ""
 
-#: launcher/updater/MeshMCUpdater/ApplyStage.cpp:184
+#: launcher/updater/KiteUpdater/ApplyStage.cpp:184
 #, qt-format
 msgctxt "ApplyStage|"
 msgid "Could not install the update.\n\n"
@@ -752,7 +752,7 @@ msgstr "Δεν ήταν δυνατή η εγκατάσταση της ενημέ
 "%2 από %3 αρχείο(α) είχαν ήδη αντικατασταθεί. Η προηγούμενη έκδοση αποθηκεύτηκε σε:\n"
 "%4"
 
-#: launcher/updater/MeshMCUpdater/ApplyStage.cpp:191
+#: launcher/updater/KiteUpdater/ApplyStage.cpp:191
 msgctxt "ApplyStage|"
 msgid "(no backup was made)"
 msgstr "(δεν έγινε αντίγραφο ασφαλείας)"
@@ -1518,12 +1518,12 @@ msgstr "Καμία ομάδα"
 
 #: launcher/crashreporter/CrashReportDialog.cpp:39
 msgctxt "CrashReportDialog|"
-msgid "MeshMC Crash Report"
-msgstr "Αναφορά κατάρρευσης MeshMC"
+msgid "Kite Crash Report"
+msgstr "Αναφορά κατάρρευσης Kite"
 
 #: launcher/crashreporter/CrashReportDialog.cpp:47
 msgctxt "CrashReportDialog|"
-msgid "<h2 style='color: #cc0000;'>MeshMC has failed</h2><p>An unexpected error occurred and MeshMC had to close.</p><p>Your logs have been uploaded to paste.ee for troubleshooting.</p>"
+msgid "<h2 style='color: #cc0000;'>Kite has failed</h2><p>An unexpected error occurred and Kite had to close.</p><p>Your logs have been uploaded to paste.ee for troubleshooting.</p>"
 msgstr ""
 
 #: launcher/crashreporter/CrashReportDialog.cpp:56
@@ -1663,8 +1663,8 @@ msgstr "Σημείωση: οι συντομεύσεις διαγράφονται
 
 #: launcher/ui/dialogs/CreateShortcutDialog.ui:190
 msgctxt "CreateShortcutDialog|"
-msgid "Move one somewhere else afterwards and MeshMC will forget it, so you would have to delete that one yourself."
-msgstr "Μετακινήστε ένα κάπου αλλού μετά και το MeshMC θα το ξεχάσετε, οπότε θα πρέπει να διαγράψετε αυτό τον εαυτό σας."
+msgid "Move one somewhere else afterwards and Kite will forget it, so you would have to delete that one yourself."
+msgstr "Μετακινήστε ένα κάπου αλλού μετά και το Kite θα το ξεχάσετε, οπότε θα πρέπει να διαγράψετε αυτό τον εαυτό σας."
 
 #: launcher/ui/dialogs/CreateShortcutDialog.cpp:78
 #, qt-format
@@ -1742,7 +1742,7 @@ msgstr "Εντολή Wrapper:"
 
 #: launcher/ui/widgets/CustomCommands.ui:77
 msgctxt "CustomCommands|"
-msgid "<html><head/><body><p>Pre-launch command runs before the instance launches and post-exit command runs after it exits.</p><p>Both will be run in MeshMC's working folder with extra environment variables:</p><ul><li>$INST_NAME - Name of the instance</li><li>$INST_ID - ID of the instance (its folder name)</li><li>$INST_DIR - absolute path of the instance</li><li>$INST_MC_DIR - absolute path of minecraft</li><li>$INST_JAVA - java binary used for launch</li><li>$INST_JAVA_ARGS - command-line parameters used for launch</li></ul><p>Wrapper command allows launching using an extra wrapper program (like 'optirun' on Linux)</p></body></html>"
+msgid "<html><head/><body><p>Pre-launch command runs before the instance launches and post-exit command runs after it exits.</p><p>Both will be run in Kite's working folder with extra environment variables:</p><ul><li>$INST_NAME - Name of the instance</li><li>$INST_ID - ID of the instance (its folder name)</li><li>$INST_DIR - absolute path of the instance</li><li>$INST_MC_DIR - absolute path of minecraft</li><li>$INST_JAVA - java binary used for launch</li><li>$INST_JAVA_ARGS - command-line parameters used for launch</li></ul><p>Wrapper command allows launching using an extra wrapper program (like 'optirun' on Linux)</p></body></html>"
 msgstr ""
 
 #: launcher/ui/pages/global/CustomCommandsPage.h:40
@@ -4131,8 +4131,8 @@ msgstr "Ήδη σταμάτημα"
 
 #: launcher/LaunchController.cpp:627
 msgctxt "LaunchController|"
-msgid "MeshMC is already shutting this instance down. Give it a few seconds - if the game does not react, it gets killed automatically."
-msgstr "Το MeshMC κλείνει ήδη αυτή την περίπτωση. Δώστε του μερικά δευτερόλεπτα - αν το παιχνίδι δεν αντιδράσει, θα σκοτωθεί αυτόματα."
+msgid "Kite is already shutting this instance down. Give it a few seconds - if the game does not react, it gets killed automatically."
+msgstr "Το Kite κλείνει ήδη αυτή την περίπτωση. Δώστε του μερικά δευτερόλεπτα - αν το παιχνίδι δεν αντιδράσει, θα σκοτωθεί αυτόματα."
 
 #: launcher/LaunchController.cpp:634
 msgctxt "LaunchController|"
@@ -4157,9 +4157,9 @@ msgstr "Αυτό μπορεί να καταστρέψει την εγκατάσ�
 #: launcher/launch/LaunchTask.cpp:201
 #, qt-format
 msgctxt "LaunchTask|"
-msgid "MeshMC stopped watching the game log because the log length surpassed %1 lines.\n"
+msgid "Kite stopped watching the game log because the log length surpassed %1 lines.\n"
 "You may have to fix your mods because the game is still logging to files and likely wasting harddrive space at an alarming rate!"
-msgstr "Το MeshMC σταμάτησε να παρακολουθεί το αρχείο καταγραφής του παιχνιδιού, επειδή το μήκος του αρχείου καταγραφής ξεπέρασε τις γραμμές %1 .\n"
+msgstr "Το Kite σταμάτησε να παρακολουθεί το αρχείο καταγραφής του παιχνιδιού, επειδή το μήκος του αρχείου καταγραφής ξεπέρασε τις γραμμές %1 .\n"
 "Μπορεί να χρειαστεί να διορθώσετε τα mods σας επειδή το παιχνίδι εξακολουθεί να καταγράφει αρχεία και πιθανότατα να σπαταλά χώρο harddrive με ανησυχητικό ρυθμό!"
 
 #: launcher/ui/pages/modplatform/legacy_ftb/ListModel.cpp:39
@@ -4321,8 +4321,8 @@ msgstr "Εγκατάσταση από προηγούμενες εκδόσεις.
 
 #: launcher/ui/pages/instance/LegacyUpgradePage.ui:29
 msgctxt "LegacyUpgradePage|"
-msgid "<html><body><h1>Upgrade is required</h1><p>MeshMC now supports old Minecraft versions and all the required features in the new (OneSix) instance format. As a consequence, the old (Legacy) format has been entirely disabled and old instances need to be upgraded.</p><p>The upgrade will create a new instance with the same contents as the current one, in the new format. The original instance will remain untouched, in case anything goes wrong in the process.</p><p>Please report any issues on our <a href=\"https://github.com/Project-Tick/MeshMC/issues\">GitHub page</a>.</p><p>There is also a <a href=\"https://discord.gg/PMxPTqwEwj\">discord channel for testing here</a>.</p></body></html>"
-msgstr "<html><body><h1>Απαιτείται αναβάθμιση</h1><p>MeshMC υποστηρίζει τώρα παλιές εκδόσεις Minecraft και όλα τα απαιτούμενα χαρακτηριστικά στη νέα μορφή (OneSix). Κατά συνέπεια, η παλιά μορφή (Legacy) έχει απενεργοποιηθεί πλήρως και οι παλιές περιπτώσεις πρέπει να αναβαθμιστούν.</p><p>Η αναβάθμιση θα δημιουργήσει μια νέα παρουσία με τα ίδια περιεχόμενα με την τρέχουσα μορφή, στη νέα μορφή. Το αρχικό παράδειγμα θα παραμείνει άθικτο, σε περίπτωση που κάτι πάει στραβά στη διαδικασία.</p><p>Παρακαλούμε αναφέρετε οποιαδήποτε προβλήματα στο <a href=\"https://github.com/Project-Tick/MeshMC/issues\">GitHub page</a>.</p><p>Υπάρχει επίσης ένα κανάλι <a href=\"https://discord.gg/PMxPTqwEwj\">discord για δοκιμές εδώ</a>.</p></body></html>"
+msgid "<html><body><h1>Upgrade is required</h1><p>Kite now supports old Minecraft versions and all the required features in the new (OneSix) instance format. As a consequence, the old (Legacy) format has been entirely disabled and old instances need to be upgraded.</p><p>The upgrade will create a new instance with the same contents as the current one, in the new format. The original instance will remain untouched, in case anything goes wrong in the process.</p><p>Please report any issues on our <a href=\"https://github.com/grxtor/kite/issues\">GitHub page</a>.</p><p>There is also a <a href=\"https://discord.gg/PMxPTqwEwj\">discord channel for testing here</a>.</p></body></html>"
+msgstr "<html><body><h1>Απαιτείται αναβάθμιση</h1><p>Kite υποστηρίζει τώρα παλιές εκδόσεις Minecraft και όλα τα απαιτούμενα χαρακτηριστικά στη νέα μορφή (OneSix). Κατά συνέπεια, η παλιά μορφή (Legacy) έχει απενεργοποιηθεί πλήρως και οι παλιές περιπτώσεις πρέπει να αναβαθμιστούν.</p><p>Η αναβάθμιση θα δημιουργήσει μια νέα παρουσία με τα ίδια περιεχόμενα με την τρέχουσα μορφή, στη νέα μορφή. Το αρχικό παράδειγμα θα παραμείνει άθικτο, σε περίπτωση που κάτι πάει στραβά στη διαδικασία.</p><p>Παρακαλούμε αναφέρετε οποιαδήποτε προβλήματα στο <a href=\"https://github.com/grxtor/kite/issues\">GitHub page</a>.</p><p>Υπάρχει επίσης ένα κανάλι <a href=\"https://discord.gg/PMxPTqwEwj\">discord για δοκιμές εδώ</a>.</p></body></html>"
 
 #: launcher/ui/pages/instance/LegacyUpgradePage.ui:39
 msgctxt "LegacyUpgradePage|"
@@ -4545,8 +4545,8 @@ msgstr "<p>Ένα παράθυρο του προγράμματος περιήγ�
 
 #: launcher/minecraft/auth/steps/MSAStep.cpp:35
 msgctxt "MSAStep|"
-msgid "Login successful! You can close this page and return to MeshMC."
-msgstr "Επιτυχής σύνδεση! Μπορείτε να κλείσετε αυτή τη σελίδα και να επιστρέψετε στο MeshMC."
+msgid "Login successful! You can close this page and return to Kite."
+msgstr "Επιτυχής σύνδεση! Μπορείτε να κλείσετε αυτή τη σελίδα και να επιστρέψετε στο Kite."
 
 #: launcher/minecraft/auth/steps/MSAStep.cpp:59
 msgctxt "MSAStep|"
@@ -4798,13 +4798,13 @@ msgstr "Προβολή και διαχείριση προσθέτων MMCO."
 
 #: launcher/ui/MainWindow.cpp:652
 msgctxt "MainWindow|"
-msgid "MeshMC Logs"
+msgid "Kite Logs"
 msgstr "Αρχεία Καταγραφής Πλέγματος"
 
 #: launcher/ui/MainWindow.cpp:653
 msgctxt "MainWindow|"
-msgid "View and manage MeshMC application logs."
-msgstr "Προβολή και διαχείριση αρχείων καταγραφής εφαρμογών MeshMC."
+msgid "View and manage Kite application logs."
+msgstr "Προβολή και διαχείριση αρχείων καταγραφής εφαρμογών Kite."
 
 #: launcher/ui/MainWindow.cpp:662
 #, qt-format
@@ -5141,7 +5141,7 @@ msgstr "Δημιουργήστε μια συντόμευση σε ένα φάκ�
 
 #: launcher/ui/MainWindow.cpp:1380
 #, qt-format
-msgctxt "MainWindow|MeshMC - Version X"
+msgctxt "MainWindow|Kite - Version X"
 msgid "%1 - Version %2"
 msgstr "%1 - Έκδοση %2"
 
@@ -5282,8 +5282,8 @@ msgstr "Εκκίνηση updater..."
 
 #: launcher/ui/MainWindow.cpp:2230
 msgctxt "MainWindow|"
-msgid "Updater launched. MeshMC will now close."
-msgstr "Εκκίνηση ενημέρωσης. Το MeshMC θα κλείσει."
+msgid "Updater launched. Kite will now close."
+msgstr "Εκκίνηση ενημέρωσης. Το Kite θα κλείσει."
 
 #: launcher/ui/MainWindow.cpp:2237
 msgctxt "MainWindow|"
@@ -5320,9 +5320,9 @@ msgstr "Ματαίωση"
 
 #: launcher/ui/MainWindow.cpp:2398
 msgctxt "MainWindow|"
-msgid "MeshMC cannot download Minecraft or update instances unless you have at least one account added.\n"
+msgid "Kite cannot download Minecraft or update instances unless you have at least one account added.\n"
 "Please add your Mojang or Minecraft account."
-msgstr "Το MeshMC δεν μπορεί να κατεβάσει το Minecraft ή να ενημερώσει περιπτώσεις εκτός εάν έχετε προσθέσει τουλάχιστον έναν λογαριασμό.\n"
+msgstr "Το Kite δεν μπορεί να κατεβάσει το Minecraft ή να ενημερώσει περιπτώσεις εκτός εάν έχετε προσθέσει τουλάχιστον έναν λογαριασμό.\n"
 "Παρακαλώ προσθέστε τον λογαριασμό σας στο Mojang ή το Minecraft."
 
 #: launcher/ui/MainWindow.cpp:2543
@@ -5426,8 +5426,8 @@ msgstr "Μετονομασία Παρουσίας"
 
 #: launcher/ui/MainWindow.cpp:3209
 msgctxt "MainWindow|"
-msgid "This is a problem: <br/> - MeshMC will likely be deleted without warning by the operating system <br/> - close MeshMC now and extract it to a real location, not a temporary folder"
-msgstr "Αυτό είναι ένα πρόβλημα: <br/> - MeshMC είναι πιθανό να διαγραφεί χωρίς προειδοποίηση από το λειτουργικό σύστημα <br/> - κλείστε το MeshMC τώρα και εξαγάγετε σε μια πραγματική τοποθεσία, δεν είναι προσωρινός φάκελος"
+msgid "This is a problem: <br/> - Kite will likely be deleted without warning by the operating system <br/> - close Kite now and extract it to a real location, not a temporary folder"
+msgstr "Αυτό είναι ένα πρόβλημα: <br/> - Kite είναι πιθανό να διαγραφεί χωρίς προειδοποίηση από το λειτουργικό σύστημα <br/> - κλείστε το Kite τώρα και εξαγάγετε σε μια πραγματική τοποθεσία, δεν είναι προσωρινός φάκελος"
 
 #: launcher/ui/MainWindow.cpp:3221
 #, qt-format
@@ -5444,8 +5444,8 @@ msgstr "Έχετε τώρα δύο επιλογές: <br/> - αλλάξτε το
 #: launcher/ui/MainWindow.cpp:3237
 #, qt-format
 msgctxt "MainWindow|"
-msgid "Your instance folder '%1' contains 'Rar$' - that means you haven't extracted MeshMC archive!"
-msgstr "Ο φάκελος παρουσίας '%1' περιέχει 'Rar$' - αυτό σημαίνει ότι δεν έχετε εξαγάγει αρχείο MeshMC!"
+msgid "Your instance folder '%1' contains 'Rar$' - that means you haven't extracted Kite archive!"
+msgstr "Ο φάκελος παρουσίας '%1' περιέχει 'Rar$' - αυτό σημαίνει ότι δεν έχετε εξαγάγει αρχείο Kite!"
 
 #: launcher/ui/MainWindow.cpp:3247
 #, qt-format
@@ -5675,353 +5675,353 @@ msgctxt "ManagedPackPage|"
 msgid "The instance updated to pack version %1 successfully."
 msgstr "Η παρουσία ενημερώθηκε με επιτυχία στην έκδοση πακέτου %1."
 
-#: launcher/minecraft/auth/steps/MeshMCLoginStep.cpp:34
-msgctxt "MeshMCLoginStep|"
+#: launcher/minecraft/auth/steps/KiteLoginStep.cpp:34
+msgctxt "KiteLoginStep|"
 msgid "Accessing Mojang services."
 msgstr "Πρόσβαση σε υπηρεσίες Mojang."
 
-#: launcher/minecraft/auth/steps/MeshMCLoginStep.cpp:80
+#: launcher/minecraft/auth/steps/KiteLoginStep.cpp:80
 #, qt-format
-msgctxt "MeshMCLoginStep|"
+msgctxt "KiteLoginStep|"
 msgid "Failed to get Minecraft access token: %1"
 msgstr "Αποτυχία λήψης διακριτικού πρόσβασης στο Minecraft: %1"
 
-#: launcher/minecraft/auth/steps/MeshMCLoginStep.cpp:92
-msgctxt "MeshMCLoginStep|"
+#: launcher/minecraft/auth/steps/KiteLoginStep.cpp:92
+msgctxt "KiteLoginStep|"
 msgid "Failed to parse the Minecraft access token response."
 msgstr "Αποτυχία ανάλυσης της απόκρισης διακριτικού πρόσβασης Minecraft."
 
-#: launcher/minecraft/auth/steps/MeshMCLoginStep.cpp:95
-msgctxt "MeshMCLoginStep|"
+#: launcher/minecraft/auth/steps/KiteLoginStep.cpp:95
+msgctxt "KiteLoginStep|"
 msgid ""
 msgstr ""
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:14
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:39
-msgctxt "MeshMCLogsDialog|"
-msgid "MeshMC Logs"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:14
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:39
+msgctxt "KiteLogsDialog|"
+msgid "Kite Logs"
 msgstr "Αρχεία Καταγραφής Πλέγματος"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:36
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:36
+msgctxt "KiteLogsDialog|"
 msgid "Reload"
 msgstr "Reload"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:43
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:43
+msgctxt "KiteLogsDialog|"
 msgid "Copy the whole log into the clipboard"
 msgstr "Αντιγραφή ολόκληρης της σύνδεσης στο πρόχειρο"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:46
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:46
+msgctxt "KiteLogsDialog|"
 msgid "&Copy"
 msgstr "&Αντιγραφή"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:53
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:53
+msgctxt "KiteLogsDialog|"
 msgid "Upload the log to paste.ee"
 msgstr "Ανεβάστε το αρχείο καταγραφής στο paste.ee"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:56
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:56
+msgctxt "KiteLogsDialog|"
 msgid "Upload"
 msgstr "Ανέβασμα"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:63
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:63
+msgctxt "KiteLogsDialog|"
 msgid "Delete the selected log file"
 msgstr "Διαγραφή του επιλεγμένου αρχείου καταγραφής"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:66
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:210
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:66
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:210
+msgctxt "KiteLogsDialog|"
 msgid "Delete"
 msgstr "Διαγραφή"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:73
-msgctxt "MeshMCLogsDialog|"
-msgid "Delete all MeshMC log files"
-msgstr "Διαγραφή όλων των αρχείων καταγραφής MeshMC"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:73
+msgctxt "KiteLogsDialog|"
+msgid "Delete all Kite log files"
+msgstr "Διαγραφή όλων των αρχείων καταγραφής Kite"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:76
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:76
+msgctxt "KiteLogsDialog|"
 msgid "Clean"
 msgstr "Καθαρισμός"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:100
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:100
+msgctxt "KiteLogsDialog|"
 msgid "Search:"
 msgstr "Αναζήτηση:"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:110
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:110
+msgctxt "KiteLogsDialog|"
 msgid "Find"
 msgstr "Εύρεση"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:152
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:217
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:263
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:152
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:217
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:263
+msgctxt "KiteLogsDialog|"
 msgid "Error"
 msgstr "Σφάλμα"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:153
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:153
 #, qt-format
-msgctxt "MeshMCLogsDialog|"
+msgctxt "KiteLogsDialog|"
 msgid "Unable to open %1 for reading: %2"
 msgstr "Αδυναμία ανοίγματος %1 για ανάγνωση: %2"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:161
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:161
 #, qt-format
-msgctxt "MeshMCLogsDialog|"
+msgctxt "KiteLogsDialog|"
 msgid "The file (%1) is too big. You may want to open it in a viewer optimized for large files."
 msgstr "Το αρχείο (%1) είναι πολύ μεγάλο. Μπορεί να θέλετε να το ανοίξετε σε ένα θεατή βελτιστοποιημένο για μεγάλα αρχεία."
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:211
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:211
 #, qt-format
-msgctxt "MeshMCLogsDialog|"
+msgctxt "KiteLogsDialog|"
 msgid "Do you really want to delete %1?"
 msgstr "Θέλετε πραγματικά να διαγράψετε το %1?"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:218
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:218
 #, qt-format
-msgctxt "MeshMCLogsDialog|"
+msgctxt "KiteLogsDialog|"
 msgid "Unable to delete %1: %2"
 msgstr "Αδυναμία διαγραφής %1: %2"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:242
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:242
+msgctxt "KiteLogsDialog|"
 msgid "Clean up"
 msgstr "Εκκαθάριση"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:243
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:243
 #, qt-format
-msgctxt "MeshMCLogsDialog|"
+msgctxt "KiteLogsDialog|"
 msgid "Do you really want to delete all log files?\n"
 "%1"
 msgstr "Θέλετε πραγματικά να διαγράψετε όλα τα αρχεία καταγραφής?\n"
 "%1"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:264
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:264
 #, qt-format
-msgctxt "MeshMCLogsDialog|"
+msgctxt "KiteLogsDialog|"
 msgid "Couldn't delete some files:\n"
 "%1"
 msgstr "Δεν ήταν δυνατή η διαγραφή μερικών αρχείων:\n"
 "%1"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:45
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:45
+msgctxt "KitePage|"
 msgid "Features"
 msgstr "Χαρακτηριστικά"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:51
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:51
+msgctxt "KitePage|"
 msgid "Update Settings"
 msgstr "Ενημέρωση Ρυθμίσεων"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:57
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:57
+msgctxt "KitePage|"
 msgid "Check for updates on start?"
 msgstr "Έλεγχος για ενημερώσεις κατά την έναρξη?"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:64
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:64
+msgctxt "KitePage|"
 msgid "Up&date Channel:"
 msgstr "Κανάλι Ενημέρωσης:"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:81
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:81
+msgctxt "KitePage|"
 msgid "No channel selected."
 msgstr "Δεν επιλέχθηκε κανάλι."
 
-#: launcher/ui/pages/global/MeshMCPage.ui:94
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:94
+msgctxt "KitePage|"
 msgid "Folders"
 msgstr "Φάκελοι"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:100
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:100
+msgctxt "KitePage|"
 msgid "I&nstances:"
 msgstr "Καταστάσεις:"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:120
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:120
+msgctxt "KitePage|"
 msgid "&Mods:"
 msgstr "&Mods:"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:143
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:143
+msgctxt "KitePage|"
 msgid "&Icons:"
 msgstr "&Εικονίδια"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:163
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:163
+msgctxt "KitePage|"
 msgid "&Skins:"
 msgstr "&Εμφανίσεις:"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:183
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:183
+msgctxt "KitePage|"
 msgid "&Java:"
 msgstr "&Java:"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:200
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:200
+msgctxt "KitePage|"
 msgid "Additional instance directories"
 msgstr "Πρόσθετοι κατάλογοι στιγμιότυπων"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:211
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:211
+msgctxt "KitePage|"
 msgid "Add"
 msgstr "Προσθήκη"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:218
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:218
+msgctxt "KitePage|"
 msgid "Remove"
 msgstr "Αφαίρεση"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:240
-msgctxt "MeshMCPage|"
-msgid "Move the data to new location (will restart MeshMC)"
-msgstr "Μετακινήστε τα δεδομένα σε νέα τοποθεσία (θα επανεκκινήσετε το MeshMC)"
+#: launcher/ui/pages/global/KitePage.ui:240
+msgctxt "KitePage|"
+msgid "Move the data to new location (will restart Kite)"
+msgstr "Μετακινήστε τα δεδομένα σε νέα τοποθεσία (θα επανεκκινήσετε το Kite)"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:247
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:247
+msgctxt "KitePage|"
 msgid "Backup System"
 msgstr "Σύστημα Αντιγράφων Ασφαλείας"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:253
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:253
+msgctxt "KitePage|"
 msgid "Creates a snapshot of each instance before launching. Backups are saved in the instance's .backups folder with the label \"pre-launch\"."
 msgstr "Δημιουργεί ένα στιγμιότυπο κάθε στιγμιότυπου πριν την εκκίνηση. Τα αντίγραφα ασφαλείας αποθηκεύονται στο φάκελο .backups της περίπτωσης με την ετικέτα \"pre-launch\"."
 
-#: launcher/ui/pages/global/MeshMCPage.ui:256
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:256
+msgctxt "KitePage|"
 msgid "Automatically &backup instances before launch"
 msgstr "Αυτόματη δημιουργία αντιγράφων ασφαλείας πριν την εκκίνηση"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:266
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:266
+msgctxt "KitePage|"
 msgid "Instance creation"
 msgstr "Παρουσίαση δημιουργίας"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:272
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:272
+msgctxt "KitePage|"
 msgid "When installing a modpack that is already installed, offer to update that instance instead of creating a second copy of it."
 msgstr "Κατά την εγκατάσταση ενός πακέτου modpack που είναι ήδη εγκατεστημένο, να προσφέρει την ενημέρωση αυτής της παρουσίας αντί για τη δημιουργία ενός δεύτερου αντιγράφου της."
 
-#: launcher/ui/pages/global/MeshMCPage.ui:275
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:275
+msgctxt "KitePage|"
 msgid "&Suggest updating an existing instance during modpack installation"
 msgstr "&Προτείνετε ενημέρωση ενός υπάρχοντος στιγμιότυπου κατά την εγκατάσταση του modpack"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:282
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:282
+msgctxt "KitePage|"
 msgid "Download the game's libraries and assets while the instance is being created, instead of waiting until the first time it is launched."
 msgstr "Κατεβάστε τις βιβλιοθήκες και τα περιουσιακά στοιχεία του παιχνιδιού, ενώ η παρουσία δημιουργείται, αντί να περιμένετε μέχρι την πρώτη φορά που θα ξεκινήσει."
 
-#: launcher/ui/pages/global/MeshMCPage.ui:285
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:285
+msgctxt "KitePage|"
 msgid "&Download the game's files while creating an instance"
 msgstr "&Κατεβάστε τα αρχεία του παιχνιδιού κατά τη δημιουργία μιας διεργασίας"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:309
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:309
+msgctxt "KitePage|"
 msgid "User Interface"
 msgstr "Περιβάλλον Χρήστη"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:315
-msgctxt "MeshMCPage|"
-msgid "MeshMC notifications"
-msgstr "Ειδοποιήσεις MeshMC"
+#: launcher/ui/pages/global/KitePage.ui:315
+msgctxt "KitePage|"
+msgid "Kite notifications"
+msgstr "Ειδοποιήσεις Kite"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:321
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:321
+msgctxt "KitePage|"
 msgid "Reset hidden notifications"
 msgstr "Επαναφορά κρυφών ειδοποιήσεων"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:337
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:337
+msgctxt "KitePage|"
 msgid "Instance view sorting mode"
 msgstr "Λειτουργία ταξινόμησης εμφάνισης εμφάνισης εμφάνισης"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:343
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:343
+msgctxt "KitePage|"
 msgid "By &last launched"
 msgstr "Κατά &τελευταία εκκίνηση"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:353
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:353
+msgctxt "KitePage|"
 msgid "By &name"
 msgstr "Κατά &όνομα"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:380
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:380
+msgctxt "KitePage|"
 msgid "Console"
 msgstr "Κονσόλα"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:386
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:386
+msgctxt "KitePage|"
 msgid "Console Settings"
 msgstr "Ρυθμίσεις Κονσόλας"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:392
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:392
+msgctxt "KitePage|"
 msgid "Show console while the game is running?"
 msgstr "Εμφάνιση κονσόλας όσο εκτελείται το παιχνίδι?"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:399
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:399
+msgctxt "KitePage|"
 msgid "Automatically close console when the game quits?"
 msgstr "Αυτόματο κλείσιμο κονσόλας όταν κλείνει το παιχνίδι?"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:406
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:406
+msgctxt "KitePage|"
 msgid "Show console when the game crashes?"
 msgstr "Εμφάνιση κονσόλας όταν το παιχνίδι καταρρεύσει?"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:416
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:416
+msgctxt "KitePage|"
 msgid "History limit"
 msgstr "Όριο ιστορικού"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:422
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:422
+msgctxt "KitePage|"
 msgid "Stop logging when log overflows"
 msgstr "Διακοπή καταγραφής κατά τις υπερροές καταγραφής"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:435
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:435
+msgctxt "KitePage|"
 msgid " lines"
 msgstr " γραμμές"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:463
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:463
+msgctxt "KitePage|"
 msgid "Console font"
 msgstr "Γραμματοσειρά κονσόλας"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:515
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:515
+msgctxt "KitePage|"
 msgid "Analytics"
 msgstr "Αναλύσεις"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:521
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:521
+msgctxt "KitePage|"
 msgid "Analytics Settings"
 msgstr "Ρυθμίσεις Analytics"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:527
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:527
+msgctxt "KitePage|"
 msgid "Send anonymous usage statistics?"
 msgstr "Αποστολή ανώνυμων στατιστικών χρήσης?"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:541
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:541
+msgctxt "KitePage|"
 msgid "<html><head/>\n"
 "<body>\n"
-"<p>MeshMC sends anonymous usage statistics on every start of the application.</p><p>The following data is collected:</p>\n"
+"<p>Kite sends anonymous usage statistics on every start of the application.</p><p>The following data is collected:</p>\n"
 "<ul>\n"
-"<li>MeshMC version.</li>\n"
+"<li>Kite version.</li>\n"
 "<li>Operating system name, version and architecture.</li>\n"
 "<li>CPU architecture (kernel architecture on linux).</li>\n"
 "<li>Size of system memory.</li>\n"
@@ -6030,9 +6030,9 @@ msgid "<html><head/>\n"
 "</body></html>"
 msgstr "<html><head/>\n"
 "<body>\n"
-"<p>MeshMC στέλνει ανώνυμα στατιστικά χρήσης σε κάθε αρχή της εφαρμογής.</p><p>Συλλέγονται τα ακόλουθα δεδομένα:</p>\n"
+"<p>Kite στέλνει ανώνυμα στατιστικά χρήσης σε κάθε αρχή της εφαρμογής.</p><p>Συλλέγονται τα ακόλουθα δεδομένα:</p>\n"
 "<ul>\n"
-"<li>Έκδοση MeshMC.</li>\n"
+"<li>Έκδοση Kite.</li>\n"
 "<li>Όνομα λειτουργικού συστήματος, έκδοση και αρχιτεκτονική.</li>\n"
 "<li>Αρχιτεκτονική CPU (αρχιτεκτονική πυρήνα σε linux).</li>\n"
 "<li>Μέγεθος μνήμης συστήματος.</li>\n"
@@ -6040,121 +6040,121 @@ msgstr "<html><head/>\n"
 "</ul>\n"
 "</body></html>"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:106
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:106
+msgctxt "KitePage|"
 msgid "You're trying to specify an instance folder which's path contains at least one '!'. Java is known to cause problems if that is the case, your instances (probably) won't start!"
 msgstr "Προσπαθείτε να καθορίσετε έναν φάκελο υποθέσεων ο οποίος περιέχει τουλάχιστον ένα '!'. Η Java είναι γνωστό ότι προκαλεί προβλήματα αν αυτή είναι η περίπτωση, οι παρουσίες σας (πιθανώς) δεν θα ξεκινήσουν!"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:111
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:111
+msgctxt "KitePage|"
 msgid "Do you really want to use this path? Selecting \"No\" will close this and not alter your instance path."
 msgstr "Θέλετε πραγματικά να χρησιμοποιήσετε αυτή τη διαδρομή? Η επιλογή \"Όχι\" θα κλείσει αυτό και δεν θα αλλάξει τη διαδρομή του στιγμιότυπου σας."
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:131
+#: launcher/ui/pages/global/KitePage.cpp:131
 #, qt-format
-msgctxt "MeshMCPage|"
+msgctxt "KitePage|"
 msgid "You're trying to specify an instance folder which was granted temporarily via Flatpak.\n"
 "This is known to cause problems. After a restart the launcher might break, because it will no longer have access to that directory.\n\n"
 "Granting %1 access to it via Flatseal is recommended."
 msgstr ""
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:138
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:138
+msgctxt "KitePage|"
 msgid "Do you want to proceed anyway?"
 msgstr "Θέλετε να προχωρήσετε ούτως ή άλλως?"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:149
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:149
+msgctxt "KitePage|"
 msgid "Instance Folder"
 msgstr "Φάκελος Παρουσίας"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:172
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:172
+msgctxt "KitePage|"
 msgid "Additional Instance Folder"
 msgstr "Πρόσθετος Φάκελος Instance"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:199
-#: launcher/ui/pages/global/MeshMCPage.cpp:206
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:199
+#: launcher/ui/pages/global/KitePage.cpp:206
+msgctxt "KitePage|"
 msgid "Duplicate directory"
 msgstr "Duplicate directory"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:200
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:200
+msgctxt "KitePage|"
 msgid "This is already your primary instance directory."
 msgstr "Αυτός είναι ήδη ο κύριος φάκελος σας."
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:207
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:207
+msgctxt "KitePage|"
 msgid "This directory has already been added."
 msgstr "Αυτός ο κατάλογος έχει ήδη προστεθεί."
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:230
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:230
+msgctxt "KitePage|"
 msgid "Icons Folder"
 msgstr "Φάκελος Εικονιδίων"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:241
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:241
+msgctxt "KitePage|"
 msgid "Skins Folder"
 msgstr "Φάκελος Εμφανίσεων"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:252
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:252
+msgctxt "KitePage|"
 msgid "Java Folder"
 msgstr "Φάκελος JavaComment"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:263
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:263
+msgctxt "KitePage|"
 msgid "Mods Folder"
 msgstr "Φάκελος Mods"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:274
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:274
+msgctxt "KitePage|"
 msgid "Automatic macOS Migration"
 msgstr "Αυτόματη μεταφορά macOS"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:275
+#: launcher/ui/pages/global/KitePage.cpp:275
 #, qt-format
-msgctxt "MeshMCPage|"
+msgctxt "KitePage|"
 msgid "%1 now stores macOS data under your Library/Application Support folder automatically."
 msgstr "%1 αποθηκεύει τώρα τα δεδομένα macOS κάτω από το φάκελο υποστήριξης βιβλιοθήκης σας αυτόματα."
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:433
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:433
+msgctxt "KitePage|"
 msgid "[Something/ERROR] A spooky error!"
 msgstr "[Κάποια/ΣΦΑΛΜΑ] Ένα τρομακτικό σφάλμα!"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:442
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:442
+msgctxt "KitePage|"
 msgid "[Test/INFO] A harmless message..."
 msgstr "[Δοκιμή/INFO] Ένα ακίνδυνο μήνυμα..."
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:451
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:451
+msgctxt "KitePage|"
 msgid "[Something/WARN] A not so spooky warning."
 msgstr "[Κάποια/ΠΡΟΣΟΧ] Δεν είναι τόσο τρομακτική προειδοποίηση."
 
-#: launcher/minecraft/launch/MeshMCPartLaunch.cpp:130
+#: launcher/minecraft/launch/KitePartLaunch.cpp:130
 #, qt-format
-msgctxt "MeshMCPartLaunch|"
+msgctxt "KitePartLaunch|"
 msgid "The wrapper command \"%1\" couldn't be found."
 msgstr "Δεν ήταν δυνατή η εύρεση της εντολής περιτυλίγματος \"%1."
 
 #. Error message displayed if instace can't start
-#: launcher/minecraft/launch/MeshMCPartLaunch.cpp:150
-msgctxt "MeshMCPartLaunch|"
+#: launcher/minecraft/launch/KitePartLaunch.cpp:150
+msgctxt "KitePartLaunch|"
 msgid "Could not launch minecraft!"
 msgstr "Αδυναμία εκκίνησης του minecraft!"
 
-#: launcher/minecraft/launch/MeshMCPartLaunch.cpp:158
-#: launcher/minecraft/launch/MeshMCPartLaunch.cpp:166
-msgctxt "MeshMCPartLaunch|"
+#: launcher/minecraft/launch/KitePartLaunch.cpp:158
+#: launcher/minecraft/launch/KitePartLaunch.cpp:166
+msgctxt "KitePartLaunch|"
 msgid "Game crashed."
 msgstr "Το παιχνίδι κατέρρευσε."
 
-#: launcher/minecraft/launch/MeshMCPartLaunch.cpp:227
-msgctxt "MeshMCPartLaunch|"
+#: launcher/minecraft/launch/KitePartLaunch.cpp:227
+msgctxt "KitePartLaunch|"
 msgid "The game did not react to the abort request. Killing it."
 msgstr "Το παιχνίδι δεν αντέδρασε στο αίτημα εγκατάλειψης. Σκοτώστε το."
 
@@ -7122,8 +7122,8 @@ msgstr "Κλειδί API για το paste.ee"
 
 #: launcher/ui/pages/global/PasteEEPage.ui:45
 msgctxt "PasteEEPage|"
-msgid "MeshMC key - 12MB &upload limit"
-msgstr "Κλειδί MeshMC - όριο μεταφόρτωσης 12MB"
+msgid "Kite key - 12MB &upload limit"
+msgstr "Κλειδί Kite - όριο μεταφόρτωσης 12MB"
 
 #: launcher/ui/pages/global/PasteEEPage.ui:55
 msgctxt "PasteEEPage|"
@@ -7137,8 +7137,8 @@ msgstr "Επικολλήστε το κλειδί API εδώ!"
 
 #: launcher/ui/pages/global/PasteEEPage.ui:82
 msgctxt "PasteEEPage|"
-msgid "<html><head/><body><p><a href=\"https://paste.ee\">paste.ee</a> is used by MeshMC for log uploads. If you have a <a href=\"https://paste.ee\">paste.ee</a> account, you can add your API key here and have your uploaded logs paired with your account.</p></body></html>"
-msgstr "<html><head/><body><p><a href=\"https://paste.ee\">πάστα. Το e</a> χρησιμοποιείται από το MeshMC για μεταφόρτωση αρχείου καταγραφής. Αν έχετε πάστα <a href=\"https://paste.ee\">. e</a> λογαριασμό, μπορείτε να προσθέσετε το κλειδί API σας εδώ και να έχετε ανεβάσει τα αρχεία καταγραφής σας σε σύνδεση με το λογαριασμό σας.</p></body></html>"
+msgid "<html><head/><body><p><a href=\"https://paste.ee\">paste.ee</a> is used by Kite for log uploads. If you have a <a href=\"https://paste.ee\">paste.ee</a> account, you can add your API key here and have your uploaded logs paired with your account.</p></body></html>"
+msgstr "<html><head/><body><p><a href=\"https://paste.ee\">πάστα. Το e</a> χρησιμοποιείται από το Kite για μεταφόρτωση αρχείου καταγραφής. Αν έχετε πάστα <a href=\"https://paste.ee\">. e</a> λογαριασμό, μπορείτε να προσθέσετε το κλειδί API σας εδώ και να έχετε ανεβάσει τα αρχεία καταγραφής σας σε σύνδεση με το λογαριασμό σας.</p></body></html>"
 
 #: launcher/ui/pages/global/PasteEEPage.h:43
 msgctxt "PasteEEPage|"
@@ -7186,13 +7186,13 @@ msgstr "Πρόσθετα MMCO"
 
 #: launcher/ui/dialogs/PluginsDialog.ui:29
 msgctxt "PluginsDialog|"
-msgid "Enabling or disabling a plugin takes effect after restarting MeshMC."
-msgstr "Η ενεργοποίηση ή απενεργοποίηση ενός πρόσθετου ενεργοποιείται μετά την επανεκκίνηση του MeshMC."
+msgid "Enabling or disabling a plugin takes effect after restarting Kite."
+msgstr "Η ενεργοποίηση ή απενεργοποίηση ενός πρόσθετου ενεργοποιείται μετά την επανεκκίνηση του Kite."
 
 #: launcher/ui/dialogs/PluginsDialog.ui:58
 msgctxt "PluginsDialog|"
-msgid "MeshMC MMCO Plugins List:"
-msgstr "Λίστα Προσθέτων Meshmc MMCO:"
+msgid "Kite MMCO Plugins List:"
+msgstr "Λίστα Προσθέτων Kite MMCO:"
 
 #: launcher/ui/dialogs/PluginsDialog.ui:78
 msgctxt "PluginsDialog|"
@@ -7263,7 +7263,7 @@ msgctxt "PreLaunchCommand|"
 msgid "Pre-Launch command ran successfully.\n\n"
 msgstr "Η Pre-Launch εντολή έτρεξε επιτυχώς.\n\n"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:113
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:113
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "Cannot create the download directory:\n"
@@ -7271,7 +7271,7 @@ msgid "Cannot create the download directory:\n"
 msgstr "Δεν μπορεί να δημιουργηθεί ο κατάλογος λήψεων:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:122
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:122
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "Cannot write to the download directory:\n"
@@ -7281,7 +7281,7 @@ msgstr "Αδυναμία εγγραφής στον κατάλογο λήψεων
 "%1\n\n"
 "%2"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:186
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:186
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "Could not download the update.\n\n"
@@ -7289,7 +7289,7 @@ msgid "Could not download the update.\n\n"
 msgstr "Δεν ήταν δυνατή η λήψη της ενημέρωσης.\n\n"
 "%1%2"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:188
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:188
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "\n"
@@ -7297,7 +7297,7 @@ msgid "\n"
 msgstr "\n"
 "κατάσταση HTTP: %1"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:196
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:196
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "The downloaded update is empty:\n"
@@ -7305,7 +7305,7 @@ msgid "The downloaded update is empty:\n"
 msgstr "Η ληφθείσα ενημέρωση είναι κενή:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:219
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:219
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "Could not unpack the update.\n\n"
@@ -7313,17 +7313,17 @@ msgid "Could not unpack the update.\n\n"
 msgstr "Δεν ήταν δυνατή η αποσυμπίεση της ενημέρωσης.\n\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:250
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:250
 #, qt-format
 msgctxt "PrepareStage|"
-msgid "The downloaded update does not look like a MeshMC release: it contains no %1.\n\n"
+msgid "The downloaded update does not look like a Kite release: it contains no %1.\n\n"
 "Unpacked to:\n"
 "%2"
-msgstr "Η κατεβασμένη ενημερωμένη έκδοση δεν μοιάζει με έκδοση MeshMC: δεν περιέχει %1.\n\n"
+msgstr "Η κατεβασμένη ενημερωμένη έκδοση δεν μοιάζει με έκδοση Kite: δεν περιέχει %1.\n\n"
 "Αποσυμπιέζεται σε:\n"
 "%2"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:257
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:257
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "The downloaded update does not contain %1.\n\n"
@@ -7333,7 +7333,7 @@ msgstr "Η ληφθείσα ενημέρωση δεν περιέχει %1.\n\n"
 "Αποσυμπιεσμένο σε:\n"
 "%2"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:283
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:283
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "Could not start the downloaded installer:\n"
@@ -7343,7 +7343,7 @@ msgstr "Δεν ήταν δυνατή η εκκίνηση του κατεβασμ
 "%1\n\n"
 "%2"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:296
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:296
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "This update is a Windows installer and cannot be applied on this platform:\n"
@@ -7351,15 +7351,15 @@ msgid "This update is a Windows installer and cannot be applied on this platform
 msgstr "Αυτή η ενημέρωση είναι ένα πρόγραμμα εγκατάστασης των Windows και δεν μπορεί να εφαρμοστεί σε αυτήν την πλατφόρμα:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:312
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:312
 #, qt-format
 msgctxt "PrepareStage|"
-msgid "MeshMC is still running and did not exit within %1 seconds.\n\n"
-"Close MeshMC and try again."
-msgstr "Το MeshMC εξακολουθεί να τρέχει και δεν εξέρχεται μέσα σε %1 δευτερόλεπτα.\n\n"
-"Κλείστε το MeshMC και προσπαθήστε ξανά."
+msgid "Kite is still running and did not exit within %1 seconds.\n\n"
+"Close Kite and try again."
+msgstr "Το Kite εξακολουθεί να τρέχει και δεν εξέρχεται μέσα σε %1 δευτερόλεπτα.\n\n"
+"Κλείστε το Kite και προσπαθήστε ξανά."
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:342
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:342
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "Could not start the second stage of the update:\n"
@@ -7369,7 +7369,7 @@ msgstr "Αδυναμία εκκίνησης του δεύτερου σταδίο
 "%1\n\n"
 "%2"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:354
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:354
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "The update could not be handed over to the version being installed.\n\n"
@@ -7480,8 +7480,8 @@ msgstr "%1 [installed]"
 
 #: launcher/ui/pages/global/ProxyPage.ui:42
 msgctxt "ProxyPage|"
-msgid "This only applies to MeshMC. Minecraft does not accept proxy settings."
-msgstr "Αυτό ισχύει μόνο για το MeshMC. Το Minecraft δεν δέχεται τις ρυθμίσεις διαμεσολαβητή."
+msgid "This only applies to Kite. Minecraft does not accept proxy settings."
+msgstr "Αυτό ισχύει μόνο για το Kite. Το Minecraft δεν δέχεται τις ρυθμίσεις διαμεσολαβητή."
 
 #: launcher/ui/pages/global/ProxyPage.ui:55
 msgctxt "ProxyPage|"
@@ -7535,8 +7535,8 @@ msgstr "Κωδικός πρόσβασης:"
 
 #: launcher/ui/pages/global/ProxyPage.ui:169
 msgctxt "ProxyPage|"
-msgid "Note: Proxy username and password are stored in plain text inside MeshMC's configuration file!"
-msgstr "Σημείωση: Το όνομα χρήστη και ο κωδικός πρόσβασης διακομιστή μεσολάβησης αποθηκεύονται σε απλό κείμενο μέσα στο αρχείο ρυθμίσεων του MeshMC!"
+msgid "Note: Proxy username and password are stored in plain text inside Kite's configuration file!"
+msgstr "Σημείωση: Το όνομα χρήστη και ο κωδικός πρόσβασης διακομιστή μεσολάβησης αποθηκεύονται σε απλό κείμενο μέσα στο αρχείο ρυθμίσεων του Kite!"
 
 #: launcher/ui/pages/global/ProxyPage.h:44
 msgctxt "ProxyPage|"
@@ -7673,8 +7673,8 @@ msgstr "processArguments έχει οριστεί σε άγνωστη τιμή '%
 #: launcher/minecraft/MojangVersionFormat.cpp:194
 #, qt-format
 msgctxt "QObject|"
-msgid "The 'minimumMeshMCVersion' value of this version (%1) is higher than supported by %3 (%2). It might not work properly!"
-msgstr "Η τιμή 'minimumMeshMCVersion' αυτής της έκδοσης (%1) είναι υψηλότερη από αυτή που υποστηρίζεται από τον %3 (%2). Ενδέχεται να μην λειτουργεί σωστά!"
+msgid "The 'minimumKiteVersion' value of this version (%1) is higher than supported by %3 (%2). It might not work properly!"
+msgstr "Η τιμή 'minimumKiteVersion' αυτής της έκδοσης (%1) είναι υψηλότερη από αυτή που υποστηρίζεται από τον %3 (%2). Ενδέχεται να μην λειτουργεί σωστά!"
 
 #: launcher/minecraft/MojangVersionFormat.cpp:312
 #, qt-format
@@ -7761,13 +7761,13 @@ msgstr "Δεν ήταν δυνατή η εγγραφή του εικονιδίο
 
 #: launcher/minecraft/ShortcutUtils.cpp:108
 msgctxt "QObject|"
-msgid "MeshMC is running from the folder it was extracted into, so it cannot create a shortcut. Move it to your Applications folder first."
-msgstr "Το MeshMC τρέχει από το φάκελο στο οποίο εξήχθησε, οπότε δεν μπορεί να δημιουργήσει μια συντόμευση. Μετακινήστε το πρώτα στο φάκελο Εφαρμογών."
+msgid "Kite is running from the folder it was extracted into, so it cannot create a shortcut. Move it to your Applications folder first."
+msgstr "Το Kite τρέχει από το φάκελο στο οποίο εξήχθησε, οπότε δεν μπορεί να δημιουργήσει μια συντόμευση. Μετακινήστε το πρώτα στο φάκελο Εφαρμογών."
 
 #: launcher/minecraft/ShortcutUtils.cpp:126
 msgctxt "QObject|"
-msgid "MeshMC looks like an AppImage, but $APPIMAGE is not set, so the path to write into the shortcut is unknown."
-msgstr "Το MeshMC μοιάζει με μια AppImage, αλλά το $APPIMAGE δεν έχει οριστεί, οπότε η διαδρομή εγγραφής στη συντόμευση είναι άγνωστη."
+msgid "Kite looks like an AppImage, but $APPIMAGE is not set, so the path to write into the shortcut is unknown."
+msgstr "Το Kite μοιάζει με μια AppImage, αλλά το $APPIMAGE δεν έχει οριστεί, οπότε η διαδρομή εγγραφής στη συντόμευση είναι άγνωστη."
 
 #: launcher/minecraft/ShortcutUtils.cpp:170
 msgctxt "QObject|"
@@ -7961,11 +7961,11 @@ msgstr "το git δεν έχει εγκατασταθεί - το ιστορικ�
 msgctxt "QObject|"
 msgid "MangoHud is not mounted inside this Flatpak sandbox.\n"
 "Install the org.freedesktop.Platform.VulkanLayer.MangoHud branch\n"
-"that matches the base runtime and restart MeshMC. A mismatched\n"
+"that matches the base runtime and restart Kite. A mismatched\n"
 "branch will not appear under /usr/lib/extensions/vulkan."
 msgstr "Το MangoHud δεν είναι τοποθετημένο μέσα σε αυτό το Flatpak sandbox.\n"
 "Εγκαταστήστε το org.Freedesktop.Platform.VulkanLayer. angoHud κλάδος\n"
-"που ταιριάζει με το χρόνο εκτέλεσης της βάσης και επανεκκίνηση του MeshMC. Ένας κλάδος\n"
+"που ταιριάζει με το χρόνο εκτέλεσης της βάσης και επανεκκίνηση του Kite. Ένας κλάδος\n"
 "δεν θα εμφανιστεί κάτω από το /usr/lib/extensions/vulkan."
 
 #: launcher/plugin/plugins/LinuxPerf/LinuxPerfPlugin.cpp:86
@@ -7987,9 +7987,9 @@ msgstr "Η λειτουργία παιχνιδιού δεν είναι διαθ�
 #: launcher/plugin/plugins/LinuxPerf/LinuxPerfPlugin.cpp:101
 msgctxt "QObject|"
 msgid "gamemoderun is not installed or not found on PATH.\n"
-"Install GameMode and restart MeshMC to enable this option."
+"Install GameMode and restart Kite to enable this option."
 msgstr "Το gamemoderun δεν είναι εγκατεστημένο ή δεν βρέθηκε στο PATH.\n"
-"Εγκαταστήστε το GameMode και επανεκκινήστε το MeshMC για να ενεργοποιήσετε αυτήν την επιλογή."
+"Εγκαταστήστε το GameMode και επανεκκινήστε το Kite για να ενεργοποιήσετε αυτήν την επιλογή."
 
 #: launcher/plugin/plugins/LinuxPerf/LinuxPerfPlugin.cpp:112
 #, qt-format
@@ -8102,15 +8102,15 @@ msgstr "Τροφοδότης Χαρτιού Συστήματος"
 
 #: launcher/plugin/plugins/SystemTray/SystemTrayPlugin.cpp:306
 msgctxt "QObject|"
-msgid "Show MeshMC system tray icon (Restart required.)"
-msgstr "Εμφάνιση εικονιδίου πλαισίου συστήματος MeshMC (η επανεκκίνηση απαιτείται.)"
+msgid "Show Kite system tray icon (Restart required.)"
+msgstr "Εμφάνιση εικονιδίου πλαισίου συστήματος Kite (η επανεκκίνηση απαιτείται.)"
 
 #: launcher/plugin/plugins/SystemTray/SystemTrayPlugin.cpp:309
 msgctxt "QObject|"
-msgid "When on, MeshMC keeps a persistent tray icon with quick-launch shortcuts and an optional minimise-to-tray close handler.\n\n"
-"Toggle takes effect after restarting MeshMC."
-msgstr "Όταν είναι ενεργό, το MeshMC διατηρεί ένα μόνιμο εικονίδιο δίσκου με συντομεύσεις γρήγορης εκκίνησης και έναν προαιρετικό χειριστή κλεισίματος ελάχιστης σε δίσκο.\n\n"
-"Εναλλαγή ενεργοποιείται μετά την επανεκκίνηση του MeshMC."
+msgid "When on, Kite keeps a persistent tray icon with quick-launch shortcuts and an optional minimise-to-tray close handler.\n\n"
+"Toggle takes effect after restarting Kite."
+msgstr "Όταν είναι ενεργό, το Kite διατηρεί ένα μόνιμο εικονίδιο δίσκου με συντομεύσεις γρήγορης εκκίνησης και έναν προαιρετικό χειριστή κλεισίματος ελάχιστης σε δίσκο.\n\n"
+"Εναλλαγή ενεργοποιείται μετά την επανεκκίνηση του Kite."
 
 #: launcher/plugin/plugins/staging/ErrorOracle/AnalysisPage.h:31
 msgctxt "QObject|"
@@ -8262,8 +8262,8 @@ msgstr "Κύκλος εξάρτησης"
 
 #: launcher/ui/dialogs/PluginsDialog.cpp:57
 msgctxt "QObject|"
-msgid "Built into MeshMC"
-msgstr "Χτισμένο σε MeshMC"
+msgid "Built into Kite"
+msgstr "Χτισμένο σε Kite"
 
 #: launcher/ui/dialogs/PluginsDialog.cpp:82
 msgctxt "QObject|"
@@ -9332,7 +9332,7 @@ msgstr "Δεν ήταν δυνατή η εκκίνηση της δυαδικής
 
 #: launcher/ui/dialogs/UpdateDialog.ui:14
 msgctxt "UpdateDialog|"
-msgid "MeshMC Update"
+msgid "Kite Update"
 msgstr "Ενημέρωση Πλέγματος"
 
 #: launcher/ui/dialogs/UpdateDialog.ui:61
@@ -9374,7 +9374,7 @@ msgstr "Κλείσιμο"
 
 #: launcher/ui/dialogs/UpdateProgressDialog.cpp:26
 msgctxt "UpdateProgressDialog|"
-msgid "MeshMC Update"
+msgid "Kite Update"
 msgstr "Ενημέρωση Πλέγματος"
 
 #: launcher/ui/dialogs/UpdateProgressDialog.cpp:32
@@ -9392,18 +9392,18 @@ msgctxt "UpdateProgressDialog|"
 msgid "Close"
 msgstr "Κλείσιμο"
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:127
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:127
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "--wait-pid expects a process id, got \"%1\"."
 msgstr "--wait-pid αναμένει ένα id διαδικασίας, πήρε το \"%1\"."
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:141
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:141
 msgctxt "UpdaterOptions|"
 msgid "No installation root was given (--root)."
 msgstr "Δεν δόθηκε ρίζα εγκατάστασης (--root)."
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:146
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:146
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "The installation root does not exist:\n"
@@ -9411,7 +9411,7 @@ msgid "The installation root does not exist:\n"
 msgstr "Η ρίζα εγκατάστασης δεν υπάρχει:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:151
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:151
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "The installation root is not a directory:\n"
@@ -9419,22 +9419,22 @@ msgid "The installation root is not a directory:\n"
 msgstr "Η ρίζα εγκατάστασης δεν είναι ένας κατάλογος:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:156
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:156
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "The installation root is not writable:\n"
 "%1\n\n"
-"MeshMC cannot update itself without write access to its own installation."
+"Kite cannot update itself without write access to its own installation."
 msgstr "Η ρίζα εγκατάστασης δεν είναι εγγράψιμη:\n"
 "%1\n\n"
-"MeshMC δεν μπορεί να ενημερωθεί χωρίς πρόσβαση εγγραφής στη δική της εγκατάσταση."
+"Kite δεν μπορεί να ενημερωθεί χωρίς πρόσβαση εγγραφής στη δική της εγκατάσταση."
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:165
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:165
 msgctxt "UpdaterOptions|"
 msgid "No download URL was given (--url)."
 msgstr "Δεν δόθηκε URL λήψης (--url)."
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:170
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:170
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "The download URL is not a valid URL:\n"
@@ -9442,13 +9442,13 @@ msgid "The download URL is not a valid URL:\n"
 msgstr "Το URL λήψης δεν είναι ένα έγκυρο URL:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:177
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:177
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "Refusing to download an update over \"%1\". Only http and https are supported."
 msgstr "Άρνηση λήψης μιας ενημέρωσης μέσω του \"%1\". Υποστηρίζονται μόνο http και https."
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:184
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:184
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "The binary to restart does not exist:\n"
@@ -9456,12 +9456,12 @@ msgid "The binary to restart does not exist:\n"
 msgstr "Το δυαδικό για επανεκκίνηση δεν υπάρχει:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:190
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:190
 msgctxt "UpdaterOptions|"
 msgid "No unpacked update was given (--source)."
 msgstr "Δεν δόθηκε καμία ενημέρωση (--source)."
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:193
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:193
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "The unpacked update is missing:\n"
@@ -9891,9 +9891,9 @@ msgstr "Αδυναμία λήψης ή φόρτωσης των intermediary mapp
 
 #: launcher/ui/pages/instance/VersionPage.cpp:417
 msgctxt "VersionPage|"
-msgid "MeshMC cannot download Minecraft or update instances unless you have at least one account added.\n"
+msgid "Kite cannot download Minecraft or update instances unless you have at least one account added.\n"
 "Please add your Mojang or Minecraft account."
-msgstr "Το MeshMC δεν μπορεί να κατεβάσει το Minecraft ή να ενημερώσει περιπτώσεις εκτός εάν έχετε προσθέσει τουλάχιστον έναν λογαριασμό.\n"
+msgstr "Το Kite δεν μπορεί να κατεβάσει το Minecraft ή να ενημερώσει περιπτώσεις εκτός εάν έχετε προσθέσει τουλάχιστον έναν λογαριασμό.\n"
 "Παρακαλώ προσθέστε τον λογαριασμό σας στο Mojang ή το Minecraft."
 
 #: launcher/ui/pages/instance/VersionPage.cpp:511
@@ -10027,13 +10027,13 @@ msgstr ""
 
 #: launcher/plugin/plugins/OfflineWiki/WikiPage.cpp:95
 msgctxt "WikiPage|"
-msgid "<h3>Wiki not available</h3><p>The MeshMC wiki is downloaded automatically using <b>git</b>, but no <code>git</code> program was found on your system, so the wiki cannot be fetched.</p><p>Install Git and restart MeshMC to download the wiki.</p>"
-msgstr "<h3>Wiki δεν είναι διαθέσιμο</h3><p>Το wiki MeshMC κατεβαίνει αυτόματα χρησιμοποιώντας <b>git</b>, αλλά δεν βρέθηκε πρόγραμμα <code>git</code> στο σύστημά σας, έτσι το wiki δεν μπορεί να ανακτηθεί.</p><p>Εγκαταστήστε το Git και επανεκκινήστε το MeshMC για να κατεβάσετε το wiki.</p>"
+msgid "<h3>Wiki not available</h3><p>The Kite wiki is downloaded automatically using <b>git</b>, but no <code>git</code> program was found on your system, so the wiki cannot be fetched.</p><p>Install Git and restart Kite to download the wiki.</p>"
+msgstr "<h3>Wiki δεν είναι διαθέσιμο</h3><p>Το wiki Kite κατεβαίνει αυτόματα χρησιμοποιώντας <b>git</b>, αλλά δεν βρέθηκε πρόγραμμα <code>git</code> στο σύστημά σας, έτσι το wiki δεν μπορεί να ανακτηθεί.</p><p>Εγκαταστήστε το Git και επανεκκινήστε το Kite για να κατεβάσετε το wiki.</p>"
 
 #: launcher/plugin/plugins/OfflineWiki/WikiPage.cpp:102
 msgctxt "WikiPage|"
-msgid "<h3>Downloading the MeshMC wiki…</h3><p>The wiki is fetched in the background the first time you are online and will appear here automatically once the download finishes. If you are offline, MeshMC retries on every launch.</p>"
-msgstr "<h3>Λήψη του wiki MeshMC…</h3><p>Το wiki ανακτάται στο παρασκήνιο την πρώτη φορά που είστε συνδεδεμένοι και θα εμφανιστεί εδώ αυτόματα μόλις ολοκληρωθεί η λήψη. Αν είστε εκτός σύνδεσης, MeshMC προσπαθεί σε κάθε εκτόξευση.</p>"
+msgid "<h3>Downloading the Kite wiki…</h3><p>The wiki is fetched in the background the first time you are online and will appear here automatically once the download finishes. If you are offline, Kite retries on every launch.</p>"
+msgstr "<h3>Λήψη του wiki Kite…</h3><p>Το wiki ανακτάται στο παρασκήνιο την πρώτη φορά που είστε συνδεδεμένοι και θα εμφανιστεί εδώ αυτόματα μόλις ολοκληρωθεί η λήψη. Αν είστε εκτός σύνδεσης, Kite προσπαθεί σε κάθε εκτόξευση.</p>"
 
 #: launcher/plugin/plugins/OfflineWiki/WikiPage.cpp:128
 #, qt-format
@@ -10332,7 +10332,7 @@ msgctxt "XboxUserStep|"
 msgid "Got Xbox user token"
 msgstr "Ελήφθη διακριτικό χρήστη Xbox"
 
-#: launcher/updater/MeshMCUpdater/main.cpp:93
+#: launcher/updater/KiteUpdater/main.cpp:93
 #, qt-format
 msgctxt "main|"
 msgid "Full log:\n"
@@ -10340,14 +10340,14 @@ msgid "Full log:\n"
 msgstr "Πλήρες ημερολόγιο:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/main.cpp:153
-#: launcher/updater/MeshMCUpdater/main.cpp:164
-#: launcher/updater/MeshMCUpdater/main.cpp:198
+#: launcher/updater/KiteUpdater/main.cpp:153
+#: launcher/updater/KiteUpdater/main.cpp:164
+#: launcher/updater/KiteUpdater/main.cpp:198
 msgctxt "main|"
 msgid "Update Failed"
 msgstr "Η Ενημέρωση Απέτυχε"
 
-#: launcher/updater/MeshMCUpdater/main.cpp:154
+#: launcher/updater/KiteUpdater/main.cpp:154
 #, qt-format
 msgctxt "main|"
 msgid "The updater was started with arguments it does not understand.\n\n"
@@ -10355,15 +10355,15 @@ msgid "The updater was started with arguments it does not understand.\n\n"
 msgstr "Η ενημέρωση ξεκίνησε με επιχειρήματα που δεν καταλαβαίνει.\n\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/main.cpp:176
+#: launcher/updater/KiteUpdater/main.cpp:176
 msgctxt "main|"
 msgid "Update Already Running"
 msgstr "Η Ενημέρωση Εκτελείται Ήδη"
 
-#: launcher/updater/MeshMCUpdater/main.cpp:177
+#: launcher/updater/KiteUpdater/main.cpp:177
 #, qt-format
 msgctxt "main|"
-msgid "Another MeshMC update is already in progress.\n\n"
+msgid "Another Kite update is already in progress.\n\n"
 "%1\n\n"
 "Wait for it to finish, or close it and try again."
 msgstr ""

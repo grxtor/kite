@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -144,7 +145,7 @@ namespace
 	 * PasteEEAPIKey setting - arbitrary text that may contain a '"' - and
 	 * unlike the POSIX branch's explicit argv[], CreateProcessW re-parses a
 	 * single command-line string, so an unescaped quote would let it inject
-	 * an extra argument into meshmc-crashreporter's parsed argv. */
+	 * an extra argument into kite-crashreporter's parsed argv. */
 	QString quoteWindowsArg(const QString& arg)
 	{
 		QString result = QStringLiteral("\"");
@@ -188,7 +189,7 @@ namespace
 	 * whenever the PasteEEAPIKey setting changes. */
 	void rebuildCrashReporterInvocation()
 	{
-		QString crashReporterName = QStringLiteral("meshmc-crashreporter");
+		QString crashReporterName = QStringLiteral("kite-crashreporter");
 #ifdef Q_OS_WIN
 		crashReporterName += QStringLiteral(".exe");
 #endif
@@ -207,12 +208,12 @@ namespace
 		if (APPLICATION && APPLICATION->settings()) {
 			const QString key =
 				APPLICATION->settings()->get("PasteEEAPIKey").toString();
-			apiKey = (key != QLatin1String("meshmc") && !key.isEmpty())
+			apiKey = (key != QLatin1String("kite") && !key.isEmpty())
 						 ? key
 						 : BuildConfig.PASTE_EE_KEY;
 		}
 		const QString logDir = QDir::currentPath();
-		const QString name = BuildConfig.MESHMC_NAME;
+		const QString name = BuildConfig.KITE_NAME;
 
 		const int current = g_activeInvocation.load(std::memory_order_relaxed);
 		const int nextSlot = current == 0 ? 1 : 0;
@@ -365,7 +366,7 @@ int main(int argc, char* argv[])
 						  });
 	}
 
-	// Install crash signal handlers to launch meshmc-crashreporter
+	// Install crash signal handlers to launch kite-crashreporter
 	signal(SIGSEGV, crashSignalHandler);
 	signal(SIGABRT, crashSignalHandler);
 #ifndef Q_OS_WIN
@@ -378,7 +379,7 @@ int main(int argc, char* argv[])
 			Q_INIT_RESOURCE(multimc);
 			Q_INIT_RESOURCE(backgrounds);
 			Q_INIT_RESOURCE(documents);
-			Q_INIT_RESOURCE(meshmc);
+			Q_INIT_RESOURCE(kite);
 			Q_INIT_RESOURCE(shaders);
 
 			Q_INIT_RESOURCE(pe_dark);
@@ -401,7 +402,7 @@ int main(int argc, char* argv[])
 			//
 			// A normal return would run C++ static destructors via
 			// exit()/__cxa_finalize.  Plugin .mmco modules statically
-			// link MeshMC_logic, which embeds a duplicate global
+			// link Kite_logic, which embeds a duplicate global
 			// `const Config BuildConfig` (non-trivial dtor with ~20
 			// QString members).  Those duplicate destructors corrupt
 			// the heap when they run after Qt is torn down, causing

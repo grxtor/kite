@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -91,7 +92,7 @@ class BaseInstance : public QObject,
 	virtual void saveNow() = 0;
 
 	/***
-	 * the instance has been invalidated - it is no longer tracked by MeshMC for
+	 * the instance has been invalidated - it is no longer tracked by Kite for
 	 * some reason, but it has not necessarily been deleted.
 	 *
 	 * Happens when the instance folder changes to some other location, or the
@@ -99,7 +100,7 @@ class BaseInstance : public QObject,
 	 */
 	void invalidate();
 
-	/// The instance's ID. The ID SHALL be determined by MESHMC internally. The
+	/// The instance's ID. The ID SHALL be determined by KITE internally. The
 	/// ID IS guaranteed to be unique.
 	virtual QString id() const;
 
@@ -150,7 +151,7 @@ class BaseInstance : public QObject,
 	 * isManagedPack() is asked on every repaint of a page that shows
 	 * an instance, and a settings lookup is already a hash probe.
 	 *
-	 * Every field is allowed to be empty. An older MeshMC recorded
+	 * Every field is allowed to be empty. An older Kite recorded
 	 * fewer of them, and a pack imported by drag-and-drop never had a
 	 * catalogue entry to record in the first place, so the page has to
 	 * cope with partial records rather than assume all-or-nothing.
@@ -182,7 +183,7 @@ class BaseInstance : public QObject,
 	 *
 	 * Deliberately does *not* require a pack id. An instance can have a
 	 * provider and no id - that is what an import from a local .mrpack
-	 * or a pack imported by an older MeshMC looks like - and such an
+	 * or a pack imported by an older Kite looks like - and such an
 	 * instance is still worth showing the pack page for, because it can
 	 * be updated from a file or from a URL the user supplies. Requiring
 	 * the id here would hide the page in exactly the case where it is

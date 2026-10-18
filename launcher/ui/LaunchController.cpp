@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -523,16 +524,16 @@ void LaunchController::launchInstance()
 			resolved_servers = resolved_servers + "]\n\n";
 		}
 		m_launcher->prependStep(new TextPrint(
-			m_launcher.get(), resolved_servers, MessageLevel::MeshMC));
+			m_launcher.get(), resolved_servers, MessageLevel::Kite));
 	} else {
 		online_mode = "offline";
 	}
 
 	m_launcher->prependStep(new TextPrint(
 		m_launcher.get(), "Launched instance in " + online_mode + " mode\n",
-		MessageLevel::MeshMC));
+		MessageLevel::Kite));
 
-	// Opt-in pre-launch snapshot (MeshMC settings -> Features).
+	// Opt-in pre-launch snapshot (Kite settings -> Features).
 	//
 	// A launch step, not an inline call: zipping a whole instance takes
 	// long enough to freeze the window if it runs on the GUI thread, and
@@ -551,9 +552,9 @@ void LaunchController::launchInstance()
 	// Prepend Version
 	m_launcher->prependStep(new TextPrint(
 		m_launcher.get(),
-		BuildConfig.MESHMC_NAME +
+		BuildConfig.KITE_NAME +
 			" version: " + BuildConfig.printableVersionString() + "\n\n",
-		MessageLevel::MeshMC));
+		MessageLevel::Kite));
 
 	// Dispatch pre-launch hook to plugins
 	if (APPLICATION->pluginManager()) {
@@ -705,7 +706,7 @@ bool LaunchController::abort()
 		if (m_launcher->isAborting()) {
 			LAUNCHER->uiHost()->message(
 				tr("Already stopping"),
-				tr("MeshMC is already shutting this instance down. Give it a "
+				tr("Kite is already shutting this instance down. Give it a "
 				   "few seconds - if the game does not react, it gets killed "
 				   "automatically."),
 				UiHost::Severity::Information);

@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -43,7 +44,7 @@ AboutInfo::AboutInfo(QObject* parent) : QObject(parent) {}
 
 QString AboutInfo::name() const
 {
-	return BuildConfig.MESHMC_DISPLAYNAME;
+	return BuildConfig.KITE_DISPLAYNAME;
 }
 
 QString AboutInfo::version() const
@@ -78,12 +79,12 @@ QString AboutInfo::updateChannel() const
 
 QString AboutInfo::sourceUrl() const
 {
-	return BuildConfig.MESHMC_GIT;
+	return BuildConfig.KITE_GIT;
 }
 
 QString AboutInfo::copyright() const
 {
-	return BuildConfig.MESHMC_COPYRIGHT;
+	return BuildConfig.KITE_COPYRIGHT;
 }
 
 QVariantList AboutInfo::helpLinks() const
@@ -99,7 +100,7 @@ QString AboutInfo::creditsHtml() const
 	if (html.isEmpty()) {
 		return html;
 	}
-	return html.arg(tr("%1 Developers").arg(BuildConfig.MESHMC_DISPLAYNAME),
+	return html.arg(tr("%1 Developers").arg(BuildConfig.KITE_DISPLAYNAME),
 					tr("MultiMC Developers"));
 }
 

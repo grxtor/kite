@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -414,7 +415,7 @@ void VersionPage::on_actionDownload_All_triggered()
 	if (!APPLICATION->accounts()->anyAccountIsValid()) {
 		CustomMessageBox::selectable(
 			this, tr("Error"),
-			tr("MeshMC cannot download Minecraft or update instances unless "
+			tr("Kite cannot download Minecraft or update instances unless "
 			   "you have at least "
 			   "one account added.\nPlease add your Mojang or Minecraft "
 			   "account."),

@@ -1,21 +1,21 @@
-# SPDX-FileCopyrightText: 2026 Project Tick
-# SPDX-FileContributor: Project Tick
+# SPDX-FileCopyrightText: 2026 grxtor
+# SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 
-######## Launcher-specific QML building blocks (MeshMC.Components) ########
+######## Launcher-specific QML building blocks (Kite.Components) ########
 
 # Mirrors launcher/qml/CMakeLists.txt: RESOURCE_PREFIX is spelled out by hand
 # rather than left to qt_policy(QTP0001) (Qt 6.5+), since the floor here is
-# 6.4, and this file lives beside the .qml it lists so the URI (MeshMC.Components)
+# 6.4, and this file lives beside the .qml it lists so the URI (Kite.Components)
 # and the on-disk path agree.
 #
 # Not added to the parent CMakeLists here -- the integrator wires this
-# library into the MeshMC_qml target once MeshMC.Theme exists to link against.
-qt_add_library(MeshMC_qml_components STATIC)
+# library into the Kite_qml target once Kite.Theme exists to link against.
+qt_add_library(Kite_qml_components STATIC)
 
 # Same reasoning as Theme/CMakeLists.txt's Theme.qml: has to run before
 # qt_add_qml_module, or Icons.qml registers as an ordinary re-instantiable
-# type and every "import MeshMC.Components" gets its own private instance
+# type and every "import Kite.Components" gets its own private instance
 # instead of the one Icons.url() is meant to be called on.
 set_source_files_properties(Icons.qml Format.qml SettingsStore.qml JavaStore.qml LauncherStore.qml PixelArt.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
@@ -25,12 +25,12 @@ set_source_files_properties(Icons.qml Format.qml SettingsStore.qml JavaStore.qml
 # illustrations (art/empty/*.jpg), all built by art/scenes/build.py. Globbed
 # rather than listed line by line -- ~100 checked-in JPGs -- with
 # CONFIGURE_DEPENDS so rebuilding the set is picked up.
-file(GLOB MESHMC_ART_SCENES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
+file(GLOB KITE_ART_SCENES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
     art/scenes/card/*.jpg art/scenes/band/*.jpg art/scenes/strip/*.jpg
     art/worlds/*.jpg art/packs/*.jpg art/empty/*.jpg)
 
-qt_add_qml_module(MeshMC_qml_components
-    URI MeshMC.Components
+qt_add_qml_module(Kite_qml_components
+    URI Kite.Components
     VERSION 1.0
     RESOURCE_PREFIX "/qt/qml"
     QML_FILES
@@ -259,7 +259,7 @@ qt_add_qml_module(MeshMC_qml_components
         art/blocks/sand.png
         art/blocks/stone.png
         art/ambient/blocks_mask.png
-        ${MESHMC_ART_SCENES}
+        ${KITE_ART_SCENES}
         art/hero/home_hero.png
         art/hero/home_day.jpg
         art/hero/home_golden.jpg
@@ -268,14 +268,14 @@ qt_add_qml_module(MeshMC_qml_components
         art/empty/no_worlds.png
         art/empty/not_found.png
     IMPORTS
-        MeshMC.Theme
+        Kite.Theme
 )
 
 # MeshIcon.qml reaches into QtQuick.Controls.impl (IconImage) directly, same
 # as the Style module's use of the same import (see Style/CMakeLists.txt) --
 # Quick + QuickControls2 already resolve it at runtime, so no separate
 # Qt::QuickControls2Impl link is needed.
-target_link_libraries(MeshMC_qml_components PUBLIC
+target_link_libraries(Kite_qml_components PUBLIC
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::QuickControls2
 )

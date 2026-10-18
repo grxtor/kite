@@ -1,3 +1,19 @@
+# Kite
+
+     Copyright (C) 2026 grxtor
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+
 # MeshMC
 
      Copyright 2012-2021 MultiMC Contributors
@@ -299,6 +315,17 @@
     License, Version 1.1. The full licence text ships next to the fonts as
     launcher/qml/Theme/fonts/inter/OFL.txt and is also available with a FAQ at
     https://openfontlicense.org
+
+# Montserrat
+
+    Copyright 2024 The Montserrat.Git Project Authors
+    (https://github.com/JulietaUla/Montserrat.git)
+
+    The Montserrat typeface, bundled with the QML user interface in
+    launcher/qml/Theme/fonts/montserrat/, is licensed under the SIL Open Font
+    License, Version 1.1. The full licence text ships next to the fonts as
+    launcher/qml/Theme/fonts/montserrat/OFL.txt and is also available with a
+    FAQ at https://openfontlicense.org
 
 # Lucide icons
 

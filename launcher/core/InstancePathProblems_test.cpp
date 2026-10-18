@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -28,7 +29,7 @@ class InstancePathProblemsTest : public QObject
   private slots:
 	void aPlainFolderHasNoProblem()
 	{
-		QVERIFY(instancePathProblems({ QStringLiteral("/home/steve/MeshMC/instances") },
+		QVERIFY(instancePathProblems({ QStringLiteral("/home/steve/Kite/instances") },
 									 QStringLiteral("/tmp"))
 					.isEmpty());
 	}
@@ -46,7 +47,7 @@ class InstancePathProblemsTest : public QObject
 	void aTemporaryFolderIsAProblem()
 	{
 		const auto problems = instancePathProblems(
-			{ QStringLiteral("/tmp/MeshMC/instances") }, QStringLiteral("/tmp"));
+			{ QStringLiteral("/tmp/Kite/instances") }, QStringLiteral("/tmp"));
 		QCOMPARE(problems.size(), 1);
 		QVERIFY(problems.at(0).text.contains(QStringLiteral("/tmp")));
 	}

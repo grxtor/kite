@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: 2026 Project Tick
 # SPDX-FileContributor: Project Tick
+# SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 #
 # check-plugin-independence.sh
@@ -15,8 +16,8 @@
 #      subclassing through the launcher tree, etc.).
 #
 #   2. Link-command grep over the build directory — confirms that the
-#      `.mmco` Ninja edges never reference meshmc.exe / meshmc.lib /
-#      MeshMC_logic.lib. Skipped if the build directory hasn't been
+#      `.mmco` Ninja edges never reference kite.exe / kite.lib /
+#      Kite_logic.lib. Skipped if the build directory hasn't been
 #      configured with Ninja yet (the CI invokes the script after the
 #      regular build, so this is always available there).
 #
@@ -236,7 +237,7 @@ if [[ $SRC_FAIL -ne 0 ]]; then
 	echo >&2
 	cat "$SRC_LOG" >&2
 	echo "Replace the offending call with the matching MMCOContext entry." >&2
-	echo "See documentation/handbook/meshmc/plugins/sdk-guide/abi-3-migration.md" >&2
+	echo "See documentation/handbook/kite/plugins/sdk-guide/abi-3-migration.md" >&2
 	exit 1
 fi
 
@@ -286,11 +287,11 @@ trap 'rm -f "$SRC_LOG" "$LINK_LOG"' EXIT
 
 # Forbidden artefacts we never want to see on a plugin's link line.
 declare -a FORBIDDEN_LINK_TOKENS=(
-	'meshmc.lib'
-	'meshmc.exe'
-	'MeshMC_logic.lib'
-	'MeshMC_logic.a'
-	'libMeshMC_logic'
+	'kite.lib'
+	'kite.exe'
+	'Kite_logic.lib'
+	'Kite_logic.a'
+	'libKite_logic'
 )
 
 # `ninja -t targets all` is the most portable way to list every target;
@@ -337,7 +338,7 @@ if [[ $LINK_FAIL -ne 0 ]]; then
 	cat "$LINK_LOG" >&2
 	echo "Inspect launcher/plugin/sdk/CMakeLists.txt and the per-plugin" >&2
 	echo "CMakeLists for accidentally re-introduced target_link_libraries" >&2
-	echo "against meshmc / MeshMC_logic." >&2
+	echo "against kite / Kite_logic." >&2
 	exit 1
 fi
 

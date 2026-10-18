@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -30,7 +31,7 @@
 #include "java/download/JavaRuntime.h"
 #include "net/NetJob.h"
 
-#ifndef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifndef Kite_DISABLE_JAVA_DOWNLOADER
 class JavaDownloadTask;
 #endif
 
@@ -164,7 +165,7 @@ class JavaDownloadController : public QObject
 
 	NetJob::Ptr m_fetchJob;
 	std::shared_ptr<QByteArray> m_fetchData;
-#ifndef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifndef Kite_DISABLE_JAVA_DOWNLOADER
 	std::unique_ptr<JavaDownloadTask> m_task;
 #endif
 };

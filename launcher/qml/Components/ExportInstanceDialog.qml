@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * "Export…": one instance out as a file -- the instance folder as a plain
@@ -130,7 +130,7 @@ Dialog {
                       ? qsTr("A Modrinth pack (.mrpack). Mods from Modrinth are linked for download, and everything else is packed in.")
                       : root.format === "curseforge"
                         ? qsTr("A CurseForge pack (.zip). Mods from CurseForge are linked for download, and everything else is packed in.")
-                        : qsTr("The whole instance in one .zip file, ready to import into MeshMC or another launcher.")
+                        : qsTr("The whole instance in one .zip file, ready to import into Kite or another launcher.")
                 wrapMode: Text.Wrap
                 color: Theme.palette.textSecondary
                 font.family: Theme.font.family

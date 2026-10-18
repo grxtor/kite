@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -105,7 +106,7 @@ class MeshUpdaterApp : public QApplication
 
 	//! The option a probe passes, and the answer it expects on stdout.
 	static constexpr auto kSelfTestOption = "--self-test";
-	static constexpr auto kSelfTestToken = "MESHMC_UPDATER_SELF_TEST_OK";
+	static constexpr auto kSelfTestToken = "KITE_UPDATER_SELF_TEST_OK";
 
 	Status status() const
 	{
@@ -304,7 +305,7 @@ class MeshUpdaterApp : public QApplication
 	 * has one, or a per-platform guess when it does not.
 	 *
 	 * Entries may be globs. manifest.txt is written by the packaging, so it
-	 * is the authority on what belongs to MeshMC and what the user put there.
+	 * is the authority on what belongs to Kite and what the user put there.
 	 */
 	QStringList installedFileList(const QDir& root) const;
 

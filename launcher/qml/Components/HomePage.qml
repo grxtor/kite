@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * The Home page: one purpose, "get back to what I was doing". The default
- * start page and the sidebar's first item. MeshMC's current news (when
+ * start page and the sidebar's first item. Kite's current news (when
  * there is any worth showing), the most recently played instances ("Jump
  * back in") and the worlds played most recently across all of them
  * ("Recent worlds") -- all from models the shell already keeps locally
@@ -17,7 +17,7 @@ import MeshMC.Theme
  * the sidebar, which also lists the recent instances.
  *
  * HERO. Like the official launcher, Lunar and the CurseForge app, Home leads
- * with art: MeshMC's own rendered scene for the time of day, full width. On
+ * with art: Kite's own rendered scene for the time of day, full width. On
  * it goes the news item itself (headline, date, Read more) when there is
  * news worth showing, and otherwise the instance played last, with Open --
  * never a greeting, and never a second Play (the play bar is the Play).
@@ -45,7 +45,7 @@ Item {
         height: Theme.control.heightSm
         verticalAlignment: Text.AlignVCenter
         color: Theme.palette.textPrimary
-        font.family: Theme.font.family
+        font.family: Theme.font.heading
         font.pixelSize: Theme.type.title.pixelSize + 1
         font.weight: Font.Bold
     }
@@ -143,7 +143,7 @@ Item {
     // QmlShell.recentWorlds -- most recently played worlds across every
     // instance; see RecentWorldsModel's own class comment.
     property var recentWorldsModel: null
-    // QmlShell.news (NewsModel): MeshMC's news, newest first, or null.
+    // QmlShell.news (NewsModel): Kite's news, newest first, or null.
     property var news: null
 
     // "day", "golden" or "night" to pin the hero's scene (review
@@ -203,7 +203,7 @@ Item {
         var match = /(\d+)\.(\d+)(?:\.(\d+))?/.exec(text || "")
         return match ? [parseInt(match[1]), parseInt(match[2]), parseInt(match[3] || "0")] : null
     }
-    // A release post ("MeshMC Release 9.1.0, now available") for the
+    // A release post ("Kite Release 9.1.0, now available") for the
     // version running now or an older one: nothing new to the reader.
     function isOutdatedRelease(title) {
         if (!/releas|available|update/i.test(title))
@@ -237,7 +237,7 @@ Item {
     readonly property string newsDate: root.hasNews && root.featuredNews.date
                                        ? Format.calendarDate(new Date(root.featuredNews.date)) : ""
 
-    // The hero: MeshMC's own rendered scene for the time of day, as big
+    // The hero: Kite's own rendered scene for the time of day, as big
     // clients lead with their art. On it, the news item when there is one,
     // otherwise the instance played last (`featured`) with Open -- no Play:
     // the play bar is the Play. Nothing to put on it, no hero.

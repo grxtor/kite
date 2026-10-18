@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -28,19 +29,19 @@ class Config
 {
   public:
 	Config();
-	QString MESHMC_NAME;
-	QString MESHMC_BINARY;
-	QString MESHMC_DISPLAYNAME;
-	QString MESHMC_COPYRIGHT;
-	QString MESHMC_DOMAIN;
-	QString MESHMC_CONFIGFILE;
-	QString MESHMC_GIT;
-	QString MESHMC_APPID;
+	QString KITE_NAME;
+	QString KITE_BINARY;
+	QString KITE_DISPLAYNAME;
+	QString KITE_COPYRIGHT;
+	QString KITE_DOMAIN;
+	QString KITE_CONFIGFILE;
+	QString KITE_GIT;
+	QString KITE_APPID;
 
-	/** Prefix for the launcher's own environment variables, e.g. "MESHMC"
-	 * for MESHMC_DISABLE_GLVULKAN. Configurable rather than hardcoded so a
+	/** Prefix for the launcher's own environment variables, e.g. "KITE"
+	 * for KITE_DISABLE_GLVULKAN. Configurable rather than hardcoded so a
 	 * rebranded build's variables carry its own name. */
-	QString MESHMC_ENVNAME;
+	QString KITE_ENVNAME;
 
 	/// The major version number.
 	int VERSION_MAJOR;
@@ -62,7 +63,7 @@ class Config
 	 * The release channel this build subscribes to: "stable" or "beta".
 	 *
 	 * Unlike VERSION_CHANNEL (which is just the git branch name), this is set
-	 * deliberately at configure time via MeshMC_UPDATE_CHANNEL, and it is
+	 * deliberately at configure time via Kite_UPDATE_CHANNEL, and it is
 	 * what decides whether the updater is allowed to offer pre-releases by
 	 * default.
 	 */
@@ -122,7 +123,7 @@ class Config
 
 	/**
 	 * This is used to fetch the news RSS feed.
-	 * It defaults in CMakeLists.txt to "https://projecttick.org/rss.xml"
+	 * It is empty by default in CMakeLists.txt
 	 */
 	QString NEWS_RSS_URL;
 	/// Semicolon-separated extra RSS feed URLs, shown by the news viewer
@@ -177,6 +178,7 @@ class Config
 	QString RESOURCE_BASE = "https://resources.download.minecraft.net/";
 	QString LIBRARY_BASE = "https://libraries.minecraft.net/";
 	QString IMGUR_BASE_URL = "https://api.imgur.com/3/";
+	// TODO(fork): both still point at Project Tick's servers.
 	QString FMLLIBS_BASE_URL = "https://files.projecttick.org/fmllibs/";
 	QString TRANSLATIONS_BASE_URL = "https://i18n.projecttick.org/";
 
@@ -188,7 +190,7 @@ class Config
 	 *
 	 * Technic takes this into account when deciding which download URL to hand
 	 * back, and an unrecognised value is not guaranteed to resolve to the
-	 * official CDN: asking as "meshmc" returned a third-party mirror
+	 * official CDN: asking as "kite" returned a third-party mirror
 	 * (bhrepo.com) whose archive failed libarchive's CRC check on every
 	 * attempt, byte for byte. "multimc" is the long-recognised value that other
 	 * launchers send.

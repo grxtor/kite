@@ -1,5 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2013, 2015 ljfa-ag <ljfa-ag@web.de>
+ * SPDX-FileContributor: grxtor
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
@@ -107,7 +108,7 @@ namespace nbt
 	typedef tag_primitive<double> tag_double;
 
 	// Explicit instantiation declarations
-#if defined(_MSC_VER) && defined(MeshMC_nbt___EXPORTS)
+#if defined(_MSC_VER) && defined(Kite_nbt___EXPORTS)
 	template class NBT_EXPORT tag_primitive<int8_t>;
 	template class NBT_EXPORT tag_primitive<int16_t>;
 	template class NBT_EXPORT tag_primitive<int32_t>;

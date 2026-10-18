@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -32,7 +33,7 @@ void CreateBackup::executeTask()
 
 	emit logLine(tr("Creating a pre-launch backup of the instance...") +
 					 QStringLiteral("\n"),
-				 MessageLevel::MeshMC);
+				 MessageLevel::Kite);
 
 	m_backupTask.reset(new BackupTask(instance->id(), instance->instanceRoot(),
 									  QStringLiteral("pre-launch")));
@@ -60,7 +61,7 @@ void CreateBackup::backupFinished()
 		emit logLine(tr("Pre-launch backup created: %1")
 						 .arg(m_backupTask->result().fileName) +
 						 QStringLiteral("\n"),
-					 MessageLevel::MeshMC);
+					 MessageLevel::Kite);
 	} else {
 		// Refusing to start the game because a convenience snapshot
 		// could not be written would be the worse failure of the two,

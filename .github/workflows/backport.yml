@@ -13,7 +13,7 @@ jobs:
       actions: write
 
     name: Backport Pull Request
-    if: github.repository_owner == 'Project-Tick' && github.event.pull_request.merged == true && (github.event_name != 'labeled' || startsWith('backport', github.event.label.name))
+    if: github.repository_owner == 'grxtor' && github.event.pull_request.merged == true && (github.event_name != 'labeled' || startsWith('backport', github.event.label.name))
     runs-on: ubuntu-slim
     steps:
 

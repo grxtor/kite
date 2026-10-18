@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
-import MeshMC.Theme
+import Kite.Theme
 
 // A whole-number setting with bounds and a unit, saved on every change.
 SettingRow {

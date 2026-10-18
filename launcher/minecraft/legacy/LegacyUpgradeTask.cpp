@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -135,7 +136,7 @@ void LegacyUpgradeTask::copyFinished()
 			}
 		};
 		QStringList rootRemovables = {"modlist", "version", "instMods"};
-		QStringList mcRemovables = {"bin", "MeshMCLauncher.jar", "icon.png"};
+		QStringList mcRemovables = {"bin", "KiteLauncher.jar", "icon.png"};
 		removeAll(inst.instanceRoot(), rootRemovables);
 		removeAll(inst.gameRoot(), mcRemovables);
 	}

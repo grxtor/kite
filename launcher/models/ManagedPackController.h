@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -36,7 +37,7 @@ class BaseInstance;
  *
  * The no-pack-id mode ManagedPackPage also offers (update from a hand-typed
  * URL or a local file) is deliberately not reproduced here: that mode
- * exists for instances an older MeshMC, or a drag-and-drop import, recorded
+ * exists for instances an older Kite, or a drag-and-drop import, recorded
  * without ever storing a catalogue id, and covering it would mean adding a
  * QML file picker for an import path this pass has not had time to verify
  * end to end. hasPackId is false for that case so a QML tab can say so
@@ -44,7 +45,7 @@ class BaseInstance;
  *
  * Created lazily by InstanceDetails::managedPack() - see that method - and
  * only when isSupported() actually says yes, mirroring ManagedPackPage::
- * isSupported() exactly (a provider MeshMC recognises, and a CurseForge
+ * isSupported() exactly (a provider Kite recognises, and a CurseForge
  * build actually compiled with an API key).
  */
 class ManagedPackController : public QObject
@@ -57,7 +58,7 @@ class ManagedPackController : public QObject
 	Q_PROPERTY(QString packId READ packId CONSTANT)
 	Q_PROPERTY(QString installedVersionName READ installedVersionName CONSTANT)
 	Q_PROPERTY(QString installedVersionId READ installedVersionId CONSTANT)
-	/// False for a pack MeshMC knows the provider of but not the catalogue
+	/// False for a pack Kite knows the provider of but not the catalogue
 	/// id of (an old import) - fetchVersions()/updateToVersion() are both
 	/// no-ops while this is false. See the class comment.
 	Q_PROPERTY(bool hasPackId READ hasPackId CONSTANT)
@@ -85,7 +86,7 @@ class ManagedPackController : public QObject
 
 	/// Whether an instance page should offer this at all - mirrors
 	/// ManagedPackPage::isSupported() exactly (see its own comment):
-	/// a provider MeshMC recognises, and - for CurseForge - a build that
+	/// a provider Kite recognises, and - for CurseForge - a build that
 	/// actually has an API key compiled in.
 	static bool isSupported(const BaseInstance* instance);
 

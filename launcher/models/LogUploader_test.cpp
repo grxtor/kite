@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -41,16 +42,16 @@ class LogUploaderTest : public QObject
 	Q_OBJECT
   private slots:
 
-	void meshmcSettingBecomesTheBuiltinKey()
+	void kiteSettingBecomesTheBuiltinKey()
 	{
-		QCOMPARE(LogUploader::resolveApiKey("meshmc", "builtin"), QString("builtin"));
+		QCOMPARE(LogUploader::resolveApiKey("kite", "builtin"), QString("builtin"));
 		QCOMPARE(LogUploader::resolveApiKey("mine", "builtin"), QString("mine"));
 	}
 
 	void emptyKeysFallBackToThePublicKey()
 	{
 		QCOMPARE(LogUploader::resolveApiKey("", "builtin"), QString("public"));
-		QCOMPARE(LogUploader::resolveApiKey("meshmc", ""), QString("public"));
+		QCOMPARE(LogUploader::resolveApiKey("kite", ""), QString("public"));
 	}
 
 	void validateAcceptsAnOrdinaryLog()

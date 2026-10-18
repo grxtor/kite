@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -29,7 +30,7 @@
 
 /*!
  * List of available Mojang accounts.
- * This should be loaded in the background by MeshMC on startup.
+ * This should be loaded in the background by Kite on startup.
  */
 class AccountList : public QAbstractListModel
 {

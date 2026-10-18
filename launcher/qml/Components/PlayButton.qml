@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * The launcher's one most important button. Square and icon-only on a card,
@@ -96,7 +96,7 @@ AbstractButton {
                 visible: !control.round
                 text: control.text
                 color: Theme.palette.textOnAccent
-                font.family: Theme.font.family
+                font.family: Theme.font.heading
                 font.pixelSize: Theme.type.title.pixelSize
                 font.weight: Font.Bold
             }

@@ -26,7 +26,7 @@
    <item row="3" column="0">
     <widget class="QLabel" name="restartHint">
      <property name="text">
-      <string>Enabling or disabling a plugin takes effect after restarting MeshMC.</string>
+      <string>Enabling or disabling a plugin takes effect after restarting Kite.</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -55,7 +55,7 @@
       </sizepolicy>
      </property>
      <property name="text">
-      <string>MeshMC MMCO Plugins List:</string>
+      <string>Kite MMCO Plugins List:</string>
      </property>
     </widget>
    </item>

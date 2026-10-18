@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -53,7 +54,7 @@ using ArchiveWritePtr = std::unique_ptr<
 	ArchiveWriteDeleter>; // NOLINT(readability-identifier-naming)
 
 /*!
- * The name of \a entry, in the one spelling the rest of MeshMC can compare
+ * The name of \a entry, in the one spelling the rest of Kite can compare
  * against.
  *
  * Reading an archive whose names are UTF-8, libarchive decomposes them on

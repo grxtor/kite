@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -28,7 +29,7 @@
  * Sparkle publishes it as a KVO-observable property; Qt wants a signal. This
  * object is the whole of the translation: it observes, and calls a block.
  */
-@interface MeshMCUpdaterObserver : NSObject
+@interface KiteUpdaterObserver : NSObject
 
 @property(nonatomic, readonly) SPUUpdater* updater;
 @property(nonatomic, copy) void (^onCanCheckChanged)(bool);
@@ -38,7 +39,7 @@
 
 @end
 
-@implementation MeshMCUpdaterObserver {
+@implementation KiteUpdaterObserver {
 	BOOL _observing;
 }
 
@@ -80,13 +81,13 @@
 /*!
  * Answers Sparkle's questions about which appcast channels we accept.
  */
-@interface MeshMCUpdaterDelegate : NSObject <SPUUpdaterDelegate>
+@interface KiteUpdaterDelegate : NSObject <SPUUpdaterDelegate>
 
 @property(nonatomic, copy) NSSet<NSString*>* allowedChannels;
 
 @end
 
-@implementation MeshMCUpdaterDelegate
+@implementation KiteUpdaterDelegate
 
 - (NSSet<NSString*>*)allowedChannelsForUpdater:(SPUUpdater*)updater
 {
@@ -99,8 +100,8 @@ class MacSparkleUpdater::Private
 {
   public:
 	SPUStandardUpdaterController* controller = nil;
-	MeshMCUpdaterObserver* observer = nil;
-	MeshMCUpdaterDelegate* delegate = nil;
+	KiteUpdaterObserver* observer = nil;
+	KiteUpdaterDelegate* delegate = nil;
 	NSAutoreleasePool* pool = nil;
 };
 
@@ -111,7 +112,7 @@ MacSparkleUpdater::MacSparkleUpdater() : priv(new MacSparkleUpdater::Private())
 	NSApplicationLoad();
 	priv->pool = [[NSAutoreleasePool alloc] init];
 
-	priv->delegate = [[MeshMCUpdaterDelegate alloc] init];
+	priv->delegate = [[KiteUpdaterDelegate alloc] init];
 
 	// startingUpdater:true is what arms Sparkle's own schedule, so no timer
 	// of ours is involved on macOS.
@@ -120,7 +121,7 @@ MacSparkleUpdater::MacSparkleUpdater() : priv(new MacSparkleUpdater::Private())
 				updaterDelegate:priv->delegate
 			 userDriverDelegate:nil];
 
-	priv->observer = [[MeshMCUpdaterObserver alloc]
+	priv->observer = [[KiteUpdaterObserver alloc]
 		initWithUpdater:priv->controller.updater];
 
 	// Explicit capture: the block outlives this constructor and must not be

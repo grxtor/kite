@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -36,7 +37,7 @@ UpdateAvailableDialog::UpdateAvailableDialog(const QString& currentVersion,
 	ui->setupUi(this);
 
 	ui->headerLabel->setText(tr("A new version of %1 is available!")
-								 .arg(BuildConfig.MESHMC_DISPLAYNAME));
+								 .arg(BuildConfig.KITE_DISPLAYNAME));
 	ui->versionAvailableLabel->setText(
 		tr("Version %1 is now available - you have %2 . Would you like to "
 		   "download it now?")

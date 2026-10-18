@@ -1,9 +1,9 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * The placeholder player figure: shown under a skin render while it loads,

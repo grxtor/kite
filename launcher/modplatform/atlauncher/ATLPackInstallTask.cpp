@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2020-2021 Jamie Mansfield <jmansfield@cadixdev.org>
@@ -293,7 +294,7 @@ namespace ATLauncher
 			}
 		}
 
-		return "org.projecttick.atlauncher:" + library.md5 + ":1";
+		return "io.github.grxtor.atlauncher:" + library.md5 + ":1";
 	}
 
 	bool PackInstallTask::createLibrariesComponent(
@@ -322,7 +323,7 @@ namespace ATLauncher
 
 		auto uuid = QUuid::createUuid();
 		auto id = uuid.toString().remove('{').remove('}');
-		auto target_id = "org.projecttick.atlauncher." + id;
+		auto target_id = "io.github.grxtor.atlauncher." + id;
 
 		auto patchDir = FS::PathCombine(instanceRoot, "patches");
 		if (!FS::ensureFolderPathExists(patchDir)) {
@@ -398,7 +399,7 @@ namespace ATLauncher
 
 		auto uuid = QUuid::createUuid();
 		auto id = uuid.toString().remove('{').remove('}');
-		auto target_id = "org.projecttick.atlauncher." + id;
+		auto target_id = "io.github.grxtor.atlauncher." + id;
 
 		auto patchDir = FS::PathCombine(instanceRoot, "patches");
 		if (!FS::ensureFolderPathExists(patchDir)) {
@@ -873,7 +874,7 @@ namespace ATLauncher
 		 * ATLauncher identifies a pack by its safe name rather than a
 		 * numeric id, and a version by its name, so those go in the id
 		 * fields - they are what this platform would need to look the
-		 * pack up again. There is no MeshMC UI that reads these back for
+		 * pack up again. There is no Kite UI that reads these back for
 		 * an ATLauncher pack today, but they cannot be recovered after
 		 * the fact, so install time is the only chance to record
 		 * them. */

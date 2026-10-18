@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -20,7 +21,7 @@
 #pragma once
 
 #include <launch/LaunchStep.h>
-#ifndef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifndef Kite_DISABLE_JAVA_DOWNLOADER
 #include "java/download/JavaRuntime.h"
 #include "java/download/JavaDownloadTask.h"
 #endif
@@ -44,7 +45,7 @@ class VerifyJavaInstall : public LaunchStep
 	int determineRequiredJavaMajor() const;
 	QString findInstalledJava(int requiredMajor) const;
 	QString javaInstallDir() const;
-#ifndef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifndef Kite_DISABLE_JAVA_DOWNLOADER
 	void autoDownloadJava(int requiredMajor);
 	void fetchVersionList(int requiredMajor);
 	void fetchRuntimes(const QString& versionId, int requiredMajor);

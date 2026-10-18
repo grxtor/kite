@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -49,8 +50,8 @@ void PasteEEPage::loadSettings()
 {
 	auto s = APPLICATION->settings();
 	QString keyToUse = s->get("PasteEEAPIKey").toString();
-	if (keyToUse == "meshmc") {
-		ui->meshmcButton->setChecked(true);
+	if (keyToUse == "kite") {
+		ui->kiteButton->setChecked(true);
 	} else {
 		ui->customButton->setChecked(true);
 		ui->customAPIkeyEdit->setText(keyToUse);
@@ -65,7 +66,7 @@ void PasteEEPage::applySettings()
 	if (ui->customButton->isChecked())
 		pasteKeyToUse = ui->customAPIkeyEdit->text();
 	else {
-		pasteKeyToUse = "meshmc";
+		pasteKeyToUse = "kite";
 	}
 	s->set("PasteEEAPIKey", pasteKeyToUse);
 }

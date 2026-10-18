@@ -1,22 +1,22 @@
-# SPDX-FileCopyrightText: 2026 Project Tick
-# SPDX-FileContributor: Project Tick
+# SPDX-FileCopyrightText: 2026 grxtor
+# SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 
-######## MeshMC.Style: the launcher's Qt Quick Controls style ########
+######## Kite.Style: the launcher's Qt Quick Controls style ########
 
 # A qmldir'd QML module, same shape as launcher/qml/CMakeLists.txt's
-# MeshMC_qml: one CMakeLists per module directory, RESOURCE_PREFIX spelled out
+# Kite_qml: one CMakeLists per module directory, RESOURCE_PREFIX spelled out
 # by hand rather than via qt_policy(QTP0001) because that policy needs Qt
 # 6.5+ and this project's floor is 6.4.
 #
-# This module is never linked into MeshMC_qml or added to the app's style
+# This module is never linked into Kite_qml or added to the app's style
 # selection here -- both are the integrator's job, done once every style/theme
 # module in the launcher exists. Building it as its own static library keeps
 # it that way: nothing in this file can accidentally wire itself in.
-qt_add_library(MeshMC_qml_style STATIC)
+qt_add_library(Kite_qml_style STATIC)
 
-qt_add_qml_module(MeshMC_qml_style
-    URI MeshMC.Style
+qt_add_qml_module(Kite_qml_style
+    URI Kite.Style
     VERSION 1.0
     RESOURCE_PREFIX "/qt/qml"
     # QtQuick.Controls.Basic is the fallback: any control this style does not
@@ -24,7 +24,7 @@ qt_add_qml_module(MeshMC_qml_style
     # instead of failing to load. Without it the style is only safe for the
     # exact set of controls it happens to ship today.
     IMPORTS
-        MeshMC.Theme
+        Kite.Theme
         QtQuick.Controls.Basic
     DEPENDENCIES
         QtQuick.Templates
@@ -66,7 +66,7 @@ qt_add_qml_module(MeshMC_qml_style
 # corresponding C++ modules still need to be linked for those imports to
 # resolve at runtime. QuickControls2 additionally pulls in the styling
 # infrastructure that makes a custom style like this one selectable at all.
-target_link_libraries(MeshMC_qml_style PUBLIC
+target_link_libraries(Kite_qml_style PUBLIC
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::QuickControls2
     Qt${QT_VERSION_MAJOR}::QuickTemplates2

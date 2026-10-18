@@ -36,4 +36,4 @@ runs:
 
         # cygpath -m: Windows path with forward slashes, which is what CMake
         # wants. Backslashes would be eaten as escapes in the -D value.
-        echo "MESHMC_BUNDLE_OPENSSL_LIBS=$(cygpath -m "$ssl");$(cygpath -m "$crypto")" >> "$GITHUB_ENV"
+        echo "KITE_BUNDLE_OPENSSL_LIBS=$(cygpath -m "$ssl");$(cygpath -m "$crypto")" >> "$GITHUB_ENV"

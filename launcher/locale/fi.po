@@ -8,7 +8,7 @@ msgstr ""
 "X-Crowdin-Project: projtlauncher\n"
 "X-Crowdin-Project-ID: 863014\n"
 "X-Crowdin-Language: fi\n"
-"X-Crowdin-File: /[Project-Tick.MeshMC] develop/launcher/locale/template.pot\n"
+"X-Crowdin-File: /[Project-Tick.Kite] develop/launcher/locale/template.pot\n"
 "X-Crowdin-File-ID: 95\n"
 "Project-Id-Version: projtlauncher\n"
 "Language-Team: Finnish\n"
@@ -223,11 +223,11 @@ msgstr "Päivitä Kanava"
 
 #: launcher/ui/dialogs/AboutDialog.cpp:121
 msgctxt "AboutDialog|"
-msgid "<p>We keep <b>MeshMC</b> open source because we believe it's important to be able to see the source code of a project like this, and we do this using the Apache license.</p>\n"
-"<p>One reason we use the Apache license is that we don't want people using the name <b>MeshMC</b> when they fork the project. This means people should examine the source code and remove all references to <b>MeshMC</b>, including the project icon and window titles (the title should not contain the phrase <b>MeshMC-fork</b>). The Apache license covers reasonable use of the name; mentioning the project's origins in the About dialog and license is acceptable. However, it must be explicitly stated that the project is a fork, which does not mean you have our approval.</p>\n"
+msgid "<p>We keep <b>Kite</b> open source because we believe it's important to be able to see the source code of a project like this, and we do this using the Apache license.</p>\n"
+"<p>One reason we use the Apache license is that we don't want people using the name <b>Kite</b> when they fork the project. This means people should examine the source code and remove all references to <b>Kite</b>, including the project icon and window titles (the title should not contain the phrase <b>Kite-fork</b>). The Apache license covers reasonable use of the name; mentioning the project's origins in the About dialog and license is acceptable. However, it must be explicitly stated that the project is a fork, which does not mean you have our approval.</p>\n"
 "<p>However, we give you the freedom to distribute this project as you wish, in any non-exclusive way, without changing its functionality, on a voluntary basis to package managers, without expecting any financial gain. Take the project and distribute it wherever people can reach it. But abide by our restrictions."
-msgstr "<p>Pidämme <b>MeshMC</b> avoimen lähdekoodin koska uskomme, että on tärkeää pystyä näkemään tällaisen projektin lähdekoodi, ja teemme tämän käyttäen Apache lisenssi.</p>\n"
-"<p>Yksi syy siihen, että käytämme Apache-lisenssiä on, että emme halua ihmisiä, jotka käyttävät nimeä <b>MeshMC</b> , kun he haarukkaavat projektin. Tämä tarkoittaa, että ihmisten tulisi tutkia lähdekoodia ja poistaa kaikki viittaukset <b>MeshMC</b>, sisältäen projektin kuvakkeen ja ikkunan otsikot (otsikko ei saa sisältää lause <b>MeshMC-fork</b>). Apache-lisenssi kattaa nimen kohtuullisen käytön. Projektin alkuperän maininta Tietoa -dialogissa ja lisenssi on hyväksyttävä. On kuitenkin todettava nimenomaisesti, että hanke on haarukka, mikä ei tarkoita sitä, että hyväksyisimme sen.</p>\n"
+msgstr "<p>Pidämme <b>Kite</b> avoimen lähdekoodin koska uskomme, että on tärkeää pystyä näkemään tällaisen projektin lähdekoodi, ja teemme tämän käyttäen Apache lisenssi.</p>\n"
+"<p>Yksi syy siihen, että käytämme Apache-lisenssiä on, että emme halua ihmisiä, jotka käyttävät nimeä <b>Kite</b> , kun he haarukkaavat projektin. Tämä tarkoittaa, että ihmisten tulisi tutkia lähdekoodia ja poistaa kaikki viittaukset <b>Kite</b>, sisältäen projektin kuvakkeen ja ikkunan otsikot (otsikko ei saa sisältää lause <b>Kite-fork</b>). Apache-lisenssi kattaa nimen kohtuullisen käytön. Projektin alkuperän maininta Tietoa -dialogissa ja lisenssi on hyväksyttävä. On kuitenkin todettava nimenomaisesti, että hanke on haarukka, mikä ei tarkoita sitä, että hyväksyisimme sen.</p>\n"
 "<p>Annamme kuitenkin sinulle vapauden levittää tätä projektia haluamallasi tavalla, joka ei ole yksinomainen ilman, että sen toimivuutta muutetaan, vapaaehtoisuuden pohjalta pakettijohtajille, odottamatta mitään taloudellista hyötyä. Ota projekti ja jaa se kaikkialla, missä ihmiset pääsevät siihen. Mutta noudata meidän rajoituksia."
 
 #: launcher/minecraft/auth/AccountList.cpp:333
@@ -380,10 +380,10 @@ msgstr "Microsoft-tilit eivät ole käytettävissä"
 
 #: launcher/ui/pages/global/AccountListPage.cpp:126
 msgctxt "AccountListPage|"
-msgid "Microsoft accounts are only usable on macOS 10.13 or newer, with fully updated MeshMC.\n\n"
-"Please update both your operating system and MeshMC."
-msgstr "Microsoft-tilejä voidaan käyttää vain macOS 10.13 tai uudemmilla versioilla, täysin päivitetyillä MeshMC:llä.\n\n"
-"Päivitä sekä käyttöjärjestelmäsi että MeshMC:si."
+msgid "Microsoft accounts are only usable on macOS 10.13 or newer, with fully updated Kite.\n\n"
+"Please update both your operating system and Kite."
+msgstr "Microsoft-tilejä voidaan käyttää vain macOS 10.13 tai uudemmilla versioilla, täysin päivitetyillä Kite:llä.\n\n"
+"Päivitä sekä käyttöjärjestelmäsi että Kite:si."
 
 #: launcher/ui/pages/global/AccountListPage.cpp:134
 msgctxt "AccountListPage|"
@@ -650,8 +650,8 @@ msgstr "Seuraamme joitakin anonyymejä tilastoja käyttäjistä."
 
 #: launcher/ui/setupwizard/AnalyticsWizardPage.cpp:66
 msgctxt "AnalyticsWizardPage|"
-msgid "<html><body><p>MeshMC sends anonymous usage statistics on every start of the application. This helps us decide what platforms and issues to focus on.</p><p>The data is processed by Google Analytics, see their <a href=\"https://support.google.com/analytics/answer/6004245?hl=en\">article on the matter</a>.</p><p>The following data is collected:</p><ul><li>A random unique ID of the installation.<br />It is stored in the application settings file.</li><li>Anonymized (partial) IP address.</li><li>MeshMC version.</li><li>Operating system name, version and architecture.</li><li>CPU architecture (kernel architecture on linux).</li><li>Size of system memory.</li><li>Java version, architecture and memory settings.</li></ul><p>If we change the tracked information, you will see this page again.</p></body></html>"
-msgstr "<html><body><p>MeshMC lähettää anonyymejä käyttötilastoja hakemuksen jokaisesta alusta. Tämä auttaa meitä päättämään mihin alustoihin ja kysymyksiin keskittyä.</p><p>Tiedot käsittelee Google Analytics, katso niiden <a href=\"https://support.google.com/analytics/answer/6004245?hl=en\">artikkeli</a>.</p><p>Seuraavat tiedot kerätään:</p><ul><li>Asentamisen satunnainen yksilöllinen tunniste.<br />Se on tallennettu sovelluksen asetustiedostoon.</li><li>Anonymisoitu (osittainen) IP-osoite.</li><li>MeshMC-versio.</li><li>Käyttöjärjestelmän nimi, versio ja arkkitehtuuri.</li><li>CPU arkkitehtuuri (ytimen arkkitehtuuri linux).</li><li>Järjestelmän muisti.</li><li>Java-versio, arkkitehtuuri ja muistiasetukset.</li></ul><p>Jos muutamme seurattuja tietoja, näet tämän sivun uudelleen.</p></body></html>"
+msgid "<html><body><p>Kite sends anonymous usage statistics on every start of the application. This helps us decide what platforms and issues to focus on.</p><p>The data is processed by Google Analytics, see their <a href=\"https://support.google.com/analytics/answer/6004245?hl=en\">article on the matter</a>.</p><p>The following data is collected:</p><ul><li>A random unique ID of the installation.<br />It is stored in the application settings file.</li><li>Anonymized (partial) IP address.</li><li>Kite version.</li><li>Operating system name, version and architecture.</li><li>CPU architecture (kernel architecture on linux).</li><li>Size of system memory.</li><li>Java version, architecture and memory settings.</li></ul><p>If we change the tracked information, you will see this page again.</p></body></html>"
+msgstr "<html><body><p>Kite lähettää anonyymejä käyttötilastoja hakemuksen jokaisesta alusta. Tämä auttaa meitä päättämään mihin alustoihin ja kysymyksiin keskittyä.</p><p>Tiedot käsittelee Google Analytics, katso niiden <a href=\"https://support.google.com/analytics/answer/6004245?hl=en\">artikkeli</a>.</p><p>Seuraavat tiedot kerätään:</p><ul><li>Asentamisen satunnainen yksilöllinen tunniste.<br />Se on tallennettu sovelluksen asetustiedostoon.</li><li>Anonymisoitu (osittainen) IP-osoite.</li><li>Kite-versio.</li><li>Käyttöjärjestelmän nimi, versio ja arkkitehtuuri.</li><li>CPU arkkitehtuuri (ytimen arkkitehtuuri linux).</li><li>Järjestelmän muisti.</li><li>Java-versio, arkkitehtuuri ja muistiasetukset.</li></ul><p>Jos muutamme seurattuja tietoja, näet tämän sivun uudelleen.</p></body></html>"
 
 #: launcher/ui/setupwizard/AnalyticsWizardPage.cpp:85
 msgctxt "AnalyticsWizardPage|"
@@ -714,13 +714,13 @@ msgctxt "Application|"
 msgid "Settings"
 msgstr "Asetukset"
 
-#: launcher/updater/MeshMCUpdater/ApplyStage.cpp:66
+#: launcher/updater/KiteUpdater/ApplyStage.cpp:66
 #, qt-format
 msgctxt "ApplyStage|"
 msgid "The first stage of the update did not exit (pid %1). Nothing has been changed."
 msgstr "Päivityksen ensimmäinen vaihe ei poistunut (pid %1). Mitään ei ole muutettu."
 
-#: launcher/updater/MeshMCUpdater/ApplyStage.cpp:84
+#: launcher/updater/KiteUpdater/ApplyStage.cpp:84
 #, qt-format
 msgctxt "ApplyStage|"
 msgid "The unpacked update contains no files:\n"
@@ -728,7 +728,7 @@ msgid "The unpacked update contains no files:\n"
 msgstr "Pakkaisematon päivitys ei sisällä tiedostoja:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/ApplyStage.cpp:141
+#: launcher/updater/KiteUpdater/ApplyStage.cpp:141
 #, qt-format
 msgctxt "ApplyStage|"
 msgid "Cannot create the backup directory:\n"
@@ -736,7 +736,7 @@ msgid "Cannot create the backup directory:\n"
 msgstr "Ei voida luoda varmuuskopiokansiota:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/ApplyStage.cpp:157
+#: launcher/updater/KiteUpdater/ApplyStage.cpp:157
 #, qt-format
 msgctxt "ApplyStage|"
 msgid "Could not back up the current version before updating.\n\n"
@@ -746,7 +746,7 @@ msgstr "Nykyistä versiota ei voitu varmuuskopioida ennen päivitystä.\n\n"
 "%1\n\n"
 "Mitään ei ole muutettu."
 
-#: launcher/updater/MeshMCUpdater/ApplyStage.cpp:184
+#: launcher/updater/KiteUpdater/ApplyStage.cpp:184
 #, qt-format
 msgctxt "ApplyStage|"
 msgid "Could not install the update.\n\n"
@@ -758,7 +758,7 @@ msgstr "Päivitystä ei voitu asentaa.\n\n"
 "%2 %3 tiedostosta oli jo vaihdettu. Edellinen versio on tallennettu\n"
 "%4"
 
-#: launcher/updater/MeshMCUpdater/ApplyStage.cpp:191
+#: launcher/updater/KiteUpdater/ApplyStage.cpp:191
 msgctxt "ApplyStage|"
 msgid "(no backup was made)"
 msgstr "(ei varmuuskopiota tehty)"
@@ -1525,13 +1525,13 @@ msgstr "Ei ryhmää"
 
 #: launcher/crashreporter/CrashReportDialog.cpp:39
 msgctxt "CrashReportDialog|"
-msgid "MeshMC Crash Report"
-msgstr "Meshmc Kaatumisilmoitus"
+msgid "Kite Crash Report"
+msgstr "Kite Kaatumisilmoitus"
 
 #: launcher/crashreporter/CrashReportDialog.cpp:47
 msgctxt "CrashReportDialog|"
-msgid "<h2 style='color: #cc0000;'>MeshMC has failed</h2><p>An unexpected error occurred and MeshMC had to close.</p><p>Your logs have been uploaded to paste.ee for troubleshooting.</p>"
-msgstr "<h2 style='color: #cc0000;'>MeshMC on epäonnistunut</h2><p>Tapahtui odottamaton virhe ja MeshMC joutui sulkemaan.</p><p>Lokit on ladattu liittämiseen.ee vianhakuun.</p>"
+msgid "<h2 style='color: #cc0000;'>Kite has failed</h2><p>An unexpected error occurred and Kite had to close.</p><p>Your logs have been uploaded to paste.ee for troubleshooting.</p>"
+msgstr "<h2 style='color: #cc0000;'>Kite on epäonnistunut</h2><p>Tapahtui odottamaton virhe ja Kite joutui sulkemaan.</p><p>Lokit on ladattu liittämiseen.ee vianhakuun.</p>"
 
 #: launcher/crashreporter/CrashReportDialog.cpp:56
 msgctxt "CrashReportDialog|"
@@ -1670,8 +1670,8 @@ msgstr "Huomautus: pikakuvakkeet poistetaan yhdessä esimerkin kanssa, mutta vai
 
 #: launcher/ui/dialogs/CreateShortcutDialog.ui:190
 msgctxt "CreateShortcutDialog|"
-msgid "Move one somewhere else afterwards and MeshMC will forget it, so you would have to delete that one yourself."
-msgstr "Liiku yksi muuallakin jälkeenpäin ja MeshMC unohtaa sen, joten sinun täytyy poistaa se itse."
+msgid "Move one somewhere else afterwards and Kite will forget it, so you would have to delete that one yourself."
+msgstr "Liiku yksi muuallakin jälkeenpäin ja Kite unohtaa sen, joten sinun täytyy poistaa se itse."
 
 #: launcher/ui/dialogs/CreateShortcutDialog.cpp:78
 #, qt-format
@@ -1749,7 +1749,7 @@ msgstr "Paketoijakomento:"
 
 #: launcher/ui/widgets/CustomCommands.ui:77
 msgctxt "CustomCommands|"
-msgid "<html><head/><body><p>Pre-launch command runs before the instance launches and post-exit command runs after it exits.</p><p>Both will be run in MeshMC's working folder with extra environment variables:</p><ul><li>$INST_NAME - Name of the instance</li><li>$INST_ID - ID of the instance (its folder name)</li><li>$INST_DIR - absolute path of the instance</li><li>$INST_MC_DIR - absolute path of minecraft</li><li>$INST_JAVA - java binary used for launch</li><li>$INST_JAVA_ARGS - command-line parameters used for launch</li></ul><p>Wrapper command allows launching using an extra wrapper program (like 'optirun' on Linux)</p></body></html>"
+msgid "<html><head/><body><p>Pre-launch command runs before the instance launches and post-exit command runs after it exits.</p><p>Both will be run in Kite's working folder with extra environment variables:</p><ul><li>$INST_NAME - Name of the instance</li><li>$INST_ID - ID of the instance (its folder name)</li><li>$INST_DIR - absolute path of the instance</li><li>$INST_MC_DIR - absolute path of minecraft</li><li>$INST_JAVA - java binary used for launch</li><li>$INST_JAVA_ARGS - command-line parameters used for launch</li></ul><p>Wrapper command allows launching using an extra wrapper program (like 'optirun' on Linux)</p></body></html>"
 msgstr ""
 
 #: launcher/ui/pages/global/CustomCommandsPage.h:40
@@ -4143,8 +4143,8 @@ msgstr "Pysäytetään jo"
 
 #: launcher/LaunchController.cpp:627
 msgctxt "LaunchController|"
-msgid "MeshMC is already shutting this instance down. Give it a few seconds - if the game does not react, it gets killed automatically."
-msgstr "MeshMC on jo sulkemassa tämän instanssin. Anna se muutaman sekunnin - jos peli ei reagoi, se tappaa automaattisesti."
+msgid "Kite is already shutting this instance down. Give it a few seconds - if the game does not react, it gets killed automatically."
+msgstr "Kite on jo sulkemassa tämän instanssin. Anna se muutaman sekunnin - jos peli ei reagoi, se tappaa automaattisesti."
 
 #: launcher/LaunchController.cpp:634
 msgctxt "LaunchController|"
@@ -4169,9 +4169,9 @@ msgstr "Tämä voi korruptoida peliversion ja sitä tulisi käyttää vain jos M
 #: launcher/launch/LaunchTask.cpp:201
 #, qt-format
 msgctxt "LaunchTask|"
-msgid "MeshMC stopped watching the game log because the log length surpassed %1 lines.\n"
+msgid "Kite stopped watching the game log because the log length surpassed %1 lines.\n"
 "You may have to fix your mods because the game is still logging to files and likely wasting harddrive space at an alarming rate!"
-msgstr "MeshMC lopetti pelin lokin katselun, koska lokin pituus ylitti %1 -rivit.\n"
+msgstr "Kite lopetti pelin lokin katselun, koska lokin pituus ylitti %1 -rivit.\n"
 "Saatat joutua korjaamaan modeja, koska peli on yhä kirjautumassa tiedostoihin ja todennäköisesti tuhlaamassa kiintolevytilaa hälyttävällä vauhdilla!"
 
 #: launcher/ui/pages/modplatform/legacy_ftb/ListModel.cpp:39
@@ -4333,8 +4333,8 @@ msgstr "Peliversio aiemmista versioista."
 
 #: launcher/ui/pages/instance/LegacyUpgradePage.ui:29
 msgctxt "LegacyUpgradePage|"
-msgid "<html><body><h1>Upgrade is required</h1><p>MeshMC now supports old Minecraft versions and all the required features in the new (OneSix) instance format. As a consequence, the old (Legacy) format has been entirely disabled and old instances need to be upgraded.</p><p>The upgrade will create a new instance with the same contents as the current one, in the new format. The original instance will remain untouched, in case anything goes wrong in the process.</p><p>Please report any issues on our <a href=\"https://github.com/Project-Tick/MeshMC/issues\">GitHub page</a>.</p><p>There is also a <a href=\"https://discord.gg/PMxPTqwEwj\">discord channel for testing here</a>.</p></body></html>"
-msgstr "<html><body><h1>päivitys vaaditaan</h1><p>MeshMC tukee nyt vanhoja Minecraft-versioita ja kaikkia vaadittuja ominaisuuksia uudessa (OneSix-muodossa). Näin ollen vanha (Legacy) muoto on täysin poistettu käytöstä ja vanhoja tapauksia on parannettava.</p><p>Päivitys luo uuden instanssin, jolla on sama sisältö kuin nykyisellä versiolla, uudessa muodossa. Alkuperäinen ilmentymä jää koskemattomaksi, jos jokin menee vikaan prosessissa.</p><p>Ilmoita kaikista ongelmista meidän <a href=\"https://github.com/Project-Tick/MeshMC/issues\">GitHub sivulla</a>.</p><p>Myös <a href=\"https://discord.gg/PMxPTqwEwj\">on discord-kanava testattavaksi tässä</a>.</p></body></html>"
+msgid "<html><body><h1>Upgrade is required</h1><p>Kite now supports old Minecraft versions and all the required features in the new (OneSix) instance format. As a consequence, the old (Legacy) format has been entirely disabled and old instances need to be upgraded.</p><p>The upgrade will create a new instance with the same contents as the current one, in the new format. The original instance will remain untouched, in case anything goes wrong in the process.</p><p>Please report any issues on our <a href=\"https://github.com/grxtor/kite/issues\">GitHub page</a>.</p><p>There is also a <a href=\"https://discord.gg/PMxPTqwEwj\">discord channel for testing here</a>.</p></body></html>"
+msgstr "<html><body><h1>päivitys vaaditaan</h1><p>Kite tukee nyt vanhoja Minecraft-versioita ja kaikkia vaadittuja ominaisuuksia uudessa (OneSix-muodossa). Näin ollen vanha (Legacy) muoto on täysin poistettu käytöstä ja vanhoja tapauksia on parannettava.</p><p>Päivitys luo uuden instanssin, jolla on sama sisältö kuin nykyisellä versiolla, uudessa muodossa. Alkuperäinen ilmentymä jää koskemattomaksi, jos jokin menee vikaan prosessissa.</p><p>Ilmoita kaikista ongelmista meidän <a href=\"https://github.com/grxtor/kite/issues\">GitHub sivulla</a>.</p><p>Myös <a href=\"https://discord.gg/PMxPTqwEwj\">on discord-kanava testattavaksi tässä</a>.</p></body></html>"
 
 #: launcher/ui/pages/instance/LegacyUpgradePage.ui:39
 msgctxt "LegacyUpgradePage|"
@@ -4557,8 +4557,8 @@ msgstr "<p>Selaimen ikkuna avautuu Microsoftin kirjautumiseen.</p><p>Jos se ei a
 
 #: launcher/minecraft/auth/steps/MSAStep.cpp:35
 msgctxt "MSAStep|"
-msgid "Login successful! You can close this page and return to MeshMC."
-msgstr "Kirjautuminen onnistui! Voit sulkea tämän sivun ja palata MeshMC."
+msgid "Login successful! You can close this page and return to Kite."
+msgstr "Kirjautuminen onnistui! Voit sulkea tämän sivun ja palata Kite."
 
 #: launcher/minecraft/auth/steps/MSAStep.cpp:59
 msgctxt "MSAStep|"
@@ -4810,13 +4810,13 @@ msgstr "Tarkastele ja hallinnoi MMCO-laajennuksia."
 
 #: launcher/ui/MainWindow.cpp:652
 msgctxt "MainWindow|"
-msgid "MeshMC Logs"
-msgstr "MeshMc Lokit"
+msgid "Kite Logs"
+msgstr "Kite Lokit"
 
 #: launcher/ui/MainWindow.cpp:653
 msgctxt "MainWindow|"
-msgid "View and manage MeshMC application logs."
-msgstr "Tarkastele ja hallitse MeshMC sovelluslokeja."
+msgid "View and manage Kite application logs."
+msgstr "Tarkastele ja hallitse Kite sovelluslokeja."
 
 #: launcher/ui/MainWindow.cpp:662
 #, qt-format
@@ -5153,7 +5153,7 @@ msgstr "Luo pikakuvake valitsemaasi kansioon, joka käynnistää valitun instans
 
 #: launcher/ui/MainWindow.cpp:1380
 #, qt-format
-msgctxt "MainWindow|MeshMC - Version X"
+msgctxt "MainWindow|Kite - Version X"
 msgid "%1 - Version %2"
 msgstr "%1 - Versio %2"
 
@@ -5294,8 +5294,8 @@ msgstr "Käynnistetään päivitystä..."
 
 #: launcher/ui/MainWindow.cpp:2230
 msgctxt "MainWindow|"
-msgid "Updater launched. MeshMC will now close."
-msgstr "Päivitys käynnistetty. MeshMC sulkeutuu nyt."
+msgid "Updater launched. Kite will now close."
+msgstr "Päivitys käynnistetty. Kite sulkeutuu nyt."
 
 #: launcher/ui/MainWindow.cpp:2237
 msgctxt "MainWindow|"
@@ -5333,9 +5333,9 @@ msgstr "Keskeytä"
 
 #: launcher/ui/MainWindow.cpp:2398
 msgctxt "MainWindow|"
-msgid "MeshMC cannot download Minecraft or update instances unless you have at least one account added.\n"
+msgid "Kite cannot download Minecraft or update instances unless you have at least one account added.\n"
 "Please add your Mojang or Minecraft account."
-msgstr "MeshMC ei voi ladata Minecraftia tai päivittää instansseja, ellei sinulla ole vähintään yhtä tiliä lisätty.\n"
+msgstr "Kite ei voi ladata Minecraftia tai päivittää instansseja, ellei sinulla ole vähintään yhtä tiliä lisätty.\n"
 "Lisää Mojang tai Minecraft -tili."
 
 #: launcher/ui/MainWindow.cpp:2543
@@ -5439,8 +5439,8 @@ msgstr "Nimeä Paketti Uudelleen"
 
 #: launcher/ui/MainWindow.cpp:3209
 msgctxt "MainWindow|"
-msgid "This is a problem: <br/> - MeshMC will likely be deleted without warning by the operating system <br/> - close MeshMC now and extract it to a real location, not a temporary folder"
-msgstr "Tämä on ongelma: <br/> - MeshMC todennäköisesti poistetaan ilman varoitusta käyttöjärjestelmä <br/> - sulje MeshMC nyt ja pura se oikeaan paikkaan, ei väliaikainen kansio"
+msgid "This is a problem: <br/> - Kite will likely be deleted without warning by the operating system <br/> - close Kite now and extract it to a real location, not a temporary folder"
+msgstr "Tämä on ongelma: <br/> - Kite todennäköisesti poistetaan ilman varoitusta käyttöjärjestelmä <br/> - sulje Kite nyt ja pura se oikeaan paikkaan, ei väliaikainen kansio"
 
 #: launcher/ui/MainWindow.cpp:3221
 #, qt-format
@@ -5457,8 +5457,8 @@ msgstr "Sinulla on nyt kaksi vaihtoehtoa: <br/> - vaihda instanssi-kansio asetuk
 #: launcher/ui/MainWindow.cpp:3237
 #, qt-format
 msgctxt "MainWindow|"
-msgid "Your instance folder '%1' contains 'Rar$' - that means you haven't extracted MeshMC archive!"
-msgstr "Esiintymiskansiosi '%1' sisältää 'Harvinainen' - se tarkoittaa, että et ole poistanut MeshMC-arkistoa!"
+msgid "Your instance folder '%1' contains 'Rar$' - that means you haven't extracted Kite archive!"
+msgstr "Esiintymiskansiosi '%1' sisältää 'Harvinainen' - se tarkoittaa, että et ole poistanut Kite-arkistoa!"
 
 #: launcher/ui/MainWindow.cpp:3247
 #, qt-format
@@ -5691,353 +5691,353 @@ msgctxt "ManagedPackPage|"
 msgid "The instance updated to pack version %1 successfully."
 msgstr "instanssi päivitetty pakettiin %1 onnistuneesti."
 
-#: launcher/minecraft/auth/steps/MeshMCLoginStep.cpp:34
-msgctxt "MeshMCLoginStep|"
+#: launcher/minecraft/auth/steps/KiteLoginStep.cpp:34
+msgctxt "KiteLoginStep|"
 msgid "Accessing Mojang services."
 msgstr "Mojangin palvelujen käyttö."
 
-#: launcher/minecraft/auth/steps/MeshMCLoginStep.cpp:80
+#: launcher/minecraft/auth/steps/KiteLoginStep.cpp:80
 #, qt-format
-msgctxt "MeshMCLoginStep|"
+msgctxt "KiteLoginStep|"
 msgid "Failed to get Minecraft access token: %1"
 msgstr "Minecraftin pääsytunnusta ei voitu hakea: %1"
 
-#: launcher/minecraft/auth/steps/MeshMCLoginStep.cpp:92
-msgctxt "MeshMCLoginStep|"
+#: launcher/minecraft/auth/steps/KiteLoginStep.cpp:92
+msgctxt "KiteLoginStep|"
 msgid "Failed to parse the Minecraft access token response."
 msgstr "Minecraftin pääsymerkin vastausta ei voitu jäsentää."
 
-#: launcher/minecraft/auth/steps/MeshMCLoginStep.cpp:95
-msgctxt "MeshMCLoginStep|"
+#: launcher/minecraft/auth/steps/KiteLoginStep.cpp:95
+msgctxt "KiteLoginStep|"
 msgid ""
 msgstr ""
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:14
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:39
-msgctxt "MeshMCLogsDialog|"
-msgid "MeshMC Logs"
-msgstr "MeshMc Lokit"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:14
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:39
+msgctxt "KiteLogsDialog|"
+msgid "Kite Logs"
+msgstr "Kite Lokit"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:36
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:36
+msgctxt "KiteLogsDialog|"
 msgid "Reload"
 msgstr "Reload"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:43
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:43
+msgctxt "KiteLogsDialog|"
 msgid "Copy the whole log into the clipboard"
 msgstr "Kopioi koko loki leikepöydälle"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:46
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:46
+msgctxt "KiteLogsDialog|"
 msgid "&Copy"
 msgstr "&Kopioi"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:53
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:53
+msgctxt "KiteLogsDialog|"
 msgid "Upload the log to paste.ee"
 msgstr "Lataa loki liittää .ee"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:56
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:56
+msgctxt "KiteLogsDialog|"
 msgid "Upload"
 msgstr "Lähetä"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:63
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:63
+msgctxt "KiteLogsDialog|"
 msgid "Delete the selected log file"
 msgstr "Poista valittu lokitiedosto"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:66
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:210
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:66
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:210
+msgctxt "KiteLogsDialog|"
 msgid "Delete"
 msgstr "Poista"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:73
-msgctxt "MeshMCLogsDialog|"
-msgid "Delete all MeshMC log files"
-msgstr "Poista kaikki MeshMC lokitiedostot"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:73
+msgctxt "KiteLogsDialog|"
+msgid "Delete all Kite log files"
+msgstr "Poista kaikki Kite lokitiedostot"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:76
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:76
+msgctxt "KiteLogsDialog|"
 msgid "Clean"
 msgstr "Puhdista"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:100
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:100
+msgctxt "KiteLogsDialog|"
 msgid "Search:"
 msgstr "Etsi:"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.ui:110
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.ui:110
+msgctxt "KiteLogsDialog|"
 msgid "Find"
 msgstr "Etsi"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:152
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:217
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:263
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:152
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:217
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:263
+msgctxt "KiteLogsDialog|"
 msgid "Error"
 msgstr "Virhe"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:153
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:153
 #, qt-format
-msgctxt "MeshMCLogsDialog|"
+msgctxt "KiteLogsDialog|"
 msgid "Unable to open %1 for reading: %2"
 msgstr "%1 ei voitu avata lukemiseen: %2"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:161
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:161
 #, qt-format
-msgctxt "MeshMCLogsDialog|"
+msgctxt "KiteLogsDialog|"
 msgid "The file (%1) is too big. You may want to open it in a viewer optimized for large files."
 msgstr "Tiedosto (%1) on liian suuri. Voit halutessasi avata sen suurille tiedostoille optimoidussa katsojassa."
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:211
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:211
 #, qt-format
-msgctxt "MeshMCLogsDialog|"
+msgctxt "KiteLogsDialog|"
 msgid "Do you really want to delete %1?"
 msgstr "Haluatko varmasti poistaa %1?"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:218
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:218
 #, qt-format
-msgctxt "MeshMCLogsDialog|"
+msgctxt "KiteLogsDialog|"
 msgid "Unable to delete %1: %2"
 msgstr "%1ei voitu poistaa: %2"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:242
-msgctxt "MeshMCLogsDialog|"
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:242
+msgctxt "KiteLogsDialog|"
 msgid "Clean up"
 msgstr "Puhdista ylös"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:243
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:243
 #, qt-format
-msgctxt "MeshMCLogsDialog|"
+msgctxt "KiteLogsDialog|"
 msgid "Do you really want to delete all log files?\n"
 "%1"
 msgstr "Haluatko varmasti poistaa kaikki lokitiedostot?\n"
 "%1"
 
-#: launcher/ui/dialogs/MeshMCLogsDialog.cpp:264
+#: launcher/ui/dialogs/KiteLogsDialog.cpp:264
 #, qt-format
-msgctxt "MeshMCLogsDialog|"
+msgctxt "KiteLogsDialog|"
 msgid "Couldn't delete some files:\n"
 "%1"
 msgstr "Joitakin tiedostoja ei voitu poistaa:\n"
 "%1"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:45
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:45
+msgctxt "KitePage|"
 msgid "Features"
 msgstr "Ominaisuudet"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:51
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:51
+msgctxt "KitePage|"
 msgid "Update Settings"
 msgstr "Päivitä Asetukset"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:57
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:57
+msgctxt "KitePage|"
 msgid "Check for updates on start?"
 msgstr "Tarkista päivitykset käynnistyksessä?"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:64
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:64
+msgctxt "KitePage|"
 msgid "Up&date Channel:"
 msgstr "Päivitä Kanava:"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:81
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:81
+msgctxt "KitePage|"
 msgid "No channel selected."
 msgstr "Kanavaa ei ole valittu."
 
-#: launcher/ui/pages/global/MeshMCPage.ui:94
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:94
+msgctxt "KitePage|"
 msgid "Folders"
 msgstr "Kansiot"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:100
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:100
+msgctxt "KitePage|"
 msgid "I&nstances:"
 msgstr "I&Ajat:"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:120
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:120
+msgctxt "KitePage|"
 msgid "&Mods:"
 msgstr "&Modit:"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:143
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:143
+msgctxt "KitePage|"
 msgid "&Icons:"
 msgstr "&Kuvakkeet:"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:163
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:163
+msgctxt "KitePage|"
 msgid "&Skins:"
 msgstr "&Olemukset:"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:183
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:183
+msgctxt "KitePage|"
 msgid "&Java:"
 msgstr "&Jaa:"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:200
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:200
+msgctxt "KitePage|"
 msgid "Additional instance directories"
 msgstr "Muita instanssihakemistoja"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:211
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:211
+msgctxt "KitePage|"
 msgid "Add"
 msgstr "Lisää"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:218
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:218
+msgctxt "KitePage|"
 msgid "Remove"
 msgstr "Poista"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:240
-msgctxt "MeshMCPage|"
-msgid "Move the data to new location (will restart MeshMC)"
-msgstr "Siirrä tiedot uuteen paikkaan (käynnistä MeshMC uudelleen)"
+#: launcher/ui/pages/global/KitePage.ui:240
+msgctxt "KitePage|"
+msgid "Move the data to new location (will restart Kite)"
+msgstr "Siirrä tiedot uuteen paikkaan (käynnistä Kite uudelleen)"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:247
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:247
+msgctxt "KitePage|"
 msgid "Backup System"
 msgstr "Varmuuskopioi Järjestelmä"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:253
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:253
+msgctxt "KitePage|"
 msgid "Creates a snapshot of each instance before launching. Backups are saved in the instance's .backups folder with the label \"pre-launch\"."
 msgstr "Luo tilannekuvan jokaisesta esiintymästä ennen käynnistämistä. Varmuuskopiot tallennetaan instanssin .backups kansioon tunnisteella \"pre-launch\"."
 
-#: launcher/ui/pages/global/MeshMCPage.ui:256
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:256
+msgctxt "KitePage|"
 msgid "Automatically &backup instances before launch"
 msgstr "Varmuuskopioi instanssit automaattisesti ennen käynnistystä"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:266
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:266
+msgctxt "KitePage|"
 msgid "Instance creation"
 msgstr "Ilmentymän luominen"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:272
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:272
+msgctxt "KitePage|"
 msgid "When installing a modpack that is already installed, offer to update that instance instead of creating a second copy of it."
 msgstr "Kun asennetaan modpack joka on jo asennettu, voit päivittää instanssi sen sijaan luoda toisen kopion siitä."
 
-#: launcher/ui/pages/global/MeshMCPage.ui:275
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:275
+msgctxt "KitePage|"
 msgid "&Suggest updating an existing instance during modpack installation"
 msgstr "&Ehdota olemassa olevan instanssin päivitystä modpack asennuksen aikana"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:282
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:282
+msgctxt "KitePage|"
 msgid "Download the game's libraries and assets while the instance is being created, instead of waiting until the first time it is launched."
 msgstr "Lataa pelin kirjastot ja resurssit kun instanssi luodaan, sen sijaan että odottaisi ensimmäistä kertaa sen käynnistämistä."
 
-#: launcher/ui/pages/global/MeshMCPage.ui:285
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:285
+msgctxt "KitePage|"
 msgid "&Download the game's files while creating an instance"
 msgstr "&Lataa pelin tiedostot luotaessa instanssia"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:309
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:309
+msgctxt "KitePage|"
 msgid "User Interface"
 msgstr "Käyttöliittymä"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:315
-msgctxt "MeshMCPage|"
-msgid "MeshMC notifications"
-msgstr "MeshMC ilmoitukset"
+#: launcher/ui/pages/global/KitePage.ui:315
+msgctxt "KitePage|"
+msgid "Kite notifications"
+msgstr "Kite ilmoitukset"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:321
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:321
+msgctxt "KitePage|"
 msgid "Reset hidden notifications"
 msgstr "Palauta piilotetut ilmoitukset"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:337
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:337
+msgctxt "KitePage|"
 msgid "Instance view sorting mode"
 msgstr "Instanssin näkymän lajittelutila"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:343
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:343
+msgctxt "KitePage|"
 msgid "By &last launched"
 msgstr "Viimeksi käynnistetty &mennessä"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:353
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:353
+msgctxt "KitePage|"
 msgid "By &name"
 msgstr "Nimen &mukaan"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:380
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:380
+msgctxt "KitePage|"
 msgid "Console"
 msgstr "Konsoli"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:386
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:386
+msgctxt "KitePage|"
 msgid "Console Settings"
 msgstr "Konsolin Asetukset"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:392
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:392
+msgctxt "KitePage|"
 msgid "Show console while the game is running?"
 msgstr "Näytä konsoli pelin ollessa käynnissä?"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:399
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:399
+msgctxt "KitePage|"
 msgid "Automatically close console when the game quits?"
 msgstr "Sulje konsoli automaattisesti kun peli lopetetaan?"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:406
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:406
+msgctxt "KitePage|"
 msgid "Show console when the game crashes?"
 msgstr "Näytä konsoli, kun peli kaatuu?"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:416
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:416
+msgctxt "KitePage|"
 msgid "History limit"
 msgstr "Historian raja"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:422
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:422
+msgctxt "KitePage|"
 msgid "Stop logging when log overflows"
 msgstr "Lopeta kirjautuminen, kun loki ylivuotaa"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:435
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:435
+msgctxt "KitePage|"
 msgid " lines"
 msgstr " rivit"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:463
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:463
+msgctxt "KitePage|"
 msgid "Console font"
 msgstr "Konsolin kirjasin"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:515
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:515
+msgctxt "KitePage|"
 msgid "Analytics"
 msgstr "Analytiikka"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:521
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:521
+msgctxt "KitePage|"
 msgid "Analytics Settings"
 msgstr "Analytiikan Asetukset"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:527
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:527
+msgctxt "KitePage|"
 msgid "Send anonymous usage statistics?"
 msgstr "Lähetetäänkö anonyymit käyttötilastot?"
 
-#: launcher/ui/pages/global/MeshMCPage.ui:541
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.ui:541
+msgctxt "KitePage|"
 msgid "<html><head/>\n"
 "<body>\n"
-"<p>MeshMC sends anonymous usage statistics on every start of the application.</p><p>The following data is collected:</p>\n"
+"<p>Kite sends anonymous usage statistics on every start of the application.</p><p>The following data is collected:</p>\n"
 "<ul>\n"
-"<li>MeshMC version.</li>\n"
+"<li>Kite version.</li>\n"
 "<li>Operating system name, version and architecture.</li>\n"
 "<li>CPU architecture (kernel architecture on linux).</li>\n"
 "<li>Size of system memory.</li>\n"
@@ -6046,9 +6046,9 @@ msgid "<html><head/>\n"
 "</body></html>"
 msgstr "<html><head/>\n"
 "<body>\n"
-"<p>MeshMC lähettää anonyymit käyttötilastot jokaisen sovelluksen alusta.</p><p>Seuraavat tiedot kerätään:</p>\n"
+"<p>Kite lähettää anonyymit käyttötilastot jokaisen sovelluksen alusta.</p><p>Seuraavat tiedot kerätään:</p>\n"
 "<ul>\n"
-"<li>MeshMC versio.</li>\n"
+"<li>Kite versio.</li>\n"
 "<li>Käyttöjärjestelmän nimi, versio ja arkkitehtuuri.</li>\n"
 "<li>CPU arkkitehtuuri (ytimen arkkitehtuuri linux).</li>\n"
 "<li>Järjestelmän muisti.</li>\n"
@@ -6056,19 +6056,19 @@ msgstr "<html><head/>\n"
 "</ul>\n"
 "</body></html>"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:106
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:106
+msgctxt "KitePage|"
 msgid "You're trying to specify an instance folder which's path contains at least one '!'. Java is known to cause problems if that is the case, your instances (probably) won't start!"
 msgstr "Yrität määrittää instanssikansion jonka polku sisältää vähintään yhden '!'. Javan tiedetään aiheuttavan ongelmia, jos näin on, sinun tapauksesi (luultavasti) eivät käynnisty!"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:111
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:111
+msgctxt "KitePage|"
 msgid "Do you really want to use this path? Selecting \"No\" will close this and not alter your instance path."
 msgstr "Haluatko todella käyttää tätä polkua? Valitsemalla \"Ei\" sulkee tämän eikä muuta instanssi polkua."
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:131
+#: launcher/ui/pages/global/KitePage.cpp:131
 #, qt-format
-msgctxt "MeshMCPage|"
+msgctxt "KitePage|"
 msgid "You're trying to specify an instance folder which was granted temporarily via Flatpak.\n"
 "This is known to cause problems. After a restart the launcher might break, because it will no longer have access to that directory.\n\n"
 "Granting %1 access to it via Flatseal is recommended."
@@ -6076,103 +6076,103 @@ msgstr "Yrität määrittää instanssikansion, joka myönnettiin väliaikaisest
 "Tämän tiedetään aiheuttavan ongelmia. Uudelleenkäynnistyksen jälkeen käynnistin saattaa katketa, koska sillä ei ole enää pääsyä kyseiseen hakemistoon.\n\n"
 " %1 -käyttöoikeuden antaminen Flatsealin kautta on suositeltavaa."
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:138
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:138
+msgctxt "KitePage|"
 msgid "Do you want to proceed anyway?"
 msgstr "Haluatko joka tapauksessa jatkaa?"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:149
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:149
+msgctxt "KitePage|"
 msgid "Instance Folder"
 msgstr "Instanssin Kansio"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:172
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:172
+msgctxt "KitePage|"
 msgid "Additional Instance Folder"
 msgstr "Lisää Pakettikansio"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:199
-#: launcher/ui/pages/global/MeshMCPage.cpp:206
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:199
+#: launcher/ui/pages/global/KitePage.cpp:206
+msgctxt "KitePage|"
 msgid "Duplicate directory"
 msgstr "Duplicate directory"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:200
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:200
+msgctxt "KitePage|"
 msgid "This is already your primary instance directory."
 msgstr "Tämä on jo ensisijainen instanssihakemisto."
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:207
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:207
+msgctxt "KitePage|"
 msgid "This directory has already been added."
 msgstr "Tämä kansio on jo lisätty."
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:230
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:230
+msgctxt "KitePage|"
 msgid "Icons Folder"
 msgstr "Kuvakkeiden Kansio"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:241
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:241
+msgctxt "KitePage|"
 msgid "Skins Folder"
 msgstr "Ulkoasun Kansio"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:252
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:252
+msgctxt "KitePage|"
 msgid "Java Folder"
 msgstr "Java- Kansio"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:263
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:263
+msgctxt "KitePage|"
 msgid "Mods Folder"
 msgstr "Modien Kansio"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:274
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:274
+msgctxt "KitePage|"
 msgid "Automatic macOS Migration"
 msgstr "Automaattinen macOS-siirto"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:275
+#: launcher/ui/pages/global/KitePage.cpp:275
 #, qt-format
-msgctxt "MeshMCPage|"
+msgctxt "KitePage|"
 msgid "%1 now stores macOS data under your Library/Application Support folder automatically."
 msgstr "%1 tallentaa nyt macOS-tiedot kirjastosi/sovellustuen kansion alle automaattisesti."
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:433
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:433
+msgctxt "KitePage|"
 msgid "[Something/ERROR] A spooky error!"
 msgstr "[Jotain/ERROR] Hämärä virhe!"
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:442
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:442
+msgctxt "KitePage|"
 msgid "[Test/INFO] A harmless message..."
 msgstr "[Test/INFO] Harmiton viesti..."
 
-#: launcher/ui/pages/global/MeshMCPage.cpp:451
-msgctxt "MeshMCPage|"
+#: launcher/ui/pages/global/KitePage.cpp:451
+msgctxt "KitePage|"
 msgid "[Something/WARN] A not so spooky warning."
 msgstr "[Jotain/VAROITUS] Ei niin pelottava varoitus."
 
-#: launcher/minecraft/launch/MeshMCPartLaunch.cpp:130
+#: launcher/minecraft/launch/KitePartLaunch.cpp:130
 #, qt-format
-msgctxt "MeshMCPartLaunch|"
+msgctxt "KitePartLaunch|"
 msgid "The wrapper command \"%1\" couldn't be found."
 msgstr "Pakkauskomentoa \"%1\" ei löytynyt."
 
 #. Error message displayed if instace can't start
-#: launcher/minecraft/launch/MeshMCPartLaunch.cpp:150
-msgctxt "MeshMCPartLaunch|"
+#: launcher/minecraft/launch/KitePartLaunch.cpp:150
+msgctxt "KitePartLaunch|"
 msgid "Could not launch minecraft!"
 msgstr "Minecraftia ei voitu käynnistää!"
 
-#: launcher/minecraft/launch/MeshMCPartLaunch.cpp:158
-#: launcher/minecraft/launch/MeshMCPartLaunch.cpp:166
-msgctxt "MeshMCPartLaunch|"
+#: launcher/minecraft/launch/KitePartLaunch.cpp:158
+#: launcher/minecraft/launch/KitePartLaunch.cpp:166
+msgctxt "KitePartLaunch|"
 msgid "Game crashed."
 msgstr "Peli kaatui."
 
-#: launcher/minecraft/launch/MeshMCPartLaunch.cpp:227
-msgctxt "MeshMCPartLaunch|"
+#: launcher/minecraft/launch/KitePartLaunch.cpp:227
+msgctxt "KitePartLaunch|"
 msgid "The game did not react to the abort request. Killing it."
 msgstr "Peli ei reagoinut keskeytettyyn pyyntöön. Sen tappaminen."
 
@@ -7140,8 +7140,8 @@ msgstr "paste.ee API-avain"
 
 #: launcher/ui/pages/global/PasteEEPage.ui:45
 msgctxt "PasteEEPage|"
-msgid "MeshMC key - 12MB &upload limit"
-msgstr "MeshMC avain - 12MB &upload limit"
+msgid "Kite key - 12MB &upload limit"
+msgstr "Kite avain - 12MB &upload limit"
 
 #: launcher/ui/pages/global/PasteEEPage.ui:55
 msgctxt "PasteEEPage|"
@@ -7155,8 +7155,8 @@ msgstr "Liitä API-avaimesi tähän!"
 
 #: launcher/ui/pages/global/PasteEEPage.ui:82
 msgctxt "PasteEEPage|"
-msgid "<html><head/><body><p><a href=\"https://paste.ee\">paste.ee</a> is used by MeshMC for log uploads. If you have a <a href=\"https://paste.ee\">paste.ee</a> account, you can add your API key here and have your uploaded logs paired with your account.</p></body></html>"
-msgstr "<html><head/><body><p><a href=\"https://paste.ee\">tahna. e</a> käyttää MeshMC lokin lähetykseen. Jos sinulla on <a href=\"https://paste.ee\">liite. e</a> -tili, voit lisätä API-avaimesi tähän ja ladata lokit yhdessä tilisi kanssa.</p></body></html>"
+msgid "<html><head/><body><p><a href=\"https://paste.ee\">paste.ee</a> is used by Kite for log uploads. If you have a <a href=\"https://paste.ee\">paste.ee</a> account, you can add your API key here and have your uploaded logs paired with your account.</p></body></html>"
+msgstr "<html><head/><body><p><a href=\"https://paste.ee\">tahna. e</a> käyttää Kite lokin lähetykseen. Jos sinulla on <a href=\"https://paste.ee\">liite. e</a> -tili, voit lisätä API-avaimesi tähän ja ladata lokit yhdessä tilisi kanssa.</p></body></html>"
 
 #: launcher/ui/pages/global/PasteEEPage.h:43
 msgctxt "PasteEEPage|"
@@ -7204,13 +7204,13 @@ msgstr "MMCO-Liitännäiset"
 
 #: launcher/ui/dialogs/PluginsDialog.ui:29
 msgctxt "PluginsDialog|"
-msgid "Enabling or disabling a plugin takes effect after restarting MeshMC."
-msgstr "Liitännäisen käyttöönotto tai poistaminen tulee voimaan MeshMC:n uudelleenkäynnistyksen jälkeen."
+msgid "Enabling or disabling a plugin takes effect after restarting Kite."
+msgstr "Liitännäisen käyttöönotto tai poistaminen tulee voimaan Kite:n uudelleenkäynnistyksen jälkeen."
 
 #: launcher/ui/dialogs/PluginsDialog.ui:58
 msgctxt "PluginsDialog|"
-msgid "MeshMC MMCO Plugins List:"
-msgstr "Meshmc MMCO Plugins -luettelo:"
+msgid "Kite MMCO Plugins List:"
+msgstr "Kite MMCO Plugins -luettelo:"
 
 #: launcher/ui/dialogs/PluginsDialog.ui:78
 msgctxt "PluginsDialog|"
@@ -7281,7 +7281,7 @@ msgctxt "PreLaunchCommand|"
 msgid "Pre-Launch command ran successfully.\n\n"
 msgstr "Käynnistystä edeltävä komento ajettu onnistuneesti.\n\n"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:113
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:113
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "Cannot create the download directory:\n"
@@ -7289,7 +7289,7 @@ msgid "Cannot create the download directory:\n"
 msgstr "Ei voida luoda latauskansiota:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:122
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:122
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "Cannot write to the download directory:\n"
@@ -7299,7 +7299,7 @@ msgstr "Ei voi kirjoittaa latauskansioon:\n"
 "%1\n\n"
 "%2"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:186
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:186
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "Could not download the update.\n\n"
@@ -7307,7 +7307,7 @@ msgid "Could not download the update.\n\n"
 msgstr "Päivitystä ei voitu ladata.\n\n"
 "%1%2"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:188
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:188
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "\n"
@@ -7315,7 +7315,7 @@ msgid "\n"
 msgstr "\n"
 "HTTP-tila: %1"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:196
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:196
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "The downloaded update is empty:\n"
@@ -7323,7 +7323,7 @@ msgid "The downloaded update is empty:\n"
 msgstr "Ladattu päivitys on tyhjä:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:219
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:219
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "Could not unpack the update.\n\n"
@@ -7331,17 +7331,17 @@ msgid "Could not unpack the update.\n\n"
 msgstr "Päivitystä ei voitu purkaa.\n\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:250
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:250
 #, qt-format
 msgctxt "PrepareStage|"
-msgid "The downloaded update does not look like a MeshMC release: it contains no %1.\n\n"
+msgid "The downloaded update does not look like a Kite release: it contains no %1.\n\n"
 "Unpacked to:\n"
 "%2"
-msgstr "Ladattu päivitys ei näytä MeshMC-julkaisulta: se ei sisällä %1.\n\n"
+msgstr "Ladattu päivitys ei näytä Kite-julkaisulta: se ei sisällä %1.\n\n"
 "Avattu osoitteeseen:\n"
 "%2"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:257
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:257
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "The downloaded update does not contain %1.\n\n"
@@ -7351,7 +7351,7 @@ msgstr "Ladattu päivitys ei sisällä %1.\n\n"
 "Vapautettu osoitteeseen:\n"
 "%2"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:283
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:283
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "Could not start the downloaded installer:\n"
@@ -7361,7 +7361,7 @@ msgstr "Latattua asentajaa ei voitu käynnistää:\n"
 "%1\n\n"
 "%2"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:296
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:296
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "This update is a Windows installer and cannot be applied on this platform:\n"
@@ -7369,15 +7369,15 @@ msgid "This update is a Windows installer and cannot be applied on this platform
 msgstr "Tämä päivitys on Windows-asennusohjelma eikä sitä voi ottaa käyttöön tällä alustalla:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:312
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:312
 #, qt-format
 msgctxt "PrepareStage|"
-msgid "MeshMC is still running and did not exit within %1 seconds.\n\n"
-"Close MeshMC and try again."
-msgstr "MeshMC on yhä käynnissä eikä poistunut %1 sekunnissa.\n\n"
-"Sulje MeshMC ja yritä uudelleen."
+msgid "Kite is still running and did not exit within %1 seconds.\n\n"
+"Close Kite and try again."
+msgstr "Kite on yhä käynnissä eikä poistunut %1 sekunnissa.\n\n"
+"Sulje Kite ja yritä uudelleen."
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:342
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:342
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "Could not start the second stage of the update:\n"
@@ -7387,7 +7387,7 @@ msgstr "Päivityksen toista vaihetta ei voitu aloittaa:\n"
 "%1\n\n"
 "%2"
 
-#: launcher/updater/MeshMCUpdater/PrepareStage.cpp:354
+#: launcher/updater/KiteUpdater/PrepareStage.cpp:354
 #, qt-format
 msgctxt "PrepareStage|"
 msgid "The update could not be handed over to the version being installed.\n\n"
@@ -7498,8 +7498,8 @@ msgstr "%1 [installed]"
 
 #: launcher/ui/pages/global/ProxyPage.ui:42
 msgctxt "ProxyPage|"
-msgid "This only applies to MeshMC. Minecraft does not accept proxy settings."
-msgstr "Tämä koskee vain MeshMC. Minecraft ei hyväksy välityspalvelinasetuksia."
+msgid "This only applies to Kite. Minecraft does not accept proxy settings."
+msgstr "Tämä koskee vain Kite. Minecraft ei hyväksy välityspalvelinasetuksia."
 
 #: launcher/ui/pages/global/ProxyPage.ui:55
 msgctxt "ProxyPage|"
@@ -7553,8 +7553,8 @@ msgstr "Salasana:"
 
 #: launcher/ui/pages/global/ProxyPage.ui:169
 msgctxt "ProxyPage|"
-msgid "Note: Proxy username and password are stored in plain text inside MeshMC's configuration file!"
-msgstr "Huomautus: Välityspalvelimen käyttäjätunnus ja salasana tallennetaan pelkkään tekstiin MeshMC:n asetustiedostoon!"
+msgid "Note: Proxy username and password are stored in plain text inside Kite's configuration file!"
+msgstr "Huomautus: Välityspalvelimen käyttäjätunnus ja salasana tallennetaan pelkkään tekstiin Kite:n asetustiedostoon!"
 
 #: launcher/ui/pages/global/ProxyPage.h:44
 msgctxt "ProxyPage|"
@@ -7691,7 +7691,7 @@ msgstr "processArguments:lle on asetettu tuntematon arvo '%1'"
 #: launcher/minecraft/MojangVersionFormat.cpp:194
 #, qt-format
 msgctxt "QObject|"
-msgid "The 'minimumMeshMCVersion' value of this version (%1) is higher than supported by %3 (%2). It might not work properly!"
+msgid "The 'minimumKiteVersion' value of this version (%1) is higher than supported by %3 (%2). It might not work properly!"
 msgstr ""
 
 #: launcher/minecraft/MojangVersionFormat.cpp:312
@@ -7779,13 +7779,13 @@ msgstr "Ei voitu kirjoittaa pikanäppäimen kuvaketta %1."
 
 #: launcher/minecraft/ShortcutUtils.cpp:108
 msgctxt "QObject|"
-msgid "MeshMC is running from the folder it was extracted into, so it cannot create a shortcut. Move it to your Applications folder first."
-msgstr "MeshMC on käynnissä kansiosta, johon se purettiin, joten se ei voi luoda pikakuvaketta. Siirrä se sovelluskansioon ensin."
+msgid "Kite is running from the folder it was extracted into, so it cannot create a shortcut. Move it to your Applications folder first."
+msgstr "Kite on käynnissä kansiosta, johon se purettiin, joten se ei voi luoda pikakuvaketta. Siirrä se sovelluskansioon ensin."
 
 #: launcher/minecraft/ShortcutUtils.cpp:126
 msgctxt "QObject|"
-msgid "MeshMC looks like an AppImage, but $APPIMAGE is not set, so the path to write into the shortcut is unknown."
-msgstr "MeshMC näyttää AppImage, mutta $APPIMAGE ei ole asetettu, joten polku pikakuvakkeeseen kirjoittamiseen on tuntematon."
+msgid "Kite looks like an AppImage, but $APPIMAGE is not set, so the path to write into the shortcut is unknown."
+msgstr "Kite näyttää AppImage, mutta $APPIMAGE ei ole asetettu, joten polku pikakuvakkeeseen kirjoittamiseen on tuntematon."
 
 #: launcher/minecraft/ShortcutUtils.cpp:170
 msgctxt "QObject|"
@@ -7979,7 +7979,7 @@ msgstr "git ei ole asennettu — versiohistoria poistettu käytöstä."
 msgctxt "QObject|"
 msgid "MangoHud is not mounted inside this Flatpak sandbox.\n"
 "Install the org.freedesktop.Platform.VulkanLayer.MangoHud branch\n"
-"that matches the base runtime and restart MeshMC. A mismatched\n"
+"that matches the base runtime and restart Kite. A mismatched\n"
 "branch will not appear under /usr/lib/extensions/vulkan."
 msgstr ""
 
@@ -8002,9 +8002,9 @@ msgstr "Pelitila ei ole käytettävissä tämän Flatpak hiekkalaatikon sisäll�
 #: launcher/plugin/plugins/LinuxPerf/LinuxPerfPlugin.cpp:101
 msgctxt "QObject|"
 msgid "gamemoderun is not installed or not found on PATH.\n"
-"Install GameMode and restart MeshMC to enable this option."
+"Install GameMode and restart Kite to enable this option."
 msgstr "gamemoderunia ei ole asennettu tai sitä ei löydy PATH:sta.\n"
-"Asenna GameMode ja käynnistä MeshMC uudelleen ottaaksesi tämän käyttöön."
+"Asenna GameMode ja käynnistä Kite uudelleen ottaaksesi tämän käyttöön."
 
 #: launcher/plugin/plugins/LinuxPerf/LinuxPerfPlugin.cpp:112
 #, qt-format
@@ -8120,15 +8120,15 @@ msgstr "Järjestelmän Kaukalo"
 
 #: launcher/plugin/plugins/SystemTray/SystemTrayPlugin.cpp:306
 msgctxt "QObject|"
-msgid "Show MeshMC system tray icon (Restart required.)"
-msgstr "Näytä MeshMC ilmoitusalueen kuvake (uudelleenkäynnistys tarvitaan.)"
+msgid "Show Kite system tray icon (Restart required.)"
+msgstr "Näytä Kite ilmoitusalueen kuvake (uudelleenkäynnistys tarvitaan.)"
 
 #: launcher/plugin/plugins/SystemTray/SystemTrayPlugin.cpp:309
 msgctxt "QObject|"
-msgid "When on, MeshMC keeps a persistent tray icon with quick-launch shortcuts and an optional minimise-to-tray close handler.\n\n"
-"Toggle takes effect after restarting MeshMC."
-msgstr "Kun päällä, MeshMC pitää itsepintaisen kuvakkeen pikakuvakkeella ja valinnaisella pienimmällä tarjottimella lähellä.\n\n"
-"Vaihto astuu voimaan MeshMC:n uudelleenkäynnistyksen jälkeen."
+msgid "When on, Kite keeps a persistent tray icon with quick-launch shortcuts and an optional minimise-to-tray close handler.\n\n"
+"Toggle takes effect after restarting Kite."
+msgstr "Kun päällä, Kite pitää itsepintaisen kuvakkeen pikakuvakkeella ja valinnaisella pienimmällä tarjottimella lähellä.\n\n"
+"Vaihto astuu voimaan Kite:n uudelleenkäynnistyksen jälkeen."
 
 #: launcher/plugin/plugins/staging/ErrorOracle/AnalysisPage.h:31
 msgctxt "QObject|"
@@ -8280,8 +8280,8 @@ msgstr "Riippuvuus sykli"
 
 #: launcher/ui/dialogs/PluginsDialog.cpp:57
 msgctxt "QObject|"
-msgid "Built into MeshMC"
-msgstr "Sisäänrakennettu MeshMC: ksi"
+msgid "Built into Kite"
+msgstr "Sisäänrakennettu Kite: ksi"
 
 #: launcher/ui/dialogs/PluginsDialog.cpp:82
 msgctxt "QObject|"
@@ -9350,8 +9350,8 @@ msgstr "Ei voitu käynnistää päivitysbinääriä.\n"
 
 #: launcher/ui/dialogs/UpdateDialog.ui:14
 msgctxt "UpdateDialog|"
-msgid "MeshMC Update"
-msgstr "MeshMc Päivitys"
+msgid "Kite Update"
+msgstr "Kite Päivitys"
 
 #: launcher/ui/dialogs/UpdateDialog.ui:61
 msgctxt "UpdateDialog|"
@@ -9392,8 +9392,8 @@ msgstr "Sulje"
 
 #: launcher/ui/dialogs/UpdateProgressDialog.cpp:26
 msgctxt "UpdateProgressDialog|"
-msgid "MeshMC Update"
-msgstr "MeshMc Päivitys"
+msgid "Kite Update"
+msgstr "Kite Päivitys"
 
 #: launcher/ui/dialogs/UpdateProgressDialog.cpp:32
 msgctxt "UpdateProgressDialog|"
@@ -9410,18 +9410,18 @@ msgctxt "UpdateProgressDialog|"
 msgid "Close"
 msgstr "Sulje"
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:127
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:127
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "--wait-pid expects a process id, got \"%1\"."
 msgstr "--wait-pid odottaa prosessia, sai \"%1\"."
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:141
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:141
 msgctxt "UpdaterOptions|"
 msgid "No installation root was given (--root)."
 msgstr "Asennuspäätä ei annettu (--root)."
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:146
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:146
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "The installation root does not exist:\n"
@@ -9429,7 +9429,7 @@ msgid "The installation root does not exist:\n"
 msgstr "Asennuspäätä ei ole olemassa:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:151
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:151
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "The installation root is not a directory:\n"
@@ -9437,22 +9437,22 @@ msgid "The installation root is not a directory:\n"
 msgstr "Asennusroot ei ole kansio:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:156
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:156
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "The installation root is not writable:\n"
 "%1\n\n"
-"MeshMC cannot update itself without write access to its own installation."
+"Kite cannot update itself without write access to its own installation."
 msgstr "Asennusroot ei ole kirjoitettavissa:\n"
 "%1\n\n"
-"MeshMC ei voi päivittää itseään ilman kirjoitusoikeutta omaan asennukseen."
+"Kite ei voi päivittää itseään ilman kirjoitusoikeutta omaan asennukseen."
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:165
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:165
 msgctxt "UpdaterOptions|"
 msgid "No download URL was given (--url)."
 msgstr "Latauksen URL-osoitetta ei annettu (--url)."
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:170
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:170
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "The download URL is not a valid URL:\n"
@@ -9460,13 +9460,13 @@ msgid "The download URL is not a valid URL:\n"
 msgstr "Latauksen URL ei ole kelvollinen URL:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:177
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:177
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "Refusing to download an update over \"%1\". Only http and https are supported."
 msgstr "Kieltäydytään lataamasta päivitystä yli \"%1\". Vain http ja https ovat tuettuja."
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:184
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:184
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "The binary to restart does not exist:\n"
@@ -9474,12 +9474,12 @@ msgid "The binary to restart does not exist:\n"
 msgstr "Uudelleenkäynnistyksen binääri ei ole olemassa:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:190
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:190
 msgctxt "UpdaterOptions|"
 msgid "No unpacked update was given (--source)."
 msgstr "Pakaisemattomia päivityksiä ei annettu (--source)."
 
-#: launcher/updater/MeshMCUpdater/UpdaterOptions.cpp:193
+#: launcher/updater/KiteUpdater/UpdaterOptions.cpp:193
 #, qt-format
 msgctxt "UpdaterOptions|"
 msgid "The unpacked update is missing:\n"
@@ -9909,9 +9909,9 @@ msgstr "Ei voitu ladata välittäjän kartoitusversioluettelojen versiolistoja!"
 
 #: launcher/ui/pages/instance/VersionPage.cpp:417
 msgctxt "VersionPage|"
-msgid "MeshMC cannot download Minecraft or update instances unless you have at least one account added.\n"
+msgid "Kite cannot download Minecraft or update instances unless you have at least one account added.\n"
 "Please add your Mojang or Minecraft account."
-msgstr "MeshMC ei voi ladata Minecraftia tai päivittää instansseja, ellei sinulla ole vähintään yhtä tiliä lisätty.\n"
+msgstr "Kite ei voi ladata Minecraftia tai päivittää instansseja, ellei sinulla ole vähintään yhtä tiliä lisätty.\n"
 "Lisää Mojang tai Minecraft -tili."
 
 #: launcher/ui/pages/instance/VersionPage.cpp:511
@@ -10045,13 +10045,13 @@ msgstr "Etsi…"
 
 #: launcher/plugin/plugins/OfflineWiki/WikiPage.cpp:95
 msgctxt "WikiPage|"
-msgid "<h3>Wiki not available</h3><p>The MeshMC wiki is downloaded automatically using <b>git</b>, but no <code>git</code> program was found on your system, so the wiki cannot be fetched.</p><p>Install Git and restart MeshMC to download the wiki.</p>"
-msgstr "<h3>Wiki ei ole käytettävissä</h3><p>MeshMC wiki ladataan automaattisesti käyttäen <b>git</b>, mutta järjestelmässä ei löytynyt <code>git</code> -ohjelmaa, joten wikiä ei voi noutaa.</p><p>Asenna Git ja käynnistä MeshMC uudelleen ladataksesi wikin.</p>"
+msgid "<h3>Wiki not available</h3><p>The Kite wiki is downloaded automatically using <b>git</b>, but no <code>git</code> program was found on your system, so the wiki cannot be fetched.</p><p>Install Git and restart Kite to download the wiki.</p>"
+msgstr "<h3>Wiki ei ole käytettävissä</h3><p>Kite wiki ladataan automaattisesti käyttäen <b>git</b>, mutta järjestelmässä ei löytynyt <code>git</code> -ohjelmaa, joten wikiä ei voi noutaa.</p><p>Asenna Git ja käynnistä Kite uudelleen ladataksesi wikin.</p>"
 
 #: launcher/plugin/plugins/OfflineWiki/WikiPage.cpp:102
 msgctxt "WikiPage|"
-msgid "<h3>Downloading the MeshMC wiki…</h3><p>The wiki is fetched in the background the first time you are online and will appear here automatically once the download finishes. If you are offline, MeshMC retries on every launch.</p>"
-msgstr "<h3>Lataa MeshMC wiki…</h3><p>Wiki on haettu taustalla ensimmäistä kertaa verkossa ja ilmestyy tänne automaattisesti, kun lataus on valmis. Jos olet offline-tilassa, MeshMC yrittää uudelleen jokaisessa käynnistyksessä.</p>"
+msgid "<h3>Downloading the Kite wiki…</h3><p>The wiki is fetched in the background the first time you are online and will appear here automatically once the download finishes. If you are offline, Kite retries on every launch.</p>"
+msgstr "<h3>Lataa Kite wiki…</h3><p>Wiki on haettu taustalla ensimmäistä kertaa verkossa ja ilmestyy tänne automaattisesti, kun lataus on valmis. Jos olet offline-tilassa, Kite yrittää uudelleen jokaisessa käynnistyksessä.</p>"
 
 #: launcher/plugin/plugins/OfflineWiki/WikiPage.cpp:128
 #, qt-format
@@ -10349,7 +10349,7 @@ msgctxt "XboxUserStep|"
 msgid "Got Xbox user token"
 msgstr "On Xbox -käyttäjätunnus"
 
-#: launcher/updater/MeshMCUpdater/main.cpp:93
+#: launcher/updater/KiteUpdater/main.cpp:93
 #, qt-format
 msgctxt "main|"
 msgid "Full log:\n"
@@ -10357,14 +10357,14 @@ msgid "Full log:\n"
 msgstr "Koko loki:\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/main.cpp:153
-#: launcher/updater/MeshMCUpdater/main.cpp:164
-#: launcher/updater/MeshMCUpdater/main.cpp:198
+#: launcher/updater/KiteUpdater/main.cpp:153
+#: launcher/updater/KiteUpdater/main.cpp:164
+#: launcher/updater/KiteUpdater/main.cpp:198
 msgctxt "main|"
 msgid "Update Failed"
 msgstr "Päivitys Epäonnistui"
 
-#: launcher/updater/MeshMCUpdater/main.cpp:154
+#: launcher/updater/KiteUpdater/main.cpp:154
 #, qt-format
 msgctxt "main|"
 msgid "The updater was started with arguments it does not understand.\n\n"
@@ -10372,18 +10372,18 @@ msgid "The updater was started with arguments it does not understand.\n\n"
 msgstr "Päivittäjä aloitettiin argumenteilla, joita se ei ymmärrä.\n\n"
 "%1"
 
-#: launcher/updater/MeshMCUpdater/main.cpp:176
+#: launcher/updater/KiteUpdater/main.cpp:176
 msgctxt "main|"
 msgid "Update Already Running"
 msgstr "Päivitä Jo Käynnissä"
 
-#: launcher/updater/MeshMCUpdater/main.cpp:177
+#: launcher/updater/KiteUpdater/main.cpp:177
 #, qt-format
 msgctxt "main|"
-msgid "Another MeshMC update is already in progress.\n\n"
+msgid "Another Kite update is already in progress.\n\n"
 "%1\n\n"
 "Wait for it to finish, or close it and try again."
-msgstr "Toinen MeshMC-päivitys on jo käynnissä.\n\n"
+msgstr "Toinen Kite-päivitys on jo käynnissä.\n\n"
 "%1\n\n"
 "Odota, että se päättyy, tai sulkea ja yritä uudelleen."
 

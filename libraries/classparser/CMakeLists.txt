@@ -15,7 +15,7 @@ endif(${BIGENDIAN})
 
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core REQUIRED)
 
-# When built as part of the MeshMC tree the top-level build has already
+# When built as part of the Kite tree the top-level build has already
 # resolved libarchive (from vcpkg, or from the system package), so only a
 # standalone build has to look for it.
 if(NOT TARGET LibArchive::LibArchive)

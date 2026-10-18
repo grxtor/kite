@@ -80,7 +80,7 @@
       </font>
      </property>
      <property name="text">
-      <string notr="true">MeshMC</string>
+      <string notr="true">Kite</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>

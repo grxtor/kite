@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -127,7 +128,7 @@ int AssetMatcher::qtMajorFromName(const QString& lowerName)
 {
 	// The token is written "-qt6", never "qt6" on its own, so the leading
 	// separator is part of the pattern: without it, a hypothetical
-	// "MeshMC-LGBTQ6..." would report a Qt version.
+	// "Kite-LGBTQ6..." would report a Qt version.
 	static const QRegularExpression qtToken(QStringLiteral("-qt(\\d+)"));
 
 	const QRegularExpressionMatch match = qtToken.match(lowerName);

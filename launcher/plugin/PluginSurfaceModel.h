@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -36,8 +37,8 @@
  * PluginUiRenderer's QWidget tree. One row per live surface at the
  * (anchor, anchorContext) this model was created for; QmlShell hands one
  * out per pair via QmlShell::pluginSurfaces() (see that class for why the
- * factory indirection exists — this class lives in MeshMC_logic, next to
- * PluginManager, and MeshMC_qml cannot see either).
+ * factory indirection exists — this class lives in Kite_logic, next to
+ * PluginManager, and Kite_qml cannot see either).
  *
  * Refresh strategy: every PluginManager::surfacesChanged() re-reads the
  * whole (anchor, anchorContext) slice and does a full beginResetModel() /

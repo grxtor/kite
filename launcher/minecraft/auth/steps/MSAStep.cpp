@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -32,7 +33,7 @@ MSAStep::MSAStep(AccountData* data, Action action)
 {
 	m_replyHandler = new QOAuthHttpServerReplyHandler(this);
 	m_replyHandler->setCallbackText(
-		tr("Login successful! You can close this page and return to MeshMC."));
+		tr("Login successful! You can close this page and return to Kite."));
 
 	m_oauth2 = new QOAuth2AuthorizationCodeFlow(this);
 	m_oauth2->setClientIdentifier(LAUNCHER->msaClientId());

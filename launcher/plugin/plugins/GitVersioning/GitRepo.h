@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * GitRepo — thin wrapper around `git` (the binary) for the
@@ -7,7 +8,7 @@
  * We deliberately do NOT link against libgit2 — it would be a heavy
  * extra dependency for the one-shot commands we actually need. Modern
  * desktops always ship a `git` binary, and Windows users who installed
- * MeshMC almost certainly also installed Git for Windows. The plugin
+ * Kite almost certainly also installed Git for Windows. The plugin
  * detects a missing `git` at init time and disables itself cleanly.
  *
  * All operations live inside the instance's own `.history/` directory

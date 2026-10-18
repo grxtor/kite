@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -41,8 +42,8 @@ void ComponentToolsTest::suggestsAUidFromTheName_data()
 {
 	QTest::addColumn<QString>("name");
 	QTest::addColumn<QString>("uid");
-	QTest::newRow("plain") << "Sodium" << "org.projecttick.custom.sodium";
-	QTest::newRow("mixed") << "My Mod 2!" << "org.projecttick.custom.mymod";
+	QTest::newRow("plain") << "Sodium" << "io.github.grxtor.custom.sodium";
+	QTest::newRow("mixed") << "My Mod 2!" << "io.github.grxtor.custom.mymod";
 	QTest::newRow("no letters") << "1234 !!" << "";
 	QTest::newRow("empty") << "" << "";
 }
@@ -75,7 +76,7 @@ void ComponentToolsTest::takesASuggestedUidWhenNoneIsGiven()
 	QVERIFY(ComponentTools::validateNewComponent("Sodium", "", {}).isEmpty());
 	// ... refused when it is not, or when a name gives nothing to suggest.
 	QVERIFY(!ComponentTools::validateNewComponent(
-				 "Sodium", "", {"org.projecttick.custom.sodium"})
+				 "Sodium", "", {"io.github.grxtor.custom.sodium"})
 				 .isEmpty());
 	QVERIFY(!ComponentTools::validateNewComponent("123", "", {}).isEmpty());
 }

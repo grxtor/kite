@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * The "Java & memory" section of SettingsPage.qml: how much memory
@@ -13,7 +13,7 @@ import MeshMC.Theme
  * instance can override these in its own InstanceJavaSettings.qml.
  *
  * The Java rows (path with Choose, Browse and Test, JVM arguments, the
- * download vendor, the Java MeshMC downloaded) work through JavaStore; see
+ * download vendor, the Java Kite downloaded) work through JavaStore; see
  * JavaPathRow.qml and friends. PermGen only appears for a Java old enough
  * to use it.
  */
@@ -68,11 +68,11 @@ SettingsScroll {
         JavaPathRow {
             id: javaPath
             label: qsTr("Java executable")
-            description: qsTr("Used when an instance does not choose its own. Leave empty to let MeshMC pick.")
+            description: qsTr("Used when an instance does not choose its own. Leave empty to let Kite pick.")
         }
         JvmArgsRow {
             label: qsTr("JVM arguments")
-            description: qsTr("Extra flags for every launch. MeshMC already sets memory and the classpath.")
+            description: qsTr("Extra flags for every launch. Kite already sets memory and the classpath.")
         }
     }
 
@@ -99,13 +99,13 @@ SettingsScroll {
         Text {
             text: qsTr("Downloaded Java")
             color: Theme.palette.textPrimary
-            font.family: Theme.font.family
+            font.family: Theme.font.heading
             font.pixelSize: Theme.type.title.pixelSize
             font.weight: Font.Bold
         }
         Text {
             width: parent.width
-            text: qsTr("Java that MeshMC downloaded and keeps in its own folder.")
+            text: qsTr("Java that Kite downloaded and keeps in its own folder.")
             wrapMode: Text.Wrap
             color: Theme.palette.textTertiary
             font.family: Theme.font.family

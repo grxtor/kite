@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -56,7 +57,7 @@ void DirectJavaLaunch::executeTask()
 	QString allArgs = args.join(", ");
 	emit logLine("Java Arguments:\n[" + m_parent->censorPrivateInfo(allArgs) +
 					 "]\n\n",
-				 MessageLevel::MeshMC);
+				 MessageLevel::Kite);
 
 	auto javaPath =
 		FS::ResolveExecutable(instance->settings()->get("JavaPath").toString());
@@ -86,7 +87,7 @@ void DirectJavaLaunch::executeTask()
 			return;
 		}
 		emit logLine("Wrapper command is:\n" + wrapperCommandStr + "\n\n",
-					 MessageLevel::MeshMC);
+					 MessageLevel::Kite);
 		args.prepend(javaPath);
 		m_process.start(wrapperCommand, wrapperArgs + args);
 	} else {
@@ -127,11 +128,11 @@ void DirectJavaLaunch::on_state(LoggedProcess::State state)
 		case LoggedProcess::Running:
 			emit logLine(QString("Minecraft process ID: %1\n\n")
 							 .arg(m_process.processId()),
-						 MessageLevel::MeshMC);
+						 MessageLevel::Kite);
 			m_parent->setPid(m_process.processId());
 			m_parent->instance()->setLastLaunch();
 			/* The game is up: nothing left to report, so no stage either.
-			 * (MeshMCPartLaunch says the same with readyForLaunch, which
+			 * (KitePartLaunch says the same with readyForLaunch, which
 			 * the launch progress shown on the instance clears on.) */
 			setStatus(QString());
 			break;

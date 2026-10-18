@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -54,7 +55,7 @@ class InstanceWindow;
  *
  * There is also a second, quieter mode. An instance can have a provider
  * recorded but no pack id (imported from a local .mrpack, or imported
- * by a MeshMC old enough not to have recorded one). There is no
+ * by a Kite old enough not to have recorded one). There is no
  * catalogue to query, so instead of a version list the page offers a URL
  * field and "Update From File" - which is the only route such an
  * instance has to a newer version. */

@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -37,7 +38,7 @@ class QNetworkReply;
  * does the launcher (AccountFaceProvider draws faces, bodies and the 3D
  * preview's texture from them).
  *
- * The textures are Mojang's and are not shipped with MeshMC: they are
+ * The textures are Mojang's and are not shipped with Kite: they are
  * fetched from the same textures.minecraft.net addresses the profile parser
  * already substitutes for a player without a skin (Parsers.cpp), and kept
  * in the data folder's cache (cache/skins/default-classic.png and

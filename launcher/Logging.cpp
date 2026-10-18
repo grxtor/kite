@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -31,19 +32,19 @@
 #include <cstdio>
 #endif
 
-Q_LOGGING_CATEGORY(netLog, "meshmc.net")
-Q_LOGGING_CATEGORY(mojangLog, "meshmc.mojang")
-Q_LOGGING_CATEGORY(metaLog, "meshmc.meta")
-Q_LOGGING_CATEGORY(archiveLog, "meshmc.archive")
-Q_LOGGING_CATEGORY(backupLog, "meshmc.backup")
-Q_LOGGING_CATEGORY(iconsLog, "meshmc.icons")
-Q_LOGGING_CATEGORY(javaLog, "meshmc.java")
-Q_LOGGING_CATEGORY(launchLog, "meshmc.launch")
-Q_LOGGING_CATEGORY(newsLog, "meshmc.news")
-Q_LOGGING_CATEGORY(pluginsLog, "meshmc.plugins")
-Q_LOGGING_CATEGORY(minecraftauthLog, "meshmc.minecraft.auth")
-Q_LOGGING_CATEGORY(minecraftgoptionsLog, "meshmc.minecraft.gameoptions")
-Q_LOGGING_CATEGORY(minecraftlaunchLog, "meshmc.minecraft.launch")
+Q_LOGGING_CATEGORY(netLog, "kite.net")
+Q_LOGGING_CATEGORY(mojangLog, "kite.mojang")
+Q_LOGGING_CATEGORY(metaLog, "kite.meta")
+Q_LOGGING_CATEGORY(archiveLog, "kite.archive")
+Q_LOGGING_CATEGORY(backupLog, "kite.backup")
+Q_LOGGING_CATEGORY(iconsLog, "kite.icons")
+Q_LOGGING_CATEGORY(javaLog, "kite.java")
+Q_LOGGING_CATEGORY(launchLog, "kite.launch")
+Q_LOGGING_CATEGORY(newsLog, "kite.news")
+Q_LOGGING_CATEGORY(pluginsLog, "kite.plugins")
+Q_LOGGING_CATEGORY(minecraftauthLog, "kite.minecraft.auth")
+Q_LOGGING_CATEGORY(minecraftgoptionsLog, "kite.minecraft.gameoptions")
+Q_LOGGING_CATEGORY(minecraftlaunchLog, "kite.minecraft.launch")
 
 namespace
 {

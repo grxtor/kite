@@ -1,8 +1,8 @@
-/* SPDX-FileCopyrightText: 2026 Project Tick
- * SPDX-FileContributor: Project Tick
+/* SPDX-FileCopyrightText: 2026 grxtor
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * Copyright (C) 2026 Project Tick
+ * Copyright (C) 2026 grxtor
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -200,7 +200,7 @@ class QmlShell : public QObject
 	~QmlShell() override;
 
 	/* Builds the models and loads the root window without showing it --
-	 * a launch straight from the command line (`meshmc --launch`) keeps the
+	 * a launch straight from the command line (`kite --launch`) keeps the
 	 * window hidden until it has something to show (see
 	 * Application::ensureQmlShell()). Does nothing once loaded. Returns
 	 * false if the QML failed to load, in which case the reasons have
@@ -213,7 +213,7 @@ class QmlShell : public QObject
 	bool show(bool minimized = false);
 
 	/* The root window load() created, or nullptr before it has
-	 * succeeded. PluginManager (MeshMC_logic, which links MeshMC_qml --
+	 * succeeded. PluginManager (Kite_logic, which links Kite_qml --
 	 * see setPluginSurfaceFactory()'s comment) uses this through
 	 * Application::qmlShellWindow() to generalise main-window handling
 	 * (show/hide/close-filter) to the QML shell the same way it already
@@ -226,9 +226,9 @@ class QmlShell : public QObject
 	static QObject* expose(QObject* object);
 
 	/*
-	 * QmlShell sits in MeshMC_qml, which links MeshMC_core only -- it
+	 * QmlShell sits in Kite_qml, which links Kite_core only -- it
 	 * cannot see PluginManager or PluginSurfaceModel, both of which live in
-	 * MeshMC_logic (the plugin host), a target that links MeshMC_qml and
+	 * Kite_logic (the plugin host), a target that links Kite_qml and
 	 * not the other way around. Application installs the real factory once
 	 * at startup (see Application::showMainWindow()), the same indirection
 	 * launchInstance()/killInstance()/etc. use via *Requested() signals --
@@ -244,7 +244,7 @@ class QmlShell : public QObject
 	static void setPluginSurfaceFactory(PluginSurfaceFactory factory);
 
 	/* The launcher's profilers (Application::profilers()), which QmlShell
-	 * cannot see from MeshMC_qml either: one {key, name, ready} map per
+	 * cannot see from Kite_qml either: one {key, name, ready} map per
 	 * profiler, `ready` meaning its own check() passes (the program is set
 	 * up under Settings, External tools). Asked fresh by launchOptions()
 	 * every time, since that check reads settings the user can change.
@@ -253,7 +253,7 @@ class QmlShell : public QObject
 	void setProfilersProvider(ProfilersProvider provider);
 
 	/* Builds the "Installed plugins" list (a PluginListModel, which lives
-	 * next to PluginManager in MeshMC_logic) -- same indirection as
+	 * next to PluginManager in Kite_logic) -- same indirection as
 	 * setPluginSurfaceFactory(). Application installs it; it returns null
 	 * in a build without the plugin host. */
 	using PluginListFactory = std::function<QObject*()>;
@@ -356,7 +356,7 @@ class QmlShell : public QObject
 	QObject* catPacks() const;
 
 	/* Everything below just emits the matching *Requested() signal: QmlShell
-	 * sits in MeshMC_qml, which cannot see the widget code that actually
+	 * sits in Kite_qml, which cannot see the widget code that actually
 	 * launches an instance, opens a dialog or shows a folder. Application
 	 * connects these to the real actions. */
 	Q_INVOKABLE void launchInstance(const QString& id);
@@ -395,7 +395,7 @@ class QmlShell : public QObject
 	Q_INVOKABLE void openPath(const QString& path);
 
 	/* Called by Application for an import that comes from outside the
-	 * window -- `meshmc --import <zip|url>`, or a second launcher process
+	 * window -- `kite --import <zip|url>`, or a second launcher process
 	 * passing its file on (the IPC "import" message) -- where the widget
 	 * UI used MainWindow::droppedURLs(). Relays @p source (a local path or
 	 * a URL) into QML as importRequested() below, which opens the New
@@ -454,7 +454,7 @@ class QmlShell : public QObject
 	Q_INVOKABLE bool isInstanceRunning(const QString& id) const;
 	/* Preview/dev-only: sets the same runtime flag LaunchTask sets around a
 	 * real game process's exit (BaseInstance::setCrashed()), so a
-	 * MESHMC_QML_ROUTE devRoute step (Main.qml's applyDevRoute(), "crashed=
+	 * KITE_QML_ROUTE devRoute step (Main.qml's applyDevRoute(), "crashed=
 	 * <id>") can exercise the Home page's "Crashed last time" chip. Unlike
 	 * every other instance property, hasCrashed is never written to
 	 * instance.cfg, so gen_preview.py's static preview data cannot fake it

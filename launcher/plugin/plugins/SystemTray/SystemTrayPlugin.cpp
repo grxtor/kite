@@ -1,7 +1,8 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- *  SystemTray  —  MeshMC MMCO plugin
+ *  SystemTray  —  Kite MMCO plugin
  *
  *  Adds a persistent QSystemTrayIcon for the launcher with:
  *    • Show / Hide / Quit actions
@@ -24,7 +25,7 @@
 /* qApp (used below to invoke "quit" on the application object) is
  * defined by whichever Q*Application header is included; the SDK
  * header no longer pulls in <QApplication> (ABI 5 dropped Qt::Widgets
- * from MeshMC::SDK), so this plugin includes the QtCore-only
+ * from Kite::SDK), so this plugin includes the QtCore-only
  * QCoreApplication header itself — QMetaObject::invokeMethod only
  * needs a QObject*, which qApp still resolves to either way. */
 #include <QCoreApplication>
@@ -73,7 +74,7 @@ static QObject* g_guard = nullptr; /* anchor for our Qt connections */
 
 /* The launcher-wide setting key we mirror our "enabled" plugin-local
  * setting onto. Lives in APPLICATION->settings() so it's visible in
- * Settings → MeshMC and can be toggled by the user without poking at
+ * Settings → Kite and can be toggled by the user without poking at
  * raw config files. The plugin still treats its own plugin-namespaced
  * "enabled" setting as the runtime source of truth — the global key
  * just drives the checkbox and is mirrored back into the plugin
@@ -128,7 +129,7 @@ static QByteArray build_tray_menu_json()
 {
 	QJsonObject openItem{{"type", "button"},
 						 {"id", "open"},
-						 {"props", QJsonObject{{"label", "Open MeshMC"}}}};
+						 {"props", QJsonObject{{"label", "Open Kite"}}}};
 	QJsonObject hideItem{{"type", "button"},
 						 {"id", "hide"},
 						 {"props", QJsonObject{{"label", "Hide window"}}}};
@@ -170,7 +171,7 @@ static QByteArray build_tray_menu_json()
 
 	QJsonObject quitItem{{"type", "button"},
 						 {"id", "quit"},
-						 {"props", QJsonObject{{"label", "Quit MeshMC"}}}};
+						 {"props", QJsonObject{{"label", "Quit Kite"}}}};
 
 	const QJsonArray items{openItem, hideItem, sep, launchSection, sep, quitItem};
 	const QJsonObject doc{{"type", "mmco-tray-menu/1"}, {"items", items}};
@@ -195,7 +196,7 @@ static void on_tray_menu_event(void* /*ud*/, const char* /*surface_id*/,
 		g_ctx->main_window_hide(g_ctx->module_handle);
 	} else if (id == QLatin1String("quit")) {
 		/* QCoreApplication::quit() is the cleanest path — it tears down
-		 * the event loop which in turn unwinds MeshMC's Application
+		 * the event loop which in turn unwinds Kite's Application
 		 * shutdown, giving PluginManager a chance to mmco_unload() us
 		 * properly. */
 		QMetaObject::invokeMethod(qApp, "quit", Qt::QueuedConnection);
@@ -272,7 +273,7 @@ static int on_main_window_close(void* /*ud*/)
 	if (!g_hintShown && settingBool("show_notifications", true)) {
 		g_hintShown = true;
 		g_ctx->tray_show_message(g_ctx->module_handle, g_tray,
-								 "MeshMC is still running",
+								 "Kite is still running",
 								 "Use the tray icon to bring the window back "
 								 "or quit the launcher.",
 								 1 /* Info */, 6000);
@@ -282,8 +283,8 @@ static int on_main_window_close(void* /*ud*/)
 
 /* ── Settings UI: one ABI 5 GLOBAL_SETTINGS surface ───────────────── *
  *
- * Replaces injectCheckboxIntoMeshMCPage()'s allWidgets()/findChild walk
- * against MeshMCPage's "verticalLayout_9": the host now renders this
+ * Replaces injectCheckboxIntoKitePage()'s allWidgets()/findChild walk
+ * against KitePage's "verticalLayout_9": the host now renders this
  * document as a titled section inside its own "Plugins" page every
  * time the global Settings dialog opens, from whatever document is
  * currently stored for this surface — so, unlike the old pattern,
@@ -320,7 +321,7 @@ static void create_settings_surface(bool currentlyEnabled)
 			 {"id", "enabled"},
 			 {"props",
 			  QJsonObject{
-				  {"label", "Show MeshMC system tray icon (Restart required.)"},
+				  {"label", "Show Kite system tray icon (Restart required.)"},
 				  {"value", currentlyEnabled},
 				  {"enabled", true}}}}}};
 	const QByteArray json = QJsonDocument(doc).toJson(QJsonDocument::Compact);
@@ -390,7 +391,7 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 	g_guard = new QObject();
 
 	/* Mirror the plugin-local "enabled" key onto a launcher-wide
-	 * setting so the user can toggle it from Settings → MeshMC. The
+	 * setting so the user can toggle it from Settings → Kite. The
 	 * global setting wins on conflict — every plugin-local read
 	 * delegates here first. */
 	if (!ctx->app_setting_contains(ctx->module_handle,
@@ -424,7 +425,7 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 
 	if (!globalEnabled) {
 		MMCO_LOG(ctx, "SystemTray: disabled via global setting; idle "
-					  "(re-enable from Settings → MeshMC).");
+					  "(re-enable from Settings → Kite).");
 		return 0;
 	}
 
@@ -447,18 +448,18 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 		settingSetBool("show_notifications", true);
 
 	/* Resolve the launcher's own logo through the SDK — the icon is
-	 * baked into MeshMC's resource bundle at ":/org.projecttick.MeshMC.svg"
+	 * baked into Kite's resource bundle at ":/io.github.grxtor.Kite.svg"
 	 * and is loaded directly. We try a few fallbacks so the tray still
 	 * gets a sensible icon on stripped/older builds. */
 	const char* iconCandidates[] = {
-		":/org.projecttick.MeshMC.svg",			 /* primary — MeshMC logo  */
+		":/io.github.grxtor.Kite.svg",			 /* primary — Kite logo  */
 		":/multimc/scalable/instances/logo.svg", /* instance default */
-		"meshmc",								 /* themed name (XDG)      */
+		"kite",								 /* themed name (XDG)      */
 		"applications-games",					 /* last-ditch fallback    */
 	};
 	g_tray = nullptr;
 	for (const char* name : iconCandidates) {
-		g_tray = ctx->tray_create(ctx->module_handle, name, "MeshMC");
+		g_tray = ctx->tray_create(ctx->module_handle, name, "Kite");
 		if (g_tray)
 			break;
 	}
@@ -469,7 +470,7 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 
 	/*
 	 * Menu layout (top → bottom, the way most launchers do it):
-	 *   Open MeshMC               ← primary action, picks Show or Hide
+	 *   Open Kite               ← primary action, picks Show or Hide
 	 *   Hide window
 	 *   ─────────────────────
 	 *   Launch instance ▸
@@ -477,7 +478,7 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 	 *       <Instance 2>
 	 *       …
 	 *   ─────────────────────
-	 *   Quit MeshMC
+	 *   Quit Kite
 	 *
 	 * Built once as a JSON doc (build_tray_menu_json()) and re-issued
 	 * via tray_set_menu() on every INSTANCE_CREATED/REMOVED so the

@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -29,7 +30,7 @@
 #include "java/JavaUtils.h"
 #include "models/JavaController.h"
 #include "net/Download.h"
-#ifndef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifndef Kite_DISABLE_JAVA_DOWNLOADER
 #include "java/download/JavaDownloadTask.h"
 #endif
 
@@ -41,7 +42,7 @@ JavaDownloadController::JavaDownloadController(QObject* parent)
 JavaDownloadController::~JavaDownloadController()
 {
 	stopFetch();
-#ifndef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifndef Kite_DISABLE_JAVA_DOWNLOADER
 	if (m_task && m_task->isRunning()) {
 		m_task->abort();
 	}
@@ -359,7 +360,7 @@ void JavaDownloadController::selectBuild(int row)
 
 void JavaDownloadController::download()
 {
-#ifndef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifndef Kite_DISABLE_JAVA_DOWNLOADER
 	if (m_downloading || m_build < 0 || m_build >= m_runtimes.size()) {
 		return;
 	}
@@ -410,7 +411,7 @@ void JavaDownloadController::download()
 void JavaDownloadController::cancel()
 {
 	stopFetch();
-#ifndef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifndef Kite_DISABLE_JAVA_DOWNLOADER
 	if (m_task && m_task->isRunning()) {
 		m_task->abort();
 	}

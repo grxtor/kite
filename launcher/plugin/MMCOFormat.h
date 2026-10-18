@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -28,7 +29,7 @@
  * calling any further entry points.
  *
  * The compiler toolchain produces .mmco by compiling C++ sources against
- * the MeshMC Plugin SDK and linking as a shared library with the .mmco
+ * the Kite Plugin SDK and linking as a shared library with the .mmco
  * extension.
  *
  *
@@ -68,7 +69,7 @@
 #define MMCO_EXTENSION ".mmco"
 
 /* Magic value that identifies the GPG signature trailer at the end of a
- * .mmco file. Little-endian on disk. ASCII: "MMCS" (MeshMC Module Signature).
+ * .mmco file. Little-endian on disk. ASCII: "MMCS" (Kite Module Signature).
  */
 #define MMCO_TRAILER_MAGIC 0x53434D4D
 #define MMCO_FLAG_NONE 0x00000000

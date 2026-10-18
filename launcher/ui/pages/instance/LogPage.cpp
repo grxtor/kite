@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -255,19 +256,19 @@ void LogPage::on_btnPaste_clicked()
 	// FIXME: turn this into a proper task and move the upload logic out of
 	// GuiUtil!
 	m_model->append(
-		MessageLevel::MeshMC,
+		MessageLevel::Kite,
 		QString("%2: Log upload triggered at: %1")
 			.arg(QDateTime::currentDateTime().toString(Qt::RFC2822Date),
-				 BuildConfig.MESHMC_NAME));
+				 BuildConfig.KITE_NAME));
 	auto url = GuiUtil::uploadPaste(m_model->toPlainText(), this);
 	if (!url.isEmpty()) {
-		m_model->append(MessageLevel::MeshMC,
+		m_model->append(MessageLevel::Kite,
 						QString("%2: Log uploaded to: %1")
-							.arg(url, BuildConfig.MESHMC_NAME));
+							.arg(url, BuildConfig.KITE_NAME));
 	} else {
 		m_model->append(
 			MessageLevel::Error,
-			QString("%1: Log upload failed!").arg(BuildConfig.MESHMC_NAME));
+			QString("%1: Log upload failed!").arg(BuildConfig.KITE_NAME));
 	}
 }
 
@@ -276,7 +277,7 @@ void LogPage::on_btnCopy_clicked()
 	if (!m_model)
 		return;
 	m_model->append(
-		MessageLevel::MeshMC,
+		MessageLevel::Kite,
 		QString("Clipboard copy at: %1")
 			.arg(QDateTime::currentDateTime().toString(Qt::RFC2822Date)));
 	GuiUtil::setClipboardText(m_model->toPlainText());

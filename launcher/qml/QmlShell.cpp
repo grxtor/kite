@@ -1,8 +1,8 @@
-/* SPDX-FileCopyrightText: 2026 Project Tick
- * SPDX-FileContributor: Project Tick
+/* SPDX-FileCopyrightText: 2026 grxtor
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * Copyright (C) 2026 Project Tick
+ * Copyright (C) 2026 grxtor
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,7 +93,7 @@ namespace
 {
 	/* Spelled out rather than loadFromModule(), which is Qt 6.5+; the floor is
 	 * 6.4. The module sets RESOURCE_PREFIX "/qt/qml" so this path is stable. */
-	const QUrl kRootUrl(QStringLiteral("qrc:/qt/qml/MeshMC/Main.qml"));
+	const QUrl kRootUrl(QStringLiteral("qrc:/qt/qml/Kite/Main.qml"));
 
 	/* Function-local static rather than a plain namespace-scope QmlShell
 	 * member: this is a process-wide seam Application installs once, not
@@ -770,7 +770,7 @@ void QmlShell::applyProxySettings()
 	// Application::initSubsystems()'s own proxy setup and the widget
 	// ProxyPage::applySettings() -- only the destination differs
 	// (LauncherContext rather than calling updateProxySettings() directly,
-	// since QmlShell cannot see Application from MeshMC_qml).
+	// since QmlShell cannot see Application from Kite_qml).
 	auto settings = LAUNCHER->settings();
 	const QString proxyTypeStr = settings->get("ProxyType").toString();
 	const QString addr = settings->get("ProxyAddr").toString();
@@ -947,11 +947,11 @@ QObject* QmlShell::library() const
 QObject* QmlShell::launcherLogs() const
 {
 	/* The working directory is the data folder, where the launcher writes
-	 * <MESHMC_NAME>-<n>.log -- the same folder the widget logs dialog
+	 * <KITE_NAME>-<n>.log -- the same folder the widget logs dialog
 	 * lists. */
 	if (!m_launcherLogs) {
 		m_launcherLogs = std::make_unique<LauncherLogs>(
-			QDir::currentPath(), BuildConfig.MESHMC_NAME);
+			QDir::currentPath(), BuildConfig.KITE_NAME);
 	}
 	return expose(m_launcherLogs.get());
 }
@@ -1057,19 +1057,19 @@ QVariantMap QmlShell::rootProperties()
 	props.insert(QStringLiteral("selection"),
 				 QVariant::fromValue(expose(m_selection.get())));
 	props.insert(QStringLiteral("shell"), QVariant::fromValue(expose(this)));
-	/* MESHMC_QML_ROUTE opens a given screen at startup -- see
-	 * Main.qml's applyDevRoute(). With MESHMC_QML_SNAPSHOT it lets a
+	/* KITE_QML_ROUTE opens a given screen at startup -- see
+	 * Main.qml's applyDevRoute(). With KITE_QML_SNAPSHOT it lets a
 	 * review script picture any page without editing the QML. */
 	props.insert(QStringLiteral("devRoute"),
-				 qEnvironmentVariable("MESHMC_QML_ROUTE"));
+				 qEnvironmentVariable("KITE_QML_ROUTE"));
 	/* Whether launcher/qml/Cat (the roaming cat companion) was built at
 	 * all -- a compile-time fact, not a setting, so it is a plain bool
 	 * handed over once here rather than a Q_PROPERTY. Main.qml's catLoader
-	 * and SettingsPage's Cat group both gate on this: MESHMC_HAS_CAT is
+	 * and SettingsPage's Cat group both gate on this: KITE_HAS_CAT is
 	 * only ever defined when launcher/qml/CMakeLists.txt actually linked
-	 * MeshMC_qml_cat in (see its MeshMC_ENABLE_CAT guard), which itself
+	 * Kite_qml_cat in (see its Kite_ENABLE_CAT guard), which itself
 	 * only happens when Qt Quick3D was found. */
-#ifdef MESHMC_HAS_CAT
+#ifdef KITE_HAS_CAT
 	props.insert(QStringLiteral("catAvailable"), true);
 #else
 	props.insert(QStringLiteral("catAvailable"), false);
@@ -1171,7 +1171,7 @@ bool QmlShell::load()
 	 * its style when QtQuick.Controls is first imported, and cannot switch
 	 * afterwards. The style falls back to Basic for anything it does not
 	 * define itself. */
-	QQuickStyle::setStyle(QStringLiteral("MeshMC.Style"));
+	QQuickStyle::setStyle(QStringLiteral("Kite.Style"));
 
 	m_engine = std::make_unique<QQmlApplicationEngine>();
 	m_engine->addImportPath(QStringLiteral("qrc:/qt/qml"));
@@ -1216,22 +1216,22 @@ bool QmlShell::load()
 
 void QmlShell::scheduleSnapshotIfRequested()
 {
-	/* MESHMC_QML_SNAPSHOT=<file.png> renders the real window, with the real
+	/* KITE_QML_SNAPSHOT=<file.png> renders the real window, with the real
 	 * models, into an image and exits. Combined with QT_QPA_PLATFORM=offscreen
 	 * it never touches a display, so it can run on a CI runner and be diffed:
 	 * this is what visual regression checks of the QML UI are built on.
 	 *
 	 * The delay lets layouts settle and asynchronously loaded images arrive;
 	 * grabWindow() then forces a render of whatever is current. */
-	const QString path = qEnvironmentVariable("MESHMC_QML_SNAPSHOT");
+	const QString path = qEnvironmentVariable("KITE_QML_SNAPSHOT");
 	if (path.isEmpty())
 		return;
 
-	/* Long enough for the first frame; MESHMC_QML_SNAPSHOT_DELAY (ms) waits
+	/* Long enough for the first frame; KITE_QML_SNAPSHOT_DELAY (ms) waits
 	 * longer, for pages that show network results. */
 	bool delayOk = false;
 	const int delay =
-		qEnvironmentVariableIntValue("MESHMC_QML_SNAPSHOT_DELAY", &delayOk);
+		qEnvironmentVariableIntValue("KITE_QML_SNAPSHOT_DELAY", &delayOk);
 	QTimer::singleShot(delayOk ? delay : 750, this, [this, path]() {
 		const QImage image = m_window->grabWindow();
 		const bool saved = !image.isNull() && image.save(path);

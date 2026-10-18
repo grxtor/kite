@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * One modpack, opened from Discover: what it is, which version to install,
@@ -255,7 +255,7 @@ Item {
                             text: root.pack.title || ""
                             elide: Text.ElideRight
                             color: Theme.media.text
-                            font.family: Theme.font.family
+                            font.family: Theme.font.heading
                             font.pixelSize: Theme.type.display.pixelSize
                             font.weight: Font.Bold
                             font.letterSpacing: -0.4
@@ -340,7 +340,7 @@ Item {
                 text: root.pack.description || ""
                 wrapMode: Text.Wrap
                 color: Theme.palette.textSecondary
-                font.family: Theme.font.family
+                font.family: Theme.font.heading
                 font.pixelSize: Theme.type.title.pixelSize
                 lineHeight: Theme.type.body.lineHeight
             }
@@ -424,7 +424,7 @@ Item {
                 Text {
                     text: qsTr("Gallery")
                     color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
+                    font.family: Theme.font.heading
                     font.pixelSize: Theme.type.title.pixelSize
                     font.weight: Font.Bold
                 }
@@ -491,7 +491,7 @@ Item {
                 Text {
                     text: qsTr("About")
                     color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
+                    font.family: Theme.font.heading
                     font.pixelSize: Theme.type.title.pixelSize
                     font.weight: Font.Bold
                 }

@@ -1,9 +1,9 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * A small neutral chip for facts about something ("Fabric", "1.21.4",

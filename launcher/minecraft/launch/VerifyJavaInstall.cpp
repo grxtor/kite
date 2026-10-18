@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -38,7 +39,7 @@
 #include "Json.h"
 #include "java/JavaUtils.h"
 
-#ifndef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifndef Kite_DISABLE_JAVA_DOWNLOADER
 #include "BuildConfig.h"
 #include <optional>
 #include "net/Download.h"
@@ -165,20 +166,20 @@ void VerifyJavaInstall::executeTask()
 		emit logLine(tr("Found installed Java %1 at: %2")
 						 .arg(requiredMajor)
 						 .arg(existingJava),
-					 MessageLevel::MeshMC);
-#ifndef MeshMC_DISABLE_JAVA_DOWNLOADER
+					 MessageLevel::Kite);
+#ifndef Kite_DISABLE_JAVA_DOWNLOADER
 		setJavaPathAndSucceed(existingJava);
 #else
 		m_inst->settings()->set("OverrideJavaLocation", true);
 		m_inst->settings()->set("JavaPath", existingJava);
 		emit logLine(tr("Java path set to: %1").arg(existingJava),
-					 MessageLevel::MeshMC);
+					 MessageLevel::Kite);
 		emitSucceeded();
 #endif
 		return;
 	}
 
-#ifndef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifndef Kite_DISABLE_JAVA_DOWNLOADER
 	// Check runtime setting for auto-download
 	if (!m_inst->settings()->get("JavaAutoDownload").toBool()) {
 		emitFailed(tr("Java %1 is required but not installed. Automatic Java "
@@ -189,7 +190,7 @@ void VerifyJavaInstall::executeTask()
 	// Not found — auto-download
 	emit logLine(
 		tr("No installed Java %1 found. Downloading...").arg(requiredMajor),
-		MessageLevel::MeshMC);
+		MessageLevel::Kite);
 	autoDownloadJava(requiredMajor);
 #else
 	emitFailed(
@@ -198,7 +199,7 @@ void VerifyJavaInstall::executeTask()
 #endif
 }
 
-#ifndef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifndef Kite_DISABLE_JAVA_DOWNLOADER
 void VerifyJavaInstall::autoDownloadJava(int requiredMajor)
 {
 	// Get vendor from instance settings (falls through to global if not
@@ -211,7 +212,7 @@ void VerifyJavaInstall::autoDownloadJava(int requiredMajor)
 		m_preferredVendor = "net.minecraft.java";
 	}
 	emit logLine(tr("Using Java vendor: %1").arg(m_preferredVendor),
-				 MessageLevel::MeshMC);
+				 MessageLevel::Kite);
 	fetchVersionList(requiredMajor);
 }
 
@@ -316,7 +317,7 @@ void VerifyJavaInstall::fetchRuntimes(const QString& versionId,
 					if (rt.runtimeOS == myOS) {
 						emit logLine(tr("Downloading %1 (%2)...")
 										 .arg(rt.name, rt.version.toString()),
-									 MessageLevel::MeshMC);
+									 MessageLevel::Kite);
 						startDownload(rt, requiredMajor);
 						return;
 					}
@@ -357,7 +358,7 @@ void VerifyJavaInstall::startDownload(const JavaDownload::RuntimeEntry& runtime,
 		}
 
 		emit logLine(tr("Java downloaded and installed at: %1").arg(javaPath),
-					 MessageLevel::MeshMC);
+					 MessageLevel::Kite);
 		setJavaPathAndSucceed(javaPath);
 	});
 
@@ -371,7 +372,7 @@ void VerifyJavaInstall::startDownload(const JavaDownload::RuntimeEntry& runtime,
 
 	connect(m_downloadTask.get(), &Task::status, this,
 			[this](const QString& status) {
-				emit logLine(status, MessageLevel::MeshMC);
+				emit logLine(status, MessageLevel::Kite);
 			});
 
 	m_downloadTask->start();
@@ -385,7 +386,7 @@ void VerifyJavaInstall::setJavaPathAndSucceed(const QString& javaPath)
 	m_inst->settings()->set("OverrideJavaLocation", true);
 	m_inst->settings()->set("JavaPath", javaPath);
 	emit logLine(tr("Java path set to: %1").arg(javaPath),
-				 MessageLevel::MeshMC);
+				 MessageLevel::Kite);
 	emitSucceeded();
 }
 #endif

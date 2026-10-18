@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -35,7 +36,7 @@
 #include <QXmlStreamReader>
 
 /*
- * Can Qt's own icon engine serve the icon themes MeshMC ships inside qrc?
+ * Can Qt's own icon engine serve the icon themes Kite ships inside qrc?
  *
  * For most of this launcher's history the answer was assumed to be no, and
  * every themed icon went through XdgIcon instead -- a fork of Qt's
@@ -74,10 +75,10 @@
  *    mainWindowOptionalIconsThatGoBlank
  *      the same coverage question asked of MainWindow.ui instead of a list
  *      kept by hand here. MainWindow::applyThemedIcons() takes its icon
- *      names from a "meshmcIcon" dynamic property in the XML, so the
+ *      names from a "kiteIcon" dynamic property in the XML, so the
  *      compiler never sees them and a misspelling costs one blank button
  *      and one qWarning. These read the .ui back and make it a test
- *      failure instead. They need MESHMC_MAINWINDOW_UI_PATH, which
+ *      failure instead. They need KITE_MAINWINDOW_UI_PATH, which
  *      launcher/CMakeLists.txt passes in.
  *  - missingIconIsNull
  *      a handful of pages ask for an icon and ask for a different one if
@@ -114,15 +115,15 @@
  * told apart from a passing run that measured nothing.
  */
 
-#ifndef MESHMC_MAINWINDOW_UI_PATH
-#error "MESHMC_MAINWINDOW_UI_PATH is not set; see add_unit_test(IconTheme) in launcher/CMakeLists.txt"
+#ifndef KITE_MAINWINDOW_UI_PATH
+#error "KITE_MAINWINDOW_UI_PATH is not set; see add_unit_test(IconTheme) in launcher/CMakeLists.txt"
 #endif
 
 namespace
 {
 
 /// The icon themes compiled into the binary, one qrc each. Keep in step with
-/// MESHMC_QRC_FILES in launcher/CMakeLists.txt (minus the ones that are not
+/// KITE_QRC_FILES in launcher/CMakeLists.txt (minus the ones that are not
 /// icon themes: backgrounds, documents, shaders).
 const QStringList kBundledThemes = {
 	QStringLiteral("multimc"),      QStringLiteral("pe_dark"),
@@ -289,14 +290,14 @@ QStringList discoverInstanceIconNames()
 	return sorted;
 }
 
-/// One "meshmcIcon" property found in a .ui file: the icon name, and the
+/// One "kiteIcon" property found in a .ui file: the icon name, and the
 /// object that asked for it, so a failure names something greppable.
 struct UiIconRequest {
 	QString objectName;
 	QString iconName;
 };
 
-/* Read every "meshmcIcon" dynamic property out of a Designer .ui file.
+/* Read every "kiteIcon" dynamic property out of a Designer .ui file.
  *
  * MainWindow::applyThemedIcons() walks its own children looking for exactly
  * this property and assigns whatever the name resolves to, so this is the
@@ -343,7 +344,7 @@ QList<UiIconRequest> readUiIconRequests(const QString& uiPath, QString* error)
 			continue;
 		}
 		if (xml.attributes().value(QStringLiteral("name")).toString() !=
-			QStringLiteral("meshmcIcon")) {
+			QStringLiteral("kiteIcon")) {
 			continue;
 		}
 
@@ -362,7 +363,7 @@ QList<UiIconRequest> readUiIconRequests(const QString& uiPath, QString* error)
 		}
 
 		if (value.isEmpty()) {
-			*error = QStringLiteral("%1: the meshmcIcon property on '%2' has "
+			*error = QStringLiteral("%1: the kiteIcon property on '%2' has "
 									"no <string> value")
 						 .arg(uiPath, owner);
 			return found;
@@ -446,7 +447,7 @@ class IconThemeTest : public QObject
 	// -----------------------------------------------------------------
 
 	/// The themes are in the binary, and the test can see them. Guards the
-	/// static-library trap: the compiled qrc lives in MeshMC_logic, and a
+	/// static-library trap: the compiled qrc lives in Kite_logic, and a
 	/// linker is free to drop the object file that registers it if nothing
 	/// references it.
 	void resourcesArePresent()
@@ -499,7 +500,7 @@ class IconThemeTest : public QObject
 	/// this case lie.
 	void unknownIconDoesNotResolve()
 	{
-		const QString bogus = QStringLiteral("meshmcnosuchiconanywhere");
+		const QString bogus = QStringLiteral("kitenosuchiconanywhere");
 
 		for (const QString& theme : kBundledThemes) {
 			QIcon::setThemeName(theme);
@@ -538,7 +539,7 @@ class IconThemeTest : public QObject
 
 		for (const QString& name : {QStringLiteral("externaltools"),
 									QStringLiteral("notes"),
-									QStringLiteral("meshmcnosuchiconanywhere")}) {
+									QStringLiteral("kitenosuchiconanywhere")}) {
 			const QIcon icon = QIcon::fromTheme(name);
 			QVERIFY2(icon.isNull(),
 					 qPrintable(name + ": a missing icon came back non-null, "
@@ -685,12 +686,12 @@ class IconThemeTest : public QObject
 	{
 		QString error;
 		const QList<UiIconRequest> requests =
-			readUiIconRequests(QStringLiteral(MESHMC_MAINWINDOW_UI_PATH),
+			readUiIconRequests(QStringLiteral(KITE_MAINWINDOW_UI_PATH),
 							   &error);
 
 		QVERIFY2(error.isEmpty(), qPrintable(error));
 		QVERIFY2(!requests.isEmpty(),
-				 "no meshmcIcon properties found in MainWindow.ui, so "
+				 "no kiteIcon properties found in MainWindow.ui, so "
 				 "MainWindow::applyThemedIcons() has nothing to do -- either "
 				 "the property was renamed or the .ui moved");
 
@@ -698,7 +699,7 @@ class IconThemeTest : public QObject
 		for (const UiIconRequest& request : requests) {
 			QVERIFY2(!request.objectName.isEmpty(),
 					 qPrintable(QStringLiteral(
-									"a meshmcIcon property ('%1') is not "
+									"a kiteIcon property ('%1') is not "
 									"inside a named action or widget")
 									.arg(request.iconName)));
 			names.insert(request.iconName);
@@ -727,7 +728,7 @@ class IconThemeTest : public QObject
 	{
 		QString error;
 		const QList<UiIconRequest> requests =
-			readUiIconRequests(QStringLiteral(MESHMC_MAINWINDOW_UI_PATH),
+			readUiIconRequests(QStringLiteral(KITE_MAINWINDOW_UI_PATH),
 							   &error);
 		QVERIFY2(error.isEmpty(), qPrintable(error));
 		QVERIFY(!requests.isEmpty());
@@ -772,7 +773,7 @@ class IconThemeTest : public QObject
 	{
 		QString error;
 		const QList<UiIconRequest> requests =
-			readUiIconRequests(QStringLiteral(MESHMC_MAINWINDOW_UI_PATH),
+			readUiIconRequests(QStringLiteral(KITE_MAINWINDOW_UI_PATH),
 							   &error);
 		QVERIFY2(error.isEmpty(), qPrintable(error));
 		QVERIFY(!requests.isEmpty());
@@ -837,14 +838,14 @@ class IconThemeTest : public QObject
 	 * themes the build machine happens to have installed -- and then this
 	 * case would report a different answer on a KDE box than on a bare CI
 	 * runner or a fresh Windows install, which is the situation a user
-	 * actually gets. Asking only the themes MeshMC ships is the question
+	 * actually gets. Asking only the themes Kite ships is the question
 	 * with one answer.
 	 */
 	void mainWindowOptionalIconsThatGoBlank()
 	{
 		QString error;
 		const QList<UiIconRequest> requests =
-			readUiIconRequests(QStringLiteral(MESHMC_MAINWINDOW_UI_PATH),
+			readUiIconRequests(QStringLiteral(KITE_MAINWINDOW_UI_PATH),
 							   &error);
 		QVERIFY2(error.isEmpty(), qPrintable(error));
 
@@ -1008,7 +1009,7 @@ int main(int argc, char* argv[])
 
 	QGuiApplication app(argc, argv);
 
-	/* The compiled themes sit in MeshMC_logic, which is a static library, so
+	/* The compiled themes sit in Kite_logic, which is a static library, so
 	 * the linker drops the object files that register them unless something
 	 * refers to them by symbol. main.cpp does this for the launcher itself
 	 * for the same reason; every icon theme listed there is repeated here,

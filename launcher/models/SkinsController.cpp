@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -42,7 +43,7 @@ namespace
 	QString temporarySkinPath()
 	{
 		return QDir::temp().filePath(
-			QStringLiteral("meshmc-skin-%1.png")
+			QStringLiteral("kite-skin-%1.png")
 				.arg(QUuid::createUuid().toString(QUuid::Id128)));
 	}
 

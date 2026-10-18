@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * GitVersioningPlugin — MMCO entry point.
@@ -160,7 +161,7 @@ static bool autoSnapshotEnabledForInstance(const char* instanceId)
 												 SETTING_AUTO_SNAPSHOT));
 }
 
-/* ---- Global settings surface (replaces injectCheckboxIntoMeshMCPage) -- */
+/* ---- Global settings surface (replaces injectCheckboxIntoKitePage) -- */
 
 static QByteArray buildGlobalSettingsDoc()
 {

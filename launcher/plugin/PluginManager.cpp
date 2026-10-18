@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -323,7 +324,7 @@ void PluginManager::shutdownAll()
 
 	// DO NOT call dlclose() or clear() data structures here.
 	//
-	// Plugin .mmco shared libraries statically link MeshMC_logic
+	// Plugin .mmco shared libraries statically link Kite_logic
 	// which contains global objects with non-trivial destructors
 	// (e.g. `const Config BuildConfig`).  Modules are opened with
 	// RTLD_NODELETE to prevent their static destructors from running
@@ -711,7 +712,7 @@ void PluginManager::ensurePluginDataDir(PluginMetadata& meta)
 #ifdef Q_OS_WIN
 	baseDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
 #else
-	baseDir = QDir::homePath() + "/.local/share/MeshMC";
+	baseDir = QDir::homePath() + "/.local/share/Kite";
 #endif
 	meta.dataDir = QDir(baseDir).filePath("plugin-data/" + meta.moduleId());
 	QDir().mkpath(meta.dataDir);
@@ -1680,7 +1681,7 @@ const char* PluginManager::api_get_app_version(void* mh)
 const char* PluginManager::api_get_app_name(void* mh)
 {
 	auto* r = rt(mh);
-	r->tempString = BuildConfig.MESHMC_NAME.toStdString();
+	r->tempString = BuildConfig.KITE_NAME.toStdString();
 	return r->tempString.c_str();
 }
 
@@ -2786,7 +2787,7 @@ BasePage* PluginManager::createGlobalSettingsPluginsPage()
 	 * a Settings dialog sidebar cluttered with one-line pages. Stacking
 	 * sections in one page is exactly what the allWidgets()/findChild
 	 * pattern it replaces already produced visually (one GroupBox per
-	 * plugin inside MeshMCPage/MinecraftPage) -- same look, without the
+	 * plugin inside KitePage/MinecraftPage) -- same look, without the
 	 * plugin ever reaching into host internals to get there.
 	 */
 	QWidget* content =
@@ -2973,7 +2974,7 @@ const char* PluginManager::api_ui_plugin_icon(void* mh, const char* name)
  * The whole S17 surface is a read-only view onto the application's
  * NewsChecker (Application::newsChecker(), shared by MainWindow and the
  * QML shell alike), which owns every feed — the launcher's own plus the
- * extra ones from MeshMC_NEWS_EXTRA_FEEDS — parses them, and hands
+ * extra ones from Kite_NEWS_EXTRA_FEEDS — parses them, and hands
  * them back merged and sorted newest first.
  *
  * It used to be a cache in this class, with the extra feeds downloaded
@@ -3063,7 +3064,7 @@ int PluginManager::api_news_add_feed_url(void* mh, const char* url)
 	if (!r || !url)
 		return -1;
 
-	/* Feeds are fixed at build time (MeshMC_NEWS_EXTRA_FEEDS) and set up
+	/* Feeds are fixed at build time (Kite_NEWS_EXTRA_FEEDS) and set up
 	 * with the NewsChecker in one go, because the indices they get are
 	 * handed out to everyone reading the news. Adding one mid-session
 	 * would renumber the list under those readers.
@@ -3342,7 +3343,7 @@ void PluginManager::connectAppSignals()
 	 *                    &Application::globalSettingsAboutToOpen,
 	 *                    g_guard, []{ ... });
 	 * which required the plugin to link against Application::staticMetaObject
-	 * (i.e. against meshmc.lib / MeshMC_logic). The bridge re-publishes
+	 * (i.e. against kite.lib / Kite_logic). The bridge re-publishes
 	 * the signal as a hook so plugins reach it through the C ABI only.
 	 *
 	 * The connection is parented on `this` (PluginManager is a QObject),

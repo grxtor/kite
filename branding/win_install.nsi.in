@@ -6,15 +6,15 @@
 
 Unicode true
 
-Name "@MeshMC_DisplayName@"
-InstallDir "$LOCALAPPDATA\Programs\@MeshMC_CommonName@"
-InstallDirRegKey HKCU "Software\@MeshMC_CommonName@" "InstallDir"
+Name "@Kite_DisplayName@"
+InstallDir "$LOCALAPPDATA\Programs\@Kite_CommonName@"
+InstallDirRegKey HKCU "Software\@Kite_CommonName@" "InstallDir"
 RequestExecutionLevel user
-OutFile "../@MeshMC_CommonName@-Setup.exe"
+OutFile "../@Kite_CommonName@-Setup.exe"
 
-!define MUI_ICON "@CMAKE_BINARY_DIR@/@MeshMC_Branding_ICO@"
+!define MUI_ICON "@CMAKE_BINARY_DIR@/@Kite_Branding_ICO@"
 
-!define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\@MeshMC_CommonName@"
+!define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\@Kite_CommonName@"
 
 ;--------------------------------
 
@@ -25,7 +25,7 @@ OutFile "../@MeshMC_CommonName@-Setup.exe"
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
-!define MUI_FINISHPAGE_RUN "$InstDir\@MeshMC_AppBinaryName@.exe"
+!define MUI_FINISHPAGE_RUN "$InstDir\@Kite_AppBinaryName@.exe"
 !insertmacro MUI_PAGE_FINISH
 
 !insertmacro MUI_UNPAGE_CONFIRM
@@ -106,13 +106,13 @@ OutFile "../@MeshMC_CommonName@-Setup.exe"
 ;--------------------------------
 
 ; Version info
-VIProductVersion "@MeshMC_VERSION_NAME4@"
-VIFileVersion "@MeshMC_VERSION_NAME4@"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "@MeshMC_DisplayName@"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "@MeshMC_DisplayName@ Installer"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "@MeshMC_Copyright@"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "@MeshMC_VERSION_NAME4@"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "@MeshMC_VERSION_NAME4@"
+VIProductVersion "@Kite_VERSION_NAME4@"
+VIFileVersion "@Kite_VERSION_NAME4@"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "@Kite_DisplayName@"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "@Kite_DisplayName@ Installer"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "@Kite_Copyright@"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "@Kite_VERSION_NAME4@"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "@Kite_VERSION_NAME4@"
 
 ;--------------------------------
 ; Conditional comp with file exist
@@ -365,17 +365,17 @@ SectionEnd
 ;------------------------------------
 
 ; The stuff to install
-Section "@MeshMC_DisplayName@"
+Section "@Kite_DisplayName@"
 
   SectionIn RO
 
-  nsExec::Exec /TIMEOUT=2000 'TaskKill /IM @MeshMC_AppBinaryName@.exe /F'
+  nsExec::Exec /TIMEOUT=2000 'TaskKill /IM @Kite_AppBinaryName@.exe /F'
 
   SetOutPath $INSTDIR
 
-  File "@MeshMC_AppBinaryName@.exe"
-  File "@MeshMC_AppBinaryName@-updater.exe"
-  File "@MeshMC_AppBinaryName@-crashreporter.exe"
+  File "@Kite_AppBinaryName@.exe"
+  File "@Kite_AppBinaryName@-updater.exe"
+  File "@Kite_AppBinaryName@-crashreporter.exe"
   File /r "mmcmodules"
   File "qt.conf"
   File "qtlogging.ini"
@@ -389,35 +389,35 @@ Section "@MeshMC_DisplayName@"
   File /nonfatal /r "tls"
 
   ; Write the installation path into the registry
-  WriteRegStr HKCU Software\@MeshMC_CommonName@ "InstallDir" "$INSTDIR"
+  WriteRegStr HKCU Software\@Kite_CommonName@ "InstallDir" "$INSTDIR"
 
   ; Write the URL Handler into registry for curseforge
   WriteRegStr HKCU Software\Classes\curseforge "URL Protocol" ""
-  WriteRegStr HKCU Software\Classes\curseforge\shell\open\command "" '"$INSTDIR\@MeshMC_AppBinaryName@.exe" "%1"'
+  WriteRegStr HKCU Software\Classes\curseforge\shell\open\command "" '"$INSTDIR\@Kite_AppBinaryName@.exe" "%1"'
 
-  ; Write the URL Handler into registry for meshmc
-  WriteRegStr HKCU Software\Classes\@MeshMC_AppBinaryName@ "URL Protocol" ""
-  WriteRegStr HKCU Software\Classes\@MeshMC_AppBinaryName@\shell\open\command "" '"$INSTDIR\@MeshMC_AppBinaryName@.exe" "%1"'
+  ; Write the URL Handler into registry for kite
+  WriteRegStr HKCU Software\Classes\@Kite_AppBinaryName@ "URL Protocol" ""
+  WriteRegStr HKCU Software\Classes\@Kite_AppBinaryName@\shell\open\command "" '"$INSTDIR\@Kite_AppBinaryName@.exe" "%1"'
 
-  ; Write the URL Handler into registry for meshmc import
-  WriteRegStr HKCU Software\Classes\meshmc "URL Protocol" ""
-  WriteRegStr HKCU Software\Classes\meshmc\shell\open\command "" '"$INSTDIR\@MeshMC_AppBinaryName@.exe" "%1"'
+  ; Write the URL Handler into registry for kite import
+  WriteRegStr HKCU Software\Classes\kite "URL Protocol" ""
+  WriteRegStr HKCU Software\Classes\kite\shell\open\command "" '"$INSTDIR\@Kite_AppBinaryName@.exe" "%1"'
 
   ; Write the uninstall keys for Windows
   ; https://learn.microsoft.com/en-us/windows/win32/msi/uninstall-registry-key
   ${GetParameters} $R0
   ${GetOptions} $R0 "/NoUninstaller" $R1
   ${If} ${Errors}
-    WriteRegStr HKCU "${UNINST_KEY}" "DisplayName" "@MeshMC_DisplayName@"
-    WriteRegStr HKCU "${UNINST_KEY}" "DisplayIcon" "$INSTDIR\@MeshMC_AppBinaryName@.exe"
+    WriteRegStr HKCU "${UNINST_KEY}" "DisplayName" "@Kite_DisplayName@"
+    WriteRegStr HKCU "${UNINST_KEY}" "DisplayIcon" "$INSTDIR\@Kite_AppBinaryName@.exe"
     WriteRegStr HKCU "${UNINST_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe" _?=$INSTDIR'
     WriteRegStr HKCU "${UNINST_KEY}" "QuietUninstallString" '"$INSTDIR\uninstall.exe" /S _?=$INSTDIR'
     WriteRegStr HKCU "${UNINST_KEY}" "InstallLocation" "$INSTDIR"
-    WriteRegStr HKCU "${UNINST_KEY}" "Publisher" "@MeshMC_DisplayName@ Contributors"
-    WriteRegStr HKCU "${UNINST_KEY}" "Version" "@MeshMC_VERSION_NAME4@"
-    WriteRegStr HKCU "${UNINST_KEY}" "DisplayVersion" "@MeshMC_RELEASE_VERSION_NAME@"
-    WriteRegStr HKCU "${UNINST_KEY}" "VersionMajor" "@MeshMC_VERSION_MAJOR@"
-    WriteRegStr HKCU "${UNINST_KEY}" "VersionMinor" "@MeshMC_VERSION_MINOR@"
+    WriteRegStr HKCU "${UNINST_KEY}" "Publisher" "@Kite_DisplayName@ Contributors"
+    WriteRegStr HKCU "${UNINST_KEY}" "Version" "@Kite_VERSION_NAME4@"
+    WriteRegStr HKCU "${UNINST_KEY}" "DisplayVersion" "@Kite_RELEASE_VERSION_NAME@"
+    WriteRegStr HKCU "${UNINST_KEY}" "VersionMajor" "@Kite_VERSION_MAJOR@"
+    WriteRegStr HKCU "${UNINST_KEY}" "VersionMinor" "@Kite_VERSION_MINOR@"
     ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
     IntFmt $0 "0x%08X" $0
     WriteRegDWORD HKCU "${UNINST_KEY}" "EstimatedSize" "$0"
@@ -428,27 +428,27 @@ Section "@MeshMC_DisplayName@"
 
 SectionEnd
 
-@MeshMC_MSVC_Redist_NSIS_Section@
+@Kite_MSVC_Redist_NSIS_Section@
 
 Section "Start Menu Shortcut" SM_SHORTCUTS
 
-  CreateShortcut "$SMPROGRAMS\@MeshMC_DisplayName@.lnk" "$INSTDIR\@MeshMC_AppBinaryName@.exe" "" "$INSTDIR\@MeshMC_AppBinaryName@.exe" 0
+  CreateShortcut "$SMPROGRAMS\@Kite_DisplayName@.lnk" "$INSTDIR\@Kite_AppBinaryName@.exe" "" "$INSTDIR\@Kite_AppBinaryName@.exe" 0
 
 SectionEnd
 
 Section /o "Desktop Shortcut" DESKTOP_SHORTCUTS
 
-  CreateShortcut "$DESKTOP\@MeshMC_DisplayName@.lnk" "$INSTDIR\@MeshMC_AppBinaryName@.exe" "" "$INSTDIR\@MeshMC_AppBinaryName@.exe" 0
+  CreateShortcut "$DESKTOP\@Kite_DisplayName@.lnk" "$INSTDIR\@Kite_AppBinaryName@.exe" "" "$INSTDIR\@Kite_AppBinaryName@.exe" 0
 
 SectionEnd
 
 
-!define APPID "@MeshMC_CommonName@.App"
-!define APPEXE "@MeshMC_AppBinaryName@.exe"
+!define APPID "@Kite_CommonName@.App"
+!define APPEXE "@Kite_AppBinaryName@.exe"
 !define APPICON "$INSTDIR\${APPEXE},0"
-!define APPDESCRIPTION "@MeshMC_DisplayName@"
-!define APPNAME "@MeshMC_DisplayName@"
-!define APPCMDTEXT "@MeshMC_DisplayName@"
+!define APPDESCRIPTION "@Kite_DisplayName@"
+!define APPNAME "@Kite_DisplayName@"
+!define APPCMDTEXT "@Kite_DisplayName@"
 
 Section /o "Shell Association (Open-With dialog)" SHELL_ASSOC
 
@@ -467,14 +467,14 @@ SectionEnd
 
 Section "Uninstall"
 
-  nsExec::Exec /TIMEOUT=2000 'TaskKill /IM @MeshMC_AppBinaryName@.exe /F'
+  nsExec::Exec /TIMEOUT=2000 'TaskKill /IM @Kite_AppBinaryName@.exe /F'
 
-  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\@MeshMC_CommonName@"
-  DeleteRegKey HKCU SOFTWARE\@MeshMC_CommonName@
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\@Kite_CommonName@"
+  DeleteRegKey HKCU SOFTWARE\@Kite_CommonName@
 
-  Delete $INSTDIR\@MeshMC_AppBinaryName@.exe
-  Delete $INSTDIR\@MeshMC_AppBinaryName@-updater.exe
-  Delete $INSTDIR\@MeshMC_AppBinaryName@-crashreporter.exe
+  Delete $INSTDIR\@Kite_AppBinaryName@.exe
+  Delete $INSTDIR\@Kite_AppBinaryName@-updater.exe
+  Delete $INSTDIR\@Kite_AppBinaryName@-crashreporter.exe
   Delete $INSTDIR\qt.conf
   Delete $INSTDIR\qtlogging.ini
   Delete $INSTDIR\*.dll
@@ -490,8 +490,8 @@ Section "Uninstall"
   RMDir /r $INSTDIR\styles
   RMDir /r $INSTDIR\tls
 
-  Delete "$SMPROGRAMS\@MeshMC_DisplayName@.lnk"
-  Delete "$DESKTOP\@MeshMC_DisplayName@.lnk"
+  Delete "$SMPROGRAMS\@Kite_DisplayName@.lnk"
+  Delete "$DESKTOP\@Kite_DisplayName@.lnk"
 
   RMDir "$INSTDIR"
 

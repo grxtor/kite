@@ -1,22 +1,22 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * The paste.ee key used for uploaded logs -- the QML equivalent of the
  * classic PasteEEPage, which only ever has this one setting (PasteEEAPIKey:
- * either the literal string "meshmc", or a key of the account's own).
+ * either the literal string "kite", or a key of the account's own).
  *
  * `ownKey` is local UI state, not a live binding to the stored setting: it
  * only tracks which radio is selected, synced from the setting once at
  * startup and from then on changed only by picking a radio here. Deriving
  * it from the setting on every read instead would snap the "own key" radio
- * back to "MeshMC key" the moment it is picked but before a key has been
+ * back to "Kite key" the moment it is picked but before a key has been
  * typed in, since the setting itself has not changed yet.
  */
 SettingsScroll {
@@ -25,8 +25,8 @@ SettingsScroll {
     title: qsTr("Log upload")
     description: qsTr("paste.ee is used to share uploaded logs. Add your own API key to have uploads paired with your paste.ee account.")
 
-    readonly property string meshmcKey: "meshmc"
-    property bool ownKey: SettingsStore.string("PasteEEAPIKey") !== root.meshmcKey
+    readonly property string kiteKey: "kite"
+    property bool ownKey: SettingsStore.string("PasteEEAPIKey") !== root.kiteKey
 
     SettingsGroup {
         width: parent.width
@@ -44,10 +44,10 @@ SettingsScroll {
                 RadioButton {
                     ButtonGroup.group: keyGroup
                     checked: !root.ownKey
-                    text: qsTr("MeshMC's shared key (12 MB limit)")
+                    text: qsTr("Kite's shared key (12 MB limit)")
                     onToggled: if (checked) {
                         root.ownKey = false
-                        SettingsStore.setValue("PasteEEAPIKey", root.meshmcKey)
+                        SettingsStore.setValue("PasteEEAPIKey", root.kiteKey)
                     }
                 }
                 RadioButton {

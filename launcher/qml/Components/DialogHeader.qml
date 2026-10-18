@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * A dialog's title row: the title, plain, the same in every dialog. No
@@ -49,6 +49,7 @@ Item {
         text: root.title
         elide: Label.ElideRight
         font.pixelSize: Theme.type.title.pixelSize
+        font.family: Theme.font.heading
         font.weight: Theme.type.title.weight
     }
 }

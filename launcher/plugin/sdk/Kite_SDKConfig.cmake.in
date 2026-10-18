@@ -1,0 +1,43 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Kite Plugin SDK — CMake package config
+#
+# Two targets are exported:
+#
+#   Kite::SDK    — C++ SDK. Pulls in Qt and the BasePage interface.
+#                    Use this for C++ plugins (UI pages, tray, dialogs).
+#   Kite::SDK_C  — language-neutral C ABI. Qt-free, header-only.
+#                    Use this for plain-C plugins, or as the binding
+#                    surface for other languages (Rust/Zig/…).
+#
+# C++ usage in an out-of-tree plugin CMakeLists.txt:
+#
+#   find_package(Qt@QT_VERSION_MAJOR@ REQUIRED COMPONENTS Core Widgets Gui)
+#   find_package(Kite_SDK REQUIRED)
+#   add_library(MyPlugin MODULE src/MyPlugin.cpp)
+#   target_link_libraries(MyPlugin PRIVATE Kite::SDK)
+#   set_target_properties(MyPlugin PROPERTIES PREFIX "" SUFFIX ".mmco")
+#
+# C usage (no Qt needed):
+#
+#   find_package(Kite_SDK REQUIRED)
+#   add_library(MyPlugin MODULE src/MyPlugin.c)
+#   target_link_libraries(MyPlugin PRIVATE Kite::SDK_C)
+#   set_target_properties(MyPlugin PROPERTIES PREFIX "" SUFFIX ".mmco")
+
+# The Qt / Katabasis dependencies are only needed by the
+# C++ Kite::SDK target. Resolve them quietly so that a plain-C consumer
+# which only links Kite::SDK_C does not require a Qt toolchain. The C++
+# target's INTERFACE_LINK_LIBRARIES still references the imported Qt
+# targets, so a C++ consumer that has Qt installed gets them transitively.
+# The Qt major version is baked in at configure time: the exported
+# Kite::SDK target names Qt@QT_VERSION_MAJOR@::* imported targets concretely, so a
+# consumer has to resolve the same major version the SDK was built against.
+set(Kite_SDK_QT_VERSION_MAJOR @QT_VERSION_MAJOR@)
+find_dependency(Qt@QT_VERSION_MAJOR@ QUIET COMPONENTS Core Widgets Gui Network)
+find_dependency(Katabasis QUIET)
+
+include("${CMAKE_CURRENT_LIST_DIR}/Kite_SDKTargets.cmake")
+check_required_components(Kite_SDK)

@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * The "Appearance" section of SettingsPage.qml: the launcher's own
@@ -18,7 +18,7 @@ SettingsScroll {
     property var languages: null
     property var selectLanguage: null
     // Whether launcher/qml/Cat was built at all (Main.qml's own
-    // catAvailable, in turn MESHMC_HAS_CAT) -- hides the Cat group below
+    // catAvailable, in turn KITE_HAS_CAT) -- hides the Cat group below
     // rather than offering switches that would do nothing on a build
     // without Qt Quick3D.
     property bool catAvailable: false
@@ -62,7 +62,7 @@ SettingsScroll {
                 height: 4 * tile.faceScale
                 smooth: false
                 sourceClipRect: Qt.rect(5, 33, 5, 4)
-                source: "qrc:/qt/qml/MeshMC/Cat/textures/cat_" + tile.value + ".png"
+                source: "qrc:/qt/qml/Kite/Cat/textures/cat_" + tile.value + ".png"
             }
         }
 
@@ -148,7 +148,7 @@ SettingsScroll {
             key: "UiFontFamily"
             defaultFamily: "Inter"
             label: qsTr("Interface font")
-            description: qsTr("The font every screen of the launcher is drawn in. Sizes stay the same. Inter comes with MeshMC; the rest are installed on this computer.")
+            description: qsTr("The font every screen of the launcher is drawn in. Sizes stay the same. Inter comes with Kite; the rest are installed on this computer.")
         }
     }
     SettingsGroup {
@@ -208,7 +208,7 @@ SettingsScroll {
             showDivider: true
             enabled: SettingsStore.bool("TheCat")
             label: qsTr("Picture")
-            description: qsTr("Add your own by putting a picture in the catpacks folder inside MeshMC's data folder.")
+            description: qsTr("Add your own by putting a picture in the catpacks folder inside Kite's data folder.")
             visible: !!LauncherStore.catPacks
             CatPackPicker {
                 width: parent.width

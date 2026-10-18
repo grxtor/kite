@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -56,7 +57,7 @@ CreateShortcutDialog::CreateShortcutDialog(MinecraftInstance* instance,
 
 	/* Joining a world from the command line needs a Minecraft new enough
 	 * to understand quick play, which the version's traits announce. No
-	 * MeshMC instance reports it yet, so in practice the target section
+	 * Kite instance reports it yet, so in practice the target section
 	 * below is server-only and says so instead of offering a radio
 	 * button with nothing on the other side of it. */
 	m_canJoinWorld =

@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -75,7 +76,7 @@ void NewComponentDialog::updateDialogState()
 	if (protoUid.isEmpty()) {
 		ui->uidTextBox->setPlaceholderText(originalPlaceholderText);
 	} else {
-		QString suggestedUid = "org.projecttick.custom." + protoUid;
+		QString suggestedUid = "io.github.grxtor.custom." + protoUid;
 		ui->uidTextBox->setPlaceholderText(suggestedUid);
 	}
 	bool allowOK =

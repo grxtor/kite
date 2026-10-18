@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * One group of the library: a collapsible header and a grid of cards.
@@ -59,7 +59,7 @@ Column {
     signal dragActiveChanged(bool active)
     signal dragMoved(real sceneY)
 
-    readonly property string dragKey: "meshmc/instance"
+    readonly property string dragKey: "kite/instance"
 
     // The group ⋯ menu, under its button.
     function openGroupMenu() {
@@ -188,7 +188,7 @@ Column {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.title
                     color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
+                    font.family: Theme.font.heading
                     font.pixelSize: Theme.type.title.pixelSize
                     font.weight: Font.Bold
                 }

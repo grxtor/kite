@@ -1,4 +1,4 @@
-# MeshMC overlay of the upstream vcpkg-tool-meson port.
+# Kite overlay of the upstream vcpkg-tool-meson port.
 #
 # Copied verbatim from cmake/vcpkg/ports/vcpkg-tool-meson (meson 1.9.0, port
 # version 10) with exactly one addition: universal-osx.patch, listed last
@@ -16,7 +16,7 @@ set(patches
   adjust-args.patch
   remove-pkgconfig-specialization.patch
   meson-56879d5.diff  # Remove with 1.9.1
-  universal-osx.patch # MeshMC addition, see README.md
+  universal-osx.patch # Kite addition, see README.md
 )
 set(scripts
   vcpkg-port-config.cmake

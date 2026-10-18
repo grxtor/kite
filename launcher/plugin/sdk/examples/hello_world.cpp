@@ -1,8 +1,9 @@
 /* SPDX-FileCopyrightText: Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: CC0-1.0
  *
- * Example MeshMC plugin (.mmco module)
+ * Example Kite plugin (.mmco module)
  *
  */
 
@@ -32,7 +33,7 @@ static int on_app_initialized(void* /*mh*/, uint32_t /*hook_id*/,
 
 	int count = g_ctx->instance_count(g_ctx->module_handle);
 	char buf[256];
-	snprintf(buf, sizeof(buf), "MeshMC has %d instance(s):", count);
+	snprintf(buf, sizeof(buf), "Kite has %d instance(s):", count);
 	MMCO_LOG(g_ctx, buf);
 
 	for (int i = 0; i < count; ++i) {

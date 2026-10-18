@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -87,7 +88,7 @@ QVariantList JavaController::vendorList()
 
 bool JavaController::downloaderAvailable() const
 {
-#ifdef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifdef Kite_DISABLE_JAVA_DOWNLOADER
 	return false;
 #else
 	return true;
@@ -335,13 +336,13 @@ QString JavaController::removeManagedUnder(const QString& rootDir,
 	// nothing reached through a link.
 	QDir vendorDir(target.canonicalFilePath());
 	if (!vendorDir.cdUp()) {
-		return tr("MeshMC can only remove Java it downloaded itself.");
+		return tr("Kite can only remove Java it downloaded itself.");
 	}
 	QDir baseDir(vendorDir.absolutePath());
 	if (!baseDir.cdUp() ||
 		baseDir.absolutePath() !=
 			QFileInfo(rootDir).canonicalFilePath()) {
-		return tr("MeshMC can only remove Java it downloaded itself.");
+		return tr("Kite can only remove Java it downloaded itself.");
 	}
 	if (!QDir(target.canonicalFilePath()).removeRecursively()) {
 		return tr("Some files could not be removed. Close anything using "

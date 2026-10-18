@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * "Create shortcut…": an icon on the desktop or in the applications list
@@ -76,7 +76,7 @@ Dialog {
 
         Text {
             Layout.fillWidth: true
-            text: root.controller ? qsTr("Starts “%1” straight away, without opening MeshMC first.").arg(root.controller.instanceName) : ""
+            text: root.controller ? qsTr("Starts “%1” straight away, without opening Kite first.").arg(root.controller.instanceName) : ""
             wrapMode: Text.Wrap
             color: Theme.palette.textSecondary
             font.family: Theme.font.family

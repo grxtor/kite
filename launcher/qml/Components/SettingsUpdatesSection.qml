@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
@@ -22,14 +22,14 @@ SettingsScroll {
     readonly property int intervalFieldWidth: 168
 
     title: qsTr("Updates")
-    description: qsTr("Whether MeshMC looks for new versions by itself.")
+    description: qsTr("Whether Kite looks for new versions by itself.")
 
     SettingsGroup {
         width: parent.width
         title: qsTr("Update checks")
         SettingRow {
             label: qsTr("Check for updates automatically")
-            description: qsTr("MeshMC asks the update server in the background and tells you when a new version is out.")
+            description: qsTr("Kite asks the update server in the background and tells you when a new version is out.")
             Switch {
                 checked: !!root.updates && root.updates.autoCheck
                 Accessible.name: qsTr("Check for updates automatically")
@@ -41,7 +41,7 @@ SettingsScroll {
         }
         SettingRow {
             label: qsTr("How often")
-            description: qsTr("0 means only when MeshMC starts.")
+            description: qsTr("0 means only when Kite starts.")
             enabled: !!root.updates && root.updates.autoCheck
             SpinBox {
                 id: interval

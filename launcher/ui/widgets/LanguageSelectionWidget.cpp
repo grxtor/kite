@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -71,8 +72,8 @@ void LanguageSelectionWidget::retranslate()
 {
 	QString text = tr("Don't see your language or the quality is poor?<br/><a "
 					  "href=\"%1\">Help us with translations!</a>")
-					   .arg("https://github.com/Project-Tick/MeshMC/wiki/"
-							"Translating-MeshMC");
+					   .arg("https://github.com/grxtor/kite/wiki/"
+							"Translating-Kite");
 	helpUsLabel->setText(text);
 }
 

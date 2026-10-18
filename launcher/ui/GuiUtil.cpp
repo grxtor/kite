@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -38,7 +39,7 @@ QString GuiUtil::uploadPaste(const QString& text, QWidget* parentWidget)
 	ProgressDialog dialog(parentWidget);
 	auto APIKeySetting =
 		APPLICATION->settings()->get("PasteEEAPIKey").toString();
-	if (APIKeySetting == "meshmc") {
+	if (APIKeySetting == "kite") {
 		APIKeySetting = BuildConfig.PASTE_EE_KEY;
 	}
 	std::unique_ptr<PasteUpload> paste(

@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -34,7 +35,7 @@ class QMenu;
 /*
  * PluginUiRenderer — turns an "mmco-ui/1" JSON document (the format
  * MMCOContext::ui_surface_create / ui_surface_update / ui_modal_run
- * take, see PluginAPI.h S33) into a live QWidget tree, MeshMC_logic
+ * take, see PluginAPI.h S33) into a live QWidget tree, Kite_logic
  * side (it builds real widgets, so it cannot live in the Qt-free SDK).
  *
  * Fourteen node types are understood:

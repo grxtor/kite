@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -60,7 +61,7 @@ QString ComponentTools::suggestUid(const QString& name)
 	if (letters.isEmpty()) {
 		return QString();
 	}
-	return QStringLiteral("org.projecttick.custom.") + letters;
+	return QStringLiteral("io.github.grxtor.custom.") + letters;
 }
 
 QString ComponentTools::validateNewComponent(const QString& name,
@@ -160,7 +161,7 @@ QObject* ComponentTools::downloadAll()
 		return nullptr;
 	}
 	if (!LAUNCHER || !LAUNCHER->accounts()->anyAccountIsValid()) {
-		setError(tr("MeshMC cannot download Minecraft unless you have signed "
+		setError(tr("Kite cannot download Minecraft unless you have signed "
 					"in with an account. Add one under Accounts."));
 		return nullptr;
 	}

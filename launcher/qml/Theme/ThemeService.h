@@ -1,8 +1,8 @@
-/* SPDX-FileCopyrightText: 2026 Project Tick
- * SPDX-FileContributor: Project Tick
+/* SPDX-FileCopyrightText: 2026 grxtor
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * Copyright (C) 2026 Project Tick
+ * Copyright (C) 2026 grxtor
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 #include "theme/ThemePalette.h"
 
 /*
- * The C++ half of MeshMC.Theme: owns which palette is active and follows the
+ * The C++ half of Kite.Theme: owns which palette is active and follows the
  * OS when asked to.
  *
  * Registered as this module's QML singleton because Theme.qml -- the

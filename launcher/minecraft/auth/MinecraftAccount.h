@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -47,7 +48,7 @@ Q_DECLARE_METATYPE(MinecraftAccountPtr)
  * A profile within someone's Mojang account.
  *
  * Currently, the profile system has not been implemented by Mojang yet,
- * but we might as well add some things for it in MeshMC right now so
+ * but we might as well add some things for it in Kite right now so
  * we don't have to rip the code to pieces to add it later.
  */
 struct AccountProfile {

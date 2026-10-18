@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Templates as T
-import MeshMC.Theme
+import Kite.Theme
 
 // No `footer:` is set here: Basic's Dialog wires one up as a DialogButtonBox,
 // but DialogButtonBox is not in this style's control list, so giving Dialog
@@ -48,6 +48,7 @@ T.Dialog {
         visible: parent?.parent === T.Overlay.overlay && control.title
         elide: Label.ElideRight
         font.pixelSize: Theme.type.title.pixelSize
+        font.family: Theme.font.heading
         font.weight: Theme.type.title.weight
         padding: Theme.space.lg
         bottomPadding: 0

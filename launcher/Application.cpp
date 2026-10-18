@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -40,7 +41,7 @@
 #include "ui/instanceview/AccessibleInstanceView.h"
 
 #include "ui/pages/BasePageProvider.h"
-#include "ui/pages/global/MeshMCPage.h"
+#include "ui/pages/global/KitePage.h"
 #include "ui/pages/global/MinecraftPage.h"
 #include "ui/pages/global/JavaPage.h"
 #include "ui/pages/global/LanguagePage.h"
@@ -93,11 +94,11 @@
 #include "updater/ExternalUpdater.h"
 #include "updater/UpdateLockFile.h"
 #if defined(Q_OS_MAC)
-#if defined(MESHMC_SPARKLE_ENABLED)
+#if defined(KITE_SPARKLE_ENABLED)
 #include "updater/MacSparkleUpdater.h"
 #endif
 #else
-#include "updater/MeshMCExternalUpdater.h"
+#include "updater/KiteExternalUpdater.h"
 #endif
 
 #include "tools/JProfiler.h"
@@ -159,7 +160,7 @@ namespace
 			return dataPath;
 		}
 		return FS::PathCombine(QDir::homePath(), "Library",
-							   "Application Support", BuildConfig.MESHMC_NAME);
+							   "Application Support", BuildConfig.KITE_NAME);
 	}
 
 	QStringList legacyMacDataPatterns()
@@ -473,10 +474,10 @@ void Application::initPlatform()
 	// answer depends on what stderr ends up pointing at. Before the message
 	// handler is installed, so the very first line is already correct.
 	Logging::prepareConsoleColour();
-	setOrganizationName(BuildConfig.MESHMC_NAME);
-	setOrganizationDomain(BuildConfig.MESHMC_DOMAIN);
-	setApplicationName(BuildConfig.MESHMC_NAME);
-	setApplicationDisplayName(QString("%1 %2").arg(BuildConfig.MESHMC_DISPLAYNAME, BuildConfig.printableVersionString()));
+	setOrganizationName(BuildConfig.KITE_NAME);
+	setOrganizationDomain(BuildConfig.KITE_DOMAIN);
+	setApplicationName(BuildConfig.KITE_NAME);
+	setApplicationDisplayName(QString("%1 %2").arg(BuildConfig.KITE_DISPLAYNAME, BuildConfig.printableVersionString()));
 	setApplicationVersion(BuildConfig.printableVersionString());
 
 	startTime = QDateTime::currentDateTime();
@@ -550,7 +551,7 @@ QHash<QString, QVariant> Application::parseCommandLine(int& argc, char** argv)
 	// --alive
 	parser.addSwitch("alive");
 	parser.addDocumentation("alive", "Write a small '" + liveCheckFile +
-										 "' file after MeshMC starts");
+										 "' file after Kite starts");
 	// --import
 	parser.addOption("import");
 	parser.addShortOpt("import", 'I');
@@ -657,7 +658,7 @@ bool Application::resolveDataPath(const QHash<QString, QVariant>& args,
 			if (xdgDataHome.isEmpty()) {
 				xdgDataHome = QDir::homePath() + "/.local/share";
 			}
-			dataPath = FS::PathCombine(xdgDataHome, BuildConfig.MESHMC_NAME);
+			dataPath = FS::PathCombine(xdgDataHome, BuildConfig.KITE_NAME);
 			adjustedBy +=
 				"Non-portable mode, using XDG data location " + dataPath;
 		}
@@ -684,34 +685,34 @@ bool Application::resolveDataPath(const QHash<QString, QVariant>& args,
 
 	if (!FS::ensureFolderPathExists(dataPath)) {
 		showFatalErrorMessage(
-			"MeshMC data folder could not be created.",
-			QString("MeshMC data folder could not be created.\n"
+			"Kite data folder could not be created.",
+			QString("Kite data folder could not be created.\n"
 					"\n"
 #if defined(Q_OS_MAC)
 					MACOS_HINT
 #endif
-					"Make sure you have the right permissions to MeshMC data "
+					"Make sure you have the right permissions to Kite data "
 					"folder and any folder needed to access it.\n"
 					"(%1)\n"
 					"\n"
-					"MeshMC cannot continue until you fix this problem.")
+					"Kite cannot continue until you fix this problem.")
 				.arg(dataPath));
 		return false;
 	}
 
 	if (!QDir::setCurrent(dataPath)) {
 		showFatalErrorMessage(
-			"MeshMC data folder could not be opened.",
-			QString("MeshMC data folder could not be opened.\n"
+			"Kite data folder could not be opened.",
+			QString("Kite data folder could not be opened.\n"
 					"\n"
 #if defined(Q_OS_MAC)
 					MACOS_HINT
 #endif
-					"Make sure you have the right permissions to MeshMC data "
+					"Make sure you have the right permissions to Kite data "
 					"folder.\n"
 					"(%1)\n"
 					"\n"
-					"MeshMC cannot continue until you fix this problem.")
+					"Kite cannot continue until you fix this problem.")
 				.arg(dataPath));
 		return false;
 	}
@@ -735,7 +736,7 @@ bool Application::initPeerInstance()
 {
 	/*
 	 * Establish the mechanism for communication with an already running
-	 * MeshMC that uses the same data path. If there is one, tell it what
+	 * Kite that uses the same data path. If there is one, tell it what
 	 * the user actually wanted to do and exit. We want to initialize this
 	 * before logging to avoid messing with the log of a potential already
 	 * running copy.
@@ -787,7 +788,7 @@ bool Application::initPeerInstance()
 
 bool Application::initLogging(const QString& dataPath)
 {
-	static const QString logBase = BuildConfig.MESHMC_NAME + "-%0.log";
+	static const QString logBase = BuildConfig.KITE_NAME + "-%0.log";
 	auto moveFile = [](const QString& oldName, const QString& newName) {
 		static_cast<void>(QFile::remove(newName));
 		static_cast<void>(QFile::copy(oldName, newName));
@@ -803,8 +804,8 @@ bool Application::initLogging(const QString& dataPath)
 	if (!logFile->open(QIODevice::WriteOnly | QIODevice::Text |
 					   QIODevice::Truncate)) {
 		showFatalErrorMessage(
-			"MeshMC data folder is not writable!",
-			QString("MeshMC couldn't create a log file - the data folder is "
+			"Kite data folder is not writable!",
+			QString("Kite couldn't create a log file - the data folder is "
 					"not writable.\n"
 					"\n"
 #if defined(Q_OS_MAC)
@@ -813,7 +814,7 @@ bool Application::initLogging(const QString& dataPath)
 					"Make sure you have write permissions to the data folder.\n"
 					"(%1)\n"
 					"\n"
-					"MeshMC cannot continue until you fix this problem.")
+					"Kite cannot continue until you fix this problem.")
 				.arg(dataPath));
 		return false;
 	}
@@ -839,8 +840,8 @@ void Application::setupPaths(const QString& binPath, const QString& origcwdPath,
 	FS::updateTimestamp(m_rootPath);
 #endif
 
-	qInfo().noquote() << BuildConfig.MESHMC_DISPLAYNAME << ", (c) 2026"
-					  << BuildConfig.MESHMC_COPYRIGHT;
+	qInfo().noquote() << BuildConfig.KITE_DISPLAYNAME << ", (c) 2026"
+					  << BuildConfig.KITE_COPYRIGHT;
 	qInfo().noquote() << "Version                    : "
 					  << BuildConfig.printableVersionString();
 	qInfo().noquote() << "Git commit                 : " << BuildConfig.GIT_COMMIT;
@@ -889,7 +890,7 @@ void Application::setupPaths(const QString& binPath, const QString& origcwdPath,
 void Application::initSettings()
 {
 	m_settings.reset(
-		new INISettingsObject(BuildConfig.MESHMC_CONFIGFILE, this));
+		new INISettingsObject(BuildConfig.KITE_CONFIGFILE, this));
 	// Updates
 	m_settings->registerSetting("UpdateChannel", BuildConfig.VERSION_CHANNEL);
 	m_settings->registerSetting("AutoUpdate", true);
@@ -1080,7 +1081,7 @@ void Application::initSettings()
 	m_settings->registerSetting("RecordGameTime", true);
 
 	// Minecraft launch method
-	m_settings->registerSetting("MCLaunchMethod", "MeshMCPart");
+	m_settings->registerSetting("MCLaunchMethod", "KitePart");
 
 	// Wrapper command for launch
 	m_settings->registerSetting("WrapperCommand", "");
@@ -1095,7 +1096,7 @@ void Application::initSettings()
 	// plugin registered through app_setting_register() — same config
 	// file, so anyone who had pre-launch snapshots switched on keeps
 	// them after the plugin graduated into core. The old key is dropped
-	// from meshmc.cfg the first time the setting is written.
+	// from kite.cfg the first time the setting is written.
 	m_settings->registerSetting(
 		{"BackupBeforeLaunch", "plugin.backup_system.BackupBeforeLaunch"},
 		false);
@@ -1142,13 +1143,13 @@ void Application::initSettings()
 	m_settings->registerSetting("DataPackDownloadGeometry", "");
 
 	// paste.ee API key
-	m_settings->registerSetting("PasteEEAPIKey", "meshmc");
+	m_settings->registerSetting("PasteEEAPIKey", "kite");
 
 	// Init page provider
 	{
 		m_globalSettingsProvider =
 			std::make_shared<GenericPageProvider>(tr("Settings"));
-		m_globalSettingsProvider->addPage<MeshMCPage>();
+		m_globalSettingsProvider->addPage<KitePage>();
 		m_globalSettingsProvider->addPage<AppearancePage>();
 		m_globalSettingsProvider->addPage<MinecraftPage>();
 		m_globalSettingsProvider->addPage<JavaPage>();
@@ -1179,7 +1180,7 @@ void Application::initSubsystems()
 	/* News and notifications belong to the application rather than to a
 	 * window, so the QML shell and the plugin news API have them too.
 	 * Nothing is fetched yet -- see startBackgroundChecks(). Feed 0 is
-	 * ours; anything after it comes from -DMeshMC_NEWS_EXTRA_FEEDS at
+	 * ours; anything after it comes from -DKite_NEWS_EXTRA_FEEDS at
 	 * build time. */
 	{
 		QStringList feeds{ BuildConfig.NEWS_RSS_URL };
@@ -1240,7 +1241,7 @@ void Application::initSubsystems()
 				connectUpdaterToQmlShell();
 			};
 #if defined(Q_OS_MAC)
-#if defined(MESHMC_SPARKLE_ENABLED)
+#if defined(KITE_SPARKLE_ENABLED)
 		startUpdater(new MacSparkleUpdater());
 #endif
 #else
@@ -1250,7 +1251,7 @@ void Application::initSubsystems()
 		 * QML presenter is up (or, if the QML shell fails to load, just
 		 * before the widget window). Under the widget UI this runs now. */
 		runWhenQmlPresenterReady([this, startUpdater]() {
-			startUpdater(new MeshMCExternalUpdater(
+			startUpdater(new KiteExternalUpdater(
 				m_rootPath, m_dataPath,
 				// Migrates the launcher's old "check on start" setting into
 				// the updater's config, once. See the constructor.
@@ -1806,7 +1807,7 @@ ThemeManager* Application::themeManager() const
 QIcon Application::getThemedIcon(const QString& name)
 {
 	if (name == "logo") {
-		return QIcon(":/org.projecttick.MeshMC.svg");
+		return QIcon(":/io.github.grxtor.Kite.svg");
 	}
 	return QIcon::fromTheme(name);
 }
@@ -1961,13 +1962,13 @@ bool Application::updatesAreAllowed()
 
 QString Application::updaterBinaryName()
 {
-	// Kept in step with MeshMCExternalUpdater::updaterBinaryRelativePath();
+	// Kept in step with KiteExternalUpdater::updaterBinaryRelativePath();
 	// that is the one that actually launches it. Duplicated only because the
 	// macOS build does not compile that class at all.
 #if defined(Q_OS_WIN32)
-	return QStringLiteral("meshmc-updater.exe");
+	return QStringLiteral("kite-updater.exe");
 #else
-	return QStringLiteral("bin/meshmc-updater");
+	return QStringLiteral("bin/kite-updater");
 #endif
 }
 
@@ -1975,7 +1976,7 @@ bool Application::updaterEnabled()
 {
 #if defined(Q_OS_MAC)
 	// Sparkle is linked in, so there is no separate binary to look for.
-#if defined(MESHMC_SPARKLE_ENABLED)
+#if defined(KITE_SPARKLE_ENABLED)
 	return BuildConfig.UPDATER_ENABLED;
 #else
 	return false;
@@ -2312,17 +2313,17 @@ namespace
 {
 	/* The QML user interface is a preview. It is always compiled -- so it
 	 * cannot rot unnoticed -- but only shown when asked for. The build option
-	 * MeshMC_QML_UI picks the default; MESHMC_QML_UI in the environment
+	 * Kite_QML_UI picks the default; KITE_QML_UI in the environment
 	 * overrides it either way, so both interfaces can be compared from the
 	 * same binary. */
 	bool useQmlShell()
 	{
-#ifdef MESHMC_QML_UI_DEFAULT
+#ifdef KITE_QML_UI_DEFAULT
 		bool fallback = true;
 #else
 		bool fallback = false;
 #endif
-		const QByteArray env = qgetenv("MESHMC_QML_UI");
+		const QByteArray env = qgetenv("KITE_QML_UI");
 		if (env.isEmpty())
 			return fallback;
 		return env != "0";
@@ -2340,8 +2341,8 @@ bool Application::ensureQmlShell()
 	}
 	m_qmlShell = std::make_unique<QmlShell>();
 
-	/* QmlShell cannot see PluginManager (MeshMC_qml does not link
-	 * MeshMC_logic, which is where the plugin host lives) -- this
+	/* QmlShell cannot see PluginManager (Kite_qml does not link
+	 * Kite_logic, which is where the plugin host lives) -- this
 	 * factory is the bridge, installed once here the same way the
 	 * signal connections below wire up the widget-side actions
 	 * QmlShell itself cannot reach. Harmless to install again for a
@@ -2373,7 +2374,7 @@ bool Application::ensureQmlShell()
 	});
 
 	/* Settings' "Installed plugins": nothing to list without the plugin
-	 * host (MeshMC_PLUGINS off). */
+	 * host (Kite_PLUGINS off). */
 	m_qmlShell->setPluginListFactory([this]() -> QObject* {
 		return m_pluginManager ? new PluginListModel(m_pluginManager.get())
 							   : nullptr;
@@ -2810,7 +2811,7 @@ QString Application::getJarsPath()
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
 		auto appDir = QCoreApplication::applicationDirPath();
 		auto installedPath =
-			FS::PathCombine(appDir, "..", "share", BuildConfig.MESHMC_NAME);
+			FS::PathCombine(appDir, "..", "share", BuildConfig.KITE_NAME);
 		if (QDir(installedPath).exists()) {
 			return installedPath;
 		}

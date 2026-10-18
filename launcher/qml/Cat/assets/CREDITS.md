@@ -8,7 +8,7 @@ https://sketchfab.com/3d-models/minecraft-cat-2b59a1815b1e47a298d4a3c084523d72
 under the Creative Commons Attribution 4.0 International licence
 (CC BY 4.0, http://creativecommons.org/licenses/by/4.0/).
 
-Changes made for MeshMC: the parts are regrouped around their joints for
+Changes made for Kite: the parts are regrouped around their joints for
 animation (`../CatRig.qml`), and the other coats (`../textures/cat_ginger.png`,
 `cat_black.png`, `cat_white.png`, `cat_siamese.png`) are recoloured from the
 original texture by `../tools/gen_cat_variants.py`.

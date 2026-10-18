@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -484,7 +485,7 @@ class MMCZipTest : public QObject
 			"-"                                                 //
 			"\xE6\x97\xA5\xE6\x9C\xAC\xE8\xAA\x9E");            // 日本語
 
-		// Stands in for C:\Users\Şafak\AppData\Roaming\MeshMC\instances.
+		// Stands in for C:\Users\Şafak\AppData\Roaming\Kite\instances.
 		auto home = root.absoluteFilePath(awkward);
 		auto packDir = home + "/pack";
 		QVERIFY(writeFile(packDir + "/mods/a.jar", QByteArray(400, 'a')));

@@ -1,15 +1,15 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import MeshMC.Theme
+import Kite.Theme
 
 /*
- * The "Launcher logs" section of SettingsPage.qml: MeshMC's own log files
+ * The "Launcher logs" section of SettingsPage.qml: Kite's own log files
  * (not a game's -- those are on each instance's Log tab), the widget
- * MeshMCLogsDialog without the dialog. Pick a run's log, search it, copy it,
- * upload it for a bug report, delete old ones. MeshMC-0 is the current run.
+ * KiteLogsDialog without the dialog. Pick a run's log, search it, copy it,
+ * upload it for a bug report, delete old ones. Kite-0 is the current run.
  *
  * The files come from `launcherLogs` (QmlShell.launcherLogs, handed down by
  * SettingsPage); until there is one the section stays out of the list.
@@ -29,7 +29,7 @@ SettingsScroll {
     readonly property int viewerHeight: 520
 
     title: qsTr("Launcher logs")
-    description: qsTr("MeshMC's own log files. The newest is the current run. Upload one when you report a problem.")
+    description: qsTr("Kite's own log files. The newest is the current run. Upload one when you report a problem.")
 
     OtherLogsView {
         width: parent.width

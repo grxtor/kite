@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import MeshMC.Theme
-import MeshMC.Components
+import Kite.Theme
+import Kite.Components
 
 ApplicationWindow {
     id: root
@@ -17,16 +17,16 @@ ApplicationWindow {
     // and the extra instance models the library needs.
     required property var shell
 
-    readonly property string moduleName: "MeshMC"
+    readonly property string moduleName: "Kite"
 
     width: 1240
     height: 780
     minimumWidth: 860
     minimumHeight: 540
-    title: "MeshMC"
+    title: "Kite"
     color: Theme.palette.canvas
 
-    // Whether launcher/qml/Cat was built at all (MESHMC_HAS_CAT): the QML
+    // Whether launcher/qml/Cat was built at all (KITE_HAS_CAT): the QML
     // shell has no other way to tell a Quick3D-less build apart from one
     // where the cat is merely turned off, and Settings needs that
     // distinction to hide the cat's rows instead of offering a switch that
@@ -93,14 +93,14 @@ ApplicationWindow {
             Qt.callLater(root.applyDevRoute)
     }
 
-    // Startup route for review snapshots (MESHMC_QML_ROUTE): ";"-separated
+    // Startup route for review snapshots (KITE_QML_ROUTE): ";"-separated
     // steps such as "theme=light;scheme=ember;size=1400x900;page=settings;section=java",
     // "instance=<id>;tab=mods", "page=discover;detail=0", "newinstance",
     // "gallery" or "page=home;crashed=<id>" (marks that instance as having
     // crashed last time, for the Home page's chip -- see QmlShell's
     // debugMarkInstanceCrashed()). "nav=<path>" goes through navigate()
     // below ("nav=settings/java", "nav=instance/fabric/settings"), and
-    // "import=<path or url>" acts like `meshmc --import` (onImportRequested).
+    // "import=<path or url>" acts like `kite --import` (onImportRequested).
     // "page=accounts;accounts-demo" opens the skin editor on demo data
     // ("accounts-demo=cape" / "=elytra" start on the player's back); that
     // step is read by AccountsController, not here.
@@ -242,7 +242,7 @@ ApplicationWindow {
         newInstanceDialog.open()
     }
 
-    // An import asked for from outside the window: `meshmc --import`, or a
+    // An import asked for from outside the window: `kite --import`, or a
     // second launcher passing a file on (QmlShell::requestImport()). With
     // the dialog already open it takes the new source in place, unless it
     // is still busy with the last one.
@@ -773,10 +773,10 @@ ApplicationWindow {
 
                 // The roaming 3D cat (launcher/qml/Cat/CatOverlay.qml), over
                 // whichever page is showing. `active` only turns true when
-                // the module actually exists (catAvailable, MESHMC_HAS_CAT)
+                // the module actually exists (catAvailable, KITE_HAS_CAT)
                 // and the setting is on, so a build without Qt Quick3D never
                 // even resolves the qrc path below -- see the CMake option
-                // MeshMC_ENABLE_CAT this all hangs off. Filling pageHost
+                // Kite_ENABLE_CAT this all hangs off. Filling pageHost
                 // rather than the whole window is what keeps its own
                 // walkArea (CatOverlay.qml's default, unset here) right of
                 // the sidebar, below the header and above the play bar
@@ -785,7 +785,7 @@ ApplicationWindow {
                     id: catLoader
                     anchors.fill: parent
                     active: root.catAvailable && SettingsStore.bool("CatEnabled")
-                    source: active ? "qrc:/qt/qml/MeshMC/Cat/CatOverlay.qml" : ""
+                    source: active ? "qrc:/qt/qml/Kite/Cat/CatOverlay.qml" : ""
                 }
 
                 // The still cat picture (Settings > Appearance > Cat picture).
@@ -794,7 +794,7 @@ ApplicationWindow {
                 Loader {
                     anchors.fill: parent
                     active: SettingsStore.bool("TheCat") && !catLoader.active
-                    source: active ? "qrc:/qt/qml/MeshMC/Components/CatPicture.qml" : ""
+                    source: active ? "qrc:/qt/qml/Kite/Components/CatPicture.qml" : ""
                 }
             }
 

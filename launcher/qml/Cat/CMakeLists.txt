@@ -1,34 +1,34 @@
-# SPDX-FileCopyrightText: 2026 Project Tick
-# SPDX-FileContributor: Project Tick
+# SPDX-FileCopyrightText: 2026 grxtor
+# SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 
-######## MeshMC.Cat: the optional 3D cat companion ########
+######## Kite.Cat: the optional 3D cat companion ########
 
 # Only ever added from launcher/qml/CMakeLists.txt's
-# `if(MeshMC_ENABLE_CAT) add_subdirectory(Cat)`, itself gated on the
+# `if(Kite_ENABLE_CAT) add_subdirectory(Cat)`, itself gated on the
 # top-level CMakeLists.txt's find_package(... OPTIONAL_COMPONENTS Quick3D)
 # -- so by the time this file runs, Qt::Quick3D is known to exist. Same
 # per-module-CMakeLists shape as Theme/Style/Components: RESOURCE_PREFIX
 # spelled out by hand (the 6.4 floor predates qt_policy(QTP0001)), and this
-# file lives beside the .qml it lists so the URI (MeshMC.Cat) and the
+# file lives beside the .qml it lists so the URI (Kite.Cat) and the
 # on-disk path agree.
-qt_add_library(MeshMC_qml_cat STATIC)
+qt_add_library(Kite_qml_cat STATIC)
 
-qt_add_qml_module(MeshMC_qml_cat
-    URI MeshMC.Cat
+qt_add_qml_module(Kite_qml_cat
+    URI Kite.Cat
     VERSION 1.0
     RESOURCE_PREFIX "/qt/qml"
-    # CatOverlay.qml `import MeshMC.Components` for SettingsStore (the
+    # CatOverlay.qml `import Kite.Components` for SettingsStore (the
     # launcher-wide settings singleton -- CatEnabled/CatVariant/
     # UiReduceMotion are ordinary settings, read the same way any other QML
     # file reads them). Declared here, the same way Style/CMakeLists.txt
-    # declares MeshMC.Theme, so this module's own build step can resolve
+    # declares Kite.Theme, so this module's own build step can resolve
     # that import and the generated qmldir records the dependency.
     IMPORTS
-        MeshMC.Components
+        Kite.Components
     # Not IMPORTS: CatOverlay.qml/CatRig.qml `import QtQuick3D`,
     # `QtQuick.Window` and `QtQuick.Controls` themselves, the same way they
-    # import MeshMC.Components above rather than relying on an implicit one.
+    # import Kite.Components above rather than relying on an implicit one.
     # DEPENDENCIES instead, the same way Style/CMakeLists.txt lists
     # QtQuick.Templates, so this module's own qmldir records the runtime
     # dependency for tooling that reads it (qmlimportscanner already finds
@@ -70,7 +70,7 @@ qt_add_qml_module(MeshMC_qml_cat
         textures/sleep_z.png
 )
 
-target_link_libraries(MeshMC_qml_cat PUBLIC
+target_link_libraries(Kite_qml_cat PUBLIC
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::Quick3D
     # For the `Overlay` attached type CatOverlay.qml reads (import

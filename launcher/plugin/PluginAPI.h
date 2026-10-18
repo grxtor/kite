@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -19,9 +20,9 @@
  *
  * MMCOContext — the runtime context passed to mmco_init().
  *
- * This is the ONLY interface plugins have into MeshMC. All interaction
+ * This is the ONLY interface plugins have into Kite. All interaction
  * goes through function pointers in this struct. Plugins MUST NOT call
- * Qt, MeshMC internals, or any symbol not exposed here.
+ * Qt, Kite internals, or any symbol not exposed here.
  *
  * The context is valid for the lifetime of the plugin (until mmco_unload()
  * returns). Pointers obtained through the API (e.g. strings from getters)
@@ -451,7 +452,7 @@ struct MMCOContext {
 											void* user_data);
 
 	/* Show / raise the main window (counterpart to the close filter for
-	 * "Show MeshMC" tray actions). hide() is also exposed for symmetry. */
+	 * "Show Kite" tray actions). hide() is also exposed for symmetry. */
 	int (*main_window_show)(void* mh);
 	int (*main_window_hide)(void* mh);
 	int (*main_window_is_visible)(void* mh);

@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -39,7 +40,7 @@ class JavaInstallList;
  *  - testing one java binary the way JavaCommon::TestCheck does, off the GUI
  *    thread (JavaChecker spawns a process), reporting through
  *    testFinished();
- *  - listing and removing the runtimes MeshMC downloaded itself, which live
+ *  - listing and removing the runtimes Kite downloaded itself, which live
  *    under JavaUtils::managedJavaRoot() as <vendor>/<name-version>/.
  *
  * Downloading a runtime is JavaDownloadController's job. What a view writes

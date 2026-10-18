@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -37,11 +38,11 @@
  *
  * The kinds are not academic. A Linux portable release is a sharun bundle:
  *
- *   bin/meshmc-crashreporter   the multi-call loader, a real file
- *   bin/meshmc                 hardlink to it
- *   bin/meshmc-updater         hardlink to it
+ *   bin/kite-crashreporter   the multi-call loader, a real file
+ *   bin/kite                 hardlink to it
+ *   bin/kite-updater         hardlink to it
  *   sharun                     hardlink to it
- *   shared/bin/meshmc          the real launcher, execed by the loader
+ *   shared/bin/kite          the real launcher, execed by the loader
  *   lib/libX11.so.6            symlink to libX11.so.6.4.0
  *
  * An extractor that keeps only regular files produces a tree with the right
@@ -231,20 +232,20 @@ class ReleaseArchiveTest : public QObject
 	static QList<Entry> sharunBundle()
 	{
 		return {
-			file(QStringLiteral("MeshMC"), "#!/usr/bin/env bash\n", true),
-			file(QStringLiteral("bin/meshmc-crashreporter"), "LOADER", true),
-			hardlink(QStringLiteral("bin/meshmc"),
-					 QStringLiteral("bin/meshmc-crashreporter")),
-			hardlink(QStringLiteral("bin/meshmc-updater"),
-					 QStringLiteral("bin/meshmc-crashreporter")),
+			file(QStringLiteral("Kite"), "#!/usr/bin/env bash\n", true),
+			file(QStringLiteral("bin/kite-crashreporter"), "LOADER", true),
+			hardlink(QStringLiteral("bin/kite"),
+					 QStringLiteral("bin/kite-crashreporter")),
+			hardlink(QStringLiteral("bin/kite-updater"),
+					 QStringLiteral("bin/kite-crashreporter")),
 			hardlink(QStringLiteral("sharun"),
-					 QStringLiteral("bin/meshmc-crashreporter")),
-			file(QStringLiteral("shared/bin/meshmc"), "LAUNCHER", true),
-			file(QStringLiteral("shared/bin/meshmc-updater"), "UPDATER", true),
+					 QStringLiteral("bin/kite-crashreporter")),
+			file(QStringLiteral("shared/bin/kite"), "LAUNCHER", true),
+			file(QStringLiteral("shared/bin/kite-updater"), "UPDATER", true),
 			file(QStringLiteral("lib/libX11.so.6.4.0"), "XLIB"),
 			symlink(QStringLiteral("lib/libX11.so.6"),
 					QStringLiteral("libX11.so.6.4.0")),
-			file(QStringLiteral("manifest.txt"), "bin/meshmc\n"),
+			file(QStringLiteral("manifest.txt"), "bin/kite\n"),
 			file(QStringLiteral("portable.txt"), ""),
 		};
 	}
@@ -288,7 +289,7 @@ class ReleaseArchiveTest : public QObject
 
 		// The entry points the launch script and the updater hand-off use.
 		for (const QString& path :
-			 {QStringLiteral("bin/meshmc"), QStringLiteral("bin/meshmc-updater"),
+			 {QStringLiteral("bin/kite"), QStringLiteral("bin/kite-updater"),
 			  QStringLiteral("sharun")}) {
 			const QFileInfo info(out.absoluteFilePath(path));
 			QVERIFY2(info.exists(), qPrintable(path));
@@ -307,7 +308,7 @@ class ReleaseArchiveTest : public QObject
 				 out.absoluteFilePath("lib/libX11.so.6.4.0"));
 
 		// And the real binaries behind the loader.
-		QCOMPARE(QFileInfo(out.absoluteFilePath("shared/bin/meshmc")).size(),
+		QCOMPARE(QFileInfo(out.absoluteFilePath("shared/bin/kite")).size(),
 				 qint64(8)); // "LAUNCHER"
 #endif
 	}
@@ -345,10 +346,10 @@ class ReleaseArchiveTest : public QObject
 		QCOMPARE(result.linkCount, 0);
 
 		// Nothing may be left standing in for a link. An empty placeholder
-		// where bin/meshmc belongs is an installation that does not start.
+		// where bin/kite belongs is an installation that does not start.
 		const QDir out(dest);
 		QVERIFY(!QFileInfo::exists(
-			out.absoluteFilePath(QStringLiteral("bin/meshmc"))));
+			out.absoluteFilePath(QStringLiteral("bin/kite"))));
 #endif
 	}
 
@@ -369,7 +370,7 @@ class ReleaseArchiveTest : public QObject
 			archivePath, work.filePath(QStringLiteral("out")));
 
 		QVERIFY2(result.ok, qPrintable(result.error));
-		QVERIFY(result.paths.contains(QStringLiteral("bin/meshmc")));
+		QVERIFY(result.paths.contains(QStringLiteral("bin/kite")));
 		QVERIFY(result.paths.contains(QStringLiteral("lib/libX11.so.6")));
 		QCOMPARE(result.paths.size(), result.fileCount + result.linkCount);
 #endif
@@ -446,7 +447,7 @@ class ReleaseArchiveTest : public QObject
 		QVERIFY(work.isValid());
 
 		const QList<Entry> entries = {
-			hardlink(QStringLiteral("bin/meshmc"),
+			hardlink(QStringLiteral("bin/kite"),
 					 QStringLiteral("bin/never-stored")),
 		};
 
@@ -509,12 +510,12 @@ class ReleaseArchiveTest : public QObject
 		QVERIFY(work.isValid());
 
 		const QList<Entry> entries = {
-			file(QStringLiteral("meshmc.exe"), "LAUNCHER", true),
-			file(QStringLiteral("meshmc-updater.exe"), "UPDATER", true),
+			file(QStringLiteral("kite.exe"), "LAUNCHER", true),
+			file(QStringLiteral("kite-updater.exe"), "UPDATER", true),
 			file(QStringLiteral("Qt6Core.dll"), "QTCORE"),
 			file(QStringLiteral("platforms/qwindows.dll"), "PLUGIN"),
 			file(QStringLiteral("jars/NewLaunch.jar"), "JAR"),
-			file(QStringLiteral("manifest.txt"), "meshmc.exe\n"),
+			file(QStringLiteral("manifest.txt"), "kite.exe\n"),
 		};
 
 		const QString archivePath =
@@ -547,9 +548,9 @@ class ReleaseArchiveTest : public QObject
 
 		// The two the update itself goes looking for by name afterwards.
 		QVERIFY(QFileInfo::exists(
-			out.absoluteFilePath(QStringLiteral("meshmc.exe"))));
+			out.absoluteFilePath(QStringLiteral("kite.exe"))));
 		QVERIFY(QFileInfo::exists(
-			out.absoluteFilePath(QStringLiteral("meshmc-updater.exe"))));
+			out.absoluteFilePath(QStringLiteral("kite-updater.exe"))));
 	}
 
 	/*!
@@ -560,7 +561,7 @@ class ReleaseArchiveTest : public QObject
 	 * counterpart take a `char*`, and on Windows libarchive hands that to
 	 * the narrow CRT entry points, which decode it in the active ANSI code
 	 * page -- so passing UTF-8 bytes, as this code used to, is the one
-	 * encoding guaranteed to be wrong there. Every archive MeshMC opens
+	 * encoding guaranteed to be wrong there. Every archive Kite opens
 	 * lives under the user's data directory, which lives under the user
 	 * profile, so for a user named Şafak the answer was "No such file or
 	 * directory" for every zip they ever touched, update included.
@@ -580,14 +581,14 @@ class ReleaseArchiveTest : public QObject
 
 		const QString awkward = awkwardName();
 
-		// Stands in for C:\Users\Şafak\AppData\Roaming\MeshMC\update.
+		// Stands in for C:\Users\Şafak\AppData\Roaming\Kite\update.
 		const QString nest = work.filePath(awkward);
 		QVERIFY(QDir().mkpath(nest));
 
 		const QString archivePath =
 			QDir(nest).filePath(awkward + QStringLiteral(".tar.gz"));
 		const QList<Entry> entries = {
-			file(QStringLiteral("meshmc.exe"), "LAUNCHER", true),
+			file(QStringLiteral("kite.exe"), "LAUNCHER", true),
 			file(QStringLiteral("Qt6Core.dll"), "QTCORE"),
 			file(awkward + QStringLiteral("/inside.txt"), "ENTRY"),
 		};
@@ -653,7 +654,7 @@ class ReleaseArchiveTest : public QObject
 	 * Opt-in, because it needs a 100-plus-megabyte archive that has no
 	 * business in the repository:
 	 *
-	 *     MESHMC_TEST_RELEASE_ARCHIVE=/path/to/MeshMC-Linux-Qt6-Portable-v10.0.0.tar.gz \
+	 *     KITE_TEST_RELEASE_ARCHIVE=/path/to/Kite-Linux-Qt6-Portable-v10.0.0.tar.gz \
 	 *         ./ReleaseArchive_test
 	 *
 	 * The archive is read a second time to build the expectation, rather than
@@ -665,9 +666,9 @@ class ReleaseArchiveTest : public QObject
 	void tst_RealReleaseArchiveIsFullyAccountedFor()
 	{
 		const QString archivePath =
-			qEnvironmentVariable("MESHMC_TEST_RELEASE_ARCHIVE");
+			qEnvironmentVariable("KITE_TEST_RELEASE_ARCHIVE");
 		if (archivePath.isEmpty())
-			QSKIP("set MESHMC_TEST_RELEASE_ARCHIVE to a release tarball");
+			QSKIP("set KITE_TEST_RELEASE_ARCHIVE to a release tarball");
 		QVERIFY2(QFileInfo::exists(archivePath), qPrintable(archivePath));
 
 		QTemporaryDir work;
@@ -742,10 +743,10 @@ class ReleaseArchiveTest : public QObject
 		QCOMPARE(result.linkCount, links);
 
 		// The two entry points the update depends on: the launch script runs
-		// bin/meshmc, and the hand-off runs bin/meshmc-updater. Both are
+		// bin/kite, and the hand-off runs bin/kite-updater. Both are
 		// hardlinks to the sharun loader in a real bundle.
-		QVERIFY(QFileInfo(out.absoluteFilePath("bin/meshmc")).isExecutable());
-		QVERIFY(QFileInfo(out.absoluteFilePath("bin/meshmc-updater"))
+		QVERIFY(QFileInfo(out.absoluteFilePath("bin/kite")).isExecutable());
+		QVERIFY(QFileInfo(out.absoluteFilePath("bin/kite-updater"))
 					.isExecutable());
 	}
 
@@ -757,10 +758,10 @@ class ReleaseArchiveTest : public QObject
 		QVERIFY(work.isValid());
 
 		const QString dest = work.filePath(QStringLiteral("out"));
-		QVERIFY(QDir().mkpath(dest + QStringLiteral("/MeshMC-1.2.3/bin")));
+		QVERIFY(QDir().mkpath(dest + QStringLiteral("/Kite-1.2.3/bin")));
 
 		QCOMPARE(ReleaseArchive::descendIntoSingleRoot(dest),
-				 QDir(dest).absoluteFilePath(QStringLiteral("MeshMC-1.2.3")));
+				 QDir(dest).absoluteFilePath(QStringLiteral("Kite-1.2.3")));
 	}
 
 	//! A release whose files sit at the top level is returned unchanged --

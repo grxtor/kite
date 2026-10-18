@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
-import MeshMC.Theme
+import Kite.Theme
 
 /*
- * One of MeshMC's folders (Settings > General > Folders): what it is, where
+ * One of Kite's folders (Settings > General > Folders): what it is, where
  * it is now, and buttons to pick another place or open it. The pick goes
  * through FolderSettingsController, which asks about risky locations
  * (a "!" in the path, a folder borrowed through Flatpak) before saving.

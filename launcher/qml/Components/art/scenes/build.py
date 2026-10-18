@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# SPDX-FileCopyrightText: 2026 Project Tick
-# SPDX-FileContributor: Project Tick
+# SPDX-FileCopyrightText: 2026 grxtor
+# SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 """
 Builds the fallback cover scenes PixelArt.landscapeUrl() serves: 32 rendered

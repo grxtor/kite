@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -561,7 +562,7 @@ void InstanceList::deleteInstance(const InstanceId& id)
 		return;
 	}
 
-	qDebug() << "Instance" << id << "has been deleted by MeshMC.";
+	qDebug() << "Instance" << id << "has been deleted by Kite.";
 
 	/* The shortcuts are dead now whatever happens -- they point at a
 	 * folder that is gone -- so a failure here is worth a line in the
@@ -1609,7 +1610,7 @@ class InstanceStaging : public Task
 	/*
 	 * WHY: the whole reason why this uses an exponential backoff retry scheme
 	 * is antivirus on Windows. Basically, it starts messing things up while
-	 * MeshMC is extracting/creating instances and causes that horrible failure
+	 * Kite is extracting/creating instances and causes that horrible failure
 	 * that is NTFS to lock files in place because they are open.
 	 */
 	ExponentialSeries backoff;
@@ -1681,7 +1682,7 @@ QString InstanceList::getStagedInstancePath(const QString& targetDir)
 	}
 
 	QString key = QUuid::createUuid().toString();
-	QString relPath = FS::PathCombine("_MESHMC_TEMP/", key);
+	QString relPath = FS::PathCombine("_KITE_TEMP/", key);
 	QDir rootPath(root);
 	auto path = FS::PathCombine(root, relPath);
 	if (!rootPath.mkpath(relPath)) {

@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * ErrorOraclePlugin — MMCO entry point. Loads the built-in rule pack
@@ -62,7 +63,7 @@ namespace
 	QString builtInRulesDir()
 	{
 		// Search order (first directory that exists wins):
-		//   1) $MESHMC_ERROR_ORACLE_RULES                (dev override)
+		//   1) $KITE_ERROR_ORACLE_RULES                (dev override)
 		//   2) macOS: Contents/Resources/MMCOPluginData/
 		//             ErrorOracle/rules                  (current install)
 		//   3) macOS: Contents/PlugIns/mmcmodules/
@@ -106,7 +107,7 @@ namespace
 						  "/mmcmodules/ErrorOracle/rules";
 		candidates << QCoreApplication::applicationDirPath() +
 						  "/ErrorOracle/rules";
-		if (auto envDir = qEnvironmentVariable("MESHMC_ERROR_ORACLE_RULES");
+		if (auto envDir = qEnvironmentVariable("KITE_ERROR_ORACLE_RULES");
 			!envDir.isEmpty())
 			candidates.prepend(envDir);
 
@@ -287,7 +288,7 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 		QString::fromUtf8(ctx->fs_plugin_data_dir(ctx->module_handle));
 	g_learning->open(QDir(plug).filePath("learn.json"));
 
-	qputenv("MESHMC_USER_RULES_DIR", userRulesDir().toUtf8());
+	qputenv("KITE_USER_RULES_DIR", userRulesDir().toUtf8());
 
 	{
 		QByteArray msg = "ErrorOracle: loaded " +

@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import MeshMC.Theme
+import Kite.Theme
 
 /*
- * First run: the few choices MeshMC cannot make on its own -- language,
+ * First run: the few choices Kite cannot make on its own -- language,
  * which Java and how much memory, an account -- as one calm, full-window
  * flow instead of a wizard dialog. Only the steps still needed are shown
  * (the shell decides which, with the same rules the classic wizard had);
@@ -97,16 +97,16 @@ Rectangle {
                 Image {
                     Layout.preferredWidth: 64
                     Layout.preferredHeight: 64
-                    source: "qrc:/icons/multimc/scalable/instances/meshmc.svg"
+                    source: "qrc:/icons/multimc/scalable/instances/kite.svg"
                     sourceSize: Qt.size(128, 128)
                     fillMode: Image.PreserveAspectFit
                 }
                 Text {
                     Layout.fillWidth: true
-                    text: qsTr("Welcome to MeshMC")
+                    text: qsTr("Welcome to Kite")
                     wrapMode: Text.Wrap
                     color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
+                    font.family: Theme.font.heading
                     font.pixelSize: Theme.type.display.pixelSize + 4
                     font.weight: Font.Bold
                     font.letterSpacing: -0.6
@@ -188,7 +188,7 @@ Rectangle {
                         : root.step === "account" ? qsTr("Sign in to play online")
                         : qsTr("You're all set")
                     color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
+                    font.family: Theme.font.heading
                     font.pixelSize: Theme.type.display.pixelSize
                     font.weight: Font.Bold
                 }
@@ -196,8 +196,8 @@ Rectangle {
                     Layout.fillWidth: true
                     Layout.maximumWidth: 640
                     wrapMode: Text.Wrap
-                    text: root.step === "language" ? qsTr("MeshMC switches as soon as you pick one. You can change it later in Settings.")
-                        : root.step === "java" ? qsTr("Minecraft runs on Java. Pick an installed one, or let MeshMC download the right version for each game automatically.")
+                    text: root.step === "language" ? qsTr("Kite switches as soon as you pick one. You can change it later in Settings.")
+                        : root.step === "java" ? qsTr("Minecraft runs on Java. Pick an installed one, or let Kite download the right version for each game automatically.")
                         : root.step === "account" ? qsTr("Use the Microsoft account that owns Minecraft. You can also do this later from the sidebar.")
                         : qsTr("Create an instance, or find a modpack in Discover.")
                     color: Theme.palette.textSecondary
@@ -302,7 +302,7 @@ Rectangle {
                                 Layout.fillWidth: true
                                 text: qsTr("Java on this computer")
                                 color: Theme.palette.textPrimary
-                                font.family: Theme.font.family
+                                font.family: Theme.font.heading
                                 font.pixelSize: Theme.type.title.pixelSize
                                 font.weight: Font.Bold
                             }
@@ -387,7 +387,7 @@ Rectangle {
                                     horizontalAlignment: Text.AlignHCenter
                                     wrapMode: Text.Wrap
                                     text: SettingsStore.bool("JavaAutoDownload")
-                                          ? qsTr("No Java found on this computer. That's fine: MeshMC downloads the right one the first time you play.")
+                                          ? qsTr("No Java found on this computer. That's fine: Kite downloads the right one the first time you play.")
                                           : qsTr("No Java found on this computer. Turn on automatic downloads above, or install Java and detect again.")
                                     color: Theme.palette.textTertiary
                                     font.family: Theme.font.family

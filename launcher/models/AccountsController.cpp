@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -215,14 +216,14 @@ QObject* AccountsController::loginMicrosoft()
 
 bool AccountsController::skinDemoRequested() const
 {
-	return qEnvironmentVariable("MESHMC_QML_ROUTE")
+	return qEnvironmentVariable("KITE_QML_ROUTE")
 		.contains(QStringLiteral("accounts-demo"));
 }
 
 QString AccountsController::skinDemoPose() const
 {
 	const QStringList steps =
-		qEnvironmentVariable("MESHMC_QML_ROUTE").split(QLatin1Char(';'));
+		qEnvironmentVariable("KITE_QML_ROUTE").split(QLatin1Char(';'));
 	const QString key = QStringLiteral("accounts-demo=");
 	for (const QString& step : steps) {
 		if (step.trimmed().startsWith(key)) {

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 # SPDX-FileCopyrightText: 2026 Project Tick
 # SPDX-FileContributor: Project Tick
+# SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 
 # Required for CMAKE_MSVC_DEBUG_INFORMATION_FORMAT to work (avoids /Zi PDB conflicts with sccache)
@@ -27,7 +28,7 @@ cmake_policy(SET CMP0091 NEW)
 # project(), which is when CMAKE_SYSTEM_PREFIX_PATH is built.
 set(CMAKE_FIND_NO_INSTALL_PREFIX TRUE)
 
-project(MeshMC)
+project(Kite)
 
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -43,22 +44,22 @@ endif()
 
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BUILD_DIR}" IS_IN_SOURCE_BUILD)
 if(IS_IN_SOURCE_BUILD)
-    message(FATAL_ERROR "You are building MeshMC in-source. Please separate the build tree from the source tree.")
+    message(FATAL_ERROR "You are building Kite in-source. Please separate the build tree from the source tree.")
 endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     if(CMAKE_HOST_SYSTEM_VERSION MATCHES ".*[Mm]icrosoft.*" OR
         CMAKE_HOST_SYSTEM_VERSION MATCHES ".*WSL.*"
     )
-        message(FATAL_ERROR "Building MeshMC is not supported in Linux-on-Windows distributions.")
+        message(FATAL_ERROR "Building Kite is not supported in Linux-on-Windows distributions.")
     endif()
 endif()
 
-set(MeshMC_COMPILER_NAME ${CMAKE_CXX_COMPILER_ID})
-set(MeshMC_COMPILER_VERSION ${CMAKE_CXX_COMPILER_VERSION})
-set(MeshMC_COMPILER_TARGET_SYSTEM ${CMAKE_SYSTEM_NAME})
-set(MeshMC_COMPILER_TARGET_SYSTEM_VERSION ${CMAKE_SYSTEM_VERSION})
-set(MeshMC_COMPILER_TARGET_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR})
+set(Kite_COMPILER_NAME ${CMAKE_CXX_COMPILER_ID})
+set(Kite_COMPILER_VERSION ${CMAKE_CXX_COMPILER_VERSION})
+set(Kite_COMPILER_TARGET_SYSTEM ${CMAKE_SYSTEM_NAME})
+set(Kite_COMPILER_TARGET_SYSTEM_VERSION ${CMAKE_SYSTEM_VERSION})
+set(Kite_COMPILER_TARGET_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR})
 
 ##################################### Set CMake options #####################################
 set(CMAKE_AUTOMOC ON)
@@ -98,21 +99,21 @@ endif()
 include(ECMQtDeclareLoggingCategory)
 
 option(ENABLE_LTO "Enable Link Time Optimization" off)
-option(MeshMC_DISABLE_JAVA_DOWNLOADER "Disable the built-in Java downloader feature" OFF)
-option(MeshMC_ENABLE_CLANG_TIDY "Run clang-tidy during C/C++ compilation" OFF)
-option(MeshMC_PLUGINS "Build plugins" OFF)
-option(MeshMC_STAGING_PLUGINS "Build Staging plugins" OFF)
+option(Kite_DISABLE_JAVA_DOWNLOADER "Disable the built-in Java downloader feature" OFF)
+option(Kite_ENABLE_CLANG_TIDY "Run clang-tidy during C/C++ compilation" OFF)
+option(Kite_PLUGINS "Build plugins" OFF)
+option(Kite_STAGING_PLUGINS "Build Staging plugins" OFF)
 
-find_program(MeshMC_CLANG_TIDY_EXECUTABLE NAMES clang-tidy clang-tidy-19 OPTIONAL)
-if(MeshMC_ENABLE_CLANG_TIDY)
-    if(MeshMC_CLANG_TIDY_EXECUTABLE)
+find_program(Kite_CLANG_TIDY_EXECUTABLE NAMES clang-tidy clang-tidy-19 OPTIONAL)
+if(Kite_ENABLE_CLANG_TIDY)
+    if(Kite_CLANG_TIDY_EXECUTABLE)
         set(CMAKE_C_CLANG_TIDY
-            "${MeshMC_CLANG_TIDY_EXECUTABLE};--config-file=${CMAKE_SOURCE_DIR}/.clang-tidy")
+            "${Kite_CLANG_TIDY_EXECUTABLE};--config-file=${CMAKE_SOURCE_DIR}/.clang-tidy")
         set(CMAKE_CXX_CLANG_TIDY
-            "${MeshMC_CLANG_TIDY_EXECUTABLE};--config-file=${CMAKE_SOURCE_DIR}/.clang-tidy")
-        message(STATUS "clang-tidy enabled: ${MeshMC_CLANG_TIDY_EXECUTABLE}")
+            "${Kite_CLANG_TIDY_EXECUTABLE};--config-file=${CMAKE_SOURCE_DIR}/.clang-tidy")
+        message(STATUS "clang-tidy enabled: ${Kite_CLANG_TIDY_EXECUTABLE}")
     else()
-        message(WARNING "MeshMC_ENABLE_CLANG_TIDY is ON but clang-tidy was not found")
+        message(WARNING "Kite_ENABLE_CLANG_TIDY is ON but clang-tidy was not found")
     endif()
 endif()
 
@@ -142,7 +143,7 @@ endif()
 
 # Find the required Qt parts
 #
-# MeshMC builds against Qt 6 only. Qt 5 support was dropped with the move to a
+# Kite builds against Qt 6 only. Qt 5 support was dropped with the move to a
 # QML user interface: Qt Quick Controls, qt_add_qml_module and the QML tooling
 # the UI relies on are Qt 6 APIs.
 #
@@ -152,19 +153,19 @@ endif()
 set(QT_VERSION_MAJOR 6)
 
 # Still a cache variable so that scripts and CI invocations that pass
-# -DMeshMC_QT_VERSION_MAJOR=5 fail loudly instead of quietly building Qt 6 when
+# -DKite_QT_VERSION_MAJOR=5 fail loudly instead of quietly building Qt 6 when
 # they asked for something else.
 # The QML user interface is always built; this only picks which interface the
-# launcher opens by default. MESHMC_QML_UI=1 or =0 in the environment overrides
+# launcher opens by default. KITE_QML_UI=1 or =0 in the environment overrides
 # it at run time.
-option(MeshMC_QML_UI "Open the QML user interface instead of the QtWidgets one by default (preview)" OFF)
+option(Kite_QML_UI "Open the QML user interface instead of the QtWidgets one by default" ON)
 
-set(MeshMC_QT_VERSION_MAJOR "6" CACHE STRING "Major Qt version to build against (6 only)")
-set_property(CACHE MeshMC_QT_VERSION_MAJOR PROPERTY STRINGS "6")
+set(Kite_QT_VERSION_MAJOR "6" CACHE STRING "Major Qt version to build against (6 only)")
+set_property(CACHE Kite_QT_VERSION_MAJOR PROPERTY STRINGS "6")
 
-if(NOT MeshMC_QT_VERSION_MAJOR STREQUAL "6")
+if(NOT Kite_QT_VERSION_MAJOR STREQUAL "6")
     message(FATAL_ERROR
-        "MeshMC requires Qt 6; Qt ${MeshMC_QT_VERSION_MAJOR} is no longer supported. "
+        "Kite requires Qt 6; Qt ${Kite_QT_VERSION_MAJOR} is no longer supported. "
         "The QML user interface depends on Qt 6 modules.")
 endif()
 
@@ -176,10 +177,10 @@ endif()
 # Which files are correct depends on the Qt build: MSYS2's Qt needs the 3.x
 # ABI (libssl-3-x64.dll, libcrypto-3-x64.dll). CI fills this in; leaving it
 # empty only affects packaging, not the build.
-set(MeshMC_BUNDLE_OPENSSL_LIBS "" CACHE STRING
+set(Kite_BUNDLE_OPENSSL_LIBS "" CACHE STRING
     "Semicolon-separated list of OpenSSL runtime libraries to ship inside the package")
 
-set(MeshMC_QT_COMPONENTS
+set(Kite_QT_COMPONENTS
     Core
     Widgets
     Concurrent
@@ -200,35 +201,35 @@ set(MeshMC_QT_COMPONENTS
 # launcher should still build from source there. Everything the QML UI needs
 # exists in 6.4: qt_add_qml_module and QML_SINGLETON/QML_ELEMENT (6.2),
 # QQmlEngine::retranslate (5.10), IconImage's color property (6.0).
-set(MeshMC_QT_MINIMUM_VERSION "6.4.0")
+set(Kite_QT_MINIMUM_VERSION "6.4.0")
 
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${MeshMC_QT_COMPONENTS})
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${Kite_QT_COMPONENTS})
 
 if(DEFINED Qt${QT_VERSION_MAJOR}Core_VERSION)
     set(_projt_qt_version "${Qt${QT_VERSION_MAJOR}Core_VERSION}")
 elseif(DEFINED Qt${QT_VERSION_MAJOR}_VERSION)
     set(_projt_qt_version "${Qt${QT_VERSION_MAJOR}_VERSION}")
 endif()
-if(DEFINED _projt_qt_version AND _projt_qt_version VERSION_LESS "${MeshMC_QT_MINIMUM_VERSION}")
-    message(FATAL_ERROR "Qt ${MeshMC_QT_MINIMUM_VERSION} or newer is required. Detected: ${_projt_qt_version}")
+if(DEFINED _projt_qt_version AND _projt_qt_version VERSION_LESS "${Kite_QT_MINIMUM_VERSION}")
+    message(FATAL_ERROR "Qt ${Kite_QT_MINIMUM_VERSION} or newer is required. Detected: ${_projt_qt_version}")
 endif()
 message(STATUS "Building against Qt ${_projt_qt_version} (major version ${QT_VERSION_MAJOR})")
 unset(_projt_qt_version)
 
 # Qt Quick 3D, for the optional roaming cat companion (launcher/qml/Cat/) --
-# never added to MeshMC_QT_COMPONENTS above: unlike everything there, the
+# never added to Kite_QT_COMPONENTS above: unlike everything there, the
 # 6.4 floor must keep building without it, so it is looked for but not
-# required. MeshMC_ENABLE_CAT defaults to whatever was found, and is the one
+# required. Kite_ENABLE_CAT defaults to whatever was found, and is the one
 # switch that decides whether launcher/qml/CMakeLists.txt descends into
 # Cat/ at all; turning it OFF by hand skips the cat even when Quick3D is
 # present, but it can never turn ON what was not found.
 find_package(Qt${QT_VERSION_MAJOR} OPTIONAL_COMPONENTS Quick3D)
-option(MeshMC_ENABLE_CAT "Build the roaming 3D cat companion (needs Qt Quick 3D)" ${Qt${QT_VERSION_MAJOR}Quick3D_FOUND})
-if(MeshMC_ENABLE_CAT AND NOT Qt${QT_VERSION_MAJOR}Quick3D_FOUND)
-    message(WARNING "MeshMC_ENABLE_CAT is ON but Qt Quick3D was not found; building without the cat.")
-    set(MeshMC_ENABLE_CAT OFF)
+option(Kite_ENABLE_CAT "Build the roaming 3D cat companion (needs Qt Quick 3D)" ${Qt${QT_VERSION_MAJOR}Quick3D_FOUND})
+if(Kite_ENABLE_CAT AND NOT Qt${QT_VERSION_MAJOR}Quick3D_FOUND)
+    message(WARNING "Kite_ENABLE_CAT is ON but Qt Quick3D was not found; building without the cat.")
+    set(Kite_ENABLE_CAT OFF)
 endif()
-message(STATUS "Cat companion (Qt Quick3D): ${MeshMC_ENABLE_CAT}")
+message(STATUS "Cat companion (Qt Quick3D): ${Kite_ENABLE_CAT}")
 
 if(UNIX)
     find_package(PkgConfig)
@@ -253,7 +254,7 @@ QUERY_QMAKE(QT_INSTALL_LIBEXECS QT_LIBEXECS_DIR)
 QUERY_QMAKE(QT_INSTALL_QML QT_QML_DIR)
 
 # Map missing multi-config configurations to available ones.
-# Monorepo libraries are built with single-config (Ninja), but MeshMC uses
+# Monorepo libraries are built with single-config (Ninja), but Kite uses
 # Ninja Multi-Config which validates all configurations at configure time.
 set(CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO RelWithDebInfo Release Debug "")
 set(CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL MinSizeRel Release Debug "")
@@ -291,42 +292,42 @@ elseif(WIN32)
 endif()
 
 if(MSVC)
-    set(_meshmc_default_plugin_signatures OFF)
+    set(_kite_default_plugin_signatures OFF)
 else()
-    set(_meshmc_default_plugin_signatures ON)
+    set(_kite_default_plugin_signatures ON)
 endif()
-option(MeshMC_PLUGIN_SIGNATURES
+option(Kite_PLUGIN_SIGNATURES
     "Enable GPG-backed plugin signature verification (requires Gpgmepp)"
-    ${_meshmc_default_plugin_signatures})
+    ${_kite_default_plugin_signatures})
 
-if(MeshMC_PLUGIN_SIGNATURES)
+if(Kite_PLUGIN_SIGNATURES)
     find_package(Gpgmepp REQUIRED)
     if(TARGET Gpgmepp)
-        set(MeshMC_GpgmeppTarget Gpgmepp)
+        set(Kite_GpgmeppTarget Gpgmepp)
     elseif(TARGET GpgmeppStatic)
-        set(MeshMC_GpgmeppTarget GpgmeppStatic)
+        set(Kite_GpgmeppTarget GpgmeppStatic)
     else()
         message(FATAL_ERROR
             "find_package(Gpgmepp) succeeded but exposed neither a Gpgmepp nor "
             "a GpgmeppStatic target, so there is nothing to link the plugin "
             "signature verifier against.\n"
-            "Configure with -DMeshMC_PLUGIN_SIGNATURES=OFF to build the stub "
+            "Configure with -DKite_PLUGIN_SIGNATURES=OFF to build the stub "
             "verifier instead.")
     endif()
-    message(STATUS "Gpgmepp target: ${MeshMC_GpgmeppTarget}")
+    message(STATUS "Gpgmepp target: ${Kite_GpgmeppTarget}")
 
-    get_target_property(_gpgmepp_loc ${MeshMC_GpgmeppTarget}
+    get_target_property(_gpgmepp_loc ${Kite_GpgmeppTarget}
                         IMPORTED_LOCATION_NOCONFIG)
-    get_target_property(_gpgmepp_son ${MeshMC_GpgmeppTarget}
+    get_target_property(_gpgmepp_son ${Kite_GpgmeppTarget}
                         IMPORTED_SONAME_NOCONFIG)
     if(_gpgmepp_loc)
         foreach(_cfg DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
-            set_property(TARGET ${MeshMC_GpgmeppTarget} APPEND PROPERTY
+            set_property(TARGET ${Kite_GpgmeppTarget} APPEND PROPERTY
                 IMPORTED_CONFIGURATIONS ${_cfg})
-            set_target_properties(${MeshMC_GpgmeppTarget} PROPERTIES
+            set_target_properties(${Kite_GpgmeppTarget} PROPERTIES
                 IMPORTED_LOCATION_${_cfg} "${_gpgmepp_loc}")
             if(_gpgmepp_son)
-                set_target_properties(${MeshMC_GpgmeppTarget} PROPERTIES
+                set_target_properties(${Kite_GpgmeppTarget} PROPERTIES
                     IMPORTED_SONAME_${_cfg} "${_gpgmepp_son}")
             endif()
         endforeach()
@@ -344,45 +345,45 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 #### Check the current Git commit and branch
 include(GetGitRevisionDescription)
-get_git_head_revision(MeshMC_GIT_REFSPEC MeshMC_GIT_COMMIT ALLOW_LOOKING_ABOVE_CMAKE_SOURCE_DIR)
-git_get_exact_tag(MeshMC_GIT_TAG)
+get_git_head_revision(Kite_GIT_REFSPEC Kite_GIT_COMMIT ALLOW_LOOKING_ABOVE_CMAKE_SOURCE_DIR)
+git_get_exact_tag(Kite_GIT_TAG)
 
-message(STATUS "Git commit: ${MeshMC_GIT_COMMIT}")
-message(STATUS "Git refspec: ${MeshMC_GIT_REFSPEC}")
-message(STATUS "Git tag: ${MeshMC_GIT_TAG}")
+message(STATUS "Git commit: ${Kite_GIT_COMMIT}")
+message(STATUS "Git refspec: ${Kite_GIT_REFSPEC}")
+message(STATUS "Git tag: ${Kite_GIT_TAG}")
 
 string(TIMESTAMP TODAY "%Y-%m-%d")
-set(MeshMC_BUILD_TIMESTAMP "${TODAY}")
+set(Kite_BUILD_TIMESTAMP "${TODAY}")
 
 #### Custom target to just print the version.
-add_custom_target(version echo "Version: ${MeshMC_RELEASE_VERSION_NAME}")
-add_custom_target(tcversion echo "\\#\\#teamcity[setParameter name=\\'env.MESHMC_VERSION\\' value=\\'${MeshMC_RELEASE_VERSION_NAME}\\']")
+add_custom_target(version echo "Version: ${Kite_RELEASE_VERSION_NAME}")
+add_custom_target(tcversion echo "\\#\\#teamcity[setParameter name=\\'env.KITE_VERSION\\' value=\\'${Kite_RELEASE_VERSION_NAME}\\']")
 
 ######## Secondly, please set version numbers ########
-set(MeshMC_VERSION_MAJOR    11)
-set(MeshMC_VERSION_MINOR    0)
-set(MeshMC_VERSION_HOTFIX   0)
+set(Kite_VERSION_MAJOR    11)
+set(Kite_VERSION_MINOR    0)
+set(Kite_VERSION_HOTFIX   0)
 
-set(MeshMC_RELEASE_VERSION_NAME "${MeshMC_VERSION_MAJOR}.${MeshMC_VERSION_MINOR}.${MeshMC_VERSION_HOTFIX}")
-set(MeshMC_RELEASE_TWO_NAME "${MeshMC_VERSION_MAJOR}.${MeshMC_VERSION_MINOR}")
-set(MeshMC_VERSION_NAME4 "${MeshMC_VERSION_MAJOR}.${MeshMC_VERSION_MINOR}.${MeshMC_VERSION_HOTFIX}.0")
-set(MeshMC_VERSION_NAME4_COMMA "${MeshMC_VERSION_MAJOR},${MeshMC_VERSION_MINOR},${MeshMC_VERSION_HOTFIX},0")
+set(Kite_RELEASE_VERSION_NAME "${Kite_VERSION_MAJOR}.${Kite_VERSION_MINOR}.${Kite_VERSION_HOTFIX}")
+set(Kite_RELEASE_TWO_NAME "${Kite_VERSION_MAJOR}.${Kite_VERSION_MINOR}")
+set(Kite_VERSION_NAME4 "${Kite_VERSION_MAJOR}.${Kite_VERSION_MINOR}.${Kite_VERSION_HOTFIX}.0")
+set(Kite_VERSION_NAME4_COMMA "${Kite_VERSION_MAJOR},${Kite_VERSION_MINOR},${Kite_VERSION_HOTFIX},0")
 
 ######## Thirdly, please define URLs and API keys ########
 
-set(MeshMC_NEWS_RSS_URL "https://projecttick.org/feed/feed.xml" CACHE STRING "URL to fetch MeshMC's news RSS feed from.")
-set(MeshMC_NEWS_EXTRA_FEEDS "https://projecttick.org/feed/feed.xml;" CACHE STRING "Semicolon-separated list of extra RSS feed URLs shown alongside the launcher's own news feed.")
+set(Kite_NEWS_RSS_URL "" CACHE STRING "URL to fetch Kite's news RSS feed from.")
+set(Kite_NEWS_EXTRA_FEEDS "" CACHE STRING "Semicolon-separated list of extra RSS feed URLs shown alongside the launcher's own news feed.")
 
 # Build number
-set(MeshMC_VERSION_BUILD -1 CACHE STRING "Build number. -1 for no build number.")
+set(Kite_VERSION_BUILD -1 CACHE STRING "Build number. -1 for no build number.")
 
-set(MeshMC_BUILD_ARTIFACT "" CACHE STRING "Name of the CI build this is, matched against release asset names.")
+set(Kite_BUILD_ARTIFACT "" CACHE STRING "Name of the CI build this is, matched against release asset names.")
 
 # Build platform.
-set(MeshMC_BUILD_PLATFORM "" CACHE STRING "A short string identifying the platform that this build was built for. Only used by the notification system and to display in the about dialog.")
+set(Kite_BUILD_PLATFORM "" CACHE STRING "A short string identifying the platform that this build was built for. Only used by the notification system and to display in the about dialog.")
 
 # Updater: the repository releases are read from.
-set(MeshMC_UPDATER_GITHUB_REPO "" CACHE STRING "GitHub repository the updater reads releases from. Defaults to MeshMC_Git.")
+set(Kite_UPDATER_GITHUB_REPO "" CACHE STRING "GitHub repository the updater reads releases from. Defaults to Kite_Git.")
 
 # Updater: the release channel this build subscribes to.
 #
@@ -390,113 +391,116 @@ set(MeshMC_UPDATER_GITHUB_REPO "" CACHE STRING "GitHub repository the updater re
 # stranded on an older version than the stable line. Users can change this
 # afterwards; this only sets the default.
 #
-# This is deliberately NOT MeshMC_VERSION_CHANNEL / BuildConfig.VERSION_CHANNEL,
+# This is deliberately NOT Kite_VERSION_CHANNEL / BuildConfig.VERSION_CHANNEL,
 # which is just the git branch name and purely informational.
-set(MeshMC_UPDATE_CHANNEL "stable" CACHE STRING "Release channel this build subscribes to: stable | beta.")
-set_property(CACHE MeshMC_UPDATE_CHANNEL PROPERTY STRINGS stable beta)
+set(Kite_UPDATE_CHANNEL "stable" CACHE STRING "Release channel this build subscribes to: stable | beta.")
+set_property(CACHE Kite_UPDATE_CHANNEL PROPERTY STRINGS stable beta)
 
-string(TOLOWER "${MeshMC_UPDATE_CHANNEL}" MeshMC_UPDATE_CHANNEL_EFFECTIVE)
-if(MeshMC_UPDATE_CHANNEL_EFFECTIVE STREQUAL "")
+string(TOLOWER "${Kite_UPDATE_CHANNEL}" Kite_UPDATE_CHANNEL_EFFECTIVE)
+if(Kite_UPDATE_CHANNEL_EFFECTIVE STREQUAL "")
     # CMakePresets forwards this from the environment, and an unset environment
     # variable expands to an empty string. Fall back to the safe channel rather
     # than shipping a build that accepts everything.
-    set(MeshMC_UPDATE_CHANNEL_EFFECTIVE "stable")
-elseif(NOT MeshMC_UPDATE_CHANNEL_EFFECTIVE MATCHES "^(stable|beta)$")
+    set(Kite_UPDATE_CHANNEL_EFFECTIVE "stable")
+elseif(NOT Kite_UPDATE_CHANNEL_EFFECTIVE MATCHES "^(stable|beta)$")
     message(FATAL_ERROR
-        "MeshMC_UPDATE_CHANNEL must be 'stable' or 'beta' (got '${MeshMC_UPDATE_CHANNEL}').")
+        "Kite_UPDATE_CHANNEL must be 'stable' or 'beta' (got '${Kite_UPDATE_CHANNEL}').")
 endif()
-message(STATUS "Update channel: ${MeshMC_UPDATE_CHANNEL_EFFECTIVE}")
+message(STATUS "Update channel: ${Kite_UPDATE_CHANNEL_EFFECTIVE}")
 
 # Notification URL
-set(MeshMC_NOTIFICATION_URL "https://projecttick.org/" CACHE STRING "URL for checking for notifications.")
+set(Kite_NOTIFICATION_URL "" CACHE STRING "URL for checking for notifications.")
 
 # The metadata server
-set(MeshMC_META_URL "https://meta.projecttick.org/" CACHE STRING "URL to fetch MeshMC's meta files from.")
+# TODO(fork): this is still Project Tick's meta server. Host our own before
+# the first public release.
+set(Kite_META_URL "https://meta.projecttick.org/" CACHE STRING "URL to fetch Kite's meta files from.")
 
 # Microsoft Client ID
-set(MeshMC_MICROSOFT_CLIENT_ID "3035382c-8f73-493a-b579-d182905c2864")
+# Our own Azure app, approved for the Minecraft API. Empty hides Microsoft sign-in.
+set(Kite_MICROSOFT_CLIENT_ID "" CACHE STRING "Azure application (client) ID for Microsoft sign-in")
 
 # paste.ee API key
-set(MeshMC_PASTE_EE_API_KEY "ay2miY3lWxUHEEzYucj5e4YShIuo1aaY43MfwsUAe" CACHE STRING "API key you can get from paste.ee when you register an account")
+set(Kite_PASTE_EE_API_KEY "" CACHE STRING "API key you can get from paste.ee when you register an account")
 
 # Imgur API Client ID
-set(MeshMC_IMGUR_CLIENT_ID "5b97b0713fba4a3" CACHE STRING "Client ID you can get from Imgur when you register an application")
+set(Kite_IMGUR_CLIENT_ID "" CACHE STRING "Client ID you can get from Imgur when you register an application")
 
 # CurseForge API key
-set(MeshMC_CURSEFORGE_API_KEY "$2a$10$S7KcKijbCj8mCHUQcn0tgOmtHg0kA8q9FI0niNJJ7knPq0INomzrG" CACHE STRING "API key for the CurseForge API (get one at https://console.curseforge.com/)")
+set(Kite_CURSEFORGE_API_KEY "" CACHE STRING "API key for the CurseForge API (get one at https://console.curseforge.com/)")
 
 # Bug tracker URL
-set(MeshMC_BUG_TRACKER_URL "https://github.com/Project-Tick/MeshMC/issues" CACHE STRING "URL for the bug tracker.")
+set(Kite_BUG_TRACKER_URL "" CACHE STRING "URL for the bug tracker.")
 
 # Discord URL
-set(MeshMC_DISCORD_URL "https://discord.gg/PMxPTqwEwj" CACHE STRING "URL for the Discord guild.")
+set(Kite_DISCORD_URL "" CACHE STRING "URL for the Discord guild.")
 
 # Subreddit URL
-set(MeshMC_SUBREDDIT_URL "" CACHE STRING "URL for the subreddit.")
+set(Kite_SUBREDDIT_URL "" CACHE STRING "URL for the subreddit.")
 
 # Feature flags
-set(MeshMC_UNLEASH_URL "" CACHE STRING "GitLab Unleash-compatible feature flags endpoint.")
-set(MeshMC_UNLEASH_INSTANCE_ID "" CACHE STRING "Unleash instance id. Set this to enable runtime feature flags.")
-set(MeshMC_UNLEASH_APP_NAME "" CACHE STRING "Unleash application name / environment (UNLEASH-APPNAME). Must match the flag's environment spec, e.g. 'production'.")
+set(Kite_UNLEASH_URL "" CACHE STRING "GitLab Unleash-compatible feature flags endpoint.")
+set(Kite_UNLEASH_INSTANCE_ID "" CACHE STRING "Unleash instance id. Set this to enable runtime feature flags.")
+set(Kite_UNLEASH_APP_NAME "" CACHE STRING "Unleash application name / environment (UNLEASH-APPNAME). Must match the flag's environment spec, e.g. 'production'.")
 
-######## Fourthly, please define MeshMC attributes ########
+######## Fourthly, please define Kite attributes ########
 
-set(MeshMC_CommonName "MeshMC")
-set(MeshMC_AppBinaryName "meshmc")
-set(MeshMC_EnvName "MESHMC")
-set(MeshMC_AppID "org.projecttick.MeshMC")
-set(MeshMC_Copyright "Project Tick")
-set(MeshMC_Copyright_Mac "© 2026 Project Tick")
-set(MeshMC_Domain "projecttick.org")
-set(MeshMC_Name "${MeshMC_CommonName}")
-set(MeshMC_DisplayName "${MeshMC_CommonName}")
-set(MeshMC_UserAgent "${MeshMC_CommonName}/${MeshMC_RELEASE_TWO_NAME}")
-set(MeshMC_ConfigFile "meshmc.cfg")
-set(MeshMC_Git "https://github.com/Project-Tick/MeshMC")
-set(MeshMC_Patreon_Url "https://www.patreon.com/meshmc")
+set(Kite_CommonName "Kite")
+set(Kite_AppBinaryName "kite")
+set(Kite_EnvName "KITE")
+set(Kite_AppID "io.github.grxtor.Kite")
+set(Kite_Copyright "grxtor")
+set(Kite_Copyright_Mac "© 2026 grxtor")
+set(Kite_Domain "grxtor.github.io")
+set(Kite_Name "${Kite_CommonName}")
+set(Kite_DisplayName "${Kite_CommonName}")
+set(Kite_UserAgent "${Kite_CommonName}/${Kite_RELEASE_TWO_NAME}")
+set(Kite_ConfigFile "kite.cfg")
+set(Kite_Git "https://github.com/grxtor/kite")
+set(Kite_Patreon_Url "")
 
 # Releases are published on the source repository, so that is where the
 # updater looks unless a build says otherwise.
-if(MeshMC_UPDATER_GITHUB_REPO STREQUAL "")
-    set(MeshMC_UPDATER_GITHUB_REPO "${MeshMC_Git}")
+if(Kite_UPDATER_GITHUB_REPO STREQUAL "")
+    set(Kite_UPDATER_GITHUB_REPO "${Kite_Git}")
 endif()
-message(STATUS "Updater repository: ${MeshMC_UPDATER_GITHUB_REPO}")
-set(MeshMC_Authors "Copyright (C) 2026 Project Tick <https://projecttick.org>, All rights reserved. This Project Licensed under GNU GENERAL PUBLIC LICENSE, either version 3 of the License, or any later version. ")
+message(STATUS "Updater repository: ${Kite_UPDATER_GITHUB_REPO}")
+set(Kite_Authors "Based on MeshMC by Project Tick and MultiMC by the MultiMC Contributors. Licensed under the Apache License, Version 2.0.")
 
 ######## Lastly, configure placeholders
 
-set(MeshMC_SVGFileName "${MeshMC_AppID}.svg")
-set(MeshMC_Branding_ICNS "branding/${MeshMC_AppID}.icns")
-set(MeshMC_Branding_ICO "${MeshMC_AppID}.ico")
-set(MeshMC_Branding_WindowsRC "branding/${MeshMC_AppBinaryName}.rc")
-set(MeshMC_Branding_LogoQRC "branding/${MeshMC_AppBinaryName}.qrc")
+set(Kite_SVGFileName "${Kite_AppID}.svg")
+set(Kite_Branding_ICNS "branding/${Kite_AppID}.icns")
+set(Kite_Branding_ICO "${Kite_AppID}.ico")
+set(Kite_Branding_WindowsRC "branding/${Kite_AppBinaryName}.rc")
+set(Kite_Branding_LogoQRC "branding/${Kite_AppBinaryName}.qrc")
 
-configure_file(branding/${MeshMC_AppID}.desktop.in ${MeshMC_AppID}.desktop)
-configure_file(branding/${MeshMC_AppID}.metainfo.xml.in ${MeshMC_AppID}.metainfo.xml)
-configure_file(branding/${MeshMC_AppBinaryName}.rc.in ${MeshMC_AppBinaryName}.rc @ONLY)
-configure_file(branding/${MeshMC_AppBinaryName}.qrc.in ${MeshMC_AppBinaryName}.qrc @ONLY)
-configure_file(branding/${MeshMC_CommonName}.manifest.in ${MeshMC_AppBinaryName}.manifest @ONLY)
-configure_file(branding/${MeshMC_AppID}.mime.xml ${MeshMC_AppID}.xml COPYONLY)
-configure_file(branding/${MeshMC_SVGFileName} ${MeshMC_SVGFileName} COPYONLY)
-configure_file(branding/${MeshMC_AppID}.ico ${MeshMC_AppID}.ico COPYONLY)
-configure_file(branding/${MeshMC_AppBinaryName}.6.scd.in ${MeshMC_AppBinaryName}.6.scd @ONLY)
-set(MeshMC_Portable_File "branding/portable.txt")
-set(MeshMC_Branding_MAC_ICON "branding/${MeshMC_CommonName}.icon")
+configure_file(branding/${Kite_AppID}.desktop.in ${Kite_AppID}.desktop)
+configure_file(branding/${Kite_AppID}.metainfo.xml.in ${Kite_AppID}.metainfo.xml)
+configure_file(branding/${Kite_AppBinaryName}.rc.in ${Kite_AppBinaryName}.rc @ONLY)
+configure_file(branding/${Kite_AppBinaryName}.qrc.in ${Kite_AppBinaryName}.qrc @ONLY)
+configure_file(branding/${Kite_CommonName}.manifest.in ${Kite_AppBinaryName}.manifest @ONLY)
+configure_file(branding/${Kite_AppID}.mime.xml ${Kite_AppID}.xml COPYONLY)
+configure_file(branding/${Kite_SVGFileName} ${Kite_SVGFileName} COPYONLY)
+configure_file(branding/${Kite_AppID}.ico ${Kite_AppID}.ico COPYONLY)
+configure_file(branding/${Kite_AppBinaryName}.6.scd.in ${Kite_AppBinaryName}.6.scd @ONLY)
+set(Kite_Portable_File "branding/portable.txt")
+set(Kite_Branding_MAC_ICON "branding/${Kite_CommonName}.icon")
 
 if(SCDOC_FOUND)
-    set(in_scd "${CMAKE_CURRENT_BINARY_DIR}/${MeshMC_AppBinaryName}.6.scd")
-    set(out_man "${CMAKE_CURRENT_BINARY_DIR}/${MeshMC_AppBinaryName}.6")
+    set(in_scd "${CMAKE_CURRENT_BINARY_DIR}/${Kite_AppBinaryName}.6.scd")
+    set(out_man "${CMAKE_CURRENT_BINARY_DIR}/${Kite_AppBinaryName}.6")
     add_custom_command(
         DEPENDS "${in_scd}"
         OUTPUT "${out_man}"
         COMMAND ${SCDOC_SCDOC} < "${in_scd}" > "${out_man}"
     )
     add_custom_target(man ALL DEPENDS ${out_man})
-    set(MeshMC_ManPage "${CMAKE_CURRENT_BINARY_DIR}/${MeshMC_AppBinaryName}.6")
+    set(Kite_ManPage "${CMAKE_CURRENT_BINARY_DIR}/${Kite_AppBinaryName}.6")
 endif()
 
 if(MSVC)
-    set(MeshMC_MSVC_Redist_NSIS_Section [=[
+    set(Kite_MSVC_Redist_NSIS_Section [=[
 !ifdef haveNScurl
 Section "Visual Studio Runtime"
     Var /GLOBAL vc_redist_exe
@@ -524,20 +528,20 @@ configure_file(branding/win_install.nsi.in win_install.nsi @ONLY)
 ####################################### Install layout #######################################
 
 if(NOT (UNIX AND APPLE))
-    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/${MeshMC_Portable_File}" DESTINATION "." COMPONENT portable EXCLUDE_FROM_ALL)
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/${Kite_Portable_File}" DESTINATION "." COMPONENT portable EXCLUDE_FROM_ALL)
 endif()
 
 if(UNIX AND APPLE)
-    set(BINARY_DEST_DIR "${MeshMC_Name}.app/Contents/MacOS")
-    set(FRAMEWORK_DEST_DIR "${MeshMC_Name}.app/Contents/Frameworks")
+    set(BINARY_DEST_DIR "${Kite_Name}.app/Contents/MacOS")
+    set(FRAMEWORK_DEST_DIR "${Kite_Name}.app/Contents/Frameworks")
     set(LIBRARY_DEST_DIR "${FRAMEWORK_DEST_DIR}")
-    set(PLUGIN_DEST_DIR "${MeshMC_Name}.app/Contents/MacOS")
-    set(RESOURCES_DEST_DIR "${MeshMC_Name}.app/Contents/Resources")
-    set(JARS_DEST_DIR "${MeshMC_Name}.app/Contents/Resources/jars")
+    set(PLUGIN_DEST_DIR "${Kite_Name}.app/Contents/MacOS")
+    set(RESOURCES_DEST_DIR "${Kite_Name}.app/Contents/Resources")
+    set(JARS_DEST_DIR "${Kite_Name}.app/Contents/Resources/jars")
     # Where Qt's own QML modules land inside the bundle. Contents/Resources
     # (rather than next to PLUGIN_DEST_DIR in Contents/MacOS) so it matches
     # what qt.conf's QmlImports key below is written relative to.
-    set(QML_DEST_DIR "${MeshMC_Name}.app/Contents/Resources/qml")
+    set(QML_DEST_DIR "${Kite_Name}.app/Contents/Resources/qml")
     # qt.conf's [Paths] entries are, on macOS, resolved relative to the
     # bundle's Contents/ directory (verified empirically: a value of
     # "Foo.app/Contents/MacOS" written into Contents/Resources/qt.conf came
@@ -548,28 +552,28 @@ if(UNIX AND APPLE)
     set(QT_CONF_QML_DEST "Resources/qml")
     set(BUNDLE_DEST_DIR ".")
     set(MMCO_MODULES_DEST_DIR
-        "${MeshMC_Name}.app/Contents/Resources/mmcmodules")
+        "${Kite_Name}.app/Contents/Resources/mmcmodules")
     set(MMCO_PLUGIN_DATA_DEST_DIR
-        "${MeshMC_Name}.app/Contents/Resources/MMCOPluginData")
+        "${Kite_Name}.app/Contents/Resources/MMCOPluginData")
 
     # Mac bundle settings
-    set(MACOSX_BUNDLE_BUNDLE_NAME "${MeshMC_DisplayName}")
-    set(MACOSX_BUNDLE_INFO_STRING "${MeshMC_DisplayName}: A custom launcher for Minecraft that allows you to easily manage multiple installations of Minecraft at once.")
-    set(MACOSX_BUNDLE_GUI_IDENTIFIER "${MeshMC_AppID}")
-    set(MACOSX_BUNDLE_BUNDLE_VERSION "${MeshMC_RELEASE_VERSION_NAME}")
-    set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${MeshMC_RELEASE_VERSION_NAME}")
-    set(MACOSX_BUNDLE_LONG_VERSION_STRING "${MeshMC_RELEASE_VERSION_NAME}")
-    set(MACOSX_BUNDLE_ICON_FILE ${MeshMC_AppID}.icns)
-    set(MACOSX_BUNDLE_COPYRIGHT "${MeshMC_Copyright_Mac}")
-    set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "C0eBoyDSoZbzgCMxQH9wH6kmjU2mPRmvhZZd9mHgqZQ=" CACHE STRING "Public key for Sparkle update feed")
-    set(MACOSX_SPARKLE_UPDATE_FEED_URL "https://projecttick.org/feed/appcast.xml" CACHE STRING "URL for Sparkle update feed")
+    set(MACOSX_BUNDLE_BUNDLE_NAME "${Kite_DisplayName}")
+    set(MACOSX_BUNDLE_INFO_STRING "${Kite_DisplayName}: A custom launcher for Minecraft that allows you to easily manage multiple installations of Minecraft at once.")
+    set(MACOSX_BUNDLE_GUI_IDENTIFIER "${Kite_AppID}")
+    set(MACOSX_BUNDLE_BUNDLE_VERSION "${Kite_RELEASE_VERSION_NAME}")
+    set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${Kite_RELEASE_VERSION_NAME}")
+    set(MACOSX_BUNDLE_LONG_VERSION_STRING "${Kite_RELEASE_VERSION_NAME}")
+    set(MACOSX_BUNDLE_ICON_FILE ${Kite_AppID}.icns)
+    set(MACOSX_BUNDLE_COPYRIGHT "${Kite_Copyright_Mac}")
+    set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "" CACHE STRING "Public key for Sparkle update feed")
+    set(MACOSX_SPARKLE_UPDATE_FEED_URL "" CACHE STRING "URL for Sparkle update feed")
 
     set(MACOSX_SPARKLE_DOWNLOAD_URL "https://github.com/sparkle-project/Sparkle/releases/download/2.8.0/Sparkle-2.8.0.tar.xz" CACHE STRING "URL to Sparkle release archive")
     set(MACOSX_SPARKLE_SHA256 "fd5681ee92bf238aaac2d08214ceaf0cc8976e452d7f882d80bac1e61581f3b1" CACHE STRING "SHA256 checksum for Sparkle release archive")
     set(MACOSX_SPARKLE_DIR "${CMAKE_BINARY_DIR}/frameworks/Sparkle")
 
     # Add the icon
-    install(FILES ${MeshMC_Branding_ICNS} DESTINATION ${RESOURCES_DEST_DIR} RENAME ${MeshMC_AppID}.icns)
+    install(FILES ${Kite_Branding_ICNS} DESTINATION ${RESOURCES_DEST_DIR} RENAME ${Kite_AppID}.icns)
 
     find_program(ACTOOL_EXE actool DOC "Path to the apple asset catalog compiler")
     if(ACTOOL_EXE)
@@ -589,14 +593,14 @@ if(UNIX AND APPLE)
         if(XCODE_VERSION VERSION_GREATER_EQUAL 26.0)
             set(ASSETS_OUT_DIR "${CMAKE_BINARY_DIR}/branding")
             set(GENERATED_ASSETS_CAR "${ASSETS_OUT_DIR}/Assets.car")
-            set(ICON_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/${MeshMC_Branding_MAC_ICON}")
+            set(ICON_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/${Kite_Branding_MAC_ICON}")
 
             add_custom_command(
                 OUTPUT "${GENERATED_ASSETS_CAR}"
                 COMMAND ${ACTOOL_EXE} "${ICON_SOURCE}"
                         --compile "${ASSETS_OUT_DIR}"
                         --output-partial-info-plist /dev/null
-                        --app-icon ${MeshMC_Name}
+                        --app-icon ${Kite_Name}
                         --enable-on-demand-resources NO
                         --target-device mac
                         --minimum-deployment-target ${CMAKE_OSX_DEPLOYMENT_TARGET}
@@ -622,36 +626,36 @@ elseif(UNIX)
 
     set(BINARY_DEST_DIR "${CMAKE_INSTALL_BINDIR}")
     set(LIBRARY_DEST_DIR "${CMAKE_INSTALL_LIBDIR}")
-    set(JARS_DEST_DIR "share/${MeshMC_Name}")
-    set(MMCO_MODULES_DEST_DIR "share/${MeshMC_Name}/mmcmodules")
+    set(JARS_DEST_DIR "share/${Kite_Name}")
+    set(MMCO_MODULES_DEST_DIR "share/${Kite_Name}/mmcmodules")
     set(MMCO_PLUGIN_DATA_DEST_DIR "${MMCO_MODULES_DEST_DIR}")
-    set(PRIVATE_LIBRARY_DEST_DIR "${CMAKE_INSTALL_LIBDIR}/${MeshMC_AppBinaryName}")
-    SET(MeshMC_BINARY_RPATH "$ORIGIN/../${PRIVATE_LIBRARY_DEST_DIR}")
+    set(PRIVATE_LIBRARY_DEST_DIR "${CMAKE_INSTALL_LIBDIR}/${Kite_AppBinaryName}")
+    SET(Kite_BINARY_RPATH "$ORIGIN/../${PRIVATE_LIBRARY_DEST_DIR}")
     set(KDE_INSTALL_APPDIR      "${CMAKE_INSTALL_DATAROOTDIR}/applications")
     set(KDE_INSTALL_METAINFODIR "${CMAKE_INSTALL_DATAROOTDIR}/metainfo")
     set(KDE_INSTALL_ICONDIR     "${CMAKE_INSTALL_DATAROOTDIR}/icons")
     set(KDE_INSTALL_MIMEDIR     "${CMAKE_INSTALL_DATAROOTDIR}/mime/packages")
     set(KDE_INSTALL_MANDIR      "${CMAKE_INSTALL_MANDIR}")
 
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${MeshMC_AppID}.desktop DESTINATION ${KDE_INSTALL_APPDIR})
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${MeshMC_AppID}.metainfo.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/branding/${MeshMC_AppID}.svg DESTINATION "${KDE_INSTALL_ICONDIR}/hicolor/scalable/apps")
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/branding/${MeshMC_AppID}_256.png DESTINATION "${KDE_INSTALL_ICONDIR}/hicolor/256x256/apps" RENAME "${MeshMC_AppID}.png")
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${MeshMC_AppID}.xml DESTINATION ${KDE_INSTALL_MIMEDIR})
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${Kite_AppID}.desktop DESTINATION ${KDE_INSTALL_APPDIR})
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${Kite_AppID}.metainfo.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/branding/${Kite_AppID}.svg DESTINATION "${KDE_INSTALL_ICONDIR}/hicolor/scalable/apps")
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/branding/${Kite_AppID}_256.png DESTINATION "${KDE_INSTALL_ICONDIR}/hicolor/256x256/apps" RENAME "${Kite_AppID}.png")
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${Kite_AppID}.xml DESTINATION ${KDE_INSTALL_MIMEDIR})
 
-    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/launcher/qtlogging.ini" DESTINATION "share/${MeshMC_Name}")
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/launcher/qtlogging.ini" DESTINATION "share/${Kite_Name}")
 
     set(PLUGIN_DEST_DIR "plugins")
     set(BUNDLE_DEST_DIR ".")
     set(RESOURCES_DEST_DIR ".")
 
-    if(MeshMC_ManPage)
-        install(FILES ${MeshMC_ManPage} DESTINATION "${KDE_INSTALL_MANDIR}/man6")
+    if(Kite_ManPage)
+        install(FILES ${Kite_ManPage} DESTINATION "${KDE_INSTALL_MANDIR}/man6")
     endif()
 
     # Install basic runner script if component "portable" is selected
-    configure_file(launcher/MeshMC.in "${CMAKE_CURRENT_BINARY_DIR}/MeshMCScript" @ONLY)
-    install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/MeshMCScript" DESTINATION "." RENAME ${MeshMC_Name} COMPONENT portable EXCLUDE_FROM_ALL)
+    configure_file(launcher/Kite.in "${CMAKE_CURRENT_BINARY_DIR}/KiteScript" @ONLY)
+    install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/KiteScript" DESTINATION "." RENAME ${Kite_Name} COMPONENT portable EXCLUDE_FROM_ALL)
 
 elseif(WIN32)
     set(BINARY_DEST_DIR ".")
@@ -670,7 +674,7 @@ elseif(WIN32)
     set(QT_CONF_QML_DEST "${QML_DEST_DIR}")
     set(JARS_DEST_DIR "jars")
     # Windows keeps the flat layout it has always used: .mmco files
-    # next to meshmc.exe under <install>/mmcmodules. Variable exists
+    # next to kite.exe under <install>/mmcmodules. Variable exists
     # so plugin CMakeLists files can refer to it uniformly.
     set(MMCO_MODULES_DEST_DIR "${BINARY_DEST_DIR}/mmcmodules")
     # Windows has no codesign-style strict mode that distinguishes
@@ -720,13 +724,13 @@ add_subdirectory(libraries/katabasis) # An OAuth2 library that tried to do too m
 # Installed explicitly rather than left to install(RUNTIME_DEPENDENCY_SET),
 # which scans the built binary and searches a directory list — it did not pick
 # these up. Their own subprojects do install them, but to
-# ${CMAKE_INSTALL_BINDIR} (install/bin/) while meshmc.exe sits at the install
+# ${CMAKE_INSTALL_BINDIR} (install/bin/) while kite.exe sits at the install
 # root, so the launcher died on startup with "nbt++.dll not found". These are
 # our own targets and we know exactly where they belong; no point rediscovering
 # it by scanning a binary.
 set_target_properties(nbt++ rainbow PROPERTIES
-    VERSION   "${MeshMC_RELEASE_VERSION_NAME}"
-    SOVERSION "${MeshMC_VERSION_MAJOR}")
+    VERSION   "${Kite_RELEASE_VERSION_NAME}"
+    SOVERSION "${Kite_VERSION_MAJOR}")
 
 if(NOT DEFINED PRIVATE_LIBRARY_DEST_DIR)
     set(PRIVATE_LIBRARY_DEST_DIR "${LIBRARY_DEST_DIR}")
@@ -753,10 +757,10 @@ add_subdirectory(launcher/crashreporter)
 # NOTE: this must always be last to appease the CMake deity of quirky install command evaluation order.
 add_subdirectory(launcher)
 
-if(MeshMC_PLUGINS)
+if(Kite_PLUGINS)
     # Plugin SDK (INTERFACE library — headers only, must come before plugins)
     add_subdirectory(launcher/plugin/sdk)
 
-    # In-tree .mmco plugins (after launcher so MeshMC_logic target is available)
+    # In-tree .mmco plugins (after launcher so Kite_logic target is available)
     add_subdirectory(launcher/plugin/plugins)
 endif()

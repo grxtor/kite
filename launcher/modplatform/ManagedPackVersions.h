@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -166,7 +167,7 @@ namespace ManagedPack
 	/* Index of the version whose id matches, or -1.
 	 *
 	 * Compared as trimmed strings rather than by number: the installed
-	 * id comes back from instance.cfg, where an older MeshMC may have
+	 * id comes back from instance.cfg, where an older Kite may have
 	 * written it with different spacing, and on Modrinth it is not
 	 * numeric to begin with. */
 	int indexOfVersionId(const VersionList& versions, const QString& versionId);

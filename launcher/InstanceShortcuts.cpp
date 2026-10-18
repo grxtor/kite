@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -100,7 +101,7 @@ namespace InstanceShortcuts
 				 * built from .desktop files and a subfolder would simply
 				 * not be read. */
 				return FS::PathCombine(applications,
-									   BuildConfig.MESHMC_DISPLAYNAME +
+									   BuildConfig.KITE_DISPLAYNAME +
 										   " Instances");
 #else
 				return applications;
@@ -155,7 +156,7 @@ namespace InstanceShortcuts
 		 * it would be dead on arrival. */
 		if (appPath.startsWith(QLatin1String("/private/var/"))) {
 			return failure(
-				QObject::tr("MeshMC is running from the folder it was "
+				QObject::tr("Kite is running from the folder it was "
 							"extracted into, so it cannot create a "
 							"shortcut. Move it to your Applications "
 							"folder first."));
@@ -172,7 +173,7 @@ namespace InstanceShortcuts
 			appPath = qEnvironmentVariable("APPIMAGE");
 			if (appPath.isEmpty()) {
 				return failure(
-					QObject::tr("MeshMC looks like an AppImage, but "
+					QObject::tr("Kite looks like an AppImage, but "
 								"$APPIMAGE is not set, so the path to "
 								"write into the shortcut is unknown."));
 			}
@@ -190,7 +191,7 @@ namespace InstanceShortcuts
 			 * flatpak run instead. */
 			QString appId = qEnvironmentVariable("FLATPAK_ID");
 			if (appId.isEmpty()) {
-				appId = QStringLiteral("org.projecttick.MeshMC");
+				appId = QStringLiteral("io.github.grxtor.Kite");
 			}
 			appPath = QStringLiteral("flatpak");
 			args << QStringLiteral("run") << appId;

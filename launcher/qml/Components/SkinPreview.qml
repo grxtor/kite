@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * A skin on a player, as large as the box it is given: in 3D, turned by
  * dragging, where the build has Qt Quick3D (the cat's module,
- * MeshMC_ENABLE_CAT -- `catAvailable`) and the window draws through a 3D
+ * Kite_ENABLE_CAT -- `catAvailable`) and the window draws through a 3D
  * graphics API; otherwise the flat front view (`flatSource`, e.g.
  * image://accountface/body/<id>) over the neutral figure, which only holds
  * the place while there is no texture yet (an account without a skin of
@@ -98,7 +98,7 @@ Item {
         id: preview3d
         anchors.fill: parent
         active: root.threeD
-        source: active ? "qrc:/qt/qml/MeshMC/Cat/SkinPreview3D.qml" : ""
+        source: active ? "qrc:/qt/qml/Kite/Cat/SkinPreview3D.qml" : ""
         onLoaded: {
             item.skinTexture = Qt.binding(() => root.skinTexture)
             item.slim = Qt.binding(() => root.slim)

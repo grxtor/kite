@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -217,7 +218,7 @@ shared_qobject_ptr<LogModel> LaunchTask::getLogModel()
 			m_instance->shouldStopOnConsoleOverflow());
 		// FIXME: should this really be here?
 		m_logModel->setOverflowMessage(
-			tr("MeshMC stopped watching the game log because the log length "
+			tr("Kite stopped watching the game log because the log length "
 			   "surpassed %1 lines.\n"
 			   "You may have to fix your mods because the game is still "
 			   "logging to files and"
@@ -237,7 +238,7 @@ void LaunchTask::onLogLines(const QStringList& lines,
 
 void LaunchTask::onLogLine(QString line, MessageLevel::Enum level)
 {
-	// if MeshMC part set a log level, use it
+	// if Kite part set a log level, use it
 	auto innerLevel = MessageLevel::fromLine(line);
 	if (innerLevel != MessageLevel::Unknown) {
 		level = innerLevel;

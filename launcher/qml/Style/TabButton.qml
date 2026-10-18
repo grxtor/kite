@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls.impl
 import QtQuick.Templates as T
-import MeshMC.Theme
+import Kite.Theme
 
 // An underline tab rather than Basic's filled-box tab: it reads lighter and
 // leaves the accent doing one job (marking the active tab) instead of also

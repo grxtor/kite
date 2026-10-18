@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -39,7 +40,7 @@ class Setting : public QObject
 	 *
 	 * Synonyms are all the possible names used in the settings object, in order
 	 * of preference. First synonym is the ID, which identifies the setting in
-	 * MeshMC.
+	 * Kite.
 	 *
 	 * defVal is the default value that will be returned when the settings
 	 * object doesn't have any value for this setting.

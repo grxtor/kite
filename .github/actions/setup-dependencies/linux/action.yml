@@ -1,5 +1,5 @@
 name: Setup Linux dependencies
-description: Install and setup dependencies for building MeshMC
+description: Install and setup dependencies for building Kite
 
 runs:
   using: composite

@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -41,17 +42,17 @@
 #include <memory>
 
 /*
- * MESHMC_PLUGIN_SIGNATURES is defined in launcher/CMakeLists.txt:
+ * KITE_PLUGIN_SIGNATURES is defined in launcher/CMakeLists.txt:
  *   1 → full GpgME-backed verifier (Linux, macOS, MinGW Windows)
  *   0 → stub verifier that always reports modules as unsigned. Used on
  *       MSVC where upstream gpgme has no working build (autotools-only,
  *       C++ ABI incompatibilities with MSVC).
  */
-#ifndef MESHMC_PLUGIN_SIGNATURES
-#define MESHMC_PLUGIN_SIGNATURES 1
+#ifndef KITE_PLUGIN_SIGNATURES
+#define KITE_PLUGIN_SIGNATURES 1
 #endif
 
-#if MESHMC_PLUGIN_SIGNATURES
+#if KITE_PLUGIN_SIGNATURES
 #include <gpgme++/context.h>
 #include <gpgme++/data.h>
 #include <gpgme++/global.h>
@@ -73,7 +74,7 @@ namespace PluginSignature
 		QMutex g_mutex;
 		QString g_keyringPath;
 
-#if MESHMC_PLUGIN_SIGNATURES
+#if KITE_PLUGIN_SIGNATURES
 		bool g_gpgmeInitialised = false;
 
 		void ensureGpgmeInit()
@@ -499,13 +500,13 @@ namespace PluginSignature
 				QStringLiteral("vim"),
 				QStringLiteral("wtfpl"),
 
-				/* ══ MeshMC's own modular-GPL identifier ══════════ *
+				/* ══ Kite's own modular-GPL identifier ══════════ *
 				 * Plugins shipped under the launcher's combined GPL +
 				 * MMCO-Module-Exception SPDX expression are recognised
 				 * as a single atomic identifier here so splitSpdx() does
 				 * not have to special-case the "WITH" clause. */
 				QStringLiteral("gpl-3.0-or-later with "
-							   "licenseref-meshmc-mmco-module-exception-1.0"),
+							   "licenseref-kite-mmco-module-exception-1.0"),
 			};
 			return ids;
 		}
@@ -560,7 +561,7 @@ namespace PluginSignature
 		if (path == g_keyringPath)
 			return;
 		g_keyringPath = path;
-#if MESHMC_PLUGIN_SIGNATURES
+#if KITE_PLUGIN_SIGNATURES
 		// Drop the cached context so the next verify() rebuilds it
 		// against the new home directory.
 		g_gpgCtx.reset();
@@ -684,7 +685,7 @@ namespace PluginSignature
 		detail.clear();
 		fingerprint.clear();
 
-#if !MESHMC_PLUGIN_SIGNATURES
+#if !KITE_PLUGIN_SIGNATURES
 		(void)payload;
 		(void)signature;
 		// Stub build (MSVC): no GpgME backend is linked. Report an
@@ -693,7 +694,7 @@ namespace PluginSignature
 		// without a working keyring. OSS modules still load; non-OSS
 		// modules are rejected with SignatureRequired.
 		detail = QStringLiteral(
-			"GPG verification is not available in this build of MeshMC");
+			"GPG verification is not available in this build of Kite");
 		return PluginSignatureState::Error;
 #else
 		ensureGpgmeInit();
@@ -784,7 +785,7 @@ namespace PluginSignature
 		detail =
 			QStringLiteral("Signature present but signing key not trusted");
 		return PluginSignatureState::Untrusted;
-#endif // MESHMC_PLUGIN_SIGNATURES
+#endif // KITE_PLUGIN_SIGNATURES
 	}
 
 	PluginSignatureState verifyFile(const QString& filePath, QString& detail,

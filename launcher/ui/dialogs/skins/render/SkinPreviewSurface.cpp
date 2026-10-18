@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -159,7 +160,7 @@ namespace skinrender
 		 * then wedges the driver. Checked before touching GL at all, so it
 		 * works even when probing itself is what crashes. */
 		const QString disableVariable =
-			QStringLiteral("%1_DISABLE_GLVULKAN").arg(BuildConfig.MESHMC_ENVNAME);
+			QStringLiteral("%1_DISABLE_GLVULKAN").arg(BuildConfig.KITE_ENVNAME);
 		if (!QProcessEnvironment::systemEnvironment()
 				 .value(disableVariable)
 				 .isEmpty()) {

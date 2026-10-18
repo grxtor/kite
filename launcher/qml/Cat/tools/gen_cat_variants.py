@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# SPDX-FileCopyrightText: 2026 Project Tick
-# SPDX-FileContributor: Project Tick
+# SPDX-FileCopyrightText: 2026 grxtor
+# SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 """Recolours the cat model's own texture (textures/cat_calico.png, from
 assets/cat.glb -- see assets/CREDITS.md) into the other coat variants.

@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -35,7 +36,7 @@
  * QML owns the clipboard and the toast.
  *
  * The paste.ee key comes from the PasteEEAPIKey setting the same way the
- * widget path reads it: the literal "meshmc" means "use the launcher's own
+ * widget path reads it: the literal "kite" means "use the launcher's own
  * key" (BuildConfig.PASTE_EE_KEY). PasteUpload censors tokens and the home
  * directory out of the text itself.
  */
@@ -55,7 +56,7 @@ class LogUploader : public QObject
 	}
 
 	/// The key PasteUpload is given for the PasteEEAPIKey setting value
-	/// @p setting: "meshmc" becomes @p builtinKey, an empty value becomes
+	/// @p setting: "kite" becomes @p builtinKey, an empty value becomes
 	/// paste.ee's anonymous "public" key, anything else is the user's own.
 	static QString resolveApiKey(const QString& setting,
 								 const QString& builtinKey);

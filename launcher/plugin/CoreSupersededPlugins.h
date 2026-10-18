@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -60,19 +61,19 @@ findCoreSupersededPlugin(const QString& name)
 {
 	static const CoreSupersededPlugin entries[] = {
 		{QLatin1String("Filelink"),
-		 QLatin1String("The shortcut system is now part of MeshMC itself")},
+		 QLatin1String("The shortcut system is now part of Kite itself")},
 		{QLatin1String("BackupSystem"),
-		 QLatin1String("Instance backups are now part of MeshMC itself "
+		 QLatin1String("Instance backups are now part of Kite itself "
 					   "(instance settings -> Backups)")},
 		{QLatin1String("NewsViewer"),
-		 QLatin1String("The news viewer is now part of MeshMC itself "
+		 QLatin1String("The news viewer is now part of Kite itself "
 					   "(the news bar headline and \"More news\")")},
 		{QLatin1String("PackPortal"),
-		 QLatin1String("The pack portal is now part of MeshMC itself")},
+		 QLatin1String("The pack portal is now part of Kite itself")},
 		{QLatin1String("PackUpdater"),
-		 QLatin1String("The pack updater is now part of MeshMC itself")},
+		 QLatin1String("The pack updater is now part of Kite itself")},
 		{QLatin1String("SkinManager"),
-		 QLatin1String("The skin manager is now part of MeshMC itself")},
+		 QLatin1String("The skin manager is now part of Kite itself")},
 	};
 
 	if (name.isEmpty())

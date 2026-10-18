@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=@Kite_DisplayName@
+Comment=Discover, manage, and play Minecraft instances
+Type=Application
+Terminal=false
+Exec=@Kite_AppBinaryName@ %U
+StartupNotify=true
+Icon=@Kite_AppID@
+Categories=Game;ActionGame;AdventureGame;Simulation;PackageManager;
+Keywords=game;minecraft;mc;
+StartupWMClass=@Kite_CommonName@
+MimeType=application/zip;application/x-modrinth-modpack+zip;x-scheme-handler/curseforge;x-scheme-handler/kite;x-scheme-handler/@Kite_AppBinaryName@;

@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Window
 import QtQuick.Controls
 import QtQuick3D
-import MeshMC.Components
+import Kite.Components
 
 /*
  * The launcher's cat (a nod to MultiMC's): a small 3D Minecraft cat that
@@ -30,7 +30,7 @@ Item {
 
     // "" runs the cat normally; "walk", "idle", "loaf", "sleep", "stretch"
     // or "pet" freezes it in that pose at a fixed spot, for review
-    // snapshots (MESHMC_QML_ROUTE's "cat=<state>" step, see Main.qml).
+    // snapshots (KITE_QML_ROUTE's "cat=<state>" step, see Main.qml).
     property string demo: ""
 
     readonly property var variants: ["calico", "ginger", "black", "white", "siamese"]

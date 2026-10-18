@@ -1,12 +1,13 @@
 /* SPDX-FileCopyrightText: Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: CC0-1.0
  *
- * Example MeshMC plugin (.mmco module) written in PLAIN C.
+ * Example Kite plugin (.mmco module) written in PLAIN C.
  *
  * This demonstrates that a .mmco module can be authored in C with no
  * Qt and no C++ at all: it includes only the language-neutral C ABI
- * header (mmco_c_sdk.h) and links against the Qt-free MeshMC::SDK_C
+ * header (mmco_c_sdk.h) and links against the Qt-free Kite::SDK_C
  * target. A C plugin gets the full data-plane API (logging, hooks,
  * instances, settings, …) but not the Qt UI page builder, which is
  * only meaningful from C++.
@@ -44,7 +45,7 @@ static int on_app_initialized(void* mh, uint32_t hook_id, void* payload,
 	MMCO_LOG(g_ctx, "Hello from the plain-C Hello World plugin!");
 
 	count = g_ctx->instance_count(g_ctx->module_handle);
-	snprintf(buf, sizeof(buf), "MeshMC has %d instance(s):", count);
+	snprintf(buf, sizeof(buf), "Kite has %d instance(s):", count);
 	MMCO_LOG(g_ctx, buf);
 
 	for (i = 0; i < count; ++i) {

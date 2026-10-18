@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -30,7 +31,7 @@
 #include <QDirIterator>
 
 #include "ui/dialogs/VersionSelectDialog.h"
-#ifndef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifndef Kite_DISABLE_JAVA_DOWNLOADER
 #include "ui/dialogs/JavaDownloadDialog.h"
 #endif
 
@@ -57,7 +58,7 @@ JavaPage::JavaPage(QWidget* parent) : QWidget(parent), ui(new Ui::JavaPage)
 	}
 
 	loadSettings();
-#ifdef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifdef Kite_DISABLE_JAVA_DOWNLOADER
 	// Hide the entire Installations tab when Java downloader is disabled
 	int idx = ui->tabWidget->indexOf(ui->tabInstallations);
 	if (idx != -1)
@@ -193,7 +194,7 @@ void JavaPage::checkerFinished()
 
 void JavaPage::on_javaDownloadBtn_clicked()
 {
-#ifndef MeshMC_DISABLE_JAVA_DOWNLOADER
+#ifndef Kite_DISABLE_JAVA_DOWNLOADER
 	JavaDownloadDialog dlg(this);
 	if (dlg.exec() == QDialog::Accepted) {
 		refreshInstalledJavas();

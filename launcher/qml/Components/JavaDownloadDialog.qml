@@ -1,17 +1,17 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import MeshMC.Theme
+import Kite.Theme
 
 /*
  * Download a Java runtime: pick a vendor, a Java version and a build for
  * this computer, then watch it download. The QML replacement for the
  * widget JavaDownloadDialog; the work is JavaDownloadController's. The
- * runtime lands in MeshMC's own Java folder, so it shows up under
+ * runtime lands in Kite's own Java folder, so it shows up under
  * "Downloaded Java" and in the Java picker afterwards.
  */
 Dialog {
@@ -51,7 +51,7 @@ Dialog {
 
         Text {
             Layout.fillWidth: true
-            text: qsTr("MeshMC keeps downloaded Java in its own folder, apart from anything you installed yourself.")
+            text: qsTr("Kite keeps downloaded Java in its own folder, apart from anything you installed yourself.")
             wrapMode: Text.Wrap
             color: Theme.palette.textTertiary
             font.family: Theme.font.family

@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -192,8 +193,8 @@ void InstanceImportTask::detectFinished()
 	// Determine pack type (same priority order as before).
 	QString root;
 	if (!r.mmcRoot.isNull()) {
-		qDebug() << "MeshMC:" << r.mmcRoot;
-		m_modpackType = ModpackType::MeshMC;
+		qDebug() << "Kite:" << r.mmcRoot;
+		m_modpackType = ModpackType::Kite;
 		root = r.mmcRoot;
 	} else if (!r.modrinthRoot.isNull()) {
 		qDebug() << "Modrinth:" << r.modrinthRoot;
@@ -366,8 +367,8 @@ void InstanceImportTask::extractFinished()
 		case ModpackType::Modrinth:
 			processModrinth();
 			return;
-		case ModpackType::MeshMC:
-			processMeshMC();
+		case ModpackType::Kite:
+			processKite();
 			return;
 		case ModpackType::Technic:
 			processTechnic();
@@ -669,7 +670,7 @@ static QString selectFlameIcon(const QString& instIcon,
 		return "steve";
 	if (pack.name.contains("FTB") || pack.name.contains("Feed The Beast"))
 		return "ftb_logo";
-	// default to something other than the MeshMC default to distinguish these
+	// default to something other than the Kite default to distinguish these
 	return "flame";
 }
 
@@ -1428,7 +1429,7 @@ void InstanceImportTask::processTechnic()
 		return;
 	}
 
-	/* Same reasoning as the MeshMC path: a Technic archive carries no
+	/* Same reasoning as the Kite path: a Technic archive carries no
 	 * catalogue identity, but this path is reachable as an "update from
 	 * file" of a managed instance, and the staged instance.cfg replaces
 	 * the live one. Without this the instance comes back from a
@@ -1448,7 +1449,7 @@ void InstanceImportTask::processTechnic()
 	emitSucceeded();
 }
 
-void InstanceImportTask::processMeshMC()
+void InstanceImportTask::processKite()
 {
 	QString configPath = FS::PathCombine(m_stagingPath, "instance.cfg");
 	auto instanceSettings = std::make_shared<INISettingsObject>(configPath);
@@ -1480,14 +1481,14 @@ void InstanceImportTask::processMeshMC()
 		}
 	}
 
-	/* Same as the Technic path: a MeshMC pack is its own file list, so
+	/* Same as the Technic path: a Kite pack is its own file list, so
 	 * what was unpacked is what the pack consists of. */
 	if (!recordPackContents(listFilesRelative(stagedGameDir()))) {
 		emitFailed(tr("Installation cancelled."));
 		return;
 	}
 
-	/* A MeshMC archive ships its own instance.cfg and says nothing about
+	/* A Kite archive ships its own instance.cfg and says nothing about
 	 * which catalogue pack it is, so there is nothing here to recover a
 	 * hint from - whatever the caller knew is all there is.
 	 *

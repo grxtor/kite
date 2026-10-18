@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -93,7 +94,7 @@ QString FolderSettingsController::instanceDirWarning(const QString& rawDir,
 		return tr("This folder was shared with %1 only for this session. "
 				  "After a restart %1 will no longer be able to open it. "
 				  "Granting it access with Flatseal is recommended.")
-			.arg(BuildConfig.MESHMC_DISPLAYNAME);
+			.arg(BuildConfig.KITE_DISPLAYNAME);
 	}
 	return QString();
 }

@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -41,7 +42,7 @@
 #include "launch/steps/TextPrint.h"
 #include "launch/steps/CheckJava.h"
 
-#include "minecraft/launch/MeshMCPartLaunch.h"
+#include "minecraft/launch/KitePartLaunch.h"
 #include "minecraft/launch/DirectJavaLaunch.h"
 #include "minecraft/launch/ModMinecraftJar.h"
 #include "minecraft/launch/ClaimAccount.h"
@@ -632,7 +633,7 @@ QStringList MinecraftInstance::processMinecraftArgs(
 	}
 
 	// blatant self-promotion.
-	token_mapping["profile_name"] = token_mapping["version_name"] = "MeshMC";
+	token_mapping["profile_name"] = token_mapping["version_name"] = "Kite";
 
 	token_mapping["version_type"] = profile->getMinecraftVersionType();
 
@@ -733,9 +734,9 @@ MinecraftInstance::createLaunchScript(AuthSessionPtr session,
 	// Decide between legacy (in-process, applet-based) and modern (subprocess)
 	// launch. Instances with the "legacyLaunch" or "alphaLaunch" trait use the
 	// classic OneSix applet launcher path which runs everything in-process. All
-	// other instances use the ModernMeshMC which spawns the game as a child
+	// other instances use the ModernKite which spawns the game as a child
 	// process with the configured Java binary, allowing Minecraft versions that
-	// require Java 21, 25 or newer to run even when MeshMC library JVM is an
+	// require Java 21, 25 or newer to run even when Kite library JVM is an
 	// older version.
 	auto profileTraits = profile->getTraits();
 	bool isLegacyApplet = profileTraits.contains("legacyLaunch") ||
@@ -744,7 +745,7 @@ MinecraftInstance::createLaunchScript(AuthSessionPtr session,
 	if (isLegacyApplet) {
 		launchScript += "launcher onesix\n";
 	} else {
-		// Pass the configured Java binary path so ModernMeshMC can spawn the
+		// Pass the configured Java binary path so ModernKite can spawn the
 		// game process with the correct JVM.
 		launchScript +=
 			"javaPath " + settings()->get("JavaPath").toString() + "\n";
@@ -1033,7 +1034,7 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 	{
 		process->appendStep(
 			new TextPrint(pptr, "Minecraft folder is:\n" + gameRoot() + "\n\n",
-						  MessageLevel::MeshMC));
+						  MessageLevel::Kite));
 	}
 
 	// check java
@@ -1042,7 +1043,7 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 	}
 
 	// check launch method
-	QStringList validMethods = {"MeshMCPart", "DirectJava"};
+	QStringList validMethods = {"KitePart", "DirectJava"};
 	QString method = launchMethod();
 	if (!validMethods.contains(method)) {
 		process->appendStep(new TextPrint(
@@ -1131,8 +1132,8 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 	{
 		// actually launch the game
 		auto method = launchMethod();
-		if (method == "MeshMCPart") {
-			auto step = new MeshMCPartLaunch(pptr);
+		if (method == "KitePart") {
+			auto step = new KitePartLaunch(pptr);
 			step->setWorkingDirectory(gameRoot());
 			step->setAuthSession(session);
 			step->setServerToJoin(serverToJoin);

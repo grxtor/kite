@@ -1,9 +1,10 @@
 # SPDX-FileCopyrightText: 2026 Project Tick
+# SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 #
 # Flite plugin bridge — builds the bundled flite submodule using
 # upstream's own autoconf + Makefile build, and exposes the resulting
-# static library as `MeshMCPlugins::Flite`.
+# static library as `KitePlugins::Flite`.
 #
 # Rationale: a hand-curated source list breaks whenever upstream
 # rearranges files or tweaks struct definitions. Delegating to
@@ -22,15 +23,15 @@
 #      INTERFACE target.
 #
 # Public targets:
-#   MeshMCPlugins::Flite — INTERFACE target with include dirs + libs.
+#   KitePlugins::Flite — INTERFACE target with include dirs + libs.
 #
 # Downstream contract:
-#   Plugins linking MeshMCPlugins::Flite MUST add_dependencies(...,
-#   MeshMCPlugins_Flite_ep) so the EP builds before the plugin tries
-#   to link the static archives. The MESHMC_FLITE_EP_TARGET global
+#   Plugins linking KitePlugins::Flite MUST add_dependencies(...,
+#   KitePlugins_Flite_ep) so the EP builds before the plugin tries
+#   to link the static archives. The KITE_FLITE_EP_TARGET global
 #   property holds that name for convenience.
 
-if(TARGET MeshMCPlugins::Flite)
+if(TARGET KitePlugins::Flite)
     return()
 endif()
 
@@ -65,7 +66,7 @@ endif()
 
 # -fPIC because libflite*.a ends up linked into the .mmco shared
 # object. -w because upstream emits an avalanche of warnings under
-# modern compilers and MeshMC's strict global flags would otherwise
+# modern compilers and Kite's strict global flags would otherwise
 # treat them as errors.
 set(_flite_cflags "-fPIC -w -O2")
 
@@ -88,7 +89,7 @@ if(NOT EXISTS "${_flite_mirror}/configure")
     file(COPY "${_flite_root}/" DESTINATION "${_flite_mirror}")
 endif()
 
-ExternalProject_Add(MeshMCPlugins_Flite_ep
+ExternalProject_Add(KitePlugins_Flite_ep
     PREFIX            "${_flite_stamps}"
     SOURCE_DIR        "${_flite_mirror}"
     BUILD_IN_SOURCE   1
@@ -130,23 +131,23 @@ file(MAKE_DIRECTORY "${_flite_install}/lib")
 
 file(MAKE_DIRECTORY "${_flite_install}/include/flite")
 
-add_library(MeshMCPlugins::Flite INTERFACE IMPORTED GLOBAL)
+add_library(KitePlugins::Flite INTERFACE IMPORTED GLOBAL)
 # Upstream installs headers into `<prefix>/include/flite/*.h`, so the
 # canonical include directive is `#include <flite/flite.h>`. We
 # expose both `<prefix>/include` and `<prefix>/include/flite` so
 # either spelling works (some plugins / examples use the unprefixed
 # form for historical reasons).
-target_include_directories(MeshMCPlugins::Flite INTERFACE
+target_include_directories(KitePlugins::Flite INTERFACE
     "${_flite_install}/include"
     "${_flite_install}/include/flite"
 )
-target_link_libraries(MeshMCPlugins::Flite INTERFACE
+target_link_libraries(KitePlugins::Flite INTERFACE
     ${_flite_lib_paths}
     m
 )
 
-set_property(GLOBAL PROPERTY MESHMC_FLITE_EP_TARGET MeshMCPlugins_Flite_ep)
+set_property(GLOBAL PROPERTY KITE_FLITE_EP_TARGET KitePlugins_Flite_ep)
 
 message(STATUS
-    "Flite bridge configured: libraries/flite -> MeshMCPlugins::Flite "
+    "Flite bridge configured: libraries/flite -> KitePlugins::Flite "
     "(built via upstream autoconf, installed to ${_flite_install})")

@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -84,7 +85,7 @@ QStringList PluginLoader::defaultSearchPaths()
 	}
 	paths << QDir(appDir).filePath("mmcmodules"); // legacy
 #elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
-	auto path = FS::PathCombine(appDir, "..", "share", BuildConfig.MESHMC_NAME);
+	auto path = FS::PathCombine(appDir, "..", "share", BuildConfig.KITE_NAME);
 	paths << FS::PathCombine(path, "mmcmodules");
 #else
 	paths << QDir(appDir).filePath("mmcmodules");
@@ -102,7 +103,7 @@ QStringList PluginLoader::defaultSearchPaths()
 	// ~/.local/lib/mmcmodules
 	QString home = QDir::homePath();
 	paths << home + "/.local/lib/mmcmodules";
-	paths << home + "/.local/share/MeshMC/mmcmodules";
+	paths << home + "/.local/share/Kite/mmcmodules";
 
 	// System-wide
 	paths << "/usr/local/lib/mmcmodules";
@@ -218,7 +219,7 @@ PluginMetadata PluginLoader::loadModule(const QString& path) const
 	//
 	// RTLD_NODELETE prevents the C runtime from running the module's
 	// static destructors during exit().  Plugin .mmco files statically
-	// link MeshMC_logic which contains the global `const Config
+	// link Kite_logic which contains the global `const Config
 	// BuildConfig` — a non-trivially-destructible object.  Without
 	// RTLD_NODELETE the duplicate BuildConfig inside each .mmco would
 	// be destroyed at exit(), corrupting the heap because the main
@@ -464,7 +465,7 @@ PluginLoader::classifyAbiMismatch(const QString& moduleName,
 	// user-facing and needs to go through Qt's translation machinery.
 	outDetail = QCoreApplication::translate(
 					"PluginLoader",
-					"“%1” was built for plugin ABI %2; this MeshMC "
+					"“%1” was built for plugin ABI %2; this Kite "
 					"supports %3–%4. It needs to be updated by its "
 					"author.")
 					.arg(label)

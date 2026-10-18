@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -28,7 +29,7 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
-#ifdef MESHMC_HAS_QRENCODE
+#ifdef KITE_HAS_QRENCODE
 #include <qrencode.h>
 #endif
 
@@ -36,7 +37,7 @@ CrashReportDialog::CrashReportDialog(const QString& pasteLink,
 									 const QString& logContent, QWidget* parent)
 	: QDialog(parent)
 {
-	setWindowTitle(tr("MeshMC Crash Report"));
+	setWindowTitle(tr("Kite Crash Report"));
 	setMinimumSize(550, 450);
 
 	auto* mainLayout = new QVBoxLayout(this);
@@ -44,8 +45,8 @@ CrashReportDialog::CrashReportDialog(const QString& pasteLink,
 	// Error message
 	m_messageLabel = new QLabel(this);
 	m_messageLabel->setText(
-		tr("<h2 style='color: #cc0000;'>MeshMC has failed</h2>"
-		   "<p>An unexpected error occurred and MeshMC had to close.</p>"
+		tr("<h2 style='color: #cc0000;'>Kite has failed</h2>"
+		   "<p>An unexpected error occurred and Kite had to close.</p>"
 		   "<p>Your logs have been uploaded to paste.ee for "
 		   "troubleshooting.</p>"));
 	m_messageLabel->setAlignment(Qt::AlignCenter);
@@ -131,7 +132,7 @@ CrashReportDialog::CrashReportDialog(const QString& pasteLink,
 
 QPixmap CrashReportDialog::generateQRCode(const QString& text, int size)
 {
-#ifdef MESHMC_HAS_QRENCODE
+#ifdef KITE_HAS_QRENCODE
 	QRcode* qr = QRcode_encodeString(text.toUtf8().constData(), 0, QR_ECLEVEL_M,
 									 QR_MODE_8, 1);
 	if (!qr) {

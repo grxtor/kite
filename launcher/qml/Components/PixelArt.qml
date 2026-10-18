@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 pragma Singleton
@@ -47,7 +47,7 @@ QtObject {
     readonly property var worldBiomes: [
         "plains", "desert", "snow", "jungle", "ocean", "cave", "nether", "end"
     ]
-    readonly property string _root: "qrc:/qt/qml/MeshMC/Components/art/"
+    readonly property string _root: "qrc:/qt/qml/Kite/Components/art/"
 
     // A plain, fast string hash (djb2-ish) -- only needs to be stable across
     // calls in this process, never to match anything outside QML.

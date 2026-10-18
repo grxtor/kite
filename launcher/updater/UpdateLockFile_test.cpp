@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -56,7 +57,7 @@ class UpdateLockFileTest : public QObject
 			QDateTime::fromSecsSinceEpoch(QDateTime::currentSecsSinceEpoch());
 		written.from = QStringLiteral("10.0.0");
 		written.to = QStringLiteral("v11.0.0");
-		written.target = QStringLiteral("/opt/MeshMC");
+		written.target = QStringLiteral("/opt/Kite");
 		written.dataPath = dataDir.path();
 		written.stage = 1;
 		written.pid = 4711;
@@ -138,8 +139,8 @@ class UpdateLockFileTest : public QObject
 		file.write("TIMESTAMP=2026-01-02T03:04:05\n"
 				   "FROM=9.0.0\n"
 				   "TO=v10.0.0\n"
-				   "TARGET=/opt/MeshMC\n"
-				   "DATA_PATH=/home/someone/.local/share/MeshMC\n"
+				   "TARGET=/opt/Kite\n"
+				   "DATA_PATH=/home/someone/.local/share/Kite\n"
 				   // A field a later updater might add; an older reader has
 				   // to ignore it rather than refuse the file.
 				   "SOMETHING_NEW=42\n");

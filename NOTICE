@@ -1,0 +1,17 @@
+Kite
+Copyright 2026 grxtor
+
+This product is a fork of MeshMC (https://github.com/Project-Tick/MeshMC),
+Copyright 2026 Project Tick, which includes MultiMC,
+Copyright 2012-2021 MultiMC Contributors. Both are licensed under the
+Apache License, Version 2.0.
+
+Kite's history diverges from MeshMC at commit 0c902055. Since then grxtor has
+modified the source: the QML user interface under launcher/qml/ is new, the
+product was renamed from MeshMC to Kite, and Project Tick's service endpoints
+and API keys were removed. Files changed by grxtor carry an
+"SPDX-FileContributor: grxtor" or "SPDX-FileCopyrightText: 2026 grxtor" line,
+and the git history records every change.
+
+"MeshMC" and "Project Tick" are names of their respective owners, used here
+only to say where this code comes from.

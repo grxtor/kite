@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -51,7 +52,7 @@
  *     version = "..."
  *
  * Everything we track beyond that (whether a file came in as a transitive
- * dependency, when it was installed, its size) lives under `x-meshmc-*`
+ * dependency, when it was installed, its size) lives under `x-kite-*`
  * keys, which is the extension namespace the format reserves; foreign
  * readers skip them instead of choking on them.
  *

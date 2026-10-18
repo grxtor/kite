@@ -2,7 +2,7 @@
 
 A small self-contained Qt-only client for Discord's local IPC socket.
 Implements just enough of the Discord RPC protocol to call
-`SET_ACTIVITY`, which is all the DiscordRPC MeshMC plugin needs.
+`SET_ACTIVITY`, which is all the DiscordRPC Kite plugin needs.
 
 ## Why not the upstream discord-rpc library?
 

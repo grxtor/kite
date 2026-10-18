@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -36,7 +37,7 @@ void PreLaunchCommand::executeTask()
 	// FIXME: where to put this?
 	QString prelaunch_cmd = m_parent->substituteVariables(m_command);
 	emit logLine(tr("Running Pre-Launch command: %1").arg(prelaunch_cmd),
-				 MessageLevel::MeshMC);
+				 MessageLevel::Kite);
 	m_process.start(prelaunch_cmd);
 }
 
@@ -62,7 +63,7 @@ void PreLaunchCommand::on_state(LoggedProcess::State state)
 				emitFailed(error);
 			} else {
 				emit logLine(tr("Pre-Launch command ran successfully.\n\n"),
-							 MessageLevel::MeshMC);
+							 MessageLevel::Kite);
 				emitSucceeded();
 			}
 		}

@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -54,7 +55,7 @@ void CheckJava::executeTask()
 		return;
 	} else {
 		emit logLine("Java path is:\n" + m_javaPath + "\n\n",
-					 MessageLevel::MeshMC);
+					 MessageLevel::Kite);
 	}
 
 	QFileInfo javaInfo(realJavaPath);
@@ -68,7 +69,7 @@ void CheckJava::executeTask()
 	if (javaUnixTime != storedUnixTime || storedVersion.size() == 0 ||
 		storedArchitecture.size() == 0 || storedVendor.size() == 0) {
 		m_JavaChecker = new JavaChecker();
-		emit logLine(QString("Checking Java version..."), MessageLevel::MeshMC);
+		emit logLine(QString("Checking Java version..."), MessageLevel::Kite);
 		connect(m_JavaChecker.get(), &JavaChecker::checkFinished, this,
 				&CheckJava::checkJavaFinished);
 		m_JavaChecker->m_path = realJavaPath;
@@ -91,19 +92,19 @@ void CheckJava::checkJavaFinished(JavaCheckResult result)
 			// Error message displayed if java can't start
 			emit logLine(QString("Could not start java:"), MessageLevel::Error);
 			emit logLines(result.errorLog.split('\n'), MessageLevel::Error);
-			emit logLine("\nCheck your MeshMC Java settings.",
-						 MessageLevel::MeshMC);
+			emit logLine("\nCheck your Kite Java settings.",
+						 MessageLevel::Kite);
 			printSystemInfo(false, false);
 			emitFailed(QString("Could not start java!"));
 			return;
 		}
 		case JavaCheckResult::Validity::ReturnedInvalidData: {
 			emit logLine(QString("Java checker returned some invalid data "
-								 "MeshMC doesn't understand:"),
+								 "Kite doesn't understand:"),
 						 MessageLevel::Error);
 			emit logLines(result.outLog.split('\n'), MessageLevel::Warning);
 			emit logLine("\nMinecraft might not start properly.",
-						 MessageLevel::MeshMC);
+						 MessageLevel::Kite);
 			printSystemInfo(false, false);
 			emitSucceeded();
 			return;
@@ -131,7 +132,7 @@ void CheckJava::printJavaInfo(const QString& version,
 	emit logLine(
 		QString("Java is version %1, using %2-bit architecture, from %3.\n\n")
 			.arg(version, architecture, vendor),
-		MessageLevel::MeshMC);
+		MessageLevel::Kite);
 	printSystemInfo(true, architecture == "64");
 }
 

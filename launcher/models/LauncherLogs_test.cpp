@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -45,11 +46,11 @@ class LauncherLogsTest : public QObject
 
 	void patternMatchesOnlyTheLaunchersOwnNumberedLogs()
 	{
-		const QRegularExpression re(LauncherLogs::fileNamePattern("MeshMC"));
-		QVERIFY(re.match("MeshMC-0.log").hasMatch());
-		QVERIFY(re.match("MeshMC-12.log").hasMatch());
-		QVERIFY(!re.match("MeshMC.log").hasMatch());
-		QVERIFY(!re.match("MeshMC-0.log.bak").hasMatch());
+		const QRegularExpression re(LauncherLogs::fileNamePattern("Kite"));
+		QVERIFY(re.match("Kite-0.log").hasMatch());
+		QVERIFY(re.match("Kite-12.log").hasMatch());
+		QVERIFY(!re.match("Kite.log").hasMatch());
+		QVERIFY(!re.match("Kite-0.log.bak").hasMatch());
 		QVERIFY(!re.match("Other-0.log").hasMatch());
 	}
 
@@ -60,25 +61,25 @@ class LauncherLogsTest : public QObject
 		QTemporaryDir tempDir;
 		QVERIFY(tempDir.isValid());
 		const QString dir = tempDir.path();
-		QVERIFY(writeFile(dir + "/MeshMC-0.log", "now"));
-		QVERIFY(writeFile(dir + "/MeshMC-1.log", "before"));
-		QVERIFY(writeFile(dir + "/meshmc.cfg", "x"));
-		QVERIFY(writeFile(dir + "/instances/a/logs/MeshMC-9.log", "nested"));
+		QVERIFY(writeFile(dir + "/Kite-0.log", "now"));
+		QVERIFY(writeFile(dir + "/Kite-1.log", "before"));
+		QVERIFY(writeFile(dir + "/kite.cfg", "x"));
+		QVERIFY(writeFile(dir + "/instances/a/logs/Kite-9.log", "nested"));
 
-		LauncherLogs logs(dir, "MeshMC");
+		LauncherLogs logs(dir, "Kite");
 		auto* model = qobject_cast<OtherLogsModel*>(logs.logs());
 		QVERIFY(model);
 		QCOMPARE(model->rowCount(), 2);
 		QCOMPARE(model->data(model->index(0, 0), OtherLogsModel::NameRole).toString(),
-				 QString("MeshMC-0.log"));
+				 QString("Kite-0.log"));
 		QCOMPARE(model->data(model->index(1, 0), OtherLogsModel::NameRole).toString(),
-				 QString("MeshMC-1.log"));
+				 QString("Kite-1.log"));
 
-		model->selectFile("MeshMC-1.log");
+		model->selectFile("Kite-1.log");
 		QCOMPARE(model->content(), QString("before"));
 		QVERIFY(model->deleteCurrent());
-		QVERIFY(!QFile::exists(dir + "/MeshMC-1.log"));
-		QVERIFY(QFile::exists(dir + "/instances/a/logs/MeshMC-9.log"));
+		QVERIFY(!QFile::exists(dir + "/Kite-1.log"));
+		QVERIFY(QFile::exists(dir + "/instances/a/logs/Kite-9.log"));
 	}
 
 	void deleteAllLeavesTheRestOfTheFolderAlone()
@@ -86,23 +87,23 @@ class LauncherLogsTest : public QObject
 		QTemporaryDir tempDir;
 		QVERIFY(tempDir.isValid());
 		const QString dir = tempDir.path();
-		QVERIFY(writeFile(dir + "/MeshMC-0.log", "a"));
-		QVERIFY(writeFile(dir + "/MeshMC-1.log", "b"));
-		QVERIFY(writeFile(dir + "/meshmc.cfg", "keep"));
+		QVERIFY(writeFile(dir + "/Kite-0.log", "a"));
+		QVERIFY(writeFile(dir + "/Kite-1.log", "b"));
+		QVERIFY(writeFile(dir + "/kite.cfg", "keep"));
 
-		LauncherLogs logs(dir, "MeshMC");
+		LauncherLogs logs(dir, "Kite");
 		auto* model = qobject_cast<OtherLogsModel*>(logs.logs());
 		QVERIFY(model->deleteAll().isEmpty());
-		QVERIFY(!QFile::exists(dir + "/MeshMC-0.log"));
-		QVERIFY(!QFile::exists(dir + "/MeshMC-1.log"));
-		QVERIFY(QFile::exists(dir + "/meshmc.cfg"));
+		QVERIFY(!QFile::exists(dir + "/Kite-0.log"));
+		QVERIFY(!QFile::exists(dir + "/Kite-1.log"));
+		QVERIFY(QFile::exists(dir + "/kite.cfg"));
 	}
 
 	void exposesAnUploaderAndTheFolder()
 	{
 		QTemporaryDir tempDir;
 		QVERIFY(tempDir.isValid());
-		LauncherLogs logs(tempDir.path(), "MeshMC");
+		LauncherLogs logs(tempDir.path(), "Kite");
 		QVERIFY(qobject_cast<LogUploader*>(logs.uploader()));
 		QCOMPARE(logs.folder(), tempDir.path());
 	}

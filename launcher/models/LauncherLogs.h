@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -26,9 +27,9 @@ class LogUploader;
 class OtherLogsModel;
 
 /*
- * The launcher's own log files (MeshMC-0.log ... MeshMC-4.log in its data
+ * The launcher's own log files (Kite-0.log ... Kite-4.log in its data
  * folder) for the Settings "Launcher logs" section - the widget-free
- * replacement for MeshMCLogsDialog. A game's logs live on each instance's
+ * replacement for KiteLogsDialog. A game's logs live on each instance's
  * Log tab; these are the launcher's.
  *
  * Reuses OtherLogsModel (list, view, delete one, delete all, gzip-aware
@@ -36,7 +37,7 @@ class OtherLogsModel;
  * every instance, which must not be scanned and watched for log files.
  * LogUploader is the upload for the selected file.
  *
- * MeshMC-0.log is the current run's. It grows while the launcher runs;
+ * Kite-0.log is the current run's. It grows while the launcher runs;
  * OtherLogsModel::reload() picks that up.
  */
 class LauncherLogs : public QObject
@@ -51,7 +52,7 @@ class LauncherLogs : public QObject
 
   public:
 	/// @p folder / @p namePrefix: where the launcher writes its logs and
-	/// what they start with (BuildConfig.MESHMC_NAME).
+	/// what they start with (BuildConfig.KITE_NAME).
 	explicit LauncherLogs(const QString& folder, const QString& namePrefix,
 						  QObject* parent = nullptr);
 	~LauncherLogs() override;

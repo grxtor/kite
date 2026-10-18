@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -19,7 +20,7 @@
 
 #pragma once
 
-/* Shims for the handful of Qt APIs that MeshMC uses and that differ between
+/* Shims for the handful of Qt APIs that Kite uses and that differ between
  * Qt 5 and Qt 6.
  *
  * This exists so the difference is spelled out once, here, instead of as a

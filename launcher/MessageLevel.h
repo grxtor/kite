@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -31,7 +32,7 @@ namespace MessageLevel
 		Unknown, /**< No idea what this is or where it came from */
 		StdOut,	 /**< Undetermined stderr messages */
 		StdErr,	 /**< Undetermined stdout messages */
-		MeshMC,	 /**< MeshMC Messages */
+		Kite,	 /**< Kite Messages */
 		Debug,	 /**< Debug Messages */
 		Info,	 /**< Info Messages */
 		Message, /**< Standard Messages */

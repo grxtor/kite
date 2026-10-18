@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -124,8 +125,8 @@ void AccountListPage::on_actionAddMicrosoft_triggered()
 		CustomMessageBox::selectable(
 			this, tr("Microsoft Accounts not available"),
 			tr("Microsoft accounts are only usable on macOS 10.13 or newer, "
-			   "with fully updated MeshMC.\n\n"
-			   "Please update both your operating system and MeshMC."),
+			   "with fully updated Kite.\n\n"
+			   "Please update both your operating system and Kite."),
 			QMessageBox::Warning)
 			->exec();
 		return;

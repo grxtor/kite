@@ -1,5 +1,5 @@
 name: Package for Linux
-description: Create Linux packages for MeshMC
+description: Create Linux packages for Kite
 
 inputs:
   version:
@@ -89,10 +89,10 @@ runs:
         # set for the Qt 5 builds, whose Qt speaks the 1.1.1 API that no
         # current distribution ships; see .github/actions/setup-openssl.
         openssl_libs=()
-        if [[ -n "${MESHMC_OPENSSL_LIB_DIR:-}" ]]; then
+        if [[ -n "${KITE_OPENSSL_LIB_DIR:-}" ]]; then
           openssl_libs=(
-            "$MESHMC_OPENSSL_LIB_DIR"/libssl.so.1.1
-            "$MESHMC_OPENSSL_LIB_DIR"/libcrypto.so.1.1
+            "$KITE_OPENSSL_LIB_DIR"/libssl.so.1.1
+            "$KITE_OPENSSL_LIB_DIR"/libcrypto.so.1.1
           )
         fi
 
@@ -142,20 +142,20 @@ runs:
         #is exported by the AppImage runtime before AppRun/sharun ever runs)
         echo "QML2_IMPORT_PATH=\$APPDIR/qml" >> "$INSTALL_APPIMAGE_DIR"/.env
         echo "QML_IMPORT_PATH=\$APPDIR/qml" >> "$INSTALL_APPIMAGE_DIR"/.env
-        ln -s org.projecttick.MeshMC.metainfo.xml "$INSTALL_APPIMAGE_DIR"/share/metainfo/org.projecttick.MeshMC.appdata.xml
-        ln -s share/applications/org.projecttick.MeshMC.desktop "$INSTALL_APPIMAGE_DIR"
-        ln -s share/icons/hicolor/256x256/apps/org.projecttick.MeshMC.png "$INSTALL_APPIMAGE_DIR"
+        ln -s io.github.grxtor.Kite.metainfo.xml "$INSTALL_APPIMAGE_DIR"/share/metainfo/io.github.grxtor.Kite.appdata.xml
+        ln -s share/applications/io.github.grxtor.Kite.desktop "$INSTALL_APPIMAGE_DIR"
+        ln -s share/icons/hicolor/256x256/apps/io.github.grxtor.Kite.png "$INSTALL_APPIMAGE_DIR"
         mv "$INSTALL_APPIMAGE_DIR"/{sharun,AppRun}
         ls -la "$INSTALL_APPIMAGE_DIR"
 
         if [[ "${{ github.ref_type }}" == "tag" ]]; then
-          APPIMAGE_DEST="MeshMC-Linux-$APPIMAGE_ARCH.AppImage"
+          APPIMAGE_DEST="Kite-Linux-$APPIMAGE_ARCH.AppImage"
         else
-          APPIMAGE_DEST="MeshMC-Linux-$VERSION-${{ inputs.build-type }}-$APPIMAGE_ARCH.AppImage"
+          APPIMAGE_DEST="Kite-Linux-$VERSION-${{ inputs.build-type }}-$APPIMAGE_ARCH.AppImage"
         fi
 
         mkappimage \
-          --updateinformation "gh-releases-zsync|${{ github.repository_owner }}|${{ github.event.repository.name }}|latest|MeshMC-Linux-$APPIMAGE_ARCH.AppImage.zsync" \
+          --updateinformation "gh-releases-zsync|${{ github.repository_owner }}|${{ github.event.repository.name }}|latest|Kite-Linux-$APPIMAGE_ARCH.AppImage.zsync" \
           "$INSTALL_APPIMAGE_DIR" \
           "$APPIMAGE_DEST"
 
@@ -172,16 +172,16 @@ runs:
         # Same as the AppImage above: the portable tarball carries its own Qt,
         # so it also has to carry the OpenSSL that Qt is able to load.
         openssl_libs=()
-        if [[ -n "${MESHMC_OPENSSL_LIB_DIR:-}" ]]; then
+        if [[ -n "${KITE_OPENSSL_LIB_DIR:-}" ]]; then
           openssl_libs=(
-            "$MESHMC_OPENSSL_LIB_DIR"/libssl.so.1.1
-            "$MESHMC_OPENSSL_LIB_DIR"/libcrypto.so.1.1
+            "$KITE_OPENSSL_LIB_DIR"/libssl.so.1.1
+            "$KITE_OPENSSL_LIB_DIR"/libcrypto.so.1.1
           )
         fi
 
         # See the QML deployment comment in the AppImage step above: Qt's own
         # QML modules live beside $QT_PLUGIN_PATH, not under it, and the
-        # portable tarball needs them too (launcher/MeshMC.in points Qt at
+        # portable tarball needs them too (launcher/Kite.in points Qt at
         # the copy made here via QML2_IMPORT_PATH/QML_IMPORT_PATH).
         qt_root="$(dirname "${QT_PLUGIN_PATH%/}")"
         QT_QML_PATH="$qt_root/qml"
@@ -216,22 +216,22 @@ runs:
 
         for l in $(find ${{ env.INSTALL_PORTABLE_DIR }} -type f -o -type l); do l=${l#$(pwd)/}; l=${l#${{ env.INSTALL_PORTABLE_DIR }}/}; l=${l#./}; echo $l; done > ${{ env.INSTALL_PORTABLE_DIR }}/manifest.txt
         cd ${{ env.INSTALL_PORTABLE_DIR }}
-        tar -czf ../MeshMC-portable.tar.gz *
+        tar -czf ../Kite-portable.tar.gz *
 
     - name: Upload portable tarball
       uses: actions/upload-artifact@v7
       with:
-        name: MeshMC-${{ inputs.artifact-name }}-Qt${{ inputs.qt-major }}-Portable-${{ inputs.version }}-${{ inputs.build-type }}
-        path: MeshMC-portable.tar.gz
+        name: Kite-${{ inputs.artifact-name }}-Qt${{ inputs.qt-major }}-Portable-${{ inputs.version }}-${{ inputs.build-type }}
+        path: Kite-portable.tar.gz
 
     - name: Upload AppImage
       uses: actions/upload-artifact@v7
       with:
-        name: MeshMC-${{ runner.os }}-Qt${{ inputs.qt-major }}-${{ inputs.version }}-${{ inputs.build-type }}-${{ env.APPIMAGE_ARCH }}.AppImage
-        path: MeshMC-${{ runner.os }}-*${{ env.APPIMAGE_ARCH }}.AppImage
+        name: Kite-${{ runner.os }}-Qt${{ inputs.qt-major }}-${{ inputs.version }}-${{ inputs.build-type }}-${{ env.APPIMAGE_ARCH }}.AppImage
+        path: Kite-${{ runner.os }}-*${{ env.APPIMAGE_ARCH }}.AppImage
 
     - name: Upload AppImage Zsync
       uses: actions/upload-artifact@v7
       with:
-        name: MeshMC-${{ runner.os }}-Qt${{ inputs.qt-major }}-${{ inputs.version }}-${{ inputs.build-type }}-${{ env.APPIMAGE_ARCH }}.AppImage.zsync
-        path: MeshMC-${{ runner.os }}-*${{ env.APPIMAGE_ARCH }}.AppImage.zsync
+        name: Kite-${{ runner.os }}-Qt${{ inputs.qt-major }}-${{ inputs.version }}-${{ inputs.build-type }}-${{ env.APPIMAGE_ARCH }}.AppImage.zsync
+        path: Kite-${{ runner.os }}-*${{ env.APPIMAGE_ARCH }}.AppImage.zsync

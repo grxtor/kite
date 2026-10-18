@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -47,23 +48,23 @@ class VersionFile : public ProblemContainer
 	void applyTo(LaunchProfile* profile);
 
   public: /* data */
-	/// MeshMC: order hint for this version file if no explicit order is set
+	/// Kite: order hint for this version file if no explicit order is set
 	int order = 0;
 
-	/// MeshMC: human readable name of this package
+	/// Kite: human readable name of this package
 	QString name;
 
-	/// MeshMC: package ID of this package
+	/// Kite: package ID of this package
 	QString uid;
 
-	/// MeshMC: version of this package
+	/// Kite: version of this package
 	QString version;
 
-	/// MeshMC: DEPRECATED dependency on a Minecraft version
+	/// Kite: DEPRECATED dependency on a Minecraft version
 	QString dependsOnMinecraftVersion;
 
 	/// Mojang: DEPRECATED used to version the Mojang version format
-	int minimumMeshMCVersion = -1;
+	int minimumKiteVersion = -1;
 
 	/// Mojang: DEPRECATED version of Minecraft this is
 	QString minecraftVersion;
@@ -71,7 +72,7 @@ class VersionFile : public ProblemContainer
 	/// Mojang: class to launch Minecraft with
 	QString mainClass;
 
-	/// MeshMC: class to launch legacy Minecraft with (embed in a custom window)
+	/// Kite: class to launch legacy Minecraft with (embed in a custom window)
 	QString appletClass;
 
 	/// Mojang: Minecraft launch arguments (may contain placeholders for
@@ -90,37 +91,37 @@ class VersionFile : public ProblemContainer
 	/// Mojang: DEPRECATED asset group to be used with Minecraft
 	QString assets;
 
-	/// MeshMC: list of tweaker mod arguments for launchwrapper
+	/// Kite: list of tweaker mod arguments for launchwrapper
 	QStringList addTweakers;
 
 	/// Mojang: list of libraries to add to the version
 	QList<LibraryPtr> libraries;
 
-	/// MeshMC: list of maven files to put in the libraries folder, but not in
+	/// Kite: list of maven files to put in the libraries folder, but not in
 	/// classpath
 	QList<LibraryPtr> mavenFiles;
 
 	/// The main jar (Minecraft version library, normally)
 	LibraryPtr mainJar;
 
-	/// MeshMC: list of attached traits of this version file - used to enable
+	/// Kite: list of attached traits of this version file - used to enable
 	/// features
 	QSet<QString> traits;
 
-	/// MeshMC: list of jar mods added to this version
+	/// Kite: list of jar mods added to this version
 	QList<LibraryPtr> jarMods;
 
-	/// MeshMC: list of mods added to this version
+	/// Kite: list of mods added to this version
 	QList<LibraryPtr> mods;
 
 	/**
-	 * MeshMC: set of packages this depends on
+	 * Kite: set of packages this depends on
 	 * NOTE: this is shared with the meta format!!!
 	 */
 	Meta::RequireSet requirements;
 
 	/**
-	 * MeshMC: set of packages this conflicts with
+	 * Kite: set of packages this conflicts with
 	 * NOTE: this is shared with the meta format!!!
 	 */
 	Meta::RequireSet conflicts;

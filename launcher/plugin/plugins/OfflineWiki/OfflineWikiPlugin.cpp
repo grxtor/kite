@@ -1,7 +1,8 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * OfflineWikiPlugin — MMCO entry point. Clones the official MeshMC wiki
+ * OfflineWikiPlugin — MMCO entry point. Clones the official Kite wiki
  * into <plugin_data>/ in the background and exposes it as a read-only
  * global settings page. The wiki is the plugin's only content source:
  * there is no bundle management and no ZIM support.
@@ -33,7 +34,7 @@
 #include <QUrl>
 
 MMCO_DEFINE_MODULE("OfflineWiki", "1.0.0", "Project Tick",
-				   "Offline, read-only viewer for the MeshMC wiki",
+				   "Offline, read-only viewer for the Kite wiki",
 				   "Apache-2.0");
 
 namespace
@@ -60,25 +61,25 @@ namespace
 	 * already running (e.g. the settings dialog reopened mid-clone). */
 	bool g_wikiSyncRunning = false;
 
-	/* The official MeshMC wiki, served offline. Cloned on first run and
+	/* The official Kite wiki, served offline. Cloned on first run and
 	 * fast-forwarded on every later start so the local copy tracks
 	 * upstream. */
-	constexpr const char kMeshmcWikiUrl[] =
-		"https://github.com/Project-Tick/MeshMC.wiki.git";
-	constexpr const char kMeshmcWikiDirName[] = "meshmc-wiki";
+	constexpr const char kKiteWikiUrl[] =
+		"https://github.com/grxtor/kite.wiki.git";
+	constexpr const char kKiteWikiDirName[] = "kite-wiki";
 
 	const QString kNoGitMarkdown = QStringLiteral(
 		"### Wiki not available\n\n"
-		"The MeshMC wiki is downloaded automatically using **git**, but no "
+		"The Kite wiki is downloaded automatically using **git**, but no "
 		"`git` program was found on your system, so the wiki cannot be "
 		"fetched.\n\n"
-		"Install Git and restart MeshMC to download the wiki.");
+		"Install Git and restart Kite to download the wiki.");
 
 	const QString kDownloadingMarkdown = QStringLiteral(
-		"### Downloading the MeshMC wiki…\n\n"
+		"### Downloading the Kite wiki…\n\n"
 		"The wiki is fetched in the background the first time you are "
 		"online and will appear here automatically once the download "
-		"finishes. If you are offline, MeshMC retries on every launch.");
+		"finishes. If you are offline, Kite retries on every launch.");
 
 	QString pluginDataDir()
 	{
@@ -90,7 +91,7 @@ namespace
 
 	QString wikiPath()
 	{
-		return QDir(pluginDataDir()).filePath(kMeshmcWikiDirName);
+		return QDir(pluginDataDir()).filePath(kKiteWikiDirName);
 	}
 
 	QString gitExecutable()
@@ -235,7 +236,7 @@ namespace
 		return true;
 	}
 
-	/* Kick off the MeshMC wiki clone/update *in the background* so boot
+	/* Kick off the Kite wiki clone/update *in the background* so boot
 	 * is never blocked on git or the network. The launcher event loop is
 	 * already running when mmco_init is called, so the asynchronous
 	 * QProcess completes on the GUI thread without any blocking wait.
@@ -247,7 +248,7 @@ namespace
 	 *   • With no cached copy and no network, the clone simply fails; the
 	 *     plugin stays healthy and retries on the next launch / when the
 	 *     settings page is reopened. */
-	void startMeshmcWikiSync()
+	void startKiteWikiSync()
 	{
 		if (g_wikiSyncRunning)
 			return;
@@ -275,7 +276,7 @@ namespace
 			workingDir = dir;
 			args << QStringLiteral("clone") << QStringLiteral("--depth")
 				 << QStringLiteral("1") << QStringLiteral("--quiet")
-				 << QString::fromUtf8(kMeshmcWikiUrl) << path;
+				 << QString::fromUtf8(kKiteWikiUrl) << path;
 		}
 
 		auto* proc = new QProcess();
@@ -289,8 +290,8 @@ namespace
 
 		g_wikiSyncRunning = true;
 		MMCO_LOG(g_ctx, haveCheckout
-							? "OfflineWiki: updating MeshMC wiki in background…"
-							: "OfflineWiki: cloning MeshMC wiki in background…");
+							? "OfflineWiki: updating Kite wiki in background…"
+							: "OfflineWiki: cloning Kite wiki in background…");
 
 		QObject::connect(
 			proc,
@@ -313,8 +314,8 @@ namespace
 					MMCO_WARN(g_ctx, msg.constData());
 				} else {
 					MMCO_LOG(g_ctx, haveCheckout
-										? "OfflineWiki: MeshMC wiki updated."
-										: "OfflineWiki: MeshMC wiki cloned.");
+										? "OfflineWiki: Kite wiki updated."
+										: "OfflineWiki: Kite wiki cloned.");
 					// Open / re-open the checkout and refresh the surface.
 					openWiki();
 					refreshSurfaceFromWiki();
@@ -404,7 +405,7 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 	// usable offline immediately. The network clone/update runs in the
 	// background so boot is never blocked on git/network.
 	openWiki();
-	MMCO_LOG(ctx, g_wiki ? "OfflineWiki: MeshMC wiki ready (cached copy)."
+	MMCO_LOG(ctx, g_wiki ? "OfflineWiki: Kite wiki ready (cached copy)."
 						 : "OfflineWiki: no cached wiki yet.");
 
 	const QByteArray doc =
@@ -415,7 +416,7 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 	if (!g_surface)
 		MMCO_ERR(ctx, "OfflineWiki: ui_surface_create() failed.");
 
-	startMeshmcWikiSync();
+	startKiteWikiSync();
 
 	MMCO_LOG(ctx, "OfflineWiki ready.");
 	return 0;

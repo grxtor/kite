@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -29,7 +30,7 @@
 
 namespace
 {
-	const QString kBuiltinKeySetting = QStringLiteral("meshmc");
+	const QString kBuiltinKeySetting = QStringLiteral("kite");
 	const QString kPublicKey = QStringLiteral("public");
 } // namespace
 

@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -25,7 +26,7 @@
 #include <QUrl>
 
 /*
- * Where MeshMC keeps its folders: the widget-free half of MeshMCPage's
+ * Where Kite keeps its folders: the widget-free half of KitePage's
  * "Folders" box. The five single folders (instances, mods, icons, skins,
  * Java) are moved with setFolder(); extra instance folders are added and
  * removed with addAdditionalDir() / removeAdditionalDir().
@@ -41,7 +42,7 @@
  *
  * InstanceList already re-reads its folders when InstanceDir or
  * AdditionalInstanceDirs changes, so nothing here reloads the library.
- * Existing instances are not moved: only where MeshMC looks changes.
+ * Existing instances are not moved: only where Kite looks changes.
  */
 class FolderSettingsController : public QObject
 {

@@ -1,5 +1,5 @@
 name: Package for macOS
-description: Create a macOS package for MeshMC
+description: Create a macOS package for Kite
 
 inputs:
   version:
@@ -83,7 +83,7 @@ runs:
           codesign --sign "$APPLE_CODESIGN_ID" --force --options runtime $TIMESTAMP_FLAG "$1"
         }
 
-        for framework in MeshMC.app/Contents/Frameworks/*.framework; do
+        for framework in Kite.app/Contents/Frameworks/*.framework; do
           [ -d "$framework" ] || continue
           for xpc in "$framework"/Versions/*/XPCServices/*.xpc; do
             sign_nested "$xpc"
@@ -93,17 +93,17 @@ runs:
           done
         done
 
-        for framework in MeshMC.app/Contents/Frameworks/*.framework; do
+        for framework in Kite.app/Contents/Frameworks/*.framework; do
           sign_nested "$framework"
         done
 
-        find MeshMC.app/Contents -type f \( -name '*.dylib' -o -name '*.so' -o -name '*.mmco' \) -print0 |
+        find Kite.app/Contents -type f \( -name '*.dylib' -o -name '*.so' -o -name '*.mmco' \) -print0 |
           while IFS= read -r -d '' lib; do
             sign_nested "$lib"
           done
 
-        for binary in meshmc-updater meshmc-crashreporter; do
-          path="MeshMC.app/Contents/MacOS/$binary"
+        for binary in kite-updater kite-crashreporter; do
+          path="Kite.app/Contents/MacOS/$binary"
           if [ ! -f "$path" ]; then
             echo "::notice::$path not present, nothing to sign."
             continue
@@ -112,13 +112,13 @@ runs:
           sign_nested "$path"
         done
 
-        chmod +x MeshMC.app/Contents/MacOS/meshmc
-        echo "Signing MeshMC.app"
+        chmod +x Kite.app/Contents/MacOS/kite
+        echo "Signing Kite.app"
         codesign --sign "$APPLE_CODESIGN_ID" --force \
           --entitlements "$ENTITLEMENTS_FILE" --options runtime $TIMESTAMP_FLAG \
-          MeshMC.app
+          Kite.app
 
-        codesign --verify --deep --strict --verbose=2 MeshMC.app
+        codesign --verify --deep --strict --verbose=2 Kite.app
 
     - name: Notarize
       shell: bash
@@ -128,18 +128,18 @@ runs:
         cd ${{ env.INSTALL_DIR }}
 
         if [ -n '${{ inputs.apple-notarize-password }}' ]; then
-          ditto -c -k --sequesterRsrc --keepParent "MeshMC.app" ../MeshMC.zip
-          xcrun notarytool submit ../MeshMC.zip \
+          ditto -c -k --sequesterRsrc --keepParent "Kite.app" ../Kite.zip
+          xcrun notarytool submit ../Kite.zip \
             --wait --progress \
             --apple-id '${{ inputs.apple-notarize-apple-id }}' \
             --team-id '${{ inputs.apple-notarize-team-id }}' \
             --password '${{ inputs.apple-notarize-password }}'
 
-          xcrun stapler staple "MeshMC.app"
+          xcrun stapler staple "Kite.app"
         else
           echo ":warning: Skipping notarization as credentials are not present." >> $GITHUB_STEP_SUMMARY
         fi
-        ditto -c -k --sequesterRsrc --keepParent "MeshMC.app" ../MeshMC.zip
+        ditto -c -k --sequesterRsrc --keepParent "Kite.app" ../Kite.zip
 
     - name: Create DMG
       shell: bash
@@ -149,15 +149,15 @@ runs:
         cd ${{ env.INSTALL_DIR }}
 
         mkdir -p src
-        cp -R "MeshMC.app" src/
+        cp -R "Kite.app" src/
 
         ln -s /Applications src/
 
         hdiutil create \
-            -volname "MeshMC ${{ inputs.version }}" \
+            -volname "Kite ${{ inputs.version }}" \
             -srcfolder src \
             -ov -format ULMO \
-            "../MeshMC.dmg"
+            "../Kite.dmg"
 
     - name: Make Sparkle signature
       shell: bash
@@ -165,8 +165,8 @@ runs:
         if [ '${{ inputs.sparkle-ed25519-key }}' != '' ]; then
           echo '${{ inputs.sparkle-ed25519-key }}' > ed25519-priv.pem
           OPENSSL=$(brew --prefix openssl@3)/bin/openssl
-          signature_zip=$("$OPENSSL" pkeyutl -sign -rawin -in ${{ github.workspace }}/MeshMC.zip -inkey ed25519-priv.pem | openssl base64 | tr -d \\n)
-          signature_dmg=$("$OPENSSL" pkeyutl -sign -rawin -in ${{ github.workspace }}/MeshMC.dmg -inkey ed25519-priv.pem | openssl base64 | tr -d \\n)
+          signature_zip=$("$OPENSSL" pkeyutl -sign -rawin -in ${{ github.workspace }}/Kite.zip -inkey ed25519-priv.pem | openssl base64 | tr -d \\n)
+          signature_dmg=$("$OPENSSL" pkeyutl -sign -rawin -in ${{ github.workspace }}/Kite.dmg -inkey ed25519-priv.pem | openssl base64 | tr -d \\n)
           rm ed25519-priv.pem
           cat >> $GITHUB_STEP_SUMMARY << EOF
         ### Artifact Information :information_source:
@@ -183,11 +183,11 @@ runs:
     - name: Upload binary tarball
       uses: actions/upload-artifact@v7
       with:
-        name: MeshMC-${{ inputs.artifact-name }}-Qt${{ inputs.qt-major }}-${{ inputs.version }}-${{ inputs.build-type }}
-        path: MeshMC.zip
+        name: Kite-${{ inputs.artifact-name }}-Qt${{ inputs.qt-major }}-${{ inputs.version }}-${{ inputs.build-type }}
+        path: Kite.zip
 
     - name: Upload disk image
       uses: actions/upload-artifact@v7
       with:
-        name: MeshMC-${{ inputs.artifact-name }}-Qt${{ inputs.qt-major }}-${{ inputs.version }}-${{ inputs.build-type }}-Qt${{ inputs.qt-major }}.dmg
-        path: MeshMC.dmg
+        name: Kite-${{ inputs.artifact-name }}-Qt${{ inputs.qt-major }}-${{ inputs.version }}-${{ inputs.build-type }}-Qt${{ inputs.qt-major }}.dmg
+        path: Kite.dmg

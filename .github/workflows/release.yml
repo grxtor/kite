@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           submodules: "true"
-          path: "MeshMC-source"
+          path: "Kite-source"
       - name: Download artifacts
         uses: actions/download-artifact@v8
       - name: Grab and store version
@@ -41,42 +41,42 @@ jobs:
           echo "VERSION=$tag_name" >> $GITHUB_ENV
       - name: Package artifacts properly
         run: |
-          mv ${{ github.workspace }}/MeshMC-source MeshMC-${{ env.VERSION }}
-          mv MeshMC-Linux-Qt6-Portable*/MeshMC-portable.tar.gz MeshMC-Linux-Qt6-Portable-${{ env.VERSION }}.tar.gz
-          mv MeshMC-Linux-aarch64-Qt6-Portable*/MeshMC-portable.tar.gz MeshMC-Linux-aarch64-Qt6-Portable-${{ env.VERSION }}.tar.gz
-          mv MeshMC-Linux-Qt6*.AppImage/MeshMC-*-x86_64.AppImage MeshMC-Linux-Qt6-x86_64.AppImage
-          mv MeshMC-Linux-Qt6*.AppImage.zsync/MeshMC-*-x86_64.AppImage.zsync MeshMC-Linux-Qt6-x86_64.AppImage.zsync
-          mv MeshMC-Linux-Qt6*.AppImage/MeshMC-*-aarch64.AppImage MeshMC-Linux-Qt6-aarch64.AppImage
-          mv MeshMC-Linux-Qt6*.AppImage.zsync/MeshMC-*-aarch64.AppImage.zsync MeshMC-Linux-Qt6-aarch64.AppImage.zsync
-          mv MeshMC-macOS-Intel-Qt6*/MeshMC.zip MeshMC-macOS-Intel-Qt6-${{ env.VERSION }}.zip
-          mv MeshMC-macOS-Intel-Qt6*/MeshMC.dmg MeshMC-macOS-Intel-Qt6-${{ env.VERSION }}.dmg
-          mv MeshMC-macOS-ARM-Qt6*/MeshMC.zip MeshMC-macOS-ARM-Qt6-${{ env.VERSION }}.zip
-          mv MeshMC-macOS-ARM-Qt6*/MeshMC.dmg MeshMC-macOS-ARM-Qt6-${{ env.VERSION }}.dmg
+          mv ${{ github.workspace }}/Kite-source Kite-${{ env.VERSION }}
+          mv Kite-Linux-Qt6-Portable*/Kite-portable.tar.gz Kite-Linux-Qt6-Portable-${{ env.VERSION }}.tar.gz
+          mv Kite-Linux-aarch64-Qt6-Portable*/Kite-portable.tar.gz Kite-Linux-aarch64-Qt6-Portable-${{ env.VERSION }}.tar.gz
+          mv Kite-Linux-Qt6*.AppImage/Kite-*-x86_64.AppImage Kite-Linux-Qt6-x86_64.AppImage
+          mv Kite-Linux-Qt6*.AppImage.zsync/Kite-*-x86_64.AppImage.zsync Kite-Linux-Qt6-x86_64.AppImage.zsync
+          mv Kite-Linux-Qt6*.AppImage/Kite-*-aarch64.AppImage Kite-Linux-Qt6-aarch64.AppImage
+          mv Kite-Linux-Qt6*.AppImage.zsync/Kite-*-aarch64.AppImage.zsync Kite-Linux-Qt6-aarch64.AppImage.zsync
+          mv Kite-macOS-Intel-Qt6*/Kite.zip Kite-macOS-Intel-Qt6-${{ env.VERSION }}.zip
+          mv Kite-macOS-Intel-Qt6*/Kite.dmg Kite-macOS-Intel-Qt6-${{ env.VERSION }}.dmg
+          mv Kite-macOS-ARM-Qt6*/Kite.zip Kite-macOS-ARM-Qt6-${{ env.VERSION }}.zip
+          mv Kite-macOS-ARM-Qt6*/Kite.dmg Kite-macOS-ARM-Qt6-${{ env.VERSION }}.dmg
 
-          tar --exclude='.git' -czf MeshMC-${{ env.VERSION }}.tar.gz MeshMC-${{ env.VERSION }}
+          tar --exclude='.git' -czf Kite-${{ env.VERSION }}.tar.gz Kite-${{ env.VERSION }}
 
-          for d in MeshMC-Windows-MSVC-Qt6*; do
+          for d in Kite-Windows-MSVC-Qt6*; do
             cd "${d}" || continue
             LEGACY="$(echo -n ${d} | grep -o Legacy || true)"
             ARM64="$(echo -n ${d} | grep -o arm64 || true)"
             INST="$(echo -n ${d} | grep -o Setup || true)"
             PORT="$(echo -n ${d} | grep -o Portable || true)"
-            NAME="MeshMC-Windows-MSVC-Qt6"
+            NAME="Kite-Windows-MSVC-Qt6"
             test -z "${LEGACY}" || NAME="${NAME}-Legacy"
             test -z "${ARM64}" || NAME="${NAME}-arm64"
             test -z "${PORT}" || NAME="${NAME}-Portable"
-            test -z "${INST}" || mv MeshMC-*.exe ../${NAME}-Setup-${{ env.VERSION }}.exe
+            test -z "${INST}" || mv Kite-*.exe ../${NAME}-Setup-${{ env.VERSION }}.exe
             test -n "${INST}" || zip -r -9 "../${NAME}-${{ env.VERSION }}.zip" *
             cd ..
           done
 
-          for d in MeshMC-Windows-MinGW-Qt6-w64*; do
+          for d in Kite-Windows-MinGW-Qt6-w64*; do
             cd "${d}" || continue
             INST="$(echo -n ${d} | grep -o Setup || true)"
             PORT="$(echo -n ${d} | grep -o Portable || true)"
-            NAME="MeshMC-Windows-MinGW-Qt6-w64"
+            NAME="Kite-Windows-MinGW-Qt6-w64"
             test -z "${PORT}" || NAME="${NAME}-Portable"
-            test -z "${INST}" || mv MeshMC-*.exe ../${NAME}-Setup-${{ env.VERSION }}.exe
+            test -z "${INST}" || mv Kite-*.exe ../${NAME}-Setup-${{ env.VERSION }}.exe
             test -n "${INST}" || zip -r -9 "../${NAME}-${{ env.VERSION }}.zip" *
             cd ..
           done
@@ -87,28 +87,28 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{ github.ref }}
-          name: MeshMC ${{ env.VERSION }}
+          name: Kite ${{ env.VERSION }}
           draft: true
           prerelease: false
           fail_on_unmatched_files: true
           files: |
-            MeshMC-Linux-Qt6-x86_64.AppImage
-            MeshMC-Linux-Qt6-x86_64.AppImage.zsync
-            MeshMC-Linux-Qt6-aarch64.AppImage
-            MeshMC-Linux-Qt6-aarch64.AppImage.zsync
-            MeshMC-Linux-Qt6-Portable-${{ env.VERSION }}.tar.gz
-            MeshMC-Linux-aarch64-Qt6-Portable-${{ env.VERSION }}.tar.gz
-            MeshMC-Windows-MinGW-Qt6-w64-${{ env.VERSION }}.zip
-            MeshMC-Windows-MinGW-Qt6-w64-Portable-${{ env.VERSION }}.zip
-            MeshMC-Windows-MinGW-Qt6-w64-Setup-${{ env.VERSION }}.exe
-            MeshMC-Windows-MSVC-Qt6-arm64-${{ env.VERSION }}.zip
-            MeshMC-Windows-MSVC-Qt6-arm64-Portable-${{ env.VERSION }}.zip
-            MeshMC-Windows-MSVC-Qt6-arm64-Setup-${{ env.VERSION }}.exe
-            MeshMC-Windows-MSVC-Qt6-${{ env.VERSION }}.zip
-            MeshMC-Windows-MSVC-Qt6-Portable-${{ env.VERSION }}.zip
-            MeshMC-Windows-MSVC-Qt6-Setup-${{ env.VERSION }}.exe
-            MeshMC-macOS-Intel-Qt6-${{ env.VERSION }}.zip
-            MeshMC-macOS-Intel-Qt6-${{ env.VERSION }}.dmg
-            MeshMC-macOS-ARM-Qt6-${{ env.VERSION }}.zip
-            MeshMC-macOS-ARM-Qt6-${{ env.VERSION }}.dmg
-            MeshMC-${{ env.VERSION }}.tar.gz
+            Kite-Linux-Qt6-x86_64.AppImage
+            Kite-Linux-Qt6-x86_64.AppImage.zsync
+            Kite-Linux-Qt6-aarch64.AppImage
+            Kite-Linux-Qt6-aarch64.AppImage.zsync
+            Kite-Linux-Qt6-Portable-${{ env.VERSION }}.tar.gz
+            Kite-Linux-aarch64-Qt6-Portable-${{ env.VERSION }}.tar.gz
+            Kite-Windows-MinGW-Qt6-w64-${{ env.VERSION }}.zip
+            Kite-Windows-MinGW-Qt6-w64-Portable-${{ env.VERSION }}.zip
+            Kite-Windows-MinGW-Qt6-w64-Setup-${{ env.VERSION }}.exe
+            Kite-Windows-MSVC-Qt6-arm64-${{ env.VERSION }}.zip
+            Kite-Windows-MSVC-Qt6-arm64-Portable-${{ env.VERSION }}.zip
+            Kite-Windows-MSVC-Qt6-arm64-Setup-${{ env.VERSION }}.exe
+            Kite-Windows-MSVC-Qt6-${{ env.VERSION }}.zip
+            Kite-Windows-MSVC-Qt6-Portable-${{ env.VERSION }}.zip
+            Kite-Windows-MSVC-Qt6-Setup-${{ env.VERSION }}.exe
+            Kite-macOS-Intel-Qt6-${{ env.VERSION }}.zip
+            Kite-macOS-Intel-Qt6-${{ env.VERSION }}.dmg
+            Kite-macOS-ARM-Qt6-${{ env.VERSION }}.zip
+            Kite-macOS-ARM-Qt6-${{ env.VERSION }}.dmg
+            Kite-${{ env.VERSION }}.tar.gz

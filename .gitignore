@@ -43,7 +43,7 @@ compile_commands.json
 tree.txt
 .clang-format-files
 
-# MeshMC MMCO Plugins
+# Kite MMCO Plugins
 
 *.mmco
 
@@ -62,3 +62,6 @@ base_lst_file*
 # Qt
 
 .qtcreator/
+
+# Local CMake presets carry our own API keys; never commit them
+CMakeUserPresets.json

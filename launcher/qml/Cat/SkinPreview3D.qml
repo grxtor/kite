@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: 2026 Project Tick
-// SPDX-FileContributor: Project Tick
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-FileContributor: grxtor
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
@@ -11,7 +11,7 @@ import QtQuick3D.Helpers
  * the elytra on its back, which a drag turns around. The skin editor and
  * the Accounts page show it through Components/SkinPreview.qml, which only
  * loads this file where Qt Quick3D exists and draws (the same condition as
- * the cat, MESHMC_HAS_CAT), and shows the flat render otherwise.
+ * the cat, KITE_HAS_CAT), and shows the flat render otherwise.
  *
  * The model is the one the widget skin dialog drew with OpenGL
  * (ui/dialogs/skins/render/PlayerScene.cpp): every part a box, sized and

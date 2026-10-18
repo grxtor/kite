@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -117,16 +118,16 @@ void LoggedProcess::on_exit(int exit_code, QProcess::ExitStatus status)
 		if (status == QProcess::NormalExit) {
 			//: Message displayed on instance exit
 			emit log({tr("Process exited with code %1.").arg(exit_code)},
-					 MessageLevel::MeshMC);
+					 MessageLevel::Kite);
 			changeState(LoggedProcess::Finished);
 		} else {
 			//: Message displayed on instance crashed
 			if (exit_code == -1)
-				emit log({tr("Process crashed.")}, MessageLevel::MeshMC);
+				emit log({tr("Process crashed.")}, MessageLevel::Kite);
 			else
 				emit log(
 					{tr("Process crashed with exitcode %1.").arg(exit_code)},
-					MessageLevel::MeshMC);
+					MessageLevel::Kite);
 			changeState(LoggedProcess::Crashed);
 		}
 	} else {

@@ -1,10 +1,11 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: MS-PL
  *
- *  DiscordRPC  —  MeshMC MMCO plugin
+ *  DiscordRPC  —  Kite MMCO plugin
  *
  *  Publishes a Discord Rich Presence activity reflecting what the user
- *  is doing in MeshMC:
+ *  is doing in Kite:
  *
  *    In launcher                 → "Browsing instances"
  *    Instance launching          → "Playing <Instance>"
@@ -35,11 +36,13 @@
 
 MMCO_DEFINE_MODULE("DiscordRPC", "1.0.0", "Project Tick",
 				   "Discord Rich Presence integration — shows the active "
-				   "MeshMC instance in your Discord status",
+				   "Kite instance in your Discord status",
 				   "MS-PL");
 
-static constexpr const char* DISCORD_APP_ID = "1503764175569162260";
-static constexpr const char* LARGE_IMAGE_KEY = "org_projecttick_meshmc";
+/* TODO(fork): our own application from the Discord Developer Portal.
+ * Empty keeps the plugin idle. */
+static constexpr const char* DISCORD_APP_ID = "";
+static constexpr const char* LARGE_IMAGE_KEY = "kite";
 
 /* ── module state ─────────────────────────────────────────────────── */
 
@@ -103,7 +106,7 @@ static void publish_idle_presence()
 	a.details = QStringLiteral("In launcher");
 	a.state = QStringLiteral("Browsing instances");
 	a.largeImageKey = QString::fromLatin1(LARGE_IMAGE_KEY);
-	a.largeImageText = QStringLiteral("MeshMC");
+	a.largeImageText = QStringLiteral("Kite");
 	a.startTimestamp = g_idleEpoch;
 	g_ipc->setActivity(a);
 }
@@ -131,7 +134,7 @@ static void publish_playing_presence()
 	}
 
 	a.largeImageKey = QString::fromLatin1(LARGE_IMAGE_KEY);
-	a.largeImageText = QStringLiteral("MeshMC");
+	a.largeImageText = QStringLiteral("Kite");
 	a.startTimestamp =
 		g_launchEpoch > 0 ? g_launchEpoch : QDateTime::currentSecsSinceEpoch();
 	g_ipc->setActivity(a);
@@ -313,6 +316,11 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 
 	if (!settingBool("enabled", true)) {
 		MMCO_LOG(ctx, "DiscordRPC: disabled via setting; idle.");
+		return 0;
+	}
+
+	if (DISCORD_APP_ID[0] == '\0') {
+		MMCO_LOG(ctx, "DiscordRPC: no Discord application ID; idle.");
 		return 0;
 	}
 

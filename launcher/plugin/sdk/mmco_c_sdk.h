@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -16,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * MeshMC Plugin SDK — C ABI header for .mmco module development.
+ * Kite Plugin SDK — C ABI header for .mmco module development.
  *
  * This is the CANONICAL, language-neutral definition of the MMCO module
  * ABI. It is pure C (C99+) and contains NO Qt and NO C++ types, so it can
@@ -42,18 +43,18 @@
  *   4. Place the .mmco file in one of the search paths:
  *        - <app_dir>/mmcmodules/                       (Linux + Windows
  * portable)
- *        - MeshMC.app/Contents/PlugIns/mmcmodules/     (macOS app bundle)
+ *        - Kite.app/Contents/PlugIns/mmcmodules/     (macOS app bundle)
  *        - ~/.local/lib/mmcmodules/                    (user-local on Linux)
  *        - /usr/local/lib/mmcmodules/                  (system-wide)
  *        - /usr/lib/mmcmodules/                        (distro packages)
  *
  * Plugins MUST NOT:
- *   - Directly #include Qt or MeshMC headers (use this SDK header instead)
+ *   - Directly #include Qt or Kite headers (use this SDK header instead)
  *   - Fork or exec processes
  *
  * Plugins CAN:
  *   - Use Qt types and widgets (provided through this header)
- *   - Use MeshMC types (BasePage, BaseInstance, etc.)
+ *   - Use Kite types (BasePage, BaseInstance, etc.)
  *   - Register for hooks to observe/modify launcher behaviour
  *   - Read/write their own settings (namespaced automatically)
  *   - Query and manage instances fully (launch, stop, mods, worlds, etc.)
@@ -242,7 +243,7 @@ typedef void (*MMCOInstanceRunningCallback)(void* user_data,
  *   more_news_action  — QAction*       (the "More News..." action)
  *   news_label_button — QToolButton*   (the clickable news headline)
  *
- * All handles are owned by MeshMC and stay valid for the lifetime of the
+ * All handles are owned by Kite and stay valid for the lifetime of the
  * main window. Plugins must NOT delete or take ownership of them.
  */
 typedef struct MMCOUiMainReadyPayload {

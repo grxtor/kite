@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-# SPDX-FileCopyrightText: 2026 Project Tick
-# SPDX-FileContributor: Project Tick
+# SPDX-FileCopyrightText: 2026 grxtor
+# SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 """
-Generates every original pixel-art asset MeshMC's QML ships as PNGs:
+Generates every original pixel-art asset Kite's QML ships as PNGs:
 block textures, the chrome-only-screen ambient tile, per-item landscape
 fallbacks (24 scenes at three shapes, drawn by scenes.py), the Home page
 hero banner and a handful of empty-state illustrations.
 
 Original artwork only -- no Mojang/Minecraft assets are read, copied or
 referenced; palettes and shapes below are this script's own, only evoking
-the same blocky, low-resolution style MeshMC's design direction calls for
+the same blocky, low-resolution style Kite's design direction calls for
 (design-plan.md "Imagery and copy rules").
 
 Deterministic: every image is built from a fixed random.Random(seed), so

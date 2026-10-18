@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -222,7 +223,7 @@ void PageContainer::help()
 		if (pageId.isEmpty())
 			return;
 		DesktopServices::openUrl(QUrl(
-			"https://github.com/Project-Tick/MeshMC/wiki/" + pageId));
+			"https://github.com/grxtor/kite/wiki/" + pageId));
 	}
 }
 

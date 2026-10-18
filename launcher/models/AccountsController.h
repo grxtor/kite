@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -130,7 +131,7 @@ class AccountsController : public QObject
 	Q_INVOKABLE QVariantMap accountSkinInfo(int row) const;
 
 	/*!
-	 * Whether MESHMC_QML_ROUTE asks for the skin/cape editor to be
+	 * Whether KITE_QML_ROUTE asks for the skin/cape editor to be
 	 * demoed (contains "accounts-demo") -- the qml-preview-tools snapshot
 	 * account file only ever has offline accounts, so no real row's isMSA
 	 * role would ever let AccountsPage.qml reach that editor otherwise.
@@ -213,7 +214,7 @@ class AccountsController : public QObject
  * One Microsoft sign-in attempt, as started by AccountsController::
  * loginMicrosoft().
  *
- * MeshMC's Microsoft login (MSAStep, launcher/minecraft/auth/steps/
+ * Kite's Microsoft login (MSAStep, launcher/minecraft/auth/steps/
  * MSAStep.cpp) is an OAuth2 authorization-code flow, not a device code
  * flow: QOAuth2AuthorizationCodeFlow opens the system browser to a
  * microsoftonline.com login page and a local HTTP server (bound to

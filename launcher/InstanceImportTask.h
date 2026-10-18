@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright 2013-2021 MultiMC Contributors
@@ -168,7 +169,7 @@ class InstanceImportTask : public InstanceTask
 
   private:
 	void processZipPack();
-	void processMeshMC();
+	void processKite();
 	void processFlame();
 	void configureFlameInstance(Flame::Manifest& pack);
 	void onFlameFileResolutionSucceeded();
@@ -216,7 +217,7 @@ class InstanceImportTask : public InstanceTask
 	bool m_aborted = false;
 	enum class ModpackType {
 		Unknown,
-		MeshMC,
+		Kite,
 		Flame,
 		Modrinth,
 		Technic
@@ -224,7 +225,7 @@ class InstanceImportTask : public InstanceTask
 
 	// Holds the raw detection results from the background scan.
 	struct DetectResult {
-		QString mmcRoot;	  // non-null → MeshMC pack
+		QString mmcRoot;	  // non-null → Kite pack
 		QString flameRoot;	  // non-null → Flame/CurseForge pack
 		QString modrinthRoot; // non-null → Modrinth pack
 		bool technicFound = false;
@@ -340,7 +341,7 @@ class InstanceImportTask : public InstanceTask
 	 * than by naming.
 	 *
 	 * For the formats that bring their own instance layout instead of
-	 * having us build one: a MeshMC pack carries whatever directory name
+	 * having us build one: a Kite pack carries whatever directory name
 	 * its exporter used, and a Technic pack's layout is decided inside
 	 * the Technic processor. Neither can be made to agree with
 	 * gameDirName(), so the question is answered the same way the

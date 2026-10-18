@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -64,7 +65,7 @@ class ComponentTools : public QObject
 		return m_error;
 	}
 
-	/// "My Mod!" -> "org.projecttick.custom.mymod": the uid offered when
+	/// "My Mod!" -> "io.github.grxtor.custom.mymod": the uid offered when
 	/// the user leaves the field empty. Empty if @p name has no letters.
 	Q_INVOKABLE static QString suggestUid(const QString& name);
 

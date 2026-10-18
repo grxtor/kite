@@ -1,16 +1,17 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: BSD-3-Clause
  *
- *  DesktopNotifier  —  MeshMC MMCO plugin
+ *  DesktopNotifier  —  Kite MMCO plugin
  *
- *  Turns selected MeshMC lifecycle events into native desktop
+ *  Turns selected Kite lifecycle events into native desktop
  *  notifications via the MMCO S19 tray API. The plugin owns a single
  *  long-lived hidden tray icon so that notifications survive the
  *  short-lived "transient" path on Linux desktops that throttle
  *  freshly-shown tray icons.
  *
  *  All event categories can be toggled at runtime through plugin
- *  settings. The MeshMC GUI does not currently expose a settings page
+ *  settings. The Kite GUI does not currently expose a settings page
  *  for plugin-namespaced keys, so toggling is done by editing the
  *  config file (or another plugin) — but the defaults are chosen so
  *  that the out-of-the-box behaviour is sensible.
@@ -29,7 +30,7 @@
 #include <cstdlib>
 
 MMCO_DEFINE_MODULE("DesktopNotifier", "1.0.0", "Project Tick",
-				   "Native desktop notifications for MeshMC events "
+				   "Native desktop notifications for Kite events "
 				   "(launch, instance lifecycle, news)",
 				   "BSD-3-Clause");
 
@@ -91,7 +92,7 @@ static int on_app_initialized(void* /*mh*/, uint32_t /*hook_id*/,
 	const char* name = g_ctx->get_app_name(g_ctx->module_handle);
 	const char* ver = g_ctx->get_app_version(g_ctx->module_handle);
 	notify(QStringLiteral("%1 ready")
-			   .arg(QString::fromUtf8(name ? name : "MeshMC")),
+			   .arg(QString::fromUtf8(name ? name : "Kite")),
 		   QStringLiteral("Version %1 is running.")
 			   .arg(QString::fromUtf8(ver ? ver : "?")),
 		   1);
@@ -125,7 +126,7 @@ static int on_instance_pre_launch(void* /*mh*/, uint32_t /*hook_id*/,
 		ver.isEmpty()
 			? QStringLiteral("Launching %1…").arg(name)
 			: QStringLiteral("Launching %1 (Minecraft %2)…").arg(name, ver);
-	notify(QStringLiteral("MeshMC instance starting"), body, 1);
+	notify(QStringLiteral("Kite instance starting"), body, 1);
 	return 0;
 }
 
@@ -140,7 +141,7 @@ static int on_instance_post_launch(void* /*mh*/, uint32_t /*hook_id*/,
 		return 0;
 	QString name = info->instance_name ? QString::fromUtf8(info->instance_name)
 									   : QStringLiteral("(unnamed)");
-	notify(QStringLiteral("MeshMC instance stopped"),
+	notify(QStringLiteral("Kite instance stopped"),
 		   QStringLiteral("%1 has exited.").arg(name), 1);
 	return 0;
 }
@@ -216,7 +217,7 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 		 * source identity on KDE / GNOME / Windows. We never show()
 		 * it. The host owns this icon and tears it down at unload. */
 		g_tray = ctx->tray_create(ctx->module_handle, "dialog-information",
-								  "MeshMC");
+								  "Kite");
 	}
 
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_APP_INITIALIZED,

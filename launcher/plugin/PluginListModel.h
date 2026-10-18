@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -35,7 +36,7 @@ class PluginManager;
  * for the next start (PluginManager::setModuleDisabled()); nothing loads
  * or unloads while the launcher runs, which `restartNeeded` reports.
  *
- * Lives in MeshMC_logic next to PluginManager; QmlShell hands one out
+ * Lives in Kite_logic next to PluginManager; QmlShell hands one out
  * through a factory Application installs (QmlShell::pluginList()).
  */
 class PluginListModel : public QAbstractListModel

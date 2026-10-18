@@ -1,0 +1,29 @@
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+
+IDI_ICON1               ICON    DISCARDABLE     "@Kite_AppID@.ico"
+1 RT_MANIFEST "@Kite_AppBinaryName@.manifest"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     @Kite_VERSION_NAME4_COMMA@
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+BEGIN
+        BLOCK "StringFileInfo"
+        BEGIN
+                BLOCK "000004b0"
+                BEGIN
+                        VALUE "CompanyName", "@Kite_Copyright@"
+                        VALUE "FileDescription", "@Kite_DisplayName@"
+                        VALUE "FileVersion", "@Kite_RELEASE_VERSION_NAME@.0"
+                        VALUE "ProductName", "@Kite_DisplayName@"
+                        VALUE "ProductVersion", "@Kite_RELEASE_VERSION_NAME@"
+                END
+        END
+        BLOCK "VarFileInfo"
+        BEGIN
+                VALUE "Translation", 0x0000, 0x04b0 // Unicode
+        END
+END

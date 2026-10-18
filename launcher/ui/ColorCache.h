@@ -1,5 +1,6 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -104,7 +105,7 @@ class LogColorCache : public ColorCache
   public:
 	LogColorCache(QColor front, QColor back) : ColorCache(front, back, 1.0)
 	{
-		addColor((int)MessageLevel::MeshMC, QColor("purple"));
+		addColor((int)MessageLevel::Kite, QColor("purple"));
 		addColor((int)MessageLevel::Debug, QColor("green"));
 		addColor((int)MessageLevel::Warning, QColor("orange"));
 		addColor((int)MessageLevel::Error, QColor("red"));

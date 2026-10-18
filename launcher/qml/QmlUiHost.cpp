@@ -1,8 +1,8 @@
-/* SPDX-FileCopyrightText: 2026 Project Tick
- * SPDX-FileContributor: Project Tick
+/* SPDX-FileCopyrightText: 2026 grxtor
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * Copyright (C) 2026 Project Tick
+ * Copyright (C) 2026 grxtor
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -724,7 +724,7 @@ UiHost::UpdateChoice QmlUiHost::offerUpdate(const QString& currentVersion,
 	QmlUiRequest request(
 		QmlUiRequest::Kind::Update,
 		tr("A new version of %1 is available!")
-			.arg(BuildConfig.MESHMC_DISPLAYNAME),
+			.arg(BuildConfig.KITE_DISPLAYNAME),
 		tr("Version %1 is now available - you have %2 . Would you like to "
 		   "download it now?")
 			.arg(availableVersion, currentVersion));

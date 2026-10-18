@@ -1,8 +1,8 @@
-/* SPDX-FileCopyrightText: 2026 Project Tick
- * SPDX-FileContributor: Project Tick
+/* SPDX-FileCopyrightText: 2026 grxtor
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * Copyright (C) 2026 Project Tick
+ * Copyright (C) 2026 grxtor
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,8 @@
 #include <memory>
 
 /*
- * Smoke test for MeshMC.Theme, the same job QmlModule_test.cpp does for the
- * MeshMC module: proves the module resolves at its resource prefix, the
+ * Smoke test for Kite.Theme, the same job QmlModule_test.cpp does for the
+ * Kite module: proves the module resolves at its resource prefix, the
  * singleton instantiates, and the tokens it hands out are the ones this
  * module declares -- not that any UI built on top of them looks right.
  *
@@ -55,7 +55,7 @@ class ThemeTest : public QObject
 		QQmlComponent component(&engine);
 		component.setData(QByteArrayLiteral(
 							   "import QtQuick\n"
-							   "import MeshMC.Theme\n"
+							   "import Kite.Theme\n"
 							   "QtObject {\n"
 							   "    property color accent: Theme.palette.accent\n"
 							   "    property int spaceMd: Theme.space.md\n"

@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: MIT
  *
  * NVIDIAPrimePlugin — MMCO entry point for the NVIDIA Prime plugin.

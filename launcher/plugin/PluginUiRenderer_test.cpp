@@ -1,4 +1,5 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
+ * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -273,14 +274,14 @@ class PluginUiRendererTest : public QObject
 			"{\n"
 			"  \"type\": \"mmco-tray-menu/1\",\n"
 			"  \"items\": [\n"
-			"    { \"type\": \"button\", \"id\": \"open\", \"props\": { \"label\": \"Open MeshMC\" } },\n"
+			"    { \"type\": \"button\", \"id\": \"open\", \"props\": { \"label\": \"Open Kite\" } },\n"
 			"    { \"type\": \"separator\" },\n"
 			"    { \"type\": \"section\", \"id\": \"launch\", \"props\": { \"title\": \"Launch instance\" },\n"
 			"      \"children\": [\n"
 			"        { \"type\": \"button\", \"id\": \"inst-1\", \"props\": { \"label\": \"My Instance\" } }\n"
 			"      ] },\n"
 			"    { \"type\": \"separator\" },\n"
-			"    { \"type\": \"button\", \"id\": \"quit\", \"props\": { \"label\": \"Quit MeshMC\" } }\n"
+			"    { \"type\": \"button\", \"id\": \"quit\", \"props\": { \"label\": \"Quit Kite\" } }\n"
 			"  ]\n"
 			"}\n";
 		QVector<Event> events;
@@ -293,12 +294,12 @@ class PluginUiRendererTest : public QObject
 		/* open, separator, "Launch instance" submenu, separator, quit. */
 		const auto actions = menu.actions();
 		QCOMPARE(actions.size(), 5);
-		QCOMPARE(actions.at(0)->text(), QStringLiteral("Open MeshMC"));
+		QCOMPARE(actions.at(0)->text(), QStringLiteral("Open Kite"));
 		QVERIFY(actions.at(1)->isSeparator());
 		QVERIFY(actions.at(2)->menu() != nullptr);
 		QCOMPARE(actions.at(2)->menu()->title(), QStringLiteral("Launch instance"));
 		QVERIFY(actions.at(3)->isSeparator());
-		QCOMPARE(actions.at(4)->text(), QStringLiteral("Quit MeshMC"));
+		QCOMPARE(actions.at(4)->text(), QStringLiteral("Quit Kite"));
 
 		actions.at(0)->trigger();
 		QCOMPARE(events.size(), 1);
