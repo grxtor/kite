@@ -346,8 +346,10 @@ ApplicationWindow {
     // one primary action there, so the play bar stays away from it. The
     // instance page has its own Play in its header (Modrinth's), for the
     // very instance the bar would show, so the bar would only repeat it.
+    // Home's hero and the instance page's header are those pages' Play; the
+    // dock carries it everywhere else, so Play is always one click away.
     function dockVisibleFor(page) {
-        return page === "home" || page === "library"
+        return page === "discover" || page === "settings" || page === "accounts"
     }
     // Inside an instance, while Content shows its "Add content" browser,
     // that page's Install is the primary action. Moot while the instance
@@ -366,7 +368,7 @@ ApplicationWindow {
 
     Shortcut {
         sequences: [StandardKey.Find]
-        onActivated: libraryToolbar.focusSearch()
+        onActivated: root.page === "home" ? homePage.focusSearch() : libraryToolbar.focusSearch()
     }
     // A page's link to Settings > Java (InstanceJavaSettings.qml), sent
     // through the JavaStore singleton the Java rows already share.
@@ -734,10 +736,40 @@ ApplicationWindow {
                         instanceModel: root.instanceModel
                         recentWorldsModel: root.shell && root.shell.recentWorlds ? root.shell.recentWorlds : null
                         news: root.shell && root.shell.news ? root.shell.news : null
+                        // The hero follows the dock's rule: the selection,
+                        // else the instance played last, else the first.
+                        heroModel: root.shell && root.shell.heroModel ? root.shell.heroModel : null
+                        sectionModelFor: function (group) {
+                            return root.shell && typeof root.shell.sectionModel === "function"
+                                    ? root.shell.sectionModel(group) : null
+                        }
+                        selectedId: root.selectedId
+                        library: root.shell && root.shell.library ? root.shell.library : null
+                        launchOptionsFor: function (id) { return root.launchOptions(id) }
+                        exportControllerFor: function (id) {
+                            return root.shell && typeof root.shell.exportController === "function"
+                                   ? root.shell.exportController(id) : null
+                        }
+                        shortcutControllerFor: function (id) {
+                            return root.shell && typeof root.shell.shortcutController === "function"
+                                   ? root.shell.shortcutController(id) : null
+                        }
+                        msaSignedIn: !!root.shell && root.shell.accountKind === "Microsoft"
 
                         onLaunchRequested: (id) => root.launch(id)
                         onStopRequested: (id) => root.call("killInstance", id)
                         onOpenInstanceRequested: (id) => root.openInstance(id)
+                        onSelectRequested: (id) => root.selectedId = id
+                        onSignInRequested: root.page = "accounts"
+                        onFolderRequested: (id) => root.call("openInstanceFolder", id)
+                        onRenameRequested: (id, name) => root.askRename(id, name)
+                        onIconRequested: (id, iconKey) => root.askIcon(id, iconKey)
+                        onGroupRequested: (id, group) => root.askGroup(id, group)
+                        onDeleteRequested: (id, name) => root.askDelete(id, name)
+                        onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
+                        onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
+                        onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+                        onNavigateRequested: (target) => root.navigate(target)
                         onOpenInstanceWorldsRequested: (id) => {
                             root.openInstance(id)
                             instancePage.tab = "worlds"
@@ -815,7 +847,7 @@ ApplicationWindow {
                             return root.shell.installModpack(projectId, versionId, name, group)
                         }
                         onShowInstanceRequested: (id) => {
-                            root.page = "library"
+                            root.page = "home"
                             if (id.length > 0)
                                 root.selectedId = id
                         }
