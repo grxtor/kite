@@ -40,7 +40,7 @@ AbstractButton {
 
     Accessible.name: qsTr("%1, in %2").arg(control.worldName).arg(control.instanceName)
 
-    ToolTip.visible: control.hovered && (nameText.truncated || metaText.truncated)
+    ToolTip.visible: control.hovered && (nameText.truncated || instanceText.truncated)
     ToolTip.delay: 500
     ToolTip.text: qsTr("%1 — %2").arg(control.worldName).arg(control.instanceName)
 
@@ -122,16 +122,29 @@ AbstractButton {
                 font.weight: Theme.type.bodyStrong.weight
             }
 
-            // "Hardcore Survival • 1 h ago"
-            Text {
-                id: metaText
+            // "Hardcore Survival  •  1 h ago": the instance's name gives way
+            // first, so the time stays whole.
+            Row {
+                id: metaRow
                 width: parent.width
-                text: [control.instanceName, Format.lastPlayed(control.lastPlayed)]
-                      .filter((part) => part.length > 0).join("  •  ")
-                elide: Text.ElideRight
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
+
+                Text {
+                    id: instanceText
+                    width: Math.max(0, Math.min(implicitWidth, metaRow.width - whenText.implicitWidth))
+                    text: control.instanceName
+                    elide: Text.ElideRight
+                    color: Theme.palette.textSecondary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.label.pixelSize
+                }
+                Text {
+                    id: whenText
+                    readonly property string when: Format.lastPlayed(control.lastPlayed)
+                    text: (control.instanceName.length > 0 && when.length > 0 ? "  •  " : "") + when
+                    color: Theme.palette.textSecondary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.label.pixelSize
+                }
             }
         }
     }

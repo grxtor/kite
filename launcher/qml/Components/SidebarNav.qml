@@ -197,7 +197,7 @@ Rectangle {
             text: "Kite"
             color: Theme.palette.textPrimary
             font.family: Theme.font.heading
-            font.pixelSize: Theme.type.title.pixelSize + 2
+            font.pixelSize: Theme.type.subheading.pixelSize
             font.weight: Font.Bold
             font.letterSpacing: -0.2
         }

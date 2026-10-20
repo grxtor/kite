@@ -45,11 +45,6 @@ Item {
     readonly property int skinNoticeWidth: 380
     // The sign-in dialog's spinner.
     readonly property int loginIndicatorSize: 32
-    // The empty state's avatar: a faint ring, a tinted disc, the icon.
-    readonly property int avatarRingSize: 96
-    readonly property int avatarDiscSize: 72
-    readonly property int avatarIconSize: 32
-    readonly property real avatarRingOpacity: 0.10
 
     // Bumped whenever any account's data changes (a refresh landing, a skin
     // upload finishing...), so the "image://accountface/..." urls below
@@ -545,22 +540,10 @@ Item {
             actionIcon: "user"
             onActionTriggered: root.startMicrosoftLogin()
 
-            Item {
-                width: root.avatarRingSize; height: root.avatarRingSize
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: root.avatarRingSize; height: root.avatarRingSize
-                    radius: width / 2
-                    color: Theme.palette.accentText
-                    opacity: root.avatarRingOpacity
-                }
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: root.avatarDiscSize; height: root.avatarDiscSize
-                    radius: width / 2
-                    color: Theme.palette.accentSubtle
-                }
-                MeshIcon { anchors.centerIn: parent; iconName: "user"; size: root.avatarIconSize; color: Theme.palette.accentText }
+            MeshIcon {
+                iconName: "user"
+                size: Theme.icon.lg + Theme.space.md
+                color: Theme.palette.textTertiary
             }
         }
 

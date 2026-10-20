@@ -37,7 +37,6 @@ Grid {
     readonly property int previewHeight: 86
     readonly property int miniSidebarWidth: 34
     readonly property int miniGap: 6
-    readonly property int miniLabelSize: 9
     readonly property bool fitsInOneRow: (width - spacing * (schemes.length - 1)) / schemes.length >= minTileWidth
     readonly property real tileWidth: (width - spacing * (columns - 1)) / columns
 
@@ -138,14 +137,6 @@ Grid {
                         width: 64; height: 18
                         radius: Theme.radius.sm
                         color: card.colors.accent
-                        Text {
-                            anchors.centerIn: parent
-                            text: qsTr("Play")
-                            color: card.colors.textOnAccent
-                            font.family: Theme.font.family
-                            font.pixelSize: root.miniLabelSize
-                            font.weight: Font.Bold
-                        }
                     }
                 }
 
