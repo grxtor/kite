@@ -71,7 +71,6 @@ qt_add_qml_module(Kite_qml_components
         ConsolePreview.qml
         TotalPlayTime.qml
         NewComponentDialog.qml
-        InstanceOverviewTab.qml
         InstancePage.qml
         ContentTab.qml
         VersionTab.qml
