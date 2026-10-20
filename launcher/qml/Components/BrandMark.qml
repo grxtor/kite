@@ -5,10 +5,10 @@
 import QtQuick
 
 /*
- * Kite's own mark at any square size: the app icon's master cut close around
- * the glass kite, with the rail tiles' corner (RecentItem's radius.md on its
- * 32 px tile, in proportion), edge to edge in the box, so the box's middle
- * is the mark's. Set `size`; the caller positions it. The picture is 256 px,
+ * Kite's own mark at any square size: the app icon's master cut to a square
+ * centred on the kite's body (the tail left out), so all four tips stand
+ * clear and the box's middle is the kite's, with the app icon's own corner
+ * (22.5 %). Set `size`; the caller positions it. The picture is 256 px,
  * scaled down once to the screen's own pixels (a PNG's sourceSize is not
  * scaled by the device ratio the way an SVG's is), so it stays crisp on
  * HiDPI.

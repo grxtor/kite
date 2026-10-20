@@ -87,10 +87,10 @@ Rectangle {
     // (RecentItem.tileSize), the widest thing on the axis.
     readonly property int labelX: root.railAxis + Theme.control.heightSm / 2 + Theme.space.md
     readonly property int itemRadius: Theme.radius.lg
-    // The Kite mark: a step under the recent tiles (RecentItem.tileSize), and
+    // The Kite mark: as big as the recent tiles (RecentItem.tileSize), and
     // the rail's items start a gap below its band, so the mark floats on the
     // top bar's line instead of stacking on the first destination.
-    readonly property int brandExtent: Theme.control.heightSm - Theme.space.xs
+    readonly property int brandExtent: Theme.control.heightSm
     readonly property int brandGap: Theme.space.md
 
     signal itemActivated(string id)
