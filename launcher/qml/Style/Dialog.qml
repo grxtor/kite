@@ -45,9 +45,9 @@ T.Dialog {
         text: control.title
         visible: parent?.parent === T.Overlay.overlay && control.title
         elide: Label.ElideRight
-        font.pixelSize: Theme.type.title.pixelSize
+        font.pixelSize: Theme.type.subheading.pixelSize
         font.family: Theme.font.heading
-        font.weight: Theme.type.title.weight
+        font.weight: Theme.type.subheading.weight
         padding: Theme.space.xl
         bottomPadding: 0
     }

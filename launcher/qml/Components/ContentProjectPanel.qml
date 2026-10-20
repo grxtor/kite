@@ -85,8 +85,8 @@ Rectangle {
                     elide: Text.ElideRight
                     color: Theme.palette.textPrimary
                     font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Font.Bold
+                    font.pixelSize: Theme.type.subheading.pixelSize
+                    font.weight: Theme.type.subheading.weight
                 }
                 Text {
                     Layout.fillWidth: true

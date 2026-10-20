@@ -8,8 +8,9 @@ import Kite.Theme
 /*
  * A group's title row: name, an optional item count, and -- when the group
  * can fold -- a chevron after them that turns to show the collapsed state.
- * The same look as the library's own group headers (InstanceSection), so a
- * titled group reads the same on every page.
+ * A page-level section title: Theme's heading, like Home's ("Continue
+ * playing", "Library"). The library's own group headers (InstanceSection)
+ * sit a level under a page's sections and stay at title size.
  */
 Item {
     id: root
@@ -33,8 +34,8 @@ Item {
             text: root.title
             color: Theme.palette.textPrimary
             font.family: Theme.font.heading
-            font.pixelSize: Theme.type.title.pixelSize
-            font.weight: Font.Bold
+            font.pixelSize: Theme.type.heading.pixelSize
+            font.weight: Theme.type.heading.weight
         }
 
         Tag {
