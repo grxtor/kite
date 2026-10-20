@@ -71,6 +71,9 @@ Dialog {
     modal: true
     // The title row sets the inset; the gap under it is the dialog's own spacing.
     topPadding: 0
+    // The actions row sets the bottom inset; this and the spacing over it
+    // leave one inset (xl) between the body and the actions.
+    bottomPadding: Theme.space.sm
     // Typing in a form is not something a stray click outside should
     // throw away, and an export in progress only stops through its button.
     closePolicy: root.exporting ? Popup.NoAutoClose : Popup.CloseOnEscape

@@ -40,6 +40,8 @@ Dialog {
     readonly property real maxHeight: parent ? parent.height - Theme.space.xxl * 2 : implicitHeight
     height: Math.min(implicitHeight, root.maxHeight)
     modal: true
+    // The title row sets the inset; the gap under it is the dialog's own spacing.
+    topPadding: 0
     // Worded like the buttons that open it ("Skin and cape"), with the
     // player's name as part of the sentence rather than after a dash.
     title: root.accountName.length > 0 ? qsTr("Skin and cape for %1").arg(root.accountName)
@@ -387,7 +389,9 @@ Dialog {
                                 id: skinGrid
                                 onContentHeightChanged: Qt.callLater(root.fitLibrary)
                                 anchors.fill: parent
-                                anchors.margins: Theme.space.sm
+                                // The box's own inset, not a tile gap: its
+                                // section labels stand clear of its border.
+                                anchors.margins: Theme.space.md
                                 clip: true
                                 cellWidth: root.tileWidth + Theme.space.sm
                                 cellHeight: root.tileHeight + Theme.space.sm
@@ -614,9 +618,9 @@ Dialog {
             anchors.right: parent.right
             anchors.rightMargin: Theme.space.md
             // On the title's line: DialogHeader's label sits below its
-            // own top padding.
+            // own top inset (xl), so its middle is half that below the row's.
             anchors.verticalCenter: parent.verticalCenter
-            anchors.verticalCenterOffset: Theme.space.lg / 2
+            anchors.verticalCenterOffset: Theme.space.xl / 2
             iconName: "x"
             tip: qsTr("Close")
             onClicked: root.close()

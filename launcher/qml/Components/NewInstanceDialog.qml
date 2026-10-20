@@ -138,6 +138,9 @@ Dialog {
     // The tabs belong to the title: right under it, not a padding's width
     // further down like a dialog's body.
     topPadding: 0
+    // The actions row sets the bottom inset; this and the spacing over it
+    // leave one inset (xl) between the body and the actions.
+    bottomPadding: Theme.space.sm
     modal: true
     closePolicy: root.creating ? Popup.NoAutoClose : Popup.CloseOnEscape
     title: root.mode === "import" ? qsTr("Import instance") : qsTr("New instance")

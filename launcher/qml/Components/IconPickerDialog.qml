@@ -32,6 +32,9 @@ Dialog {
     modal: true
     // The title row sets the inset; the gap under it is the dialog's own spacing.
     topPadding: 0
+    // The actions row sets the bottom inset; this and the spacing over it
+    // leave one inset (xl) between the body and the actions.
+    bottomPadding: Theme.space.sm
     title: qsTr("Choose an icon")
 
     header: DialogHeader {
@@ -125,7 +128,7 @@ Dialog {
     footer: Row {
         spacing: Theme.space.sm
         padding: Theme.space.xl
-        topPadding: Theme.space.sm
+        topPadding: 0
         layoutDirection: Qt.RightToLeft
 
         Button {

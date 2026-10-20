@@ -27,6 +27,15 @@ Dialog {
     anchors.centerIn: parent
     width: Math.min(440, parent ? parent.width - Theme.space.xxl * 2 : 440)
     modal: true
+    // The title row sets the inset; the gap under it is the dialog's own spacing.
+    topPadding: 0
+    // The actions row sets the bottom inset; this and the spacing over it
+    // leave one inset (xl) between the body and the actions.
+    bottomPadding: Theme.space.sm
+
+    header: DialogHeader {
+        title: root.title
+    }
 
     onOpened: {
         field.text = root.value

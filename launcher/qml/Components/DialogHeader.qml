@@ -16,6 +16,12 @@ import Kite.Theme
  * Callers that name an icon but no tone colour (the accent is the default)
  * get the plain title; the icon is a bare glyph in that tone, never a
  * tinted tile.
+ *
+ * The title is a size over the dialog's own section titles (a form's
+ * "Minecraft version", a list's "Files"), which sit at title size, so the
+ * dialog's name still leads -- Modrinth's dialog titles stand about 20 px.
+ * Every dialog uses this row, rather than the style's plain header, so
+ * they all match.
  */
 Item {
     id: root
@@ -48,8 +54,8 @@ Item {
         anchors.rightMargin: Theme.space.xl
         text: root.title
         elide: Label.ElideRight
-        font.pixelSize: Theme.type.title.pixelSize
+        font.pixelSize: Theme.type.subheading.pixelSize
         font.family: Theme.font.heading
-        font.weight: Theme.type.title.weight
+        font.weight: Theme.type.subheading.weight
     }
 }

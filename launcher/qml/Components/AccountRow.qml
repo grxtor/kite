@@ -31,6 +31,10 @@ Item {
     // Set by the page for whichever row it is already showing in the hero
     // card, so the same account is never listed twice.
     property bool hidden: false
+    // Space under the card, counted in the row's own height: a ListView
+    // spaces every delegate, even a collapsed one, so the page's list keeps
+    // no spacing of its own and a hidden row leaves no gap behind.
+    property int gap: 0
     // Bumped by the page whenever an account's skin may have changed, so the
     // face image's url changes and QML actually refetches it -- see
     // AccountsPage.qml's imageRevision.
@@ -60,15 +64,13 @@ Item {
 
     // A hidden row collapses out of the ListView entirely rather than just
     // turning invisible, so it leaves no gap where it used to be.
-    implicitHeight: root.hidden ? 0 : root.rowHeight
+    implicitHeight: root.hidden ? 0 : root.rowHeight + root.gap
     visible: !root.hidden
-
-    HoverHandler { id: hoverHandler; enabled: !root.hidden }
 
     Rectangle {
         id: card
         width: parent.width
-        height: parent.height
+        height: root.rowHeight
         radius: Theme.radius.lg
         // The plain card look: surface plus border, one step lighter under
         // the pointer. Hover changes the fill alone -- no lift, no second
@@ -78,6 +80,9 @@ Item {
         border.color: Theme.palette.border
 
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+
+        // On the card, not the row, so the gap under it is not hover.
+        HoverHandler { id: hoverHandler; enabled: !root.hidden }
 
         RowLayout {
             anchors.fill: parent
@@ -103,9 +108,10 @@ Item {
                     text: root.shownName
                     elide: Text.ElideRight
                     color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.bodyStrong.pixelSize
-                    font.weight: Theme.type.bodyStrong.weight
+                    // As a Home row's name (HomeJumpCard).
+                    font.family: Theme.font.heading
+                    font.pixelSize: Theme.type.title.pixelSize
+                    font.weight: Theme.type.title.weight
                 }
 
                 Row {

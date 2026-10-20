@@ -30,6 +30,9 @@ Dialog {
     modal: true
     // The title row sets the inset; the gap under it is the dialog's own spacing.
     topPadding: 0
+    // The actions row sets the bottom inset; this and the spacing over it
+    // leave one inset (xl) between the body and the actions.
+    bottomPadding: Theme.space.sm
     closePolicy: root.busy ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnPressOutside
     title: qsTr("Download Java")
 

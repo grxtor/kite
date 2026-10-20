@@ -499,7 +499,9 @@ Item {
                 id: list
                 anchors.fill: parent
                 clip: true
-                spacing: Theme.space.md
+                // The rows carry their own gap (AccountRow.gap), so the
+                // hidden hero row adds none under the heading.
+                spacing: 0
                 boundsBehavior: Flickable.StopAtBounds
                 model: root.accounts
                 currentIndex: root.heroIndex
@@ -508,6 +510,7 @@ Item {
                 delegate: AccountRow {
                     width: list.width
                     hidden: index === root.heroIndex
+                    gap: Theme.space.md
                     rev: root.imageRevision
                     onMakeDefaultRequested: root.controller.setDefault(index)
                     onRefreshRequested: root.controller.refresh(index)
@@ -583,7 +586,17 @@ Item {
         anchors.centerIn: parent
         width: Math.min(root.offlineDialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.offlineDialogWidth)
         modal: true
+        // The title row sets the inset; the gap under it is the dialog's own spacing.
+        topPadding: 0
+        // The actions row sets the bottom inset; this and the spacing over it
+        // leave one inset (xl) between the body and the actions.
+        bottomPadding: Theme.space.sm
         title: qsTr("Add offline account")
+
+        header: DialogHeader {
+            title: offlineDialog.title
+        }
+
         onOpened: {
             usernameField.text = ""
             offlineError.text = ""
@@ -621,7 +634,7 @@ Item {
         footer: Row {
             layoutDirection: Qt.RightToLeft
             spacing: Theme.space.sm
-            padding: Theme.space.lg
+            padding: Theme.space.xl
             topPadding: 0
             Button {
                 id: addButton
@@ -637,7 +650,7 @@ Item {
             }
             Button {
                 text: qsTr("Cancel")
-                variant: "ghost"
+                variant: "secondary"
                 onClicked: offlineDialog.close()
             }
         }
@@ -649,8 +662,17 @@ Item {
         anchors.centerIn: parent
         width: Math.min(root.loginDialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.loginDialogWidth)
         modal: true
+        // The title row sets the inset; the gap under it is the dialog's own spacing.
+        topPadding: 0
+        // The actions row sets the bottom inset; this and the spacing over it
+        // leave one inset (xl) between the body and the actions.
+        bottomPadding: Theme.space.sm
         closePolicy: Popup.NoAutoClose
         title: qsTr("Sign in with Microsoft")
+
+        header: DialogHeader {
+            title: loginDialog.title
+        }
 
         readonly property bool done: !!root.login && root.login.succeeded
         readonly property bool failed: !!root.login && root.login.failed
@@ -702,7 +724,7 @@ Item {
         footer: Row {
             layoutDirection: Qt.RightToLeft
             spacing: Theme.space.sm
-            padding: Theme.space.lg
+            padding: Theme.space.xl
             topPadding: 0
             Button {
                 visible: loginDialog.done
@@ -725,7 +747,7 @@ Item {
             }
             Button {
                 visible: !loginDialog.done
-                variant: "ghost"
+                variant: "secondary"
                 text: qsTr("Cancel")
                 onClicked: {
                     if (root.login && root.login.running)
@@ -753,7 +775,16 @@ Item {
         // made this text-only dialog's height depend on itself.
         width: root.skinNoticeWidth
         modal: true
+        // The title row sets the inset; the gap under it is the dialog's own spacing.
+        topPadding: 0
+        // The actions row sets the bottom inset; this and the spacing over it
+        // leave one inset (xl) between the body and the actions.
+        bottomPadding: Theme.space.sm
         title: qsTr("Skin and cape")
+
+        header: DialogHeader {
+            title: offlineSkinDialog.title
+        }
 
         contentItem: Text {
             width: parent.width
@@ -767,7 +798,7 @@ Item {
         footer: Row {
             layoutDirection: Qt.RightToLeft
             spacing: Theme.space.sm
-            padding: Theme.space.lg
+            padding: Theme.space.xl
             topPadding: 0
             Button {
                 text: qsTr("Close")
