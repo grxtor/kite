@@ -41,6 +41,11 @@ T.Switch {
             // Translucent, so the same grey reads on canvas, a card or a
             // dialog; under the pointer it steps up like a field's border.
             : (control.hovered || control.down ? Theme.neutral.trackHover : Theme.neutral.track)
+        // Off, the track wears borderStrong: the translucent grey alone is
+        // 1.4:1 (light) / 1.5:1 (dark) against its surface, under the 3:1
+        // a control's own shape needs.
+        border.width: control.checked ? 0 : 1
+        border.color: control.hovered ? Theme.palette.textTertiary : Theme.palette.borderStrong
         opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         Behavior on color {

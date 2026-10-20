@@ -374,7 +374,9 @@ Dialog {
             Layout.minimumHeight: root.versionListMinHeight
             Layout.preferredHeight: root.versionListMinHeight
             radius: Theme.radius.lg
-            color: Theme.palette.surfaceSunken
+            // The dialog's own surface inside a hairline: a dark well read
+            // as a hole in it.
+            color: "transparent"
             border.width: 1
             border.color: Theme.palette.border
 
@@ -455,14 +457,14 @@ Dialog {
                 height: Theme.space.lg
                 atTop: true
                 flickable: versions
-                fadeTo: Theme.palette.surfaceSunken
+                fadeTo: Theme.glass.popup
             }
             ScrollFade {
                 anchors.left: versions.left
                 anchors.right: versions.right
                 anchors.bottom: versions.bottom
                 flickable: versions
-                fadeTo: Theme.palette.surfaceSunken
+                fadeTo: Theme.glass.popup
             }
 
             BusyIndicator {
@@ -617,10 +619,40 @@ Dialog {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: Theme.radius.lg
-                color: Theme.palette.surfaceSunken
-                border.width: dropArea.containsDrag ? 2 : 1
-                border.color: dropArea.containsDrag ? Theme.palette.accent : Theme.palette.border
-                Behavior on border.color { ColorAnimation { duration: Theme.motion.fast } }
+                // Transparent with a dashed outline -- the usual look of a
+                // drop target -- that turns accent while a file is over it.
+                color: "transparent"
+
+                // A Canvas, not a Shape: it draws the same on every render
+                // backend, and this one outline is drawn rarely.
+                Canvas {
+                    id: dashes
+                    anchors.fill: parent
+                    readonly property real stroke: dropArea.containsDrag ? 2 : 1
+                    readonly property color ink: dropArea.containsDrag ? Theme.palette.accent : Theme.palette.borderStrong
+                    onStrokeChanged: requestPaint()
+                    onInkChanged: requestPaint()
+                    onWidthChanged: requestPaint()
+                    onHeightChanged: requestPaint()
+
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.reset()
+                        var h = stroke / 2
+                        var r = dropTarget.radius
+                        ctx.strokeStyle = ink
+                        ctx.lineWidth = stroke
+                        ctx.setLineDash([6 * stroke, 5 * stroke])
+                        ctx.beginPath()
+                        ctx.moveTo(h + r, h)
+                        ctx.arcTo(width - h, h, width - h, height - h, r)
+                        ctx.arcTo(width - h, height - h, h, height - h, r)
+                        ctx.arcTo(h, height - h, h, h, r)
+                        ctx.arcTo(h, h, width - h, h, r)
+                        ctx.closePath()
+                        ctx.stroke()
+                    }
+                }
 
                 DropArea {
                     id: dropArea
