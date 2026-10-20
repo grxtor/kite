@@ -600,8 +600,8 @@ bool QmlShell::deleteInstance(const QString& id)
 	}
 
 	auto instances = LAUNCHER->instances();
-	if (!instances->trashInstance(id)) {
-		instances->deleteInstance(id);
+	if (!instances->trashInstance(id) && !instances->deleteInstance(id)) {
+		return false;
 	}
 
 	/* The widget grid persists its selection across restarts under this
@@ -1114,6 +1114,17 @@ bool QmlShell::load()
 	// fires exactly when that list actually moves (see refreshDerived()).
 	connect(m_instances.get(), &InstanceFilterModel::groupsChanged, this,
 			&QmlShell::groupsChanged);
+	connect(LAUNCHER->icons().get(), &IconList::iconUpdated, this, [this]() {
+		if (m_iconRevisionPending) {
+			return;
+		}
+		m_iconRevisionPending = true;
+		QTimer::singleShot(0, this, [this]() {
+			m_iconRevisionPending = false;
+			++m_iconRevision;
+			emit iconRevisionChanged();
+		});
+	});
 	m_recent = std::make_unique<InstanceFilterModel>();
 	m_recent->setRecentFirst(true);
 	m_recent->setSourceModel(LAUNCHER->instances().get());

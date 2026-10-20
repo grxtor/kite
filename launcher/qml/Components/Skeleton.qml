@@ -37,6 +37,8 @@ Item {
 
     Rectangle {
         id: sweep
+        // A still placeholder, not a stopped band, under reduced motion.
+        visible: !SettingsStore.bool("UiReduceMotion")
         width: Math.max(1, root.width) * 0.4
         height: parent.height
         radius: root.radius
@@ -51,7 +53,7 @@ Item {
 
         SequentialAnimation on x {
             loops: Animation.Infinite
-            running: root.visible
+            running: root.visible && root.motionEnabled
             NumberAnimation { from: -sweep.width; to: root.width; duration: 1300; easing.type: Easing.InOutSine }
             PauseAnimation { duration: 450 }
         }

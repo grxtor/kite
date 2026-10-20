@@ -115,7 +115,7 @@ Dialog {
                     anchors.centerIn: parent
                     width: root.iconSize
                     height: root.iconSize
-                    source: "image://instanceicon/" + cell.key
+                    source: Icons.instanceIcon(cell.key)
                     sourceSize: Qt.size(root.iconSize * 2, root.iconSize * 2)
                     fillMode: Image.PreserveAspectFit
                     smooth: true

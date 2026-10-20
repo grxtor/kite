@@ -176,6 +176,7 @@ qt_add_qml_module(Kite_qml_components
         LibrarySections.qml
         InstanceMenu.qml
         HomeSidePanel.qml
+        HomeEmptyState.qml
         HomeSectionTitle.qml
         HomeHero.qml
         HomeHeroFacts.qml

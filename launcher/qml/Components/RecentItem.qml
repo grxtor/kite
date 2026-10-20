@@ -99,7 +99,7 @@ AbstractButton {
                 anchors.centerIn: parent
                 width: control.pictureSize
                 height: control.pictureSize
-                source: "image://instanceicon/" + (control.iconKey.length > 0 ? control.iconKey : "default")
+                source: Icons.instanceIcon(control.iconKey)
                 sourceSize: Qt.size(width * 2, height * 2)
                 fillMode: Image.PreserveAspectFit
             }

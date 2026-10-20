@@ -292,25 +292,16 @@ Item {
         flickable: flick
     }
 
-    // Nothing in the library yet: the way in, in the middle of the main
-    // column ("Set up Kite" says the same beside it).
-    EmptyState {
+    // Nothing in the library yet: the way in, in the middle of the page
+    // (the side panel stays away until there is something to put in it).
+    HomeEmptyState {
         x: Math.round((root.mainWidth - width) / 2)
         anchors.verticalCenter: parent.verticalCenter
         // A readable measure for the body text; EmptyState caps it.
         width: Math.min(root.mainWidth - root.pagePadding * 2, root.emptyStateWidth)
         visible: !root.hasLibrary
-        title: qsTr("Your library is empty")
-        body: qsTr("An instance is one Minecraft setup: a version, a mod loader and its mods. Create one to start playing, or find a modpack in Discover.")
-        actionText: qsTr("Create your first instance")
-        actionIcon: "plus"
-        onActionTriggered: root.createRequested()
-
-        MeshIcon {
-            iconName: "cube"
-            size: Theme.icon.lg + Theme.space.md
-            color: Theme.palette.textTertiary
-        }
+        onCreateRequested: root.createRequested()
+        onDiscoverRequested: root.discoverRequested()
     }
 
     HomeSidePanel {

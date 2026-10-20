@@ -24,6 +24,9 @@ Rectangle {
     signal signInRequested()
 
     readonly property bool allDone: root.hasInstances && root.signedIn
+    // An empty library has the page's own "Create instance" in front of it;
+    // the checklist comes once there is something to check off.
+    readonly property bool shown: root.hasInstances && !root.allDone
 
     implicitHeight: column.implicitHeight + Theme.space.md * 2
     radius: Theme.radius.lg
@@ -53,8 +56,8 @@ Rectangle {
             radius: Theme.radius.md
             color: step.down ? Theme.palette.pressedOverlay
                  : step.hovered ? Theme.palette.hoverOverlay : "transparent"
-            border.width: step.visualFocus ? Theme.focus.width : 1
-            border.color: step.visualFocus ? Theme.palette.focusRing : Theme.palette.border
+            border.width: step.visualFocus ? Theme.focus.width : 0
+            border.color: Theme.palette.focusRing
             Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         }
 

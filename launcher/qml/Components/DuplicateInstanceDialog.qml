@@ -106,7 +106,7 @@ Dialog {
                         height: Theme.control.height
                         sourceSize.width: width * 2
                         sourceSize.height: height * 2
-                        source: "image://instanceicon/" + (root.iconKey.length > 0 ? root.iconKey : "default")
+                        source: Icons.instanceIcon(root.iconKey)
                         fillMode: Image.PreserveAspectFit
                         smooth: true
                         mipmap: true

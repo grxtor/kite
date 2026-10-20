@@ -537,13 +537,13 @@ bool InstanceList::isGroupCollapsed(const QString& group)
 	return m_collapsedGroups.contains(group);
 }
 
-void InstanceList::deleteInstance(const InstanceId& id)
+bool InstanceList::deleteInstance(const InstanceId& id)
 {
 	auto inst = getInstanceById(id);
 	if (!inst) {
 		qDebug() << "Cannot delete instance" << id
 				 << ". No such instance is present (deleted externally?).";
-		return;
+		return false;
 	}
 
 	if (m_instanceGroupIndex.remove(id)) {
@@ -559,7 +559,7 @@ void InstanceList::deleteInstance(const InstanceId& id)
 	if (!FS::deletePath(inst->instanceRoot())) {
 		qWarning() << "Deletion of instance" << id
 				   << "has not been completely successful ...";
-		return;
+		return false;
 	}
 
 	qDebug() << "Instance" << id << "has been deleted by Kite.";
@@ -576,6 +576,7 @@ void InstanceList::deleteInstance(const InstanceId& id)
 					   << shortcut.filePath << "of deleted instance" << id;
 		}
 	}
+	return true;
 }
 
 bool InstanceList::trashInstance(const InstanceId& id)

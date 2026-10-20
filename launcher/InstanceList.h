@@ -225,8 +225,9 @@ class InstanceList : public QAbstractListModel
 	 */
 	void renameGroup(const GroupId& from, const GroupId& to);
 
-	/// Delete an instance and its shortcuts for good.
-	void deleteInstance(const InstanceId& id);
+	/// Delete an instance and its shortcuts for good. False when the
+	/// instance folder could not be removed (or the id is unknown).
+	bool deleteInstance(const InstanceId& id);
 
 	/**
 	 * Move an instance and its shortcuts to the platform's trash.

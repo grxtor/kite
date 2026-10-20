@@ -98,7 +98,7 @@ Rectangle {
                 anchors.centerIn: parent
                 width: root.tileIconSize
                 height: width
-                source: "image://instanceicon/" + (root.iconKey.length > 0 ? root.iconKey : "default")
+                source: Icons.instanceIcon(root.iconKey)
                 sourceSize: Qt.size(width, height)
                 fillMode: Image.PreserveAspectFit
                 smooth: true

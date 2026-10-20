@@ -130,7 +130,7 @@ Item {
                     visible: !root.showsPackArt
                     width: root.iconSize
                     height: root.iconSize
-                    source: "image://instanceicon/" + (root.iconKey.length > 0 ? root.iconKey : "default")
+                    source: Icons.instanceIcon(root.iconKey)
                     sourceSize: Qt.size(width, height)
                     fillMode: Image.PreserveAspectFit
                     smooth: true

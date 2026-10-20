@@ -27,6 +27,12 @@ import Kite.Theme
 Item {
     id: root
 
+    // The pulse stops with the window, an off-screen page and "Reduce
+    // motion" (see RecentItem for why this is repeated per file).
+    readonly property bool motionEnabled: root.visible
+                                          && Qt.application.state === Qt.ApplicationActive
+                                          && !SettingsStore.bool("UiReduceMotion")
+
     required property string instanceId
     required property string name
     required property string iconKey
@@ -63,7 +69,7 @@ Item {
     readonly property real iconShare: 0.84
     readonly property int iconSize: Math.round(squareSize * iconShare)
     readonly property int runningDotSize: 9
-    readonly property string iconSource: "image://instanceicon/" + (root.iconKey.length > 0 ? root.iconKey : "default")
+    readonly property string iconSource: Icons.instanceIcon(root.iconKey)
     readonly property int versionColumnWidth: 168
     readonly property int lastPlayedColumnWidth: 104
     readonly property int playTimeColumnWidth: 84
@@ -172,7 +178,7 @@ Item {
                     border.color: surface.color
 
                     SequentialAnimation on opacity {
-                        running: root.isRunning || root.launching
+                        running: (root.isRunning || root.launching) && root.motionEnabled
                         loops: Animation.Infinite
                         NumberAnimation { from: 1.0; to: 0.45; duration: 900; easing.type: Easing.InOutSine }
                         NumberAnimation { from: 0.45; to: 1.0; duration: 900; easing.type: Easing.InOutSine }

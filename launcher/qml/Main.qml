@@ -64,6 +64,12 @@ ApplicationWindow {
         root.page = "instance"
     }
 
+    Binding {
+        target: LauncherStore
+        property: "iconRevision"
+        value: root.shell ? root.shell.iconRevision : 0
+    }
+
     Component.onCompleted: {
         if (root.shell && root.shell.settings) {
             SettingsStore.adapter = root.shell.settings
@@ -348,14 +354,11 @@ ApplicationWindow {
                 ? root.shell.launchOptions(id) : ({})
     }
 
-    // Home and Library keep the play bar; Settings/Accounts hide it -- no
-    // "instance to play" on either, and the extra chrome would just crowd
-    // two already form-heavy pages. Discover is a store: its Install is the
-    // one primary action there, so the play bar stays away from it. The
-    // instance page has its own Play in its header (Modrinth's), for the
-    // very instance the bar would show, so the bar would only repeat it.
-    // Home's hero and the instance page's header are those pages' Play; the
-    // dock carries it everywhere else, so Play is always one click away.
+    // The play bar shows on Discover, Settings and Accounts: pages with no
+    // Play of their own, where it keeps the selected instance one click
+    // away. Home's hero and the instance page's header are those pages'
+    // Play, and the bar would only repeat it there; the library page that
+    // once had it is no longer in the rail.
     function dockVisibleFor(page) {
         return page === "discover" || page === "settings" || page === "accounts"
     }
@@ -374,9 +377,21 @@ ApplicationWindow {
             arg === undefined ? root.shell[name]() : root.shell[name](arg)
     }
 
+    // Ctrl+F searches the library, which lives on Home; from another page
+    // it goes there first and the field takes focus once Home is showing
+    // (pageTransition). An instance page keeps its own Ctrl+F (LogTab).
+    property bool focusHomeSearch: false
     Shortcut {
         sequences: [StandardKey.Find]
-        onActivated: root.page === "home" ? homePage.focusSearch() : libraryToolbar.focusSearch()
+        enabled: root.page !== "instance"
+        onActivated: {
+            if (root.page === "home") {
+                homePage.focusSearch()
+            } else {
+                root.focusHomeSearch = true
+                root.page = "home"
+            }
+        }
     }
     // A page's link to Settings > Java (InstanceJavaSettings.qml), sent
     // through the JavaStore singleton the Java rows already share.
@@ -652,11 +667,7 @@ ApplicationWindow {
                 ComboBox {
                     id: sortCombo
                     implicitWidth: 152
-                    model: [
-                        { value: "Name", label: qsTr("Name") },
-                        { value: "LastLaunch", label: qsTr("Last played") },
-                        { value: "TotalTimePlayed", label: qsTr("Time played") }
-                    ]
+                    model: SettingsStore.instanceSortModes
                     textRole: "label"
                     valueRole: "value"
                     // InstSortMode is the same launcher-wide setting the
@@ -720,6 +731,13 @@ ApplicationWindow {
                     NumberAnimation { target: pageHost; property: "opacity"; to: 0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
                     PropertyAction { target: pageStack; property: "currentIndex"; value: pageTransition.nextIndex }
                     PropertyAction { target: pageHost; property: "dockVisible"; value: root.dockVisibleFor(pageHost.pageOrder[pageTransition.nextIndex]) }
+                    ScriptAction {
+                        script: {
+                            if (root.focusHomeSearch && root.page === "home")
+                                homePage.focusSearch()
+                            root.focusHomeSearch = false
+                        }
+                    }
                     ParallelAnimation {
                         NumberAnimation { target: pageHost; property: "opacity"; to: 1; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
                         NumberAnimation { target: pageSlide; property: "y"; from: Theme.space.sm; to: 0; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
@@ -982,6 +1000,7 @@ ApplicationWindow {
         recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
         selectedId: root.selectedId
         onSelectRequested: (id) => root.selectedId = id
+        onCreateRequested: root.openNewInstance()
         onLaunchRequested: (id) => root.launch(id)
         onStopRequested: (id) => root.call("killInstance", id)
         onCancelRequested: (id) => root.call("killInstance", id)
@@ -995,7 +1014,7 @@ ApplicationWindow {
     NewInstanceDialog {
         id: newInstanceDialog
         iconsModel: root.shell && root.shell.iconsModel ? root.shell.iconsModel : null
-        onCreated: root.page = "library"
+        onCreated: root.page = "home"
     }
 
     // Instance management, from the library's menu.
@@ -1037,7 +1056,7 @@ ApplicationWindow {
                     root.selectedId = ""
                 // Deleted from its own page: there is no page left to show.
                 if (root.page === "instance" && root.openedInstanceId === targetId)
-                    root.page = "library"
+                    root.page = "home"
                 // Undo is offered only when it went to the trash; a
                 // platform without one deleted it for good.
                 var library = root.shell.library
@@ -1053,7 +1072,7 @@ ApplicationWindow {
                     toast.show(qsTr("Instance deleted."), "success")
                 }
             } else {
-                toast.show(qsTr("The instance could not be deleted. Is it running?"), "danger")
+                toast.show(qsTr("The instance could not be deleted. Is it running, or are its files in use?"), "danger")
             }
         }
     }
@@ -1098,6 +1117,8 @@ ApplicationWindow {
             root.page = "accounts"
             accountsPage.startMicrosoftLogin()
         }
+        onCreateInstanceRequested: root.openNewInstance()
+        onDiscoverRequested: root.page = "discover"
     }
 
     Loader {

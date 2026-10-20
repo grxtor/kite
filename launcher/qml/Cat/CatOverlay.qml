@@ -43,9 +43,11 @@ Item {
     readonly property bool reduceMotion: SettingsStore.bool("UiReduceMotion")
     readonly property bool windowActive: root.Window.window ? root.Window.active : true
     // Every open Popup/Dialog is reparented into the window's overlay, so
-    // counting its children says whether one is open without Main.qml
-    // naming them all.
-    readonly property int openPopups: Overlay.overlay ? Overlay.overlay.children.length : 0
+    // counting its visible children says whether one is open without
+    // Main.qml naming them all. Visible only: closed Toasts, and anything
+    // else parked in the overlay, are there all the time.
+    readonly property int openPopups: Overlay.overlay
+        ? Overlay.overlay.children.filter(child => child.visible).length : 0
     readonly property bool paused: root.demo === ""
                                    && (!root.windowActive || root.reduceMotion || root.openPopups > 0)
 

@@ -24,4 +24,7 @@ QtObject {
     property var playTime: null
     // CatPackList: the cat pictures (packs, sourceFor(id)).
     property var catPacks: null
+    // QmlShell::iconRevision: bumps when any instance icon's pixels may have
+    // changed; Icons.instanceIcon() folds it into the image URL.
+    property int iconRevision: 0
 }

@@ -657,6 +657,8 @@ Item {
             height: visible ? implicitHeight : 0
             text: qsTr("Delete…")
             icon.source: Icons.url("trash")
+            // As InstanceMenu: a running game's folder is in use.
+            enabled: !root.running
             onTriggered: root.deleteRequested(root.instanceId, instanceMenu.name)
         }
     }

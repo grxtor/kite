@@ -91,7 +91,7 @@ Item {
     readonly property int runningDotSize: 7
     // A key the instanceicon provider resolves to its generic icon, so the
     // square is never empty.
-    readonly property string iconSource: "image://instanceicon/" + (root.iconKey.length > 0 ? root.iconKey : "default")
+    readonly property string iconSource: Icons.instanceIcon(root.iconKey)
 
     implicitWidth: 180
     implicitHeight: inset + squareSize + Theme.space.sm + Theme.type.title.lineHeightPx

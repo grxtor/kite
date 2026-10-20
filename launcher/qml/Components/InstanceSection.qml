@@ -96,55 +96,66 @@ Column {
             // hand it to the page's scrolling once the drag is on.
             grabPermissions: PointerHandler.CanTakeOverFromItems | PointerHandler.CanTakeOverFromHandlersOfDifferentType
             onActiveChanged: {
-                if (active)
-                    chip.Drag.start()
-                else
-                    chip.Drag.drop()
+                if (active) {
+                    chipLoader.active = true
+                    chipLoader.item.Drag.start()
+                } else if (chipLoader.item) {
+                    chipLoader.item.Drag.drop()
+                    chipLoader.active = false
+                }
                 dragSource.section.dragActiveChanged(active)
             }
             onCentroidChanged: if (active) dragSource.section.dragMoved(centroid.scenePosition.y)
         }
 
-        Rectangle {
-            id: chip
-            parent: Overlay.overlay
-            visible: dragger.active
-            // What a drop reads off its source.
-            readonly property string instanceId: dragSource.instanceId
-            readonly property string group: dragSource.section.group
-            x: dragger.centroid.scenePosition.x - width / 2
-            y: dragger.centroid.scenePosition.y - height / 2
-            width: chipRow.implicitWidth + Theme.space.md * 2
-            height: Theme.control.height
-            radius: Theme.radius.sm
-            color: Theme.palette.surfaceOverlay
-            border.width: 1
-            border.color: Theme.palette.borderStrong
-            Drag.keys: [dragSource.section.dragKey]
-            Drag.hotSpot.x: width / 2
-            Drag.hotSpot.y: height / 2
+        // Built only while a drag is on. The chip lives in the window's
+        // overlay, and CatOverlay counts that overlay's children as open
+        // popups: one per card at rest kept the cat hidden.
+        Loader {
+            id: chipLoader
+            active: false
+            sourceComponent: Component {
+                Rectangle {
+                    id: chip
+                    parent: Overlay.overlay
+                    // What a drop reads off its source.
+                    readonly property string instanceId: dragSource.instanceId
+                    readonly property string group: dragSource.section.group
+                    x: dragger.centroid.scenePosition.x - width / 2
+                    y: dragger.centroid.scenePosition.y - height / 2
+                    width: chipRow.implicitWidth + Theme.space.md * 2
+                    height: Theme.control.height
+                    radius: Theme.radius.sm
+                    color: Theme.palette.surfaceOverlay
+                    border.width: 1
+                    border.color: Theme.palette.borderStrong
+                    Drag.keys: [dragSource.section.dragKey]
+                    Drag.hotSpot.x: width / 2
+                    Drag.hotSpot.y: height / 2
 
-            Row {
-                id: chipRow
-                anchors.centerIn: parent
-                spacing: Theme.space.sm
-                Image {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: Theme.icon.md
-                    height: Theme.icon.md
-                    sourceSize.width: width * 2
-                    sourceSize.height: height * 2
-                    source: "image://instanceicon/" + (dragSource.iconKey.length > 0 ? dragSource.iconKey : "default")
-                    smooth: true
-                    mipmap: true
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: dragSource.name
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
-                    font.weight: Font.Medium
+                    Row {
+                        id: chipRow
+                        anchors.centerIn: parent
+                        spacing: Theme.space.sm
+                        Image {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: Theme.icon.md
+                            height: Theme.icon.md
+                            sourceSize.width: width * 2
+                            sourceSize.height: height * 2
+                            source: Icons.instanceIcon(dragSource.iconKey)
+                            smooth: true
+                            mipmap: true
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: dragSource.name
+                            color: Theme.palette.textPrimary
+                            font.family: Theme.font.family
+                            font.pixelSize: Theme.type.body.pixelSize
+                            font.weight: Font.Medium
+                        }
+                    }
                 }
             }
         }

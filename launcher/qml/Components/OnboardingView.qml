@@ -28,6 +28,9 @@ Rectangle {
 
     signal finished()
     signal signInRequested()
+    // The last step's two ways on, for a library with nothing in it yet.
+    signal createInstanceRequested()
+    signal discoverRequested()
 
     function start() {
         var needed = root.shell && root.shell.setupSteps ? root.shell.setupSteps.slice() : []
@@ -55,6 +58,28 @@ Rectangle {
     function finish() {
         root.active = false
         root.finished()
+    }
+
+    // Leaves the flow for somewhere to start: New instance or Discover.
+    function finishTo(request) {
+        root.finish()
+        request()
+    }
+
+    // The saved language's row, centred: the list opens on it, not on the
+    // first language in the alphabet. TranslationsModel has no key lookup
+    // of its own, so the roles are read row by row.
+    function showChosenLanguage() {
+        var model = languageList.model
+        var saved = SettingsStore.string("Language")
+        if (!model || saved.length === 0)
+            return
+        for (var row = 0; row < languageList.count; ++row) {
+            if (model.data(model.index(row, 0), Qt.UserRole) === saved) {
+                languageList.positionViewAtIndex(row, ListView.Center)
+                return
+            }
+        }
     }
 
     function stepTitle(id) {
@@ -116,7 +141,7 @@ Rectangle {
                     wrapMode: Text.Wrap
                     color: Theme.palette.textPrimary
                     font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.display.pixelSize + 4
+                    font.pixelSize: Theme.type.display.pixelSize
                     font.weight: Font.Bold
                     font.letterSpacing: -0.6
                 }
@@ -126,7 +151,7 @@ Rectangle {
                     wrapMode: Text.Wrap
                     color: Theme.palette.textSecondary
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize + 1
+                    font.pixelSize: Theme.type.body.pixelSize
                 }
 
                 Column {
@@ -207,11 +232,11 @@ Rectangle {
                     wrapMode: Text.Wrap
                     text: root.step === "language" ? qsTr("Kite switches as soon as you pick one. You can change it later in Settings.")
                         : root.step === "java" ? qsTr("Minecraft runs on Java. Pick an installed one, or let Kite download the right version for each game automatically.")
-                        : root.step === "account" ? qsTr("Use the Microsoft account that owns Minecraft. You can also do this later from the account button at the top right.")
+                        : root.step === "account" ? qsTr("Use the Microsoft account that owns Minecraft. You can also do this later from the account button at the bottom of the left sidebar.")
                         : qsTr("Create an instance, or find a modpack in Discover.")
                     color: Theme.palette.textSecondary
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize + 1
+                    font.pixelSize: Theme.type.body.pixelSize
                     lineHeight: 1.3
                 }
 
@@ -243,6 +268,8 @@ Rectangle {
                                 clip: true
                                 model: root.shell ? root.shell.languages : null
                                 ScrollBar.vertical: ScrollBar {}
+                                onCountChanged: Qt.callLater(root.showChosenLanguage)
+                                Component.onCompleted: Qt.callLater(root.showChosenLanguage)
                                 delegate: AbstractButton {
                                     id: languageRow
                                     required property string languageKey
@@ -277,12 +304,18 @@ Rectangle {
                                             font.weight: languageRow.chosen ? Font.DemiBold : Font.Normal
                                         }
                                         Text {
-                                            Layout.rightMargin: Theme.space.md
                                             visible: Number(languageRow.completeness) > 0 && Number(languageRow.completeness) < 1
                                             text: qsTr("%1% translated").arg(Math.round(Number(languageRow.completeness) * 100))
                                             color: Theme.palette.textTertiary
                                             font.family: Theme.font.family
                                             font.pixelSize: Theme.type.caption.pixelSize
+                                        }
+                                        MeshIcon {
+                                            Layout.rightMargin: Theme.space.md
+                                            visible: languageRow.chosen
+                                            iconName: "check"
+                                            size: Theme.icon.sm
+                                            color: Theme.palette.accentText
                                         }
                                     }
                                 }
@@ -422,16 +455,8 @@ Rectangle {
                         Item { Layout.fillHeight: true }
                     }
 
-                    // Done
-                    ColumnLayout {
-                        spacing: Theme.space.md
-                        MeshIcon {
-                            iconName: "check"
-                            size: 56
-                            color: Theme.palette.success
-                        }
-                        Item { Layout.fillHeight: true }
-                    }
+                    // Done: the way on is in the footer.
+                    Item {}
                 }
 
                 RowLayout {
@@ -448,15 +473,32 @@ Rectangle {
                     Item { Layout.fillWidth: true }
                     Button {
                         flat: true
+                        visible: root.step === "done"
+                        text: qsTr("Go to Home")
+                        onClicked: root.finish()
+                    }
+                    Button {
+                        visible: root.step === "done"
+                        text: qsTr("Browse modpacks")
+                        icon.source: Icons.url("compass")
+                        onClicked: root.finishTo(root.discoverRequested)
+                    }
+                    Button {
                         visible: root.step === "account"
                         text: qsTr("Later")
                         onClicked: root.next()
                     }
                     Button {
                         highlighted: true
-                        visible: root.step !== "account"
-                        text: root.step === "done" ? qsTr("Start playing") : qsTr("Continue")
-                        icon.source: root.step === "done" ? Icons.url("play") : ""
+                        visible: root.step === "done"
+                        text: qsTr("Create an instance")
+                        icon.source: Icons.url("plus")
+                        onClicked: root.finishTo(root.createInstanceRequested)
+                    }
+                    Button {
+                        highlighted: true
+                        visible: root.step !== "account" && root.step !== "done"
+                        text: qsTr("Continue")
                         onClicked: root.next()
                     }
                 }

@@ -256,7 +256,7 @@ Dialog {
                         anchors.centerIn: parent
                         width: Math.round(iconButton.height * 0.62)
                         height: width
-                        source: "image://instanceicon/" + root.selectedIcon
+                        source: Icons.instanceIcon(root.selectedIcon)
                         sourceSize: Qt.size(width, height)
                         fillMode: Image.PreserveAspectFit
                     }
@@ -584,7 +584,7 @@ Dialog {
                                         anchors.centerIn: parent
                                         width: Math.round(root.logoSize * loaderCard.modelData.fit)
                                         height: width
-                                        source: "image://instanceicon/" + loaderCard.modelData.iconKey
+                                        source: Icons.instanceIcon(loaderCard.modelData.iconKey)
                                         sourceSize: Qt.size(width * 2, height * 2)
                                         fillMode: Image.PreserveAspectFit
                                         smooth: true

@@ -11,7 +11,8 @@ import Kite.Theme
  * shared shape SidebarNav slides between items (NavSelectionIndicator) --
  * this control only ever draws its own transient hover/press state, so the
  * shape shows through untouched wherever it sits. Selected, its icon and
- * label take accentText over that accent-tinted fill.
+ * label take accentText over that neutral shape, whose nose is lit in the
+ * accent.
  */
 AbstractButton {
     id: control

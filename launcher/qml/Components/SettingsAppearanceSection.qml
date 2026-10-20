@@ -171,7 +171,7 @@ SettingsScroll {
         SettingSwitch {
             key: "CatEnabled"
             label: qsTr("Show the cat")
-            description: qsTr("A small Minecraft cat that lives on the play bar. Click to pet it, double-click and it hops.")
+            description: qsTr("A small Minecraft cat that wanders along the bottom edge of the page. Click to pet it, double-click and it hops.")
             // One cat in that corner: the picture below steps aside.
             onSwitched: (on) => { if (on) SettingsStore.setValue("TheCat", false) }
         }

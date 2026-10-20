@@ -45,11 +45,7 @@ RowLayout {
     // it changes. Followed rather than read once: it is still empty when
     // this completes, before Main.qml points SettingsStore at the live
     // adapter.
-    readonly property var sortModes: [
-        { value: "Name", label: qsTr("Name") },
-        { value: "LastLaunch", label: qsTr("Last played") },
-        { value: "TotalTimePlayed", label: qsTr("Time played") }
-    ]
+    readonly property var sortModes: SettingsStore.instanceSortModes
     readonly property string sortMode: SettingsStore.string("InstSortMode") || "Name"
     readonly property string sortLabel: {
         var mode = root.sortModes.find((entry) => entry.value === root.sortMode)

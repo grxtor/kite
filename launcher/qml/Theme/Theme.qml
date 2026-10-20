@@ -197,9 +197,10 @@ QtObject {
      * Selection grammar: one documented look per control class, not one
      * grammar total and not accidental variety --
      *   - rail/list nav (SidebarNav, and anything reusing its mechanism,
-     *     e.g. Settings' section list): a sliding accentSubtle shape -- a
-     *     rounded square on the icon rail, a full-width pill in a labelled
-     *     list -- with an accentText icon and label.
+     *     e.g. Settings' section list): a sliding neutral shape in the
+     *     kite's cut -- a square on the icon rail, a full-width pill in a
+     *     labelled list -- with its nose lit in the accent and an
+     *     accentText icon and label.
      *   - tab strip (TabStrip, TabBar/TabButton): a soft pill behind the
      *     active tab -- accentSubtle fill, accentText label -- the rest plain
      *     text with a hover overlay (Modrinth's tabs; phase-02 brief).

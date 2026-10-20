@@ -96,8 +96,9 @@ Item {
         spacing: Theme.space.xl
 
         // Same rail selection grammar as the main sidebar (design-plan.md
-        // Principle 6/§4): a sliding pill + left accent bar behind the row,
-        // not just NavItem's own bare accent-icon/bold-text fallback. Shares
+        // Principle 6/§4): a sliding neutral kite-cut pill with its nose lit
+        // in the accent behind the row, not just NavItem's own bare
+        // accent-icon/bold-text fallback. Shares
         // SidebarNav's own mechanism via NavSelectionIndicator rather than
         // re-deriving the geometry here.
         Item {

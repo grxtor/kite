@@ -25,10 +25,7 @@ SettingsScroll {
             key: "InstSortMode"
             label: qsTr("Sort instances by")
             description: qsTr("Order inside each group of the library.")
-            options: [
-                { value: "Name", label: qsTr("Name") },
-                { value: "LastLaunch", label: qsTr("Last played") }
-            ]
+            options: SettingsStore.instanceSortModes
         }
     }
     SettingsGroup {

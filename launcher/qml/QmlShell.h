@@ -166,6 +166,11 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* iconsModel READ iconsModel CONSTANT)
 	/// Where installed icons live, for a picker's "open folder" action.
 	Q_PROPERTY(QString iconsDir READ iconsDir CONSTANT)
+	/* Bumps whenever any icon's pixels may have changed (IconList's
+	 * iconUpdated: a game texture arrived, an icon file was replaced).
+	 * QML caches image://instanceicon/<key> by URL, so Icons.instanceIcon()
+	 * appends this as `?rev=`; see InstanceIconProvider.h. */
+	Q_PROPERTY(int iconRevision READ iconRevision NOTIFY iconRevisionChanged)
 
 	/* Onboarding: the widget SetupWizard (LanguageWizardPage/JavaWizardPage)
 	 * used to run before the main window -- including under the QML shell,
@@ -486,6 +491,7 @@ class QmlShell : public QObject
 	QString iconsDir() const;
 
 	QStringList setupSteps() const;
+	int iconRevision() const { return m_iconRevision; }
 	/* Recomputes setupSteps() from live settings, exactly like
 	 * Application::createSetupWizard() did once at startup for the widget
 	 * wizard -- called once from the constructor, and again whenever QML
@@ -558,6 +564,8 @@ class QmlShell : public QObject
 	void groupsChanged();
 	/// importIcon() succeeded and the icon list now has @p key.
 	void iconImported(const QString& key);
+	/// iconRevision() moved.
+	void iconRevisionChanged();
 
 	/// setupSteps() moved.
 	void setupStepsChanged();
@@ -629,6 +637,12 @@ class QmlShell : public QObject
 	 * translations()/javalist()), shared with the rest of the launcher and
 	 * outliving any one QmlShell, so there is nothing here to own. */
 	QStringList m_setupSteps;
+
+	/* iconRevision(). Bumped once per event-loop turn however many
+	 * iconUpdated signals arrived (loadGameTextures() emits one per
+	 * changed icon), so every bound Image reloads once. */
+	int m_iconRevision = 0;
+	bool m_iconRevisionPending = false;
 	bool m_javaDetecting = false;
 
 	/* requestImport() sources that arrived before load() loaded the root

@@ -52,6 +52,8 @@ Item {
     signal launchRequested(string id)
     signal stopRequested(string id)
     signal cancelRequested(string id)
+    // The picker's "Create instance", with no instance to pick yet.
+    signal createRequested()
 
     // The Play options menu (LaunchOptionsMenu.qml): what it offers comes
     // from launchOptionsFor(id) -- Main.qml's launchOptions() -- and its
@@ -245,7 +247,7 @@ Item {
                         width: Math.round(pickerButton.tileSize * 0.8)
                         height: width
                         visible: root.hasInstance
-                        source: root.dockIconKey.length > 0 ? "image://instanceicon/" + root.dockIconKey : ""
+                        source: root.dockIconKey.length > 0 ? Icons.instanceIcon(root.dockIconKey) : ""
                         sourceSize: Qt.size(width, height)
                         fillMode: Image.PreserveAspectFit
                     }
@@ -492,9 +494,22 @@ Item {
         // Search field + the ColumnLayout's own spacing + this popup's own
         // top/bottom padding -- everything in this popup that is not the
         // list itself.
-        readonly property int chromeHeight: Theme.control.height + Theme.space.sm + padding * 2
-        height: chromeHeight + Math.min(listMaxHeight, Math.max(1, list.contentHeight
-                                                                  + list.topMargin + list.bottomMargin))
+        // Nothing in the library at all (not just no search match): no
+        // search field then, only the way to make the first instance.
+        readonly property int recentCount: root.recentModel && root.recentModel.count !== undefined
+                                           ? root.recentModel.count : 0
+        readonly property bool libraryEmpty: searchField.text.length === 0 && picker.recentCount === 0
+                                             && !!root.instanceModel && root.instanceModel.count === 0
+        // Search field + the ColumnLayout's own spacing + this popup's own
+        // top/bottom padding -- everything in this popup that is not the
+        // list itself.
+        readonly property int chromeHeight: (picker.libraryEmpty ? 0 : Theme.control.height + Theme.space.sm)
+                                            + padding * 2
+        // The list's own height; with no rows, the empty state's.
+        readonly property int listAreaHeight: list.count === 0
+            ? emptyState.implicitHeight + Theme.space.xl * 2
+            : Math.min(listMaxHeight, list.contentHeight + list.topMargin + list.bottomMargin)
+        height: chromeHeight + listAreaHeight
         padding: Theme.space.sm
         // Belt and braces alongside the height match above: nothing paints
         // past this popup's own rounded background.
@@ -504,6 +519,8 @@ Item {
         onOpened: {
             picker.savedFilter = root.instanceModel ? root.instanceModel.filterText : ""
             searchField.text = ""
+            // The library whole, whatever a page's own search left on it.
+            if (root.instanceModel) root.instanceModel.filterText = ""
             // Ready to type into, but with the plain focused border, not the
             // keyboard focus ring: nobody tabbed here. (The ring is for
             // keyboard focus; see Style/TextField.qml.)
@@ -516,6 +533,7 @@ Item {
 
             SearchBox {
                 id: searchField
+                visible: !picker.libraryEmpty
                 Layout.fillWidth: true
                 placeholderText: qsTr("Search instances")
                 onTextChanged: if (root.instanceModel) root.instanceModel.filterText = text
@@ -525,8 +543,7 @@ Item {
             // wait below it.
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: Math.min(picker.listMaxHeight, Math.max(1, list.contentHeight
-                                                                                  + list.topMargin + list.bottomMargin))
+                Layout.preferredHeight: picker.listAreaHeight
 
                 ListView {
                     id: list
@@ -540,8 +557,10 @@ Item {
                     boundsBehavior: Flickable.StopAtBounds
                     // The default listing is most-recent-first; typing a search
                     // switches to the full library so an instance that has
-                    // never been played can still be found.
-                    model: searchField.text.length > 0 ? root.instanceModel : root.recentModel
+                    // never been played can still be found. So does a library
+                    // nothing has been played from yet.
+                    model: searchField.text.length > 0 || picker.recentCount === 0
+                           ? root.instanceModel : root.recentModel
                     ScrollBar.vertical: ScrollBar {}
 
                     delegate: ItemDelegate {
@@ -572,7 +591,7 @@ Item {
                             Image {
                                 Layout.preferredWidth: 28
                                 Layout.preferredHeight: 28
-                                source: row.iconKey.length > 0 ? "image://instanceicon/" + row.iconKey : ""
+                                source: row.iconKey.length > 0 ? Icons.instanceIcon(row.iconKey) : ""
                                 // A fixed size, not Qt.size(width, height): this
                                 // Image's own width/height come from Layout.
                                 // preferred* rather than a literal, and tying
@@ -619,15 +638,26 @@ Item {
                             }
                         }
                     }
+                }
 
-                    EmptyState {
-                        anchors.centerIn: parent
-                        visible: list.count === 0
-                        title: qsTr("No instances found")
-                        body: ""
-                        actionText: ""
+                EmptyState {
+                    id: emptyState
+                    anchors.centerIn: parent
+                    visible: list.count === 0
+                    title: picker.libraryEmpty ? qsTr("No instances yet") : qsTr("No matches")
+                    body: picker.libraryEmpty ? qsTr("Create one to start playing.")
+                                              : qsTr("Try a different name.")
+                    actionText: picker.libraryEmpty ? qsTr("Create instance") : ""
+                    actionIcon: "plus"
+                    onActionTriggered: {
+                        picker.close()
+                        root.createRequested()
+                    }
 
-                        MeshIcon { iconName: "search"; size: 32; color: Theme.palette.textTertiary }
+                    MeshIcon {
+                        iconName: picker.libraryEmpty ? "cube" : "search"
+                        size: Theme.icon.lg + Theme.space.md
+                        color: Theme.palette.textTertiary
                     }
                 }
 

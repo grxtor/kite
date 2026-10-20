@@ -32,7 +32,7 @@ Item {
     readonly property bool hasWorlds: worldsRepeater.count > 0
 
     // Not the children's `visible`: that follows the panel's own.
-    readonly property bool hasContent: !gettingStarted.allDone || newsList.hasNews || root.hasWorlds
+    readonly property bool hasContent: gettingStarted.shown || newsList.hasNews || root.hasWorlds
     // The news as HomeNews reads it: every post off `news`, the newest one
     // still worth showing (or null), and whether there is one.
     readonly property var newsEntries: newsList.allEntries
@@ -68,7 +68,7 @@ Item {
             GettingStartedCard {
                 id: gettingStarted
                 width: parent.width
-                visible: !gettingStarted.allDone
+                visible: gettingStarted.shown
                 hasInstances: root.hasInstances
                 signedIn: root.signedIn
                 onCreateRequested: root.createRequested()

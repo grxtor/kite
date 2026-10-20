@@ -38,7 +38,7 @@ Item {
             visible: !root.showsPackArt
             width: Math.round(root.width * root.iconShare)
             height: width
-            source: root.iconKey.length > 0 ? "image://instanceicon/" + root.iconKey : ""
+            source: root.iconKey.length > 0 ? Icons.instanceIcon(root.iconKey) : ""
             sourceSize: Qt.size(width, height)
             fillMode: Image.PreserveAspectFit
             smooth: true
