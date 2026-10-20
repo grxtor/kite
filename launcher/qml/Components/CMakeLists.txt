@@ -27,6 +27,7 @@ qt_add_qml_module(Kite_qml_components
         CoverArt.qml
         PlaceholderSurface.qml
         InstanceTile.qml
+        KiteNose.qml
         InstanceCard.qml
         InstanceListRow.qml
         InstanceSection.qml
