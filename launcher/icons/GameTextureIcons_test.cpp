@@ -120,19 +120,22 @@ class GameTextureIconsTest : public QObject
 
 	void animatedTextureGivesItsFirstFrame()
 	{
-		QImage fire = filled(16, 64, qRgba(200, 0, 0, 255));
+		QImage strip = filled(16, 64, qRgba(200, 0, 0, 255));
 		const QImage firstFrame = filled(16, 16, qRgba(255, 160, 0, 255));
 		for (int y = 0; y < 16; ++y) {
 			for (int x = 0; x < 16; ++x) {
-				fire.setPixel(x, y, firstFrame.pixel(x, y));
+				strip.setPixel(x, y, firstFrame.pixel(x, y));
 			}
 		}
 		writeJar(QStringLiteral("1.21.4"),
-				 {{QStringLiteral("block/fire_0.png"), fire}});
+				 {{QStringLiteral("block/tnt_side.png"), strip},
+				  {QStringLiteral("block/fire_0.png"), strip}});
 
 		const auto images =
 			GameTextureIcons::readFromJar(jarPath(QStringLiteral("1.21.4")));
-		QCOMPARE(images.value(QStringLiteral("flame")), firstFrame);
+		QCOMPARE(images.value(QStringLiteral("tnt")), firstFrame);
+		// "flame" is CurseForge's mark, not fire: never drawn from the jar.
+		QVERIFY(!images.contains(QStringLiteral("flame")));
 	}
 
 	void faceIsCroppedWithItsHat()

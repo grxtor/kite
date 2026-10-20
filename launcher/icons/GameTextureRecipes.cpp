@@ -114,10 +114,8 @@ const QList<Recipe>& recipes()
 			wholeTexture(QStringLiteral("meat"),
 						 {QStringLiteral("item/cooked_beef.png"),
 						  QStringLiteral("items/beef_cooked.png")}),
-			// An animated strip; wholeTexture() takes its first frame.
-			wholeTexture(QStringLiteral("flame"),
-						 {QStringLiteral("block/fire_0.png"),
-						  QStringLiteral("blocks/fire_layer_0.png")}),
+			// No "flame": that key is CurseForge's mark (what an imported
+			// CurseForge pack gets), not fire, so it keeps the upstream logo.
 			{QStringLiteral("creeper"), kHeadSize, {{creeper, kHeadFront, {}}}},
 			{QStringLiteral("squarecreeper"),
 			 kHeadSize,
