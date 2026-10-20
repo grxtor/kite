@@ -211,6 +211,21 @@ void InstanceFilterModel::setRecentFirst(bool recentFirst)
 	invalidate();
 }
 
+bool InstanceFilterModel::grouped() const
+{
+	return m_grouped;
+}
+
+void InstanceFilterModel::setGrouped(bool grouped)
+{
+	if (m_grouped == grouped) {
+		return;
+	}
+	m_grouped = grouped;
+	Q_EMIT groupedChanged();
+	invalidate();
+}
+
 QStringList InstanceFilterModel::groups() const
 {
 	return m_groups;
@@ -301,6 +316,9 @@ bool InstanceFilterModel::lessThan(const QModelIndex& left,
 	if (m_recentFirst && m_lastLaunchRole >= 0) {
 		return left.data(m_lastLaunchRole).toLongLong() >
 			   right.data(m_lastLaunchRole).toLongLong();
+	}
+	if (!m_grouped) {
+		return subSortLessThan(left, right);
 	}
 	const QString leftGroup = left.data(m_groupRole).toString();
 	const QString rightGroup = right.data(m_groupRole).toString();

@@ -285,6 +285,63 @@ class InstanceFilterModelTest : public QObject
 		QCOMPARE(firstSpy.count(), 1);
 	}
 
+	/// grouped off: one list in plain sort order, the groups ignored -- and
+	/// back on, group by group again. Every row stays either way.
+	void test_grouped_offIgnoresGroupsInOrder()
+	{
+		FakeInstanceModel source({
+			{ "a", "Pack 3", "Vanilla", 0 },
+			{ "b", "Pack 10", "", 0 },
+			{ "c", "Pack 1", "Modpacks", 0 },
+			{ "d", "Pack 2", "", 0 },
+		});
+		InstanceFilterModel filter;
+		filter.setSourceModel(&source);
+		QVERIFY(filter.grouped());
+		auto ids = [&filter]() {
+			QStringList out;
+			for (int row = 0; row < filter.rowCount(); ++row)
+				out << filter.index(row, 0).data(FakeInstanceModel::IdRole).toString();
+			return out;
+		};
+		// Ungrouped first, then "Modpacks", then "Vanilla".
+		QCOMPARE(ids(), QStringList({ "d", "b", "c", "a" }));
+
+		QSignalSpy groupedSpy(&filter, &InstanceFilterModel::groupedChanged);
+		filter.setGrouped(false);
+		QCOMPARE(groupedSpy.count(), 1);
+		QCOMPARE(filter.count(), 4);
+		QCOMPARE(ids(), QStringList({ "c", "d", "a", "b" }));
+		QCOMPARE(filter.firstId(), QString("c"));
+
+		// Setting the same value again announces nothing.
+		filter.setGrouped(false);
+		QCOMPARE(groupedSpy.count(), 1);
+
+		filter.setGrouped(true);
+		QCOMPARE(groupedSpy.count(), 2);
+		QCOMPARE(ids(), QStringList({ "d", "b", "c", "a" }));
+	}
+
+	/// grouped off still follows InstSortMode: "LastLaunch" across the
+	/// whole library, not within each group.
+	void test_grouped_offFollowsSortModeAcrossGroups()
+	{
+		FakeInstanceModel source({
+			{ "a", "Alpha", "Vanilla", 100 },
+			{ "b", "Beta", "", 300 },
+			{ "c", "Gamma", "Modpacks", 200 },
+		});
+		SortModeInstanceFilterModel filter;
+		filter.mode = "LastLaunch";
+		filter.setGrouped(false);
+		filter.setSourceModel(&source);
+
+		QCOMPARE(filter.index(0, 0).data(FakeInstanceModel::IdRole).toString(), QString("b"));
+		QCOMPARE(filter.index(1, 0).data(FakeInstanceModel::IdRole).toString(), QString("c"));
+		QCOMPARE(filter.index(2, 0).data(FakeInstanceModel::IdRole).toString(), QString("a"));
+	}
+
 	/// Filters set before the source arrives must already see its roles --
 	/// the shell configures its recent and hero proxies exactly this way.
 	void test_filtersSetBeforeSource_applyToFirstRows()

@@ -30,6 +30,17 @@ Item {
     id: root
 
     /*
+     * A heading on the page under the header: a side card's, "Gallery",
+     * "Description" -- Theme's subheading, one level under the pack's name.
+     */
+    component Subheading: Text {
+        color: Theme.palette.textPrimary
+        font.family: Theme.font.heading
+        font.pixelSize: Theme.type.subheading.pixelSize
+        font.weight: Theme.type.subheading.weight
+    }
+
+    /*
      * A card in the side column: a title over its own content.
      */
     component SideCard: Rectangle {
@@ -49,12 +60,8 @@ Item {
             width: parent.width - Theme.space.lg * 2
             spacing: Theme.space.md
 
-            Text {
+            Subheading {
                 text: sideCard.title
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.heading
-                font.pixelSize: Theme.type.title.pixelSize
-                font.weight: Theme.type.title.weight
             }
             Column {
                 id: sideBody
@@ -564,12 +571,8 @@ Item {
                         visible: root.gallery.length > 0
                         spacing: Theme.space.md
 
-                        Text {
+                        Subheading {
                             text: qsTr("Gallery")
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.heading
-                            font.pixelSize: Theme.type.heading.pixelSize
-                            font.weight: Theme.type.heading.weight
                         }
 
                         Flickable {
@@ -624,12 +627,8 @@ Item {
                         visible: !!root.detail && ((root.detail.body || "").length > 0 || root.detail.loading)
                         spacing: Theme.space.md
 
-                        Text {
+                        Subheading {
                             text: qsTr("Description")
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.heading
-                            font.pixelSize: Theme.type.heading.pixelSize
-                            font.weight: Theme.type.heading.weight
                         }
 
                         BusyIndicator {

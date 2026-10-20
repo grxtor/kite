@@ -17,7 +17,9 @@ import Kite.Theme
  * so dragging an instance towards the edge of the view scrolls that view.
  *
  * Without `sectionModelFor` there are no per-group models to show, and the
- * whole (search-filtered) `instanceModel` is one section without a header.
+ * whole (search-filtered) `instanceModel` is one section without a header --
+ * as it is when the library is set to show no groups (`instanceModel`'s
+ * `grouped` off, which orders it without them).
  */
 Item {
     id: root
@@ -74,6 +76,7 @@ Item {
 
     readonly property bool searching: root.searchText.length > 0
     readonly property bool grouped: typeof root.sectionModelFor === "function"
+                                    && !(root.instanceModel && root.instanceModel.grouped === false)
     readonly property var groups: root.instanceModel && root.instanceModel.groups ? root.instanceModel.groups : []
 
     // An instance being dragged to another group: the host's view holds

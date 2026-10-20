@@ -1107,6 +1107,7 @@ void Application::initSettings()
 	m_settings->registerSetting("CatOpacity", 100);
 
 	m_settings->registerSetting("InstSortMode", "Name");
+	m_settings->registerSetting("InstGrouped", true);
 	m_settings->registerSetting("SelectedInstance", QString());
 
 	// Toolbar customization

@@ -44,7 +44,8 @@ Item {
     property var heroModel: null
     // The library, search-filtered (QmlShell's instance proxy).
     property var instanceModel: null
-    // QmlShell.recentWorlds: the side panel's "Recent worlds".
+    // QmlShell.recentWorlds: the side panel's "Recent worlds", and the
+    // hero's "Last world".
     property var recentWorldsModel: null
     // QmlShell.news (NewsModel): Kite's news, newest first, or null.
     property var news: null
@@ -67,7 +68,8 @@ Item {
     signal stopRequested(string id)
     // Opens the instance page: the hero, a row, or a card's ⋯ > Open.
     signal openInstanceRequested(string id)
-    // Opens the instance page on its Worlds tab: a recent world.
+    // Opens the instance page on its Worlds tab: a recent world, or the
+    // hero's last one.
     signal openInstanceWorldsRequested(string id)
     // New instance: the toolbar, "Set up Kite" and the empty page.
     signal createRequested()
@@ -173,6 +175,8 @@ Item {
                 width: parent.width
                 rowModel: root.heroModel ? root.heroModel : root.recentModel
                 launchOptionsFor: root.launchOptionsFor
+                worldsModel: root.recentWorldsModel
+                onWorldsRequested: (id) => root.openInstanceWorldsRequested(id)
                 onOpenRequested: (id) => root.openInstanceRequested(id)
                 onLaunchRequested: (id) => root.launchRequested(id)
                 onStopRequested: (id) => root.stopRequested(id)
@@ -215,6 +219,7 @@ Item {
                         id: toolbar
                         width: parent.width
                         viewMode: root.viewMode
+                        libraryModel: root.instanceModel
                         onViewModeActivated: (value) => root.viewMode = value
                         onNewInstanceRequested: root.createRequested()
                         onSearchTextChanged: root.applySearch()

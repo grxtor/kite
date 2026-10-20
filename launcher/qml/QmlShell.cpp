@@ -1154,10 +1154,22 @@ bool QmlShell::load()
 		m_news = std::make_unique<NewsModel>(checker);
 	}
 
+	/* InstGrouped: whether the library shows group by group, or as one
+	 * list. Only the library proxy follows it; the per-group section models
+	 * are what grouping shows. Looked up rather than assumed, so a build
+	 * without the setting just stays grouped. */
+	if (auto grouped = LAUNCHER->settings()->getSetting("InstGrouped")) {
+		m_instances->setGrouped(grouped->get().toBool());
+	}
+
 	/* The sort order reads InstSortMode on every comparison, but a proxy
 	 * only compares when told to: re-sort when the setting moves. */
 	connect(LAUNCHER->settings().get(), &SettingsObject::SettingChanged, this,
-			[this](const Setting& setting, const QVariant&) {
+			[this](const Setting& setting, const QVariant& value) {
+				if (setting.id() == QLatin1String("InstGrouped")) {
+					m_instances->setGrouped(value.toBool());
+					return;
+				}
 				if (setting.id() != QLatin1String("InstSortMode")) {
 					return;
 				}

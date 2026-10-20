@@ -10,8 +10,12 @@ import Kite.Theme
  * The Library section's toolbar on Home, as in Modrinth App: a wide search,
  * the sort, grid or list, and New instance, in one row under the "Library"
  * heading. The search field gives up its width first under pressure -- the
- * sort box and the labelled button keep theirs, since a shrunken combo box
+ * sort button and the labelled button keep theirs, since a shrunken button
  * reads as broken where a narrower search field still reads as one.
+ *
+ * The sort button names the current order and opens a menu of them, then
+ * "Show groups": a check, as every on/off choice is, for the library as
+ * group sections or as one list.
  *
  * New instance stays secondary: on Home the play bar's Play is the one
  * primary button.
@@ -22,6 +26,9 @@ RowLayout {
     property alias searchText: searchField.text
     // "grid" or "list", the page's; the toggle only asks.
     property string viewMode: "grid"
+    // The library proxy (QmlShell's instance model): whether it shows
+    // groups is its `grouped`.
+    property var libraryModel: null
 
     signal viewModeActivated(string value)
     signal newInstanceRequested()
@@ -32,6 +39,37 @@ RowLayout {
 
     readonly property int searchMinWidth: 160
 
+    // InstSortMode is the launcher-wide setting Settings > General's "Sort
+    // instances by" writes too; QmlShell re-sorts every instance proxy when
+    // it changes. Followed rather than read once: it is still empty when
+    // this completes, before Main.qml points SettingsStore at the live
+    // adapter.
+    readonly property var sortModes: [
+        { value: "Name", label: qsTr("Name") },
+        { value: "LastLaunch", label: qsTr("Last played") },
+        { value: "TotalTimePlayed", label: qsTr("Time played") }
+    ]
+    readonly property string sortMode: SettingsStore.string("InstSortMode") || "Name"
+    readonly property string sortLabel: {
+        var mode = root.sortModes.find((entry) => entry.value === root.sortMode)
+        return mode ? mode.label : root.sortModes[0].label
+    }
+    readonly property bool grouped: !root.libraryModel || root.libraryModel.grouped !== false
+
+    // The InstGrouped launcher setting keeps it across restarts (QmlShell
+    // hands it to the proxy); without that setting the proxy alone holds it
+    // for the session.
+    function setGrouped(on) {
+        if (SettingsStore.adapter && SettingsStore.adapter.contains("InstGrouped"))
+            SettingsStore.setValue("InstGrouped", on)
+        else if (root.libraryModel)
+            root.libraryModel.grouped = on
+    }
+
+    function openSortMenu() {
+        sortMenu.popup(sortButton, 0, sortButton.height + Theme.space.xs)
+    }
+
     spacing: Theme.space.sm
 
     SearchBox {
@@ -41,27 +79,44 @@ RowLayout {
         placeholderText: qsTr("Search instances")
     }
 
-    ComboBox {
-        id: sortBox
-        model: [
-            { value: "Name", label: qsTr("Name") },
-            { value: "LastLaunch", label: qsTr("Last played") },
-            { value: "TotalTimePlayed", label: qsTr("Time played") }
-        ]
-        textRole: "label"
-        valueRole: "value"
-        // InstSortMode is the launcher-wide setting Settings > General's
-        // "Sort instances by" writes too; QmlShell re-sorts every instance
-        // proxy when it changes. Followed rather than read once: it is still
-        // empty when this completes, before Main.qml points SettingsStore at
-        // the live adapter.
-        readonly property string stored: SettingsStore.string("InstSortMode") || "Name"
-        function sync() { currentIndex = Math.max(0, indexOfValue(stored)) }
-        onStoredChanged: sync()
-        Component.onCompleted: sync()
-        onActivated: SettingsStore.setValue("InstSortMode", currentValue)
+    Button {
+        id: sortButton
+        text: root.sortLabel
+        icon.source: Icons.url("sort")
+        onClicked: sortMenu.visible ? sortMenu.close() : root.openSortMenu()
 
-        Accessible.name: qsTr("Sort instances by")
+        Accessible.name: qsTr("Sort instances by %1").arg(root.sortLabel)
+    }
+
+    // One order checked at a time; choosing the checked one again leaves
+    // it checked.
+    ButtonGroup { id: sortGroup }
+
+    Menu {
+        id: sortMenu
+
+        Instantiator {
+            model: root.sortModes
+            delegate: MenuItem {
+                required property var modelData
+                text: modelData.label
+                checkable: true
+                checked: root.sortMode === modelData.value
+                ButtonGroup.group: sortGroup
+                onTriggered: SettingsStore.setValue("InstSortMode", modelData.value)
+            }
+            onObjectAdded: (index, object) => sortMenu.insertItem(index, object)
+            onObjectRemoved: (index, object) => sortMenu.removeItem(object)
+        }
+
+        MenuSeparator {}
+
+        MenuItem {
+            text: qsTr("Show groups")
+            checkable: true
+            checked: root.grouped
+            onToggled: root.setGrouped(checked)
+        }
     }
 
     // Grid or list: two icon buttons, the current view lit.

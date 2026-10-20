@@ -41,10 +41,10 @@ TextEdit {
     readonly property font displayFont: Qt.font({ family: Theme.font.family, pixelSize: root.pixelSize })
     property bool loaded: false
 
-    // The article's type scale, between the theme's own steps: h1 the
-    // heading size, h3 the title size, h2 halfway between them.
+    // The article's type scale, the theme's own steps: h1 the heading size,
+    // h2 the subheading size, h3 the title size.
     readonly property int h1Size: Theme.type.heading.pixelSize
-    readonly property int h2Size: Math.round((Theme.type.heading.pixelSize + Theme.type.title.pixelSize) / 2)
+    readonly property int h2Size: Theme.type.subheading.pixelSize
     readonly property int h3Size: Theme.type.title.pixelSize
     readonly property int minorHeadingSize: Theme.type.bodyStrong.pixelSize
     readonly property int lineHeightPercent: Math.round(Theme.type.body.lineHeight * 100)

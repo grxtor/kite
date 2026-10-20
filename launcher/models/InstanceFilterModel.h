@@ -74,6 +74,11 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	 * setting, and instances that were never launched are left out. */
 	Q_PROPERTY(bool recentFirst READ recentFirst WRITE setRecentFirst NOTIFY
 				   recentFirstChanged)
+	/* Whether rows are ordered group by group (the default, as the widget
+	 * grid does). Off, the library is one list: the group plays no part in
+	 * the order, only the InstSortMode sort does. */
+	Q_PROPERTY(bool grouped READ grouped WRITE setGrouped NOTIFY
+				   groupedChanged)
 	/// Distinct groups of the rows that pass the filter, in row order.
 	Q_PROPERTY(QStringList groups READ groups NOTIFY groupsChanged)
 	/// Id of the first row after filtering and sorting; empty when none.
@@ -100,6 +105,9 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	bool recentFirst() const;
 	void setRecentFirst(bool recentFirst);
 
+	bool grouped() const;
+	void setGrouped(bool grouped);
+
 	QStringList groups() const;
 	QString firstId() const;
 
@@ -112,6 +120,7 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	void exactGroupChanged();
 	void instanceIdChanged();
 	void recentFirstChanged();
+	void groupedChanged();
 	void groupsChanged();
 	void firstIdChanged();
 
@@ -140,6 +149,7 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	bool m_exactGroup = false;
 	QString m_instanceId;
 	bool m_recentFirst = false;
+	bool m_grouped = true;
 	QStringList m_groups;
 	QString m_firstId;
 

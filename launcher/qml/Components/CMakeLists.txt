@@ -115,7 +115,6 @@ qt_add_qml_module(Kite_qml_components
         TabScroll.qml
         TabStrip.qml
         TabToolbar.qml
-        StatTile.qml
         ConfirmDialog.qml
         DialogHeader.qml
         AccountsPage.qml
@@ -177,12 +176,14 @@ qt_add_qml_module(Kite_qml_components
         HomeSidePanel.qml
         HomeSectionTitle.qml
         HomeHero.qml
+        HomeHeroFacts.qml
+        HomeHeroTile.qml
+        HomeHeroTitle.qml
         HomeContinuePlaying.qml
         HomePanelHeading.qml
         QuietPlayButton.qml
         HomeWorldTile.qml
         HoverReason.qml
-        HomeLibraryTile.qml
         BrandMark.qml
         SkinSilhouette.qml
         ServersTab.qml
