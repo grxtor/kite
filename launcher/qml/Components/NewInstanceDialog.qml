@@ -56,18 +56,19 @@ Dialog {
     // scrolls the dialog instead of squeezing the list.
     readonly property int versionListRows: 4
     readonly property int versionListMinHeight: versionListRows * Theme.control.height + Theme.space.xs * 2 + 2
-    readonly property int logoWell: Theme.control.heightLg
-    readonly property int logoSize: Theme.control.height
+    readonly property int logoSize: Theme.control.heightLg
     // Each loader wears the logo the launcher already ships for it (the
     // iconName column of knownModLoaders(), served by the instanceicon
     // provider); the unmodified game gets the grass block, the default
-    // instance icon.
+    // instance icon. `fit` evens out how big they read: a solid square (the
+    // grass block, NeoForge's framed pixel art) looks larger than a mark
+    // with air around it at the same box.
     readonly property var loaders: [
-        { value: "", label: qsTr("Vanilla"), iconKey: "grass" },
-        { value: "fabric", label: "Fabric", iconKey: "fabricmc" },
-        { value: "quilt", label: "Quilt", iconKey: "quilt_mark" },
-        { value: "forge", label: "Forge", iconKey: "forge_mark" },
-        { value: "neoforge", label: "NeoForge", iconKey: "neoforged" }
+        { value: "", label: qsTr("Vanilla"), iconKey: "grass", fit: 0.78 },
+        { value: "fabric", label: "Fabric", iconKey: "fabricmc", fit: 1.0 },
+        { value: "quilt", label: "Quilt", iconKey: "quilt_mark", fit: 0.86 },
+        { value: "forge", label: "Forge", iconKey: "forge_mark", fit: 1.0 },
+        { value: "neoforge", label: "NeoForge", iconKey: "neoforged", fit: 0.78 }
     ]
 
     // Start on the newest version of the list shown, so Create works
@@ -243,14 +244,12 @@ Dialog {
                 ToolTip.text: qsTr("Change icon")
                 onClicked: iconPicker.open()
 
-                // A control, so a control's corner; hover moves the border
-                // alone.
-                background: Rectangle {
+                // A control, so a control's corner, on the tile every
+                // instance icon sits on; hover moves the border alone.
+                background: InstanceTile {
                     radius: Theme.radius.sm
-                    color: Theme.palette.surfaceRaised
-                    border.width: 1
-                    border.color: iconButton.hovered ? Theme.palette.borderStrong : Theme.palette.border
-                    Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                    borderColor: iconButton.hovered ? Theme.palette.borderStrong : Theme.palette.border
+                    Behavior on borderColor { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                 }
                 contentItem: Item {
                     Image {
@@ -572,23 +571,18 @@ Dialog {
                                 anchors.centerIn: parent
                                 spacing: Theme.space.sm
 
-                                // Every logo sits in the same well at the
-                                // same size, so a mark that ships on its
-                                // own square (Forge's navy, Quilt's
-                                // purple) reads as a logo on a plate like
-                                // the rest, not as a box only it has.
-                                Rectangle {
+                                // The logo stands on the card itself: a
+                                // dark well around it read as a hole in
+                                // the tile. One box for all, scaled by
+                                // the loader's `fit`.
+                                Item {
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    width: root.logoWell
+                                    width: root.logoSize
                                     height: width
-                                    radius: Theme.radius.sm
-                                    color: Theme.palette.surfaceSunken
-                                    border.width: 1
-                                    border.color: Theme.palette.border
 
                                     Image {
                                         anchors.centerIn: parent
-                                        width: root.logoSize
+                                        width: Math.round(root.logoSize * loaderCard.modelData.fit)
                                         height: width
                                         source: "image://instanceicon/" + loaderCard.modelData.iconKey
                                         sourceSize: Qt.size(width * 2, height * 2)

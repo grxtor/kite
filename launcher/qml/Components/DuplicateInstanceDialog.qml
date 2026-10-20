@@ -93,12 +93,11 @@ Dialog {
                     iconPicker.current = root.iconKey
                     iconPicker.open()
                 }
-                background: Rectangle {
+                // The copy's icon, on the tile every instance icon sits on.
+                background: InstanceTile {
                     radius: Theme.radius.sm
-                    color: Theme.palette.surfaceSunken
-                    border.width: 1
-                    border.color: iconButton.hovered ? Theme.palette.borderStrong : Theme.palette.border
-                    Behavior on border.color { ColorAnimation { duration: Theme.motion.fast } }
+                    borderColor: iconButton.hovered ? Theme.palette.borderStrong : Theme.palette.border
+                    Behavior on borderColor { ColorAnimation { duration: Theme.motion.fast } }
                 }
                 contentItem: Item {
                     Image {
