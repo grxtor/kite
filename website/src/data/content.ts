@@ -2,40 +2,38 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ImageMetadata } from 'astro';
 import type { Locale } from '../i18n';
-import type { FeatureKey, HighlightKey, PlatformKey, ScreenId } from '../i18n/en';
+import type { FeatureKey, PlatformKey, ScreenId } from '../i18n/types';
 import type { IconName } from '../lib/icons';
 
+// Rendered from a copy of a real Kite data folder, with the accounts removed.
 import enHome from '../assets/screens/en/home.webp';
+import enLibrary from '../assets/screens/en/library.webp';
 import enMods from '../assets/screens/en/mods.webp';
 import enNewInstance from '../assets/screens/en/new-instance.webp';
-import enAccounts from '../assets/screens/en/accounts.webp';
 import enJava from '../assets/screens/en/java.webp';
 import trHome from '../assets/screens/tr/home.webp';
+import trLibrary from '../assets/screens/tr/library.webp';
 import trMods from '../assets/screens/tr/mods.webp';
 import trNewInstance from '../assets/screens/tr/new-instance.webp';
-import trAccounts from '../assets/screens/tr/accounts.webp';
 import trJava from '../assets/screens/tr/java.webp';
 
 export const SCREENS: Record<Locale, Record<ScreenId, ImageMetadata>> = {
-  en: { home: enHome, mods: enMods, newInstance: enNewInstance, accounts: enAccounts, java: enJava },
-  tr: { home: trHome, mods: trMods, newInstance: trNewInstance, accounts: trAccounts, java: trJava },
+  en: { home: enHome, library: enLibrary, mods: enMods, newInstance: enNewInstance, java: enJava },
+  tr: { home: trHome, library: trLibrary, mods: trMods, newInstance: trNewInstance, java: trJava },
 };
+
+/**
+ * An in-game screenshot behind the hero, taken in the player's own world.
+ * Null until there is one: the hero then sits on the plain canvas.
+ */
+export const HERO_BACKDROP: ImageMetadata | null = null;
 
 /** Feature rows in page order, with the screenshot each one shows. */
 export const FEATURE_ROWS: ReadonlyArray<{ key: FeatureKey; screen: ScreenId }> = [
+  { key: 'library', screen: 'library' },
   { key: 'mods', screen: 'mods' },
   { key: 'loaders', screen: 'newInstance' },
-  { key: 'accounts', screen: 'accounts' },
   { key: 'java', screen: 'java' },
-];
-
-export const HIGHLIGHTS: ReadonlyArray<{ key: HighlightKey; icon: IconName }> = [
-  { key: 'worlds', icon: 'image' },
-  { key: 'backups', icon: 'archive' },
-  { key: 'imports', icon: 'package' },
-  { key: 'language', icon: 'languages' },
-  { key: 'openSource', icon: 'code' },
-  { key: 'playTime', icon: 'clock' },
 ];
 
 export const PLATFORMS: ReadonlyArray<{ key: PlatformKey; icon: IconName }> = [

@@ -1,11 +1,13 @@
 ---
 // SPDX-FileCopyrightText: 2026 grxtor
 // SPDX-License-Identifier: Apache-2.0
+import Backdrop from '../components/Backdrop.astro';
 import Button from '../components/Button.astro';
-import FeatureRow from '../components/FeatureRow.astro';
-import HighlightCard from '../components/HighlightCard.astro';
+import CompareSection from '../components/CompareSection.astro';
+import FeatureCard from '../components/FeatureCard.astro';
+import NativeSection from '../components/NativeSection.astro';
 import Screenshot from '../components/Screenshot.astro';
-import { FEATURE_ROWS, HIGHLIGHTS } from '../data/content';
+import { FEATURE_ROWS, HERO_BACKDROP } from '../data/content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getDictionary, localePath, type Locale } from '../i18n';
 
@@ -24,16 +26,17 @@ const downloadPath = localePath(locale, '/download');
   title={t.meta.home.title}
   description={t.meta.home.description}
 >
-  <section class="hero">
-    <div class="container">
+  <section class:list={['hero', HERO_BACKDROP && 'has-backdrop']}>
+    {HERO_BACKDROP && <Backdrop image={HERO_BACKDROP} />}
+    <div class="container hero-grid">
       <div class="intro">
         <h1>{t.hero.title}</h1>
         <p class="lead">{t.hero.lead}</p>
         <div class="actions">
           <Button href={downloadPath} size="lg">{t.hero.primaryCta}</Button>
-          <Button href="#features" variant="secondary" size="lg">{t.hero.secondaryCta}</Button>
+          <Button href="#compare" variant="secondary" size="lg">{t.hero.secondaryCta}</Button>
         </div>
-        <p class="note muted">{t.hero.note}</p>
+        <p class="note">{t.hero.note}</p>
       </div>
       <div class="hero-shot">
         <Screenshot locale={locale} screen="home" alt={t.hero.screenshotAlt} size="hero" priority />
@@ -41,23 +44,23 @@ const downloadPath = localePath(locale, '/download');
     </div>
   </section>
 
+  <NativeSection locale={locale} />
+
   <section class="section features" id="features" aria-labelledby="features-title">
     <div class="container">
-      <h2 id="features-title" class="centered">{t.features.title}</h2>
-      <div class="intro-feature">
-        <h3>{t.features.intro.title}</h3>
-        <p class="lead">{t.features.intro.text}</p>
+      <div class="features-head">
+        <h2 id="features-title">{t.features.title}</h2>
+        <p class="lead">{t.features.lead}</p>
       </div>
-      <div class="rows">
+      <div class="cards">
         {
-          FEATURE_ROWS.map((row, index) => (
-            <FeatureRow
+          FEATURE_ROWS.map((row) => (
+            <FeatureCard
               locale={locale}
               screen={row.screen}
               title={t.features.rows[row.key].title}
               text={t.features.rows[row.key].text}
               alt={t.features.rows[row.key].alt}
-              flip={index % 2 === 1}
             />
           ))
         }
@@ -65,111 +68,101 @@ const downloadPath = localePath(locale, '/download');
     </div>
   </section>
 
-  <section class="highlights" aria-label={t.features.title}>
-    <div class="container">
-      <ul class="grid">
-        {
-          HIGHLIGHTS.map((item) => (
-            <HighlightCard
-              icon={item.icon}
-              title={t.highlights[item.key].title}
-              text={t.highlights[item.key].text}
-            />
-          ))
-        }
-      </ul>
-    </div>
-  </section>
+  <CompareSection locale={locale} />
 
   <section class="closing" aria-labelledby="closing-title">
-    <div class="container band">
-      <h2 id="closing-title">{t.closing.title}</h2>
-      <p class="lead">{t.closing.text}</p>
-      <Button href={downloadPath} size="lg">{t.closing.cta}</Button>
+    <div class="container">
+      <div class="closing-bar">
+        <div>
+          <h2 id="closing-title">{t.closing.title}</h2>
+          <p class="closing-text">{t.closing.text}</p>
+        </div>
+        <Button href={downloadPath} size="lg">{t.closing.cta}</Button>
+      </div>
     </div>
   </section>
 </BaseLayout>
 
 <style>
   .hero {
-    padding-block: var(--space-8) 0;
+    position: relative;
+    isolation: isolate;
+    overflow-x: clip;
+    padding-block: var(--space-8);
+  }
+  .has-backdrop {
+    padding-top: var(--space-9);
+  }
+  .hero-grid {
+    display: grid;
+    gap: var(--space-8);
+    align-items: center;
   }
   .intro {
     display: grid;
-    justify-items: center;
     gap: var(--space-5);
-    max-width: 52rem;
-    margin-inline: auto;
-    text-align: center;
+    max-width: 38rem;
   }
-  .intro .lead {
-    max-width: 44rem;
+  h1 {
+    font-size: var(--text-display);
+    line-height: 1.04;
+    letter-spacing: var(--tracking-h1);
   }
   .actions {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
     gap: var(--space-3);
     margin-top: var(--space-2);
   }
   .note {
+    color: var(--text-muted);
     font-size: var(--text-sm);
   }
-  .hero-shot {
-    max-width: var(--hero-shot-max);
-    margin: var(--space-8) auto 0;
+  /* On wide screens the screenshot runs past the right edge of the page. */
+  @media (min-width: 1080px) {
+    .hero-grid {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    }
+    .hero-shot {
+      width: var(--hero-shot-bleed);
+    }
   }
 
   .features {
     scroll-margin-top: var(--header-height);
   }
-  .centered {
-    text-align: center;
-  }
-  .intro-feature {
-    display: grid;
-    justify-items: center;
-    gap: var(--space-3);
-    max-width: 44rem;
-    margin: var(--space-6) auto var(--space-9);
-    text-align: center;
-  }
-  .rows {
-    display: grid;
-    gap: var(--space-9);
-  }
-
-  .highlights {
-    padding-bottom: var(--space-section);
-  }
-  .grid {
+  .features-head {
     display: grid;
     gap: var(--space-4);
-    grid-template-columns: 1fr;
+    max-width: 46rem;
+    margin-bottom: var(--space-7);
   }
-  @media (min-width: 600px) {
-    .grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
+  .cards {
+    display: grid;
+    gap: var(--space-5);
   }
-  @media (min-width: 960px) {
-    .grid {
-      grid-template-columns: repeat(3, 1fr);
+  @media (min-width: 900px) {
+    .cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
   .closing {
+    padding-bottom: var(--space-section);
+  }
+  .closing-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
     background: var(--surface);
-    border-top: 1px solid var(--border);
-    padding-block: var(--space-section);
   }
-  .band {
-    display: grid;
-    justify-items: center;
-    gap: var(--space-4);
-    text-align: center;
-  }
-  .band .lead {
-    margin-bottom: var(--space-3);
+  .closing-text {
+    margin-top: var(--space-2);
+    color: var(--text-secondary);
   }
 </style>

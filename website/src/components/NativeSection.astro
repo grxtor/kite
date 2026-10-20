@@ -1,0 +1,113 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+//
+// "Native, not a web page": what Kite is built with, next to a real excerpt
+// of its QML. The code is highlighted at build time; no script ships.
+import { Code } from 'astro:components';
+import { QML_EXCERPT, QML_EXCERPT_FILE } from '../data/qml-excerpt';
+import { format, getDictionary, type Locale } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale);
+const caption = format(t.native.codeCaption, { file: QML_EXCERPT_FILE });
+---
+
+<section class="section native" id="native" aria-labelledby="native-title">
+  <div class="container grid">
+    <div class="copy">
+      <h2 id="native-title">{t.native.title}</h2>
+      <p class="lead">{t.native.lead}</p>
+      <p class="body">{t.native.body}</p>
+      <dl class="facts">
+        {
+          t.native.facts.map((fact) => (
+            <div class="fact">
+              <dt>{fact.label}</dt>
+              <dd>{fact.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+    <figure class="code">
+      <figcaption>{caption}</figcaption>
+      <Code code={QML_EXCERPT} lang="qml" theme="css-variables" />
+    </figure>
+  </div>
+</section>
+
+<style>
+  .native {
+    scroll-margin-top: var(--header-height);
+  }
+  .grid {
+    display: grid;
+    gap: var(--space-7);
+    align-items: start;
+  }
+  .copy {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .body {
+    color: var(--text-secondary);
+  }
+  .facts {
+    display: grid;
+    margin: var(--space-3) 0 0;
+    border-top: 1px solid var(--border);
+  }
+  .fact {
+    display: grid;
+    grid-template-columns: minmax(8rem, 2fr) 3fr;
+    gap: var(--space-4);
+    padding-block: var(--space-3);
+    border-bottom: 1px solid var(--border);
+  }
+  dt {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+  }
+  dd {
+    margin: 0;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .code {
+    margin: 0;
+    min-width: 0;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--sunken);
+    overflow: hidden;
+  }
+  figcaption {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+  }
+  .code :global(pre) {
+    margin: 0;
+    padding: var(--space-5) var(--space-4);
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.65;
+  }
+
+  @media (min-width: 1000px) {
+    .grid {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+      gap: var(--space-8);
+    }
+  }
+</style>

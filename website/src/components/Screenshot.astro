@@ -5,7 +5,7 @@ import { Picture } from 'astro:assets';
 import { SCREENS } from '../data/content';
 import { SCREENSHOT_SIZES, SCREENSHOT_WIDTHS } from '../lib/imaging';
 import type { Locale } from '../i18n';
-import type { ScreenId } from '../i18n/en';
+import type { ScreenId } from '../i18n/types';
 
 interface Props {
   locale: Locale;
@@ -16,7 +16,7 @@ interface Props {
   priority?: boolean;
 }
 
-const { locale, screen, alt, size = 'row', priority = false } = Astro.props;
+const { locale, screen, alt, size = 'card', priority = false } = Astro.props;
 ---
 
 <div class="shot">

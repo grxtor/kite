@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: 2026 grxtor
 // SPDX-License-Identifier: Apache-2.0
-import type { Dictionary } from './en';
+import type { Dictionary } from './types';
 
 export const tr = {
   siteName: 'Kite',
   meta: {
     home: {
-      title: 'Kite: kurulumlar etrafında tasarlanmış bir Minecraft başlatıcısı',
+      title: 'Kite: native bir Minecraft başlatıcısı',
       description:
-        'Kite, Minecraft’ın her kopyasını kendi modları, dünyaları ve ayarlarıyla ayrı bir kurulumda tutar. macOS, Windows ve Linux için ücretsiz ve açık kaynak.',
+        'Kite, C++ ile yazılmış, arayüzü Qt Quick olan bir Minecraft başlatıcısı. Ayrı kurulumlar; Modrinth, CurseForge, FTB, ATLauncher ve Technic paketleri; Java’yı da kendisi halleder. Ücretsiz ve açık kaynak.',
     },
     download: {
       title: 'Kite’ı indir',
@@ -27,78 +27,69 @@ export const tr = {
     languageLabel: 'Dil',
     homeLabel: 'Kite ana sayfa',
     features: 'Özellikler',
+    compare: 'Karşılaştır',
     download: 'İndir',
     privacy: 'Gizlilik',
     terms: 'Koşullar',
     github: 'GitHub',
   },
   hero: {
-    title: 'Her Minecraft kendi yerinde.',
-    lead: 'Kite, oyunun her kopyasını kendi kurulumunda tutar; modlar, dünyalar ve ayarlar birbirine karışmaz. Bir sürüm seç, mod paketi ekle, Microsoft ile giriş yap ve oyna.',
+    title: 'Native yazılmış bir Minecraft başlatıcısı.',
+    lead: 'Kite, bir web sayfasının etrafına sarılmadı; C++ ile yazıldı, arayüzü Qt Quick. Her kurulumun kendi modları, dünyaları ve Java’sı var. Modrinth, CurseForge, FTB, ATLauncher ve Technic paketleri bir arama uzağında.',
     primaryCta: 'Kite’ı indir',
-    secondaryCta: 'Neler yaptığına bak',
-    note: 'Ücretsiz ve açık kaynak · macOS, Windows ve Linux',
+    secondaryCta: 'Diğerlerinden farkı',
+    note: 'Ücretsiz ve açık kaynak · Apache 2.0 · macOS, Windows ve Linux',
     screenshotAlt:
-      'Kite ana sayfası: en son oynanan kurulum ve Oyna düğmesi, devam edilecek kurulumların listesi, sağda son dünyalar ve altta kütüphane.',
+      'Gerçek kurulumlarla Kite ana sayfası: oynamaya hazır MC-26.3-Animations, Zombiemania ve üç Minecraft sürümüyle “Oynamaya devam et” listesi, sağda son dünyalar.',
+  },
+  native: {
+    title: 'Native, web sayfası değil',
+    lead: 'Bugün çoğu başlatıcı bir pencereye konmuş web uygulaması. Kite’ın arayüzü Qt’nin arayüz dili QML ile yazıldı ve Qt Quick onu ekran kartınla çiziyor: macOS’ta Metal, Windows’ta Direct3D, Linux’ta OpenGL.',
+    body: 'Altında MultiMC’den gelen C++ var; Prism Launcher da aynı aileden. Kite 2026’da MeshMC’den ayrıldı ve sıfırdan yazılmış yeni bir arayüz aldı.',
+    facts: [
+      { label: 'Arayüz', value: 'Qt Quick (QML)' },
+      { label: 'Çekirdek', value: 'C++17 ve Qt 6' },
+      { label: 'Çizim', value: 'Metal, Direct3D ya da OpenGL' },
+      { label: 'Kite için yazılan', value: '216 QML dosyası, 35.000 satır' },
+      { label: 'Lisans', value: 'Apache 2.0' },
+    ],
+    codeCaption: 'Oyna düğmesi, {file} dosyasından',
   },
   features: {
     title: 'Kurulumlar etrafında tasarlandı',
-    intro: {
-      title: 'Hiçbiri diğerini bozmaz',
-      text: 'Vanilla 1.21, 200 modluk bir paket ve bir ön sürüm yan yana durabilir. Her kurulumun kendi modları, dünyaları, kaynak paketleri ve Java ayarları vardır.',
-    },
+    lead: 'Kurulum, kendi modları, dünyaları, kaynak paketleri ve Java ayarları olan bir Minecraft kopyasıdır. Sade bir 26.3, 437 modluk bir paket ve bir ön sürüm birbirine dokunmadan yan yana durur.',
     rows: {
+      library: {
+        title: 'Bütün kütüphanen',
+        text: 'Kurulumlar mod paketinin logosunu ya da kendi oyununun dokularından kesilmiş bir ikonu taşır. Sırala, grupla, hangisinde ne kadar oynadığını gör.',
+        alt: 'Kite kütüphanesi: ATM10, Create: Skies and Seas, DeceasedCraft, Fabulously Optimized, Fresh & Smooth ve Zombiemania dahil on gerçek kurulum; üstte toplam 58 saat oynama süresi.',
+      },
       mods: {
-        title: 'Klasör karıştırmadan modlar',
-        text: 'Bir kurulumdaki tüm modları gör, birini kapat, güncelle ya da Kite’tan çıkmadan Modrinth’ten yenilerini ekle.',
-        alt: 'Bir Fabric kurulumunun İçerik sekmesi: altı mod, sürümleri ve her biri için açma kapama düğmesi; üstte güncelleme denetleme ve içerik ekleme düğmeleri.',
+        title: '437 mod, tek liste',
+        text: 'Bu All the Mods 10. Bir modu kapat, bütün modların güncellemesini tek seferde denetle ya da klasör açmadan Modrinth ve CurseForge’dan yenilerini ekle.',
+        alt: 'ATM10 kurulumunun İçerik sekmesi: sürümleri ve açma kapama düğmeleriyle 437 mod; üstte güncelleme denetleme ve içerik ekleme düğmeleri.',
       },
       loaders: {
         title: 'Her yükleyici, her sürüm',
-        text: 'Kurulum oluştururken bir Minecraft sürümü ile Fabric, Quilt, Forge ya da NeoForge seç. Gerisini Kite indirir.',
-        alt: 'Yeni kurulum penceresi: ad alanı, Minecraft sürümleri listesi ve mod yükleyici satırı: Vanilla, Fabric, Quilt, Forge ve NeoForge.',
-      },
-      accounts: {
-        title: 'Hesapların ve skin’lerin',
-        text: 'Microsoft hesabınla giriş yap, birden fazla hesap tut, skin’ini ve pelerinini başlatıcıdan değiştir.',
-        alt: 'Hesaplar ekranındaki skin ve pelerin penceresi: skin önizlemesi, varsayılan skin’lerin ızgarası ve pelerin seçimi.',
+        text: 'Bir Minecraft sürümü seç, sonra Fabric, Quilt, Forge ya da NeoForge. Oyunu, yükleyiciyi ve gereken bütün kütüphaneleri Kite indirir.',
+        alt: 'Yeni kurulum penceresi: ad alanı, 26.3’ten 1.21.11’e Minecraft sürümleri ve mod yükleyici satırı: Vanilla, Fabric, Quilt, Forge ve NeoForge.',
       },
       java: {
         title: 'Java hazır',
-        text: 'Kite, Minecraft sürümünün istediği Java’yı seçer, sende yoksa indirir. Belleği bir kaydırıcıyla ayarlarsın.',
-        alt: 'Ayarlar’ın Java ve bellek sayfası: en çok bellek için 6 GB’a ayarlı bir kaydırıcı, başlangıç belleği alanı ve Java yolu.',
+        text: 'Her Minecraft sürümü başka bir Java ister. Kite doğrusunu seçer, sende yoksa indirir. Bellek bir kaydırıcı.',
+        alt: 'Java ve bellek ayarları: 6 GB’a ayarlı en çok bellek kaydırıcısı, başlangıç belleği alanı ve kullanılan Java.',
       },
     },
   },
-  highlights: {
-    worlds: {
-      title: 'Dünyalar ve ekran görüntüleri',
-      text: 'Her kurulum kendininkileri listeler.',
-    },
-    backups: {
-      title: 'Başlatmadan önce yedek',
-      text: 'İsteğe bağlı, ayarlardan seçersin.',
-    },
-    imports: {
-      title: 'Paketlerini içe aktarır',
-      text: 'Modrinth .mrpack, CurseForge, MultiMC ve Prism zip dosyaları.',
-    },
-    language: {
-      title: 'Senin dilin',
-      text: 'İngilizce ve Türkçe, uygulamanın içinde.',
-    },
-    openSource: {
-      title: 'Açık kaynak',
-      text: 'Apache 2.0, MeshMC ve MultiMC üzerine kurulu.',
-    },
-    playTime: {
-      title: 'Oynama süresi ve son dünyalar',
-      text: 'Ana sayfa kaldığın yeri gösterir.',
-    },
+  compare: {
+    title: 'Diğerlerinden farkı',
+    lead: 'Her başlatıcının kendi sitesi, kaynak kodu ve gizlilik politikasıyla Ekim 2026’da kontrol edildi.',
+    corner: 'Başlatıcı',
+    sourcesTitle: 'Kaynaklar',
   },
   closing: {
-    title: 'Kite’ı edin',
-    text: 'Ücretsiz, yüklemek için hesap gerekmez.',
+    title: 'Kite ücretsiz',
+    text: 'macOS, Windows ve Linux için. Reklam yok, bize hesap açman gerekmiyor.',
     cta: 'Kite’ı indir',
   },
   download: {
@@ -109,13 +100,13 @@ export const tr = {
     buttonLabel: '{name} için Kite’ı indir',
     comingSoon: 'Yakında',
     platforms: {
-      macos: { name: 'macOS', detail: 'Apple silicon ve Intel' },
-      windows: { name: 'Windows', detail: 'Windows 10 ve 11, 64 bit' },
-      linux: { name: 'Linux', detail: 'AppImage, 64 bit' },
+      macos: { name: 'macOS', detail: 'Apple silicon ve Intel, macOS 12 ya da üstü' },
+      windows: { name: 'Windows', detail: 'Windows 10 ve 11, x64 ve Arm' },
+      linux: { name: 'Linux', detail: 'AppImage, x86-64 ve ARM64' },
     },
     requirementsTitle: 'Gerekenler',
     requirements: [
-      'Oynamak için bir Minecraft: Java Edition hesabı (Microsoft)',
+      'Minecraft: Java Edition’a sahip bir Microsoft hesabı',
       '64 bit bir sistem',
       'Bir kurulum oyunu ilk kez indirirken internet bağlantısı',
     ],

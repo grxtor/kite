@@ -32,9 +32,28 @@
   --on-accent: #ffffff;
   --focus-ring: var(--accent-text);
 
+  /* In-game backdrops: a neutral scrim, never tinted */
+  --scrim-top: rgb(15 16 18 / 55%);
+  --scrim-mid: rgb(15 16 18 / 72%);
+  --backdrop-height: min(100%, 56rem);
+
+  /* Code (Shiki css-variables theme) */
+  --astro-code-foreground: #e6e3ef;
+  --astro-code-background: var(--sunken);
+  --astro-code-token-keyword: #b9a8ff;
+  --astro-code-token-string: #a6d9a8;
+  --astro-code-token-string-expression: #a6d9a8;
+  --astro-code-token-constant: #f2b880;
+  --astro-code-token-function: #8fcaff;
+  --astro-code-token-parameter: #e6e3ef;
+  --astro-code-token-punctuation: #8a8499;
+  --astro-code-token-comment: #6b6679;
+  --astro-code-token-link: #b9a8ff;
+
   /* Fonts */
   --font-heading: 'Montserrat', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
 
   /* Type scale */
   --text-sm: 0.875rem;
@@ -43,6 +62,7 @@
   --text-h3: 1.375rem;
   --text-h2: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
   --text-h1: clamp(2.5rem, 5vw, 4rem);
+  --text-display: clamp(2.75rem, 1.6rem + 3.6vw, 4.5rem);
   --leading-body: 1.6;
   --leading-heading: 1.15;
   --tracking-h1: -0.03em;
@@ -70,7 +90,11 @@
   /* Layout */
   --gutter: 1rem;
   --content-max: 1200px;
-  --hero-shot-max: 1160px;
+  /* The hero screenshot is wider than its column and runs off the page edge. */
+  --hero-shot-bleed: 136%;
+  /* Below this the comparison table scrolls sideways inside its frame. */
+  --compare-min-width: 760px;
+  --compare-label-width: 11rem;
   --reading-max: 68ch;
   --header-height: 64px;
   --icon-box: 40px;

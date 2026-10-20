@@ -1,0 +1,61 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+//
+// One feature: a short title and text above a real screenshot that sits on
+// the card's bottom edge.
+import Screenshot from './Screenshot.astro';
+import type { Locale } from '../i18n';
+import type { ScreenId } from '../i18n/types';
+
+interface Props {
+  locale: Locale;
+  screen: ScreenId;
+  title: string;
+  text: string;
+  alt: string;
+}
+
+const { locale, screen, title, text, alt } = Astro.props;
+---
+
+<article class="card">
+  <div class="copy">
+    <h3>{title}</h3>
+    <p>{text}</p>
+  </div>
+  <div class="media">
+    <Screenshot locale={locale} screen={screen} alt={alt} size="card" />
+  </div>
+</article>
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    padding: var(--space-6) var(--space-6) 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .copy {
+    display: grid;
+    gap: var(--space-2);
+    max-width: 48ch;
+  }
+  .copy p {
+    color: var(--text-secondary);
+  }
+  .media {
+    margin-top: auto;
+  }
+  /* The screenshot is cut off by the card's bottom edge. */
+  .media :global(.shot) {
+    border-bottom: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    box-shadow: none;
+  }
+</style>

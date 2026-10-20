@@ -1,118 +1,16 @@
 // SPDX-FileCopyrightText: 2026 grxtor
 // SPDX-License-Identifier: Apache-2.0
+import type { Dictionary } from './types';
 
-/** Keys of the five app screenshots. Files live in src/assets/screens/<locale>/. */
-export type ScreenId = 'home' | 'mods' | 'newInstance' | 'accounts' | 'java';
-export type FeatureKey = 'mods' | 'loaders' | 'accounts' | 'java';
-export type HighlightKey =
-  | 'worlds'
-  | 'backups'
-  | 'imports'
-  | 'language'
-  | 'openSource'
-  | 'playTime';
-export type PlatformKey = 'macos' | 'windows' | 'linux';
-
-export interface PageMeta {
-  title: string;
-  description: string;
-}
-
-export interface FeatureCopy {
-  title: string;
-  text: string;
-  /** Describes what the screenshot shows. */
-  alt: string;
-}
-
-export interface HighlightCopy {
-  title: string;
-  text: string;
-}
-
-export interface PlatformCopy {
-  name: string;
-  detail: string;
-}
-
-/** The shape every locale dictionary must follow. */
-export interface Dictionary {
-  siteName: string;
-  meta: {
-    home: PageMeta;
-    download: PageMeta;
-    notFound: PageMeta;
-  };
-  nav: {
-    skipToContent: string;
-    mainLabel: string;
-    footerLabel: string;
-    languageLabel: string;
-    homeLabel: string;
-    features: string;
-    download: string;
-    privacy: string;
-    terms: string;
-    github: string;
-  };
-  hero: {
-    title: string;
-    lead: string;
-    primaryCta: string;
-    secondaryCta: string;
-    note: string;
-    screenshotAlt: string;
-  };
-  features: {
-    title: string;
-    intro: { title: string; text: string };
-    rows: Record<FeatureKey, FeatureCopy>;
-  };
-  highlights: Record<HighlightKey, HighlightCopy>;
-  closing: {
-    title: string;
-    text: string;
-    cta: string;
-  };
-  download: {
-    title: string;
-    lead: string;
-    notReleased: string;
-    button: string;
-    /** Accessible name of a download button. `{name}` is the platform name. */
-    buttonLabel: string;
-    comingSoon: string;
-    platforms: Record<PlatformKey, PlatformCopy>;
-    requirementsTitle: string;
-    requirements: string[];
-    sourceLink: string;
-  };
-  legal: {
-    lastUpdated: string;
-  };
-  notFound: {
-    title: string;
-    text: string;
-    home: string;
-    download: string;
-  };
-  footer: {
-    license: string;
-    fork: string;
-    disclaimer: string;
-    /** The same disclaimer in the page language. Null when the page is already English. */
-    disclaimerLocal: string | null;
-    trademark: string;
-  };
-}
+export type { Dictionary, FeatureKey, PlatformKey, ScreenId } from './types';
 
 export const en: Dictionary = {
   siteName: 'Kite',
   meta: {
     home: {
-      title: 'Kite: a Minecraft launcher built around instances',
+      title: 'Kite: a native Minecraft launcher',
       description:
-        'Kite keeps each install of Minecraft in its own instance, with its own mods, worlds and settings. Free and open source for macOS, Windows and Linux.',
+        'Kite is a Minecraft launcher written in C++ with a Qt Quick interface. Separate instances, modpacks from Modrinth, CurseForge, FTB, ATLauncher and Technic, and Java handled for you. Free and open source.',
     },
     download: {
       title: 'Download Kite',
@@ -131,78 +29,69 @@ export const en: Dictionary = {
     languageLabel: 'Language',
     homeLabel: 'Kite home',
     features: 'Features',
+    compare: 'Compare',
     download: 'Download',
     privacy: 'Privacy',
     terms: 'Terms',
     github: 'GitHub',
   },
   hero: {
-    title: 'Every Minecraft, in its own place.',
-    lead: 'Kite keeps each install of the game in its own instance, with its own mods, worlds and settings. Pick a version, add a modpack, sign in with Microsoft, and play.',
+    title: 'A Minecraft launcher, built native.',
+    lead: 'Kite is written in C++ with a Qt Quick interface, not wrapped around a web page. Every instance keeps its own mods, worlds and Java, and modpacks from Modrinth, CurseForge, FTB, ATLauncher and Technic are one search away.',
     primaryCta: 'Download Kite',
-    secondaryCta: 'See what it does',
-    note: 'Free and open source · macOS, Windows and Linux',
+    secondaryCta: 'How it compares',
+    note: 'Free and open source · Apache 2.0 · macOS, Windows and Linux',
     screenshotAlt:
-      'The Kite home screen: the last instance played with a Play button, a list of instances to continue, recent worlds on the right and the library below.',
+      'Kite’s Home screen with real instances: MC-26.3-Animations ready to play, a Continue playing list with Zombiemania and three Minecraft versions, and recent worlds on the right.',
+  },
+  native: {
+    title: 'Native, not a web page',
+    lead: 'Many launchers today are web apps in a window. Kite’s interface is written in QML, Qt’s language for user interfaces, and Qt Quick draws it with your graphics card: Metal on macOS, Direct3D on Windows, OpenGL on Linux.',
+    body: 'Underneath is C++ from MultiMC, the same family Prism Launcher comes from. Kite forked MeshMC in 2026 and gave it a new interface, written from scratch.',
+    facts: [
+      { label: 'Interface', value: 'Qt Quick (QML)' },
+      { label: 'Core', value: 'C++17 and Qt 6' },
+      { label: 'Drawn with', value: 'Metal, Direct3D or OpenGL' },
+      { label: 'Written for Kite', value: '216 QML files, 35,000 lines' },
+      { label: 'License', value: 'Apache 2.0' },
+    ],
+    codeCaption: 'The Play button, from {file}',
   },
   features: {
     title: 'Built around instances',
-    intro: {
-      title: 'Nothing breaks the others',
-      text: 'Vanilla 1.21, a 200-mod pack and a snapshot can sit side by side. Each instance has its own mods, worlds, resource packs and Java settings.',
-    },
+    lead: 'An instance is one copy of Minecraft with its own mods, worlds, resource packs and Java settings. A plain 26.3, a 437-mod pack and a snapshot sit side by side without touching each other.',
     rows: {
+      library: {
+        title: 'Your whole library',
+        text: 'Instances wear their modpack’s logo, or an icon cut from your own game’s textures. Sort them, group them, and see how long you’ve played each one.',
+        alt: 'Kite’s Library: ten real instances in a grid, including ATM10, Create: Skies and Seas, DeceasedCraft, Fabulously Optimized, Fresh & Smooth and Zombiemania, with 58 hours of total play time in the header.',
+      },
       mods: {
-        title: 'Mods without folder digging',
-        text: 'See every mod in an instance, switch one off, update it, or add more from Modrinth without leaving Kite.',
-        alt: 'The Content tab of a Fabric instance listing six mods with their versions and an on and off switch for each, above buttons to check for updates and add content.',
+        title: '437 mods, one list',
+        text: 'This is All the Mods 10. Switch a mod off, check every mod for updates at once, or add more from Modrinth and CurseForge without opening a folder.',
+        alt: 'The Content tab of the ATM10 instance, listing 437 mods with their versions and an on and off switch for each, under buttons to check for updates and add content.',
       },
       loaders: {
         title: 'Any loader, any version',
-        text: 'Pick a Minecraft version and Fabric, Quilt, Forge or NeoForge when you create an instance. Kite downloads the rest.',
-        alt: 'The New instance dialog with a name field, a list of Minecraft versions and a row of mod loaders: Vanilla, Fabric, Quilt, Forge and NeoForge.',
-      },
-      accounts: {
-        title: 'Your accounts and skins',
-        text: 'Sign in with your Microsoft account, keep more than one, and change your skin and cape from the launcher.',
-        alt: 'The skin and cape dialog on the Accounts screen, with a skin preview, a grid of default skins and a choice of capes.',
+        text: 'Pick a Minecraft version, then Fabric, Quilt, Forge or NeoForge. Kite downloads the game, the loader and every library it needs.',
+        alt: 'The New instance dialog with a name field, the Minecraft versions from 26.3 down to 1.21.11, and a row of mod loaders: Vanilla, Fabric, Quilt, Forge and NeoForge.',
       },
       java: {
         title: 'Java, handled',
-        text: 'Kite picks the Java your Minecraft version needs and downloads it if you don\'t have it. Memory is a slider.',
-        alt: 'Settings on the Java and memory page, with a slider for maximum memory set to 6 GB, a starting memory field and the Java runtime path.',
+        text: 'Each Minecraft version wants a different Java. Kite picks the right one and downloads it if you don’t have it. Memory is a slider.',
+        alt: 'The Java and memory settings page, with a slider for maximum memory set to 6 GB, a starting memory field and the Java runtime in use.',
       },
     },
   },
-  highlights: {
-    worlds: {
-      title: 'Worlds and screenshots',
-      text: 'Each instance lists its own.',
-    },
-    backups: {
-      title: 'Backups before launch',
-      text: 'Optional, and you choose it in settings.',
-    },
-    imports: {
-      title: 'Imports your packs',
-      text: 'Modrinth .mrpack, CurseForge, MultiMC and Prism zips.',
-    },
-    language: {
-      title: 'Your language',
-      text: 'English and Turkish, built in.',
-    },
-    openSource: {
-      title: 'Open source',
-      text: 'Apache 2.0, built on MeshMC and MultiMC.',
-    },
-    playTime: {
-      title: 'Play time and recent worlds',
-      text: 'Home shows where you left off.',
-    },
+  compare: {
+    title: 'How Kite compares',
+    lead: 'Checked against each launcher’s own website, source code and privacy policy in October 2026.',
+    corner: 'Launcher',
+    sourcesTitle: 'Sources',
   },
   closing: {
-    title: 'Get Kite',
-    text: 'Free, no account needed to install.',
+    title: 'Kite is free',
+    text: 'For macOS, Windows and Linux. No ads, no account with us.',
     cta: 'Download Kite',
   },
   download: {
@@ -213,13 +102,13 @@ export const en: Dictionary = {
     buttonLabel: 'Download Kite for {name}',
     comingSoon: 'Coming soon',
     platforms: {
-      macos: { name: 'macOS', detail: 'Apple silicon and Intel' },
-      windows: { name: 'Windows', detail: 'Windows 10 and 11, 64-bit' },
-      linux: { name: 'Linux', detail: 'AppImage, 64-bit' },
+      macos: { name: 'macOS', detail: 'Apple silicon and Intel, macOS 12 or later' },
+      windows: { name: 'Windows', detail: 'Windows 10 and 11, x64 and Arm' },
+      linux: { name: 'Linux', detail: 'AppImage, x86-64 and ARM64' },
     },
     requirementsTitle: 'What you need',
     requirements: [
-      'A Minecraft: Java Edition account (Microsoft) to play',
+      'A Microsoft account that owns Minecraft: Java Edition',
       'A 64-bit system',
       'An internet connection the first time an instance downloads the game',
     ],
