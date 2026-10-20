@@ -58,6 +58,8 @@ base_lst_file*
 *.mo
 
 *.ts
+# Kite's own translations live in the tree (translations/update.sh)
+!translations/kite_*.ts
 
 # Qt
 
