@@ -19,9 +19,10 @@ import Kite.Theme
  * hover and a darker one when pressed, and no glow. Stop is the danger fill
  * with the same rule as a danger Button's label: the dark theme's light
  * coral takes the canvas' near-black, which reads on it where white did
- * not (2.6:1). Corners are Theme.radius.md in both shapes; the icon-only
- * (`round`) variant is a rounded square, not a circle -- like the rest of
- * an instance's identity it stays off the pill radius.
+ * not (2.6:1). Corners are Theme.radius.md in both shapes but for the
+ * top-right, cut tight like everything you can launch (KiteShape); the
+ * icon-only (`round`) variant is a rounded square, not a circle -- like the
+ * rest of an instance's identity it stays off the pill radius.
  */
 AbstractButton {
     id: control
@@ -59,30 +60,31 @@ AbstractButton {
     // The label and the glyph, as a filled Style Button picks them.
     readonly property color ink: running && Theme.dark ? Theme.palette.canvas : Theme.palette.textOnAccent
 
-    background: Rectangle {
+    background: KiteShape {
         id: plate
         radius: Theme.radius.md
         color: control.fill
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
         // The barely visible top-to-bottom tint every filled button has.
-        Rectangle {
+        KiteShape {
             anchors.fill: parent
-            radius: parent.radius
+            radius: plate.radius
             gradient: Gradient {
                 GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.10) }
                 GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0.0) }
             }
         }
 
-        // Keyboard focus ring, outset so it never competes with the fill.
-        Rectangle {
+        // Keyboard focus ring, outset so it never competes with the fill,
+        // its own corners parallel to the plate's.
+        KiteShape {
             anchors.fill: parent
             anchors.margins: -Theme.space.xxs
-            radius: parent.radius + Theme.space.xxs
-            color: "transparent"
-            border.width: 2
-            border.color: Theme.palette.focusRing
+            radius: plate.radius + Theme.space.xxs
+            cutRadius: plate.cutRadius + Theme.space.xxs
+            borderWidth: 2
+            borderColor: Theme.palette.focusRing
             visible: control.visualFocus
         }
     }

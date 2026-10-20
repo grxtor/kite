@@ -74,7 +74,12 @@ Item {
     readonly property real targetH: root.target ? root.target.height : 0
     readonly property real targetW: root.target ? root.target.width : 0
 
-    Rectangle {
+    // The icon rail's square wears the kite's cut, like the instance tiles
+    // below it (KiteShape); the labelled list's pill stays round, and
+    // folding the rail turns the one into the other with the shape itself.
+    property bool cut: root.collapsed
+
+    KiteShape {
         id: pill
         visible: !!root.target
         width: root.collapsed ? root.railSquare : root.targetW
@@ -84,8 +89,10 @@ Item {
                            : (root.targetW - root.railSquare) / 2)
         y: root.targetY + (root.collapsed ? (root.targetH - height) / 2 : 0)
         radius: root.cornerRadius
+        cutRadius: root.cut ? Theme.radius.xs : root.cornerRadius
         color: Theme.palette.accentSubtle
 
+        Behavior on cutRadius { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on x { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on width { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }

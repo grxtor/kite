@@ -26,6 +26,7 @@ qt_add_qml_module(Kite_qml_components
     QML_FILES
         CoverArt.qml
         PlaceholderSurface.qml
+        InstanceTile.qml
         InstanceCard.qml
         InstanceListRow.qml
         InstanceSection.qml

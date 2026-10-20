@@ -13,8 +13,8 @@ import Kite.Theme
  * follows whichever scheme and theme are active; nothing here is an image.
  *
  * Whatever goes in the middle is a child of this item (the default property),
- * and is centred by the host: InstanceCard and the Home rows put the
- * instance's icon there.
+ * and is centred by the host. An instance's icon sits on InstanceTile
+ * instead: this tile, in the kite's cut.
  */
 Rectangle {
     // A raised step in the dark theme; in the light one the cards are

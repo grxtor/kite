@@ -9,7 +9,7 @@ import Kite.Theme
 /*
  * One instance in the library grid, the way Modrinth App's library shows
  * one: a large square, a small inset from the card's edge, with the
- * instance's icon all but filling a calm neutral tile (PlaceholderSurface),
+ * instance's icon all but filling a calm neutral tile (InstanceTile),
  * then the name and what it runs. A pack installed from a platform shows
  * its own logo across the whole square instead. Most instances have no
  * screenshot, so the card is built around the icon, never around an empty
@@ -139,17 +139,17 @@ Item {
             onTapped: { root.forceActiveFocus(); root.clicked(); root.menuRequested(null) }
         }
 
-        Item {
+        // The instance's tile, raised while the card is hovered; a picture
+        // across it gets its corners in the card's own colour.
+        InstanceTile {
             id: square
             x: root.inset
             y: root.inset
             width: root.squareSize
             height: root.squareSize
-
-            PlaceholderSurface {
-                anchors.fill: parent
-                radius: root.squareRadius
-            }
+            radius: root.squareRadius
+            matte: root.showsPackArt || preview.visible ? card.color : "transparent"
+            lifted: root.hovered
 
             // The instance's icon, centred. The provider renders it at the
             // requested size, so it stays sharp at any card width.
@@ -194,20 +194,13 @@ Item {
             }
 
             // While launching the square dims and a bar runs along its foot.
-            Rectangle {
+            KiteShape {
                 anchors.fill: parent
                 radius: root.squareRadius
                 color: Theme.media.chip
                 opacity: root.launching ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity { NumberAnimation { duration: Theme.motion.normal } }
-            }
-
-            // Rounds the pictures' corners in the card's own colour.
-            CornerMatte {
-                visible: root.showsPackArt || preview.visible
-                cornerRadius: root.squareRadius
-                matte: card.color
             }
 
             LaunchProgressBar {

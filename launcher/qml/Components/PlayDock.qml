@@ -103,8 +103,7 @@ Item {
     }
 
     // -- The current row, read out of rowModel's one row --------------------
-    // Same idiom as InstancePage's header ContinueCard/InstanceOverviewTab
-    // sync: a role model with 0-1 rows has no properties of its own to bind
+    // A role model with 0-1 rows has no properties of its own to bind
     // to directly, so a throwaway delegate reads its roles into plain
     // properties everything else here can use.
     property string dockInstanceId: ""
@@ -231,13 +230,15 @@ Item {
                 // A neutral tile, the icon filling about 80 % of it -- the
                 // same tile every instance icon sits on (designs/
                 // phase3-scale.md, decision 3), never one tinted from it.
-                Rectangle {
+                // An instance's, so in the kite's cut, raised on hover.
+                KiteShape {
                     Layout.preferredWidth: pickerButton.tileSize
                     Layout.preferredHeight: pickerButton.tileSize
                     radius: Theme.radius.md
                     color: Theme.palette.surfaceRaised
-                    border.width: 1
-                    border.color: Theme.palette.border
+                    borderWidth: 1
+                    borderColor: Theme.palette.border
+                    lifted: pickerButton.hovered
 
                     Image {
                         anchors.centerIn: parent

@@ -32,6 +32,9 @@ qt_add_qml_module(Kite_qml_theme
         # The glass surface (Theme.glass) for the sidebar, play bar and
         # popups, for the same reason.
         GlassSurface.qml
+        # The cut-corner shape everything launchable wears (an instance's
+        # tile, Play), for the same reason.
+        KiteShape.qml
     SOURCES
         ThemeService.h
         ThemeService.cpp

@@ -78,7 +78,9 @@ AbstractButton {
     }
 
     contentItem: Item {
-        Rectangle {
+        // An instance, so its tile wears the kite's cut and lifts while
+        // hovered (KiteShape).
+        KiteShape {
             id: tile
             // At the same x in both modes, never re-anchored: the icon rail
             // is exactly as wide as this column (SidebarNav.railAxis), so
@@ -89,8 +91,9 @@ AbstractButton {
             height: control.tileSize
             radius: Theme.radius.md
             color: Theme.palette.surfaceRaised
-            border.width: 1
-            border.color: Theme.palette.border
+            borderWidth: 1
+            borderColor: Theme.palette.border
+            lifted: control.hovered
 
             Image {
                 anchors.centerIn: parent

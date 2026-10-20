@@ -304,6 +304,8 @@ Item {
                         iconKey: headerCard.iconKey.length > 0 ? headerCard.iconKey : "default"
                         packArt: headerCard.model.packArt || ""
                         matte: Theme.palette.canvas
+                        // The hero's corner is too round at 64 px.
+                        radius: Theme.radius.lg
                     }
 
                     ColumnLayout {

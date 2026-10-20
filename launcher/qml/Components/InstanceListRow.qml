@@ -120,14 +120,15 @@ Item {
             anchors.rightMargin: Theme.space.md
             spacing: Theme.space.lg
 
-            Item {
+            // The instance's tile, raised while the row is hovered, as the
+            // grid card's is.
+            InstanceTile {
                 Layout.preferredWidth: root.squareSize
                 Layout.preferredHeight: root.squareSize
+                radius: Theme.radius.md
+                matte: root.showsPackArt ? surface.color : "transparent"
+                lifted: root.hovered
 
-                PlaceholderSurface {
-                    anchors.fill: parent
-                    radius: Theme.radius.md
-                }
                 Image {
                     anchors.centerIn: parent
                     visible: !root.showsPackArt
@@ -152,16 +153,13 @@ Item {
                     mipmap: true
                     asynchronous: true
                 }
-                CornerMatte {
-                    visible: root.showsPackArt
-                    cornerRadius: Theme.radius.md
-                    matte: surface.color
-                }
 
                 // Pulsing while running, same treatment as the sidebar's
                 // Recent list -- one running-instance language everywhere.
-                // Amber while the launch is still starting the game.
+                // Amber while the launch is still starting the game. Over
+                // the logo's corner matte, which it overlaps.
                 Rectangle {
+                    z: 2
                     visible: root.isRunning || root.launching
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom

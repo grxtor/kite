@@ -117,14 +117,14 @@ Item {
             anchors.rightMargin: Theme.space.md
             spacing: Theme.space.md
 
-            Item {
+            InstanceTile {
                 Layout.preferredWidth: root.squareSize
                 Layout.preferredHeight: root.squareSize
+                radius: Theme.radius.md
+                // Rounds the logo's corners in the row's own colour.
+                matte: root.showsPackArt ? card.color : "transparent"
+                lifted: root.hovered
 
-                PlaceholderSurface {
-                    anchors.fill: parent
-                    radius: Theme.radius.md
-                }
                 Image {
                     anchors.centerIn: parent
                     visible: !root.showsPackArt
@@ -146,11 +146,6 @@ Item {
                     smooth: true
                     mipmap: true
                     asynchronous: true
-                }
-                CornerMatte {
-                    visible: root.showsPackArt
-                    cornerRadius: Theme.radius.md
-                    matte: card.color
                 }
             }
 
