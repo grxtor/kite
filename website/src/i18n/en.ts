@@ -126,9 +126,6 @@ export const en: Dictionary = {
   footer: {
     license: '© 2026 grxtor. Kite is licensed under the Apache License 2.0.',
     fork: 'Kite is a fork of MeshMC by Project Tick, which continues MultiMC.',
-    disclaimer:
-      'NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.',
-    disclaimerLocal: null,
     trademark: 'Minecraft is a trademark of Mojang Synergies AB.',
   },
 };

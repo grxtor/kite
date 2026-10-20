@@ -108,9 +108,6 @@ export interface Dictionary {
   footer: {
     license: string;
     fork: string;
-    disclaimer: string;
-    /** The same disclaimer in the page language. Null when the page is already English. */
-    disclaimerLocal: string | null;
     trademark: string;
   };
 }

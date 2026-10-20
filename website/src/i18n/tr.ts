@@ -124,10 +124,6 @@ export const tr = {
   footer: {
     license: '© 2026 grxtor. Kite, Apache Lisansı 2.0 ile lisanslanmıştır.',
     fork: 'Kite, MultiMC’nin devamı olan Project Tick’in MeshMC projesinden türetilmiştir.',
-    disclaimer:
-      'NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.',
-    disclaimerLocal:
-      'Resmî bir Minecraft ürünü değildir; Mojang veya Microsoft tarafından onaylanmamıştır ve onlarla bağlantılı değildir.',
     trademark: 'Minecraft is a trademark of Mojang Synergies AB.',
   },
 } satisfies Dictionary;
