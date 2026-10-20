@@ -74,17 +74,16 @@ AbstractButton {
                 anchors.fill: parent
                 radius: Theme.radius.md
             }
-            // The game saves icon.png at 64x64; drawn a little smaller,
-            // filtered so the downscale stays clean.
+            // The game saves icon.png at 64x64 and shows it pixel-sharp,
+            // so it is drawn the same way: at its own size, unfiltered,
+            // rather than smoothed into a blur.
             Image {
                 id: worldIcon
                 anchors.fill: parent
                 visible: control.hasIcon
                 source: control.iconUrl
-                sourceSize: Qt.size(width * 2, height * 2)
                 fillMode: Image.PreserveAspectCrop
-                smooth: true
-                mipmap: true
+                smooth: false
                 asynchronous: true
             }
             CornerMatte {
