@@ -2010,6 +2010,12 @@ if(DEFINED Kite_AppBinaryName)
 endif()
 if(APPLE)
     set_target_properties(${Kite_Name} PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/MacOSXBundleInfo.plist.in")
+    # The top-level install() only puts the icon into the installed Kite.app;
+    # without this the build-tree kite.app has no Contents/Resources and the
+    # Dock and Finder fall back to the generic app icon.
+    set(KITE_ICNS "${CMAKE_CURRENT_SOURCE_DIR}/../${Kite_Branding_ICNS}")
+    set_source_files_properties(${KITE_ICNS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    target_sources(${Kite_Name} PRIVATE ${KITE_ICNS})
 endif()
 if(DEFINED Kite_BINARY_RPATH)
     SET_TARGET_PROPERTIES(${Kite_Name} PROPERTIES INSTALL_RPATH "${Kite_BINARY_RPATH}")
