@@ -231,6 +231,12 @@ if(Kite_ENABLE_CAT AND NOT Qt${QT_VERSION_MAJOR}Quick3D_FOUND)
 endif()
 message(STATUS "Cat companion (Qt Quick3D): ${Kite_ENABLE_CAT}")
 
+# Qt Linguist tools (lrelease), which compile translations/kite_*.ts into the
+# .qm files bundled in the launcher. Optional: without them the build still
+# works, it just ships English only (see launcher/CMakeLists.txt).
+find_package(Qt${QT_VERSION_MAJOR} OPTIONAL_COMPONENTS LinguistTools)
+message(STATUS "Bundled translations (Qt LinguistTools): ${Qt${QT_VERSION_MAJOR}LinguistTools_FOUND}")
+
 if(UNIX)
     find_package(PkgConfig)
     if(PkgConfig_FOUND)
@@ -415,6 +421,11 @@ set(Kite_NOTIFICATION_URL "" CACHE STRING "URL for checking for notifications.")
 # TODO(fork): this is still Project Tick's meta server. Host our own before
 # the first public release.
 set(Kite_META_URL "https://meta.projecttick.org/" CACHE STRING "URL to fetch Kite's meta files from.")
+
+# Translations are bundled in the app (translations/kite_*.ts). Leave this empty
+# so Kite never downloads any; set it to a server that serves index_v2.json and
+# the .qm files listed in it to get downloadable updates on top of the bundle.
+set(Kite_TRANSLATIONS_URL "" CACHE STRING "URL to download translation updates from (empty: bundled translations only).")
 
 # Microsoft Client ID
 # Our own Azure app, approved for the Minecraft API. Empty hides Microsoft sign-in.

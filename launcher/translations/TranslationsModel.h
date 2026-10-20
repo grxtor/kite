@@ -55,6 +55,7 @@ class TranslationsModel : public QAbstractListModel
   private:
 	Language* findLanguage(const QString& key);
 	void reloadLocalFiles();
+	bool installAppTranslator(const QString& name, const QString& dir);
 	void downloadTranslation(QString key);
 	void downloadNext();
 

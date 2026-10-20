@@ -724,7 +724,7 @@ set(TRANSLATIONS_SOURCES
     translations/POTranslator.cpp
 )
 
-# Model bookkeeping only (roleNames(), the builtin default row) -- no
+# Model bookkeeping, the bundled languages and the data dir override -- no
 # network, same reasoning as the IconList test below.
 add_unit_test(TranslationsModel
     SOURCES translations/TranslationsModel_test.cpp
@@ -1391,6 +1391,43 @@ endif()
 # it and the widget UI depend on each other until the declarative plugin ABI
 # replaces that.
 add_library(Kite_core STATIC ${LOGIC_SOURCES})
+
+# Bundled translations: every translations/kite_<lang>.ts is compiled to a .qm
+# with lrelease and embedded in the core as :/i18n/kite_<lang>.qm, next to
+# :/i18n/stats.txt ("<lang> <translated> <total>" per line, counted from the
+# .ts here because a .qm cannot tell how complete it is). The resources are
+# self-registering, nothing in the code refers to them at build time; without
+# Qt LinguistTools or without any .ts the launcher is simply English only.
+if(Qt${QT_VERSION_MAJOR}LinguistTools_FOUND)
+    file(GLOB KITE_TS_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/translations/kite_*.ts")
+    if(KITE_TS_FILES)
+        # Content changes of a .ts re-run cmake so stats.txt follows them.
+        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${KITE_TS_FILES})
+        set(_kite_i18n_stats "")
+        foreach(_ts IN LISTS KITE_TS_FILES)
+            get_filename_component(_lang "${_ts}" NAME_WE)
+            string(REGEX REPLACE "^kite_" "" _lang "${_lang}")
+            file(READ "${_ts}" _ts_text)
+            string(REGEX MATCHALL "<message[ >]" _ts_messages "${_ts_text}")
+            list(LENGTH _ts_messages _ts_total)
+            string(REGEX MATCHALL "<translation type=\"(unfinished|vanished|obsolete)\"" _ts_open "${_ts_text}")
+            list(LENGTH _ts_open _ts_unfinished)
+            math(EXPR _ts_done "${_ts_total} - ${_ts_unfinished}")
+            string(APPEND _kite_i18n_stats "${_lang} ${_ts_done} ${_ts_total}\n")
+        endforeach()
+        unset(_ts_text)
+        file(CONFIGURE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/stats.txt"
+            CONTENT "${_kite_i18n_stats}" @ONLY)
+        qt6_add_lrelease(Kite_core
+            TS_FILES ${KITE_TS_FILES}
+            QM_FILES_OUTPUT_VARIABLE KITE_QM_FILES)
+        qt6_add_resources(Kite_core kite_i18n
+            PREFIX "/i18n"
+            BASE "${CMAKE_CURRENT_BINARY_DIR}"
+            FILES ${KITE_QM_FILES} "${CMAKE_CURRENT_BINARY_DIR}/stats.txt")
+        message(STATUS "Bundled translations: ${KITE_TS_FILES}")
+    endif()
+endif()
 add_library(Kite_logic STATIC ${PLUGIN_SOURCES} ${KITE_SOURCES} ${KITE_UI} ${KITE_SHARED_UI} ${KITE_RESOURCES})
 target_link_libraries(Kite_logic Kite_core)
 
