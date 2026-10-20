@@ -87,9 +87,11 @@ Rectangle {
     // (RecentItem.tileSize), the widest thing on the axis.
     readonly property int labelX: root.railAxis + Theme.control.heightSm / 2 + Theme.space.md
     readonly property int itemRadius: Theme.radius.lg
-    // The Kite mark: the size of the recent tiles below it
-    // (RecentItem.tileSize), so it reads as the rail's first tile.
-    readonly property int brandExtent: Theme.control.heightSm
+    // The Kite mark: a step under the recent tiles (RecentItem.tileSize), and
+    // the rail's items start a gap below its band, so the mark floats on the
+    // top bar's line instead of stacking on the first destination.
+    readonly property int brandExtent: Theme.control.heightSm - Theme.space.xs
+    readonly property int brandGap: Theme.space.md
 
     signal itemActivated(string id)
     signal recentActivated(string id)
@@ -103,7 +105,7 @@ Rectangle {
     // column overflowing -- on a short window the list gives way first.
     readonly property int recentShown: {
         var pitch = root.itemSize + column.spacing
-        var fixed = root.bandHeight + Theme.layout.barHeight
+        var fixed = root.bandHeight + root.brandGap + Theme.layout.barHeight
                   + (root.items.length + root.footerItems.length + 1) * pitch
                   + rule.height + rule.Layout.topMargin + rule.Layout.bottomMargin + column.spacing
                   + (root.collapsed ? Theme.control.heightSm + column.spacing : 0)
@@ -215,6 +217,7 @@ Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: brandBand.bottom
+        anchors.topMargin: root.brandGap
         anchors.bottom: footBand.top
         anchors.leftMargin: root.inset
         anchors.rightMargin: root.inset
