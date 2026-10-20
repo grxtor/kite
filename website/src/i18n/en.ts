@@ -169,7 +169,7 @@ export const en: Dictionary = {
       },
       java: {
         title: 'Java, handled',
-        text: 'Kite finds a Java runtime that fits the version you play and lets you set memory with a slider.',
+        text: 'Kite picks the Java your Minecraft version needs and downloads it if you don\'t have it. Memory is a slider.',
         alt: 'Settings on the Java and memory page, with a slider for maximum memory set to 6 GB, a starting memory field and the Java runtime path.',
       },
     },
@@ -189,7 +189,7 @@ export const en: Dictionary = {
     },
     language: {
       title: 'Your language',
-      text: 'English, Turkish and more.',
+      text: 'English and Turkish, built in.',
     },
     openSource: {
       title: 'Open source',

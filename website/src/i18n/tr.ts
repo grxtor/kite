@@ -65,7 +65,7 @@ export const tr = {
       },
       java: {
         title: 'Java hazır',
-        text: 'Kite, oynadığın sürüme uyan bir Java bulur ve belleği bir kaydırıcıyla ayarlamanı sağlar.',
+        text: 'Kite, Minecraft sürümünün istediği Java’yı seçer, sende yoksa indirir. Belleği bir kaydırıcıyla ayarlarsın.',
         alt: 'Ayarlar’ın Java ve bellek sayfası: en çok bellek için 6 GB’a ayarlı bir kaydırıcı, başlangıç belleği alanı ve Java yolu.',
       },
     },
@@ -85,7 +85,7 @@ export const tr = {
     },
     language: {
       title: 'Senin dilin',
-      text: 'İngilizce, Türkçe ve daha fazlası.',
+      text: 'İngilizce ve Türkçe, uygulamanın içinde.',
     },
     openSource: {
       title: 'Açık kaynak',

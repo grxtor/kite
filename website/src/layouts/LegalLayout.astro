@@ -109,4 +109,34 @@ const updatedText = new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZon
     border: 0;
     border-top: 1px solid var(--border);
   }
+  /* Wide tables scroll inside the column instead of the page. */
+  .prose :global(table) {
+    display: block;
+    overflow-x: auto;
+    margin: var(--space-5) 0 var(--space-6);
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+    line-height: var(--leading-body);
+  }
+  .prose :global(th),
+  .prose :global(td) {
+    padding: var(--space-3) var(--space-4) var(--space-3) 0;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  .prose :global(th) {
+    color: var(--text);
+    font-weight: 600;
+    border-bottom-color: var(--border-strong);
+  }
+  .prose :global(td:first-child) {
+    min-width: 10rem;
+    color: var(--text);
+    font-weight: 500;
+  }
+  /* Paths such as %APPDATA%\Kite\Kite may break on narrow screens. */
+  .prose :global(code) {
+    overflow-wrap: anywhere;
+  }
 </style>
