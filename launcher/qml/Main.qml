@@ -191,6 +191,14 @@ ApplicationWindow {
                 root.call("debugShowRequest", value)
             else if (key === "sidebar")
                 SettingsStore.setValue("UiSidebarCollapsed", value === "collapsed")
+            // The first-run flow over the shell with every step listed, on
+            // a data dir that no longer needs it; nothing is saved unless a
+            // step is finished.
+            else if (key === "onboarding") {
+                onboarding.steps = ["language", "java", "account", "done"]
+                onboarding.index = 0
+                onboarding.active = true
+            }
             else if (key === "crashed")
                 root.call("debugMarkInstanceCrashed", value)
             // A real click at window point "x,y[,right[,delayMs]]" -- see

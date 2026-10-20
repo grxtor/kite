@@ -327,6 +327,9 @@
         <file>scalable/instances/fox_legacy.svg</file>
         <file>scalable/instances/bee_legacy.svg</file>
 
+        <!-- The Kite logo for the app's own UI (BrandMark.qml): branding/Kite.icon's master, cut to the app icon's rounded square. Not a theme icon. -->
+        <file>brand/kite-mark.png</file>
+
         <!-- delete, tag, rename, shortcut, about, new, checkupdate and server LGPL3, Oxygen icons.-->
         <file>scalable/delete.svg</file>
         <file>scalable/tag.svg</file>

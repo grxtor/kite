@@ -105,12 +105,10 @@ Rectangle {
                 anchors.margins: Theme.space.xxl
                 spacing: Theme.space.lg
 
-                Image {
-                    Layout.preferredWidth: 64
-                    Layout.preferredHeight: 64
-                    source: "qrc:/icons/multimc/scalable/instances/kite.svg"
-                    sourceSize: Qt.size(128, 128)
-                    fillMode: Image.PreserveAspectFit
+                BrandMark {
+                    size: 64
+                    Layout.preferredWidth: size
+                    Layout.preferredHeight: size
                 }
                 Text {
                     Layout.fillWidth: true

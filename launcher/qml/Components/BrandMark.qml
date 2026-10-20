@@ -5,15 +5,20 @@
 import QtQuick
 
 /*
- * Kite's own mark at any square size, rasterised at 2x so it stays crisp
- * on HiDPI. Set `size`; the caller positions it.
+ * Kite's own mark at any square size: the app icon's tile (the violet glass
+ * kite on its rounded square), edge to edge in the box, so the box's middle
+ * is the mark's. Set `size`; the caller positions it. The picture is 256 px,
+ * scaled down once to the screen's own pixels (a PNG's sourceSize is not
+ * scaled by the device ratio the way an SVG's is), so it stays crisp on
+ * HiDPI.
  */
 Image {
-    property int size: 24
+    property int size: 32
+    readonly property int pixelExtent: Math.ceil(size * Screen.devicePixelRatio)
 
     width: size
     height: size
-    source: "qrc:/icons/multimc/scalable/instances/kite.svg"
-    sourceSize: Qt.size(size * 2, size * 2)
+    source: "qrc:/icons/multimc/brand/kite-mark.png"
+    sourceSize: Qt.size(pixelExtent, pixelExtent)
     fillMode: Image.PreserveAspectFit
 }

@@ -87,8 +87,9 @@ Rectangle {
     // (RecentItem.tileSize), the widest thing on the axis.
     readonly property int labelX: root.railAxis + Theme.control.heightSm / 2 + Theme.space.md
     readonly property int itemRadius: Theme.radius.lg
-    // The Kite mark: a fixed size, not one derived from a control height.
-    readonly property int brandExtent: 30
+    // The Kite mark: the size of the recent tiles below it
+    // (RecentItem.tileSize), so it reads as the rail's first tile.
+    readonly property int brandExtent: Theme.control.heightSm
 
     signal itemActivated(string id)
     signal recentActivated(string id)
@@ -178,10 +179,15 @@ Rectangle {
             size: root.brandExtent
         }
 
+        // On the labels' line, as the names below it are, its letters (not
+        // its line box, which hangs low) centred on the mark: "Kite" has no
+        // descender, so its ink is what rises above the baseline (the tight
+        // rect's own height runs a pixel below it).
         Text {
-            anchors.left: mark.right
-            anchors.leftMargin: Theme.space.sm + Theme.space.xxs
-            anchors.verticalCenter: parent.verticalCenter
+            id: wordmark
+            x: root.inset + root.labelX
+            anchors.baseline: mark.verticalCenter
+            anchors.baselineOffset: -wordmarkInk.tightBoundingRect.y / 2
             visible: !root.collapsed
             text: "Kite"
             color: Theme.palette.textPrimary
@@ -189,6 +195,11 @@ Rectangle {
             font.pixelSize: Theme.type.title.pixelSize + 2
             font.weight: Font.Bold
             font.letterSpacing: -0.2
+        }
+        TextMetrics {
+            id: wordmarkInk
+            font: wordmark.font
+            text: wordmark.text
         }
 
         CollapseToggle {
