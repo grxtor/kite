@@ -1,0 +1,148 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+import Icon from '../components/Icon.astro';
+import PlatformCard from '../components/PlatformCard.astro';
+import { PLATFORMS } from '../data/content';
+import { release } from '../data/release';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { format, getDictionary, type Locale } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale);
+const released = PLATFORMS.some((platform) => release.downloads[platform.key] !== null);
+---
+
+<BaseLayout
+  locale={locale}
+  route="/download"
+  title={t.meta.download.title}
+  description={t.meta.download.description}
+>
+  <div class="container page">
+    <div class="head">
+      <h1>{t.download.title}</h1>
+      <p class="lead">{t.download.lead}</p>
+      {
+        !released && (
+          <p class="notice" role="note">
+            <Icon name="info" size={18} />
+            <span>{t.download.notReleased}</span>
+          </p>
+        )
+      }
+    </div>
+
+    <ul class="cards">
+      {
+        PLATFORMS.map((platform) => {
+          const copy = t.download.platforms[platform.key];
+          return (
+            <PlatformCard
+              icon={platform.icon}
+              name={copy.name}
+              detail={copy.detail}
+              href={release.downloads[platform.key]}
+              buttonText={t.download.button}
+              unavailableText={t.download.comingSoon}
+              buttonLabel={format(t.download.buttonLabel, { name: copy.name })}
+            />
+          );
+        })
+      }
+    </ul>
+
+    <section class="needs" aria-labelledby="needs-title">
+      <h2 id="needs-title">{t.download.requirementsTitle}</h2>
+      <ul class="list">
+        {
+          t.download.requirements.map((item) => (
+            <li>
+              <Icon name="check" size={18} />
+              <span>{item}</span>
+            </li>
+          ))
+        }
+      </ul>
+      {
+        release.repoUrl && (
+          <p class="source">
+            <a href={release.repoUrl}>
+              {t.download.sourceLink}
+              <Icon name="external-link" size={16} />
+            </a>
+          </p>
+        )
+      }
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    padding-block: var(--space-8) var(--space-section);
+  }
+  .head {
+    display: grid;
+    gap: var(--space-4);
+    max-width: 44rem;
+  }
+  .notice {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+    padding: var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    color: var(--text-secondary);
+  }
+  .notice :global(svg) {
+    flex: none;
+    margin-top: 0.2em;
+    color: var(--accent-text);
+  }
+  .cards {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+    margin-top: var(--space-7);
+  }
+  .needs {
+    margin-top: var(--space-9);
+    max-width: 44rem;
+  }
+  .needs h2 {
+    font-size: var(--text-h3);
+    letter-spacing: var(--tracking-h3);
+  }
+  .list {
+    display: grid;
+    gap: var(--space-3);
+    margin-top: var(--space-5);
+  }
+  .list li {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+    color: var(--text-secondary);
+  }
+  .list :global(svg) {
+    flex: none;
+    margin-top: 0.25em;
+    color: var(--accent-text);
+  }
+  .source {
+    margin-top: var(--space-5);
+  }
+  .source a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+</style>

@@ -1,0 +1,57 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+import Icon from './Icon.astro';
+import type { IconName } from '../lib/icons';
+
+interface Props {
+  icon: IconName;
+  title: string;
+  text: string;
+}
+
+const { icon, title, text } = Astro.props;
+---
+
+<li class="card">
+  <span class="icon"><Icon name={icon} size={20} /></span>
+  <h3>{title}</h3>
+  <p>{text}</p>
+</li>
+
+<style>
+  .card {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    padding: var(--space-5);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    transition: border-color var(--duration-fast) var(--ease);
+  }
+  .card:hover {
+    border-color: var(--border-strong);
+  }
+  .icon {
+    display: inline-grid;
+    place-items: center;
+    width: var(--icon-box);
+    height: var(--icon-box);
+    margin-bottom: var(--space-2);
+    background: var(--raised);
+    border-radius: var(--radius-md);
+    color: var(--accent-text);
+  }
+  h3 {
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+  p {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    line-height: 1.55;
+  }
+</style>

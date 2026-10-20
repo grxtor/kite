@@ -1,0 +1,112 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+interface Props {
+  href?: string | null;
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  /** Also stretches the button to the full width of its container. */
+  block?: boolean;
+  /** Renders a non-interactive element instead of a link. */
+  disabled?: boolean;
+  label?: string;
+}
+
+const { href, variant = 'primary', size = 'md', block = false, disabled = false, label } =
+  Astro.props;
+const classes = ['btn', `btn-${variant}`, `btn-${size}`, block && 'btn-block'];
+---
+
+{
+  disabled || !href ? (
+    <span class:list={classes} aria-disabled="true" aria-label={label}>
+      <slot />
+    </span>
+  ) : (
+    <a class:list={classes} href={href} aria-label={label}>
+      <slot />
+    </a>
+  )
+}
+
+<style>
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    height: var(--control-height);
+    padding-inline: var(--space-4);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color var(--duration-fast) var(--ease),
+      border-color var(--duration-fast) var(--ease),
+      color var(--duration-fast) var(--ease);
+  }
+  .btn-sm {
+    height: var(--control-height-sm);
+    padding-inline: var(--space-3);
+    font-size: var(--text-sm);
+  }
+  .btn-lg {
+    height: var(--control-height-lg);
+    padding-inline: var(--space-5);
+  }
+  .btn-block {
+    display: flex;
+    width: 100%;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    color: var(--on-accent);
+  }
+  .btn-primary:active {
+    background: var(--accent-pressed);
+  }
+
+  .btn-secondary {
+    background: var(--raised);
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .btn-secondary:hover {
+    background: var(--hover);
+    border-color: var(--border-strong);
+    color: var(--text);
+  }
+  .btn-secondary:active {
+    background: var(--surface);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+  }
+  .btn-ghost:hover {
+    background: var(--hover);
+    color: var(--text);
+  }
+  .btn-ghost:active {
+    background: var(--surface);
+  }
+
+  .btn[aria-disabled='true'] {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+</style>

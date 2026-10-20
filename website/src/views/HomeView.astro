@@ -1,0 +1,175 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+import Button from '../components/Button.astro';
+import FeatureRow from '../components/FeatureRow.astro';
+import HighlightCard from '../components/HighlightCard.astro';
+import Screenshot from '../components/Screenshot.astro';
+import { FEATURE_ROWS, HIGHLIGHTS } from '../data/content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getDictionary, localePath, type Locale } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale);
+const downloadPath = localePath(locale, '/download');
+---
+
+<BaseLayout
+  locale={locale}
+  route="/"
+  title={t.meta.home.title}
+  description={t.meta.home.description}
+>
+  <section class="hero">
+    <div class="container">
+      <div class="intro">
+        <h1>{t.hero.title}</h1>
+        <p class="lead">{t.hero.lead}</p>
+        <div class="actions">
+          <Button href={downloadPath} size="lg">{t.hero.primaryCta}</Button>
+          <Button href="#features" variant="secondary" size="lg">{t.hero.secondaryCta}</Button>
+        </div>
+        <p class="note muted">{t.hero.note}</p>
+      </div>
+      <div class="hero-shot">
+        <Screenshot locale={locale} screen="home" alt={t.hero.screenshotAlt} size="hero" priority />
+      </div>
+    </div>
+  </section>
+
+  <section class="section features" id="features" aria-labelledby="features-title">
+    <div class="container">
+      <h2 id="features-title" class="centered">{t.features.title}</h2>
+      <div class="intro-feature">
+        <h3>{t.features.intro.title}</h3>
+        <p class="lead">{t.features.intro.text}</p>
+      </div>
+      <div class="rows">
+        {
+          FEATURE_ROWS.map((row, index) => (
+            <FeatureRow
+              locale={locale}
+              screen={row.screen}
+              title={t.features.rows[row.key].title}
+              text={t.features.rows[row.key].text}
+              alt={t.features.rows[row.key].alt}
+              flip={index % 2 === 1}
+            />
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="highlights" aria-label={t.features.title}>
+    <div class="container">
+      <ul class="grid">
+        {
+          HIGHLIGHTS.map((item) => (
+            <HighlightCard
+              icon={item.icon}
+              title={t.highlights[item.key].title}
+              text={t.highlights[item.key].text}
+            />
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="closing" aria-labelledby="closing-title">
+    <div class="container band">
+      <h2 id="closing-title">{t.closing.title}</h2>
+      <p class="lead">{t.closing.text}</p>
+      <Button href={downloadPath} size="lg">{t.closing.cta}</Button>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding-block: var(--space-8) 0;
+  }
+  .intro {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-5);
+    max-width: 52rem;
+    margin-inline: auto;
+    text-align: center;
+  }
+  .intro .lead {
+    max-width: 44rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+  }
+  .note {
+    font-size: var(--text-sm);
+  }
+  .hero-shot {
+    max-width: var(--hero-shot-max);
+    margin: var(--space-8) auto 0;
+  }
+
+  .features {
+    scroll-margin-top: var(--header-height);
+  }
+  .centered {
+    text-align: center;
+  }
+  .intro-feature {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-3);
+    max-width: 44rem;
+    margin: var(--space-6) auto var(--space-9);
+    text-align: center;
+  }
+  .rows {
+    display: grid;
+    gap: var(--space-9);
+  }
+
+  .highlights {
+    padding-bottom: var(--space-section);
+  }
+  .grid {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 600px) {
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 960px) {
+    .grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .closing {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding-block: var(--space-section);
+  }
+  .band {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-4);
+    text-align: center;
+  }
+  .band .lead {
+    margin-bottom: var(--space-3);
+  }
+</style>

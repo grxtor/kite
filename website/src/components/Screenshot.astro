@@ -1,0 +1,49 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+import { Picture } from 'astro:assets';
+import { SCREENS } from '../data/content';
+import { SCREENSHOT_SIZES, SCREENSHOT_WIDTHS } from '../lib/imaging';
+import type { Locale } from '../i18n';
+import type { ScreenId } from '../i18n/en';
+
+interface Props {
+  locale: Locale;
+  screen: ScreenId;
+  alt: string;
+  size?: keyof typeof SCREENSHOT_SIZES;
+  /** Load immediately instead of lazily. Use for the first screenshot on a page. */
+  priority?: boolean;
+}
+
+const { locale, screen, alt, size = 'row', priority = false } = Astro.props;
+---
+
+<div class="shot">
+  <Picture
+    src={SCREENS[locale][screen]}
+    alt={alt}
+    formats={['avif', 'webp']}
+    fallbackFormat="webp"
+    widths={SCREENSHOT_WIDTHS}
+    sizes={SCREENSHOT_SIZES[size]}
+    loading={priority ? 'eager' : 'lazy'}
+    fetchpriority={priority ? 'high' : 'auto'}
+    decoding={priority ? 'sync' : 'async'}
+  />
+</div>
+
+<style>
+  .shot {
+    border: 1px solid var(--border-shot);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-shot);
+    overflow: hidden;
+  }
+  .shot :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+</style>

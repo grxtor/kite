@@ -1,0 +1,89 @@
+/*
+ * SPDX-FileCopyrightText: 2026 grxtor
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Design tokens. The colours match the Kite app (launcher/qml/Theme).
+ */
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --canvas: #0f1012;
+  --surface: #17181b;
+  --raised: #26272c;
+  --hover: #222328;
+  --sunken: #0a0b0d;
+
+  /* Lines */
+  --border: rgb(255 255 255 / 7%);
+  --border-strong: rgb(255 255 255 / 12%);
+  --border-shot: rgb(255 255 255 / 8%);
+
+  /* Text */
+  --text: #f2f0f8;
+  --text-secondary: #b4aec6;
+  --text-muted: #8a8499;
+
+  /* Accent: buttons, links, focus rings, small highlights only */
+  --accent: #7657f7;
+  --accent-hover: #6a4aee;
+  --accent-pressed: #5b3cdc;
+  --accent-text: #b9a8ff;
+  --on-accent: #ffffff;
+  --focus-ring: var(--accent-text);
+
+  /* Fonts */
+  --font-heading: 'Montserrat', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Type scale */
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lead: 1.1875rem;
+  --text-h3: 1.375rem;
+  --text-h2: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+  --text-h1: clamp(2.5rem, 5vw, 4rem);
+  --leading-body: 1.6;
+  --leading-heading: 1.15;
+  --tracking-h1: -0.03em;
+  --tracking-h2: -0.02em;
+  --tracking-h3: -0.01em;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --space-section: clamp(4rem, 3rem + 5vw, 7rem);
+
+  /* Layout */
+  --gutter: 1rem;
+  --content-max: 1200px;
+  --hero-shot-max: 1160px;
+  --reading-max: 68ch;
+  --header-height: 64px;
+  --icon-box: 40px;
+  --icon-box-lg: 48px;
+  --control-height-sm: 36px;
+  --control-height: 40px;
+  --control-height-lg: 44px;
+
+  /* Effects: neutral shadows, used on screenshots only */
+  --shadow-shot: 0 24px 64px rgb(0 0 0 / 45%), 0 4px 16px rgb(0 0 0 / 30%);
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration: 160ms;
+  --ease: ease-out;
+}

@@ -1,0 +1,99 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+import LanguageSwitch from './LanguageSwitch.astro';
+import Logo from './Logo.astro';
+import { release } from '../data/release';
+import { getDictionary, localePath, type Locale, type Route } from '../i18n';
+
+interface Props {
+  locale: Locale;
+  route: Route;
+}
+
+const { locale, route } = Astro.props;
+const t = getDictionary(locale);
+const links = [
+  { href: localePath(locale, '/download'), label: t.nav.download },
+  { href: localePath(locale, '/privacy'), label: t.nav.privacy },
+  { href: localePath(locale, '/terms'), label: t.nav.terms },
+];
+---
+
+<footer class="footer">
+  <div class="container">
+    <div class="top">
+      <a class="brand" href={localePath(locale, '/')} aria-label={t.nav.homeLabel}>
+        <Logo />
+      </a>
+      <nav class="links" aria-label={t.nav.footerLabel}>
+        {links.map((link) => <a href={link.href}>{link.label}</a>)}
+        {release.repoUrl && <a href={release.repoUrl}>{t.nav.github}</a>}
+      </nav>
+      <LanguageSwitch locale={locale} route={route} />
+    </div>
+    <div class="legal">
+      <p>{t.footer.license}</p>
+      <p>{t.footer.fork}</p>
+      <p class="fine">
+        <span>{t.footer.disclaimer}</span>
+        {t.footer.disclaimerLocal && <span lang={locale}>{t.footer.disclaimerLocal}</span>}
+        <span>{t.footer.trademark}</span>
+      </p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    margin-top: auto;
+    padding-block: var(--space-7);
+    background: var(--canvas);
+    border-top: 1px solid var(--border);
+  }
+  .top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4) var(--space-6);
+  }
+  .brand {
+    text-decoration: none;
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-5);
+    margin-right: auto;
+  }
+  .links a {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .links a:hover {
+    color: var(--text);
+  }
+  .legal {
+    display: grid;
+    gap: var(--space-2);
+    margin-top: var(--space-6);
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+  }
+  .legal p {
+    max-width: 80ch;
+  }
+  .fine {
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+  }
+  .fine span {
+    display: block;
+    margin-block: var(--space-1);
+  }
+</style>

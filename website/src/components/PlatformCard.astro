@@ -1,0 +1,73 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+import Button from './Button.astro';
+import Icon from './Icon.astro';
+import type { IconName } from '../lib/icons';
+
+interface Props {
+  icon: IconName;
+  name: string;
+  detail: string;
+  /** Null while the build for this system is not published. */
+  href: string | null;
+  buttonText: string;
+  /** Text shown instead of the button label when there is no link yet. */
+  unavailableText: string;
+  buttonLabel: string;
+}
+
+const { icon, name, detail, href, buttonText, unavailableText, buttonLabel } = Astro.props;
+---
+
+<li class="card">
+  <span class="icon"><Icon name={icon} size={24} /></span>
+  <h2>{name}</h2>
+  <p>{detail}</p>
+  <div class="action">
+    {
+      href ? (
+        <Button href={href} size="lg" block label={buttonLabel}>
+          {buttonText}
+        </Button>
+      ) : (
+        <Button disabled size="lg" block>
+          {unavailableText}
+        </Button>
+      )
+    }
+  </div>
+</li>
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-6);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+  }
+  .icon {
+    display: inline-grid;
+    place-items: center;
+    width: var(--icon-box-lg);
+    height: var(--icon-box-lg);
+    margin-bottom: var(--space-3);
+    background: var(--raised);
+    border-radius: var(--radius-lg);
+    color: var(--text);
+  }
+  h2 {
+    font-size: var(--text-h3);
+    letter-spacing: var(--tracking-h3);
+  }
+  p {
+    color: var(--text-secondary);
+  }
+  .action {
+    margin-top: auto;
+    padding-top: var(--space-5);
+  }
+</style>

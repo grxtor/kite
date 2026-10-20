@@ -1,0 +1,62 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+import { LOCALES, LOCALE_INFO, getDictionary, localePath, type Locale, type Route } from '../i18n';
+
+interface Props {
+  locale: Locale;
+  /** The page being shown, so each link leads to the same page in its language. */
+  route: Route;
+}
+
+const { locale, route } = Astro.props;
+const label = getDictionary(locale).nav.languageLabel;
+---
+
+<nav class="switch" aria-label={label}>
+  {
+    LOCALES.map((code, index) => (
+      <>
+        {index > 0 && (
+          <span class="sep" aria-hidden="true">
+            /
+          </span>
+        )}
+        <a
+          href={localePath(code, route)}
+          lang={code}
+          hreflang={code}
+          aria-label={LOCALE_INFO[code].name}
+          aria-current={code === locale ? 'true' : undefined}
+        >
+          {LOCALE_INFO[code].short}
+        </a>
+      </>
+    ))
+  }
+</nav>
+
+<style>
+  .switch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+  a {
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--text);
+  }
+  a[aria-current='true'] {
+    color: var(--text);
+  }
+  .sep {
+    color: var(--text-muted);
+  }
+</style>

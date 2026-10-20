@@ -1,0 +1,112 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+import type { MarkdownLayoutProps } from 'astro';
+import BaseLayout from './BaseLayout.astro';
+import { DEFAULT_LOCALE, getDictionary, parsePath } from '../i18n';
+
+interface Frontmatter {
+  title: string;
+  description: string;
+  /** ISO date, e.g. 2026-10-20. */
+  updated: string;
+}
+
+type Props = MarkdownLayoutProps<Frontmatter>;
+
+const { frontmatter } = Astro.props;
+// Locale and route come from the URL, so each markdown file only holds its text.
+const parsed = parsePath(Astro.url.pathname);
+const locale = parsed?.locale ?? DEFAULT_LOCALE;
+const route = parsed?.route ?? '/';
+const t = getDictionary(locale);
+const updated = new Date(frontmatter.updated);
+const updatedText = new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(
+  updated,
+);
+---
+
+<BaseLayout
+  locale={locale}
+  route={route}
+  title={`${frontmatter.title} · ${t.siteName}`}
+  description={frontmatter.description}
+>
+  <article class="container page">
+    <div class="column">
+      <h1>{frontmatter.title}</h1>
+      <p class="updated muted">
+        {t.legal.lastUpdated}: <time datetime={frontmatter.updated}>{updatedText}</time>
+      </p>
+      <div class="prose">
+        <slot />
+      </div>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .page {
+    padding-block: var(--space-8) var(--space-section);
+  }
+  .column {
+    max-width: var(--reading-max);
+  }
+  h1 {
+    font-size: var(--text-h2);
+    letter-spacing: var(--tracking-h2);
+  }
+  .updated {
+    margin-top: var(--space-3);
+    font-size: var(--text-sm);
+  }
+  .prose {
+    margin-top: var(--space-7);
+    color: var(--text-secondary);
+    font-size: var(--text-lead);
+    line-height: 1.7;
+  }
+  .prose :global(h2) {
+    margin-top: var(--space-7);
+    margin-bottom: var(--space-3);
+    font-size: var(--text-h3);
+    letter-spacing: var(--tracking-h3);
+  }
+  .prose :global(h3) {
+    margin-top: var(--space-6);
+    margin-bottom: var(--space-2);
+    font-size: var(--text-lead);
+  }
+  .prose :global(p) {
+    margin-bottom: var(--space-4);
+  }
+  .prose :global(ul),
+  .prose :global(ol) {
+    margin: 0 0 var(--space-4);
+    padding-left: var(--space-5);
+  }
+  .prose :global(ul) {
+    list-style: disc;
+  }
+  .prose :global(li) {
+    margin-bottom: var(--space-2);
+  }
+  .prose :global(li::marker) {
+    color: var(--text-muted);
+  }
+  .prose :global(strong) {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .prose :global(code) {
+    padding: 0.1em 0.35em;
+    background: var(--raised);
+    border-radius: var(--radius-sm);
+    font-size: 0.9em;
+  }
+  .prose :global(hr) {
+    margin-block: var(--space-6);
+    border: 0;
+    border-top: 1px solid var(--border);
+  }
+</style>

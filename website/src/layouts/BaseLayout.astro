@@ -1,0 +1,117 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+import '../styles/global.css';
+import { getImage } from 'astro:assets';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SCREENS } from '../data/content';
+import { OG_IMAGE } from '../lib/imaging';
+import { LOCALES, LOCALE_INFO, getDictionary, localePath, type Locale, type Route } from '../i18n';
+
+interface Props {
+  locale: Locale;
+  route: Route;
+  title: string;
+  description: string;
+  /** Keeps the page out of search results and skips canonical and hreflang links. */
+  noindex?: boolean;
+}
+
+const { locale, route, title, description, noindex = false } = Astro.props;
+const t = getDictionary(locale);
+const site = Astro.site ?? new URL('https://kiteclient.com');
+const canonical = new URL(localePath(locale, route), site).href;
+const ogImage = await getImage({
+  src: SCREENS[locale].home,
+  width: OG_IMAGE.width,
+  height: OG_IMAGE.height,
+  fit: 'cover',
+  position: 'top',
+  format: 'jpeg',
+});
+const ogImageUrl = new URL(ogImage.src, site).href;
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0F1012" />
+    <meta name="color-scheme" content="dark" />
+    {noindex && <meta name="robots" content="noindex" />}
+    {!noindex && <link rel="canonical" href={canonical} />}
+    {
+      !noindex &&
+        LOCALES.map((code) => (
+          <link
+            rel="alternate"
+            hreflang={code}
+            href={new URL(localePath(code, route), site).href}
+          />
+        ))
+    }
+    {
+      !noindex && (
+        <link rel="alternate" hreflang="x-default" href={new URL(localePath('en', route), site).href} />
+      )
+    }
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preload" href="/fonts/Inter-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link
+      rel="preload"
+      href="/fonts/Montserrat-Bold.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={t.siteName} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={LOCALE_INFO[locale].og} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content={String(OG_IMAGE.width)} />
+    <meta property="og:image:height" content={String(OG_IMAGE.height)} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+  </head>
+  <body>
+    <a class="skip" href="#main">{t.nav.skipToContent}</a>
+    <Header locale={locale} route={route} />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Footer locale={locale} route={route} />
+  </body>
+</html>
+
+<style>
+  .skip {
+    position: absolute;
+    left: var(--space-4);
+    top: var(--space-2);
+    z-index: 20;
+    padding: var(--space-2) var(--space-4);
+    background: var(--accent);
+    color: var(--on-accent);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    text-decoration: none;
+    transform: translateY(-200%);
+  }
+  .skip:focus {
+    transform: translateY(0);
+  }
+  main:focus {
+    outline: none;
+  }
+</style>

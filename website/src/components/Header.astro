@@ -1,0 +1,89 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+import Button from './Button.astro';
+import LanguageSwitch from './LanguageSwitch.astro';
+import Logo from './Logo.astro';
+import { getDictionary, localePath, type Locale, type Route } from '../i18n';
+
+interface Props {
+  locale: Locale;
+  route: Route;
+}
+
+const { locale, route } = Astro.props;
+const t = getDictionary(locale);
+const home = localePath(locale, '/');
+const downloadPath = localePath(locale, '/download');
+---
+
+<header class="header">
+  <div class="container bar">
+    <a class="brand" href={home} aria-label={t.nav.homeLabel}>
+      <Logo />
+    </a>
+    <nav class="nav" aria-label={t.nav.mainLabel}>
+      <a class="link" href={`${home}#features`}>{t.nav.features}</a>
+      <a class="link" href={downloadPath}>{t.nav.download}</a>
+    </nav>
+    <div class="actions">
+      <LanguageSwitch locale={locale} route={route} />
+      <Button href={downloadPath} size="sm">{t.nav.download}</Button>
+    </div>
+  </div>
+</header>
+
+<style>
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--canvas);
+    border-bottom: 1px solid var(--border);
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+    height: var(--header-height);
+  }
+  .brand {
+    margin-right: auto;
+    text-decoration: none;
+  }
+  .nav {
+    display: none;
+    align-items: center;
+    gap: var(--space-5);
+  }
+  .link {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .link:hover {
+    color: var(--text);
+  }
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  /* Phones keep the logo, the language switch and the Download button. */
+  @media (min-width: 640px) {
+    .nav {
+      display: flex;
+    }
+    .brand {
+      margin-right: 0;
+    }
+    .bar {
+      gap: var(--space-6);
+    }
+    .actions {
+      margin-left: auto;
+    }
+  }
+</style>
