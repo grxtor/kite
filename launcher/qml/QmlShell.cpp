@@ -1156,11 +1156,8 @@ bool QmlShell::load()
 
 	/* InstGrouped: whether the library shows group by group, or as one
 	 * list. Only the library proxy follows it; the per-group section models
-	 * are what grouping shows. Looked up rather than assumed, so a build
-	 * without the setting just stays grouped. */
-	if (auto grouped = LAUNCHER->settings()->getSetting("InstGrouped")) {
-		m_instances->setGrouped(grouped->get().toBool());
-	}
+	 * are what grouping shows. */
+	m_instances->setGrouped(LAUNCHER->settings()->get("InstGrouped").toBool());
 
 	/* The sort order reads InstSortMode on every comparison, but a proxy
 	 * only compares when told to: re-sort when the setting moves. */

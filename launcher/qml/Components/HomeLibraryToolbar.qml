@@ -14,8 +14,9 @@ import Kite.Theme
  * reads as broken where a narrower search field still reads as one.
  *
  * The sort button names the current order and opens a menu of them, then
- * "Show groups": a check, as every on/off choice is, for the library as
- * group sections or as one list.
+ * "Group instances": a check, as every on/off choice is, for the library as
+ * group sections or as one list (the InstGrouped launcher setting, which
+ * QmlShell hands to the library proxy).
  *
  * New instance stays secondary: on Home the play bar's Play is the one
  * primary button.
@@ -55,16 +56,6 @@ RowLayout {
         return mode ? mode.label : root.sortModes[0].label
     }
     readonly property bool grouped: !root.libraryModel || root.libraryModel.grouped !== false
-
-    // The InstGrouped launcher setting keeps it across restarts (QmlShell
-    // hands it to the proxy); without that setting the proxy alone holds it
-    // for the session.
-    function setGrouped(on) {
-        if (SettingsStore.adapter && SettingsStore.adapter.contains("InstGrouped"))
-            SettingsStore.setValue("InstGrouped", on)
-        else if (root.libraryModel)
-            root.libraryModel.grouped = on
-    }
 
     function openSortMenu() {
         sortMenu.popup(sortButton, 0, sortButton.height + Theme.space.xs)
@@ -112,10 +103,10 @@ RowLayout {
         MenuSeparator {}
 
         MenuItem {
-            text: qsTr("Show groups")
+            text: qsTr("Group instances")
             checkable: true
             checked: root.grouped
-            onToggled: root.setGrouped(checked)
+            onToggled: SettingsStore.setValue("InstGrouped", checked)
         }
     }
 
