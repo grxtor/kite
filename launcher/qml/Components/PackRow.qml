@@ -51,7 +51,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: row.selected ? Theme.palette.accentSubtle
-             : hover.hovered ? Theme.palette.surfaceRaised : "transparent"
+             : hover.hovered ? Theme.palette.surfaceHover : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
     }
     Rectangle {
@@ -67,14 +67,14 @@ Item {
     component FactLabel: Text {
         color: Theme.palette.textTertiary
         font.family: Theme.font.family
-        font.pixelSize: Theme.type.caption.pixelSize
+        font.pixelSize: Theme.type.label.pixelSize
     }
     component FactValue: Text {
         Layout.fillWidth: true
         elide: Text.ElideMiddle
         color: Theme.palette.textPrimary
         font.family: Theme.font.family
-        font.pixelSize: Theme.type.caption.pixelSize
+        font.pixelSize: Theme.type.label.pixelSize
     }
 
     HoverHandler { id: hover }
@@ -126,35 +126,12 @@ Item {
 
             // The file's own logo when it has one; otherwise (and
             // while it loads) the kind's glyph.
-            Item {
+            RowThumb {
                 Layout.preferredWidth: owner.thumbSize
                 Layout.preferredHeight: owner.thumbSize
                 opacity: row.itemEnabled ? 1 : Theme.opacity.disabled
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: Theme.radius.md
-                    color: Theme.palette.surfaceSunken
-                    border.width: 1
-                    border.color: Theme.palette.border
-                    Image {
-                        id: logo
-                        anchors.fill: parent
-                        anchors.margins: owner.thumbInset
-                        source: row.iconUrl
-                        // The provider scales to exactly this,
-                        // keeping pixel-art logos crisp.
-                        sourceSize: Qt.size(width, height)
-                        fillMode: Image.PreserveAspectFit
-                    }
-                    MeshIcon {
-                        anchors.centerIn: parent
-                        visible: logo.status !== Image.Ready
-                        iconName: owner.iconName
-                        size: Theme.icon.md
-                        color: Theme.palette.textTertiary
-                    }
-                }
+                source: row.iconUrl
+                glyph: owner.iconName
             }
 
             Column {
@@ -168,8 +145,8 @@ Item {
                     elide: Text.ElideRight
                     color: Theme.palette.textPrimary
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
-                    font.weight: Font.DemiBold
+                    font.pixelSize: Theme.type.title.pixelSize
+                    font.weight: Theme.type.title.weight
                 }
                 // Who made it and where from -- or, with no Version column
                 // (a narrow table), its version.
@@ -179,7 +156,7 @@ Item {
                     text: owner.showVersionColumn ? row.byline
                           : (row.version ? String(row.version) : row.byline)
                     elide: Text.ElideRight
-                    color: Theme.palette.textTertiary
+                    color: Theme.palette.textSecondary
                     font.family: Theme.font.family
                     font.pixelSize: Theme.type.label.pixelSize
                 }

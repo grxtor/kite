@@ -44,8 +44,11 @@ Item {
     readonly property int comboWidth: 220
     readonly property int comboMinWidth: 120
     // Below this width the Copy, Upload and Open folder buttons keep only
-    // their icons (their label becomes the tooltip).
-    readonly property int compactBelow: 700
+    // their icons (their label becomes the tooltip), so Find keeps a field
+    // worth typing in: spelled out, they and the file picker take about
+    // 700 of the row. Settings' column is always narrower; the Log tab of
+    // a normal window is wider.
+    readonly property int compactBelow: 960
     readonly property bool compact: root.width < root.compactBelow
 
     readonly property bool hasFile: !!logs && logs.currentFile.length > 0

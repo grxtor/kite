@@ -21,8 +21,8 @@ import Kite.Theme
  * content is an action of the Content tab ("Add content" in its toolbar),
  * not a tab of its own: like Modrinth App going to its browse page, it
  * opens the browser as a page of its own -- banner and tabs make way for
- * the results, which matters most in a small window -- and the back button
- * top left, now named after the instance, returns to the list.
+ * the results, which matters most in a small window -- and the instance's
+ * name in the top bar's breadcrumb returns to the list.
  */
 Item {
     id: root
@@ -147,8 +147,10 @@ Item {
 
     // The header delegate below, for the menu's name/icon/group.
     property var headerCard: null
+    // Home's scale: a 64 px tile (HomeHeroTile, smaller), and Play at Home's
+    // hero height.
     readonly property int headerIconSize: 64
-    readonly property int headerActionSize: Theme.control.heightLg + Theme.space.xs
+    readonly property int headerActionSize: Theme.control.heightLg
     // Whether the opened instance's game is running (from the header model).
     property bool running: false
 
@@ -212,40 +214,11 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: Theme.space.xl + Theme.space.xs
         anchors.rightMargin: Theme.space.xl + Theme.space.xs
-        // Theme.space.sm, matching TopBar's own title-row top margin exactly
-        // (see TopBar.qml): this page has no TopBar of its own, but the
-        // account still has to land in the same pixel spot switching to and
-        // from a page that does.
+        // The shell's inset panel adds no padding; every page gives itself
+        // this much under its top edge.
         anchors.topMargin: Theme.space.xl
         anchors.bottomMargin: Theme.space.lg
         spacing: Theme.space.md
-
-        // Only in Add content: the shell's top bar names the way back to the
-        // library, but not out of the browser to this instance's Content.
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.maximumWidth: Theme.layout.maxContentWidth
-            Layout.alignment: Qt.AlignHCenter
-            Layout.preferredHeight: Theme.control.height
-            visible: root.browsing
-            spacing: Theme.space.sm
-
-            Button {
-                flat: true
-                text: root.headerCard ? root.headerCard.name : qsTr("Content")
-                icon.source: Icons.url("chevron-left")
-                leftPadding: Theme.space.sm
-                // Pulled out by its padding and the empty third of the
-                // chevron's square left of its stroke, so the ink starts on
-                // the tabs' edge -- the same rule as Discover's "Back to
-                // results".
-                Layout.leftMargin: -(leftPadding + Math.round(Theme.icon.sm / 3))
-                // A long instance name gives way before the page does.
-                Layout.maximumWidth: Math.round(root.width / 2)
-                onClicked: root.leaveBrowse()
-            }
-            Item { Layout.fillWidth: true }
-        }
 
         Repeater {
             model: root.headerModel
@@ -262,7 +235,6 @@ Item {
                 // Hidden while "Show play time per instance" is off.
                 readonly property string played: SettingsStore.bool("ShowGameTime")
                                                  ? Format.playTime(model.totalTimePlayed) : ""
-                readonly property color tint: model.iconTint
 
                 Layout.fillWidth: true
                 Layout.maximumWidth: Theme.layout.maxContentWidth
@@ -321,27 +293,17 @@ Item {
                     anchors.right: parent.right
                     spacing: Theme.space.lg
 
-                    // The instance's identity: its own icon on a tint of its
-                    // colour, a card corner (lg), never a pill.
-                    Rectangle {
+                    // The instance's identity, as Home's hero shows it: its
+                    // icon all but filling the neutral tile, or the pack's
+                    // own logo across it -- never a tint taken from the
+                    // icon's colour.
+                    HomeHeroTile {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.preferredWidth: root.headerIconSize
                         Layout.preferredHeight: root.headerIconSize
-                        radius: Theme.radius.lg
-                        border.width: 1
-                        border.color: Theme.palette.border
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: Format.shade(headerCard.tint, Theme.dark ? 0.34 : 0.84, 0.55) }
-                            GradientStop { position: 1.0; color: Format.shade(headerCard.tint, Theme.dark ? 0.18 : 0.72, 0.55) }
-                        }
-                        Image {
-                            anchors.centerIn: parent
-                            width: Math.round(parent.width * 0.7)
-                            height: width
-                            source: headerCard.iconKey.length > 0 ? "image://instanceicon/" + headerCard.iconKey : ""
-                            sourceSize: Qt.size(width, height)
-                            fillMode: Image.PreserveAspectFit
-                        }
+                        iconKey: headerCard.iconKey.length > 0 ? headerCard.iconKey : "default"
+                        packArt: headerCard.model.packArt || ""
+                        matte: Theme.palette.canvas
                     }
 
                     ColumnLayout {
@@ -356,8 +318,8 @@ Item {
                             elide: Text.ElideRight
                             color: Theme.palette.textPrimary
                             font.family: Theme.font.heading
-                            font.pixelSize: Theme.type.display.pixelSize - Theme.space.xs
-                            font.weight: Font.DemiBold
+                            font.pixelSize: Theme.type.display.pixelSize
+                            font.weight: Theme.type.display.weight
                         }
 
                         Flow {

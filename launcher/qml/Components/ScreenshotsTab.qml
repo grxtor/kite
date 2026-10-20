@@ -485,6 +485,8 @@ Item {
 
     EmptyState {
         anchors.centerIn: parent
+        // Up where the list would start, as on every other tab.
+        upperThird: true
         visible: !root.model || root.model.count === 0
         title: qsTr("No screenshots yet")
         body: qsTr("Press F2 in game; they will show up here.")

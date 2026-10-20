@@ -426,6 +426,8 @@ Item {
     // EmptyState takes its title's width unless given one of its own.
     EmptyState {
         anchors.centerIn: parent
+        // Up where the list would start, as on every other tab.
+        upperThird: true
         width: parent.width
         visible: root.isMinecraft && root.count === 0
         title: root.current.emptyTitle
@@ -435,6 +437,7 @@ Item {
 
     EmptyState {
         anchors.centerIn: parent
+        upperThird: true
         width: parent.width
         visible: !root.isMinecraft
         title: qsTr("No content")

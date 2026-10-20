@@ -33,8 +33,6 @@ Item {
     // The TaskWatcher of "Download all files", while it runs and after it fails.
     property var downloadWatcher: null
     readonly property bool downloading: !!root.downloadWatcher && root.downloadWatcher.running
-    readonly property int rowHeight: 72
-    readonly property int thumbSize: 44
 
     // PackProfile reports its failures in launcher terms; the one a player
     // most often meets (the version metadata could not be fetched or
@@ -220,7 +218,7 @@ Item {
     Component {
         id: componentDelegate
 
-        Rectangle {
+        TabListRow {
             id: row
             required property int index
             required property string name
@@ -246,91 +244,45 @@ Item {
                                                || (isCustomizable && !isCustom) || isRevertible || isRemovable
 
             width: list.width
-            height: root.rowHeight
-            radius: Theme.radius.lg
-            color: hover.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
-            border.width: 1
-            border.color: Theme.palette.border
-            Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
+            title: row.name
+            meta: row.version
+            dimmed: !row.isEnabled
+            // Minecraft itself, or the loader / library laid over it.
+            thumb.glyph: row.uid === "net.minecraft" ? "cube" : "layers"
+            onMenuRequested: if (row.hasActions) rowMenu.popup()
 
-            HoverHandler { id: hover }
-            TapHandler {
-                acceptedButtons: Qt.RightButton
-                onTapped: if (row.hasActions) rowMenu.popup()
-            }
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: Theme.space.lg
-                anchors.rightMargin: Theme.space.md
-                spacing: Theme.space.md
-
-                // Minecraft itself, or the loader / library laid over it.
-                Rectangle {
-                    Layout.preferredWidth: root.thumbSize
-                    Layout.preferredHeight: root.thumbSize
-                    radius: Theme.radius.md
-                    color: Theme.palette.surfaceSunken
-                    border.width: 1
-                    border.color: Theme.palette.border
-                    MeshIcon {
-                        anchors.centerIn: parent
-                        iconName: row.uid === "net.minecraft" ? "cube" : "layers"
-                        size: Theme.icon.md
-                        color: Theme.palette.textTertiary
-                    }
-                }
-
+            badges: [
                 MeshIcon {
+                    anchors.verticalCenter: parent.verticalCenter
                     visible: row.problemSeverity === "warning" || row.problemSeverity === "error"
                     iconName: "alert-triangle"
                     size: Theme.icon.sm
                     color: row.problemSeverity === "error" ? Theme.palette.danger : Theme.palette.warning
-                }
+                },
+                StatusBadge { visible: row.isCustom; text: qsTr("Custom"); tone: "warning" },
+                StatusBadge { visible: !row.isEnabled; text: qsTr("Off") }
+            ]
 
-                Column {
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 0
-                    spacing: Theme.space.xxs
-
-                    Text {
-                        width: parent.width
-                        text: row.name
-                        elide: Text.ElideRight
-                        color: row.isEnabled ? Theme.palette.textPrimary : Theme.palette.textTertiary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.bodyStrong.pixelSize
-                        font.weight: Theme.type.bodyStrong.weight
-                    }
-                    Row {
-                        spacing: Theme.space.xs
-                        Tag { text: row.version }
-                        StatusBadge { visible: row.isCustom; text: qsTr("Custom"); tone: "warning" }
-                        StatusBadge { visible: !row.isEnabled; text: qsTr("Off") }
-                    }
+            Switch {
+                visible: row.canDisable
+                enabled: !root.locked
+                checked: row.isEnabled
+                Accessible.name: qsTr("Enable %1").arg(row.name)
+                onToggled: {
+                    root.components.setComponentEnabled(row.uid, checked)
+                    checked = Qt.binding(() => row.isEnabled)
                 }
+            }
 
-                Switch {
-                    visible: row.canDisable
-                    enabled: !root.locked
-                    checked: row.isEnabled
-                    Accessible.name: qsTr("Enable %1").arg(row.name)
-                    onToggled: {
-                        root.components.setComponentEnabled(row.uid, checked)
-                        checked = Qt.binding(() => row.isEnabled)
-                    }
-                }
-
-                IconButton {
-                    id: moreButton
-                    // Keeps the switches in one column whether or not a row
-                    // has a menu.
-                    opacity: row.hasActions ? 1 : 0
-                    enabled: row.hasActions
-                    iconName: "more"
-                    tip: qsTr("More")
-                    onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
-                }
+            IconButton {
+                id: moreButton
+                // Keeps the switches in one column whether or not a row
+                // has a menu.
+                opacity: row.hasActions ? 1 : 0
+                enabled: row.hasActions
+                iconName: "more"
+                tip: qsTr("More")
+                onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
             }
 
             // Hidden entries are zeroed as well: a hidden item still takes

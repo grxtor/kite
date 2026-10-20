@@ -33,22 +33,23 @@ Item {
     // user why nothing happened.
     property string actionError: ""
 
-    readonly property int rowHeight: 72
-    readonly property int thumbSize: 44
-
     // BackupController's timestampText is "yyyy-MM-dd HH:mm:ss" local time;
     // read back into a date so it reads like every other date in the app.
     function backupAge(timestampText) {
         var ms = new Date(String(timestampText).replace(" ", "T")).getTime()
         return isNaN(ms) ? timestampText : Format.lastPlayed(ms)
     }
-    // What a backup is called in the list. A backup made without a label is
-    // named after its creation time ("2026-09-18_09-00-00.zip"); that reads
-    // as a date and time instead of a file name. A labelled one keeps its
-    // label; either way ".zip" is not part of the name.
+    // Whether a backup was made without a label, and so is named after its
+    // creation time ("2026-09-18_09-00-00.zip").
+    function namedByTime(name) {
+        return /^\d{4}-\d{2}-\d{2}[_ T-]\d{2}[-.:]\d{2}[-.:]\d{2}$/.test(String(name).replace(/\.zip$/i, ""))
+    }
+    // What a backup is called in the list. One named after its creation time
+    // reads as that date and time instead of a file name. A labelled one
+    // keeps its label; either way ".zip" is not part of the name.
     function backupTitle(name, timestampText) {
         var bare = String(name).replace(/\.zip$/i, "")
-        if (!/^\d{4}-\d{2}-\d{2}[_ T-]\d{2}[-.:]\d{2}[-.:]\d{2}$/.test(bare))
+        if (!root.namedByTime(name))
             return bare
         var when = new Date(String(timestampText).replace(" ", "T"))
         return isNaN(when.getTime()) ? bare
@@ -139,82 +140,35 @@ Item {
             // Overlays the rows' right edge rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
-            delegate: Rectangle {
+            delegate: TabListRow {
                 id: row
                 required property int index
                 required property string name
                 required property string timestampText
                 required property string sizeText
 
-                readonly property string title: root.backupTitle(row.name, row.timestampText)
-
                 width: list.width
-                height: root.rowHeight
-                radius: Theme.radius.lg
-                color: hover.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
-                border.width: 1
-                border.color: Theme.palette.border
-                Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
+                title: root.backupTitle(row.name, row.timestampText)
+                // When the title is already the date, only the size is left
+                // to say.
+                meta: root.namedByTime(row.name) ? row.sizeText
+                                                 : [root.backupAge(row.timestampText), row.sizeText].join("  •  ")
+                thumb.glyph: "archive"
+                onMenuRequested: if (!root.busy) rowMenu.popup()
 
-                HoverHandler { id: hover }
-                TapHandler {
-                    acceptedButtons: Qt.RightButton
-                    onTapped: if (!root.busy) rowMenu.popup()
+                Button {
+                    text: qsTr("Restore")
+                    enabled: !root.busy && !root.running
+                    ToolTip.visible: hovered && root.running
+                    ToolTip.text: qsTr("Close the game before restoring a backup.")
+                    onClicked: root.confirmRestore(row.index, row.title)
                 }
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: Theme.space.lg
-                    anchors.rightMargin: Theme.space.md
-                    spacing: Theme.space.md
-
-                    Rectangle {
-                        Layout.preferredWidth: root.thumbSize
-                        Layout.preferredHeight: root.thumbSize
-                        radius: Theme.radius.md
-                        color: Theme.palette.surfaceSunken
-                        border.width: 1
-                        border.color: Theme.palette.border
-                        MeshIcon { anchors.centerIn: parent; iconName: "archive"; size: Theme.icon.md; color: Theme.palette.textTertiary }
-                    }
-
-                    Column {
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                        spacing: Theme.space.xxs
-                        Text {
-                            width: parent.width
-                            text: row.title
-                            elide: Text.ElideRight
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.bodyStrong.pixelSize
-                            font.weight: Theme.type.bodyStrong.weight
-                        }
-                        Text {
-                            width: parent.width
-                            text: qsTr("%1, %2").arg(root.backupAge(row.timestampText)).arg(row.sizeText)
-                            elide: Text.ElideRight
-                            color: Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.label.pixelSize
-                        }
-                    }
-
-                    Button {
-                        text: qsTr("Restore")
-                        enabled: !root.busy && !root.running
-                        ToolTip.visible: hovered && root.running
-                        ToolTip.text: qsTr("Close the game before restoring a backup.")
-                        onClicked: root.confirmRestore(row.index, row.title)
-                    }
-                    IconButton {
-                        id: moreButton
-                        enabled: !root.busy
-                        iconName: "more"
-                        tip: qsTr("More")
-                        onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
-                    }
+                IconButton {
+                    id: moreButton
+                    enabled: !root.busy
+                    iconName: "more"
+                    tip: qsTr("More")
+                    onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
                 }
 
                 Menu {

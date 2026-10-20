@@ -23,7 +23,8 @@ AbstractButton {
     property bool picked: false
     property bool installed: false
 
-    readonly property int rowHeight: 48
+    // Two lines at the list scale (body over label) with air around them.
+    readonly property int rowHeight: Theme.control.heightLg + Theme.space.sm
 
     height: root.rowHeight
     hoverEnabled: true
@@ -48,7 +49,7 @@ AbstractButton {
                 elide: Text.ElideRight
                 color: root.entry.isCompatible ? Theme.palette.textPrimary : Theme.palette.textTertiary
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
+                font.pixelSize: Theme.type.body.pixelSize
                 font.weight: root.picked ? Font.Bold : Font.Medium
             }
             Text {
@@ -64,9 +65,9 @@ AbstractButton {
                       : fits.length > 0 ? qsTr("Not for this instance (%1)").arg(fits)
                       : qsTr("Not for this instance")
                 elide: Text.ElideRight
-                color: root.entry.isCompatible ? Theme.palette.textTertiary : Theme.palette.warning
+                color: root.entry.isCompatible ? Theme.palette.textSecondary : Theme.palette.warning
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                font.pixelSize: Theme.type.label.pixelSize
             }
         }
         Tag {

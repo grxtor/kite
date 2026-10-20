@@ -27,10 +27,6 @@ Item {
     signal openFolderRequested(string path)
     signal joinRequested(string address)
 
-    readonly property int rowHeight: 72
-    readonly property int thumbSize: 44
-    // The same frame InstanceListRow gives an instance icon.
-    readonly property int thumbInset: Theme.space.xs
     // servers.dat's per-server resource pack choice, in its own order.
     readonly property var packChoices: [
         { value: 0, label: qsTr("Ask") },
@@ -99,7 +95,7 @@ Item {
             // Overlays the rows' right edge rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
-            delegate: Rectangle {
+            delegate: TabListRow {
                 id: row
                 required property int index
                 required property string name
@@ -109,88 +105,25 @@ Item {
                 // server, as a data: URL; "" if it never has.
                 required property string iconUrl
 
-                readonly property string title: row.name.length > 0 ? row.name : qsTr("Minecraft Server")
-
                 width: list.width
-                height: root.rowHeight
-                radius: Theme.radius.lg
-                color: hover.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
-                border.width: 1
-                border.color: Theme.palette.border
-                Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
+                title: row.name.length > 0 ? row.name : qsTr("Minecraft Server")
+                meta: row.address.length > 0 ? row.address : qsTr("No address yet")
+                thumb.source: row.iconUrl
+                thumb.glyph: "server"
+                onMenuRequested: rowMenu.popup()
 
-                HoverHandler { id: hover }
-                TapHandler {
-                    acceptedButtons: Qt.RightButton
-                    onTapped: rowMenu.popup()
+                Button {
+                    text: qsTr("Join")
+                    icon.source: Icons.url("play")
+                    enabled: row.address.trim().length > 0
+                    onClicked: root.joinRequested(row.address)
                 }
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: Theme.space.lg
-                    anchors.rightMargin: Theme.space.md
-                    spacing: Theme.space.md
-
-                    Rectangle {
-                        Layout.preferredWidth: root.thumbSize
-                        Layout.preferredHeight: root.thumbSize
-                        radius: Theme.radius.md
-                        color: Theme.palette.surfaceSunken
-                        border.width: 1
-                        border.color: Theme.palette.border
-                        Image {
-                            id: favicon
-                            anchors.fill: parent
-                            anchors.margins: root.thumbInset
-                            source: row.iconUrl
-                            sourceSize: Qt.size(width, height)
-                            fillMode: Image.PreserveAspectFit
-                        }
-                        MeshIcon {
-                            anchors.centerIn: parent
-                            visible: favicon.status !== Image.Ready
-                            iconName: "server"
-                            size: Theme.icon.md
-                            color: Theme.palette.textTertiary
-                        }
-                    }
-
-                    Column {
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                        spacing: Theme.space.xxs
-                        Text {
-                            width: parent.width
-                            text: row.title
-                            elide: Text.ElideRight
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.bodyStrong.pixelSize
-                            font.weight: Theme.type.bodyStrong.weight
-                        }
-                        Text {
-                            width: parent.width
-                            text: row.address.length > 0 ? row.address : qsTr("No address yet")
-                            elide: Text.ElideRight
-                            color: Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.label.pixelSize
-                        }
-                    }
-
-                    Button {
-                        text: qsTr("Join")
-                        icon.source: Icons.url("play")
-                        enabled: row.address.trim().length > 0
-                        onClicked: root.joinRequested(row.address)
-                    }
-
-                    IconButton {
-                        id: moreButton
-                        iconName: "more"
-                        tip: qsTr("More")
-                        onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
-                    }
+                IconButton {
+                    id: moreButton
+                    iconName: "more"
+                    tip: qsTr("More")
+                    onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
                 }
 
                 Menu {
@@ -252,6 +185,15 @@ Item {
         anchors.centerIn: parent
         width: Math.min(440, parent ? parent.width - Theme.space.xxl * 2 : 440)
         modal: true
+        // The title row sets the inset; the gap under it is the dialog's own spacing.
+        topPadding: 0
+        // The actions row sets the bottom inset; this and the spacing over it
+        // leave one inset (xl) between the body and the actions.
+        bottomPadding: Theme.space.sm
+
+        header: DialogHeader {
+            title: serverDialog.title
+        }
 
         onOpened: {
             if (row < 0) {
@@ -330,7 +272,7 @@ Item {
         footer: Row {
             layoutDirection: Qt.RightToLeft
             spacing: Theme.space.sm
-            padding: Theme.space.lg
+            padding: Theme.space.xl
             topPadding: 0
             Button {
                 text: serverDialog.row < 0 ? qsTr("Add server") : qsTr("Save")
@@ -340,7 +282,6 @@ Item {
             }
             Button {
                 text: qsTr("Cancel")
-                flat: true
                 onClicked: serverDialog.close()
             }
         }

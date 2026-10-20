@@ -78,9 +78,7 @@ Item {
         toast.show(qsTr("That is not a Minecraft world. Pick a .zip with a world in it."), "danger")
     }
 
-    readonly property int rowHeight: 72
-    readonly property int thumbSize: 44
-    // The game modes worth a tag. WorldList reports a level.dat without one
+    // The game modes worth naming. WorldList reports a level.dat without one
     // as "Undefined" (or "Unknown (n)"), which says nothing to a player, so
     // anything else is simply left out.
     readonly property var knownModes: [qsTranslate("GameType", "Survival"), qsTranslate("GameType", "Creative"),
@@ -151,7 +149,7 @@ Item {
             // Overlays the rows' right edge rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
-            delegate: Item {
+            delegate: TabListRow {
                 id: cell
                 required property int index
                 required property string name
@@ -169,169 +167,93 @@ Item {
                 readonly property string mode: String(cell.gameMode || "")
 
                 width: list.width
-                height: root.rowHeight
+                title: cell.displayName
+                // "Survival  •  Day 12  •  Yesterday", as Home's rows read.
+                meta: [root.knownModes.indexOf(cell.mode) >= 0 ? cell.mode : "",
+                       cell.dayCount !== undefined && cell.dayCount !== null ? qsTr("Day %1").arg(cell.dayCount) : "",
+                       Format.lastPlayed(cell.lastPlayed ? Number(cell.lastPlayed) : 0)]
+                      .filter((part) => part.length > 0).join("  •  ")
+                // The world's own icon.png, kept crisp like the pixel picture
+                // it is. Without one, a neutral globe: a landscape there
+                // would pass for a real view of the world, and two worlds
+                // would share one.
+                thumb.source: Format.fileUrl(cell.iconFile)
+                thumb.glyph: "globe"
+                thumb.fill: true
+                thumb.pixelArt: true
+                onMenuRequested: if (!root.busy) rowMenu.popup()
 
-                HoverHandler { id: hover }
-                TapHandler {
-                    acceptedButtons: Qt.RightButton
-                    onTapped: if (!root.busy) rowMenu.popup()
-                }
+                IconButton {
+                    id: moreButton
+                    enabled: !root.busy
+                    iconName: "more"
+                    tip: qsTr("More")
+                    onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
 
-                Rectangle {
-                    id: card
-                    anchors.fill: parent
-                    radius: Theme.radius.lg
-                    color: hover.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
-                    border.width: 1
-                    border.color: Theme.palette.border
-
-                    Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: Theme.space.lg
-                        anchors.rightMargin: Theme.space.md
-                        spacing: Theme.space.md
-
-                        Rectangle {
-                            id: thumb
-                            Layout.preferredWidth: root.thumbSize
-                            Layout.preferredHeight: root.thumbSize
-                            radius: Theme.radius.md
-                            color: Theme.palette.surfaceSunken
-                            clip: true
-
-                            // The world's own icon.png, kept crisp like the
-                            // pixel picture it is.
-                            Image {
-                                id: worldIcon
-                                anchors.fill: parent
-                                source: Format.fileUrl(cell.iconFile)
-                                sourceSize: Qt.size(width * 2, height * 2)
-                                fillMode: Image.PreserveAspectCrop
-                                smooth: false
-                                asynchronous: true
-                                visible: status === Image.Ready
-                            }
-                            // No icon.png: a neutral globe. A landscape
-                            // here would pass for a real view of the world,
-                            // and two worlds would share one.
-                            MeshIcon {
-                                anchors.centerIn: parent
-                                visible: !worldIcon.visible
-                                iconName: "globe"
-                                size: Theme.icon.md
-                                color: Theme.palette.textTertiary
-                            }
-                            CornerMatte {
-                                cornerRadius: thumb.radius
-                                matte: card.color
+                    Menu {
+                        id: rowMenu
+                        onAboutToShow: root.mceditReady = !!root.details && root.details.mceditConfigured()
+                        MenuItem {
+                            // An old-format instance has no Data packs tab.
+                            visible: !!root.details && root.details.isMinecraft
+                            height: visible ? implicitHeight : 0
+                            text: qsTr("Data packs")
+                            icon.source: Icons.url("package")
+                            onTriggered: root.dataPacksRequested(cell.index)
+                        }
+                        MenuItem {
+                            text: qsTr("Copy seed")
+                            icon.source: Icons.url("copy")
+                            onTriggered: {
+                                clipboard.copyText(String(cell.seed))
+                                toast.show(qsTr("Seed copied."), "success")
                             }
                         }
-
-                        Column {
-                            Layout.fillWidth: true
-                            Layout.minimumWidth: 0
-                            spacing: Theme.space.xs
-                            Text {
-                                width: parent.width
-                                text: cell.displayName
-                                elide: Text.ElideRight
-                                color: Theme.palette.textPrimary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.bodyStrong.pixelSize
-                                font.weight: Theme.type.bodyStrong.weight
-                            }
-                            Row {
-                                spacing: Theme.space.xs
-                                Tag {
-                                    visible: root.knownModes.indexOf(cell.mode) >= 0
-                                    text: cell.mode
-                                }
-                                Tag {
-                                    visible: cell.dayCount !== undefined && cell.dayCount !== null
-                                    text: qsTr("Day %1").arg(cell.dayCount)
-                                }
-                                Tag {
-                                    iconName: "clock"
-                                    text: Format.lastPlayed(cell.lastPlayed ? Number(cell.lastPlayed) : 0)
-                                }
-                            }
+                        MenuItem {
+                            visible: root.mceditReady
+                            height: visible ? implicitHeight : 0
+                            text: qsTr("Open in MCEdit")
+                            icon.source: Icons.url("external-link")
+                            onTriggered: root.guarded(() => {
+                                var problem = root.details.openWorldInMCEdit(cell.index)
+                                if (problem.length > 0)
+                                    toast.show(problem, "danger")
+                            })
                         }
-
-                        IconButton {
-                            id: moreButton
-                            enabled: !root.busy
-                            iconName: "more"
-                            tip: qsTr("More")
-                            onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
-
-                            Menu {
-                                id: rowMenu
-                                onAboutToShow: root.mceditReady = !!root.details && root.details.mceditConfigured()
-                                MenuItem {
-                                    // An old-format instance has no Data packs tab.
-                                    visible: !!root.details && root.details.isMinecraft
-                                    height: visible ? implicitHeight : 0
-                                    text: qsTr("Data packs")
-                                    icon.source: Icons.url("package")
-                                    onTriggered: root.dataPacksRequested(cell.index)
-                                }
-                                MenuItem {
-                                    text: qsTr("Copy seed")
-                                    icon.source: Icons.url("copy")
-                                    onTriggered: {
-                                        clipboard.copyText(String(cell.seed))
-                                        toast.show(qsTr("Seed copied."), "success")
-                                    }
-                                }
-                                MenuItem {
-                                    visible: root.mceditReady
-                                    height: visible ? implicitHeight : 0
-                                    text: qsTr("Open in MCEdit")
-                                    icon.source: Icons.url("external-link")
-                                    onTriggered: root.guarded(() => {
-                                        var problem = root.details.openWorldInMCEdit(cell.index)
-                                        if (problem.length > 0)
-                                            toast.show(problem, "danger")
-                                    })
-                                }
-                                MenuSeparator {}
-                                MenuItem {
-                                    text: qsTr("Rename…")
-                                    icon.source: Icons.url("edit")
-                                    onTriggered: root.guarded(() => {
-                                        renamePrompt.row = cell.index
-                                        renamePrompt.value = cell.displayName
-                                        renamePrompt.open()
-                                    })
-                                }
-                                MenuItem {
-                                    text: qsTr("Copy…")
-                                    icon.source: Icons.url("copy")
-                                    onTriggered: root.guarded(() => {
-                                        copyPrompt.row = cell.index
-                                        copyPrompt.value = qsTr("%1 (copy)").arg(cell.displayName)
-                                        copyPrompt.open()
-                                    })
-                                }
-                                MenuItem {
-                                    text: qsTr("Reset icon")
-                                    icon.source: Icons.url("image")
-                                    enabled: !!cell.iconFile
-                                    onTriggered: root.guarded(() => root.details.resetWorldIcon(cell.index))
-                                }
-                                MenuSeparator {}
-                                MenuItem {
-                                    text: qsTr("Delete…")
-                                    icon.source: Icons.url("trash")
-                                    onTriggered: root.guarded(() => {
-                                        confirm.row = cell.index
-                                        confirm.text = qsTr("Delete the world “%1”? It cannot be recovered from the launcher.").arg(cell.displayName)
-                                        confirm.open()
-                                    })
-                                }
-                            }
+                        MenuSeparator {}
+                        MenuItem {
+                            text: qsTr("Rename…")
+                            icon.source: Icons.url("edit")
+                            onTriggered: root.guarded(() => {
+                                renamePrompt.row = cell.index
+                                renamePrompt.value = cell.displayName
+                                renamePrompt.open()
+                            })
+                        }
+                        MenuItem {
+                            text: qsTr("Copy…")
+                            icon.source: Icons.url("copy")
+                            onTriggered: root.guarded(() => {
+                                copyPrompt.row = cell.index
+                                copyPrompt.value = qsTr("%1 (copy)").arg(cell.displayName)
+                                copyPrompt.open()
+                            })
+                        }
+                        MenuItem {
+                            text: qsTr("Reset icon")
+                            icon.source: Icons.url("image")
+                            enabled: !!cell.iconFile
+                            onTriggered: root.guarded(() => root.details.resetWorldIcon(cell.index))
+                        }
+                        MenuSeparator {}
+                        MenuItem {
+                            text: qsTr("Delete…")
+                            icon.source: Icons.url("trash")
+                            onTriggered: root.guarded(() => {
+                                confirm.row = cell.index
+                                confirm.text = qsTr("Delete the world “%1”? It cannot be recovered from the launcher.").arg(cell.displayName)
+                                confirm.open()
+                            })
                         }
                     }
                 }

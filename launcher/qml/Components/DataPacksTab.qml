@@ -30,8 +30,6 @@ Item {
     readonly property bool unlocked: !!root.controller && root.controller.unlocked
     readonly property int count: list.count
     readonly property string lockedReason: qsTr("The game is running. Data packs can be changed once it has closed.")
-    readonly property int rowHeight: 72
-    readonly property int thumbSize: 44
     readonly property int pickerWidth: 220
 
     function openWorld(row) {
@@ -78,7 +76,10 @@ Item {
                     // arrives; open the default world as soon as there is one,
                     // or the toolbar would stay disabled with nothing to act on.
                     onCountChanged: if (root.controller && !root.controller.ready) root.openDefault()
-                }
+                },
+                // Takes the free width, or the row would share it out
+                // between the label and the picker and pull them apart.
+                Item { Layout.fillWidth: true }
             ]
 
             Button {
@@ -117,7 +118,9 @@ Item {
             // Overlays the rows' right edge rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
-            delegate: Rectangle {
+            // Same row as Content's (PackList): what it is on the left, its
+            // switch and ⋯ menu on the right.
+            delegate: TabListRow {
                 id: row
                 required property int index
                 required property var model
@@ -126,78 +129,27 @@ Item {
                 readonly property bool itemEnabled: model.enabled
 
                 width: list.width
-                height: root.rowHeight
-                radius: Theme.radius.lg
-                color: hover.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
-                border.width: 1
-                border.color: Theme.palette.border
+                title: row.name
+                meta: row.version ? String(row.version) : ""
+                dimmed: !row.itemEnabled
+                thumb.glyph: "package"
+                onMenuRequested: rowMenu.popup()
 
-                Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
-                HoverHandler { id: hover }
-                TapHandler {
-                    acceptedButtons: Qt.RightButton
-                    onTapped: rowMenu.popup()
+                Switch {
+                    checked: row.itemEnabled
+                    enabled: root.unlocked
+                    Accessible.name: qsTr("Enable %1").arg(row.name)
+                    onToggled: {
+                        root.controller.setEnabled(row.index, checked)
+                        checked = Qt.binding(() => row.itemEnabled)
+                    }
                 }
 
-                // Same row as Content's (PackList): what it is on the left,
-                // its switch and ⋯ menu on the right.
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: Theme.space.lg
-                    anchors.rightMargin: Theme.space.md
-                    spacing: Theme.space.md
-
-                    Rectangle {
-                        Layout.preferredWidth: root.thumbSize
-                        Layout.preferredHeight: root.thumbSize
-                        radius: Theme.radius.md
-                        color: Theme.palette.surfaceSunken
-                        border.width: 1
-                        border.color: Theme.palette.border
-                        opacity: row.itemEnabled ? 1 : Theme.opacity.disabled
-                        MeshIcon { anchors.centerIn: parent; iconName: "package"; size: Theme.icon.md; color: Theme.palette.textTertiary }
-                    }
-
-                    Column {
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                        spacing: Theme.space.xxs
-                        Text {
-                            width: parent.width
-                            text: row.name
-                            elide: Text.ElideRight
-                            color: row.itemEnabled ? Theme.palette.textPrimary : Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.bodyStrong.pixelSize
-                            font.weight: Theme.type.bodyStrong.weight
-                        }
-                        Text {
-                            width: parent.width
-                            visible: text.length > 0
-                            text: row.version ? String(row.version) : ""
-                            elide: Text.ElideRight
-                            color: Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.label.pixelSize
-                        }
-                    }
-
-                    Switch {
-                        checked: row.itemEnabled
-                        enabled: root.unlocked
-                        Accessible.name: qsTr("Enable %1").arg(row.name)
-                        onToggled: {
-                            root.controller.setEnabled(row.index, checked)
-                            checked = Qt.binding(() => row.itemEnabled)
-                        }
-                    }
-
-                    IconButton {
-                        id: moreButton
-                        iconName: "more"
-                        tip: qsTr("More")
-                        onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
-                    }
+                IconButton {
+                    id: moreButton
+                    iconName: "more"
+                    tip: qsTr("More")
+                    onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
                 }
 
                 Menu {

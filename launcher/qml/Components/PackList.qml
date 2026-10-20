@@ -52,9 +52,8 @@ Item {
     property string expandedKey: ""
 
     readonly property int count: list.count
-    readonly property int thumbSize: 44
-    // The same frame InstanceListRow gives an instance icon.
-    readonly property int thumbInset: Theme.space.xs + Theme.space.xxs
+    // A row's square (RowThumb), at the size of every instance tab's rows.
+    readonly property int thumbSize: Theme.control.heightLg
     // The tick box column, and the table's columns: the header and every
     // row are laid out from these, so they line up. Version only when the
     // card is wide enough to spare it, as in Modrinth App's table.
@@ -259,6 +258,8 @@ Item {
     // (ContentTab shows its own empty state for that).
     EmptyState {
         anchors.centerIn: parent
+        // Up where the list would start, as on every other tab.
+        upperThird: true
         // Its own width, or it takes its title's.
         width: parent.width
         visible: !!root.model && root.model.totalCount > 0 && root.model.count === 0

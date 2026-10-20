@@ -115,6 +115,8 @@ qt_add_qml_module(Kite_qml_components
         TabScroll.qml
         TabStrip.qml
         TabToolbar.qml
+        TabListRow.qml
+        RowThumb.qml
         ConfirmDialog.qml
         DialogHeader.qml
         AccountsPage.qml
