@@ -203,8 +203,8 @@ class ContentFilterModelTest : public QObject
 		const QString markdown = InstanceContentController::renderExport(
 			items, "markdown", {"version"}, QString());
 		QCOMPARE(markdown, QStringLiteral("- Fabric API\n"
-										  "- Lithium [0\\.14\\.3]\n"
-										  "- Sodium [0\\.6\\.5]"));
+										  "- Lithium [0.14.3]\n"
+										  "- Sodium [0.6.5]"));
 
 		const QString csv = InstanceContentController::renderExport(
 			items, "csv", {"version", "authors"}, QString());
