@@ -65,6 +65,9 @@ Rectangle {
     property var accountsController: null
 
     property bool collapsed: true
+    // False while the host keeps the rail whatever the toggle says (a narrow
+    // window): the expand toggle hides rather than do nothing.
+    property bool canExpand: true
     // Whether the play bar is showing beside the foot band. The band keeps
     // its height either way, so the account never moves between pages; kept
     // for callers that still pass it.
@@ -108,7 +111,7 @@ Rectangle {
         var fixed = root.bandHeight + root.brandGap + Theme.layout.barHeight
                   + (root.items.length + root.footerItems.length + 1) * pitch
                   + rule.height + rule.Layout.topMargin + rule.Layout.bottomMargin + column.spacing
-                  + (root.collapsed ? Theme.control.heightSm + column.spacing : 0)
+                  + (root.collapsed && root.canExpand ? Theme.control.heightSm + column.spacing : 0)
                   + Theme.space.lg
         return Math.max(0, Math.min(root.recentLimit, Math.floor((root.height - fixed) / pitch)))
     }
@@ -292,7 +295,7 @@ Rectangle {
         Item { Layout.fillHeight: true }
 
         CollapseToggle {
-            visible: root.collapsed
+            visible: root.collapsed && root.canExpand
             Layout.alignment: Qt.AlignHCenter
         }
 

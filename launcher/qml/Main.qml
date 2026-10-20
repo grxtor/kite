@@ -524,11 +524,12 @@ ApplicationWindow {
         width: implicitWidth
         bandHeight: root.shellBarHeight
         // The icon rail (Modrinth's) unless the labelled sidebar was asked
-        // for -- the persisted toggle (SidebarNav's own CollapseToggle). A
-        // narrow window keeps the rail regardless, rather than squeezing the
-        // pages behind a labelled sidebar; so does Settings, which brings
-        // its own section list.
-        collapsed: root.width < 1000 || root.page === "settings" || SettingsStore.bool("UiSidebarCollapsed")
+        // for -- the persisted toggle (SidebarNav's own CollapseToggle), on
+        // every page. A narrow window keeps the rail regardless, rather than
+        // squeezing the pages behind a labelled sidebar, and then offers no
+        // toggle that could not act.
+        canExpand: root.width >= 1000
+        collapsed: !canExpand || SettingsStore.bool("UiSidebarCollapsed")
         items: root.navItems
         footerItems: [
             { id: "settings", icon: "settings", label: qsTr("Settings") }
