@@ -27,6 +27,7 @@
 #include <QDir>
 #include <QtGui/QIcon>
 #include <QColor>
+#include <QImage>
 #include <QHash>
 #include <memory>
 
@@ -94,6 +95,17 @@ class IconList : public QAbstractListModel
 	void startWatching();
 	void stopWatching();
 
+	/* Shows each built-in icon that has a game texture (see
+	 * GameTextureIcons) as that texture instead, read from the newest
+	 * client jar under librariesDir and cached in cacheDir. Built-in icons
+	 * without one, and a custom icon saved under a built-in key, stay as
+	 * they are. Both folders default to the data directory's own, relative
+	 * like IconsDir. Runs once on construction; run it again after a new
+	 * client jar is downloaded. */
+	void loadGameTextures(
+		const QString& librariesDir = QStringLiteral("libraries"),
+		const QString& cacheDir = QStringLiteral("cache/gametextures"));
+
   signals:
 	void iconUpdated(QString key);
 
@@ -103,6 +115,7 @@ class IconList : public QAbstractListModel
 	// hide assign op
 	IconList& operator=(const IconList&) = delete;
 	void reindex();
+	QIcon iconAt(int index) const;
 
   public slots:
 	void directoryChanged(const QString& path);
@@ -118,4 +131,9 @@ class IconList : public QAbstractListModel
 	QVector<MMCIcon> icons;
 	QDir m_dir;
 	mutable QHash<QString, QColor> m_tintCache;
+	struct GameTexture {
+		QImage image;
+		QIcon icon;
+	};
+	QHash<QString, GameTexture> m_gameTextures;
 };

@@ -20,6 +20,7 @@
  */
 
 #include "IconList.h"
+#include "GameTextureIcons.h"
 #include "Logging.h"
 #include <FileSystem.h>
 #include <QMap>
@@ -57,6 +58,7 @@ IconList::IconList(const QStringList& builtinPaths, QString path,
 	for (auto& builtinName : builtinNames) {
 		addThemeIcon(builtinName);
 	}
+	loadGameTextures();
 
 	m_watcher.reset(new QFileSystemWatcher());
 	is_watching = false;
@@ -240,7 +242,7 @@ QVariant IconList::data(const QModelIndex& index, int role) const
 
 	switch (role) {
 		case Qt::DecorationRole:
-			return icons[row].icon();
+			return iconAt(row);
 		case Qt::DisplayRole:
 			return icons[row].name();
 		case Qt::UserRole:
@@ -400,14 +402,56 @@ QIcon IconList::getIcon(const QString& key) const
 	int icon_index = getIconIndex(key);
 
 	if (icon_index != -1)
-		return icons[icon_index].icon();
+		return iconAt(icon_index);
 
 	// Fallback for icons that don't exist.
 	icon_index = getIconIndex("grass");
 
 	if (icon_index != -1)
-		return icons[icon_index].icon();
+		return iconAt(icon_index);
 	return QIcon();
+}
+
+QIcon IconList::iconAt(int index) const
+{
+	const MMCIcon& entry = icons[index];
+	// Only ever over the icon Kite ships: a file in the icons folder saved
+	// under the same key is the user's choice and still wins.
+	if (entry.isBuiltIn()) {
+		const auto texture = m_gameTextures.constFind(entry.m_key);
+		if (texture != m_gameTextures.constEnd())
+			return texture->icon;
+	}
+	return entry.icon();
+}
+
+void IconList::loadGameTextures(const QString& librariesDir,
+								const QString& cacheDir)
+{
+	const auto images = GameTextureIcons::load(librariesDir, cacheDir);
+	QSet<QString> changed;
+	for (auto it = m_gameTextures.cbegin(); it != m_gameTextures.cend(); ++it) {
+		if (!images.contains(it.key()))
+			changed.insert(it.key());
+	}
+	for (auto it = images.cbegin(); it != images.cend(); ++it) {
+		const auto old = m_gameTextures.constFind(it.key());
+		if (old != m_gameTextures.constEnd() && old->image == it.value())
+			continue;
+		changed.insert(it.key());
+	}
+
+	m_gameTextures.clear();
+	for (auto it = images.cbegin(); it != images.cend(); ++it) {
+		m_gameTextures.insert(
+			it.key(), {it.value(), GameTextureIcons::pixelIcon(it.value())});
+	}
+	for (const QString& key : changed) {
+		const int idx = getIconIndex(key);
+		if (idx != -1)
+			dataChanged(index(idx), index(idx));
+		emit iconUpdated(key);
+	}
 }
 
 QColor IconList::tint(const QString& key) const

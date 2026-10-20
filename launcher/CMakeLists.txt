@@ -388,6 +388,8 @@ set(ICONS_SOURCES
     icons/MMCIcon.cpp
     icons/IconList.h
     icons/IconList.cpp
+    icons/GameTextureIcons.h
+    icons/GameTextureIcons.cpp
 )
 
 # Support for Minecraft instances and launch
@@ -1779,6 +1781,13 @@ add_unit_test(IconTheme
 # since addThemeIcon()/addIcon() never render anything.
 add_unit_test(IconList
     SOURCES icons/IconList_test.cpp
+    LIBS Kite_core Qt${QT_VERSION_MAJOR}::Gui
+    )
+
+# Client jars built inside the test from generated PNGs -- never Mojang's
+# own textures -- read into icons, cached, and preferred by IconList.
+add_unit_test(GameTextureIcons
+    SOURCES icons/GameTextureIcons_test.cpp
     LIBS Kite_core Qt${QT_VERSION_MAJOR}::Gui
     )
 
