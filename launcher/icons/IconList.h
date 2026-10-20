@@ -101,7 +101,8 @@ class IconList : public QAbstractListModel
 	 * without one, and a custom icon saved under a built-in key, stay as
 	 * they are. Both folders default to the data directory's own, relative
 	 * like IconsDir. Runs once on construction; run it again after a new
-	 * client jar is downloaded. */
+	 * client jar is downloaded -- it does nothing while the newest jar is
+	 * still the one already shown. */
 	void loadGameTextures(
 		const QString& librariesDir = QStringLiteral("libraries"),
 		const QString& cacheDir = QStringLiteral("cache/gametextures"));
@@ -136,4 +137,5 @@ class IconList : public QAbstractListModel
 		QIcon icon;
 	};
 	QHash<QString, GameTexture> m_gameTextures;
+	QString m_gameTextureJar;
 };

@@ -390,6 +390,8 @@ set(ICONS_SOURCES
     icons/IconList.cpp
     icons/GameTextureIcons.h
     icons/GameTextureIcons.cpp
+    icons/GameTextureRecipes.h
+    icons/GameTextureRecipes.cpp
 )
 
 # Support for Minecraft instances and launch
@@ -1785,7 +1787,8 @@ add_unit_test(IconList
     )
 
 # Client jars built inside the test from generated PNGs -- never Mojang's
-# own textures -- read into icons, cached, and preferred by IconList.
+# own textures -- read into icons and cached; IconList_test covers how
+# IconList prefers them, over the same fixture (icons/GameTextureFixture.h).
 add_unit_test(GameTextureIcons
     SOURCES icons/GameTextureIcons_test.cpp
     LIBS Kite_core Qt${QT_VERSION_MAJOR}::Gui

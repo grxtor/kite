@@ -427,6 +427,26 @@ void InstanceExportController::applyIgnoreLists()
 	 * inside another zip doubles its size for nothing. They live beside
 	 * the game folder, so the path is the instance root's, not @c prefix. */
 	paths.insert(QStringLiteral(".backups"));
+	/* Pictures the launcher renders from the instance's icon: the game
+	 * folder's icon.png on every launch (the macOS dock icon), and a
+	 * desktop shortcut's icon in the instance folder. A built-in icon may be
+	 * drawn from the player's own Minecraft textures (GameTextureIcons),
+	 * which are Mojang's and must never leave in an export; and these are
+	 * rendered again whenever they are needed anyway. A file in the
+	 * instance folder named after the icon key is kept: that is how an
+	 * export carries a custom icon (saveInstanceIcon(), and the importer's
+	 * IconUtils::findBestIconIn()). */
+	for (const QString& rendered :
+		 {FS::PathCombine(prefix, QStringLiteral("icon.png")),
+		  QStringLiteral("Icon.icns"), QStringLiteral("icon.ico"),
+		  QStringLiteral("icon.png")}) {
+		const bool customIcon =
+			!rendered.contains(QLatin1Char('/')) &&
+			QFileInfo(rendered).completeBaseName() == m_instance->iconKey();
+		if (!customIcon) {
+			paths.insert(rendered);
+		}
+	}
 	m_tree->ignoreFilesWithName() = {QStringLiteral(".DS_Store"),
 									 QStringLiteral("thumbs.db"),
 									 QStringLiteral("Thumbs.db")};

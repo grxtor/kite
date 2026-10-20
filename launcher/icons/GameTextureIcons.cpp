@@ -18,6 +18,7 @@
  */
 
 #include "GameTextureIcons.h"
+#include "GameTextureRecipes.h"
 
 #include <QDir>
 #include <QElapsedTimer>
@@ -44,203 +45,9 @@ namespace
 const QString kTextureRoot = QStringLiteral("assets/minecraft/textures/");
 
 /* Written into a version's cache folder once every image is in it. The
- * number is the revision of the recipes below: bump it when they change,
+ * number is the revision of GameTextureRecipes: bump it when they change,
  * and caches made from the old ones are redone instead of trusted. */
 const QString kCacheMarker = QStringLiteral(".complete-1");
-
-struct Layer {
-	/* Where the texture sits under kTextureRoot, newest layout first: 1.13
-	 * renamed most block and item textures, and some mobs have moved
-	 * since. */
-	QStringList paths;
-	/* The part of it to take; a null rect is the whole texture. */
-	QRect source;
-	/* Where that part goes on the icon. */
-	QPoint at;
-};
-
-struct Recipe {
-	QString key;
-	/* The icon's size before it is padded square; empty is the size of
-	 * the first layer. */
-	QSize size;
-	/* The first layer is the icon itself and must be in the jar; the rest
-	 * go over it where the jar has them. */
-	QList<Layer> layers;
-};
-
-Recipe wholeTexture(const QString& key, const QStringList& paths)
-{
-	return {key, QSize(), {{paths, QRect(), QPoint()}}};
-}
-
-/* An 8x8 mob head in the standard entity layout: the front of the head
- * box at (8,8), and the front of its second, outer layer at (40,8) --
- * the same coordinates a player skin uses. */
-const QSize kHeadSize(8, 8);
-const QRect kHeadFront(8, 8, 8, 8);
-const QRect kHatFront(40, 8, 8, 8);
-
-const QList<Recipe>& recipes()
-{
-	static const QList<Recipe> table = [] {
-		const QStringList creeper = {
-			QStringLiteral("entity/creeper/creeper.png")};
-		const QStringList skeleton = {
-			QStringLiteral("entity/skeleton/skeleton.png")};
-		const QStringList enderman = {
-			QStringLiteral("entity/enderman/enderman.png")};
-		const QStringList steve = {
-			QStringLiteral("entity/player/wide/steve.png"),
-			QStringLiteral("entity/steve.png")};
-		const QStringList chicken = {
-			QStringLiteral("entity/chicken/chicken_temperate.png"),
-			QStringLiteral("entity/chicken/temperate_chicken.png"),
-			QStringLiteral("entity/chicken.png")};
-		const QStringList fox = {QStringLiteral("entity/fox/fox.png")};
-
-		return QList<Recipe>{
-			wholeTexture(QStringLiteral("grass"),
-						 {QStringLiteral("block/grass_block_side.png"),
-						  QStringLiteral("blocks/grass_side.png")}),
-			wholeTexture(QStringLiteral("dirt"),
-						 {QStringLiteral("block/dirt.png"),
-						  QStringLiteral("blocks/dirt.png")}),
-			wholeTexture(QStringLiteral("stone"),
-						 {QStringLiteral("block/stone.png"),
-						  QStringLiteral("blocks/stone.png")}),
-			wholeTexture(QStringLiteral("planks"),
-						 {QStringLiteral("block/oak_planks.png"),
-						  QStringLiteral("blocks/planks_oak.png")}),
-			wholeTexture(QStringLiteral("brick"),
-						 {QStringLiteral("block/bricks.png"),
-						  QStringLiteral("blocks/brick.png")}),
-			wholeTexture(QStringLiteral("tnt"),
-						 {QStringLiteral("block/tnt_side.png"),
-						  QStringLiteral("blocks/tnt_side.png")}),
-			wholeTexture(QStringLiteral("diamond"),
-						 {QStringLiteral("block/diamond_block.png"),
-						  QStringLiteral("blocks/diamond_block.png")}),
-			wholeTexture(QStringLiteral("gold"),
-						 {QStringLiteral("block/gold_block.png"),
-						  QStringLiteral("blocks/gold_block.png")}),
-			wholeTexture(QStringLiteral("iron"),
-						 {QStringLiteral("block/iron_block.png"),
-						  QStringLiteral("blocks/iron_block.png")}),
-			wholeTexture(QStringLiteral("netherstar"),
-						 {QStringLiteral("item/nether_star.png"),
-						  QStringLiteral("items/nether_star.png")}),
-			wholeTexture(QStringLiteral("enderpearl"),
-						 {QStringLiteral("item/ender_pearl.png"),
-						  QStringLiteral("items/ender_pearl.png")}),
-			wholeTexture(QStringLiteral("meat"),
-						 {QStringLiteral("item/cooked_beef.png"),
-						  QStringLiteral("items/beef_cooked.png")}),
-			// An animated strip; wholeTexture() takes its first frame.
-			wholeTexture(QStringLiteral("flame"),
-						 {QStringLiteral("block/fire_0.png"),
-						  QStringLiteral("blocks/fire_layer_0.png")}),
-			{QStringLiteral("creeper"), kHeadSize, {{creeper, kHeadFront, {}}}},
-			{QStringLiteral("squarecreeper"),
-			 kHeadSize,
-			 {{creeper, kHeadFront, {}}}},
-			{QStringLiteral("skeleton"),
-			 kHeadSize,
-			 {{skeleton, kHeadFront, {}}, {skeleton, kHatFront, {}}}},
-			// The outer layer at (8,24) is its jaw; the eyes are a texture of
-			// their own, drawn over the face.
-			{QStringLiteral("enderman"),
-			 kHeadSize,
-			 {{enderman, kHeadFront, {}},
-			  {enderman, QRect(8, 24, 8, 8), {}},
-			  {{QStringLiteral("entity/enderman/enderman_eyes.png")},
-			   kHeadFront,
-			   {}}}},
-			{QStringLiteral("steve"),
-			 kHeadSize,
-			 {{steve, kHeadFront, {}}, {steve, kHatFront, {}}}},
-			// A 4x6 face with the beak over its middle and the wattle under it.
-			{QStringLiteral("chicken"),
-			 QSize(4, 6),
-			 {{chicken, QRect(3, 3, 4, 6), {}},
-			  {chicken, QRect(16, 2, 4, 2), QPoint(0, 2)},
-			  {chicken, QRect(16, 6, 2, 2), QPoint(1, 4)}}},
-			// An 8x6 face under two ears, with the snout over its bottom rows.
-			{QStringLiteral("fox"),
-			 QSize(8, 8),
-			 {{fox, QRect(7, 11, 8, 6), QPoint(0, 2)},
-			  {fox, QRect(9, 2, 2, 2), QPoint(0, 0)},
-			  {fox, QRect(16, 2, 2, 2), QPoint(6, 0)},
-			  {fox, QRect(9, 21, 4, 2), QPoint(2, 6)}}},
-			// The front of its body, which is its face.
-			{QStringLiteral("bee"),
-			 QSize(7, 7),
-			 {{{QStringLiteral("entity/bee/bee.png")},
-			   QRect(10, 10, 7, 7),
-			   {}}}},
-		};
-	}();
-	return table;
-}
-
-/* The part of the jar's texture @p layer asks for, or a null image when
- * the jar has none of its paths or the texture is too small for it. */
-QImage layerImage(const Layer& layer, const QHash<QString, QImage>& textures)
-{
-	for (const QString& path : layer.paths) {
-		const auto texture = textures.constFind(path);
-		if (texture == textures.constEnd()) {
-			continue;
-		}
-		QRect source = layer.source;
-		if (source.isNull()) {
-			// An animated texture is a strip of square frames, one under
-			// the other; the first one stands for it.
-			source = QRect(0, 0, texture->width(),
-						   qMin(texture->width(), texture->height()));
-		}
-		if (!texture->rect().contains(source)) {
-			return QImage();
-		}
-		return texture->copy(source);
-	}
-	return QImage();
-}
-
-QImage paddedSquare(const QImage& image)
-{
-	if (image.width() == image.height()) {
-		return image;
-	}
-	const int side = qMax(image.width(), image.height());
-	QImage square(side, side, QImage::Format_ARGB32);
-	square.fill(Qt::transparent);
-	QPainter painter(&square);
-	painter.drawImage((side - image.width()) / 2, (side - image.height()) / 2,
-					  image);
-	return square;
-}
-
-QImage compose(const Recipe& recipe, const QHash<QString, QImage>& textures)
-{
-	const QImage base = layerImage(recipe.layers.first(), textures);
-	if (base.isNull()) {
-		return QImage();
-	}
-	QImage icon(recipe.size.isEmpty() ? base.size() : recipe.size,
-				QImage::Format_ARGB32);
-	icon.fill(Qt::transparent);
-	QPainter painter(&icon);
-	painter.drawImage(recipe.layers.first().at, base);
-	for (int i = 1; i < recipe.layers.size(); ++i) {
-		const QImage part = layerImage(recipe.layers[i], textures);
-		if (!part.isNull()) {
-			painter.drawImage(recipe.layers[i].at, part);
-		}
-	}
-	painter.end();
-	return paddedSquare(icon);
-}
 
 struct ArchiveReadDeleter {
 	void operator()(struct archive* archive) const
@@ -260,18 +67,14 @@ QByteArray readEntry(struct archive* archive)
 	return read < 0 ? QByteArray() : data;
 }
 
-/* Every recipe's image from the jar at @p jarPath into @p images, in one
+/* Every key's image from the jar at @p jarPath into @p images, in one
  * pass over it. False when the jar could not be read to its end -- one
  * still being written, or a damaged one -- which leaves @p images empty. */
 bool readJar(const QString& jarPath, QHash<QString, QImage>* images)
 {
 	QSet<QString> wanted;
-	for (const Recipe& recipe : recipes()) {
-		for (const Layer& layer : recipe.layers) {
-			for (const QString& path : layer.paths) {
-				wanted.insert(kTextureRoot + path);
-			}
-		}
+	for (const QString& path : GameTextureRecipes::texturePaths()) {
+		wanted.insert(kTextureRoot + path);
 	}
 
 	std::unique_ptr<struct archive, ArchiveReadDeleter> archive(
@@ -306,12 +109,7 @@ bool readJar(const QString& jarPath, QHash<QString, QImage>* images)
 		return false;
 	}
 
-	for (const Recipe& recipe : recipes()) {
-		const QImage image = compose(recipe, textures);
-		if (!image.isNull()) {
-			images->insert(recipe.key, image);
-		}
-	}
+	*images = GameTextureRecipes::compose(textures);
 	return true;
 }
 
@@ -384,15 +182,6 @@ class PixelArtIconEngine : public QIconEngine
 };
 } // namespace
 
-QStringList GameTextureIcons::keys()
-{
-	QStringList keys;
-	for (const Recipe& recipe : recipes()) {
-		keys.append(recipe.key);
-	}
-	return keys;
-}
-
 QString GameTextureIcons::findClientJar(const QString& librariesDir,
 										QString* version)
 {
@@ -434,12 +223,11 @@ QHash<QString, QImage> GameTextureIcons::readFromJar(const QString& jarPath)
 	return images;
 }
 
-QHash<QString, QImage> GameTextureIcons::load(const QString& librariesDir,
+QHash<QString, QImage> GameTextureIcons::load(const QString& jarPath,
+											  const QString& version,
 											  const QString& cacheDir)
 {
-	QString version;
-	const QString jar = findClientJar(librariesDir, &version);
-	if (jar.isEmpty()) {
+	if (jarPath.isEmpty()) {
 		return {};
 	}
 
@@ -447,7 +235,7 @@ QHash<QString, QImage> GameTextureIcons::load(const QString& librariesDir,
 	const QString marker = cache.filePath(kCacheMarker);
 	QHash<QString, QImage> images;
 	if (QFileInfo::exists(marker)) {
-		for (const QString& key : keys()) {
+		for (const QString& key : GameTextureRecipes::keys()) {
 			const QImage image(cache.filePath(key + QStringLiteral(".png")));
 			if (!image.isNull()) {
 				images.insert(key,
@@ -457,15 +245,16 @@ QHash<QString, QImage> GameTextureIcons::load(const QString& librariesDir,
 		return images;
 	}
 
-	// An unreadable jar is not cached as having nothing, so the next look
-	// tries it again.
+	// A jar that gave nothing -- unreadable, or cut short mid-download in a
+	// way the reader cannot tell -- is not cached as having nothing, so the
+	// next look tries it again.
 	QElapsedTimer timer;
 	timer.start();
-	if (!readJar(jar, &images)) {
+	if (!readJar(jarPath, &images) || images.isEmpty()) {
 		return images;
 	}
 	qCDebug(iconsLog) << "Read" << images.size() << "game textures from"
-					  << jar << "in" << timer.elapsed() << "ms";
+					  << jarPath << "in" << timer.elapsed() << "ms";
 	if (!FS::ensureFolderPathExists(cache.absolutePath())) {
 		return images;
 	}

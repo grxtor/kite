@@ -428,7 +428,18 @@ QIcon IconList::iconAt(int index) const
 void IconList::loadGameTextures(const QString& librariesDir,
 								const QString& cacheDir)
 {
-	const auto images = GameTextureIcons::load(librariesDir, cacheDir);
+	QString version;
+	const QString jar =
+		GameTextureIcons::findClientJar(librariesDir, &version);
+	if (jar == m_gameTextureJar)
+		return;
+	const auto images = GameTextureIcons::load(jar, version, cacheDir);
+	// A jar that cannot be read yet keeps what is shown, and is tried again
+	// next time; one that is gone takes its textures with it.
+	if (!jar.isEmpty() && images.isEmpty())
+		return;
+	m_gameTextureJar = jar;
+
 	QSet<QString> changed;
 	for (auto it = m_gameTextures.cbegin(); it != m_gameTextures.cend(); ++it) {
 		if (!images.contains(it.key()))

@@ -23,7 +23,6 @@
 #include <QIcon>
 #include <QImage>
 #include <QString>
-#include <QStringList>
 
 /*
  * The real game look for the built-in instance icons ("grass", "diamond",
@@ -43,9 +42,6 @@
  */
 namespace GameTextureIcons
 {
-	/// The built-in instance icon keys a game texture stands in for.
-	QStringList keys();
-
 	/*!
 	 * The newest release client jar under @p librariesDir, laid out the way
 	 * the launcher downloads it (com/mojang/minecraft/<version>/
@@ -57,18 +53,19 @@ namespace GameTextureIcons
 						  QString* version = nullptr);
 
 	/*!
-	 * Every key's image read from the jar at @p jarPath, at the texture's
-	 * own resolution, padded to a square. A key whose textures this jar
-	 * does not have is left out; an unreadable jar gives nothing at all.
+	 * Every key's image read from the jar at @p jarPath (see
+	 * GameTextureRecipes for which key is made from what). A key whose
+	 * textures this jar does not have is left out; an unreadable jar gives
+	 * nothing at all.
 	 */
 	QHash<QString, QImage> readFromJar(const QString& jarPath);
 
 	/*!
-	 * readFromJar() for findClientJar(@p librariesDir), through a cache in
-	 * @p cacheDir, one folder per game version, so each jar is opened once.
-	 * Empty without a jar.
+	 * readFromJar() for the jar at @p jarPath, of game @p version (both as
+	 * findClientJar() gives them), through a cache in @p cacheDir with a
+	 * folder per version, so each jar is opened once. Empty without a jar.
 	 */
-	QHash<QString, QImage> load(const QString& librariesDir,
+	QHash<QString, QImage> load(const QString& jarPath, const QString& version,
 								const QString& cacheDir);
 
 	/// An icon of @p image at any size, scaled with nearest-neighbour so a

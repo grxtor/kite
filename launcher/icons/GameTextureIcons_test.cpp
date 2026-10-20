@@ -17,33 +17,23 @@
  * limitations under the License.
  */
 
-#include <QBuffer>
 #include <QDir>
 #include <QFile>
 #include <QGuiApplication>
 #include <QImage>
-#include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
 
 #include <memory>
 
 #include "FileSystem.h"
-#include "MMCZip.h"
+#include "icons/GameTextureFixture.h"
 #include "icons/GameTextureIcons.h"
-#include "icons/IconList.h"
+
+using GameTextureFixture::filled;
 
 namespace
 {
-const QString kTextures = QStringLiteral("assets/minecraft/textures/");
-
-QImage filled(int width, int height, QRgb colour)
-{
-	QImage image(width, height, QImage::Format_ARGB32);
-	image.fill(colour);
-	return image;
-}
-
 /* Every pixel a colour of its own, so a crop can be checked against the
  * exact place it was taken from. */
 QImage coordinates(int width, int height)
@@ -56,21 +46,13 @@ QImage coordinates(int width, int height)
 	}
 	return image;
 }
-
-QByteArray png(const QImage& image)
-{
-	QByteArray bytes;
-	QBuffer buffer(&bytes);
-	buffer.open(QIODevice::WriteOnly);
-	image.save(&buffer, "PNG");
-	return bytes;
-}
 } // namespace
 
 /*
- * Covers GameTextureIcons and IconList's use of it against client jars
+ * Covers GameTextureIcons and the recipes behind it against client jars
  * this test builds itself out of generated PNGs at the paths the game
- * uses. No Mojang texture is involved anywhere: only the paths matter.
+ * uses (GameTextureFixture). How IconList shows the result is covered in
+ * IconList_test.cpp.
  */
 class GameTextureIconsTest : public QObject
 {
@@ -199,7 +181,7 @@ class GameTextureIconsTest : public QObject
 	void noJarGivesNothing()
 	{
 		QVERIFY(GameTextureIcons::findClientJar(libraries()).isEmpty());
-		QVERIFY(GameTextureIcons::load(libraries(), cache()).isEmpty());
+		QVERIFY(loadNewest().isEmpty());
 		QVERIFY(!QFileInfo::exists(cache()));
 	}
 
@@ -208,7 +190,7 @@ class GameTextureIconsTest : public QObject
 		const QImage first = filled(16, 16, qRgba(10, 20, 30, 255));
 		writeJar(QStringLiteral("1.21.4"),
 				 {{QStringLiteral("block/stone.png"), first}});
-		QCOMPARE(GameTextureIcons::load(libraries(), cache())
+		QCOMPARE(loadNewest()
 					 .value(QStringLiteral("stone")),
 				 first);
 		QVERIFY(QFileInfo::exists(cache() +
@@ -218,7 +200,7 @@ class GameTextureIconsTest : public QObject
 		writeJar(QStringLiteral("1.21.4"),
 				 {{QStringLiteral("block/stone.png"),
 				   filled(16, 16, qRgba(90, 90, 90, 255))}});
-		QCOMPARE(GameTextureIcons::load(libraries(), cache())
+		QCOMPARE(loadNewest()
 					 .value(QStringLiteral("stone")),
 				 first);
 	}
@@ -232,13 +214,13 @@ class GameTextureIconsTest : public QObject
 		file.write("not a zip at all");
 		file.close();
 
-		QVERIFY(GameTextureIcons::load(libraries(), cache()).isEmpty());
+		QVERIFY(loadNewest().isEmpty());
 
 		// Once the jar is whole, it is read after all.
 		const QImage stone = filled(16, 16, qRgba(70, 70, 70, 255));
 		writeJar(QStringLiteral("1.21.4"),
 				 {{QStringLiteral("block/stone.png"), stone}});
-		QCOMPARE(GameTextureIcons::load(libraries(), cache())
+		QCOMPARE(loadNewest()
 					 .value(QStringLiteral("stone")),
 				 stone);
 	}
@@ -269,56 +251,6 @@ class GameTextureIconsTest : public QObject
 		QCOMPARE(retina.devicePixelRatio(), 2.0);
 	}
 
-	void iconListPrefersTextureForBuiltinKeys()
-	{
-		const QImage grass = filled(16, 16, qRgba(40, 160, 40, 255));
-		writeJar(QStringLiteral("1.21.4"),
-				 {{QStringLiteral("block/grass_block_side.png"), grass}});
-		IconList icons(QStringList(), iconsDir());
-		QVERIFY(icons.addThemeIcon(QStringLiteral("grass")));
-		QSignalSpy updated(&icons, &IconList::iconUpdated);
-
-		icons.loadGameTextures(libraries(), cache());
-
-		QCOMPARE(updated.count(), 1);
-		QCOMPARE(updated.first().first().toString(), QStringLiteral("grass"));
-		QCOMPARE(pixelOf(icons.getIcon(QStringLiteral("grass"))),
-				 grass.pixel(0, 0));
-		// Unknown keys fall back to grass, texture and all.
-		QCOMPARE(pixelOf(icons.getIcon(QStringLiteral("no-such-key"))),
-				 grass.pixel(0, 0));
-		// Still a built-in icon, so exporting an instance never copies the
-		// texture into the pack.
-		const QModelIndex row =
-			icons.index(icons.getIconIndex(QStringLiteral("grass")));
-		QVERIFY(icons.data(row, IconList::IsBuiltinRole).toBool());
-		QVERIFY(icons.icon(QStringLiteral("grass"))->isBuiltIn());
-
-		// The jar gone, the built-in icon comes back.
-		QVERIFY(QDir(libraries()).removeRecursively());
-		icons.loadGameTextures(libraries(), cache());
-		QCOMPARE(updated.count(), 2);
-		QVERIFY(pixelOf(icons.getIcon(QStringLiteral("grass"))) !=
-				grass.pixel(0, 0));
-	}
-
-	void customIconUnderBuiltinKeyStillWins()
-	{
-		writeJar(QStringLiteral("1.21.4"),
-				 {{QStringLiteral("block/grass_block_side.png"),
-				   filled(16, 16, qRgba(40, 160, 40, 255))}});
-		const QRgb mine = qRgba(1, 2, 3, 255);
-		QVERIFY(QDir().mkpath(iconsDir()));
-		const QString path = iconsDir() + QStringLiteral("/grass.png");
-		QVERIFY(filled(16, 16, mine).save(path, "PNG"));
-
-		IconList icons(QStringList(), iconsDir());
-		QVERIFY(icons.addThemeIcon(QStringLiteral("grass")));
-		icons.loadGameTextures(libraries(), cache());
-
-		QCOMPARE(pixelOf(icons.getIcon(QStringLiteral("grass"))), mine);
-	}
-
   private:
 	QString libraries() const
 	{
@@ -330,42 +262,24 @@ class GameTextureIconsTest : public QObject
 		return m_dir->filePath(QStringLiteral("cache/gametextures"));
 	}
 
-	QString iconsDir() const
-	{
-		return m_dir->filePath(QStringLiteral("icons"));
-	}
-
 	QString jarPath(const QString& version) const
 	{
-		return libraries() + QStringLiteral("/com/mojang/minecraft/%1/"
-											"minecraft-%1-client.jar")
-								 .arg(version);
+		return GameTextureFixture::jarPath(libraries(), version);
 	}
 
-	/* A client jar for @p version holding @p textures, each under the
-	 * game's texture root at the path it is keyed by. */
 	void writeJar(const QString& version,
 				  const QList<QPair<QString, QImage>>& textures) const
 	{
-		const QString path = jarPath(version);
-		QVERIFY(FS::ensureFilePathExists(path));
-		QFile::remove(path);
-		MMCZip::ZipWriter jar(path);
-		QVERIFY(jar.open());
-		// Something besides textures, as a real jar has.
-		QVERIFY(jar.addFile(QStringLiteral("net/minecraft/client/Main.class"),
-							QByteArray("\xca\xfe\xba\xbe")));
-		for (const auto& texture : textures) {
-			QVERIFY(
-				jar.addFile(kTextures + texture.first, png(texture.second)));
-		}
-		QVERIFY(jar.close());
+		QVERIFY(GameTextureFixture::writeJar(libraries(), version, textures));
 	}
 
-	static QRgb pixelOf(const QIcon& icon)
+	/* What IconList does: the newest jar, through the cache. */
+	QHash<QString, QImage> loadNewest() const
 	{
-		const QImage image = icon.pixmap(QSize(16, 16), 1.0).toImage();
-		return image.isNull() ? 0 : image.pixel(0, 0);
+		QString version;
+		const QString jar =
+			GameTextureIcons::findClientJar(libraries(), &version);
+		return GameTextureIcons::load(jar, version, cache());
 	}
 
 	std::unique_ptr<QTemporaryDir> m_dir;

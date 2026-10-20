@@ -73,6 +73,25 @@ namespace
 		QVERIFY(finished.wait(10000));
 	}
 
+	/* A NullInstance whose game folder can sit beneath it, as a Minecraft
+	 * instance's .minecraft does; empty is the instance folder itself. */
+	class TestInstance : public NullInstance
+	{
+	  public:
+		TestInstance(SettingsObjectPtr global, SettingsObjectPtr settings,
+					 const QString& root, const QString& gameFolder)
+			: NullInstance(global, settings, root), m_gameFolder(gameFolder)
+		{
+		}
+		QString gameRoot() const override
+		{
+			return FS::PathCombine(instanceRoot(), m_gameFolder);
+		}
+
+	  private:
+		QString m_gameFolder;
+	};
+
 	QModelIndex childNamed(QAbstractItemModel* model, const QModelIndex& parent,
 						   const QString& name)
 	{
@@ -105,14 +124,15 @@ class InstanceExportControllerTest : public QObject
 
 	QTemporaryDir m_dir;
 
-	InstancePtr makeInstance(const QString& name)
+	InstancePtr makeInstance(const QString& name,
+							 const QString& gameFolder = QString())
 	{
 		const QString root = m_dir.filePath(name);
 		QDir().mkpath(root);
 		auto settings = std::make_shared<INISettingsObject>(
 			FS::PathCombine(root, "instance.cfg"));
-		auto instance = std::make_shared<NullInstance>(
-			makeGlobalSettings(m_dir.path()), settings, root);
+		auto instance = std::make_shared<TestInstance>(
+			makeGlobalSettings(m_dir.path()), settings, root, gameFolder);
 		instance->setName(name);
 		return instance;
 	}
@@ -162,6 +182,41 @@ class InstanceExportControllerTest : public QObject
 		QVERIFY(!entries.contains(".DS_Store"));
 		// The instance's own backups are zips; they do not go in a zip.
 		QVERIFY(!entries.contains(".backups/old.zip"));
+	}
+
+	/* Icons the launcher renders -- from a built-in icon, possibly the
+	 * player's own game textures -- never go; a file named after a custom
+	 * icon's key is that icon, and stays. */
+	void zipLeavesOutRenderedIcons()
+	{
+		for (const QString& key :
+			 {QStringLiteral("grass"), QStringLiteral("icon")}) {
+			auto instance = makeInstance("icons-" + key, ".minecraft");
+			instance->setIconKey(key);
+			for (const char* file :
+				 {"a.txt", "icon.png", "Icon.icns", "icon.ico",
+				  ".minecraft/icon.png", ".minecraft/options.txt"}) {
+				QVERIFY(writeFile(FS::PathCombine(instance->instanceRoot(),
+												  QString::fromLatin1(file))));
+			}
+
+			InstanceExportController controller(instance);
+			const QString output = m_dir.filePath(instance->name() + ".zip");
+			auto* watcher = qobject_cast<TaskWatcher*>(
+				controller.exportTo(QUrl::fromLocalFile(output).toString()));
+			QVERIFY(watcher);
+			waitFor(watcher);
+			QVERIFY2(watcher->succeeded(), qPrintable(watcher->error()));
+
+			const QStringList entries = MMCZip::listEntries(output);
+			QVERIFY2(entries.contains(".minecraft/options.txt"),
+					 qPrintable(entries.join(", ")));
+			QVERIFY(entries.contains("a.txt"));
+			QVERIFY(!entries.contains(".minecraft/icon.png"));
+			QVERIFY(!entries.contains("Icon.icns"));
+			QCOMPARE(entries.contains("icon.png"), key == "icon");
+			QCOMPARE(entries.contains("icon.ico"), key == "icon");
+		}
 	}
 
 	void uncheckingInTheTreeLeavesItOut()

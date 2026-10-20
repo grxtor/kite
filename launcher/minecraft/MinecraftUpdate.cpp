@@ -28,6 +28,8 @@
 #include <QDataStream>
 
 #include "BaseInstance.h"
+#include "core/LauncherContext.h"
+#include "icons/IconList.h"
 #include "minecraft/PackProfile.h"
 #include "minecraft/Library.h"
 #include <FileSystem.h>
@@ -43,6 +45,16 @@
 MinecraftUpdate::MinecraftUpdate(MinecraftInstance* inst, QObject* parent)
 	: SequentialTask(parent, QStringLiteral("MinecraftUpdate")), m_inst(inst)
 {
+	/* The first update of a version downloads its client jar, which the
+	 * built-in instance icons are drawn from when it is the newest (see
+	 * IconList::loadGameTextures()). The icon list is the context, so this
+	 * runs on its thread -- the GUI one -- whichever thread finishes the
+	 * task; and it does nothing unless a newer jar has arrived. */
+	if (LAUNCHER && LAUNCHER->icons()) {
+		IconList* icons = LAUNCHER->icons().get();
+		connect(this, &Task::succeeded, icons,
+				[icons] { icons->loadGameTextures(); });
+	}
 }
 
 void MinecraftUpdate::executeTask()
