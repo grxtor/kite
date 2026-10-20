@@ -6,10 +6,11 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The rail/list-nav selection grammar: a soft accent-tinted shape
- * (accentSubtle) that slides between rows -- a rounded square on the icon
- * rail, a full-width pill in a labelled list -- the selected row's own icon and
- * label turning accentText (NavItem) -- Modrinth's nav and settings list.
+ * The rail/list-nav selection grammar: a neutral raised shape in the kite's
+ * cut that slides between rows -- a square on the icon rail, a full-width
+ * pill in a labelled list -- with the kite's nose lit in the accent at its
+ * cut corner, and the selected row's own icon and label turning accentText
+ * (NavItem).
  * A sibling of whatever draws the rows themselves (a NavItem only ever
  * paints its own transient hover/press state; the pill is what actually
  * shows "this one is selected").
@@ -74,11 +75,8 @@ Item {
     readonly property real targetH: root.target ? root.target.height : 0
     readonly property real targetW: root.target ? root.target.width : 0
 
-    // The icon rail's square wears the kite's cut, like the instance tiles
-    // below it (KiteShape); the labelled list's pill stays round, and
-    // folding the rail turns the one into the other with the shape itself.
-    property bool cut: root.collapsed
-
+    // The selection wears the kite's cut (KiteShape) in both modes, on a
+    // neutral tile rather than an accent tint: the one accent is the nose.
     KiteShape {
         id: pill
         visible: !!root.target
@@ -89,31 +87,37 @@ Item {
                            : (root.targetW - root.railSquare) / 2)
         y: root.targetY + (root.collapsed ? (root.targetH - height) / 2 : 0)
         radius: root.cornerRadius
-        cutRadius: root.cut ? Theme.radius.xs : root.cornerRadius
-        color: Theme.palette.accentSubtle
+        color: Theme.palette.surfaceRaised
+        borderWidth: 1
+        borderColor: Theme.palette.border
 
-        Behavior on cutRadius { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on x { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on width { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on height { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
     }
 
-    // Kite's own mark on the selection: a small accent diamond -- the
-    // kite's tip -- pinned half over the shape's leading edge. It rides with
-    // the shape, so it slides between rows too. Only ever on the selected
-    // row; nothing else in the app wears it as decoration.
-    property bool showMark: true
-    Rectangle {
-        id: mark
-        readonly property int side: 8
-        visible: root.showMark && pill.visible
-        width: side
-        height: side
-        rotation: 45
-        antialiasing: true
-        color: Theme.palette.accent
-        x: pill.x - width / 2
-        y: pill.y + (pill.height - height) / 2
+    // The kite's nose: a small accent triangle filling the cut corner, a
+    // square turned 45 degrees and clipped to the corner. It rides with the
+    // shape, so it slides between rows too.
+    Item {
+        id: nose
+        readonly property int leg: 10
+        visible: pill.visible
+        x: pill.x + pill.width - leg
+        y: pill.y
+        width: leg
+        height: leg
+        clip: true
+
+        Rectangle {
+            width: nose.leg * Math.SQRT2
+            height: width
+            x: nose.leg - width / 2
+            y: -height / 2
+            rotation: 45
+            antialiasing: true
+            color: Theme.palette.accent
+        }
     }
 }
