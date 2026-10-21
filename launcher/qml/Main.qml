@@ -135,6 +135,10 @@ ApplicationWindow {
                 devDetail.start()
             else if (key === "newinstance")
                 root.openNewInstance(value)
+            // The New instance dialog's mod loader, picked (after
+            // newinstance): "loader=fabric".
+            else if (key === "loader")
+                root.shell.newInstance.loader = value
             else if (key === "nav")
                 root.navigate(value)
             else if (key === "import")

@@ -51,12 +51,12 @@ Dialog {
     signal created()
 
     readonly property bool creating: !!watcher && watcher.running
-    readonly property int loaderTileHeight: 96
+    readonly property int loaderTileHeight: Theme.control.heightLg
     // Rows of the version list that always stay visible; a shorter window
     // scrolls the dialog instead of squeezing the list.
     readonly property int versionListRows: 4
     readonly property int versionListMinHeight: versionListRows * Theme.control.height + Theme.space.xs * 2 + 2
-    readonly property int logoSize: Theme.control.heightLg
+    readonly property int logoSize: Theme.icon.lg
     // Each loader wears the logo the launcher already ships for it (the
     // iconName column of knownModLoaders(), served by the instanceicon
     // provider); the unmodified game gets the grass block, the default
@@ -70,6 +70,14 @@ Dialog {
         { value: "forge", label: "Forge", iconKey: "forge_mark", fit: 1.0 },
         { value: "neoforge", label: "NeoForge", iconKey: "neoforged", fit: 0.78 }
     ]
+
+    function loaderLabel(value) {
+        for (var i = 0; i < root.loaders.length; ++i) {
+            if (root.loaders[i].value === value)
+                return root.loaders[i].label
+        }
+        return ""
+    }
 
     // Start on the newest version of the list shown, so Create works
     // straight away; an explicit pick is never overridden.
@@ -490,8 +498,11 @@ Dialog {
             Layout.fillWidth: true
             spacing: Theme.space.sm
 
+            // As tall as the loader version box with or without it, so
+            // picking a loader does not shorten the version list above.
             RowLayout {
                 Layout.fillWidth: true
+                Layout.preferredHeight: Theme.control.height
                 spacing: Theme.space.md
 
                 Text {
@@ -510,10 +521,12 @@ Dialog {
                     model: root.controller ? root.controller.loaderVersions : null
                     textRole: "version"
                     valueRole: "versionId"
+                    // Names the loader as well ("Fabric 0.20.1"), so the box
+                    // says whose version it is.
                     displayText: root.controller && root.controller.loaderLoading ? qsTr("Loading\u2026")
                                : count === 0 ? qsTr("None for this version")
-                               : currentIndex >= 0 ? currentText
-                               : root.controller ? root.controller.selectedLoaderVersion : ""
+                               : root.loaderLabel(root.controller.loader) + " "
+                                 + (currentIndex >= 0 ? currentText : root.controller.selectedLoaderVersion)
                     // The controller may have picked a version before the rows
                     // reached this box; line the two up whenever either moves.
                     function syncToController() {
@@ -531,8 +544,8 @@ Dialog {
                 }
             }
 
-            // One selectable card per loader instead of a segmented control,
-            // so the showpiece dialog leads with imagery here too.
+            // One selectable tile per loader, its logo beside its name: a
+            // control-sized row, so the version list above keeps the height.
             RowLayout {
                 Layout.fillWidth: true
                 spacing: Theme.space.sm
@@ -556,29 +569,32 @@ Dialog {
                         Accessible.name: modelData.label
                         onClicked: if (root.controller) root.controller.loader = modelData.value
 
-                        // One surface for every tile; the chosen one gets
-                        // the tile picker's accent ring, hover only lifts
-                        // the border.
+                        // The chosen one wears the active tab's and the
+                        // filter chips' look (accentSubtle fill, accent
+                        // hairline); the rest are plain outlines on the
+                        // dialog, so the row reads as one control.
                         background: Rectangle {
-                            radius: Theme.radius.lg
-                            color: Theme.palette.surfaceRaised
-                            border.width: loaderCard.selected ? 2 : 1
+                            radius: Theme.radius.md
+                            color: loaderCard.selected ? Theme.palette.accentSubtle
+                                 : loaderCard.hovered ? Theme.palette.hoverOverlay : "transparent"
+                            border.width: 1
                             border.color: loaderCard.selected ? Theme.palette.accent
                                         : loaderCard.hovered ? Theme.palette.borderStrong : Theme.palette.border
+                            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                             Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                         }
 
                         contentItem: Item {
-                            Column {
+                            Row {
                                 anchors.centerIn: parent
                                 spacing: Theme.space.sm
 
-                                // The logo stands on the card itself: a
+                                // The logo stands on the tile itself: a
                                 // dark well around it read as a hole in
                                 // the tile. One box for all, scaled by
                                 // the loader's `fit`.
                                 Item {
-                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.verticalCenter: parent.verticalCenter
                                     width: root.logoSize
                                     height: width
 
@@ -595,9 +611,9 @@ Dialog {
                                 }
 
                                 Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.verticalCenter: parent.verticalCenter
                                     text: loaderCard.modelData.label
-                                    color: loaderCard.selected ? Theme.palette.textPrimary : Theme.palette.textSecondary
+                                    color: loaderCard.selected ? Theme.palette.accentText : Theme.palette.textSecondary
                                     font.family: Theme.font.family
                                     font.pixelSize: Theme.type.label.pixelSize
                                     font.weight: loaderCard.selected ? Font.DemiBold : Font.Medium
