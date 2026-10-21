@@ -89,6 +89,16 @@ const targets = Object.fromEntries(
     color: var(--text-muted);
     text-decoration: none;
   }
+  /* On a phone the parts stack, so no line starts with a dot. */
+  @media (max-width: 479px) {
+    .meta {
+      flex-direction: column;
+      align-items: center;
+    }
+    .meta > :not([hidden]) ~ :not([hidden])::before {
+      content: none;
+    }
+  }
   .meta a {
     color: var(--text-secondary);
   }

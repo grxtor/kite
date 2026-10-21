@@ -18,7 +18,8 @@ const downloadPath = localePath(locale, '/download');
 ---
 
 <header class="header">
-  <div class="container bar">
+  <div class="container">
+    <div class="bar">
     <a class="brand" href={home} aria-label={t.nav.homeLabel}>
       <Logo />
     </a>
@@ -31,22 +32,31 @@ const downloadPath = localePath(locale, '/download');
       <LanguageSwitch locale={locale} route={route} />
       <Button href={downloadPath} size="sm">{t.nav.download}</Button>
     </div>
+    </div>
   </div>
 </header>
 
 <style>
+  /* A floating bar of liquid glass: the page scrolls under it. */
   .header {
     position: sticky;
     top: 0;
     z-index: 10;
-    background: var(--canvas);
-    border-bottom: 1px solid var(--border);
+    height: var(--header-height);
+    padding-top: var(--space-3);
   }
   .bar {
     display: flex;
     align-items: center;
     gap: var(--space-5);
-    height: var(--header-height);
+    height: var(--header-bar-height);
+    padding-inline: var(--space-4) var(--space-2);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-pill);
+    background: var(--glass-sheen), var(--glass-fill);
+    box-shadow: var(--glass-edge-top), var(--glass-edge-bottom), var(--glass-shadow);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
   }
   .brand {
     margin-right: auto;
