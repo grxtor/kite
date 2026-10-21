@@ -31,6 +31,8 @@ export interface Focus {
   x: number;
   y: number;
   ratio: string;
+  /** Fade the bottom into the card; off when the region already ends there. */
+  fade?: boolean;
 }
 
 /** `sizes` for an enlarged picture: the frame's width times the zoom. */

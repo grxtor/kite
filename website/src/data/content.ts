@@ -42,7 +42,7 @@ export const FEATURE_CARDS: ReadonlyArray<{
 }> = [
   { key: 'library', screen: 'library', focus: { zoom: 1.2, x: 0.06, y: 0.01, ratio: '16 / 9' }, wide: true },
   { key: 'mods', screen: 'mods', focus: { zoom: 1.75, x: 0.05, y: 0.075, ratio: '4 / 3' }, wide: false },
-  { key: 'loaders', screen: 'newInstance', focus: { zoom: 1.55, x: 0.17, y: 0.46, ratio: '4 / 3' }, wide: false },
+  { key: 'loaders', screen: 'newInstance', focus: { zoom: 1.3, x: 0.115, y: 0.05, ratio: '4 / 3', fade: false }, wide: false },
   { key: 'java', screen: 'java', focus: { zoom: 1.6, x: 0.26, y: 0.08, ratio: '16 / 9' }, wide: true },
 ];
 
