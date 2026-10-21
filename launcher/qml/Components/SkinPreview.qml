@@ -7,8 +7,8 @@ import Kite.Theme
 
 /*
  * A skin on a player, as large as the box it is given: in 3D, turned by
- * dragging, where the build has Qt Quick3D (the cat's module,
- * Kite_ENABLE_CAT -- `catAvailable`) and the window draws through a 3D
+ * dragging, where the build has Qt Quick3D (the Skin3D module,
+ * Kite_ENABLE_SKIN3D -- `skin3DAvailable`) and the window draws through a 3D
  * graphics API; otherwise the flat front view (`flatSource`, e.g.
  * image://accountface/body/<id>) over the neutral figure, which only holds
  * the place while there is no texture yet (an account without a skin of
@@ -32,14 +32,14 @@ Item {
     // The cape's 64x32 texture, or empty.
     property url capeTexture
     property bool elytra: false
-    // Whether launcher/qml/Cat was built (Main.qml's catAvailable).
-    property bool catAvailable: false
+    // Whether launcher/qml/Skin3D was built (Main.qml's skin3DAvailable).
+    property bool skin3DAvailable: false
 
     readonly property bool hasSkin: root.skinTexture.toString().length > 0
     // Qt Quick3D renders nothing through the software renderer (and the
     // offscreen review snapshots use it), so the flat view is the honest
     // choice there too.
-    readonly property bool threeD: root.catAvailable && root.hasSkin
+    readonly property bool threeD: root.skin3DAvailable && root.hasSkin
                                    && GraphicsInfo.api !== GraphicsInfo.Software
                                    && GraphicsInfo.api !== GraphicsInfo.Unknown
 
@@ -56,7 +56,7 @@ Item {
         id: preview3d
         anchors.fill: parent
         active: root.threeD
-        source: active ? "qrc:/qt/qml/Kite/Cat/SkinPreview3D.qml" : ""
+        source: active ? "qrc:/qt/qml/Kite/Skin3D/SkinPreview3D.qml" : ""
         onLoaded: {
             item.skinTexture = Qt.binding(() => root.skinTexture)
             item.slim = Qt.binding(() => root.slim)

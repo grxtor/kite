@@ -920,7 +920,7 @@ This action cannot be undone.</source>
 <context>
     <name>Application</name>
     <message>
-        <location filename="../launcher/Application.cpp" line="+1152"/>
+        <location filename="../launcher/Application.cpp" line="+1150"/>
         <source>Settings</source>
         <translation>Ayarlar</translation>
     </message>
@@ -1690,14 +1690,6 @@ This cannot be undone.</source>
         <location line="+18"/>
         <source>Removing cape</source>
         <translation>Pelerin çıkarılıyor</translation>
-    </message>
-</context>
-<context>
-    <name>CatOverlay</name>
-    <message>
-        <location filename="../launcher/qml/Cat/CatOverlay.qml" line="+295"/>
-        <source>Pet the cat</source>
-        <translation>Kediyi sev</translation>
     </message>
 </context>
 <context>
@@ -6643,7 +6635,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstanceSection</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceSection.qml" line="+189"/>
+        <location filename="../launcher/qml/Components/InstanceSection.qml" line="+188"/>
         <source>Collapsed</source>
         <translation>Daraltıldı</translation>
     </message>
@@ -9617,7 +9609,7 @@ Neden:
         <translation>Yeni kurulum</translation>
     </message>
     <message>
-        <location line="+325"/>
+        <location line="+303"/>
         <source>Rename instance</source>
         <translation>Kurulumu yeniden adlandır</translation>
     </message>
@@ -12696,7 +12688,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Vanilla</translation>
     </message>
     <message>
-        <location line="+26"/>
+        <location line="+34"/>
         <source>Minecraft %1</source>
         <translation>Minecraft %1</translation>
     </message>
@@ -12732,18 +12724,18 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     </message>
     <message>
         <location line="+75"/>
-        <location line="+566"/>
+        <location line="+574"/>
         <source>Create</source>
         <translation>Oluştur</translation>
     </message>
     <message>
-        <location line="-565"/>
-        <location line="+579"/>
+        <location line="-573"/>
+        <location line="+587"/>
         <source>Import</source>
         <translation>İçe aktar</translation>
     </message>
     <message>
-        <location line="-560"/>
+        <location line="-568"/>
         <source>Instance icon</source>
         <translation>Kurulum simgesi</translation>
     </message>
@@ -12794,12 +12786,12 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Önerilen</translation>
     </message>
     <message>
-        <location line="+61"/>
+        <location line="+64"/>
         <source>Mod loader</source>
         <translation>Mod yükleyici</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+17"/>
         <source>Loading…</source>
         <translation>Yükleniyor…</translation>
     </message>
@@ -12809,7 +12801,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Bu sürüm için yok</translation>
     </message>
     <message>
-        <location line="+167"/>
+        <location line="+170"/>
         <source>Drop a .zip or .mrpack file here</source>
         <translation>Buraya bir .zip veya .mrpack dosyası bırak</translation>
     </message>
@@ -16478,7 +16470,7 @@ Currently installed version: %1</source>
 <context>
     <name>SettingsAppearanceSection</name>
     <message>
-        <location filename="../launcher/qml/Components/SettingsAppearanceSection.qml" line="+85"/>
+        <location filename="../launcher/qml/Components/SettingsAppearanceSection.qml" line="+24"/>
         <source>Appearance</source>
         <translation>Görünüm</translation>
     </message>
@@ -16565,56 +16557,11 @@ Currently installed version: %1</source>
     </message>
     <message>
         <location line="+1"/>
-        <source>Turns off decorative animation across the launcher, including the cat.</source>
-        <translation>Kedi dahil, başlatıcıdaki süsleme amaçlı animasyonları kapatır.</translation>
+        <source>Turns off decorative animation across the launcher.</source>
+        <translation>Başlatıcıdaki süsleme amaçlı animasyonları kapatır.</translation>
     </message>
     <message>
-        <location line="+10"/>
-        <source>Cat</source>
-        <translation>Kedi</translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>Show the cat</source>
-        <translation>Kediyi göster</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>A small Minecraft cat that wanders along the bottom edge of the page. Click to pet it, double-click and it hops.</source>
-        <translation>Sayfanın alt kenarında dolaşan küçük bir Minecraft kedisi. Tıklayınca sevilir, çift tıklayınca zıplar.</translation>
-    </message>
-    <message>
-        <location line="+7"/>
-        <source>Variant</source>
-        <translation>Tür</translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>Calico</source>
-        <translation>Alaca</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Ginger</source>
-        <translation>Sarman</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Black</source>
-        <translation>Siyah</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>White</source>
-        <translation>Beyaz</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Siamese</source>
-        <translation>Siyam</translation>
-    </message>
-    <message>
-        <location line="+9"/>
+        <location line="+6"/>
         <source>Cat picture</source>
         <translation>Kedi resmi</translation>
     </message>
@@ -16624,17 +16571,12 @@ Currently installed version: %1</source>
         <translation>Kedi resmi göster</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>A quiet picture of a cat in the corner of every page, instead of the 3D cat.</source>
-        <translation>3B kedi yerine her sayfanın köşesinde sakin bir kedi resmi.</translation>
-    </message>
-    <message>
         <location line="+1"/>
         <source>A quiet picture of a cat in the corner of every page.</source>
         <translation>Her sayfanın köşesinde sakin bir kedi resmi.</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+6"/>
         <source>Picture</source>
         <translation>Resim</translation>
     </message>
@@ -17204,7 +17146,7 @@ Currently installed version: %1</source>
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../launcher/qml/Components/SettingsPage.qml" line="+57"/>
+        <location filename="../launcher/qml/Components/SettingsPage.qml" line="+53"/>
         <source>General</source>
         <translation>Genel</translation>
     </message>

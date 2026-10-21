@@ -8,7 +8,7 @@ import Kite.Theme
 
 /*
  * The "Appearance" section of SettingsPage.qml: the launcher's own
- * language, palette and mode, motion, and the cat.
+ * language, palette and mode, motion, and the cat picture.
  */
 SettingsScroll {
     id: root
@@ -17,70 +17,9 @@ SettingsScroll {
     // that switches to one of its keys, live.
     property var languages: null
     property var selectLanguage: null
-    // Whether launcher/qml/Cat was built at all (Main.qml's own
-    // catAvailable, in turn KITE_HAS_CAT) -- hides the Cat group below
-    // rather than offering switches that would do nothing on a build
-    // without Qt Quick3D.
-    property bool catAvailable: false
 
     // The language box, as wide as the longest language name needs.
     readonly property int languageBoxWidth: 260
-
-    // One tile in the cat variant picker below -- the coat's face, cropped
-    // out of the same texture the 3D cat wears (see Cat/CatRig.qml), plus a label,
-    // styled like SkinCapeEditor's CapeTile but simple enough not to
-    // warrant its own file for the one row that uses it.
-    component CatVariantTile: Item {
-        id: tile
-        required property string value
-        required property string label
-        readonly property bool selected: SettingsStore.string("CatVariant") === tile.value
-
-        // The face is the texture's 5x4 pixels at seven times their size,
-        // on a swatch with room around it, over its label.
-        readonly property int faceScale: 7
-        readonly property int swatchSize: 48
-        implicitWidth: swatchSize + Theme.space.sm
-        implicitHeight: swatch.height + Theme.space.xs + tileLabel.implicitHeight
-
-        Rectangle {
-            id: swatch
-            anchors.top: parent.top
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: tile.swatchSize
-            height: tile.swatchSize
-            radius: Theme.radius.md
-            color: tile.selected ? Theme.palette.surfaceHover : Theme.palette.surface
-            border.width: tile.selected ? 2 : 1
-            border.color: tile.selected ? Theme.palette.accent : Theme.palette.border
-
-            // The front of the head in the model's 64x64 UV layout: five
-            // pixels wide, four high, eyes on its second row.
-            Image {
-                anchors.centerIn: parent
-                width: 5 * tile.faceScale
-                height: 4 * tile.faceScale
-                smooth: false
-                sourceClipRect: Qt.rect(5, 33, 5, 4)
-                source: "qrc:/qt/qml/Kite/Cat/textures/cat_" + tile.value + ".png"
-            }
-        }
-
-        Text {
-            id: tileLabel
-            anchors.top: swatch.bottom
-            anchors.topMargin: Theme.space.xs
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: tile.label
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
-        }
-
-        TapHandler {
-            onTapped: SettingsStore.setValue("CatVariant", tile.value)
-        }
-    }
 
     title: qsTr("Appearance")
     description: qsTr("The launcher's own language and colour scheme.")
@@ -157,51 +96,17 @@ SettingsScroll {
         SettingSwitch {
             key: "UiReduceMotion"
             label: qsTr("Reduce motion")
-            description: qsTr("Turns off decorative animation across the launcher, including the cat.")
+            description: qsTr("Turns off decorative animation across the launcher.")
         }
     }
-    // Hidden outright rather than shown disabled: a build
-    // without Qt Quick3D has nothing these switches could turn
-    // on, and a visible-but-inert row reads as broken, not as
-    // "not for you". See root.catAvailable's own comment.
-    SettingsGroup {
-        width: parent.width
-        visible: root.catAvailable
-        title: qsTr("Cat")
-        SettingSwitch {
-            key: "CatEnabled"
-            label: qsTr("Show the cat")
-            description: qsTr("A small Minecraft cat that wanders along the bottom edge of the page. Click to pet it, double-click and it hops.")
-            // One cat in that corner: the picture below steps aside.
-            onSwitched: (on) => { if (on) SettingsStore.setValue("TheCat", false) }
-        }
-        SettingRow {
-            wide: true
-            showDivider: true
-            label: qsTr("Variant")
-            Row {
-                spacing: Theme.space.md
-                CatVariantTile { value: "calico"; label: qsTr("Calico") }
-                CatVariantTile { value: "ginger"; label: qsTr("Ginger") }
-                CatVariantTile { value: "black"; label: qsTr("Black") }
-                CatVariantTile { value: "white"; label: qsTr("White") }
-                CatVariantTile { value: "siamese"; label: qsTr("Siamese") }
-            }
-        }
-    }
-    // The still cat pictures of the classic window, for builds with or
-    // without the 3D cat. Shares the corner with the 3D cat, so turning one
-    // on turns the other off.
+    // The still cat pictures of the classic window.
     SettingsGroup {
         width: parent.width
         title: qsTr("Cat picture")
         SettingSwitch {
             key: "TheCat"
             label: qsTr("Show a cat picture")
-            description: root.catAvailable
-                         ? qsTr("A quiet picture of a cat in the corner of every page, instead of the 3D cat.")
-                         : qsTr("A quiet picture of a cat in the corner of every page.")
-            onSwitched: (on) => { if (on) SettingsStore.setValue("CatEnabled", false) }
+            description: qsTr("A quiet picture of a cat in the corner of every page.")
         }
         SettingRow {
             wide: true

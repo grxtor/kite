@@ -26,13 +26,13 @@ ApplicationWindow {
     title: "Kite"
     color: Theme.palette.canvas
 
-    // Whether launcher/qml/Cat was built at all (KITE_HAS_CAT): the QML
-    // shell has no other way to tell a Quick3D-less build apart from one
-    // where the cat is merely turned off, and Settings needs that
-    // distinction to hide the cat's rows instead of offering a switch that
-    // would do nothing. Set from QmlShell::rootProperties(); false is the
-    // right default for QmlModule_test, which never sets it.
-    property bool catAvailable: false
+    // Whether launcher/qml/Skin3D was built at all (KITE_HAS_SKIN3D): the
+    // QML shell has no other way to tell a Quick3D-less build apart, and
+    // SkinPreview needs it to fall back to the flat view instead of
+    // loading a module that is not there. Set from
+    // QmlShell::rootProperties(); false is the right default for
+    // QmlModule_test, which never sets it.
+    property bool skin3DAvailable: false
 
     // The macOS menu bar (AppMenuBar.qml), on the native Cocoa platform
     // only and with the same switch the widget bar uses -- anywhere else
@@ -215,16 +215,12 @@ ApplicationWindow {
             // QmlShell::debugClick().
             else if (key === "click")
                 root.call("debugClick", value)
-            // Deterministic cat pose for review snapshots -- see
-            // CatOverlay.qml's own `demo` property.
             // The icon picker, as the library's "Change icon" opens it.
             else if (key === "iconpicker") {
                 iconDialog.targetId = root.dockInstanceId
                 iconDialog.current = value.length > 0 ? value : "grass"
                 iconDialog.open()
             }
-            else if (key === "cat" && catLoader.item)
-                catLoader.item.demo = value
         }
     }
     Timer {
@@ -857,9 +853,6 @@ ApplicationWindow {
                         pluginSurfaces: root.shell && typeof root.shell.pluginSurfaces === "function"
                                         ? root.shell.pluginSurfaces(0, "") : null
                         systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
-                        // Whether to show the Cat group at all -- see
-                        // root.catAvailable's own comment.
-                        catAvailable: root.catAvailable
                         about: root.shell && root.shell.about ? root.shell.about : null
                         pluginList: root.shell && typeof root.shell.pluginList === "function"
                                     ? root.shell.pluginList() : null
@@ -936,34 +929,15 @@ ApplicationWindow {
                     AccountsPage {
                         id: accountsPage
                         controller: root.shell && root.shell.accountsController ? root.shell.accountsController : null
-                        // The 3D skin preview needs the cat's Quick3D module.
-                        catAvailable: root.catAvailable
+                        // The 3D skin preview needs the Skin3D module.
+                        skin3DAvailable: root.skin3DAvailable
                     }
                 }
 
-                // The roaming 3D cat (launcher/qml/Cat/CatOverlay.qml), over
-                // whichever page is showing. `active` only turns true when
-                // the module actually exists (catAvailable, KITE_HAS_CAT)
-                // and the setting is on, so a build without Qt Quick3D never
-                // even resolves the qrc path below -- see the CMake option
-                // Kite_ENABLE_CAT this all hangs off. Filling pageHost
-                // rather than the whole window is what keeps its own
-                // walkArea (CatOverlay.qml's default, unset here) right of
-                // the sidebar, below the header and above the play bar
-                // without this file needing to know any of their sizes.
-                Loader {
-                    id: catLoader
-                    anchors.fill: parent
-                    active: root.catAvailable && SettingsStore.bool("CatEnabled")
-                    source: active ? "qrc:/qt/qml/Kite/Cat/CatOverlay.qml" : ""
-                }
-
                 // The still cat picture (Settings > Appearance > Cat picture).
-                // Never together with the 3D cat: an old or hand-edited
-                // config may have both on, and they share the same corner.
                 Loader {
                     anchors.fill: parent
-                    active: SettingsStore.bool("TheCat") && !catLoader.active
+                    active: SettingsStore.bool("TheCat")
                     source: active ? "qrc:/qt/qml/Kite/Components/CatPicture.qml" : ""
                 }
             }

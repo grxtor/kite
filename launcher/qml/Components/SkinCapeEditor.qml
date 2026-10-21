@@ -57,8 +57,8 @@ Dialog {
     // so image urls change and QML actually refetches them -- see
     // AccountsPage.qml's imageRevision.
     property int rev: 0
-    // Whether launcher/qml/Cat (Qt Quick3D) exists -- see SkinPreview.
-    property bool catAvailable: false
+    // Whether launcher/qml/Skin3D (Qt Quick3D) exists -- see SkinPreview.
+    property bool skin3DAvailable: false
 
     // Sizes: the dialog, the preview column (a 1:2 player plus room to
     // turn), the library box (a row of the user's tiles and a row of the
@@ -311,7 +311,7 @@ Dialog {
                                 id: preview
                                 anchors.fill: parent
                                 anchors.margins: Theme.space.md
-                                catAvailable: root.catAvailable
+                                skin3DAvailable: root.skin3DAvailable
                                 skinTexture: root.selected ? root.selected.textureUrl || ""
                                              : root.info.hasSkin && root.accountId.length > 0
                                                ? "image://accountface/skin/" + root.accountId + "?rev=" + root.rev : ""

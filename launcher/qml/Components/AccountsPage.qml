@@ -167,8 +167,8 @@ Item {
     readonly property string heroStatus: heroItem ? heroItem.status : ""
     readonly property string heroStateKey: heroItem ? heroItem.stateKey : ""
     readonly property int heroRow: heroItem ? heroItem.index : -1
-    // Whether launcher/qml/Cat (Qt Quick3D) exists -- see SkinPreview.
-    property bool catAvailable: false
+    // Whether launcher/qml/Skin3D (Qt Quick3D) exists -- see SkinPreview.
+    property bool skin3DAvailable: false
     // The hero account's skin facts (AccountsController::accountSkinInfo):
     // whether there is a skin to draw (its own, or the game's default for
     // it once downloaded), its arm width, and for a Microsoft account its
@@ -291,7 +291,7 @@ Item {
                     Layout.preferredWidth: root.heroPreviewWidth
                     Layout.preferredHeight: root.heroPreviewHeight
                     Layout.alignment: Qt.AlignVCenter
-                    catAvailable: root.catAvailable
+                    skin3DAvailable: root.skin3DAvailable
                     skinTexture: root.heroSkin.hasSkin && root.heroAccountId.length > 0
                                  ? "image://accountface/skin/" + root.heroAccountId + "?rev=" + root.imageRevision : ""
                     flatSource: root.heroAccountId.length > 0
@@ -746,7 +746,7 @@ Item {
         id: skinCapeEditor
         controller: root.controller
         rev: root.imageRevision
-        catAvailable: root.catAvailable
+        skin3DAvailable: root.skin3DAvailable
     }
 
     Dialog {

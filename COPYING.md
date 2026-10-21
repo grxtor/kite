@@ -338,15 +338,6 @@
     licence text ships next to them as
     launcher/qml/Components/icons/LICENSE.Lucide.txt.
 
-# "Minecraft Cat" model
-
-    "Minecraft Cat" by JanesBT (https://sketchfab.com/JanesBt), from
-    https://sketchfab.com/3d-models/minecraft-cat-2b59a1815b1e47a298d4a3c084523d72
-    is licensed under the Creative Commons Attribution 4.0 International
-    licence (https://creativecommons.org/licenses/by/4.0/). MeshMC regroups
-    its parts for animation and recolours its texture into other coats; see
-    launcher/qml/Cat/assets/CREDITS.md.
-
 # NeoForged icon
 
     The NeoForge icon (launcher/resources/multimc/scalable/instances/neoforged.svg)

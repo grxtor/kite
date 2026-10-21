@@ -906,11 +906,9 @@ void Application::initSettings()
 	// The QML interface's font (Settings > Appearance).
 	m_settings->registerSetting("UiFontFamily", QString("Inter"));
 	m_settings->registerSetting("UiSidebarCollapsed", true);
-	// Stops decorative loops (Play sheen, the cat's idle moves) for people
-	// who find motion distracting.
+	// Stops decorative loops (Play sheen) for people who find motion
+	// distracting.
 	m_settings->registerSetting("UiReduceMotion", false);
-	m_settings->registerSetting("CatEnabled", true);
-	m_settings->registerSetting("CatVariant", QString("calico"));
 
 	/* Screen-top menu bar. Only macOS has one; elsewhere the setting is
 	 * carried but never acted on. The second key is what this shipped as

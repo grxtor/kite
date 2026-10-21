@@ -29,10 +29,6 @@ Item {
     property var languages: null
     property var selectLanguage: null
     property string section: "general"
-    // Whether launcher/qml/Cat was built at all (Main.qml's own
-    // catAvailable, in turn KITE_HAS_CAT) -- passed on to the Appearance
-    // section, which hides its Cat group without it.
-    property bool catAvailable: false
     // QmlShell.about (AboutInfo) for the About section, and the
     // PluginListModel for "Installed plugins"; null hides either section.
     property var about: null
@@ -169,7 +165,6 @@ Item {
             SettingsAppearanceSection {
                 languages: root.languages
                 selectLanguage: root.selectLanguage
-                catAvailable: root.catAvailable
             }
             SettingsCommandsSection {}
             SettingsPluginsListSection {
