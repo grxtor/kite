@@ -2,30 +2,34 @@
 // SPDX-FileCopyrightText: 2026 grxtor
 // SPDX-License-Identifier: Apache-2.0
 //
-// One feature: a short title and text above a real screenshot that sits on
-// the card's bottom edge.
+// One bento card: a short title and text above an enlarged region of a real
+// screenshot, which fades out into the card's bottom edge.
 import Screenshot from './Screenshot.astro';
 import type { Locale } from '../i18n';
 import type { ScreenId } from '../i18n/types';
+import type { Focus } from '../lib/imaging';
 
 interface Props {
   locale: Locale;
   screen: ScreenId;
+  focus: Focus;
   title: string;
   text: string;
   alt: string;
+  /** Takes the wider column of its row on large screens. */
+  wide?: boolean;
 }
 
-const { locale, screen, title, text, alt } = Astro.props;
+const { locale, screen, focus, title, text, alt, wide = false } = Astro.props;
 ---
 
-<article class="card">
+<article class:list={['card', wide && 'wide']}>
   <div class="copy">
     <h3>{title}</h3>
     <p>{text}</p>
   </div>
   <div class="media">
-    <Screenshot locale={locale} screen={screen} alt={alt} size="card" />
+    <Screenshot locale={locale} screen={screen} alt={alt} focus={focus} />
   </div>
 </article>
 
@@ -43,7 +47,7 @@ const { locale, screen, title, text, alt } = Astro.props;
   .copy {
     display: grid;
     gap: var(--space-2);
-    max-width: 48ch;
+    max-width: 46ch;
   }
   .copy p {
     color: var(--text-secondary);
@@ -51,11 +55,19 @@ const { locale, screen, title, text, alt } = Astro.props;
   .media {
     margin-top: auto;
   }
-  /* The screenshot is cut off by the card's bottom edge. */
+  /* The picture runs into the card's bottom edge. */
   .media :global(.shot) {
     border-bottom: 0;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    box-shadow: none;
+  }
+  /* Twelve columns from the bento grid: a wide card takes seven, a narrow five. */
+  @media (min-width: 900px) {
+    .card {
+      grid-column: span 5;
+    }
+    .wide {
+      grid-column: span 7;
+    }
   }
 </style>

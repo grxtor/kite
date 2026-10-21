@@ -2,11 +2,11 @@
 // SPDX-FileCopyrightText: 2026 grxtor
 // SPDX-License-Identifier: Apache-2.0
 import Icon from '../components/Icon.astro';
-import PlatformCard from '../components/PlatformCard.astro';
+import PlatformCards from '../components/PlatformCards.astro';
 import { PLATFORMS } from '../data/content';
 import { release } from '../data/release';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { format, getDictionary, type Locale } from '../i18n';
+import { getDictionary, type Locale } from '../i18n';
 
 interface Props {
   locale: Locale;
@@ -37,24 +37,9 @@ const released = PLATFORMS.some((platform) => release.downloads[platform.key] !=
       }
     </div>
 
-    <ul class="cards">
-      {
-        PLATFORMS.map((platform) => {
-          const copy = t.download.platforms[platform.key];
-          return (
-            <PlatformCard
-              icon={platform.icon}
-              name={copy.name}
-              detail={copy.detail}
-              href={release.downloads[platform.key]}
-              buttonText={t.download.button}
-              unavailableText={t.download.comingSoon}
-              buttonLabel={format(t.download.buttonLabel, { name: copy.name })}
-            />
-          );
-        })
-      }
-    </ul>
+    <div class="cards">
+      <PlatformCards locale={locale} />
+    </div>
 
     <section class="needs" aria-labelledby="needs-title">
       <h2 id="needs-title">{t.download.requirementsTitle}</h2>
@@ -108,9 +93,6 @@ const released = PLATFORMS.some((platform) => release.downloads[platform.key] !=
     color: var(--accent-text);
   }
   .cards {
-    display: grid;
-    gap: var(--space-4);
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
     margin-top: var(--space-7);
   }
   .needs {

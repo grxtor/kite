@@ -53,9 +53,15 @@ export interface Dictionary {
   hero: {
     title: string;
     lead: string;
-    primaryCta: string;
-    secondaryCta: string;
-    note: string;
+    /** Download button before the visitor's system is known. */
+    cta: string;
+    /** Download button once the visitor's system is detected. */
+    ctaFor: Record<PlatformKey, string>;
+    /** Shown under the button while there is no release. */
+    status: string;
+    /** The minimum system for each platform, under the button. */
+    minimum: Record<PlatformKey, string>;
+    otherSystems: string;
     screenshotAlt: string;
   };
   native: {
@@ -78,10 +84,13 @@ export interface Dictionary {
     corner: string;
     sourcesTitle: string;
   };
-  closing: {
+  faq: {
     title: string;
-    text: string;
-    cta: string;
+    items: Array<{ question: string; answer: string }>;
+  };
+  platformsBand: {
+    title: string;
+    lead: string;
   };
   download: {
     title: string;

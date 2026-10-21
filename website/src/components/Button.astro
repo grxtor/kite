@@ -65,9 +65,11 @@ const classes = ['btn', `btn-${variant}`, `btn-${size}`, block && 'btn-block'];
     width: 100%;
   }
 
+  /* Download is Kite's "launch": it wears the kite's cut, like Play in the app. */
   .btn-primary {
     background: var(--accent);
     color: var(--on-accent);
+    border-top-right-radius: var(--radius-cut);
   }
   .btn-primary:hover {
     background: var(--accent-hover);

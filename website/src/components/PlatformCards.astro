@@ -1,0 +1,49 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+//
+// The three platform cards, shared by the download page and the home page.
+import PlatformCard from './PlatformCard.astro';
+import { PLATFORMS } from '../data/content';
+import { release } from '../data/release';
+import { format, getDictionary, type Locale } from '../i18n';
+
+interface Props {
+  locale: Locale;
+  heading?: 'h2' | 'h3';
+  /** Anchors the cards (#macos …); only one copy on a page may set it. */
+  anchors?: boolean;
+}
+
+const { locale, heading = 'h2', anchors = true } = Astro.props;
+const t = getDictionary(locale);
+---
+
+<ul class="cards">
+  {
+    PLATFORMS.map((platform) => {
+      const copy = t.download.platforms[platform.key];
+      return (
+        <PlatformCard
+          icon={platform.icon}
+          name={copy.name}
+          detail={copy.detail}
+          href={release.downloads[platform.key]}
+          buttonText={t.download.button}
+          unavailableText={t.download.comingSoon}
+          buttonLabel={format(t.download.buttonLabel, { name: copy.name })}
+          id={anchors ? platform.key : undefined}
+          heading={heading}
+        />
+      );
+    })
+  }
+</ul>
+
+<style>
+  .cards {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  }
+</style>

@@ -15,14 +15,29 @@ interface Props {
   /** Text shown instead of the button label when there is no link yet. */
   unavailableText: string;
   buttonLabel: string;
+  /** Anchor for links such as /download#macos. */
+  id?: string;
+  /** h2 on the download page, h3 inside a section on the home page. */
+  heading?: 'h2' | 'h3';
 }
 
-const { icon, name, detail, href, buttonText, unavailableText, buttonLabel } = Astro.props;
+const {
+  icon,
+  name,
+  detail,
+  href,
+  buttonText,
+  unavailableText,
+  buttonLabel,
+  id,
+  heading = 'h2',
+} = Astro.props;
+const Heading = heading;
 ---
 
-<li class="card">
+<li class="card" id={id}>
   <span class="icon"><Icon name={icon} size={24} /></span>
-  <h2>{name}</h2>
+  <Heading class="name">{name}</Heading>
   <p>{detail}</p>
   <div class="action">
     {
@@ -59,7 +74,10 @@ const { icon, name, detail, href, buttonText, unavailableText, buttonLabel } = A
     border-radius: var(--radius-lg);
     color: var(--text);
   }
-  h2 {
+  .card {
+    scroll-margin-top: calc(var(--header-height) + var(--space-5));
+  }
+  .name {
     font-size: var(--text-h3);
     letter-spacing: var(--tracking-h3);
   }

@@ -35,10 +35,20 @@ export const tr = {
   },
   hero: {
     title: 'Native yazılmış bir Minecraft başlatıcısı.',
-    lead: 'Kite, bir web sayfasının etrafına sarılmadı; C++ ile yazıldı, arayüzü Qt Quick. Her kurulumun kendi modları, dünyaları ve Java’sı var. Modrinth, CurseForge, FTB, ATLauncher ve Technic paketleri bir arama uzağında.',
-    primaryCta: 'Kite’ı indir',
-    secondaryCta: 'Diğerlerinden farkı',
-    note: 'Ücretsiz ve açık kaynak · Apache 2.0 · macOS, Windows ve Linux',
+    lead: 'Bir pencereye konmuş web sayfası değil; C++ ve Qt Quick. Her kurulumun kendi modları, dünyaları ve Java’sı var. Modrinth, CurseForge, FTB, ATLauncher ve Technic paketleri bir arama uzağında.',
+    cta: 'Kite’ı indir',
+    ctaFor: {
+      macos: 'macOS için indir',
+      windows: 'Windows için indir',
+      linux: 'Linux için indir',
+    },
+    status: 'İlk sürüm yakında',
+    minimum: {
+      macos: 'macOS 12 ya da üstü',
+      windows: 'Windows 10 ve 11',
+      linux: 'AppImage, x86-64 ve ARM64',
+    },
+    otherSystems: 'Diğer sistemler',
     screenshotAlt:
       'Gerçek kurulumlarla Kite ana sayfası: oynamaya hazır MC-26.3-Animations, Zombiemania ve üç Minecraft sürümüyle “Oynamaya devam et” listesi, sağda son dünyalar.',
   },
@@ -87,10 +97,44 @@ export const tr = {
     corner: 'Başlatıcı',
     sourcesTitle: 'Kaynaklar',
   },
-  closing: {
-    title: 'Kite ücretsiz',
-    text: 'macOS, Windows ve Linux için. Reklam yok, bize hesap açman gerekmiyor.',
-    cta: 'Kite’ı indir',
+  faq: {
+    title: 'Sorular',
+    items: [
+      {
+        question: 'Minecraft’ı satın almam gerekiyor mu?',
+        answer:
+          'Evet. Kite, Minecraft: Java Edition’a sahip Microsoft hesabınla giriş yapar. Hesap yoksa Kite yalnızca oyunun demosunu açabilir.',
+      },
+      {
+        question: 'Kite gerçekten ücretsiz mi?',
+        answer:
+          'Evet. Reklam yok, ücretli paket yok, bize hesap açman da gerekmiyor. Kite Apache Lisansı 2.0 ile lisanslı; kaynak kodu ilk sürümle herkese açılıyor.',
+      },
+      {
+        question: 'Prism ya da MultiMC’deki kurulumlarımı getirebilir miyim?',
+        answer:
+          'Eski başlatıcında kurulumu zip olarak dışa aktar, o zip’i Kite’ta içe aktar. Modrinth .mrpack dosyaları, CurseForge paket zip’leri ve Technic paketleri de aynı şekilde gelir.',
+      },
+      {
+        question: 'Minecraft daha hızlı çalışır mı?',
+        answer:
+          'Kite bir başlatıcı; FPS’in oyundan ve kurduğun modlardan (Sodium gibi) gelir. Kite her sürüm için doğru Java’yı seçer ve oyuna ayarladığın belleği verir.',
+      },
+      {
+        question: 'Microsoft hesabım güvende mi?',
+        answer:
+          'Girişi tarayıcında, Microsoft’un kendi sayfasında yaparsın; Kite şifreni hiç görmez. Giriş anahtarları bilgisayarında kalır. Kite’ın neyi nereye gönderdiği gizlilik politikasında tek tek yazıyor.',
+      },
+      {
+        question: 'Hangi sistemlerde çalışır?',
+        answer:
+          'Apple silicon ve Intel’de macOS 12 ya da üstü; x64 ve Arm’da Windows 10 ve 11; Linux’ta x86-64 ve ARM64 için AppImage.',
+      },
+    ],
+  },
+  platformsBand: {
+    title: 'Kite’ı edin',
+    lead: 'macOS, Windows ve Linux için ücretsiz.',
   },
   download: {
     title: 'Kite’ı indir',

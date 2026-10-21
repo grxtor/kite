@@ -37,10 +37,20 @@ export const en: Dictionary = {
   },
   hero: {
     title: 'A Minecraft launcher, built native.',
-    lead: 'Kite is written in C++ with a Qt Quick interface, not wrapped around a web page. Every instance keeps its own mods, worlds and Java, and modpacks from Modrinth, CurseForge, FTB, ATLauncher and Technic are one search away.',
-    primaryCta: 'Download Kite',
-    secondaryCta: 'How it compares',
-    note: 'Free and open source · Apache 2.0 · macOS, Windows and Linux',
+    lead: 'C++ and Qt Quick, not a web page in a window. Every instance keeps its own mods, worlds and Java, and modpacks from Modrinth, CurseForge, FTB, ATLauncher and Technic are one search away.',
+    cta: 'Download Kite',
+    ctaFor: {
+      macos: 'Download for macOS',
+      windows: 'Download for Windows',
+      linux: 'Download for Linux',
+    },
+    status: 'First release coming soon',
+    minimum: {
+      macos: 'macOS 12 or later',
+      windows: 'Windows 10 and 11',
+      linux: 'AppImage, x86-64 and ARM64',
+    },
+    otherSystems: 'Other systems',
     screenshotAlt:
       'Kite’s Home screen with real instances: MC-26.3-Animations ready to play, a Continue playing list with Zombiemania and three Minecraft versions, and recent worlds on the right.',
   },
@@ -89,10 +99,44 @@ export const en: Dictionary = {
     corner: 'Launcher',
     sourcesTitle: 'Sources',
   },
-  closing: {
-    title: 'Kite is free',
-    text: 'For macOS, Windows and Linux. No ads, no account with us.',
-    cta: 'Download Kite',
+  faq: {
+    title: 'Questions',
+    items: [
+      {
+        question: 'Do I need to own Minecraft?',
+        answer:
+          'Yes. Kite signs you in with the Microsoft account that owns Minecraft: Java Edition. Without one, Kite can only start the game’s demo.',
+      },
+      {
+        question: 'Is Kite really free?',
+        answer:
+          'Yes. No ads, no paid tier and no account with us. Kite is licensed under the Apache License 2.0, and its source code goes public with the first release.',
+      },
+      {
+        question: 'Can I bring my instances from Prism or MultiMC?',
+        answer:
+          'Export an instance as a zip from your old launcher and import that zip in Kite. Modrinth .mrpack files, CurseForge modpack zips and Technic packs import the same way.',
+      },
+      {
+        question: 'Will Minecraft run faster?',
+        answer:
+          'Kite is a launcher, so your frame rate comes from the game and the mods you install, such as Sodium. What Kite does is pick the right Java for each version and give the game the memory you set.',
+      },
+      {
+        question: 'Is my Microsoft account safe?',
+        answer:
+          'You sign in on Microsoft’s own page, in your browser, so Kite never sees your password. The sign-in tokens stay on your computer, and the privacy policy lists everything Kite sends and where.',
+      },
+      {
+        question: 'Which systems does it run on?',
+        answer:
+          'macOS 12 or later on Apple silicon and Intel, Windows 10 and 11 on x64 and Arm, and Linux as an AppImage for x86-64 and ARM64.',
+      },
+    ],
+  },
+  platformsBand: {
+    title: 'Get Kite',
+    lead: 'Free for macOS, Windows and Linux.',
   },
   download: {
     title: 'Download Kite',
