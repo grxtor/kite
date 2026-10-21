@@ -112,6 +112,8 @@
   /* The floating glass bar plus the gap above it. */
   --header-height: 76px;
   --header-bar-height: 56px;
+  /* Space between the bar's ends and the mark or button: (56 - 40) / 2. */
+  --header-bar-inset: 8px;
   --icon-box: 40px;
   --icon-box-lg: 48px;
   --control-height-sm: 36px;

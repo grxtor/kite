@@ -28,6 +28,7 @@ export const tr = {
     homeLabel: 'Kite ana sayfa',
     features: 'Özellikler',
     compare: 'Karşılaştır',
+    faq: 'Sorular',
     download: 'İndir',
     privacy: 'Gizlilik',
     terms: 'Koşullar',

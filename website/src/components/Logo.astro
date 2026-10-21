@@ -4,13 +4,20 @@
 import { Image } from 'astro:assets';
 import logo from '../assets/logo.png';
 import { LOGO_SIZE_PX } from '../lib/imaging';
+
+interface Props {
+  /** Height of the mark in CSS pixels. */
+  size?: number;
+}
+
+const { size = LOGO_SIZE_PX } = Astro.props;
 ---
 
 <span class="logo">
   <Image
     src={logo}
-    width={LOGO_SIZE_PX}
-    height={LOGO_SIZE_PX}
+    width={size}
+    height={size}
     densities={[1, 2]}
     alt=""
     loading="eager"

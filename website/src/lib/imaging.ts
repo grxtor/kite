@@ -47,6 +47,8 @@ export const BACKDROP_SIZES = '100vw';
 
 /** Logo is drawn at this size; the 2x file is generated for sharp screens. */
 export const LOGO_SIZE_PX = 32;
+/** The mark in the header bar: as tall as the bar's button, so the two ends mirror. */
+export const HEADER_LOGO_SIZE_PX = 40;
 
 /** Open Graph image size recommended by most platforms. */
 export const OG_IMAGE = { width: 1200, height: 630 } as const;

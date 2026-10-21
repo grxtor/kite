@@ -9,12 +9,21 @@ interface Props {
   block?: boolean;
   /** Renders a non-interactive element instead of a link. */
   disabled?: boolean;
+  /** Fully rounded, for a button inside a capsule such as the header bar. */
+  pill?: boolean;
   label?: string;
 }
 
-const { href, variant = 'primary', size = 'md', block = false, disabled = false, label } =
-  Astro.props;
-const classes = ['btn', `btn-${variant}`, `btn-${size}`, block && 'btn-block'];
+const {
+  href,
+  variant = 'primary',
+  size = 'md',
+  block = false,
+  disabled = false,
+  pill = false,
+  label,
+} = Astro.props;
+const classes = ['btn', `btn-${variant}`, `btn-${size}`, block && 'btn-block', pill && 'btn-pill'];
 ---
 
 {
@@ -59,6 +68,11 @@ const classes = ['btn', `btn-${variant}`, `btn-${size}`, block && 'btn-block'];
   .btn-lg {
     height: var(--control-height-lg);
     padding-inline: var(--space-5);
+  }
+  /* Concentric with a capsule around it, so the kite's cut gives way here. */
+  .btn-pill,
+  .btn-pill.btn-primary {
+    border-radius: var(--radius-pill);
   }
   .btn-block {
     display: flex;

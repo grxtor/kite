@@ -5,6 +5,7 @@ import Button from './Button.astro';
 import LanguageSwitch from './LanguageSwitch.astro';
 import Logo from './Logo.astro';
 import { getDictionary, localePath, type Locale, type Route } from '../i18n';
+import { HEADER_LOGO_SIZE_PX } from '../lib/imaging';
 
 interface Props {
   locale: Locale;
@@ -20,18 +21,18 @@ const downloadPath = localePath(locale, '/download');
 <header class="header">
   <div class="container">
     <div class="bar">
-    <a class="brand" href={home} aria-label={t.nav.homeLabel}>
-      <Logo />
-    </a>
-    <nav class="nav" aria-label={t.nav.mainLabel}>
-      <a class="link" href={`${home}#features`}>{t.nav.features}</a>
-      <a class="link" href={`${home}#compare`}>{t.nav.compare}</a>
-      <a class="link" href={downloadPath}>{t.nav.download}</a>
-    </nav>
-    <div class="actions">
-      <LanguageSwitch locale={locale} route={route} />
-      <Button href={downloadPath} size="sm">{t.nav.download}</Button>
-    </div>
+      <a class="brand" href={home} aria-label={t.nav.homeLabel}>
+        <Logo size={HEADER_LOGO_SIZE_PX} />
+      </a>
+      <nav class="nav" aria-label={t.nav.mainLabel}>
+        <a class="link" href={`${home}#features`}>{t.nav.features}</a>
+        <a class="link" href={`${home}#compare`}>{t.nav.compare}</a>
+        <a class="link" href={`${home}#faq`}>{t.nav.faq}</a>
+      </nav>
+      <div class="actions">
+        <LanguageSwitch locale={locale} route={route} />
+        <Button href={downloadPath} pill>{t.nav.download}</Button>
+      </div>
     </div>
   </div>
 </header>
@@ -45,12 +46,14 @@ const downloadPath = localePath(locale, '/download');
     height: var(--header-height);
     padding-top: var(--space-3);
   }
+  /* Three columns: the mark and the button sit the same distance from
+     each end, and the links stay in the true middle. */
   .bar {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    gap: var(--space-5);
     height: var(--header-bar-height);
-    padding-inline: var(--space-4) var(--space-2);
+    padding-inline: var(--header-bar-inset);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-pill);
     background: var(--glass-sheen), var(--glass-fill);
@@ -59,13 +62,18 @@ const downloadPath = localePath(locale, '/download');
     backdrop-filter: var(--glass-blur);
   }
   .brand {
-    margin-right: auto;
+    grid-column: 1;
+    justify-self: start;
+    display: flex;
+    align-items: center;
+    border-radius: var(--radius-md);
     text-decoration: none;
   }
   .nav {
     display: none;
+    grid-column: 2;
     align-items: center;
-    gap: var(--space-5);
+    gap: var(--space-6);
   }
   .link {
     color: var(--text-secondary);
@@ -77,24 +85,16 @@ const downloadPath = localePath(locale, '/download');
     color: var(--text);
   }
   .actions {
+    grid-column: 3;
+    justify-self: end;
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-4);
   }
-
-  /* Phones keep the logo, the language switch and the Download button. */
-  @media (min-width: 640px) {
+  /* Phones keep the mark, the language switch and the Download button. */
+  @media (min-width: 720px) {
     .nav {
       display: flex;
-    }
-    .brand {
-      margin-right: 0;
-    }
-    .bar {
-      gap: var(--space-6);
-    }
-    .actions {
-      margin-left: auto;
     }
   }
 </style>

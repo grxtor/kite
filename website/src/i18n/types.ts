@@ -45,6 +45,7 @@ export interface Dictionary {
     homeLabel: string;
     features: string;
     compare: string;
+    faq: string;
     download: string;
     privacy: string;
     terms: string;

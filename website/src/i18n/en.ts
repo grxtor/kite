@@ -30,6 +30,7 @@ export const en: Dictionary = {
     homeLabel: 'Kite home',
     features: 'Features',
     compare: 'Compare',
+    faq: 'Questions',
     download: 'Download',
     privacy: 'Privacy',
     terms: 'Terms',
