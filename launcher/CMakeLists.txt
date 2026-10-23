@@ -2065,6 +2065,16 @@ if(APPLE)
     set(KITE_ICNS "${CMAKE_CURRENT_SOURCE_DIR}/../${Kite_Branding_ICNS}")
     set_source_files_properties(${KITE_ICNS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     target_sources(${Kite_Name} PRIVATE ${KITE_ICNS})
+    # Same for the Java helpers: without them the build-tree kite.app cannot
+    # start a game ("Could not find or load main class
+    # io.github.grxtor.EntryPoint"). Application::getJarsPath() looks in
+    # Contents/Resources/jars.
+    get_target_property(KITE_NEWLAUNCH_JAR NewLaunch JAR_FILE)
+    get_target_property(KITE_JAVACHECK_JAR JavaCheck JAR_FILE)
+    set_source_files_properties(${KITE_NEWLAUNCH_JAR} ${KITE_JAVACHECK_JAR}
+        PROPERTIES MACOSX_PACKAGE_LOCATION Resources/jars GENERATED TRUE)
+    target_sources(${Kite_Name} PRIVATE ${KITE_NEWLAUNCH_JAR} ${KITE_JAVACHECK_JAR})
+    add_dependencies(${Kite_Name} NewLaunch JavaCheck)
 endif()
 if(DEFINED Kite_BINARY_RPATH)
     SET_TARGET_PROPERTIES(${Kite_Name} PROPERTIES INSTALL_RPATH "${Kite_BINARY_RPATH}")
