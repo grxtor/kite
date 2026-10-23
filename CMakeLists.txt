@@ -429,7 +429,7 @@ set(Kite_TRANSLATIONS_URL "" CACHE STRING "URL to download translation updates f
 
 # Microsoft Client ID
 # Our own Azure app, approved for the Minecraft API. Empty hides Microsoft sign-in.
-set(Kite_MICROSOFT_CLIENT_ID "" CACHE STRING "Azure application (client) ID for Microsoft sign-in")
+set(Kite_MICROSOFT_CLIENT_ID "3e21e33c-8db3-41f9-bbd3-8309b8c41203" CACHE STRING "Azure application (client) ID for Microsoft sign-in")
 
 # paste.ee API key
 set(Kite_PASTE_EE_API_KEY "" CACHE STRING "API key you can get from paste.ee when you register an account")
