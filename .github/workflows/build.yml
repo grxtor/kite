@@ -4,14 +4,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Builds only run for a release (release.yml calls this on a tag push) or
+# when started by hand from the Actions tab.
 on:
-  push:
-    branches:
-      - 'develop'
-      - 'release-*'
-  merge_group:
-    types: [checks_requested]
-  pull_request:
   workflow_call:
     inputs:
       build-type:
