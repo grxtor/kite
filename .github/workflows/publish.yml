@@ -32,3 +32,105 @@ jobs:
           # installers.
           installers-regex: 'Kite-Windows-MSVC-Qt6(?:-arm64|-Legacy)?-Setup-.+\.exe$'
           token: ${{ secrets.WINGET_TOKEN }}
+
+  # Scoop and Homebrew read Kite from repositories of our own, so these two
+  # jobs fill in packaging/ and push the result there. PACKAGES_TOKEN needs
+  # write access to grxtor/scoop-bucket and grxtor/homebrew-tap.
+  scoop:
+    name: Scoop
+
+    permissions:
+      contents: read
+
+    runs-on: ubuntu-slim
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          path: kite
+
+      - name: Checkout the bucket
+        uses: actions/checkout@v7
+        with:
+          repository: grxtor/scoop-bucket
+          token: ${{ secrets.PACKAGES_TOKEN }}
+          path: bucket
+
+      - name: Publish on Scoop
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          mkdir -p bucket/bucket
+          kite/packaging/fill-template.sh kite/packaging/scoop/kite.json "$TAG" > bucket/bucket/kite.json
+          cd bucket
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bucket/kite.json
+          git commit -m "kite: update to $TAG"
+          git push
+
+  homebrew:
+    name: Homebrew
+
+    permissions:
+      contents: read
+
+    runs-on: ubuntu-slim
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          path: kite
+
+      - name: Checkout the tap
+        uses: actions/checkout@v7
+        with:
+          repository: grxtor/homebrew-tap
+          token: ${{ secrets.PACKAGES_TOKEN }}
+          path: tap
+
+      - name: Publish on Homebrew
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          mkdir -p tap/Casks
+          kite/packaging/fill-template.sh kite/packaging/homebrew/kite.rb "$TAG" > tap/Casks/kite.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/kite.rb
+          git commit -m "kite $TAG"
+          git push
+
+  aur:
+    name: AUR
+
+    permissions:
+      contents: read
+
+    # The AUR action runs in a container, which ubuntu-slim cannot start.
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Fill in the PKGBUILD
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        # Into the workspace: that is all the action's container can see.
+        run: packaging/fill-template.sh packaging/aur/PKGBUILD "$TAG" > PKGBUILD
+
+      - name: Publish on the AUR
+        uses: KSXGitHub/github-actions-deploy-aur@v4.2.0
+        with:
+          pkgname: kite-bin
+          pkgbuild: ./PKGBUILD
+          # Builds the package with makepkg once before pushing it.
+          test: true
+          commit_username: grxtor
+          commit_email: 86706456+grxtor@users.noreply.github.com
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update to ${{ github.event.release.tag_name }}

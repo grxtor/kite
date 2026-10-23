@@ -38,8 +38,9 @@ if [[ -f "${LAUNCHER_DIR}/sharun" ]]; then
     export ${LAUNCHER_ENVNAME}_DISABLE_GLVULKAN=1
 fi
 
-# Just to be sure...
-chmod +x "${LAUNCHER_DIR}/bin/${LAUNCHER_NAME}"
+# Just to be sure... but only when needed: a package installs this under
+# /opt as root, where the user may not chmod it.
+[[ -x "${LAUNCHER_DIR}/bin/${LAUNCHER_NAME}" ]] || chmod +x "${LAUNCHER_DIR}/bin/${LAUNCHER_NAME}"
 
 ARGS=("${LAUNCHER_DIR}/${LAUNCHER_NAME}" "${LAUNCHER_DIR}/bin/${LAUNCHER_NAME}")
 

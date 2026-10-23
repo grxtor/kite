@@ -1,0 +1,28 @@
+{
+    "##": "Filled in and pushed to grxtor/scoop-bucket by .github/workflows/publish.yml. The updater is removed because Scoop updates Kite now.",
+    "version": "@VERSION@",
+    "description": "Minecraft launcher with multi-instance management",
+    "homepage": "https://kiteclient.com",
+    "license": "Apache-2.0 AND LGPL-3.0-only AND LGPL-2.1-only AND OFL-1.1 AND MIT",
+    "suggest": {
+        "vcredist": "extras/vcredist2022"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/grxtor/kite/releases/download/@TAG@/Kite-Windows-MSVC-Qt6-@TAG@.zip",
+            "hash": "@SHA256:Kite-Windows-MSVC-Qt6-@TAG@.zip@"
+        },
+        "arm64": {
+            "url": "https://github.com/grxtor/kite/releases/download/@TAG@/Kite-Windows-MSVC-Qt6-arm64-@TAG@.zip",
+            "hash": "@SHA256:Kite-Windows-MSVC-Qt6-arm64-@TAG@.zip@"
+        }
+    },
+    "pre_install": "Remove-Item \"$dir\\kite-updater.exe\" -ErrorAction SilentlyContinue",
+    "bin": "kite.exe",
+    "shortcuts": [
+        [
+            "kite.exe",
+            "Kite"
+        ]
+    ]
+}
