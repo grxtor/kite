@@ -420,8 +420,8 @@ limiting.
 
 ## Deploying
 
-The server is meant to run on the Dokploy box (152.53.142.222) as an
-Application in the Kite project, next to a Dokploy Postgres database:
+The server is meant to run on the Dokploy server as an Application in the
+Kite project, next to a Dokploy Postgres database:
 
 1. Create a Postgres database service (e.g. `kite-friends-db`) in the Kite
    project. Keep it internal; it needs no public port.
@@ -436,7 +436,7 @@ Application in the Kite project, next to a Dokploy Postgres database:
    ```
 
 4. Domain `api.kiteclient.com` → port 8080, HTTPS with Let's Encrypt, and a
-   proxied Cloudflare `A` record `api` → 152.53.142.222.
+   proxied Cloudflare `A` record `api` pointing at the Dokploy server.
 5. The health check is `GET /healthz`.
 
 `CLIENT_IP_HEADER` matters: without it every request seems to come from
