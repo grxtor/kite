@@ -1,5 +1,6 @@
-import Fastify, { LogController, type FastifyError, type FastifyInstance, type FastifyRequest } from 'fastify';
+import Fastify, { LogController, type FastifyError, type FastifyInstance } from 'fastify';
 import type pg from 'pg';
+import { clientIpReader } from './clientIp.ts';
 import type { Config } from './config.ts';
 import { createContext, minute, type Context } from './context.ts';
 import { HttpError } from './errors.ts';
@@ -17,17 +18,6 @@ export interface AppDeps {
 }
 
 const bodyLimitBytes = 8 * 1024;
-
-function clientIpReader(config: Config) {
-  return (request: FastifyRequest): string => {
-    if (config.clientIpHeader) {
-      const header = request.headers[config.clientIpHeader];
-      const value = (Array.isArray(header) ? header[0] : header)?.split(',')[0]?.trim();
-      if (value) return value;
-    }
-    return request.ip;
-  };
-}
 
 /** Drops expired challenges, sessions and statuses, and forgets finished rate-limit windows. */
 async function purgeExpired(ctx: Context): Promise<void> {

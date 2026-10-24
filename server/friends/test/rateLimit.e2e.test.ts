@@ -95,11 +95,25 @@ describe('rate limits', () => {
 
     test('are counted per client address when a client IP header is set', async () => {
       const server = await start({ clientIpHeader: 'x-client-ip', rateLimits: { authPerMinute: 2 } });
-      const from = (ip: string) => ({ body: { name: 'Notch' }, headers: { 'x-client-ip': ip } });
+      const from = (ip: string) => ({
+        body: { name: 'Notch' },
+        headers: { 'x-real-ip': '172.70.1.2', 'x-client-ip': ip },
+      });
       assert.equal((await server.api('POST', '/v1/auth/challenge', from('198.51.100.1'))).status, 200);
       assert.equal((await server.api('POST', '/v1/auth/challenge', from('198.51.100.1'))).status, 200);
       assertLimited(await server.api<ErrorBody>('POST', '/v1/auth/challenge', from('198.51.100.1')), MINUTE);
       assert.equal((await server.api('POST', '/v1/auth/challenge', from('198.51.100.2'))).status, 200);
+    });
+
+    test('a client IP header from outside Cloudflare does not get a fresh limit', async () => {
+      const server = await start({ clientIpHeader: 'x-client-ip', rateLimits: { authPerMinute: 2 } });
+      const from = (ip: string) => ({
+        body: { name: 'Notch' },
+        headers: { 'x-real-ip': '203.0.113.9', 'x-client-ip': ip },
+      });
+      assert.equal((await server.api('POST', '/v1/auth/challenge', from('198.51.100.1'))).status, 200);
+      assert.equal((await server.api('POST', '/v1/auth/challenge', from('198.51.100.2'))).status, 200);
+      assertLimited(await server.api<ErrorBody>('POST', '/v1/auth/challenge', from('198.51.100.3')), MINUTE);
     });
 
     test('do not use up the limit of other endpoints', async () => {

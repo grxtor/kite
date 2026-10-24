@@ -24,7 +24,7 @@ environment:
 | `DATABASE_URL` | (required) | Postgres connection string |
 | `PORT` / `HOST` | `8080` / `0.0.0.0` | Where to listen |
 | `MOJANG_SESSION_URL` | `https://sessionserver.mojang.com` | Session server used for `hasJoined` |
-| `CLIENT_IP_HEADER` | (none) | Header that carries the client IP, e.g. `cf-connecting-ip` behind Cloudflare. Without it the socket address is used |
+| `CLIENT_IP_HEADER` | (none) | Header that carries the client IP, e.g. `cf-connecting-ip` behind Cloudflare. Believed only for requests that reached the proxy from a Cloudflare address. Without it the socket address is used |
 | `STATUS_TTL_SECONDS` | `180` | How long a reported status stays live |
 | `SESSION_TTL_DAYS` | `30` | Lifetime of a session token |
 | `LOG_LEVEL` | `info` | Pino log level. Requests are not logged, only errors |
@@ -440,11 +440,15 @@ Kite project, next to a Dokploy Postgres database:
 5. The health check is `GET /healthz`.
 
 `CLIENT_IP_HEADER` matters: without it every request seems to come from
-Traefik, and all users share one per-IP limit. `cf-connecting-ip` is only
-safe while the server is reached through Cloudflare, because anyone talking
-to the origin directly can set the header. Per-user limits still apply to
-every signed-in request. Without Cloudflare in front, use `x-real-ip`, which
-Traefik sets itself.
+Traefik, and all users share one per-IP limit. Anyone talking to the origin
+directly could set `cf-connecting-ip` themselves, so the server believes it
+only when `X-Real-Ip`, which Traefik overwrites with the address that
+connected to it, is one of Cloudflare's ranges (listed in
+`src/clientIp.ts`). A direct request is counted by its real address
+whatever it claims. On the Dokploy server Traefik also turns direct
+requests for `api.kiteclient.com` away with 418 (the edge guard in
+`/etc/dokploy/traefik/dynamic/00-edge-guard.yml`). Without Cloudflare in
+front, use `x-real-ip`.
 
 `docker-compose.yml` runs the same image with its own Postgres, for a local
 run.
