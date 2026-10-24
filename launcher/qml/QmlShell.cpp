@@ -120,9 +120,10 @@ bool languageSetupStepNeeded(const QString& language)
 	return language.isEmpty();
 }
 
-bool javaSetupStepNeeded(bool hostnameChanged, bool javaPathResolves)
+bool javaSetupStepNeeded(bool hostnameChanged, bool javaPathResolves,
+						 bool autoDownload)
 {
-	return hostnameChanged || !javaPathResolves;
+	return hostnameChanged || (!javaPathResolves && !autoDownload);
 }
 
 QmlShell::QmlShell(QObject* parent) : QObject(parent)
@@ -662,7 +663,8 @@ void QmlShell::recomputeSetupSteps()
 	if (languageSetupStepNeeded(settings->get("Language").toString())) {
 		steps << QStringLiteral("language");
 	}
-	if (javaSetupStepNeeded(hostnameChanged, javaPathResolves)) {
+	if (javaSetupStepNeeded(hostnameChanged, javaPathResolves,
+							settings->get("JavaAutoDownload").toBool())) {
 		steps << QStringLiteral("java");
 	}
 

@@ -188,10 +188,14 @@ public class ModernLauncher implements Kite
         // Let the game process inherit the working directory from us (set by LauncherPartLaunch)
         pb.directory(null);
 
-        // Set JAVA_HOME so the game and any native launchers can locate Java correctly
+        // Set JAVA_HOME so the game and any native launchers can locate Java correctly,
+        // but only when the binary sits in a Java installation (one has a "release"
+        // file). macOS's /usr/bin/java is a stub that runs $JAVA_HOME/bin/java: with
+        // JAVA_HOME=/usr it runs itself over and over and the game never starts.
         File javaFile = new File(javaPath);
         File javaParent = javaFile.getParentFile();
-        if (javaParent != null && javaParent.getParentFile() != null)
+        if (javaParent != null && javaParent.getParentFile() != null
+            && new File(javaParent.getParentFile(), "release").isFile())
         {
             pb.environment().put("JAVA_HOME", javaParent.getParent());
         }

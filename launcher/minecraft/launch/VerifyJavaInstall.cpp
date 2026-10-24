@@ -23,11 +23,16 @@
 #include <QDir>
 #include <QDirIterator>
 #include <QFileInfo>
+#include <QHash>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QProcess>
 #include <QRegularExpression>
+#include <QStandardPaths>
+#include <QSysInfo>
+
+#include <tuple>
 
 #include <launch/LaunchTask.h>
 #include <minecraft/MinecraftInstance.h>
@@ -54,7 +59,13 @@
 
 namespace
 {
-	std::optional<JavaVersion> probeJavaVersion(const QString& javaPath)
+	struct ProbedJava
+	{
+		JavaVersion version;
+		QString arch; // os.arch, as the JVM reports it
+	};
+
+	std::optional<ProbedJava> probeJava(const QString& javaPath)
 	{
 		const auto checkerJar =
 			FS::PathCombine(LAUNCHER->getJarsPath(), "JavaCheck.jar");
@@ -78,15 +89,44 @@ namespace
 		const auto stdoutData =
 			QString::fromLocal8Bit(process.readAllStandardOutput());
 		const auto lines = stdoutData.split('\n', Qt::SkipEmptyParts);
+		QString version;
+		QString arch;
 		for (const auto& rawLine : lines) {
 			const auto line = rawLine.trimmed();
-			if (!line.startsWith("java.version=")) {
-				continue;
+			if (line.startsWith("java.version=")) {
+				version = line.mid(QString("java.version=").size());
+			} else if (line.startsWith("os.arch=")) {
+				arch = line.mid(QString("os.arch=").size());
 			}
-			return JavaVersion(line.mid(QString("java.version=").size()));
 		}
+		if (version.isEmpty()) {
+			return std::nullopt;
+		}
+		return ProbedJava{JavaVersion(version), arch};
+	}
 
-		return std::nullopt;
+	// Whether a JVM that reports os.arch @p arch runs natively for the
+	// architecture Kite was built for, the one its Java downloads are for
+	// too. On an Apple Silicon Mac an x86_64 Java only runs under Rosetta.
+	bool runsNatively(const QString& arch)
+	{
+		static const QHash<QString, QString> javaToQt = {
+			{"aarch64", "arm64"},
+			{"amd64", "x86_64"},
+			{"x86", "i386"},
+			{"i686", "i386"},
+		};
+		return javaToQt.value(arch, arch) == QSysInfo::buildCpuArchitecture();
+	}
+
+	// Whether @p javaBinary sits in a Java installation (<home>/bin/java,
+	// with the "release" file every JDK and JRE has in <home>) rather than
+	// being a stub or a link elsewhere.
+	bool isJavaInstallation(const QString& javaBinary)
+	{
+		return QFileInfo(QDir(QFileInfo(javaBinary).absolutePath())
+							 .filePath(QStringLiteral("../release")))
+			.isFile();
 	}
 } // namespace
 
@@ -120,24 +160,43 @@ QString VerifyJavaInstall::javaInstallDir() const
 	return JavaUtils::managedJavaRoot();
 }
 
-QString VerifyJavaInstall::findInstalledJava(int requiredMajor) const
+VerifyJavaInstall::InstalledJava
+VerifyJavaInstall::findInstalledJava(int requiredMajor) const
 {
 	JavaUtils javaUtils;
 	QList<QString> systemJavas = javaUtils.FindJavaPaths();
 	QSet<QString> seenPaths;
+	// The closest major at or above the requirement, not the first one
+	// found: with Java 17 and 25 installed, 1.20.4 gets 17. Between two of
+	// the same major, one that runs natively comes first -- but never before
+	// a closer major: an x86_64 Java under Rosetta can load the natives of
+	// every Minecraft version, an arm64 one only those of 1.19 and later.
+	// Then one inside a Java installation comes before a stub like macOS's
+	// /usr/bin/java, which runs whichever Java is newest and so can change
+	// under the version recorded for it.
+	InstalledJava best;
+	std::tuple<int, bool, bool> bestRank; // lower is better
 	for (const QString& javaPath : systemJavas) {
 		QString resolved = FS::ResolveExecutable(javaPath);
 		if (resolved.isEmpty() || seenPaths.contains(resolved))
 			continue;
 
 		seenPaths.insert(resolved);
-		const auto version = probeJavaVersion(resolved);
-		if (version.has_value() && version->major() >= requiredMajor) {
-			return resolved;
+		const auto probed = probeJava(resolved);
+		if (!probed.has_value() || probed->version.major() < requiredMajor)
+			continue;
+		const int major = probed->version.major();
+		const auto rank = std::make_tuple(major, !runsNatively(probed->arch),
+										  !isJavaInstallation(resolved));
+		if (best.path.isEmpty() || rank < bestRank) {
+			best = {resolved, major};
+			bestRank = rank;
+			if (rank == std::make_tuple(requiredMajor, false, false))
+				break;
 		}
 	}
 
-	return {};
+	return best;
 }
 
 void VerifyJavaInstall::executeTask()
@@ -147,44 +206,63 @@ void VerifyJavaInstall::executeTask()
 
 	auto javaVersion = m_inst->getJavaVersion();
 	int requiredMajor = determineRequiredJavaMajor();
+	// CheckJava lets a launch through with no usable Java when none is set
+	// up (the welcome screen's "let Kite download the right version"), so a
+	// recorded version alone does not mean there is a Java to run.
+	const bool javaPathResolves =
+		!QStandardPaths::findExecutable(
+			 FS::ResolveExecutable(
+				 m_inst->settings()->get("JavaPath").toString()))
+			 .isEmpty();
 
 	// No Java requirement or already met
-	if (requiredMajor == 0 || javaVersion.major() >= requiredMajor) {
+	if (javaPathResolves &&
+		(requiredMajor == 0 || javaVersion.major() >= requiredMajor)) {
 		emitSucceeded();
 		return;
 	}
 
-	// Java version insufficient — try to find an already-downloaded one
-	emit logLine(
-		tr("Current Java version %1 does not meet the requirement of Java %2.")
-			.arg(javaVersion.toString())
-			.arg(requiredMajor),
-		MessageLevel::Warning);
+	if (javaPathResolves) {
+		// Java version insufficient — try to find an already-downloaded one
+		emit logLine(tr("Current Java version %1 does not meet the "
+						"requirement of Java %2.")
+						 .arg(javaVersion.toString())
+						 .arg(requiredMajor),
+					 MessageLevel::Warning);
+	} else {
+		// Minecraft before 1.12 states no requirement; it runs on Java 8.
+		if (requiredMajor == 0) {
+			requiredMajor = 8;
+		}
+		emit logLine(
+			tr("No Java is set up. Looking for Java %1.").arg(requiredMajor),
+			MessageLevel::Kite);
+	}
 
-	QString existingJava = findInstalledJava(requiredMajor);
-	if (!existingJava.isEmpty()) {
+	const auto existingJava = findInstalledJava(requiredMajor);
+	// With no Java set up, each version gets the major it asks for, the way
+	// the official launcher does it, and that major is downloaded when it is
+	// not installed. A newer one is not enough for old versions: the
+	// LaunchWrapper of Forge up to 1.12.2 does not run on Java 9 and later.
+	// An installed newer one is still used if no download works out.
+	if (!existingJava.path.isEmpty() &&
+		(javaPathResolves || existingJava.major == requiredMajor)) {
 		emit logLine(tr("Found installed Java %1 at: %2")
-						 .arg(requiredMajor)
-						 .arg(existingJava),
+						 .arg(existingJava.major)
+						 .arg(existingJava.path),
 					 MessageLevel::Kite);
-#ifndef Kite_DISABLE_JAVA_DOWNLOADER
-		setJavaPathAndSucceed(existingJava);
-#else
-		m_inst->settings()->set("OverrideJavaLocation", true);
-		m_inst->settings()->set("JavaPath", existingJava);
-		emit logLine(tr("Java path set to: %1").arg(existingJava),
-					 MessageLevel::Kite);
-		emitSucceeded();
-#endif
+		setJavaPathAndSucceed(existingJava.path);
 		return;
 	}
+	m_fallbackJava = existingJava;
 
 #ifndef Kite_DISABLE_JAVA_DOWNLOADER
 	// Check runtime setting for auto-download
 	if (!m_inst->settings()->get("JavaAutoDownload").toBool()) {
-		emitFailed(tr("Java %1 is required but not installed. Automatic Java "
-					  "download is disabled.")
-					   .arg(requiredMajor));
+		failOrUseFallback(
+			tr("Java %1 is required but not installed. Automatic Java "
+			   "download is disabled.")
+				.arg(requiredMajor));
 		return;
 	}
 	// Not found — auto-download
@@ -193,7 +271,7 @@ void VerifyJavaInstall::executeTask()
 		MessageLevel::Kite);
 	autoDownloadJava(requiredMajor);
 #else
-	emitFailed(
+	failOrUseFallback(
 		tr("Java %1 is required but not installed. Please install it manually.")
 			.arg(requiredMajor));
 #endif
@@ -235,13 +313,13 @@ void VerifyJavaInstall::fetchVersionList(int requiredMajor)
 			try {
 				doc = Json::requireDocument(m_fetchData);
 			} catch (const Exception& e) {
-				emitFailed(
+				failOrUseFallback(
 					tr("Failed to parse Java version list from meta server: %1")
 						.arg(e.cause()));
 				return;
 			}
 			if (!doc.isObject()) {
-				emitFailed(
+				failOrUseFallback(
 					tr("Failed to parse Java version list from meta server."));
 				return;
 			}
@@ -260,19 +338,21 @@ void VerifyJavaInstall::fetchVersionList(int requiredMajor)
 			}
 
 			if (!found) {
-				emitFailed(tr("Java %1 is not available for download from the "
-							  "selected vendor. Please install it manually or "
-							  "try a different vendor in settings.")
-							   .arg(requiredMajor));
+				failOrUseFallback(
+					tr("Java %1 is not available for download from the "
+					   "selected vendor. Please install it manually or "
+					   "try a different vendor in settings.")
+						.arg(requiredMajor));
 			}
 		});
 
 	connect(m_fetchJob.get(), &NetJob::failed, this,
 			[this, requiredMajor](QString reason) {
-				emitFailed(tr("Failed to fetch Java version list: %1. Please "
-							  "install Java %2 manually.")
-							   .arg(reason)
-							   .arg(requiredMajor));
+				failOrUseFallback(
+					tr("Failed to fetch Java version list: %1. Please "
+					   "install Java %2 manually.")
+						.arg(reason)
+						.arg(requiredMajor));
 				m_fetchJob.reset();
 			});
 
@@ -300,12 +380,14 @@ void VerifyJavaInstall::fetchRuntimes(const QString& versionId,
 				try {
 					doc = Json::requireDocument(m_fetchData);
 				} catch (const Exception& e) {
-					emitFailed(tr("Failed to parse Java runtime details: %1")
-								   .arg(e.cause()));
+					failOrUseFallback(
+						tr("Failed to parse Java runtime details: %1")
+							.arg(e.cause()));
 					return;
 				}
 				if (!doc.isObject()) {
-					emitFailed(tr("Failed to parse Java runtime details."));
+					failOrUseFallback(
+						tr("Failed to parse Java runtime details."));
 					return;
 				}
 
@@ -323,14 +405,16 @@ void VerifyJavaInstall::fetchRuntimes(const QString& versionId,
 					}
 				}
 
-				emitFailed(tr("No Java %1 download available for your platform "
-							  "(%2). Please install it manually.")
-							   .arg(requiredMajor)
-							   .arg(myOS));
+				failOrUseFallback(
+					tr("No Java %1 download available for your platform "
+					   "(%2). Please install it manually.")
+						.arg(requiredMajor)
+						.arg(myOS));
 			});
 
 	connect(m_fetchJob.get(), &NetJob::failed, this, [this](QString reason) {
-		emitFailed(tr("Failed to fetch Java runtime details: %1").arg(reason));
+		failOrUseFallback(
+			tr("Failed to fetch Java runtime details: %1").arg(reason));
 		m_fetchJob.reset();
 	});
 
@@ -352,7 +436,7 @@ void VerifyJavaInstall::startDownload(const JavaDownload::RuntimeEntry& runtime,
 		QString javaPath = m_downloadTask->installedJavaPath();
 
 		if (javaPath.isEmpty()) {
-			emitFailed(
+			failOrUseFallback(
 				tr("Java was downloaded but the binary could not be found."));
 			return;
 		}
@@ -364,9 +448,9 @@ void VerifyJavaInstall::startDownload(const JavaDownload::RuntimeEntry& runtime,
 
 	connect(m_downloadTask.get(), &Task::failed, this,
 			[this, requiredMajor](const QString& reason) {
-				emitFailed(tr("Failed to download Java %1: %2")
-							   .arg(requiredMajor)
-							   .arg(reason));
+				failOrUseFallback(tr("Failed to download Java %1: %2")
+									  .arg(requiredMajor)
+									  .arg(reason));
 				m_downloadTask.reset();
 			});
 
@@ -378,6 +462,22 @@ void VerifyJavaInstall::startDownload(const JavaDownload::RuntimeEntry& runtime,
 	m_downloadTask->start();
 }
 
+#endif
+
+void VerifyJavaInstall::failOrUseFallback(const QString& reason)
+{
+	if (m_fallbackJava.path.isEmpty()) {
+		emitFailed(reason);
+		return;
+	}
+	emit logLine(reason, MessageLevel::Warning);
+	emit logLine(tr("Using the installed Java %1 at %2 instead.")
+					 .arg(m_fallbackJava.major)
+					 .arg(m_fallbackJava.path),
+				 MessageLevel::Kite);
+	setJavaPathAndSucceed(m_fallbackJava.path);
+}
+
 void VerifyJavaInstall::setJavaPathAndSucceed(const QString& javaPath)
 {
 	auto m_inst =
@@ -387,6 +487,31 @@ void VerifyJavaInstall::setJavaPathAndSucceed(const QString& javaPath)
 	m_inst->settings()->set("JavaPath", javaPath);
 	emit logLine(tr("Java path set to: %1").arg(javaPath),
 				 MessageLevel::Kite);
-	emitSucceeded();
+
+	// What CheckJava records for a Java it checks, recorded for this one
+	// too: the native libraries and the classpath follow the architecture,
+	// and the JVM arguments follow the version (an unknown one adds
+	// -XX:PermSize, which modern Java refuses to start with). Without this
+	// they would still describe the Java used before, or none at all.
+	m_javaChecker = new JavaChecker();
+	m_javaChecker->m_path = javaPath;
+	connect(m_javaChecker.get(), &JavaChecker::checkFinished, this,
+			[this, javaPath](JavaCheckResult result) {
+				m_javaChecker.reset();
+				if (result.validity != JavaCheckResult::Validity::Valid) {
+					emitFailed(tr("Could not start the Java at %1.")
+								   .arg(javaPath));
+					return;
+				}
+				auto settings = m_parent->instance()->settings();
+				settings->set("JavaVersion", result.javaVersion.toString());
+				settings->set("JavaArchitecture", result.mojangPlatform);
+				settings->set("JavaVendor", result.javaVendor);
+				settings->set("JavaTimestamp",
+							  QFileInfo(javaPath)
+								  .lastModified()
+								  .toMSecsSinceEpoch());
+				emitSucceeded();
+			});
+	m_javaChecker->performCheck();
 }
-#endif

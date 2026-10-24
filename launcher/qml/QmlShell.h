@@ -82,10 +82,14 @@ bool languageSetupStepNeeded(const QString& language);
  * "LastHostname" setting recorded on a previous run -- same trigger the
  * widget wizard used (a new machine, or a rename, may mean Java moved or
  * vanished). @p javaPathResolves: FS::ResolveExecutable() on the "JavaPath"
- * setting found something. Callers compute both against live state; this
- * function only combines them, so it needs neither Qt network calls
+ * setting found something. @p autoDownload: the "JavaAutoDownload" setting.
+ * With it on, no Java path is a choice the step itself offers ("let Kite
+ * download the right version for each game"), so a missing path alone does
+ * not bring the step back. Callers compute all three against live state;
+ * this function only combines them, so it needs neither Qt network calls
  * (QHostInfo) nor filesystem access to test. */
-bool javaSetupStepNeeded(bool hostnameChanged, bool javaPathResolves);
+bool javaSetupStepNeeded(bool hostnameChanged, bool javaPathResolves,
+						 bool autoDownload);
 
 /*
  * The QML user interface: owns the engine, hands the core's models to it and

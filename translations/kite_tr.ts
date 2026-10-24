@@ -3036,14 +3036,14 @@ The author may have blocked third-party launchers, or there may be no build for 
 <context>
     <name>CrashReportDialog</name>
     <message>
-        <location filename="../launcher/crashreporter/CrashReportDialog.cpp" line="+40"/>
+        <location filename="../launcher/crashreporter/CrashReportDialog.cpp" line="+93"/>
         <source>Kite Crash Report</source>
         <translation>Kite çökme raporu</translation>
     </message>
     <message>
         <location line="+8"/>
-        <source>&lt;h2 style=&apos;color: #cc0000;&apos;&gt;Kite has failed&lt;/h2&gt;&lt;p&gt;An unexpected error occurred and Kite had to close.&lt;/p&gt;&lt;p&gt;Your logs have been uploaded to paste.ee for troubleshooting.&lt;/p&gt;</source>
-        <translation>&lt;h2 style=&apos;color: #cc0000;&apos;&gt;Kite çöktü&lt;/h2&gt;&lt;p&gt;Beklenmeyen bir hata oluştu ve Kite&apos;ın kapanması gerekti.&lt;/p&gt;&lt;p&gt;Sorunu incelemek için günlüklerin paste.ee&apos;ye yüklendi.&lt;/p&gt;</translation>
+        <source>&lt;h2 style=&apos;color: #cc0000;&apos;&gt;Kite has failed&lt;/h2&gt;&lt;p&gt;An unexpected error occurred and Kite had to close.&lt;/p&gt;&lt;p&gt;As you chose, your log was uploaded to paste.ee for troubleshooting.&lt;/p&gt;</source>
+        <translation>&lt;h2 style=&apos;color: #cc0000;&apos;&gt;Kite çöktü&lt;/h2&gt;&lt;p&gt;Beklenmeyen bir hata oluştu ve Kite&apos;ın kapanması gerekti.&lt;/p&gt;&lt;p&gt;Seçtiğin gibi, sorunu incelemek için günlüğün paste.ee&apos;ye yüklendi.&lt;/p&gt;</translation>
     </message>
     <message>
         <location line="+9"/>
@@ -3092,6 +3092,34 @@ The author may have blocked third-party launchers, or there may be no build for 
         <location line="+5"/>
         <source>Close</source>
         <translation>Kapat</translation>
+    </message>
+</context>
+<context>
+    <name>CrashUploadPromptDialog</name>
+    <message>
+        <location line="-137"/>
+        <source>Kite Crash Report</source>
+        <translation>Kite çökme raporu</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>&lt;h2&gt;Kite has failed&lt;/h2&gt;&lt;p&gt;An unexpected error occurred and Kite had to close.&lt;/p&gt;&lt;p&gt;Would you like to upload the log below to paste.ee so the problem can be looked into? Nothing is sent unless you choose Upload. Anyone who has the link will be able to read it.&lt;/p&gt;&lt;p&gt;Tokens, UUIDs and your home folder path have been removed. Other text, such as your player name, instance names and mod lists, is still in the log: read it first.&lt;/p&gt;</source>
+        <translation>&lt;h2&gt;Kite çöktü&lt;/h2&gt;&lt;p&gt;Beklenmeyen bir hata oluştu ve Kite&apos;ın kapanması gerekti.&lt;/p&gt;&lt;p&gt;Sorunun incelenebilmesi için aşağıdaki günlüğü paste.ee&apos;ye yüklemek ister misin? Yükle&apos;yi seçmedikçe hiçbir şey gönderilmez. Bağlantısı olan herkes günlüğü okuyabilir.&lt;/p&gt;&lt;p&gt;Token&apos;lar, UUID&apos;ler ve ana klasörünün yolu çıkarıldı. Oyuncu adın, kurulum adları ve mod listeleri gibi diğer bilgiler günlükte duruyor: önce bir oku.&lt;/p&gt;</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>The full log stays on your computer at: %1</source>
+        <translation>Günlüğün tamamı bilgisayarında şurada duruyor: %1</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Don&apos;t upload</source>
+        <translation>Yükleme</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Upload</source>
+        <translation>Yükle</translation>
     </message>
 </context>
 <context>
@@ -3527,7 +3555,7 @@ The author may have blocked third-party launchers, or there may be no build for 
         <translation>Herhangi bir yükleyici</translation>
     </message>
     <message>
-        <location line="+115"/>
+        <location line="+113"/>
         <source>Browse modpacks on</source>
         <translation>Mod paketlerine göz atma kaynağı</translation>
     </message>
@@ -5639,7 +5667,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeJumpCard</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeJumpCard.qml" line="+192"/>
+        <location filename="../launcher/qml/Components/HomeJumpCard.qml" line="+193"/>
         <source>New</source>
         <translation>Yeni</translation>
     </message>
@@ -5688,7 +5716,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomePage</name>
     <message>
-        <location filename="../launcher/qml/Components/HomePage.qml" line="+215"/>
+        <location filename="../launcher/qml/Components/HomePage.qml" line="+216"/>
         <source>Library</source>
         <translation>Kütüphane</translation>
     </message>
@@ -5926,7 +5954,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceCard</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceCard.qml" line="+246"/>
+        <location filename="../launcher/qml/Components/InstanceCard.qml" line="+248"/>
         <source>Starting…</source>
         <translation>Başlıyor…</translation>
     </message>
@@ -6427,7 +6455,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstanceListRow</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceListRow.qml" line="+222"/>
+        <location filename="../launcher/qml/Components/InstanceListRow.qml" line="+223"/>
         <source>%1%</source>
         <translation>%1%</translation>
     </message>
@@ -9568,7 +9596,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+262"/>
+        <location filename="../launcher/qml/Main.qml" line="+277"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -9578,21 +9606,21 @@ Neden:
         <translation>Oynamak için Minecraft&apos;a sahip Microsoft hesabıyla giriş yap.</translation>
     </message>
     <message>
-        <location line="+137"/>
+        <location line="+152"/>
         <source>Delete “%1”? Its folder — worlds, mods, screenshots — is removed for good.</source>
         <translation>“%1” silinsin mi? Klasörü (dünyalar, modlar, ekran görüntüleri) tamamen kaldırılır.</translation>
     </message>
     <message>
         <location line="+64"/>
-        <location line="+66"/>
+        <location line="+67"/>
         <location line="+12"/>
         <location line="+0"/>
         <source>Home</source>
         <translation>Ana sayfa</translation>
     </message>
     <message>
-        <location line="-77"/>
-        <location line="+67"/>
+        <location line="-78"/>
+        <location line="+68"/>
         <source>Discover</source>
         <translation>Keşfet</translation>
     </message>
@@ -9633,7 +9661,7 @@ Neden:
         <translation>Yeni kurulum</translation>
     </message>
     <message>
-        <location line="+303"/>
+        <location line="+336"/>
         <source>Rename instance</source>
         <translation>Kurulumu yeniden adlandır</translation>
     </message>
@@ -9648,7 +9676,7 @@ Neden:
         <translation>Bu ad kullanılamaz.</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+10"/>
         <source>Move to group</source>
         <translation>Gruba taşı</translation>
     </message>
@@ -9668,7 +9696,7 @@ Neden:
         <translation>Taşı</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+14"/>
         <location line="+1"/>
         <source>Delete instance</source>
         <translation>Kurulumu sil</translation>
@@ -12234,7 +12262,7 @@ Are you sure?</source>
 <context>
     <name>ModHealthModel</name>
     <message>
-        <location filename="../launcher/models/ModHealthModel.cpp" line="+279"/>
+        <location filename="../launcher/models/ModHealthText.cpp" line="+59"/>
         <source>Minecraft</source>
         <translation>Minecraft</translation>
     </message>
@@ -14079,13 +14107,13 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Oyna çubuğu</translation>
     </message>
     <message>
-        <location line="+130"/>
+        <location line="+133"/>
         <source>Change instance: %1</source>
         <translation>Kurulumu değiştir: %1</translation>
     </message>
     <message>
         <location line="+0"/>
-        <location line="+57"/>
+        <location line="+63"/>
         <source>Choose an instance</source>
         <translation>Bir kurulum seç</translation>
     </message>
@@ -15794,7 +15822,7 @@ What should happen to %1?</source>
 <context>
     <name>QmlShell</name>
     <message>
-        <location filename="../launcher/qml/QmlShell.cpp" line="+463"/>
+        <location filename="../launcher/qml/QmlShell.cpp" line="+464"/>
         <source>Choose an account</source>
         <translation>Bir hesap seç</translation>
     </message>
@@ -15925,7 +15953,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
 <context>
     <name>RecentItem</name>
     <message>
-        <location filename="../launcher/qml/Components/RecentItem.qml" line="+160"/>
+        <location filename="../launcher/qml/Components/RecentItem.qml" line="+178"/>
         <source>Play</source>
         <translation>Oyna</translation>
     </message>
@@ -16636,7 +16664,12 @@ Currently installed version: %1</source>
         <translation>Çalıştırdığın sürüm, yardım alacağın yerler, Kite&apos;ın arkasındaki kişiler ve lisanslar.</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+4"/>
+        <source>Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.</source>
+        <translation>Resmî bir Minecraft ürünü değildir. Mojang veya Microsoft tarafından onaylanmamıştır ve onlarla bağlantılı değildir.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
         <source>Version</source>
         <translation>Sürüm</translation>
     </message>
@@ -17777,7 +17810,7 @@ Currently installed version: %1</source>
         <translation>Kenar çubuğunu daralt</translation>
     </message>
     <message>
-        <location line="+251"/>
+        <location line="+263"/>
         <source>New instance</source>
         <translation>Yeni kurulum</translation>
     </message>
@@ -18960,28 +18993,32 @@ inheritsFrom eksik</translation>
 <context>
     <name>VerifyJavaInstall</name>
     <message>
-        <location filename="../launcher/minecraft/launch/VerifyJavaInstall.cpp" line="+159"/>
+        <location filename="../launcher/minecraft/launch/VerifyJavaInstall.cpp" line="+227"/>
         <source>Current Java version %1 does not meet the requirement of Java %2.</source>
         <translation>Mevcut Java sürümü %1, Java %2 gereksinimini karşılamıyor.</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+23"/>
         <source>Found installed Java %1 at: %2</source>
         <translation>Yüklü Java %1 bulundu: %2</translation>
     </message>
     <message>
-        <location line="+9"/>
-        <location line="+213"/>
+        <location line="+238"/>
         <source>Java path set to: %1</source>
         <translation>Java yolu şuna ayarlandı: %1</translation>
     </message>
     <message>
-        <location line="-203"/>
+        <location line="-225"/>
         <source>Java %1 is required but not installed. Automatic Java download is disabled.</source>
         <translation>Java %1 gerekli ama yüklü değil. Otomatik Java indirme kapalı.</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="-25"/>
+        <source>No Java is set up. Looking for Java %1.</source>
+        <translation>Ayarlı bir Java yok. Java %1 aranıyor.</translation>
+    </message>
+    <message>
+        <location line="+32"/>
         <source>No installed Java %1 found. Downloading...</source>
         <translation>Yüklü Java %1 bulunamadı. İndiriliyor...</translation>
     </message>
@@ -19011,12 +19048,12 @@ inheritsFrom eksik</translation>
         <translation>Meta sunucusundan Java sürüm listesi ayrıştırılamadı.</translation>
     </message>
     <message>
-        <location line="+18"/>
+        <location line="+19"/>
         <source>Java %1 is not available for download from the selected vendor. Please install it manually or try a different vendor in settings.</source>
         <translation>Java %1, seçilen sağlayıcıdan indirilemiyor. Lütfen elle yükle ya da ayarlardan başka bir sağlayıcı dene.</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+10"/>
         <source>Failed to fetch Java version list: %1. Please install Java %2 manually.</source>
         <translation>Java sürüm listesi alınamadı: %1. Lütfen Java %2 sürümünü elle yükle.</translation>
     </message>
@@ -19026,12 +19063,12 @@ inheritsFrom eksik</translation>
         <translation>Java çalışma zamanı ayrıntılarını getir</translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="+13"/>
         <source>Failed to parse Java runtime details: %1</source>
         <translation>Java çalışma zamanı ayrıntıları ayrıştırılamadı: %1</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Failed to parse Java runtime details.</source>
         <translation>Java çalışma zamanı ayrıntıları ayrıştırılamadı.</translation>
     </message>
@@ -19041,12 +19078,12 @@ inheritsFrom eksik</translation>
         <translation>%1 (%2) indiriliyor...</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+9"/>
         <source>No Java %1 download available for your platform (%2). Please install it manually.</source>
         <translation>Platformun (%2) için indirilebilir Java %1 yok. Lütfen elle yükle.</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+8"/>
         <source>Failed to fetch Java runtime details: %1</source>
         <translation>Java çalışma zamanı ayrıntıları alınamadı: %1</translation>
     </message>
@@ -19064,6 +19101,16 @@ inheritsFrom eksik</translation>
         <location line="+7"/>
         <source>Failed to download Java %1: %2</source>
         <translation>Java %1 indirilemedi: %2</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <source>Using the installed Java %1 at %2 instead.</source>
+        <translation>Bunun yerine %2 konumundaki yüklü Java %1 kullanılıyor.</translation>
+    </message>
+    <message>
+        <location line="+28"/>
+        <source>Could not start the Java at %1.</source>
+        <translation>%1 konumundaki Java başlatılamadı.</translation>
     </message>
 </context>
 <context>
@@ -20188,24 +20235,6 @@ Lütfen hesabını şuna göre ayarla: %1.</translation>
         <translation>XSTS kimlik doğrulaması tanınmayan hatalarla bitti:
 
 %1</translation>
-    </message>
-</context>
-<context>
-    <name>XboxProfileStep</name>
-    <message>
-        <location filename="../launcher/minecraft/auth/steps/XboxProfileStep.cpp" line="+37"/>
-        <source>Fetching Xbox profile.</source>
-        <translation>Xbox profili alınıyor.</translation>
-    </message>
-    <message>
-        <location line="+51"/>
-        <source>Failed to retrieve the Xbox profile.</source>
-        <translation>Xbox profili alınamadı.</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>Got Xbox profile</source>
-        <translation>Xbox profili alındı</translation>
     </message>
 </context>
 <context>
