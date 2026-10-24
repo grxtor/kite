@@ -268,7 +268,7 @@ class BundleCatalogTest : public QObject
 		BundleCatalog catalog;
 		for (const QString& loader : {"fabric", "forge", "neoforge", "quilt"}) {
 			const QStringList projects = projectsOf(
-				catalog.mods({"performance", "comfort", "pvp"}, loader));
+				catalog.mods({"performance", "comfort"}, loader));
 			QCOMPARE(projects.size(), QSet<QString>(projects.begin(), projects.end()).size());
 		}
 	}

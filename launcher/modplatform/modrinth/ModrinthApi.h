@@ -105,6 +105,11 @@ class ModrinthApi final : public ModPlatform::ContentApi
 	 * lookup. Answers with the same version object as versionUrl(). */
 	static QUrl versionByHashUrl(const QString& sha1);
 
+	/* The same question for many files at once: POST {"hashes": [...],
+	 * "algorithm": "sha1"} and get back a map from each hash that is known
+	 * to its version object. */
+	static QUrl versionsByHashesUrl();
+
 	/* Project versions restricted to an explicit set of loaders. Used
 	 * for modpack browsing, where any of the mod loaders will do. */
 	static QUrl projectVersionsUrlForLoaders(const QString& projectId,

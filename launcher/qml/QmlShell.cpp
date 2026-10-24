@@ -62,6 +62,8 @@
 #include "BuildConfig.h"
 #include "models/InstanceFilterModel.h"
 #include "models/NewInstanceController.h"
+#include "minecraft/PerformanceSetupRules.h"
+#include "minecraft/PerformanceSetupTask.h"
 #include "modplatform/BundleCatalog.h"
 #include "settings/Setting.h"
 #include "models/RecentWorldsModel.h"
@@ -294,6 +296,7 @@ QVariantMap QmlShell::launchOptions(const QString& id) const
 											? m_profilersProvider()
 											: QVariantList() },
 		{ QStringLiteral("accounts"), accounts },
+		{ QStringLiteral("performance"), minecraft && performanceEnabled(id) },
 	};
 }
 
@@ -303,6 +306,63 @@ void QmlShell::setInstanceProfiler(const QString& id,
 	if (auto instance = LAUNCHER->instances()->getInstanceById(id)) {
 		instance->setProfilerKey(profilerKey);
 	}
+}
+
+static std::shared_ptr<MinecraftInstance>
+minecraftInstanceById(const QString& id)
+{
+	return std::dynamic_pointer_cast<MinecraftInstance>(
+		LAUNCHER->instances()->getInstanceById(id));
+}
+
+bool QmlShell::performanceEnabled(const QString& id) const
+{
+	auto instance = minecraftInstanceById(id);
+	return instance && instance->settings()->get("KitePerformance").toBool();
+}
+
+void QmlShell::setPerformanceEnabled(const QString& id, bool on)
+{
+	if (auto instance = minecraftInstanceById(id)) {
+		instance->settings()->set("KitePerformance", on);
+		emit performanceChanged(id);
+	}
+}
+
+QStringList QmlShell::performanceExcluded(const QString& id) const
+{
+	auto instance = minecraftInstanceById(id);
+	return instance ? PerformanceSetup::parseExcluded(
+						  instance->settings()
+							  ->get("KitePerformanceExcluded")
+							  .toString())
+					: QStringList();
+}
+
+void QmlShell::setPerformanceExcluded(const QString& id,
+									  const QStringList& projects)
+{
+	if (auto instance = minecraftInstanceById(id)) {
+		instance->settings()->set("KitePerformanceExcluded",
+								  PerformanceSetup::joinExcluded(projects));
+		emit performanceChanged(id);
+	}
+}
+
+QObject* QmlShell::speedUp(const QString& id)
+{
+	auto instance = minecraftInstanceById(id);
+	if (!instance || instance->isRunning()) {
+		return nullptr;
+	}
+	instance->settings()->set("KitePerformance", true);
+	emit performanceChanged(id);
+
+	auto* task = new PerformanceSetupTask(instance);
+	auto* watcher = new TaskWatcher(Task::Ptr(task), this);
+	watcher->setTitle(tr("Kite Performance"));
+	task->start();
+	return expose(watcher);
 }
 
 void QmlShell::killInstance(const QString& id)

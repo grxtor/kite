@@ -390,6 +390,7 @@ class QmlShell : public QObject
 	 *   profiler      the instance's profiler key ("" for none)
 	 *   profilers     [{key, name, ready}] -- see setProfilersProvider()
 	 *   accounts      [{id, name, kind, isDefault}] for "Play as"
+	 *   performance   whether Kite Performance is on for the instance
 	 * Empty for an unknown id. */
 	Q_INVOKABLE QVariantMap launchOptions(const QString& id) const;
 	/* Sets instance @p id's profiler ("" for none), the setting every way
@@ -397,6 +398,23 @@ class QmlShell : public QObject
 	 * Starts nothing by itself. */
 	Q_INVOKABLE void setInstanceProfiler(const QString& id,
 										 const QString& profilerKey);
+	/* Kite Performance, a mode of one instance: while it is on, every Play
+	 * first makes sure the Performance bundle's default mods are installed
+	 * (adding Fabric to an instance with no loader), minus the projects in
+	 * performanceExcluded() (Modrinth project ids the player unticked).
+	 * The setters do nothing for an unknown or non-Minecraft id and tell
+	 * QML through performanceChanged(). */
+	Q_INVOKABLE bool performanceEnabled(const QString& id) const;
+	Q_INVOKABLE void setPerformanceEnabled(const QString& id, bool on);
+	Q_INVOKABLE QStringList performanceExcluded(const QString& id) const;
+	Q_INVOKABLE void setPerformanceExcluded(const QString& id,
+											const QStringList& projects);
+	/* "Speed up": turns the mode on and does the setup now. The TaskWatcher
+	 * of that setup, or null (and nothing changed) when the instance is
+	 * running or is not a Minecraft instance. The setup never fails; once
+	 * the watcher has finished, its `status` is a sentence saying what
+	 * was done, for a toast. */
+	Q_INVOKABLE QObject* speedUp(const QString& id);
 	Q_INVOKABLE void killInstance(const QString& id);
 	Q_INVOKABLE void openInstanceFolder(const QString& id);
 	/* Launches instance @p id straight into server @p address (host[:port]),
@@ -553,6 +571,9 @@ class QmlShell : public QObject
 	void launchModeRequested(const QString& id, const QString& mode);
 	void launchAsRequested(const QString& id, const QString& accountId);
 	void killRequested(const QString& id);
+	/// setPerformanceEnabled(), setPerformanceExcluded() or speedUp()
+	/// changed instance @p id's Kite Performance settings.
+	void performanceChanged(const QString& id);
 	void folderRequested(const QString& id);
 	void joinServerRequested(const QString& id, const QString& address);
 

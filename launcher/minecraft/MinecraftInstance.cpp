@@ -45,6 +45,7 @@
 #include "minecraft/launch/KitePartLaunch.h"
 #include "minecraft/launch/DirectJavaLaunch.h"
 #include "minecraft/launch/ModMinecraftJar.h"
+#include "minecraft/launch/PreparePerformance.h"
 #include "minecraft/launch/ClaimAccount.h"
 #include "minecraft/launch/ReconstructAssets.h"
 #include "minecraft/launch/ScanModFolders.h"
@@ -184,6 +185,13 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 	// Join server on launch, this does not have a global override
 	m_settings->registerSetting("JoinServerOnLaunch", false);
 	m_settings->registerSetting("JoinServerOnLaunchAddress", "");
+
+	/* Kite Performance: while on, Play makes sure the performance mods are
+	 * installed (PerformanceSetupTask). The excluded projects are the ones
+	 * the player unticked, as a comma-joined list of Modrinth project ids:
+	 * the config file stores strings, not lists. */
+	m_settings->registerSetting("KitePerformance", false);
+	m_settings->registerSetting("KitePerformanceExcluded", "");
 
 	/* Vanilla only ever reads data packs from saves/<world>/datapacks, so
 	 * an instance-wide folder is meaningless unless a loader such as Paxi
@@ -1093,6 +1101,11 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 		// Only a signed-in session has anything to claim.
 		if (!session->demo && session->status != AuthSession::PlayableOffline) {
 			process->appendStep(new ClaimAccount(pptr, session));
+		}
+		// The performance mods (and Fabric) land before the update, which
+		// then resolves the loader and downloads its libraries.
+		if (m_settings->get("KitePerformance").toBool()) {
+			process->appendStep(new PreparePerformance(pptr));
 		}
 		process->appendStep(new Update(pptr, Net::Mode::Online));
 	} else {

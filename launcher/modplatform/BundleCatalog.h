@@ -60,7 +60,8 @@ class BundleCatalog : public QObject
 
 	/// The mods of @p bundleIds, in catalog order, that exist for
 	/// @p loader (empty = vanilla, nothing): project, name, summary, bundle,
-	/// bundleName, category, categoryName, isDefault, serverSafe. A project
+	/// bundleName, category, categoryName, isDefault, serverSafe, icon (a URL,
+	/// "" when the catalog has none). A project
 	/// in several bundles is listed once, under the first.
 	Q_INVOKABLE QVariantList mods(const QStringList& bundleIds,
 								  const QString& loader) const;
@@ -77,9 +78,15 @@ class BundleCatalog : public QObject
 									 const QString& instanceId);
 
 	/// Sets the preset's memory and, if the instance has none yet, its
-	/// options.txt. Whether anything was applied.
+	/// options.txt, and turns Kite Performance on for a preset that has the
+	/// performance bundle. Whether anything was applied.
 	Q_INVOKABLE bool applyPresetDefaults(const QString& instanceId,
 										 const QString& presetId);
+
+	/// Replaces the catalog with the copy refresh() last downloaded, when
+	/// there is one and it is valid; no network. For code that wants the
+	/// current lists without showing them (the launch-time setup).
+	bool loadCached();
 
 	/// Asks meta.kiteclient.com for a newer catalog; once per run, silent
 	/// when there is none.

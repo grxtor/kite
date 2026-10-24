@@ -772,17 +772,7 @@ QStringList ContentUpdateController::installedProjects() const
 {
 	auto folder = m_lists ? m_lists->folderFor(QStringLiteral("mods")) : nullptr;
 	auto index = folder ? folder->metadataIndex() : nullptr;
-	QStringList projects;
-	if (!index) {
-		return projects;
-	}
-	for (const auto& entry : index->all()) {
-		if (entry.platform == ModrinthApi::get().id() &&
-			!entry.projectId.isEmpty()) {
-			projects.append(entry.projectId);
-		}
-	}
-	return projects;
+	return index ? index->projectIds(ModrinthApi::get().id()) : QStringList();
 }
 
 bool ContentUpdateController::hasOptiFine() const

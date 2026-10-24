@@ -403,6 +403,10 @@ set(MINECRAFT_SOURCES
     # Minecraft support
     minecraft/PresetDefaults.h
     minecraft/PresetDefaults.cpp
+    minecraft/PerformanceSetupRules.h
+    minecraft/PerformanceSetupRules.cpp
+    minecraft/PerformanceSetupTask.h
+    minecraft/PerformanceSetupTask.cpp
     minecraft/auth/AccountData.cpp
     minecraft/auth/AccountData.h
     minecraft/auth/AccountList.cpp
@@ -464,6 +468,8 @@ set(MINECRAFT_SOURCES
     minecraft/launch/KitePartLaunch.h
     minecraft/launch/MinecraftServerTarget.cpp
     minecraft/launch/MinecraftServerTarget.h
+    minecraft/launch/PreparePerformance.cpp
+    minecraft/launch/PreparePerformance.h
     minecraft/launch/PrintInstanceInfo.cpp
     minecraft/launch/PrintInstanceInfo.h
     minecraft/launch/ReconstructAssets.cpp
@@ -1831,6 +1837,13 @@ add_unit_test(BundleCatalog
 # keys a version reads, and that an existing options.txt is never replaced.
 add_unit_test(PresetDefaults
     SOURCES minecraft/PresetDefaults_test.cpp
+    LIBS Kite_core
+    )
+# Kite Performance's decisions: what is wanted given the catalog, the
+# exclusions and what is installed, which jars have no record, the hash
+# lookup's request and answer, and the stored exclusion list.
+add_unit_test(PerformanceSetupTask
+    SOURCES minecraft/PerformanceSetupTask_test.cpp
     LIBS Kite_core
     )
 # The mods tab's health list over made-up issues: one row per problem, the

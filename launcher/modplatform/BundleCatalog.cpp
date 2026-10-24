@@ -48,6 +48,7 @@ namespace
 	const QString kCatalogPath = QStringLiteral("kite/bundles.json");
 	const QString kTurkish = QStringLiteral("tr");
 	const QString kEnglish = QStringLiteral("en");
+	const QString kPerformanceBundle = QStringLiteral("performance");
 
 	bool hasText(const QJsonObject& object, const QString& key)
 	{
@@ -239,6 +240,7 @@ QVariantList BundleCatalog::mods(const QStringList& bundleIds,
 				{"categoryName", categoryNames.value(category)},
 				{"isDefault", mod.value("default").toBool()},
 				{"serverSafe", mod.value("serverSafe").toBool(true)},
+				{"icon", mod.value("icon").toString()},
 			});
 		}
 	}
@@ -308,6 +310,27 @@ bool BundleCatalog::applyPresetDefaults(const QString& instanceId,
 		options.insert(it.key(), it.value().toVariant().toString());
 	}
 	PresetDefaults::writeOptions(instance->gameRoot(), options);
+
+	if (preset.value("bundles").toArray().contains(kPerformanceBundle)) {
+		settings->set("KitePerformance", true);
+	}
+	return true;
+}
+
+bool BundleCatalog::loadCached()
+{
+	auto* context = LAUNCHER;
+	auto entry =
+		context ? context->metacache()->getEntry("general", kCatalogPath) : nullptr;
+	QFile file(entry ? entry->getFullPath() : QString());
+	QString error;
+	if (!entry || !file.open(QIODevice::ReadOnly)) {
+		return false;
+	}
+	if (!loadFromJson(file.readAll(), &error)) {
+		qCWarning(metaLog) << "Ignoring the cached bundle catalog:" << error;
+		return false;
+	}
 	return true;
 }
 
