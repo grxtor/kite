@@ -23,6 +23,7 @@
 #include <QIcon>
 #include <QImage>
 #include <QTemporaryDir>
+#include <QGuiApplication>
 #include <QTest>
 #include <QUrl>
 #include <QVariantMap>
@@ -234,6 +235,16 @@ class InstanceShortcutControllerTest : public QObject
 	}
 };
 
-QTEST_MAIN(InstanceShortcutControllerTest)
+int main(int argc, char* argv[])
+{
+	// QIcon and QImage need a QGuiApplication; offscreen keeps this runnable
+	// on a headless runner, as in GameTextureIcons_test.cpp.
+	qputenv("QT_QPA_PLATFORM", "offscreen");
+
+	QGuiApplication app(argc, argv);
+
+	InstanceShortcutControllerTest test;
+	return QTest::qExec(&test, argc, argv);
+}
 
 #include "InstanceShortcutController_test.moc"

@@ -6,9 +6,11 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
-// Off is a calm grey box, on is the accent with a white tick -- the toggle
-// grammar Switch and RadioButton share (phase-02 brief). No outline: the
-// grey fill is the box, the way Modrinth's own checkboxes read.
+// Off is an outlined box, on is the accent with a white tick -- the toggle
+// grammar Switch and RadioButton share (phase-02 brief). The outline is
+// borderStrong, not the hairline: a grey fill alone measured 1.4:1 (light)
+// and 1.5:1 (dark) against its surface, under the 3:1 a control's own shape
+// needs (WCAG 1.4.11).
 T.CheckBox {
     id: control
 
@@ -30,14 +32,16 @@ T.CheckBox {
         y: control.topPadding + (control.availableHeight - height) / 2
 
         // Checked/partially-checked share the accent fill; only Unchecked is
-        // the plain outlined surface, so this one flag decides both the fill
-        // colour below and which of the two overlay/tint strategies applies.
+        // the outlined box, so this one flag decides the fill, the outline
+        // and which of the two overlay/tint strategies applies.
         readonly property bool boxChecked: control.checkState !== Qt.Unchecked
 
         radius: Theme.radius.indicator
         color: box.boxChecked
             ? (control.down ? Theme.palette.accentPressed : control.hovered ? Theme.palette.accentHover : Theme.palette.accent)
-            : (control.down ? Theme.neutral.trackHover : control.hovered ? Theme.neutral.trackHover : Theme.neutral.track)
+            : (control.down || control.hovered ? Theme.neutral.track : "transparent")
+        border.width: box.boxChecked ? 0 : 1
+        border.color: control.hovered ? Theme.palette.textTertiary : Theme.palette.borderStrong
         opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         Behavior on color {

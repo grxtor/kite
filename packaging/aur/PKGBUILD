@@ -1,0 +1,42 @@
+# Maintainer: grxtor <https://github.com/grxtor>
+# Filled in and pushed to the AUR by .github/workflows/publish.yml.
+
+pkgname=kite-bin
+_tag=@TAG@
+pkgver=@VERSION@
+pkgrel=1
+pkgdesc='Minecraft launcher with multi-instance management'
+arch=('x86_64' 'aarch64')
+url='https://kiteclient.com'
+license=('Apache-2.0' 'LGPL-3.0-only' 'LGPL-2.1-only' 'OFL-1.1' 'MIT')
+optdepends=('java-runtime: run Minecraft with a system-wide Java'
+            'xdg-desktop-portal: native file pickers')
+provides=('kite')
+conflicts=('kite')
+# The tarball is a sharun bundle with its own Qt; leave its binaries alone.
+options=('!strip' '!debug')
+
+_release="https://github.com/grxtor/kite/releases/download/${_tag}"
+source_x86_64=("${_release}/Kite-Linux-Qt6-Portable-${_tag}.tar.gz")
+source_aarch64=("${_release}/Kite-Linux-aarch64-Qt6-Portable-${_tag}.tar.gz")
+noextract=("Kite-Linux-Qt6-Portable-${_tag}.tar.gz"
+           "Kite-Linux-aarch64-Qt6-Portable-${_tag}.tar.gz")
+sha256sums_x86_64=('@SHA256:Kite-Linux-Qt6-Portable-@TAG@.tar.gz@')
+sha256sums_aarch64=('@SHA256:Kite-Linux-aarch64-Qt6-Portable-@TAG@.tar.gz@')
+
+package() {
+  local tarball="${source_x86_64[0]##*/}"
+  [[ $CARCH == aarch64 ]] && tarball="${source_aarch64[0]##*/}"
+
+  install -d "$pkgdir/opt/kite" "$pkgdir/usr/bin" "$pkgdir/usr/share"
+  bsdtar -xf "$srcdir/$tarball" -C "$pkgdir/opt/kite"
+
+  # pacman updates Kite now. Without portable.txt the data goes to
+  # ~/.local/share/Kite, and without the updater the app stops offering
+  # updates of its own.
+  rm "$pkgdir/opt/kite/"{portable.txt,manifest.txt} "$pkgdir/opt/kite/bin/kite-updater"
+  ln -s /opt/kite/Kite "$pkgdir/usr/bin/kite"
+
+  # Copied, not moved: the bundle still looks for its files under /opt/kite.
+  cp -a "$pkgdir/opt/kite/share/"{applications,icons,metainfo,mime} "$pkgdir/usr/share/"
+}

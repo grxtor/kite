@@ -149,13 +149,16 @@ runs:
         ls -la "$INSTALL_APPIMAGE_DIR"
 
         if [[ "${{ github.ref_type }}" == "tag" ]]; then
-          APPIMAGE_DEST="Kite-Linux-$APPIMAGE_ARCH.AppImage"
+          # The name release.yml publishes. AppImageUpdate fetches both the
+          # .zsync named below and the AppImage the .zsync points at (this
+          # file's name), so neither may differ from the release asset.
+          APPIMAGE_DEST="Kite-Linux-Qt${{ inputs.qt-major }}-$APPIMAGE_ARCH.AppImage"
         else
           APPIMAGE_DEST="Kite-Linux-$VERSION-${{ inputs.build-type }}-$APPIMAGE_ARCH.AppImage"
         fi
 
         mkappimage \
-          --updateinformation "gh-releases-zsync|${{ github.repository_owner }}|${{ github.event.repository.name }}|latest|Kite-Linux-$APPIMAGE_ARCH.AppImage.zsync" \
+          --updateinformation "gh-releases-zsync|${{ github.repository_owner }}|${{ github.event.repository.name }}|latest|Kite-Linux-Qt${{ inputs.qt-major }}-$APPIMAGE_ARCH.AppImage.zsync" \
           "$INSTALL_APPIMAGE_DIR" \
           "$APPIMAGE_DEST"
 

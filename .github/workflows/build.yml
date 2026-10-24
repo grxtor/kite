@@ -4,14 +4,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Builds only run for a release (release.yml calls this on a tag push) or
+# when started by hand from the Actions tab.
 on:
-  push:
-    branches:
-      - 'develop'
-      - 'release-*'
-  merge_group:
-    types: [checks_requested]
-  pull_request:
   workflow_call:
     inputs:
       build-type:
@@ -48,17 +43,19 @@ jobs:
           - os: ubuntu-24.04
             artifact-name: Linux
             cmake-preset: linux
-            qt-version: 6.10.2
+            qt-version: 6.11.2
             qt-major: 6
             build-name: Linux x86_64 Qt6
 
           - os: ubuntu-24.04-arm
             artifact-name: Linux-aarch64
             cmake-preset: linux
-            qt-version: 6.10.2
+            qt-version: 6.11.2
             qt-major: 6
             build-name: Linux aarch64 Qt6
 
+          # Qt comes from MSYS2's packages here, not install-qt-action, so it
+          # follows whatever MSYS2 ships (6.12.0 in October 2026).
           - os: windows-2025
             artifact-name: Windows-MinGW-w64
             cmake-preset: windows_mingw
@@ -72,7 +69,7 @@ jobs:
             cmake-preset: windows_msvc
             # TODO(@YongDo-Hyun): This is the default in setup-dependencies/windows. Why isn't it working?!?!
             vcvars-arch: amd64
-            qt-version: 6.10.2
+            qt-version: 6.11.2
             qt-major: 6
             build-name: Windows MSVC x86_64 Qt6
 
@@ -80,23 +77,36 @@ jobs:
             artifact-name: Windows-MSVC-arm64
             cmake-preset: windows_msvc
             vcvars-arch: arm64
-            qt-version: 6.10.2
+            qt-version: 6.11.2
             qt-major: 6
             build-name: Windows MSVC aarch64 Qt6
 
           - os: macos-26-intel
             artifact-name: macOS-Intel
             cmake-preset: macos
+            # Qt 6.11 needs macOS 13 or later.
+            macosx-deployment-target: 13.0
+            qt-version: 6.11.2
+            qt-major: 6
+            build-name: macOS x86_64 Qt6
+
+          # For Intel Macs stuck on macOS 12, which Qt 6.11 no longer
+          # supports. Qt 6.9 gets no more fixes, so this stays a separate
+          # download rather than the default Intel build.
+          - os: macos-26-intel
+            artifact-name: macOS-Intel-Legacy
+            cmake-preset: macos
             macosx-deployment-target: 12.0
             qt-version: 6.9.3
             qt-major: 6
-            build-name: macOS x86_64 Qt6
+            build-name: macOS x86_64 Legacy Qt6
 
           - os: macos-26
             artifact-name: macOS-ARM
             cmake-preset: macos
-            macosx-deployment-target: 12.0
-            qt-version: 6.9.3
+            # Qt 6.11 needs macOS 13 or later.
+            macosx-deployment-target: 13.0
+            qt-version: 6.11.2
             qt-major: 6
             build-name: macOS aarch64 Qt6
 
@@ -145,11 +155,25 @@ jobs:
         run: |
           cmake --preset "$CMAKE_PRESET" -D VCPKG_HOST_TRIPLET="$VCPKG_TRIPLET" -D VCPKG_TARGET_TRIPLET="$VCPKG_TRIPLET" -DKite_QT_VERSION_MAJOR="$QT_MAJOR" -DKite_BUNDLE_OPENSSL_LIBS="${KITE_BUNDLE_OPENSSL_LIBS:-}"
 
+      # Configure is where vcpkg builds the dependencies; keep them even if
+      # the build or the tests fail later. An exact hit has nothing new.
+      - name: Save vcpkg binary cache
+        if: ${{ !cancelled() && steps.setup-dependencies.outputs.vcpkg-cache-key != '' && steps.setup-dependencies.outputs.vcpkg-cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ steps.setup-dependencies.outputs.vcpkg-cache-dir }}
+          key: ${{ steps.setup-dependencies.outputs.vcpkg-cache-key }}
+
       - name: Run build
         run: |
           cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
 
       - name: Run tests
+        env:
+          # On Windows a runner's tests have a console without a window, so
+          # Qt sends QtTest output to the debugger instead of ctest and a
+          # failure shows no FAIL! line. This puts it back on stderr.
+          QT_FORCE_STDERR_LOGGING: 1
         run: |
           ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" --output-on-failure
 

@@ -8,12 +8,10 @@ import Kite.Theme
 /*
  * The cat picture chosen in Settings > Appearance (the same packs the classic
  * window's background cat offers), sitting quietly in the bottom right
- * corner of the page area, where the 3D cat walks. A still picture: it never
- * takes a click, never moves and stays well back from the content.
+ * corner of the page area. A still picture: it never takes a click, never
+ * moves and stays well back from the content.
  *
  * Loaded by Main.qml over the page area, only while the TheCat setting is on.
- * Settings turns the 3D cat off when this is turned on, so the two do not
- * share the corner.
  */
 Item {
     id: root

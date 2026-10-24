@@ -58,12 +58,12 @@ AbstractButton {
     property int cornerRadius: Theme.radius.md
     property int iconAxis: Theme.space.md + Theme.icon.md / 2
     property int labelX: control.iconAxis + control.tileSize / 2 + Theme.space.sm
-    // The tile is a step bigger than a nav glyph: an instance icon is a
-    // picture and reads by its picture rather than by a line shape. The icon
-    // fills about 80 % of it, the share a card's cover gives its icon
-    // (designs/phase3-scale.md, decision 3).
-    readonly property int tileSize: Theme.control.heightSm
-    readonly property int pictureSize: Math.round(control.tileSize * 0.8)
+    // The tile nearly fills the rail's square: an instance icon is a picture
+    // and reads by its picture rather than by a line shape. The icon fills
+    // most of it, with a small corner, so the kite's cut and the rounding
+    // don't leave the tile looking empty around a small icon.
+    readonly property int tileSize: Theme.control.height
+    readonly property int pictureSize: Math.round(control.tileSize * 0.86)
 
     background: Rectangle {
         width: control.compact ? control.railSquare : control.width
@@ -89,7 +89,7 @@ AbstractButton {
             anchors.verticalCenter: parent.verticalCenter
             width: control.tileSize
             height: control.tileSize
-            radius: Theme.radius.md
+            radius: Theme.radius.sm
             color: Theme.palette.surfaceRaised
             borderWidth: 1
             borderColor: Theme.palette.border

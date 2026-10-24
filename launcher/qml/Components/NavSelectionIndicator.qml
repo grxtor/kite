@@ -97,27 +97,11 @@ Item {
         Behavior on height { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
     }
 
-    // The kite's nose: a small accent triangle filling the cut corner, a
-    // square turned 45 degrees and clipped to the corner. It rides with the
-    // shape, so it slides between rows too.
-    Item {
-        id: nose
-        readonly property int leg: 10
+    // The kite's nose (KiteNose) in the cut corner. It rides with the shape,
+    // so it slides between rows too.
+    KiteNose {
         visible: pill.visible
         x: pill.x + pill.width - leg
         y: pill.y
-        width: leg
-        height: leg
-        clip: true
-
-        Rectangle {
-            width: nose.leg * Math.SQRT2
-            height: width
-            x: nose.leg - width / 2
-            y: -height / 2
-            rotation: 45
-            antialiasing: true
-            color: Theme.palette.accent
-        }
     }
 }

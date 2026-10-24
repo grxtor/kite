@@ -25,12 +25,12 @@ add_subdirectory(Theme)
 add_subdirectory(Style)
 add_subdirectory(Components)
 
-# The roaming 3D cat, only when Qt Quick3D was found (see the top-level
+# The 3D skin preview, only when Qt Quick3D was found (see the top-level
 # CMakeLists.txt's find_package(... OPTIONAL_COMPONENTS Quick3D) and the
-# Kite_ENABLE_CAT option next to it). Kept out of the unconditional list
-# above so a Quick3D-less build never even sees Cat/'s CMakeLists.txt.
-if(Kite_ENABLE_CAT)
-    add_subdirectory(Cat)
+# Kite_ENABLE_SKIN3D option next to it). Kept out of the unconditional list
+# above so a Quick3D-less build never even sees Skin3D/'s CMakeLists.txt.
+if(Kite_ENABLE_SKIN3D)
+    add_subdirectory(Skin3D)
 endif()
 
 qt_add_library(Kite_qml STATIC)
@@ -81,14 +81,14 @@ target_link_libraries(Kite_qml PUBLIC
     Qt${QT_VERSION_MAJOR}::QuickControls2
 )
 
-# The cat's module and plugin, linked the same way as the three above, plus
-# the compile-time flag QmlShell.cpp reads to tell QML whether Main.qml's
-# catLoader has anything to load at all -- see QmlShell::rootProperties().
-# Both stay entirely out of a build with Kite_ENABLE_CAT off.
-if(Kite_ENABLE_CAT)
+# The 3D skin preview's module and plugin, linked the same way as the three
+# above, plus the compile-time flag QmlShell.cpp reads to tell QML whether
+# SkinPreview has a 3D view to load at all -- see QmlShell::rootProperties().
+# Both stay entirely out of a build with Kite_ENABLE_SKIN3D off.
+if(Kite_ENABLE_SKIN3D)
     target_link_libraries(Kite_qml PUBLIC
-        Kite_qml_cat
-        Kite_qml_catplugin
+        Kite_qml_skin3d
+        Kite_qml_skin3dplugin
     )
-    target_compile_definitions(Kite_qml PRIVATE KITE_HAS_CAT=1)
+    target_compile_definitions(Kite_qml PRIVATE KITE_HAS_SKIN3D=1)
 endif()

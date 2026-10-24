@@ -32,6 +32,15 @@ outputs:
   qt-version:
     description: Version of Qt used
     value: ${{ inputs.qt-version }}
+  vcpkg-cache-dir:
+    description: Directory holding vcpkg's binary cache
+    value: ${{ steps.vcpkg-cache-key.outputs.dir }}
+  vcpkg-cache-key:
+    description: Key to save vcpkg's binary cache under
+    value: ${{ steps.vcpkg-cache-key.outputs.key }}
+  vcpkg-cache-hit:
+    description: Whether the vcpkg binary cache was restored by its exact key
+    value: ${{ steps.vcpkg-cache.outputs.cache-hit }}
 
 runs:
   using: composite
@@ -115,14 +124,47 @@ runs:
         esac
 
         echo "VCPKG_TRIPLET=$vcpkg_arch-$vcpkg_platform" >> "$GITHUB_ENV"
+
+    # Without this vcpkg builds every dependency from source on every run,
+    # which on macOS (gpgme's autotools build, for both halves of the
+    # universal triplet) takes longer than building Kite. vcpkg names each
+    # cached package by its exact ABI hash, so restoring an older cache is
+    # safe: whatever no longer matches is rebuilt. build.yml saves the cache
+    # right after configuring, so a later failure does not lose it.
+    - name: Set up vcpkg binary cache
+      id: vcpkg-cache-key
+      shell: bash
+      run: |
+        dir='${{ runner.temp }}/vcpkg-binary-cache'
+        mkdir -p "$dir"
+        echo "VCPKG_BINARY_SOURCES=clear;files,$dir,readwrite" >> "$GITHUB_ENV"
+        echo "dir=$dir" >> "$GITHUB_OUTPUT"
+        echo "key=vcpkg[${{ inputs.artifact-name }}]-$ImageOS-$ImageVersion-$(git -C cmake/vcpkg rev-parse HEAD)-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'cmake/vcpkg-triplets/**', 'cmake/vcpkg-ports/**') }}" >> "$GITHUB_OUTPUT"
+
+    - name: Restore vcpkg binary cache
+      id: vcpkg-cache
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ steps.vcpkg-cache-key.outputs.dir }}
+        key: ${{ steps.vcpkg-cache-key.outputs.key }}
+        # Brackets, not a dash: "macOS-Intel-" is a prefix of
+        # "macOS-Intel-Legacy-", and vcpkg's ABI hash does not include the
+        # deployment target, so the two caches must never cross.
+        restore-keys: vcpkg[${{ inputs.artifact-name }}]-
     - name: Install Qt 6
       if: ${{ inputs.msystem == '' && inputs.qt-major == '6' }}
       uses: jurplel/install-qt-action@v4
       with:
-        aqtversion: "==3.1.*"
+        # Qt 6.11 moved its Windows x64 packages into per-compiler folders on
+        # download.qt.io. aqtinstall handles that since miurahr/aqtinstall#1000,
+        # but no release has it yet (3.3.0 is from June 2025), so this pins the
+        # master commit install-qt-action's maintainers point to for Qt 6.11 on
+        # Windows (jurplel/install-qt-action#374). Go back to `aqtversion` once
+        # a release after 3.3.0 is out.
+        aqtsource: "git+https://github.com/miurahr/aqtinstall.git@076e1659807d0b362a3ed684d54c2e9c775eb9c7"
         version: ${{ inputs.qt-version }}
-        # qtquick3d is the optional 3D cat companion's only extra Qt
-        # dependency (see launcher/qml/Cat/CMakeLists.txt); qtshadertools is
+        # qtquick3d is the optional 3D skin preview's only extra Qt
+        # dependency (see launcher/qml/Skin3D/CMakeLists.txt); qtshadertools is
         # listed alongside it because Quick3D bakes its shader variants
         # through it at runtime, not only at build time, so it has to be
         # present even though nothing here compiles a shader directly.

@@ -207,7 +207,7 @@ Dialog {
             Layout.fillHeight: true
             Layout.minimumHeight: root.previewMinHeight
             radius: Theme.radius.sm
-            color: Theme.palette.surfaceSunken
+            color: "transparent"
             border.width: 1
             border.color: Theme.palette.border
 

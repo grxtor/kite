@@ -101,6 +101,8 @@ class AssetMatcherTest : public QObject
 			QStringLiteral("Kite-macOS-Intel-Qt6-%1.dmg").arg(v),
 			QStringLiteral("Kite-macOS-ARM-Qt6-%1.zip").arg(v),
 			QStringLiteral("Kite-macOS-ARM-Qt6-%1.dmg").arg(v),
+			QStringLiteral("Kite-macOS-Intel-Legacy-Qt6-%1.zip").arg(v),
+			QStringLiteral("Kite-macOS-Intel-Legacy-Qt6-%1.dmg").arg(v),
 			QStringLiteral("Kite-%1.tar.gz").arg(v),
 		};
 	}
@@ -178,6 +180,7 @@ class AssetMatcherTest : public QObject
 			install(QStringLiteral("macOS-Intel-Qt5"), false, false, false),
 			install(QStringLiteral("macOS-Intel-Qt6"), false, false, false),
 			install(QStringLiteral("macOS-ARM-Qt6"), false, false, true),
+			install(QStringLiteral("macOS-Intel-Legacy-Qt6"), false, false, false),
 		};
 	}
 
@@ -284,6 +287,9 @@ class AssetMatcherTest : public QObject
 		QTest::newRow("macOS ARM Qt6")
 			<< "macOS-ARM-Qt6" << false << false << true
 			<< QStringLiteral("Kite-macOS-ARM-Qt6-%1.zip").arg(v);
+		QTest::newRow("macOS Intel Legacy Qt6")
+			<< "macOS-Intel-Legacy-Qt6" << false << false << false
+			<< QStringLiteral("Kite-macOS-Intel-Legacy-Qt6-%1.zip").arg(v);
 	}
 
 	void tst_Release()

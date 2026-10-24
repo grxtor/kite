@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+#include <QGuiApplication>
 #include <QTest>
 
 #include "models/RichBody.h"
@@ -160,6 +161,17 @@ class RichBodyTest : public QObject
 	}
 };
 
-QTEST_MAIN(RichBodyTest)
+int main(int argc, char* argv[])
+{
+	// RichBody renders through QTextDocument and QFont, which need a
+	// QGuiApplication; offscreen keeps this runnable on a headless runner, as
+	// in GameTextureIcons_test.cpp.
+	qputenv("QT_QPA_PLATFORM", "offscreen");
+
+	QGuiApplication app(argc, argv);
+
+	RichBodyTest test;
+	return QTest::qExec(&test, argc, argv);
+}
 
 #include "RichBody_test.moc"

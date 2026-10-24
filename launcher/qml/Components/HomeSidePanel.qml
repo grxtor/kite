@@ -99,12 +99,16 @@ Item {
                     // HomeWorldTile's required properties.
                     delegate: Item {
                         visible: model.index < root.maxWorlds
-                        width: visible ? tile.width : 0
+                        width: visible ? column.width : 0
                         height: visible ? tile.height : 0
 
+                        // The icon stands on the column's edge, with the
+                        // heading and the cards; the row's hover bleeds out
+                        // by its own padding.
                         HomeWorldTile {
                             id: tile
-                            width: column.width
+                            x: -Theme.space.sm
+                            width: column.width + Theme.space.sm * 2
                             worldName: model.worldName
                             folderName: model.folderName
                             iconUrl: model.iconUrl

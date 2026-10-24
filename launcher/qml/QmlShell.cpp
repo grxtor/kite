@@ -1062,17 +1062,17 @@ QVariantMap QmlShell::rootProperties()
 	 * review script picture any page without editing the QML. */
 	props.insert(QStringLiteral("devRoute"),
 				 qEnvironmentVariable("KITE_QML_ROUTE"));
-	/* Whether launcher/qml/Cat (the roaming cat companion) was built at
+	/* Whether launcher/qml/Skin3D (the 3D skin preview) was built at
 	 * all -- a compile-time fact, not a setting, so it is a plain bool
-	 * handed over once here rather than a Q_PROPERTY. Main.qml's catLoader
-	 * and SettingsPage's Cat group both gate on this: KITE_HAS_CAT is
-	 * only ever defined when launcher/qml/CMakeLists.txt actually linked
-	 * Kite_qml_cat in (see its Kite_ENABLE_CAT guard), which itself
-	 * only happens when Qt Quick3D was found. */
-#ifdef KITE_HAS_CAT
-	props.insert(QStringLiteral("catAvailable"), true);
+	 * handed over once here rather than a Q_PROPERTY. SkinPreview.qml
+	 * gates its 3D view on this: KITE_HAS_SKIN3D is only ever defined
+	 * when launcher/qml/CMakeLists.txt actually linked Kite_qml_skin3d
+	 * in (see its Kite_ENABLE_SKIN3D guard), which itself only happens
+	 * when Qt Quick3D was found. */
+#ifdef KITE_HAS_SKIN3D
+	props.insert(QStringLiteral("skin3DAvailable"), true);
 #else
-	props.insert(QStringLiteral("catAvailable"), false);
+	props.insert(QStringLiteral("skin3DAvailable"), false);
 #endif
 	return props;
 }

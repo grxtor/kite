@@ -47,7 +47,7 @@ const QString kTextureRoot = QStringLiteral("assets/minecraft/textures/");
 /* Written into a version's cache folder once every image is in it. The
  * number is the revision of GameTextureRecipes: bump it when they change,
  * and caches made from the old ones are redone instead of trusted. */
-const QString kCacheMarker = QStringLiteral(".complete-1");
+const QString kCacheMarker = QStringLiteral(".complete-2");
 
 struct ArchiveReadDeleter {
 	void operator()(struct archive* archive) const

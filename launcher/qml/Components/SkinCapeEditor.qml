@@ -57,15 +57,15 @@ Dialog {
     // so image urls change and QML actually refetches them -- see
     // AccountsPage.qml's imageRevision.
     property int rev: 0
-    // Whether launcher/qml/Cat (Qt Quick3D) exists -- see SkinPreview.
-    property bool catAvailable: false
+    // Whether launcher/qml/Skin3D (Qt Quick3D) exists -- see SkinPreview.
+    property bool skin3DAvailable: false
 
     // Sizes: the dialog, the preview column (a 1:2 player plus room to
     // turn), the library box (a row of the user's tiles and a row of the
     // default ones), and one skin tile.
     readonly property int preferredWidth: 840
     readonly property int previewWidth: 220
-    readonly property int previewHeight: 300
+    readonly property int previewHeight: 260
     readonly property int libraryHeight: 320
     // The library box's height: libraryHeight at least, and on a taller
     // window as tall as every tile needs, so the box scrolls (and cuts a
@@ -271,6 +271,9 @@ Dialog {
                     // -- The preview -------------------------------------------
                     ColumnLayout {
                         Layout.alignment: Qt.AlignTop
+                        // Its fill-width children would otherwise make the
+                        // column share the row's spare width with the library.
+                        Layout.fillWidth: false
                         Layout.preferredWidth: root.previewWidth
                         spacing: Theme.space.sm
 
@@ -308,7 +311,7 @@ Dialog {
                                 id: preview
                                 anchors.fill: parent
                                 anchors.margins: Theme.space.md
-                                catAvailable: root.catAvailable
+                                skin3DAvailable: root.skin3DAvailable
                                 skinTexture: root.selected ? root.selected.textureUrl || ""
                                              : root.info.hasSkin && root.accountId.length > 0
                                                ? "image://accountface/skin/" + root.accountId + "?rev=" + root.rev : ""
@@ -337,6 +340,66 @@ Dialog {
                                 root.showElytra = checked
                                 preview.showBack()
                             }
+                        }
+                        // Under the player, so the library box gets the height
+                        // a row of its own took.
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Theme.space.sm
+                            Text {
+                                text: qsTr("Arms")
+                                color: Theme.palette.textSecondary
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.type.label.pixelSize
+                            }
+                            // Two radio buttons, as in the official
+                            // launcher's skin editor -- exactly one of two,
+                            // not a pill switch.
+                            Repeater {
+                                model: [
+                                    { slim: false, label: qsTr("Classic") },
+                                    { slim: true, label: qsTr("Slim") }
+                                ]
+                                delegate: RadioButton {
+                                    id: armsRadio
+                                    required property var modelData
+                                    readonly property bool current: (root.selected ? root.selected.slim : root.info.slim) === modelData.slim
+                                    enabled: !!root.selected && !root.busy
+                                    text: modelData.label
+                                    // Checked follows the skin, not the
+                                    // click: a click only asks for the change,
+                                    // and the binding (which a click breaks)
+                                    // is put back each time.
+                                    autoExclusive: false
+                                    checked: armsRadio.current
+                                    onClicked: {
+                                        // A default skin swaps to its other
+                                        // texture; a library one records it.
+                                        if (!armsRadio.current) {
+                                            if (root.selectedDefault.length > 0)
+                                                root.defaultSlim = modelData.slim
+                                            else
+                                                root.skins.setSlim(root.selectedName, modelData.slim)
+                                        }
+                                        armsRadio.checked = Qt.binding(() => armsRadio.current)
+                                    }
+                                }
+                            }
+                        }
+
+                        Button {
+                            Layout.fillWidth: true
+                            variant: "primary"
+                            text: qsTr("Wear this skin")
+                            enabled: root.selectedReady && !root.busy
+                            onClicked: root.wearSelected()
+                        }
+                        Button {
+                            Layout.fillWidth: true
+                            variant: "ghost"
+                            text: qsTr("Reset skin")
+                            enabled: !root.busy
+                            onClicked: root.run(root.controller.resetSkin(root.row), qsTr("The skin could not be reset."))
                         }
                     }
 
@@ -379,7 +442,10 @@ Dialog {
                             Layout.fillWidth: true
                             Layout.preferredHeight: root.libraryRoom
                             radius: Theme.radius.lg
-                            color: Theme.palette.surfaceSunken
+                            // The dialog's own surface inside the hairline,
+                            // as every list box in a dialog: a dark well
+                            // reads as a hole.
+                            color: "transparent"
                             border.width: 1
                             border.color: Theme.palette.border
 
@@ -477,64 +543,7 @@ Dialog {
                                 anchors.bottom: parent.bottom
                                 anchors.margins: Theme.space.sm
                                 flickable: skinGrid
-                                fadeTo: Theme.palette.surfaceSunken
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: Theme.space.sm
-                            Text {
-                                text: qsTr("Arms")
-                                color: Theme.palette.textSecondary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
-                            }
-                            // Two radio buttons, as in the official
-                            // launcher's skin editor -- exactly one of two,
-                            // not a pill switch.
-                            Repeater {
-                                model: [
-                                    { slim: false, label: qsTr("Classic") },
-                                    { slim: true, label: qsTr("Slim") }
-                                ]
-                                delegate: RadioButton {
-                                    id: armsRadio
-                                    required property var modelData
-                                    readonly property bool current: (root.selected ? root.selected.slim : root.info.slim) === modelData.slim
-                                    enabled: !!root.selected && !root.busy
-                                    text: modelData.label
-                                    // Checked follows the skin, not the
-                                    // click: a click only asks for the change,
-                                    // and the binding (which a click breaks)
-                                    // is put back each time.
-                                    autoExclusive: false
-                                    checked: armsRadio.current
-                                    onClicked: {
-                                        // A default skin swaps to its other
-                                        // texture; a library one records it.
-                                        if (!armsRadio.current) {
-                                            if (root.selectedDefault.length > 0)
-                                                root.defaultSlim = modelData.slim
-                                            else
-                                                root.skins.setSlim(root.selectedName, modelData.slim)
-                                        }
-                                        armsRadio.checked = Qt.binding(() => armsRadio.current)
-                                    }
-                                }
-                            }
-                            Item { Layout.fillWidth: true }
-                            Button {
-                                variant: "ghost"
-                                text: qsTr("Reset skin")
-                                enabled: !root.busy
-                                onClicked: root.run(root.controller.resetSkin(root.row), qsTr("The skin could not be reset."))
-                            }
-                            Button {
-                                variant: "primary"
-                                text: qsTr("Wear this skin")
-                                enabled: root.selectedReady && !root.busy
-                                onClicked: root.wearSelected()
+                                fadeTo: Theme.glass.popup
                             }
                         }
 

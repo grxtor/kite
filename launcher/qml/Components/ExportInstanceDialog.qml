@@ -263,7 +263,7 @@ Dialog {
                 Layout.fillHeight: true
                 Layout.minimumHeight: root.treeMinHeight
                 radius: Theme.radius.sm
-                color: Theme.palette.surfaceSunken
+                color: "transparent"
                 border.width: 1
                 border.color: Theme.palette.border
 
@@ -367,7 +367,7 @@ Dialog {
                     anchors.bottom: parent.bottom
                     anchors.margins: 1
                     flickable: tree
-                    fadeTo: Theme.palette.surfaceSunken
+                    fadeTo: Theme.glass.popup
                 }
 
                 // The tree starts inside the instance (or its game folder),

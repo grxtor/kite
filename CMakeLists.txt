@@ -216,20 +216,26 @@ endif()
 message(STATUS "Building against Qt ${_projt_qt_version} (major version ${QT_VERSION_MAJOR})")
 unset(_projt_qt_version)
 
-# Qt Quick 3D, for the optional roaming cat companion (launcher/qml/Cat/) --
+# Qt Quick 3D, for the optional 3D skin preview (launcher/qml/Skin3D/) --
 # never added to Kite_QT_COMPONENTS above: unlike everything there, the
 # 6.4 floor must keep building without it, so it is looked for but not
-# required. Kite_ENABLE_CAT defaults to whatever was found, and is the one
+# required. Kite_ENABLE_SKIN3D defaults to whatever was found, and is the one
 # switch that decides whether launcher/qml/CMakeLists.txt descends into
-# Cat/ at all; turning it OFF by hand skips the cat even when Quick3D is
-# present, but it can never turn ON what was not found.
+# Skin3D/ at all; turning it OFF by hand leaves the flat skin view even when
+# Quick3D is present, but it can never turn ON what was not found.
 find_package(Qt${QT_VERSION_MAJOR} OPTIONAL_COMPONENTS Quick3D)
-option(Kite_ENABLE_CAT "Build the roaming 3D cat companion (needs Qt Quick 3D)" ${Qt${QT_VERSION_MAJOR}Quick3D_FOUND})
-if(Kite_ENABLE_CAT AND NOT Qt${QT_VERSION_MAJOR}Quick3D_FOUND)
-    message(WARNING "Kite_ENABLE_CAT is ON but Qt Quick3D was not found; building without the cat.")
-    set(Kite_ENABLE_CAT OFF)
+option(Kite_ENABLE_SKIN3D "Build the 3D skin preview (needs Qt Quick 3D)" ${Qt${QT_VERSION_MAJOR}Quick3D_FOUND})
+if(Kite_ENABLE_SKIN3D AND NOT Qt${QT_VERSION_MAJOR}Quick3D_FOUND)
+    message(WARNING "Kite_ENABLE_SKIN3D is ON but Qt Quick3D was not found; building without the 3D skin preview.")
+    set(Kite_ENABLE_SKIN3D OFF)
 endif()
-message(STATUS "Cat companion (Qt Quick3D): ${Kite_ENABLE_CAT}")
+message(STATUS "3D skin preview (Qt Quick3D): ${Kite_ENABLE_SKIN3D}")
+
+# Qt Linguist tools (lrelease), which compile translations/kite_*.ts into the
+# .qm files bundled in the launcher. Optional: without them the build still
+# works, it just ships English only (see launcher/CMakeLists.txt).
+find_package(Qt${QT_VERSION_MAJOR} OPTIONAL_COMPONENTS LinguistTools)
+message(STATUS "Bundled translations (Qt LinguistTools): ${Qt${QT_VERSION_MAJOR}LinguistTools_FOUND}")
 
 if(UNIX)
     find_package(PkgConfig)
@@ -416,9 +422,14 @@ set(Kite_NOTIFICATION_URL "" CACHE STRING "URL for checking for notifications.")
 # the first public release.
 set(Kite_META_URL "https://meta.projecttick.org/" CACHE STRING "URL to fetch Kite's meta files from.")
 
+# Translations are bundled in the app (translations/kite_*.ts). Leave this empty
+# so Kite never downloads any; set it to a server that serves index_v2.json and
+# the .qm files listed in it to get downloadable updates on top of the bundle.
+set(Kite_TRANSLATIONS_URL "" CACHE STRING "URL to download translation updates from (empty: bundled translations only).")
+
 # Microsoft Client ID
 # Our own Azure app, approved for the Minecraft API. Empty hides Microsoft sign-in.
-set(Kite_MICROSOFT_CLIENT_ID "" CACHE STRING "Azure application (client) ID for Microsoft sign-in")
+set(Kite_MICROSOFT_CLIENT_ID "3e21e33c-8db3-41f9-bbd3-8309b8c41203" CACHE STRING "Azure application (client) ID for Microsoft sign-in")
 
 # paste.ee API key
 set(Kite_PASTE_EE_API_KEY "" CACHE STRING "API key you can get from paste.ee when you register an account")
@@ -565,6 +576,13 @@ if(UNIX AND APPLE)
     set(MACOSX_BUNDLE_LONG_VERSION_STRING "${Kite_RELEASE_VERSION_NAME}")
     set(MACOSX_BUNDLE_ICON_FILE ${Kite_AppID}.icns)
     set(MACOSX_BUNDLE_COPYRIGHT "${Kite_Copyright_Mac}")
+    # Lets macOS turn away a build made for a newer system with its own
+    # message, rather than the app crashing inside Qt (the Legacy release
+    # targets 12, the others 13). Left out when no target is set.
+    if(CMAKE_OSX_DEPLOYMENT_TARGET)
+        set(MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION_KEY
+            "<key>LSMinimumSystemVersion</key>\n    <string>${CMAKE_OSX_DEPLOYMENT_TARGET}</string>")
+    endif()
     set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "" CACHE STRING "Public key for Sparkle update feed")
     set(MACOSX_SPARKLE_UPDATE_FEED_URL "" CACHE STRING "URL for Sparkle update feed")
 

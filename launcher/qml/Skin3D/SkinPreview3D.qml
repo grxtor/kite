@@ -10,8 +10,8 @@ import QtQuick3D.Helpers
  * A Minecraft player in 3D: a skin on the standard model, with a cape or
  * the elytra on its back, which a drag turns around. The skin editor and
  * the Accounts page show it through Components/SkinPreview.qml, which only
- * loads this file where Qt Quick3D exists and draws (the same condition as
- * the cat, KITE_HAS_CAT), and shows the flat render otherwise.
+ * loads this file where Qt Quick3D exists and draws (KITE_HAS_SKIN3D), and
+ * shows the flat render otherwise.
  *
  * The model is the one the widget skin dialog drew with OpenGL
  * (ui/dialogs/skins/render/PlayerScene.cpp): every part a box, sized and

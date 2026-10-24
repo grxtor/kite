@@ -209,7 +209,9 @@ Item {
                 width: parent.width
                 height: Math.min(180, fileList.contentHeight + Theme.space.md)
                 radius: Theme.radius.md
-                color: Theme.palette.surfaceSunken
+                color: "transparent"
+                border.width: 1
+                border.color: Theme.palette.border
                 ListView {
                     id: fileList
                     anchors.fill: parent
@@ -430,7 +432,9 @@ Item {
                 width: parent.width
                 height: Math.min(320, modsList.contentHeight + Theme.space.sm * 2)
                 radius: Theme.radius.md
-                color: Theme.palette.surfaceSunken
+                color: "transparent"
+                border.width: 1
+                border.color: Theme.palette.border
                 ListView {
                     id: modsList
                     anchors.fill: parent
@@ -548,10 +552,11 @@ Item {
         }
 
         // pickAccount: play with the selected account.
-        Button {
+        // A launch, so it wears the kite cut like every other Play.
+        PlayButton {
             visible: root.kind === "pickAccount"
-            highlighted: true
-            text: qsTr("Play")
+            round: false
+            size: Theme.control.height
             onClicked: accountPicker.play()
         }
 

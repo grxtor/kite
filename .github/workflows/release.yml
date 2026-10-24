@@ -52,10 +52,15 @@ jobs:
           mv Kite-macOS-Intel-Qt6*/Kite.dmg Kite-macOS-Intel-Qt6-${{ env.VERSION }}.dmg
           mv Kite-macOS-ARM-Qt6*/Kite.zip Kite-macOS-ARM-Qt6-${{ env.VERSION }}.zip
           mv Kite-macOS-ARM-Qt6*/Kite.dmg Kite-macOS-ARM-Qt6-${{ env.VERSION }}.dmg
+          mv Kite-macOS-Intel-Legacy-Qt6*/Kite.zip Kite-macOS-Intel-Legacy-Qt6-${{ env.VERSION }}.zip
+          mv Kite-macOS-Intel-Legacy-Qt6*/Kite.dmg Kite-macOS-Intel-Legacy-Qt6-${{ env.VERSION }}.dmg
 
           tar --exclude='.git' -czf Kite-${{ env.VERSION }}.tar.gz Kite-${{ env.VERSION }}
 
-          for d in Kite-Windows-MSVC-Qt6*; do
+          # The artifacts are named Kite-<artifact-name>-..., so the Qt
+          # version is not right after "MSVC"/"MinGW-w64"; NAME below
+          # rebuilds the published names.
+          for d in Kite-Windows-MSVC*; do
             cd "${d}" || continue
             LEGACY="$(echo -n ${d} | grep -o Legacy || true)"
             ARM64="$(echo -n ${d} | grep -o arm64 || true)"
@@ -70,7 +75,7 @@ jobs:
             cd ..
           done
 
-          for d in Kite-Windows-MinGW-Qt6-w64*; do
+          for d in Kite-Windows-MinGW-w64*; do
             cd "${d}" || continue
             INST="$(echo -n ${d} | grep -o Setup || true)"
             PORT="$(echo -n ${d} | grep -o Portable || true)"
@@ -111,4 +116,6 @@ jobs:
             Kite-macOS-Intel-Qt6-${{ env.VERSION }}.dmg
             Kite-macOS-ARM-Qt6-${{ env.VERSION }}.zip
             Kite-macOS-ARM-Qt6-${{ env.VERSION }}.dmg
+            Kite-macOS-Intel-Legacy-Qt6-${{ env.VERSION }}.zip
+            Kite-macOS-Intel-Legacy-Qt6-${{ env.VERSION }}.dmg
             Kite-${{ env.VERSION }}.tar.gz

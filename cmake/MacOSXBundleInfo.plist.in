@@ -26,6 +26,7 @@
     <string>${Kite_Name}</string>
     <key>CFBundleIdentifier</key>
     <string>${MACOSX_BUNDLE_GUI_IDENTIFIER}</string>
+    ${MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION_KEY}
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleLongVersionString</key>

@@ -40,8 +40,10 @@ Item {
         visible: root.hasPicture
         source: root.source
         // A logo comes from its provider at exactly this size; a filled
-        // picture is cropped, so it is asked for larger.
-        sourceSize: root.fill ? Qt.size(width * 2, height * 2) : Qt.size(width, height)
+        // picture is cropped, so it is asked for larger. A pixel picture
+        // loads at its own size, so nothing smooths it before it is drawn.
+        sourceSize: root.pixelArt ? undefined
+                  : root.fill ? Qt.size(width * 2, height * 2) : Qt.size(width, height)
         fillMode: root.fill ? Image.PreserveAspectCrop : Image.PreserveAspectFit
         smooth: !root.pixelArt
         asynchronous: root.fill

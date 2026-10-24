@@ -38,6 +38,15 @@ namespace
 		QVERIFY(file.open(QIODevice::WriteOnly));
 		file.write("x");
 	}
+
+	/* The binary the managed-runtime scan looks for, as in JavaController's
+	 * javaBinaryName(): a runtime with only "java" in bin/ is not found on
+	 * Windows. */
+#if defined(Q_OS_WIN)
+	const QString kJavaBinary = QStringLiteral("javaw.exe");
+#else
+	const QString kJavaBinary = QStringLiteral("java");
+#endif
 } // namespace
 
 class JavaControllerTest : public QObject
@@ -160,13 +169,13 @@ void JavaControllerTest::scansDownloadedRuntimes()
 {
 	QTemporaryDir dir;
 	QVERIFY(dir.isValid());
-	touch(dir.path(), "adoptium/jdk-21.0.1/Contents/Home/bin/java");
-	touch(dir.path(), "adoptium/jdk-17.0.9/bin/java");
-	touch(dir.path(), "azul/zulu-8/bin/java");
+	touch(dir.path(), "adoptium/jdk-21.0.1/Contents/Home/bin/" + kJavaBinary);
+	touch(dir.path(), "adoptium/jdk-17.0.9/bin/" + kJavaBinary);
+	touch(dir.path(), "azul/zulu-8/bin/" + kJavaBinary);
 	// Unfinished download: a folder without a binary is not a runtime.
 	QDir().mkpath(dir.filePath("azul/zulu-broken/lib"));
 	// A "java" that is not under bin/ does not count either.
-	touch(dir.path(), "azul/zulu-odd/java");
+	touch(dir.path(), "azul/zulu-odd/" + kJavaBinary);
 
 	const auto rows = JavaController::scanManaged(dir.path());
 	QCOMPARE(rows.size(), 3);
@@ -179,7 +188,7 @@ void JavaControllerTest::scansDownloadedRuntimes()
 			 QString("jdk-17.0.9"));
 	QCOMPARE(rows.at(2).toMap().value("vendor").toString(), QString("azul"));
 	QVERIFY(rows.at(0).toMap().value("javaPath").toString().endsWith(
-		"Contents/Home/bin/java"));
+		"Contents/Home/bin/" + kJavaBinary));
 	QCOMPARE(rows.at(1).toMap().value("root").toString(),
 			 dir.filePath("adoptium/jdk-17.0.9"));
 }

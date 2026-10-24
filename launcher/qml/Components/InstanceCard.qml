@@ -114,7 +114,7 @@ Item {
         radius: Theme.radius.lg
         // Hover lifts the card: one step lighter and a small shadow under
         // it, never a zoom.
-        color: root.hovered ? Theme.palette.surfaceHover : Theme.palette.surface
+        color: root.hovered || root.selected ? Theme.palette.surfaceHover : Theme.palette.surface
 
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
@@ -354,20 +354,20 @@ Item {
     }
 
     // The card's hairline, drawn over everything so the pictures' corner
-    // matte never paints across it. Selected: a 2px accent ring.
+    // matte never paints across it. Selected keeps the hover look (fill and
+    // border), with no accent ring.
     Rectangle {
         anchors.fill: card
         radius: card.radius
         color: "transparent"
-        border.width: root.selected ? 2 : 1
-        border.color: root.selected ? Theme.palette.accent
-                    : root.hovered ? Theme.neutral.borderHover : Theme.palette.border
+        border.width: 1
+        border.color: root.selected || root.hovered ? Theme.neutral.borderHover : Theme.palette.border
         Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
     Rectangle {
         // Keyboard focus ring, outset so it never competes with the
-        // selected border: 4px out from the card's corner.
+        // selected state: 4px out from the card's corner.
         anchors.fill: card
         anchors.margins: -Theme.space.xs
         radius: card.radius + Theme.space.xs

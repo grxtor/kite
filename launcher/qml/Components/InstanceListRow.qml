@@ -14,7 +14,7 @@ import Kite.Theme
  * the two delegates are interchangeable from InstanceSection's point of
  * view -- and the same grammar: the icon on the calm neutral square
  * (or the pack's own logo across it), the same surface, hover lift,
- * selected ring, and Play fading in on hover.
+ * selected state (the hover look kept on), and Play fading in on hover.
  *
  * The trailing columns drop out at narrow widths rather than truncating into
  * nonsense; the name always keeps the room it needs to stay readable.
@@ -97,7 +97,7 @@ Item {
         anchors.fill: parent
         radius: Theme.radius.lg
         // The grid card's hover: one step lighter and a small shadow.
-        color: root.hovered ? Theme.palette.surfaceHover : Theme.palette.surface
+        color: root.hovered || root.selected ? Theme.palette.surfaceHover : Theme.palette.surface
 
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
@@ -287,14 +287,14 @@ Item {
     }
 
     // The hairline, over everything so the logo's corner matte never
-    // paints across it. Selected: a 2px accent ring.
+    // paints across it. Selected keeps the hover look (fill and border),
+    // with no accent ring.
     Rectangle {
         anchors.fill: surface
         radius: surface.radius
         color: "transparent"
-        border.width: root.selected ? 2 : 1
-        border.color: root.selected ? Theme.palette.accent
-                    : root.hovered ? Theme.neutral.borderHover : Theme.palette.border
+        border.width: 1
+        border.color: root.selected || root.hovered ? Theme.neutral.borderHover : Theme.palette.border
         Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 

@@ -45,11 +45,6 @@ Item {
     readonly property int skinNoticeWidth: 380
     // The sign-in dialog's spinner.
     readonly property int loginIndicatorSize: 32
-    // The empty state's avatar: a faint ring, a tinted disc, the icon.
-    readonly property int avatarRingSize: 96
-    readonly property int avatarDiscSize: 72
-    readonly property int avatarIconSize: 32
-    readonly property real avatarRingOpacity: 0.10
 
     // Bumped whenever any account's data changes (a refresh landing, a skin
     // upload finishing...), so the "image://accountface/..." urls below
@@ -172,8 +167,8 @@ Item {
     readonly property string heroStatus: heroItem ? heroItem.status : ""
     readonly property string heroStateKey: heroItem ? heroItem.stateKey : ""
     readonly property int heroRow: heroItem ? heroItem.index : -1
-    // Whether launcher/qml/Cat (Qt Quick3D) exists -- see SkinPreview.
-    property bool catAvailable: false
+    // Whether launcher/qml/Skin3D (Qt Quick3D) exists -- see SkinPreview.
+    property bool skin3DAvailable: false
     // The hero account's skin facts (AccountsController::accountSkinInfo):
     // whether there is a skin to draw (its own, or the game's default for
     // it once downloaded), its arm width, and for a Microsoft account its
@@ -296,7 +291,7 @@ Item {
                     Layout.preferredWidth: root.heroPreviewWidth
                     Layout.preferredHeight: root.heroPreviewHeight
                     Layout.alignment: Qt.AlignVCenter
-                    catAvailable: root.catAvailable
+                    skin3DAvailable: root.skin3DAvailable
                     skinTexture: root.heroSkin.hasSkin && root.heroAccountId.length > 0
                                  ? "image://accountface/skin/" + root.heroAccountId + "?rev=" + root.imageRevision : ""
                     flatSource: root.heroAccountId.length > 0
@@ -545,22 +540,10 @@ Item {
             actionIcon: "user"
             onActionTriggered: root.startMicrosoftLogin()
 
-            Item {
-                width: root.avatarRingSize; height: root.avatarRingSize
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: root.avatarRingSize; height: root.avatarRingSize
-                    radius: width / 2
-                    color: Theme.palette.accentText
-                    opacity: root.avatarRingOpacity
-                }
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: root.avatarDiscSize; height: root.avatarDiscSize
-                    radius: width / 2
-                    color: Theme.palette.accentSubtle
-                }
-                MeshIcon { anchors.centerIn: parent; iconName: "user"; size: root.avatarIconSize; color: Theme.palette.accentText }
+            MeshIcon {
+                iconName: "user"
+                size: Theme.icon.lg + Theme.space.md
+                color: Theme.palette.textTertiary
             }
         }
 
@@ -763,7 +746,7 @@ Item {
         id: skinCapeEditor
         controller: root.controller
         rev: root.imageRevision
-        catAvailable: root.catAvailable
+        skin3DAvailable: root.skin3DAvailable
     }
 
     Dialog {

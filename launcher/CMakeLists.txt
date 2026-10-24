@@ -724,7 +724,7 @@ set(TRANSLATIONS_SOURCES
     translations/POTranslator.cpp
 )
 
-# Model bookkeeping only (roleNames(), the builtin default row) -- no
+# Model bookkeeping, the bundled languages and the data dir override -- no
 # network, same reasoning as the IconList test below.
 add_unit_test(TranslationsModel
     SOURCES translations/TranslationsModel_test.cpp
@@ -1391,6 +1391,43 @@ endif()
 # it and the widget UI depend on each other until the declarative plugin ABI
 # replaces that.
 add_library(Kite_core STATIC ${LOGIC_SOURCES})
+
+# Bundled translations: every translations/kite_<lang>.ts is compiled to a .qm
+# with lrelease and embedded in the core as :/i18n/kite_<lang>.qm, next to
+# :/i18n/stats.txt ("<lang> <translated> <total>" per line, counted from the
+# .ts here because a .qm cannot tell how complete it is). The resources are
+# self-registering, nothing in the code refers to them at build time; without
+# Qt LinguistTools or without any .ts the launcher is simply English only.
+if(Qt${QT_VERSION_MAJOR}LinguistTools_FOUND)
+    file(GLOB KITE_TS_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/translations/kite_*.ts")
+    if(KITE_TS_FILES)
+        # Content changes of a .ts re-run cmake so stats.txt follows them.
+        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${KITE_TS_FILES})
+        set(_kite_i18n_stats "")
+        foreach(_ts IN LISTS KITE_TS_FILES)
+            get_filename_component(_lang "${_ts}" NAME_WE)
+            string(REGEX REPLACE "^kite_" "" _lang "${_lang}")
+            file(READ "${_ts}" _ts_text)
+            string(REGEX MATCHALL "<message[ >]" _ts_messages "${_ts_text}")
+            list(LENGTH _ts_messages _ts_total)
+            string(REGEX MATCHALL "<translation type=\"(unfinished|vanished|obsolete)\"" _ts_open "${_ts_text}")
+            list(LENGTH _ts_open _ts_unfinished)
+            math(EXPR _ts_done "${_ts_total} - ${_ts_unfinished}")
+            string(APPEND _kite_i18n_stats "${_lang} ${_ts_done} ${_ts_total}\n")
+        endforeach()
+        unset(_ts_text)
+        file(CONFIGURE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/stats.txt"
+            CONTENT "${_kite_i18n_stats}" @ONLY)
+        qt6_add_lrelease(Kite_core
+            TS_FILES ${KITE_TS_FILES}
+            QM_FILES_OUTPUT_VARIABLE KITE_QM_FILES)
+        qt6_add_resources(Kite_core kite_i18n
+            PREFIX "/i18n"
+            BASE "${CMAKE_CURRENT_BINARY_DIR}"
+            FILES ${KITE_QM_FILES} "${CMAKE_CURRENT_BINARY_DIR}/stats.txt")
+        message(STATUS "Bundled translations: ${KITE_TS_FILES}")
+    endif()
+endif()
 add_library(Kite_logic STATIC ${PLUGIN_SOURCES} ${KITE_SOURCES} ${KITE_UI} ${KITE_SHARED_UI} ${KITE_RESOURCES})
 target_link_libraries(Kite_logic Kite_core)
 
@@ -1942,7 +1979,7 @@ add_subdirectory(qml)
 # the resources on Linux.
 add_unit_test(QmlModule
     SOURCES qml/QmlModule_test.cpp
-    LIBS Kite_qml Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
+    LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
     )
 
 # qt_add_qml_module builds the module as a static library plus a separate QML
@@ -1950,6 +1987,10 @@ add_unit_test(QmlModule
 # emit the import automatically during finalization, but add_unit_test uses a
 # plain add_executable, so it has to be asked for by hand -- otherwise the test
 # links and then fails at runtime with 'plugin "Kite_qmlplugin" not found'.
+# The root module's own plugin is linked explicitly above: nothing imports
+# "Kite", so qmlimportscanner only found it by accident -- the implicit "QML"
+# import resolved to launcher/qml/qmldir on case-insensitive file systems --
+# and on Linux it was missing.
 qt_import_qml_plugins(QmlModule_test)
 
 # Kite_logic rather than the core: the built-in icons are compiled from
@@ -2002,12 +2043,14 @@ add_unit_test(QmlUiHost
 add_executable(${Kite_Name} MACOSX_BUNDLE WIN32 main.cpp ${KITE_RCS})
 # Keyword signature: qt_import_qml_plugins below links with PRIVATE, and CMake
 # refuses to mix the two forms on one target.
-target_link_libraries(${Kite_Name} PRIVATE Kite_logic)
+target_link_libraries(${Kite_Name} PRIVATE Kite_logic Kite_qmlplugin)
 
 # Same reason as QmlModule_test: Kite_qml is a static QML module with a
 # separate plugin, and a plain add_executable does not import it. Without this
 # the launcher links and then fails at runtime with 'plugin "Kite_qmlplugin"
-# not found' the moment the QML shell loads.
+# not found' the moment the QML shell loads. Kite_qmlplugin is linked
+# explicitly above for the same reason as there: the scan finds it only on
+# case-insensitive file systems.
 qt_import_qml_plugins(${Kite_Name})
 
 # Export all symbols so dlopen()'ed .mmco plugins can resolve launcher symbols at runtime
@@ -2028,6 +2071,16 @@ if(APPLE)
     set(KITE_ICNS "${CMAKE_CURRENT_SOURCE_DIR}/../${Kite_Branding_ICNS}")
     set_source_files_properties(${KITE_ICNS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     target_sources(${Kite_Name} PRIVATE ${KITE_ICNS})
+    # Same for the Java helpers: without them the build-tree kite.app cannot
+    # start a game ("Could not find or load main class
+    # io.github.grxtor.EntryPoint"). Application::getJarsPath() looks in
+    # Contents/Resources/jars.
+    get_target_property(KITE_NEWLAUNCH_JAR NewLaunch JAR_FILE)
+    get_target_property(KITE_JAVACHECK_JAR JavaCheck JAR_FILE)
+    set_source_files_properties(${KITE_NEWLAUNCH_JAR} ${KITE_JAVACHECK_JAR}
+        PROPERTIES MACOSX_PACKAGE_LOCATION Resources/jars GENERATED TRUE)
+    target_sources(${Kite_Name} PRIVATE ${KITE_NEWLAUNCH_JAR} ${KITE_JAVACHECK_JAR})
+    add_dependencies(${Kite_Name} NewLaunch JavaCheck)
 endif()
 if(DEFINED Kite_BINARY_RPATH)
     SET_TARGET_PROPERTIES(${Kite_Name} PROPERTIES INSTALL_RPATH "${Kite_BINARY_RPATH}")

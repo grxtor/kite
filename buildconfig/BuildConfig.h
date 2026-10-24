@@ -178,9 +178,11 @@ class Config
 	QString RESOURCE_BASE = "https://resources.download.minecraft.net/";
 	QString LIBRARY_BASE = "https://libraries.minecraft.net/";
 	QString IMGUR_BASE_URL = "https://api.imgur.com/3/";
-	// TODO(fork): both still point at Project Tick's servers.
+	// TODO(fork): still points at Project Tick's server.
 	QString FMLLIBS_BASE_URL = "https://files.projecttick.org/fmllibs/";
-	QString TRANSLATIONS_BASE_URL = "https://i18n.projecttick.org/";
+
+	/// Where translation updates are downloaded from; empty means never.
+	QString TRANSLATIONS_BASE_URL;
 
 	QString MODPACKSCH_API_BASE_URL = "https://api.modpacks.ch/";
 

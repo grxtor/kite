@@ -108,9 +108,8 @@ Column {
             onCentroidChanged: if (active) dragSource.section.dragMoved(centroid.scenePosition.y)
         }
 
-        // Built only while a drag is on. The chip lives in the window's
-        // overlay, and CatOverlay counts that overlay's children as open
-        // popups: one per card at rest kept the cat hidden.
+        // Built only while a drag is on: the chip lives in the window's
+        // overlay, and one per card at rest would sit there for nothing.
         Loader {
             id: chipLoader
             active: false

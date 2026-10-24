@@ -26,6 +26,8 @@
 #include <QDir>
 #include <QLibraryInfo>
 #include <QDebug>
+#include <QFile>
+#include <QTextStream>
 
 #include "FileSystem.h"
 #include "net/NetJob.h"
@@ -38,6 +40,11 @@
 #include "core/LauncherContext.h"
 
 const static QLatin1String defaultLangCode("en_US");
+
+// Translations compiled into the launcher (launcher/CMakeLists.txt): one
+// kite_<lang>.qm per language plus stats.txt, "<lang> <translated> <total>".
+const static QLatin1String bundledDir(":/i18n");
+const static QLatin1String qmPrefix("kite_");
 
 enum class FileType { NONE, QM, PO };
 
@@ -93,7 +100,8 @@ struct Language {
 		return (key == other.key && file_name == other.file_name &&
 				file_size == other.file_size && file_sha1 == other.file_sha1 &&
 				translated == other.translated && fuzzy == other.fuzzy &&
-				total == other.fuzzy && localFileType == other.localFileType);
+				total == other.fuzzy && localFileType == other.localFileType &&
+				bundled == other.bundled);
 	}
 
 	Language& apply(Language& other)
@@ -108,6 +116,7 @@ struct Language {
 		fuzzy = other.fuzzy;
 		total = other.total;
 		localFileType = other.localFileType;
+		bundled = other.bundled;
 		return *this;
 	}
 
@@ -125,6 +134,8 @@ struct Language {
 	unsigned total = 0;
 
 	FileType localFileType = FileType::NONE;
+	// A kite_<key>.qm is compiled into the launcher.
+	bool bundled = false;
 };
 
 struct TranslationsModel::Private {
@@ -181,6 +192,52 @@ void TranslationsModel::indexReceived()
 
 namespace
 {
+	// Downloads are off unless the build names a server for them.
+	bool downloadsEnabled()
+	{
+		return !BuildConfig.TRANSLATIONS_BASE_URL.isEmpty();
+	}
+
+	QUrl translationsUrl(const QString& file)
+	{
+		QString base = BuildConfig.TRANSLATIONS_BASE_URL;
+		if (!base.endsWith('/')) {
+			base += '/';
+		}
+		return QUrl(base + file);
+	}
+
+	// The languages compiled into the launcher, with how much of each is
+	// translated (stats.txt is counted from the .ts at build time).
+	void readBundled(QMap<QString, Language>& languages)
+	{
+		QDir dir(bundledDir);
+		const auto entries = dir.entryInfoList({qmPrefix + "*.qm"}, QDir::Files);
+		for (const auto& entry : entries) {
+			Language lang(entry.completeBaseName().mid(qmPrefix.size()));
+			lang.bundled = true;
+			languages.insert(lang.key, lang);
+		}
+
+		QFile stats(QString(bundledDir) + "/stats.txt");
+		if (!stats.open(QIODevice::ReadOnly | QIODevice::Text)) {
+			return;
+		}
+		QTextStream in(&stats);
+		while (!in.atEnd()) {
+			const auto parts = in.readLine().split(' ', Qt::SkipEmptyParts);
+			auto lang = parts.size() == 3 ? languages.find(parts[0])
+										   : languages.end();
+			if (lang == languages.end()) {
+				continue;
+			}
+			unsigned translated = parts[1].toUInt();
+			unsigned total = parts[2].toUInt();
+			lang->setTranslationStats(
+				translated, total > translated ? total - translated : 0, 0);
+		}
+	}
+
 	void readIndex(const QString& path, QMap<QString, Language>& languages)
 	{
 		QByteArray data;
@@ -236,15 +293,20 @@ void TranslationsModel::reloadLocalFiles()
 	QMap<QString, Language> languages = {
 		{defaultLangCode, Language(defaultLangCode)}};
 
-	readIndex(d->m_dir.absoluteFilePath("index_v2.json"), languages);
-	auto entries = d->m_dir.entryInfoList({"mmc_*.qm", "*.po"},
+	readBundled(languages);
+	// An index left over from an earlier download is only trusted while
+	// downloads are on; otherwise it would list languages with no file.
+	if (downloadsEnabled()) {
+		readIndex(d->m_dir.absoluteFilePath("index_v2.json"), languages);
+	}
+	auto entries = d->m_dir.entryInfoList({"kite_*.qm", "*.po"},
 										  QDir::Files | QDir::NoDotAndDotDot);
 	for (auto& entry : entries) {
 		auto completeSuffix = entry.completeSuffix();
 		QString langCode;
 		FileType fileType = FileType::NONE;
 		if (completeSuffix == "qm") {
-			langCode = entry.baseName().remove(0, 4);
+			langCode = entry.baseName().remove(0, qmPrefix.size());
 			fileType = FileType::QM;
 		} else if (completeSuffix == "po") {
 			langCode = entry.baseName();
@@ -260,11 +322,10 @@ void TranslationsModel::reloadLocalFiles()
 				language.localFileType = fileType;
 			}
 		} else {
-			if (fileType == FileType::PO) {
-				Language localFound(langCode);
-				localFound.localFileType = FileType::PO;
-				languages.insert(langCode, localFound);
-			}
+			// A file dropped in by a translator, unknown to the bundle.
+			Language localFound(langCode);
+			localFound.localFileType = fileType;
+			languages.insert(langCode, localFound);
 		}
 	}
 
@@ -411,6 +472,24 @@ Language* TranslationsModel::findLanguage(const QString& key)
 	}
 }
 
+bool TranslationsModel::installAppTranslator(const QString& name,
+											 const QString& dir)
+{
+	d->m_app_translator.reset(new QTranslator());
+	// No search delimiters: kite_tr must not quietly fall back to kite.qm.
+	if (!d->m_app_translator->load(name, dir, QString(), ".qm")) {
+		d->m_app_translator.reset();
+		return false;
+	}
+	qDebug() << "Loading Application Language File" << name << "from" << dir;
+	if (!QCoreApplication::installTranslator(d->m_app_translator.get())) {
+		qCritical() << "Installing Application Language File failed.";
+		d->m_app_translator.reset();
+		return false;
+	}
+	return true;
+}
+
 bool TranslationsModel::selectLanguage(QString key)
 {
 	QString& langCode = key;
@@ -467,6 +546,7 @@ bool TranslationsModel::selectLanguage(QString key)
 		d->m_qt_translator.reset();
 	}
 
+	// Order: a .po / kite_<lang>.qm in the data dir overrides the bundled one.
 	if (langPtr->localFileType == FileType::PO) {
 		qDebug() << "Loading Application Language File for"
 				 << langCode.toLocal8Bit().constData() << "...";
@@ -486,19 +566,9 @@ bool TranslationsModel::selectLanguage(QString key)
 		}
 	} else if (langPtr->localFileType == FileType::QM) {
 		d->m_app_translator.reset(new QTranslator());
-		if (d->m_app_translator->load("mmc_" + langCode, d->m_dir.path())) {
-			qDebug() << "Loading Application Language File for"
-					 << langCode.toLocal8Bit().constData() << "...";
-			if (!QCoreApplication::installTranslator(
-					d->m_app_translator.get())) {
-				qCritical() << "Installing Application Language File failed.";
-				d->m_app_translator.reset();
-			} else {
-				successful = true;
-			}
-		} else {
-			d->m_app_translator.reset();
-		}
+		successful |= installAppTranslator(qmPrefix + langCode, d->m_dir.path());
+	} else if (langPtr->bundled) {
+		successful |= installAppTranslator(qmPrefix + langCode, bundledDir);
 	} else {
 		d->m_app_translator.reset();
 	}
@@ -523,6 +593,9 @@ QString TranslationsModel::selectedLanguage()
 
 void TranslationsModel::downloadIndex()
 {
+	if (!downloadsEnabled()) {
+		return;
+	}
 	if (d->m_index_job || d->m_dl_job) {
 		return;
 	}
@@ -532,7 +605,7 @@ void TranslationsModel::downloadIndex()
 		LAUNCHER->metacache()->resolveEntry("translations", "index_v2.json");
 	entry->setStale(true);
 	d->m_index_task = Net::Download::makeCached(
-		QUrl("https://i18n.projecttick.org/index_v2.json"), entry);
+		translationsUrl("index_v2.json"), entry);
 	d->m_index_job->addNetAction(d->m_index_task);
 	connect(d->m_index_job.get(), &NetJob::failed, this,
 			&TranslationsModel::indexFailed);
@@ -545,6 +618,9 @@ void TranslationsModel::updateLanguage(QString key)
 {
 	if (key == defaultLangCode) {
 		qWarning() << "Cannot update builtin language" << key;
+		return;
+	}
+	if (!downloadsEnabled()) {
 		return;
 	}
 	auto found = findLanguage(key);
@@ -564,18 +640,18 @@ void TranslationsModel::downloadTranslation(QString key)
 		return;
 	}
 	auto lang = findLanguage(key);
-	if (!lang) {
+	if (!lang || lang->file_name.isEmpty()) {
 		qWarning() << "Will not download an unknown translation" << key;
 		return;
 	}
 
 	d->m_downloadingTranslation = key;
 	MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
-		"translations", "mmc_" + key + ".qm");
+		"translations", qmPrefix + key + ".qm");
 	entry->setStale(true);
 
 	auto dl = Net::Download::makeCached(
-		QUrl(BuildConfig.TRANSLATIONS_BASE_URL + lang->file_name), entry);
+		translationsUrl(lang->file_name), entry);
 	auto rawHash = QByteArray::fromHex(lang->file_sha1.toLatin1());
 	dl->addValidator(
 		new Net::ChecksumValidator(QCryptographicHash::Sha1, rawHash));
