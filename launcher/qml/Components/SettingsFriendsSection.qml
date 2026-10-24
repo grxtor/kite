@@ -50,7 +50,7 @@ SettingsScroll {
                     // The switch turns on only once the question is answered.
                     checked = Qt.binding(() => root.on)
                     if (root.on)
-                        root.controller.setEnabled(false)
+                        root.controller.enabled = false
                     else
                         optIn.open()
                 }

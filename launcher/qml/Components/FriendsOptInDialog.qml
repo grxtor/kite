@@ -7,7 +7,7 @@ import Kite.Theme
 /*
  * The question before friends are switched on, from Home's side panel and
  * from Settings: plainly what is shared, and that nothing is sent while it
- * stays off. Confirming turns it on (FriendsController.setEnabled).
+ * stays off. Confirming turns it on (FriendsController.enabled).
  */
 ConfirmDialog {
     id: root
@@ -21,5 +21,5 @@ ConfirmDialog {
     text: qsTr("Your friends will see your Minecraft name, whether you are online, the instance and Minecraft version you play, and the name of the server you are on. A server reached by a raw IP address, or on your home network, is never named.")
           + "\n\n" + qsTr("You can go invisible or hide the server whenever you like in Settings. While this is off, Kite sends nothing.")
 
-    onConfirmed: if (root.controller) root.controller.setEnabled(true)
+    onConfirmed: if (root.controller) root.controller.enabled = true
 }
