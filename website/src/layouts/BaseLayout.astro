@@ -16,9 +16,11 @@ interface Props {
   description: string;
   /** Keeps the page out of search results and skips canonical and hreflang links. */
   noindex?: boolean;
+  /** schema.org JSON-LD for the page, see lib/structured-data. */
+  structuredData?: Record<string, unknown>;
 }
 
-const { locale, route, title, description, noindex = false } = Astro.props;
+const { locale, route, title, description, noindex = false, structuredData } = Astro.props;
 const t = getDictionary(locale);
 const site = Astro.site ?? new URL('https://kiteclient.com');
 const canonical = new URL(localePath(locale, route), site).href;
@@ -31,6 +33,8 @@ const ogImage = await getImage({
   format: 'jpeg',
 });
 const ogImageUrl = new URL(ogImage.src, site).href;
+// A `<` in the text must not close the script tag early.
+const jsonLd = structuredData && JSON.stringify(structuredData).replace(/</g, '\\u003c');
 ---
 
 <!doctype html>
@@ -76,13 +80,21 @@ const ogImageUrl = new URL(ogImage.src, site).href;
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:locale" content={LOCALE_INFO[locale].og} />
+    {
+      LOCALES.filter((code) => code !== locale).map((code) => (
+        <meta property="og:locale:alternate" content={LOCALE_INFO[code].og} />
+      ))
+    }
     <meta property="og:image" content={ogImageUrl} />
     <meta property="og:image:width" content={String(OG_IMAGE.width)} />
     <meta property="og:image:height" content={String(OG_IMAGE.height)} />
+    <meta property="og:image:alt" content={t.hero.screenshotAlt} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content={t.hero.screenshotAlt} />
+    {jsonLd && <script type="application/ld+json" set:html={jsonLd} />}
   </head>
   <body>
     <a class="skip" href="#main">{t.nav.skipToContent}</a>

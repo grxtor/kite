@@ -11,6 +11,7 @@ import SkyHero from '../components/SkyHero.astro';
 import { FEATURE_CARDS } from '../data/content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getDictionary, type Locale } from '../i18n';
+import { homeStructuredData } from '../lib/structured-data';
 
 interface Props {
   locale: Locale;
@@ -18,6 +19,7 @@ interface Props {
 
 const { locale } = Astro.props;
 const t = getDictionary(locale);
+const site = Astro.site ?? new URL('https://kiteclient.com');
 ---
 
 <BaseLayout
@@ -25,6 +27,7 @@ const t = getDictionary(locale);
   route="/"
   title={t.meta.home.title}
   description={t.meta.home.description}
+  structuredData={homeStructuredData(locale, site)}
 >
   <SkyHero locale={locale} />
 
