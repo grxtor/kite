@@ -128,6 +128,9 @@ qt_add_qml_module(Kite_qml_components
         SkinPreview.qml
         CapeTile.qml
         NewInstanceDialog.qml
+        RecommendedPane.qml
+        BundleModList.qml
+        BundleDialog.qml
         PromptDialog.qml
         Toast.qml
         IconPickerDialog.qml

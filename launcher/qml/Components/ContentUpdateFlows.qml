@@ -84,6 +84,19 @@ Item {
                     qsTr("Nothing compatible was found to install."), "neutral")
     }
 
+    // Installs the recommended mods with Modrinth project @p ids that the
+    // folder does not have yet, after a review of what they bring along.
+    function installBundle(ids) {
+        if (!root.updater)
+            return
+        const review = root.updater.installBundle(ids)
+        if (!review) {
+            root.notify(root.updater.lastError, "neutral")
+            return
+        }
+        root.settle(review, qsTr("Installed the recommended mods."), "")
+    }
+
     function resetMetadata(keys, name) {
         resetConfirm.keys = keys
         resetConfirm.text = keys.length === 1 && name.length > 0

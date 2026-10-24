@@ -36,6 +36,8 @@ Item {
     // a tab this instance does not have, shows the first tab (Content, or
     // Worlds on an old-format instance).
     property string tab: ""
+    // The QML shell, handed on to the Content tab.
+    property var shell: null
     // (anchor, instanceId) -> PluginSurfaceModel.
     property var pluginSurfacesFor: null
     // The account, for the top-right ProfileButton -- this page has no
@@ -119,7 +121,7 @@ Item {
             versionmore: ["version", versionTab], newcomponent: ["version", versionTab],
             otherlogs: ["log", logTab], logfind: ["log", logTab],
             shotselect: ["screenshots", shotsTab], shotrename: ["screenshots", shotsTab],
-            browsepick: ["browse", browseView], modhealth: ["content", contentTab]
+            browsepick: ["browse", browseView], modhealth: ["content", contentTab], bundles: ["content", contentTab]
         }
         const owner = owners[name]
         if (!owner)
@@ -441,6 +443,7 @@ Item {
             ContentTab {
                 id: contentTab
                 details: root.details
+                shell: root.shell
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
                 onBrowseRequested: (kind) => root.browseContent(kind)
             }

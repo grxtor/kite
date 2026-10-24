@@ -1672,6 +1672,71 @@ This cannot be undone.</source>
     </message>
 </context>
 <context>
+    <name>BundleCatalog</name>
+    <message>
+        <location filename="../launcher/modplatform/BundleCatalog.cpp" line="+259"/>
+        <location line="+66"/>
+        <source>Recommended mods</source>
+        <translation>Önerilen modlar</translation>
+    </message>
+</context>
+<context>
+    <name>BundleDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/BundleDialog.qml" line="+52"/>
+        <source>Performance</source>
+        <translation>Performans</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Comfort</source>
+        <translation>Konfor</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>PvP</source>
+        <translation>PvP</translation>
+    </message>
+    <message>
+        <location line="+31"/>
+        <source>Recommended mods</source>
+        <translation>Önerilen modlar</translation>
+    </message>
+    <message>
+        <location line="+41"/>
+        <source>Nothing in this bundle for this loader.</source>
+        <translation>Bu paketin bu yükleyici için bir şeyi yok.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>OptiFine is installed. Sodium and Iris don&apos;t run alongside it: remove OptiFine, or untick them.</source>
+        <translation>OptiFine yüklü. Sodium ve Iris onunla birlikte çalışmaz: OptiFine&apos;ı kaldır ya da bunların işaretini kaldır.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Install</source>
+        <translation>Yükle</translation>
+    </message>
+</context>
+<context>
+    <name>BundleModList</name>
+    <message>
+        <location filename="../launcher/qml/Components/BundleModList.qml" line="+161"/>
+        <source>Installed</source>
+        <translation>Yüklü</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Hypixel and other servers ban this. Using it is your responsibility.</source>
+        <translation>Hypixel ve diğer sunucular bunu yasaklıyor. Kullanmak senin sorumluluğunda.</translation>
+    </message>
+</context>
+<context>
     <name>BusyOverlay</name>
     <message>
         <location filename="../launcher/qml/Components/BusyOverlay.qml" line="+62"/>
@@ -2475,7 +2540,7 @@ The author may have blocked third-party launchers, or there may be no build for 
 <context>
     <name>ContentTab</name>
     <message>
-        <location filename="../launcher/qml/Components/ContentTab.qml" line="+56"/>
+        <location filename="../launcher/qml/Components/ContentTab.qml" line="+58"/>
         <source>Mods</source>
         <translation>Modlar</translation>
     </message>
@@ -2600,7 +2665,7 @@ The author may have blocked third-party launchers, or there may be no build for 
         <translation>Oyun çalışıyor. %1, oyun kapandıktan sonra değiştirilebilir.</translation>
     </message>
     <message>
-        <location line="+82"/>
+        <location line="+92"/>
         <source>“%1” could not be added.</source>
         <translation>“%1” eklenemedi.</translation>
     </message>
@@ -2630,7 +2695,7 @@ The author may have blocked third-party launchers, or there may be no build for 
         <translation>%1 %2 bu kurulumdan kaldırılsın mı? Dosyalar silinir.</translation>
     </message>
     <message>
-        <location line="+63"/>
+        <location line="+64"/>
         <source>Search %1</source>
         <translation>%1 ara</translation>
     </message>
@@ -2678,6 +2743,11 @@ The author may have blocked third-party launchers, or there may be no build for 
     </message>
     <message>
         <location line="+13"/>
+        <source>Recommended mods</source>
+        <translation>Önerilen modlar</translation>
+    </message>
+    <message>
+        <location line="+12"/>
         <source>Add content</source>
         <translation>İçerik ekle</translation>
     </message>
@@ -2764,7 +2834,7 @@ The author may have blocked third-party launchers, or there may be no build for 
         <translation>Yükleyici seç…</translation>
     </message>
     <message>
-        <location line="+54"/>
+        <location line="+65"/>
         <source>List saved.</source>
         <translation>Liste kaydedildi.</translation>
     </message>
@@ -2777,7 +2847,7 @@ The author may have blocked third-party launchers, or there may be no build for 
 <context>
     <name>ContentUpdateController</name>
     <message>
-        <location filename="../launcher/models/ContentUpdateController.cpp" line="+412"/>
+        <location filename="../launcher/models/ContentUpdateController.cpp" line="+417"/>
         <source>Already checking for updates.</source>
         <translation>Güncellemeler zaten denetleniyor.</translation>
     </message>
@@ -2796,11 +2866,12 @@ The author may have blocked third-party launchers, or there may be no build for 
         <location line="-249"/>
         <location line="+254"/>
         <location line="+32"/>
+        <location line="+30"/>
         <source>This instance has no Minecraft version set.</source>
         <translation>Bu kurulumda Minecraft sürümü ayarlanmamış.</translation>
     </message>
     <message>
-        <location line="-267"/>
+        <location line="-297"/>
         <source>None of these were installed from Modrinth or CurseForge, so there is nothing to check. Files added from Add content can be checked.</source>
         <translation>Bunların hiçbiri Modrinth veya CurseForge&apos;dan yüklenmemiş, bu yüzden denetlenecek bir şey yok. İçerik ekle bölümünden eklenen dosyalar denetlenebilir.</translation>
     </message>
@@ -2874,13 +2945,24 @@ The author may have blocked third-party launchers, or there may be no build for 
     </message>
     <message>
         <location line="-16"/>
+        <location line="+30"/>
         <source>The game is running. Install once it has closed.</source>
         <translation>Oyun çalışıyor. Kapandıktan sonra yükle.</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="-20"/>
         <source>There is nothing to look for.</source>
         <translation>Aranacak bir şey yok.</translation>
+    </message>
+    <message>
+        <location line="+36"/>
+        <source>Those mods are already installed.</source>
+        <translation>Bu modlar zaten yüklü.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Recommended mods</source>
+        <translation>Önerilen modlar</translation>
     </message>
 </context>
 <context>
@@ -2910,6 +2992,11 @@ The author may have blocked third-party launchers, or there may be no build for 
         <location line="+15"/>
         <source>Nothing compatible was found to install.</source>
         <translation>Yüklenecek uyumlu bir şey bulunamadı.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Installed the recommended mods.</source>
+        <translation>Önerilen modlar yüklendi.</translation>
     </message>
     <message>
         <location line="+6"/>
@@ -3036,14 +3123,14 @@ The author may have blocked third-party launchers, or there may be no build for 
 <context>
     <name>CrashReportDialog</name>
     <message>
-        <location filename="../launcher/crashreporter/CrashReportDialog.cpp" line="+40"/>
+        <location filename="../launcher/crashreporter/CrashReportDialog.cpp" line="+93"/>
         <source>Kite Crash Report</source>
         <translation>Kite çökme raporu</translation>
     </message>
     <message>
         <location line="+8"/>
-        <source>&lt;h2 style=&apos;color: #cc0000;&apos;&gt;Kite has failed&lt;/h2&gt;&lt;p&gt;An unexpected error occurred and Kite had to close.&lt;/p&gt;&lt;p&gt;Your logs have been uploaded to paste.ee for troubleshooting.&lt;/p&gt;</source>
-        <translation>&lt;h2 style=&apos;color: #cc0000;&apos;&gt;Kite çöktü&lt;/h2&gt;&lt;p&gt;Beklenmeyen bir hata oluştu ve Kite&apos;ın kapanması gerekti.&lt;/p&gt;&lt;p&gt;Sorunu incelemek için günlüklerin paste.ee&apos;ye yüklendi.&lt;/p&gt;</translation>
+        <source>&lt;h2 style=&apos;color: #cc0000;&apos;&gt;Kite has failed&lt;/h2&gt;&lt;p&gt;An unexpected error occurred and Kite had to close.&lt;/p&gt;&lt;p&gt;As you chose, your log was uploaded to paste.ee for troubleshooting.&lt;/p&gt;</source>
+        <translation>&lt;h2 style=&apos;color: #cc0000;&apos;&gt;Kite çöktü&lt;/h2&gt;&lt;p&gt;Beklenmeyen bir hata oluştu ve Kite&apos;ın kapanması gerekti.&lt;/p&gt;&lt;p&gt;İstediğin gibi, sorunu incelemek için günlüğün paste.ee&apos;ye yüklendi.&lt;/p&gt;</translation>
     </message>
     <message>
         <location line="+9"/>
@@ -3092,6 +3179,34 @@ The author may have blocked third-party launchers, or there may be no build for 
         <location line="+5"/>
         <source>Close</source>
         <translation>Kapat</translation>
+    </message>
+</context>
+<context>
+    <name>CrashUploadPromptDialog</name>
+    <message>
+        <location line="-137"/>
+        <source>Kite Crash Report</source>
+        <translation>Kite çökme raporu</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>&lt;h2&gt;Kite has failed&lt;/h2&gt;&lt;p&gt;An unexpected error occurred and Kite had to close.&lt;/p&gt;&lt;p&gt;Would you like to upload the log below to paste.ee so the problem can be looked into? Nothing is sent unless you choose Upload. Anyone who has the link will be able to read it.&lt;/p&gt;&lt;p&gt;Tokens, UUIDs and your home folder path have been removed. Other text, such as your player name, instance names and mod lists, is still in the log: read it first.&lt;/p&gt;</source>
+        <translation>&lt;h2&gt;Kite çöktü&lt;/h2&gt;&lt;p&gt;Beklenmeyen bir hata oluştu ve Kite&apos;ın kapanması gerekti.&lt;/p&gt;&lt;p&gt;Sorunun incelenebilmesi için aşağıdaki günlüğü paste.ee&apos;ye yüklemek ister misin? Yükle&apos;yi seçmedikçe hiçbir şey gönderilmez. Bağlantıya sahip olan herkes günlüğü okuyabilir.&lt;/p&gt;&lt;p&gt;Token&apos;lar, UUID&apos;ler ve ana klasör yolun çıkarıldı. Oyuncu adın, kurulum adların ve mod listen gibi diğer metinler günlükte duruyor: önce oku.&lt;/p&gt;</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>The full log stays on your computer at: %1</source>
+        <translation>Günlüğün tamamı bilgisayarında şurada duruyor: %1</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Don&apos;t upload</source>
+        <translation>Yükleme</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Upload</source>
+        <translation>Yükle</translation>
     </message>
 </context>
 <context>
@@ -3527,7 +3642,7 @@ The author may have blocked third-party launchers, or there may be no build for 
         <translation>Herhangi bir yükleyici</translation>
     </message>
     <message>
-        <location line="+115"/>
+        <location line="+113"/>
         <source>Browse modpacks on</source>
         <translation>Mod paketlerine göz atma kaynağı</translation>
     </message>
@@ -5639,7 +5754,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeJumpCard</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeJumpCard.qml" line="+192"/>
+        <location filename="../launcher/qml/Components/HomeJumpCard.qml" line="+193"/>
         <source>New</source>
         <translation>Yeni</translation>
     </message>
@@ -5688,7 +5803,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomePage</name>
     <message>
-        <location filename="../launcher/qml/Components/HomePage.qml" line="+215"/>
+        <location filename="../launcher/qml/Components/HomePage.qml" line="+216"/>
         <source>Library</source>
         <translation>Kütüphane</translation>
     </message>
@@ -5926,7 +6041,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceCard</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceCard.qml" line="+246"/>
+        <location filename="../launcher/qml/Components/InstanceCard.qml" line="+248"/>
         <source>Starting…</source>
         <translation>Başlıyor…</translation>
     </message>
@@ -6427,7 +6542,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstanceListRow</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceListRow.qml" line="+222"/>
+        <location filename="../launcher/qml/Components/InstanceListRow.qml" line="+223"/>
         <source>%1%</source>
         <translation>%1%</translation>
     </message>
@@ -6521,7 +6636,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstancePage</name>
     <message>
-        <location filename="../launcher/qml/Components/InstancePage.qml" line="+170"/>
+        <location filename="../launcher/qml/Components/InstancePage.qml" line="+172"/>
         <source>Content</source>
         <translation>İçerik</translation>
     </message>
@@ -6582,12 +6697,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
     </message>
     <message>
         <location line="+4"/>
-        <location line="+334"/>
+        <location line="+335"/>
         <source>Plugins</source>
         <translation>Eklentiler</translation>
     </message>
     <message>
-        <location line="-192"/>
+        <location line="-193"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
@@ -6612,7 +6727,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+179"/>
+        <location line="+180"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
@@ -9568,7 +9683,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+262"/>
+        <location filename="../launcher/qml/Main.qml" line="+281"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -9578,21 +9693,21 @@ Neden:
         <translation>Oynamak için Minecraft&apos;a sahip Microsoft hesabıyla giriş yap.</translation>
     </message>
     <message>
-        <location line="+137"/>
+        <location line="+152"/>
         <source>Delete “%1”? Its folder — worlds, mods, screenshots — is removed for good.</source>
         <translation>“%1” silinsin mi? Klasörü (dünyalar, modlar, ekran görüntüleri) tamamen kaldırılır.</translation>
     </message>
     <message>
         <location line="+64"/>
-        <location line="+66"/>
+        <location line="+67"/>
         <location line="+12"/>
         <location line="+0"/>
         <source>Home</source>
         <translation>Ana sayfa</translation>
     </message>
     <message>
-        <location line="-77"/>
-        <location line="+67"/>
+        <location line="-78"/>
+        <location line="+68"/>
         <source>Discover</source>
         <translation>Keşfet</translation>
     </message>
@@ -9633,7 +9748,7 @@ Neden:
         <translation>Yeni kurulum</translation>
     </message>
     <message>
-        <location line="+303"/>
+        <location line="+338"/>
         <source>Rename instance</source>
         <translation>Kurulumu yeniden adlandır</translation>
     </message>
@@ -9648,7 +9763,7 @@ Neden:
         <translation>Bu ad kullanılamaz.</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+10"/>
         <source>Move to group</source>
         <translation>Gruba taşı</translation>
     </message>
@@ -9668,7 +9783,7 @@ Neden:
         <translation>Taşı</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+14"/>
         <location line="+1"/>
         <source>Delete instance</source>
         <translation>Kurulumu sil</translation>
@@ -12234,7 +12349,7 @@ Are you sure?</source>
 <context>
     <name>ModHealthModel</name>
     <message>
-        <location filename="../launcher/models/ModHealthModel.cpp" line="+279"/>
+        <location filename="../launcher/models/ModHealthText.cpp" line="+59"/>
         <source>Minecraft</source>
         <translation>Minecraft</translation>
     </message>
@@ -12916,17 +13031,17 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>NewInstanceDialog</name>
     <message>
-        <location filename="../launcher/qml/Components/NewInstanceDialog.qml" line="+67"/>
+        <location filename="../launcher/qml/Components/NewInstanceDialog.qml" line="+75"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
     <message>
-        <location line="+34"/>
+        <location line="+38"/>
         <source>Minecraft %1</source>
         <translation>Minecraft %1</translation>
     </message>
     <message>
-        <location line="+31"/>
+        <location line="+55"/>
         <source>Release</source>
         <translation>Kararlı sürüm</translation>
     </message>
@@ -12946,7 +13061,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Alfa</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+22"/>
         <source>Import instance</source>
         <translation>Kurulumu içe aktar</translation>
     </message>
@@ -12956,19 +13071,19 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Yeni kurulum</translation>
     </message>
     <message>
-        <location line="+75"/>
-        <location line="+574"/>
+        <location line="+88"/>
+        <location line="+585"/>
         <source>Create</source>
         <translation>Oluştur</translation>
     </message>
     <message>
-        <location line="-573"/>
-        <location line="+587"/>
+        <location line="-583"/>
+        <location line="+601"/>
         <source>Import</source>
         <translation>İçe aktar</translation>
     </message>
     <message>
-        <location line="-568"/>
+        <location line="-582"/>
         <source>Instance icon</source>
         <translation>Kurulum simgesi</translation>
     </message>
@@ -13014,7 +13129,8 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Eski sürümler</translation>
     </message>
     <message>
-        <location line="+73"/>
+        <location line="-142"/>
+        <location line="+215"/>
         <source>Recommended</source>
         <translation>Önerilen</translation>
     </message>
@@ -13034,7 +13150,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Bu sürüm için yok</translation>
     </message>
     <message>
-        <location line="+170"/>
+        <location line="+180"/>
         <source>Drop a .zip or .mrpack file here</source>
         <translation>Buraya bir .zip veya .mrpack dosyası bırak</translation>
     </message>
@@ -13085,12 +13201,12 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     </message>
     <message>
         <location line="+2"/>
-        <location line="+40"/>
+        <location line="+44"/>
         <source>Importing…</source>
         <translation>İçe aktarılıyor…</translation>
     </message>
     <message>
-        <location line="-40"/>
+        <location line="-44"/>
         <location line="+26"/>
         <source>Creating…</source>
         <translation>Oluşturuluyor…</translation>
@@ -14079,13 +14195,13 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Oyna çubuğu</translation>
     </message>
     <message>
-        <location line="+130"/>
+        <location line="+133"/>
         <source>Change instance: %1</source>
         <translation>Kurulumu değiştir: %1</translation>
     </message>
     <message>
         <location line="+0"/>
-        <location line="+57"/>
+        <location line="+63"/>
         <source>Choose an instance</source>
         <translation>Bir kurulum seç</translation>
     </message>
@@ -15794,7 +15910,7 @@ What should happen to %1?</source>
 <context>
     <name>QmlShell</name>
     <message>
-        <location filename="../launcher/qml/QmlShell.cpp" line="+463"/>
+        <location filename="../launcher/qml/QmlShell.cpp" line="+465"/>
         <source>Choose an account</source>
         <translation>Bir hesap seç</translation>
     </message>
@@ -15925,9 +16041,79 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
 <context>
     <name>RecentItem</name>
     <message>
-        <location filename="../launcher/qml/Components/RecentItem.qml" line="+160"/>
+        <location filename="../launcher/qml/Components/RecentItem.qml" line="+178"/>
         <source>Play</source>
         <translation>Oyna</translation>
+    </message>
+</context>
+<context>
+    <name>RecommendedPane</name>
+    <message>
+        <location filename="../launcher/qml/Components/RecommendedPane.qml" line="+215"/>
+        <source>%1 · Minecraft %2</source>
+        <translation>%1 · Minecraft %2</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 · any recent version</source>
+        <translation>%1 · güncel herhangi bir sürüm</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Minecraft version</source>
+        <translation>Minecraft sürümü</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Minecraft %1</source>
+        <translation>Minecraft %1</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Loading…</source>
+        <translation>Yükleniyor…</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <source>Kite can&apos;t download OptiFine, because its license doesn&apos;t allow it. Get it from optifine.net and drop it on the instance&apos;s Mods tab.</source>
+        <translation>Kite OptiFine&apos;ı indiremez, çünkü lisansı buna izin vermiyor. optifine.net&apos;ten al ve kurulumun Modlar sekmesine bırak.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Open optifine.net</source>
+        <translation>optifine.net&apos;i aç</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>%1 has no build for Minecraft %2.</source>
+        <translation>%1, Minecraft %2 için bir sürüm yok.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Pick a version to see what will be installed.</source>
+        <translation>Nelerin yükleneceğini görmek için bir sürüm seç.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>No mods picked. Only the loader will be installed.</source>
+        <translation>Mod seçilmedi. Yalnızca yükleyici kurulacak.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Looking up versions…</source>
+        <translation>Sürümler aranıyor…</translation>
+    </message>
+    <message numerus="yes">
+        <location line="+1"/>
+        <source>%n mods will be installed, with what they need.</source>
+        <translation>
+            <numerusform>%n mod, gerekenleriyle birlikte yüklenecek.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Not available for %1: %2. They are skipped.</source>
+        <translation>%1 için yok: %2. Bunlar atlanacak.</translation>
     </message>
 </context>
 <context>
@@ -16636,7 +16822,12 @@ Currently installed version: %1</source>
         <translation>Çalıştırdığın sürüm, yardım alacağın yerler, Kite&apos;ın arkasındaki kişiler ve lisanslar.</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+4"/>
+        <source>Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.</source>
+        <translation>Resmî bir Minecraft ürünü değildir. Mojang veya Microsoft tarafından onaylanmamıştır ve onlarla bağlantılı değildir.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
         <source>Version</source>
         <translation>Sürüm</translation>
     </message>
@@ -17777,7 +17968,7 @@ Currently installed version: %1</source>
         <translation>Kenar çubuğunu daralt</translation>
     </message>
     <message>
-        <location line="+251"/>
+        <location line="+263"/>
         <source>New instance</source>
         <translation>Yeni kurulum</translation>
     </message>
@@ -20188,24 +20379,6 @@ Lütfen hesabını şuna göre ayarla: %1.</translation>
         <translation>XSTS kimlik doğrulaması tanınmayan hatalarla bitti:
 
 %1</translation>
-    </message>
-</context>
-<context>
-    <name>XboxProfileStep</name>
-    <message>
-        <location filename="../launcher/minecraft/auth/steps/XboxProfileStep.cpp" line="+37"/>
-        <source>Fetching Xbox profile.</source>
-        <translation>Xbox profili alınıyor.</translation>
-    </message>
-    <message>
-        <location line="+51"/>
-        <source>Failed to retrieve the Xbox profile.</source>
-        <translation>Xbox profili alınamadı.</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>Got Xbox profile</source>
-        <translation>Xbox profili alındı</translation>
     </message>
 </context>
 <context>

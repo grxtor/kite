@@ -194,6 +194,9 @@ ApplicationWindow {
             // Add content's Filters popup (after instance=<id>).
             else if (key === "browsefilters")
                 Qt.callLater(instancePage.openBrowseFilters)
+            // The Content tab's Recommended mods dialog (after instance=<id>).
+            else if (key === "bundles")
+                Qt.callLater(instancePage.review, "bundles")
             // A tab's own state, after instance=<id>: "versionmore",
             // "newcomponent", "otherlogs", "logfind", "shotselect",
             // "shotrename" -- see InstancePage.review().
@@ -252,14 +255,15 @@ ApplicationWindow {
     // Null until first opened.
     readonly property QtObject newInstanceDialog: newInstanceLoader.item
 
-    // mode is "create" (default) or "import" -- see NewInstanceDialog.qml.
+    // mode is "create" (default), "recommended" or "import" -- see
+    // NewInstanceDialog.qml.
     // source pre-fills import mode's file/URL field; empty otherwise.
     function openNewInstance(mode, source) {
         if (!root.shell || !root.shell.newInstance)
             return
         var instanceDialog = root.dialog(newInstanceLoader)
         instanceDialog.controller = root.shell.newInstance
-        instanceDialog.mode = mode === "import" ? "import" : "create"
+        instanceDialog.mode = mode === "import" || mode === "recommended" ? mode : "create"
         instanceDialog.presetSource = source || ""
         instanceDialog.open()
     }
@@ -932,6 +936,7 @@ ApplicationWindow {
                         sourceComponent: InstancePage {
                                 headerModel: root.shell && root.shell.instancePageModel ? root.shell.instancePageModel : null
                                 details: root.openedDetails
+                                shell: root.shell
                                 systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
                                 accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
                                 accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
@@ -1053,6 +1058,7 @@ ApplicationWindow {
         active: false
         sourceComponent: NewInstanceDialog {
             iconsModel: root.shell && root.shell.iconsModel ? root.shell.iconsModel : null
+            bundles: root.shell && root.shell.bundles ? root.shell.bundles : null
             onCreated: root.page = "home"
         }
     }

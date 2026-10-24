@@ -41,6 +41,8 @@ Item {
     // InstanceDetails: content (InstanceContentController), loaderInstaller,
     // isMinecraft, name.
     property var details: null
+    // The QML shell, for the catalog behind Recommended mods.
+    property var shell: null
     property string kind: "mods"
     signal openFolderRequested(string path)
     // "Add content": browse for @p kind (InstancePage opens the browser).
@@ -152,11 +154,21 @@ Item {
         else if (root.content)
             root.content.setEnabled("mods", [key], action === "enable")
     }
+    // Recommended mods (Mods only); the dialog is built on first use.
+    function openBundles() {
+        root.withLoader(() => {
+            bundleLoader.active = true
+            if (bundleLoader.item)
+                bundleLoader.item.show()
+        })
+    }
     // A state for review snapshots (InstancePage.review()): "modhealth"
-    // opens the problems dialog.
+    // opens the problems dialog, "bundles" the Recommended mods one.
     function review(name) {
         if (name === "modhealth")
             healthDialog.open()
+        else if (name === "bundles")
+            root.openBundles()
     }
 
     function fileName(url) {
@@ -222,8 +234,9 @@ Item {
             readonly property int updatesIconWidth: root.updatable ? Theme.control.height + gap : 0
             // The actions row without the search field and the label of
             // "Check for updates".
+            readonly property int bundlesWidth: root.kind === "mods" ? bundlesButton.implicitWidth + gap : 0
             readonly property int actionsWidth: folderButton.implicitWidth + moreButton.implicitWidth
-                                                + addButton.implicitWidth + gap * 3
+                                                + addButton.implicitWidth + bundlesWidth + gap * 3
             // Measured against the tab's own width, which the toolbar's
             // contents never feed back into.
             readonly property bool oneRow: root.width >= kindsWidth + searchMinWidth + updatesIconWidth + actionsWidth
@@ -344,6 +357,18 @@ Item {
                             icon.source: Icons.url("list")
                             onTriggered: root.exportList([])
                         }
+                    }
+                }
+
+                HoverReason {
+                    visible: root.kind === "mods"
+                    reason: root.lockedReason
+                    Button {
+                        id: bundlesButton
+                        enabled: root.unlocked && !root.flowsBusy
+                        text: qsTr("Recommended mods")
+                        icon.source: Icons.url("package")
+                        onClicked: root.openBundles()
                     }
                 }
 
@@ -564,6 +589,17 @@ Item {
         lockedReason: root.lockedReason
         onActionRequested: (action, key, dependencyId, replacesKey) => root.runHealthAction(action, key, dependencyId, replacesKey)
         onInstallAll: root.installMissing(root.health.installRows())
+    }
+
+    Loader {
+        id: bundleLoader
+        active: false
+        sourceComponent: BundleDialog {
+            bundles: root.shell ? root.shell.bundles : null
+            updater: root.content ? root.content.updater : null
+            loader: root.details && root.details.contentBrowser ? root.details.contentBrowser.instanceLoader : ""
+            onInstallRequested: (ids) => flows.installBundle(ids)
+        }
     }
 
     ExportContentListDialog {
