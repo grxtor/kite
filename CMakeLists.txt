@@ -576,6 +576,13 @@ if(UNIX AND APPLE)
     set(MACOSX_BUNDLE_LONG_VERSION_STRING "${Kite_RELEASE_VERSION_NAME}")
     set(MACOSX_BUNDLE_ICON_FILE ${Kite_AppID}.icns)
     set(MACOSX_BUNDLE_COPYRIGHT "${Kite_Copyright_Mac}")
+    # Lets macOS turn away a build made for a newer system with its own
+    # message, rather than the app crashing inside Qt (the Legacy release
+    # targets 12, the others 13). Left out when no target is set.
+    if(CMAKE_OSX_DEPLOYMENT_TARGET)
+        set(MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION_KEY
+            "<key>LSMinimumSystemVersion</key>\n    <string>${CMAKE_OSX_DEPLOYMENT_TARGET}</string>")
+    endif()
     set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "" CACHE STRING "Public key for Sparkle update feed")
     set(MACOSX_SPARKLE_UPDATE_FEED_URL "" CACHE STRING "URL for Sparkle update feed")
 

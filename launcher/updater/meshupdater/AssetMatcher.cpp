@@ -207,7 +207,7 @@ AssetMatcher::consider(const GitHubReleaseAsset& asset,
 		return decision;
 	}
 
-	// "Legacy" is a separate product line for older Windows versions. It
+	// "Legacy" is a separate product line for older Windows and macOS. It
 	// shares every other word with the ordinary build, so without this an
 	// ordinary install would quietly migrate onto it.
 	if (!identity.legacy && name.contains(QLatin1String("legacy"))) {
