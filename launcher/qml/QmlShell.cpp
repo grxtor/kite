@@ -66,6 +66,7 @@
 #include "minecraft/PerformanceSetupRules.h"
 #include "minecraft/PerformanceSetupTask.h"
 #include "modplatform/BundleCatalog.h"
+#include "friends/FriendsController.h"
 #include "settings/Setting.h"
 #include "models/RecentWorldsModel.h"
 #include "models/SettingsAdapter.h"
@@ -1087,6 +1088,15 @@ QObject* QmlShell::bundles() const
 		m_bundles->refresh();
 	}
 	return expose(m_bundles.get());
+}
+
+QObject* QmlShell::friends() const
+{
+	if (!m_friends) {
+		/* The working directory is the data folder, where accounts.json is. */
+		m_friends = std::make_unique<FriendsController>(QDir::currentPath());
+	}
+	return expose(m_friends.get());
 }
 
 QObject* QmlShell::exportController(const QString& id)

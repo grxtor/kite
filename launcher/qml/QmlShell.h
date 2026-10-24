@@ -49,6 +49,7 @@ class PlayTimeSummary;
 class LibraryController;
 class LauncherLogs;
 class BundleCatalog;
+class FriendsController;
 class CatPackList;
 class RecentWorldsModel;
 class JavaInstallList;
@@ -159,6 +160,10 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* catPacks READ catPacks CONSTANT)
 	/// Recommended mods and instance presets (see modplatform/BundleCatalog.h).
 	Q_PROPERTY(QObject* bundles READ bundles CONSTANT)
+	/// Who is online and where, from Kite's friends server (see
+	/// friends/FriendsController.h). Off, and silent, until the user turns
+	/// it on.
+	Q_PROPERTY(QObject* friends READ friends CONSTANT)
 	/* Distinct groups currently in use, for a "move to group" picker's
 	 * suggestions -- the same list InstanceFilterModel derives for the
 	 * library's own section headers (see m_instances), so a group picker
@@ -367,6 +372,8 @@ class QmlShell : public QObject
 	QObject* catPacks() const;
 	/// Made on first use, like catPacks().
 	QObject* bundles() const;
+	/// Made on first use; contacts nothing unless FriendsEnabled is set.
+	QObject* friends() const;
 
 	/* Everything below just emits the matching *Requested() signal: QmlShell
 	 * sits in Kite_qml, which cannot see the widget code that actually
@@ -674,6 +681,7 @@ class QmlShell : public QObject
 	mutable std::unique_ptr<LauncherLogs> m_launcherLogs;
 	mutable std::unique_ptr<CatPackList> m_catPacks;
 	mutable std::unique_ptr<BundleCatalog> m_bundles;
+	mutable std::unique_ptr<FriendsController> m_friends;
 	/* Keyed by (anchor, anchorContext) -- see pluginSurfaces(). Declared
 	 * alongside the other cached models, for the same reason: destroyed
 	 * before the engine is torn down. */

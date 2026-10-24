@@ -115,6 +115,13 @@ class LaunchTask : public Task
 
 	void requestLogging();
 
+	/**
+	 * @brief emitted for every line the launch prints, game output
+	 * included, after private values are censored. For code that reads the
+	 * log as it goes (the friends feature) without owning the LogModel.
+	 */
+	void logLineReceived(const QString& line);
+
   public slots:
 	void onLogLines(const QStringList& lines,
 					MessageLevel::Enum defaultLevel = MessageLevel::Kite);

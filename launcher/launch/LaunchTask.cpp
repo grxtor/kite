@@ -253,6 +253,7 @@ void LaunchTask::onLogLine(QString line, MessageLevel::Enum level)
 	// censor private user info
 	line = censorPrivateInfo(line);
 
+	emit logLineReceived(line);
 	auto& model = *getLogModel();
 	model.append(level, line);
 }

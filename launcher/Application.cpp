@@ -1144,6 +1144,14 @@ void Application::initSettings()
 	// paste.ee API key
 	m_settings->registerSetting("PasteEEAPIKey", "kite");
 
+	// Friends (server/friends/): off until the user turns it on; nothing is
+	// sent to the server before then. The Mojang URL is a test hook for
+	// the local end-to-end run, not a setting anyone should change.
+	m_settings->registerSetting("FriendsEnabled", false);
+	m_settings->registerSetting("FriendsServerUrl", BuildConfig.FRIENDS_URL);
+	m_settings->registerSetting("FriendsMojangSessionUrl",
+								QString("https://sessionserver.mojang.com"));
+
 	// Init page provider
 	{
 		m_globalSettingsProvider =

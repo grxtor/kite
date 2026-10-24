@@ -911,6 +911,49 @@ add_unit_test(PackContents
     LIBS Kite_logic
     )
 
+# The friends list: Kite's friends server (server/friends/), the sign-in
+# with Mojang's session server and the game log rules for "who is where".
+set(FRIENDS_SOURCES
+    friends/FriendsApi.h
+    friends/FriendsApi.cpp
+    friends/FriendsDisplay.h
+    friends/FriendsDisplay.cpp
+    friends/FriendsLogRules.h
+    friends/FriendsLogRules.cpp
+    friends/FriendsSessionStore.h
+    friends/FriendsSessionStore.cpp
+    friends/FriendsHttp.h
+    friends/FriendsHttp.cpp
+    friends/FriendsGameWatcher.h
+    friends/FriendsGameWatcher.cpp
+    friends/FriendsController.h
+    friends/FriendsController.cpp
+    friends/FriendsSignIn.cpp
+    friends/FriendsPoll.cpp
+    friends/FriendsActions.cpp
+)
+
+# The messages and their answers over the README's fixture JSON, the status
+# lines, and the session file.
+add_unit_test(FriendsApi
+    SOURCES friends/FriendsApi_test.cpp
+    LIBS Kite_core
+    )
+
+# What the game log says about where the player is, for 1.8.9, 1.21.x and
+# 26.x, and what must not count.
+add_unit_test(FriendsLogRules
+    SOURCES friends/FriendsLogRules_test.cpp
+    LIBS Kite_core
+    )
+
+# The watcher over a real InstanceList of NullInstances: running, the most
+# recent of several, and the world following the log lines of its launch.
+add_unit_test(FriendsGameWatcher
+    SOURCES friends/FriendsGameWatcher_test.cpp
+    LIBS Kite_core
+    )
+
 set(PLUGIN_SOURCES
     # Supplies core-declared interfaces that need the plugin host to run.
     plugin/PluginAuthRequestDecorator.h
@@ -977,6 +1020,7 @@ set(LOGIC_SOURCES
     ${ATLAUNCHER_SOURCES}
     ${MODRINTH_SOURCES}
     ${CONTENT_DOWNLOAD_SOURCES}
+    ${FRIENDS_SOURCES}
 )
 
 SET(KITE_SOURCES
