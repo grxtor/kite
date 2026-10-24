@@ -5,6 +5,7 @@
 <h1 align="center">Kite</h1>
 
 <p align="center">
+  <strong>Weighs nothing. Holds everything.</strong><br>
   A Minecraft launcher, built native: C++ and Qt Quick, not a web page in a window.
 </p>
 
