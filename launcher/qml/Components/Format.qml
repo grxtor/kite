@@ -137,4 +137,13 @@ QtObject {
             s = s.substring(1)
         return decodeURIComponent(s)
     }
+
+    // The friends list with those playing first, then those online, then
+    // the rest; the order the server gave (by name) holds inside each.
+    function friendsByPresence(friends) {
+        var rank = (f) => f.state === "playing" ? 0 : f.state === "online" ? 1 : 2
+        return (friends || []).map((f, i) => ({ f: f, i: i }))
+            .sort((a, b) => (rank(a.f) - rank(b.f)) || a.i - b.i)
+            .map((x) => x.f)
+    }
 }

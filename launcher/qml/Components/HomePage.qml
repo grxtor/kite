@@ -47,6 +47,8 @@ Item {
     property var instanceModel: null
     // QmlShell.recentWorlds: the side panel's "Recent worlds", and the
     // hero's "Last world".
+    // QmlShell.friends (FriendsController), or null.
+    property var friends: null
     property var recentWorldsModel: null
     // QmlShell.news (NewsModel): Kite's news, newest first, or null.
     property var news: null
@@ -77,6 +79,8 @@ Item {
     signal discoverRequested()
     // "Set up Kite"'s "Sign in with Microsoft".
     signal signInRequested()
+    // The Friends dialog, on "friends" or "requests".
+    signal friendsRequested(string tab)
     // A Continue playing row's ⋯ (or right-click). The page already opens
     // the library's instance menu for it; this only tells.
     signal menuRequested(string id, Item anchor)
@@ -319,6 +323,8 @@ Item {
         signedIn: root.msaSignedIn
         news: root.news
         recentWorldsModel: root.recentWorldsModel
+        friends: root.friends
+        onFriendsRequested: (tab) => root.friendsRequested(tab)
         onCreateRequested: root.createRequested()
         onSignInRequested: root.signInRequested()
         onWorldRequested: (id) => root.openInstanceWorldsRequested(id)

@@ -147,6 +147,12 @@ ApplicationWindow {
                 root.navigate(value)
             else if (key === "import")
                 root.openImport(value)
+            // The Friends dialog; "friendsTab=requests" or "=blocked" opens
+            // it on that tab.
+            else if (key === "friends")
+                Qt.callLater(root.openFriends, "friends")
+            else if (key === "friendsTab")
+                Qt.callLater(root.openFriends, value)
             else if (key === "gallery")
                 galleryLoader.active = true
             else if (key === "profilemenu")
@@ -248,6 +254,14 @@ ApplicationWindow {
             root.selection.selectOnly(selectedId)
         else
             root.selection.clear()
+    }
+
+    // QmlShell.friends (FriendsController), or null where this build has none.
+    readonly property var friendsController: root.shell && root.shell.friends ? root.shell.friends : null
+    // The Friends dialog on tab "friends", "requests" or "blocked".
+    function openFriends(tab) {
+        var friendsDialog = root.dialog(friendsLoader)
+        friendsDialog.openTab(tab || "friends")
     }
 
     // The dialog held by `loader`, built now if it is not yet.
@@ -823,6 +837,8 @@ ApplicationWindow {
                                    ? root.shell.shortcutController(id) : null
                         }
                         msaSignedIn: !!root.shell && root.shell.accountKind === "Microsoft"
+                        friends: root.friendsController
+                        onFriendsRequested: (tab) => root.openFriends(tab)
 
                         onLaunchRequested: (id) => root.launch(id)
                         onStopRequested: (id) => root.call("killInstance", id)
@@ -910,6 +926,7 @@ ApplicationWindow {
                                 pluginList: root.shell && typeof root.shell.pluginList === "function"
                                             ? root.shell.pluginList() : null
                                 launcherLogs: root.shell && root.shell.launcherLogs ? root.shell.launcherLogs : null
+                                friends: root.friendsController
                                 onOpenPathRequested: (path) => root.call("openPath", path)
                         }
                     }
@@ -1140,6 +1157,23 @@ ApplicationWindow {
                     toast.show(qsTr("The instance could not be deleted. Is it running, or are its files in use?"), "danger")
                 }
             }
+        }
+    }
+
+    Loader {
+        id: friendsLoader
+        active: false
+        sourceComponent: FriendsDialog {
+            controller: root.friendsController
+        }
+    }
+
+    // What the friends server answered to something asked of it.
+    Connections {
+        target: root.friendsController
+        function onActionFinished(action, ok, message) {
+            if (message.length > 0)
+                toast.show(message, ok ? "success" : "danger")
         }
     }
 

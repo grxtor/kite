@@ -144,6 +144,7 @@ qt_add_qml_module(Kite_qml_components
         SettingsExternalToolsSection.qml
         SettingsLogUploadSection.qml
         SettingsGeneralSection.qml
+        SettingsFriendsSection.qml
         SettingsJavaSection.qml
         SettingsMinecraftSection.qml
         SettingsConsoleSection.qml
@@ -182,6 +183,14 @@ qt_add_qml_module(Kite_qml_components
         LibrarySections.qml
         InstanceMenu.qml
         HomeSidePanel.qml
+        HomeFriends.qml
+        FriendRow.qml
+        FriendMoreButton.qml
+        FriendsDialog.qml
+        FriendsFriendsTab.qml
+        FriendsRequestsTab.qml
+        FriendsBlockedTab.qml
+        FriendsOptInDialog.qml
         HomeEmptyState.qml
         HomeSectionTitle.qml
         HomeHero.qml
@@ -213,6 +222,7 @@ qt_add_qml_module(Kite_qml_components
         icons/arrow-down.svg
         icons/arrow-right.svg
         icons/arrow-up.svg
+        icons/ban.svg
         icons/bell.svg
         icons/check.svg
         icons/chevron-down.svg
