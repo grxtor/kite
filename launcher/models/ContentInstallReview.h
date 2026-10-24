@@ -27,10 +27,10 @@
 #include <QStringList>
 #include <memory>
 
+#include "modplatform/DependencyResolver.h"
 #include "modplatform/ModDownloadTypes.h"
 
 class ModFolderModel;
-class DependencyResolver;
 
 /*
  * An install plan, shown before anything is downloaded: the QML-facing
@@ -43,7 +43,10 @@ class DependencyResolver;
  *     dependencies (DependencyResolver, mods only) into rows under it.
  *   - Missing dependencies (missingDependencies(), "Verify dependencies"):
  *     the resolver is run over what is already installed, and only what
- *     it finds missing is listed. There is no picked row.
+ *     it finds missing is listed. There is no picked row. The mod health
+ *     check's "Install" is this shape too: setWantedProjects() adds the
+ *     mods it found missing by id, setReplacements() the outdated copies
+ *     they are to replace.
  *
  * Every dependency row can be unticked; one whose project is already on
  * disk at another version starts unticked - DownloadSummaryDialog's own
@@ -99,6 +102,8 @@ class ContentInstallReview : public QAbstractListModel
 		CheckedRole,
 		/// A version of this is already installed.
 		MaybeInstalledRole,
+		/// The file this one replaces, or "".
+		ReplacesRole,
 		/// The author only allows downloads from their own page.
 		BrowserOnlyRole,
 		/// "release" / "beta" / "alpha" / "".
@@ -151,6 +156,17 @@ class ContentInstallReview : public QAbstractListModel
 	QVariant data(const QModelIndex& index, int role) const override;
 	QHash<int, QByteArray> roleNames() const override;
 
+	/// Mods to look up by id, as if the installed ones given to
+	/// missingDependencies() required them (DependencyResolver::
+	/// addWantedProjects). Before start(); a review with no installed mods
+	/// and only these still resolves.
+	void setWantedProjects(const QList<DependencyResolver::WantedProject>& wanted);
+	/// For the dependency that answers wanted id K (its `slug`): the file
+	/// @p fileByWantedId has under K, which it replaces. Such a row is
+	/// installed as a replacement and starts ticked even though a version
+	/// of it is already on disk - replacing an outdated copy is the point.
+	/// Before start() or applyResolution().
+	void setReplacements(const QHash<QString, QString>& fileByWantedId);
 	/// Resolves dependencies, or settles at once when there are none to
 	/// look for. Called by whoever created the review.
 	void start();
@@ -203,6 +219,8 @@ class ContentInstallReview : public QAbstractListModel
 	QString m_loader;
 	std::shared_ptr<ModFolderModel> m_folder;
 	bool m_resolveDependencies = false;
+	QList<DependencyResolver::WantedProject> m_wanted;
+	QHash<QString, QString> m_replacements;
 
 	QList<Row> m_rows;
 	QList<ModPlatform::UnresolvedDep> m_unresolved;

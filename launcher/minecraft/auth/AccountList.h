@@ -136,6 +136,11 @@ class AccountList : public QAbstractListModel
 	void setDefaultAccount(MinecraftAccountPtr profileId);
 	bool anyAccountIsValid();
 
+	/// Whether a Microsoft account that owns Minecraft is in the list. Offline
+	/// accounts hang on this: they are only for play alongside a purchased
+	/// game.
+	bool anyMicrosoftAccountOwnsMinecraft();
+
 	bool isActive() const;
 
   protected:

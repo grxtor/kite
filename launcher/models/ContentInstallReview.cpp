@@ -161,6 +161,8 @@ QVariant ContentInstallReview::data(const QModelIndex& index, int role) const
 			return row.checked;
 		case MaybeInstalledRole:
 			return row.maybeInstalled;
+		case ReplacesRole:
+			return row.item.replacesFileName;
 		case BrowserOnlyRole:
 			return row.item.browserDownloadOnly;
 		case VersionTypeRole:
@@ -181,9 +183,22 @@ QHash<int, QByteArray> ContentInstallReview::roleNames() const
 		{IsDependencyRole, "isDependency"},
 		{CheckedRole, "checked"},
 		{MaybeInstalledRole, "maybeInstalled"},
+		{ReplacesRole, "replaces"},
 		{BrowserOnlyRole, "browserOnly"},
 		{VersionTypeRole, "versionType"},
 	};
+}
+
+void ContentInstallReview::setWantedProjects(
+	const QList<DependencyResolver::WantedProject>& wanted)
+{
+	m_wanted = wanted;
+}
+
+void ContentInstallReview::setReplacements(
+	const QHash<QString, QString>& fileByWantedId)
+{
+	m_replacements = fileByWantedId;
 }
 
 void ContentInstallReview::start()
@@ -203,6 +218,7 @@ void ContentInstallReview::start()
 	if (m_folder) {
 		m_resolver->setInstalledIndex(m_folder->metadataIndex());
 	}
+	m_resolver->addWantedProjects(m_wanted);
 	/* A failure is not the end of the install - the widget's Skip does
 	 * not end it either: whatever was resolved before it is offered. An
 	 * abort reports through failed() too. */
@@ -245,8 +261,16 @@ void ContentInstallReview::applyResolution(
 		row.requiredBy = dep.requiredBy;
 		row.versionType = dep.versionType;
 		row.maybeInstalled = dep.maybeInstalled;
-		/* "Unticked because a version of this is already installed." */
-		row.checked = !dep.maybeInstalled;
+		/* A dependency that answers a wanted id with an outdated copy on
+		 * disk replaces that copy. */
+		const QString replaced = m_replacements.value(dep.slug);
+		if (!dep.slug.isEmpty() && !replaced.isEmpty()) {
+			row.item.replaceExisting = true;
+			row.item.replacesFileName = replaced;
+		}
+		/* "Unticked because a version of this is already installed" -
+		 * unless replacing it is what the row is for. */
+		row.checked = !dep.maybeInstalled || row.item.replaceExisting;
 		m_rows.append(row);
 	}
 	m_unresolved = unresolved;

@@ -119,7 +119,7 @@ Item {
             versionmore: ["version", versionTab], newcomponent: ["version", versionTab],
             otherlogs: ["log", logTab], logfind: ["log", logTab],
             shotselect: ["screenshots", shotsTab], shotrename: ["screenshots", shotsTab],
-            browsepick: ["browse", browseView]
+            browsepick: ["browse", browseView], modhealth: ["content", contentTab]
         }
         const owner = owners[name]
         if (!owner)

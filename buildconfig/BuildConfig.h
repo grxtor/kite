@@ -178,8 +178,9 @@ class Config
 	QString RESOURCE_BASE = "https://resources.download.minecraft.net/";
 	QString LIBRARY_BASE = "https://libraries.minecraft.net/";
 	QString IMGUR_BASE_URL = "https://api.imgur.com/3/";
-	// TODO(fork): still points at Project Tick's server.
-	QString FMLLIBS_BASE_URL = "https://files.projecttick.org/fmllibs/";
+	// Served next to Kite's meta, byte-identical to the files the sha1s in
+	// VersionFilterData.cpp pin.
+	QString FMLLIBS_BASE_URL = "https://meta.kiteclient.com/fmllibs/";
 
 	/// Where translation updates are downloaded from; empty means never.
 	QString TRANSLATIONS_BASE_URL;

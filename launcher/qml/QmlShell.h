@@ -82,10 +82,14 @@ bool languageSetupStepNeeded(const QString& language);
  * "LastHostname" setting recorded on a previous run -- same trigger the
  * widget wizard used (a new machine, or a rename, may mean Java moved or
  * vanished). @p javaPathResolves: FS::ResolveExecutable() on the "JavaPath"
- * setting found something. Callers compute both against live state; this
- * function only combines them, so it needs neither Qt network calls
+ * setting found something. @p autoDownload: the "JavaAutoDownload" setting.
+ * With it on, no Java path is a choice the step itself offers ("let Kite
+ * download the right version for each game"), so a missing path alone does
+ * not bring the step back. Callers compute all three against live state;
+ * this function only combines them, so it needs neither Qt network calls
  * (QHostInfo) nor filesystem access to test. */
-bool javaSetupStepNeeded(bool hostnameChanged, bool javaPathResolves);
+bool javaSetupStepNeeded(bool hostnameChanged, bool javaPathResolves,
+						 bool autoDownload);
 
 /*
  * The QML user interface: owns the engine, hands the core's models to it and
@@ -324,6 +328,9 @@ class QmlShell : public QObject
 	 * for one section of the library. Created on first use and kept, so
 	 * QML asking again from a rebuilt delegate gets the same model back. */
 	Q_INVOKABLE QObject* sectionModel(const QString& group);
+	/* IconList::fillsTile(): whether icon @p key is drawn across its whole
+	 * tile (Icons.fillsTile() in QML). */
+	Q_INVOKABLE bool iconFillsTile(const QString& key) const;
 	/* The InstanceDetails bridge for one instance's detail page. At most
 	 * one is kept at a time: asking for a different id replaces (and
 	 * destroys) whichever one was open before; asking again for the same
@@ -366,7 +373,7 @@ class QmlShell : public QObject
 	 * connects these to the real actions. */
 	Q_INVOKABLE void launchInstance(const QString& id);
 	/* Play in a given way: @p mode is "offline" (no sign-in, the account
-	 * cache as it is), "demo" (the demo, no account needed; refused by
+	 * cache as it is), "demo" (the demo, signed in like any launch; refused by
 	 * Application where launchOptions() says supportsDemo is false) or
 	 * anything else for a normal launch -- the widget launch menu's Launch,
 	 * Launch Offline and Launch Demo. */

@@ -366,6 +366,46 @@ class MMCZipTest : public QObject
 				 QByteArray(4000, 'c'));
 	}
 
+	// Several files out of one pass, from a file and from memory - which is
+	// where a jar bundled inside another one is read.
+	void test_ReadFilesFromZip_OnePassFromFileAndMemory()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		QDir root(tempDir.path());
+
+		auto zip = root.absoluteFilePath("jar.zip");
+		QVERIFY(writeStoredZip(zip, {{"a.txt", "alpha"},
+									 {"dir/b.txt", "bravo"},
+									 {"empty.txt", ""},
+									 {"c.txt", "charlie"}}));
+		const QStringList wanted{"dir/b.txt", "a.txt", "empty.txt",
+								 "missing.txt"};
+
+		const auto fromFile = MMCZip::readFilesFromZip(zip, wanted);
+		QCOMPARE(fromFile.size(), 3);
+		QCOMPARE(fromFile.value("a.txt"), QByteArray("alpha"));
+		QCOMPARE(fromFile.value("dir/b.txt"), QByteArray("bravo"));
+		// An empty file is there, with nothing in it; a missing one is not.
+		QVERIFY(fromFile.contains("empty.txt"));
+		QVERIFY(fromFile.value("empty.txt").isEmpty());
+		QVERIFY(!fromFile.contains("missing.txt"));
+		QVERIFY(!fromFile.contains("c.txt"));
+
+		QFile file(zip);
+		QVERIFY(file.open(QIODevice::ReadOnly));
+		const QByteArray bytes = file.readAll();
+		QCOMPARE(MMCZip::readFilesFromZipData(bytes, wanted), fromFile);
+
+		QVERIFY(MMCZip::readFilesFromZip(root.absoluteFilePath("nope.zip"),
+										 wanted)
+					.isEmpty());
+		QVERIFY(MMCZip::readFilesFromZipData(QByteArray(), wanted).isEmpty());
+		QVERIFY(MMCZip::readFilesFromZipData(QByteArray("not a zip"), wanted)
+					.isEmpty());
+		QVERIFY(MMCZip::readFilesFromZip(zip, {}).isEmpty());
+	}
+
 	// A download that stopped on an entry boundary still looks like a
 	// perfectly readable zip to a streaming reader: it walks local headers
 	// until the bytes run out and calls that the end of the archive. So

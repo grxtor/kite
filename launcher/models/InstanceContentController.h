@@ -33,7 +33,9 @@ class ModFolderModel;
 class ModMetadataIndex;
 class ContentFilterModel;
 class ContentUpdateController;
+class ModHealthModel;
 class Mod;
+class QTimer;
 
 /*
  * Everything ContentTab.qml does to an instance's content folders that the
@@ -57,6 +59,10 @@ class Mod;
  * Rows are addressed by ContentFilterModel's `key`, not by row number,
  * so a selection survives sorting, searching and toggling.
  *
+ * `health` is the mods folder's health check (ModHealthModel): redone,
+ * a moment after the folder or the instance's loader changes, from what
+ * the files say about themselves.
+ *
  * Created lazily by InstanceDetails::content() and parented to it; every
  * object handed to QML from here is parented to this controller, so the
  * QML engine never takes ownership of one.
@@ -79,6 +85,9 @@ class InstanceContentController : public QObject
 	/// Updates, version changes, dependency checks and metadata resets
 	/// for these folders (ContentUpdateController).
 	Q_PROPERTY(QObject* updater READ updater CONSTANT)
+	/// What is wrong with the mods folder: missing, switched-off and
+	/// wrong-version dependencies, clashes, duplicates (ModHealthModel).
+	Q_PROPERTY(QObject* health READ health CONSTANT)
 
   public:
 	explicit InstanceContentController(MinecraftInstance* instance,
@@ -97,6 +106,7 @@ class InstanceContentController : public QObject
 		return m_lastError;
 	}
 	QObject* updater() const;
+	QObject* health() const;
 
 	/// The folder model behind @p kind (building it if needed), or null -
 	/// for ContentUpdateController, which works on the folders directly.
@@ -180,6 +190,10 @@ class InstanceContentController : public QObject
 	bool showsCoreMods() const;
 	bool globalDataPacksEnabled() const;
 	void refreshHasModLoader();
+	/// Checks the mods folder again once the changes of the moment have
+	/// settled: files are read one at a time, each announcing itself.
+	void scheduleHealthCheck();
+	void runHealthCheck();
 	/// The global data pack folder moved or was switched on or off.
 	void onGlobalDataPacksChanged();
 	void setLastError(const QString& error);
@@ -197,4 +211,10 @@ class InstanceContentController : public QObject
 	QString m_lastError;
 	/// Owned via QObject parentage (parent is `this`).
 	ContentUpdateController* m_updater = nullptr;
+	/// Owned via QObject parentage (parent is `this`); null without an
+	/// instance.
+	ModHealthModel* m_health = nullptr;
+	/// Single-shot, owned via QObject parentage; restarted by every
+	/// change, so a folder being read is checked once, after the last file.
+	QTimer* m_healthTimer = nullptr;
 };

@@ -106,6 +106,21 @@ static ArchiveReadPtr openZipForReading(const QString& path)
 	return a;
 }
 
+// A zip that is already in memory: a jar bundled inside another one. `data`
+// has to outlive the returned handle, which reads straight out of it.
+static ArchiveReadPtr openZipFromMemory(const QByteArray& data)
+{
+	ArchiveReadPtr a(archive_read_new());
+	archive_read_support_format_zip(a.get());
+	if (archive_read_open_memory(a.get(), data.constData(), data.size()) !=
+		ARCHIVE_OK) {
+		qWarning() << "Could not open in-memory archive:"
+				   << archive_error_string(a.get());
+		return nullptr;
+	}
+	return a;
+}
+
 static ArchiveWritePtr createZipForWriting(const QString& path)
 {
 	ArchiveWritePtr a(archive_write_new());
@@ -866,6 +881,44 @@ bool MMCZip::extractFile(QString fileCompressed, QString file, QString target)
 	return MMCZip::extractRelFile(fileCompressed, file, target);
 }
 
+// The body of the entry libarchive is positioned on.
+static QByteArray readEntryData(struct archive* ar, struct archive_entry* entry)
+{
+	la_int64_t sz = archive_entry_size(entry);
+	if (sz <= 0) {
+		// Size may be unknown; read in chunks
+		QByteArray result;
+		char buf[8192];
+		la_ssize_t r;
+		while ((r = archive_read_data(ar, buf, sizeof(buf))) > 0)
+			result.append(buf, r);
+		return result;
+	}
+	QByteArray data(sz, Qt::Uninitialized);
+	archive_read_data(ar, data.data(), sz);
+	return data;
+}
+
+// One pass over the archive, stopping as soon as every wanted entry has been
+// read. The first entry of a name wins, as it always did for a single file.
+static QHash<QString, QByteArray> readEntries(struct archive* ar,
+											  const QStringList& entryNames)
+{
+	const QSet<QString> wanted(entryNames.begin(), entryNames.end());
+	QHash<QString, QByteArray> found;
+	struct archive_entry* entry;
+	while (found.size() < wanted.size() &&
+		   archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
+		const QString name = entryPathName(entry);
+		if (wanted.contains(name) && !found.contains(name)) {
+			found.insert(name, readEntryData(ar, entry));
+		} else {
+			archive_read_data_skip(ar);
+		}
+	}
+	return found;
+}
+
 QByteArray MMCZip::readFileFromZip(const QString& zipPath,
 								   const QString& entryName)
 {
@@ -873,27 +926,29 @@ QByteArray MMCZip::readFileFromZip(const QString& zipPath,
 	if (!ar)
 		return {};
 
-	struct archive_entry* entry;
-	while (archive_read_next_header(ar.get(), &entry) == ARCHIVE_OK) {
-		QString name = entryPathName(entry);
-		if (name == entryName) {
-			la_int64_t sz = archive_entry_size(entry);
-			if (sz <= 0) {
-				// Size may be unknown; read in chunks
-				QByteArray result;
-				char buf[8192];
-				la_ssize_t r;
-				while ((r = archive_read_data(ar.get(), buf, sizeof(buf))) > 0)
-					result.append(buf, r);
-				return result;
-			}
-			QByteArray data(sz, Qt::Uninitialized);
-			archive_read_data(ar.get(), data.data(), sz);
-			return data;
-		}
-		archive_read_data_skip(ar.get());
-	}
-	return {};
+	return readEntries(ar.get(), {entryName}).value(entryName);
+}
+
+QHash<QString, QByteArray> MMCZip::readFilesFromZip(
+	const QString& zipPath, const QStringList& entryNames)
+{
+	auto ar = openZipForReading(zipPath);
+	if (!ar)
+		return {};
+
+	return readEntries(ar.get(), entryNames);
+}
+
+QHash<QString, QByteArray> MMCZip::readFilesFromZipData(
+	const QByteArray& zipData, const QStringList& entryNames)
+{
+	if (zipData.isEmpty())
+		return {};
+	auto ar = openZipFromMemory(zipData);
+	if (!ar)
+		return {};
+
+	return readEntries(ar.get(), entryNames);
 }
 
 bool MMCZip::entryExists(const QString& zipPath, const QString& entryName)

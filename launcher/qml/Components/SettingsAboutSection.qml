@@ -42,6 +42,15 @@ SettingsScroll {
     title: qsTr("About")
     description: qsTr("The version you are running, where to get help, and the people and licences behind Kite.")
 
+    Text {
+        width: parent.width
+        text: qsTr("Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.")
+        wrapMode: Text.Wrap
+        color: Theme.palette.textSecondary
+        font.family: Theme.font.family
+        font.pixelSize: Theme.type.label.pixelSize
+    }
+
     SettingsGroup {
         width: parent.width
         title: root.about ? root.about.name : ""

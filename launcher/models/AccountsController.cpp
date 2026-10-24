@@ -172,18 +172,11 @@ void AccountsController::refresh(int row)
 bool AccountsController::addOffline(const QString& username)
 {
 	// Same rule as AccountListPage::on_actionAddOffline_triggered(): an
-	// offline account is only useful once there is a Microsoft account to
-	// actually play under, since offline mode exists for testing/LAN play
-	// alongside a real account rather than as a Minecraft account
+	// offline account is only allowed once a Microsoft account that owns
+	// Minecraft is signed in, since offline mode exists for testing/LAN play
+	// alongside a purchased game rather than as a Minecraft account
 	// replacement.
-	bool hasMSA = false;
-	for (int i = 0; i < m_accounts->count(); i++) {
-		if (m_accounts->at(i)->isMSA()) {
-			hasMSA = true;
-			break;
-		}
-	}
-	if (!hasMSA) {
+	if (!m_accounts->anyMicrosoftAccountOwnsMinecraft()) {
 		return false;
 	}
 

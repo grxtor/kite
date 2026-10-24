@@ -37,16 +37,25 @@
  * parts of AccountsController that only touch AccountList/MinecraftAccount.
  *
  * MinecraftAccount::createBlankMSA() marks an account as MSA-typed without
- * performing any login - exactly what's needed to satisfy addOffline()'s
- * "at least one Microsoft account exists" rule in a test. Actually signing
- * in (AccountsController::loginMicrosoft()) goes through MSAStep, which
- * reaches LAUNCHER->network() - that needs a real LauncherContext and is
- * deliberately not exercised here, per instructions not to perform network
- * auth calls in tests.
+ * performing any login; with its entitlement set (createOwningMSA()) that is
+ * exactly what addOffline()'s "a Microsoft account owns Minecraft" rule
+ * needs in a test. Actually signing in (AccountsController::loginMicrosoft())
+ * goes through MSAStep, which reaches LAUNCHER->network() - that needs a
+ * real LauncherContext and is deliberately not exercised here, per
+ * instructions not to perform network auth calls in tests.
  */
 class AccountsControllerTest : public QObject
 {
 	Q_OBJECT
+
+  private:
+	/// A Microsoft account that owns Minecraft, without a login.
+	static MinecraftAccountPtr createOwningMSA()
+	{
+		auto msa = MinecraftAccount::createBlankMSA();
+		msa->accountData()->minecraftEntitlement.ownsMinecraft = true;
+		return msa;
+	}
 
   private slots:
 	void test_roleNames_includeQmlRoles()
@@ -194,7 +203,7 @@ class AccountsControllerTest : public QObject
 		QCOMPARE(list->count(), 1);
 	}
 
-	void test_addOffline_requiresAnMSAAccountFirst()
+	void test_addOffline_requiresAnOwningMSAAccountFirst()
 	{
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());
 		AccountsController controller(list);
@@ -202,16 +211,38 @@ class AccountsControllerTest : public QObject
 		QVERIFY(!controller.addOffline("Steve"));
 		QCOMPARE(list->count(), 0);
 
+		// A Microsoft account that does not own the game is not enough.
 		list->addAccount(MinecraftAccount::createBlankMSA());
+		QVERIFY(!controller.addOffline("Steve"));
+		QCOMPARE(list->count(), 1);
+
+		list->addAccount(createOwningMSA());
 		QVERIFY(controller.addOffline("Steve"));
-		QCOMPARE(list->count(), 2);
+		QCOMPARE(list->count(), 3);
+	}
+
+	void test_anyMicrosoftAccountOwnsMinecraft()
+	{
+		AccountList list;
+		QVERIFY(!list.anyMicrosoftAccountOwnsMinecraft());
+
+		// An offline account "owns" the game for launching, but is no
+		// Microsoft account.
+		list.addAccount(MinecraftAccount::createOffline("Steve"));
+		QVERIFY(!list.anyMicrosoftAccountOwnsMinecraft());
+
+		list.addAccount(MinecraftAccount::createBlankMSA());
+		QVERIFY(!list.anyMicrosoftAccountOwnsMinecraft());
+
+		list.addAccount(createOwningMSA());
+		QVERIFY(list.anyMicrosoftAccountOwnsMinecraft());
 	}
 
 	void test_addOffline_rejectsEmptyOrWhitespaceUsername()
 	{
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());
 		AccountsController controller(list);
-		list->addAccount(MinecraftAccount::createBlankMSA());
+		list->addAccount(createOwningMSA());
 
 		QVERIFY(!controller.addOffline(""));
 		QVERIFY(!controller.addOffline("   "));
@@ -222,7 +253,7 @@ class AccountsControllerTest : public QObject
 	{
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());
 		AccountsController controller(list);
-		list->addAccount(MinecraftAccount::createBlankMSA());
+		list->addAccount(createOwningMSA());
 
 		QVERIFY(controller.addOffline("  Steve  "));
 		QCOMPARE(list->at(1)->profileName(), QStringLiteral("Steve"));
@@ -232,7 +263,7 @@ class AccountsControllerTest : public QObject
 	{
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());
 		AccountsController controller(list);
-		list->addAccount(MinecraftAccount::createBlankMSA());
+		list->addAccount(createOwningMSA());
 		QVERIFY(controller.addOffline("Steve"));
 
 		QVERIFY(!controller.addOffline("steve"));

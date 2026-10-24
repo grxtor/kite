@@ -20,6 +20,7 @@
 
 #include "ContentUpdateController.h"
 
+#include <QHash>
 #include <QSet>
 
 #include "BuildConfig.h"
@@ -287,6 +288,68 @@ QList<ModPlatform::SelectedMod> ContentUpdateController::resolvableEntries(
 		mods.append(mod);
 	}
 	return mods;
+}
+
+ContentUpdateController::MissingPlan ContentUpdateController::planMissing(
+	const ModFolderModel& folder, const QString& mcVersion,
+	const QStringList& keys, const QStringList& ids,
+	const QStringList& replaceKeys)
+{
+	QHash<QString, const Mod*> files;
+	for (size_t row = 0; row < folder.size(); ++row) {
+		files.insert(ContentFilterModel::keyFor(folder.at(row)), &folder.at(row));
+	}
+	/* What a person calls a file: the mod's name, else the file's own. */
+	const auto nameOf = [&files](const QString& key) {
+		const Mod* mod = files.value(key, nullptr);
+		if (!mod) {
+			return key;
+		}
+		return mod->name().isEmpty() ? mod->filename().fileName() : mod->name();
+	};
+
+	MissingPlan plan;
+	QHash<QString, int> wantedAt;
+	QSet<QString> replaced;
+	for (int i = 0; i < ids.size(); ++i) {
+		const QString& id = ids.at(i);
+		if (id.isEmpty()) {
+			continue;
+		}
+		if (!wantedAt.contains(id)) {
+			wantedAt.insert(id, int(plan.wanted.size()));
+			plan.wanted.append({id, {}});
+		}
+
+		const QString key = keys.value(i);
+		QStringList& requiredBy = plan.wanted[wantedAt.value(id)].requiredBy;
+		const QString name = key.isEmpty() ? QString() : nameOf(key);
+		if (!name.isEmpty() && !requiredBy.contains(name)) {
+			requiredBy.append(name);
+		}
+
+		/* On disk it may be switched off, so the name is the file's own. */
+		const QString replaceKey = replaceKeys.value(i);
+		if (files.contains(replaceKey) && !plan.replacements.contains(id)) {
+			plan.replacements.insert(
+				id, files.value(replaceKey)->filename().fileName());
+			replaced.insert(replaceKey);
+		}
+	}
+
+	/* Only a file with a recorded origin can say what it needs exactly;
+	 * the others have only their name to give. */
+	auto index = folder.metadataIndex();
+	QList<ModMetadataIndex::Entry> origins;
+	QSet<QString> seen;
+	for (const QString& key : keys) {
+		if (index && !replaced.contains(key) && !seen.contains(key)) {
+			seen.insert(key);
+			origins.append(index->get(key));
+		}
+	}
+	plan.selected = resolvableEntries(origins, mcVersion);
+	return plan;
 }
 
 void ContentUpdateController::fillCurrentVersions(
@@ -629,6 +692,38 @@ QObject* ContentUpdateController::verifyDependencies()
 
 	auto* review = ContentInstallReview::missingDependencies(
 		installed, tr("Missing dependencies"), mc, loader(), folder, this);
+	review->start();
+	return review;
+}
+
+QObject* ContentUpdateController::installMissing(const QStringList& keys,
+												 const QStringList& ids,
+												 const QStringList& replaceKeys)
+{
+	auto folder = m_lists ? m_lists->folderFor(QStringLiteral("mods")) : nullptr;
+	if (!folder) {
+		return nullptr;
+	}
+	if (!m_lists->changesAllowed(QStringLiteral("mods"))) {
+		setLastError(tr("The game is running. Install once it has closed."));
+		return nullptr;
+	}
+	const QString mc = mcVersion();
+	if (mc.isEmpty()) {
+		setLastError(tr("This instance has no Minecraft version set."));
+		return nullptr;
+	}
+	const MissingPlan plan = planMissing(*folder, mc, keys, ids, replaceKeys);
+	if (plan.wanted.isEmpty()) {
+		setLastError(tr("There is nothing to look for."));
+		return nullptr;
+	}
+	setLastError(QString());
+
+	auto* review = ContentInstallReview::missingDependencies(
+		plan.selected, tr("Missing dependencies"), mc, loader(), folder, this);
+	review->setWantedProjects(plan.wanted);
+	review->setReplacements(plan.replacements);
 	review->start();
 	return review;
 }

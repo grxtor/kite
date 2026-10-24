@@ -64,6 +64,15 @@ AbstractButton {
     // don't leave the tile looking empty around a small icon.
     readonly property int tileSize: Theme.control.height
     readonly property int pictureSize: Math.round(control.tileSize * 0.86)
+    // An opaque square icon (Icons.fillsTile) fills the tile instead, its
+    // corners rounded in `surround`: what the rail shows around the tile
+    // (SidebarNav sets it), under this item's hover or press tint.
+    readonly property bool iconFills: Icons.fillsTile(control.iconKey)
+    property color surround: "transparent"
+    // The open instance. On the folded rail its tile lights the kite's
+    // nose in its own cut, as a selected library card does, instead of
+    // SidebarNav's selection square framing it.
+    property bool selected: false
 
     background: Rectangle {
         width: control.compact ? control.railSquare : control.width
@@ -94,14 +103,23 @@ AbstractButton {
             borderWidth: 1
             borderColor: Theme.palette.border
             lifted: control.hovered
+            matte: !control.iconFills ? "transparent"
+                 : Qt.tint(control.surround, control.down ? Theme.palette.pressedOverlay
+                                            : control.hovered ? Theme.palette.hoverOverlay : "transparent")
 
             Image {
                 anchors.centerIn: parent
-                width: control.pictureSize
-                height: control.pictureSize
+                width: control.iconFills ? parent.width : control.pictureSize
+                height: width
                 source: Icons.instanceIcon(control.iconKey)
                 sourceSize: Qt.size(width * 2, height * 2)
                 fillMode: Image.PreserveAspectFit
+            }
+            KiteNose {
+                visible: control.selected && control.compact
+                z: 2
+                x: tile.width - leg
+                y: 0
             }
 
             // Pulses rather than sitting static, so a glance at the rail

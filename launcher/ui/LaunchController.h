@@ -56,17 +56,10 @@ class LaunchController : public Task
 		m_profiler = profiler;
 	}
 
-	/**
-	 * Launch the demo instead of logging in.
-	 *
-	 * An empty username means "decide later": decideAccount() falls back to
-	 * the default account's profile name, or a generic one when there is no
-	 * account at all.
-	 */
-	void setDemoMode(bool demoMode, const QString& username = QString())
+	/// Launch the demo. The account still logs in, like a normal launch.
+	void setDemoMode(bool demoMode)
 	{
 		m_demoMode = demoMode;
-		m_demoUsername = username;
 	}
 
 	void setParentWidget(QWidget* widget)
@@ -107,7 +100,6 @@ class LaunchController : public Task
 	BaseProfilerFactory* m_profiler = nullptr;
 	bool m_online = true;
 	bool m_demoMode = false;
-	QString m_demoUsername;
 	InstancePtr m_instance;
 	QWidget* m_parentWidget = nullptr;
 	InstanceWindow* m_console = nullptr;

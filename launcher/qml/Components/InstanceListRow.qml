@@ -68,6 +68,7 @@ Item {
     readonly property int squareSize: Theme.control.heightLg
     readonly property real iconShare: 0.84
     readonly property int iconSize: Math.round(squareSize * iconShare)
+    readonly property bool iconFills: Icons.fillsTile(root.iconKey)
     readonly property int runningDotSize: 9
     readonly property string iconSource: Icons.instanceIcon(root.iconKey)
     readonly property int versionColumnWidth: 168
@@ -132,14 +133,14 @@ Item {
                 Layout.preferredWidth: root.squareSize
                 Layout.preferredHeight: root.squareSize
                 radius: Theme.radius.md
-                matte: root.showsPackArt ? surface.color : "transparent"
+                matte: root.showsPackArt || root.iconFills ? surface.color : "transparent"
                 lifted: root.hovered
 
                 Image {
                     anchors.centerIn: parent
                     visible: !root.showsPackArt
-                    width: root.iconSize
-                    height: root.iconSize
+                    width: root.iconFills ? parent.width : root.iconSize
+                    height: width
                     source: root.iconSource
                     sourceSize: Qt.size(width, height)
                     fillMode: Image.PreserveAspectFit

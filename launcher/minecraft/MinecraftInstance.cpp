@@ -1099,6 +1099,14 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 		process->appendStep(new Update(pptr, Net::Mode::Offline));
 	}
 
+	// Make sure the Java this version needs is set up -- picking an installed
+	// one or downloading it -- right after the update, which resolves the
+	// version, and before anything that reads the Java's architecture (native
+	// libraries, the classpath) or version (JVM arguments).
+	{
+		process->appendStep(new VerifyJavaInstall(pptr));
+	}
+
 	// if there are any jar mods
 	{
 		process->appendStep(new ModMinecraftJar(pptr));
@@ -1122,11 +1130,6 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 	// reconstruct assets if needed
 	{
 		process->appendStep(new ReconstructAssets(pptr));
-	}
-
-	// verify that minimum Java requirements are met
-	{
-		process->appendStep(new VerifyJavaInstall(pptr));
 	}
 
 	{

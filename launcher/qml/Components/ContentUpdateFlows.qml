@@ -9,8 +9,9 @@ import Kite.Theme
 /*
  * The Content tab's update flows, kept out of ContentTab itself: check
  * for updates (UpdateReviewDialog), change one file's version
- * (ChangeVersionDialog), verify dependencies and reset metadata, each on
- * top of ContentUpdateController. Whatever needs reviewing goes through
+ * (ChangeVersionDialog), verify dependencies, install what the mod health
+ * check found missing, and reset metadata, each on top of
+ * ContentUpdateController. Whatever needs reviewing goes through
  * InstallReviewDialog; whatever downloads is `activity` until it ends,
  * and how it went comes out of notify() for the tab's toast.
  */
@@ -68,6 +69,21 @@ Item {
                     qsTr("Every dependency is installed."))
     }
 
+    // Installs the mods with @p ids for the files with @p keys that need
+    // them, replacing the file with key replaceKeys[i] for ids[i] when it is
+    // not empty (ModHealthModel's "install" rows).
+    function installMissing(keys, ids, replaceKeys) {
+        if (!root.updater)
+            return
+        const review = root.updater.installMissing(keys, ids, replaceKeys)
+        if (!review) {
+            root.notify(root.updater.lastError, "neutral")
+            return
+        }
+        root.settle(review, qsTr("Installed the missing dependencies."),
+                    qsTr("Nothing compatible was found to install."), "neutral")
+    }
+
     function resetMetadata(keys, name) {
         resetConfirm.keys = keys
         resetConfirm.text = keys.length === 1 && name.length > 0
@@ -81,8 +97,9 @@ Item {
     // Once @p review knows what it needs: straight to the download when
     // there is nothing to ask about, else to InstallReviewDialog.
     // @p nothingText, when set, is said instead of installing a review
-    // that found nothing (a dependency check that came back clean).
-    function settle(review, doneText, nothingText) {
+    // that found nothing (a dependency check that came back clean), in
+    // @p nothingTone ("success" unless given).
+    function settle(review, doneText, nothingText, nothingTone) {
         root.resolving = review
         const go = function () {
             if (!review.ready || root.resolving !== review)
@@ -93,7 +110,7 @@ Item {
                 reviewDialog.show(review)
             } else if (nothingText && nothingText.length > 0) {
                 review.cancel()
-                root.notify(nothingText, "success")
+                root.notify(nothingText, nothingTone || "success")
             } else {
                 root.track(review.install(), doneText)
             }

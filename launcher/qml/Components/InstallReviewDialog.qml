@@ -130,6 +130,7 @@ Dialog {
                 required property string requiredBy
                 required property bool isDependency
                 required property bool maybeInstalled
+                required property string replaces
                 required property bool browserOnly
                 required property string versionType
                 required property var model
@@ -138,11 +139,12 @@ Dialog {
                 checkable: isDependency
                 checked: model.checked
                 title: name
-                subtitle: maybeInstalled ? qsTr("Another version is already installed")
+                subtitle: replaces.length > 0 ? qsTr("Replaces %1").arg(replaces)
+                        : maybeInstalled ? qsTr("Another version is already installed")
                         : browserOnly ? qsTr("The author only allows downloads from their own page")
                         : isDependency && requiredBy.length > 0 ? qsTr("Needed by %1").arg(requiredBy)
                         : fileName
-                subtitleWarning: maybeInstalled || browserOnly
+                subtitleWarning: (maybeInstalled && replaces.length === 0) || browserOnly
                 tags: (versionType === "beta" ? [qsTr("Beta")] : versionType === "alpha" ? [qsTr("Alpha")] : [])
                       .concat(provider.length > 0 ? [provider] : [])
                 onToggled: (on) => root.review.setChecked(index, on)

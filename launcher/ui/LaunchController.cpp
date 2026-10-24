@@ -71,20 +71,6 @@ void LaunchController::decideAccount()
 {
 	auto accounts = APPLICATION->accounts();
 
-	/* Demo was asked for up front (the Launch Demo entry), so there is no
-	 * account question to ask: login() skips authentication entirely. All
-	 * that is missing is a name to show in game. Borrowing the default
-	 * account's profile name keeps the demo from being called "User" for
-	 * someone who does have an account. */
-	if (m_demoMode) {
-		if (m_demoUsername.isEmpty()) {
-			auto account = accounts->defaultAccount();
-			QString profileName = account ? account->profileName() : QString();
-			m_demoUsername = profileName.isEmpty() ? tr("User") : profileName;
-		}
-		return;
-	}
-
 	if (m_accountToUse) {
 		return;
 	}
@@ -117,50 +103,11 @@ void LaunchController::decideAccount()
 			} else {
 				APPLICATION->ShowGlobalSettings(m_parentWidget, "accounts");
 			}
-		} else {
-			// Offer demo mode as an alternative
-			const bool wantsDemo = LAUNCHER->uiHost()->confirm(
-				tr("No Account — Play Demo?"),
-				tr("<b>No Microsoft account is linked.</b><br><br>"
-				   "Without a Microsoft account you cannot play the full "
-				   "version of Minecraft.<br><br>"
-				   "<b>Demo Mode</b> lets you try Minecraft with the "
-				   "following limitations:<br>"
-				   "&nbsp;&bull;&nbsp;Only a small area of the world is "
-				   "accessible<br>"
-				   "&nbsp;&bull;&nbsp;Progress is not saved after the demo "
-				   "ends<br>"
-				   "&nbsp;&bull;&nbsp;Multiplayer is not available<br><br>"
-				   "Would you like to launch Minecraft in Demo Mode?"),
-				UiHost::Severity::Question, tr("Play Demo"), tr("Cancel"));
-
-			if (wantsDemo) {
-				auto username = LAUNCHER->uiHost()->askText(
-					tr("Demo Mode — Choose Username"),
-					tr("Enter a username to use in Demo Mode:"), tr("User"));
-				if (!username) {
-					// User cancelled username dialog → abort (login() will
-					// handle the failure)
-					return;
-				}
-				m_demoMode = true;
-				m_demoUsername = username->trimmed().isEmpty()
-									 ? tr("User")
-									 : username->trimmed();
-			} else {
-				// User declined demo mode → abort (login() will handle the
-				// failure)
-				return;
-			}
 		}
 	}
 
-	if (m_demoMode) {
-		return;
-	}
-
-	// If still no accounts after the dialog (e.g. user cancelled demo mode
-	// or didn't add an account), bail out — login() will handle the failure.
+	// If still no accounts after the dialog (e.g. the user declined to add
+	// one), bail out — login() will handle the failure.
 	if (accounts->count() <= 0) {
 		return;
 	}
@@ -212,21 +159,18 @@ void LaunchController::login()
 {
 	decideAccount();
 
-	// Demo mode: bypass normal account login entirely
-	if (m_demoMode) {
-		m_session = std::make_shared<AuthSession>();
-		m_session->wants_online = m_online;
-		m_session->status = AuthSession::PlayableOnline;
-		m_session->user_type = "legacy";
-		m_session->MakeDemo();
-		m_session->player_name = m_demoUsername; // use the chosen username
-		launchInstance();
-		return;
-	}
-
 	// if no account is selected, we bail
 	if (!m_accountToUse) {
 		emitFailed(tr("No account selected for launch."));
+		return;
+	}
+
+	// Offline play rides on a purchased game: without a Microsoft account
+	// that owns Minecraft signed in, an offline account cannot launch.
+	if (!m_accountToUse->isMSA() &&
+		!APPLICATION->accounts()->anyMicrosoftAccountOwnsMinecraft()) {
+		emitFailed(tr("Offline accounts need a Microsoft account that owns "
+					  "Minecraft to be signed in to Kite."));
 		return;
 	}
 
@@ -362,6 +306,13 @@ void LaunchController::login()
 					}
 					// we own Minecraft, there is a profile, it's all ready to
 					// go!
+					if (m_demoMode) {
+						// Keep the account's name rather than MakeDemo()'s
+						// generic "Player".
+						const QString name = m_session->player_name;
+						m_session->MakeDemo();
+						m_session->player_name = name;
+					}
 					launchInstance();
 					return;
 				} else {
