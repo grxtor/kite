@@ -128,6 +128,7 @@ qt_add_qml_module(Kite_qml_components
         SkinPreview.qml
         CapeTile.qml
         NewInstanceDialog.qml
+        PerformanceModIcons.qml
         BundleModList.qml
         BundleDialog.qml
         SpeedUpButton.qml

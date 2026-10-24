@@ -46,7 +46,7 @@ bool InstanceTask::abort()
 
 void InstanceTask::downloadFiles(MinecraftInstance* instance)
 {
-	if (!instance ||
+	if (!instance || !m_downloadGameFiles ||
 		!m_globalSettings->get("DownloadGameFilesDuringInstanceCreation")
 			 .toBool()) {
 		emitSucceeded();

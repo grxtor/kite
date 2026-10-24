@@ -488,7 +488,8 @@ QString NewInstanceController::suggestedName() const
 
 QObject* NewInstanceController::create(const QString& name,
 									   const QString& group,
-									   const QString& iconKey)
+									   const QString& iconKey,
+									   bool gameFiles)
 {
 	if (m_selectedMinecraftVersion.isEmpty()) {
 		return nullptr;
@@ -515,6 +516,7 @@ QObject* NewInstanceController::create(const QString& name,
 	creationTask->setGroup(group);
 	creationTask->setIcon(iconKey);
 	creationTask->setTargetDir(LAUNCHER->instances()->primaryDir());
+	creationTask->setDownloadGameFiles(gameFiles);
 
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(creationTask);
 	auto* watcher = new TaskWatcher(Task::Ptr(wrapped), this);

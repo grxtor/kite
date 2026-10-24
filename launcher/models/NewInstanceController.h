@@ -306,9 +306,15 @@ class NewInstanceController : public QObject
 	 * this controller, so QML gets it as CppOwnership without needing its
 	 * own expose() call - see QmlShell::expose()). Null if no Minecraft
 	 * version is selected yet, or if selectedMinecraftVersion names no
-	 * version the metadata index actually has. */
+	 * version the metadata index actually has.
+	 *
+	 * @p gameFiles false skips the pre-download of the game's files that
+	 * the global setting would otherwise do while the task runs - for a
+	 * caller that does not want the user waiting on it (the Kite
+	 * Performance instance, which goes on to install its mods in the
+	 * background). The files then come with the first launch. */
 	Q_INVOKABLE QObject* create(const QString& name, const QString& group,
-								const QString& iconKey);
+								const QString& iconKey, bool gameFiles = true);
 
 	/// Wraps suggestedImportName() above for QML - see its comment.
 	Q_INVOKABLE QString suggestedNameForImportSource(const QString& source) const;

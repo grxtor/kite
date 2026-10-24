@@ -1126,6 +1126,7 @@ ApplicationWindow {
             iconsModel: root.shell && root.shell.iconsModel ? root.shell.iconsModel : null
             shell: root.shell
             onCreated: root.page = "home"
+            onOpenInstanceRequested: (id) => root.navigate("instance/" + id + "/content")
         }
     }
 

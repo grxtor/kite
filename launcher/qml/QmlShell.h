@@ -19,7 +19,9 @@
 
 #pragma once
 
+#include <QHash>
 #include <QObject>
+#include <QPointer>
 #include <QStringList>
 #include <QVariantMap>
 
@@ -38,6 +40,7 @@ class ModrinthModpackModel;
 class FlameModpackModel;
 class FtbModpackModel;
 class AtlModpackModel;
+class TaskWatcher;
 class TechnicModpackModel;
 class AccountsController;
 class NewInstanceController;
@@ -430,8 +433,16 @@ class QmlShell : public QObject
 	 * or has no mod loader (a vanilla instance is never changed: see
 	 * createPerformanceInstance()). The setup never fails; once
 	 * the watcher has finished, its `status` is a sentence saying what
-	 * was done, for a toast. */
+	 * was done, for a toast.
+	 * One setup per instance: while one is still running, this returns
+	 * that one's watcher instead of starting a second task over the same
+	 * mods folder. */
 	Q_INVOKABLE QObject* speedUp(const QString& id);
+	/* The TaskWatcher of the speedUp() setup still running on instance
+	 * @p id, or null when there is none. For a page that opens after the
+	 * setup began (the new-instance dialog starts it and closes) and
+	 * wants to show its progress. */
+	Q_INVOKABLE QObject* performanceSetup(const QString& id) const;
 	/* "Speed up" on a vanilla instance, which is never changed: makes a
 	 * NEW, empty instance (no worlds, nothing copied) on the source's
 	 * Minecraft version with the newest Fabric loader, named
@@ -691,6 +702,9 @@ class QmlShell : public QObject
 	std::unique_ptr<QQmlApplicationEngine> m_engine;
 	QQuickWindow* m_window = nullptr;
 	int m_accountRevision = 0;
+	/* The speedUp() setups that are running, by instance id. Entries
+	 * are dropped when their watcher finishes. */
+	QHash<QString, QPointer<TaskWatcher>> m_performanceSetups;
 
 	/* Onboarding -- see setupSteps()'s Q_PROPERTY comment. Not exposed as
 	 * shared_ptr members the way m_instances etc. are: TranslationsModel and

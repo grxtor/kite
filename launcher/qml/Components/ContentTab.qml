@@ -169,6 +169,14 @@ Item {
         root.performance = !!root.shell && root.instanceId.length > 0
                            && root.shell.performanceEnabled(root.instanceId)
     }
+    // The mods of a Kite Performance setup already under way on this instance
+    // (the New instance dialog starts one and closes) get their progress
+    // notice here, as if Speed up had been pressed on this tab.
+    function trackRunningSetup() {
+        const watcher = root.shell && root.instanceId.length > 0 ? root.shell.performanceSetup(root.instanceId) : null
+        if (watcher && flows.activity !== watcher)
+            flows.track(watcher, "")
+    }
     // "Speed up" (Mods only): turns Kite Performance on and installs now.
     // With the mode already on, its settings open instead. Without a loader
     // it makes a separate instance instead (and opens it), so the vanilla
@@ -287,14 +295,17 @@ Item {
             // The actions row without the search field and the label of
             // "Check for updates".
             readonly property int bundlesWidth: root.kind === "mods"
-                                                ? (root.speedUpOffered ? speedUpButton.implicitWidth + gap : 0)
-                                                  + addonsButton.implicitWidth + gap : 0
-            readonly property int actionsWidth: folderButton.implicitWidth + moreButton.implicitWidth
+                                                ? (root.speedUpOffered ? speedUpMeasure.implicitWidth + gap : 0)
+                                                  + addonsMeasure.implicitWidth + gap : 0
+            readonly property int actionsWidth: folderMeasure.implicitWidth + moreButton.implicitWidth
                                                 + addButton.implicitWidth + bundlesWidth + gap * 3
             // Measured against the tab's own width, which the toolbar's
             // contents never feed back into.
             readonly property bool oneRow: root.width >= kindsWidth + searchMinWidth + updatesIconWidth + actionsWidth
             readonly property real actionsRowWidth: oneRow ? root.width - kindsWidth : root.width
+            // Open folder, Speed up and Add-ons give up their labels once
+            // the row cannot hold them spelled out next to the search.
+            readonly property bool compact: actionsRowWidth < searchMinWidth + updatesIconWidth + actionsWidth
             // "Check for updates" spelled out when there is room for it as
             // well; just its icon (and tooltip) otherwise.
             readonly property bool updatesLabelFits: actionsRowWidth >= searchMinWidth + updatesMeasure.implicitWidth
@@ -325,12 +336,30 @@ Item {
                     placeholderText: qsTr("Search %1").arg(root.current.noun)
                 }
 
-                // Only measured, for updatesLabelFits.
+                // Only measured (by updatesLabelFits and actionsWidth), so
+                // what they take does not change with what is shown.
                 Button {
                     id: updatesMeasure
                     visible: false
                     text: qsTr("Check for updates")
                     icon.source: Icons.url("refresh")
+                }
+                Button {
+                    id: folderMeasure
+                    visible: false
+                    text: qsTr("Open folder")
+                    icon.source: Icons.url("folder")
+                }
+                SpeedUpButton {
+                    id: speedUpMeasure
+                    visible: false
+                    on: root.performance
+                }
+                Button {
+                    id: addonsMeasure
+                    visible: false
+                    text: qsTr("Add-ons")
+                    icon.source: Icons.url("puzzle")
                 }
                 HoverReason {
                     visible: root.updatable
@@ -349,8 +378,12 @@ Item {
 
                 Button {
                     id: folderButton
+                    display: toolbar.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
                     text: qsTr("Open folder")
                     icon.source: Icons.url("folder")
+                    ToolTip.visible: hovered && display === AbstractButton.IconOnly
+                    ToolTip.delay: 400
+                    ToolTip.text: text
                     onClicked: root.openFolderRequested(root.content ? root.content.dir(root.kind) : "")
                 }
 
@@ -420,6 +453,7 @@ Item {
                     SpeedUpButton {
                         id: speedUpButton
                         on: root.performance
+                        display: toolbar.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
                         enabled: root.unlocked && !root.flowsBusy
                         onClicked: root.speedUp()
                     }
@@ -430,8 +464,12 @@ Item {
                     Button {
                         id: addonsButton
                         enabled: root.unlocked && !root.flowsBusy
+                        display: toolbar.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
                         text: qsTr("Add-ons")
                         icon.source: Icons.url("puzzle")
+                        ToolTip.visible: hovered && display === AbstractButton.IconOnly
+                        ToolTip.delay: 400
+                        ToolTip.text: text
                         onClicked: root.openBundles(false)
                     }
                 }
@@ -514,13 +552,17 @@ Item {
         }
     }
 
-    readonly property bool flowsBusy: flows.busyText.length > 0
+    // The tab is reused from one instance to the next, and a download goes on
+    // after the user moves on: its notice stays with the instance it began on.
+    property string flowsInstanceId: ""
+    readonly property bool flowsBusy: flows.busyText.length > 0 && root.flowsInstanceId === root.instanceId
     ContentUpdateFlows {
         id: flows
         content: root.content
         kind: root.kind
         noun: root.current.noun
         onNotify: (message, tone) => { if (message.length > 0) toast.show(message, tone) }
+        onActivityChanged: root.flowsInstanceId = flows.activity ? root.instanceId : ""
     }
 
     // The search follows whichever list is showing.
@@ -687,9 +729,18 @@ Item {
     onDetailsChanged: root.refreshPerformance()
     // The details object is reused from one instance to the next, so a
     // new instance arrives as a new id, not as new details.
-    onInstanceIdChanged: root.refreshPerformance()
-    onVisibleChanged: if (visible) root.refreshPerformance()
-    Component.onCompleted: root.refreshPerformance()
+    onInstanceIdChanged: {
+        root.refreshPerformance()
+        root.trackRunningSetup()
+    }
+    onVisibleChanged: if (visible) {
+        root.refreshPerformance()
+        root.trackRunningSetup()
+    }
+    Component.onCompleted: {
+        root.refreshPerformance()
+        root.trackRunningSetup()
+    }
     Connections {
         target: root.shell
         ignoreUnknownSignals: true

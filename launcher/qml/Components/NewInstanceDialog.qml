@@ -44,9 +44,6 @@ Dialog {
     // The QML shell: which versions have Kite Performance, and its bundle
     // catalog and speedUp() to set an instance up once it exists.
     property var shell: null
-    // Where a Kite Performance instance is: "creating" it, then
-    // "installing" the performance mods; empty otherwise.
-    property string performanceStep: ""
     // The selected version was picked with its ⚡: Fabric, the performance
     // mods and its own name. A plain row or loader click turns it off.
     property bool performanceMode: false
@@ -58,8 +55,14 @@ Dialog {
     property string presetSource: ""
 
     signal created()
+    // A Kite Performance instance was created and its mods are installing in
+    // the background: the integrator opens it on its mods.
+    signal openInstanceRequested(string id)
 
     readonly property bool creating: !!watcher && watcher.running
+    // The ⚡ pick only applies to creating; an import started after it is a
+    // plain one.
+    readonly property bool performanceCreate: root.mode === "create" && root.performanceMode
     readonly property int loaderTileHeight: Theme.control.heightLg
     // Rows of the version list that always stay visible; a shorter window
     // scrolls the dialog instead of squeezing the list.
@@ -164,26 +167,26 @@ Dialog {
         root.controller.loader = value
     }
 
-    function create() {
-        root.performanceStep = root.performanceMode ? "creating" : ""
-        root.watcher = root.controller.create(nameField.text.trim(), groupField.text.trim(), root.selectedIcon)
+    // The performance mods the setup will install, for the icon row.
+    function performanceMods() {
+        return root.shell && root.shell.bundles ? root.shell.bundles.mods(["performance"], "fabric") : []
     }
 
-    // The instance exists: its memory and options.txt first, then the mods.
-    // Their download takes over the progress UI; without one the dialog is
-    // done.
+    // A Kite Performance instance leaves the game's files for the first Play:
+    // the user would otherwise wait on them before leaving this dialog.
+    function create() {
+        root.watcher = root.controller.create(nameField.text.trim(), groupField.text.trim(), root.selectedIcon,
+                                              !root.performanceCreate)
+    }
+
+    // The instance exists: its memory and options.txt, then the mods, which
+    // install in the background while the integrator shows the instance.
     function installPerformance() {
         const id = root.watcher.instanceId
         root.shell.bundles.applyPresetDefaults(id, "performance")
-        const install = root.shell.speedUp(id)
-        if (install) {
-            root.performanceStep = "installing"
-            root.watcher = install
-            return
-        }
-        root.performanceStep = ""
+        root.shell.speedUp(id)
         root.close()
-        root.created()
+        root.openInstanceRequested(id)
     }
 
     function typeLabel(type) {
@@ -222,7 +225,6 @@ Dialog {
     // before open(), e.g. Main.qml's openNewInstance(mode).
     onOpened: {
         root.watcher = null
-        root.performanceStep = ""
         root.performanceMode = false
         root.nameEdited = false
         root.selectedIcon = "default"
@@ -254,17 +256,14 @@ Dialog {
         target: root.watcher
         ignoreUnknownSignals: true
         function onFinished(ok) {
-            // A failed install leaves the instance made: the first Play
-            // tries again.
-            if (!ok && root.performanceStep !== "installing")
+            if (!ok)
                 return
-            if (ok && root.performanceStep === "creating") {
+            if (root.performanceCreate && root.watcher.instanceId)
                 root.installPerformance()
-                return
+            else {
+                root.close()
+                root.created()
             }
-            root.performanceStep = ""
-            root.close()
-            root.created()
         }
     }
 
@@ -585,6 +584,12 @@ Dialog {
             color: Theme.palette.textTertiary
             font.family: Theme.font.family
             font.pixelSize: Theme.type.caption.pixelSize
+        }
+        PerformanceModIcons {
+            Layout.fillWidth: true
+            Layout.topMargin: -Theme.space.xs
+            visible: root.performanceMode
+            mods: root.performanceMode ? root.performanceMods() : []
         }
 
         // Mod loader

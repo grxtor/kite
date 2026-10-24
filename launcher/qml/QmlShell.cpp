@@ -369,8 +369,17 @@ bool QmlShell::performanceSupported(const QString& mcVersion) const
 	return PerformanceSetup::supportsVersion(mcVersion);
 }
 
+QObject* QmlShell::performanceSetup(const QString& id) const
+{
+	return m_performanceSetups.value(id).data();
+}
+
 QObject* QmlShell::speedUp(const QString& id)
 {
+	if (auto* running = performanceSetup(id)) {
+		return running;
+	}
+
 	auto instance = minecraftInstanceById(id);
 	if (!instance || instance->isRunning() ||
 		!PerformanceSetup::hasLoader(instance->getPackProfile()->primaryModLoader())) {
@@ -382,6 +391,9 @@ QObject* QmlShell::speedUp(const QString& id)
 	auto* task = new PerformanceSetupTask(instance);
 	auto* watcher = new TaskWatcher(Task::Ptr(task), this);
 	watcher->setTitle(tr("Kite Performance"));
+	m_performanceSetups.insert(id, watcher);
+	connect(watcher, &TaskWatcher::finished, this,
+			[this, id]() { m_performanceSetups.remove(id); });
 	task->start();
 	return expose(watcher);
 }
