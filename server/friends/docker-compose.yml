@@ -1,0 +1,32 @@
+# A local run with its own Postgres: `docker compose up --build`, then http://localhost:8080.
+# In production the server runs as a Dokploy Application instead (see README).
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: kite
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kite}
+      POSTGRES_DB: kite_friends
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kite -d kite_friends"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgres://kite:${POSTGRES_PASSWORD:-kite}@db:5432/kite_friends
+      CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db-data:
