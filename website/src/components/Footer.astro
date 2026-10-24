@@ -60,7 +60,10 @@ const links = [
     justify-content: space-between;
     gap: var(--space-4) var(--space-6);
   }
+  /* A flex box, so the logo's line box adds no descender gap below it and
+     the mark centres on the links like in the header. */
   .brand {
+    display: flex;
     text-decoration: none;
   }
   /* The switch's links are padded for tapping; pull it out by that much so

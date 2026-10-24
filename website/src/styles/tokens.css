@@ -35,15 +35,17 @@
   --light: #ffffff;
   --light-hover: #efe9ff;
   --on-light: #1a1240;
-  /* The deep violet the dawn settles into and the footer starts with. */
-  --footer-bg: #3a25a0;
+  /* The dawn's brightest band, right above the horizon. */
+  --dawn-horizon: #3a25a0;
+  /* Under the horizon: the footer is the dark ground the sky meets. */
+  --footer-bg: var(--sky-zenith);
   --on-sky-hairline: rgb(255 255 255 / 10%);
   /* Glass on the sky: white, not the night's grey. */
   --sky-glass-fill: rgb(255 255 255 / 10%);
   --sky-glass-border: rgb(255 255 255 / 25%);
 
   /* The sky as backgrounds. Dusk opens the home and download pages and glows
-     at its foot; dawn is the home page's last band, night rising to violet. */
+     at its foot; dawn is the home page's last band, night rising to violet at the horizon. */
   --sky-dusk:
     radial-gradient(60% 38% at 50% 100%, var(--sky-glow), transparent 70%),
     linear-gradient(
@@ -62,7 +64,7 @@
       transparent 0%,
       var(--sky-zenith) 24%,
       var(--sky-high) 58%,
-      var(--footer-bg) 100%
+      var(--dawn-horizon) 100%
     );
 
   /* Lines */
@@ -122,9 +124,9 @@
   --astro-code-token-link: #b9a8ff;
 
   /* Fonts */
-  /* Headings are a display serif; the wordmark keeps the app's Montserrat. */
-  --font-heading: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
-  --font-brand: 'Montserrat', system-ui, sans-serif;
+  /* The app's own fonts: Montserrat for headings and the wordmark, Inter for text. */
+  --font-heading: 'Montserrat', system-ui, sans-serif;
+  --font-brand: var(--font-heading);
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
 
@@ -133,18 +135,18 @@
   --text-base: 1rem;
   --text-lead: 1.1875rem;
   --text-eyebrow: 0.9375rem;
-  --text-h3: 1.875rem;
-  --text-name: 1.5rem;
-  --text-os: clamp(2.25rem, 1.6rem + 2vw, 3rem);
-  --text-h2: clamp(2.5rem, 1.7rem + 3vw, 4.25rem);
-  --text-h1: clamp(3rem, 2rem + 4.5vw, 5.5rem);
-  --text-display: clamp(3.5rem, 1.6rem + 7vw, 8.5rem);
+  --text-h3: 1.375rem;
+  --text-name: 1.125rem;
+  --text-os: clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem);
+  --text-h2: clamp(2rem, 1.4rem + 2.4vw, 3.5rem);
+  --text-h1: clamp(2.5rem, 1.6rem + 3.6vw, 4.5rem);
+  --text-display: clamp(3rem, 1.3rem + 5vw, 6rem);
   --leading-body: 1.6;
-  --leading-heading: 1.02;
-  --leading-display: 0.92;
-  --tracking-h1: -0.02em;
-  --tracking-h2: -0.015em;
-  --tracking-h3: -0.005em;
+  --leading-heading: 1.08;
+  --leading-display: 1;
+  --tracking-h1: -0.04em;
+  --tracking-h2: -0.03em;
+  --tracking-h3: -0.01em;
   --tracking-eyebrow: 0.01em;
 
   /* Radii: the app's own scale (Theme.radius) */

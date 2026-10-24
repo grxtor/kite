@@ -26,18 +26,11 @@
   src: url('/fonts/Inter-SemiBold.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'Instrument Serif';
-  font-weight: 400;
+  font-family: 'Montserrat';
+  font-weight: 600;
   font-style: normal;
   font-display: swap;
-  src: url('/fonts/InstrumentSerif-Regular.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Instrument Serif';
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-  src: url('/fonts/InstrumentSerif-Italic.woff2') format('woff2');
+  src: url('/fonts/Montserrat-SemiBold.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Montserrat';
@@ -45,6 +38,14 @@
   font-style: normal;
   font-display: swap;
   src: url('/fonts/Montserrat-Bold.woff2') format('woff2');
+}
+/* For the headline's accent word. */
+@font-face {
+  font-family: 'Montserrat';
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+  src: url('/fonts/Montserrat-BoldItalic.woff2') format('woff2');
 }
 
 *,
@@ -95,7 +96,7 @@ h2,
 h3 {
   margin: 0;
   font-family: var(--font-heading);
-  font-weight: 400;
+  font-weight: 700;
   line-height: var(--leading-heading);
   color: var(--text);
 }
@@ -109,6 +110,7 @@ h2 {
 }
 h3 {
   font-size: var(--text-h3);
+  font-weight: 600;
   letter-spacing: var(--tracking-h3);
 }
 
