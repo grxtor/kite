@@ -84,6 +84,7 @@ Item {
     // the card's picture, with only a rim of the calm tile around it.
     readonly property real iconShare: 0.82
     readonly property int iconSize: Math.round(squareSize * iconShare)
+    readonly property bool iconFills: Icons.fillsTile(root.iconKey)
     readonly property int squareRadius: Theme.radius.md
     // Play and ⋯ on the square, and their distance from its corners.
     readonly property int playSize: Theme.control.height
@@ -148,16 +149,17 @@ Item {
             width: root.squareSize
             height: root.squareSize
             radius: root.squareRadius
-            matte: root.showsPackArt || preview.visible ? card.color : "transparent"
+            matte: root.showsPackArt || preview.visible || root.iconFills ? card.color : "transparent"
             lifted: root.hovered
 
-            // The instance's icon, centred. The provider renders it at the
-            // requested size, so it stays sharp at any card width.
+            // The instance's icon, centred, or across the tile when it is an
+            // opaque square. The provider renders it at the requested size,
+            // so it stays sharp at any card width.
             Image {
                 anchors.centerIn: parent
                 visible: !root.showsPackArt
-                width: root.iconSize
-                height: root.iconSize
+                width: root.iconFills ? parent.width : root.iconSize
+                height: width
                 source: root.iconSource
                 sourceSize: Qt.size(width, height)
                 fillMode: Image.PreserveAspectFit

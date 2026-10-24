@@ -83,6 +83,7 @@ ApplicationWindow {
             LauncherStore.updates = root.shell.updateSettings
             LauncherStore.playTime = root.shell.playTime
             LauncherStore.catPacks = root.shell.catPacks
+            LauncherStore.icons = root.shell
             var mode = SettingsStore.string("UiThemeMode")
             if (mode === "dark" || mode === "light" || mode === "system")
                 Theme.mode = mode
@@ -90,7 +91,7 @@ ApplicationWindow {
             if (scheme === "amethyst" || scheme === "ember" || scheme === "diamond" || scheme === "grass")
                 Theme.scheme = scheme
         }
-        onboarding.start()
+        onboardingLoader.active = !!root.shell && !!root.shell.setupSteps && root.shell.setupSteps.length > 0
         if (root.devRoute.length > 0)
             Qt.callLater(root.applyDevRoute)
     }
@@ -108,6 +109,9 @@ ApplicationWindow {
     // step is read by AccountsController, not here.
     property string devRoute: ""
     function applyDevRoute() {
+        // Routes reach into pages the route may not show; build them all.
+        for (var slot of [libraryLoader, settingsLoader, discoverLoader, instanceLoader, accountsLoader])
+            slot.built = true
         var steps = root.devRoute.split(";")
         for (var i = 0; i < steps.length; ++i) {
             var eq = steps[i].indexOf("=")
@@ -205,9 +209,10 @@ ApplicationWindow {
             // a data dir that no longer needs it; nothing is saved unless a
             // step is finished.
             else if (key === "onboarding") {
-                onboarding.steps = ["language", "java", "account", "done"]
-                onboarding.index = 0
-                onboarding.active = true
+                onboardingLoader.active = true
+                onboardingLoader.item.steps = ["language", "java", "account", "done"]
+                onboardingLoader.item.index = 0
+                onboardingLoader.item.active = true
             }
             else if (key === "crashed")
                 root.call("debugMarkInstanceCrashed", value)
@@ -217,6 +222,7 @@ ApplicationWindow {
                 root.call("debugClick", value)
             // The icon picker, as the library's "Change icon" opens it.
             else if (key === "iconpicker") {
+                var iconDialog = root.dialog(iconLoader)
                 iconDialog.targetId = root.dockInstanceId
                 iconDialog.current = value.length > 0 ? value : "grass"
                 iconDialog.open()
@@ -238,15 +244,24 @@ ApplicationWindow {
             root.selection.clear()
     }
 
+    // The dialog held by `loader`, built now if it is not yet.
+    function dialog(loader) {
+        loader.active = true
+        return loader.item
+    }
+    // Null until first opened.
+    readonly property QtObject newInstanceDialog: newInstanceLoader.item
+
     // mode is "create" (default) or "import" -- see NewInstanceDialog.qml.
     // source pre-fills import mode's file/URL field; empty otherwise.
     function openNewInstance(mode, source) {
         if (!root.shell || !root.shell.newInstance)
             return
-        newInstanceDialog.controller = root.shell.newInstance
-        newInstanceDialog.mode = mode === "import" ? "import" : "create"
-        newInstanceDialog.presetSource = source || ""
-        newInstanceDialog.open()
+        var instanceDialog = root.dialog(newInstanceLoader)
+        instanceDialog.controller = root.shell.newInstance
+        instanceDialog.mode = mode === "import" ? "import" : "create"
+        instanceDialog.presetSource = source || ""
+        instanceDialog.open()
     }
 
     // An import asked for from outside the window: `kite --import`, or a
@@ -254,7 +269,7 @@ ApplicationWindow {
     // the dialog already open it takes the new source in place, unless it
     // is still busy with the last one.
     function openImport(source) {
-        if (!newInstanceDialog.opened) {
+        if (!newInstanceDialog || !newInstanceDialog.opened) {
             root.openNewInstance("import", source)
             return
         }
@@ -297,9 +312,9 @@ ApplicationWindow {
             root.page = parts[0]
             return true
         case "settings":
+            root.page = "settings"
             if (parts.length > 1 && parts[1].length > 0)
                 settingsPage.section = parts[1]
-            root.page = "settings"
             return true
         case "instance":
             if (parts.length < 2 || parts[1].length === 0 || !root.shell
@@ -307,7 +322,7 @@ ApplicationWindow {
                     || !root.shell.instanceDetails(parts[1]))
                 return false
             root.openInstance(parts[1])
-            if (parts.length > 2 && parts[2].length > 0)
+            if (parts.length > 2 && parts[2].length > 0 && instancePage)
                 instancePage.tab = parts[2]
             return true
         }
@@ -354,18 +369,28 @@ ApplicationWindow {
                 ? root.shell.launchOptions(id) : ({})
     }
 
-    // The play bar shows on Discover, Settings and Accounts: pages with no
-    // Play of their own, where it keeps the selected instance one click
-    // away. Home's hero and the instance page's header are those pages'
-    // Play, and the bar would only repeat it there; the library page that
-    // once had it is no longer in the rail.
+    // The play bar shows on Home, Discover, Settings and Accounts, keeping
+    // the selected instance one click away. Home has it too: the hero scrolls
+    // away under Continue playing and the library, the bar stays. The
+    // instance page's header is that page's Play, and the bar would only
+    // repeat it there; the library page that once had it is no longer in the
+    // rail.
     function dockVisibleFor(page) {
-        return page === "discover" || page === "settings" || page === "accounts"
+        return page === "home" || page === "discover" || page === "settings" || page === "accounts"
     }
     // Inside an instance, while Content shows its "Add content" browser,
     // that page's Install is the primary action. Moot while the instance
     // page has no bar at all, kept so bringing the bar back there keeps it.
     readonly property bool dockSuppressed: root.page === "instance" && !!instancePage && instancePage.browsing === true
+
+    // The pages built on demand (PageSlot): null until first shown. Setting
+    // root.page builds the page at once, so code that sends the user
+    // somewhere and then hands the page something does it in that order.
+    readonly property Item libraryPage: libraryLoader.item
+    readonly property Item settingsPage: settingsLoader.item
+    readonly property Item discoverPage: discoverLoader.item
+    readonly property Item instancePage: instanceLoader.item
+    readonly property Item accountsPage: accountsLoader.item
 
     function instanceGroups() {
         var groups = root.shell && root.shell.groups ? root.shell.groups : []
@@ -409,7 +434,8 @@ ApplicationWindow {
         ignoreUnknownSignals: true
         function onOpenInstanceLog(id) {
             root.openInstance(id)
-            instancePage.tab = "log"
+            if (instancePage)
+                instancePage.tab = "log"
         }
         function onImportRequested(source) {
             root.openImport(source)
@@ -446,22 +472,26 @@ ApplicationWindow {
     // Instance management, shared by the library's card menu and the
     // instance page's own ⋯ menu.
     function askRename(id, name) {
+        var renameDialog = root.dialog(renameLoader)
         renameDialog.targetId = id
         renameDialog.value = name
         renameDialog.open()
     }
     function askIcon(id, iconKey) {
+        var iconDialog = root.dialog(iconLoader)
         iconDialog.targetId = id
         iconDialog.current = iconKey
         iconDialog.open()
     }
     function askGroup(id, group) {
+        var groupDialog = root.dialog(groupLoader)
         groupDialog.targetId = id
         groupDialog.value = group
         groupDialog.suggestions = root.instanceGroups()
         groupDialog.open()
     }
     function askDelete(id, name) {
+        var deleteDialog = root.dialog(deleteLoader)
         deleteDialog.targetId = id
         deleteDialog.text = qsTr("Delete \u201c%1\u201d? Its folder \u2014 worlds, mods, screenshots \u2014 is removed for good.").arg(name)
         deleteDialog.open()
@@ -538,6 +568,7 @@ ApplicationWindow {
         anchors.bottom: parent.bottom
         width: implicitWidth
         bandHeight: root.shellBarHeight
+        surround: root.shellColor
         // The icon rail (Modrinth's) unless the labelled sidebar was asked
         // for -- the persisted toggle (SidebarNav's own CollapseToggle), on
         // every page. A narrow window keeps the rail regardless, rather than
@@ -597,7 +628,7 @@ ApplicationWindow {
              : root.page === "settings" ? qsTr("Settings")
              : root.page === "discover" ? qsTr("Discover")
              : root.page === "accounts" ? qsTr("Accounts")
-             : root.page === "instance" ? (instancePage.browsing ? qsTr("Add content") : root.openedName)
+             : root.page === "instance" ? (instancePage && instancePage.browsing ? qsTr("Add content") : root.openedName)
              : qsTr("Library")
         iconName: root.page === "settings" ? "settings"
                 : root.page === "discover" ? "compass"
@@ -605,7 +636,7 @@ ApplicationWindow {
                 : root.page === "library" ? "library"
                 : "home"
         trail: root.page !== "instance" ? []
-             : instancePage.browsing ? [qsTr("Home"), root.openedName] : [qsTr("Home")]
+             : instancePage && instancePage.browsing ? [qsTr("Home"), root.openedName] : [qsTr("Home")]
         onTrailActivated: (index) => {
             if (index === 0)
                 root.page = "home"
@@ -691,8 +722,8 @@ ApplicationWindow {
 
                 // Grid or list: two icon buttons, the current view lit.
                 ViewModeToggle {
-                    current: libraryPage.viewMode
-                    onActivated: (value) => libraryPage.viewMode = value
+                    current: libraryPage ? libraryPage.viewMode : "grid"
+                    onActivated: (value) => { if (libraryPage) libraryPage.viewMode = value }
                 }
 
                 Button {
@@ -805,132 +836,156 @@ ApplicationWindow {
                         onDiscoverRequested: root.page = "discover"
                     }
 
-                    LibraryPage {
-                        id: libraryPage
+                    PageSlot {
+                        id: libraryLoader
+                        page: "library"
+                        // A Loader is a focus scope: the page's own focus
+                        // only counts with this set too.
                         focus: true
-                        instanceModel: root.instanceModel
-                        sectionModelFor: function (group) {
-                            return root.shell && typeof root.shell.sectionModel === "function"
-                                    ? root.shell.sectionModel(group) : null
-                        }
-                        searchText: libraryToolbar.searchText
-                        selectedId: root.selectedId
-                        // Groups, undo delete and Duplicate with its own
-                        // dialog (LibraryController).
-                        library: root.shell && root.shell.library ? root.shell.library : null
+                        current: root.page
+                        sourceComponent: LibraryPage {
+                                focus: true
+                                instanceModel: root.instanceModel
+                                sectionModelFor: function (group) {
+                                    return root.shell && typeof root.shell.sectionModel === "function"
+                                            ? root.shell.sectionModel(group) : null
+                                }
+                                searchText: libraryToolbar.searchText
+                                selectedId: root.selectedId
+                                // Groups, undo delete and Duplicate with its own
+                                // dialog (LibraryController).
+                                library: root.shell && root.shell.library ? root.shell.library : null
 
-                        onSelectRequested: (id) => root.selectedId = id
-                        onLaunchRequested: (id) => root.launch(id)
-                        onStopRequested: (id) => root.call("killInstance", id)
-                        onEditRequested: (id) => root.openInstance(id)
-                        onFolderRequested: (id) => root.call("openInstanceFolder", id)
-                        onCreateRequested: root.openNewInstance()
-                        onRenameRequested: (id, name) => root.askRename(id, name)
-                        onIconRequested: (id, iconKey) => root.askIcon(id, iconKey)
-                        onGroupRequested: (id, group) => root.askGroup(id, group)
-                        onDeleteRequested: (id, name) => root.askDelete(id, name)
-                        onClearSearchRequested: libraryToolbar.searchText = ""
-                        exportControllerFor: function (id) {
-                            return root.shell && typeof root.shell.exportController === "function"
-                                   ? root.shell.exportController(id) : null
+                                onSelectRequested: (id) => root.selectedId = id
+                                onLaunchRequested: (id) => root.launch(id)
+                                onStopRequested: (id) => root.call("killInstance", id)
+                                onEditRequested: (id) => root.openInstance(id)
+                                onFolderRequested: (id) => root.call("openInstanceFolder", id)
+                                onCreateRequested: root.openNewInstance()
+                                onRenameRequested: (id, name) => root.askRename(id, name)
+                                onIconRequested: (id, iconKey) => root.askIcon(id, iconKey)
+                                onGroupRequested: (id, group) => root.askGroup(id, group)
+                                onDeleteRequested: (id, name) => root.askDelete(id, name)
+                                onClearSearchRequested: libraryToolbar.searchText = ""
+                                exportControllerFor: function (id) {
+                                    return root.shell && typeof root.shell.exportController === "function"
+                                           ? root.shell.exportController(id) : null
+                                }
+                                shortcutControllerFor: function (id) {
+                                    return root.shell && typeof root.shell.shortcutController === "function"
+                                           ? root.shell.shortcutController(id) : null
+                                }
+                                // Play options (LaunchOptionsMenu.qml) in the ⋯ menu.
+                                launchOptionsFor: function (id) { return root.launchOptions(id) }
+                                onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
+                                onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
+                                onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+                                onNavigateRequested: (target) => root.navigate(target)
                         }
-                        shortcutControllerFor: function (id) {
-                            return root.shell && typeof root.shell.shortcutController === "function"
-                                   ? root.shell.shortcutController(id) : null
-                        }
-                        // Play options (LaunchOptionsMenu.qml) in the ⋯ menu.
-                        launchOptionsFor: function (id) { return root.launchOptions(id) }
-                        onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
-                        onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
-                        onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
-                        onNavigateRequested: (target) => root.navigate(target)
                     }
 
-                    SettingsPage {
-                        id: settingsPage
-                        languages: root.shell && root.shell.languages ? root.shell.languages : null
-                        selectLanguage: function (key) { root.shell.selectLanguage(key) }
-                        pluginSurfaces: root.shell && typeof root.shell.pluginSurfaces === "function"
-                                        ? root.shell.pluginSurfaces(0, "") : null
-                        systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
-                        about: root.shell && root.shell.about ? root.shell.about : null
-                        pluginList: root.shell && typeof root.shell.pluginList === "function"
-                                    ? root.shell.pluginList() : null
-                        launcherLogs: root.shell && root.shell.launcherLogs ? root.shell.launcherLogs : null
-                        onOpenPathRequested: (path) => root.call("openPath", path)
+                    PageSlot {
+                        id: settingsLoader
+                        page: "settings"
+                        current: root.page
+                        sourceComponent: SettingsPage {
+                                languages: root.shell && root.shell.languages ? root.shell.languages : null
+                                selectLanguage: function (key) { root.shell.selectLanguage(key) }
+                                pluginSurfaces: root.shell && typeof root.shell.pluginSurfaces === "function"
+                                                ? root.shell.pluginSurfaces(0, "") : null
+                                systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
+                                about: root.shell && root.shell.about ? root.shell.about : null
+                                pluginList: root.shell && typeof root.shell.pluginList === "function"
+                                            ? root.shell.pluginList() : null
+                                launcherLogs: root.shell && root.shell.launcherLogs ? root.shell.launcherLogs : null
+                                onOpenPathRequested: (path) => root.call("openPath", path)
+                        }
                     }
 
-                    DiscoverPage {
-                        id: discoverPage
-                        model: root.shell && root.shell.modpackModel ? root.shell.modpackModel : null
-                        curseForgeModel: root.shell && root.shell.curseForgeModpackModel ? root.shell.curseForgeModpackModel : null
-                        ftbModel: root.shell && root.shell.ftbModpackModel ? root.shell.ftbModpackModel : null
-                        atlModel: root.shell && root.shell.atlModpackModel ? root.shell.atlModpackModel : null
-                        technicModel: root.shell && root.shell.technicModpackModel ? root.shell.technicModpackModel : null
-                        installer: function (projectId, versionId, name, group) {
-                            return root.shell.installModpack(projectId, versionId, name, group)
+                    PageSlot {
+                        id: discoverLoader
+                        page: "discover"
+                        current: root.page
+                        sourceComponent: DiscoverPage {
+                                shown: discoverLoader.StackLayout.isCurrentItem
+                                model: root.shell && root.shell.modpackModel ? root.shell.modpackModel : null
+                                curseForgeModel: root.shell && root.shell.curseForgeModpackModel ? root.shell.curseForgeModpackModel : null
+                                ftbModel: root.shell && root.shell.ftbModpackModel ? root.shell.ftbModpackModel : null
+                                atlModel: root.shell && root.shell.atlModpackModel ? root.shell.atlModpackModel : null
+                                technicModel: root.shell && root.shell.technicModpackModel ? root.shell.technicModpackModel : null
+                                installer: function (projectId, versionId, name, group) {
+                                    return root.shell.installModpack(projectId, versionId, name, group)
+                                }
+                                onShowInstanceRequested: (id) => {
+                                    root.page = "home"
+                                    if (id.length > 0)
+                                        root.selectedId = id
+                                }
+                                onOtherPlatformsRequested: root.openNewInstance("import")
                         }
-                        onShowInstanceRequested: (id) => {
-                            root.page = "home"
-                            if (id.length > 0)
-                                root.selectedId = id
-                        }
-                        onOtherPlatformsRequested: root.openNewInstance("import")
                     }
 
-                    InstancePage {
-                        id: instancePage
-                        headerModel: root.shell && root.shell.instancePageModel ? root.shell.instancePageModel : null
-                        details: root.openedDetails
-                        systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
-                        accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
-                        accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
-                        accountAvatarSource: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
-                        accountsController: root.shell && root.shell.accountsController ? root.shell.accountsController : null
-                        onOpenAccountsRequested: root.page = "accounts"
-                        // Back to where the breadcrumb's root points (Home).
-                        onBackRequested: root.page = "home"
-                        // The header's own Play and Stop: the one Play on
-                        // this page, the play bar stays away (dockVisibleFor).
-                        onPlayRequested: (id) => root.launch(id)
-                        onStopRequested: (id) => root.call("killInstance", id)
-                        // The header's ⋯ menu manages the instance with the
-                        // same dialogs as the library's own card menu.
-                        manageable: true
-                        library: root.shell && root.shell.library ? root.shell.library : null
-                        onRenameRequested: (id, name) => root.askRename(id, name)
-                        onIconRequested: (id, iconKey) => root.askIcon(id, iconKey)
-                        onGroupRequested: (id, group) => root.askGroup(id, group)
-                        onDeleteRequested: (id, name) => root.askDelete(id, name)
-                        // Two arguments -- root.call() only ever forwards
-                        // one -- so this goes straight to the shell instead.
-                        onJoinServerRequested: (id, address) => { if (root.shell) root.shell.joinServer(id, address) }
-                        pluginSurfacesFor: function (anchor, instanceId) {
-                            return root.shell && typeof root.shell.pluginSurfaces === "function"
-                                   ? root.shell.pluginSurfaces(anchor, instanceId) : null
+                    PageSlot {
+                        id: instanceLoader
+                        page: "instance"
+                        current: root.page
+                        sourceComponent: InstancePage {
+                                headerModel: root.shell && root.shell.instancePageModel ? root.shell.instancePageModel : null
+                                details: root.openedDetails
+                                systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
+                                accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
+                                accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
+                                accountAvatarSource: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
+                                accountsController: root.shell && root.shell.accountsController ? root.shell.accountsController : null
+                                onOpenAccountsRequested: root.page = "accounts"
+                                // Back to where the breadcrumb's root points (Home).
+                                onBackRequested: root.page = "home"
+                                // The header's own Play and Stop: the one Play on
+                                // this page, the play bar stays away (dockVisibleFor).
+                                onPlayRequested: (id) => root.launch(id)
+                                onStopRequested: (id) => root.call("killInstance", id)
+                                // The header's ⋯ menu manages the instance with the
+                                // same dialogs as the library's own card menu.
+                                manageable: true
+                                library: root.shell && root.shell.library ? root.shell.library : null
+                                onRenameRequested: (id, name) => root.askRename(id, name)
+                                onIconRequested: (id, iconKey) => root.askIcon(id, iconKey)
+                                onGroupRequested: (id, group) => root.askGroup(id, group)
+                                onDeleteRequested: (id, name) => root.askDelete(id, name)
+                                // Two arguments -- root.call() only ever forwards
+                                // one -- so this goes straight to the shell instead.
+                                onJoinServerRequested: (id, address) => { if (root.shell) root.shell.joinServer(id, address) }
+                                pluginSurfacesFor: function (anchor, instanceId) {
+                                    return root.shell && typeof root.shell.pluginSurfaces === "function"
+                                           ? root.shell.pluginSurfaces(anchor, instanceId) : null
+                                }
+                                onOpenPathRequested: (path) => root.call("openPath", path)
+                                exportControllerFor: function (id) {
+                                    return root.shell && typeof root.shell.exportController === "function"
+                                           ? root.shell.exportController(id) : null
+                                }
+                                shortcutControllerFor: function (id) {
+                                    return root.shell && typeof root.shell.shortcutController === "function"
+                                           ? root.shell.shortcutController(id) : null
+                                }
+                                // Play options (LaunchOptionsMenu.qml) in the ⋯ menu.
+                                launchOptionsFor: function (id) { return root.launchOptions(id) }
+                                onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
+                                onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
+                                onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+                                onNavigateRequested: (target) => root.navigate(target)
                         }
-                        onOpenPathRequested: (path) => root.call("openPath", path)
-                        exportControllerFor: function (id) {
-                            return root.shell && typeof root.shell.exportController === "function"
-                                   ? root.shell.exportController(id) : null
-                        }
-                        shortcutControllerFor: function (id) {
-                            return root.shell && typeof root.shell.shortcutController === "function"
-                                   ? root.shell.shortcutController(id) : null
-                        }
-                        // Play options (LaunchOptionsMenu.qml) in the ⋯ menu.
-                        launchOptionsFor: function (id) { return root.launchOptions(id) }
-                        onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
-                        onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
-                        onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
-                        onNavigateRequested: (target) => root.navigate(target)
                     }
 
-                    AccountsPage {
-                        id: accountsPage
-                        controller: root.shell && root.shell.accountsController ? root.shell.accountsController : null
-                        // The 3D skin preview needs the Skin3D module.
-                        skin3DAvailable: root.skin3DAvailable
+                    PageSlot {
+                        id: accountsLoader
+                        page: "accounts"
+                        current: root.page
+                        sourceComponent: AccountsPage {
+                                controller: root.shell && root.shell.accountsController ? root.shell.accountsController : null
+                                // The 3D skin preview needs the Skin3D module.
+                                skin3DAvailable: root.skin3DAvailable
+                        }
                     }
                 }
 
@@ -968,6 +1023,7 @@ ApplicationWindow {
     // page is still visible.
     PlayDock {
         id: playDock
+        surround: root.shellColor
         anchors.left: sidebar.right
         anchors.right: parent.right
         anchors.bottom: parent.bottom
@@ -989,78 +1045,96 @@ ApplicationWindow {
         onNavigateRequested: (target) => root.navigate(target)
     }
 
-    NewInstanceDialog {
-        id: newInstanceDialog
-        iconsModel: root.shell && root.shell.iconsModel ? root.shell.iconsModel : null
-        onCreated: root.page = "home"
+    // The dialogs below are built the first time one is asked for
+    // (root.dialog()), not at start: a closed Dialog still builds its whole
+    // body.
+    Loader {
+        id: newInstanceLoader
+        active: false
+        sourceComponent: NewInstanceDialog {
+            iconsModel: root.shell && root.shell.iconsModel ? root.shell.iconsModel : null
+            onCreated: root.page = "home"
+        }
     }
 
     // Instance management, from the library's menu.
-    PromptDialog {
-        id: renameDialog
-        property string targetId
-        title: qsTr("Rename instance")
-        confirmText: qsTr("Rename")
-        onSubmitted: (text) => {
-            if (root.shell.renameInstance(targetId, text))
-                close()
-            else
-                error = qsTr("That name cannot be used.")
-        }
-    }
-
-    PromptDialog {
-        id: groupDialog
-        property string targetId
-        title: qsTr("Move to group")
-        label: qsTr("Type a new group or pick an existing one.")
-        placeholder: qsTr("No group")
-        confirmText: qsTr("Move")
-        allowEmpty: true
-        onSubmitted: (text) => {
-            root.shell.setInstanceGroup(targetId, text)
-            close()
-        }
-    }
-
-    ConfirmDialog {
-        id: deleteDialog
-        property string targetId
-        title: qsTr("Delete instance")
-        confirmText: qsTr("Delete instance")
-        onConfirmed: {
-            if (root.shell.deleteInstance(targetId)) {
-                if (root.selectedId === targetId)
-                    root.selectedId = ""
-                // Deleted from its own page: there is no page left to show.
-                if (root.page === "instance" && root.openedInstanceId === targetId)
-                    root.page = "home"
-                // Undo is offered only when it went to the trash; a
-                // platform without one deleted it for good.
-                var library = root.shell.library
-                if (library && library.canUndoDelete) {
-                    var trashedName = library.lastDeletedName
-                    toast.show(qsTr("Instance deleted."), "success", qsTr("Undo"), function () {
-                        if (library.undoDelete())
-                            toast.show(qsTr("“%1” is back in your library.").arg(trashedName), "success")
-                        else
-                            toast.show(qsTr("“%1” could not be put back. It is still in the trash.").arg(trashedName), "danger")
-                    })
-                } else {
-                    toast.show(qsTr("Instance deleted."), "success")
-                }
-            } else {
-                toast.show(qsTr("The instance could not be deleted. Is it running, or are its files in use?"), "danger")
+    Loader {
+        id: renameLoader
+        active: false
+        sourceComponent: PromptDialog {
+            property string targetId
+            title: qsTr("Rename instance")
+            confirmText: qsTr("Rename")
+            onSubmitted: (text) => {
+                if (root.shell.renameInstance(targetId, text))
+                    close()
+                else
+                    error = qsTr("That name cannot be used.")
             }
         }
     }
 
-    IconPickerDialog {
-        id: iconDialog
-        property string targetId
-        iconsModel: root.shell && root.shell.iconsModel ? root.shell.iconsModel : null
-        onPicked: (key) => root.shell.setInstanceIcon(targetId, key)
-        onOpenFolderRequested: root.call("openPath", root.shell.iconsDir || "icons")
+    Loader {
+        id: groupLoader
+        active: false
+        sourceComponent: PromptDialog {
+            property string targetId
+            title: qsTr("Move to group")
+            label: qsTr("Type a new group or pick an existing one.")
+            placeholder: qsTr("No group")
+            confirmText: qsTr("Move")
+            allowEmpty: true
+            onSubmitted: (text) => {
+                root.shell.setInstanceGroup(targetId, text)
+                close()
+            }
+        }
+    }
+
+    Loader {
+        id: deleteLoader
+        active: false
+        sourceComponent: ConfirmDialog {
+            property string targetId
+            title: qsTr("Delete instance")
+            confirmText: qsTr("Delete instance")
+            onConfirmed: {
+                if (root.shell.deleteInstance(targetId)) {
+                    if (root.selectedId === targetId)
+                        root.selectedId = ""
+                    // Deleted from its own page: there is no page left to show.
+                    if (root.page === "instance" && root.openedInstanceId === targetId)
+                        root.page = "home"
+                    // Undo is offered only when it went to the trash; a
+                    // platform without one deleted it for good.
+                    var library = root.shell.library
+                    if (library && library.canUndoDelete) {
+                        var trashedName = library.lastDeletedName
+                        toast.show(qsTr("Instance deleted."), "success", qsTr("Undo"), function () {
+                            if (library.undoDelete())
+                                toast.show(qsTr("“%1” is back in your library.").arg(trashedName), "success")
+                            else
+                                toast.show(qsTr("“%1” could not be put back. It is still in the trash.").arg(trashedName), "danger")
+                        })
+                    } else {
+                        toast.show(qsTr("Instance deleted."), "success")
+                    }
+                } else {
+                    toast.show(qsTr("The instance could not be deleted. Is it running, or are its files in use?"), "danger")
+                }
+            }
+        }
+    }
+
+    Loader {
+        id: iconLoader
+        active: false
+        sourceComponent: IconPickerDialog {
+            property string targetId
+            iconsModel: root.shell && root.shell.iconsModel ? root.shell.iconsModel : null
+            onPicked: (key) => root.shell.setInstanceIcon(targetId, key)
+            onOpenFolderRequested: root.call("openPath", root.shell.iconsDir || "icons")
+        }
     }
 
     Toast {
@@ -1088,15 +1162,24 @@ ApplicationWindow {
     }
 
     // First run: language, Java, account -- over everything else.
-    OnboardingView {
-        id: onboarding
-        shell: root.shell
-        onSignInRequested: {
-            root.page = "accounts"
-            accountsPage.startMicrosoftLogin()
+    // Only built when there is a first-run step to show (and for the
+    // "onboarding" review route). Over everything else, as the view's own
+    // z only orders it inside this Loader.
+    Loader {
+        id: onboardingLoader
+        active: false
+        anchors.fill: parent
+        z: 800
+        sourceComponent: OnboardingView {
+            shell: root.shell
+            onSignInRequested: {
+                root.page = "accounts"
+                accountsPage.startMicrosoftLogin()
+            }
+            onCreateInstanceRequested: root.openNewInstance()
+            onDiscoverRequested: root.page = "discover"
+            Component.onCompleted: start()
         }
-        onCreateInstanceRequested: root.openNewInstance()
-        onDiscoverRequested: root.page = "discover"
     }
 
     Loader {

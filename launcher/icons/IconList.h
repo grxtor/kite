@@ -59,6 +59,11 @@ class IconList : public QAbstractListModel
 	 * with a coloured accent is tinted by the accent. Cached per key until
 	 * the icon changes; invalid if the icon has no visible pixels. */
 	QColor tint(const QString& key) const;
+	/* Whether the icon is an opaque square to its very edge (a block, a
+	 * mob's face, most pack logos): such a picture fills its tile and takes
+	 * the tile's corners, instead of floating inside it with its own square
+	 * corners against the tile's round ones. Cached like tint(). */
+	bool fillsTile(const QString& key) const;
 	int getIconIndex(const QString& key) const;
 	QString getDirectory() const;
 
@@ -132,6 +137,7 @@ class IconList : public QAbstractListModel
 	QVector<MMCIcon> icons;
 	QDir m_dir;
 	mutable QHash<QString, QColor> m_tintCache;
+	mutable QHash<QString, bool> m_fillsTileCache;
 	struct GameTexture {
 		QImage image;
 		QIcon icon;

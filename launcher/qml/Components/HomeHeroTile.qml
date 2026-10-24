@@ -25,18 +25,19 @@ Item {
     property bool lifted: false
 
     readonly property real iconShare: 0.84
+    readonly property bool iconFills: root.iconKey.length > 0 && Icons.fillsTile(root.iconKey)
     readonly property bool showsPackArt: root.packArt.length > 0 && packLogo.status === Image.Ready
 
     InstanceTile {
         anchors.fill: parent
         radius: root.radius
-        matte: root.showsPackArt ? root.matte : "transparent"
+        matte: root.showsPackArt || root.iconFills ? root.matte : "transparent"
         lifted: root.lifted
 
         Image {
             anchors.centerIn: parent
             visible: !root.showsPackArt
-            width: Math.round(root.width * root.iconShare)
+            width: root.iconFills ? root.width : Math.round(root.width * root.iconShare)
             height: width
             source: root.iconKey.length > 0 ? Icons.instanceIcon(root.iconKey) : ""
             sourceSize: Qt.size(width, height)

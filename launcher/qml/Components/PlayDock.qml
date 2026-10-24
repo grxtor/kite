@@ -111,6 +111,9 @@ Item {
     property string dockInstanceId: ""
     property string dockName: ""
     property string dockIconKey: ""
+    // The colour the bar is drawn on (Main.qml's shell), for the corners of
+    // an instance icon that fills its tile.
+    property color surround: "transparent"
     property bool dockRunning: false
     property bool dockCanLaunch: false
     property var dockTotalTimePlayed: 0
@@ -241,10 +244,16 @@ Item {
                     borderWidth: 1
                     borderColor: Theme.palette.border
                     lifted: pickerButton.hovered
+                    readonly property bool iconFills: root.hasInstance && Icons.fillsTile(root.dockIconKey)
+                    // An opaque square icon fills the tile, rounded in the
+                    // colour around it: the bar under the button's tint.
+                    matte: !iconFills ? "transparent"
+                         : Qt.tint(root.surround, pickerButton.down ? Theme.palette.pressedOverlay
+                                   : pickerButton.hovered || picker.visible ? Theme.palette.hoverOverlay : "transparent")
 
                     Image {
                         anchors.centerIn: parent
-                        width: Math.round(pickerButton.tileSize * 0.8)
+                        width: parent.iconFills ? parent.width : Math.round(pickerButton.tileSize * 0.8)
                         height: width
                         visible: root.hasInstance
                         source: root.dockIconKey.length > 0 ? Icons.instanceIcon(root.dockIconKey) : ""

@@ -27,4 +27,6 @@ QtObject {
     // QmlShell::iconRevision: bumps when any instance icon's pixels may have
     // changed; Icons.instanceIcon() folds it into the image URL.
     property int iconRevision: 0
+    // QmlShell, for iconFillsTile(key) -- see Icons.fillsTile().
+    property var icons: null
 }

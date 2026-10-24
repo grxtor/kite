@@ -62,6 +62,7 @@ Item {
     readonly property int squareSize: Theme.control.height
     readonly property real iconShare: 0.84
     readonly property int iconSize: Math.round(root.squareSize * root.iconShare)
+    readonly property bool iconFills: Icons.fillsTile(root.iconKey)
     // Empty (so not shown) when "Show play time per instance" is off.
     readonly property string playTimeText: SettingsStore.bool("ShowGameTime") && !root.isNew
                                            ? Format.playTime(root.totalTimePlayed) : ""
@@ -122,14 +123,14 @@ Item {
                 Layout.preferredHeight: root.squareSize
                 radius: Theme.radius.md
                 // Rounds the logo's corners in the row's own colour.
-                matte: root.showsPackArt ? card.color : "transparent"
+                matte: root.showsPackArt || root.iconFills ? card.color : "transparent"
                 lifted: root.hovered
 
                 Image {
                     anchors.centerIn: parent
                     visible: !root.showsPackArt
-                    width: root.iconSize
-                    height: root.iconSize
+                    width: root.iconFills ? parent.width : root.iconSize
+                    height: width
                     source: Icons.instanceIcon(root.iconKey)
                     sourceSize: Qt.size(width, height)
                     fillMode: Image.PreserveAspectFit

@@ -324,6 +324,9 @@ class QmlShell : public QObject
 	 * for one section of the library. Created on first use and kept, so
 	 * QML asking again from a rebuilt delegate gets the same model back. */
 	Q_INVOKABLE QObject* sectionModel(const QString& group);
+	/* IconList::fillsTile(): whether icon @p key is drawn across its whole
+	 * tile (Icons.fillsTile() in QML). */
+	Q_INVOKABLE bool iconFillsTile(const QString& key) const;
 	/* The InstanceDetails bridge for one instance's detail page. At most
 	 * one is kept at a time: asking for a different id replaces (and
 	 * destroys) whichever one was open before; asking again for the same
