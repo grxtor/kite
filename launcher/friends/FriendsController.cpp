@@ -24,6 +24,7 @@
 #include <QDir>
 
 #include "FriendsDisplay.h"
+#include "FriendsFaces.h"
 #include "FriendsGameWatcher.h"
 #include "FriendsSessionStore.h"
 #include "InstanceList.h"
@@ -42,11 +43,18 @@ namespace
 	 * this after the last one. */
 	constexpr int kMinSignInGapMs = 5000;
 	const QString kSessionFile = QStringLiteral("friends.json");
+	/* The friends' heads, under the data folder. */
+	const QString kFacesDir = QStringLiteral("cache/friendfaces");
 } // namespace
 
 FriendsController::FriendsController(const QString& dataDir, QObject* parent)
-	: QObject(parent), m_dataDir(dataDir), m_http(new FriendsHttp(this))
+	: QObject(parent),
+	  m_dataDir(dataDir),
+	  m_http(new FriendsHttp(this)),
+	  m_faces(new FriendsFaces(QDir(dataDir).filePath(kFacesDir), this))
 {
+	connect(m_faces, &FriendsFaces::changed, this,
+			&FriendsController::onFacesChanged);
 	m_settings = FriendsDisplay::settingsMap({});
 	m_pollTimer.setInterval(kPollIntervalMs);
 	connect(&m_pollTimer, &QTimer::timeout, this, &FriendsController::tick);
@@ -98,6 +106,8 @@ void FriendsController::setEnabled(bool enabled)
 		start();
 	} else {
 		stop(true);
+		/* Their heads are their data too. */
+		m_faces->clearCache();
 	}
 }
 
@@ -201,6 +211,7 @@ void FriendsController::stop(bool tellServer)
 	m_enabled = false;
 	m_pollTimer.stop();
 	m_pushTimer.stop();
+	m_faces->cancel();
 	m_watcher.reset();
 	m_polling = false;
 	const QString token = m_session.token;
@@ -274,4 +285,36 @@ void FriendsController::onAboutToQuit()
 	m_http->sendAndWait("DELETE",
 						FriendsApi::url(serverUrl(), FriendsApi::Path::status()),
 						QByteArray(), m_session.token, kQuitGoOfflineMs);
+}
+
+void FriendsController::attachFaces(QVariantList& list) const
+{
+	for (QVariant& one : list) {
+		QVariantMap person = one.toMap();
+		person["face"] = m_faces->faceUrl(person.value("uuid").toString());
+		one = person;
+	}
+}
+
+void FriendsController::fetchFaces()
+{
+	if (!m_enabled) {
+		return;
+	}
+	QStringList uuids;
+	for (const auto& list : {m_friends, m_incoming, m_outgoing, m_blocked}) {
+		for (const QVariant& one : list) {
+			uuids.append(one.toMap().value("uuid").toString());
+		}
+	}
+	m_faces->ensure(uuids, mojangUrl());
+}
+
+void FriendsController::onFacesChanged()
+{
+	attachFaces(m_friends);
+	attachFaces(m_incoming);
+	attachFaces(m_outgoing);
+	attachFaces(m_blocked);
+	emit changed();
 }

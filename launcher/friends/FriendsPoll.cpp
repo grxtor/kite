@@ -264,7 +264,11 @@ void FriendsController::applySnapshot(
 										   QDateTime::currentDateTimeUtc());
 	m_incoming = FriendsDisplay::personList(snapshot.incoming);
 	m_outgoing = FriendsDisplay::personList(snapshot.outgoing);
+	attachFaces(m_friends);
+	attachFaces(m_incoming);
+	attachFaces(m_outgoing);
 	emit changed();
+	fetchFaces();
 }
 
 void FriendsController::clearData()

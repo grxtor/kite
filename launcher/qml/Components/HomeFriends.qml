@@ -189,7 +189,7 @@ Column {
                 id: row
                 x: -Theme.space.sm
                 width: root.width + Theme.space.sm * 2
-                uuid: slot.modelData.uuid
+                face: slot.modelData.face
                 name: slot.modelData.name
                 detail: slot.modelData.statusText
                 presence: slot.modelData.state

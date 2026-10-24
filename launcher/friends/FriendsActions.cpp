@@ -28,6 +28,7 @@
 #include <QMetaObject>
 
 #include "FriendsDisplay.h"
+#include "FriendsFaces.h"
 #include "core/LauncherContext.h"
 #include "settings/SettingsObject.h"
 
@@ -243,7 +244,9 @@ void FriendsController::loadBlocked(
 										 : std::nullopt;
 				if (blocked) {
 					m_blocked = FriendsDisplay::personList(*blocked);
+					attachFaces(m_blocked);
 					emit changed();
+					fetchFaces();
 				}
 				done(reply, blocked.has_value());
 			});
@@ -338,6 +341,7 @@ void FriendsController::deleteAccount()
 				/* Gone on the server: nothing left to tell it. */
 				LAUNCHER->settings()->set(kEnabledSetting, false);
 				stop(false);
+				m_faces->clearCache();
 				finishAction("deleteAccount", true,
 							 tr("Your friends account and its data were "
 								"deleted"));

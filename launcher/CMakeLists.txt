@@ -590,6 +590,8 @@ set(MINECRAFT_SOURCES
     minecraft/skins/ProfileSkinImport.h
     minecraft/skins/DefaultSkins.cpp
     minecraft/skins/DefaultSkins.h
+    minecraft/skins/SkinFace.cpp
+    minecraft/skins/SkinFace.h
 
     mojang/PackageManifest.h
     mojang/PackageManifest.cpp
@@ -918,6 +920,8 @@ set(FRIENDS_SOURCES
     friends/FriendsApi.cpp
     friends/FriendsDisplay.h
     friends/FriendsDisplay.cpp
+    friends/FriendsFaces.h
+    friends/FriendsFaces.cpp
     friends/FriendsLogRules.h
     friends/FriendsLogRules.cpp
     friends/FriendsSessionStore.h
@@ -951,6 +955,13 @@ add_unit_test(FriendsLogRules
 # recent of several, and the world following the log lines of its launch.
 add_unit_test(FriendsGameWatcher
     SOURCES friends/FriendsGameWatcher_test.cpp
+    LIBS Kite_core
+    )
+
+# A friend's head: the skin URL from Mojang's profile (and which hosts are
+# accepted), the face cut from a skin, and when a face is stale.
+add_unit_test(FriendsFaces
+    SOURCES friends/FriendsFaces_test.cpp
     LIBS Kite_core
     )
 

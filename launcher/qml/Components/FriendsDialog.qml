@@ -29,6 +29,9 @@ Dialog {
     readonly property int preferredWidth: 560
     readonly property int preferredHeight: 620
     readonly property int listMinHeight: 240
+    // A request is on its way; the name stays in the field until it is
+    // accepted, so a failed one is not typed again.
+    property bool sending: false
 
     function openTab(id) {
         root.tab = id
@@ -37,8 +40,8 @@ Dialog {
     function submit() {
         if (!root.nameValid || !root.controller)
             return
+        root.sending = true
         root.controller.sendRequest(root.typedName)
-        nameField.clear()
     }
     function confirmAction(remove, uuid, name) {
         confirm.removing = remove
@@ -91,7 +94,7 @@ Dialog {
             }
             Button {
                 highlighted: true
-                enabled: root.nameValid
+                enabled: root.nameValid && !root.sending
                 text: qsTr("Add")
                 icon.source: Icons.url("plus")
                 onClicked: root.submit()
@@ -168,6 +171,18 @@ Dialog {
         Button {
             text: qsTr("Close")
             onClicked: root.close()
+        }
+    }
+
+    // The answer to Add: only a request that went through empties the field.
+    Connections {
+        target: root.controller
+        function onActionFinished(action, ok, message) {
+            if (action !== "sendRequest")
+                return
+            root.sending = false
+            if (ok)
+                nameField.clear()
         }
     }
 

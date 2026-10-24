@@ -30,7 +30,7 @@ Item {
             id: row
             required property var modelData
             width: list.width
-            uuid: modelData.uuid
+            face: modelData.face
             name: modelData.name
 
             Button {

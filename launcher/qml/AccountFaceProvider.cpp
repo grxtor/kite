@@ -27,6 +27,7 @@
 #include "minecraft/auth/MinecraftAccount.h"
 #include "minecraft/skins/DefaultSkins.h"
 #include "minecraft/skins/SkinEntry.h"
+#include "minecraft/skins/SkinFace.h"
 
 namespace
 {
@@ -41,7 +42,6 @@ constexpr int kFaceX = 8;
 constexpr int kFaceY = 8;
 constexpr int kHatX = 40;
 constexpr int kHatY = 8;
-constexpr int kFaceExtent = 8;
 
 // Prefix an id is checked for (after the "?rev=N" cache-buster is already
 // stripped) to ask for the full body instead of the face.
@@ -143,20 +143,7 @@ AccountFaceProvider::AccountFaceProvider()
 
 QImage AccountFaceProvider::faceFromSkin(const QImage& skin)
 {
-	if (skin.isNull() || skin.width() < kHatX + kFaceExtent ||
-		skin.height() < kFaceY + kFaceExtent) {
-		return QImage();
-	}
-
-	QImage face(kFaceExtent, kFaceExtent, QImage::Format_ARGB32_Premultiplied);
-	face.fill(Qt::transparent);
-
-	QPainter painter(&face);
-	painter.drawImage(
-		0, 0, skin.copy(kFaceX, kFaceY, kFaceExtent, kFaceExtent));
-	painter.drawImage(0, 0, skin.copy(kHatX, kHatY, kFaceExtent, kFaceExtent));
-	painter.end();
-	return face;
+	return SkinFace::fromSkin(skin);
 }
 
 QImage AccountFaceProvider::bodyFromSkin(const QImage& skin, bool slim)

@@ -22,9 +22,9 @@ Item {
         var incoming = root.controller ? root.controller.incoming : []
         var outgoing = root.controller ? root.controller.outgoing : []
         for (var i = 0; i < incoming.length; ++i)
-            rows.push({ incoming: true, uuid: incoming[i].uuid, name: incoming[i].name })
+            rows.push({ incoming: true, uuid: incoming[i].uuid, name: incoming[i].name, face: incoming[i].face })
         for (var j = 0; j < outgoing.length; ++j)
-            rows.push({ incoming: false, uuid: outgoing[j].uuid, name: outgoing[j].name })
+            rows.push({ incoming: false, uuid: outgoing[j].uuid, name: outgoing[j].name, face: outgoing[j].face })
         return rows
     }
 
@@ -41,14 +41,13 @@ Item {
             id: row
             required property var modelData
             width: list.width
-            uuid: modelData.uuid
+            face: modelData.face
             name: modelData.name
             detail: modelData.incoming ? qsTr("Wants to be your friend") : qsTr("Waiting for them to answer")
 
             Button {
                 visible: row.modelData.incoming
                 buttonSize: "sm"
-                highlighted: true
                 text: qsTr("Accept")
                 onClicked: root.controller.accept(row.modelData.uuid)
             }

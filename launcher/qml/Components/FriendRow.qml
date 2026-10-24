@@ -8,7 +8,9 @@ import Kite.Theme
 
 /*
  * One person in the friends list, on Home's side panel and in the Friends
- * dialog: their Minecraft head, their name, and a quiet line under it (where
+ * dialog: their Minecraft head (the 8x8 face FriendsController cached from
+ * Mojang, drawn pixel for pixel; a neutral tile with a user icon until it
+ * is there), their name, and a quiet line under it (where
  * they are, or what the row is about). Whatever goes inside the row
  * (buttons, a ⋯) lands on its right.
  *
@@ -22,8 +24,9 @@ import Kite.Theme
 AbstractButton {
     id: root
 
-    property string uuid
     property string name
+    // The head's picture (FriendsController's `face`), "" until it is cached.
+    property string face
     property string detail
     property string presence: ""
     property bool detailStrong: false
@@ -58,10 +61,32 @@ AbstractButton {
         spacing: Theme.space.md
 
         // A friend's head is dimmed while they are offline.
-        PlayerHead {
-            size: root.headSize
+        Item {
+            Layout.preferredWidth: root.headSize
+            Layout.preferredHeight: root.headSize
             opacity: root.presence === "offline" ? root.offlineOpacity : 1
-            source: root.uuid.length > 0 ? "image://accountface/friend/" + root.uuid : ""
+            Accessible.ignored: true
+
+            Rectangle {
+                anchors.fill: parent
+                visible: head.status !== Image.Ready
+                color: Theme.palette.surfaceSunken
+
+                MeshIcon {
+                    anchors.centerIn: parent
+                    iconName: "user"
+                    size: Theme.icon.md
+                    color: Theme.palette.textTertiary
+                }
+            }
+            Image {
+                id: head
+                anchors.fill: parent
+                source: root.face
+                smooth: false
+                mipmap: false
+                fillMode: Image.Stretch
+            }
         }
 
         Column {

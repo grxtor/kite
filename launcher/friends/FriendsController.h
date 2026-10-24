@@ -34,6 +34,7 @@
 #include "FriendsApi.h"
 #include "FriendsHttp.h"
 
+class FriendsFaces;
 class FriendsGameWatcher;
 
 /*
@@ -63,9 +64,11 @@ class FriendsController : public QObject
 	Q_PROPERTY(QString error READ error NOTIFY changed)
 	Q_PROPERTY(QString myName READ myName NOTIFY changed)
 	/// uuid, name, since, state, lastSeenAt, instance, version, worldType,
-	/// host, port, statusText (see FriendsDisplay::friendMap).
+	/// host, port, statusText (see FriendsDisplay::friendMap), face.
+	/// face (here and in the lists below) is the URL of the person's cached
+	/// head, "" until it has been fetched from Mojang (FriendsFaces).
 	Q_PROPERTY(QVariantList friends READ friends NOTIFY changed)
-	/// uuid, name, createdAt
+	/// uuid, name, createdAt, face
 	Q_PROPERTY(QVariantList incoming READ incoming NOTIFY changed)
 	Q_PROPERTY(QVariantList outgoing READ outgoing NOTIFY changed)
 	Q_PROPERTY(QVariantList blocked READ blocked NOTIFY changed)
@@ -165,6 +168,11 @@ class FriendsController : public QObject
 	QString unreachableText() const;
 	void applySnapshot(const FriendsApi::FriendsSnapshot& snapshot);
 	void clearData();
+	/// Sets "face" on every person of @p list from the cache.
+	void attachFaces(QVariantList& list) const;
+	/// Asks FriendsFaces for the heads of everyone in the four lists.
+	void fetchFaces();
+	void onFacesChanged();
 
 	// Actions (FriendsActions.cpp)
 	/// Sends the request and words its outcome with @p interpret, which
@@ -185,6 +193,7 @@ class FriendsController : public QObject
   private:
 	QString m_dataDir;
 	FriendsHttp* m_http;
+	FriendsFaces* m_faces;
 	std::unique_ptr<FriendsGameWatcher> m_watcher;
 	QTimer m_pollTimer;
 	QTimer m_pushTimer;
