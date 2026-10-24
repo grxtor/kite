@@ -35,9 +35,12 @@ class TaskWatcher;
 
 /*
  * Kite Performance for one instance: makes sure the Performance bundle's
- * default mods are installed, adding Fabric first to an instance that has
- * no loader. It runs before every Play of an instance with the mode on
- * (PreparePerformance) and once on its own for "Speed up".
+ * default mods are installed. It runs before every Play of an instance
+ * with the mode on (PreparePerformance), once on its own for "Speed up",
+ * and as the last step of PerformanceInstanceTask.
+ *
+ * An instance without a mod loader is never changed - no loader is added
+ * to it: the task ends at once, without the network, saying so.
  *
  * What is wanted is the catalog's default performance mods for the
  * instance's loader, minus the ones the player unticked
@@ -64,6 +67,12 @@ class PerformanceSetupTask : public Task
 		return m_summary;
 	}
 
+	/// How many mods the task installed; 0 until it is over.
+	int added() const
+	{
+		return m_added;
+	}
+
 	bool canAbort() const override
 	{
 		return true;
@@ -80,11 +89,8 @@ class PerformanceSetupTask : public Task
 	void onJarsIdentified(const QByteArray& reply);
 	void resolveWanted();
 	void onResolved();
-	void loadLoaderVersion();
-	void onLoaderListReady();
 	void install();
 	void onInstalled(bool ok);
-	void addLoader();
 	/// Ends the task: a warning in the log if @p problem, the summary as
 	/// the final status, success.
 	void finish(const QString& summary, const QString& problem = QString());
@@ -93,18 +99,16 @@ class PerformanceSetupTask : public Task
 	std::shared_ptr<ModFolderModel> m_folder;
 	QString m_mcVersion;
 	QString m_loader;
-	bool m_vanilla = false;
 	QStringList m_defaults;
 	QStringList m_excluded;
 	QStringList m_installed;
 	QStringList m_wanted;
-	QString m_loaderVersion;
 	int m_toInstall = 0;
+	int m_added = 0;
 	QString m_summary;
 	bool m_aborted = false;
 
 	shared_qobject_ptr<Net::JsonPost> m_lookup;
-	Task::Ptr m_loaderListLoad;
 	QPointer<ContentInstallReview> m_review;
 	QPointer<TaskWatcher> m_download;
 };

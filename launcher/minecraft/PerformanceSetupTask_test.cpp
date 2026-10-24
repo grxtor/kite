@@ -74,17 +74,34 @@ class PerformanceSetupTest : public QObject
 				 (QStringList{"a"}));
 	}
 
-	void aVanillaInstanceGetsFabric()
+	void aVanillaInstanceHasNoLoader()
 	{
-		QVERIFY(PerformanceSetup::needsLoader(QString()));
-		QCOMPARE(PerformanceSetup::targetLoader(QString()), QString("fabric"));
+		QVERIFY(!PerformanceSetup::hasLoader(QString()));
 	}
 
-	void aModdedInstanceKeepsItsLoader()
+	void aModdedInstanceHasALoader()
 	{
 		for (const QString& loader : {"fabric", "forge", "quilt", "neoforge"}) {
-			QVERIFY(!PerformanceSetup::needsLoader(loader));
-			QCOMPARE(PerformanceSetup::targetLoader(loader), loader);
+			QVERIFY(PerformanceSetup::hasLoader(loader));
+		}
+	}
+
+	void releasesFrom116OnAreSupported()
+	{
+		for (const QString& version :
+			 {"1.16", "1.16.5", "1.20.1", "1.21.11", "26.3", "26.1.2"}) {
+			QVERIFY2(PerformanceSetup::supportsVersion(version),
+					 qPrintable(version));
+		}
+	}
+
+	void olderVersionsAndSnapshotsAreNot()
+	{
+		for (const QString& version :
+			 {"1.12.2", "1.8.9", "1.15.2", "1.7", "24w14a", "b1.7.3", "a1.0.4",
+			  "1.21-pre1", "1.", "", "latest"}) {
+			QVERIFY2(!PerformanceSetup::supportsVersion(version),
+					 qPrintable(version));
 		}
 	}
 

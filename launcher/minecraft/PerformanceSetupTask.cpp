@@ -19,9 +19,6 @@
 
 #include "PerformanceSetupTask.h"
 
-#include "core/LauncherContext.h"
-#include "meta/Index.h"
-#include "meta/VersionList.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 #include "minecraft/PerformanceSetupRules.h"
@@ -37,7 +34,6 @@
 namespace
 {
 	const QString kPerformanceBundle = QStringLiteral("performance");
-	const QString kFabricUid = QStringLiteral("net.fabricmc.fabric-loader");
 	constexpr int kPercent = 100;
 } // namespace
 
@@ -54,9 +50,14 @@ void PerformanceSetupTask::executeTask()
 
 	auto profile = m_instance->getPackProfile();
 	m_mcVersion = profile->getComponentVersion(QStringLiteral("net.minecraft"));
-	const QString primary = profile->primaryModLoader();
-	m_vanilla = PerformanceSetup::needsLoader(primary);
-	m_loader = PerformanceSetup::targetLoader(primary);
+	m_loader = profile->primaryModLoader();
+	if (!PerformanceSetup::hasLoader(m_loader)) {
+		/* A vanilla instance is never changed: Kite Performance makes
+		 * a separate, modded one for it instead. */
+		finish(tr("Kite Performance needs a mod loader; this instance is "
+				  "left as it is"));
+		return;
+	}
 	m_folder = m_instance->loaderModList();
 	if (m_mcVersion.isEmpty() || !m_folder) {
 		finish(tr("Kite Performance: up to date"));
@@ -161,49 +162,6 @@ void PerformanceSetupTask::onResolved()
 		finish(tr("Kite Performance: no matching mods for this version"));
 		return;
 	}
-	if (m_vanilla) {
-		loadLoaderVersion();
-	} else {
-		install();
-	}
-}
-
-void PerformanceSetupTask::loadLoaderVersion()
-{
-	setStatus(tr("Looking up Fabric"));
-	auto list = LAUNCHER->metadataIndex()->get(kFabricUid);
-	if (!list->isLoaded()) {
-		m_loaderListLoad = list->getLoadTask();
-		if (m_loaderListLoad && !m_loaderListLoad->isFinished()) {
-			connect(m_loaderListLoad.get(), &Task::finished, this,
-					&PerformanceSetupTask::onLoaderListReady);
-			if (!m_loaderListLoad->isRunning()) {
-				m_loaderListLoad->start();
-			}
-			return;
-		}
-	}
-	onLoaderListReady();
-}
-
-void PerformanceSetupTask::onLoaderListReady()
-{
-	if (m_aborted) {
-		return;
-	}
-	auto list = LAUNCHER->metadataIndex()->get(kFabricUid);
-	BaseVersionPtr version = list->getRecommended();
-	if (!version && list->count() > 0) {
-		version = list->at(0);
-	}
-	if (!version) {
-		m_review->cancel();
-		finish(tr("Kite Performance: could not reach Modrinth; playing "
-				  "without changes"),
-			   QStringLiteral("no Fabric loader version available"));
-		return;
-	}
-	m_loaderVersion = version->descriptor();
 	install();
 }
 
@@ -237,39 +195,8 @@ void PerformanceSetupTask::onInstalled(bool ok)
 			   QStringLiteral("the download failed: ") + m_download->error());
 		return;
 	}
-	if (m_vanilla) {
-		addLoader();
-		return;
-	}
+	m_added = m_toInstall;
 	finish(tr("Kite Performance: added %n mod(s)", "", m_toInstall));
-}
-
-void PerformanceSetupTask::addLoader()
-{
-	setStatus(tr("Adding Fabric"));
-	auto profile = m_instance->getPackProfile();
-	if (!profile->setComponentVersion(kFabricUid, m_loaderVersion)) {
-		finish(tr("Kite Performance: added %n mod(s)", "", m_toInstall),
-			   QStringLiteral("Fabric could not be added"));
-		return;
-	}
-	/* Fabric's own requirements are settled here, before the launch's
-	 * update step reloads the components. */
-	profile->resolve(Net::Mode::Online);
-	profile->saveNow();
-	const QString summary =
-		tr("Kite Performance: added Fabric and %n mod(s)", "", m_toInstall);
-	auto resolving = profile->getCurrentTask();
-	if (!resolving || resolving->isFinished()) {
-		finish(summary);
-		return;
-	}
-	connect(resolving.get(), &Task::finished, this, [this, summary, resolving] {
-		finish(summary, resolving->wasSuccessful()
-							? QString()
-							: QStringLiteral("Fabric did not resolve: ") +
-								  resolving->failReason());
-	});
 }
 
 void PerformanceSetupTask::finish(const QString& summary, const QString& problem)

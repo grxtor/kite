@@ -407,6 +407,8 @@ set(MINECRAFT_SOURCES
     minecraft/PerformanceSetupRules.cpp
     minecraft/PerformanceSetupTask.h
     minecraft/PerformanceSetupTask.cpp
+    minecraft/PerformanceInstanceTask.h
+    minecraft/PerformanceInstanceTask.cpp
     minecraft/auth/AccountData.cpp
     minecraft/auth/AccountData.h
     minecraft/auth/AccountList.cpp

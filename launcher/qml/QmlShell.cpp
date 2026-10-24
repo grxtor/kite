@@ -62,6 +62,7 @@
 #include "BuildConfig.h"
 #include "models/InstanceFilterModel.h"
 #include "models/NewInstanceController.h"
+#include "minecraft/PerformanceInstanceTask.h"
 #include "minecraft/PerformanceSetupRules.h"
 #include "minecraft/PerformanceSetupTask.h"
 #include "modplatform/BundleCatalog.h"
@@ -256,6 +257,17 @@ QObject* QmlShell::pluginList()
 	return expose(m_pluginList.get());
 }
 
+/// Kite Performance installs mods, so it needs a loader to put them in and
+/// a game version they exist for.
+static bool
+performanceAvailable(const std::shared_ptr<MinecraftInstance>& instance)
+{
+	auto profile = instance->getPackProfile();
+	return PerformanceSetup::hasLoader(profile->primaryModLoader()) &&
+		   PerformanceSetup::supportsVersion(
+			   profile->getComponentVersion(QStringLiteral("net.minecraft")));
+}
+
 QVariantMap QmlShell::launchOptions(const QString& id) const
 {
 	auto instance = LAUNCHER->instances()->getInstanceById(id);
@@ -297,6 +309,8 @@ QVariantMap QmlShell::launchOptions(const QString& id) const
 											: QVariantList() },
 		{ QStringLiteral("accounts"), accounts },
 		{ QStringLiteral("performance"), minecraft && performanceEnabled(id) },
+		{ QStringLiteral("performanceAvailable"),
+		  minecraft && performanceAvailable(minecraft) },
 	};
 }
 
@@ -349,10 +363,16 @@ void QmlShell::setPerformanceExcluded(const QString& id,
 	}
 }
 
+bool QmlShell::performanceSupported(const QString& mcVersion) const
+{
+	return PerformanceSetup::supportsVersion(mcVersion);
+}
+
 QObject* QmlShell::speedUp(const QString& id)
 {
 	auto instance = minecraftInstanceById(id);
-	if (!instance || instance->isRunning()) {
+	if (!instance || instance->isRunning() ||
+		!PerformanceSetup::hasLoader(instance->getPackProfile()->primaryModLoader())) {
 		return nullptr;
 	}
 	instance->settings()->set("KitePerformance", true);
@@ -361,6 +381,30 @@ QObject* QmlShell::speedUp(const QString& id)
 	auto* task = new PerformanceSetupTask(instance);
 	auto* watcher = new TaskWatcher(Task::Ptr(task), this);
 	watcher->setTitle(tr("Kite Performance"));
+	task->start();
+	return expose(watcher);
+}
+
+QObject* QmlShell::createPerformanceInstance(const QString& sourceId)
+{
+	auto source = minecraftInstanceById(sourceId);
+	const QString mcVersion =
+		source ? source->getPackProfile()->getComponentVersion(
+					 QStringLiteral("net.minecraft"))
+			   : QString();
+	if (!source || !PerformanceSetup::supportsVersion(mcVersion)) {
+		return nullptr;
+	}
+
+	const QString name = tr("%1 · Kite Performance").arg(source->name());
+	auto* task = new PerformanceInstanceTask(
+		mcVersion, name, LAUNCHER->instances()->getInstanceGroup(sourceId));
+	auto* watcher = new TaskWatcher(Task::Ptr(task), this);
+	watcher->setTitle(name);
+	/* The id is known as soon as the instance exists, which is before the
+	 * task reports success: finished(true) reaches QML with it set. */
+	connect(task, &PerformanceInstanceTask::instanceCreated, watcher,
+			&TaskWatcher::setInstanceId);
 	task->start();
 	return expose(watcher);
 }

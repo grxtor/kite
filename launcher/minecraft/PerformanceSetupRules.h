@@ -36,11 +36,14 @@ namespace PerformanceSetup
 	QStringList wantedProjects(const QStringList& defaults,
 							   const QStringList& excluded,
 							   const QStringList& installed);
-	/// The loader the mods are resolved for: @p loader, or Fabric when the
-	/// instance has none.
-	QString targetLoader(const QString& loader);
-	/// Whether the instance needs a loader added before it can run mods.
-	bool needsLoader(const QString& loader);
+	/// Whether @p loader names a mod loader. Kite Performance only installs
+	/// mods into an instance that has one: a vanilla instance is never
+	/// changed.
+	bool hasLoader(const QString& loader);
+	/// Whether the performance mods exist for Minecraft @p mcVersion: a
+	/// release from 1.16 on, or a numbered release such as 26.1.2. False
+	/// for older releases, snapshots and betas.
+	bool supportsVersion(const QString& mcVersion);
 	/// File names in @p folder (.jar, enabled or not) that @p index has no
 	/// record of.
 	QStringList looseJars(const QDir& folder, const ModMetadataIndex& index);

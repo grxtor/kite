@@ -391,6 +391,8 @@ class QmlShell : public QObject
 	 *   profilers     [{key, name, ready}] -- see setProfilersProvider()
 	 *   accounts      [{id, name, kind, isDefault}] for "Play as"
 	 *   performance   whether Kite Performance is on for the instance
+	 *   performanceAvailable  whether it can be: the instance has a mod
+	 *                 loader and a game version the mods exist for
 	 * Empty for an unknown id. */
 	Q_INVOKABLE QVariantMap launchOptions(const QString& id) const;
 	/* Sets instance @p id's profiler ("" for none), the setting every way
@@ -399,9 +401,11 @@ class QmlShell : public QObject
 	Q_INVOKABLE void setInstanceProfiler(const QString& id,
 										 const QString& profilerKey);
 	/* Kite Performance, a mode of one instance: while it is on, every Play
-	 * first makes sure the Performance bundle's default mods are installed
-	 * (adding Fabric to an instance with no loader), minus the projects in
-	 * performanceExcluded() (Modrinth project ids the player unticked).
+	 * first makes sure the Performance bundle's default mods are installed,
+	 * minus the projects in performanceExcluded() (Modrinth project ids the
+	 * player unticked). It never touches an instance without a mod loader:
+	 * a vanilla instance is left as it is, and "Speed up" makes a separate
+	 * one for it (createPerformanceInstance()).
 	 * The setters do nothing for an unknown or non-Minecraft id and tell
 	 * QML through performanceChanged(). */
 	Q_INVOKABLE bool performanceEnabled(const QString& id) const;
@@ -409,12 +413,31 @@ class QmlShell : public QObject
 	Q_INVOKABLE QStringList performanceExcluded(const QString& id) const;
 	Q_INVOKABLE void setPerformanceExcluded(const QString& id,
 											const QStringList& projects);
-	/* "Speed up": turns the mode on and does the setup now. The TaskWatcher
-	 * of that setup, or null (and nothing changed) when the instance is
-	 * running or is not a Minecraft instance. The setup never fails; once
+	/* Whether the performance mods exist for Minecraft @p mcVersion: a
+	 * release from 1.16 on or a numbered one (26.1.2); not "1.12.2",
+	 * "1.8.9", snapshots or betas. */
+	Q_INVOKABLE bool performanceSupported(const QString& mcVersion) const;
+	/* "Speed up" on a modded instance: turns the mode on and does the
+	 * setup now. The TaskWatcher of that setup, or null (and nothing
+	 * changed) when the instance is running, is not a Minecraft instance,
+	 * or has no mod loader (a vanilla instance is never changed: see
+	 * createPerformanceInstance()). The setup never fails; once
 	 * the watcher has finished, its `status` is a sentence saying what
 	 * was done, for a toast. */
 	Q_INVOKABLE QObject* speedUp(const QString& id);
+	/* "Speed up" on a vanilla instance, which is never changed: makes a
+	 * NEW, empty instance (no worlds, nothing copied) on the source's
+	 * Minecraft version with the newest Fabric loader, named
+	 * "<source> · Kite Performance", in the source's group, with the
+	 * Performance preset's memory and options.txt and the mode on, then
+	 * installs the performance mods into it.
+	 * One TaskWatcher covers the whole chain: its `instanceId` is the new
+	 * instance's by the time finished(true) fires, and its final `status`
+	 * is a sentence ("Created X with 4 performance mods"). finished(false)
+	 * with `error` if the instance could not be created (the mods are best
+	 * effort). Null when @p sourceId is not a Minecraft instance or its
+	 * version is not performanceSupported(). */
+	Q_INVOKABLE QObject* createPerformanceInstance(const QString& sourceId);
 	Q_INVOKABLE void killInstance(const QString& id);
 	Q_INVOKABLE void openInstanceFolder(const QString& id);
 	/* Launches instance @p id straight into server @p address (host[:port]),

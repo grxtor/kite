@@ -27,9 +27,9 @@ class PerformanceSetupTask;
 
 /*
  * The launch step for Kite Performance: runs PerformanceSetupTask before the
- * update, so the performance mods (and Fabric, for an instance without a
- * loader) are in place when the update resolves the components. Says in the
- * launch log what it did. It never fails the launch.
+ * update, so the performance mods are in place when the update resolves
+ * the components. An instance without a mod loader is left as it is. Says
+ * in the launch log what it did. It never fails the launch.
  */
 class PreparePerformance : public LaunchStep
 {

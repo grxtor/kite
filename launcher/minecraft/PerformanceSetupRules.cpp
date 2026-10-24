@@ -24,12 +24,17 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QRegularExpression>
 
 #include "minecraft/mod/ModMetadataIndex.h"
 
 namespace
 {
-	const QString kFabric = QStringLiteral("fabric");
+	/* "1.16" is the first release Sodium and friends are built for. */
+	constexpr int kFirstSupportedMinor = 16;
+	/* From "26.1" on, versions are numbered by year: the first part is
+	 * no longer 1. */
+	constexpr int kFirstNumberedMajor = 2;
 	const QString kExcludedSeparator = QStringLiteral(",");
 
 	QString sha1Of(const QString& path)
@@ -60,14 +65,24 @@ namespace PerformanceSetup
 		return wanted;
 	}
 
-	QString targetLoader(const QString& loader)
+	bool hasLoader(const QString& loader)
 	{
-		return loader.isEmpty() ? kFabric : loader;
+		return !loader.isEmpty();
 	}
 
-	bool needsLoader(const QString& loader)
+	bool supportsVersion(const QString& mcVersion)
 	{
-		return loader.isEmpty();
+		static const QRegularExpression release(
+			QStringLiteral("^(\\d+)\\.(\\d+)(\\.\\d+)?$"));
+		const QRegularExpressionMatch match = release.match(mcVersion);
+		if (!match.hasMatch()) {
+			return false;
+		}
+		const int major = match.captured(1).toInt();
+		if (major >= kFirstNumberedMajor) {
+			return true;
+		}
+		return major == 1 && match.captured(2).toInt() >= kFirstSupportedMinor;
 	}
 
 	QStringList looseJars(const QDir& folder, const ModMetadataIndex& index)

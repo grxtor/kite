@@ -1102,8 +1102,8 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 		if (!session->demo && session->status != AuthSession::PlayableOffline) {
 			process->appendStep(new ClaimAccount(pptr, session));
 		}
-		// The performance mods (and Fabric) land before the update, which
-		// then resolves the loader and downloads its libraries.
+		// The performance mods land before the update, which then
+		// resolves the loader and downloads its libraries.
 		if (m_settings->get("KitePerformance").toBool()) {
 			process->appendStep(new PreparePerformance(pptr));
 		}
