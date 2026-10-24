@@ -562,7 +562,9 @@ Item {
         // Up where the list would start, as on every other tab.
         upperThird: true
         width: parent.width
-        visible: root.isMinecraft && root.count === 0
+        // Not while something installs: its progress notice sits where this
+        // would, and says more than "no mods" while they are on their way.
+        visible: root.isMinecraft && root.count === 0 && !root.flowsBusy
         title: root.current.emptyTitle
         body: root.current.emptyBody
         MeshIcon { iconName: root.current.icon; size: 40; color: Theme.palette.textTertiary }
@@ -683,6 +685,9 @@ Item {
     }
 
     onDetailsChanged: root.refreshPerformance()
+    // The details object is reused from one instance to the next, so a
+    // new instance arrives as a new id, not as new details.
+    onInstanceIdChanged: root.refreshPerformance()
     onVisibleChanged: if (visible) root.refreshPerformance()
     Component.onCompleted: root.refreshPerformance()
     Connections {
