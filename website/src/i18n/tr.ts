@@ -35,8 +35,8 @@ export const tr = {
     github: 'GitHub',
   },
   hero: {
-    title: 'Native yazılmış bir Minecraft başlatıcısı.',
-    lead: 'Bir pencereye konmuş web sayfası değil; C++ ve Qt Quick. Her kurulumun kendi modları, dünyaları ve Java’sı var. Modrinth, CurseForge, FTB, ATLauncher ve Technic paketleri bir arama uzağında.',
+    title: 'Hafif ama her şeyi taşır.',
+    lead: 'C++ ve Qt Quick ile yazılmış bir Minecraft başlatıcısı; pencereye konmuş bir web sayfası değil. Her kurulumun kendi modları, dünyaları ve Java’sı var. Modrinth, CurseForge, FTB, ATLauncher ve Technic paketleri bir arama uzağında.',
     cta: 'Kite’ı indir',
     ctaFor: {
       macos: 'macOS için indir',
