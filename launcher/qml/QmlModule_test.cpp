@@ -258,10 +258,9 @@ class QmlModuleTest : public QObject
 				 QStringLiteral("java"));
 	}
 
-	/* The Play options: with no account at all, "Play offline" goes to the
-	 * Accounts page instead of launching; the demo needs no account and
-	 * launches either way. */
-	void launchModeNeedsAnAccountExceptForTheDemo()
+	/* The Play options: with no account at all, "Play offline" and the demo
+	 * go to the Accounts page instead of launching. */
+	void launchModeNeedsAnAccount()
 	{
 		QQmlEngine engine;
 		FakeShell shell;
@@ -277,11 +276,13 @@ class QmlModuleTest : public QObject
 		QVERIFY(shell.lastLaunch.isEmpty());
 		QCOMPARE(root->property("page").toString(), QStringLiteral("accounts"));
 
+		QVERIFY(navigate(root.get(), QStringLiteral("library")));
 		QVERIFY(QMetaObject::invokeMethod(
 			root.get(), "launchMode", Q_RETURN_ARG(QVariant, unused),
 			Q_ARG(QVariant, QStringLiteral("fabric")),
 			Q_ARG(QVariant, QStringLiteral("demo"))));
-		QCOMPARE(shell.lastLaunch, QStringLiteral("fabric:demo"));
+		QVERIFY(shell.lastLaunch.isEmpty());
+		QCOMPARE(root->property("page").toString(), QStringLiteral("accounts"));
 	}
 
 	/* The macOS menu bar only ever shows natively (Cocoa); anywhere else

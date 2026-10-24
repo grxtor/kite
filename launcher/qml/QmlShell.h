@@ -366,7 +366,7 @@ class QmlShell : public QObject
 	 * connects these to the real actions. */
 	Q_INVOKABLE void launchInstance(const QString& id);
 	/* Play in a given way: @p mode is "offline" (no sign-in, the account
-	 * cache as it is), "demo" (the demo, no account needed; refused by
+	 * cache as it is), "demo" (the demo, signed in like any launch; refused by
 	 * Application where launchOptions() says supportsDemo is false) or
 	 * anything else for a normal launch -- the widget launch menu's Launch,
 	 * Launch Offline and Launch Demo. */

@@ -332,9 +332,9 @@ ApplicationWindow {
 
     // The other ways to play (LaunchOptionsMenu.qml): "offline" or "demo"
     // (QmlShell::launchInstanceMode()), as another account, and the
-    // instance's profiler. The demo needs no account; the rest do.
+    // instance's profiler. All of them need an account.
     function launchMode(id, mode) {
-        if (mode !== "demo" && root.sendToAccountsIfNone())
+        if (root.sendToAccountsIfNone())
             return
         if (root.shell && typeof root.shell.launchInstanceMode === "function")
             root.shell.launchInstanceMode(id, mode)

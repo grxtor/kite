@@ -94,7 +94,7 @@ class AccountsController : public QObject
 	/*!
 	 * Adds an offline account named @p username, applying the same rules
 	 * the old offline dialog enforced:
-	 *  - at least one Microsoft account must already be in the list;
+	 *  - a Microsoft account that owns Minecraft must already be in the list;
 	 *  - the trimmed username must not be empty;
 	 *  - it must not collide (case-insensitively) with an existing offline
 	 *    account's username.

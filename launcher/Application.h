@@ -73,10 +73,10 @@ namespace Meta
 /**
  * How the game is to be started.
  *
- * These are mutually exclusive on purpose: a demo session is never a
- * logged-in one, so a pair of booleans would allow combinations that mean
- * nothing. The profiler is deliberately not part of this -- it is an
- * instance setting now, not a property of one launch.
+ * These are mutually exclusive on purpose: an offline session and a demo
+ * one are different ways to start, so a pair of booleans would allow
+ * combinations that mean nothing. The profiler is deliberately not part of
+ * this -- it is an instance setting now, not a property of one launch.
  */
 enum class LaunchMode
 {
@@ -84,7 +84,7 @@ enum class LaunchMode
 	Normal,
 	/// Launch with whatever the account cache already has.
 	Offline,
-	/// Launch the demo, without logging in at all.
+	/// Log in, launch the demo.
 	Demo
 };
 

@@ -144,20 +144,12 @@ void AccountListPage::on_actionAddMicrosoft_triggered()
 
 void AccountListPage::on_actionAddOffline_triggered()
 {
-	// Check if at least one MSA account exists
-	bool hasMSA = false;
-	for (int i = 0; i < m_accounts->count(); i++) {
-		if (m_accounts->at(i)->isMSA()) {
-			hasMSA = true;
-			break;
-		}
-	}
-	if (!hasMSA) {
+	// An offline account needs a Microsoft account that owns Minecraft
+	if (!m_accounts->anyMicrosoftAccountOwnsMinecraft()) {
 		CustomMessageBox::selectable(
 			this, tr("Microsoft Account Required"),
-			tr("Adding an offline account requires at least one Microsoft "
-			   "account to be logged in. Please add a Microsoft account "
-			   "first."),
+			tr("Adding an offline account requires a Microsoft account that "
+			   "owns Minecraft to be logged in. Please add one first."),
 			QMessageBox::Warning)
 			->exec();
 		return;
@@ -269,15 +261,10 @@ void AccountListPage::updateButtonStates()
 	ui->actionDeleteSkin->setEnabled(accountIsReady);
 	ui->actionRefresh->setEnabled(accountIsReady);
 
-	// Offline account button: only enabled if at least one MSA account exists
-	bool hasMSA = false;
-	for (int i = 0; i < m_accounts->count(); i++) {
-		if (m_accounts->at(i)->isMSA()) {
-			hasMSA = true;
-			break;
-		}
-	}
-	ui->actionAddOffline->setEnabled(hasMSA);
+	// Offline account button: only enabled once a Microsoft account owns
+	// Minecraft
+	ui->actionAddOffline->setEnabled(
+		m_accounts->anyMicrosoftAccountOwnsMinecraft());
 
 	if (m_accounts->defaultAccount().get() == nullptr) {
 		ui->actionNoDefault->setEnabled(false);

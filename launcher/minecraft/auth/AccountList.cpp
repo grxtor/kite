@@ -731,6 +731,16 @@ bool AccountList::anyAccountIsValid()
 	return false;
 }
 
+bool AccountList::anyMicrosoftAccountOwnsMinecraft()
+{
+	for (auto account : m_accounts) {
+		if (account->isMSA() && account->ownsMinecraft()) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void AccountList::fillQueue()
 {
 
