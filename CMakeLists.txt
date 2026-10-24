@@ -417,10 +417,11 @@ message(STATUS "Update channel: ${Kite_UPDATE_CHANNEL_EFFECTIVE}")
 # Notification URL
 set(Kite_NOTIFICATION_URL "" CACHE STRING "URL for checking for notifications.")
 
-# The metadata server
-# TODO(fork): this is still Project Tick's meta server. Host our own before
-# the first public release.
-set(Kite_META_URL "https://meta.projecttick.org/" CACHE STRING "URL to fetch Kite's meta files from.")
+# The metadata server: Kite's own, generated hourly on the Dokploy server by a
+# fork of Project Tick's meta generator (/opt/kite-meta). It also serves the
+# fmllibs and the launcher maven the meta points at. Keep the trailing slash:
+# the meta and Java download code append paths to it.
+set(Kite_META_URL "https://meta.kiteclient.com/" CACHE STRING "URL to fetch Kite's meta files from.")
 
 # Translations are bundled in the app (translations/kite_*.ts). Leave this empty
 # so Kite never downloads any; set it to a server that serves index_v2.json and
