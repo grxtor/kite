@@ -147,6 +147,10 @@ class PackProfile : public QAbstractListModel
 	Task::Ptr getCurrentTask();
 
 	std::shared_ptr<LaunchProfile> getProfile() const;
+	/// A launch profile for @p context, made anew and not kept: what another
+	/// Java would get. Null if the components cannot be applied.
+	std::shared_ptr<LaunchProfile>
+	makeProfile(const RuntimeContext& context) const;
 
 	// NOTE: used ONLY by MinecraftInstance to provide legacy version mappings
 	// from instance config

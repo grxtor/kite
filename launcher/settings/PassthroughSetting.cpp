@@ -63,8 +63,12 @@ void PassthroughSetting::reset()
 
 void PassthroughSetting::set(QVariant value)
 {
+	// An overriding value belongs to this side only: written to the other
+	// one too, it would stand there for something else (an instance's own
+	// Java recorded as the global one's).
 	if (isOverriding()) {
 		Setting::set(value);
+		return;
 	}
 	m_other->set(value);
 }

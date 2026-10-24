@@ -497,6 +497,8 @@ set(MINECRAFT_SOURCES
     minecraft/MojangVersionFormat.h
     minecraft/Rule.cpp
     minecraft/Rule.h
+    minecraft/RuntimeContext.cpp
+    minecraft/RuntimeContext.h
     minecraft/OneSixVersionFormat.cpp
     minecraft/OneSixVersionFormat.h
     minecraft/OpSys.cpp

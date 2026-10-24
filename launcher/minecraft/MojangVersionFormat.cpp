@@ -329,10 +329,10 @@ LibraryPtr MojangVersionFormat::libraryFromJson(ProblemContainer& problems,
 				qWarning() << filename
 						   << "contains an invalid native (skipping)";
 			}
-			OpSys opSys = OpSys_fromString(it.key());
-			if (opSys != Os_Other) {
-				out->m_nativeClassifiers[opSys] = it.value().toString();
-			}
+			// Kept by the platform's name as given: "osx-arm64" and the
+			// like are told apart when the natives are picked
+			// (RuntimeContext::nativeClassifier()).
+			out->m_nativeClassifiers[it.key()] = it.value().toString();
 		}
 	}
 	if (libObj.contains("rules")) {
@@ -356,7 +356,7 @@ QJsonObject MojangVersionFormat::libraryToJson(Library* library)
 		QJsonObject nativeList;
 		auto iter = library->m_nativeClassifiers.begin();
 		while (iter != library->m_nativeClassifiers.end()) {
-			nativeList.insert(OpSys_toString(iter.key()), iter.value());
+			nativeList.insert(iter.key(), iter.value());
 			iter++;
 		}
 		libRoot.insert("natives", nativeList);

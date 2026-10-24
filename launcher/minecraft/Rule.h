@@ -24,7 +24,7 @@
 #include <QList>
 #include <QJsonObject>
 #include <memory>
-#include "OpSys.h"
+#include "RuntimeContext.h"
 
 class Library;
 class Rule;
@@ -38,15 +38,16 @@ class Rule
 {
   protected:
 	RuleAction m_result;
-	virtual bool applies(const Library* parent) = 0;
+	virtual bool applies(const Library* parent,
+						 const RuntimeContext& context) = 0;
 
   public:
 	Rule(RuleAction result) : m_result(result) {}
 	virtual ~Rule() {};
 	virtual QJsonObject toJson() = 0;
-	RuleAction apply(const Library* parent)
+	RuleAction apply(const Library* parent, const RuntimeContext& context)
 	{
-		if (applies(parent))
+		if (applies(parent, context))
 			return m_result;
 		else
 			return Defer;
@@ -56,24 +57,24 @@ class Rule
 class OsRule : public Rule
 {
   private:
-	// the OS
-	OpSys m_system;
+	// the platform, as the meta names it: "osx", "osx-arm64", ...
+	QString m_system;
 	// the OS version regexp
 	QString m_version_regexp;
 
   protected:
-	virtual bool applies(const Library*)
+	virtual bool applies(const Library*, const RuntimeContext& context)
 	{
-		return (m_system == currentSystem);
+		return context.matches(m_system);
 	}
-	OsRule(RuleAction result, OpSys system, QString version_regexp)
+	OsRule(RuleAction result, QString system, QString version_regexp)
 		: Rule(result), m_system(system), m_version_regexp(version_regexp)
 	{
 	}
 
   public:
 	virtual QJsonObject toJson();
-	static std::shared_ptr<OsRule> create(RuleAction result, OpSys system,
+	static std::shared_ptr<OsRule> create(RuleAction result, QString system,
 										  QString version_regexp)
 	{
 		return std::shared_ptr<OsRule>(
@@ -84,7 +85,7 @@ class OsRule : public Rule
 class ImplicitRule : public Rule
 {
   protected:
-	virtual bool applies(const Library*)
+	virtual bool applies(const Library*, const RuntimeContext&)
 	{
 		return true;
 	}

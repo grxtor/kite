@@ -30,7 +30,7 @@
 #include <memory>
 
 #include "Rule.h"
-#include "minecraft/OpSys.h"
+#include "RuntimeContext.h"
 #include "GradleSpecifier.h"
 #include "MojangDownloadInfo.h"
 
@@ -117,8 +117,9 @@ class Library
 		m_repositoryURL = base_url;
 	}
 
-	void getApplicableFiles(OpSys system, QStringList& jar, QStringList& native,
-							QStringList& native32, QStringList& native64,
+	void getApplicableFiles(const RuntimeContext& context, QStringList& jar,
+							QStringList& native, QStringList& native32,
+							QStringList& native64,
 							const QString& overridePath) const;
 
 	void setAbsoluteUrl(const QString& absolute_url)
@@ -132,7 +133,7 @@ class Library
 	}
 
 	/// Get the file name of the library
-	QString filename(OpSys system) const;
+	QString filename(const RuntimeContext& context) const;
 
 	// DEPRECATED: set a display name, used by jar mods only
 	void setDisplayName(const QString& displayName)
@@ -141,7 +142,7 @@ class Library
 	}
 
 	/// Get the file name of the library
-	QString displayName(OpSys system) const;
+	QString displayName(const RuntimeContext& context) const;
 
 	void setMojangDownloadInfo(MojangLibraryDownloadInfo::Ptr info)
 	{
@@ -160,8 +161,8 @@ class Library
 	}
 
 	/// Returns true if the library should be loaded (or extracted, in case of
-	/// natives)
-	bool isActive() const;
+	/// natives) in @p context
+	bool isActive(const RuntimeContext& context) const;
 
 	/// Returns true if the library is contained in an instance and false if it
 	/// is shared
@@ -174,7 +175,8 @@ class Library
 	bool isForge() const;
 
 	// Get a list of downloads for this library
-	QList<NetAction::Ptr> getDownloads(OpSys system, class HttpMetaCache* cache,
+	QList<NetAction::Ptr> getDownloads(const RuntimeContext& context,
+									   class HttpMetaCache* cache,
 									   QStringList& failedLocalFiles,
 									   const QString& overridePath) const;
 
@@ -186,7 +188,7 @@ class Library
 	QString storagePrefix() const;
 
 	/// Get the relative file path where the library should be saved
-	QString storageSuffix(OpSys system) const;
+	QString storageSuffix(const RuntimeContext& context) const;
 
 	QString hint() const
 	{
@@ -227,8 +229,9 @@ class Library
 	/// a list of files that shouldn't be extracted from the library
 	QStringList m_extractExcludes;
 
-	/// native suffixes per OS
-	QMap<OpSys, QString> m_nativeClassifiers;
+	/// native classifiers per platform, as the meta names them ("osx",
+	/// "osx-arm64", ...); RuntimeContext::nativeClassifier() picks one
+	QMap<QString, QString> m_nativeClassifiers;
 
 	/// true if the library had a rules section (even empty)
 	bool applyRules = false;

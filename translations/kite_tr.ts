@@ -920,7 +920,7 @@ This action cannot be undone.</source>
 <context>
     <name>Application</name>
     <message>
-        <location filename="../launcher/Application.cpp" line="+1150"/>
+        <location filename="../launcher/Application.cpp" line="+1152"/>
         <source>Settings</source>
         <translation>Ayarlar</translation>
     </message>
@@ -1728,7 +1728,7 @@ This cannot be undone.</source>
 <context>
     <name>CheckJava</name>
     <message>
-        <location filename="../launcher/launch/steps/CheckJava.cpp" line="+31"/>
+        <location filename="../launcher/launch/steps/CheckJava.cpp" line="+32"/>
         <source>Checking Java</source>
         <translation>Java denetleniyor</translation>
     </message>
@@ -7576,12 +7576,12 @@ Java ikili dosyası: %1</translation>
     </message>
     <message>
         <location line="+10"/>
-        <location line="+123"/>
+        <location line="+136"/>
         <source>Failed to create target directory: %1</source>
         <translation>Hedef klasör oluşturulamadı: %1</translation>
     </message>
     <message>
-        <location line="-119"/>
+        <location line="-132"/>
         <source>Java download</source>
         <translation>Java indirme</translation>
     </message>
@@ -7596,7 +7596,7 @@ Java ikili dosyası: %1</translation>
         <translation>%1 çıkarılıyor...</translation>
     </message>
     <message>
-        <location line="+24"/>
+        <location line="+25"/>
         <source>Unsupported archive format: %1</source>
         <translation>Desteklenmeyen arşiv biçimi: %1</translation>
     </message>
@@ -7606,7 +7606,7 @@ Java ikili dosyası: %1</translation>
         <translation>Java arşivi çıkarılamadı.</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="+34"/>
         <source>Could not find java binary in extracted archive.</source>
         <translation>Çıkarılan arşivde java ikili dosyası bulunamadı.</translation>
     </message>
@@ -9073,7 +9073,7 @@ Should it be removed now?</source>
         <translation>Kütüphane dosyaları Mojang&apos;dan alınıyor...</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+9"/>
         <source>Libraries for instance %1</source>
         <translation>%1 kurulumunun kütüphaneleri</translation>
     </message>
@@ -11687,7 +11687,7 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
 <context>
     <name>MinecraftInstance</name>
     <message>
-        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+900"/>
+        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+898"/>
         <source>&lt;SESSION ID&gt;</source>
         <translation>&lt;SESSION ID&gt;</translation>
     </message>
@@ -11834,7 +11834,7 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
 <context>
     <name>MinecraftUpdate</name>
     <message>
-        <location filename="../launcher/minecraft/MinecraftUpdate.cpp" line="+64"/>
+        <location filename="../launcher/minecraft/MinecraftUpdate.cpp" line="+69"/>
         <source>Preparing folders</source>
         <translation>Klasörler hazırlanıyor</translation>
     </message>
@@ -12448,7 +12448,7 @@ Are you sure?</source>
         <translation>Eski jar dosyası kaldırılamadı: %1</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+17"/>
         <source>Couldn&apos;t determine the Minecraft jar to add the jar mods to.</source>
         <translation>Jar modlarının ekleneceği Minecraft jar dosyası belirlenemedi.</translation>
     </message>
@@ -13818,7 +13818,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Sürüm</translation>
     </message>
     <message>
-        <location line="+364"/>
+        <location line="+379"/>
         <source>No version selected.</source>
         <translation>Sürüm seçilmedi.</translation>
     </message>
@@ -14872,7 +14872,7 @@ Bunları JVM bağımsız değişkenlerinden kaldırana kadar bu mesaj gösterile
         <translation>Sürüm dosyasında desteklenmeyen &apos;+minecraftArguments&apos; öğesi var</translation>
     </message>
     <message>
-        <location filename="../launcher/minecraft/PackProfile.cpp" line="-1154"/>
+        <location filename="../launcher/minecraft/PackProfile.cpp" line="-1169"/>
         <source>Invalid component file version, expected %1</source>
         <translation>Geçersiz bileşen dosyası sürümü, beklenen: %1</translation>
     </message>
@@ -18826,7 +18826,7 @@ inheritsFrom eksik</translation>
         <translation>Görev durduruldu.</translation>
     </message>
     <message>
-        <location line="+30"/>
+        <location line="+32"/>
         <source>Instance update failed because: %1
 
 </source>
@@ -18993,17 +18993,17 @@ inheritsFrom eksik</translation>
 <context>
     <name>VerifyJavaInstall</name>
     <message>
-        <location filename="../launcher/minecraft/launch/VerifyJavaInstall.cpp" line="+227"/>
+        <location filename="../launcher/minecraft/launch/VerifyJavaInstall.cpp" line="+256"/>
         <source>Current Java version %1 does not meet the requirement of Java %2.</source>
         <translation>Mevcut Java sürümü %1, Java %2 gereksinimini karşılamıyor.</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location line="+27"/>
         <source>Found installed Java %1 at: %2</source>
         <translation>Yüklü Java %1 bulundu: %2</translation>
     </message>
     <message>
-        <location line="+238"/>
+        <location line="+249"/>
         <source>Java path set to: %1</source>
         <translation>Java yolu şuna ayarlandı: %1</translation>
     </message>
@@ -19013,12 +19013,17 @@ inheritsFrom eksik</translation>
         <translation>Java %1 gerekli ama yüklü değil. Otomatik Java indirme kapalı.</translation>
     </message>
     <message>
-        <location line="-25"/>
+        <location line="-40"/>
         <source>No Java is set up. Looking for Java %1.</source>
         <translation>Ayarlı bir Java yok. Java %1 aranıyor.</translation>
     </message>
     <message>
-        <location line="+32"/>
+        <location line="+29"/>
+        <source>This version has no native libraries for %1. Install an x86_64 Java %2 to play it.</source>
+        <translation>Bu sürümün %1 için yerel kütüphaneleri yok. Oynamak için x86_64 bir Java %2 yükle.</translation>
+    </message>
+    <message>
+        <location line="+18"/>
         <source>No installed Java %1 found. Downloading...</source>
         <translation>Yüklü Java %1 bulunamadı. İndiriliyor...</translation>
     </message>
