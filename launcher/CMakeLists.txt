@@ -1979,7 +1979,7 @@ add_subdirectory(qml)
 # the resources on Linux.
 add_unit_test(QmlModule
     SOURCES qml/QmlModule_test.cpp
-    LIBS Kite_qml Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
+    LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
     )
 
 # qt_add_qml_module builds the module as a static library plus a separate QML
@@ -1987,6 +1987,10 @@ add_unit_test(QmlModule
 # emit the import automatically during finalization, but add_unit_test uses a
 # plain add_executable, so it has to be asked for by hand -- otherwise the test
 # links and then fails at runtime with 'plugin "Kite_qmlplugin" not found'.
+# The root module's own plugin is linked explicitly above: nothing imports
+# "Kite", so qmlimportscanner only found it by accident -- the implicit "QML"
+# import resolved to launcher/qml/qmldir on case-insensitive file systems --
+# and on Linux it was missing.
 qt_import_qml_plugins(QmlModule_test)
 
 # Kite_logic rather than the core: the built-in icons are compiled from
@@ -2039,12 +2043,14 @@ add_unit_test(QmlUiHost
 add_executable(${Kite_Name} MACOSX_BUNDLE WIN32 main.cpp ${KITE_RCS})
 # Keyword signature: qt_import_qml_plugins below links with PRIVATE, and CMake
 # refuses to mix the two forms on one target.
-target_link_libraries(${Kite_Name} PRIVATE Kite_logic)
+target_link_libraries(${Kite_Name} PRIVATE Kite_logic Kite_qmlplugin)
 
 # Same reason as QmlModule_test: Kite_qml is a static QML module with a
 # separate plugin, and a plain add_executable does not import it. Without this
 # the launcher links and then fails at runtime with 'plugin "Kite_qmlplugin"
-# not found' the moment the QML shell loads.
+# not found' the moment the QML shell loads. Kite_qmlplugin is linked
+# explicitly above for the same reason as there: the scan finds it only on
+# case-insensitive file systems.
 qt_import_qml_plugins(${Kite_Name})
 
 # Export all symbols so dlopen()'ed .mmco plugins can resolve launcher symbols at runtime

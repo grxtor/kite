@@ -54,8 +54,12 @@ Item {
         property real corner
         property alias color: plate.color
         property alias gradient: plate.gradient
-        property alias borderWidth: plate.border.width
-        property alias borderColor: plate.border.color
+        // Plain properties, not aliases to plate.border.*: Qt before 6.11
+        // rejects an alias into a grouped property nothing has bound yet
+        // ("Invalid alias target location"), which made every KiteShape
+        // unavailable there.
+        property real borderWidth: 0
+        property color borderColor: "transparent"
 
         clip: true
 
@@ -66,6 +70,8 @@ Item {
             width: piece.parent.width + piece.grow * 2
             height: piece.parent.height + piece.grow * 2
             radius: piece.corner + piece.grow
+            border.width: piece.borderWidth
+            border.color: piece.borderColor
         }
     }
 

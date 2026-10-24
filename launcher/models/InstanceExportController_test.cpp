@@ -24,6 +24,7 @@
 #include <QFileInfo>
 #include <QSignalSpy>
 #include <QTemporaryDir>
+#include <QGuiApplication>
 #include <QTest>
 #include <QUrl>
 
@@ -303,6 +304,17 @@ class InstanceExportControllerTest : public QObject
 	}
 };
 
-QTEST_MAIN(InstanceExportControllerTest)
+int main(int argc, char* argv[])
+{
+	// The export reads instance icons as QIcon/QPixmap, which need a
+	// QGuiApplication; offscreen keeps this runnable on a headless runner, as
+	// in GameTextureIcons_test.cpp.
+	qputenv("QT_QPA_PLATFORM", "offscreen");
+
+	QGuiApplication app(argc, argv);
+
+	InstanceExportControllerTest test;
+	return QTest::qExec(&test, argc, argv);
+}
 
 #include "InstanceExportController_test.moc"
