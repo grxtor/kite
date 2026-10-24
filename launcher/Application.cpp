@@ -1060,6 +1060,10 @@ void Application::initSettings()
 	m_settings->registerSetting("JavaPath", "");
 	m_settings->registerSetting("JavaTimestamp", 0);
 	m_settings->registerSetting("JavaArchitecture", "");
+	// os.arch of the Java, which natives have to match ("aarch64", ...)
+	m_settings->registerSetting("JavaRealArchitecture", "");
+	// the Java the values above were recorded for
+	m_settings->registerSetting("JavaCheckedPath", "");
 	m_settings->registerSetting("JavaVersion", "");
 	m_settings->registerSetting("JavaVendor", "");
 	m_settings->registerSetting("LastHostname", "");

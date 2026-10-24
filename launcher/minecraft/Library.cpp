@@ -25,9 +25,9 @@
 #include <FileSystem.h>
 #include <BuildConfig.h>
 
-void Library::getApplicableFiles(OpSys system, QStringList& jar,
-								 QStringList& native, QStringList& native32,
-								 QStringList& native64,
+void Library::getApplicableFiles(const RuntimeContext& context,
+								 QStringList& jar, QStringList& native,
+								 QStringList& native32, QStringList& native64,
 								 const QString& overridePath) const
 {
 	bool local = isLocal();
@@ -40,7 +40,7 @@ void Library::getApplicableFiles(OpSys system, QStringList& jar,
 		}
 		return out.absoluteFilePath();
 	};
-	QString raw_storage = storageSuffix(system);
+	QString raw_storage = storageSuffix(context);
 	if (isNative()) {
 		if (raw_storage.contains("${arch}")) {
 			auto nat32Storage = raw_storage;
@@ -57,7 +57,7 @@ void Library::getApplicableFiles(OpSys system, QStringList& jar,
 	}
 }
 
-QList<NetAction::Ptr> Library::getDownloads(OpSys system,
+QList<NetAction::Ptr> Library::getDownloads(const RuntimeContext& context,
 											class HttpMetaCache* cache,
 											QStringList& failedLocalFiles,
 											const QString& overridePath) const
@@ -109,11 +109,12 @@ QList<NetAction::Ptr> Library::getDownloads(OpSys system,
 		return true;
 	};
 
-	QString raw_storage = storageSuffix(system);
+	QString raw_storage = storageSuffix(context);
 	if (m_mojangDownloads) {
 		if (isNative()) {
-			if (m_nativeClassifiers.contains(system)) {
-				auto nativeClassifier = m_nativeClassifiers[system];
+			const QString nativeClassifier =
+				context.nativeClassifier(m_nativeClassifiers);
+			if (!nativeClassifier.isNull()) {
 				if (nativeClassifier.contains("${arch}")) {
 					auto nat32Classifier = nativeClassifier;
 					nat32Classifier.replace("${arch}", "32");
@@ -144,7 +145,8 @@ QList<NetAction::Ptr> Library::getDownloads(OpSys system,
 				}
 			} else {
 				qDebug() << "Ignoring native library" << m_name.serialize()
-						 << "because it has no classifier for current OS";
+						 << "because it has no classifier for"
+						 << context.classifier();
 			}
 		} else {
 			if (m_mojangDownloads->artifact) {
@@ -187,7 +189,7 @@ QList<NetAction::Ptr> Library::getDownloads(OpSys system,
 	return out;
 }
 
-bool Library::isActive() const
+bool Library::isActive(const RuntimeContext& context) const
 {
 	bool result = true;
 	if (m_rules.empty()) {
@@ -195,14 +197,15 @@ bool Library::isActive() const
 	} else {
 		RuleAction ruleResult = Disallow;
 		for (auto rule : m_rules) {
-			RuleAction temp = rule->apply(this);
+			RuleAction temp = rule->apply(this, context);
 			if (temp != Defer)
 				ruleResult = temp;
 		}
 		result = result && (ruleResult == Allow);
 	}
 	if (isNative()) {
-		result = result && m_nativeClassifiers.contains(currentSystem);
+		result =
+			result && !context.nativeClassifier(m_nativeClassifiers).isNull();
 	}
 	return result;
 }
@@ -235,7 +238,7 @@ QString Library::storagePrefix() const
 	return m_storagePrefix;
 }
 
-QString Library::filename(OpSys system) const
+QString Library::filename(const RuntimeContext& context) const
 {
 	if (!m_filename.isEmpty()) {
 		return m_filename;
@@ -247,22 +250,21 @@ QString Library::filename(OpSys system) const
 
 	// otherwise native, override classifiers. Mojang HACK!
 	GradleSpecifier nativeSpec = m_name;
-	if (m_nativeClassifiers.contains(system)) {
-		nativeSpec.setClassifier(m_nativeClassifiers[system]);
-	} else {
-		nativeSpec.setClassifier("INVALID");
-	}
+	const QString nativeClassifier =
+		context.nativeClassifier(m_nativeClassifiers);
+	nativeSpec.setClassifier(nativeClassifier.isNull() ? QString("INVALID")
+													   : nativeClassifier);
 	return nativeSpec.getFileName();
 }
 
-QString Library::displayName(OpSys system) const
+QString Library::displayName(const RuntimeContext& context) const
 {
 	if (!m_displayname.isEmpty())
 		return m_displayname;
-	return filename(system);
+	return filename(context);
 }
 
-QString Library::storageSuffix(OpSys system) const
+QString Library::storageSuffix(const RuntimeContext& context) const
 {
 	// non-native? use only the gradle specifier
 	if (!isNative()) {
@@ -271,10 +273,9 @@ QString Library::storageSuffix(OpSys system) const
 
 	// otherwise native, override classifiers. Mojang HACK!
 	GradleSpecifier nativeSpec = m_name;
-	if (m_nativeClassifiers.contains(system)) {
-		nativeSpec.setClassifier(m_nativeClassifiers[system]);
-	} else {
-		nativeSpec.setClassifier("INVALID");
-	}
+	const QString nativeClassifier =
+		context.nativeClassifier(m_nativeClassifiers);
+	nativeSpec.setClassifier(nativeClassifier.isNull() ? QString("INVALID")
+													   : nativeClassifier);
 	return nativeSpec.toPath(m_filename);
 }

@@ -47,7 +47,14 @@ class MinecraftUpdate : public SequentialTask
 {
 	Q_OBJECT
   public:
-	explicit MinecraftUpdate(MinecraftInstance* inst, QObject* parent = 0);
+	/// What to bring up to date. A launch does it in two goes, the version
+	/// info first and the files after the Java is settled: which Java a
+	/// version needs is in its version info, and which natives to download
+	/// depends on that Java.
+	enum class Part { Everything, VersionInfo, GameFiles };
+
+	explicit MinecraftUpdate(MinecraftInstance* inst,
+							 Part part = Part::Everything, QObject* parent = 0);
 	virtual ~MinecraftUpdate() {};
 
 	bool canAbort() const override;
@@ -66,5 +73,6 @@ class MinecraftUpdate : public SequentialTask
 	void addStage(Task::Ptr task, const QString& stage);
 
 	MinecraftInstance* m_inst = nullptr;
+	Part m_part = Part::Everything;
 	QHash<Task*, QString> m_stages;
 };

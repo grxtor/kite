@@ -56,8 +56,9 @@ void ModMinecraftJar::executeTask()
 		auto mainJar = profile->getMainJar();
 		QStringList jars, temp1, temp2, temp3, temp4;
 		if (mainJar) {
-			mainJar->getApplicableFiles(currentSystem, jars, temp1, temp2,
-										temp3, m_inst->getLocalLibraryPath());
+			mainJar->getApplicableFiles(m_inst->runtimeContext(), jars, temp1,
+										temp2, temp3,
+										m_inst->getLocalLibraryPath());
 		}
 		if (jars.isEmpty()) {
 			emitFailed(tr("Couldn't determine the Minecraft jar to add the jar "

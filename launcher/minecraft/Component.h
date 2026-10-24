@@ -30,6 +30,7 @@
 
 class PackProfile;
 class LaunchProfile;
+struct RuntimeContext;
 namespace Meta
 {
 	class Version;
@@ -106,7 +107,7 @@ class Component : public QObject, public ProblemProvider
 			  std::shared_ptr<VersionFile> file);
 
 	virtual ~Component() {};
-	void applyTo(LaunchProfile* profile);
+	void applyTo(LaunchProfile* profile, const RuntimeContext& context);
 
 	bool isEnabled();
 	bool setEnabled(bool state);

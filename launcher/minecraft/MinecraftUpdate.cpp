@@ -42,8 +42,10 @@
 #include <meta/Index.h>
 #include <meta/Version.h>
 
-MinecraftUpdate::MinecraftUpdate(MinecraftInstance* inst, QObject* parent)
-	: SequentialTask(parent, QStringLiteral("MinecraftUpdate")), m_inst(inst)
+MinecraftUpdate::MinecraftUpdate(MinecraftInstance* inst, Part part,
+								 QObject* parent)
+	: SequentialTask(parent, QStringLiteral("MinecraftUpdate")), m_inst(inst),
+	  m_part(part)
 {
 	/* The first update of a version downloads its client jar, which the
 	 * built-in instance icons are drawn from when it is the newest (see
@@ -59,13 +61,16 @@ MinecraftUpdate::MinecraftUpdate(MinecraftInstance* inst, QObject* parent)
 
 void MinecraftUpdate::executeTask()
 {
+	const bool versionInfo = m_part != Part::GameFiles;
+	const bool gameFiles = m_part != Part::VersionInfo;
+
 	// create folders
-	{
+	if (gameFiles) {
 		addStage(Task::Ptr(new FoldersTask(m_inst)), tr("Preparing folders"));
 	}
 
 	// add metadata update task if necessary
-	{
+	if (versionInfo) {
 		auto components = m_inst->getPackProfile();
 		components->reload(Net::Mode::Online);
 		auto task = components->getCurrentTask();
@@ -75,19 +80,19 @@ void MinecraftUpdate::executeTask()
 	}
 
 	// libraries download
-	{
+	if (gameFiles) {
 		addStage(Task::Ptr(new LibrariesTask(m_inst)),
 				 tr("Downloading libraries"));
 	}
 
 	// FML libraries download and copy into the instance
-	{
+	if (gameFiles) {
 		addStage(Task::Ptr(new FMLLibrariesTask(m_inst)),
 				 tr("Downloading Forge libraries"));
 	}
 
 	// assets update
-	{
+	if (gameFiles) {
 		addStage(Task::Ptr(new AssetUpdateTask(m_inst)),
 				 tr("Downloading assets"));
 	}

@@ -139,9 +139,10 @@ void LaunchProfile::applyMods(const QList<LibraryPtr>& mods)
 	}
 }
 
-void LaunchProfile::applyLibrary(LibraryPtr library)
+void LaunchProfile::applyLibrary(LibraryPtr library,
+								 const RuntimeContext& context)
 {
-	if (!library->isActive()) {
+	if (!library->isActive(context)) {
 		return;
 	}
 
@@ -167,9 +168,10 @@ void LaunchProfile::applyLibrary(LibraryPtr library)
 	}
 }
 
-void LaunchProfile::applyMavenFile(LibraryPtr mavenFile)
+void LaunchProfile::applyMavenFile(LibraryPtr mavenFile,
+								   const RuntimeContext& context)
 {
-	if (!mavenFile->isActive()) {
+	if (!mavenFile->isActive(context)) {
 		return;
 	}
 
@@ -279,7 +281,7 @@ const QList<LibraryPtr>& LaunchProfile::getMavenFiles() const
 	return m_mavenFiles;
 }
 
-void LaunchProfile::getLibraryFiles(const QString& architecture,
+void LaunchProfile::getLibraryFiles(const RuntimeContext& context,
 									QStringList& jars, QStringList& nativeJars,
 									const QString& overridePath,
 									const QString& tempPath) const
@@ -288,8 +290,8 @@ void LaunchProfile::getLibraryFiles(const QString& architecture,
 	jars.clear();
 	nativeJars.clear();
 	for (auto lib : getLibraries()) {
-		lib->getApplicableFiles(currentSystem, jars, nativeJars, native32,
-								native64, overridePath);
+		lib->getApplicableFiles(context, jars, nativeJars, native32, native64,
+								overridePath);
 	}
 	// NOTE: order is important here, add main jar last to the lists
 	if (m_mainJar) {
@@ -298,17 +300,17 @@ void LaunchProfile::getLibraryFiles(const QString& architecture,
 			QDir tempDir(tempPath);
 			jars.append(tempDir.absoluteFilePath("minecraft.jar"));
 		} else {
-			m_mainJar->getApplicableFiles(currentSystem, jars, nativeJars,
-										  native32, native64, overridePath);
+			m_mainJar->getApplicableFiles(context, jars, nativeJars, native32,
+										  native64, overridePath);
 		}
 	}
 	for (auto lib : getNativeLibraries()) {
-		lib->getApplicableFiles(currentSystem, jars, nativeJars, native32,
-								native64, overridePath);
+		lib->getApplicableFiles(context, jars, nativeJars, native32, native64,
+								overridePath);
 	}
-	if (architecture == "32") {
+	if (context.bitness == "32") {
 		nativeJars.append(native32);
-	} else if (architecture == "64") {
+	} else if (context.bitness == "64") {
 		nativeJars.append(native64);
 	}
 }

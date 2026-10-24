@@ -20,6 +20,7 @@
 #pragma once
 
 #include "Component.h"
+#include "RuntimeContext.h"
 #include <map>
 #include <QTimer>
 #include <QList>
@@ -35,6 +36,8 @@ struct PackProfileData {
 
 	// the launch profile (volatile, temporary thing created on demand)
 	std::shared_ptr<LaunchProfile> m_profile;
+	// what m_profile was made for; another Java may need other libraries
+	RuntimeContext m_profileContext;
 
 	// version information migrated from instance.cfg file. Single use on
 	// migration!

@@ -35,6 +35,7 @@
 class PackProfile;
 class VersionFile;
 class LaunchProfile;
+struct RuntimeContext;
 struct MojangDownloadInfo;
 struct MojangAssetIndexInfo;
 
@@ -45,7 +46,9 @@ class VersionFile : public ProblemContainer
 	friend class OneSixVersionFormat;
 
   public: /* methods */
-	void applyTo(LaunchProfile* profile);
+	/// Adds this file to @p profile, with the libraries that apply in
+	/// @p context.
+	void applyTo(LaunchProfile* profile, const RuntimeContext& context);
 
   public: /* data */
 	/// Kite: order hint for this version file if no explicit order is set

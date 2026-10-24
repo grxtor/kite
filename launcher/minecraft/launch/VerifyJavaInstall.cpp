@@ -23,7 +23,6 @@
 #include <QDir>
 #include <QDirIterator>
 #include <QFileInfo>
-#include <QHash>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -37,6 +36,7 @@
 #include <launch/LaunchTask.h>
 #include <minecraft/MinecraftInstance.h>
 #include <minecraft/PackProfile.h>
+#include <minecraft/RuntimeContext.h>
 #include <minecraft/VersionFilterData.h>
 
 #include "core/LauncherContext.h"
@@ -110,13 +110,9 @@ namespace
 	// too. On an Apple Silicon Mac an x86_64 Java only runs under Rosetta.
 	bool runsNatively(const QString& arch)
 	{
-		static const QHash<QString, QString> javaToQt = {
-			{"aarch64", "arm64"},
-			{"amd64", "x86_64"},
-			{"x86", "i386"},
-			{"i686", "i386"},
-		};
-		return javaToQt.value(arch, arch) == QSysInfo::buildCpuArchitecture();
+		return RuntimeContext::normalizeArchitecture(arch) ==
+			   RuntimeContext::normalizeArchitecture(
+				   QSysInfo::buildCpuArchitecture());
 	}
 
 	// Whether @p javaBinary sits in a Java installation (<home>/bin/java,
@@ -161,17 +157,19 @@ QString VerifyJavaInstall::javaInstallDir() const
 }
 
 VerifyJavaInstall::InstalledJava
-VerifyJavaInstall::findInstalledJava(int requiredMajor) const
+VerifyJavaInstall::findInstalledJava(int requiredMajor,
+									 bool preferNative) const
 {
 	JavaUtils javaUtils;
 	QList<QString> systemJavas = javaUtils.FindJavaPaths();
 	QSet<QString> seenPaths;
 	// The closest major at or above the requirement, not the first one
 	// found: with Java 17 and 25 installed, 1.20.4 gets 17. Between two of
-	// the same major, one that runs natively comes first -- but never before
-	// a closer major: an x86_64 Java under Rosetta can load the natives of
-	// every Minecraft version, an arm64 one only those of 1.19 and later.
-	// Then one inside a Java installation comes before a stub like macOS's
+	// the same major, one that runs natively comes first, but not before a
+	// closer major: a mod loader may not start on a newer Java than its
+	// version was made for, while emulation only makes it slower. (With
+	// @p preferNative off, only Javas that run under emulation count.) Then one
+	// inside a Java installation comes before a stub like macOS's
 	// /usr/bin/java, which runs whichever Java is newest and so can change
 	// under the version recorded for it.
 	InstalledJava best;
@@ -186,10 +184,15 @@ VerifyJavaInstall::findInstalledJava(int requiredMajor) const
 		if (!probed.has_value() || probed->version.major() < requiredMajor)
 			continue;
 		const int major = probed->version.major();
-		const auto rank = std::make_tuple(major, !runsNatively(probed->arch),
+		const bool native = runsNatively(probed->arch);
+		// A version with no natives for this architecture cannot run on a
+		// native Java at all.
+		if (native && !preferNative)
+			continue;
+		const auto rank = std::make_tuple(major, native != preferNative,
 										  !isJavaInstallation(resolved));
 		if (best.path.isEmpty() || rank < bestRank) {
-			best = {resolved, major};
+			best = {resolved, major, native};
 			bestRank = rank;
 			if (rank == std::make_tuple(requiredMajor, false, false))
 				break;
@@ -197,6 +200,36 @@ VerifyJavaInstall::findInstalledJava(int requiredMajor) const
 	}
 
 	return best;
+}
+
+bool VerifyJavaInstall::nativeJavaCanRun() const
+{
+	auto m_inst =
+		std::dynamic_pointer_cast<MinecraftInstance>(m_parent->instance());
+	const auto native = RuntimeContext::forJava(QString(), QString());
+	if (native.architecture == "x86_64" || native.architecture == "x86") {
+		return true;
+	}
+	RuntimeContext emulated = native;
+	emulated.architecture = "x86_64";
+	emulated.bitness = "64";
+	const auto components = m_inst->getPackProfile();
+	const auto nativeProfile = components->makeProfile(native);
+	const auto emulatedProfile = components->makeProfile(emulated);
+	if (!nativeProfile || !emulatedProfile) {
+		return true;
+	}
+	QSet<QString> nativeLibraries;
+	for (const auto& library : nativeProfile->getNativeLibraries()) {
+		nativeLibraries.insert(library->artifactPrefix());
+	}
+	for (const auto& library : emulatedProfile->getNativeLibraries()) {
+		if (library->artifactPrefix().startsWith("org.lwjgl") &&
+			!nativeLibraries.contains(library->artifactPrefix())) {
+			return false;
+		}
+	}
+	return true;
 }
 
 void VerifyJavaInstall::executeTask()
@@ -239,14 +272,18 @@ void VerifyJavaInstall::executeTask()
 			MessageLevel::Kite);
 	}
 
-	const auto existingJava = findInstalledJava(requiredMajor);
+	const bool preferNative = nativeJavaCanRun();
+	const auto existingJava = findInstalledJava(requiredMajor, preferNative);
 	// With no Java set up, each version gets the major it asks for, the way
 	// the official launcher does it, and that major is downloaded when it is
 	// not installed. A newer one is not enough for old versions: the
 	// LaunchWrapper of Forge up to 1.12.2 does not run on Java 9 and later.
-	// An installed newer one is still used if no download works out.
+	// Nor is one that runs under emulation when a native one can be had --
+	// or a native one when the version has no natives for it.
+	// An installed one is still used if no download works out.
 	if (!existingJava.path.isEmpty() &&
-		(javaPathResolves || existingJava.major == requiredMajor)) {
+		(javaPathResolves || (existingJava.major == requiredMajor &&
+							  existingJava.native == preferNative))) {
 		emit logLine(tr("Found installed Java %1 at: %2")
 						 .arg(existingJava.major)
 						 .arg(existingJava.path),
@@ -255,6 +292,17 @@ void VerifyJavaInstall::executeTask()
 		return;
 	}
 	m_fallbackJava = existingJava;
+
+	// Kite downloads Java for its own architecture, which this version has
+	// no natives for.
+	if (!preferNative) {
+		failOrUseFallback(
+			tr("This version has no native libraries for %1. Install an "
+			   "x86_64 Java %2 to play it.")
+				.arg(RuntimeContext::forJava(QString(), QString()).classifier())
+				.arg(requiredMajor));
+		return;
+	}
 
 #ifndef Kite_DISABLE_JAVA_DOWNLOADER
 	// Check runtime setting for auto-download
@@ -506,6 +554,8 @@ void VerifyJavaInstall::setJavaPathAndSucceed(const QString& javaPath)
 				auto settings = m_parent->instance()->settings();
 				settings->set("JavaVersion", result.javaVersion.toString());
 				settings->set("JavaArchitecture", result.mojangPlatform);
+				settings->set("JavaRealArchitecture", result.realPlatform);
+				settings->set("JavaCheckedPath", javaPath);
 				settings->set("JavaVendor", result.javaVendor);
 				settings->set("JavaTimestamp",
 							  QFileInfo(javaPath)

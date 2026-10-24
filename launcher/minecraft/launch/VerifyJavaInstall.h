@@ -48,8 +48,17 @@ class VerifyJavaInstall : public LaunchStep
 	{
 		QString path;
 		int major = 0;
+		bool native = false; // runs without emulation
 	};
-	InstalledJava findInstalledJava(int requiredMajor) const;
+	/// The best installed Java for @p requiredMajor. With @p preferNative
+	/// off (the version has no natives for this architecture), only Javas
+	/// that run under emulation are considered.
+	InstalledJava findInstalledJava(int requiredMajor, bool preferNative) const;
+	/// Whether this version has LWJGL natives for a Java of the architecture
+	/// Kite was built for. Before LWJGL 3.3 the meta only has them where it
+	/// adds a build of its own (arm64 Macs, ARM Linux); on Windows ARM such a
+	/// version only runs on an x86_64 Java, under emulation.
+	bool nativeJavaCanRun() const;
 	QString javaInstallDir() const;
 	void setJavaPathAndSucceed(const QString& javaPath);
 	// Fails with @p reason, unless an installed Java newer than the one

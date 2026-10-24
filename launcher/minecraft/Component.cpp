@@ -144,7 +144,7 @@ std::shared_ptr<Meta::Version> Component::getMeta()
 	return m_metaVersion;
 }
 
-void Component::applyTo(LaunchProfile* profile)
+void Component::applyTo(LaunchProfile* profile, const RuntimeContext& context)
 {
 	// do not apply disabled components
 	if (!isEnabled()) {
@@ -152,7 +152,7 @@ void Component::applyTo(LaunchProfile* profile)
 	}
 	auto vfile = getVersionFile();
 	if (vfile) {
-		vfile->applyTo(profile);
+		vfile->applyTo(profile, context);
 	} else {
 		profile->applyProblemSeverity(getProblemSeverity());
 	}
