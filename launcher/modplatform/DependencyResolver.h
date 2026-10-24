@@ -20,9 +20,11 @@
 #pragma once
 
 #include <QObject>
+#include <QHash>
 #include <QList>
 #include <QPointer>
 #include <QString>
+#include <QStringList>
 #include <QUrl>
 #include <functional>
 #include <memory>
@@ -38,6 +40,15 @@ class DependencyResolver : public Task
 	Q_OBJECT
 
   public:
+	/* A project to resolve as if a selected mod required it, known only by
+	 * the mod id a jar asks for - which is all the mod health check can say
+	 * about what is missing. `requiredBy` names the files that need it, for
+	 * the review's "Required by" line. */
+	struct WantedProject {
+		QString id;
+		QStringList requiredBy;
+	};
+
 	explicit DependencyResolver(
 		const QList<ModPlatform::SelectedMod>& selectedMods,
 		const QString& mcVersion, const QString& loader,
@@ -48,6 +59,25 @@ class DependencyResolver : public Task
 	 * present on disk is treated as already-resolved, so transitive
 	 * dependencies that are already installed are no longer re-fetched. */
 	void setInstalledIndex(std::shared_ptr<ModMetadataIndex> index);
+
+	/* Projects to resolve as if a selected mod required them. Call before
+	 * start(); there may be no selected mods at all.
+	 *
+	 * Each is looked up on Modrinth with the id as the project slug (its
+	 * project endpoints take a slug as well as an id): the newest version
+	 * for this Minecraft version and loader, the way a required dependency
+	 * with no version id is. When Modrinth has no such project, or nothing
+	 * of it that runs here, CurseForge is tried the way a cross-resolved
+	 * dependency is, with the id as both name and slug - so only an exact
+	 * slug or an exact title counts. What neither finds is listed in
+	 * unresolvedDependencies() under the id. Their own required
+	 * dependencies follow as usual.
+	 *
+	 * The answer is recorded under the project's own id, not the slug it
+	 * was asked for, so a project something else already pulled in is not
+	 * fetched twice. Its `slug` is set to the wanted id (when the provider
+	 * did not name one) - how a caller tells which wanted id a row answers. */
+	void addWantedProjects(const QList<WantedProject>& wanted);
 
 	QList<ModPlatform::DependencyInfo> resolvedDependencies() const
 	{
@@ -91,16 +121,25 @@ class DependencyResolver : public Task
 				 std::function<void(const QByteArray&)> onDone);
 
 	void resolveNextMod();
+	void resolveWantedProjects();
+	void onWantedProjectResolved(const WantedProject& wanted,
+								 const QByteArray& data);
+	/// Renames the accepted dependency of Modrinth project @p projectId
+	/// after the project's title.
+	void nameAfterProject(const QString& projectId);
 	void resolveCurseForgeDependencies(const ModPlatform::SelectedMod& mod);
 	void resolveModrinthDependencies(const ModPlatform::SelectedMod& mod);
 	void onCurseForgeVersionResolved(const ModPlatform::SelectedMod& mod,
 									 const QByteArray& data);
 	void onModrinthVersionResolved(const ModPlatform::SelectedMod& mod,
 								   const QByteArray& data);
+	/* @p wantedId: the wanted project this answers, or empty for a
+	 * dependency some file named. */
 	void onDependencyProjectResolved(const QString& platform,
 									 const QString& projectId,
 									 const QByteArray& data,
-									 const QStringList& requiredBy);
+									 const QStringList& requiredBy,
+									 const QString& wantedId = QString());
 	void checkCompletion();
 
   private:
@@ -118,16 +157,28 @@ class DependencyResolver : public Task
 	void executeCrossResolve(const QString& targetPlatform,
 							 const QString& projectName,
 							 const QString& sourceSlug,
-							 const QStringList& requiredBy);
+							 const QStringList& requiredBy,
+							 const QString& wantedId = QString());
+	/* A CurseForge dependency with no file that runs here: asked for on
+	 * Modrinth by name. A wanted project started on Modrinth, so for it
+	 * there is nowhere left to ask and it is listed as unresolved. */
+	void noUsableCurseForgeFile(const QString& projectId,
+								const QStringList& requiredBy,
+								const QString& wantedId);
 
 	/* Takes a fully resolved dependency, or drops it when the very
 	 * version it asks for is already on disk. Marks it as possibly
 	 * installed when some other version of it is. */
 	void acceptDependency(ModPlatform::DependencyInfo dep);
 	/* A dependency two things need is downloaded once, so the second
-	 * thing to ask for it only adds its name to the existing entry. */
+	 * thing to ask for it only adds its name to the existing entry - and
+	 * @p slug, when it is the wanted id that asked. The entry may not exist
+	 * yet: a project is claimed when its lookup is made and recorded when
+	 * the answer comes back, so what is said in between is kept in
+	 * m_lateNotes and joins the entry as acceptDependency() records it. */
 	void noteAlsoRequiredBy(const QString& platform, const QString& projectId,
-							const QStringList& requiredBy);
+							const QStringList& requiredBy,
+							const QString& slug = QString());
 
 	bool isVersionInstalled(const QString& platform, const QString& projectId,
 							const QString& versionId) const;
@@ -138,11 +189,15 @@ class DependencyResolver : public Task
 
   private:
 	QList<ModPlatform::SelectedMod> m_selectedMods;
+	QList<WantedProject> m_wanted;
 	QList<ModPlatform::DependencyInfo> m_dependencies;
 	QList<ModPlatform::UnresolvedDep> m_unresolvedDeps;
 	QSet<QString> m_resolvedProjectIds; // avoid duplicates (platform:projectId)
 	QSet<QString>
 		m_resolvedNames; // avoid cross-platform duplicates (normalized name)
+	/* platform:projectId -> what noteAlsoRequiredBy() was told about a
+	 * dependency not recorded yet. Only `requiredBy` and `slug` are used. */
+	QHash<QString, ModPlatform::DependencyInfo> m_lateNotes;
 	std::shared_ptr<ModMetadataIndex> m_installed;
 	QString m_mcVersion;
 	QString m_loader;

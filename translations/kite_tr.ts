@@ -383,7 +383,7 @@
     </message>
     <message>
         <location line="+5"/>
-        <location filename="../launcher/ui/pages/global/AccountListPage.cpp" line="+327"/>
+        <location filename="../launcher/ui/pages/global/AccountListPage.cpp" line="+314"/>
         <source>Delete Skin</source>
         <translation type="unfinished"></translation>
     </message>
@@ -418,7 +418,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../launcher/ui/pages/global/AccountListPage.cpp" line="-275"/>
+        <location filename="../launcher/ui/pages/global/AccountListPage.cpp" line="-262"/>
         <source>Welcome!
 If you&apos;re new here, you can click the &quot;Add Microsoft&quot; button to add your Microsoft account.</source>
         <translation type="unfinished"></translation>
@@ -446,17 +446,17 @@ Please update both your operating system and Kite.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="+15"/>
         <source>Microsoft Account Required</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Adding an offline account requires at least one Microsoft account to be logged in. Please add a Microsoft account first.</source>
-        <translation type="unfinished"></translation>
+        <source>Adding an offline account requires a Microsoft account that owns Minecraft to be logged in. Please add one first.</source>
+        <translation>Çevrimdışı hesap eklemek için Minecraft&apos;a sahip bir Microsoft hesabıyla giriş yapılmış olmalı. Önce birini ekle.</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+14"/>
         <source>User</source>
         <translation type="unfinished"></translation>
     </message>
@@ -491,7 +491,7 @@ Please update both your operating system and Kite.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+106"/>
+        <location line="+101"/>
         <source>Offline account</source>
         <translation type="unfinished">Çevrimdışı hesap</translation>
     </message>
@@ -606,7 +606,7 @@ This action cannot be undone.</source>
 <context>
     <name>AccountsController</name>
     <message>
-        <location filename="../launcher/models/AccountsController.cpp" line="+325"/>
+        <location filename="../launcher/models/AccountsController.cpp" line="+318"/>
         <source>Skin images must be 64x64 or 64x32 pixel PNG files.</source>
         <translation>Skin görselleri 64x64 veya 64x32 piksellik PNG dosyaları olmalı.</translation>
     </message>
@@ -2121,12 +2121,12 @@ This cannot be undone.</source>
     <message>
         <location line="+5"/>
         <source>NeoForge</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">NeoForge</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Forge</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Forge</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2475,7 +2475,7 @@ The author may have blocked third-party launchers, or there may be no build for 
 <context>
     <name>ContentTab</name>
     <message>
-        <location filename="../launcher/qml/Components/ContentTab.qml" line="+48"/>
+        <location filename="../launcher/qml/Components/ContentTab.qml" line="+56"/>
         <source>Mods</source>
         <translation>Modlar</translation>
     </message>
@@ -2600,7 +2600,7 @@ The author may have blocked third-party launchers, or there may be no build for 
         <translation>Oyun çalışıyor. %1, oyun kapandıktan sonra değiştirilebilir.</translation>
     </message>
     <message>
-        <location line="+61"/>
+        <location line="+82"/>
         <source>“%1” could not be added.</source>
         <translation>“%1” eklenemedi.</translation>
     </message>
@@ -2682,7 +2682,32 @@ The author may have blocked third-party launchers, or there may be no build for 
         <translation>İçerik ekle</translation>
     </message>
     <message>
-        <location line="+116"/>
+        <location line="+29"/>
+        <source>1 problem may stop the game from starting.</source>
+        <translation>1 sorun oyunun açılmasını engelleyebilir.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 problems may stop the game from starting.</source>
+        <translation>%1 sorun oyunun açılmasını engelleyebilir.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>1 warning about these mods.</source>
+        <translation>Bu modlarla ilgili 1 uyarı var.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 warnings about these mods.</source>
+        <translation>Bu modlarla ilgili %1 uyarı var.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Show</source>
+        <translation>Göster</translation>
+    </message>
+    <message>
+        <location line="+97"/>
         <source>No content</source>
         <translation>İçerik yok</translation>
     </message>
@@ -2739,7 +2764,7 @@ The author may have blocked third-party launchers, or there may be no build for 
         <translation>Yükleyici seç…</translation>
     </message>
     <message>
-        <location line="+45"/>
+        <location line="+54"/>
         <source>List saved.</source>
         <translation>Liste kaydedildi.</translation>
     </message>
@@ -2752,7 +2777,7 @@ The author may have blocked third-party launchers, or there may be no build for 
 <context>
     <name>ContentUpdateController</name>
     <message>
-        <location filename="../launcher/models/ContentUpdateController.cpp" line="+349"/>
+        <location filename="../launcher/models/ContentUpdateController.cpp" line="+412"/>
         <source>Already checking for updates.</source>
         <translation>Güncellemeler zaten denetleniyor.</translation>
     </message>
@@ -2770,11 +2795,12 @@ The author may have blocked third-party launchers, or there may be no build for 
     <message>
         <location line="-249"/>
         <location line="+254"/>
+        <location line="+32"/>
         <source>This instance has no Minecraft version set.</source>
         <translation>Bu kurulumda Minecraft sürümü ayarlanmamış.</translation>
     </message>
     <message>
-        <location line="-235"/>
+        <location line="-267"/>
         <source>None of these were installed from Modrinth or CurseForge, so there is nothing to check. Files added from Add content can be checked.</source>
         <translation>Bunların hiçbiri Modrinth veya CurseForge&apos;dan yüklenmemiş, bu yüzden denetlenecek bir şey yok. İçerik ekle bölümünden eklenen dosyalar denetlenebilir.</translation>
     </message>
@@ -2842,14 +2868,25 @@ The author may have blocked third-party launchers, or there may be no build for 
     </message>
     <message>
         <location line="+8"/>
+        <location line="+30"/>
         <source>Missing dependencies</source>
         <translation>Eksik bağımlılıklar</translation>
+    </message>
+    <message>
+        <location line="-16"/>
+        <source>The game is running. Install once it has closed.</source>
+        <translation>Oyun çalışıyor. Kapandıktan sonra yükle.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>There is nothing to look for.</source>
+        <translation>Aranacak bir şey yok.</translation>
     </message>
 </context>
 <context>
     <name>ContentUpdateFlows</name>
     <message>
-        <location filename="../launcher/qml/Components/ContentUpdateFlows.qml" line="+24"/>
+        <location filename="../launcher/qml/Components/ContentUpdateFlows.qml" line="+25"/>
         <source>mods</source>
         <translation>mod</translation>
     </message>
@@ -2860,13 +2897,19 @@ The author may have blocked third-party launchers, or there may be no build for 
     </message>
     <message>
         <location line="+34"/>
+        <location line="+15"/>
         <source>Installed the missing dependencies.</source>
         <translation>Eksik bağımlılıklar yüklendi.</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="-14"/>
         <source>Every dependency is installed.</source>
         <translation>Tüm bağımlılıklar yüklü.</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Nothing compatible was found to install.</source>
+        <translation>Yüklenecek uyumlu bir şey bulunamadı.</translation>
     </message>
     <message>
         <location line="+6"/>
@@ -2884,7 +2927,7 @@ The author may have blocked third-party launchers, or there may be no build for 
         <translation>%1 %2 için kaynak bilgisi unutulsun mu? Yüklü kalırlar ama buradan güncellenemez veya başka sürüme geçirilemez.</translation>
     </message>
     <message>
-        <location line="+33"/>
+        <location line="+34"/>
         <source>The download did not finish.</source>
         <translation>İndirme tamamlanmadı.</translation>
     </message>
@@ -3446,7 +3489,7 @@ The author may have blocked third-party launchers, or there may be no build for 
 <context>
     <name>DependencyResolver</name>
     <message>
-        <location filename="../launcher/modplatform/DependencyResolver.cpp" line="+185"/>
+        <location filename="../launcher/modplatform/DependencyResolver.cpp" line="+238"/>
         <source>Resolving dependencies...</source>
         <translation>Bağımlılıklar çözümleniyor...</translation>
     </message>
@@ -5824,7 +5867,12 @@ Lütfen tekrar dene.</translation>
         <translation>Çalışması için gerekli</translation>
     </message>
     <message>
-        <location line="+24"/>
+        <location line="+25"/>
+        <source>Replaces %1</source>
+        <translation>%1 dosyasının yerini alır</translation>
+    </message>
+    <message>
+        <location line="+1"/>
         <source>Another version is already installed</source>
         <translation>Başka bir sürüm zaten yüklü</translation>
     </message>
@@ -5901,7 +5949,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceContentController</name>
     <message>
-        <location filename="../launcher/models/InstanceContentController.cpp" line="+503"/>
+        <location filename="../launcher/models/InstanceContentController.cpp" line="+546"/>
         <source>No file was chosen.</source>
         <translation>Hiç dosya seçilmedi.</translation>
     </message>
@@ -8471,13 +8519,6 @@ Granting %1 access to it via Flatseal is recommended.</source>
     </message>
     <message>
         <location line="+21"/>
-        <location line="+57"/>
-        <location line="+8"/>
-        <source>User</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="-51"/>
         <source>No Accounts</source>
         <translation type="unfinished"></translation>
     </message>
@@ -8487,39 +8528,17 @@ Granting %1 access to it via Flatseal is recommended.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+25"/>
-        <source>No Account — Play Demo?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>&lt;b&gt;No Microsoft account is linked.&lt;/b&gt;&lt;br&gt;&lt;br&gt;Without a Microsoft account you cannot play the full version of Minecraft.&lt;br&gt;&lt;br&gt;&lt;b&gt;Demo Mode&lt;/b&gt; lets you try Minecraft with the following limitations:&lt;br&gt;&amp;nbsp;&amp;bull;&amp;nbsp;Only a small area of the world is accessible&lt;br&gt;&amp;nbsp;&amp;bull;&amp;nbsp;Progress is not saved after the demo ends&lt;br&gt;&amp;nbsp;&amp;bull;&amp;nbsp;Multiplayer is not available&lt;br&gt;&lt;br&gt;Would you like to launch Minecraft in Demo Mode?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+11"/>
-        <location line="+239"/>
+        <location line="+241"/>
         <source>Play Demo</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-239"/>
-        <location line="+240"/>
+        <location line="+1"/>
         <source>Cancel</source>
         <translation type="unfinished">İptal</translation>
     </message>
     <message>
-        <location line="-236"/>
-        <source>Demo Mode — Choose Username</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Enter a username to use in Demo Mode:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+43"/>
+        <location line="-196"/>
         <source>Choose an account</source>
         <translation type="unfinished">Bir hesap seç</translation>
     </message>
@@ -8534,12 +8553,17 @@ Granting %1 access to it via Flatseal is recommended.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+34"/>
+        <location line="+22"/>
         <source>No account selected for launch.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+8"/>
+        <source>Offline accounts need a Microsoft account that owns Minecraft to be signed in to Kite.</source>
+        <translation>Çevrimdışı hesaplar için Kite&apos;ta Minecraft&apos;a sahip bir Microsoft hesabıyla giriş yapılmış olmalı.</translation>
+    </message>
+    <message>
+        <location line="+11"/>
         <source>Your account is currently not logged in. Please enter your password to log in again. &lt;br /&gt; &lt;br /&gt; This could be caused by a password change.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -8560,7 +8584,7 @@ Granting %1 access to it via Flatseal is recommended.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="+19"/>
         <source>Play demo?</source>
         <translation type="unfinished"></translation>
     </message>
@@ -12175,6 +12199,215 @@ Are you sure?</source>
     </message>
 </context>
 <context>
+    <name>ModHealthDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/ModHealthDialog.qml" line="+71"/>
+        <source>Mod problems</source>
+        <translation>Mod sorunları</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Nothing is wrong with these mods.</source>
+        <translation>Bu modlarda bir sorun yok.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The game may not start until these are sorted out.</source>
+        <translation>Bunlar çözülene kadar oyun açılmayabilir.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The game should still start. These are worth a look.</source>
+        <translation>Oyun yine de açılır, ama bunlara bir göz atmakta fayda var.</translation>
+    </message>
+    <message>
+        <location line="+133"/>
+        <source>Install all</source>
+        <translation>Hepsini yükle</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Close</source>
+        <translation>Kapat</translation>
+    </message>
+</context>
+<context>
+    <name>ModHealthModel</name>
+    <message>
+        <location filename="../launcher/models/ModHealthModel.cpp" line="+279"/>
+        <source>Minecraft</source>
+        <translation>Minecraft</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Fabric Loader</source>
+        <translation>Fabric Loader</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Quilt Loader</source>
+        <translation>Quilt Loader</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Forge</source>
+        <translation>Forge</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>NeoForge</source>
+        <translation>NeoForge</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <source>“%1” needs %2</source>
+        <translation>“%1” için %2 gerekli</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>“%1” needs “%2”, which is turned off</source>
+        <translation>“%1” için “%2” gerekli, ama kapalı</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>“%1” needs a different version of “%2”</source>
+        <translation>“%1” için “%2” modunun başka bir sürümü gerekli</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>“%1” is not made for this version of Minecraft</source>
+        <translation>“%1” bu Minecraft sürümü için yapılmamış</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>“%1” is not made for Minecraft %2</source>
+        <translation>“%1” Minecraft %2 için yapılmamış</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>“%1” needs a different %2 version</source>
+        <translation>“%1” için başka bir %2 sürümü gerekli</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>“%1” does not work with “%2”</source>
+        <translation>“%1” ve “%2” birlikte çalışmaz</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>“%1” may not work well with “%2”</source>
+        <translation>“%1” ve “%2” birlikte iyi çalışmayabilir</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>“%1” is installed twice</source>
+        <translation>“%1” iki kez yüklü</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>“%1” is made for another mod loader</source>
+        <translation>“%1” başka bir mod yükleyici için yapılmış</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>“%1” is made for %2</source>
+        <translation>“%1” %2 için yapılmış</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>It is not installed.</source>
+        <translation>Yüklü değil.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Version %1 is needed, and it is not installed.</source>
+        <translation>Gereken sürüm: %1. Yüklü değil.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>The game will not start until it is turned on.</source>
+        <translation>O mod açılmadan oyun başlamaz.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <location line="+7"/>
+        <source>It asks for %1.</source>
+        <translation>İstediği: %1.</translation>
+    </message>
+    <message>
+        <location line="-6"/>
+        <source>It asks for %1; %2 is installed.</source>
+        <translation>İstediği: %1. Yüklü olan: %2.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>It asks for Minecraft %1.</source>
+        <translation>İstediği: Minecraft %1.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>It asks for %1; this instance has %2.</source>
+        <translation>İstediği: %1. Bu kurulumda olan: %2.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>The game will not start with both turned on.</source>
+        <translation>İkisi birden açıkken oyun başlamaz.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The game starts, but its author advises against using both.</source>
+        <translation>Oyun başlar, ama modun yapımcısı ikisini birlikte kullanmamanı öneriyor.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Another file is the same mod.</source>
+        <translation>Başka bir dosya da aynı mod.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 and %2 are the same mod.</source>
+        <translation>%1 ve %2 aynı mod.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>This instance&apos;s loader does not load it.</source>
+        <translation>Bu kurulumun yükleyicisi onu yüklemez.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>This instance runs %1, so it is not loaded.</source>
+        <translation>Bu kurulum %1 kullanıyor, bu yüzden yüklenmez.</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Install</source>
+        <translation>Yükle</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Turn on “%1”</source>
+        <translation>“%1” modunu aç</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Update</source>
+        <translation>Güncelle</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <location line="+10"/>
+        <location line="+3"/>
+        <source>Turn off “%1”</source>
+        <translation>“%1” modunu kapat</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Turn off %1</source>
+        <translation>%1 dosyasını kapat</translation>
+    </message>
+</context>
+<context>
     <name>ModMinecraftJar</name>
     <message>
         <location filename="../launcher/minecraft/launch/ModMinecraftJar.cpp" line="+40"/>
@@ -13462,7 +13695,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>dosya</translation>
     </message>
     <message>
-        <location line="+75"/>
+        <location line="+84"/>
         <source>Remove “%1” from this instance? The file is deleted.</source>
         <translation>“%1” bu kurulumdan kaldırılsın mı? Dosya silinir.</translation>
     </message>
@@ -13487,7 +13720,17 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>İşlemler</translation>
     </message>
     <message>
-        <location line="+55"/>
+        <location line="+47"/>
+        <source>Problem</source>
+        <translation>Sorun</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Warning</source>
+        <translation>Uyarı</translation>
+    </message>
+    <message>
+        <location line="+11"/>
         <source>No matches</source>
         <translation>Eşleşme yok</translation>
     </message>
@@ -13580,7 +13823,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>PackRow</name>
     <message>
-        <location filename="../launcher/qml/Components/PackRow.qml" line="+46"/>
+        <location filename="../launcher/qml/Components/PackRow.qml" line="+70"/>
         <source>%1 · %2</source>
         <translation>%1 · %2</translation>
     </message>
@@ -13590,7 +13833,17 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>%1 seç</translation>
     </message>
     <message>
-        <location line="+78"/>
+        <location line="+85"/>
+        <source>Problem</source>
+        <translation>Sorun</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Warning</source>
+        <translation>Uyarı</translation>
+    </message>
+    <message>
+        <location line="+16"/>
         <source>Enable %1</source>
         <translation>%1 etkinleştir</translation>
     </message>
@@ -13605,7 +13858,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Açıklama yok.</translation>
     </message>
     <message>
-        <location line="+19"/>
+        <location line="+40"/>
         <source>Authors</source>
         <translation>Yapımcılar</translation>
     </message>
@@ -19172,6 +19425,34 @@ Please add your Mojang or Minecraft account.</source>
         <location line="+3"/>
         <source>Latest</source>
         <translation>En son</translation>
+    </message>
+</context>
+<context>
+    <name>VersionRange</name>
+    <message>
+        <location filename="../launcher/minecraft/mod/VersionRange.cpp" line="+35"/>
+        <source>%1 or newer</source>
+        <translation>%1 veya daha yeni</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>newer than %1</source>
+        <translation>%1 sürümünden yeni</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>older than %1</source>
+        <translation>%1 sürümünden eski</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>%1 or older</source>
+        <translation>%1 veya daha eski</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>%1 or newer, below %2</source>
+        <translation>%1 veya daha yeni, %2 öncesi</translation>
     </message>
 </context>
 <context>

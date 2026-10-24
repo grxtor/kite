@@ -16,6 +16,11 @@ import Kite.Theme
  *
  * A row of a table, not a card of its own: rows share PackList's card and
  * are split by hairlines; hover and ticked rows tint their whole width.
+ *
+ * A mod the health check has something to say about (missing or
+ * switched-off dependencies, clashes, doubled files) carries a "Problem"
+ * or "Warning" badge before its switch, with the reasons in a tooltip and
+ * again, written out, at the top of its details.
  */
 Item {
     id: row
@@ -38,6 +43,25 @@ Item {
     readonly property bool expanded: owner.expandedKey === key
     // The last row draws no hairline under itself: the card's border ends it.
     property bool lastRow: false
+
+    // The mods folder's health check (ModHealthModel); mods only.
+    readonly property var health: owner.kind === "mods" && owner.controller ? owner.controller.health : null
+    // What it found about this file, asked again whenever the check is
+    // redone (`revision` changes), blocking ones first.
+    readonly property var problems: {
+        const h = row.health
+        if (!h)
+            return []
+        h.revision
+        return h.problemsFor(row.key)
+    }
+    readonly property bool problemBlocking: {
+        const h = row.health
+        if (!h)
+            return false
+        h.revision
+        return h.blockingFor(row.key)
+    }
 
     height: header.height + (expanded ? details.implicitHeight + Theme.space.md : 0)
     // "Mod Menu · Modrinth": who made it and where it came from.
@@ -189,6 +213,29 @@ Item {
                 }
             }
 
+            // What the health check found; the tooltip lists it. Its slot
+            // is as wide as the widest badge (PackList), the badge against
+            // the switch.
+            Item {
+                visible: owner.healthBadgeWidth > 0
+                Layout.preferredWidth: owner.healthBadgeWidth
+                Layout.preferredHeight: healthBadge.implicitHeight
+                Layout.alignment: Qt.AlignVCenter
+
+                StatusBadge {
+                    id: healthBadge
+                    anchors.right: parent.right
+                    visible: row.problems.length > 0
+                    text: row.problemBlocking ? qsTr("Problem") : qsTr("Warning")
+                    tone: row.problemBlocking ? "danger" : "warning"
+
+                    HoverHandler { id: badgeHover }
+                    ToolTip.visible: badgeHover.hovered
+                    ToolTip.delay: 400
+                    ToolTip.text: row.problems.join("\n")
+                }
+            }
+
             HoverReason {
                 reason: owner.unlocked ? "" : owner.lockedReason
                 Layout.preferredWidth: 40
@@ -233,6 +280,27 @@ Item {
             font.family: Theme.font.family
             font.pixelSize: Theme.type.label.pixelSize
             lineHeight: Theme.type.label.lineHeight
+        }
+
+        // What is wrong with it, each in the colour of its severity.
+        ColumnLayout {
+            Layout.fillWidth: true
+            visible: row.problems.length > 0
+            spacing: Theme.space.xxs
+
+            Repeater {
+                model: row.problems
+                Text {
+                    required property string modelData
+                    Layout.fillWidth: true
+                    text: modelData
+                    wrapMode: Text.Wrap
+                    color: row.problemBlocking ? Theme.palette.danger : Theme.palette.warning
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.label.pixelSize
+                    font.weight: Font.Medium
+                }
+            }
         }
 
         GridLayout {

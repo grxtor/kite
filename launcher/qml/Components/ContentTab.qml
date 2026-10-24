@@ -28,6 +28,12 @@ import Kite.Theme
  * are open, and a change would only apply to the next launch. Packs the
  * game reloads on its own stay editable. Adding a mod to an instance with
  * no loader first offers to install one.
+ *
+ * For mods, a notice under the toolbar says when the health check found
+ * something wrong (missing or switched-off dependencies, clashes, doubled
+ * files); "Show" opens ModHealthDialog, whose rows turn files on or off or
+ * install what is missing or outdated (one at a time, or all in one review).
+ * Each affected row carries a badge of its own (PackRow).
  */
 Item {
     id: root
@@ -41,6 +47,8 @@ Item {
     signal browseRequested(string kind)
 
     readonly property var content: details ? details.content : null
+    // What the health check found in the mods folder (ModHealthModel).
+    readonly property var health: root.content ? root.content.health : null
     readonly property bool isMinecraft: !!details && details.isMinecraft
 
     // Label, noun and empty-state copy per kind.
@@ -128,6 +136,27 @@ Item {
     function browse() {
         if (!root.needsLoaderFirst(() => root.browseRequested(root.kind)))
             root.browseRequested(root.kind)
+    }
+    // Looks up and installs what ModHealthModel.installRows() lists (maps of
+    // key, dependencyId and replacesKey), as one review.
+    function installMissing(rows) {
+        healthDialog.close()
+        root.withLoader(() => flows.installMissing(rows.map((r) => r.key), rows.map((r) => r.dependencyId),
+                                                   rows.map((r) => r.replacesKey)))
+    }
+    // A row of ModHealthDialog: switch a file, or install a missing or
+    // outdated mod (@p key is then the file that needs it).
+    function runHealthAction(action, key, dependencyId, replacesKey) {
+        if (action === "install")
+            root.installMissing([{ key: key, dependencyId: dependencyId, replacesKey: replacesKey }])
+        else if (root.content)
+            root.content.setEnabled("mods", [key], action === "enable")
+    }
+    // A state for review snapshots (InstancePage.review()): "modhealth"
+    // opens the problems dialog.
+    function review(name) {
+        if (name === "modhealth")
+            healthDialog.open()
     }
 
     function fileName(url) {
@@ -347,6 +376,21 @@ Item {
             progress: flows.busyProgress
         }
 
+        // Something wrong with the mods; the dialog says what and how to
+        // put it right.
+        NoticeBar {
+            Layout.fillWidth: true
+            visible: root.kind === "mods" && !!root.health && root.health.count > 0
+            text: !root.health ? ""
+                  : root.health.blockingCount === 1 ? qsTr("1 problem may stop the game from starting.")
+                  : root.health.blockingCount > 1
+                    ? qsTr("%1 problems may stop the game from starting.").arg(root.health.blockingCount)
+                  : root.health.count === 1 ? qsTr("1 warning about these mods.")
+                  : qsTr("%1 warnings about these mods.").arg(root.health.count)
+            actionText: qsTr("Show")
+            onActionTriggered: healthDialog.open()
+        }
+
         // What can be done with the ticked rows.
         ContentSelectionBar {
             Layout.fillWidth: true
@@ -402,7 +446,7 @@ Item {
     Shortcut {
         sequences: [StandardKey.Cancel]
         enabled: root.visible && packList.selecting && !searchField.activeFocus
-                 && !exportDialog.visible && !bulkConfirm.visible
+                 && !exportDialog.visible && !bulkConfirm.visible && !healthDialog.visible
         onActivated: packList.clearSelection()
     }
 
@@ -511,6 +555,15 @@ Item {
             if (root.content.hasModLoader && afterLoaderExpiry.running)
                 root.runAfterLoader()
         }
+    }
+
+    ModHealthDialog {
+        id: healthDialog
+        health: root.health
+        unlocked: root.unlocked
+        lockedReason: root.lockedReason
+        onActionRequested: (action, key, dependencyId, replacesKey) => root.runHealthAction(action, key, dependencyId, replacesKey)
+        onInstallAll: root.installMissing(root.health.installRows())
     }
 
     ExportContentListDialog {

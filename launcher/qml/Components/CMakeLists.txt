@@ -87,6 +87,7 @@ qt_add_qml_module(Kite_qml_components
         ContentSelectionBar.qml
         ExportContentListDialog.qml
         InstallReviewDialog.qml
+        ModHealthDialog.qml
         ContentFilterPopup.qml
         NoticeBar.qml
         ReviewRow.qml

@@ -25,6 +25,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QStandardPaths>
+#include <QTimer>
 #include <QUrl>
 #include <algorithm>
 
@@ -34,9 +35,11 @@
 #include "minecraft/PackProfile.h"
 #include "minecraft/VersionFilterData.h"
 #include "minecraft/mod/ModFolderModel.h"
+#include "minecraft/mod/ModHealth.h"
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "models/ContentFilterModel.h"
 #include "models/ContentUpdateController.h"
+#include "models/ModHealthModel.h"
 #include "settings/Setting.h"
 
 namespace
@@ -50,6 +53,11 @@ namespace
 
 	const QString kDataPacksEnabled = QStringLiteral("GlobalDataPacksEnabled");
 	const QString kDataPacksPath = QStringLiteral("GlobalDataPacksPath");
+
+	/* How long the mods folder and the loader have to stay quiet before
+	 * the health check runs: the files are read one by one, each reporting
+	 * a change of its own. */
+	constexpr int kHealthDelayMs = 150;
 
 	/* Mirrors InstanceDetails' startWatchingFresh(): a model somebody else
 	 * already watches only re-arms its watcher, so ask for a fresh read. */
@@ -75,6 +83,25 @@ InstanceContentController::InstanceContentController(
 	connect(m_instance, &BaseInstance::runningStatusChanged, this,
 			&InstanceContentController::runningChanged);
 
+	m_health = new ModHealthModel(this);
+	m_healthTimer = new QTimer(this);
+	m_healthTimer->setSingleShot(true);
+	m_healthTimer->setInterval(kHealthDelayMs);
+	connect(m_healthTimer, &QTimer::timeout, this,
+			&InstanceContentController::runHealthCheck);
+	/* Files turn up, are read, switched and removed through these. */
+	auto mods = m_instance->loaderModList();
+	connect(mods.get(), &ModFolderModel::updateFinished, this,
+			&InstanceContentController::scheduleHealthCheck);
+	connect(mods.get(), &QAbstractItemModel::dataChanged, this,
+			&InstanceContentController::scheduleHealthCheck);
+	connect(mods.get(), &QAbstractItemModel::rowsInserted, this,
+			&InstanceContentController::scheduleHealthCheck);
+	connect(mods.get(), &QAbstractItemModel::rowsRemoved, this,
+			&InstanceContentController::scheduleHealthCheck);
+	connect(mods.get(), &QAbstractItemModel::modelReset, this,
+			&InstanceContentController::scheduleHealthCheck);
+
 	if (auto profile = m_instance->getPackProfile()) {
 		/* A component list is a model like any other: a loader appearing
 		 * or going shows up as one of these. */
@@ -87,8 +114,19 @@ InstanceContentController::InstanceContentController(
 				&InstanceContentController::refreshHasModLoader);
 		connect(p, &QAbstractItemModel::dataChanged, this,
 				&InstanceContentController::refreshHasModLoader);
+		/* ...and the loader and Minecraft version the mods are checked
+		 * against change with them. */
+		connect(p, &QAbstractItemModel::rowsInserted, this,
+				&InstanceContentController::scheduleHealthCheck);
+		connect(p, &QAbstractItemModel::rowsRemoved, this,
+				&InstanceContentController::scheduleHealthCheck);
+		connect(p, &QAbstractItemModel::modelReset, this,
+				&InstanceContentController::scheduleHealthCheck);
+		connect(p, &QAbstractItemModel::dataChanged, this,
+				&InstanceContentController::scheduleHealthCheck);
 	}
 	refreshHasModLoader();
+	scheduleHealthCheck();
 
 	/* The instance rebuilds its data pack model when either setting moves
 	 * (MinecraftInstance's own connections, made in its constructor and
@@ -137,6 +175,11 @@ bool InstanceContentController::running() const
 QObject* InstanceContentController::updater() const
 {
 	return m_updater;
+}
+
+QObject* InstanceContentController::health() const
+{
+	return m_health;
 }
 
 void InstanceContentController::refreshRows(const QString& kind,
@@ -535,6 +578,31 @@ void InstanceContentController::refreshHasModLoader()
 	emit hasModLoaderChanged();
 	/* Forge appearing or going can change whether coremods are shown. */
 	emit kindsChanged();
+}
+
+void InstanceContentController::scheduleHealthCheck()
+{
+	m_healthTimer->start();
+}
+
+void InstanceContentController::runHealthCheck()
+{
+	auto profile = m_instance->getPackProfile();
+	const auto environment = ModHealthModel::environmentFor(profile.get());
+	const auto entries =
+		ModHealthModel::entriesFor(m_instance->loaderModList()->allMods());
+
+	/* Issue does not carry them, and WrongLoader's title names them. */
+	QHash<QString, QStringList> loaders;
+	for (const auto& entry : entries) {
+		if (!entry.details.loaders.isEmpty()) {
+			loaders.insert(entry.key, entry.details.loaders);
+		}
+	}
+
+	m_health->setEnvironment(environment);
+	m_health->setFileLoaders(loaders);
+	m_health->setIssues(ModHealth::check(entries, environment));
 }
 
 void InstanceContentController::onGlobalDataPacksChanged()

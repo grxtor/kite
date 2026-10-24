@@ -80,6 +80,10 @@ set(CORE_SOURCES
     models/ManagedPackController.cpp
     models/ContentFilterModel.h
     models/ContentFilterModel.cpp
+    models/ModHealthModel.h
+    models/ModHealthModel.cpp
+    models/ModHealthModelIds.h
+    models/ModHealthText.cpp
     models/InstanceContentController.h
     models/InstanceContentController.cpp
     models/ContentInstallReview.h
@@ -524,6 +528,12 @@ set(MINECRAFT_SOURCES
     minecraft/mod/ModFolderLoadTask.cpp
     minecraft/mod/LocalModParseTask.h
     minecraft/mod/LocalModParseTask.cpp
+    minecraft/mod/ModMetadataReader.h
+    minecraft/mod/ModMetadataReader.cpp
+    minecraft/mod/ModMetadataFormats.h
+    minecraft/mod/ModMetadataToml.cpp
+    minecraft/mod/ModMetadataFabricQuilt.cpp
+    minecraft/mod/ModMetadataLegacy.cpp
     minecraft/mod/ModIconCache.h
     minecraft/mod/ModIconCache.cpp
     minecraft/mod/ModMetadataIndex.h
@@ -532,6 +542,16 @@ set(MINECRAFT_SOURCES
     minecraft/mod/PackwizSidecar.cpp
     minecraft/mod/PackLayout.h
     minecraft/mod/PackLayout.cpp
+    minecraft/mod/VersionRange.h
+    minecraft/mod/VersionRange.cpp
+    minecraft/mod/VersionRangeCommon.h
+    minecraft/mod/VersionRangeFabric.h
+    minecraft/mod/VersionRangeMaven.h
+    minecraft/mod/ModHealth.h
+    minecraft/mod/ModHealth.cpp
+    minecraft/mod/ModHealthIndex.h
+    minecraft/mod/ModHealthLoaders.h
+    minecraft/mod/ModHealthLoaders.cpp
     minecraft/mod/ResourcePackFolderModel.h
     minecraft/mod/ResourcePackFolderModel.cpp
     minecraft/mod/TexturePackFolderModel.h
@@ -619,6 +639,20 @@ add_unit_test(ModFolderModel
 add_unit_test(LocalModParseTask
     SOURCES minecraft/mod/LocalModParseTask_test.cpp
     LIBS Kite_logic
+    )
+
+# Fabric predicates and Maven ranges against made-up versions, including the
+# free-text ones that must come back Unknown rather than a guess.
+add_unit_test(VersionRange
+    SOURCES minecraft/mod/VersionRange_test.cpp
+    LIBS Kite_core
+    )
+
+# The mod health check over made-up folders: missing, switched-off and
+# wrong-version dependencies, clashes, duplicates, files for another loader.
+add_unit_test(ModHealth
+    SOURCES minecraft/mod/ModHealth_test.cpp
+    LIBS Kite_core
     )
 
 # options.txt editing against a temp file: one line changed in place, the
@@ -1775,6 +1809,12 @@ add_unit_test(ContentFilterModel
     )
 add_unit_test(ContentInstallReview
     SOURCES models/ContentInstallReview_test.cpp
+    LIBS Kite_core
+    )
+# The mods tab's health list over made-up issues: one row per problem, the
+# action each kind offers, and the per-file lookups behind a row's badge.
+add_unit_test(ModHealthModel
+    SOURCES models/ModHealthModel_test.cpp
     LIBS Kite_core
     )
 # WP2a: the update list, the selection filter for a check, which recorded

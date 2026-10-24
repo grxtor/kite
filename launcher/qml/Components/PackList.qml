@@ -62,6 +62,15 @@ Item {
     readonly property int versionColumnWidth: Math.round(width * 0.24)
     // Switch and ⋯ menu on the right.
     readonly property int actionsWidth: 40 + Theme.space.md + Theme.control.height
+    // While the mods' health check has something to report, every row keeps
+    // room before its switch for the "Problem"/"Warning" badge (PackRow), so
+    // the Version column stays lined up whether a row has one or not. A
+    // folder with nothing wrong looks as it always did.
+    readonly property bool showsHealth: kind === "mods" && !!controller && !!controller.health
+                                        && controller.health.count > 0
+    readonly property int healthBadgeWidth: showsHealth ? Math.max(problemMeasure.implicitWidth,
+                                                                   warningMeasure.implicitWidth) : 0
+    readonly property int healthSlotWidth: showsHealth ? healthBadgeWidth + Theme.space.md : 0
     readonly property int rowPadding: Theme.space.lg
     // Details line up under the name, past the tick box and the logo.
     readonly property int detailsIndent: rowPadding + checkSize + Theme.space.md + thumbSize + Theme.space.md
@@ -206,7 +215,7 @@ Item {
                     font.weight: Font.DemiBold
                 }
                 Text {
-                    Layout.preferredWidth: root.actionsWidth
+                    Layout.preferredWidth: root.actionsWidth + root.healthSlotWidth
                     horizontalAlignment: Text.AlignRight
                     text: qsTr("Actions")
                     color: Theme.palette.textSecondary
@@ -253,6 +262,10 @@ Item {
             radius: Theme.radius.lg
         }
     }
+
+    // Only measured, for healthBadgeWidth.
+    StatusBadge { id: problemMeasure; visible: false; text: qsTr("Problem") }
+    StatusBadge { id: warningMeasure; visible: false; text: qsTr("Warning") }
 
     // A search that matches nothing; the folder itself is not empty
     // (ContentTab shows its own empty state for that).

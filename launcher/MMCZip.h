@@ -26,6 +26,7 @@
 #include <QDir>
 #include <QSet>
 #include <QDateTime>
+#include <QHash>
 #include "minecraft/mod/Mod.h"
 #include <functional>
 #include <optional>
@@ -261,6 +262,27 @@ namespace MMCZip
 	 */
 	QByteArray readFileFromZip(const QString& zipPath,
 							   const QString& entryName);
+
+	/**
+	 * Read several files from a zip archive in one pass.
+	 *
+	 * readFileFromZip() scans the archive from the start every time, which
+	 * adds up for a caller that wants a handful of known names out of a
+	 * large jar. This scans once and stops when it has them all.
+	 *
+	 * \return the contents of each entry that exists, by the name it was
+	 * asked for. Names that are missing are absent from the result; an
+	 * empty file is present with empty contents.
+	 */
+	QHash<QString, QByteArray> readFilesFromZip(const QString& zipPath,
+												const QStringList& entryNames);
+
+	/**
+	 * readFilesFromZip() over an archive already in memory - a jar that
+	 * sits inside another jar, say.
+	 */
+	QHash<QString, QByteArray> readFilesFromZipData(
+		const QByteArray& zipData, const QStringList& entryNames);
 
 	/**
 	 * Check if a given entry path exists in a zip archive.

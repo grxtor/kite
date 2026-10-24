@@ -29,6 +29,7 @@
 #include "net/Download.h"
 #include "net/NetJob.h"
 
+#include <QHash>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -53,6 +54,50 @@ namespace
 			default:
 				return QString();
 		}
+	}
+
+	/* What another thing that needed a dependency adds to its entry: its
+	 * name, and the wanted id when the entry has no slug yet. */
+	void mergeNote(ModPlatform::DependencyInfo& dep,
+				   const QStringList& requiredBy, const QString& slug)
+	{
+		for (const QString& name : requiredBy) {
+			if (!name.isEmpty() && !dep.requiredBy.contains(name)) {
+				dep.requiredBy.append(name);
+			}
+		}
+		if (dep.slug.isEmpty()) {
+			dep.slug = slug;
+		}
+	}
+
+	/* The Modrinth slug of a mod whose id says something else. A jar names
+	 * what it needs by mod id, and most libraries use their slug as their
+	 * id - these well-known ones do not, and would otherwise always end up
+	 * "not found". Only ids whose project is certain belong here: a wrong
+	 * entry installs the wrong mod. */
+	QString modrinthSlugFor(const QString& modId)
+	{
+		static const QHash<QString, QString> slugs = {
+			{QStringLiteral("fabric"), QStringLiteral("fabric-api")},
+			{QStringLiteral("fabric_api"), QStringLiteral("fabric-api")},
+			{QStringLiteral("architectury"), QStringLiteral("architectury-api")},
+			{QStringLiteral("owo"), QStringLiteral("owo-lib")},
+			{QStringLiteral("yet_another_config_lib_v3"), QStringLiteral("yacl")},
+			{QStringLiteral("kotlinforforge"), QStringLiteral("kotlin-for-forge")},
+			{QStringLiteral("cloth_config"), QStringLiteral("cloth-config")},
+			{QStringLiteral("forgeconfigapiport"),
+			 QStringLiteral("forge-config-api-port")},
+			{QStringLiteral("geckolib3"), QStringLiteral("geckolib")},
+			{QStringLiteral("puzzleslib"), QStringLiteral("puzzles-lib")},
+			{QStringLiteral("resourcefullib"), QStringLiteral("resourceful-lib")},
+			{QStringLiteral("roughlyenoughitems"), QStringLiteral("rei")},
+			{QStringLiteral("cardinal-components"),
+			 QStringLiteral("cardinal-components-api")},
+			{QStringLiteral("fzzy_config"), QStringLiteral("fzzy-config")},
+			{QStringLiteral("lambdynlights"), QStringLiteral("lambdynamiclights")},
+		};
+		return slugs.value(modId.toLower(), modId);
 	}
 
 } // namespace
@@ -141,26 +186,29 @@ void DependencyResolver::acceptDependency(ModPlatform::DependencyInfo dep)
 		isProjectInstalled(dep.platform, dep.projectId, dep.name);
 
 	m_resolvedNames.insert(normalizeName(dep.name));
+	/* Whatever else asked for it while it was still on its way. */
+	const auto late = m_lateNotes.take(dep.platform + ":" + dep.projectId);
+	mergeNote(dep, late.requiredBy, late.slug);
 	m_dependencies.append(dep);
 }
 
 void DependencyResolver::noteAlsoRequiredBy(const QString& platform,
 											const QString& projectId,
-											const QStringList& requiredBy)
+											const QStringList& requiredBy,
+											const QString& slug)
 {
-	if (requiredBy.isEmpty()) {
+	if (requiredBy.isEmpty() && slug.isEmpty()) {
 		return;
 	}
 	for (auto& dep : m_dependencies) {
 		if (dep.platform == platform && dep.projectId == projectId) {
-			for (const QString& name : requiredBy) {
-				if (!name.isEmpty() && !dep.requiredBy.contains(name)) {
-					dep.requiredBy.append(name);
-				}
-			}
+			mergeNote(dep, requiredBy, slug);
 			return;
 		}
 	}
+	/* Not recorded yet, so its own lookup is still out: keep this for
+	 * acceptDependency(). */
+	mergeNote(m_lateNotes[platform + ":" + projectId], requiredBy, slug);
 }
 
 QString DependencyResolver::normalizeName(const QString& name)
@@ -176,14 +224,23 @@ QString DependencyResolver::normalizeName(const QString& name)
 	return ModMetadataIndex::normalizeName(name);
 }
 
+void DependencyResolver::addWantedProjects(const QList<WantedProject>& wanted)
+{
+	m_wanted = wanted;
+}
+
 void DependencyResolver::executeTask()
 {
-	if (m_selectedMods.isEmpty()) {
+	if (m_selectedMods.isEmpty() && m_wanted.isEmpty()) {
 		emitSucceeded();
 		return;
 	}
 	setStatus(tr("Resolving dependencies..."));
 	m_currentModIndex = 0;
+	/* Before the selected mods: with none of those, resolveNextMod() goes
+	 * straight to asking whether everything has answered, and the wanted
+	 * lookups have to be in flight - and counted - by then. */
+	resolveWantedProjects();
 	resolveNextMod();
 }
 
@@ -260,6 +317,92 @@ void DependencyResolver::request(const QString& name, const QUrl& url,
 	// Show the lookup as its own line in the progress dialog.
 	propagateStepsFrom(job);
 	job->start();
+}
+
+void DependencyResolver::resolveWantedProjects()
+{
+	for (const WantedProject& wanted : m_wanted) {
+		if (wanted.id.isEmpty()) {
+			continue;
+		}
+
+		/* The id is the project's slug as far as Modrinth is concerned. It
+		 * comes out of a jar, so it is escaped rather than trusted to be a
+		 * path segment. */
+		ModPlatform::VersionQuery query;
+		query.projectId = QString::fromLatin1(
+			QUrl::toPercentEncoding(modrinthSlugFor(wanted.id)));
+		query.contentType = ModPlatform::ContentType::Mod;
+		query.mcVersions = ModPlatform::singleVersionList(m_mcVersion);
+		query.loaders = ModPlatform::singleLoaderList(m_loader);
+
+		request(QString("MR::WantedProject(%1)").arg(wanted.id),
+				ModrinthApi::get().projectVersionsUrl(query),
+				[this, wanted](const QByteArray& bytes) {
+					onWantedProjectResolved(wanted, bytes);
+				});
+	}
+}
+
+void DependencyResolver::onWantedProjectResolved(const WantedProject& wanted,
+												 const QByteArray& data)
+{
+	/* No such project (a 404 reaches here as an empty reply) and a project
+	 * with nothing for this version and loader (an empty list) end the
+	 * same way: the other provider is asked, under the same id. */
+	const QJsonArray versions = QJsonDocument::fromJson(data).array();
+	const QJsonObject newest =
+		ModPlatform::newestModrinthVersion(versions, m_loader);
+	if (newest.isEmpty()) {
+		qWarning() << "No Modrinth version of wanted project" << wanted.id
+				   << "- attempting cross resolve to CurseForge";
+		executeCrossResolve(QStringLiteral("curseforge"), wanted.id, wanted.id,
+							wanted.requiredBy, wanted.id);
+		return;
+	}
+
+	/* What was asked for by slug is recorded by id, so that something else
+	 * needing the same project does not fetch it a second time. */
+	QString projectId = newest.value("project_id").toString();
+	if (projectId.isEmpty()) {
+		projectId = wanted.id;
+	}
+	const QString key = "modrinth:" + projectId;
+	if (m_resolvedProjectIds.contains(key)) {
+		noteAlsoRequiredBy(QStringLiteral("modrinth"), projectId,
+						   wanted.requiredBy, wanted.id);
+		return;
+	}
+	m_resolvedProjectIds.insert(key);
+
+	onDependencyProjectResolved(QStringLiteral("modrinth"), projectId, data,
+								wanted.requiredBy, wanted.id);
+	nameAfterProject(projectId);
+}
+
+void DependencyResolver::nameAfterProject(const QString& projectId)
+{
+	/* A version is named however its author tagged the upload ("v13.0.4
+	 * for 1.21.4"), which says nothing about what is being installed; a
+	 * project asked for by name is listed under its project's own title. */
+	request(QString("MR::WantedTitle(%1)").arg(projectId),
+			ModrinthApi::get().projectUrl(projectId),
+			[this, projectId](const QByteArray& bytes) {
+				const QString title = QJsonDocument::fromJson(bytes)
+										  .object()
+										  .value("title")
+										  .toString();
+				if (title.isEmpty()) {
+					return;
+				}
+				for (auto& dep : m_dependencies) {
+					if (dep.platform == QLatin1String("modrinth") &&
+						dep.projectId == projectId) {
+						dep.name = title;
+						return;
+					}
+				}
+			});
 }
 
 void DependencyResolver::resolveNextMod()
@@ -385,7 +528,7 @@ void DependencyResolver::onModrinthVersionResolved(
 
 void DependencyResolver::onDependencyProjectResolved(
 	const QString& platform, const QString& projectId, const QByteArray& data,
-	const QStringList& requiredBy)
+	const QStringList& requiredBy, const QString& wantedId)
 {
 	QJsonParseError parseError;
 	QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
@@ -407,7 +550,7 @@ void DependencyResolver::onDependencyProjectResolved(
 		if (filesArr.isEmpty()) {
 			qWarning() << "No compatible files found for CurseForge dependency"
 					   << projectId << "- attempting cross resolve to Modrinth";
-			crossResolveFromCurseForge(projectId, requiredBy);
+			noUsableCurseForgeFile(projectId, requiredBy, wantedId);
 			return;
 		}
 
@@ -420,7 +563,7 @@ void DependencyResolver::onDependencyProjectResolved(
 			qWarning() << "No file for loader" << m_loader
 					   << "among CurseForge dependency" << projectId
 					   << "files - attempting cross resolve to Modrinth";
-			crossResolveFromCurseForge(projectId, requiredBy);
+			noUsableCurseForgeFile(projectId, requiredBy, wantedId);
 			return;
 		}
 
@@ -429,6 +572,7 @@ void DependencyResolver::onDependencyProjectResolved(
 		dep.platform = "curseforge";
 		dep.isRequired = true;
 		dep.requiredBy = requiredBy;
+		dep.slug = wantedId;
 		dep.versionId = QString::number(Json::ensureInteger(fileObj, "id", 0));
 		dep.fileName = Json::ensureString(fileObj, "fileName", "");
 		dep.downloadUrl = Json::ensureString(fileObj, "downloadUrl", "");
@@ -499,6 +643,7 @@ void DependencyResolver::onDependencyProjectResolved(
 		dep.platform = "modrinth";
 		dep.isRequired = true;
 		dep.requiredBy = requiredBy;
+		dep.slug = wantedId;
 		dep.versionType = Json::ensureString(vObj, "version_type", "");
 
 		auto files = Json::ensureArray(vObj, "files");
@@ -781,10 +926,24 @@ void DependencyResolver::crossResolveFromModrinth(
 			});
 }
 
+void DependencyResolver::noUsableCurseForgeFile(const QString& projectId,
+												const QStringList& requiredBy,
+												const QString& wantedId)
+{
+	if (wantedId.isEmpty()) {
+		crossResolveFromCurseForge(projectId, requiredBy);
+		return;
+	}
+	ModPlatform::UnresolvedDep unresolved;
+	unresolved.name = wantedId;
+	m_unresolvedDeps.append(unresolved);
+}
+
 void DependencyResolver::executeCrossResolve(const QString& targetPlatform,
 											 const QString& projectName,
 											 const QString& sourceSlug,
-											 const QStringList& requiredBy)
+											 const QStringList& requiredBy,
+											 const QString& wantedId)
 {
 	// Check if we already resolved something with this name (cross-platform
 	// dedup)
@@ -802,8 +961,8 @@ void DependencyResolver::executeCrossResolve(const QString& targetPlatform,
 
 	request(
 		QString("CrossSearch(%1)").arg(projectName), url,
-		[this, targetPlatform, projectName, sourceSlug,
-		 requiredBy](const QByteArray& bytes) {
+		[this, targetPlatform, projectName, sourceSlug, requiredBy,
+		 wantedId](const QByteArray& bytes) {
 			if (bytes.isEmpty()) {
 				/* The search itself did not come back. The dependency is
 				 * no less unresolved for it, and saying so beats
@@ -930,8 +1089,8 @@ void DependencyResolver::executeCrossResolve(const QString& targetPlatform,
 							: FlameApi::get().projectVersionsUrl(crossQuery);
 
 					request(QString("CrossDepResolve(%1)").arg(hitId), fileUrl,
-							[this, targetPlatform, hitId, projectName,
-							 requiredBy](const QByteArray& depBytes) {
+							[this, targetPlatform, hitId, projectName, requiredBy,
+							 wantedId](const QByteArray& depBytes) {
 								if (depBytes.isEmpty()) {
 									ModPlatform::UnresolvedDep unresolved;
 									unresolved.name = projectName;
@@ -940,10 +1099,11 @@ void DependencyResolver::executeCrossResolve(const QString& targetPlatform,
 								}
 								onDependencyProjectResolved(
 									targetPlatform, hitId, depBytes,
-									requiredBy);
+									requiredBy, wantedId);
 							});
 				} else {
-					noteAlsoRequiredBy(targetPlatform, hitId, requiredBy);
+					noteAlsoRequiredBy(targetPlatform, hitId, requiredBy,
+									   wantedId);
 					bool wasResolved = false;
 					for (const auto& dep : m_dependencies) {
 						if ((dep.platform + ":" + dep.projectId) == key) {
@@ -956,6 +1116,11 @@ void DependencyResolver::executeCrossResolve(const QString& targetPlatform,
 								   << "could not be resolved on any platform";
 						ModPlatform::UnresolvedDep unresolved;
 						unresolved.name = projectName;
+						/* Said which project it was, so the cleanup in
+						 * checkCompletion() can take it back off the list
+						 * when the lookup still in flight records it. */
+						unresolved.platform = targetPlatform;
+						unresolved.projectId = hitId;
 						m_unresolvedDeps.append(unresolved);
 					}
 				}

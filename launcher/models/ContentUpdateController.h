@@ -31,6 +31,7 @@
 
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "modplatform/ContentType.h"
+#include "modplatform/DependencyResolver.h"
 #include "modplatform/ModDownloadTypes.h"
 #include "modplatform/ModUpdateCheckTask.h"
 
@@ -118,6 +119,8 @@ class ContentUpdateList : public QAbstractListModel
  *     the conflict analyzer turns it into a replacement);
  *   - "Verify dependencies": DependencyResolver over the installed mods,
  *     what is missing as a ContentInstallReview to tick and install;
+ *   - "Install" in the mod health check: installMissing() looks up the
+ *     mods it found missing or outdated by id, as the same kind of review;
  *   - "Reset metadata": forget where files came from.
  * Every download comes back as a TaskWatcher parented to this controller,
  * and the folder is re-read once it ends, success or not.
@@ -214,6 +217,15 @@ class ContentUpdateController : public QObject
 	/// What the installed mods need and do not have, as a
 	/// ContentInstallReview (started), or null with lastError set.
 	Q_INVOKABLE QObject* verifyDependencies();
+	/// Installs what the mod health check found missing or outdated: the
+	/// mods with @p ids (looked up as DependencyResolver::addWantedProjects
+	/// does), for the files with @p keys that need them (named in the
+	/// review as what asked for each), replacing the file with key
+	/// @p replaceKeys[i] for ids[i] when it is not empty. A
+	/// ContentInstallReview (started), or null with lastError set.
+	Q_INVOKABLE QObject* installMissing(const QStringList& keys,
+										const QStringList& ids,
+										const QStringList& replaceKeys);
 
 	/// Forgets where the files with @p keys came from (their sidecars);
 	/// the files stay. Returns how many records went.
@@ -232,6 +244,25 @@ class ContentUpdateController : public QObject
 	static QList<ModPlatform::SelectedMod>
 	resolvableEntries(const QList<ModMetadataIndex::Entry>& entries,
 					  const QString& mcVersion);
+	/// What installMissing() hands the review, worked out from the folder.
+	struct MissingPlan {
+		/// The files among the asked keys with a recorded origin: their
+		/// platform record names their dependencies exactly.
+		QList<ModPlatform::SelectedMod> selected;
+		/// One per distinct id, asked for by the files that need it.
+		QList<DependencyResolver::WantedProject> wanted;
+		/// Wanted id -> the on-disk file name of the copy it replaces.
+		QHash<QString, QString> replacements;
+	};
+	/// @p keys, @p ids and @p replaceKeys as installMissing() takes them,
+	/// against @p folder. Empty ids are skipped; a key no file has is
+	/// ignored; a file being replaced is not asked about its own
+	/// dependencies, since it is about to go.
+	static MissingPlan planMissing(const ModFolderModel& folder,
+								   const QString& mcVersion,
+								   const QStringList& keys,
+								   const QStringList& ids,
+								   const QStringList& replaceKeys);
 	/// Gives each update with no recorded current version the version its
 	/// installed file declares itself ("0.14.3"), so the review reads
 	/// "0.14.3 → 0.15.3" rather than starting from a file name.
