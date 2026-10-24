@@ -167,6 +167,9 @@ class ContentInstallReview : public QAbstractListModel
 	/// of it is already on disk - replacing an outdated copy is the point.
 	/// Before start() or applyResolution().
 	void setReplacements(const QHash<QString, QString>& fileByWantedId);
+	/// The folder the rows are installed into, for a review made before the
+	/// instance it is for exists. Before install().
+	void setFolder(std::shared_ptr<ModFolderModel> folder);
 	/// Resolves dependencies, or settles at once when there are none to
 	/// look for. Called by whoever created the review.
 	void start();

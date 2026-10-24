@@ -201,6 +201,11 @@ void ContentInstallReview::setReplacements(
 	m_replacements = fileByWantedId;
 }
 
+void ContentInstallReview::setFolder(std::shared_ptr<ModFolderModel> folder)
+{
+	m_folder = std::move(folder);
+}
+
 void ContentInstallReview::start()
 {
 	if (m_resolving || m_ready || m_finished) {

@@ -48,6 +48,7 @@ class UpdateSettingsController;
 class PlayTimeSummary;
 class LibraryController;
 class LauncherLogs;
+class BundleCatalog;
 class CatPackList;
 class RecentWorldsModel;
 class JavaInstallList;
@@ -156,6 +157,8 @@ class QmlShell : public QObject
 	/// The cat pictures for Settings > Appearance and the still cat
 	/// (see models/CatPackList.h).
 	Q_PROPERTY(QObject* catPacks READ catPacks CONSTANT)
+	/// Recommended mods and instance presets (see modplatform/BundleCatalog.h).
+	Q_PROPERTY(QObject* bundles READ bundles CONSTANT)
 	/* Distinct groups currently in use, for a "move to group" picker's
 	 * suggestions -- the same list InstanceFilterModel derives for the
 	 * library's own section headers (see m_instances), so a group picker
@@ -359,6 +362,8 @@ class QmlShell : public QObject
 	QObject* launcherLogs() const;
 	/// Made on first use, like javaController().
 	QObject* catPacks() const;
+	/// Made on first use, like catPacks().
+	QObject* bundles() const;
 
 	/* Everything below just emits the matching *Requested() signal: QmlShell
 	 * sits in Kite_qml, which cannot see the widget code that actually
@@ -621,6 +626,7 @@ class QmlShell : public QObject
 	mutable std::unique_ptr<LibraryController> m_library;
 	mutable std::unique_ptr<LauncherLogs> m_launcherLogs;
 	mutable std::unique_ptr<CatPackList> m_catPacks;
+	mutable std::unique_ptr<BundleCatalog> m_bundles;
 	/* Keyed by (anchor, anchorContext) -- see pluginSurfaces(). Declared
 	 * alongside the other cached models, for the same reason: destroyed
 	 * before the engine is torn down. */

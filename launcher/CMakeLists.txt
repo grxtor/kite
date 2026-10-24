@@ -401,6 +401,8 @@ set(ICONS_SOURCES
 # Support for Minecraft instances and launch
 set(MINECRAFT_SOURCES
     # Minecraft support
+    minecraft/PresetDefaults.h
+    minecraft/PresetDefaults.cpp
     minecraft/auth/AccountData.cpp
     minecraft/auth/AccountData.h
     minecraft/auth/AccountList.cpp
@@ -886,6 +888,8 @@ set(CONTENT_DOWNLOAD_SOURCES
     modplatform/ModDownloadTypes.h
     modplatform/DependencyResolver.h
     modplatform/DependencyResolver.cpp
+    modplatform/BundleCatalog.h
+    modplatform/BundleCatalog.cpp
     modplatform/ContentDownloadTask.h
     modplatform/ContentDownloadTask.cpp
     modplatform/ModInstallConflictAnalyzer.h
@@ -1424,6 +1428,13 @@ endif()
 # replaces that.
 add_library(Kite_core STATIC ${LOGIC_SOURCES})
 
+# The recommended-mods catalog, embedded as :/kite/bundles.json. In the core
+# so BundleCatalog finds it in the tests as well as in the launcher.
+qt6_add_resources(Kite_core kite_bundles
+    PREFIX "/kite"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/resources/kite"
+    FILES resources/kite/bundles.json)
+
 # Bundled translations: every translations/kite_<lang>.ts is compiled to a .qm
 # with lrelease and embedded in the core as :/i18n/kite_<lang>.qm, next to
 # :/i18n/stats.txt ("<lang> <translated> <total>" per line, counted from the
@@ -1807,6 +1818,19 @@ add_unit_test(ContentFilterModel
     )
 add_unit_test(ContentInstallReview
     SOURCES models/ContentInstallReview_test.cpp
+    LIBS Kite_core
+    )
+# The recommended-mods catalog: parsing and validation, language fallback,
+# loader filtering and de-duplication over a small catalog, and the catalog built
+# into the launcher. Previews and installs need a provider and are not run.
+add_unit_test(BundleCatalog
+    SOURCES modplatform/BundleCatalog_test.cpp
+    LIBS Kite_core
+    )
+# What a preset sets besides its mods: the memory table, which options.txt
+# keys a version reads, and that an existing options.txt is never replaced.
+add_unit_test(PresetDefaults
+    SOURCES minecraft/PresetDefaults_test.cpp
     LIBS Kite_core
     )
 # The mods tab's health list over made-up issues: one row per problem, the

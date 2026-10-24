@@ -62,6 +62,8 @@
 #include "BuildConfig.h"
 #include "models/InstanceFilterModel.h"
 #include "models/NewInstanceController.h"
+#include "modplatform/BundleCatalog.h"
+#include "settings/Setting.h"
 #include "models/RecentWorldsModel.h"
 #include "models/SettingsAdapter.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
@@ -962,6 +964,20 @@ QObject* QmlShell::catPacks() const
 		m_catPacks = std::make_unique<CatPackList>();
 	}
 	return expose(m_catPacks.get());
+}
+
+QObject* QmlShell::bundles() const
+{
+	if (!m_bundles) {
+		m_bundles = std::make_unique<BundleCatalog>();
+		/* The texts follow the language; the catalog resolves them on
+		 * each read, so only the bindings need telling. */
+		connect(LAUNCHER->settings()->getSetting("Language").get(),
+				&Setting::SettingChanged, m_bundles.get(),
+				&BundleCatalog::changed);
+		m_bundles->refresh();
+	}
+	return expose(m_bundles.get());
 }
 
 QObject* QmlShell::exportController(const QString& id)

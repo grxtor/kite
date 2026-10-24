@@ -1,0 +1,120 @@
+{
+	"formatVersion": 1,
+	"bundles": [
+		{
+			"id": "performance",
+			"name": { "en": "Performance", "tr": "Performans" },
+			"summary": { "en": "The mods that make the game run faster: the same family Lunar uses on modern versions.", "tr": "Oyunu hızlandıran modlar: Lunar'ın yeni sürümlerde kullandığı aile." },
+			"categories": [
+				{ "id": "core", "name": { "en": "Speed", "tr": "Hız" } },
+				{ "id": "extra", "name": { "en": "Extras", "tr": "Ekstralar" } }
+			],
+			"mods": [
+				{ "project": "AANobbMI", "name": "Sodium", "category": "core", "default": true, "summary": { "en": "Rewrites the renderer; the biggest FPS gain.", "tr": "Render motorunu baştan yazar; en büyük FPS kazancı." } },
+				{ "project": "gvQqBUqZ", "name": "Lithium", "category": "core", "default": true, "summary": { "en": "Faster game logic and physics.", "tr": "Oyun mantığını ve fiziği hızlandırır." } },
+				{ "project": "uXXizFIs", "name": "FerriteCore", "category": "core", "default": true, "summary": { "en": "Uses less memory.", "tr": "Daha az bellek kullanır." } },
+				{ "project": "5ZwdcRci", "name": "ImmediatelyFast", "category": "core", "default": true, "summary": { "en": "Draws the HUD, text and entities faster.", "tr": "HUD'u, yazıları ve entity'leri daha hızlı çizer." } },
+				{ "project": "NNAgCjsB", "name": "Entity Culling", "category": "core", "default": true, "summary": { "en": "Skips entities you cannot see.", "tr": "Görünmeyen entity'leri çizmez." } },
+				{ "project": "51shyZVL", "name": "More Culling", "category": "core", "default": true, "summary": { "en": "Skips more hidden block faces.", "tr": "Görünmeyen blok yüzlerini daha çok atlar." } },
+				{ "project": "LQ3K71Q1", "name": "Dynamic FPS", "category": "core", "default": true, "summary": { "en": "Lowers FPS and sound while the game is in the background.", "tr": "Oyun arka plandayken FPS'i ve sesi kısar." } },
+				{ "project": "nmDcB62a", "name": "ModernFix", "category": "core", "default": true, "summary": { "en": "Faster start, less memory.", "tr": "Daha hızlı açılış, daha az bellek." } },
+				{ "project": "g96Z4WVZ", "name": "BadOptimizations", "category": "extra", "default": false, "summary": { "en": "Small CPU savings.", "tr": "Küçük işlemci tasarrufları." } },
+				{ "project": "Ps1zyz6x", "name": "ScalableLux", "category": "extra", "default": false, "summary": { "en": "Faster lighting engine.", "tr": "Daha hızlı ışık motoru." } },
+				{ "project": "YL57xq9U", "name": "Iris", "category": "extra", "default": false, "summary": { "en": "Shader packs, including OptiFine ones.", "tr": "Shader paketleri, OptiFine'ınkiler dahil." } },
+				{ "project": "PtjYWJkn", "name": "Sodium Extra", "category": "extra", "default": false, "summary": { "en": "More video settings.", "tr": "Daha fazla görüntü ayarı." } },
+				{ "project": "Bh37bMuy", "name": "Reese's Sodium Options", "category": "extra", "default": false, "summary": { "en": "A roomier video settings screen.", "tr": "Daha ferah bir görüntü ayarları ekranı." } }
+			]
+		},
+		{
+			"id": "comfort",
+			"name": { "en": "Comfort", "tr": "Konfor" },
+			"summary": { "en": "In-game extras: zoom, a mod menu, tooltips and the OptiFine look.", "tr": "Oyun içi eklentiler: zoom, mod menüsü, ipuçları ve OptiFine görünümü." },
+			"categories": [
+				{ "id": "interface", "name": { "en": "Interface", "tr": "Arayüz" } },
+				{ "id": "visual", "name": { "en": "Looks", "tr": "Görsel" } },
+				{ "id": "map", "name": { "en": "Map", "tr": "Harita" } },
+				{ "id": "chat", "name": { "en": "Chat", "tr": "Sohbet" } }
+			],
+			"mods": [
+				{ "project": "mOgUt4GM", "name": "Mod Menu", "category": "interface", "default": true, "loaders": ["fabric", "quilt"], "summary": { "en": "Lists your mods and opens their settings.", "tr": "Modları listeler, ayarlarını açar." } },
+				{ "project": "xv94TkTM", "name": "Controlling", "category": "interface", "default": true, "summary": { "en": "Search in the key bindings.", "tr": "Tuş atamalarında arama." } },
+				{ "project": "EsAfCjCV", "name": "AppleSkin", "category": "interface", "default": true, "summary": { "en": "Shows hunger and saturation.", "tr": "Açlığı ve doygunluğu gösterir." } },
+				{ "project": "aC3cM3Vq", "name": "Mouse Tweaks", "category": "interface", "default": true, "summary": { "en": "Faster inventory handling with the mouse.", "tr": "Envanterde fareyle daha hızlı işlem." } },
+				{ "project": "nvQzSEkH", "name": "Jade", "category": "interface", "default": false, "summary": { "en": "Tells you what you are looking at.", "tr": "Baktığın bloğu ve entity'yi söyler." } },
+				{ "project": "2M01OLQq", "name": "Shulker Box Tooltip", "category": "interface", "default": false, "summary": { "en": "Shows what is inside a shulker box.", "tr": "Shulker kutusunun içini gösterir." } },
+				{ "project": "Wb5oqrBJ", "name": "Chat Heads", "category": "interface", "default": false, "summary": { "en": "Player heads next to chat messages.", "tr": "Sohbette oyuncu kafaları." } },
+				{ "project": "8shC1gFX", "name": "BetterF3", "category": "interface", "default": false, "summary": { "en": "A tidier F3 screen.", "tr": "Daha düzenli bir F3 ekranı." } },
+				{ "project": "w7ThoJFB", "name": "Zoomify", "category": "visual", "default": true, "summary": { "en": "Zoom, like OptiFine's.", "tr": "OptiFine'daki gibi zoom." } },
+				{ "project": "1IjD5062", "name": "Continuity", "category": "visual", "default": false, "summary": { "en": "Connected textures for resource packs.", "tr": "Kaynak paketleri için bağlantılı dokular." } },
+				{ "project": "4I1XuqiY", "name": "Entity Model Features", "category": "visual", "default": false, "summary": { "en": "Custom entity models from OptiFine packs.", "tr": "OptiFine paketlerindeki entity modelleri." } },
+				{ "project": "BVzZfTc1", "name": "Entity Texture Features", "category": "visual", "default": false, "summary": { "en": "Random and emissive entity textures from OptiFine packs.", "tr": "OptiFine paketlerindeki rastgele ve parlayan dokular." } },
+				{ "project": "yBW8D80W", "name": "LambDynamicLights", "category": "visual", "default": false, "summary": { "en": "A torch in your hand lights the way.", "tr": "Elindeki meşale etrafı aydınlatır." } },
+				{ "project": "zV5r3pPn", "name": "3D Skin Layers", "category": "visual", "default": false, "summary": { "en": "The outer skin layer in 3D.", "tr": "Skin'in dış katmanı 3 boyutlu." } },
+				{ "project": "1bokaNcj", "name": "Xaero's Minimap", "category": "map", "default": false, "serverSafe": false, "summary": { "en": "A minimap. Banned on some PvP servers, Hypixel included.", "tr": "Mini harita. Hypixel dahil bazı PvP sunucularında yasak." } },
+				{ "project": "NcUtCpym", "name": "Xaero's World Map", "category": "map", "default": false, "serverSafe": false, "summary": { "en": "A full-screen world map.", "tr": "Tam ekran dünya haritası." } },
+				{ "project": "qQyHxfxd", "name": "No Chat Reports", "category": "chat", "default": false, "summary": { "en": "Stops chat messages being signed for reporting.", "tr": "Sohbet mesajlarının şikâyet için imzalanmasını kapatır." } }
+			]
+		},
+		{
+			"id": "pvp",
+			"name": { "en": "PvP", "tr": "PvP" },
+			"summary": { "en": "HUD, hit colour and 1.7 animations, like Lunar and Badlion. Mods some servers ban are off and marked.", "tr": "Lunar ve Badlion gibi HUD, vuruş rengi ve 1.7 animasyonları. Bazı sunucuların yasakladığı modlar kapalı ve işaretli." },
+			"categories": [
+				{ "id": "hud", "name": { "en": "HUD", "tr": "HUD" } },
+				{ "id": "combat", "name": { "en": "Combat look", "tr": "Dövüş görünümü" } },
+				{ "id": "legacy", "name": { "en": "1.8.9", "tr": "1.8.9" } },
+				{ "id": "risky", "name": { "en": "At your own risk", "tr": "Sorumluluk sende" } }
+			],
+			"mods": [
+				{ "project": "1yIQcc2b", "name": "EvergreenHUD", "category": "hud", "default": true, "summary": { "en": "FPS, CPS, keystrokes, ping and coordinates on screen.", "tr": "Ekranda FPS, CPS, tuşlar, ping ve koordinat." } },
+				{ "project": "i9xRThb3", "name": "PolySprint", "category": "hud", "default": true, "loaders": ["forge"], "summary": { "en": "Toggle sprint and sneak (1.8.9 has no setting for it).", "tr": "Toggle sprint ve sneak (1.8.9'da bunun ayarı yok)." } },
+				{ "project": "Mptc0jo6", "name": "PolyHitbox", "category": "combat", "default": true, "summary": { "en": "Styles the F3+B hitboxes.", "tr": "F3+B hitbox'larının görünümünü ayarlar." } },
+				{ "project": "6zatK8W5", "name": "DamageTint", "category": "combat", "default": true, "summary": { "en": "Hit colour.", "tr": "Vuruş rengi." } },
+				{ "project": "4Hfmgaef", "name": "OverflowAnimations", "category": "combat", "default": true, "summary": { "en": "1.7 animations (blockhit and others).", "tr": "1.7 animasyonları (blockhit vb.)." } },
+				{ "project": "9ZPMzrQQ", "name": "Low Fire Reborn", "category": "combat", "default": true, "loaders": ["fabric"], "summary": { "en": "A smaller fire overlay.", "tr": "Daha küçük ateş efekti." } },
+				{ "project": "xT45UG5o", "name": "PolyBlur", "category": "combat", "default": false, "summary": { "en": "Motion blur.", "tr": "Hareket bulanıklığı." } },
+				{ "project": "YknNc5nN", "name": "PolyPatcher", "category": "legacy", "default": true, "loaders": ["forge"], "summary": { "en": "Hundreds of 1.8.9 fixes and speedups.", "tr": "1.8.9 için yüzlerce düzeltme ve hızlandırma." } },
+				{ "project": "NNAgCjsB", "name": "Entity Culling", "category": "legacy", "default": true, "loaders": ["forge"], "summary": { "en": "Skips entities you cannot see.", "tr": "Görünmeyen entity'leri çizmez." } },
+				{ "project": "S1v2ASLQ", "name": "Freelook", "category": "risky", "default": false, "serverSafe": false, "summary": { "en": "Look around without turning. Hypixel and many PvP servers ban it.", "tr": "Dönmeden etrafına bakarsın. Hypixel ve birçok PvP sunucusu yasaklıyor." } },
+				{ "project": "1bokaNcj", "name": "Xaero's Minimap", "category": "risky", "default": false, "serverSafe": false, "summary": { "en": "A minimap. Hypixel and many PvP servers ban it.", "tr": "Mini harita. Hypixel ve birçok PvP sunucusu yasaklıyor." } }
+			]
+		}
+	],
+	"presets": [
+		{
+			"id": "performance",
+			"name": { "en": "Kite Performance", "tr": "Kite Performans" },
+			"summary": { "en": "Fabric with the performance mods. Pick any recent version.", "tr": "Performans modlarıyla Fabric. Güncel herhangi bir sürüm." },
+			"loader": "fabric",
+			"bundles": ["performance", "comfort"],
+			"options": "fps"
+		},
+		{
+			"id": "pvp",
+			"name": { "en": "Kite PvP", "tr": "Kite PvP" },
+			"summary": { "en": "Performance plus a PvP HUD, on a recent version.", "tr": "Güncel sürümde performans ve PvP HUD'u." },
+			"loader": "fabric",
+			"bundles": ["performance", "pvp"],
+			"options": "pvp"
+		},
+		{
+			"id": "pvp-legacy",
+			"name": { "en": "Kite PvP 1.8.9", "tr": "Kite PvP 1.8.9" },
+			"summary": { "en": "Forge 1.8.9 with PolyPatcher and the PvP HUD.", "tr": "PolyPatcher ve PvP HUD'uyla Forge 1.8.9." },
+			"minecraft": "1.8.9",
+			"loader": "forge",
+			"bundles": ["pvp"],
+			"options": "pvp"
+		}
+	],
+	"options": {
+		"fps": {
+			"modern": { "renderDistance": "8", "simulationDistance": "6", "enableVsync": "false", "maxFps": "260", "entityShadows": "false", "particles": "1" },
+			"legacy": { "renderDistance": "8", "enableVsync": "false", "maxFps": "260", "entityShadows": "false", "particles": "1", "fancyGraphics": "false" }
+		},
+		"pvp": {
+			"modern": { "renderDistance": "8", "simulationDistance": "6", "enableVsync": "false", "maxFps": "260", "entityShadows": "false", "particles": "1", "toggleSprint": "true", "bobView": "false", "fovEffectScale": "0.0", "screenEffectScale": "0.0" },
+			"legacy": { "renderDistance": "8", "enableVsync": "false", "maxFps": "260", "entityShadows": "false", "particles": "1", "fancyGraphics": "false", "bobView": "false" }
+		}
+	}
+}

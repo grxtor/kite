@@ -40,6 +40,11 @@
 #include "models/InstanceContentController.h"
 #include "tasks/TaskWatcher.h"
 
+namespace
+{
+	const QString kOptiFine = QStringLiteral("optifine");
+} // namespace
+
 // ---------------------------------------------------------------------------
 // ContentUpdateList
 
@@ -726,6 +731,74 @@ QObject* ContentUpdateController::installMissing(const QStringList& keys,
 	review->setReplacements(plan.replacements);
 	review->start();
 	return review;
+}
+
+QObject* ContentUpdateController::installBundle(const QStringList& projectIds)
+{
+	auto folder = m_lists ? m_lists->folderFor(QStringLiteral("mods")) : nullptr;
+	if (!folder) {
+		return nullptr;
+	}
+	if (!m_lists->changesAllowed(QStringLiteral("mods"))) {
+		setLastError(tr("The game is running. Install once it has closed."));
+		return nullptr;
+	}
+	const QString mc = mcVersion();
+	if (mc.isEmpty()) {
+		setLastError(tr("This instance has no Minecraft version set."));
+		return nullptr;
+	}
+	const QStringList have = installedProjects();
+	QList<DependencyResolver::WantedProject> wanted;
+	for (const QString& id : projectIds) {
+		if (!id.isEmpty() && !have.contains(id)) {
+			wanted.append({id, {}});
+		}
+	}
+	if (wanted.isEmpty()) {
+		setLastError(tr("Those mods are already installed."));
+		return nullptr;
+	}
+	setLastError(QString());
+
+	auto* review = ContentInstallReview::missingDependencies(
+		{}, tr("Recommended mods"), mc, loader(), folder, this);
+	review->setWantedProjects(wanted);
+	review->start();
+	return review;
+}
+
+QStringList ContentUpdateController::installedProjects() const
+{
+	auto folder = m_lists ? m_lists->folderFor(QStringLiteral("mods")) : nullptr;
+	auto index = folder ? folder->metadataIndex() : nullptr;
+	QStringList projects;
+	if (!index) {
+		return projects;
+	}
+	for (const auto& entry : index->all()) {
+		if (entry.platform == ModrinthApi::get().id() &&
+			!entry.projectId.isEmpty()) {
+			projects.append(entry.projectId);
+		}
+	}
+	return projects;
+}
+
+bool ContentUpdateController::hasOptiFine() const
+{
+	auto folder = m_lists ? m_lists->folderFor(QStringLiteral("mods")) : nullptr;
+	if (!folder) {
+		return false;
+	}
+	for (size_t row = 0; row < folder->size(); ++row) {
+		const Mod& mod = folder->at(row);
+		if (mod.name().contains(kOptiFine, Qt::CaseInsensitive) ||
+			mod.filename().fileName().contains(kOptiFine, Qt::CaseInsensitive)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 int ContentUpdateController::resetMetadata(const QString& kind,
