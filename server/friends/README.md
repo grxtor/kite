@@ -68,7 +68,7 @@ Failures return a status code and a body like this:
 | 404 | `not_found` | The player, request or friend does not exist, or you may not see it |
 | 409 | `already_friends` | Friend request to someone who already is a friend |
 | 409 | `blocked_by_you` | Friend request to someone you blocked. Unblock first |
-| 409 | `limit_reached` | Too many friends (500) or pending outgoing requests (100) |
+| 409 | `limit_reached` | Too many friends (500), pending outgoing requests (100) or blocks (1000) |
 | 429 | `rate_limited` | Too many requests. Wait for the `Retry-After` header (seconds) |
 | 502 | `mojang_unavailable` | Mojang's session server failed or timed out. Try again later |
 
@@ -127,8 +127,9 @@ it owns the account the way a Minecraft server checks a joining player:
    ```
 
    `401 not_joined` means Mojang has no record of step 2 (yet). The challenge
-   stays valid until it expires, so the launcher may retry once after a
-   second. A challenge can be used for one login only.
+   stays valid until it expires, so the launcher may retry after a second; a
+   challenge allows five attempts. A challenge can be used for one login
+   only.
 
 The token lasts 30 days. On `401 unauthorized` from any endpoint, sign in
 again. A user keeps at most 10 tokens; an eleventh login drops the oldest.
@@ -168,9 +169,9 @@ GET /v1/me
 - `hideServer`: friends see that you are playing, but not where. Server and
   single-player are both hidden.
 - `shareIpServers`: off by default. When off, a server reached by a raw IP
-  (`203.0.113.7`) or a local address (`192.168.1.20`, `localhost`,
-  `myserver.local`, a single-label name) is shown as "a server" without its
-  address. The address is not stored either.
+  (`203.0.113.7`, `1.2.3.4.nip.io`) or a local address (`192.168.1.20`,
+  `localhost`, `myserver.local`, `nas.fritz.box`, a single-label name) is
+  shown as "a server" without its address. The address is not stored either.
 
 ```http
 PATCH /v1/me/settings
@@ -185,8 +186,9 @@ DELETE /v1/me
 ```
 
 `204`. Deletes the account and everything stored about it: tokens, status,
-friendships, requests and blocks, in both directions. Signing in again later
-creates a new, empty account.
+settings, friendships, requests in both directions, and the blocks you
+placed. Blocks other players placed on you stay, because they belong to
+them. Signing in again later creates a new, empty account.
 
 ### Reporting your status
 
@@ -215,7 +217,9 @@ PUT /v1/me/status
 - `world`: where the player is, only with `playing`:
   - `{ "type": "server", "host": "...", "port": 25565 }` from the game log's
     `Connecting to <host>, <port>` line. `port` is optional and defaults to
-    25565. The host must be a valid DNS name, IPv4 or IPv6 address.
+    25565. The host must be a valid DNS name, IPv4 or IPv6 address. A name
+    whose last label is a number (`2130706433`, `0x7f.0x1`) is refused,
+    because resolvers read it as an IP address.
   - `{ "type": "singleplayer" }` for the integrated server.
   - `null` or left out while in the menus.
 
@@ -341,8 +345,9 @@ DELETE /v1/friends/{uuid}
 PUT /v1/blocks/{uuid}
 ```
 
-`204`, or `404` if no Kite user has that UUID. Blocking removes the
-friendship and pending requests in both directions. A blocked player cannot
+`204`, or `404` if no Kite user has that UUID, or `409 limit_reached` past
+1000 blocks. Blocking removes the friendship and pending requests in both
+directions. A blocked player cannot
 send you requests and cannot see your status, even with `visibility:
 "everyone"`; you cannot see theirs either.
 
@@ -399,7 +404,8 @@ GET /healthz
 
 ## Privacy
 
-What the server stores, all of it deleted by `DELETE /v1/me`:
+What the server stores, all of it deleted by `DELETE /v1/me` (except blocks
+other players placed on you):
 
 - Minecraft UUID and name, and when they were last seen
 - Settings

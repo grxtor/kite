@@ -49,6 +49,11 @@ describe('normalizeHost', () => {
     ['64 character label', `${label63}a.com`],
     ['254 character name', name254],
     ['empty brackets', '[]'],
+    ['decimal IPv4', '2130706433'],
+    ['hex IPv4', '0x7f.0x1'],
+    ['dotted IPv4 ending in hex', '127.0.0.0x1'],
+    ['mixed hex and decimal IPv4', '0xc0.0xa8.0.0x1'],
+    ['single hex label', '0x7f000001'],
   ];
   for (const [title, input] of invalid) {
     test(`rejects ${title}`, () => {
@@ -66,7 +71,6 @@ describe('classifyHost', () => {
     ['corp.com', 'domain'],
     ['internal.com', 'domain'],
     ['notlocalhost.com', 'domain'],
-    ['256.1.1.1.nip.io', 'domain'],
     ['mc-1-2-3.example.com', 'domain'],
 
     ['0.0.0.0', 'local'],
@@ -124,12 +128,23 @@ describe('classifyHost', () => {
     ['wiki.intranet', 'local'],
     ['files.corp', 'local'],
     ['router.home.arpa', 'local'],
+    ['localhost.localdomain', 'local'],
+    ['fritz.box', 'local'],
+    ['nas.fritz.box', 'local'],
+    ['pc.mshome.net', 'local'],
+    ['nas.test', 'local'],
+    ['mc.example', 'local'],
+    ['app.localtest.me', 'local'],
+    ['mc.box', 'domain'],
 
     ['1.2.3.4.nip.io', 'ip'],
     ['84-12-3-4.sslip.io', 'ip'],
     ['mc.84-12-3-4.sslip.io', 'ip'],
     ['a.1.2.3.4.example.com', 'ip'],
     ['255.255.255.255.nip.io', 'ip'],
+    ['256.1.1.1.nip.io', 'ip'],
+    ['7f000001.nip.io', 'ip'],
+    ['mc.traefik.me', 'ip'],
   ];
   for (const [host, kind] of cases) {
     test(`${host} is ${kind}`, () => {

@@ -7,6 +7,17 @@ export interface UserRef {
 
 type Queryable = Pick<pg.Pool, 'query'>;
 
+/**
+ * Serializes everything that changes how two players relate (requests, friendship,
+ * blocks) for the rest of the transaction, so a block cannot race an accept.
+ */
+export async function lockPair(client: pg.PoolClient, a: string, b: string): Promise<void> {
+  await client.query(
+    `select pg_advisory_xact_lock(hashtextextended(least($1::uuid, $2::uuid)::text || greatest($1::uuid, $2::uuid)::text, 0))`,
+    [a, b],
+  );
+}
+
 /** The current holder of a Minecraft name. Names move between accounts, so the latest sign-in wins. */
 export async function findUserByName(db: Queryable, name: string): Promise<UserRef | null> {
   const { rows } = await db.query<UserRef>(

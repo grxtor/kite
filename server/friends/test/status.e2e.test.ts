@@ -239,6 +239,14 @@ describe('status', () => {
       await setSettings(reporter, { visibility: 'friends' });
       assert.equal((await seen(viewer, reporter)).state, 'offline');
     });
+
+    test('going invisible forgets the last seen time', async () => {
+      const { reporter, viewer } = await pair();
+      await report(reporter, { state: 'online' });
+      await setSettings(reporter, { visibility: 'invisible' });
+      await setSettings(reporter, { visibility: 'friends' });
+      assert.deepEqual(await seen(viewer, reporter), { state: 'offline', lastSeenAt: null });
+    });
   });
 
   test('reporting needs a token', async () => {

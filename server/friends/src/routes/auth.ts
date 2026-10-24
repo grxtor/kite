@@ -9,6 +9,8 @@ import { challengeBody, nameBody } from '../schemas.ts';
 const tokenPrefix = 'kfs_';
 const tokenPattern = /^Bearer (kfs_[A-Za-z0-9_-]{43})$/;
 const maxSessionsPerUser = 10;
+// Each login attempt asks Mojang, so a challenge allows only a few.
+const maxLoginAttempts = 5;
 
 export function hashToken(token: string): Buffer {
   return createHash('sha256').update(token).digest();
@@ -61,12 +63,13 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Context, clientIp:
     { schema: { body: challengeBody }, onRequest: limitAuth },
     async (request) => {
       const { challengeId } = request.body;
-      const { rows } = await ctx.pool.query<{ name: string; server_id: string }>(
-        'select name, server_id from challenges where id = $1 and expires_at > $2',
+      const { rows } = await ctx.pool.query<{ name: string; server_id: string; attempts: number }>(
+        `update challenges set attempts = attempts + 1 where id = $1 and expires_at > $2
+         returning name, server_id, attempts`,
         [challengeId, ctx.now()],
       );
       const challenge = rows[0];
-      if (!challenge) throw challengeInvalid();
+      if (!challenge || challenge.attempts > maxLoginAttempts) throw challengeInvalid();
 
       // The challenge survives a failed check so the launcher can retry once its join lands.
       const profile = await hasJoined(ctx.config.mojangSessionUrl, challenge.name, challenge.server_id);

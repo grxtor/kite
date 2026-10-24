@@ -85,11 +85,18 @@ export async function buildApp({ config, pool, clock = Date.now }: AppDeps): Pro
     registerPlayerRoutes(scope, ctx);
   });
 
+  // An idle connection dropped by Postgres must not take the process down; the pool replaces it.
+  const onPoolError = (error: Error) => app.log.error(error, 'idle Postgres connection failed');
+  pool.on('error', onPoolError);
+
   const purgeTimer = setInterval(() => {
     purgeExpired(ctx).catch((error: unknown) => app.log.error(error, 'purging expired rows failed'));
   }, minute);
   purgeTimer.unref();
-  app.addHook('onClose', async () => clearInterval(purgeTimer));
+  app.addHook('onClose', async () => {
+    clearInterval(purgeTimer);
+    pool.off('error', onPoolError);
+  });
 
   return app;
 }

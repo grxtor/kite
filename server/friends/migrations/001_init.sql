@@ -28,6 +28,7 @@ create table challenges (
   id uuid primary key,
   name text not null,
   server_id text not null,
+  attempts integer not null default 0,
   expires_at timestamptz not null
 );
 create index challenges_expires_idx on challenges (expires_at);
@@ -51,9 +52,11 @@ create table friendships (
 );
 create index friendships_b_idx on friendships (user_b);
 
+-- No foreign key on blocked: a block belongs to the blocker and must outlive the
+-- blocked player deleting their account and signing in again.
 create table blocks (
   blocker uuid not null references users on delete cascade,
-  blocked uuid not null references users on delete cascade,
+  blocked uuid not null,
   created_at timestamptz not null,
   primary key (blocker, blocked),
   check (blocker <> blocked)

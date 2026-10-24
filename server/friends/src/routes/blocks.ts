@@ -1,9 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { currentUser, type Context } from '../context.ts';
 import { withTransaction } from '../db.ts';
-import { badRequest, notFound } from '../errors.ts';
+import { badRequest, HttpError, notFound } from '../errors.ts';
 import { uuidParams } from '../schemas.ts';
-import { findUserByUuid } from '../users.ts';
+import { findUserByUuid, lockPair } from '../users.ts';
+
+const maxBlocks = 1000;
 
 export function registerBlockRoutes(app: FastifyInstance, ctx: Context) {
   app.get('/v1/blocks', async (request) => {
@@ -21,6 +23,14 @@ export function registerBlockRoutes(app: FastifyInstance, ctx: Context) {
     if (target === me) throw badRequest('You cannot block yourself');
     if (!(await findUserByUuid(ctx.pool, target))) throw notFound('No such player');
     await withTransaction(ctx.pool, async (client) => {
+      await lockPair(client, me, target);
+      const { rows } = await client.query<{ count: number }>(
+        'select count(*)::int as count from blocks where blocker = $1 and blocked <> $2',
+        [me, target],
+      );
+      if ((rows[0]?.count ?? 0) >= maxBlocks) {
+        throw new HttpError(409, 'limit_reached', `At most ${maxBlocks} players can be blocked`);
+      }
       await client.query(
         'insert into blocks (blocker, blocked, created_at) values ($1, $2, $3) on conflict do nothing',
         [me, target, ctx.now()],

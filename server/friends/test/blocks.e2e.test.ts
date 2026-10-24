@@ -39,6 +39,20 @@ describe('blocks', () => {
     assert.deepEqual((await s.friendsOf(b)).friends, []);
   });
 
+  test('a block racing an accept never leaves them friends', async () => {
+    for (let round = 0; round < 15; round += 1) {
+      const blocker = await s.newPlayer();
+      const other = await s.newPlayer();
+      await sendRequest(blocker, other);
+      await Promise.all([
+        s.api('POST', `/v1/friends/requests/${blocker.uuid}/accept`, { token: other.token }),
+        block(blocker, other),
+      ]);
+      assert.deepEqual((await s.friendsOf(other)).friends, []);
+      assert.deepEqual((await s.friendsOf(blocker)).friends, []);
+    }
+  });
+
   test('blocking removes pending requests in both directions', async () => {
     const a = await s.newPlayer();
     const sentTo = await s.newPlayer();

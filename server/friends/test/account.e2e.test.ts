@@ -83,12 +83,26 @@ describe('deleting an account', () => {
     assert.deepEqual(blocks.body, { blocked: [] });
   });
 
-  test('blocks in both directions were deleted too', async () => {
+  test('their own blocks are deleted', async () => {
     const againToken = await s.signIn(leaverName, leaverUuid);
-    const toBlocker = await s.api('POST', '/v1/friends/requests', { token: againToken, body: { name: blockedBy.name } });
-    assert.equal(toBlocker.status, 201);
     const toBlocked = await s.api('POST', '/v1/friends/requests', { token: againToken, body: { name: blocked.name } });
     assert.equal(toBlocked.status, 201);
+  });
+
+  test('a block someone else placed on them survives', async () => {
+    const againToken = await s.signIn(leaverName, leaverUuid);
+    const toBlocker = await s.api<ErrorBody>('POST', '/v1/friends/requests', {
+      token: againToken,
+      body: { name: blockedBy.name },
+    });
+    assert.equal(toBlocker.status, 404);
+    const lookup = await s.api('GET', `/v1/players/${blockedBy.name}/status`, { token: againToken });
+    assert.equal(lookup.status, 404);
+    const list = await s.api<{ blocked: Array<{ uuid: string }> }>('GET', '/v1/blocks', { token: blockedBy.token });
+    assert.deepEqual(
+      list.body.blocked.map((b) => b.uuid),
+      [leaverUuid],
+    );
   });
 
   test('the old status is gone', async () => {

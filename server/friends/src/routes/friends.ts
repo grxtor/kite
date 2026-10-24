@@ -5,7 +5,7 @@ import { withTransaction } from '../db.ts';
 import { badRequest, HttpError, notFound } from '../errors.ts';
 import { nameBody, uuidParams } from '../schemas.ts';
 import { presenceColumns, statusView, type PresenceRow } from '../status.ts';
-import { areFriends, findUserByName, hasBlockBetween, type UserRef } from '../users.ts';
+import { areFriends, findUserByName, hasBlockBetween, lockPair, type UserRef } from '../users.ts';
 
 const maxFriends = 500;
 const maxPendingOutgoing = 100;
@@ -36,7 +36,10 @@ async function friendCount(client: pg.PoolClient, uuid: string): Promise<number>
   return rows[0]?.count ?? 0;
 }
 
-/** Turns a pending request from `from` to `to` into a friendship; false if there was none. */
+/**
+ * Turns a pending request from `from` to `to` into a friendship; false if there was none.
+ * The caller holds the pair lock.
+ */
 async function acceptRequest(client: pg.PoolClient, from: string, to: string, now: Date): Promise<boolean> {
   const removed = await client.query('delete from friend_requests where from_uuid = $1 and to_uuid = $2', [from, to]);
   if (removed.rowCount === 0) return false;
@@ -60,7 +63,9 @@ export function registerFriendRoutes(app: FastifyInstance, ctx: Context) {
        from friendships f
        join users u on u.uuid = case when f.user_a = $1 then f.user_b else f.user_a end
        left join presence p on p.user_uuid = u.uuid and p.expires_at > $2
-       where f.user_a = $1 or f.user_b = $1
+       where (f.user_a = $1 or f.user_b = $1)
+         and not exists (select 1 from blocks b
+                         where (b.blocker = $1 and b.blocked = u.uuid) or (b.blocker = u.uuid and b.blocked = $1))
        order by u.name_lower, u.uuid`,
       [me, ctx.now()],
     );
@@ -94,12 +99,14 @@ export function registerFriendRoutes(app: FastifyInstance, ctx: Context) {
     const target = await findUserByName(ctx.pool, request.body.name);
     if (!target) throw noSuchPlayer();
     if (target.uuid === me) throw badRequest('That is you');
-    const blocks = await hasBlockBetween(ctx.pool, me, target.uuid);
-    if (blocks.byA) throw new HttpError(409, 'blocked_by_you', 'You blocked this player; unblock them first');
-    if (blocks.byB) throw noSuchPlayer();
-    if (await areFriends(ctx.pool, me, target.uuid)) throw new HttpError(409, 'already_friends', 'Already friends');
 
     const result = await withTransaction(ctx.pool, async (client) => {
+      await lockPair(client, me, target.uuid);
+      const blocks = await hasBlockBetween(client, me, target.uuid);
+      if (blocks.byA) throw new HttpError(409, 'blocked_by_you', 'You blocked this player; unblock them first');
+      if (blocks.byB) throw noSuchPlayer();
+      if (await areFriends(client, me, target.uuid)) throw new HttpError(409, 'already_friends', 'Already friends');
+
       const now = ctx.now();
       if (await acceptRequest(client, target.uuid, me, now)) return 'accepted';
       const existing = await client.query('select 1 from friend_requests where from_uuid = $1 and to_uuid = $2', [
@@ -139,6 +146,9 @@ export function registerFriendRoutes(app: FastifyInstance, ctx: Context) {
       const me = currentUser(request).uuid;
       const from = request.params.uuid.toLowerCase();
       const user = await withTransaction(ctx.pool, async (client): Promise<UserRef | null> => {
+        await lockPair(client, from, me);
+        const blocks = await hasBlockBetween(client, from, me);
+        if (blocks.byA || blocks.byB) return null;
         if (!(await acceptRequest(client, from, me, ctx.now()))) return null;
         const { rows } = await client.query<UserRef>('select uuid, name from users where uuid = $1', [from]);
         return rows[0] ?? null;

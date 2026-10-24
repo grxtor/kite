@@ -86,6 +86,20 @@ describe('auth', () => {
       assert.equal(late.body.user.uuid, id.uuid);
     });
 
+    test('a challenge allows five login attempts', async () => {
+      const id = nextIdentity();
+      const ch = await challenge(id.name);
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const res = await s.api<ErrorBody>('POST', '/v1/auth/login', { body: { challengeId: ch.challengeId } });
+        assert.equal(res.body.error, 'not_joined');
+      }
+      s.mojang.join(id.name, id.uuid, ch.serverId);
+      const sixth = await s.api<ErrorBody>('POST', '/v1/auth/login', { body: { challengeId: ch.challengeId } });
+      assert.equal(sixth.status, 400);
+      assert.equal(sixth.body.error, 'challenge_invalid');
+      assert.equal(s.mojang.requests.filter((r) => r.serverId === ch.serverId).length, 5);
+    });
+
     test('a challenge works for one login only', async () => {
       const id = nextIdentity();
       const ch = await challenge(id.name);

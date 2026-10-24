@@ -4,7 +4,13 @@ export type AddressKind = 'domain' | 'ip' | 'local';
 
 const maxHostLength = 253;
 const labelPattern = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
-const localSuffixes = ['localhost', 'local', 'lan', 'home', 'internal', 'intranet', 'corp', 'home.arpa'];
+// Reserved and home-network names (RFC 2606, 6761, 8375) and common router domains.
+const localSuffixes = [
+  'localhost', 'localdomain', 'local', 'lan', 'home', 'internal', 'intranet', 'corp', 'private',
+  'home.arpa', 'test', 'invalid', 'example', 'fritz.box', 'mshome.net', 'localtest.me', 'lvh.me',
+];
+// Wildcard DNS services whose names are an IP address in disguise.
+const ipEncodingSuffixes = ['nip.io', 'sslip.io', 'xip.io', 'traefik.me'];
 
 const localRanges = new BlockList();
 for (const [network, prefix] of [
@@ -32,8 +38,9 @@ export function normalizeHost(raw: string): string | null {
   if (host.length === 0 || host.length > maxHostLength) return null;
   const labels = host.split('.');
   if (!labels.every((label) => labelPattern.test(label))) return null;
-  // An all-numeric last label would be a malformed IPv4 like 1.2.3 or 300.1.1.1.
-  if (/^\d+$/.test(labels.at(-1) ?? '')) return null;
+  // A numeric last label makes resolvers read the whole name as an IPv4 in some
+  // other notation (2130706433, 0x7f.0x1, 127.0.0.0x1), or it is malformed (1.2.3).
+  if (/^(?:\d+|0x[0-9a-f]*)$/.test(labels.at(-1) ?? '')) return null;
   return host;
 }
 
@@ -66,7 +73,8 @@ export function classifyHost(host: string): AddressKind {
     return localRanges.check(host, 'ipv6') ? 'local' : 'ip';
   }
   if (!host.includes('.')) return 'local';
-  if (localSuffixes.some((suffix) => host === suffix || host.endsWith(`.${suffix}`))) return 'local';
-  if (embedsIPv4(host)) return 'ip';
+  const under = (suffix: string) => host === suffix || host.endsWith(`.${suffix}`);
+  if (localSuffixes.some(under)) return 'local';
+  if (ipEncodingSuffixes.some(under) || embedsIPv4(host)) return 'ip';
   return 'domain';
 }
