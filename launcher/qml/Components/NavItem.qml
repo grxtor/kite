@@ -13,6 +13,11 @@ import Kite.Theme
  * shape shows through untouched wherever it sits. Selected, its icon and
  * label take accentText over that neutral shape, whose nose is lit in the
  * accent.
+ *
+ * A destination can carry a count (`badge`, hidden at 0): a pill at the
+ * icon's top-right corner on the rail, at the row's right end in the
+ * labelled sidebar. `badgeTone` says what the number is: "accent" for
+ * something that wants an answer, "success" for good news.
  */
 AbstractButton {
     id: control
@@ -40,6 +45,14 @@ AbstractButton {
     // hover and selection read as the same shape in the rail.
     property int railSquare: Theme.control.height
     property int cornerRadius: Theme.radius.md
+    property int badge: 0
+    property string badgeTone: "accent"
+    // The most a pill shows; past it, "99+".
+    readonly property int badgeCap: 99
+    // What the rail is drawn on (SidebarNav.surround), so the pill's ring can
+    // cut it clear of whatever it overlaps: the icon, and the kite's nose on
+    // a selected item.
+    property color surround: "transparent"
 
     implicitHeight: Theme.control.height
     implicitWidth: 200
@@ -48,6 +61,7 @@ AbstractButton {
 
     Accessible.role: Accessible.PageTab
     Accessible.name: label
+    Accessible.description: control.badge > 0 ? String(control.badge) : ""
 
     // Beside the rail rather than over it: above, it would cover the item
     // the pointer is moving to next.
@@ -94,7 +108,7 @@ AbstractButton {
 
         Text {
             x: control.labelX - control.leftPadding
-            width: Math.max(0, parent.width - x)
+            width: Math.max(0, parent.width - x - (pill.visible && !control.collapsed ? pill.width + Theme.space.md + Theme.space.sm : 0))
             anchors.verticalCenter: parent.verticalCenter
             visible: !control.collapsed
             text: control.label
@@ -103,6 +117,37 @@ AbstractButton {
             font.family: Theme.font.family
             font.pixelSize: Theme.type.body.pixelSize
             font.weight: control.selected ? Font.DemiBold : Font.Medium
+        }
+    }
+
+    // The count. Drawn over the background and the contentItem, so it sits
+    // on the icon's corner without taking part in either's layout. Filled
+    // like a Button: textOnAccent on the accent, and the canvas on the
+    // success green (white would not read on the dark theme's light green).
+    Rectangle {
+        id: pill
+        visible: control.badge > 0
+        width: Math.max(height, pillText.implicitWidth + Theme.space.sm + Theme.focus.width * 2)
+        height: Math.ceil(Theme.type.caption.lineHeightPx) + Theme.focus.width * 2
+        radius: Theme.radius.pill
+        border.width: Theme.focus.width
+        // A selected item sits on the selection's own fill.
+        border.color: control.selected ? Theme.palette.surfaceRaised : control.surround
+        color: control.badgeTone === "success" ? Theme.palette.success : Theme.palette.accent
+        // Rail: centred on the corner of the icon. Labelled: the row's end.
+        x: control.collapsed ? control.iconAxis + Theme.icon.md / 2 - width / 2
+                             : control.width - width - Theme.space.md
+        y: control.collapsed ? (control.height - Theme.icon.md) / 2 - height / 2
+                             : (control.height - height) / 2
+
+        Text {
+            id: pillText
+            anchors.centerIn: parent
+            text: control.badge > control.badgeCap ? control.badgeCap + "+" : String(control.badge)
+            color: control.badgeTone === "success" ? Theme.palette.canvas : Theme.palette.textOnAccent
+            font.family: Theme.font.family
+            font.pixelSize: Theme.type.caption.pixelSize
+            font.weight: Font.DemiBold
         }
     }
 }

@@ -6,7 +6,7 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The Friends dialog's "Blocked" tab: people who can neither send you a
+ * The Friends page's "Blocked" tab: people who can neither send you a
  * request nor see when you are online, each with an Unblock.
  */
 Item {

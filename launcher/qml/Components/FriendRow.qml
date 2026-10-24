@@ -7,8 +7,8 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One person in the friends list, on Home's side panel and in the Friends
- * dialog: their Minecraft head (the 8x8 face FriendsController cached from
+ * One person in the friends list, on Home's side panel and on the Friends
+ * page: their Minecraft head (the 8x8 face FriendsController cached from
  * Mojang, drawn pixel for pixel; a neutral tile with a user icon until it
  * is there), their name, and a quiet line under it (where
  * they are, or what the row is about). Whatever goes inside the row
@@ -19,7 +19,7 @@ import Kite.Theme
  * friend's name. `detailStrong` sets the line in the normal text colour
  * instead of the secondary one: the server a friend is on is the point of
  * the row. A row is only a button (hover overlay, focus, clicks) when
- * `interactive` is set; in the dialog it is a plain row.
+ * `interactive` is set; on the Friends page it is a plain row.
  */
 AbstractButton {
     id: root

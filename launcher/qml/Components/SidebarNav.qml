@@ -47,6 +47,10 @@ Rectangle {
     // Each entry: { id, icon, label }; icon is a MeshIcon name.
     property var items: []
     property var footerItems: []
+    // Counts on the destinations, by id: { friends: { count, tone } } (see
+    // NavItem.badge). A map of its own, so a count changing never rebuilds
+    // `items` and the delegates with it.
+    property var badges: ({})
     property string currentId: ""
     // The open instance, if any: its recent tile takes the selection while
     // it is listed, over currentId.
@@ -247,6 +251,9 @@ Rectangle {
                 cornerRadius: root.itemRadius
                 iconName: modelData.icon
                 label: modelData.label
+                surround: root.surround
+                badge: root.badges[modelData.id] ? root.badges[modelData.id].count : 0
+                badgeTone: root.badges[modelData.id] ? root.badges[modelData.id].tone : "accent"
                 selected: root.selectedNavItem === navDelegate
                 collapsed: root.collapsed
                 onClicked: root.itemActivated(modelData.id)

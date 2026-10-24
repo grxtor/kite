@@ -110,7 +110,7 @@ ApplicationWindow {
     property string devRoute: ""
     function applyDevRoute() {
         // Routes reach into pages the route may not show; build them all.
-        for (var slot of [libraryLoader, settingsLoader, discoverLoader, instanceLoader, accountsLoader])
+        for (var slot of [libraryLoader, settingsLoader, discoverLoader, instanceLoader, accountsLoader, friendsLoader])
             slot.built = true
         var steps = root.devRoute.split(";")
         for (var i = 0; i < steps.length; ++i) {
@@ -147,7 +147,7 @@ ApplicationWindow {
                 root.navigate(value)
             else if (key === "import")
                 root.openImport(value)
-            // The Friends dialog; "friendsTab=requests" or "=blocked" opens
+            // The Friends page; "friendsTab=requests" or "=blocked" opens
             // it on that tab.
             else if (key === "friends")
                 Qt.callLater(root.openFriends, "friends")
@@ -258,10 +258,11 @@ ApplicationWindow {
 
     // QmlShell.friends (FriendsController), or null where this build has none.
     readonly property var friendsController: root.shell && root.shell.friends ? root.shell.friends : null
-    // The Friends dialog on tab "friends", "requests" or "blocked".
+    // The Friends page on tab "friends", "requests" or "blocked". Going
+    // there first builds it (PageSlot), so it is there to be given the tab.
     function openFriends(tab) {
-        var friendsDialog = root.dialog(friendsLoader)
-        friendsDialog.openTab(tab || "friends")
+        root.page = "friends"
+        friendsPage.tab = tab || "friends"
     }
 
     // The dialog held by `loader`, built now if it is not yet.
@@ -311,6 +312,8 @@ ApplicationWindow {
      * Targets are paths, given whole or split in two (navigate("settings",
      * "java") is navigate("settings/java")):
      *   "home", "library", "discover", "accounts"
+     *   "friends" or "friends/<tab>"        a FriendsPage.qml tab id
+     *                                       ("friends", "requests", "blocked")
      *   "settings" or "settings/<section>"  a SettingsPage.qml section id
      *                                       ("java", "proxy", "about", ...)
      *   "instance/<id>" or "instance/<id>/<tab>"
@@ -330,6 +333,9 @@ ApplicationWindow {
         case "discover":
         case "accounts":
             root.page = parts[0]
+            return true
+        case "friends":
+            root.openFriends(parts.length > 1 ? parts[1] : "")
             return true
         case "settings":
             root.page = "settings"
@@ -393,14 +399,15 @@ ApplicationWindow {
                 ? root.shell.launchOptions(id) : ({})
     }
 
-    // The play bar shows on Home, Discover, Settings and Accounts, keeping
-    // the selected instance one click away. Home has it too: the hero scrolls
-    // away under Continue playing and the library, the bar stays. The
+    // The play bar shows on Home, Discover, Friends, Settings and Accounts,
+    // keeping the selected instance one click away. Home has it too: the
+    // hero scrolls away under Continue playing and the library, the bar stays. The
     // instance page's header is that page's Play, and the bar would only
     // repeat it there; the library page that once had it is no longer in the
     // rail.
     function dockVisibleFor(page) {
         return page === "home" || page === "discover" || page === "settings" || page === "accounts"
+               || page === "friends"
     }
     // Inside an instance, while Content shows its "Add content" browser,
     // that page's Install is the primary action. Moot while the instance
@@ -415,6 +422,7 @@ ApplicationWindow {
     readonly property Item discoverPage: discoverLoader.item
     readonly property Item instancePage: instanceLoader.item
     readonly property Item accountsPage: accountsLoader.item
+    readonly property Item friendsPage: friendsLoader.item
 
     function instanceGroups() {
         var groups = root.shell && root.shell.groups ? root.shell.groups : []
@@ -583,7 +591,23 @@ ApplicationWindow {
     readonly property var navItems: [
         { id: "home", icon: "home", label: qsTr("Home") },
         { id: "discover", icon: "compass", label: qsTr("Discover") }
-    ]
+    ].concat(root.friendsController ? [{ id: "friends", icon: "users", label: qsTr("Friends") }] : [])
+
+    // The counts on the rail (SidebarNav.badges), kept apart from navItems
+    // so a friend coming online never rebuilds the rail's items. Friends:
+    // requests waiting for an answer come first, in the accent; otherwise
+    // how many are online, in green. Nothing while friends are off or not
+    // connected: the numbers would be stale.
+    readonly property var navBadges: {
+        var friends = root.friendsController
+        if (!friends || !friends.enabled || friends.state !== "ready")
+            return ({})
+        if (friends.incomingCount > 0)
+            return ({ friends: { count: friends.incomingCount, tone: "accent" } })
+        if (friends.onlineCount > 0)
+            return ({ friends: { count: friends.onlineCount, tone: "success" } })
+        return ({})
+    }
 
     SidebarNav {
         id: sidebar
@@ -601,6 +625,7 @@ ApplicationWindow {
         canExpand: root.width >= 1000
         collapsed: !canExpand || SettingsStore.bool("UiSidebarCollapsed")
         items: root.navItems
+        badges: root.navBadges
         footerItems: [
             { id: "settings", icon: "settings", label: qsTr("Settings") }
         ]
@@ -652,11 +677,13 @@ ApplicationWindow {
              : root.page === "settings" ? qsTr("Settings")
              : root.page === "discover" ? qsTr("Discover")
              : root.page === "accounts" ? qsTr("Accounts")
+             : root.page === "friends" ? qsTr("Friends")
              : root.page === "instance" ? (instancePage && instancePage.browsing ? qsTr("Add content") : root.openedName)
              : qsTr("Library")
         iconName: root.page === "settings" ? "settings"
                 : root.page === "discover" ? "compass"
                 : root.page === "accounts" ? "user"
+                : root.page === "friends" ? "users"
                 : root.page === "library" ? "library"
                 : "home"
         trail: root.page !== "instance" ? []
@@ -770,7 +797,7 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 Layout.minimumWidth: 0
 
-                readonly property var pageOrder: ["home", "library", "settings", "discover", "instance", "accounts"]
+                readonly property var pageOrder: ["home", "library", "settings", "discover", "instance", "accounts", "friends"]
                 // Whether the play bar shows for the page currently on
                 // screen -- updated at the same invisible midpoint as
                 // pageStack's own currentIndex (see pageTransition below),
@@ -1019,6 +1046,17 @@ ApplicationWindow {
                                 skin3DAvailable: root.skin3DAvailable
                         }
                     }
+
+                    PageSlot {
+                        id: friendsLoader
+                        page: "friends"
+                        current: root.page
+                        sourceComponent: FriendsPage {
+                                shown: friendsLoader.StackLayout.isCurrentItem
+                                controller: root.friendsController
+                                onNavigateRequested: (target) => root.navigate(target)
+                        }
+                    }
                 }
 
                 // The still cat picture (Settings > Appearance > Cat picture).
@@ -1157,14 +1195,6 @@ ApplicationWindow {
                     toast.show(qsTr("The instance could not be deleted. Is it running, or are its files in use?"), "danger")
                 }
             }
-        }
-    }
-
-    Loader {
-        id: friendsLoader
-        active: false
-        sourceComponent: FriendsDialog {
-            controller: root.friendsController
         }
     }
 

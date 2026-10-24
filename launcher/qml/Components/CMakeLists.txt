@@ -186,7 +186,8 @@ qt_add_qml_module(Kite_qml_components
         HomeFriends.qml
         FriendRow.qml
         FriendMoreButton.qml
-        FriendsDialog.qml
+        FriendsPage.qml
+        FriendsPageState.qml
         FriendsFriendsTab.qml
         FriendsRequestsTab.qml
         FriendsBlockedTab.qml

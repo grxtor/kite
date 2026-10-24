@@ -12,7 +12,7 @@ import Kite.Theme
  * question is FriendsOptInDialog's); signed out, connecting or failed, a
  * line saying so; ready, the first few friends (those playing first) as
  * FriendRows, a row for waiting requests, and the + and Manage that open
- * the Friends dialog (Main.qml's, through manageRequested).
+ * the Friends page (Main.qml opens it, through manageRequested).
  */
 Column {
     id: root

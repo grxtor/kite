@@ -7,35 +7,56 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The friends list in full: add someone by their Minecraft name, then three
- * tabs -- Friends (where each one is; ⋯ to remove or block), Requests
- * (accept, decline, cancel) and Blocked (unblock). Removing and blocking
- * ask first. What the server answered comes back as a toast from Main.qml,
- * off FriendsController.actionFinished.
+ * The friends list in full, its own page in the rail: add someone by their
+ * Minecraft name, then three tabs -- Friends (where each one is; ⋯ to remove
+ * or block), Requests (accept, decline, cancel) and Blocked (unblock).
+ * Removing and blocking ask first. What the server answered comes back as a
+ * toast from Main.qml, off FriendsController.actionFinished. While friends
+ * are not connected the list gives way to FriendsPageState.
  */
-Dialog {
+Item {
     id: root
 
     // QmlShell.friends (FriendsController), or null.
     property var controller: null
     // "friends", "requests" or "blocked".
     property string tab: "friends"
+    // Whether this is the page on screen. Main.qml binds it to its PageSlot's
+    // StackLayout.isCurrentItem (see DiscoverPage.shown).
+    property bool shown: false
 
-    readonly property bool connected: !!root.controller && root.controller.enabled
-                                      && root.controller.state === "ready"
+    // A path for Main.qml's navigate().
+    signal navigateRequested(string target)
+
+    // "off", "noAccount", "signingIn", "error" or "ready"; as HomeFriends
+    // reads it, the controller's own "off" while it is enabled is only the
+    // moment before it connects.
+    readonly property string phase: !root.controller ? "off"
+        : !root.controller.enabled ? "off"
+        : root.controller.state === "off" ? "signingIn" : root.controller.state
+    readonly property bool connected: root.phase === "ready"
     readonly property string typedName: nameField.text.trim()
     // Minecraft's own rule for a name.
     readonly property bool nameValid: /^[A-Za-z0-9_]{1,16}$/.test(root.typedName)
-    readonly property int preferredWidth: 560
-    readonly property int preferredHeight: 620
-    readonly property int listMinHeight: 240
+    // Past this the add row and the list stop reading as one block; the
+    // column stops growing here on wide windows, as SettingsScroll's does.
+    readonly property int readableWidth: 760
     // A request is on its way; the name stays in the field until it is
     // accepted, so a failed one is not typed again.
     property bool sending: false
 
     function openTab(id) {
         root.tab = id
-        root.open()
+    }
+    // Fresh lists whenever the page is shown, and the Blocked tab's count
+    // before it is ever opened. Only while connected: asking while friends
+    // are off or failing only makes the controller answer with a toast
+    // saying what the page already says.
+    function load() {
+        if (!root.controller || !root.connected)
+            return
+        root.controller.refresh()
+        root.controller.refreshBlocked()
     }
     function submit() {
         if (!root.nameValid || !root.controller)
@@ -50,37 +71,25 @@ Dialog {
         confirm.open()
     }
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
-    height: Math.min(root.preferredHeight, parent ? parent.height - Theme.space.xxl * 2 : root.preferredHeight)
-    modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
-    topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
-    bottomPadding: Theme.space.sm
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-    title: qsTr("Friends")
+    onShownChanged: if (root.shown) root.load()
+    // Connecting while the page is open (after Turn on, or Try again).
+    onConnectedChanged: if (root.shown) root.load()
+    Component.onCompleted: if (root.shown) root.load()
 
-    header: DialogHeader {
-        title: root.title
-    }
-
-    onOpened: {
-        if (root.controller) {
-            root.controller.refresh()
-            // The Blocked tab's count, before it is ever opened.
-            root.controller.refreshBlocked()
-        }
-    }
-
-    contentItem: ColumnLayout {
+    ColumnLayout {
+        id: content
+        visible: root.connected
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        // The page area gives no padding of its own.
+        anchors.topMargin: Theme.space.xl
+        anchors.bottomMargin: Theme.space.lg
+        width: Math.min(root.width - (Theme.space.xl + Theme.space.xs) * 2, root.readableWidth)
         spacing: Theme.space.md
 
         RowLayout {
             Layout.fillWidth: true
-            visible: root.connected
             spacing: Theme.space.sm
 
             TextField {
@@ -103,7 +112,7 @@ Dialog {
 
         Text {
             Layout.fillWidth: true
-            visible: root.connected && root.typedName.length > 0 && !root.nameValid
+            visible: root.typedName.length > 0 && !root.nameValid
             text: qsTr("A Minecraft name has 1 to 16 letters, numbers or underscores.")
             wrapMode: Text.Wrap
             color: Theme.palette.danger
@@ -113,7 +122,6 @@ Dialog {
 
         TabStrip {
             Layout.fillWidth: true
-            visible: root.connected
             current: root.tab
             onActivated: (id) => root.tab = id
             tabs: [
@@ -126,7 +134,6 @@ Dialog {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.minimumHeight: root.listMinHeight
             radius: Theme.radius.md
             color: Theme.palette.surfaceSunken
             border.width: 1
@@ -134,7 +141,6 @@ Dialog {
 
             StackLayout {
                 anchors.fill: parent
-                visible: root.connected
                 currentIndex: root.tab === "requests" ? 1 : root.tab === "blocked" ? 2 : 0
 
                 FriendsFriendsTab {
@@ -150,28 +156,16 @@ Dialog {
                     controller: root.controller
                 }
             }
-
-            // Friends off, signed out or not connected: nothing to list.
-            EmptyState {
-                anchors.centerIn: parent
-                width: parent.width
-                visible: !root.connected
-                title: qsTr("Friends are not connected")
-                body: qsTr("Turn friends on from Home or in Settings, and sign in with a Microsoft account.")
-                MeshIcon { iconName: "users"; size: Theme.icon.lg + Theme.space.md; color: Theme.palette.textTertiary }
-            }
         }
     }
 
-    footer: Row {
-        layoutDirection: Qt.RightToLeft
-        padding: Theme.space.xl
-        topPadding: 0
-
-        Button {
-            text: qsTr("Close")
-            onClicked: root.close()
-        }
+    // Friends off, signed out, connecting or failed: nothing to list.
+    FriendsPageState {
+        anchors.fill: parent
+        visible: !root.connected
+        controller: root.controller
+        phase: root.phase
+        onNavigateRequested: (target) => root.navigateRequested(target)
     }
 
     // The answer to Add: only a request that went through empties the field.

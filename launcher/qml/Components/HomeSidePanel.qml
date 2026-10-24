@@ -28,7 +28,7 @@ Item {
 
     signal createRequested()
     signal signInRequested()
-    // The Friends dialog, on "friends" or "requests".
+    // The Friends page, on "friends" or "requests".
     signal friendsRequested(string tab)
     // A recent world: open its instance on the Worlds tab.
     signal worldRequested(string instanceId)

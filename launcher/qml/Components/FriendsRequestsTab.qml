@@ -6,7 +6,7 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The Friends dialog's "Requests" tab: people asking to be your friend
+ * The Friends page's "Requests" tab: people asking to be your friend
  * (accept, decline, or block them) above the requests you sent (cancel).
  */
 Item {

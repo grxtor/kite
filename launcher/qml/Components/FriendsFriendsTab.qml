@@ -6,7 +6,7 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The Friends dialog's "Friends" tab: everyone on the list, those playing
+ * The Friends page's "Friends" tab: everyone on the list, those playing
  * first, with where they are and a ⋯ to remove or block them.
  */
 Item {

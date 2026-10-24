@@ -5180,9 +5180,9 @@ Lütfen tekrar dene.</translation>
     </message>
 </context>
 <context>
-    <name>FriendsDialog</name>
+    <name>FriendsPage</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsDialog.qml" line="+61"/>
+        <location filename="../launcher/qml/Components/FriendsPage.qml" line="18"/>
         <location line="+56"/>
         <source>Friends</source>
         <translation>Arkadaşlar</translation>
@@ -5218,21 +5218,6 @@ Lütfen tekrar dene.</translation>
         <translation>Engellenenler</translation>
     </message>
     <message>
-        <location line="+37"/>
-        <source>Friends are not connected</source>
-        <translation>Arkadaşlar bağlı değil</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Turn friends on from Home or in Settings, and sign in with a Microsoft account.</source>
-        <translation>Arkadaşları Ana sayfadan ya da Ayarlar&apos;dan aç ve bir Microsoft hesabıyla giriş yap.</translation>
-    </message>
-    <message>
-        <location line="+12"/>
-        <source>Close</source>
-        <translation>Kapat</translation>
-    </message>
-    <message>
         <location line="+13"/>
         <source>Remove %1?</source>
         <translation>%1 kaldırılsın mı?</translation>
@@ -5261,6 +5246,54 @@ Lütfen tekrar dene.</translation>
         <location line="+1"/>
         <source>%1 will be taken off your friends and can no longer send you requests or see when you are online. They are not told.</source>
         <translation>%1 arkadaşlarından çıkarılır, sana istek gönderemez ve çevrimiçi olduğunu göremez. Ona haber verilmez.</translation>
+    </message>
+</context>
+<context>
+    <name>FriendsPageState</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendsPageState.qml" line="29"/>
+        <source>Friends are off</source>
+        <translation>Arkadaşlar kapalı</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Connecting…</source>
+        <translation>Bağlanıyor…</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Friends are not connected</source>
+        <translation>Arkadaşlar bağlı değil</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>See which server your friends are playing on. There is no chat. While friends are off, Kite sends nothing.</source>
+        <translation>Arkadaşlarının hangi sunucuda oynadığını gör. Sohbet yok. Arkadaşlar kapalıyken Kite hiçbir şey göndermez.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Sign in with a Microsoft account to use friends.</source>
+        <translation>Arkadaşları kullanmak için bir Microsoft hesabıyla giriş yap.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Friends could not connect.</source>
+        <translation>Arkadaşlar bağlanamadı.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Turn on</source>
+        <translation>Aç</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Sign in</source>
+        <translation>Giriş yap</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
     </message>
 </context>
 <context>
@@ -10268,6 +10301,11 @@ Neden:
         <location line="+2"/>
         <source>Accounts</source>
         <translation>Hesaplar</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Friends</source>
+        <translation>Arkadaşlar</translation>
     </message>
     <message>
         <location line="+1"/>

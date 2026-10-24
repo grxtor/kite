@@ -79,7 +79,7 @@ Item {
     signal discoverRequested()
     // "Set up Kite"'s "Sign in with Microsoft".
     signal signInRequested()
-    // The Friends dialog, on "friends" or "requests".
+    // The Friends page, on "friends" or "requests".
     signal friendsRequested(string tab)
     // A Continue playing row's ⋯ (or right-click). The page already opens
     // the library's instance menu for it; this only tells.

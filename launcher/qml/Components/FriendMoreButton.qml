@@ -6,8 +6,8 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The ⋯ at the end of a person's row in the Friends dialog: what can be done
- * to them. It only says what was asked for; the dialog confirms and acts.
+ * The ⋯ at the end of a person's row on the Friends page: what can be done
+ * to them. It only says what was asked for; the page confirms and acts.
  * Someone who is not a friend (a request) cannot be removed, only blocked.
  */
 IconButton {
