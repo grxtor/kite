@@ -13,9 +13,11 @@ interface Props {
   heading?: 'h2' | 'h3';
   /** Anchors the cards (#macos …); only one copy on a page may set it. */
   anchors?: boolean;
+  /** `sky` when the cards sit on the sky. */
+  tone?: 'night' | 'sky';
 }
 
-const { locale, heading = 'h2', anchors = true } = Astro.props;
+const { locale, heading = 'h2', anchors = true, tone = 'night' } = Astro.props;
 const t = getDictionary(locale);
 ---
 
@@ -25,7 +27,6 @@ const t = getDictionary(locale);
       const copy = t.download.platforms[platform.key];
       return (
         <PlatformCard
-          icon={platform.icon}
           name={copy.name}
           detail={copy.detail}
           href={release.downloads[platform.key]}
@@ -34,6 +35,7 @@ const t = getDictionary(locale);
           buttonLabel={format(t.download.buttonLabel, { name: copy.name })}
           id={anchors ? platform.key : undefined}
           heading={heading}
+          tone={tone}
         />
       );
     })

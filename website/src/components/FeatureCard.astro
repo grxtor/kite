@@ -23,7 +23,7 @@ interface Props {
 const { locale, screen, focus, title, text, alt, wide = false } = Astro.props;
 ---
 
-<article class:list={['card', wide && 'wide']}>
+<article class:list={['card', 'panel', wide && 'wide']}>
   <div class="copy">
     <h3>{title}</h3>
     <p>{text}</p>
@@ -39,9 +39,9 @@ const { locale, screen, focus, title, text, alt, wide = false } = Astro.props;
     flex-direction: column;
     gap: var(--space-6);
     padding: var(--space-6) var(--space-6) 0;
-    border: 1px solid var(--border);
     border-radius: var(--radius-xl);
-    background: var(--surface);
+    /* The panel's whisper of white over a violet horizon at the foot. */
+    background: var(--panel-fill), var(--panel-glow);
     overflow: hidden;
   }
   .copy {

@@ -1,15 +1,14 @@
 ---
 // SPDX-FileCopyrightText: 2026 grxtor
 // SPDX-License-Identifier: Apache-2.0
-import Backdrop from '../components/Backdrop.astro';
 import CompareSection from '../components/CompareSection.astro';
 import FaqSection from '../components/FaqSection.astro';
+import DawnBand from '../components/DawnBand.astro';
 import FeatureCard from '../components/FeatureCard.astro';
-import HeroDownload from '../components/HeroDownload.astro';
 import NativeSection from '../components/NativeSection.astro';
-import PlatformCards from '../components/PlatformCards.astro';
-import Screenshot from '../components/Screenshot.astro';
-import { FEATURE_CARDS, HERO_BACKDROP } from '../data/content';
+import SectionHead from '../components/SectionHead.astro';
+import SkyHero from '../components/SkyHero.astro';
+import { FEATURE_CARDS } from '../data/content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getDictionary, type Locale } from '../i18n';
 
@@ -27,33 +26,11 @@ const t = getDictionary(locale);
   title={t.meta.home.title}
   description={t.meta.home.description}
 >
-  <section class:list={['hero', HERO_BACKDROP && 'has-backdrop']}>
-    {HERO_BACKDROP && <Backdrop image={HERO_BACKDROP} />}
-    <div class="container">
-      <div class="intro">
-        <h1>{t.hero.title}</h1>
-        <p class="lead">{t.hero.lead}</p>
-        <HeroDownload locale={locale} />
-      </div>
-      <div class="hero-shot">
-        <Screenshot
-          locale={locale}
-          screen="home"
-          alt={t.hero.screenshotAlt}
-          size="hero"
-          cut
-          priority
-        />
-      </div>
-    </div>
-  </section>
+  <SkyHero locale={locale} />
 
   <section class="section features" id="features" aria-labelledby="features-title">
     <div class="container">
-      <div class="head">
-        <h2 id="features-title">{t.features.title}</h2>
-        <p class="lead">{t.features.lead}</p>
-      </div>
+      <SectionHead id="features-title" title={t.features.title} lead={t.features.lead} />
       <div class="bento">
         {
           FEATURE_CARDS.map((card) => (
@@ -76,56 +53,12 @@ const t = getDictionary(locale);
   <CompareSection locale={locale} />
   <FaqSection locale={locale} />
 
-  <section class="section band" aria-labelledby="band-title">
-    <div class="container">
-      <div class="head">
-        <h2 id="band-title">{t.platformsBand.title}</h2>
-        <p class="lead">{t.platformsBand.lead}</p>
-      </div>
-      <PlatformCards locale={locale} heading="h3" anchors={false} />
-    </div>
-  </section>
+  <DawnBand locale={locale} />
 </BaseLayout>
 
 <style>
-  .hero {
-    position: relative;
-    isolation: isolate;
-    padding-top: var(--space-9);
-  }
-  .intro {
-    display: grid;
-    justify-items: center;
-    gap: var(--space-5);
-    max-width: 48rem;
-    margin-inline: auto;
-    text-align: center;
-  }
-  h1 {
-    font-size: var(--text-display);
-    line-height: 1.04;
-    letter-spacing: var(--tracking-h1);
-    text-wrap: balance;
-  }
-  .intro .lead {
-    max-width: 40rem;
-  }
-  .hero-shot {
-    max-width: var(--hero-shot-max);
-    margin: var(--space-8) auto 0;
-  }
-
-  .features,
-  .band {
+  .features {
     scroll-margin-top: var(--header-height);
-  }
-  .head {
-    display: grid;
-    justify-items: center;
-    gap: var(--space-4);
-    max-width: 46rem;
-    margin: 0 auto var(--space-7);
-    text-align: center;
   }
   .bento {
     display: grid;

@@ -2,17 +2,68 @@
  * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * Design tokens. The colours match the Kite app (launcher/qml/Theme).
+ * Design tokens. The accent, text and radii match the Kite app
+ * (launcher/qml/Theme). The page is a sky: dusk at the top, night under it,
+ * so the canvas is a night tone rather than the app's neutral grey.
  */
 :root {
   color-scheme: dark;
 
-  /* Surfaces */
-  --canvas: #0f1012;
-  --surface: #17181b;
-  --raised: #26272c;
-  --hover: #222328;
-  --sunken: #0a0b0d;
+  /* Surfaces: the night under the hero's sky */
+  --canvas: #0d0b15;
+  --surface: #15131e;
+  --raised: #221f2d;
+  --hover: #1c1a27;
+  --sunken: #09080f;
+
+  /* The sky, from the kite mark's own violet: zenith down to the horizon */
+  --sky-zenith: #150e36;
+  --sky-high: #2b1c76;
+  --sky-mid: #5a3ad6;
+  --sky-low: #9b7cff;
+  --sky-horizon: #dccbff;
+  --sky-glow: rgb(243 220 255 / 70%);
+  /* Minecraft's flat clouds: a white top face over a lavender underside.
+     Opaque here; each cloud sets its own opacity. */
+  --cloud-top: #ffffff;
+  --cloud-under: #cbb8ff;
+  /* Text and controls that sit on the sky */
+  --on-sky: #ffffff;
+  --on-sky-secondary: rgb(255 255 255 / 78%);
+  --on-sky-muted: rgb(255 255 255 / 58%);
+  --on-sky-border: rgb(255 255 255 / 34%);
+  --light: #ffffff;
+  --light-hover: #efe9ff;
+  --on-light: #1a1240;
+  /* The deep violet the dawn settles into and the footer starts with. */
+  --footer-bg: #3a25a0;
+  --on-sky-hairline: rgb(255 255 255 / 10%);
+  /* Glass on the sky: white, not the night's grey. */
+  --sky-glass-fill: rgb(255 255 255 / 10%);
+  --sky-glass-border: rgb(255 255 255 / 25%);
+
+  /* The sky as backgrounds. Dusk opens the home and download pages and glows
+     at its foot; dawn is the home page's last band, night rising to violet. */
+  --sky-dusk:
+    radial-gradient(60% 38% at 50% 100%, var(--sky-glow), transparent 70%),
+    linear-gradient(
+      180deg,
+      var(--sky-zenith) 0%,
+      var(--sky-high) 24%,
+      var(--sky-mid) 50%,
+      var(--sky-low) 72%,
+      var(--sky-horizon) 86%,
+      transparent 100%
+    );
+  --sky-dawn:
+    radial-gradient(60% 32% at 50% 68%, rgb(155 124 255 / 28%), transparent),
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      var(--sky-zenith) 24%,
+      var(--sky-high) 58%,
+      var(--footer-bg) 100%
+    );
 
   /* Lines */
   --border: rgb(255 255 255 / 7%);
@@ -31,6 +82,15 @@
   --accent-text: #b9a8ff;
   --on-accent: #ffffff;
   --focus-ring: var(--accent-text);
+
+  /* Quiet glass panels over the night: cards, the code figure, the table */
+  --panel-fill: linear-gradient(180deg, rgb(255 255 255 / 4%), rgb(255 255 255 / 1.5%));
+  --panel-border: rgb(255 255 255 / 8%);
+  /* Blurs the stars behind a panel so they never speckle its text. */
+  --panel-blur: blur(10px);
+  --panel-highlight: inset 0 1px 0 rgb(255 255 255 / 8%);
+  /* A faint violet horizon at a card's foot */
+  --panel-glow: radial-gradient(80% 45% at 50% 100%, rgb(118 87 247 / 18%), transparent 75%);
 
   /* Liquid glass, as the app's GlassSurface: a translucent neutral fill that
      blurs what passes under it, a light top edge and a darker bottom edge.
@@ -62,7 +122,9 @@
   --astro-code-token-link: #b9a8ff;
 
   /* Fonts */
-  --font-heading: 'Montserrat', system-ui, sans-serif;
+  /* Headings are a display serif; the wordmark keeps the app's Montserrat. */
+  --font-heading: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  --font-brand: 'Montserrat', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
 
@@ -70,15 +132,20 @@
   --text-sm: 0.875rem;
   --text-base: 1rem;
   --text-lead: 1.1875rem;
-  --text-h3: 1.375rem;
-  --text-h2: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
-  --text-h1: clamp(2.5rem, 5vw, 4rem);
-  --text-display: clamp(2.75rem, 1.6rem + 3.6vw, 4.5rem);
+  --text-eyebrow: 0.9375rem;
+  --text-h3: 1.875rem;
+  --text-name: 1.5rem;
+  --text-os: clamp(2.25rem, 1.6rem + 2vw, 3rem);
+  --text-h2: clamp(2.5rem, 1.7rem + 3vw, 4.25rem);
+  --text-h1: clamp(3rem, 2rem + 4.5vw, 5.5rem);
+  --text-display: clamp(3.5rem, 1.6rem + 7vw, 8.5rem);
   --leading-body: 1.6;
-  --leading-heading: 1.15;
-  --tracking-h1: -0.03em;
-  --tracking-h2: -0.02em;
-  --tracking-h3: -0.01em;
+  --leading-heading: 1.02;
+  --leading-display: 0.92;
+  --tracking-h1: -0.02em;
+  --tracking-h2: -0.015em;
+  --tracking-h3: -0.005em;
+  --tracking-eyebrow: 0.01em;
 
   /* Radii: the app's own scale (Theme.radius) */
   --radius-sm: 8px;

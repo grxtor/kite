@@ -1,8 +1,10 @@
 ---
 // SPDX-FileCopyrightText: 2026 grxtor
 // SPDX-License-Identifier: Apache-2.0
+import Clouds from '../components/Clouds.astro';
 import Icon from '../components/Icon.astro';
 import PlatformCards from '../components/PlatformCards.astro';
+import type { CloudSpot } from '../lib/clouds';
 import { PLATFORMS } from '../data/content';
 import { release } from '../data/release';
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -14,6 +16,12 @@ interface Props {
 
 const { locale } = Astro.props;
 const t = getDictionary(locale);
+// Two clouds low in the sky, either side of the copy's end.
+const CLOUDS: readonly CloudSpot[] = [
+  { shape: 'long', left: '62%', top: '34%', width: 'clamp(9rem, 22vw, 20rem)', opacity: 0.5, drift: 90, wideOnly: true },
+  { shape: 'wide', left: '-4%', top: 'calc(100% - 6rem)', width: 'clamp(12rem, 26vw, 24rem)', opacity: 0.8, drift: 100 },
+  { shape: 'bank', left: '70%', top: 'calc(100% - 6.5rem)', width: 'clamp(12rem, 28vw, 26rem)', opacity: 0.85, drift: 115 },
+];
 const released = PLATFORMS.some((platform) => release.downloads[platform.key] !== null);
 ---
 
@@ -23,20 +31,25 @@ const released = PLATFORMS.some((platform) => release.downloads[platform.key] !=
   title={t.meta.download.title}
   description={t.meta.download.description}
 >
-  <div class="container page">
-    <div class="head">
-      <h1>{t.download.title}</h1>
-      <p class="lead">{t.download.lead}</p>
-      {
-        !released && (
-          <p class="notice" role="note">
-            <Icon name="info" size={18} />
-            <span>{t.download.notReleased}</span>
-          </p>
-        )
-      }
+  <section class="sky" aria-labelledby="download-title">
+    <Clouds spots={CLOUDS} />
+    <div class="container">
+      <div class="head">
+        <h1 id="download-title">{t.download.title}</h1>
+        <p class="lead">{t.download.lead}</p>
+        {
+          !released && (
+            <p class="notice" role="note">
+              <Icon name="info" size={18} />
+              <span>{t.download.notReleased}</span>
+            </p>
+          )
+        }
+      </div>
     </div>
+  </section>
 
+  <div class="container page">
     <div class="cards">
       <PlatformCards locale={locale} />
     </div>
@@ -69,12 +82,35 @@ const released = PLATFORMS.some((platform) => release.downloads[platform.key] !=
 
 <style>
   .page {
-    padding-block: var(--space-8) var(--space-section);
+    padding-block: var(--space-6) var(--space-section);
+  }
+  /* A short dusk: the hero's sky, running up behind the floating header. */
+  .sky {
+    position: relative;
+    isolation: isolate;
+    margin-top: calc(-1 * var(--header-height));
+    padding-block: calc(var(--header-height) + var(--space-7)) calc(var(--space-9) + var(--space-7));
+    /* The horizon settles into the night instead of fading to a grey. */
+    background: linear-gradient(180deg, transparent 60%, var(--canvas)), var(--sky-dusk);
+    color: var(--on-sky);
+  }
+  .sky .container {
+    position: relative;
+    z-index: 1;
   }
   .head {
     display: grid;
+    justify-items: start;
     gap: var(--space-4);
     max-width: 44rem;
+  }
+  h1 {
+    color: var(--on-sky);
+    font-size: var(--text-h1);
+    letter-spacing: var(--tracking-h1);
+  }
+  .lead {
+    color: var(--on-sky-secondary);
   }
   .notice {
     display: flex;
@@ -82,18 +118,16 @@ const released = PLATFORMS.some((platform) => release.downloads[platform.key] !=
     gap: var(--space-3);
     margin-top: var(--space-2);
     padding: var(--space-4);
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--sky-glass-fill);
+    border: 1px solid var(--sky-glass-border);
     border-radius: var(--radius-lg);
-    color: var(--text-secondary);
+    color: var(--on-sky);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
   }
   .notice :global(svg) {
     flex: none;
     margin-top: 0.2em;
-    color: var(--accent-text);
-  }
-  .cards {
-    margin-top: var(--space-7);
   }
   .needs {
     margin-top: var(--space-9);

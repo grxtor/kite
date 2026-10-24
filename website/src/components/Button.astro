@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 interface Props {
   href?: string | null;
-  variant?: 'primary' | 'secondary' | 'ghost';
+  /** `light` and `sky` are for buttons that sit on the sky. */
+  variant?: 'primary' | 'secondary' | 'ghost' | 'light' | 'sky';
   size?: 'sm' | 'md' | 'lg';
   /** Also stretches the button to the full width of its container. */
   block?: boolean;
@@ -71,7 +72,8 @@ const classes = ['btn', `btn-${variant}`, `btn-${size}`, block && 'btn-block', p
   }
   /* Concentric with a capsule around it, so the kite's cut gives way here. */
   .btn-pill,
-  .btn-pill.btn-primary {
+  .btn-pill.btn-primary,
+  .btn-pill.btn-light {
     border-radius: var(--radius-pill);
   }
   .btn-block {
@@ -91,6 +93,27 @@ const classes = ['btn', `btn-${variant}`, `btn-${size}`, block && 'btn-block', p
   }
   .btn-primary:active {
     background: var(--accent-pressed);
+  }
+
+  /* On the sky, the launch button turns white and keeps the kite's cut. */
+  .btn-light {
+    background: var(--light);
+    color: var(--on-light);
+    border-top-right-radius: var(--radius-cut);
+  }
+  .btn-light:hover {
+    background: var(--light-hover);
+    color: var(--on-light);
+  }
+
+  .btn-sky {
+    background: transparent;
+    border-color: var(--on-sky-border);
+    color: var(--on-sky);
+  }
+  .btn-sky:hover {
+    background: rgb(255 255 255 / 10%);
+    color: var(--on-sky);
   }
 
   .btn-secondary {
@@ -119,10 +142,12 @@ const classes = ['btn', `btn-${variant}`, `btn-${size}`, block && 'btn-block', p
     background: var(--surface);
   }
 
+  /* Not yet available: an empty slot, dashed. A card on the sky sets the
+     colours it needs through --btn-off-*. */
   .btn[aria-disabled='true'] {
-    background: var(--surface);
-    border-color: var(--border);
-    color: var(--text-muted);
+    background: transparent;
+    border: 1px dashed var(--btn-off-border, var(--border-strong));
+    color: var(--btn-off-color, var(--text-muted));
     cursor: not-allowed;
   }
 </style>

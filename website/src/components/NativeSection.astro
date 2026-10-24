@@ -34,7 +34,7 @@ const caption = format(t.native.codeCaption, { file: QML_EXCERPT_FILE });
         }
       </dl>
     </div>
-    <figure class="code">
+    <figure class="code panel">
       <figcaption>{caption}</figcaption>
       <Code code={QML_EXCERPT} lang="qml" theme="css-variables" />
     </figure>
@@ -82,15 +82,14 @@ const caption = format(t.native.codeCaption, { file: QML_EXCERPT_FILE });
   .code {
     margin: 0;
     min-width: 0;
-    border: 1px solid var(--border-strong);
     border-radius: var(--radius-lg);
-    background: var(--sunken);
+    /* The panel shows through the highlighted code. */
+    --astro-code-background: transparent;
     overflow: hidden;
   }
   figcaption {
     padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--border);
-    background: var(--surface);
     color: var(--text-muted);
     font-family: var(--font-mono);
     font-size: 0.8125rem;

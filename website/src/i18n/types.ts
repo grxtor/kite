@@ -52,8 +52,15 @@ export interface Dictionary {
     github: string;
   };
   hero: {
-    title: string;
+    /** Small line above the headline. */
+    eyebrow: string;
+    /** The headline, one entry per line. */
+    title: string[];
+    /** The part of the headline set in italics; it must appear in one line. */
+    titleAccent: string;
     lead: string;
+    /** Link next to the download button that jumps to the features. */
+    explore: string;
     /** Download button before the visitor's system is known. */
     cta: string;
     /** Download button once the visitor's system is detected. */

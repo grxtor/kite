@@ -26,11 +26,18 @@
   src: url('/fonts/Inter-SemiBold.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'Montserrat';
-  font-weight: 600;
+  font-family: 'Instrument Serif';
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
-  src: url('/fonts/Montserrat-SemiBold.woff2') format('woff2');
+  src: url('/fonts/InstrumentSerif-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Instrument Serif';
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+  src: url('/fonts/InstrumentSerif-Italic.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Montserrat';
@@ -63,7 +70,12 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--canvas);
+  /* The night: Minecraft's square stars, two tiles of different sizes so
+     the pattern does not visibly repeat. */
+  background:
+    url('/stars-a.svg'),
+    url('/stars-b.svg') 240px 120px,
+    var(--canvas);
   color: var(--text);
   font-family: var(--font-body);
   font-size: var(--text-base);
@@ -83,7 +95,7 @@ h2,
 h3 {
   margin: 0;
   font-family: var(--font-heading);
-  font-weight: 700;
+  font-weight: 400;
   line-height: var(--leading-heading);
   color: var(--text);
 }
@@ -97,7 +109,6 @@ h2 {
 }
 h3 {
   font-size: var(--text-h3);
-  font-weight: 600;
   letter-spacing: var(--tracking-h3);
 }
 
@@ -160,6 +171,15 @@ ul {
   font-size: var(--text-lead);
   line-height: 1.55;
   color: var(--text-secondary);
+}
+
+/* A quiet glass panel on the night: a whisper of white, a hairline edge. */
+.panel {
+  border: 1px solid var(--panel-border);
+  background: var(--panel-fill);
+  box-shadow: var(--panel-highlight);
+  -webkit-backdrop-filter: var(--panel-blur);
+  backdrop-filter: var(--panel-blur);
 }
 
 .section {

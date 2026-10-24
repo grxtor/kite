@@ -47,16 +47,16 @@ const label = getDictionary(locale).nav.languageLabel;
   a {
     padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-sm);
-    color: var(--text-muted);
+    color: var(--switch-muted, var(--text-muted));
     text-decoration: none;
   }
   a:hover {
-    color: var(--text);
+    color: var(--switch-strong, var(--text));
   }
   a[aria-current='true'] {
-    color: var(--text);
+    color: var(--switch-strong, var(--text));
   }
   .sep {
-    color: var(--text-muted);
+    color: var(--switch-muted, var(--text-muted));
   }
 </style>

@@ -1,0 +1,53 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+//
+// The head of a home page section: the serif title on the left and the lead
+// on the right, bottom-aligned with it; stacked on phones, or always when the
+// lead is a single short line.
+interface Props {
+  /** Id of the heading, for the section's aria-labelledby. */
+  id: string;
+  title: string;
+  lead: string;
+  /** `sky` for a head that sits on the sky instead of the night. */
+  tone?: 'night' | 'sky';
+  /** Keep the lead under the title on wide screens too. */
+  stacked?: boolean;
+}
+
+const { id, title, lead, tone = 'night', stacked = false } = Astro.props;
+---
+
+<div class:list={['head', tone === 'sky' && 'on-sky', stacked && 'stacked']}>
+  <h2 id={id}>{title}</h2>
+  <p class="lead">{lead}</p>
+</div>
+
+<style>
+  .head {
+    display: grid;
+    gap: var(--space-4);
+    margin-bottom: var(--space-7);
+  }
+  .lead {
+    max-width: 36rem;
+  }
+  .on-sky h2 {
+    color: var(--on-sky);
+  }
+  .on-sky .lead {
+    color: var(--on-sky-secondary);
+  }
+  @media (min-width: 900px) {
+    .head:not(.stacked) {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--space-8);
+      align-items: end;
+    }
+    .head:not(.stacked) .lead {
+      /* The lead's last line meets the title's baseline. */
+      padding-bottom: var(--space-2);
+    }
+  }
+</style>

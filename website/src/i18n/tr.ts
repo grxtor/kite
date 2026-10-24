@@ -35,8 +35,11 @@ export const tr = {
     github: 'GitHub',
   },
   hero: {
-    title: 'Hafif ama her şeyi taşır.',
-    lead: 'C++ ve Qt Quick ile yazılmış bir Minecraft başlatıcısı; pencereye konmuş bir web sayfası değil. Her kurulumun kendi modları, dünyaları ve Java’sı var. Modrinth, CurseForge, FTB, ATLauncher ve Technic paketleri bir arama uzağında.',
+    eyebrow: 'Bir Minecraft başlatıcısı',
+    title: ['Hafif ama', 'her şeyi taşır.'],
+    titleAccent: 'Hafif',
+    lead: 'C++ ve Qt Quick ile yazıldı; pencereye konmuş bir web sayfası değil. Modrinth, CurseForge, FTB, ATLauncher ve Technic paketleri, her biri kendi kurulumunda.',
+    explore: 'İçine göz at',
     cta: 'Kite’ı indir',
     ctaFor: {
       macos: 'macOS için indir',
@@ -169,6 +172,6 @@ export const tr = {
   footer: {
     license: '© 2026 grxtor. Kite, Apache Lisansı 2.0 ile lisanslanmıştır.',
     fork: 'Kite, MultiMC’nin devamı olan Project Tick’in MeshMC projesinden türetilmiştir.',
-    trademark: 'Minecraft is a trademark of Mojang Synergies AB.',
+    trademark: 'Minecraft, Mojang Synergies AB’nin ticari markasıdır.',
   },
 } satisfies Dictionary;

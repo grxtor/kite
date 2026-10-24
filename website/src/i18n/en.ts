@@ -37,8 +37,11 @@ export const en: Dictionary = {
     github: 'GitHub',
   },
   hero: {
-    title: 'Weighs nothing. Holds everything.',
-    lead: 'A Minecraft launcher in C++ and Qt Quick, not a web page in a window. Every instance keeps its own mods, worlds and Java, and modpacks from Modrinth, CurseForge, FTB, ATLauncher and Technic are one search away.',
+    eyebrow: 'A Minecraft launcher',
+    title: ['Weighs nothing.', 'Holds everything.'],
+    titleAccent: 'nothing.',
+    lead: 'Written in C++ and Qt Quick, not a web page in a window. Modpacks from Modrinth, CurseForge, FTB, ATLauncher and Technic, each in an instance of its own.',
+    explore: 'Look inside',
     cta: 'Download Kite',
     ctaFor: {
       macos: 'Download for macOS',

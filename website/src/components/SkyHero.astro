@@ -1,0 +1,206 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+//
+// The home page's opening: a dusk sky in the kite mark's violet, Minecraft
+// clouds drifting through it and a glass kite whose line runs down behind
+// the app window, which rises out of the horizon into the night below.
+import Clouds from './Clouds.astro';
+import GlassKite from './GlassKite.astro';
+import Button from './Button.astro';
+import HeroDownload from './HeroDownload.astro';
+import Screenshot from './Screenshot.astro';
+import type { CloudSpot } from '../lib/clouds';
+import { getDictionary, type Locale } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale);
+
+/** The kite's widest size, matching the top of --kite-size (19rem). */
+const KITE_MAX_PX = 304;
+
+// High clouds sit by percentage; the low ones hang just above the window's
+// top edge, wherever the copy ends.
+const CLOUDS: readonly CloudSpot[] = [
+  { shape: 'short', left: '52%', top: '9%', width: 'clamp(7rem, 14vw, 13rem)', opacity: 0.38, drift: 70, wideOnly: true },
+  { shape: 'long', left: '70%', top: '47%', width: 'clamp(10rem, 22vw, 21rem)', opacity: 0.55, drift: 85, wideOnly: true },
+  { shape: 'wide', left: '-6%', top: 'calc(100% - var(--sky-overlap) + 2rem)', width: 'clamp(14rem, 30vw, 28rem)', opacity: 0.8, drift: 95 },
+  { shape: 'bank', left: '64%', top: 'calc(100% - var(--sky-overlap) + 3.5rem)', width: 'clamp(16rem, 38vw, 36rem)', opacity: 0.85, drift: 110 },
+];
+
+/** Splits a headline line around its italic accent. */
+function accentParts(line: string): [string, string, string] | null {
+  const at = line.indexOf(t.hero.titleAccent);
+  return at < 0
+    ? null
+    : [line.slice(0, at), t.hero.titleAccent, line.slice(at + t.hero.titleAccent.length)];
+}
+---
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="sky">
+    <Clouds spots={CLOUDS} />
+    <div class="container stage">
+      <div class="flight" aria-hidden="true">
+        <GlassKite size={KITE_MAX_PX} line />
+      </div>
+      <div class="copy">
+        <p class="eyebrow">{t.hero.eyebrow}</p>
+        <h1 id="hero-title">
+          {
+            t.hero.title.map((line) => {
+              const parts = accentParts(line);
+              return (
+                <span class="row">
+                  {parts ? (
+                    <>
+                      {parts[0]}
+                      <em>{parts[1]}</em>
+                      {parts[2]}
+                    </>
+                  ) : (
+                    line
+                  )}
+                </span>
+              );
+            })
+          }
+        </h1>
+        <p class="lead">{t.hero.lead}</p>
+        <HeroDownload locale={locale}>
+          <Button href="#features" size="lg" variant="sky">{t.hero.explore}</Button>
+        </HeroDownload>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="window">
+      <Screenshot
+        locale={locale}
+        screen="home"
+        alt={t.hero.screenshotAlt}
+        size="hero"
+        cut
+        priority
+      />
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    isolation: isolate;
+    /* The sky runs up behind the floating header. */
+    margin-top: calc(-1 * var(--header-height));
+  }
+
+  .sky {
+    position: relative;
+    padding-top: calc(var(--header-height) + var(--space-8));
+    padding-bottom: var(--sky-overlap);
+    color: var(--on-sky);
+    background: var(--sky-dusk);
+  }
+  .stage {
+    position: relative;
+  }
+
+  /* The kite's line runs down behind the window. */
+  .flight {
+    position: absolute;
+    z-index: 1;
+    top: calc(-1 * var(--space-7));
+    right: var(--gutter);
+    width: var(--kite-size);
+  }
+
+  .copy {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    justify-items: start;
+    gap: var(--space-5);
+  }
+  .eyebrow {
+    color: var(--on-sky-muted);
+    font-size: var(--text-eyebrow);
+    font-weight: 500;
+    letter-spacing: var(--tracking-eyebrow);
+  }
+  h1 {
+    color: var(--on-sky);
+    font-size: var(--text-display);
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-h1);
+  }
+  .row {
+    display: block;
+  }
+  em {
+    color: var(--sky-horizon);
+  }
+  .lead {
+    max-width: 34rem;
+    color: var(--on-sky-secondary);
+  }
+  .copy :global(.download) {
+    margin-top: var(--space-3);
+  }
+
+  .window {
+    position: relative;
+    z-index: 2;
+    max-width: var(--hero-shot-max);
+    margin: calc(-1 * var(--sky-overlap) + var(--space-8)) auto 0;
+    padding: var(--window-pad);
+    border: 1px solid rgb(255 255 255 / 26%);
+    border-radius: calc(var(--radius-lg) + var(--window-pad));
+    border-top-right-radius: calc(var(--radius-cut) + var(--window-pad) / 2);
+    background: rgb(255 255 255 / 9%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 30%),
+      0 40px 120px rgb(20 8 70 / 55%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(20px) saturate(140%);
+  }
+
+  .hero {
+    --kite-size: clamp(8rem, 21vw, 19rem);
+    --kite-line: 40rem;
+    --sky-overlap: clamp(12rem, 24vw, 22rem);
+    --window-pad: clamp(6px, 0.8vw, 12px);
+  }
+
+  /* Phones: the kite flies above the copy and its line is left out. */
+  @media (max-width: 719px) {
+    .sky {
+      padding-top: calc(var(--header-height) + var(--space-6));
+    }
+    .flight {
+      position: relative;
+      top: 0;
+      right: auto;
+      margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-2)) 0 auto;
+    }
+    .flight :global(.line) {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .flight {
+      animation: hover 7s ease-in-out infinite;
+    }
+  }
+  @keyframes hover {
+    50% {
+      translate: 0 -12px;
+      rotate: 2deg;
+    }
+  }
+</style>

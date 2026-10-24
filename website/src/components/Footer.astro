@@ -46,8 +46,12 @@ const links = [
   .footer {
     margin-top: auto;
     padding-block: var(--space-7);
-    background: var(--canvas);
-    border-top: 1px solid var(--border);
+    /* The colour the home page's dawn ends in, so the two meet without a seam. */
+    background: var(--footer-bg);
+    border-top: 1px solid var(--on-sky-hairline);
+    color: var(--on-sky-secondary);
+    --switch-muted: var(--on-sky-muted);
+    --switch-strong: var(--on-sky);
   }
   .top {
     display: flex;
@@ -59,6 +63,11 @@ const links = [
   .brand {
     text-decoration: none;
   }
+  /* The switch's links are padded for tapping; pull it out by that much so
+     its text lines up with the page edge like everything else. */
+  .top :global(.switch) {
+    margin-inline: calc(-1 * var(--space-2));
+  }
   .links {
     display: flex;
     flex-wrap: wrap;
@@ -66,28 +75,28 @@ const links = [
     margin-right: auto;
   }
   .links a {
-    color: var(--text-secondary);
+    color: var(--on-sky-secondary);
     font-size: var(--text-sm);
     font-weight: 500;
     text-decoration: none;
   }
   .links a:hover {
-    color: var(--text);
+    color: var(--on-sky);
   }
   .legal {
     display: grid;
     gap: var(--space-2);
     margin-top: var(--space-6);
     padding-top: var(--space-5);
-    border-top: 1px solid var(--border);
-    color: var(--text-secondary);
+    border-top: 1px solid var(--on-sky-hairline);
+    color: var(--on-sky-secondary);
     font-size: var(--text-sm);
   }
   .legal p {
     max-width: 80ch;
   }
   .fine {
-    color: var(--text-muted);
+    color: var(--on-sky-muted);
     font-size: 0.8125rem;
   }
   .fine span {
