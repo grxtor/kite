@@ -12,8 +12,8 @@ import Kite.Theme
  * panel and "Change version…" -- with what it runs on, greyed out (and
  * saying why) when it does not fit this instance. `entry` is one item of
  * ContentBrowser.versions / ContentUpdateController.versions. The picked
- * row is tinted and ticked; `installed` adds a tag for the version the
- * instance has now.
+ * row is ticked and keeps the hover look (a lifted fill and a hairline, no
+ * accent); `installed` adds a tag for the version the instance has now.
  */
 AbstractButton {
     id: root
@@ -30,11 +30,17 @@ AbstractButton {
     hoverEnabled: true
 
     background: Rectangle {
+        // Picked looks like hovered. Both fade in from their own colour at
+        // zero alpha, so nothing greys on the way from "transparent".
+        readonly property bool lifted: root.picked || root.hovered
+        readonly property color fill: Theme.palette.surfaceHover
+        readonly property color edge: Theme.neutral.borderHover
         radius: Theme.radius.md
-        color: root.picked ? Theme.palette.accentSubtle
-             : root.hovered ? Theme.palette.hoverOverlay : "transparent"
-        border.width: root.picked ? 1 : 0
-        border.color: Theme.palette.accent
+        color: lifted ? fill : Qt.rgba(fill.r, fill.g, fill.b, 0)
+        border.width: 1
+        border.color: lifted ? edge : Qt.rgba(edge.r, edge.g, edge.b, 0)
+        Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
+        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast } }
     }
     contentItem: RowLayout {
         spacing: Theme.space.sm

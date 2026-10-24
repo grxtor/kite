@@ -354,7 +354,7 @@ Item {
                         color: accountRow.selected ? Theme.palette.surfaceHover
                              : accountRow.hovered ? Theme.palette.hoverOverlay : "transparent"
                         border.width: 1
-                        border.color: accountRow.selected ? Theme.palette.accent : Theme.palette.border
+                        border.color: accountRow.selected ? Theme.neutral.borderHover : Theme.palette.border
                         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                     }
 

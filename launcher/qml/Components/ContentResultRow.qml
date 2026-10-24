@@ -11,8 +11,8 @@ import Kite.Theme
  * One search result of ContentBrowserView, a row of its results table:
  * logo, "Title by author", one line of description (or the install's
  * progress), and "Installed" once it is. Rows share one card and are split
- * by hairlines; hover and the picked row tint an inset strip, the way
- * PackRow's do on the Content tab.
+ * by hairlines; hover and the picked row share one look -- a lifted inset
+ * strip with a hairline, no accent -- the way PackRow's and the Library's do.
  */
 AbstractButton {
     id: row
@@ -62,11 +62,16 @@ AbstractButton {
             anchors.topMargin: Theme.space.xxs
             anchors.bottomMargin: Theme.space.xxs
             radius: Theme.radius.sm
-            // Picked: a raised fill with an accent edge, no tinted fill.
-            color: row.selected || row.hovered ? Theme.palette.surfaceRaised : Theme.palette.surface
-            border.width: row.selected ? 1 : 0
-            border.color: Theme.palette.accent
+            // Picked keeps the hover look (InstanceCard's): the lifted fill
+            // and its hairline, no accent. The edge fades in from its own
+            // colour at zero alpha, so it never greys on the way.
+            readonly property bool lifted: row.selected || row.hovered
+            readonly property color edge: Theme.neutral.borderHover
+            color: lifted ? Theme.palette.surfaceHover : Theme.palette.surface
+            border.width: 1
+            border.color: lifted ? edge : Qt.rgba(edge.r, edge.g, edge.b, 0)
             Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
+            Behavior on border.color { ColorAnimation { duration: Theme.motion.fast } }
         }
         Rectangle {
             anchors.left: parent.left
