@@ -366,7 +366,7 @@ add_custom_target(version echo "Version: ${Kite_RELEASE_VERSION_NAME}")
 add_custom_target(tcversion echo "\\#\\#teamcity[setParameter name=\\'env.KITE_VERSION\\' value=\\'${Kite_RELEASE_VERSION_NAME}\\']")
 
 ######## Secondly, please set version numbers ########
-set(Kite_VERSION_MAJOR    11)
+set(Kite_VERSION_MAJOR    1)
 set(Kite_VERSION_MINOR    0)
 set(Kite_VERSION_HOTFIX   0)
 

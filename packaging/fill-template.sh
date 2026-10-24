@@ -7,8 +7,8 @@
 #
 #   fill-template.sh <template> <tag>
 #
-# @TAG@ becomes the tag (v11.0.0) and @VERSION@ the tag without its "v"
-# (11.0.0). @SHA256:<asset>@ becomes the SHA-256 of that release asset, which
+# @TAG@ becomes the tag (v1.0.0) and @VERSION@ the tag without its "v"
+# (1.0.0). @SHA256:<asset>@ becomes the SHA-256 of that release asset, which
 # is downloaded to compute it; <asset> may itself contain @TAG@.
 
 set -euo pipefail
