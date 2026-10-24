@@ -8,15 +8,17 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * A checklist of the catalog's recommended mods (BundleCatalog::mods()),
- * shared by the New instance dialog's Recommended tab and the Content tab's
- * Recommended mods dialog. Rows are grouped under a small heading per
- * category, and per bundle too when the list spans more than one.
+ * A checklist of the catalog's mods (BundleCatalog::mods()), shared by the
+ * Content tab's Add-ons and Kite Performance dialogs (BundleDialog). Each
+ * row has the mod's icon, its name and a line about it. Rows are grouped
+ * under a small heading per category, and per bundle too when the list
+ * spans more than one.
  *
- * Ticks start from each mod's own default and are re-seeded whenever `mods`
- * changes. A mod the instance already has is shown ticked and locked, with
- * an "Installed" tag, and is left out of `checkedProjects`. A mod servers
- * ban (`serverSafe: false`) carries a warning under its summary.
+ * Ticks start from each mod's own default, bar the ones in `excluded`, and
+ * are re-seeded whenever `mods` changes. A mod the instance already has is
+ * shown ticked and locked, with an "Installed" tag, and is left out of
+ * `checkedProjects`. A mod servers ban (`serverSafe: false`) carries a
+ * warning under its summary.
  */
 ListView {
     id: root
@@ -25,6 +27,8 @@ ListView {
     property var mods: []
     // Modrinth project ids the instance already has.
     property var installed: []
+    // Project ids that start unticked although the catalog ticks them.
+    property var excluded: []
     // What the user has ticked, installed mods excluded.
     readonly property var checkedProjects: {
         const out = []
@@ -35,6 +39,16 @@ ListView {
         }
         return out
     }
+    // The catalog's defaults the user unticked, installed ones aside.
+    readonly property var uncheckedDefaults: {
+        const out = []
+        for (const mod of root.mods) {
+            if (mod.isDefault === true && root.ticks[mod.project] !== true
+                    && root.installed.indexOf(mod.project) < 0 && out.indexOf(mod.project) < 0)
+                out.push(mod.project)
+        }
+        return out
+    }
     // project id -> ticked; replaced whole on every change so bindings follow.
     property var ticks: ({})
 
@@ -42,6 +56,7 @@ ListView {
     // content edge.
     readonly property int rowPadding: 0
     readonly property int headingGap: Theme.space.md
+    readonly property int iconSize: Theme.control.heightLg
 
     // Headings and mod rows in one flat list.
     readonly property var rows: {
@@ -65,7 +80,8 @@ ListView {
     function seed() {
         const next = {}
         for (const mod of root.mods)
-            next[mod.project] = next[mod.project] === true || mod.isDefault === true
+            next[mod.project] = next[mod.project] === true
+                || (mod.isDefault === true && root.excluded.indexOf(mod.project) < 0)
         root.ticks = next
     }
     function setTick(project, on) {
@@ -75,6 +91,7 @@ ListView {
     }
 
     onModsChanged: root.seed()
+    onExcludedChanged: root.seed()
     Component.onCompleted: root.seed()
 
     clip: true
@@ -122,7 +139,6 @@ ListView {
 
             CheckBox {
                 id: box
-                Layout.alignment: Qt.AlignTop
                 Layout.leftMargin: root.rowPadding - Theme.space.xs
                 enabled: !entry.isInstalled
                 checked: entry.isInstalled || (entry.isMod && root.ticks[entry.mod.project] === true)
@@ -133,52 +149,65 @@ ListView {
                 }
             }
 
-            ColumnLayout {
+            // The picture and the text tick the row too, not just the box.
+            RowLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: Theme.space.xs
                 Layout.bottomMargin: Theme.space.xs
-                spacing: Theme.space.xxs
+                spacing: Theme.space.md
 
-                // The text ticks the row too, not just the box.
                 TapHandler {
                     enabled: box.enabled
                     onTapped: root.setTick(entry.mod.project, root.ticks[entry.mod.project] !== true)
                 }
 
-                RowLayout {
+                // The mod's own icon, on the neutral tile; the package glyph
+                // while it loads, or when there is none.
+                RowThumb {
+                    Layout.preferredWidth: root.iconSize
+                    Layout.preferredHeight: root.iconSize
+                    source: entry.isMod && entry.mod.icon ? entry.mod.icon : ""
+                }
+
+                ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: Theme.space.sm
+                    spacing: Theme.space.xxs
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Theme.space.sm
+                        Text {
+                            text: entry.isMod ? entry.mod.name : ""
+                            elide: Text.ElideRight
+                            color: Theme.palette.textPrimary
+                            font.family: Theme.font.family
+                            font.pixelSize: Theme.type.body.pixelSize
+                            font.weight: Font.DemiBold
+                        }
+                        Tag {
+                            visible: entry.isInstalled
+                            text: qsTr("Installed")
+                        }
+                        Item { Layout.fillWidth: true }
+                    }
                     Text {
-                        text: entry.isMod ? entry.mod.name : ""
-                        elide: Text.ElideRight
-                        color: Theme.palette.textPrimary
+                        Layout.fillWidth: true
+                        text: entry.isMod ? entry.mod.summary : ""
+                        wrapMode: Text.Wrap
+                        color: Theme.palette.textSecondary
                         font.family: Theme.font.family
-                        font.pixelSize: Theme.type.body.pixelSize
-                        font.weight: Font.DemiBold
+                        font.pixelSize: Theme.type.label.pixelSize
                     }
-                    Tag {
-                        visible: entry.isInstalled
-                        text: qsTr("Installed")
+                    Text {
+                        Layout.fillWidth: true
+                        visible: entry.unsafe
+                        text: qsTr("Hypixel and other servers ban this. Using it is your responsibility.")
+                        wrapMode: Text.Wrap
+                        color: Theme.palette.warning
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.type.label.pixelSize
+                        font.weight: Font.Medium
                     }
-                    Item { Layout.fillWidth: true }
-                }
-                Text {
-                    Layout.fillWidth: true
-                    text: entry.isMod ? entry.mod.summary : ""
-                    wrapMode: Text.Wrap
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
-                }
-                Text {
-                    Layout.fillWidth: true
-                    visible: entry.unsafe
-                    text: qsTr("Hypixel and other servers ban this. Using it is your responsibility.")
-                    wrapMode: Text.Wrap
-                    color: Theme.palette.warning
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
-                    font.weight: Font.Medium
                 }
             }
         }

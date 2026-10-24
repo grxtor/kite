@@ -51,6 +51,7 @@ Item {
     signal launchModeRequested(string id, string mode)
     signal launchAsRequested(string id, string accountId)
     signal profilerChosen(string id, string profilerKey)
+    signal performanceChosen(string id, bool enabled)
     signal navigateRequested(string target)
 
     // id -> export / shortcut controller (QmlShell, set in Main.qml). The ⋯
@@ -153,6 +154,7 @@ Item {
             onLaunchModeRequested: (id, mode) => root.launchModeRequested(id, mode)
             onLaunchAsRequested: (id, accountId) => root.launchAsRequested(id, accountId)
             onProfilerChosen: (id, profilerKey) => root.profilerChosen(id, profilerKey)
+            onPerformanceChosen: (id, enabled) => root.performanceChosen(id, enabled)
             onNavigateRequested: (target) => root.navigateRequested(target)
         }
     }

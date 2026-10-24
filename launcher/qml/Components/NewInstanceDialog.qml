@@ -9,11 +9,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * A new instance, in one of three modes:
+ * A new instance, in one of two modes:
  *  - "create": pick a Minecraft version and, if wanted, a mod loader; name
  *    it; create.
- *  - "recommended": a preset (Kite Performance, Kite PvP...) with its mods,
- *    in RecommendedPane; creating also installs the picked mods.
  *  - "import": a local .zip/.mrpack export (CurseForge, Modrinth, MultiMC,
  *    Prism...) or a direct download URL, staged through the same
  *    InstanceImportTask the widget dialog used.
@@ -43,12 +41,19 @@ Dialog {
     // "create" or "import" -- set by the integrator before open(), e.g.
     // Main.qml's openNewInstance(mode).
     property string mode: "create"
-    // BundleCatalog (shell.bundles) behind the Recommended tab.
-    property var bundles: null
-    // A Recommended instance in the making: once it exists its preset's
-    // defaults are applied and the mods of this review are installed.
-    property string pendingPreset: ""
-    property var pendingReview: null
+    // The QML shell: its bundle catalog and speedUp() set an instance up
+    // for Kite Performance once it exists.
+    property var shell: null
+    // Where a Kite Performance instance is: "creating" it, then
+    // "installing" the performance mods; empty otherwise.
+    property string performanceStep: ""
+    // The Kite Performance switch follows the version until it is touched.
+    property bool performanceTouched: false
+    readonly property string selectedVersion: root.controller ? root.controller.selectedMinecraftVersion : ""
+    readonly property bool performanceSupported: root.supportsPerformance(root.selectedVersion)
+    // The oldest Minecraft the performance mods exist for.
+    readonly property int performanceMinMinor: 16
+    readonly property string performanceText: qsTr("Sodium and the other performance mods are installed with the instance. On Vanilla it adds Fabric.")
     // Raw text of the chosen file/URL in import mode.
     property string importSource: ""
     // What import mode's file/URL field starts with when the dialog opens:
@@ -104,10 +109,6 @@ Dialog {
     function refreshSuggestedName() {
         if (root.nameEdited || !root.controller || root.mode === "import")
             return
-        if (root.mode === "recommended") {
-            nameField.text = recommendedPane.suggestedName
-            return
-        }
         var suggested = root.controller.suggestedName()
         if (suggested.length > 0 && root.controller.loader.length === 0)
             suggested = qsTr("Minecraft %1").arg(suggested)
@@ -139,26 +140,37 @@ Dialog {
         refreshImportName()
     }
 
-    function createRecommended() {
-        root.pendingPreset = recommendedPane.preset.id
-        root.pendingReview = recommendedPane.takeReview()
+    // Releases from 1.16 on ("1.21.4") and the year-style ones after 1.x
+    // ("26.3"); anything older, and snapshots, have no such mods.
+    function supportsPerformance(version) {
+        const parts = /^(\d+)\.(\d+)(\.\d+)?$/.exec(version)
+        if (!parts)
+            return false
+        return parts[1] === "1" ? Number(parts[2]) >= root.performanceMinMinor : Number(parts[1]) > 1
+    }
+    function followPerformanceDefault() {
+        if (!root.performanceTouched)
+            performanceSwitch.checked = root.performanceSupported
+    }
+
+    function create() {
+        root.performanceStep = performanceRow.checked ? "creating" : ""
         root.watcher = root.controller.create(nameField.text.trim(), groupField.text.trim(), root.selectedIcon)
     }
 
-    // The instance exists: its preset's defaults, then the mods. The mods'
-    // download takes over the progress UI; without any, the dialog is done.
-    function finishRecommended() {
+    // The instance exists: its memory and options.txt first, then the mods.
+    // Their download takes over the progress UI; without one the dialog is
+    // done.
+    function installPerformance() {
         const id = root.watcher.instanceId
-        const presetId = root.pendingPreset
-        const review = root.pendingReview
-        root.pendingPreset = ""
-        root.pendingReview = null
-        root.bundles.applyPresetDefaults(id, presetId)
-        const download = review ? root.bundles.installInto(review, id) : null
-        if (download) {
-            root.watcher = download
+        root.shell.bundles.applyPresetDefaults(id, "performance")
+        const install = root.shell.speedUp(id)
+        if (install) {
+            root.performanceStep = "installing"
+            root.watcher = install
             return
         }
+        root.performanceStep = ""
         root.close()
         root.created()
     }
@@ -178,9 +190,7 @@ Dialog {
     width: Math.min(860, parent ? parent.width - Theme.space.xxl * 2 : 860)
     // Taller windows get a taller version list (it fills the height), up
     // to this; a short one scrolls the form.
-    readonly property int maxHeight: root.mode === "recommended" ? recommendedMaxHeight : 760
-    // The Recommended tab has a mod list to give room to.
-    readonly property int recommendedMaxHeight: 880
+    readonly property int maxHeight: 760
     height: Math.min(root.maxHeight, parent ? parent.height - Theme.space.xxl * 2 : root.maxHeight)
     // The tabs belong to the title: right under it, not a padding's width
     // further down like a dialog's body.
@@ -201,14 +211,15 @@ Dialog {
     // before open(), e.g. Main.qml's openNewInstance(mode).
     onOpened: {
         root.watcher = null
-        root.pendingPreset = ""
-        root.pendingReview = null
+        root.performanceStep = ""
+        root.performanceTouched = false
         root.nameEdited = false
         root.selectedIcon = "default"
         groupField.text = ""
         root.importSource = root.presetSource
         sourceField.text = root.presetSource
         selectDefaultVersion()
+        root.followPerformanceDefault()
         if (root.mode === "import")
             refreshImportName()
         else
@@ -224,28 +235,27 @@ Dialog {
     Connections {
         target: root.controller
         ignoreUnknownSignals: true
-        function onSelectedMinecraftVersionChanged() { root.refreshSuggestedName() }
+        function onSelectedMinecraftVersionChanged() {
+            root.refreshSuggestedName()
+            root.followPerformanceDefault()
+        }
         function onSelectedLoaderVersionChanged() { root.refreshSuggestedName() }
         function onLoaderChanged() { root.refreshSuggestedName() }
     }
-
-    onClosed: recommendedPane.dropReview()
 
     Connections {
         target: root.watcher
         ignoreUnknownSignals: true
         function onFinished(ok) {
-            if (!ok) {
-                if (root.pendingReview)
-                    root.pendingReview.cancel()
-                root.pendingReview = null
-                root.pendingPreset = ""
+            // A failed install leaves the instance made: the first Play
+            // tries again.
+            if (!ok && root.performanceStep !== "installing")
+                return
+            if (ok && root.performanceStep === "creating") {
+                root.installPerformance()
                 return
             }
-            if (root.pendingPreset.length > 0) {
-                root.finishRecommended()
-                return
-            }
+            root.performanceStep = ""
             root.close()
             root.created()
         }
@@ -279,7 +289,6 @@ Dialog {
             enabled: !root.creating
             tabs: [
                 { id: "create", label: qsTr("Create") },
-                { id: "recommended", label: qsTr("Recommended") },
                 { id: "import", label: qsTr("Import") }
             ]
             current: root.mode
@@ -395,7 +404,7 @@ Dialog {
         StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: ["create", "recommended", "import"].indexOf(root.mode)
+            currentIndex: root.mode === "import" ? 1 : 0
 
         // Create: pick a Minecraft version and, optionally, a mod loader.
         ColumnLayout {
@@ -676,17 +685,25 @@ Dialog {
                 }
             }
         }
-        } // create pane
 
-        RecommendedPane {
-            id: recommendedPane
-            controller: root.controller
-            bundles: root.bundles
-            active: root.opened && root.mode === "recommended"
-            busy: root.creating
-            loaderLabel: root.loaderLabel
-            onSuggestedNameChanged: root.refreshSuggestedName()
+        // On for the versions the mods exist for: Play installs the
+        // performance mods (and Fabric on a vanilla one) before the game
+        // starts.
+        SettingRow {
+            id: performanceRow
+            Layout.fillWidth: true
+            property alias checked: performanceSwitch.checked
+            label: qsTr("Kite Performance")
+            description: root.performanceSupported || root.selectedVersion.length === 0 ? root.performanceText
+                         : root.performanceText + "\n" + qsTr("Not available before Minecraft 1.16")
+            enabled: !root.creating
+            Switch {
+                id: performanceSwitch
+                onToggled: root.performanceTouched = true
+                Accessible.name: performanceRow.label
+            }
         }
+        } // create pane
 
         // Import: a local archive/export, or a direct download URL.
         ColumnLayout {
@@ -868,12 +885,8 @@ Dialog {
             enabled: !root.creating && !!root.controller
                      && root.controller.selectedMinecraftVersion.length > 0
                      && nameField.text.trim().length > 0
-                     && (root.mode !== "recommended" || recommendedPane.canCreate)
             onClicked: {
-                if (root.mode === "recommended")
-                    root.createRecommended()
-                else
-                    root.watcher = root.controller.create(nameField.text.trim(), groupField.text.trim(), root.selectedIcon)
+                root.create()
             }
         }
         Button {

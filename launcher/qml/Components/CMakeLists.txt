@@ -128,9 +128,9 @@ qt_add_qml_module(Kite_qml_components
         SkinPreview.qml
         CapeTile.qml
         NewInstanceDialog.qml
-        RecommendedPane.qml
         BundleModList.qml
         BundleDialog.qml
+        SpeedUpButton.qml
         PromptDialog.qml
         Toast.qml
         IconPickerDialog.qml
@@ -244,6 +244,7 @@ qt_add_qml_module(Kite_qml_components
         icons/package.svg
         icons/play.svg
         icons/plus.svg
+        icons/puzzle.svg
         icons/refresh.svg
         icons/search.svg
         icons/server.svg
@@ -257,6 +258,7 @@ qt_add_qml_module(Kite_qml_components
         icons/user.svg
         icons/users.svg
         icons/x.svg
+        icons/zap.svg
     IMPORTS
         Kite.Theme
 )

@@ -194,9 +194,12 @@ ApplicationWindow {
             // Add content's Filters popup (after instance=<id>).
             else if (key === "browsefilters")
                 Qt.callLater(instancePage.openBrowseFilters)
-            // The Content tab's Recommended mods dialog (after instance=<id>).
+            // The Content tab's Add-ons and Kite Performance dialogs (after
+            // instance=<id>).
             else if (key === "bundles")
                 Qt.callLater(instancePage.review, "bundles")
+            else if (key === "perfdialog")
+                Qt.callLater(instancePage.review, "perfdialog")
             // A tab's own state, after instance=<id>: "versionmore",
             // "newcomponent", "otherlogs", "logfind", "shotselect",
             // "shotrename" -- see InstancePage.review().
@@ -255,15 +258,14 @@ ApplicationWindow {
     // Null until first opened.
     readonly property QtObject newInstanceDialog: newInstanceLoader.item
 
-    // mode is "create" (default), "recommended" or "import" -- see
-    // NewInstanceDialog.qml.
+    // mode is "create" (default) or "import" -- see NewInstanceDialog.qml.
     // source pre-fills import mode's file/URL field; empty otherwise.
     function openNewInstance(mode, source) {
         if (!root.shell || !root.shell.newInstance)
             return
         var instanceDialog = root.dialog(newInstanceLoader)
         instanceDialog.controller = root.shell.newInstance
-        instanceDialog.mode = mode === "import" || mode === "recommended" ? mode : "create"
+        instanceDialog.mode = mode === "import" ? "import" : "create"
         instanceDialog.presetSource = source || ""
         instanceDialog.open()
     }
@@ -365,6 +367,10 @@ ApplicationWindow {
     function setProfiler(id, profilerKey) {
         if (root.shell && typeof root.shell.setInstanceProfiler === "function")
             root.shell.setInstanceProfiler(id, profilerKey)
+    }
+    function setPerformance(id, enabled) {
+        if (root.shell && typeof root.shell.setPerformanceEnabled === "function")
+            root.shell.setPerformanceEnabled(id, enabled)
     }
     // What a LaunchOptionsMenu offers for instance @p id; a page hands this
     // to its menu as `optionsFor` (see QmlShell::launchOptions()).
@@ -831,6 +837,7 @@ ApplicationWindow {
                         onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
                         onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
                         onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+                        onPerformanceChosen: (id, enabled) => root.setPerformance(id, enabled)
                         onNavigateRequested: (target) => root.navigate(target)
                         onOpenInstanceWorldsRequested: (id) => {
                             root.openInstance(id)
@@ -884,6 +891,7 @@ ApplicationWindow {
                                 onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
                                 onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
                                 onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+                                onPerformanceChosen: (id, enabled) => root.setPerformance(id, enabled)
                                 onNavigateRequested: (target) => root.navigate(target)
                         }
                     }
@@ -978,6 +986,7 @@ ApplicationWindow {
                                 onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
                                 onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
                                 onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+                                onPerformanceChosen: (id, enabled) => root.setPerformance(id, enabled)
                                 onNavigateRequested: (target) => root.navigate(target)
                         }
                     }
@@ -1047,6 +1056,7 @@ ApplicationWindow {
         onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
         onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
         onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+        onPerformanceChosen: (id, enabled) => root.setPerformance(id, enabled)
         onNavigateRequested: (target) => root.navigate(target)
     }
 
@@ -1058,7 +1068,7 @@ ApplicationWindow {
         active: false
         sourceComponent: NewInstanceDialog {
             iconsModel: root.shell && root.shell.iconsModel ? root.shell.iconsModel : null
-            bundles: root.shell && root.shell.bundles ? root.shell.bundles : null
+            shell: root.shell
             onCreated: root.page = "home"
         }
     }

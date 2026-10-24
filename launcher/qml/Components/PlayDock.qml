@@ -62,6 +62,7 @@ Item {
     signal launchModeRequested(string id, string mode)
     signal launchAsRequested(string id, string accountId)
     signal profilerChosen(string id, string profilerKey)
+    signal performanceChosen(string id, bool enabled)
     signal navigateRequested(string target)
 
     // Every decorative loop stops when the window is not the active one and
@@ -482,6 +483,7 @@ Item {
         onLaunchModeRequested: (id, mode) => root.launchModeRequested(id, mode)
         onLaunchAsRequested: (id, accountId) => root.launchAsRequested(id, accountId)
         onProfilerChosen: (id, key) => root.profilerChosen(id, key)
+        onPerformanceChosen: (id, enabled) => root.performanceChosen(id, enabled)
         onNavigateRequested: (target) => root.navigateRequested(target)
     }
 

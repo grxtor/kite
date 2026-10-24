@@ -77,6 +77,7 @@ Item {
     signal launchModeRequested(string id, string mode)
     signal launchAsRequested(string id, string accountId)
     signal profilerChosen(string id, string profilerKey)
+    signal performanceChosen(string id, bool enabled)
     signal navigateRequested(string target)
 
     // id -> export / shortcut controller, as on LibraryPage: the header
@@ -121,7 +122,7 @@ Item {
             versionmore: ["version", versionTab], newcomponent: ["version", versionTab],
             otherlogs: ["log", logTab], logfind: ["log", logTab],
             shotselect: ["screenshots", shotsTab], shotrename: ["screenshots", shotsTab],
-            browsepick: ["browse", browseView], modhealth: ["content", contentTab], bundles: ["content", contentTab]
+            browsepick: ["browse", browseView], modhealth: ["content", contentTab], bundles: ["content", contentTab], perfdialog: ["content", contentTab]
         }
         const owner = owners[name]
         if (!owner)
@@ -576,6 +577,7 @@ Item {
             onLaunchModeRequested: (id, mode) => root.launchModeRequested(id, mode)
             onLaunchAsRequested: (id, accountId) => root.launchAsRequested(id, accountId)
             onProfilerChosen: (id, key) => root.profilerChosen(id, key)
+            onPerformanceChosen: (id, enabled) => root.performanceChosen(id, enabled)
             onNavigateRequested: (target) => root.navigateRequested(target)
         }
         MenuSeparator {
