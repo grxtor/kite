@@ -53,6 +53,8 @@ Item {
 
     // The header carries its own Play/Stop next to the persistent play bar's.
     signal backRequested()
+    // Open another instance (the Mods tab's new Kite Performance one).
+    signal openInstanceRequested(string id)
     // The header's Play and Stop, for the instance this page has open.
     signal playRequested(string id)
     signal stopRequested(string id)
@@ -447,6 +449,7 @@ Item {
                 shell: root.shell
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
                 onBrowseRequested: (kind) => root.browseContent(kind)
+                onOpenInstanceRequested: (id) => root.openInstanceRequested(id)
             }
 
             ContentBrowserView {

@@ -953,6 +953,7 @@ ApplicationWindow {
                                 onOpenAccountsRequested: root.page = "accounts"
                                 // Back to where the breadcrumb's root points (Home).
                                 onBackRequested: root.page = "home"
+                                onOpenInstanceRequested: (id) => root.openInstance(id)
                                 // The header's own Play and Stop: the one Play on
                                 // this page, the play bar stays away (dockVisibleFor).
                                 onPlayRequested: (id) => root.launch(id)

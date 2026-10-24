@@ -41,19 +41,15 @@ Dialog {
     // "create" or "import" -- set by the integrator before open(), e.g.
     // Main.qml's openNewInstance(mode).
     property string mode: "create"
-    // The QML shell: its bundle catalog and speedUp() set an instance up
-    // for Kite Performance once it exists.
+    // The QML shell: which versions have Kite Performance, and its bundle
+    // catalog and speedUp() to set an instance up once it exists.
     property var shell: null
     // Where a Kite Performance instance is: "creating" it, then
     // "installing" the performance mods; empty otherwise.
     property string performanceStep: ""
-    // The Kite Performance switch follows the version until it is touched.
-    property bool performanceTouched: false
-    readonly property string selectedVersion: root.controller ? root.controller.selectedMinecraftVersion : ""
-    readonly property bool performanceSupported: root.supportsPerformance(root.selectedVersion)
-    // The oldest Minecraft the performance mods exist for.
-    readonly property int performanceMinMinor: 16
-    readonly property string performanceText: qsTr("Sodium and the other performance mods are installed with the instance. On Vanilla it adds Fabric.")
+    // The selected version was picked with its ⚡: Fabric, the performance
+    // mods and its own name. A plain row or loader click turns it off.
+    property bool performanceMode: false
     // Raw text of the chosen file/URL in import mode.
     property string importSource: ""
     // What import mode's file/URL field starts with when the dialog opens:
@@ -84,6 +80,14 @@ Dialog {
         { value: "neoforge", label: "NeoForge", iconKey: "neoforged", fit: 0.78 }
     ]
 
+    // The widest date a row shows (a long month name and a two-digit day).
+    TextMetrics {
+        id: dateSample
+        font.family: Theme.font.family
+        font.pixelSize: Theme.type.caption.pixelSize
+        text: Format.calendarDate(new Date(2025, 4, 30))
+    }
+
     function loaderLabel(value) {
         for (var i = 0; i < root.loaders.length; ++i) {
             if (root.loaders[i].value === value)
@@ -110,7 +114,9 @@ Dialog {
         if (root.nameEdited || !root.controller || root.mode === "import")
             return
         var suggested = root.controller.suggestedName()
-        if (suggested.length > 0 && root.controller.loader.length === 0)
+        if (root.performanceMode)
+            suggested = qsTr("Kite Performance %1").arg(root.controller.selectedMinecraftVersion)
+        else if (suggested.length > 0 && root.controller.loader.length === 0)
             suggested = qsTr("Minecraft %1").arg(suggested)
         nameField.text = suggested
     }
@@ -123,6 +129,8 @@ Dialog {
             return
         nameField.text = root.controller.suggestedNameForImportSource(root.importSource)
     }
+
+    onPerformanceModeChanged: root.refreshSuggestedName()
 
     onModeChanged: {
         if (root.mode === "import")
@@ -140,21 +148,24 @@ Dialog {
         refreshImportName()
     }
 
-    // Releases from 1.16 on ("1.21.4") and the year-style ones after 1.x
-    // ("26.3"); anything older, and snapshots, have no such mods.
-    function supportsPerformance(version) {
-        const parts = /^(\d+)\.(\d+)(\.\d+)?$/.exec(version)
-        if (!parts)
-            return false
-        return parts[1] === "1" ? Number(parts[2]) >= root.performanceMinMinor : Number(parts[1]) > 1
+    // A plain pick of @p version: Kite Performance is not part of it.
+    function pickVersion(version) {
+        root.performanceMode = false
+        root.controller.selectMinecraftVersion(version)
     }
-    function followPerformanceDefault() {
-        if (!root.performanceTouched)
-            performanceSwitch.checked = root.performanceSupported
+    // A version's ⚡: that version, on Fabric, as a Kite Performance instance.
+    function pickPerformance(version) {
+        root.controller.selectMinecraftVersion(version)
+        root.controller.loader = "fabric"
+        root.performanceMode = true
+    }
+    function pickLoader(value) {
+        root.performanceMode = false
+        root.controller.loader = value
     }
 
     function create() {
-        root.performanceStep = performanceRow.checked ? "creating" : ""
+        root.performanceStep = root.performanceMode ? "creating" : ""
         root.watcher = root.controller.create(nameField.text.trim(), groupField.text.trim(), root.selectedIcon)
     }
 
@@ -212,14 +223,13 @@ Dialog {
     onOpened: {
         root.watcher = null
         root.performanceStep = ""
-        root.performanceTouched = false
+        root.performanceMode = false
         root.nameEdited = false
         root.selectedIcon = "default"
         groupField.text = ""
         root.importSource = root.presetSource
         sourceField.text = root.presetSource
         selectDefaultVersion()
-        root.followPerformanceDefault()
         if (root.mode === "import")
             refreshImportName()
         else
@@ -235,10 +245,7 @@ Dialog {
     Connections {
         target: root.controller
         ignoreUnknownSignals: true
-        function onSelectedMinecraftVersionChanged() {
-            root.refreshSuggestedName()
-            root.followPerformanceDefault()
-        }
+        function onSelectedMinecraftVersionChanged() { root.refreshSuggestedName() }
         function onSelectedLoaderVersionChanged() { root.refreshSuggestedName() }
         function onLoaderChanged() { root.refreshSuggestedName() }
     }
@@ -472,7 +479,7 @@ Dialog {
                     width: versions.width
                     height: Theme.control.height
                     hoverEnabled: true
-                    onClicked: root.controller.selectMinecraftVersion(version)
+                    onClicked: root.pickVersion(version)
 
                     background: Rectangle {
                         radius: Theme.radius.md
@@ -506,8 +513,22 @@ Dialog {
                             text: qsTr("Recommended")
                         }
                         Item { Layout.fillWidth: true }
+                        // Where Kite Performance exists, its own pick: the
+                        // version on Fabric with the performance mods.
+                        IconButton {
+                            visible: root.shell ? root.shell.performanceSupported(versionRow.version) : false
+                            iconName: "zap"
+                            tip: qsTr("Kite Performance")
+                            size: Theme.control.heightSm
+                            icon.color: versionRow.selected && root.performanceMode ? Theme.palette.accentText
+                                      : hovered ? Theme.palette.textPrimary : Theme.palette.textTertiary
+                            onClicked: root.pickPerformance(versionRow.version)
+                        }
+                        // One width for every date, so the ⚡ stands in one column.
                         Text {
                             Layout.rightMargin: Theme.space.md
+                            Layout.preferredWidth: dateSample.advanceWidth
+                            horizontalAlignment: Text.AlignRight
                             text: versionRow.time ? Format.calendarDate(new Date(versionRow.time)) : ""
                             color: Theme.palette.textTertiary
                             font.family: Theme.font.family
@@ -552,6 +573,18 @@ Dialog {
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.label.pixelSize
             }
+        }
+
+        // What the \u26a1 pick brings, only while it is the pick.
+        Text {
+            Layout.fillWidth: true
+            Layout.topMargin: -Theme.space.sm
+            visible: root.performanceMode
+            wrapMode: Text.Wrap
+            text: qsTr("Fabric with Sodium and the other performance mods, as its own instance.")
+            color: Theme.palette.textTertiary
+            font.family: Theme.font.family
+            font.pixelSize: Theme.type.caption.pixelSize
         }
 
         // Mod loader
@@ -628,7 +661,7 @@ Dialog {
                         checkable: true
                         checked: selected
                         Accessible.name: modelData.label
-                        onClicked: if (root.controller) root.controller.loader = modelData.value
+                        onClicked: if (root.controller) root.pickLoader(modelData.value)
 
                         // The chosen one wears the active tab's and the
                         // filter chips' look (accentSubtle fill, accent
@@ -686,23 +719,6 @@ Dialog {
             }
         }
 
-        // On for the versions the mods exist for: Play installs the
-        // performance mods (and Fabric on a vanilla one) before the game
-        // starts.
-        SettingRow {
-            id: performanceRow
-            Layout.fillWidth: true
-            property alias checked: performanceSwitch.checked
-            label: qsTr("Kite Performance")
-            description: root.performanceSupported || root.selectedVersion.length === 0 ? root.performanceText
-                         : root.performanceText + "\n" + qsTr("Not available before Minecraft 1.16")
-            enabled: !root.creating
-            Switch {
-                id: performanceSwitch
-                onToggled: root.performanceTouched = true
-                Accessible.name: performanceRow.label
-            }
-        }
         } // create pane
 
         // Import: a local archive/export, or a direct download URL.

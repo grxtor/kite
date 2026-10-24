@@ -2551,7 +2551,7 @@ The author may have blocked third-party launchers, or there may be no build for 
 <context>
     <name>ContentTab</name>
     <message>
-        <location filename="../launcher/qml/Components/ContentTab.qml" line="+62"/>
+        <location filename="../launcher/qml/Components/ContentTab.qml" line="+69"/>
         <source>Mods</source>
         <translation>Modlar</translation>
     </message>
@@ -2676,12 +2676,13 @@ The author may have blocked third-party launchers, or there may be no build for 
         <translation>Oyun çalışıyor. %1, oyun kapandıktan sonra değiştirilebilir.</translation>
     </message>
     <message>
-        <location line="+75"/>
+        <location line="+80"/>
+        <location line="+5"/>
         <source>Kite Performance could not be set up for this instance.</source>
         <translation>Kite Performans bu kurulum için ayarlanamadı.</translation>
     </message>
     <message>
-        <location line="+44"/>
+        <location line="+48"/>
         <source>“%1” could not be added.</source>
         <translation>“%1” eklenemedi.</translation>
     </message>
@@ -2711,7 +2712,7 @@ The author may have blocked third-party launchers, or there may be no build for 
         <translation>%1 %2 bu kurulumdan kaldırılsın mı? Dosyalar silinir.</translation>
     </message>
     <message>
-        <location line="+65"/>
+        <location line="+66"/>
         <source>Search %1</source>
         <translation>%1 ara</translation>
     </message>
@@ -6652,7 +6653,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstancePage</name>
     <message>
-        <location filename="../launcher/qml/Components/InstancePage.qml" line="+173"/>
+        <location filename="../launcher/qml/Components/InstancePage.qml" line="+175"/>
         <source>Content</source>
         <translation>İçerik</translation>
     </message>
@@ -6713,12 +6714,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
     </message>
     <message>
         <location line="+4"/>
-        <location line="+335"/>
+        <location line="+336"/>
         <source>Plugins</source>
         <translation>Eklentiler</translation>
     </message>
     <message>
-        <location line="-193"/>
+        <location line="-194"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
@@ -6743,7 +6744,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+181"/>
+        <location line="+182"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
@@ -8855,7 +8856,7 @@ Do you want to play the demo?</source>
 <context>
     <name>LaunchOptionsMenu</name>
     <message>
-        <location filename="../launcher/qml/Components/LaunchOptionsMenu.qml" line="+65"/>
+        <location filename="../launcher/qml/Components/LaunchOptionsMenu.qml" line="+67"/>
         <source>Play options</source>
         <translation>Oynama seçenekleri</translation>
     </message>
@@ -8880,12 +8881,12 @@ Do you want to play the demo?</source>
         <translation>%1 (varsayılan)</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+17"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+14"/>
         <source>Profiler</source>
         <translation>Profil oluşturucu</translation>
     </message>
@@ -9769,7 +9770,7 @@ Neden:
         <translation>Yeni kurulum</translation>
     </message>
     <message>
-        <location line="+342"/>
+        <location line="+343"/>
         <source>Rename instance</source>
         <translation>Kurulumu yeniden adlandır</translation>
     </message>
@@ -13052,22 +13053,22 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>NewInstanceDialog</name>
     <message>
-        <location filename="../launcher/qml/Components/NewInstanceDialog.qml" line="+56"/>
-        <source>Sodium and the other performance mods are installed with the instance. On Vanilla it adds Fabric.</source>
-        <translation>Sodium ve diğer performans modları kurulumla birlikte yüklenir. Vanilla'da Fabric'i de ekler.</translation>
-    </message>
-    <message>
-        <location line="+24"/>
+        <location filename="../launcher/qml/Components/NewInstanceDialog.qml" line="+76"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
     <message>
-        <location line="+34"/>
+        <location line="+42"/>
+        <source>Kite Performance %1</source>
+        <translation>Kite Performans %1</translation>
+    </message>
+    <message>
+        <location line="+2"/>
         <source>Minecraft %1</source>
         <translation>Minecraft %1</translation>
     </message>
     <message>
-        <location line="+66"/>
+        <location line="+71"/>
         <source>Release</source>
         <translation>Kararlı sürüm</translation>
     </message>
@@ -13097,19 +13098,19 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Yeni kurulum</translation>
     </message>
     <message>
-        <location line="+88"/>
-        <location line="+592"/>
+        <location line="+84"/>
+        <location line="+601"/>
         <source>Create</source>
         <translation>Oluştur</translation>
     </message>
     <message>
-        <location line="-591"/>
-        <location line="+605"/>
+        <location line="-600"/>
+        <location line="+614"/>
         <source>Import</source>
         <translation>İçe aktar</translation>
     </message>
     <message>
-        <location line="-586"/>
+        <location line="-595"/>
         <source>Instance icon</source>
         <translation>Kurulum simgesi</translation>
     </message>
@@ -13160,7 +13161,12 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Önerilen</translation>
     </message>
     <message>
-        <location line="+64"/>
+        <location line="+71"/>
+        <source>Fabric with Sodium and the other performance mods, as its own instance.</source>
+        <translation>Sodium ve diğer performans modlarıyla Fabric, ayrı bir kurulum olarak.</translation>
+    </message>
+    <message>
+        <location line="+19"/>
         <source>Mod loader</source>
         <translation>Mod yükleyici</translation>
     </message>
@@ -13175,17 +13181,12 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Bu sürüm için yok</translation>
     </message>
     <message>
-        <location line="+108"/>
+        <location line="-100"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>Not available before Minecraft 1.16</source>
-        <translation>Minecraft 1.16'dan önce kullanılamaz</translation>
-    </message>
-    <message>
-        <location line="+78"/>
+        <location line="+271"/>
         <source>Drop a .zip or .mrpack file here</source>
         <translation>Buraya bir .zip veya .mrpack dosyası bırak</translation>
     </message>
@@ -14205,14 +14206,54 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     </message>
 </context>
 <context>
+    <name>PerformanceInstanceTask</name>
+    <message>
+        <location filename="../launcher/minecraft/PerformanceInstanceTask.cpp" line="+50"/>
+        <source>Creating %1</source>
+        <translation>%1 oluşturuluyor</translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <source>Minecraft %1 is not available</source>
+        <translation>Minecraft %1 kullanılamıyor</translation>
+    </message>
+    <message>
+        <location line="+19"/>
+        <source>Could not find a Fabric version</source>
+        <translation>Fabric sürümü bulunamadı</translation>
+    </message>
+    <message>
+        <location line="+43"/>
+        <source>The new instance could not be found</source>
+        <translation>Yeni kurulum bulunamadı</translation>
+    </message>
+    <message numerus="yes">
+        <location line="+24"/>
+        <source>Created %1 with %n performance mod(s)</source>
+        <translation>
+            <numerusform>%1, %n performans moduyla oluşturuldu</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Created %1</source>
+        <translation>%1 oluşturuldu</translation>
+    </message>
+</context>
+<context>
     <name>PerformanceSetupTask</name>
     <message>
-        <location filename="../launcher/minecraft/PerformanceSetupTask.cpp" line="+52"/>
+        <location filename="../launcher/minecraft/PerformanceSetupTask.cpp" line="+48"/>
         <source>Checking Kite Performance</source>
         <translation>Kite Performans kontrol ediliyor</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+9"/>
+        <source>Kite Performance needs a mod loader; this instance is left as it is</source>
+        <translation>Kite Performans bir mod yükleyici ister; bu kurulum olduğu gibi bırakıldı</translation>
+    </message>
+    <message>
+        <location line="+6"/>
         <location line="+20"/>
         <location line="+42"/>
         <source>Kite Performance: up to date</source>
@@ -14240,20 +14281,14 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     </message>
     <message>
         <location line="+23"/>
-        <location line="+54"/>
+        <location line="+11"/>
         <source>Kite Performance: no matching mods for this version</source>
         <translation>Kite Performans: bu sürüm için uygun mod yok</translation>
     </message>
     <message>
-        <location line="-42"/>
-        <source>Looking up Fabric</source>
-        <translation>Fabric aranıyor</translation>
-    </message>
-    <message>
-        <location line="+28"/>
-        <location line="+34"/>
+        <location line="+20"/>
         <source>Kite Performance: could not reach Modrinth; playing without changes</source>
-        <translation>Kite Performans: Modrinth'e ulaşılamadı; değişiklik yapmadan oynatılıyor</translation>
+        <translation>Kite Performans: Modrinth&apos;e ulaşılamadı; değişiklik yapmadan oynatılıyor</translation>
     </message>
     <message>
         <location line="-23"/>
@@ -14261,23 +14296,10 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Performans modları indiriliyor</translation>
     </message>
     <message numerus="yes">
-        <location line="+32"/>
-        <location line="+8"/>
+        <location line="+29"/>
         <source>Kite Performance: added %n mod(s)</source>
         <translation>
             <numerusform>Kite Performans: %n mod eklendi</numerusform>
-        </translation>
-    </message>
-    <message>
-        <location line="-3"/>
-        <source>Adding Fabric</source>
-        <translation>Fabric ekleniyor</translation>
-    </message>
-    <message numerus="yes">
-        <location line="+12"/>
-        <source>Kite Performance: added Fabric and %n mod(s)</source>
-        <translation>
-            <numerusform>Kite Performans: Fabric ve %n mod eklendi</numerusform>
         </translation>
     </message>
 </context>
@@ -16030,12 +16052,17 @@ What should happen to %1?</source>
 <context>
     <name>QmlShell</name>
     <message>
-        <location filename="../launcher/qml/QmlShell.cpp" line="+363"/>
+        <location filename="../launcher/qml/QmlShell.cpp" line="+383"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>
     <message>
-        <location line="+162"/>
+        <location line="+16"/>
+        <source>%1 · Kite Performance</source>
+        <translation>%1 · Kite Performans</translation>
+    </message>
+    <message>
+        <location line="+170"/>
         <source>Choose an account</source>
         <translation>Bir hesap seç</translation>
     </message>

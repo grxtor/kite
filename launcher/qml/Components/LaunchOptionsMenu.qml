@@ -36,8 +36,8 @@ Menu {
     id: root
 
     property string instanceId: ""
-    // function (id) returning {supportsDemo, performance, profiler,
-    // profilers, accounts}
+    // function (id) returning {supportsDemo, performance,
+    // performanceAvailable, profiler, profilers, accounts}
     // (see QmlShell::launchOptions()), or null.
     property var optionsFor: null
     property var options: ({})
@@ -58,6 +58,8 @@ Menu {
     readonly property var profilers: root.options && root.options.profilers ? root.options.profilers : []
     readonly property string profiler: root.options && root.options.profiler ? root.options.profiler : ""
     readonly property bool performance: !!(root.options && root.options.performance)
+    // The instance has a loader and a version the performance mods exist for.
+    readonly property bool performanceAvailable: !!(root.options && root.options.performanceAvailable)
     readonly property bool supportsDemo: !!(root.options && root.options.supportsDemo)
     // Choosing among one account is no choice.
     readonly property bool offersPlayAs: root.accounts.length > 1
@@ -128,15 +130,20 @@ Menu {
     MenuSeparator {}
 
     // The mode, not one launch: while it is on, Play installs the
-    // performance mods first.
+    // performance mods first. Only for an instance with a loader on a
+    // version the mods exist for; a vanilla one is never changed.
     MenuItem {
         text: qsTr("Kite Performance")
         checkable: true
         checked: root.performance
+        visible: root.performanceAvailable
+        height: visible ? implicitHeight : 0
         onTriggered: root.performanceChosen(root.instanceId, checked)
     }
-
-    MenuSeparator {}
+    MenuSeparator {
+        visible: root.performanceAvailable
+        height: visible ? implicitHeight : 0
+    }
 
     Menu {
         id: profilerMenu

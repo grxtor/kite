@@ -47,6 +47,8 @@ Item {
     signal openFolderRequested(string path)
     // "Add content": browse for @p kind (InstancePage opens the browser).
     signal browseRequested(string kind)
+    // Open instance @p id (the new Kite Performance instance Speed up made).
+    signal openInstanceRequested(string id)
 
     readonly property var content: details ? details.content : null
     // What the health check found in the mods folder (ModHealthModel).
@@ -55,6 +57,11 @@ Item {
     // Whether Kite Performance is on for this instance (Mods' toolbar).
     property bool performance: false
     readonly property string instanceId: details ? details.instanceId : ""
+    // Speed up on an instance with no loader never touches it: it makes a
+    // Kite Performance instance, so it is offered where the mods exist.
+    readonly property string gameVersion: details && details.contentBrowser ? details.contentBrowser.instanceGameVersion : ""
+    readonly property bool speedUpOffered: !!root.content && (root.content.hasModLoader
+        || (!!root.shell && root.shell.performanceSupported(root.gameVersion)))
     readonly property string instanceLoader: details && details.contentBrowser ? details.contentBrowser.instanceLoader : ""
 
     // Label, noun and empty-state copy per kind.
@@ -163,11 +170,16 @@ Item {
                            && root.shell.performanceEnabled(root.instanceId)
     }
     // "Speed up" (Mods only): turns Kite Performance on and installs now.
-    // With the mode already on, its settings open instead. The backend adds
-    // the loader itself, so no loader is asked for first.
+    // With the mode already on, its settings open instead. Without a loader
+    // it makes a separate instance instead (and opens it), so the vanilla
+    // one stays as it is -- no loader is asked for first either way.
     function speedUp() {
         if (root.performance) {
             root.openBundles(true)
+            return
+        }
+        if (!root.content.hasModLoader) {
+            root.makePerformanceInstance()
             return
         }
         const watcher = root.shell ? root.shell.speedUp(root.instanceId) : null
@@ -175,6 +187,15 @@ Item {
             flows.track(watcher, "")
         else
             toast.show(qsTr("Kite Performance could not be set up for this instance."), "neutral")
+    }
+    function makePerformanceInstance() {
+        const watcher = root.shell ? root.shell.createPerformanceInstance(root.instanceId) : null
+        if (!watcher) {
+            toast.show(qsTr("Kite Performance could not be set up for this instance."), "neutral")
+            return
+        }
+        flows.track(watcher, "")
+        watcher.finished.connect((ok) => { if (ok) root.openInstanceRequested(watcher.instanceId) })
     }
     // Add-ons, or with @p performance the Kite Performance settings, in a
     // BundleDialog built on first use; only Add-ons need a loader.
@@ -266,7 +287,8 @@ Item {
             // The actions row without the search field and the label of
             // "Check for updates".
             readonly property int bundlesWidth: root.kind === "mods"
-                                                ? speedUpButton.implicitWidth + addonsButton.implicitWidth + gap * 2 : 0
+                                                ? (root.speedUpOffered ? speedUpButton.implicitWidth + gap : 0)
+                                                  + addonsButton.implicitWidth + gap : 0
             readonly property int actionsWidth: folderButton.implicitWidth + moreButton.implicitWidth
                                                 + addButton.implicitWidth + bundlesWidth + gap * 3
             // Measured against the tab's own width, which the toolbar's
@@ -393,7 +415,7 @@ Item {
                 }
 
                 HoverReason {
-                    visible: root.kind === "mods"
+                    visible: root.kind === "mods" && root.speedUpOffered
                     reason: root.lockedReason
                     SpeedUpButton {
                         id: speedUpButton
