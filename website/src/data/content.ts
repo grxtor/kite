@@ -3,7 +3,6 @@
 import type { ImageMetadata } from 'astro';
 import type { Locale } from '../i18n';
 import type { FeatureKey, PlatformKey, ScreenId } from '../i18n/types';
-import type { IconName } from '../lib/icons';
 import type { Focus } from '../lib/imaging';
 
 // Rendered from a copy of a real Kite data folder, with the accounts removed.
@@ -46,8 +45,8 @@ export const FEATURE_CARDS: ReadonlyArray<{
   { key: 'java', screen: 'java', focus: { zoom: 1.6, x: 0.26, y: 0.08, ratio: '16 / 9' }, wide: true },
 ];
 
-export const PLATFORMS: ReadonlyArray<{ key: PlatformKey; icon: IconName }> = [
-  { key: 'macos', icon: 'laptop' },
-  { key: 'windows', icon: 'monitor' },
-  { key: 'linux', icon: 'terminal' },
+export const PLATFORMS: ReadonlyArray<{ key: PlatformKey }> = [
+  { key: 'macos' },
+  { key: 'windows' },
+  { key: 'linux' },
 ];
