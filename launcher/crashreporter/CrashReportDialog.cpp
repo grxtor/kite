@@ -25,6 +25,7 @@
 #include <QDesktopServices>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QPlainTextEdit>
 #include <QPushButton>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -32,6 +33,58 @@
 #ifdef KITE_HAS_QRENCODE
 #include <qrencode.h>
 #endif
+
+CrashUploadPromptDialog::CrashUploadPromptDialog(const QString& censoredLog,
+												 const QString& logPath,
+												 QWidget* parent)
+	: QDialog(parent)
+{
+	setWindowTitle(tr("Kite Crash Report"));
+	setMinimumSize(600, 480);
+
+	auto* mainLayout = new QVBoxLayout(this);
+
+	auto* intro = new QLabel(this);
+	intro->setText(
+		tr("<h2>Kite has failed</h2>"
+		   "<p>An unexpected error occurred and Kite had to close.</p>"
+		   "<p>Would you like to upload the log below to paste.ee so the "
+		   "problem can be looked into? Nothing is sent unless you choose "
+		   "Upload. Anyone who has the link will be able to read it.</p>"
+		   "<p>Tokens, UUIDs and your home folder path have been removed. "
+		   "Other text, such as your player name, instance names and mod "
+		   "lists, is still in the log: read it first.</p>"));
+	intro->setWordWrap(true);
+	mainLayout->addWidget(intro);
+
+	auto* logView = new QPlainTextEdit(this);
+	logView->setReadOnly(true);
+	logView->setLineWrapMode(QPlainTextEdit::NoWrap);
+	logView->setPlainText(censoredLog);
+	// The newest lines are the interesting ones.
+	logView->moveCursor(QTextCursor::End);
+	mainLayout->addWidget(logView, 1);
+
+	auto* pathLabel = new QLabel(
+		tr("The full log stays on your computer at: %1").arg(logPath), this);
+	pathLabel->setWordWrap(true);
+	pathLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+	mainLayout->addWidget(pathLabel);
+
+	auto* buttonLayout = new QHBoxLayout();
+	buttonLayout->addStretch();
+
+	auto* declineBtn = new QPushButton(tr("Don't upload"), this);
+	declineBtn->setDefault(true);
+	connect(declineBtn, &QPushButton::clicked, this, &QDialog::reject);
+	buttonLayout->addWidget(declineBtn);
+
+	auto* uploadBtn = new QPushButton(tr("Upload"), this);
+	connect(uploadBtn, &QPushButton::clicked, this, &QDialog::accept);
+	buttonLayout->addWidget(uploadBtn);
+
+	mainLayout->addLayout(buttonLayout);
+}
 
 CrashReportDialog::CrashReportDialog(const QString& pasteLink,
 									 const QString& logContent, QWidget* parent)
@@ -47,7 +100,7 @@ CrashReportDialog::CrashReportDialog(const QString& pasteLink,
 	m_messageLabel->setText(
 		tr("<h2 style='color: #cc0000;'>Kite has failed</h2>"
 		   "<p>An unexpected error occurred and Kite had to close.</p>"
-		   "<p>Your logs have been uploaded to paste.ee for "
+		   "<p>As you chose, your log was uploaded to paste.ee for "
 		   "troubleshooting.</p>"));
 	m_messageLabel->setAlignment(Qt::AlignCenter);
 	m_messageLabel->setWordWrap(true);

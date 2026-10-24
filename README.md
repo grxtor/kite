@@ -21,10 +21,13 @@ The Java launcher parts still target Java 7, which JDK 20 and newer refuse to
 compile. Build with JDK 17 or older, for example by adding
 `-DJava_JAVAC_EXECUTABLE=<jdk17>/bin/javac` to the configure line.
 
-API keys are not part of the source tree. Without them the matching feature
-stays hidden: Microsoft sign-in, CurseForge, log uploads (paste.ee) and
-screenshot uploads (Imgur). Keep your own keys in a `CMakeUserPresets.json`,
-which git ignores:
+Microsoft sign-in uses Kite's own Azure app, whose client ID is built in. API
+keys are not part of the source tree. Without them the matching feature stays
+hidden: CurseForge and screenshot uploads (Imgur). Log uploads (paste.ee) need
+a key too: paste.ee rejects its old anonymous `public` key, so without one the
+Upload button and the crash reporter's upload fail. Either way the log is sent
+only when the user clicks Upload (or agrees in the crash reporter). Keep your
+own keys in a `CMakeUserPresets.json`, which git ignores:
 
 ```json
 {
@@ -34,8 +37,8 @@ which git ignores:
       "name": "macos-local",
       "inherits": "macos",
       "cacheVariables": {
-        "Kite_MICROSOFT_CLIENT_ID": "<Azure application ID>",
-        "Kite_CURSEFORGE_API_KEY": "<CurseForge API key>"
+        "Kite_CURSEFORGE_API_KEY": "<CurseForge API key>",
+        "Kite_PASTE_EE_API_KEY": "<paste.ee application key>"
       }
     }
   ]

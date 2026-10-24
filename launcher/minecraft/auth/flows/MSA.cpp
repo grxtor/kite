@@ -24,7 +24,6 @@
 #include "minecraft/auth/steps/XboxUserStep.h"
 #include "minecraft/auth/steps/XboxAuthorizationStep.h"
 #include "minecraft/auth/steps/KiteLoginStep.h"
-#include "minecraft/auth/steps/XboxProfileStep.h"
 #include "minecraft/auth/steps/EntitlementsStep.h"
 #include "minecraft/auth/steps/MinecraftProfileStep.h"
 #include "minecraft/auth/steps/GetSkinStep.h"
@@ -40,7 +39,6 @@ MSASilent::MSASilent(AccountData* data, QObject* parent)
 		new XboxAuthorizationStep(m_data, &m_data->mojangservicesToken,
 								  "rp://api.minecraftservices.com/", "Mojang"));
 	m_steps.append(new KiteLoginStep(m_data));
-	m_steps.append(new XboxProfileStep(m_data));
 	m_steps.append(new EntitlementsStep(m_data));
 	m_steps.append(new MinecraftProfileStep(m_data));
 	m_steps.append(new GetSkinStep(m_data));
@@ -57,7 +55,6 @@ MSAInteractive::MSAInteractive(AccountData* data, QObject* parent)
 		new XboxAuthorizationStep(m_data, &m_data->mojangservicesToken,
 								  "rp://api.minecraftservices.com/", "Mojang"));
 	m_steps.append(new KiteLoginStep(m_data));
-	m_steps.append(new XboxProfileStep(m_data));
 	m_steps.append(new EntitlementsStep(m_data));
 	m_steps.append(new MinecraftProfileStep(m_data));
 	m_steps.append(new GetSkinStep(m_data));

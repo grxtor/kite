@@ -23,6 +23,18 @@
 #include <QLabel>
 #include <QPixmap>
 
+/* Asked before anything leaves the machine: shows the censored log exactly as
+ * it would be sent and lets the user choose. Accepted = upload. */
+class CrashUploadPromptDialog : public QDialog
+{
+	Q_OBJECT
+
+  public:
+	explicit CrashUploadPromptDialog(const QString& censoredLog,
+									 const QString& logPath,
+									 QWidget* parent = nullptr);
+};
+
 class CrashReportDialog : public QDialog
 {
 	Q_OBJECT

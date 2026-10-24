@@ -307,6 +307,15 @@ int main(int argc, char* argv[])
 
 	logContent = censorText(logContent, filter);
 
+	// Nothing leaves the machine until the user has seen the (censored) log
+	// and agreed.
+	const QString logPath =
+		QDir(logDir).absoluteFilePath(QString("%1-0.log").arg(baseName));
+	CrashUploadPromptDialog prompt(logContent, logPath);
+	if (prompt.exec() != QDialog::Accepted) {
+		return 0;
+	}
+
 	// Upload to paste.ee
 	QNetworkAccessManager nam;
 	QString pasteLink = uploadToPasteEE(&nam, logContent, apiKey);
@@ -314,9 +323,7 @@ int main(int argc, char* argv[])
 		QMessageBox::warning(
 			nullptr, "Kite Crash Reporter",
 			"Failed to upload crash log to paste.ee.\n"
-			"Please manually share the log file located at:\n" +
-				QDir(logDir).absoluteFilePath(
-					QString("%1-0.log").arg(baseName)));
+			"Please manually share the log file located at:\n" + logPath);
 		return 1;
 	}
 
