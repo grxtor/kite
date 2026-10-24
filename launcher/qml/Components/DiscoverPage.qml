@@ -135,22 +135,20 @@ Item {
             root.runSearch()
     }
 
+    // Whether this is the page on screen. Main.qml binds it to its
+    // PageSlot's StackLayout.isCurrentItem: the page itself sits in that
+    // Loader, not in the StackLayout, so its own attached one never turns
+    // true. Not `visible`, which can still be true at Component.onCompleted
+    // before StackLayout's next polish hides the pages not shown.
+    property bool shown: false
+
     // First search when the page is first shown -- not at startup, so
-    // opening the launcher never talks to Modrinth on its own. Gated on
-    // StackLayout's own isCurrentItem (Qt 6.4+), not `visible`: `visible`
-    // is still true at Component.onCompleted (StackLayout only flips the
-    // non-current pages' visible off on its next polish, after every page's
-    // own onCompleted has already run), so checking it here fired a search
-    // on every startup regardless of which page was actually shown. Falls
-    // back to `visible` if a future QtQuick.Layouts build ever drops the
-    // attached property.
+    // opening the launcher never talks to Modrinth on its own.
     function searchIfFirstShown() {
-        var current = root.StackLayout && root.StackLayout.isCurrentItem !== undefined
-                    ? root.StackLayout.isCurrentItem : root.visible
-        if (current && !root.searched)
+        if (root.shown && !root.searched)
             runSearch()
     }
-    StackLayout.onIsCurrentItemChanged: searchIfFirstShown()
+    onShownChanged: searchIfFirstShown()
     onModelChanged: searchIfFirstShown()
     Component.onCompleted: searchIfFirstShown()
 

@@ -45,7 +45,10 @@ SettingRow {
             model: root.options
             textRole: "label"
             valueRole: "value"
-            currentIndex: indexOfValue(root.stored)
+            // Through `count`, so it is worked out again once the model
+            // has arrived rather than once, before it (a page built after
+            // the settings were loaded never changes `stored` again).
+            currentIndex: count > 0 ? indexOfValue(root.stored) : -1
             onActivated: root.choose(currentValue)
             Accessible.name: root.label
         }

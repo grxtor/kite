@@ -72,6 +72,9 @@ Rectangle {
     // its height either way, so the account never moves between pages; kept
     // for callers that still pass it.
     property bool barBeside: true
+    // The colour the rail is drawn on (Main.qml's shell), for the corners of
+    // an instance icon that fills its tile (RecentItem.surround).
+    property color surround: "transparent"
     // The band at the top, on the top bar's line (Main.qml's shellBarHeight).
     property int bandHeight: Theme.control.heightLg
 
@@ -121,6 +124,7 @@ Rectangle {
     // lists, where the selection just hides rather than parking on the last
     // real destination.
     readonly property Item selectedNavItem: findNavItem(currentId, currentInstanceId)
+    readonly property bool selectedIsInstance: !!root.selectedNavItem && root.selectedNavItem.instanceId !== undefined
 
     function findNavItem(id, instanceId) {
         if (instanceId && instanceId.length > 0) {
@@ -156,7 +160,10 @@ Rectangle {
     // previous item to the new one instead of each item owning its own
     // static highlight -- NavItem itself only ever paints hover/press.
     NavSelectionIndicator {
-        target: root.selectedNavItem
+        // On the folded rail an instance's own tile shows it is selected
+        // (RecentItem.selected, the nose in its cut): the square around it
+        // would only frame a picture that already fills its tile.
+        target: root.collapsed && root.selectedIsInstance ? null : root.selectedNavItem
         collapsed: root.collapsed
         railSquare: root.itemSize
         railAxis: root.railAxis
@@ -263,6 +270,7 @@ Rectangle {
             id: recentRepeater
             model: root.recentModel
             delegate: RecentItem {
+                id: recentDelegate
                 required property int index
 
                 // Rows past what fits stay out of the layout entirely.
@@ -274,6 +282,10 @@ Rectangle {
                 labelX: root.labelX
                 cornerRadius: root.itemRadius
                 compact: root.collapsed
+                selected: root.selectedNavItem === recentDelegate
+                // The selection's fill when it sits under this one: only in
+                // the labelled sidebar, the folded rail shows no square.
+                surround: selected && !root.collapsed ? Theme.palette.surfaceRaised : root.surround
                 onClicked: root.recentActivated(instanceId)
                 onPlayRequested: root.recentPlayRequested(instanceId)
             }

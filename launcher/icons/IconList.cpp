@@ -41,8 +41,10 @@ IconList::IconList(const QStringList& builtinPaths, QString path,
 {
 	// Connected first, so the stale colour is gone before anyone else
 	// hears about the change and asks for it again.
-	connect(this, &IconList::iconUpdated, this,
-			[this](const QString& key) { m_tintCache.remove(key); });
+	connect(this, &IconList::iconUpdated, this, [this](const QString& key) {
+		m_tintCache.remove(key);
+		m_fillsTileCache.remove(key);
+	});
 
 	QSet<QString> builtinNames;
 
@@ -463,6 +465,31 @@ void IconList::loadGameTextures(const QString& librariesDir,
 			dataChanged(index(idx), index(idx));
 		emit iconUpdated(key);
 	}
+}
+
+bool IconList::fillsTile(const QString& key) const
+{
+	const auto cached = m_fillsTileCache.constFind(key);
+	if (cached != m_fillsTileCache.constEnd()) {
+		return *cached;
+	}
+
+	// Every pixel of the outermost ring opaque; an icon that does not come
+	// out square at this size has a transparent margin somewhere.
+	constexpr int kProbe = 32;
+	const QImage image = getIcon(key)
+							 .pixmap(QSize(kProbe, kProbe), 1.0)
+							 .toImage()
+							 .convertToFormat(QImage::Format_ARGB32);
+	bool opaque = image.width() == kProbe && image.height() == kProbe;
+	for (int i = 0; opaque && i < kProbe; ++i) {
+		opaque = qAlpha(image.pixel(i, 0)) == 255 &&
+				 qAlpha(image.pixel(i, kProbe - 1)) == 255 &&
+				 qAlpha(image.pixel(0, i)) == 255 &&
+				 qAlpha(image.pixel(kProbe - 1, i)) == 255;
+	}
+	m_fillsTileCache.insert(key, opaque);
+	return opaque;
 }
 
 QColor IconList::tint(const QString& key) const

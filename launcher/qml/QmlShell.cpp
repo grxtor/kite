@@ -629,6 +629,11 @@ QObject* QmlShell::iconsModel() const
 	return expose(LAUNCHER->icons().get());
 }
 
+bool QmlShell::iconFillsTile(const QString& key) const
+{
+	return LAUNCHER->icons()->fillsTile(key);
+}
+
 QString QmlShell::iconsDir() const
 {
 	return LAUNCHER->icons()->getDirectory();

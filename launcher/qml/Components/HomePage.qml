@@ -14,8 +14,9 @@ import Kite.Theme
  * HomeContinuePlaying); then the whole Library, its toolbar and every
  * group -- all in one scrolling column. Beside them, on a wide enough
  * window, a side panel (HomeSidePanel): "Set up Kite" and Kite's news. The
- * default start page and the sidebar's first item. The play bar does not
- * show here; the hero takes its place.
+ * default start page and the sidebar's first item. The play bar shows
+ * here too (Main.qml's dockVisibleFor), so Play stays in reach once the
+ * hero has scrolled away.
  *
  * The Continue playing rows' Plays are secondary (QuietPlayButton), and a
  * row's ⋯ opens the same instance menu as the library's cards.
