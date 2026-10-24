@@ -10,7 +10,7 @@ export const en: Dictionary = {
     home: {
       title: 'Kite: a native Minecraft launcher',
       description:
-        'Kite is a Minecraft launcher written in C++ with a Qt Quick interface. Separate instances, modpacks from Modrinth, CurseForge, FTB, ATLauncher and Technic, and Java handled for you. Free and open source.',
+        'Kite is a free, open source Minecraft launcher written in C++ with Qt Quick. Separate instances, Modrinth and CurseForge modpacks, and Java handled for you.',
     },
     download: {
       title: 'Download Kite',
@@ -114,7 +114,7 @@ export const en: Dictionary = {
       {
         question: 'Is Kite really free?',
         answer:
-          'Yes. No ads, no paid tier and no account with us. Kite is licensed under the Apache License 2.0, and its source code goes public with the first release.',
+          'Yes. No ads, no paid tier and no account with us. Kite is licensed under the Apache License 2.0, and its source code is public on GitHub.',
       },
       {
         question: 'Can I bring my instances from Prism or MultiMC?',

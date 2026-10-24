@@ -8,7 +8,7 @@ export const tr = {
     home: {
       title: 'Kite: native bir Minecraft başlatıcısı',
       description:
-        'Kite, C++ ile yazılmış, arayüzü Qt Quick olan bir Minecraft başlatıcısı. Ayrı kurulumlar; Modrinth, CurseForge, FTB, ATLauncher ve Technic paketleri; Java’yı da kendisi halleder. Ücretsiz ve açık kaynak.',
+        'Kite, C++ ve Qt Quick ile yazılmış ücretsiz, açık kaynak bir Minecraft başlatıcısı. Ayrı kurulumlar, Modrinth ve CurseForge paketleri; Java’yı kendisi halleder.',
     },
     download: {
       title: 'Kite’ı indir',
@@ -112,7 +112,7 @@ export const tr = {
       {
         question: 'Kite gerçekten ücretsiz mi?',
         answer:
-          'Evet. Reklam yok, ücretli paket yok, bize hesap açman da gerekmiyor. Kite Apache Lisansı 2.0 ile lisanslı; kaynak kodu ilk sürümle herkese açılıyor.',
+          'Evet. Reklam yok, ücretli paket yok, bize hesap açman da gerekmiyor. Kite Apache Lisansı 2.0 ile lisanslı; kaynak kodu GitHub’da herkese açık.',
       },
       {
         question: 'Prism ya da MultiMC’deki kurulumlarımı getirebilir miyim?',

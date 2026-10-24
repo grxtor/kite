@@ -35,7 +35,7 @@ export const COMPARE: Record<Locale, { rows: CompareRow[] }> = {
       {
         label: 'Source code',
         cells: {
-          kite: 'Apache 2.0, public from the first release',
+          kite: 'Open, Apache 2.0',
           prism: 'Open, GPL-3.0',
           modrinth: 'Open, GPL-3.0',
           curseforge: 'Closed',
@@ -93,7 +93,7 @@ export const COMPARE: Record<Locale, { rows: CompareRow[] }> = {
       {
         label: 'Kaynak kod',
         cells: {
-          kite: 'Apache 2.0, ilk sürümle herkese açık',
+          kite: 'Açık, Apache 2.0',
           prism: 'Açık, GPL-3.0',
           modrinth: 'Açık, GPL-3.0',
           curseforge: 'Kapalı',
