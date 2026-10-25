@@ -67,6 +67,22 @@ const released = PLATFORMS.some((platform) => release.downloads[platform.key] !=
         }
       </ul>
       {
+        released && (
+          <>
+            <h2 class="sub">{t.download.firstRunTitle}</h2>
+            <p class="first-run-lead">{t.download.firstRunLead}</p>
+            <ul class="list">
+              {t.download.firstRun.map((item) => (
+                <li>
+                  <Icon name="info" size={18} />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )
+      }
+      {
         release.repoUrl && (
           <p class="source">
             <a href={release.repoUrl}>
@@ -136,6 +152,13 @@ const released = PLATFORMS.some((platform) => release.downloads[platform.key] !=
   .needs h2 {
     font-size: var(--text-h3);
     letter-spacing: var(--tracking-h3);
+  }
+  .needs .sub {
+    margin-top: var(--space-8);
+  }
+  .first-run-lead {
+    margin-top: var(--space-3);
+    color: var(--text-secondary);
   }
   .list {
     display: grid;

@@ -4,9 +4,10 @@
 //
 // The hero's download button. Without script it says "Download Kite" and
 // goes to the download page; a few lines below name the visitor's system
-// and point at its build (or its card on the download page while there is
-// no release). It sits on the hero's sky; anything in the slot goes next to
-// the button.
+// and point at its main build (or its card on the download page while there
+// is no release). A Mac always gets its card: a browser does not say whether
+// it runs on Apple silicon or Intel, and each needs its own build. It sits on
+// the hero's sky; anything in the slot goes next to the button.
 import Button from './Button.astro';
 import { PLATFORMS } from '../data/content';
 import { release } from '../data/release';
@@ -21,14 +22,17 @@ const t = getDictionary(locale);
 const downloadPath = localePath(locale, '/download');
 const released = PLATFORMS.some((platform) => release.downloads[platform.key] !== null);
 const targets = Object.fromEntries(
-  PLATFORMS.map((platform) => [
-    platform.key,
-    {
-      label: t.hero.ctaFor[platform.key],
-      minimum: t.hero.minimum[platform.key],
-      href: release.downloads[platform.key] ?? `${downloadPath}#${platform.key}`,
-    },
-  ]),
+  PLATFORMS.map((platform) => {
+    const main = platform.key === 'macos' ? undefined : release.downloads[platform.key]?.[0];
+    return [
+      platform.key,
+      {
+        label: t.hero.ctaFor[platform.key],
+        minimum: t.hero.minimum[platform.key],
+        href: main?.url ?? `${downloadPath}#${platform.key}`,
+      },
+    ];
+  }),
 );
 ---
 

@@ -14,6 +14,10 @@ interface Props {
   /** Text shown instead of the button label when there is no link yet. */
   unavailableText: string;
   buttonLabel: string;
+  /** The system's other builds, as small links under the button. */
+  others?: ReadonlyArray<{ url: string; text: string; label: string }>;
+  /** Introduces `others`, e.g. "Also for". */
+  othersText?: string;
   /** Anchor for links such as /download#macos. */
   id?: string;
   /** h2 on the download page, h3 inside a section on the home page. */
@@ -29,6 +33,8 @@ const {
   buttonText,
   unavailableText,
   buttonLabel,
+  others = [],
+  othersText = '',
   id,
   heading = 'h2',
   tone = 'night',
@@ -50,6 +56,18 @@ const sky = tone === 'sky';
         <Button disabled size="lg" block>
           {unavailableText}
         </Button>
+      )
+    }
+    {
+      href && others.length > 0 && (
+        <p class="others">
+          <span>{othersText}</span>
+          {others.map((other) => (
+            <a href={other.url} aria-label={other.label}>
+              {other.text}
+            </a>
+          ))}
+        </p>
       )
     }
   </div>
@@ -74,6 +92,24 @@ const sky = tone === 'sky';
   .action {
     margin-top: auto;
     padding-top: var(--space-6);
+  }
+  .others {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    margin-top: var(--space-3);
+    font-size: var(--text-sm);
+  }
+  /* A dot between the links, none after the lead-in. */
+  .others a + a::before {
+    content: '·';
+    display: inline-block;
+    margin-right: var(--space-3);
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+  .on-sky .others a {
+    color: var(--on-sky);
   }
 
   .on-sky {

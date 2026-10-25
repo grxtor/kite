@@ -5,6 +5,15 @@
 export type ScreenId = 'home' | 'library' | 'mods' | 'newInstance' | 'java';
 export type FeatureKey = 'library' | 'mods' | 'loaders' | 'java';
 export type PlatformKey = 'macos' | 'windows' | 'linux';
+/** One downloadable build of a system (src/data/release.ts). */
+export type BuildKey =
+  | 'macosArm'
+  | 'macosIntel'
+  | 'macosLegacy'
+  | 'windowsX64'
+  | 'windowsArm'
+  | 'linuxX64'
+  | 'linuxArm';
 
 export interface PageMeta {
   title: string;
@@ -107,10 +116,20 @@ export interface Dictionary {
     button: string;
     /** Accessible name of a download button. `{name}` is the platform name. */
     buttonLabel: string;
+    /** A card's main button. `{build}` is one of `builds`. */
+    buttonFor: string;
+    /** Introduces a card's other builds. */
+    otherBuilds: string;
+    /** Names of the builds, as a card shows them. */
+    builds: Record<BuildKey, string>;
     comingSoon: string;
     platforms: Record<PlatformKey, PlatformCopy>;
     requirementsTitle: string;
     requirements: string[];
+    /** How to open a build the system warns about (they are not signed yet). */
+    firstRunTitle: string;
+    firstRunLead: string;
+    firstRun: string[];
     sourceLink: string;
   };
   legal: {

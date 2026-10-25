@@ -25,14 +25,23 @@ const t = getDictionary(locale);
   {
     PLATFORMS.map((platform) => {
       const copy = t.download.platforms[platform.key];
+      const [main, ...others] = release.downloads[platform.key] ?? [];
       return (
         <PlatformCard
           name={copy.name}
           detail={copy.detail}
-          href={release.downloads[platform.key]}
-          buttonText={t.download.button}
+          href={main?.url ?? null}
+          buttonText={main ? format(t.download.buttonFor, { build: t.download.builds[main.build] }) : t.download.button}
           unavailableText={t.download.comingSoon}
-          buttonLabel={format(t.download.buttonLabel, { name: copy.name })}
+          buttonLabel={format(t.download.buttonLabel, {
+            name: main ? `${copy.name} (${t.download.builds[main.build]})` : copy.name,
+          })}
+          others={others.map((file) => ({
+            url: file.url,
+            text: t.download.builds[file.build],
+            label: format(t.download.buttonLabel, { name: `${copy.name} (${t.download.builds[file.build]})` }),
+          }))}
+          othersText={t.download.otherBuilds}
           id={anchors ? platform.key : undefined}
           heading={heading}
           tone={tone}

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Dictionary } from './types';
 
-export type { Dictionary, FeatureKey, PlatformKey, ScreenId } from './types';
+export type { BuildKey, Dictionary, FeatureKey, PlatformKey, ScreenId } from './types';
 
 export const en: Dictionary = {
   siteName: 'Kite',
@@ -148,6 +148,17 @@ export const en: Dictionary = {
     notReleased: "Kite's first release isn't out yet. Download links will appear here when it is.",
     button: 'Download',
     buttonLabel: 'Download Kite for {name}',
+    buttonFor: 'Download for {build}',
+    otherBuilds: 'Also for',
+    builds: {
+      macosArm: 'Apple silicon',
+      macosIntel: 'Intel',
+      macosLegacy: 'Intel, macOS 12',
+      windowsX64: 'x64',
+      windowsArm: 'Arm',
+      linuxX64: 'x86-64',
+      linuxArm: 'ARM64',
+    },
     comingSoon: 'Coming soon',
     platforms: {
       macos: { name: 'macOS', detail: 'Apple silicon and Intel, macOS 12 or later' },
@@ -159,6 +170,12 @@ export const en: Dictionary = {
       'A Microsoft account that owns Minecraft: Java Edition',
       'A 64-bit system',
       'An internet connection the first time an instance downloads the game',
+    ],
+    firstRunTitle: 'Opening it the first time',
+    firstRunLead: 'Kite’s builds are not signed yet, so your system may warn you before it opens them.',
+    firstRun: [
+      'Windows: if SmartScreen says it protected your PC, choose More info, then Run anyway.',
+      'macOS: if Kite can’t be opened, go to System Settings, then Privacy & Security, and choose Open Anyway next to Kite.',
     ],
     sourceLink: 'Source code and older versions',
   },
