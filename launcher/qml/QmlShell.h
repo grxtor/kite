@@ -461,8 +461,10 @@ class QmlShell : public QObject
 	 * was done, for a toast.
 	 * One setup per instance: while one is still running, this returns
 	 * that one's watcher instead of starting a second task over the same
-	 * mods folder. */
-	Q_INVOKABLE QObject* speedUp(const QString& id);
+	 * mods folder.
+	 * @p extras are other catalog projects to install in the same run
+	 * (New instance's mod picker); only this run installs them. */
+	Q_INVOKABLE QObject* speedUp(const QString& id, const QStringList& extras = {});
 	/* The TaskWatcher of the speedUp() setup still running on instance
 	 * @p id, or null when there is none. For a page that opens after the
 	 * setup began (the new-instance dialog starts it and closes) and

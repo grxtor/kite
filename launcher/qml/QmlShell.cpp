@@ -378,7 +378,7 @@ QObject* QmlShell::performanceSetup(const QString& id) const
 	return m_performanceSetups.value(id).data();
 }
 
-QObject* QmlShell::speedUp(const QString& id)
+QObject* QmlShell::speedUp(const QString& id, const QStringList& extras)
 {
 	if (auto* running = performanceSetup(id)) {
 		return running;
@@ -392,7 +392,7 @@ QObject* QmlShell::speedUp(const QString& id)
 	instance->settings()->set("KitePerformance", true);
 	emit performanceChanged(id);
 
-	auto* task = new PerformanceSetupTask(instance);
+	auto* task = new PerformanceSetupTask(instance, extras);
 	auto* watcher = new TaskWatcher(Task::Ptr(task), this);
 	watcher->setTitle(tr("Kite Performance"));
 	m_performanceSetups.insert(id, watcher);

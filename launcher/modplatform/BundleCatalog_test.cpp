@@ -38,7 +38,7 @@ namespace
 					{ "project": "shared", "name": "Shared", "category": "core", "default": true,
 					  "summary": { "en": "English only" } },
 					{ "project": "forgeonly", "name": "Forge Only", "category": "core", "default": false,
-					  "loaders": ["forge"], "serverSafe": false,
+					  "loaders": ["forge"], "serverSafe": false, "requires": ["shared"],
 					  "summary": { "en": "Forge", "tr": "Forge tr" } }
 				]
 			},
@@ -155,10 +155,12 @@ class BundleCatalogTest : public QObject
 		QCOMPARE(shared.value("categoryName").toString(), QString("Cekirdek"));
 		QVERIFY(shared.value("isDefault").toBool());
 		QVERIFY(shared.value("serverSafe").toBool());
+		QVERIFY(shared.value("requires").toStringList().isEmpty());
 
 		const QVariantMap forgeOnly = mods.at(1).toMap();
 		QVERIFY(!forgeOnly.value("isDefault").toBool());
 		QVERIFY(!forgeOnly.value("serverSafe").toBool());
+		QCOMPARE(forgeOnly.value("requires").toStringList(), QStringList{"shared"});
 	}
 
 	void aProjectInTwoBundlesIsListedOnce()
@@ -270,6 +272,24 @@ class BundleCatalogTest : public QObject
 			const QStringList projects = projectsOf(
 				catalog.mods({"performance", "comfort"}, loader));
 			QCOMPARE(projects.size(), QSet<QString>(projects.begin(), projects.end()).size());
+		}
+	}
+
+	void theBuiltInCatalogRequiresWhatItLists()
+	{
+		/* Picking a mod picks what it requires too, so each of those has
+		 * to be in the same list. */
+		BundleCatalog catalog;
+		for (const QString& loader : {"fabric", "forge", "neoforge", "quilt"}) {
+			const QVariantList mods = catalog.mods({"performance", "comfort"}, loader);
+			const QStringList projects = projectsOf(mods);
+			for (const QVariant& mod : mods) {
+				const QVariantMap fields = mod.toMap();
+				for (const QString& required : fields.value("requires").toStringList()) {
+					QVERIFY2(projects.contains(required),
+							 qPrintable(fields.value("name").toString() + " / " + loader));
+				}
+			}
 		}
 	}
 };

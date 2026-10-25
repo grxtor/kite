@@ -1674,7 +1674,7 @@ This cannot be undone.</source>
 <context>
     <name>BundleCatalog</name>
     <message>
-        <location filename="../launcher/modplatform/BundleCatalog.cpp" line="+261"/>
+        <location filename="../launcher/modplatform/BundleCatalog.cpp" line="+262"/>
         <location line="+87"/>
         <source>Recommended mods</source>
         <translation>Önerilen modlar</translation>
@@ -10695,7 +10695,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+308"/>
+        <location filename="../launcher/qml/Main.qml" line="+311"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -13569,6 +13569,69 @@ Are you sure?</source>
     </message>
 </context>
 <context>
+    <name>ModPickerSheet</name>
+    <message>
+        <location filename="../launcher/qml/Components/ModPickerSheet.qml" line="+49"/>
+        <source>All</source>
+        <translation>Tümü</translation>
+    </message>
+    <message>
+        <location line="+59"/>
+        <source>Kite Performance mods</source>
+        <translation>Kite Performans modları</translation>
+    </message>
+    <message>
+        <location line="+22"/>
+        <source>Search mods</source>
+        <translation>Mod ara</translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <source>No mods match.</source>
+        <translation>Eşleşen mod yok.</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>%1 of %2 on</source>
+        <translation>%1 / %2 açık</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Reset to defaults</source>
+        <translation>Varsayılana dön</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Done</source>
+        <translation>Bitti</translation>
+    </message>
+    <message>
+        <location line="+72"/>
+        <source>On</source>
+        <translation>Açık</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Off</source>
+        <translation>Kapalı</translation>
+    </message>
+    <message>
+        <location line="+26"/>
+        <source>Default</source>
+        <translation>Varsayılan</translation>
+    </message>
+    <message>
+        <location line="+25"/>
+        <source>Needs %1</source>
+        <translation>%1 gerekir</translation>
+    </message>
+</context>
+<context>
     <name>ModUpdateCheckTask</name>
     <message>
         <location filename="../launcher/modplatform/ModUpdateCheckTask.cpp" line="+237"/>
@@ -14054,7 +14117,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>NewInstanceDialog</name>
     <message>
-        <location filename="../launcher/qml/Components/NewInstanceDialog.qml" line="+79"/>
+        <location filename="../launcher/qml/Components/NewInstanceDialog.qml" line="+83"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
@@ -14069,7 +14132,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Minecraft %1</translation>
     </message>
     <message>
-        <location line="+71"/>
+        <location line="+96"/>
         <source>Release</source>
         <translation>Kararlı sürüm</translation>
     </message>
@@ -14099,19 +14162,19 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Yeni kurulum</translation>
     </message>
     <message>
-        <location line="+80"/>
-        <location line="+607"/>
+        <location line="+83"/>
+        <location line="+556"/>
         <source>Create</source>
         <translation>Oluştur</translation>
     </message>
     <message>
-        <location line="-606"/>
-        <location line="+620"/>
+        <location line="-555"/>
+        <location line="+569"/>
         <source>Import</source>
         <translation>İçe aktar</translation>
     </message>
     <message>
-        <location line="-601"/>
+        <location line="-550"/>
         <source>Instance icon</source>
         <translation>Kurulum simgesi</translation>
     </message>
@@ -14142,12 +14205,22 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Grup yok</translation>
     </message>
     <message>
-        <location line="+30"/>
+        <location line="+41"/>
+        <source>Type</source>
+        <translation>Tür</translation>
+    </message>
+    <message>
+        <location line="+68"/>
         <source>Minecraft version</source>
         <translation>Minecraft sürümü</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+14"/>
+        <source>Snapshots and old versions</source>
+        <translation>Ön sürümler ve eski sürümler</translation>
+    </message>
+    <message>
+        <location line="+9"/>
         <source>Snapshots</source>
         <translation>Ön sürümler</translation>
     </message>
@@ -14157,22 +14230,12 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Eski sürümler</translation>
     </message>
     <message>
-        <location line="+73"/>
+        <location line="+79"/>
         <source>Recommended</source>
         <translation>Önerilen</translation>
     </message>
     <message>
-        <location line="+71"/>
-        <source>Fabric with Sodium and the other performance mods, as its own instance.</source>
-        <translation>Sodium ve diğer performans modlarıyla Fabric, ayrı bir kurulum olarak.</translation>
-    </message>
-    <message>
-        <location line="+25"/>
-        <source>Mod loader</source>
-        <translation>Mod yükleyici</translation>
-    </message>
-    <message>
-        <location line="+17"/>
+        <location line="-144"/>
         <source>Loading…</source>
         <translation>Yükleniyor…</translation>
     </message>
@@ -14182,12 +14245,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Bu sürüm için yok</translation>
     </message>
     <message>
-        <location line="-106"/>
-        <source>Kite Performance</source>
-        <translation>Kite Performans</translation>
-    </message>
-    <message>
-        <location line="+277"/>
+        <location line="+276"/>
         <source>Drop a .zip or .mrpack file here</source>
         <translation>Buraya bir .zip veya .mrpack dosyası bırak</translation>
     </message>
@@ -14278,6 +14336,34 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <location filename="../launcher/ui/dialogs/NewInstanceDialog.cpp" line="+64"/>
         <source>Default (%1)</source>
         <translation>Varsayılan (%1)</translation>
+    </message>
+</context>
+<context>
+    <name>NewInstanceKindList</name>
+    <message>
+        <location filename="../launcher/qml/Components/NewInstanceKindList.qml" line="+55"/>
+        <source>%1, %2 and %3 more</source>
+        <translation>%1, %2 ve %3 mod daha</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Kite Performance</source>
+        <translation>Kite Performans</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Not for this version</source>
+        <translation>Bu sürümde yok</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Fabric with the performance mods</source>
+        <translation>Performans modlarıyla Fabric</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Edit mods</source>
+        <translation>Modları düzenle</translation>
     </message>
 </context>
 <context>
@@ -15244,7 +15330,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>PerformanceSetupTask</name>
     <message>
-        <location filename="../launcher/minecraft/PerformanceSetupTask.cpp" line="+48"/>
+        <location filename="../launcher/minecraft/PerformanceSetupTask.cpp" line="+49"/>
         <source>Checking Kite Performance</source>
         <translation>Kite Performans kontrol ediliyor</translation>
     </message>
@@ -15255,13 +15341,13 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     </message>
     <message>
         <location line="+6"/>
-        <location line="+20"/>
-        <location line="+42"/>
+        <location line="+21"/>
+        <location line="+43"/>
         <source>Kite Performance: up to date</source>
         <translation>Kite Performans: güncel</translation>
     </message>
     <message>
-        <location line="-26"/>
+        <location line="-27"/>
         <source>Looking for mods you already have</source>
         <translation>Zaten sahip olduğun modlar aranıyor</translation>
     </message>
@@ -15271,7 +15357,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Modlar tanınıyor</translation>
     </message>
     <message>
-        <location line="+33"/>
+        <location line="+34"/>
         <source>Finding performance mods</source>
         <translation>Performans modları bulunuyor</translation>
     </message>

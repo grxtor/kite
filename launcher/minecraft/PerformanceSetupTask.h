@@ -44,7 +44,8 @@ class TaskWatcher;
  *
  * What is wanted is the catalog's default performance mods for the
  * instance's loader, minus the ones the player unticked
- * (KitePerformanceExcluded), minus what is already there: mods the folder
+ * (KitePerformanceExcluded), plus `extras` -- other catalog mods picked for
+ * this one run, e.g. in New instance -- minus what is already there: mods the folder
  * recorded from Modrinth, and jars added by hand that Modrinth identifies
  * by hash - so a hand-added Sodium never gets a second one beside it.
  * Nothing wanted ends the task at once, without the network.
@@ -58,6 +59,7 @@ class PerformanceSetupTask : public Task
 
   public:
 	explicit PerformanceSetupTask(std::shared_ptr<MinecraftInstance> instance,
+								  const QStringList& extras = {},
 								  QObject* parent = nullptr);
 	~PerformanceSetupTask() override = default;
 
@@ -100,6 +102,7 @@ class PerformanceSetupTask : public Task
 	QString m_mcVersion;
 	QString m_loader;
 	QStringList m_defaults;
+	QStringList m_extras;
 	QStringList m_excluded;
 	QStringList m_installed;
 	QStringList m_wanted;

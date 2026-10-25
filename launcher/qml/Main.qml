@@ -139,10 +139,13 @@ ApplicationWindow {
                 devDetail.start()
             else if (key === "newinstance")
                 root.openNewInstance(value)
-            // The New instance dialog's mod loader, picked (after
-            // newinstance): "loader=fabric".
+            // The New instance dialog's type, picked (after newinstance):
+            // "loader=fabric", or "loader=performance" for Kite Performance;
+            // "mods" then opens Kite Performance's mod picker.
             else if (key === "loader")
-                root.shell.newInstance.loader = value
+                root.dialog(newInstanceLoader).pickKind(value)
+            else if (key === "mods")
+                root.dialog(newInstanceLoader).openModPicker()
             else if (key === "nav")
                 root.navigate(value)
             else if (key === "import")

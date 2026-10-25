@@ -241,6 +241,7 @@ QVariantList BundleCatalog::mods(const QStringList& bundleIds,
 				{"isDefault", mod.value("default").toBool()},
 				{"serverSafe", mod.value("serverSafe").toBool(true)},
 				{"icon", mod.value("icon").toString()},
+				{"requires", mod.value("requires").toVariant().toStringList()},
 			});
 		}
 	}

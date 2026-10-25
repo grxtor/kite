@@ -20,9 +20,9 @@
 				{ "project": "nmDcB62a", "name": "ModernFix", "icon": "https://cdn.modrinth.com/data/nmDcB62a/2af94de5e08ae54567ee86b968fc7ce076d9fee5_96.webp", "category": "core", "default": true, "summary": { "en": "Faster start, less memory.", "tr": "Daha hızlı açılış, daha az bellek." } },
 				{ "project": "g96Z4WVZ", "name": "BadOptimizations", "category": "extra", "default": false, "summary": { "en": "Small CPU savings.", "tr": "Küçük işlemci tasarrufları." } },
 				{ "project": "Ps1zyz6x", "name": "ScalableLux", "icon": "https://cdn.modrinth.com/data/Ps1zyz6x/27133942a1a58af1bb11b087957ea4cc14414dd3_96.webp", "category": "extra", "default": false, "summary": { "en": "Faster lighting engine.", "tr": "Daha hızlı ışık motoru." } },
-				{ "project": "YL57xq9U", "name": "Iris", "icon": "https://cdn.modrinth.com/data/YL57xq9U/18d0e7f076d3d6ed5bedd472b853909aac5da202_96.webp", "category": "extra", "default": false, "summary": { "en": "Shader packs, including OptiFine ones.", "tr": "Shader paketleri, OptiFine'ınkiler dahil." } },
-				{ "project": "PtjYWJkn", "name": "Sodium Extra", "icon": "https://cdn.modrinth.com/data/PtjYWJkn/0df4fb22a11e1dcb5e83cb0aadd275b571aca7a9_96.webp", "category": "extra", "default": false, "summary": { "en": "More video settings.", "tr": "Daha fazla görüntü ayarı." } },
-				{ "project": "Bh37bMuy", "name": "Reese's Sodium Options", "icon": "https://cdn.modrinth.com/data/Bh37bMuy/icon.png", "category": "extra", "default": false, "summary": { "en": "A roomier video settings screen.", "tr": "Daha ferah bir görüntü ayarları ekranı." } }
+				{ "project": "YL57xq9U", "name": "Iris", "icon": "https://cdn.modrinth.com/data/YL57xq9U/18d0e7f076d3d6ed5bedd472b853909aac5da202_96.webp", "category": "extra", "default": false, "requires": ["AANobbMI"], "summary": { "en": "Shader packs, including OptiFine ones.", "tr": "Shader paketleri, OptiFine'ınkiler dahil." } },
+				{ "project": "PtjYWJkn", "name": "Sodium Extra", "icon": "https://cdn.modrinth.com/data/PtjYWJkn/0df4fb22a11e1dcb5e83cb0aadd275b571aca7a9_96.webp", "category": "extra", "default": false, "requires": ["AANobbMI"], "summary": { "en": "More video settings.", "tr": "Daha fazla görüntü ayarı." } },
+				{ "project": "Bh37bMuy", "name": "Reese's Sodium Options", "icon": "https://cdn.modrinth.com/data/Bh37bMuy/icon.png", "category": "extra", "default": false, "requires": ["AANobbMI"], "summary": { "en": "A roomier video settings screen.", "tr": "Daha ferah bir görüntü ayarları ekranı." } }
 			]
 		},
 		{

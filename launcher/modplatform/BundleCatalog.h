@@ -61,7 +61,8 @@ class BundleCatalog : public QObject
 	/// The mods of @p bundleIds, in catalog order, that exist for
 	/// @p loader (empty = vanilla, nothing): project, name, summary, bundle,
 	/// bundleName, category, categoryName, isDefault, serverSafe, icon (a URL,
-	/// "" when the catalog has none). A project
+	/// "" when the catalog has none), requires (the catalog projects it does
+	/// not run without; empty when none). A project
 	/// in several bundles is listed once, under the first.
 	Q_INVOKABLE QVariantList mods(const QStringList& bundleIds,
 								  const QString& loader) const;

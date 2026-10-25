@@ -44,9 +44,12 @@ Dialog {
     // The QML shell: which versions have Kite Performance, and its bundle
     // catalog and speedUp() to set an instance up once it exists.
     property var shell: null
-    // The selected version was picked with its ⚡: Fabric, the performance
-    // mods and its own name. A plain row or loader click turns it off.
+    // Kite Performance is the picked type: Fabric, the performance mods and
+    // its own name. Picking another type turns it off.
     property bool performanceMode: false
+    // Project ids of the catalog mods picked for Kite Performance in the mod
+    // picker, or null for the catalog's defaults.
+    property var modPicks: null
     // Raw text of the chosen file/URL in import mode.
     property string importSource: ""
     // What import mode's file/URL field starts with when the dialog opens:
@@ -63,12 +66,13 @@ Dialog {
     // The ⚡ pick only applies to creating; an import started after it is a
     // plain one.
     readonly property bool performanceCreate: root.mode === "create" && root.performanceMode
-    readonly property int loaderTileHeight: Theme.control.heightLg
     // Rows of the version list that always stay visible; a shorter window
     // scrolls the dialog instead of squeezing the list.
     readonly property int versionListRows: 4
     readonly property int versionListMinHeight: versionListRows * Theme.control.height + Theme.space.xs * 2 + 2
-    readonly property int logoSize: Theme.icon.lg
+    // The type list's column, wide enough for the performance mods' icons
+    // on one line; the version list takes the rest.
+    readonly property int kindColumnWidth: 296
     // Each loader wears the logo the launcher already ships for it (the
     // iconName column of knownModLoaders(), served by the instanceicon
     // provider); the unmodified game gets the grass block, the default
@@ -151,25 +155,41 @@ Dialog {
         refreshImportName()
     }
 
-    // A plain pick of @p version: Kite Performance is not part of it.
-    function pickVersion(version) {
-        root.performanceMode = false
-        root.controller.selectMinecraftVersion(version)
-    }
-    // A version's ⚡: that version, on Fabric, as a Kite Performance instance.
-    function pickPerformance(version) {
-        root.controller.selectMinecraftVersion(version)
-        root.controller.loader = "fabric"
-        root.performanceMode = true
-    }
-    function pickLoader(value) {
-        root.performanceMode = false
-        root.controller.loader = value
+    // A row of the type list: Kite Performance is Fabric with the
+    // performance mods and its own name; any other row is that loader, plain.
+    function pickKind(kind) {
+        if (kind === kindList.performanceKind) {
+            root.controller.loader = "fabric"
+            root.performanceMode = true
+        } else {
+            root.performanceMode = false
+            root.controller.loader = kind
+        }
     }
 
-    // The performance mods the setup will install, for the icon row.
-    function performanceMods() {
-        return root.shell && root.shell.bundles ? root.shell.bundles.mods(["performance"], "fabric") : []
+    // Kite Performance has mods for releases from 1.16 on; while it is the
+    // type, the other versions cannot be picked.
+    function versionFits(version) {
+        return !root.performanceMode || (!!root.shell && root.shell.performanceSupported(version))
+    }
+
+    // Every catalog mod Kite Performance can bring: the performance bundle
+    // and the comfort one.
+    function catalogMods() {
+        return root.shell && root.shell.bundles ? root.shell.bundles.mods(["performance", "comfort"], "fabric") : []
+    }
+    function pickedProjects() {
+        return root.modPicks !== null ? root.modPicks
+             : root.catalogMods().filter((mod) => mod.isDefault === true).map((mod) => mod.project)
+    }
+    // The rows of the picked mods, for the type list's icons and summary.
+    function pickedMods() {
+        const picked = root.pickedProjects()
+        return root.catalogMods().filter((mod) => picked.indexOf(mod.project) >= 0)
+    }
+    function openModPicker() {
+        modPicker.mods = root.catalogMods()
+        modPicker.openWith(root.pickedProjects())
     }
 
     // A Kite Performance instance leaves the game's files for the first Play:
@@ -181,10 +201,19 @@ Dialog {
 
     // The instance exists: its memory and options.txt, then the mods, which
     // install in the background while the integrator shows the instance.
+    // The setup keeps the performance bundle's defaults installed on every
+    // Play, so the ones turned off are excluded for good; every other pick
+    // is installed once, with them.
     function installPerformance() {
         const id = root.watcher.instanceId
+        const picked = root.pickedProjects()
+        const kept = (mod) => mod.bundle === "performance" && mod.isDefault === true
+        const mods = root.catalogMods()
         root.shell.bundles.applyPresetDefaults(id, "performance")
-        root.shell.speedUp(id)
+        root.shell.setPerformanceExcluded(id, mods.filter((mod) => kept(mod) && picked.indexOf(mod.project) < 0)
+                                                 .map((mod) => mod.project))
+        root.shell.speedUp(id, mods.filter((mod) => !kept(mod) && picked.indexOf(mod.project) >= 0)
+                                   .map((mod) => mod.project))
         root.close()
         root.openInstanceRequested(id)
     }
@@ -222,10 +251,13 @@ Dialog {
     }
 
     // root.mode itself is left alone here -- the integrator sets it right
-    // before open(), e.g. Main.qml's openNewInstance(mode).
-    onOpened: {
+    // before open(), e.g. Main.qml's openNewInstance(mode). Before the
+    // dialog shows, so a pick made right after open() (Main.qml's
+    // "loader=" route step) is not reset.
+    onAboutToShow: {
         root.watcher = null
         root.performanceMode = false
+        root.modPicks = null
         root.nameEdited = false
         root.selectedIcon = "default"
         groupField.text = ""
@@ -407,19 +439,98 @@ Dialog {
             onPicked: (key) => root.selectedIcon = key
         }
 
+        ModPickerSheet {
+            id: modPicker
+            onPicked: (projects) => root.modPicks = projects
+        }
+
         StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             currentIndex: root.mode === "import" ? 1 : 0
 
-        // Create: pick a Minecraft version and, optionally, a mod loader.
+        // Create: what the instance runs on, beside the Minecraft version.
+        RowLayout {
+            spacing: Theme.space.xl
+
+        // Type: Kite Performance, the unmodified game or a mod loader.
         ColumnLayout {
-            spacing: Theme.space.lg
+            Layout.fillWidth: false
+            Layout.preferredWidth: root.kindColumnWidth
+            Layout.fillHeight: true
+            spacing: Theme.space.md
+
+            // As tall as the version column's heading with its filter
+            // button, so both lists start on one line.
+            Text {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Theme.control.heightSm
+                verticalAlignment: Text.AlignVCenter
+                text: qsTr("Type")
+                color: Theme.palette.textPrimary
+                font.family: Theme.font.heading
+                font.pixelSize: Theme.type.title.pixelSize
+                font.weight: Font.Bold
+            }
+
+            NewInstanceKindList {
+                id: kindList
+                Layout.fillWidth: true
+                enabled: !root.creating && !!root.controller
+                loaders: root.loaders
+                current: root.performanceMode ? kindList.performanceKind
+                       : root.controller ? root.controller.loader : ""
+                performanceAvailable: !!root.shell && !!root.controller
+                                      && root.shell.performanceSupported(root.controller.selectedMinecraftVersion)
+                // Read again on every pick, after the catalog may have loaded.
+                pickedMods: root.performanceMode ? root.pickedMods() : []
+                onPicked: (kind) => root.pickKind(kind)
+                onEditModsRequested: root.openModPicker()
+            }
+
+            // The picked loader's version; names the loader as well
+            // ("Fabric 0.20.1"), so the box says whose version it is.
+            ComboBox {
+                id: loaderVersionBox
+                Layout.fillWidth: true
+                visible: !!root.controller && root.controller.loader.length > 0
+                enabled: !root.creating && count > 0
+                model: root.controller ? root.controller.loaderVersions : null
+                textRole: "version"
+                valueRole: "versionId"
+                displayText: root.controller && root.controller.loaderLoading ? qsTr("Loading…")
+                           : count === 0 ? qsTr("None for this version")
+                           : root.loaderLabel(root.controller.loader) + " "
+                             + (currentIndex >= 0 ? currentText : root.controller.selectedLoaderVersion)
+                // The controller may have picked a version before the rows
+                // reached this box; line the two up whenever either moves.
+                function syncToController() {
+                    if (root.controller)
+                        currentIndex = indexOfValue(root.controller.selectedLoaderVersion)
+                }
+                onCountChanged: syncToController()
+                onActivated: root.controller.selectLoaderVersion(currentValue)
+                // Follow the controller's pick (it defaults to the newest).
+                Connections {
+                    target: root.controller
+                    ignoreUnknownSignals: true
+                    function onSelectedLoaderVersionChanged() { loaderVersionBox.syncToController() }
+                }
+            }
+
+            Item { Layout.fillHeight: true }
+        }
 
         // Minecraft version
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: Theme.space.md
+
         RowLayout {
             Layout.fillWidth: true
-            spacing: Theme.space.lg
+            Layout.preferredHeight: Theme.control.heightSm
+            spacing: Theme.space.sm
 
             Text {
                 Layout.fillWidth: true
@@ -429,17 +540,34 @@ Dialog {
                 font.pixelSize: Theme.type.title.pixelSize
                 font.weight: Font.Bold
             }
-            Switch {
-                text: qsTr("Snapshots")
+            // Snapshots and old versions are rarely wanted: a menu rather
+            // than two switches, lit while either is on.
+            IconButton {
+                id: filterButton
+                readonly property bool filtering: !!root.controller
+                    && (root.controller.minecraftVersions.showSnapshots || root.controller.minecraftVersions.showOldVersions)
                 enabled: !!root.controller
-                checked: root.controller ? root.controller.minecraftVersions.showSnapshots : false
-                onToggled: root.controller.minecraftVersions.showSnapshots = checked
+                iconName: "filter"
+                tip: qsTr("Snapshots and old versions")
+                size: Theme.control.heightSm
+                icon.color: filtering ? Theme.palette.accentText
+                          : hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
+                onClicked: filterMenu.popup(filterButton, 0, filterButton.height + Theme.space.xs)
             }
-            Switch {
-                text: qsTr("Old versions")
-                enabled: !!root.controller
-                checked: root.controller ? root.controller.minecraftVersions.showOldVersions : false
-                onToggled: root.controller.minecraftVersions.showOldVersions = checked
+            Menu {
+                id: filterMenu
+                MenuItem {
+                    text: qsTr("Snapshots")
+                    checkable: true
+                    checked: root.controller ? root.controller.minecraftVersions.showSnapshots : false
+                    onToggled: root.controller.minecraftVersions.showSnapshots = checked
+                }
+                MenuItem {
+                    text: qsTr("Old versions")
+                    checkable: true
+                    checked: root.controller ? root.controller.minecraftVersions.showOldVersions : false
+                    onToggled: root.controller.minecraftVersions.showOldVersions = checked
+                }
             }
         }
 
@@ -478,12 +606,17 @@ Dialog {
                     width: versions.width
                     height: Theme.control.height
                     hoverEnabled: true
-                    onClicked: root.pickVersion(version)
+                    enabled: root.versionFits(version)
+                    onClicked: root.controller.selectMinecraftVersion(version)
 
+                    // The pick-one list's look (VersionRow): the picked row
+                    // is lifted, outlined and ticked; hover only lifts.
                     background: Rectangle {
                         radius: Theme.radius.md
                         color: versionRow.selected ? Theme.palette.surfaceHover
                              : versionRow.hovered ? Theme.palette.hoverOverlay : "transparent"
+                        border.width: 1
+                        border.color: versionRow.selected ? Theme.neutral.borderHover : "transparent"
                     }
 
                     contentItem: RowLayout {
@@ -491,14 +624,14 @@ Dialog {
                         Text {
                             Layout.leftMargin: Theme.space.md
                             text: versionRow.version
-                            color: versionRow.selected ? Theme.palette.accentText : Theme.palette.textPrimary
+                            color: versionRow.enabled ? Theme.palette.textPrimary : Theme.palette.textTertiary
                             font.family: Theme.font.family
                             font.pixelSize: Theme.type.body.pixelSize
                             font.weight: versionRow.selected ? Font.Bold : Font.Medium
                         }
                         // Releases are the list's default and need no
                         // badge on every row; a snapshot or an old beta/
-                        // alpha does, once the switches above show them.
+                        // alpha does, once the filter above shows them.
                         StatusBadge {
                             visible: versionRow.type !== "release"
                             tone: versionRow.type === "snapshot" ? "warning" : "neutral"
@@ -512,26 +645,23 @@ Dialog {
                             text: qsTr("Recommended")
                         }
                         Item { Layout.fillWidth: true }
-                        // Where Kite Performance exists, its own pick: the
-                        // version on Fabric with the performance mods.
-                        IconButton {
-                            visible: root.shell ? root.shell.performanceSupported(versionRow.version) : false
-                            iconName: "zap"
-                            tip: qsTr("Kite Performance")
-                            size: Theme.control.heightSm
-                            icon.color: versionRow.selected && root.performanceMode ? Theme.palette.accentText
-                                      : hovered ? Theme.palette.textPrimary : Theme.palette.textTertiary
-                            onClicked: root.pickPerformance(versionRow.version)
-                        }
-                        // One width for every date, so the ⚡ stands in one column.
+                        // One width for every date, so the tick stands in one column.
                         Text {
-                            Layout.rightMargin: Theme.space.md
                             Layout.preferredWidth: dateSample.advanceWidth
                             horizontalAlignment: Text.AlignRight
                             text: versionRow.time ? Format.calendarDate(new Date(versionRow.time)) : ""
                             color: Theme.palette.textTertiary
                             font.family: Theme.font.family
                             font.pixelSize: Theme.type.caption.pixelSize
+                        }
+                        // Faded out rather than hidden, so the dates keep
+                        // their column on every row.
+                        MeshIcon {
+                            Layout.rightMargin: Theme.space.md
+                            opacity: versionRow.selected ? 1 : 0
+                            iconName: "check"
+                            size: Theme.icon.sm
+                            color: Theme.palette.accentText
                         }
                     }
                 }
@@ -574,156 +704,7 @@ Dialog {
             }
         }
 
-        // What the \u26a1 pick brings, only while it is the pick.
-        Text {
-            Layout.fillWidth: true
-            Layout.topMargin: -Theme.space.sm
-            visible: root.performanceMode
-            wrapMode: Text.Wrap
-            text: qsTr("Fabric with Sodium and the other performance mods, as its own instance.")
-            color: Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
-        }
-        PerformanceModIcons {
-            Layout.fillWidth: true
-            Layout.topMargin: -Theme.space.xs
-            visible: root.performanceMode
-            mods: root.performanceMode ? root.performanceMods() : []
-        }
-
-        // Mod loader
-        ColumnLayout {
-            Layout.fillWidth: true
-            spacing: Theme.space.sm
-
-            // As tall as the loader version box with or without it, so
-            // picking a loader does not shorten the version list above.
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.preferredHeight: Theme.control.height
-                spacing: Theme.space.md
-
-                Text {
-                    text: qsTr("Mod loader")
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Font.Bold
-                }
-                Item { Layout.fillWidth: true }
-                ComboBox {
-                    id: loaderVersionBox
-                    Layout.preferredWidth: 220
-                    visible: !!root.controller && root.controller.loader.length > 0
-                    enabled: !root.creating && count > 0
-                    model: root.controller ? root.controller.loaderVersions : null
-                    textRole: "version"
-                    valueRole: "versionId"
-                    // Names the loader as well ("Fabric 0.20.1"), so the box
-                    // says whose version it is.
-                    displayText: root.controller && root.controller.loaderLoading ? qsTr("Loading\u2026")
-                               : count === 0 ? qsTr("None for this version")
-                               : root.loaderLabel(root.controller.loader) + " "
-                                 + (currentIndex >= 0 ? currentText : root.controller.selectedLoaderVersion)
-                    // The controller may have picked a version before the rows
-                    // reached this box; line the two up whenever either moves.
-                    function syncToController() {
-                        if (root.controller)
-                            currentIndex = indexOfValue(root.controller.selectedLoaderVersion)
-                    }
-                    onCountChanged: syncToController()
-                    onActivated: root.controller.selectLoaderVersion(currentValue)
-                    // Follow the controller's pick (it defaults to the newest).
-                    Connections {
-                        target: root.controller
-                        ignoreUnknownSignals: true
-                        function onSelectedLoaderVersionChanged() { loaderVersionBox.syncToController() }
-                    }
-                }
-            }
-
-            // One selectable tile per loader, its logo beside its name: a
-            // control-sized row, so the version list above keeps the height.
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: Theme.space.sm
-
-                Repeater {
-                    model: root.loaders
-
-                    delegate: AbstractButton {
-                        id: loaderCard
-                        required property var modelData
-                        readonly property bool selected: (root.controller ? root.controller.loader : "") === modelData.value
-
-                        // Equal shares of the row, whatever the label.
-                        Layout.fillWidth: true
-                        Layout.preferredWidth: 1
-                        Layout.preferredHeight: root.loaderTileHeight
-                        enabled: !root.creating
-                        hoverEnabled: true
-                        checkable: true
-                        checked: selected
-                        Accessible.name: modelData.label
-                        onClicked: if (root.controller) root.pickLoader(modelData.value)
-
-                        // The chosen one wears the active tab's and the
-                        // filter chips' look (accentSubtle fill, accent
-                        // hairline); the rest are plain outlines on the
-                        // dialog, so the row reads as one control.
-                        background: Rectangle {
-                            radius: Theme.radius.md
-                            color: loaderCard.selected ? Theme.palette.accentSubtle
-                                 : loaderCard.hovered ? Theme.palette.hoverOverlay : "transparent"
-                            border.width: 1
-                            border.color: loaderCard.selected ? Theme.palette.accent
-                                        : loaderCard.hovered ? Theme.palette.borderStrong : Theme.palette.border
-                            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-                            Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-                        }
-
-                        contentItem: Item {
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: Theme.space.sm
-
-                                // The logo stands on the tile itself: a
-                                // dark well around it read as a hole in
-                                // the tile. One box for all, scaled by
-                                // the loader's `fit`.
-                                Item {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: root.logoSize
-                                    height: width
-
-                                    Image {
-                                        anchors.centerIn: parent
-                                        width: Math.round(root.logoSize * loaderCard.modelData.fit)
-                                        height: width
-                                        source: Icons.instanceIcon(loaderCard.modelData.iconKey)
-                                        sourceSize: Qt.size(width * 2, height * 2)
-                                        fillMode: Image.PreserveAspectFit
-                                        smooth: true
-                                        mipmap: true
-                                    }
-                                }
-
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: loaderCard.modelData.label
-                                    color: loaderCard.selected ? Theme.palette.accentText : Theme.palette.textSecondary
-                                    font.family: Theme.font.family
-                                    font.pixelSize: Theme.type.label.pixelSize
-                                    font.weight: loaderCard.selected ? Font.DemiBold : Font.Medium
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
+        } // version column
         } // create pane
 
         // Import: a local archive/export, or a direct download URL.

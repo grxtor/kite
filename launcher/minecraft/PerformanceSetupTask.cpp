@@ -38,8 +38,9 @@ namespace
 } // namespace
 
 PerformanceSetupTask::PerformanceSetupTask(
-	std::shared_ptr<MinecraftInstance> instance, QObject* parent)
-	: Task(parent), m_instance(std::move(instance))
+	std::shared_ptr<MinecraftInstance> instance, const QStringList& extras,
+	QObject* parent)
+	: Task(parent), m_instance(std::move(instance)), m_extras(extras)
 {
 }
 
@@ -77,7 +78,8 @@ void PerformanceSetupTask::executeTask()
 	m_excluded = PerformanceSetup::parseExcluded(
 		m_instance->settings()->get("KitePerformanceExcluded").toString());
 	m_installed = m_folder->metadataIndex()->projectIds(ModrinthApi::get().id());
-	m_wanted = PerformanceSetup::wantedProjects(m_defaults, m_excluded, m_installed);
+	m_wanted = PerformanceSetup::wantedProjects(m_defaults + m_extras, m_excluded,
+												m_installed);
 
 	if (m_wanted.isEmpty()) {
 		finish(tr("Kite Performance: up to date"));
@@ -120,7 +122,8 @@ void PerformanceSetupTask::onJarsIdentified(const QByteArray& reply)
 	}
 	/* A failed lookup leaves the metadata-only set as it was. */
 	m_installed.append(PerformanceSetup::projectsInHashReply(reply));
-	m_wanted = PerformanceSetup::wantedProjects(m_defaults, m_excluded, m_installed);
+	m_wanted = PerformanceSetup::wantedProjects(m_defaults + m_extras, m_excluded,
+												m_installed);
 	if (m_wanted.isEmpty()) {
 		finish(tr("Kite Performance: up to date"));
 		return;
