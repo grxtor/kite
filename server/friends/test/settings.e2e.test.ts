@@ -14,7 +14,7 @@ describe('me and settings', () => {
     await s.close();
   });
 
-  const defaults: Settings = { visibility: 'friends', hideServer: false, shareIpServers: false };
+  const defaults: Settings = { visibility: 'friends', hideServer: false, shareIpServers: false, allowJoin: true };
 
   test('GET /v1/me returns uuid, name and default settings', async () => {
     const me = await s.newPlayer();
@@ -34,9 +34,20 @@ describe('me and settings', () => {
     const me = await s.newPlayer();
     await s.api('PATCH', '/v1/me/settings', { token: me.token, body: { visibility: 'invisible', hideServer: true } });
     const res = await s.api<Settings>('PATCH', '/v1/me/settings', { token: me.token, body: { shareIpServers: true } });
-    assert.deepEqual(res.body, { visibility: 'invisible', hideServer: true, shareIpServers: true });
+    assert.deepEqual(res.body, { visibility: 'invisible', hideServer: true, shareIpServers: true, allowJoin: true });
     const mine = await s.api<MeBody>('GET', '/v1/me', { token: me.token });
     assert.deepEqual(mine.body.settings, res.body);
+  });
+
+  test('PATCH turns allowJoin off and on', async () => {
+    const me = await s.newPlayer();
+    const off = await s.api<Settings>('PATCH', '/v1/me/settings', { token: me.token, body: { allowJoin: false } });
+    assert.equal(off.status, 200);
+    assert.deepEqual(off.body, { ...defaults, allowJoin: false });
+    const read = await s.api<MeBody>('GET', '/v1/me', { token: me.token });
+    assert.equal(read.body.settings.allowJoin, false);
+    const on = await s.api<Settings>('PATCH', '/v1/me/settings', { token: me.token, body: { allowJoin: true } });
+    assert.deepEqual(on.body, defaults);
   });
 
   test('PATCH with an empty body returns the current settings', async () => {
@@ -59,6 +70,7 @@ describe('me and settings', () => {
     ['an unknown visibility', { visibility: 'public' }],
     ['a visibility that is not a string', { visibility: true }],
     ['hideServer that is not a boolean', { hideServer: 'yes' }],
+    ['allowJoin that is not a boolean', { allowJoin: 'yes' }],
     ['shareIpServers that is not a boolean', { shareIpServers: 'maybe' }],
   ];
   for (const [title, body] of rejected) {

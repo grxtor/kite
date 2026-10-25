@@ -24,7 +24,7 @@ environment:
 | `DATABASE_URL` | (required) | Postgres connection string |
 | `PORT` / `HOST` | `8080` / `0.0.0.0` | Where to listen |
 | `MOJANG_SESSION_URL` | `https://sessionserver.mojang.com` | Session server used for `hasJoined` |
-| `CLIENT_IP_HEADER` | (none) | Header that carries the client IP, e.g. `cf-connecting-ip` behind Cloudflare. Without it the socket address is used |
+| `CLIENT_IP_HEADER` | (none) | Header that carries the client IP, e.g. `cf-connecting-ip` behind Cloudflare. Believed only for requests that reached the proxy from a Cloudflare address. Without it the socket address is used |
 | `STATUS_TTL_SECONDS` | `180` | How long a reported status stays live |
 | `SESSION_TTL_DAYS` | `30` | Lifetime of a session token |
 | `LOG_LEVEL` | `info` | Pino log level. Requests are not logged, only errors |
@@ -156,7 +156,7 @@ GET /v1/me
 {
   "uuid": "069a79f4-44e9-4726-a5be-fca90e38aaf5",
   "name": "Notch",
-  "settings": { "visibility": "friends", "hideServer": false, "shareIpServers": false }
+  "settings": { "visibility": "friends", "hideServer": false, "shareIpServers": false, "allowJoin": true }
 }
 ```
 
@@ -172,13 +172,16 @@ GET /v1/me
   (`203.0.113.7`, `1.2.3.4.nip.io`) or a local address (`192.168.1.20`,
   `localhost`, `myserver.local`, `nas.fritz.box`, a single-label name) is
   shown as "a server" without its address. The address is not stored either.
+- `allowJoin`: on by default. Friends may join the server you are on. It
+  only takes effect while they can see the server's address; see `joinable`
+  in [Status objects](#status-objects).
 
 ```http
 PATCH /v1/me/settings
 { "visibility": "everyone", "hideServer": true }
 ```
 
-`200` with the full settings object. Any subset of the three fields may be
+`200` with the full settings object. Any subset of the four fields may be
 sent.
 
 ```http
@@ -231,7 +234,8 @@ PUT /v1/me/status
     "state": "playing",
     "instance": "Survival 1.21",
     "version": "1.21.4",
-    "world": { "type": "server", "host": "mc.hypixel.net", "port": 25565 }
+    "world": { "type": "server", "host": "mc.hypixel.net", "port": 25565 },
+    "joinable": true
   }
 }
 ```
@@ -253,17 +257,23 @@ Everywhere a status is shown it has one of these shapes:
 ```json
 { "state": "offline", "lastSeenAt": "2026-10-24T16:00:00.000Z" }
 { "state": "online" }
-{ "state": "playing", "instance": "Survival 1.21", "version": "1.21.4", "world": <world> }
+{ "state": "playing", "instance": "Survival 1.21", "version": "1.21.4", "world": <world>, "joinable": true }
 ```
 
 `world` is one of:
 
 | `world` | Show as |
 |---|---|
-| `{ "type": "server", "host": "mc.hypixel.net", "port": 25565 }` | "on mc.hypixel.net" (a Join button can use host and port) |
+| `{ "type": "server", "host": "mc.hypixel.net", "port": 25565 }` | "on mc.hypixel.net" (a Join button uses host and port when `joinable`) |
 | `{ "type": "server" }` | "on a server" (the address is a raw IP or local and not shared) |
 | `{ "type": "singleplayer" }` | "Single-player" |
 | `null` | "Playing" (in the menus, or `hideServer` is on) |
+
+`joinable` says whether the launcher may offer to join the player: it is
+`true` only when the player's `allowJoin` is on and `world` is a server with a
+`host`. Single-player, the menus, `hideServer` and an address the player does
+not share all make it `false`. It follows the player's current settings, so
+turning `allowJoin` off takes effect on the next poll.
 
 `lastSeenAt` is the last time the player reported a status, or `null` if never
 or if the player is invisible.
@@ -286,7 +296,8 @@ GET /v1/friends
       "name": "jeb_",
       "since": "2026-10-20T12:00:00.000Z",
       "status": { "state": "playing", "instance": "Hypixel", "version": "1.8.9",
-                  "world": { "type": "server", "host": "mc.hypixel.net", "port": 25565 } }
+                  "world": { "type": "server", "host": "mc.hypixel.net", "port": 25565 },
+                  "joinable": true }
     }
   ],
   "requests": {
@@ -420,8 +431,8 @@ limiting.
 
 ## Deploying
 
-The server is meant to run on the Dokploy box (152.53.142.222) as an
-Application in the Kite project, next to a Dokploy Postgres database:
+The server is meant to run on the Dokploy server as an Application in the
+Kite project, next to a Dokploy Postgres database:
 
 1. Create a Postgres database service (e.g. `kite-friends-db`) in the Kite
    project. Keep it internal; it needs no public port.
@@ -436,15 +447,19 @@ Application in the Kite project, next to a Dokploy Postgres database:
    ```
 
 4. Domain `api.kiteclient.com` → port 8080, HTTPS with Let's Encrypt, and a
-   proxied Cloudflare `A` record `api` → 152.53.142.222.
+   proxied Cloudflare `A` record `api` pointing at the Dokploy server.
 5. The health check is `GET /healthz`.
 
 `CLIENT_IP_HEADER` matters: without it every request seems to come from
-Traefik, and all users share one per-IP limit. `cf-connecting-ip` is only
-safe while the server is reached through Cloudflare, because anyone talking
-to the origin directly can set the header. Per-user limits still apply to
-every signed-in request. Without Cloudflare in front, use `x-real-ip`, which
-Traefik sets itself.
+Traefik, and all users share one per-IP limit. Anyone talking to the origin
+directly could set `cf-connecting-ip` themselves, so the server believes it
+only when `X-Real-Ip`, which Traefik overwrites with the address that
+connected to it, is one of Cloudflare's ranges (listed in
+`src/clientIp.ts`). A direct request is counted by its real address
+whatever it claims. On the Dokploy server Traefik also turns direct
+requests for `api.kiteclient.com` away with 418 (the edge guard in
+`/etc/dokploy/traefik/dynamic/00-edge-guard.yml`). Without Cloudflare in
+front, use `x-real-ip`.
 
 `docker-compose.yml` runs the same image with its own Postgres, for a local
 run.
