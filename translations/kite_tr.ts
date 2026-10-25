@@ -7273,12 +7273,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
     </message>
     <message>
         <location line="+4"/>
-        <location line="+342"/>
+        <location line="+344"/>
         <source>Plugins</source>
         <translation>Eklentiler</translation>
     </message>
     <message>
-        <location line="-200"/>
+        <location line="-202"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
@@ -7303,7 +7303,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+188"/>
+        <location line="+190"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
@@ -15218,22 +15218,27 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     </message>
     <message>
         <location line="+5"/>
-        <location line="+54"/>
+        <location line="+62"/>
         <source>Kite mod</source>
         <translation>Kite modu</translation>
     </message>
     <message>
-        <location line="-21"/>
+        <location line="-29"/>
         <source>Kite mod: Fabric Loader %1 is too old for it</source>
         <translation>Kite modu: Fabric Loader %1 bunun için çok eski</translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location line="+4"/>
         <source>Kite mod: not available for Minecraft %1 yet</source>
         <translation>Kite modu: Minecraft %1 için henüz yok</translation>
     </message>
     <message>
         <location line="+5"/>
+        <source>Kite mod: the list of versions could not be loaded</source>
+        <translation>Kite modu: sürüm listesi alınamadı</translation>
+    </message>
+    <message>
+        <location line="+6"/>
         <location line="+49"/>
         <source>Kite mod: %1 ready</source>
         <translation>Kite modu: %1 hazır</translation>

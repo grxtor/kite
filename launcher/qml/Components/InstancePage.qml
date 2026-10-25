@@ -518,9 +518,11 @@ Item {
                 systemMemoryMiB: root.systemMemoryMiB
                 running: root.running
                 loader: root.details && root.details.contentBrowser ? root.details.contentBrowser.instanceLoader : ""
-                // The manifest is fetched when the game starts, so the answer is read again when it stops running.
+                // The manifest is fetched when the game starts, so the answer is read again when it stops
+                // running, and when the tab is shown again (the loader may have been updated in Version).
                 kiteModSupport: {
                     root.running
+                    visible
                     return root.details ? root.details.kiteModSupport() : "unknown"
                 }
             }

@@ -94,13 +94,21 @@ void PrepareKiteMod::manifestFetched()
 	const auto build =
 		KiteMod::cachedBuild(m_cacheRoot, m_mcVersion, m_loaderVersion);
 	if (!build) {
-		const auto support = KiteMod::cachedSupport(m_cacheRoot, m_mcVersion,
-													m_loaderVersion);
-		finish(support == KiteMod::Support::LoaderTooOld
-				   ? tr("Kite mod: Fabric Loader %1 is too old for it")
-						 .arg(m_loaderVersion)
-				   : tr("Kite mod: not available for Minecraft %1 yet")
-						 .arg(m_mcVersion));
+		switch (KiteMod::cachedSupport(m_cacheRoot, m_mcVersion,
+									   m_loaderVersion)) {
+			case KiteMod::Support::LoaderTooOld:
+				finish(tr("Kite mod: Fabric Loader %1 is too old for it")
+						   .arg(m_loaderVersion));
+				break;
+			case KiteMod::Support::NoBuildForMinecraft:
+				finish(tr("Kite mod: not available for Minecraft %1 yet")
+						   .arg(m_mcVersion));
+				break;
+			default:
+				// No readable manifest: the server was not reached yet.
+				finish(tr("Kite mod: the list of versions could not be loaded"));
+				break;
+		}
 		return;
 	}
 	if (KiteMod::isDownloaded(m_cacheRoot, *build)) {
