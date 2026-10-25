@@ -2,7 +2,7 @@
 layout: ../layouts/LegalLayout.astro
 title: "Privacy Policy"
 description: "What Kite and kiteclient.com do with your data."
-updated: "2026-10-24"
+updated: "2026-10-25"
 ---
 
 Kite is a Minecraft launcher made by grxtor. This policy covers the Kite app and this website, kiteclient.com. If anything here is unclear, write to [contact@kiteclient.com](mailto:contact@kiteclient.com).
@@ -11,7 +11,7 @@ Kite is a Minecraft launcher made by grxtor. This policy covers the Kite app and
 
 - Kite has no analytics, no telemetry and no advertising. It does not create an ID for you or your computer.
 - Kite has no account system of its own. Your Microsoft sign-in, your settings and your instances stay on your computer.
-- Friends is the one feature that uses a server of ours. It is off until you turn it on. When it is on, Kite's server keeps your Minecraft name, your friends and what you are playing, and you can delete all of it from inside Kite.
+- Friends is the one feature that uses a server of ours. It is on by default once you sign in with a Microsoft account, and you can turn it off in Settings → Friends. When it is on, Kite's server keeps your Minecraft name, your friends and what you are playing, and you can delete all of it from inside Kite.
 - Kite talks to the services it needs to work: Microsoft and Mojang to sign you in and download the game, and mod sites such as Modrinth when you browse or update mods. Each of those services sees your IP address and handles your data under its own privacy policy.
 
 ## The website
@@ -75,7 +75,7 @@ Kite can load plugins. Plugins from other people are their own software and can 
 
 ## Friends
 
-Friends shows which server your friends are playing on. There is no chat. It is off until you turn on **Use friends** in Settings → Friends, and while it is off, Kite sends nothing for it.
+Friends shows which server your friends are playing on. There is no chat. It is on by default once you sign in with a Microsoft account, and the first time, Kite shows a note that your friends can see you. You can turn it off with **Use friends** in Settings → Friends. While it is off, Kite sends nothing for it.
 
 ### Signing in
 
@@ -109,6 +109,7 @@ Like this site, the friends server runs on our own machine behind Cloudflare. It
 - Invisible always shows you as offline, without a last-seen time, and the server keeps no status for you at all.
 - With **Hide which server I am on**, friends see that you are playing, but not where. The server doesn't keep the address either.
 - A server you join by a raw IP address, or one on your home network, shows as "a server". Its address is neither shown nor kept unless you turn on **Show servers I join by IP address**.
+- **Let friends join the server I'm on** is on by default. It gives your friends a Join button for the server you are on. They only get it when they can see your server: if you hide it, or it is a raw-IP or home-network server you don't share, there is no Join button.
 - Anyone using Kite who knows your Minecraft name can send you a friend request. Blocking someone removes them from your friends, and they can no longer send you requests or see your status.
 
 ### Your friends' heads
@@ -123,7 +124,7 @@ Turning Friends off tells the server that you are offline, signs Kite out, and d
 
 ## Children
 
-Kite and this site don't ask for personal data from anyone, including children. If a player turns on Friends, Kite's server keeps only what is listed under [Friends](#friends). Sign-in for younger players is handled by Microsoft's own family settings.
+Kite and this site don't ask for personal data from anyone, including children. While Friends is on, Kite's server keeps only what is listed under [Friends](#friends). Sign-in for younger players is handled by Microsoft's own family settings.
 
 ## Your rights
 

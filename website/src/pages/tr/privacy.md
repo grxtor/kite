@@ -2,7 +2,7 @@
 layout: ../../layouts/LegalLayout.astro
 title: "Gizlilik Politikası"
 description: "Kite’ın ve kiteclient.com’un verilerinle ne yaptığı."
-updated: "2026-10-24"
+updated: "2026-10-25"
 ---
 
 Kite, grxtor’un yaptığı bir Minecraft başlatıcısı. Bu politika Kite uygulamasını ve bu siteyi, kiteclient.com’u kapsar. Anlaşılmayan bir yer olursa [contact@kiteclient.com](mailto:contact@kiteclient.com) adresine yaz.
@@ -11,7 +11,7 @@ Kite, grxtor’un yaptığı bir Minecraft başlatıcısı. Bu politika Kite uyg
 
 - Kite’ta analitik, telemetri ya da reklam yok. Kite sana veya bilgisayarına bir kimlik numarası vermez.
 - Kite’ın kendine ait bir hesap sistemi yok. Microsoft girişin, ayarların ve kurulumların senin bilgisayarında kalır.
-- Arkadaşlar, bizim bir sunucumuzu kullanan tek özellik. Sen açana kadar kapalıdır. Açıkken Kite’ın sunucusu Minecraft adını, arkadaşlarını ve ne oynadığını tutar; bunların hepsini Kite’ın içinden silebilirsin.
+- Arkadaşlar, bizim bir sunucumuzu kullanan tek özellik. Microsoft hesabıyla giriş yaptığında varsayılan olarak açıktır; Ayarlar → Arkadaşlar’dan kapatabilirsin. Açıkken Kite’ın sunucusu Minecraft adını, arkadaşlarını ve ne oynadığını tutar; bunların hepsini Kite’ın içinden silebilirsin.
 - Kite, çalışmak için gereken servislerle konuşur. Seni giriş yaptırmak ve oyunu indirmek için Microsoft ve Mojang’la, mod ararken ya da güncellerken Modrinth gibi mod siteleriyle bağlantı kurar. Bu servislerin her biri IP adresini görür ve verini kendi gizlilik politikasına göre işler.
 
 ## Site
@@ -75,7 +75,7 @@ Kite eklenti yükleyebilir. Başkalarının yazdığı eklentiler kendi yazılı
 
 ## Arkadaşlar
 
-Arkadaşlar, arkadaşlarının hangi sunucuda oynadığını gösterir. Sohbet yok. Ayarlar → Arkadaşlar’da **Arkadaşları kullan**’ı açana kadar kapalıdır; kapalıyken Kite bu özellik için hiçbir şey göndermez.
+Arkadaşlar, arkadaşlarının hangi sunucuda oynadığını gösterir. Sohbet yok. Microsoft hesabıyla giriş yaptığında varsayılan olarak açıktır ve Kite ilk seferde arkadaşlarının seni görebildiğini söyleyen bir not gösterir. Ayarlar → Arkadaşlar’daki **Arkadaşları kullan** ile kapatabilirsin. Kapalıyken Kite bu özellik için hiçbir şey göndermez.
 
 ### Giriş
 
@@ -109,6 +109,7 @@ Arkadaşlık sunucusu, bu site gibi Cloudflare’in arkasında kendi makinemizde
 - Görünmez seni her zaman çevrimdışı gösterir, son görülme zamanı da göstermez; sunucu senin için hiçbir durum tutmaz.
 - **Hangi sunucuda olduğumu gizle** açıksa arkadaşların oynadığını görür, ama nerede oynadığını görmez. Sunucu adresi de tutmaz.
 - Ham bir IP adresiyle girdiğin ya da ev ağındaki bir sunucu “bir sunucu” olarak görünür. **IP adresiyle girdiğim sunucuları göster**’i açmadıkça adresi ne gösterilir ne tutulur.
+- **Arkadaşlarım bulunduğum sunucuya katılabilsin** varsayılan olarak açıktır. Arkadaşlarına, bulunduğun sunucu için bir Katıl düğmesi verir. Bu düğme yalnızca sunucunu görebildiklerinde çıkar: sunucuyu gizlersen ya da paylaşmadığın ham IP’li veya ev ağındaki bir sunucudaysan Katıl düğmesi olmaz.
 - Minecraft adını bilen her Kite kullanıcısı sana arkadaşlık isteği gönderebilir. Birini engellersen arkadaşlarından çıkar; artık sana istek gönderemez ve durumunu göremez.
 
 ### Arkadaşlarının kafaları
@@ -123,7 +124,7 @@ Ayarlar → Arkadaşlar’daki **Arkadaşlık verilerimi sil**, Kite’ın sunuc
 
 ## Çocuklar
 
-Kite ve bu site, çocuklar dahil hiç kimseden kişisel veri istemez. Bir oyuncu Arkadaşlar’ı açarsa Kite’ın sunucusu yalnızca [Arkadaşlar](#arkadaşlar) bölümünde yazanları tutar. Küçük oyuncuların girişi Microsoft’un kendi aile ayarlarıyla yönetilir.
+Kite ve bu site, çocuklar dahil hiç kimseden kişisel veri istemez. Arkadaşlar açıkken Kite’ın sunucusu yalnızca [Arkadaşlar](#arkadaşlar) bölümünde yazanları tutar. Küçük oyuncuların girişi Microsoft’un kendi aile ayarlarıyla yönetilir.
 
 ## Hakların
 
