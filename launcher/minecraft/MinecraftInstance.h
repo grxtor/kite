@@ -21,6 +21,8 @@
 #pragma once
 #include "BaseInstance.h"
 #include <java/JavaVersion.h>
+#include "minecraft/KiteModRules.h"
+#include "modbridge/ModBridgeProtocol.h"
 #include "minecraft/mod/Mod.h"
 #include <QProcess>
 #include <QDir>
@@ -153,6 +155,25 @@ class MinecraftInstance : public BaseInstance
 							   MinecraftServerTargetPtr serverToJoin);
 	/// get arguments passed to java
 	QStringList javaArguments() const;
+	/// The -Dfabric.addMods argument that loads Kite's own mod, or nothing
+	/// when the mod is off, the loader is not Fabric or no jar is at hand.
+	/// Kept out of javaArguments(): only the game's JVM wants it.
+	QStringList kiteModArguments() const;
+	/// Whether Kite's mod is on for this instance and the instance is on
+	/// Fabric.
+	bool kiteModApplies() const;
+	/// Whether the cached manifest has a build for this instance's Minecraft
+	/// and Fabric Loader versions; Unknown until a manifest has been fetched.
+	KiteMod::Support kiteModSupport() const;
+	/// The bridge session of the launch under way (StartModBridge): its port
+	/// goes to the game as -Dkite.bridge.port by kiteModArguments(), its token
+	/// as KITE_BRIDGE_TOKEN by createEnvironment(). Empty between games: it is
+	/// cleared when the instance stops.
+	void setBridgeGrant(const ModBridgeProtocol::Grant& grant);
+	/// The jar kiteModArguments() would load; empty when there is none.
+	QString kiteModJar() const;
+	/// The version of this instance's Fabric Loader; empty without one.
+	QString kiteModLoaderVersion() const;
 
 	/// get variables for launch command variable substitution/environment
 	QMap<QString, QString> getVariables() const override;
@@ -196,6 +217,7 @@ class MinecraftInstance : public BaseInstance
 	QString launchMethod();
 
   protected: // data
+	ModBridgeProtocol::Grant m_bridgeGrant;
 	std::shared_ptr<PackProfile> m_components;
 	mutable std::shared_ptr<ModFolderModel> m_loader_mod_list;
 	mutable std::shared_ptr<ModFolderModel> m_core_mod_list;

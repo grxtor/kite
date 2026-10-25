@@ -33,6 +33,7 @@
 #include "news/NewsChecker.h"
 #include "notifications/NotificationChecker.h"
 #include "core/InstancePathProblems.h"
+#include "modbridge/ModBridge.h"
 #include "ui/InstanceWindow.h"
 #include "ui/MacMenuBar.h"
 
@@ -1148,6 +1149,17 @@ void Application::initSettings()
 	// paste.ee API key
 	m_settings->registerSetting("PasteEEAPIKey", "kite");
 
+	// Friends (server/friends/): on unless the user turned it off in
+	// Settings (a stored false stays off). FriendsNoticeSeen is the
+	// one-time "Friends is on" card, dismissed for good once either of its
+	// buttons is pressed. The Mojang URL is a test hook for the local
+	// end-to-end run, not a setting anyone should change.
+	m_settings->registerSetting("FriendsEnabled", true);
+	m_settings->registerSetting("FriendsNoticeSeen", false);
+	m_settings->registerSetting("FriendsServerUrl", BuildConfig.FRIENDS_URL);
+	m_settings->registerSetting("FriendsMojangSessionUrl",
+								QString("https://sessionserver.mojang.com"));
+
 	// Init page provider
 	{
 		m_globalSettingsProvider =
@@ -1179,6 +1191,12 @@ void Application::initSubsystems()
 		updateProxySettings(proxyTypeStr, addr, port, user, pass);
 		qDebug() << "<> Network done.";
 	}
+
+	/* The bridge for the Kite mod of a running game: nothing listens until a
+	 * launch registers a session. */
+	m_modBridge.reset(new ModBridge(
+		QString("%1 %2").arg(BuildConfig.KITE_DISPLAYNAME,
+							 BuildConfig.printableVersionString())));
 
 	/* News and notifications belong to the application rather than to a
 	 * window, so the QML shell and the plugin news API have them too.
@@ -2885,6 +2903,11 @@ NewsChecker* Application::newsChecker() const
 NotificationChecker* Application::notificationChecker() const
 {
 	return m_notificationChecker.get();
+}
+
+ModBridge* Application::modBridge() const
+{
+	return m_modBridge.get();
 }
 
 bool Application::usingQmlShell() const

@@ -40,6 +40,7 @@ void DirectJavaLaunch::executeTask()
 	std::shared_ptr<MinecraftInstance> minecraftInstance =
 		std::dynamic_pointer_cast<MinecraftInstance>(instance);
 	QStringList args = minecraftInstance->javaArguments();
+	args.append(minecraftInstance->kiteModArguments());
 
 	args.append("-Djava.library.path=" + minecraftInstance->getNativePath());
 

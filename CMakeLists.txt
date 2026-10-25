@@ -425,6 +425,12 @@ set(Kite_NOTIFICATION_URL "" CACHE STRING "URL for checking for notifications.")
 # the meta and Java download code append paths to it.
 set(Kite_META_URL "https://meta.kiteclient.com/" CACHE STRING "URL to fetch Kite's meta files from.")
 
+# The friends server (server/friends/): who is online and on which server.
+# Contacted unless the user turns friends off in Settings; empty, it turns the
+# feature off for the build (no rail entry, nothing sent). Keep the trailing
+# slash.
+set(Kite_FRIENDS_URL "https://api.kiteclient.com/" CACHE STRING "URL of Kite's friends server.")
+
 # Translations are bundled in the app (translations/kite_*.ts). Leave this empty
 # so Kite never downloads any; set it to a server that serves index_v2.json and
 # the .qm files listed in it to get downloadable updates on top of the bundle.

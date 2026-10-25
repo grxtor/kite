@@ -10,7 +10,7 @@ import Kite.Theme
  * The other ways to play one instance: offline, the demo, as another
  * account, and which profiler watches the game -- what the widget launch
  * menu's Launch Offline, Launch Demo and profiler entries offered, plus
- * "Play as".
+ * "Play as" and the Kite Performance mode.
  *
  * A Menu, so a page can open it on its own (PlayDock's chevron next to
  * Play) or nest it inside a bigger one as a submenu (a card's ⋯ menu):
@@ -26,6 +26,8 @@ import Kite.Theme
  * two or more accounts. It starts nothing itself; each choice is a signal
  * for Main.qml to act on, the way the pages' own Play buttons are.
  *
+ * Kite Performance is the same: a setting of the instance, switched here.
+ *
  * The profiler is a setting of the instance, not of one launch (the
  * widget menu treated it the same way): picking one here makes every later
  * Play use it, until "None" is picked.
@@ -34,7 +36,8 @@ Menu {
     id: root
 
     property string instanceId: ""
-    // function (id) returning {supportsDemo, profiler, profilers, accounts}
+    // function (id) returning {supportsDemo, performance,
+    // performanceAvailable, profiler, profilers, accounts}
     // (see QmlShell::launchOptions()), or null.
     property var optionsFor: null
     property var options: ({})
@@ -45,6 +48,8 @@ Menu {
     signal launchAsRequested(string id, string accountId)
     // profilerKey: "" for none -- QmlShell::setInstanceProfiler().
     signal profilerChosen(string id, string profilerKey)
+    // enabled: Kite Performance for the instance -- QmlShell::setPerformanceEnabled().
+    signal performanceChosen(string id, bool enabled)
     // A Main.qml navigate() path: a profiler that is not set up yet sends
     // the user to the settings where it is.
     signal navigateRequested(string target)
@@ -52,6 +57,9 @@ Menu {
     readonly property var accounts: root.options && root.options.accounts ? root.options.accounts : []
     readonly property var profilers: root.options && root.options.profilers ? root.options.profilers : []
     readonly property string profiler: root.options && root.options.profiler ? root.options.profiler : ""
+    readonly property bool performance: !!(root.options && root.options.performance)
+    // The instance has a loader and a version the performance mods exist for.
+    readonly property bool performanceAvailable: !!(root.options && root.options.performanceAvailable)
     readonly property bool supportsDemo: !!(root.options && root.options.supportsDemo)
     // Choosing among one account is no choice.
     readonly property bool offersPlayAs: root.accounts.length > 1
@@ -120,6 +128,22 @@ Menu {
     }
 
     MenuSeparator {}
+
+    // The mode, not one launch: while it is on, Play installs the
+    // performance mods first. Only for an instance with a loader on a
+    // version the mods exist for; a vanilla one is never changed.
+    MenuItem {
+        text: qsTr("Kite Performance")
+        checkable: true
+        checked: root.performance
+        visible: root.performanceAvailable
+        height: visible ? implicitHeight : 0
+        onTriggered: root.performanceChosen(root.instanceId, checked)
+    }
+    MenuSeparator {
+        visible: root.performanceAvailable
+        height: visible ? implicitHeight : 0
+    }
 
     Menu {
         id: profilerMenu

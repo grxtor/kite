@@ -10,7 +10,8 @@ import Kite.Theme
  * The Content tab's update flows, kept out of ContentTab itself: check
  * for updates (UpdateReviewDialog), change one file's version
  * (ChangeVersionDialog), verify dependencies, install what the mod health
- * check found missing, and reset metadata, each on top of
+ * check found missing, install bundle mods (Add-ons, Kite Performance), and
+ * reset metadata, each on top of
  * ContentUpdateController. Whatever needs reviewing goes through
  * InstallReviewDialog; whatever downloads is `activity` until it ends,
  * and how it went comes out of notify() for the tab's toast.
@@ -84,6 +85,19 @@ Item {
                     qsTr("Nothing compatible was found to install."), "neutral")
     }
 
+    // Installs the bundle mods with Modrinth project @p ids that the folder
+    // does not have yet, after a review of what they bring along.
+    function installBundle(ids) {
+        if (!root.updater)
+            return
+        const review = root.updater.installBundle(ids)
+        if (!review) {
+            root.notify(root.updater.lastError, "neutral")
+            return
+        }
+        root.settle(review, qsTr("Installed the mods."), "")
+    }
+
     function resetMetadata(keys, name) {
         resetConfirm.keys = keys
         resetConfirm.text = keys.length === 1 && name.length > 0
@@ -119,12 +133,15 @@ Item {
         go()
     }
 
+    // @p doneText empty: the watcher's own status says how it went (Speed
+    // up's "added Fabric and 7 mods").
     function track(watcher, doneText) {
         if (!watcher)
             return
         root.activity = watcher
         watcher.finished.connect(function (ok) {
-            root.notify(ok ? doneText : (watcher.error.length > 0 ? watcher.error : qsTr("The download did not finish.")),
+            const done = doneText.length > 0 || watcher.status.length === 0 ? doneText : watcher.status
+            root.notify(ok ? done : (watcher.error.length > 0 ? watcher.error : qsTr("The download did not finish.")),
                         ok ? "success" : "danger")
             if (root.activity === watcher)
                 root.activity = null

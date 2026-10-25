@@ -1,0 +1,26 @@
+{
+  "name": "kite-friends-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kite's friends service: who is online and on which server",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@10.28.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node src/main.ts",
+    "test": "node --test --test-concurrency=1 \"test/**/*.test.ts\"",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "fastify": "5.12.7",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/pg": "8.23.1",
+    "typescript": "^7.0.2"
+  }
+}

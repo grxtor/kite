@@ -41,7 +41,9 @@ RowLayout {
     RowLayout {
         id: leadingRow
         Layout.fillWidth: true
-        Layout.minimumWidth: 0
+        // No minimum of its own: it is the sum of its children's, so a
+        // search box that asks for a width keeps it and the row clips at
+        // the window edge rather than letting the box run under the actions.
         // A nested layout's maximum is the sum of what it holds, so without
         // this its fixed-width children would stop it taking the free space
         // and the actions would crowd up against them.

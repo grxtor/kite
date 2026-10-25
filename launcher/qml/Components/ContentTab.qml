@@ -41,15 +41,28 @@ Item {
     // InstanceDetails: content (InstanceContentController), loaderInstaller,
     // isMinecraft, name.
     property var details: null
+    // The QML shell, for the catalog behind Add-ons and Kite Performance.
+    property var shell: null
     property string kind: "mods"
     signal openFolderRequested(string path)
     // "Add content": browse for @p kind (InstancePage opens the browser).
     signal browseRequested(string kind)
+    // Open instance @p id (the new Kite Performance instance Speed up made).
+    signal openInstanceRequested(string id)
 
     readonly property var content: details ? details.content : null
     // What the health check found in the mods folder (ModHealthModel).
     readonly property var health: root.content ? root.content.health : null
     readonly property bool isMinecraft: !!details && details.isMinecraft
+    // Whether Kite Performance is on for this instance (Mods' toolbar).
+    property bool performance: false
+    readonly property string instanceId: details ? details.instanceId : ""
+    // Speed up on an instance with no loader never touches it: it makes a
+    // Kite Performance instance, so it is offered where the mods exist.
+    readonly property string gameVersion: details && details.contentBrowser ? details.contentBrowser.instanceGameVersion : ""
+    readonly property bool speedUpOffered: !!root.content && (root.content.hasModLoader
+        || (!!root.shell && root.shell.performanceSupported(root.gameVersion)))
+    readonly property string instanceLoader: details && details.contentBrowser ? details.contentBrowser.instanceLoader : ""
 
     // Label, noun and empty-state copy per kind.
     readonly property var kindInfo: ({
@@ -152,11 +165,70 @@ Item {
         else if (root.content)
             root.content.setEnabled("mods", [key], action === "enable")
     }
+    function refreshPerformance() {
+        root.performance = !!root.shell && root.instanceId.length > 0
+                           && root.shell.performanceEnabled(root.instanceId)
+    }
+    // The mods of a Kite Performance setup already under way on this instance
+    // (the New instance dialog starts one and closes) get their progress
+    // notice here, as if Speed up had been pressed on this tab.
+    function trackRunningSetup() {
+        const watcher = root.shell && root.instanceId.length > 0 ? root.shell.performanceSetup(root.instanceId) : null
+        if (watcher && flows.activity !== watcher)
+            flows.track(watcher, "")
+    }
+    // "Speed up" (Mods only): turns Kite Performance on and installs now.
+    // With the mode already on, its settings open instead. Without a loader
+    // it makes a separate instance instead (and opens it), so the vanilla
+    // one stays as it is -- no loader is asked for first either way.
+    function speedUp() {
+        if (root.performance) {
+            root.openBundles(true)
+            return
+        }
+        if (!root.content.hasModLoader) {
+            root.makePerformanceInstance()
+            return
+        }
+        const watcher = root.shell ? root.shell.speedUp(root.instanceId) : null
+        if (watcher)
+            flows.track(watcher, "")
+        else
+            toast.show(qsTr("Kite Performance could not be set up for this instance."), "neutral")
+    }
+    function makePerformanceInstance() {
+        const watcher = root.shell ? root.shell.createPerformanceInstance(root.instanceId) : null
+        if (!watcher) {
+            toast.show(qsTr("Kite Performance could not be set up for this instance."), "neutral")
+            return
+        }
+        flows.track(watcher, "")
+        watcher.finished.connect((ok) => { if (ok) root.openInstanceRequested(watcher.instanceId) })
+    }
+    // Add-ons, or with @p performance the Kite Performance settings, in a
+    // BundleDialog built on first use; only Add-ons need a loader.
+    function openBundles(performance) {
+        const open = () => {
+            const loader = performance ? bundlePerformanceLoader : bundleAddonsLoader
+            loader.active = true
+            if (loader.item)
+                loader.item.show()
+        }
+        if (performance)
+            open()
+        else
+            root.withLoader(open)
+    }
     // A state for review snapshots (InstancePage.review()): "modhealth"
-    // opens the problems dialog.
+    // opens the problems dialog, "bundles" the Add-ons one and "perfdialog"
+    // the Kite Performance one.
     function review(name) {
         if (name === "modhealth")
             healthDialog.open()
+        else if (name === "bundles")
+            root.openBundles(false)
+        else if (name === "perfdialog")
+            root.openBundles(true)
     }
 
     function fileName(url) {
@@ -222,12 +294,18 @@ Item {
             readonly property int updatesIconWidth: root.updatable ? Theme.control.height + gap : 0
             // The actions row without the search field and the label of
             // "Check for updates".
-            readonly property int actionsWidth: folderButton.implicitWidth + moreButton.implicitWidth
-                                                + addButton.implicitWidth + gap * 3
+            readonly property int bundlesWidth: root.kind === "mods"
+                                                ? (root.speedUpOffered ? speedUpMeasure.implicitWidth + gap : 0)
+                                                  + addonsMeasure.implicitWidth + gap : 0
+            readonly property int actionsWidth: folderMeasure.implicitWidth + moreButton.implicitWidth
+                                                + addButton.implicitWidth + bundlesWidth + gap * 3
             // Measured against the tab's own width, which the toolbar's
             // contents never feed back into.
             readonly property bool oneRow: root.width >= kindsWidth + searchMinWidth + updatesIconWidth + actionsWidth
             readonly property real actionsRowWidth: oneRow ? root.width - kindsWidth : root.width
+            // Open folder, Speed up and Add-ons give up their labels once
+            // the row cannot hold them spelled out next to the search.
+            readonly property bool compact: actionsRowWidth < searchMinWidth + updatesIconWidth + actionsWidth
             // "Check for updates" spelled out when there is room for it as
             // well; just its icon (and tooltip) otherwise.
             readonly property bool updatesLabelFits: actionsRowWidth >= searchMinWidth + updatesMeasure.implicitWidth
@@ -258,12 +336,30 @@ Item {
                     placeholderText: qsTr("Search %1").arg(root.current.noun)
                 }
 
-                // Only measured, for updatesLabelFits.
+                // Only measured (by updatesLabelFits and actionsWidth), so
+                // what they take does not change with what is shown.
                 Button {
                     id: updatesMeasure
                     visible: false
                     text: qsTr("Check for updates")
                     icon.source: Icons.url("refresh")
+                }
+                Button {
+                    id: folderMeasure
+                    visible: false
+                    text: qsTr("Open folder")
+                    icon.source: Icons.url("folder")
+                }
+                SpeedUpButton {
+                    id: speedUpMeasure
+                    visible: false
+                    on: root.performance
+                }
+                Button {
+                    id: addonsMeasure
+                    visible: false
+                    text: qsTr("Add-ons")
+                    icon.source: Icons.url("puzzle")
                 }
                 HoverReason {
                     visible: root.updatable
@@ -282,8 +378,12 @@ Item {
 
                 Button {
                     id: folderButton
+                    display: toolbar.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
                     text: qsTr("Open folder")
                     icon.source: Icons.url("folder")
+                    ToolTip.visible: hovered && display === AbstractButton.IconOnly
+                    ToolTip.delay: 400
+                    ToolTip.text: text
                     onClicked: root.openFolderRequested(root.content ? root.content.dir(root.kind) : "")
                 }
 
@@ -344,6 +444,33 @@ Item {
                             icon.source: Icons.url("list")
                             onTriggered: root.exportList([])
                         }
+                    }
+                }
+
+                HoverReason {
+                    visible: root.kind === "mods" && root.speedUpOffered
+                    reason: root.lockedReason
+                    SpeedUpButton {
+                        id: speedUpButton
+                        on: root.performance
+                        display: toolbar.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
+                        enabled: root.unlocked && !root.flowsBusy
+                        onClicked: root.speedUp()
+                    }
+                }
+                HoverReason {
+                    visible: root.kind === "mods"
+                    reason: root.lockedReason
+                    Button {
+                        id: addonsButton
+                        enabled: root.unlocked && !root.flowsBusy
+                        display: toolbar.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
+                        text: qsTr("Add-ons")
+                        icon.source: Icons.url("puzzle")
+                        ToolTip.visible: hovered && display === AbstractButton.IconOnly
+                        ToolTip.delay: 400
+                        ToolTip.text: text
+                        onClicked: root.openBundles(false)
                     }
                 }
 
@@ -425,13 +552,17 @@ Item {
         }
     }
 
-    readonly property bool flowsBusy: flows.busyText.length > 0
+    // The tab is reused from one instance to the next, and a download goes on
+    // after the user moves on: its notice stays with the instance it began on.
+    property string flowsInstanceId: ""
+    readonly property bool flowsBusy: flows.busyText.length > 0 && root.flowsInstanceId === root.instanceId
     ContentUpdateFlows {
         id: flows
         content: root.content
         kind: root.kind
         noun: root.current.noun
         onNotify: (message, tone) => { if (message.length > 0) toast.show(message, tone) }
+        onActivityChanged: root.flowsInstanceId = flows.activity ? root.instanceId : ""
     }
 
     // The search follows whichever list is showing.
@@ -473,7 +604,9 @@ Item {
         // Up where the list would start, as on every other tab.
         upperThird: true
         width: parent.width
-        visible: root.isMinecraft && root.count === 0
+        // Not while something installs: its progress notice sits where this
+        // would, and says more than "no mods" while they are on their way.
+        visible: root.isMinecraft && root.count === 0 && !root.flowsBusy
         title: root.current.emptyTitle
         body: root.current.emptyBody
         MeshIcon { iconName: root.current.icon; size: 40; color: Theme.palette.textTertiary }
@@ -564,6 +697,57 @@ Item {
         lockedReason: root.lockedReason
         onActionRequested: (action, key, dependencyId, replacesKey) => root.runHealthAction(action, key, dependencyId, replacesKey)
         onInstallAll: root.installMissing(root.health.installRows())
+    }
+
+    Component {
+        id: bundleDialog
+        BundleDialog {
+            shell: root.shell
+            instanceId: root.instanceId
+            bundles: root.shell ? root.shell.bundles : null
+            updater: root.content ? root.content.updater : null
+            onInstallRequested: (ids) => root.withLoader(() => flows.installBundle(ids))
+        }
+    }
+    Loader {
+        id: bundleAddonsLoader
+        active: false
+        sourceComponent: bundleDialog
+        onLoaded: item.loader = Qt.binding(() => root.instanceLoader)
+    }
+    // The mode puts Fabric on a vanilla instance, so its list is Fabric's.
+    Loader {
+        id: bundlePerformanceLoader
+        active: false
+        sourceComponent: bundleDialog
+        onLoaded: {
+            item.performance = true
+            item.loader = Qt.binding(() => root.instanceLoader.length > 0 ? root.instanceLoader : "fabric")
+        }
+    }
+
+    onDetailsChanged: root.refreshPerformance()
+    // The details object is reused from one instance to the next, so a
+    // new instance arrives as a new id, not as new details.
+    onInstanceIdChanged: {
+        root.refreshPerformance()
+        root.trackRunningSetup()
+    }
+    onVisibleChanged: if (visible) {
+        root.refreshPerformance()
+        root.trackRunningSetup()
+    }
+    Component.onCompleted: {
+        root.refreshPerformance()
+        root.trackRunningSetup()
+    }
+    Connections {
+        target: root.shell
+        ignoreUnknownSignals: true
+        function onPerformanceChanged(id) {
+            if (id === root.instanceId)
+                root.refreshPerformance()
+        }
     }
 
     ExportContentListDialog {

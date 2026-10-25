@@ -342,6 +342,11 @@ QUrl ModrinthApi::versionByHashUrl(const QString& sha1)
 					.arg(apiBase(), sha1.toLower()));
 }
 
+QUrl ModrinthApi::versionsByHashesUrl()
+{
+	return QUrl(QString("%1/version_files").arg(apiBase()));
+}
+
 QUrl ModrinthApi::projectVersionsUrlForLoaders(const QString& projectId,
 											   const QStringList& loaders)
 {

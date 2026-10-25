@@ -74,8 +74,8 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        color: row.selected ? Theme.palette.accentSubtle
-             : hover.hovered ? Theme.palette.surfaceHover : "transparent"
+        // Ticked keeps the hover look (the Library's rule), no accent tint.
+        color: row.selected || hover.hovered ? Theme.palette.surfaceHover : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
     }
     Rectangle {

@@ -128,6 +128,10 @@ qt_add_qml_module(Kite_qml_components
         SkinPreview.qml
         CapeTile.qml
         NewInstanceDialog.qml
+        PerformanceModIcons.qml
+        BundleModList.qml
+        BundleDialog.qml
+        SpeedUpButton.qml
         PromptDialog.qml
         Toast.qml
         IconPickerDialog.qml
@@ -141,6 +145,7 @@ qt_add_qml_module(Kite_qml_components
         SettingsExternalToolsSection.qml
         SettingsLogUploadSection.qml
         SettingsGeneralSection.qml
+        SettingsFriendsSection.qml
         SettingsJavaSection.qml
         SettingsMinecraftSection.qml
         SettingsConsoleSection.qml
@@ -179,6 +184,31 @@ qt_add_qml_module(Kite_qml_components
         LibrarySections.qml
         InstanceMenu.qml
         HomeSidePanel.qml
+        HomeFriends.qml
+        HomeFriendsRequestsLink.qml
+        HomeFriendsOfflineStrip.qml
+        FriendHead.qml
+        FriendRow.qml
+        FriendStatusRow.qml
+        FriendMoreButton.qml
+        FriendPersonMenu.qml
+        FriendJoinFlow.qml
+        FriendsPending.qml
+        FriendJoinDialog.qml
+        FriendsPage.qml
+        FriendsPageState.qml
+        FriendsSelfCard.qml
+        FriendsNotice.qml
+        FriendsEmptyState.qml
+        FriendsSectionHeader.qml
+        FriendsGroup.qml
+        FriendsFriendsTab.qml
+        FriendsListScroll.qml
+        FriendsRequestsTab.qml
+        FriendsBlockedTab.qml
+        SoftIconCircle.qml
+        PanelNote.qml
+        CopyName.qml
         HomeEmptyState.qml
         HomeSectionTitle.qml
         HomeHero.qml
@@ -210,6 +240,7 @@ qt_add_qml_module(Kite_qml_components
         icons/arrow-down.svg
         icons/arrow-right.svg
         icons/arrow-up.svg
+        icons/ban.svg
         icons/bell.svg
         icons/check.svg
         icons/chevron-down.svg
@@ -241,6 +272,7 @@ qt_add_qml_module(Kite_qml_components
         icons/package.svg
         icons/play.svg
         icons/plus.svg
+        icons/puzzle.svg
         icons/refresh.svg
         icons/search.svg
         icons/server.svg
@@ -254,6 +286,7 @@ qt_add_qml_module(Kite_qml_components
         icons/user.svg
         icons/users.svg
         icons/x.svg
+        icons/zap.svg
     IMPORTS
         Kite.Theme
 )

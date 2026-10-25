@@ -1,0 +1,75 @@
+{
+	"formatVersion": 1,
+	"bundles": [
+		{
+			"id": "performance",
+			"name": { "en": "Performance", "tr": "Performans" },
+			"summary": { "en": "The mods that make the game run faster: the same family Lunar uses on modern versions.", "tr": "Oyunu hızlandıran modlar: Lunar'ın yeni sürümlerde kullandığı aile." },
+			"categories": [
+				{ "id": "core", "name": { "en": "Speed", "tr": "Hız" } },
+				{ "id": "extra", "name": { "en": "Extras", "tr": "Ekstralar" } }
+			],
+			"mods": [
+				{ "project": "AANobbMI", "name": "Sodium", "icon": "https://cdn.modrinth.com/data/AANobbMI/295862f4724dc3f78df3447ad6072b2dcd3ef0c9_96.webp", "category": "core", "default": true, "summary": { "en": "Rewrites the renderer; the biggest FPS gain.", "tr": "Render motorunu baştan yazar; en büyük FPS kazancı." } },
+				{ "project": "gvQqBUqZ", "name": "Lithium", "icon": "https://cdn.modrinth.com/data/gvQqBUqZ/bcc8686c13af0143adf4285d741256af824f70b7_96.webp", "category": "core", "default": true, "summary": { "en": "Faster game logic and physics.", "tr": "Oyun mantığını ve fiziği hızlandırır." } },
+				{ "project": "uXXizFIs", "name": "FerriteCore", "icon": "https://cdn.modrinth.com/data/uXXizFIs/222a126f26f8f9ae1eb339f3b767677f18bff31f_96.webp", "category": "core", "default": true, "summary": { "en": "Uses less memory.", "tr": "Daha az bellek kullanır." } },
+				{ "project": "5ZwdcRci", "name": "ImmediatelyFast", "icon": "https://cdn.modrinth.com/data/5ZwdcRci/e57b6b451425692ac17ad322d5e14bea686a383a_96.webp", "category": "core", "default": true, "summary": { "en": "Draws the HUD, text and entities faster.", "tr": "HUD'u, yazıları ve entity'leri daha hızlı çizer." } },
+				{ "project": "NNAgCjsB", "name": "Entity Culling", "icon": "https://cdn.modrinth.com/data/NNAgCjsB/7873452d6cede4daed12da3d7d8c193ab88b4fd6_96.webp", "category": "core", "default": true, "summary": { "en": "Skips entities you cannot see.", "tr": "Görünmeyen entity'leri çizmez." } },
+				{ "project": "51shyZVL", "name": "More Culling", "icon": "https://cdn.modrinth.com/data/51shyZVL/c51b07193b56e952269ef50101d12aecba2b4747_96.webp", "category": "core", "default": true, "summary": { "en": "Skips more hidden block faces.", "tr": "Görünmeyen blok yüzlerini daha çok atlar." } },
+				{ "project": "LQ3K71Q1", "name": "Dynamic FPS", "icon": "https://cdn.modrinth.com/data/LQ3K71Q1/5056368d0d87c1a9f3efead0cb48ab39a4ea87bf_96.webp", "category": "core", "default": true, "summary": { "en": "Lowers FPS and sound while the game is in the background.", "tr": "Oyun arka plandayken FPS'i ve sesi kısar." } },
+				{ "project": "nmDcB62a", "name": "ModernFix", "icon": "https://cdn.modrinth.com/data/nmDcB62a/2af94de5e08ae54567ee86b968fc7ce076d9fee5_96.webp", "category": "core", "default": true, "summary": { "en": "Faster start, less memory.", "tr": "Daha hızlı açılış, daha az bellek." } },
+				{ "project": "g96Z4WVZ", "name": "BadOptimizations", "category": "extra", "default": false, "summary": { "en": "Small CPU savings.", "tr": "Küçük işlemci tasarrufları." } },
+				{ "project": "Ps1zyz6x", "name": "ScalableLux", "icon": "https://cdn.modrinth.com/data/Ps1zyz6x/27133942a1a58af1bb11b087957ea4cc14414dd3_96.webp", "category": "extra", "default": false, "summary": { "en": "Faster lighting engine.", "tr": "Daha hızlı ışık motoru." } },
+				{ "project": "YL57xq9U", "name": "Iris", "icon": "https://cdn.modrinth.com/data/YL57xq9U/18d0e7f076d3d6ed5bedd472b853909aac5da202_96.webp", "category": "extra", "default": false, "summary": { "en": "Shader packs, including OptiFine ones.", "tr": "Shader paketleri, OptiFine'ınkiler dahil." } },
+				{ "project": "PtjYWJkn", "name": "Sodium Extra", "icon": "https://cdn.modrinth.com/data/PtjYWJkn/0df4fb22a11e1dcb5e83cb0aadd275b571aca7a9_96.webp", "category": "extra", "default": false, "summary": { "en": "More video settings.", "tr": "Daha fazla görüntü ayarı." } },
+				{ "project": "Bh37bMuy", "name": "Reese's Sodium Options", "icon": "https://cdn.modrinth.com/data/Bh37bMuy/icon.png", "category": "extra", "default": false, "summary": { "en": "A roomier video settings screen.", "tr": "Daha ferah bir görüntü ayarları ekranı." } }
+			]
+		},
+		{
+			"id": "comfort",
+			"name": { "en": "Comfort", "tr": "Konfor" },
+			"summary": { "en": "In-game extras: zoom, a mod menu, tooltips and the OptiFine look.", "tr": "Oyun içi eklentiler: zoom, mod menüsü, ipuçları ve OptiFine görünümü." },
+			"categories": [
+				{ "id": "interface", "name": { "en": "Interface", "tr": "Arayüz" } },
+				{ "id": "visual", "name": { "en": "Looks", "tr": "Görsel" } },
+				{ "id": "map", "name": { "en": "Map", "tr": "Harita" } },
+				{ "id": "chat", "name": { "en": "Chat", "tr": "Sohbet" } }
+			],
+			"mods": [
+				{ "project": "mOgUt4GM", "name": "Mod Menu", "icon": "https://cdn.modrinth.com/data/mOgUt4GM/5a20ed1450a0e1e79a1fe04e61bb4e5878bf1d20.png", "category": "interface", "default": true, "loaders": ["fabric", "quilt"], "summary": { "en": "Lists your mods and opens their settings.", "tr": "Modları listeler, ayarlarını açar." } },
+				{ "project": "xv94TkTM", "name": "Controlling", "icon": "https://cdn.modrinth.com/data/xv94TkTM/bdb6feb3d04ca37da4ed5aa73fef062a39d8b3e5_96.webp", "category": "interface", "default": true, "summary": { "en": "Search in the key bindings.", "tr": "Tuş atamalarında arama." } },
+				{ "project": "EsAfCjCV", "name": "AppleSkin", "icon": "https://cdn.modrinth.com/data/EsAfCjCV/icon.png", "category": "interface", "default": true, "summary": { "en": "Shows hunger and saturation.", "tr": "Açlığı ve doygunluğu gösterir." } },
+				{ "project": "aC3cM3Vq", "name": "Mouse Tweaks", "icon": "https://cdn.modrinth.com/data/aC3cM3Vq/6c0eaa4e60a9c87f4766f222ff63286f09da32c0_96.webp", "category": "interface", "default": true, "summary": { "en": "Faster inventory handling with the mouse.", "tr": "Envanterde fareyle daha hızlı işlem." } },
+				{ "project": "nvQzSEkH", "name": "Jade", "icon": "https://cdn.modrinth.com/data/nvQzSEkH/b04217bc2b7dc524c4d12f81ff42cc1cefb9b0fc_96.webp", "category": "interface", "default": false, "summary": { "en": "Tells you what you are looking at.", "tr": "Baktığın bloğu ve entity'yi söyler." } },
+				{ "project": "2M01OLQq", "name": "Shulker Box Tooltip", "icon": "https://cdn.modrinth.com/data/2M01OLQq/bb490716cf2590cf84100a495931c3d4743bce43_96.webp", "category": "interface", "default": false, "summary": { "en": "Shows what is inside a shulker box.", "tr": "Shulker kutusunun içini gösterir." } },
+				{ "project": "Wb5oqrBJ", "name": "Chat Heads", "icon": "https://cdn.modrinth.com/data/Wb5oqrBJ/icon.png", "category": "interface", "default": false, "summary": { "en": "Player heads next to chat messages.", "tr": "Sohbette oyuncu kafaları." } },
+				{ "project": "8shC1gFX", "name": "BetterF3", "icon": "https://cdn.modrinth.com/data/8shC1gFX/icon.png", "category": "interface", "default": false, "summary": { "en": "A tidier F3 screen.", "tr": "Daha düzenli bir F3 ekranı." } },
+				{ "project": "w7ThoJFB", "name": "Zoomify", "icon": "https://cdn.modrinth.com/data/w7ThoJFB/e2de67a0bfb9e8aa2347982ab3ec5463f26cca31_96.webp", "category": "visual", "default": true, "summary": { "en": "Zoom, like OptiFine's.", "tr": "OptiFine'daki gibi zoom." } },
+				{ "project": "1IjD5062", "name": "Continuity", "icon": "https://cdn.modrinth.com/data/1IjD5062/icon.png", "category": "visual", "default": false, "summary": { "en": "Connected textures for resource packs.", "tr": "Kaynak paketleri için bağlantılı dokular." } },
+				{ "project": "4I1XuqiY", "name": "Entity Model Features", "icon": "https://cdn.modrinth.com/data/4I1XuqiY/6e5bbd0d06b1741bfdab6c0cfab6de8fdaf0064c_96.webp", "category": "visual", "default": false, "summary": { "en": "Custom entity models from OptiFine packs.", "tr": "OptiFine paketlerindeki entity modelleri." } },
+				{ "project": "BVzZfTc1", "name": "Entity Texture Features", "icon": "https://cdn.modrinth.com/data/BVzZfTc1/af683d206d50b05258d865b0d6e4aa2f2cee12f2_96.webp", "category": "visual", "default": false, "summary": { "en": "Random and emissive entity textures from OptiFine packs.", "tr": "OptiFine paketlerindeki rastgele ve parlayan dokular." } },
+				{ "project": "yBW8D80W", "name": "LambDynamicLights", "icon": "https://cdn.modrinth.com/data/yBW8D80W/d4f5c3ff8df7caf024178b04eca6d69f95979cfe_96.webp", "category": "visual", "default": false, "summary": { "en": "A torch in your hand lights the way.", "tr": "Elindeki meşale etrafı aydınlatır." } },
+				{ "project": "zV5r3pPn", "name": "3D Skin Layers", "icon": "https://cdn.modrinth.com/data/zV5r3pPn/ff7010d4ec0275609866c8b0f603b25e25949c08_96.webp", "category": "visual", "default": false, "summary": { "en": "The outer skin layer in 3D.", "tr": "Skin'in dış katmanı 3 boyutlu." } },
+				{ "project": "1bokaNcj", "name": "Xaero's Minimap", "icon": "https://cdn.modrinth.com/data/1bokaNcj/354080f65407e49f486fcf9c4580e82c45ae63b8_96.webp", "category": "map", "default": false, "serverSafe": false, "summary": { "en": "A minimap. Banned on some PvP servers, Hypixel included.", "tr": "Mini harita. Hypixel dahil bazı PvP sunucularında yasak." } },
+				{ "project": "NcUtCpym", "name": "Xaero's World Map", "icon": "https://cdn.modrinth.com/data/NcUtCpym/354080f65407e49f486fcf9c4580e82c45ae63b8_96.webp", "category": "map", "default": false, "serverSafe": false, "summary": { "en": "A full-screen world map.", "tr": "Tam ekran dünya haritası." } },
+				{ "project": "qQyHxfxd", "name": "No Chat Reports", "icon": "https://cdn.modrinth.com/data/qQyHxfxd/icon.png", "category": "chat", "default": false, "summary": { "en": "Stops chat messages being signed for reporting.", "tr": "Sohbet mesajlarının şikâyet için imzalanmasını kapatır." } }
+			]
+		}
+	],
+	"presets": [
+		{
+			"id": "performance",
+			"name": { "en": "Kite Performance", "tr": "Kite Performans" },
+			"summary": { "en": "Fabric with the performance mods. Pick any recent version.", "tr": "Performans modlarıyla Fabric. Güncel herhangi bir sürüm." },
+			"loader": "fabric",
+			"bundles": ["performance", "comfort"],
+			"options": "fps"
+		}
+	],
+	"options": {
+		"fps": {
+			"modern": { "renderDistance": "8", "simulationDistance": "6", "enableVsync": "false", "maxFps": "260", "entityShadows": "false", "particles": "1" },
+			"legacy": { "renderDistance": "8", "enableVsync": "false", "maxFps": "260", "entityShadows": "false", "particles": "1", "fancyGraphics": "false" }
+		}
+	}
+}

@@ -148,6 +148,11 @@ class Config
 	QString META_URL;
 
 	/**
+	 * The friends server's URL (server/friends/)
+	 */
+	QString FRIENDS_URL;
+
+	/**
 	 * API key for the CurseForge API
 	 */
 	QString CURSEFORGE_API_KEY;

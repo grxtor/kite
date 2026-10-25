@@ -7,8 +7,9 @@ import Kite.Theme
 
 /*
  * Home's side panel: "Set up Kite" (GettingStartedCard) until both its
- * steps are done, then Kite's news, then the worlds played most recently
- * across every instance (compact HomeWorldTile rows). Its own column
+ * steps are done, then Friends (HomeFriends), then Kite's news, then the
+ * worlds played most recently across every instance (compact HomeWorldTile
+ * rows). Its own column
  * beside the page, scrolling on its own and set off by a hairline; the page
  * decides whether there is room for it, and hides it when it has nothing to
  * show (`hasContent`).
@@ -22,9 +23,20 @@ Item {
     property var news: null
     // QmlShell.recentWorlds (RecentWorldsModel), or null.
     property var recentWorldsModel: null
+    // QmlShell.friends (FriendsController), or null.
+    property var friends: null
+    // Main.qml's FriendJoinFlow.
+    property var joinFlow: null
 
     signal createRequested()
     signal signInRequested()
+    // The Friends page, on "friends" or "requests", or "add" (the add
+    // field focused).
+    signal friendsRequested(string tab)
+    // A path for Main.qml's navigate() ("settings/friends").
+    signal navigateRequested(string target)
+    // Join a friend's server (a friend map).
+    signal joinRequested(var friend)
     // A recent world: open its instance on the Worlds tab.
     signal worldRequested(string instanceId)
 
@@ -33,6 +45,7 @@ Item {
 
     // Not the children's `visible`: that follows the panel's own.
     readonly property bool hasContent: gettingStarted.shown || newsList.hasNews || root.hasWorlds
+                                     || (friendsSection.shown && root.hasInstances)
     // The news as HomeNews reads it: every post off `news`, the newest one
     // still worth showing (or null), and whether there is one.
     readonly property var newsEntries: newsList.allEntries
@@ -73,6 +86,21 @@ Item {
                 signedIn: root.signedIn
                 onCreateRequested: root.createRequested()
                 onSignInRequested: root.signInRequested()
+            }
+
+            HomeFriends {
+                id: friendsSection
+                width: parent.width
+                // Like the checklist, after the first instance: the empty
+                // library has the page's own way in in front of it.
+                visible: friendsSection.shown && root.hasInstances
+                controller: root.friends
+                joinFlow: root.joinFlow
+                setupShowsSignIn: gettingStarted.shown && !root.signedIn
+                onManageRequested: (tab) => root.friendsRequested(tab)
+                onSignInRequested: root.signInRequested()
+                onNavigateRequested: (target) => root.navigateRequested(target)
+                onJoinRequested: (friend) => root.joinRequested(friend)
             }
 
             HomeNews {

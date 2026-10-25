@@ -286,6 +286,14 @@ void DependencyResolver::request(const QString& name, const QUrl& url,
 	m_pendingRequests++;
 	m_activeJobs.append(job);
 
+	/* An aborted job only reports once its download has unwound, which can
+	 * be after this resolver is gone (a review cancelled mid-lookup) and
+	 * its handlers with it; the download may still be handed data until
+	 * then. So the buffer lives as long as the job, and the job goes
+	 * however it ends. */
+	connect(job, &QObject::destroyed, job, [response] {});
+	connect(job, &Task::finished, job, &QObject::deleteLater);
+
 	auto finish = [this, job](const std::function<void(const QByteArray&)>& fn,
 							  const QByteArray& bytes) {
 		m_activeJobs.removeAll(QPointer<NetJob>(job));

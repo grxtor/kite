@@ -45,6 +45,8 @@ class LaunchTask : public Task
 	void appendStep(shared_qobject_ptr<LaunchStep> step);
 	void prependStep(shared_qobject_ptr<LaunchStep> step);
 	void setCensorFilter(QMap<QString, QString> filter);
+	/// Also hides @p secret in the log from now on, whatever the filter says.
+	void addCensorEntry(const QString& secret, const QString& replacement);
 	void setWrapperCommand(QString wrapperCommand);
 
 	InstancePtr instance()
@@ -65,6 +67,21 @@ class LaunchTask : public Task
 	qint64 pid()
 	{
 		return m_pid;
+	}
+
+	/**
+	 * @brief the profile id the game is played as, for the friends feature:
+	 * set only when that is the signed-in account's own identity (an online
+	 * launch, no demo), "" for anything else (offline, a demo, not known).
+	 */
+	void setPlayerProfile(const QString& profileId)
+	{
+		m_playerProfile = profileId;
+	}
+
+	QString playerProfile() const
+	{
+		return m_playerProfile;
 	}
 
 	/**
@@ -115,6 +132,13 @@ class LaunchTask : public Task
 
 	void requestLogging();
 
+	/**
+	 * @brief emitted for every line the launch prints, game output
+	 * included, after private values are censored. For code that reads the
+	 * log as it goes (the friends feature) without owning the LogModel.
+	 */
+	void logLineReceived(const QString& line);
+
   public slots:
 	void onLogLines(const QStringList& lines,
 					MessageLevel::Enum defaultLevel = MessageLevel::Kite);
@@ -146,6 +170,7 @@ class LaunchTask : public Task
 	int currentStep = -1;
 	State state = NotStarted;
 	qint64 m_pid = -1;
+	QString m_playerProfile;
 
   private: /* data */
 	QMetaObject::Connection m_stepStatusConnection;

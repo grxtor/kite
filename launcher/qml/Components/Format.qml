@@ -137,4 +137,107 @@ QtObject {
             s = s.substring(1)
         return decodeURIComponent(s)
     }
+
+    // The friends list in the three groups the Friends page and Home's panel
+    // show -- playing, online, offline -- the order the server gave (by
+    // name) holding inside each.
+    function friendsGrouped(friends) {
+        var groups = { playing: [], online: [], offline: [] }
+        for (var i = 0; i < (friends || []).length; ++i) {
+            var state = friends[i].state
+            groups[state === "playing" || state === "online" ? state : "offline"].push(friends[i])
+        }
+        return groups
+    }
+
+    // The second line of a friend's row: { text, suffix, tone }. On a
+    // server it is the host and the game version after it; singleplayer and
+    // a hidden server say so, with the version too; online and offline are
+    // the line FriendsDisplay worded ("In Kite", "Last seen 3 h ago"), the
+    // offline one "faint". Every line but the offline one is "secondary",
+    // as the other lists' second lines are: the name is the row's loudest
+    // text, and Join marks what can be acted on.
+    function friendStatus(friend) {
+        if (friend.state === "playing") {
+            if (friend.worldType === "server" && friend.host)
+                return { text: friend.host, suffix: friend.version, tone: "secondary" }
+            return {
+                text: friend.worldType === "singleplayer" ? qsTr("Singleplayer")
+                    : friend.worldType === "server" ? qsTr("On a server") : qsTr("Playing"),
+                suffix: friend.version,
+                tone: "secondary"
+            }
+        }
+        return { text: friend.statusText, suffix: "", tone: friend.state === "offline" ? "faint" : "secondary" }
+    }
+
+    // Whether Join shows: playing on a server whose host is visible, and the
+    // friend lets others join (FriendsDisplay already ands the three). The
+    // game version is what picks the instance, so it has to be known too.
+    function friendJoinable(friend) {
+        return friend.state === "playing" && friend.worldType === "server"
+                && !!friend.host && !!friend.version && friend.joinable === true
+    }
+
+    // Whether there is no Join for a visible server because its player
+    // turned joining off (a row says so, instead of looking like a bug).
+    function friendJoinOff(friend) {
+        return friend.state === "playing" && friend.worldType === "server"
+                && !!friend.host && friend.joinOff === true
+    }
+
+    // Why friends ask for a sign-in: said by the Friends page and by Home's
+    // panel alike.
+    readonly property string friendsNeedAccount: qsTr("Friends needs a Minecraft account that is signed in with Microsoft.")
+
+    // Where a friends view is: "off" (no controller, or turned off),
+    // "noAccount", "signingIn", "error" or "ready". The controller's own
+    // "off" while it is enabled is only the moment before it connects.
+    function friendsPhase(controller) {
+        if (!controller || !controller.enabled)
+            return "off"
+        return controller.state === "off" ? "signingIn" : controller.state
+    }
+
+    // Signed out, or failed in a way only signing in to the Minecraft
+    // account again fixes: the view offers "Sign in", not "Try again".
+    function friendsSignInFirst(controller) {
+        var phase = root.friendsPhase(controller)
+        return phase === "noAccount" || (phase === "error" && controller.needsSignIn)
+    }
+
+    // A failed poll while the lists are already there: they stay on screen
+    // (a bar says the server is not answering) instead of giving way to the
+    // full-page error.
+    function friendsStale(controller) {
+        return root.friendsPhase(controller) === "error" && !root.friendsSignInFirst(controller)
+                && controller.loaded
+    }
+
+    // Whether the friends lists have anyone in them: friends and the
+    // requests either way, and with @p withBlocked the people you blocked.
+    // (Not before the lists are read, which is "no one" only by default.)
+    function friendsHasAnyone(controller, withBlocked) {
+        return !!controller && controller.friends.length + controller.incoming.length
+                + controller.outgoing.length + (withBlocked ? controller.blocked.length : 0) > 0
+    }
+
+    // When the friends lists were last read, as a time of day in the
+    // user's format ("14:32"), or "" if they have not been.
+    function friendsUpdatedAt(controller) {
+        var at = controller ? controller.updatedAtMs : 0
+        // (Locale.ShortFormat given to Qt.formatTime() reads as Qt.ISODate:
+        // "17:30:08" whatever the language.)
+        return at > 0 ? new Date(at).toLocaleTimeString(Qt.locale(), Locale.ShortFormat) : ""
+    }
+
+    // Where Join sends the game: the host, and the port unless it is the
+    // game's own. An IPv6 host goes in brackets, as parse() of a server
+    // address reads it (it takes them off again for the game).
+    readonly property int defaultServerPort: 25565
+    function friendAddress(friend) {
+        var host = friend.host.indexOf(":") >= 0 ? "[" + friend.host + "]" : friend.host
+        return friend.port > 0 && friend.port !== root.defaultServerPort
+                ? host + ":" + friend.port : host
+    }
 }

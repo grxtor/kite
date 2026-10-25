@@ -25,6 +25,7 @@
 #include "settings/Setting.h"
 #include "settings/SettingsObject.h"
 #include "core/LauncherContext.h"
+#include <QFileInfo>
 #include <QRegularExpression>
 
 #include "MMCStrings.h"
@@ -42,9 +43,13 @@
 #include "launch/steps/TextPrint.h"
 #include "launch/steps/CheckJava.h"
 
+#include "minecraft/KiteModRules.h"
 #include "minecraft/launch/KitePartLaunch.h"
 #include "minecraft/launch/DirectJavaLaunch.h"
 #include "minecraft/launch/ModMinecraftJar.h"
+#include "minecraft/launch/PrepareKiteMod.h"
+#include "minecraft/launch/PreparePerformance.h"
+#include "minecraft/launch/StartModBridge.h"
 #include "minecraft/launch/ClaimAccount.h"
 #include "minecraft/launch/ReconstructAssets.h"
 #include "minecraft/launch/ScanModFolders.h"
@@ -188,6 +193,25 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 	// Join server on launch, this does not have a global override
 	m_settings->registerSetting("JoinServerOnLaunch", false);
 	m_settings->registerSetting("JoinServerOnLaunchAddress", "");
+
+	/* Kite Performance: while on, Play makes sure the performance mods are
+	 * installed (PerformanceSetupTask). The excluded projects are the ones
+	 * the player unticked, as a comma-joined list of Modrinth project ids:
+	 * the config file stores strings, not lists. */
+	m_settings->registerSetting("KitePerformance", false);
+	m_settings->registerSetting("KitePerformanceExcluded", "");
+
+	/* Kite mod: Kite's own Fabric mod (the in-game menu and HUD), loaded
+	 * for this instance through -Dfabric.addMods, so it never lands in the
+	 * mods folder. On by default; it only applies to a Fabric instance. */
+	m_settings->registerSetting("KiteMod", true);
+	/* The game is over: so is its session on the mod bridge. */
+	connect(this, &BaseInstance::runningStatusChanged, this,
+			[this](bool running) {
+				if (!running) {
+					m_bridgeGrant = {};
+				}
+			});
 
 	/* Vanilla only ever reads data packs from saves/<world>/datapacks, so
 	 * an instance-wide folder is meaningless unless a loader such as Paxi
@@ -497,6 +521,94 @@ QStringList MinecraftInstance::extraArguments() const
 	return list;
 }
 
+QString MinecraftInstance::kiteModLoaderVersion() const
+{
+	auto components = getPackProfile();
+	return components ? components->getComponentVersion(KiteMod::kFabricLoaderUid)
+					  : QString();
+}
+
+bool MinecraftInstance::kiteModApplies() const
+{
+	auto components = getPackProfile();
+	if (!components) {
+		return false;
+	}
+	/* The loader version is read first: like minecraftVersion(), it loads
+	 * the profile when nothing has yet. */
+	minecraftVersion();
+	return KiteMod::appliesTo(m_settings->get("KiteMod").toBool(),
+							  components->primaryModLoader(),
+							  kiteModLoaderVersion());
+}
+
+KiteMod::Support MinecraftInstance::kiteModSupport() const
+{
+	auto* context = LAUNCHER;
+	if (!context) {
+		return KiteMod::Support::Unknown;
+	}
+	/* The loader version is read first, as in kiteModApplies(). */
+	const QString loaderVersion = kiteModLoaderVersion();
+	return KiteMod::cachedSupport(context->metacache()->getBasePath("general"),
+								  minecraftVersion(), loaderVersion);
+}
+
+/* The jar of Kite's mod to inject, or nothing. Cheap and free of side
+ * effects, as it never fetches: PrepareKiteMod does that at launch.
+ * KITE_MOD_JAR names a jar to use in place of a downloaded one, for
+ * working on the mod itself. */
+QString MinecraftInstance::kiteModJar() const
+{
+	const QFileInfo devJar(qEnvironmentVariable("KITE_MOD_JAR"));
+	if (devJar.isFile()) {
+		return devJar.absoluteFilePath();
+	}
+
+	auto* context = LAUNCHER;
+	if (!context) {
+		return QString();
+	}
+	const QString cacheRoot = context->metacache()->getBasePath("general");
+	const auto build = KiteMod::cachedBuild(cacheRoot, minecraftVersion(),
+											kiteModLoaderVersion());
+	if (!build || !KiteMod::isDownloaded(cacheRoot, *build)) {
+		return QString();
+	}
+	return KiteMod::jarPath(cacheRoot, *build);
+}
+
+QStringList MinecraftInstance::kiteModArguments() const
+{
+	if (!kiteModApplies()) {
+		return {};
+	}
+	const QString jar = kiteModJar();
+	if (jar.isEmpty()) {
+		return {};
+	}
+	QStringList arguments{KiteMod::addModsArgument(extraArguments(), jar)};
+	if (m_bridgeGrant.valid()) {
+		/* The port only: the token travels in the environment, as argv is
+		 * logged and shows in `ps`. */
+		arguments << QStringLiteral("-D%1=%2")
+						 .arg(QString::fromLatin1(
+								  ModBridgeProtocol::kPortProperty),
+							  QString::number(m_bridgeGrant.port));
+	}
+	/* A Kite Performance instance opens on the server list by default; the
+	 * mod reads this as the default of its own setting. */
+	if (m_settings->get("KitePerformance").toBool()) {
+		arguments << QStringLiteral("-Dkite.performance=true");
+	}
+	return arguments;
+}
+
+void MinecraftInstance::setBridgeGrant(const ModBridgeProtocol::Grant& grant)
+{
+	m_bridgeGrant = grant;
+}
+
 QStringList MinecraftInstance::javaArguments() const
 {
 	QStringList args;
@@ -573,6 +685,10 @@ QProcessEnvironment MinecraftInstance::createEnvironment()
 	for (auto it = variables.begin(); it != variables.end(); ++it) {
 		env.insert(it.key(), it.value());
 	}
+	if (m_bridgeGrant.valid()) {
+		env.insert(QString::fromLatin1(ModBridgeProtocol::kTokenEnvVar),
+				   m_bridgeGrant.token);
+	}
 	return env;
 }
 
@@ -608,7 +724,7 @@ QStringList MinecraftInstance::processMinecraftArgs(
 	if (serverToJoin && !serverToJoin->address.isEmpty()) {
 		if (profile->hasTrait("feature:is_quick_play_multiplayer")) {
 			args_pattern += " --quickPlayMultiplayer " +
-							serverToJoin->address + ":" +
+							serverToJoin->quickPlayHost() + ":" +
 							QString::number(serverToJoin->port);
 		} else {
 			args_pattern += " --server " + serverToJoin->address;
@@ -679,7 +795,15 @@ MinecraftInstance::createLaunchScript(AuthSessionPtr session,
 	}
 
 	if (serverToJoin && !serverToJoin->address.isEmpty()) {
-		launchScript += "serverAddress " + serverToJoin->address + "\n";
+		/* ModernLauncher joins "serverAddress:serverPort" with quick play, as
+		 * processMinecraftArgs() does for DirectJava: the brackets of an IPv6
+		 * address have to be there for it too. */
+		const bool quickPlay =
+			profile->hasTrait("feature:is_quick_play_multiplayer");
+		launchScript += "serverAddress " +
+						(quickPlay ? serverToJoin->quickPlayHost()
+								   : serverToJoin->address) +
+						"\n";
 		launchScript +=
 			"serverPort " + QString::number(serverToJoin->port) + "\n";
 	} else if (serverToJoin && !serverToJoin->world.isEmpty()) {
@@ -757,6 +881,10 @@ MinecraftInstance::createLaunchScript(AuthSessionPtr session,
 		for (auto arg : javaArguments()) {
 			launchScript += "jvmArg " + arg + "\n";
 		}
+		// Kite's own mod rides on the game's JVM only, not the helper's.
+		for (auto arg : kiteModArguments()) {
+			launchScript += "jvmArg " + arg + "\n";
+		}
 
 		launchScript += "launcher modern\n";
 	}
@@ -782,6 +910,13 @@ MinecraftInstance::verboseDescription(AuthSessionPtr session,
 			out << "traits " + trait;
 		}
 		out << "";
+	}
+
+	// Said once the arguments are known: this is what the game gets.
+	const auto kiteModArgs = kiteModArguments();
+	if (!kiteModArgs.isEmpty()) {
+		out << tr("Kite mod: %1").arg(QFileInfo(kiteModJar()).fileName())
+			<< "";
 	}
 
 	auto settings = this->settings();
@@ -1094,6 +1229,15 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 		if (!session->demo && session->status != AuthSession::PlayableOffline) {
 			process->appendStep(new ClaimAccount(pptr, session));
 		}
+		// The performance mods land before the update, which then
+		// resolves the loader and downloads its libraries.
+		if (m_settings->get("KitePerformance").toBool()) {
+			process->appendStep(new PreparePerformance(pptr));
+		}
+		// Kite's mod is fetched here; an offline launch uses what is cached.
+		if (kiteModApplies()) {
+			process->appendStep(new PrepareKiteMod(pptr));
+		}
 		process->appendStep(new Update(pptr, [this] {
 			return Task::Ptr(new MinecraftUpdate(
 				this, MinecraftUpdate::Part::VersionInfo));
@@ -1142,6 +1286,11 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 		process->appendStep(new ReconstructAssets(pptr));
 	}
 
+	// the Kite mod's way to the launcher, once the mod's jar is known
+	if (kiteModApplies()) {
+		process->appendStep(new StartModBridge(pptr));
+	}
+
 	{
 		// actually launch the game
 		auto method = launchMethod();
@@ -1168,6 +1317,13 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 	}
 	if (session) {
 		process->setCensorFilter(createCensorFilterFromSession(session));
+		/* Whose game this is, for the friends feature (FriendsGameWatcher):
+		 * only an online launch of an account says whose it is. Offline, a
+		 * demo or another account's game is never reported under the account
+		 * Friends is signed in as. */
+		if (session->status == AuthSession::PlayableOnline && !session->demo) {
+			process->setPlayerProfile(session->uuid);
+		}
 	}
 	m_launchProcess = process;
 	emit launchTaskChanged(m_launchProcess);

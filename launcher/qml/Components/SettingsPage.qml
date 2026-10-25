@@ -36,6 +36,12 @@ Item {
     // QmlShell.launcherLogs (LauncherLogs) for "Launcher logs"; null hides
     // that section.
     property var launcherLogs: null
+    // QmlShell.friends (FriendsController) for "Friends"; null hides that
+    // section.
+    property var friends: null
+    // The default account's name if it is a Microsoft one ("" if not): the
+    // account whose Friends data Delete in "Friends" removes.
+    property string friendsAccountName: ""
 
     // Show a folder in the file manager (the General section's Folders).
     signal openPathRequested(string path)
@@ -48,11 +54,12 @@ Item {
     // plugin list, an arrow out of a box for programs outside the launcher,
     // an up arrow for sending a log away, a filing box for the launcher's
     // own kept logs, the circling arrows of "check again" for updates, and
-    // "i" for about.
+    // "i" for about, and two people for friends.
     readonly property var sections: [
         { id: "general", icon: "settings", label: qsTr("General") },
         { id: "java", icon: "server", label: qsTr("Java & memory") },
         { id: "minecraft", icon: "cube", label: qsTr("Minecraft") },
+        { id: "friends", icon: "users", label: qsTr("Friends") },
         { id: "console", icon: "list", label: qsTr("Console") },
         { id: "appearance", icon: "sun", label: qsTr("Appearance") },
         { id: "commands", icon: "terminal", label: qsTr("Custom commands") },
@@ -161,6 +168,10 @@ Item {
                 systemMemoryMiB: root.systemMemoryMiB
             }
             SettingsMinecraftSection {}
+            SettingsFriendsSection {
+                controller: root.friends
+                accountName: root.friendsAccountName
+            }
             SettingsConsoleSection {}
             SettingsAppearanceSection {
                 languages: root.languages

@@ -36,6 +36,8 @@ Item {
     // a tab this instance does not have, shows the first tab (Content, or
     // Worlds on an old-format instance).
     property string tab: ""
+    // The QML shell, handed on to the Content tab.
+    property var shell: null
     // (anchor, instanceId) -> PluginSurfaceModel.
     property var pluginSurfacesFor: null
     // The account, for the top-right ProfileButton -- this page has no
@@ -51,6 +53,8 @@ Item {
 
     // The header carries its own Play/Stop next to the persistent play bar's.
     signal backRequested()
+    // Open another instance (the Mods tab's new Kite Performance one).
+    signal openInstanceRequested(string id)
     // The header's Play and Stop, for the instance this page has open.
     signal playRequested(string id)
     signal stopRequested(string id)
@@ -75,6 +79,7 @@ Item {
     signal launchModeRequested(string id, string mode)
     signal launchAsRequested(string id, string accountId)
     signal profilerChosen(string id, string profilerKey)
+    signal performanceChosen(string id, bool enabled)
     signal navigateRequested(string target)
 
     // id -> export / shortcut controller, as on LibraryPage: the header
@@ -119,7 +124,7 @@ Item {
             versionmore: ["version", versionTab], newcomponent: ["version", versionTab],
             otherlogs: ["log", logTab], logfind: ["log", logTab],
             shotselect: ["screenshots", shotsTab], shotrename: ["screenshots", shotsTab],
-            browsepick: ["browse", browseView], modhealth: ["content", contentTab]
+            browsepick: ["browse", browseView], modhealth: ["content", contentTab], bundles: ["content", contentTab], perfdialog: ["content", contentTab]
         }
         const owner = owners[name]
         if (!owner)
@@ -441,8 +446,10 @@ Item {
             ContentTab {
                 id: contentTab
                 details: root.details
+                shell: root.shell
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
                 onBrowseRequested: (kind) => root.browseContent(kind)
+                onOpenInstanceRequested: (id) => root.openInstanceRequested(id)
             }
 
             ContentBrowserView {
@@ -510,6 +517,14 @@ Item {
                 adapter: root.details ? root.details.settings : null
                 systemMemoryMiB: root.systemMemoryMiB
                 running: root.running
+                loader: root.details && root.details.contentBrowser ? root.details.contentBrowser.instanceLoader : ""
+                // The manifest is fetched when the game starts, so the answer is read again when it stops
+                // running, and when the tab is shown again (the loader may have been updated in Version).
+                kiteModSupport: {
+                    root.running
+                    visible
+                    return root.details ? root.details.kiteModSupport() : "unknown"
+                }
             }
 
             GameOptionsTab {
@@ -573,6 +588,7 @@ Item {
             onLaunchModeRequested: (id, mode) => root.launchModeRequested(id, mode)
             onLaunchAsRequested: (id, accountId) => root.launchAsRequested(id, accountId)
             onProfilerChosen: (id, key) => root.profilerChosen(id, key)
+            onPerformanceChosen: (id, enabled) => root.performanceChosen(id, enabled)
             onNavigateRequested: (target) => root.navigateRequested(target)
         }
         MenuSeparator {

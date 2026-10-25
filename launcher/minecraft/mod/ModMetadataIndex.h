@@ -126,6 +126,8 @@ class ModMetadataIndex
 	Entry get(const QString& fileName) const;
 	bool contains(const QString& fileName) const;
 	QList<Entry> all() const;
+	/* Project ids of the entries installed from @p platform, one each. */
+	QStringList projectIds(const QString& platform) const;
 
 	/* Lookup helpers used by conflict / update analyzers. */
 	Entry findByPlatformProject(const QString& platform,

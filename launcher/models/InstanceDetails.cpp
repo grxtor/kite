@@ -677,6 +677,24 @@ bool InstanceDetails::isLegacy() const
 	return LegacyUpgrade::isLegacy(m_instance);
 }
 
+QString InstanceDetails::kiteModSupport() const
+{
+	if (!m_mc) {
+		return QStringLiteral("unknown");
+	}
+	switch (m_mc->kiteModSupport()) {
+		case KiteMod::Support::Available:
+			return QStringLiteral("available");
+		case KiteMod::Support::NoBuildForMinecraft:
+			return QStringLiteral("noBuild");
+		case KiteMod::Support::LoaderTooOld:
+			return QStringLiteral("loaderTooOld");
+		case KiteMod::Support::Unknown:
+			break;
+	}
+	return QStringLiteral("unknown");
+}
+
 QObject* InstanceDetails::upgradeLegacy()
 {
 	auto* launcher = LauncherContext::instance();

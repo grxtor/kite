@@ -488,7 +488,8 @@ QString NewInstanceController::suggestedName() const
 
 QObject* NewInstanceController::create(const QString& name,
 									   const QString& group,
-									   const QString& iconKey)
+									   const QString& iconKey,
+									   bool gameFiles)
 {
 	if (m_selectedMinecraftVersion.isEmpty()) {
 		return nullptr;
@@ -515,10 +516,21 @@ QObject* NewInstanceController::create(const QString& name,
 	creationTask->setGroup(group);
 	creationTask->setIcon(iconKey);
 	creationTask->setTargetDir(LAUNCHER->instances()->primaryDir());
+	creationTask->setDownloadGameFiles(gameFiles);
 
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(creationTask);
 	auto* watcher = new TaskWatcher(Task::Ptr(wrapped), this);
 	watcher->setTitle(name);
+	/* The final id is only settled when InstanceList commits the staged
+	 * instance, which it announces just before the wrapped task reports
+	 * success - so the watcher has the id by the time finished(true)
+	 * reaches QML. A task that fails commits nothing. */
+	const auto selected = connect(
+		LAUNCHER->instances().get(), &InstanceList::instanceSelectRequest,
+		watcher, [watcher](const QString& id) { watcher->setInstanceId(id); },
+		Qt::SingleShotConnection);
+	connect(watcher, &TaskWatcher::finished, watcher,
+			[selected](bool) { QObject::disconnect(selected); });
 	wrapped->start();
 	return watcher;
 }

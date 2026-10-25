@@ -153,6 +153,17 @@ class InstanceTask : public Task
 		return m_targetDir;
 	}
 
+	/* Whether downloadFiles() below may pre-download the game's files at
+	 * all, on top of the global setting. On by default.
+	 *
+	 * A caller turns it off when the user is not going to wait on this
+	 * task: the files then come with the first launch, exactly as they do
+	 * when that global setting is off. */
+	void setDownloadGameFiles(bool download)
+	{
+		m_downloadGameFiles = download;
+	}
+
 	/* Abortable exactly while the optional game-file download below is
 	 * running. Everything before it is either unpacking or fetching the
 	 * pack itself, which is not something we can stop halfway and be
@@ -210,6 +221,7 @@ class InstanceTask : public Task
 	QString m_overrideInstanceId;
 	QStringList m_filesToRemoveAfterCommit;
 	QString m_targetDir;
+	bool m_downloadGameFiles = true;
 	/* The game-file download while it is running, and null otherwise -
 	 * which is also how canAbort() knows whether there is anything to
 	 * abort. */

@@ -19,7 +19,9 @@
 
 #pragma once
 
+#include <QHash>
 #include <QObject>
+#include <QPointer>
 #include <QStringList>
 #include <QVariantMap>
 
@@ -38,6 +40,7 @@ class ModrinthModpackModel;
 class FlameModpackModel;
 class FtbModpackModel;
 class AtlModpackModel;
+class TaskWatcher;
 class TechnicModpackModel;
 class AccountsController;
 class NewInstanceController;
@@ -48,6 +51,8 @@ class UpdateSettingsController;
 class PlayTimeSummary;
 class LibraryController;
 class LauncherLogs;
+class BundleCatalog;
+class FriendsController;
 class CatPackList;
 class RecentWorldsModel;
 class JavaInstallList;
@@ -70,6 +75,24 @@ class QEvent;
  * without a LauncherContext, the way NewInstanceController.h's
  * composeSuggestedInstanceName() is. */
 QString sanitizedInstanceName(const QString& name);
+
+/* What Friends' Join knows of an instance when it picks the ones that can
+ * follow a friend into a server. Free-standing, like the helpers above, so
+ * the order can be tested without a LauncherContext. */
+struct JoinChoice
+{
+	QString version;
+	qint64 lastLaunch = 0;
+	QString name;
+};
+/* The indexes into @p choices of those on exactly @p version, the most
+ * recently played first, then by name in the user's language. Empty for an
+ * empty version. */
+QList<int> joinMatches(const QList<JoinChoice>& choices, const QString& version);
+/* The indexes of the others (a known version that is not @p version): those
+ * on its release line (1.21.x for 1.21.4) first, each group ordered as
+ * above. */
+QList<int> joinOthers(const QList<JoinChoice>& choices, const QString& version);
 
 /* The onboarding rules Application::createSetupWizard() used to gate the
  * widget SetupWizard's pages (LanguageWizardPage/JavaWizardPage) -- now
@@ -160,6 +183,13 @@ class QmlShell : public QObject
 	/// The cat pictures for Settings > Appearance and the still cat
 	/// (see models/CatPackList.h).
 	Q_PROPERTY(QObject* catPacks READ catPacks CONSTANT)
+	/// Recommended mods and instance presets (see modplatform/BundleCatalog.h).
+	Q_PROPERTY(QObject* bundles READ bundles CONSTANT)
+	/// Who is online and where, from Kite's friends server (see
+	/// friends/FriendsController.h). On by default; contacts nothing once
+	/// the user turns it off in Settings. Null in a build without a friends
+	/// server.
+	Q_PROPERTY(QObject* friends READ friends CONSTANT)
 	/* Distinct groups currently in use, for a "move to group" picker's
 	 * suggestions -- the same list InstanceFilterModel derives for the
 	 * library's own section headers (see m_instances), so a group picker
@@ -366,6 +396,12 @@ class QmlShell : public QObject
 	QObject* launcherLogs() const;
 	/// Made on first use, like javaController().
 	QObject* catPacks() const;
+	/// Made on first use, like catPacks().
+	QObject* bundles() const;
+	/// Made on first use; contacts nothing while FriendsEnabled is off (it
+	/// is on unless the user turned it off). Null where the build has no
+	/// friends server (FriendsController::available()).
+	QObject* friends() const;
 
 	/* Everything below just emits the matching *Requested() signal: QmlShell
 	 * sits in Kite_qml, which cannot see the widget code that actually
@@ -389,6 +425,9 @@ class QmlShell : public QObject
 	 *   profiler      the instance's profiler key ("" for none)
 	 *   profilers     [{key, name, ready}] -- see setProfilersProvider()
 	 *   accounts      [{id, name, kind, isDefault}] for "Play as"
+	 *   performance   whether Kite Performance is on for the instance
+	 *   performanceAvailable  whether it can be: the instance has a mod
+	 *                 loader and a game version the mods exist for
 	 * Empty for an unknown id. */
 	Q_INVOKABLE QVariantMap launchOptions(const QString& id) const;
 	/* Sets instance @p id's profiler ("" for none), the setting every way
@@ -396,12 +435,71 @@ class QmlShell : public QObject
 	 * Starts nothing by itself. */
 	Q_INVOKABLE void setInstanceProfiler(const QString& id,
 										 const QString& profilerKey);
+	/* Kite Performance, a mode of one instance: while it is on, every Play
+	 * first makes sure the Performance bundle's default mods are installed,
+	 * minus the projects in performanceExcluded() (Modrinth project ids the
+	 * player unticked). It never touches an instance without a mod loader:
+	 * a vanilla instance is left as it is, and "Speed up" makes a separate
+	 * one for it (createPerformanceInstance()).
+	 * The setters do nothing for an unknown or non-Minecraft id and tell
+	 * QML through performanceChanged(). */
+	Q_INVOKABLE bool performanceEnabled(const QString& id) const;
+	Q_INVOKABLE void setPerformanceEnabled(const QString& id, bool on);
+	Q_INVOKABLE QStringList performanceExcluded(const QString& id) const;
+	Q_INVOKABLE void setPerformanceExcluded(const QString& id,
+											const QStringList& projects);
+	/* Whether the performance mods exist for Minecraft @p mcVersion: a
+	 * release from 1.16 on or a numbered one (26.1.2); not "1.12.2",
+	 * "1.8.9", snapshots or betas. */
+	Q_INVOKABLE bool performanceSupported(const QString& mcVersion) const;
+	/* "Speed up" on a modded instance: turns the mode on and does the
+	 * setup now. The TaskWatcher of that setup, or null (and nothing
+	 * changed) when the instance is running, is not a Minecraft instance,
+	 * or has no mod loader (a vanilla instance is never changed: see
+	 * createPerformanceInstance()). The setup never fails; once
+	 * the watcher has finished, its `status` is a sentence saying what
+	 * was done, for a toast.
+	 * One setup per instance: while one is still running, this returns
+	 * that one's watcher instead of starting a second task over the same
+	 * mods folder. */
+	Q_INVOKABLE QObject* speedUp(const QString& id);
+	/* The TaskWatcher of the speedUp() setup still running on instance
+	 * @p id, or null when there is none. For a page that opens after the
+	 * setup began (the new-instance dialog starts it and closes) and
+	 * wants to show its progress. */
+	Q_INVOKABLE QObject* performanceSetup(const QString& id) const;
+	/* "Speed up" on a vanilla instance, which is never changed: makes a
+	 * NEW, empty instance (no worlds, nothing copied) on the source's
+	 * Minecraft version with the newest Fabric loader, named
+	 * "<source> · Kite Performance", in the source's group, with the
+	 * Performance preset's memory and options.txt and the mode on, then
+	 * installs the performance mods into it.
+	 * One TaskWatcher covers the whole chain: its `instanceId` is the new
+	 * instance's by the time finished(true) fires, and its final `status`
+	 * is a sentence ("Created X with 4 performance mods"). finished(false)
+	 * with `error` if the instance could not be created (the mods are best
+	 * effort). Null when @p sourceId is not a Minecraft instance or its
+	 * version is not performanceSupported(). */
+	Q_INVOKABLE QObject* createPerformanceInstance(const QString& sourceId);
 	Q_INVOKABLE void killInstance(const QString& id);
 	Q_INVOKABLE void openInstanceFolder(const QString& id);
 	/* Launches instance @p id straight into server @p address (host[:port]),
 	 * the QML-facing replacement for ServersPage's "Join" action
-	 * (ServersPage::on_actionJoin_triggered()). */
-	Q_INVOKABLE void joinServer(const QString& id, const QString& address);
+	 * (ServersPage::on_actionJoin_triggered()). Returns whether the instance
+	 * can start: a running or broken one only gets its Log or edit page
+	 * (Application::launch()), and nothing joins. */
+	Q_INVOKABLE bool joinServer(const QString& id, const QString& address);
+	/* The Minecraft instances whose game version is exactly @p mcVersion
+	 * (their net.minecraft component), the most recently played first:
+	 * [{id, name, iconKey, version, loader, lastLaunch, running,
+	 * canLaunch}]. Friends' Join uses it to pick which instance enters a
+	 * friend's server. Empty for an empty version. */
+	Q_INVOKABLE QVariantList instancesForVersion(const QString& mcVersion) const;
+	/* The other Minecraft instances, same maps: those on the same release
+	 * line as @p mcVersion (1.21.x for 1.21.4) first, then the rest, each
+	 * most recently played first. What Join offers when no instance is on
+	 * the friend's exact version. */
+	Q_INVOKABLE QVariantList otherInstances(const QString& mcVersion) const;
 	/// Opens a folder in the file manager; relative paths are resolved
 	/// against the data folder, which is the working directory.
 	Q_INVOKABLE void openPath(const QString& path);
@@ -552,6 +650,9 @@ class QmlShell : public QObject
 	void launchModeRequested(const QString& id, const QString& mode);
 	void launchAsRequested(const QString& id, const QString& accountId);
 	void killRequested(const QString& id);
+	/// setPerformanceEnabled(), setPerformanceExcluded() or speedUp()
+	/// changed instance @p id's Kite Performance settings.
+	void performanceChanged(const QString& id);
 	void folderRequested(const QString& id);
 	void joinServerRequested(const QString& id, const QString& address);
 
@@ -628,6 +729,8 @@ class QmlShell : public QObject
 	mutable std::unique_ptr<LibraryController> m_library;
 	mutable std::unique_ptr<LauncherLogs> m_launcherLogs;
 	mutable std::unique_ptr<CatPackList> m_catPacks;
+	mutable std::unique_ptr<BundleCatalog> m_bundles;
+	mutable std::unique_ptr<FriendsController> m_friends;
 	/* Keyed by (anchor, anchorContext) -- see pluginSurfaces(). Declared
 	 * alongside the other cached models, for the same reason: destroyed
 	 * before the engine is torn down. */
@@ -637,6 +740,9 @@ class QmlShell : public QObject
 	std::unique_ptr<QQmlApplicationEngine> m_engine;
 	QQuickWindow* m_window = nullptr;
 	int m_accountRevision = 0;
+	/* The speedUp() setups that are running, by instance id. Entries
+	 * are dropped when their watcher finishes. */
+	QHash<QString, QPointer<TaskWatcher>> m_performanceSetups;
 
 	/* Onboarding -- see setupSteps()'s Q_PROPERTY comment. Not exposed as
 	 * shared_ptr members the way m_instances etc. are: TranslationsModel and

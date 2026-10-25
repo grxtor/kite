@@ -227,6 +227,16 @@ class ContentUpdateController : public QObject
 										const QStringList& ids,
 										const QStringList& replaceKeys);
 
+	/// Installs the recommended mods @p projectIds (Modrinth project ids)
+	/// that the mods folder does not already have from Modrinth, with what
+	/// they need. A ContentInstallReview (started), or null with lastError
+	/// set.
+	Q_INVOKABLE QObject* installBundle(const QStringList& projectIds);
+	/// Modrinth project ids of the mods installed from Modrinth.
+	Q_INVOKABLE QStringList installedProjects() const;
+	/// Whether a mod named OptiFine is installed; Sodium does not run with it.
+	Q_INVOKABLE bool hasOptiFine() const;
+
 	/// Forgets where the files with @p keys came from (their sidecars);
 	/// the files stay. Returns how many records went.
 	Q_INVOKABLE int resetMetadata(const QString& kind, const QStringList& keys);

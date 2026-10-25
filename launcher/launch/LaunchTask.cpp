@@ -144,6 +144,14 @@ void LaunchTask::setCensorFilter(QMap<QString, QString> filter)
 	m_censorFilter = filter;
 }
 
+void LaunchTask::addCensorEntry(const QString& secret,
+								const QString& replacement)
+{
+	if (!secret.trimmed().isEmpty()) {
+		m_censorFilter[secret] = replacement;
+	}
+}
+
 QString LaunchTask::censorPrivateInfo(QString in)
 {
 	auto iter = m_censorFilter.begin();
@@ -253,6 +261,7 @@ void LaunchTask::onLogLine(QString line, MessageLevel::Enum level)
 	// censor private user info
 	line = censorPrivateInfo(line);
 
+	emit logLineReceived(line);
 	auto& model = *getLogModel();
 	model.append(level, line);
 }

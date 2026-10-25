@@ -401,6 +401,16 @@ set(ICONS_SOURCES
 # Support for Minecraft instances and launch
 set(MINECRAFT_SOURCES
     # Minecraft support
+    minecraft/PresetDefaults.h
+    minecraft/PresetDefaults.cpp
+    minecraft/KiteModRules.h
+    minecraft/KiteModRules.cpp
+    minecraft/PerformanceSetupRules.h
+    minecraft/PerformanceSetupRules.cpp
+    minecraft/PerformanceSetupTask.h
+    minecraft/PerformanceSetupTask.cpp
+    minecraft/PerformanceInstanceTask.h
+    minecraft/PerformanceInstanceTask.cpp
     minecraft/auth/AccountData.cpp
     minecraft/auth/AccountData.h
     minecraft/auth/AccountList.cpp
@@ -462,6 +472,12 @@ set(MINECRAFT_SOURCES
     minecraft/launch/KitePartLaunch.h
     minecraft/launch/MinecraftServerTarget.cpp
     minecraft/launch/MinecraftServerTarget.h
+    minecraft/launch/PrepareKiteMod.cpp
+    minecraft/launch/PrepareKiteMod.h
+    minecraft/launch/StartModBridge.cpp
+    minecraft/launch/StartModBridge.h
+    minecraft/launch/PreparePerformance.cpp
+    minecraft/launch/PreparePerformance.h
     minecraft/launch/PrintInstanceInfo.cpp
     minecraft/launch/PrintInstanceInfo.h
     minecraft/launch/ReconstructAssets.cpp
@@ -582,6 +598,8 @@ set(MINECRAFT_SOURCES
     minecraft/skins/ProfileSkinImport.h
     minecraft/skins/DefaultSkins.cpp
     minecraft/skins/DefaultSkins.h
+    minecraft/skins/SkinFace.cpp
+    minecraft/skins/SkinFace.h
 
     mojang/PackageManifest.h
     mojang/PackageManifest.cpp
@@ -623,6 +641,12 @@ add_unit_test(Library
 # a failed offline metadata load fails the launch with a reason.
 add_unit_test(LaunchPreflight
     SOURCES minecraft/LaunchPreflight_test.cpp
+    LIBS Kite_core
+    )
+
+# The address a launch joins, as the game's quick play takes it.
+add_unit_test(MinecraftServerTarget
+    SOURCES minecraft/launch/MinecraftServerTarget_test.cpp
     LIBS Kite_core
     )
 
@@ -888,6 +912,8 @@ set(CONTENT_DOWNLOAD_SOURCES
     modplatform/ModDownloadTypes.h
     modplatform/DependencyResolver.h
     modplatform/DependencyResolver.cpp
+    modplatform/BundleCatalog.h
+    modplatform/BundleCatalog.cpp
     modplatform/ContentDownloadTask.h
     modplatform/ContentDownloadTask.cpp
     modplatform/ModInstallConflictAnalyzer.h
@@ -899,6 +925,85 @@ set(CONTENT_DOWNLOAD_SOURCES
 add_unit_test(PackContents
     SOURCES modplatform/PackContents_test.cpp
     LIBS Kite_logic
+    )
+
+# The friends list: Kite's friends server (server/friends/), the sign-in
+# with Mojang's session server and the game log rules for "who is where".
+set(FRIENDS_SOURCES
+    friends/FriendsApi.h
+    friends/FriendsApi.cpp
+    friends/FriendsDisplay.h
+    friends/FriendsDisplay.cpp
+    friends/FriendsFaces.h
+    friends/FriendsFaces.cpp
+    friends/FriendsLogRules.h
+    friends/FriendsLogRules.cpp
+    friends/FriendsSessionStore.h
+    friends/FriendsSessionStore.cpp
+    friends/FriendsHttp.h
+    friends/FriendsHttp.cpp
+    friends/FriendsGameWatcher.h
+    friends/FriendsGameWatcher.cpp
+    friends/FriendsController.h
+    friends/FriendsController.cpp
+    friends/FriendsSignIn.cpp
+    friends/FriendsPoll.cpp
+    friends/FriendsActions.cpp
+    friends/FriendsBridge.cpp
+    # The Kite mod <-> launcher bridge (kite-mod/docs/BRIDGE.md).
+    modbridge/ModBridgeProtocol.h
+    modbridge/ModBridgeProtocol.cpp
+    modbridge/ModBridgeAnswers.cpp
+    modbridge/ModBridgeJson.h
+    modbridge/ModBridgeJson.cpp
+    modbridge/ModBridgeSource.h
+    modbridge/FriendsBridgeSource.h
+    modbridge/FriendsBridgeSource.cpp
+    modbridge/ModBridge.h
+    modbridge/ModBridge.cpp
+    modbridge/ModBridgeRoutes.cpp
+)
+
+# The messages and their answers over the README's fixture JSON, the status
+# lines, and the session file.
+add_unit_test(FriendsApi
+    SOURCES friends/FriendsApi_test.cpp
+    LIBS Kite_core
+    )
+
+# What the game log says about where the player is, for 1.8.9, 1.21.x and
+# 26.x, and what must not count.
+add_unit_test(FriendsLogRules
+    SOURCES friends/FriendsLogRules_test.cpp
+    LIBS Kite_core
+    )
+
+# The watcher over a real InstanceList of NullInstances: running, the most
+# recent of several, and the world following the log lines of its launch.
+add_unit_test(FriendsGameWatcher
+    SOURCES friends/FriendsGameWatcher_test.cpp
+    LIBS Kite_core
+    )
+
+# A friend's head: the skin URL from Mojang's profile (and which hosts are
+# accepted), the face cut from a skin, and when a face is stale.
+add_unit_test(FriendsFaces
+    SOURCES friends/FriendsFaces_test.cpp
+    LIBS Kite_core
+    )
+
+# The bridge's rules (request reading, Host/Origin/Sec-Fetch, token, limits)
+# and its messages, as pure functions.
+add_unit_test(ModBridgeProtocol
+    SOURCES modbridge/ModBridgeProtocol_test.cpp
+    LIBS Kite_core
+    )
+
+# The bridge over a real loopback socket with a fake friends source:
+# sessions, authentication, the endpoints and the limits.
+add_unit_test(ModBridge
+    SOURCES modbridge/ModBridge_test.cpp
+    LIBS Kite_core
     )
 
 set(PLUGIN_SOURCES
@@ -967,6 +1072,7 @@ set(LOGIC_SOURCES
     ${ATLAUNCHER_SOURCES}
     ${MODRINTH_SOURCES}
     ${CONTENT_DOWNLOAD_SOURCES}
+    ${FRIENDS_SOURCES}
 )
 
 SET(KITE_SOURCES
@@ -1426,6 +1532,13 @@ endif()
 # replaces that.
 add_library(Kite_core STATIC ${LOGIC_SOURCES})
 
+# The recommended-mods catalog, embedded as :/kite/bundles.json. In the core
+# so BundleCatalog finds it in the tests as well as in the launcher.
+qt6_add_resources(Kite_core kite_bundles
+    PREFIX "/kite"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/resources/kite"
+    FILES resources/kite/bundles.json)
+
 # Bundled translations: every translations/kite_<lang>.ts is compiled to a .qm
 # with lrelease and embedded in the core as :/i18n/kite_<lang>.qm, next to
 # :/i18n/stats.txt ("<lang> <translated> <total>" per line, counted from the
@@ -1809,6 +1922,33 @@ add_unit_test(ContentFilterModel
     )
 add_unit_test(ContentInstallReview
     SOURCES models/ContentInstallReview_test.cpp
+    LIBS Kite_core
+    )
+# The recommended-mods catalog: parsing and validation, language fallback,
+# loader filtering and de-duplication over a small catalog, and the catalog built
+# into the launcher. Previews and installs need a provider and are not run.
+add_unit_test(BundleCatalog
+    SOURCES modplatform/BundleCatalog_test.cpp
+    LIBS Kite_core
+    )
+# What a preset sets besides its mods: the memory table, which options.txt
+# keys a version reads, and that an existing options.txt is never replaced.
+add_unit_test(PresetDefaults
+    SOURCES minecraft/PresetDefaults_test.cpp
+    LIBS Kite_core
+    )
+# Kite Performance's decisions: what is wanted given the catalog, the
+# exclusions and what is installed, which jars have no record, the hash
+# lookup's request and answer, and the stored exclusion list.
+add_unit_test(PerformanceSetupTask
+    SOURCES minecraft/PerformanceSetupTask_test.cpp
+    LIBS Kite_core
+    )
+# Kite mod's decisions: the manifest's parsing and what it skips, the build
+# picked for a Minecraft and loader version, when the mod applies, the merged
+# -Dfabric.addMods argument and the jar cache.
+add_unit_test(KiteModRules
+    SOURCES minecraft/KiteModRules_test.cpp
     LIBS Kite_core
     )
 # The mods tab's health list over made-up issues: one row per problem, the

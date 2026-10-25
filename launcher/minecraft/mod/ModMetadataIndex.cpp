@@ -258,6 +258,18 @@ QList<ModMetadataIndex::Entry> ModMetadataIndex::all() const
 	return m_entries.values();
 }
 
+QStringList ModMetadataIndex::projectIds(const QString& platform) const
+{
+	QStringList projects;
+	for (const Entry& entry : all()) {
+		if (entry.platform == platform && !entry.projectId.isEmpty() &&
+			!projects.contains(entry.projectId)) {
+			projects.append(entry.projectId);
+		}
+	}
+	return projects;
+}
+
 ModMetadataIndex::Entry
 ModMetadataIndex::findByPlatformProject(const QString& platform,
 										const QString& projectId) const

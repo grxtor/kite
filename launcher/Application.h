@@ -194,6 +194,7 @@ class Application : public QApplication, public LauncherContext
 
 	NewsChecker* newsChecker() const override;
 	NotificationChecker* notificationChecker() const override;
+	ModBridge* modBridge() const override;
 
 	/* Whether the QML shell is up and its presenter ready to answer -- the
 	 * same check uiHost() makes before it will route a UiHost call to
@@ -443,6 +444,9 @@ class Application : public QApplication, public LauncherContext
 	void reportInstancePathProblems();
 	unique_qobject_ptr<NewsChecker> m_newsChecker;
 	unique_qobject_ptr<NotificationChecker> m_notificationChecker;
+	/* The Kite mod's way to the launcher; listens only while a game with
+	 * the mod runs. QmlShell::friends() hands it the friends controller. */
+	unique_qobject_ptr<ModBridge> m_modBridge;
 	/* Shows (first time) or raises the QML shell's window, counting it as
 	 * an open window while it is shown -- see m_qmlWindowShown. */
 	void showQmlShellWindow(bool minimized);

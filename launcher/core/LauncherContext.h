@@ -32,6 +32,7 @@ class HttpMetaCache;
 class IconList;
 class InstanceList;
 class JavaInstallList;
+class ModBridge;
 class NewsChecker;
 class NotificationChecker;
 class QNetworkAccessManager;
@@ -125,6 +126,12 @@ class LauncherContext
 		return nullptr;
 	}
 	virtual NotificationChecker* notificationChecker() const
+	{
+		return nullptr;
+	}
+	/* The bridge the Kite mod of a running game talks to the launcher
+	 * through. Null where there is none (a test or tool context). */
+	virtual ModBridge* modBridge() const
 	{
 		return nullptr;
 	}

@@ -285,6 +285,13 @@ class InstanceDetails : public QObject
 	/// succeeds), or null if this is not a legacy instance, it is running,
 	/// or the launcher's instance list is not available.
 	Q_INVOKABLE QObject* upgradeLegacy();
+	/// Whether Kite's own mod has a build for this instance, by what the
+	/// last fetched manifest says: "available", "noBuild" (none for its
+	/// Minecraft version), "loaderTooOld" (its Fabric Loader is older than
+	/// every build for that version needs) or "unknown" (no manifest yet,
+	/// or not a Minecraft instance). Read again after the game has run: that
+	/// is when the manifest is fetched.
+	Q_INVOKABLE QString kiteModSupport() const;
 	/// Whether the MCEditPath setting points at a usable MCEdit - the Worlds
 	/// tab shows "Open in MCEdit" only then.
 	Q_INVOKABLE bool mceditConfigured() const;

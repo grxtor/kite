@@ -19,6 +19,8 @@
 
 #include "qml/QmlShell.h"
 
+#include <algorithm>
+
 #include <QCoreApplication>
 #include <QCursor>
 #include <QElapsedTimer>
@@ -62,6 +64,13 @@
 #include "BuildConfig.h"
 #include "models/InstanceFilterModel.h"
 #include "models/NewInstanceController.h"
+#include "minecraft/PerformanceInstanceTask.h"
+#include "minecraft/PerformanceSetupRules.h"
+#include "minecraft/PerformanceSetupTask.h"
+#include "modplatform/BundleCatalog.h"
+#include "friends/FriendsController.h"
+#include "modbridge/ModBridge.h"
+#include "settings/Setting.h"
 #include "models/RecentWorldsModel.h"
 #include "models/SettingsAdapter.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
@@ -253,6 +262,17 @@ QObject* QmlShell::pluginList()
 	return expose(m_pluginList.get());
 }
 
+/// Kite Performance installs mods, so it needs a loader to put them in and
+/// a game version they exist for.
+static bool
+performanceAvailable(const std::shared_ptr<MinecraftInstance>& instance)
+{
+	auto profile = instance->getPackProfile();
+	return PerformanceSetup::hasLoader(profile->primaryModLoader()) &&
+		   PerformanceSetup::supportsVersion(
+			   profile->getComponentVersion(QStringLiteral("net.minecraft")));
+}
+
 QVariantMap QmlShell::launchOptions(const QString& id) const
 {
 	auto instance = LAUNCHER->instances()->getInstanceById(id);
@@ -293,6 +313,9 @@ QVariantMap QmlShell::launchOptions(const QString& id) const
 											? m_profilersProvider()
 											: QVariantList() },
 		{ QStringLiteral("accounts"), accounts },
+		{ QStringLiteral("performance"), minecraft && performanceEnabled(id) },
+		{ QStringLiteral("performanceAvailable"),
+		  minecraft && performanceAvailable(minecraft) },
 	};
 }
 
@@ -302,6 +325,105 @@ void QmlShell::setInstanceProfiler(const QString& id,
 	if (auto instance = LAUNCHER->instances()->getInstanceById(id)) {
 		instance->setProfilerKey(profilerKey);
 	}
+}
+
+static std::shared_ptr<MinecraftInstance>
+minecraftInstanceById(const QString& id)
+{
+	return std::dynamic_pointer_cast<MinecraftInstance>(
+		LAUNCHER->instances()->getInstanceById(id));
+}
+
+bool QmlShell::performanceEnabled(const QString& id) const
+{
+	auto instance = minecraftInstanceById(id);
+	return instance && instance->settings()->get("KitePerformance").toBool();
+}
+
+void QmlShell::setPerformanceEnabled(const QString& id, bool on)
+{
+	if (auto instance = minecraftInstanceById(id)) {
+		instance->settings()->set("KitePerformance", on);
+		emit performanceChanged(id);
+	}
+}
+
+QStringList QmlShell::performanceExcluded(const QString& id) const
+{
+	auto instance = minecraftInstanceById(id);
+	return instance ? PerformanceSetup::parseExcluded(
+						  instance->settings()
+							  ->get("KitePerformanceExcluded")
+							  .toString())
+					: QStringList();
+}
+
+void QmlShell::setPerformanceExcluded(const QString& id,
+									  const QStringList& projects)
+{
+	if (auto instance = minecraftInstanceById(id)) {
+		instance->settings()->set("KitePerformanceExcluded",
+								  PerformanceSetup::joinExcluded(projects));
+		emit performanceChanged(id);
+	}
+}
+
+bool QmlShell::performanceSupported(const QString& mcVersion) const
+{
+	return PerformanceSetup::supportsVersion(mcVersion);
+}
+
+QObject* QmlShell::performanceSetup(const QString& id) const
+{
+	return m_performanceSetups.value(id).data();
+}
+
+QObject* QmlShell::speedUp(const QString& id)
+{
+	if (auto* running = performanceSetup(id)) {
+		return running;
+	}
+
+	auto instance = minecraftInstanceById(id);
+	if (!instance || instance->isRunning() ||
+		!PerformanceSetup::hasLoader(instance->getPackProfile()->primaryModLoader())) {
+		return nullptr;
+	}
+	instance->settings()->set("KitePerformance", true);
+	emit performanceChanged(id);
+
+	auto* task = new PerformanceSetupTask(instance);
+	auto* watcher = new TaskWatcher(Task::Ptr(task), this);
+	watcher->setTitle(tr("Kite Performance"));
+	m_performanceSetups.insert(id, watcher);
+	connect(watcher, &TaskWatcher::finished, this,
+			[this, id]() { m_performanceSetups.remove(id); });
+	task->start();
+	return expose(watcher);
+}
+
+QObject* QmlShell::createPerformanceInstance(const QString& sourceId)
+{
+	auto source = minecraftInstanceById(sourceId);
+	const QString mcVersion =
+		source ? source->getPackProfile()->getComponentVersion(
+					 QStringLiteral("net.minecraft"))
+			   : QString();
+	if (!source || !PerformanceSetup::supportsVersion(mcVersion)) {
+		return nullptr;
+	}
+
+	const QString name = tr("%1 · Kite Performance").arg(source->name());
+	auto* task = new PerformanceInstanceTask(
+		mcVersion, name, LAUNCHER->instances()->getInstanceGroup(sourceId));
+	auto* watcher = new TaskWatcher(Task::Ptr(task), this);
+	watcher->setTitle(name);
+	/* The id is known as soon as the instance exists, which is before the
+	 * task reports success: finished(true) reaches QML with it set. */
+	connect(task, &PerformanceInstanceTask::instanceCreated, watcher,
+			&TaskWatcher::setInstanceId);
+	task->start();
+	return expose(watcher);
 }
 
 void QmlShell::killInstance(const QString& id)
@@ -314,9 +436,138 @@ void QmlShell::openInstanceFolder(const QString& id)
 	emit folderRequested(id);
 }
 
-void QmlShell::joinServer(const QString& id, const QString& address)
+bool QmlShell::joinServer(const QString& id, const QString& address)
 {
+	auto instance = LAUNCHER->instances()->getInstanceById(id);
+	const bool starts = instance && instance->canLaunch();
 	emit joinServerRequested(id, address);
+	return starts;
+}
+
+namespace
+{
+	using MinecraftInstances = QList<std::shared_ptr<MinecraftInstance>>;
+
+	/* minecraftVersion(), not the component's version: an instance whose
+	 * profile nothing has read yet would have none, and no friend's version
+	 * would match it. */
+	QString gameVersionOf(const std::shared_ptr<MinecraftInstance>& instance)
+	{
+		return instance->minecraftVersion();
+	}
+
+	QVariantList joinCandidates(const MinecraftInstances& instances)
+	{
+		QVariantList list;
+		for (const auto& instance : instances) {
+			list.append(QVariantMap{
+				{ QStringLiteral("id"), instance->id() },
+				{ QStringLiteral("name"), instance->name() },
+				{ QStringLiteral("iconKey"), instance->iconKey() },
+				{ QStringLiteral("version"), gameVersionOf(instance) },
+				{ QStringLiteral("loader"), instance->modLoaderName() },
+				{ QStringLiteral("lastLaunch"), instance->lastLaunch() },
+				{ QStringLiteral("running"), instance->isRunning() },
+				{ QStringLiteral("canLaunch"), instance->canLaunch() },
+			});
+		}
+		return list;
+	}
+
+	MinecraftInstances minecraftInstances()
+	{
+		MinecraftInstances all;
+		auto instances = LAUNCHER->instances();
+		for (int i = 0; i < instances->count(); ++i) {
+			if (auto minecraft = std::dynamic_pointer_cast<MinecraftInstance>(
+					instances->at(i))) {
+				all.append(minecraft);
+			}
+		}
+		return all;
+	}
+
+	QList<JoinChoice> choicesOf(const MinecraftInstances& instances)
+	{
+		QList<JoinChoice> choices;
+		for (const auto& instance : instances) {
+			choices.append({ gameVersionOf(instance), instance->lastLaunch(),
+							 instance->name() });
+		}
+		return choices;
+	}
+
+	MinecraftInstances picked(const MinecraftInstances& instances,
+							  const QList<int>& indexes)
+	{
+		MinecraftInstances chosen;
+		for (int index : indexes) {
+			chosen.append(instances.at(index));
+		}
+		return chosen;
+	}
+
+	/* "1.21" of "1.21.4": the release line patches of one game version
+	 * share. */
+	QString releaseLineOf(const QString& version)
+	{
+		return version.split(QLatin1Char('.')).mid(0, 2).join(QLatin1Char('.'));
+	}
+
+	/* Most recently played first, then by name in the user's language. */
+	bool playedBefore(const JoinChoice& a, const JoinChoice& b)
+	{
+		if (a.lastLaunch != b.lastLaunch) {
+			return a.lastLaunch > b.lastLaunch;
+		}
+		return a.name.localeAwareCompare(b.name) < 0;
+	}
+} // namespace
+
+QList<int> joinMatches(const QList<JoinChoice>& choices, const QString& version)
+{
+	QList<int> matches;
+	for (int i = 0; i < choices.size(); ++i) {
+		if (!version.isEmpty() && choices.at(i).version == version) {
+			matches.append(i);
+		}
+	}
+	std::stable_sort(matches.begin(), matches.end(), [&choices](int a, int b) {
+		return playedBefore(choices.at(a), choices.at(b));
+	});
+	return matches;
+}
+
+QList<int> joinOthers(const QList<JoinChoice>& choices, const QString& version)
+{
+	const QString line = releaseLineOf(version);
+	QList<int> others;
+	for (int i = 0; i < choices.size(); ++i) {
+		const QString& other = choices.at(i).version;
+		if (!version.isEmpty() && !other.isEmpty() && other != version) {
+			others.append(i);
+		}
+	}
+	std::stable_sort(others.begin(), others.end(), [&](int a, int b) {
+		const bool sameA = releaseLineOf(choices.at(a).version) == line;
+		const bool sameB = releaseLineOf(choices.at(b).version) == line;
+		return sameA != sameB ? sameA
+							  : playedBefore(choices.at(a), choices.at(b));
+	});
+	return others;
+}
+
+QVariantList QmlShell::instancesForVersion(const QString& mcVersion) const
+{
+	const auto all = minecraftInstances();
+	return joinCandidates(
+		picked(all, joinMatches(choicesOf(all), mcVersion)));
+}
+
+QVariantList QmlShell::otherInstances(const QString& mcVersion) const
+{
+	const auto all = minecraftInstances();
+	return joinCandidates(picked(all, joinOthers(choicesOf(all), mcVersion)));
 }
 
 void QmlShell::openPath(const QString& path)
@@ -969,6 +1220,36 @@ QObject* QmlShell::catPacks() const
 		m_catPacks = std::make_unique<CatPackList>();
 	}
 	return expose(m_catPacks.get());
+}
+
+QObject* QmlShell::bundles() const
+{
+	if (!m_bundles) {
+		m_bundles = std::make_unique<BundleCatalog>();
+		/* The texts follow the language; the catalog resolves them on
+		 * each read, so only the bindings need telling. */
+		connect(LAUNCHER->settings()->getSetting("Language").get(),
+				&Setting::SettingChanged, m_bundles.get(),
+				&BundleCatalog::changed);
+		m_bundles->refresh();
+	}
+	return expose(m_bundles.get());
+}
+
+QObject* QmlShell::friends() const
+{
+	if (!FriendsController::available()) {
+		return nullptr;
+	}
+	if (!m_friends) {
+		/* The working directory is the data folder, where accounts.json is. */
+		m_friends = std::make_unique<FriendsController>(QDir::currentPath());
+		/* The Kite mod of a running game reads it through the bridge. */
+		if (auto* bridge = LAUNCHER ? LAUNCHER->modBridge() : nullptr) {
+			bridge->setFriends(m_friends.get());
+		}
+	}
+	return expose(m_friends.get());
 }
 
 QObject* QmlShell::exportController(const QString& id)

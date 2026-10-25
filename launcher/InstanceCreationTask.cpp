@@ -71,6 +71,22 @@ void InstanceCreationTask::executeTask()
 		instanceSettings->resumeSave();
 	}
 
+	/* A loader's components resolve in the background, and the staged
+	 * folder is committed (moved) as soon as this task succeeds: with the
+	 * game files not downloaded here, that used to happen before the pack
+	 * was written, leaving an instance with an empty mmc-pack.json. So
+	 * the resolve is waited for and the pack saved first. */
+	auto components = instance->getPackProfile();
+	auto resolving = components->getCurrentTask();
+	if (resolving && !resolving->isFinished()) {
+		connect(resolving.get(), &Task::finished, this, [this, instance] {
+			instance->getPackProfile()->saveNow();
+			downloadFiles(instance);
+		});
+		return;
+	}
+	components->saveNow();
+
 	/* Finishes the task, whether or not it downloads anything. */
 	downloadFiles(instance);
 }

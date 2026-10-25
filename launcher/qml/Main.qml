@@ -110,7 +110,7 @@ ApplicationWindow {
     property string devRoute: ""
     function applyDevRoute() {
         // Routes reach into pages the route may not show; build them all.
-        for (var slot of [libraryLoader, settingsLoader, discoverLoader, instanceLoader, accountsLoader])
+        for (var slot of [libraryLoader, settingsLoader, discoverLoader, instanceLoader, accountsLoader, friendsLoader])
             slot.built = true
         var steps = root.devRoute.split(";")
         for (var i = 0; i < steps.length; ++i) {
@@ -147,6 +147,12 @@ ApplicationWindow {
                 root.navigate(value)
             else if (key === "import")
                 root.openImport(value)
+            // The Friends page; "friendsTab=requests" or "=blocked" opens
+            // it on that tab.
+            else if (key === "friends")
+                Qt.callLater(root.openFriends, "friends")
+            else if (key === "friendsTab")
+                Qt.callLater(root.openFriends, value)
             else if (key === "gallery")
                 galleryLoader.active = true
             else if (key === "profilemenu")
@@ -194,6 +200,12 @@ ApplicationWindow {
             // Add content's Filters popup (after instance=<id>).
             else if (key === "browsefilters")
                 Qt.callLater(instancePage.openBrowseFilters)
+            // The Content tab's Add-ons and Kite Performance dialogs (after
+            // instance=<id>).
+            else if (key === "bundles")
+                Qt.callLater(instancePage.review, "bundles")
+            else if (key === "perfdialog")
+                Qt.callLater(instancePage.review, "perfdialog")
             // A tab's own state, after instance=<id>: "versionmore",
             // "newcomponent", "otherlogs", "logfind", "shotselect",
             // "shotrename" -- see InstancePage.review().
@@ -244,6 +256,25 @@ ApplicationWindow {
             root.selection.clear()
     }
 
+    // QmlShell.friends (FriendsController), or null where this build has none.
+    readonly property var friendsController: root.shell && root.shell.friends ? root.shell.friends : null
+    // The Friends page on tab "friends", "requests" or "blocked", or "add":
+    // the friends tab with the add field focused. Going there first builds
+    // it (PageSlot), so it is there to be given the tab.
+    function openFriends(tab) {
+        root.page = "friends"
+        friendsPage.tab = tab === "requests" || tab === "blocked" ? tab : "friends"
+        if (tab === "add")
+            Qt.callLater(friendsPage.focusAddField)
+    }
+
+    // New instance, on Minecraft @p version (a friend's, with none of
+    // yours to follow them): FriendJoinFlow asks for it.
+    function createInstanceOn(version) {
+        root.openNewInstance("create")
+        root.shell.newInstance.selectMinecraftVersion(version)
+    }
+
     // The dialog held by `loader`, built now if it is not yet.
     function dialog(loader) {
         loader.active = true
@@ -291,6 +322,8 @@ ApplicationWindow {
      * Targets are paths, given whole or split in two (navigate("settings",
      * "java") is navigate("settings/java")):
      *   "home", "library", "discover", "accounts"
+     *   "friends" or "friends/<tab>"        a FriendsPage.qml tab id
+     *                                       ("friends", "requests", "blocked")
      *   "settings" or "settings/<section>"  a SettingsPage.qml section id
      *                                       ("java", "proxy", "about", ...)
      *   "instance/<id>" or "instance/<id>/<tab>"
@@ -310,6 +343,9 @@ ApplicationWindow {
         case "discover":
         case "accounts":
             root.page = parts[0]
+            return true
+        case "friends":
+            root.openFriends(parts.length > 1 ? parts[1] : "")
             return true
         case "settings":
             root.page = "settings"
@@ -362,6 +398,10 @@ ApplicationWindow {
         if (root.shell && typeof root.shell.setInstanceProfiler === "function")
             root.shell.setInstanceProfiler(id, profilerKey)
     }
+    function setPerformance(id, enabled) {
+        if (root.shell && typeof root.shell.setPerformanceEnabled === "function")
+            root.shell.setPerformanceEnabled(id, enabled)
+    }
     // What a LaunchOptionsMenu offers for instance @p id; a page hands this
     // to its menu as `optionsFor` (see QmlShell::launchOptions()).
     function launchOptions(id) {
@@ -369,14 +409,15 @@ ApplicationWindow {
                 ? root.shell.launchOptions(id) : ({})
     }
 
-    // The play bar shows on Home, Discover, Settings and Accounts, keeping
-    // the selected instance one click away. Home has it too: the hero scrolls
-    // away under Continue playing and the library, the bar stays. The
+    // The play bar shows on Home, Discover, Friends, Settings and Accounts,
+    // keeping the selected instance one click away. Home has it too: the
+    // hero scrolls away under Continue playing and the library, the bar stays. The
     // instance page's header is that page's Play, and the bar would only
     // repeat it there; the library page that once had it is no longer in the
     // rail.
     function dockVisibleFor(page) {
         return page === "home" || page === "discover" || page === "settings" || page === "accounts"
+               || page === "friends"
     }
     // Inside an instance, while Content shows its "Add content" browser,
     // that page's Install is the primary action. Moot while the instance
@@ -391,6 +432,7 @@ ApplicationWindow {
     readonly property Item discoverPage: discoverLoader.item
     readonly property Item instancePage: instanceLoader.item
     readonly property Item accountsPage: accountsLoader.item
+    readonly property Item friendsPage: friendsLoader.item
 
     function instanceGroups() {
         var groups = root.shell && root.shell.groups ? root.shell.groups : []
@@ -559,7 +601,20 @@ ApplicationWindow {
     readonly property var navItems: [
         { id: "home", icon: "home", label: qsTr("Home") },
         { id: "discover", icon: "compass", label: qsTr("Discover") }
-    ]
+    ].concat(root.friendsController ? [{ id: "friends", icon: "users", label: qsTr("Friends") }] : [])
+
+    // The counts on the rail (SidebarNav.badges), kept apart from navItems
+    // so a request coming in never rebuilds the rail's items. Friends: the
+    // requests waiting for an answer, in the accent. Only what needs an
+    // answer: a count of who is online is nearly always there, so it would
+    // read as noise, and Home's panel says it. Nothing while friends are off
+    // or not connected: the number would be stale.
+    readonly property var navBadges: {
+        var friends = root.friendsController
+        if (!friends || !friends.enabled || friends.state !== "ready" || friends.incomingCount === 0)
+            return ({})
+        return ({ friends: { count: friends.incomingCount, tone: "accent" } })
+    }
 
     SidebarNav {
         id: sidebar
@@ -577,6 +632,7 @@ ApplicationWindow {
         canExpand: root.width >= 1000
         collapsed: !canExpand || SettingsStore.bool("UiSidebarCollapsed")
         items: root.navItems
+        badges: root.navBadges
         footerItems: [
             { id: "settings", icon: "settings", label: qsTr("Settings") }
         ]
@@ -628,11 +684,13 @@ ApplicationWindow {
              : root.page === "settings" ? qsTr("Settings")
              : root.page === "discover" ? qsTr("Discover")
              : root.page === "accounts" ? qsTr("Accounts")
+             : root.page === "friends" ? qsTr("Friends")
              : root.page === "instance" ? (instancePage && instancePage.browsing ? qsTr("Add content") : root.openedName)
              : qsTr("Library")
         iconName: root.page === "settings" ? "settings"
                 : root.page === "discover" ? "compass"
                 : root.page === "accounts" ? "user"
+                : root.page === "friends" ? "users"
                 : root.page === "library" ? "library"
                 : "home"
         trail: root.page !== "instance" ? []
@@ -746,7 +804,7 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 Layout.minimumWidth: 0
 
-                readonly property var pageOrder: ["home", "library", "settings", "discover", "instance", "accounts"]
+                readonly property var pageOrder: ["home", "library", "settings", "discover", "instance", "accounts", "friends"]
                 // Whether the play bar shows for the page currently on
                 // screen -- updated at the same invisible midpoint as
                 // pageStack's own currentIndex (see pageTransition below),
@@ -813,6 +871,10 @@ ApplicationWindow {
                                    ? root.shell.shortcutController(id) : null
                         }
                         msaSignedIn: !!root.shell && root.shell.accountKind === "Microsoft"
+                        friends: root.friendsController
+                        joinFlow: friendJoin
+                        onFriendsRequested: (tab) => root.openFriends(tab)
+                        onJoinRequested: (friend) => friendJoin.join(friend)
 
                         onLaunchRequested: (id) => root.launch(id)
                         onStopRequested: (id) => root.call("killInstance", id)
@@ -827,6 +889,7 @@ ApplicationWindow {
                         onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
                         onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
                         onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+                        onPerformanceChosen: (id, enabled) => root.setPerformance(id, enabled)
                         onNavigateRequested: (target) => root.navigate(target)
                         onOpenInstanceWorldsRequested: (id) => {
                             root.openInstance(id)
@@ -880,6 +943,7 @@ ApplicationWindow {
                                 onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
                                 onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
                                 onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+                                onPerformanceChosen: (id, enabled) => root.setPerformance(id, enabled)
                                 onNavigateRequested: (target) => root.navigate(target)
                         }
                     }
@@ -898,6 +962,9 @@ ApplicationWindow {
                                 pluginList: root.shell && typeof root.shell.pluginList === "function"
                                             ? root.shell.pluginList() : null
                                 launcherLogs: root.shell && root.shell.launcherLogs ? root.shell.launcherLogs : null
+                                friends: root.friendsController
+                                friendsAccountName: root.shell && root.shell.accountKind === "Microsoft" && root.shell.accountName
+                                                    ? root.shell.accountName : ""
                                 onOpenPathRequested: (path) => root.call("openPath", path)
                         }
                     }
@@ -932,6 +999,7 @@ ApplicationWindow {
                         sourceComponent: InstancePage {
                                 headerModel: root.shell && root.shell.instancePageModel ? root.shell.instancePageModel : null
                                 details: root.openedDetails
+                                shell: root.shell
                                 systemMemoryMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
                                 accountName: root.shell && root.shell.accountName ? root.shell.accountName : ""
                                 accountKind: root.shell && root.shell.accountKind ? root.shell.accountKind : ""
@@ -940,6 +1008,7 @@ ApplicationWindow {
                                 onOpenAccountsRequested: root.page = "accounts"
                                 // Back to where the breadcrumb's root points (Home).
                                 onBackRequested: root.page = "home"
+                                onOpenInstanceRequested: (id) => root.openInstance(id)
                                 // The header's own Play and Stop: the one Play on
                                 // this page, the play bar stays away (dockVisibleFor).
                                 onPlayRequested: (id) => root.launch(id)
@@ -973,6 +1042,7 @@ ApplicationWindow {
                                 onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
                                 onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
                                 onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+                                onPerformanceChosen: (id, enabled) => root.setPerformance(id, enabled)
                                 onNavigateRequested: (target) => root.navigate(target)
                         }
                     }
@@ -985,6 +1055,20 @@ ApplicationWindow {
                                 controller: root.shell && root.shell.accountsController ? root.shell.accountsController : null
                                 // The 3D skin preview needs the Skin3D module.
                                 skin3DAvailable: root.skin3DAvailable
+                        }
+                    }
+
+                    PageSlot {
+                        id: friendsLoader
+                        page: "friends"
+                        current: root.page
+                        sourceComponent: FriendsPage {
+                                shown: friendsLoader.StackLayout.isCurrentItem
+                                controller: root.friendsController
+                                myFace: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
+                                joinFlow: friendJoin
+                                onNavigateRequested: (target) => root.navigate(target)
+                                onJoinRequested: (friend) => friendJoin.join(friend)
                         }
                     }
                 }
@@ -1042,6 +1126,7 @@ ApplicationWindow {
         onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
         onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
         onProfilerChosen: (id, profilerKey) => root.setProfiler(id, profilerKey)
+        onPerformanceChosen: (id, enabled) => root.setPerformance(id, enabled)
         onNavigateRequested: (target) => root.navigate(target)
     }
 
@@ -1053,7 +1138,9 @@ ApplicationWindow {
         active: false
         sourceComponent: NewInstanceDialog {
             iconsModel: root.shell && root.shell.iconsModel ? root.shell.iconsModel : null
+            shell: root.shell
             onCreated: root.page = "home"
+            onOpenInstanceRequested: (id) => root.navigate("instance/" + id + "/content")
         }
     }
 
@@ -1124,6 +1211,28 @@ ApplicationWindow {
                 }
             }
         }
+    }
+
+    // What the friends server answered to something asked of it.
+    Connections {
+        target: root.friendsController
+        function onActionFinished(action, ok, message) {
+            // "Try again" on the page or the panel failing again: what is
+            // wrong is already written there.
+            if (action === "refresh" && root.friendsController.state === "error")
+                return
+            if (message.length > 0)
+                toast.show(message, ok ? "success" : "danger")
+        }
+    }
+
+    // A friend's Join, from the Friends page and Home's panel.
+    FriendJoinFlow {
+        id: friendJoin
+        shell: root.shell
+        selectedId: root.selectedId
+        toast: toast
+        onCreateInstanceRequested: (version) => root.createInstanceOn(version)
     }
 
     Loader {
