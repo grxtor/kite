@@ -6699,7 +6699,7 @@ Lütfen tekrar dene.</translation>
         <translation>Dünya ekle</translation>
     </message>
     <message>
-        <location line="+51"/>
+        <location line="+69"/>
         <source>That world is no longer in the list.</source>
         <translation>Bu dünya artık listede yok.</translation>
     </message>
@@ -7273,12 +7273,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
     </message>
     <message>
         <location line="+4"/>
-        <location line="+337"/>
+        <location line="+342"/>
         <source>Plugins</source>
         <translation>Eklentiler</translation>
     </message>
     <message>
-        <location line="-195"/>
+        <location line="-200"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
@@ -7303,7 +7303,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+183"/>
+        <location line="+188"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
@@ -7620,7 +7620,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstanceSettingsTab</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceSettingsTab.qml" line="+30"/>
+        <location filename="../launcher/qml/Components/InstanceSettingsTab.qml" line="+34"/>
         <source>Each group follows the launcher&apos;s settings until you switch it to custom for this instance.</source>
         <translation>Her grup, bu kurulum için özele geçirene kadar başlatıcının ayarlarını izler.</translation>
     </message>
@@ -7648,6 +7648,16 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <location line="+8"/>
         <source>The Kite mod needs Fabric.</source>
         <translation>Kite modu Fabric gerektirir.</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>This instance&apos;s Fabric Loader is too old for the Kite mod. Update it in the Version tab.</source>
+        <translation>Bu örneğin Fabric Loader sürümü Kite modu için çok eski. Sürüm sekmesinden güncelleyin.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The Kite mod is not available for this Minecraft version yet.</source>
+        <translation>Bu Minecraft sürümü için Kite modu henüz yok.</translation>
     </message>
     <message>
         <location line="+15"/>
@@ -12381,7 +12391,7 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
 <context>
     <name>MinecraftInstance</name>
     <message>
-        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+866"/>
+        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+878"/>
         <source>Kite mod: %1</source>
         <translation>Kite modu: %1</translation>
     </message>
@@ -15202,29 +15212,34 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>PrepareKiteMod</name>
     <message>
-        <location filename="../launcher/minecraft/launch/PrepareKiteMod.cpp" line="+54"/>
+        <location filename="../launcher/minecraft/launch/PrepareKiteMod.cpp" line="+62"/>
         <source>Checking the Kite mod</source>
         <translation>Kite modu kontrol ediliyor</translation>
     </message>
     <message>
         <location line="+5"/>
-        <location line="+36"/>
+        <location line="+54"/>
         <source>Kite mod</source>
         <translation>Kite modu</translation>
     </message>
     <message>
-        <location line="-18"/>
-        <source>Kite mod: no version for Minecraft %1</source>
-        <translation>Kite modu: Minecraft %1 için sürüm yok</translation>
+        <location line="-21"/>
+        <source>Kite mod: Fabric Loader %1 is too old for it</source>
+        <translation>Kite modu: Fabric Loader %1 bunun için çok eski</translation>
     </message>
     <message>
-        <location line="+4"/>
-        <location line="+44"/>
+        <location line="+2"/>
+        <source>Kite mod: not available for Minecraft %1 yet</source>
+        <translation>Kite modu: Minecraft %1 için henüz yok</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <location line="+49"/>
         <source>Kite mod: %1 ready</source>
         <translation>Kite modu: %1 hazır</translation>
     </message>
     <message>
-        <location line="-35"/>
+        <location line="-40"/>
         <source>Downloading the Kite mod</source>
         <translation>Kite modu indiriliyor</translation>
     </message>
@@ -15234,7 +15249,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>dosya beklenen boyutta değil</translation>
     </message>
     <message>
-        <location line="+13"/>
+        <location line="+18"/>
         <source>Kite mod could not be downloaded: %1</source>
         <translation>Kite modu indirilemedi: %1</translation>
     </message>
@@ -20778,7 +20793,7 @@ Please add your Mojang or Minecraft account.</source>
 <context>
     <name>WorldCopyTask</name>
     <message>
-        <location filename="../launcher/models/InstanceDetails.cpp" line="-586"/>
+        <location filename="../launcher/models/InstanceDetails.cpp" line="-604"/>
         <source>The operation failed. See the launcher log for details.</source>
         <translation>İşlem başarısız oldu. Ayrıntılar için başlatıcı günlüğüne bak.</translation>
     </message>

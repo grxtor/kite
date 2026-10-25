@@ -322,14 +322,89 @@ class KiteModRulesTest : public QObject
 		QVERIFY(!KiteMod::cachedBuild(root.path(), "26.4", "0.20.1"));
 	}
 
-	void listsOnlyOlderKiteModJarsToDelete()
+	void deletesOnlyJarsTheManifestNoLongerLists()
 	{
-		const QStringList names{"kite-mod-0.1.0.jar", "kite-mod-0.2.0.jar",
+		const QList<KiteModBuild> listed{build("26.3", "0.2.0", "0.19.3"),
+										 build("26.4", "0.1.0", "0.19.3")};
+		const QStringList names{"kite-mod-0.2.0.jar", "kite-mod-0.1.0.jar",
 								"kite-mod-0.0.9.jar", "other.jar",
 								"kite-mod-0.0.1.txt"};
-		QCOMPARE(KiteMod::outdatedJars(names, "kite-mod-0.2.0.jar"),
-				 (QStringList{"kite-mod-0.1.0.jar", "kite-mod-0.0.9.jar"}));
-		QVERIFY(KiteMod::outdatedJars({}, "kite-mod-0.2.0.jar").isEmpty());
+		QCOMPARE(KiteMod::outdatedJars(names, listed, "kite-mod-0.2.0.jar"),
+				 (QStringList{"kite-mod-0.0.9.jar"}));
+		QVERIFY(KiteMod::outdatedJars({}, listed, "kite-mod-0.2.0.jar")
+					.isEmpty());
+	}
+
+	void keepsTheJarOfAnotherMinecraftVersion()
+	{
+		/* 26.4's jar sits in the cache while an instance on 26.3 downloads
+		 * its own: the other one must survive. */
+		const QList<KiteModBuild> listed{build("26.3", "0.2.0", "0.19.3"),
+										 build("26.4", "0.1.0", "0.19.3")};
+		QVERIFY(KiteMod::outdatedJars({"kite-mod-0.2.0.jar", "kite-mod-0.1.0.jar"},
+									  listed, "kite-mod-0.2.0.jar")
+					.isEmpty());
+	}
+
+	void neverDeletesTheJarJustDownloaded()
+	{
+		/* Even if the manifest was replaced since and no longer names it. */
+		QCOMPARE(KiteMod::outdatedJars({"kite-mod-0.2.0.jar", "kite-mod-0.1.0.jar"},
+									   {}, "kite-mod-0.2.0.jar"),
+				 (QStringList{"kite-mod-0.1.0.jar"}));
+	}
+
+	void supportIsUnknownWithoutAManifest()
+	{
+		using Support = KiteMod::Support;
+		QCOMPARE(KiteMod::supportFor(std::nullopt, "26.3", "0.20.1"),
+				 Support::Unknown);
+		const QList<KiteModBuild> builds{build("26.3", "0.1.0", "0.19.3")};
+		QCOMPARE(KiteMod::supportFor(builds, "", "0.20.1"), Support::Unknown);
+		QCOMPARE(KiteMod::supportFor(builds, "26.3", ""), Support::Unknown);
+	}
+
+	void supportTellsAvailableFromMissing()
+	{
+		using Support = KiteMod::Support;
+		const QList<KiteModBuild> builds{build("26.3", "0.1.0", "0.19.3")};
+		QCOMPARE(KiteMod::supportFor(builds, "26.3", "0.19.3"),
+				 Support::Available);
+		QCOMPARE(KiteMod::supportFor(builds, "1.21.1", "0.19.3"),
+				 Support::NoBuildForMinecraft);
+		QCOMPARE(KiteMod::supportFor(builds, "26.3", "0.18.0"),
+				 Support::LoaderTooOld);
+		/* A manifest with nothing in it is still a manifest. */
+		QCOMPARE(KiteMod::supportFor(QList<KiteModBuild>{}, "26.3", "0.19.3"),
+				 Support::NoBuildForMinecraft);
+	}
+
+	void anOlderLoaderIsFineWhenAnotherBuildSuitsIt()
+	{
+		const QList<KiteModBuild> builds{build("26.3", "0.1.0", "0.18.0"),
+										 build("26.3", "0.2.0", "0.19.3")};
+		QCOMPARE(KiteMod::supportFor(builds, "26.3", "0.18.5"),
+				 KiteMod::Support::Available);
+	}
+
+	void readsTheSupportFromTheCachedManifest()
+	{
+		using Support = KiteMod::Support;
+		QTemporaryDir root;
+		QVERIFY(root.isValid());
+		QCOMPARE(KiteMod::cachedSupport(root.path(), "26.3", "0.20.1"),
+				 Support::Unknown);
+		write(QDir(root.path()).filePath(KiteMod::kManifestPath), "junk");
+		QCOMPARE(KiteMod::cachedSupport(root.path(), "26.3", "0.20.1"),
+				 Support::Unknown);
+		write(QDir(root.path()).filePath(KiteMod::kManifestPath),
+			  manifest({buildJson("26.3", "0.1.0", "0.19.3")}));
+		QCOMPARE(KiteMod::cachedSupport(root.path(), "26.3", "0.20.1"),
+				 Support::Available);
+		QCOMPARE(KiteMod::cachedSupport(root.path(), "1.21.1", "0.20.1"),
+				 Support::NoBuildForMinecraft);
+		QCOMPARE(KiteMod::cachedSupport(root.path(), "26.3", "0.10.0"),
+				 Support::LoaderTooOld);
 	}
 };
 

@@ -21,6 +21,7 @@
 #pragma once
 #include "BaseInstance.h"
 #include <java/JavaVersion.h>
+#include "minecraft/KiteModRules.h"
 #include "minecraft/mod/Mod.h"
 #include <QProcess>
 #include <QDir>
@@ -159,6 +160,9 @@ class MinecraftInstance : public BaseInstance
 	/// Whether Kite's mod is on for this instance and the instance is on
 	/// Fabric.
 	bool kiteModApplies() const;
+	/// Whether the cached manifest has a build for this instance's Minecraft
+	/// and Fabric Loader versions; Unknown until a manifest has been fetched.
+	KiteMod::Support kiteModSupport() const;
 	/// The jar kiteModArguments() would load; empty when there is none.
 	QString kiteModJar() const;
 	/// The version of this instance's Fabric Loader; empty without one.

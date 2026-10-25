@@ -518,6 +518,11 @@ Item {
                 systemMemoryMiB: root.systemMemoryMiB
                 running: root.running
                 loader: root.details && root.details.contentBrowser ? root.details.contentBrowser.instanceLoader : ""
+                // The manifest is fetched when the game starts, so the answer is read again when it stops running.
+                kiteModSupport: {
+                    root.running
+                    return root.details ? root.details.kiteModSupport() : "unknown"
+                }
             }
 
             GameOptionsTab {

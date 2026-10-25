@@ -24,6 +24,10 @@ TabScroll {
     // the Kite mod is a Fabric mod.
     property string loader: ""
     readonly property bool kiteModAvailable: root.loader === "fabric"
+    // What the last fetched manifest says about a Kite mod build for this
+    // instance: "available", "noBuild", "loaderTooOld" or "unknown" (no
+    // manifest yet: nothing is claimed).
+    property string kiteModSupport: "unknown"
     // PluginSurfaceModel for this instance's settings anchor, or null.
     property var pluginSurfaces: null
 
@@ -68,6 +72,16 @@ TabScroll {
                 width: parent.width
                 tone: "info"
                 text: qsTr("The Kite mod needs Fabric.")
+            }
+
+            // The switch stays usable: it means "use the mod when there is one".
+            NoticeBar {
+                visible: root.kiteModAvailable && (root.kiteModSupport === "noBuild" || root.kiteModSupport === "loaderTooOld")
+                width: parent.width
+                tone: "info"
+                text: root.kiteModSupport === "loaderTooOld"
+                    ? qsTr("This instance's Fabric Loader is too old for the Kite mod. Update it in the Version tab.")
+                    : qsTr("The Kite mod is not available for this Minecraft version yet.")
             }
         }
 

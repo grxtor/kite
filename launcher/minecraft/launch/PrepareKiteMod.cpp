@@ -36,6 +36,14 @@
 namespace
 {
 	const QString kGeneralCache = QStringLiteral("general");
+	constexpr int kCachedManifestTimeoutMs = 5000;
+	constexpr int kFirstManifestTimeoutMs = 15000;
+}
+
+int PrepareKiteMod::manifestTimeout(bool haveCachedManifest)
+{
+	return haveCachedManifest ? kCachedManifestTimeoutMs
+							  : kFirstManifestTimeoutMs;
 }
 
 void PrepareKiteMod::executeTask()
@@ -63,18 +71,36 @@ void PrepareKiteMod::executeTask()
 	 * may be down or have no manifest yet. */
 	connect(m_job.get(), &Task::finished, this,
 			&PrepareKiteMod::manifestFetched);
+	/* NetJob tries a part four times and Qt sets no transfer timeout, so
+	 * a host that does not answer would hold the launch for minutes. Past
+	 * the timeout the job is aborted, which ends it like a failure. */
+	m_manifestTimer.setSingleShot(true);
+	connect(&m_manifestTimer, &QTimer::timeout, this, [this] {
+		if (m_job && m_job->isRunning()) {
+			m_job->abort();
+		}
+	});
+	m_manifestTimer.start(
+		manifestTimeout(KiteMod::cachedBuilds(m_cacheRoot).has_value()));
 	m_job->start();
 }
 
 void PrepareKiteMod::manifestFetched()
 {
+	m_manifestTimer.stop();
 	if (m_aborted) {
 		return;
 	}
 	const auto build =
 		KiteMod::cachedBuild(m_cacheRoot, m_mcVersion, m_loaderVersion);
 	if (!build) {
-		finish(tr("Kite mod: no version for Minecraft %1").arg(m_mcVersion));
+		const auto support = KiteMod::cachedSupport(m_cacheRoot, m_mcVersion,
+													m_loaderVersion);
+		finish(support == KiteMod::Support::LoaderTooOld
+				   ? tr("Kite mod: Fabric Loader %1 is too old for it")
+						 .arg(m_loaderVersion)
+				   : tr("Kite mod: not available for Minecraft %1 yet")
+						 .arg(m_mcVersion));
 		return;
 	}
 	if (KiteMod::isDownloaded(m_cacheRoot, *build)) {
@@ -117,10 +143,15 @@ void PrepareKiteMod::downloaded(const KiteModBuild& build)
 		downloadFailed(tr("the file is not the expected size"));
 		return;
 	}
-	const QDir folder(KiteMod::cacheFolder(m_cacheRoot));
-	for (const QString& old :
-		 KiteMod::outdatedJars(folder.entryList(QDir::Files), build.file)) {
-		QFile::remove(folder.filePath(old));
+	/* Only what the manifest has dropped goes: a jar it still lists may
+	 * be another Minecraft version's, or one a launch in progress is about
+	 * to hand to its game. Without a readable manifest nothing is known. */
+	if (const auto listed = KiteMod::cachedBuilds(m_cacheRoot)) {
+		const QDir folder(KiteMod::cacheFolder(m_cacheRoot));
+		for (const QString& old : KiteMod::outdatedJars(
+				 folder.entryList(QDir::Files), *listed, build.file)) {
+			QFile::remove(folder.filePath(old));
+		}
 	}
 	finish(tr("Kite mod: %1 ready").arg(build.version));
 }

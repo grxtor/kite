@@ -26,6 +26,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
+#include <QSet>
 #include <QUrl>
 #include <algorithm>
 
@@ -119,6 +120,23 @@ namespace KiteMod
 		return best;
 	}
 
+	Support supportFor(const std::optional<QList<KiteModBuild>>& builds,
+					   const QString& mcVersion, const QString& loaderVersion)
+	{
+		if (!builds || mcVersion.isEmpty() || loaderVersion.isEmpty()) {
+			return Support::Unknown;
+		}
+		if (pickBuild(*builds, mcVersion, loaderVersion)) {
+			return Support::Available;
+		}
+		const bool madeForMinecraft = std::any_of(
+			builds->begin(), builds->end(), [&](const KiteModBuild& build) {
+				return build.minecraft == mcVersion;
+			});
+		return madeForMinecraft ? Support::LoaderTooOld
+								: Support::NoBuildForMinecraft;
+	}
+
 	bool appliesTo(bool enabled, const QString& primaryLoader,
 				   const QString& loaderVersion)
 	{
@@ -157,27 +175,44 @@ namespace KiteMod
 		return info.isFile() && info.size() == build.size;
 	}
 
-	std::optional<KiteModBuild> cachedBuild(const QString& cacheRoot,
-											const QString& mcVersion,
-											const QString& loaderVersion)
+	std::optional<QList<KiteModBuild>> cachedBuilds(const QString& cacheRoot)
 	{
 		QFile manifest(QDir(cacheRoot).filePath(kManifestPath));
 		if (!manifest.open(QIODevice::ReadOnly)) {
 			return std::nullopt;
 		}
-		const auto builds = parseManifest(manifest.readAll());
+		return parseManifest(manifest.readAll());
+	}
+
+	Support cachedSupport(const QString& cacheRoot, const QString& mcVersion,
+						  const QString& loaderVersion)
+	{
+		return supportFor(cachedBuilds(cacheRoot), mcVersion, loaderVersion);
+	}
+
+	std::optional<KiteModBuild> cachedBuild(const QString& cacheRoot,
+											const QString& mcVersion,
+											const QString& loaderVersion)
+	{
+		const auto builds = cachedBuilds(cacheRoot);
 		if (!builds) {
 			return std::nullopt;
 		}
 		return pickBuild(*builds, mcVersion, loaderVersion);
 	}
 
-	QStringList outdatedJars(const QStringList& names, const QString& keep)
+	QStringList outdatedJars(const QStringList& names,
+							 const QList<KiteModBuild>& builds,
+							 const QString& keep)
 	{
+		QSet<QString> listed;
+		for (const KiteModBuild& build : builds) {
+			listed.insert(build.file);
+		}
 		QStringList outdated;
 		for (const QString& name : names) {
-			if (name != keep && name.startsWith(kJarPrefix) &&
-				name.endsWith(kJarSuffix)) {
+			if (name != keep && !listed.contains(name) &&
+				name.startsWith(kJarPrefix) && name.endsWith(kJarSuffix)) {
 				outdated.append(name);
 			}
 		}

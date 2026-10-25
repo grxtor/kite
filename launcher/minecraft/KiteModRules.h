@@ -60,6 +60,23 @@ namespace KiteMod
 	std::optional<KiteModBuild> pickBuild(const QList<KiteModBuild>& builds,
 										  const QString& mcVersion,
 										  const QString& loaderVersion);
+	/// Whether a build can be used for an instance, as far as the manifest
+	/// we have says.
+	enum class Support {
+		/// No manifest to go by yet, or the instance's versions are not
+		/// known: nothing can be claimed either way.
+		Unknown,
+		Available,
+		/// The manifest has no build made for this Minecraft version.
+		NoBuildForMinecraft,
+		/// There are builds for this Minecraft version, but all of them need
+		/// a newer Fabric Loader than the instance has.
+		LoaderTooOld
+	};
+	/// The support for @p mcVersion and @p loaderVersion in @p builds;
+	/// pass nothing for @p builds when there is no manifest.
+	Support supportFor(const std::optional<QList<KiteModBuild>>& builds,
+					   const QString& mcVersion, const QString& loaderVersion);
 	/// Whether the mod can be loaded: switched on, on Fabric (Quilt is a
 	/// different loader) with a known loader version.
 	bool appliesTo(bool enabled, const QString& primaryLoader,
@@ -77,11 +94,21 @@ namespace KiteMod
 	QString jarPath(const QString& cacheRoot, const KiteModBuild& build);
 	/// Whether @p build's jar is on disk with the size the manifest says.
 	bool isDownloaded(const QString& cacheRoot, const KiteModBuild& build);
+	/// The builds of the manifest cached under @p cacheRoot; nothing when
+	/// there is no usable one.
+	std::optional<QList<KiteModBuild>> cachedBuilds(const QString& cacheRoot);
+	/// supportFor() over the manifest cached under @p cacheRoot.
+	Support cachedSupport(const QString& cacheRoot, const QString& mcVersion,
+						  const QString& loaderVersion);
 	/// The best build of the manifest cached under @p cacheRoot, if any.
 	std::optional<KiteModBuild> cachedBuild(const QString& cacheRoot,
 											const QString& mcVersion,
 											const QString& loaderVersion);
-	/// The Kite mod jars in @p names other than @p keep: the old versions to
-	/// delete once a new one is in place.
-	QStringList outdatedJars(const QStringList& names, const QString& keep);
+	/// The Kite mod jars in @p names to delete once a new one is in place:
+	/// those no build in @p builds names any more, other than @p keep. A jar
+	/// the manifest still lists may belong to an instance on another
+	/// Minecraft version, or one that is launching right now, so it stays.
+	QStringList outdatedJars(const QStringList& names,
+							 const QList<KiteModBuild>& builds,
+							 const QString& keep);
 } // namespace KiteMod

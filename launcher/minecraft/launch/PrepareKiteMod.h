@@ -21,6 +21,7 @@
 
 #include <launch/LaunchStep.h>
 
+#include <QTimer>
 #include <memory>
 #include <optional>
 
@@ -34,7 +35,10 @@ class MinecraftInstance;
  * The launch step that gets Kite's own Fabric mod ready: it asks the meta
  * server for the manifest, picks the build for this instance's Minecraft and
  * Fabric Loader, and downloads the jar into the cache when it is missing or
- * the wrong size, deleting the older ones. The jar is handed to the game by
+ * the wrong size, deleting the jars the manifest no longer lists. The manifest
+ * request is cut short after a few seconds (see manifestTimeout()) and the
+ * cached manifest is used instead, so an unreachable meta server cannot hold
+ * a launch up. The jar is handed to the game by
  * MinecraftInstance::kiteModArguments(). Says in the launch log what it did.
  * It never fails the launch: without the mod the game starts the same, and
  * only an abort stops it. An offline launch does not run this step and uses
@@ -57,6 +61,9 @@ class PrepareKiteMod : public LaunchStep
 	bool abort() override;
 
   private:
+	/// How long to wait for the manifest before using the cached one. Longer
+	/// when there is none yet, as then the mod would be missing this launch.
+	static int manifestTimeout(bool haveCachedManifest);
 	void manifestFetched();
 	void download(const KiteModBuild& build);
 	void downloaded(const KiteModBuild& build);
@@ -68,5 +75,6 @@ class PrepareKiteMod : public LaunchStep
 	QString m_mcVersion;
 	QString m_loaderVersion;
 	NetJob::Ptr m_job;
+	QTimer m_manifestTimer;
 	bool m_aborted = false;
 };

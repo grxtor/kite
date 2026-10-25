@@ -532,6 +532,18 @@ bool MinecraftInstance::kiteModApplies() const
 							  kiteModLoaderVersion());
 }
 
+KiteMod::Support MinecraftInstance::kiteModSupport() const
+{
+	auto* context = LAUNCHER;
+	if (!context) {
+		return KiteMod::Support::Unknown;
+	}
+	/* The loader version is read first, as in kiteModApplies(). */
+	const QString loaderVersion = kiteModLoaderVersion();
+	return KiteMod::cachedSupport(context->metacache()->getBasePath("general"),
+								  minecraftVersion(), loaderVersion);
+}
+
 /* The jar of Kite's mod to inject, or nothing. Cheap and free of side
  * effects, as it never fetches: PrepareKiteMod does that at launch.
  * KITE_MOD_JAR names a jar to use in place of a downloaded one, for
