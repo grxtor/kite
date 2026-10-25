@@ -403,6 +403,8 @@ set(MINECRAFT_SOURCES
     # Minecraft support
     minecraft/PresetDefaults.h
     minecraft/PresetDefaults.cpp
+    minecraft/KiteModRules.h
+    minecraft/KiteModRules.cpp
     minecraft/PerformanceSetupRules.h
     minecraft/PerformanceSetupRules.cpp
     minecraft/PerformanceSetupTask.h
@@ -470,6 +472,8 @@ set(MINECRAFT_SOURCES
     minecraft/launch/KitePartLaunch.h
     minecraft/launch/MinecraftServerTarget.cpp
     minecraft/launch/MinecraftServerTarget.h
+    minecraft/launch/PrepareKiteMod.cpp
+    minecraft/launch/PrepareKiteMod.h
     minecraft/launch/PreparePerformance.cpp
     minecraft/launch/PreparePerformance.h
     minecraft/launch/PrintInstanceInfo.cpp
@@ -1901,6 +1905,13 @@ add_unit_test(PresetDefaults
 # lookup's request and answer, and the stored exclusion list.
 add_unit_test(PerformanceSetupTask
     SOURCES minecraft/PerformanceSetupTask_test.cpp
+    LIBS Kite_core
+    )
+# Kite mod's decisions: the manifest's parsing and what it skips, the build
+# picked for a Minecraft and loader version, when the mod applies, the merged
+# -Dfabric.addMods argument and the jar cache.
+add_unit_test(KiteModRules
+    SOURCES minecraft/KiteModRules_test.cpp
     LIBS Kite_core
     )
 # The mods tab's health list over made-up issues: one row per problem, the

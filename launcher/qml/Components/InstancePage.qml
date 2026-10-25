@@ -517,6 +517,7 @@ Item {
                 adapter: root.details ? root.details.settings : null
                 systemMemoryMiB: root.systemMemoryMiB
                 running: root.running
+                loader: root.details && root.details.contentBrowser ? root.details.contentBrowser.instanceLoader : ""
             }
 
             GameOptionsTab {

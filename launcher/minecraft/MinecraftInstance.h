@@ -152,6 +152,17 @@ class MinecraftInstance : public BaseInstance
 							   MinecraftServerTargetPtr serverToJoin);
 	/// get arguments passed to java
 	QStringList javaArguments() const;
+	/// The -Dfabric.addMods argument that loads Kite's own mod, or nothing
+	/// when the mod is off, the loader is not Fabric or no jar is at hand.
+	/// Kept out of javaArguments(): only the game's JVM wants it.
+	QStringList kiteModArguments() const;
+	/// Whether Kite's mod is on for this instance and the instance is on
+	/// Fabric.
+	bool kiteModApplies() const;
+	/// The jar kiteModArguments() would load; empty when there is none.
+	QString kiteModJar() const;
+	/// The version of this instance's Fabric Loader; empty without one.
+	QString kiteModLoaderVersion() const;
 
 	/// get variables for launch command variable substitution/environment
 	QMap<QString, QString> getVariables() const override;

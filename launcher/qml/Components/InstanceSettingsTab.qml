@@ -20,6 +20,10 @@ TabScroll {
     property var adapter: null
     property int systemMemoryMiB: 8192
     property bool running: false
+    // The instance's mod loader id ("fabric", "quilt", ... or "" for none):
+    // the Kite mod is a Fabric mod.
+    property string loader: ""
+    readonly property bool kiteModAvailable: root.loader === "fabric"
     // PluginSurfaceModel for this instance's settings anchor, or null.
     property var pluginSurfaces: null
 
@@ -40,6 +44,32 @@ TabScroll {
         width: parent.width
         spacing: Theme.space.xl
         enabled: !root.running
+
+        // Kite's own mod: this instance's alone, with no launcher-wide value
+        // to follow, so it is a plain group and not an OverrideGroup.
+        Column {
+            width: parent.width
+            spacing: Theme.space.sm
+
+            SettingsGroup {
+                width: parent.width
+                title: qsTr("Kite mod")
+                SettingSwitch {
+                    source: store
+                    key: "KiteMod"
+                    enabled: root.kiteModAvailable
+                    label: qsTr("Use the Kite mod")
+                    description: qsTr("Adds Kite's in-game menu (Right Shift) and HUD. It is loaded only for this instance and never appears in its mods folder.")
+                }
+            }
+
+            NoticeBar {
+                visible: !root.kiteModAvailable
+                width: parent.width
+                tone: "info"
+                text: qsTr("The Kite mod needs Fabric.")
+            }
+        }
 
         // Memory, Java and JVM arguments: their own file, so Java
         // management can grow there without touching the rest of this tab.

@@ -25,6 +25,7 @@
 #include "settings/Setting.h"
 #include "settings/SettingsObject.h"
 #include "core/LauncherContext.h"
+#include <QFileInfo>
 #include <QRegularExpression>
 
 #include "MMCStrings.h"
@@ -42,9 +43,11 @@
 #include "launch/steps/TextPrint.h"
 #include "launch/steps/CheckJava.h"
 
+#include "minecraft/KiteModRules.h"
 #include "minecraft/launch/KitePartLaunch.h"
 #include "minecraft/launch/DirectJavaLaunch.h"
 #include "minecraft/launch/ModMinecraftJar.h"
+#include "minecraft/launch/PrepareKiteMod.h"
 #include "minecraft/launch/PreparePerformance.h"
 #include "minecraft/launch/ClaimAccount.h"
 #include "minecraft/launch/ReconstructAssets.h"
@@ -192,6 +195,11 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 	 * the config file stores strings, not lists. */
 	m_settings->registerSetting("KitePerformance", false);
 	m_settings->registerSetting("KitePerformanceExcluded", "");
+
+	/* Kite mod: Kite's own Fabric mod (the in-game menu and HUD), loaded
+	 * for this instance through -Dfabric.addMods, so it never lands in the
+	 * mods folder. On by default; it only applies to a Fabric instance. */
+	m_settings->registerSetting("KiteMod", true);
 
 	/* Vanilla only ever reads data packs from saves/<world>/datapacks, so
 	 * an instance-wide folder is meaningless unless a loader such as Paxi
@@ -503,6 +511,63 @@ QStringList MinecraftInstance::extraArguments() const
 	return list;
 }
 
+QString MinecraftInstance::kiteModLoaderVersion() const
+{
+	auto components = getPackProfile();
+	return components ? components->getComponentVersion(KiteMod::kFabricLoaderUid)
+					  : QString();
+}
+
+bool MinecraftInstance::kiteModApplies() const
+{
+	auto components = getPackProfile();
+	if (!components) {
+		return false;
+	}
+	/* The loader version is read first: like minecraftVersion(), it loads
+	 * the profile when nothing has yet. */
+	minecraftVersion();
+	return KiteMod::appliesTo(m_settings->get("KiteMod").toBool(),
+							  components->primaryModLoader(),
+							  kiteModLoaderVersion());
+}
+
+/* The jar of Kite's mod to inject, or nothing. Cheap and free of side
+ * effects, as it never fetches: PrepareKiteMod does that at launch.
+ * KITE_MOD_JAR names a jar to use in place of a downloaded one, for
+ * working on the mod itself. */
+QString MinecraftInstance::kiteModJar() const
+{
+	const QFileInfo devJar(qEnvironmentVariable("KITE_MOD_JAR"));
+	if (devJar.isFile()) {
+		return devJar.absoluteFilePath();
+	}
+
+	auto* context = LAUNCHER;
+	if (!context) {
+		return QString();
+	}
+	const QString cacheRoot = context->metacache()->getBasePath("general");
+	const auto build = KiteMod::cachedBuild(cacheRoot, minecraftVersion(),
+											kiteModLoaderVersion());
+	if (!build || !KiteMod::isDownloaded(cacheRoot, *build)) {
+		return QString();
+	}
+	return KiteMod::jarPath(cacheRoot, *build);
+}
+
+QStringList MinecraftInstance::kiteModArguments() const
+{
+	if (!kiteModApplies()) {
+		return {};
+	}
+	const QString jar = kiteModJar();
+	if (jar.isEmpty()) {
+		return {};
+	}
+	return {KiteMod::addModsArgument(extraArguments(), jar)};
+}
+
 QStringList MinecraftInstance::javaArguments() const
 {
 	QStringList args;
@@ -764,6 +829,10 @@ MinecraftInstance::createLaunchScript(AuthSessionPtr session,
 		for (auto arg : javaArguments()) {
 			launchScript += "jvmArg " + arg + "\n";
 		}
+		// Kite's own mod rides on the game's JVM only, not the helper's.
+		for (auto arg : kiteModArguments()) {
+			launchScript += "jvmArg " + arg + "\n";
+		}
 
 		launchScript += "launcher modern\n";
 	}
@@ -789,6 +858,13 @@ MinecraftInstance::verboseDescription(AuthSessionPtr session,
 			out << "traits " + trait;
 		}
 		out << "";
+	}
+
+	// Said once the arguments are known: this is what the game gets.
+	const auto kiteModArgs = kiteModArguments();
+	if (!kiteModArgs.isEmpty()) {
+		out << tr("Kite mod: %1").arg(QFileInfo(kiteModJar()).fileName())
+			<< "";
 	}
 
 	auto settings = this->settings();
@@ -1106,6 +1182,10 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 		// resolves the loader and downloads its libraries.
 		if (m_settings->get("KitePerformance").toBool()) {
 			process->appendStep(new PreparePerformance(pptr));
+		}
+		// Kite's mod is fetched here; an offline launch uses what is cached.
+		if (kiteModApplies()) {
+			process->appendStep(new PrepareKiteMod(pptr));
 		}
 		process->appendStep(new Update(pptr, Net::Mode::Online));
 	} else {
