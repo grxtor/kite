@@ -185,14 +185,30 @@ qt_add_qml_module(Kite_qml_components
         InstanceMenu.qml
         HomeSidePanel.qml
         HomeFriends.qml
+        HomeFriendsRequestsLink.qml
+        HomeFriendsOfflineStrip.qml
+        FriendHead.qml
         FriendRow.qml
+        FriendStatusRow.qml
         FriendMoreButton.qml
+        FriendPersonMenu.qml
+        FriendJoinFlow.qml
+        FriendsPending.qml
+        FriendJoinDialog.qml
         FriendsPage.qml
         FriendsPageState.qml
+        FriendsSelfCard.qml
+        FriendsNotice.qml
+        FriendsEmptyState.qml
+        FriendsSectionHeader.qml
+        FriendsGroup.qml
         FriendsFriendsTab.qml
+        FriendsListScroll.qml
         FriendsRequestsTab.qml
         FriendsBlockedTab.qml
-        FriendsOptInDialog.qml
+        SoftIconCircle.qml
+        PanelNote.qml
+        CopyName.qml
         HomeEmptyState.qml
         HomeSectionTitle.qml
         HomeHero.qml

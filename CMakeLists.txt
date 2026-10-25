@@ -424,7 +424,9 @@ set(Kite_NOTIFICATION_URL "" CACHE STRING "URL for checking for notifications.")
 set(Kite_META_URL "https://meta.kiteclient.com/" CACHE STRING "URL to fetch Kite's meta files from.")
 
 # The friends server (server/friends/): who is online and on which server.
-# Only contacted once the user turns friends on. Keep the trailing slash.
+# Contacted unless the user turns friends off in Settings; empty, it turns the
+# feature off for the build (no rail entry, nothing sent). Keep the trailing
+# slash.
 set(Kite_FRIENDS_URL "https://api.kiteclient.com/" CACHE STRING "URL of Kite's friends server.")
 
 # Translations are bundled in the app (translations/kite_*.ts). Leave this empty

@@ -68,6 +68,21 @@ class LaunchTask : public Task
 	}
 
 	/**
+	 * @brief the profile id the game is played as, for the friends feature:
+	 * set only when that is the signed-in account's own identity (an online
+	 * launch, no demo), "" for anything else (offline, a demo, not known).
+	 */
+	void setPlayerProfile(const QString& profileId)
+	{
+		m_playerProfile = profileId;
+	}
+
+	QString playerProfile() const
+	{
+		return m_playerProfile;
+	}
+
+	/**
 	 * @brief prepare the process for launch (for multi-stage launch)
 	 */
 	virtual void executeTask() override;
@@ -153,6 +168,7 @@ class LaunchTask : public Task
 	int currentStep = -1;
 	State state = NotStarted;
 	qint64 m_pid = -1;
+	QString m_playerProfile;
 
   private: /* data */
 	QMetaObject::Connection m_stepStatusConnection;

@@ -25,11 +25,18 @@ Item {
     property var recentWorldsModel: null
     // QmlShell.friends (FriendsController), or null.
     property var friends: null
+    // Main.qml's FriendJoinFlow.
+    property var joinFlow: null
 
     signal createRequested()
     signal signInRequested()
-    // The Friends page, on "friends" or "requests".
+    // The Friends page, on "friends" or "requests", or "add" (the add
+    // field focused).
     signal friendsRequested(string tab)
+    // A path for Main.qml's navigate() ("settings/friends").
+    signal navigateRequested(string target)
+    // Join a friend's server (a friend map).
+    signal joinRequested(var friend)
     // A recent world: open its instance on the Worlds tab.
     signal worldRequested(string instanceId)
 
@@ -88,8 +95,12 @@ Item {
                 // library has the page's own way in in front of it.
                 visible: friendsSection.shown && root.hasInstances
                 controller: root.friends
+                joinFlow: root.joinFlow
+                setupShowsSignIn: gettingStarted.shown && !root.signedIn
                 onManageRequested: (tab) => root.friendsRequested(tab)
                 onSignInRequested: root.signInRequested()
+                onNavigateRequested: (target) => root.navigateRequested(target)
+                onJoinRequested: (friend) => root.joinRequested(friend)
             }
 
             HomeNews {

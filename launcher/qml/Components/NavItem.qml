@@ -15,7 +15,7 @@ import Kite.Theme
  * accent.
  *
  * A destination can carry a count (`badge`, hidden at 0): a pill at the
- * icon's top-right corner on the rail, at the row's right end in the
+ * icon's bottom-right corner on the rail, at the row's right end in the
  * labelled sidebar. `badgeTone` says what the number is: "accent" for
  * something that wants an answer, "success" for good news.
  */
@@ -50,8 +50,7 @@ AbstractButton {
     // The most a pill shows; past it, "99+".
     readonly property int badgeCap: 99
     // What the rail is drawn on (SidebarNav.surround), so the pill's ring can
-    // cut it clear of whatever it overlaps: the icon, and the kite's nose on
-    // a selected item.
+    // cut it clear of the icon it overlaps.
     property color surround: "transparent"
 
     implicitHeight: Theme.control.height
@@ -134,10 +133,12 @@ AbstractButton {
         // A selected item sits on the selection's own fill.
         border.color: control.selected ? Theme.palette.surfaceRaised : control.surround
         color: control.badgeTone === "success" ? Theme.palette.success : Theme.palette.accent
-        // Rail: centred on the corner of the icon. Labelled: the row's end.
-        x: control.collapsed ? control.iconAxis + Theme.icon.md / 2 - width / 2
+        // Rail: on the icon's bottom-right corner, a little out of it, so it
+        // covers neither a glyph's top (the second head of "users") nor the
+        // kite's nose at the selection's top-right. Labelled: the row's end.
+        x: control.collapsed ? control.iconAxis + Theme.icon.md / 2 + Theme.space.xs - width / 2
                              : control.width - width - Theme.space.md
-        y: control.collapsed ? (control.height - Theme.icon.md) / 2 - height / 2
+        y: control.collapsed ? (control.height + Theme.icon.md) / 2 + Theme.space.xs - height / 2
                              : (control.height - height) / 2
 
         Text {

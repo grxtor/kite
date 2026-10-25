@@ -2,56 +2,69 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The Friends page's "Friends" tab: everyone on the list, those playing
- * first, with where they are and a ⋯ to remove or block them.
+ * The Friends page's "Friends" tab: everyone on the list in three groups --
+ * playing, online, offline -- each a caption over rows that sit on the page
+ * (FriendsGroup). With nobody on the list it is FriendsEmptyState instead;
+ * until the list has been read it is neither, so a person with friends is
+ * not told they have none while it loads.
  */
 Item {
     id: root
 
     // QmlShell.friends (FriendsController), or null.
     property var controller: null
+    // The page's FriendPersonMenu.
+    property var menu: null
+    // Main.qml's FriendJoinFlow.
+    property var joinFlow: null
+    // The list is the last one read, not a live one.
+    property bool stale: false
+    // The server answers: Join and ⋯ need it, reading the list does not.
+    property bool actionsEnabled: true
 
-    signal removeRequested(string uuid, string name)
-    signal blockRequested(string uuid, string name)
+    signal joinRequested(var friend)
 
-    readonly property var rows: Format.friendsByPresence(root.controller ? root.controller.friends : [])
+    readonly property var groups: Format.friendsGrouped(root.controller ? root.controller.friends : [])
+    readonly property bool hasFriends: !!root.controller && root.controller.friends.length > 0
+    readonly property bool empty: !!root.controller && root.controller.loaded && !root.hasFriends
 
-    ListView {
-        id: list
+    FriendsListScroll {
         anchors.fill: parent
-        anchors.margins: Theme.space.xs
-        clip: true
-        model: root.rows
-        boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar {}
+        visible: root.hasFriends
+        actionsEnabled: root.actionsEnabled
+        spacing: Theme.space.sm
 
-        delegate: FriendRow {
-            id: row
-            required property var modelData
-            width: list.width
-            face: modelData.face
-            name: modelData.name
-            detail: modelData.statusText
-            presence: modelData.state
-            detailStrong: modelData.worldType === "server" && !!modelData.host
-
-            FriendMoreButton {
-                onRemoveRequested: root.removeRequested(row.modelData.uuid, row.modelData.name)
-                onBlockRequested: root.blockRequested(row.modelData.uuid, row.modelData.name)
-            }
+        FriendsGroup {
+            width: parent.width
+            title: qsTr("PLAYING — %1").arg(root.groups.playing.length)
+            friends: root.groups.playing
+            menu: root.menu
+            joinFlow: root.joinFlow
+            stale: root.stale
+            onJoinRequested: (friend) => root.joinRequested(friend)
+        }
+        FriendsGroup {
+            width: parent.width
+            title: qsTr("ONLINE — %1").arg(root.groups.online.length)
+            friends: root.groups.online
+            menu: root.menu
+            stale: root.stale
+        }
+        FriendsGroup {
+            width: parent.width
+            title: qsTr("OFFLINE — %1").arg(root.groups.offline.length)
+            friends: root.groups.offline
+            menu: root.menu
+            stale: root.stale
         }
     }
 
-    EmptyState {
-        anchors.centerIn: parent
-        width: parent.width
-        visible: root.rows.length === 0
-        title: qsTr("No friends yet")
-        body: qsTr("Add one by their Minecraft name. They need to have turned friends on in Kite too.")
-        MeshIcon { iconName: "users"; size: Theme.icon.lg + Theme.space.md; color: Theme.palette.textTertiary }
+    FriendsEmptyState {
+        anchors.fill: parent
+        visible: root.empty
+        myName: root.controller ? root.controller.myName : ""
     }
 }

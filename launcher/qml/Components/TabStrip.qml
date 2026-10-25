@@ -22,11 +22,14 @@ import Kite.Theme
  * A tab given `more: true` lives in that menu at every width -- for the
  * ones used less often (an instance's Version or Backups), so the strip
  * keeps to the everyday tabs even on a wide window.
+ *
+ * A tab given `attention: true` draws its count on an accent pill, like the
+ * rail's: something there waits for an answer (Friends' requests).
  */
 Item {
     id: root
 
-    // [{ id, label, count?, more? }]
+    // [{ id, label, count?, more?, attention? }]
     property var tabs: []
     property string current
     signal activated(string id)
@@ -126,6 +129,7 @@ Item {
                 required property var modelData
                 readonly property bool selected: modelData.id === root.current
                 readonly property bool hasCount: modelData.count !== undefined && modelData.count >= 0
+                readonly property bool attention: tab.hasCount && modelData.count > 0 && modelData.attention === true
                 readonly property color inkColor: tab.selected ? Theme.palette.accentText
                                                 : tab.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
 
@@ -142,7 +146,7 @@ Item {
                 // measures) only visible children, so the width comes from
                 // the label metrics, which keep it while hidden.
                 visible: root.overflowIds.indexOf(modelData.id) < 0
-                implicitWidth: labelWidth + (hasCount ? labelRow.spacing + countLabel.implicitWidth : 0)
+                implicitWidth: labelWidth + (hasCount ? labelRow.spacing + countBox.width : 0)
                                + root.pillPadding * 2
                 onImplicitWidthChanged: Qt.callLater(root.relayout)
 
@@ -179,15 +183,30 @@ Item {
                         font.pixelSize: Theme.type.body.pixelSize
                         font.weight: tab.selected ? Font.DemiBold : Font.Medium
                     }
-                    Text {
-                        id: countLabel
+                    // The count, on an accent pill when something waits.
+                    Item {
+                        id: countBox
                         anchors.verticalCenter: parent.verticalCenter
                         visible: tab.hasCount
-                        text: tab.hasCount ? tab.modelData.count : ""
-                        color: tab.selected ? tab.inkColor : Theme.palette.textTertiary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.caption.pixelSize
-                        font.weight: Font.Medium
+                        width: tab.attention ? Math.max(height, countLabel.implicitWidth + Theme.space.sm) : countLabel.implicitWidth
+                        height: tab.attention ? Math.ceil(countLabel.implicitHeight) + Theme.space.xs : countLabel.implicitHeight
+
+                        Rectangle {
+                            anchors.fill: parent
+                            visible: tab.attention
+                            radius: Theme.radius.pill
+                            color: Theme.palette.accent
+                        }
+                        Text {
+                            id: countLabel
+                            anchors.centerIn: parent
+                            text: tab.hasCount ? tab.modelData.count : ""
+                            color: tab.attention ? Theme.palette.textOnAccent
+                                 : tab.selected ? tab.inkColor : Theme.palette.textTertiary
+                            font.family: Theme.font.family
+                            font.pixelSize: Theme.type.caption.pixelSize
+                            font.weight: tab.attention ? Font.DemiBold : Font.Medium
+                        }
                     }
                 }
 

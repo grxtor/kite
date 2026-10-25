@@ -258,11 +258,21 @@ ApplicationWindow {
 
     // QmlShell.friends (FriendsController), or null where this build has none.
     readonly property var friendsController: root.shell && root.shell.friends ? root.shell.friends : null
-    // The Friends page on tab "friends", "requests" or "blocked". Going
-    // there first builds it (PageSlot), so it is there to be given the tab.
+    // The Friends page on tab "friends", "requests" or "blocked", or "add":
+    // the friends tab with the add field focused. Going there first builds
+    // it (PageSlot), so it is there to be given the tab.
     function openFriends(tab) {
         root.page = "friends"
-        friendsPage.tab = tab || "friends"
+        friendsPage.tab = tab === "requests" || tab === "blocked" ? tab : "friends"
+        if (tab === "add")
+            Qt.callLater(friendsPage.focusAddField)
+    }
+
+    // New instance, on Minecraft @p version (a friend's, with none of
+    // yours to follow them): FriendJoinFlow asks for it.
+    function createInstanceOn(version) {
+        root.openNewInstance("create")
+        root.shell.newInstance.selectMinecraftVersion(version)
     }
 
     // The dialog held by `loader`, built now if it is not yet.
@@ -594,19 +604,16 @@ ApplicationWindow {
     ].concat(root.friendsController ? [{ id: "friends", icon: "users", label: qsTr("Friends") }] : [])
 
     // The counts on the rail (SidebarNav.badges), kept apart from navItems
-    // so a friend coming online never rebuilds the rail's items. Friends:
-    // requests waiting for an answer come first, in the accent; otherwise
-    // how many are online, in green. Nothing while friends are off or not
-    // connected: the numbers would be stale.
+    // so a request coming in never rebuilds the rail's items. Friends: the
+    // requests waiting for an answer, in the accent. Only what needs an
+    // answer: a count of who is online is nearly always there, so it would
+    // read as noise, and Home's panel says it. Nothing while friends are off
+    // or not connected: the number would be stale.
     readonly property var navBadges: {
         var friends = root.friendsController
-        if (!friends || !friends.enabled || friends.state !== "ready")
+        if (!friends || !friends.enabled || friends.state !== "ready" || friends.incomingCount === 0)
             return ({})
-        if (friends.incomingCount > 0)
-            return ({ friends: { count: friends.incomingCount, tone: "accent" } })
-        if (friends.onlineCount > 0)
-            return ({ friends: { count: friends.onlineCount, tone: "success" } })
-        return ({})
+        return ({ friends: { count: friends.incomingCount, tone: "accent" } })
     }
 
     SidebarNav {
@@ -865,7 +872,9 @@ ApplicationWindow {
                         }
                         msaSignedIn: !!root.shell && root.shell.accountKind === "Microsoft"
                         friends: root.friendsController
+                        joinFlow: friendJoin
                         onFriendsRequested: (tab) => root.openFriends(tab)
+                        onJoinRequested: (friend) => friendJoin.join(friend)
 
                         onLaunchRequested: (id) => root.launch(id)
                         onStopRequested: (id) => root.call("killInstance", id)
@@ -954,6 +963,8 @@ ApplicationWindow {
                                             ? root.shell.pluginList() : null
                                 launcherLogs: root.shell && root.shell.launcherLogs ? root.shell.launcherLogs : null
                                 friends: root.friendsController
+                                friendsAccountName: root.shell && root.shell.accountKind === "Microsoft" && root.shell.accountName
+                                                    ? root.shell.accountName : ""
                                 onOpenPathRequested: (path) => root.call("openPath", path)
                         }
                     }
@@ -1054,7 +1065,10 @@ ApplicationWindow {
                         sourceComponent: FriendsPage {
                                 shown: friendsLoader.StackLayout.isCurrentItem
                                 controller: root.friendsController
+                                myFace: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
+                                joinFlow: friendJoin
                                 onNavigateRequested: (target) => root.navigate(target)
+                                onJoinRequested: (friend) => friendJoin.join(friend)
                         }
                     }
                 }
@@ -1203,9 +1217,22 @@ ApplicationWindow {
     Connections {
         target: root.friendsController
         function onActionFinished(action, ok, message) {
+            // "Try again" on the page or the panel failing again: what is
+            // wrong is already written there.
+            if (action === "refresh" && root.friendsController.state === "error")
+                return
             if (message.length > 0)
                 toast.show(message, ok ? "success" : "danger")
         }
+    }
+
+    // A friend's Join, from the Friends page and Home's panel.
+    FriendJoinFlow {
+        id: friendJoin
+        shell: root.shell
+        selectedId: root.selectedId
+        toast: toast
+        onCreateInstanceRequested: (version) => root.createInstanceOn(version)
     }
 
     Loader {

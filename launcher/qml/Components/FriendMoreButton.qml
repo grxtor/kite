@@ -7,35 +7,24 @@ import Kite.Theme
 
 /*
  * The ⋯ at the end of a person's row on the Friends page: what can be done
- * to them. It only says what was asked for; the page confirms and acts.
- * Someone who is not a friend (a request) cannot be removed, only blocked.
+ * to them. It opens the page's FriendPersonMenu (`menu`) for this person; it
+ * is always there, so Remove and Block can be found without hunting for a
+ * row to hover.
  */
 IconButton {
     id: root
 
+    // The page's FriendPersonMenu.
+    property var menu: null
+    property string personUuid
+    // Whose row it is, for a screen reader: every row has a "More".
+    property string personName
+    // Someone who is not a friend (a request) can only be blocked.
     property bool canRemove: true
-    signal removeRequested()
-    signal blockRequested()
 
     size: Theme.control.heightSm
     iconName: "more"
     tip: qsTr("More")
-    onClicked: menu.popup(root, root.width - menu.width, root.height + Theme.space.xs)
-
-    Menu {
-        id: menu
-
-        MenuItem {
-            visible: root.canRemove
-            height: visible ? implicitHeight : 0
-            text: qsTr("Remove friend…")
-            icon.source: Icons.url("x")
-            onTriggered: root.removeRequested()
-        }
-        MenuItem {
-            text: qsTr("Block…")
-            icon.source: Icons.url("ban")
-            onTriggered: root.blockRequested()
-        }
-    }
+    Accessible.name: root.personName.length > 0 ? qsTr("More options for %1").arg(root.personName) : root.tip
+    onClicked: if (root.menu) root.menu.openFor(root, root.personUuid, root.personName, root.canRemove)
 }

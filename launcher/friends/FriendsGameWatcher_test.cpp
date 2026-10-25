@@ -33,6 +33,10 @@ using FriendsApi::World;
 
 namespace
 {
+	/* The profile Friends is signed in as, and another account's. */
+	const QString kMe = QStringLiteral("11111111-2222-3333-4444-555555555555");
+	const QString kOther = QStringLiteral("99999999-8888-7777-6666-555555555555");
+
 	SettingsObjectPtr makeGlobalSettings(QTemporaryDir& dir)
 	{
 		auto settings =
@@ -73,11 +77,15 @@ namespace
 			list->loadList();
 		}
 
-		/// Starts the game of @p id and returns its launch task.
-		shared_qobject_ptr<LaunchTask> start(const QString& id)
+		/// Starts the game of @p id, played as @p profile ("" for a launch
+		/// that is not an account's own: offline, a demo), and returns its
+		/// launch task.
+		shared_qobject_ptr<LaunchTask> start(const QString& id,
+											 const QString& profile = kMe)
 		{
 			auto inst = list->getInstanceById(id);
 			auto task = LaunchTask::create(inst);
+			task->setPlayerProfile(profile);
 			emit inst->launchTaskChanged(task);
 			return task;
 		}
@@ -93,7 +101,7 @@ class FriendsGameWatcherTest : public QObject
 	{
 		Fixture f;
 		FriendsGameWatcher watcher(f.list);
-		QVERIFY(!watcher.presence().playing);
+		QVERIFY(!watcher.presence(kMe).playing);
 	}
 
 	void aRunningGameIsPlayingWithItsName()
@@ -102,9 +110,9 @@ class FriendsGameWatcherTest : public QObject
 		FriendsGameWatcher watcher(f.list);
 		QSignalSpy spy(&watcher, &FriendsGameWatcher::changed);
 		auto task = f.start("one");
-		QVERIFY(watcher.presence().playing);
-		QCOMPARE(watcher.presence().instance, QString("Survival"));
-		QCOMPARE(watcher.presence().world.type, World::Type::None);
+		QVERIFY(watcher.presence(kMe).playing);
+		QCOMPARE(watcher.presence(kMe).instance, QString("Survival"));
+		QCOMPARE(watcher.presence(kMe).world.type, World::Type::None);
 		QVERIFY(spy.count() >= 1);
 	}
 
@@ -115,16 +123,16 @@ class FriendsGameWatcherTest : public QObject
 		auto task = f.start("one");
 		task->onLogLine("[12:00:00] [Render thread/INFO]: Connecting to "
 						"mc.hypixel.net, 25565");
-		QCOMPARE(watcher.presence().world.type, World::Type::Server);
-		QCOMPARE(watcher.presence().world.host, QString("mc.hypixel.net"));
+		QCOMPARE(watcher.presence(kMe).world.type, World::Type::Server);
+		QCOMPARE(watcher.presence(kMe).world.host, QString("mc.hypixel.net"));
 
 		task->onLogLine("[12:00:30] [Server thread/INFO]: Starting integrated "
 						"minecraft server version 1.21.4");
-		QCOMPARE(watcher.presence().world.type, World::Type::Singleplayer);
+		QCOMPARE(watcher.presence(kMe).world.type, World::Type::Singleplayer);
 
 		task->onLogLine("[12:01:00] [Server thread/INFO]: Stopping server");
-		QCOMPARE(watcher.presence().world.type, World::Type::None);
-		QVERIFY(watcher.presence().playing);
+		QCOMPARE(watcher.presence(kMe).world.type, World::Type::None);
+		QVERIFY(watcher.presence(kMe).playing);
 	}
 
 	void aChangeIsAnnouncedOnce()
@@ -149,13 +157,13 @@ class FriendsGameWatcherTest : public QObject
 		task->onLogLine("[12:00:00] [Render thread/INFO]: Connecting to "
 						"mc.hypixel.net, 25565");
 		f.list->getInstanceById("one")->setRunning(false);
-		QVERIFY(!watcher.presence().playing);
-		QCOMPARE(watcher.presence().world.type, World::Type::None);
+		QVERIFY(!watcher.presence(kMe).playing);
+		QCOMPARE(watcher.presence(kMe).world.type, World::Type::None);
 
 		/* The next launch starts in the menus. */
 		auto again = f.start("one");
-		QVERIFY(watcher.presence().playing);
-		QCOMPARE(watcher.presence().world.type, World::Type::None);
+		QVERIFY(watcher.presence(kMe).playing);
+		QCOMPARE(watcher.presence(kMe).world.type, World::Type::None);
 	}
 
 	void theMostRecentlyStartedGameCounts()
@@ -164,18 +172,96 @@ class FriendsGameWatcherTest : public QObject
 		FriendsGameWatcher watcher(f.list);
 		auto first = f.start("one");
 		auto second = f.start("two");
-		QCOMPARE(watcher.presence().instance, QString("Creative"));
+		QCOMPARE(watcher.presence(kMe).instance, QString("Creative"));
 		f.list->getInstanceById("two")->setRunning(false);
-		QCOMPARE(watcher.presence().instance, QString("Survival"));
+		QCOMPARE(watcher.presence(kMe).instance, QString("Survival"));
 	}
 
-	void aGameAlreadyRunningIsPickedUp()
+	void aGameOfAnotherAccountIsNotReported()
 	{
 		Fixture f;
+		FriendsGameWatcher watcher(f.list);
+		auto task = f.start("one", kOther);
+		task->onLogLine("[12:00:00] [Render thread/INFO]: Connecting to "
+						"play.example.net, 25565");
+		// Friends is signed in as kMe: this is someone else's game.
+		QVERIFY(!watcher.presence(kMe).playing);
+		QVERIFY(watcher.presence(kMe).instance.isEmpty());
+		QCOMPARE(watcher.presence(kMe).world.type, World::Type::None);
+		// It is the game of kOther, if that is who asks.
+		QVERIFY(watcher.presence(kOther).playing);
+		QCOMPARE(watcher.presence(kOther).world.host,
+				 QString("play.example.net"));
+	}
+
+	void anOfflineOrDemoGameIsNotReported()
+	{
+		Fixture f;
+		FriendsGameWatcher watcher(f.list);
+		// No profile: offline, a demo, or a launch that does not say.
+		auto task = f.start("one", QString());
+		QVERIFY(!watcher.presence(kMe).playing);
+		QVERIFY(!watcher.presence(QString()).playing);
+	}
+
+	void theProfileMatchesWhateverTheDashes()
+	{
+		Fixture f;
+		FriendsGameWatcher watcher(f.list);
+		auto task = f.start("one", "11111111222233334444555555555555");
+		QVERIFY(watcher.presence(kMe).playing);
+		QVERIFY(watcher.presence("11111111222233334444555555555555").playing);
+		QVERIFY(!watcher.presence(QString()).playing);
+	}
+
+	void onlyTheLatestGameCountsWhoeverPlaysIt()
+	{
+		Fixture f;
+		FriendsGameWatcher watcher(f.list);
+		auto mine = f.start("one", kMe);
+		auto alt = f.start("two", kOther);
+		// The newest is an alt's: nothing is told, though an older game of
+		// the signed-in account runs.
+		QVERIFY(!watcher.presence(kMe).playing);
+		f.list->getInstanceById("two")->setRunning(false);
+		QVERIFY(watcher.presence(kMe).playing);
+		QCOMPARE(watcher.presence(kMe).instance, QString("Survival"));
+	}
+
+	void aGameCountsOnceItsLaunchIsKnown()
+	{
+		Fixture f;
+		FriendsGameWatcher watcher(f.list);
+		QSignalSpy spy(&watcher, &FriendsGameWatcher::changed);
+		auto inst = f.list->getInstanceById("one");
+		// create() sets the instance running before anyone says who plays.
+		auto task = LaunchTask::create(inst);
+		QCOMPARE(spy.count(), 0);
+		QVERIFY(!watcher.presence(kMe).playing);
+		task->setPlayerProfile(kMe);
+		emit inst->launchTaskChanged(task);
+		QCOMPARE(spy.count(), 1);
+		QVERIFY(watcher.presence(kMe).playing);
+		// Another account's launch of the same kind is announced too (the
+		// latest game changes who it is played by).
+		inst->setRunning(false);
+		QCOMPARE(spy.count(), 2);
+		auto again = LaunchTask::create(inst);
+		again->setPlayerProfile(kOther);
+		emit inst->launchTaskChanged(again);
+		QCOMPARE(spy.count(), 3);
+		QVERIFY(!watcher.presence(kMe).playing);
+	}
+
+	void aGameAlreadyRunningWithoutALaunchIsNotReported()
+	{
+		Fixture f;
+		// The instance of this test does not hold its launch task (a real
+		// one does, and says whose game it is), so nothing says who plays.
 		auto task = f.start("one");
 		FriendsGameWatcher watcher(f.list);
-		QVERIFY(watcher.presence().playing);
-		QCOMPARE(watcher.presence().instance, QString("Survival"));
+		QVERIFY(!watcher.presence(kMe).playing);
+		QVERIFY(!watcher.presence(QString()).playing);
 	}
 };
 

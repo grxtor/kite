@@ -691,7 +691,7 @@ QStringList MinecraftInstance::processMinecraftArgs(
 	if (serverToJoin && !serverToJoin->address.isEmpty()) {
 		if (profile->hasTrait("feature:is_quick_play_multiplayer")) {
 			args_pattern += " --quickPlayMultiplayer " +
-							serverToJoin->address + ":" +
+							serverToJoin->quickPlayHost() + ":" +
 							QString::number(serverToJoin->port);
 		} else {
 			args_pattern += " --server " + serverToJoin->address;
@@ -762,7 +762,15 @@ MinecraftInstance::createLaunchScript(AuthSessionPtr session,
 	}
 
 	if (serverToJoin && !serverToJoin->address.isEmpty()) {
-		launchScript += "serverAddress " + serverToJoin->address + "\n";
+		/* ModernLauncher joins "serverAddress:serverPort" with quick play, as
+		 * processMinecraftArgs() does for DirectJava: the brackets of an IPv6
+		 * address have to be there for it too. */
+		const bool quickPlay =
+			profile->hasTrait("feature:is_quick_play_multiplayer");
+		launchScript += "serverAddress " +
+						(quickPlay ? serverToJoin->quickPlayHost()
+								   : serverToJoin->address) +
+						"\n";
 		launchScript +=
 			"serverPort " + QString::number(serverToJoin->port) + "\n";
 	} else if (serverToJoin && !serverToJoin->world.isEmpty()) {
@@ -1260,6 +1268,13 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 	}
 	if (session) {
 		process->setCensorFilter(createCensorFilterFromSession(session));
+		/* Whose game this is, for the friends feature (FriendsGameWatcher):
+		 * only an online launch of an account says whose it is. Offline, a
+		 * demo or another account's game is never reported under the account
+		 * Friends is signed in as. */
+		if (session->status == AuthSession::PlayableOnline && !session->demo) {
+			process->setPlayerProfile(session->uuid);
+		}
 	}
 	m_launchProcess = process;
 	emit launchTaskChanged(m_launchProcess);

@@ -1144,10 +1144,13 @@ void Application::initSettings()
 	// paste.ee API key
 	m_settings->registerSetting("PasteEEAPIKey", "kite");
 
-	// Friends (server/friends/): off until the user turns it on; nothing is
-	// sent to the server before then. The Mojang URL is a test hook for
-	// the local end-to-end run, not a setting anyone should change.
-	m_settings->registerSetting("FriendsEnabled", false);
+	// Friends (server/friends/): on unless the user turned it off in
+	// Settings (a stored false stays off). FriendsNoticeSeen is the
+	// one-time "Friends is on" card, dismissed for good once either of its
+	// buttons is pressed. The Mojang URL is a test hook for the local
+	// end-to-end run, not a setting anyone should change.
+	m_settings->registerSetting("FriendsEnabled", true);
+	m_settings->registerSetting("FriendsNoticeSeen", false);
 	m_settings->registerSetting("FriendsServerUrl", BuildConfig.FRIENDS_URL);
 	m_settings->registerSetting("FriendsMojangSessionUrl",
 								QString("https://sessionserver.mojang.com"));

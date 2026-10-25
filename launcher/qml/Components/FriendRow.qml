@@ -2,96 +2,111 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One person in the friends list, on Home's side panel and on the Friends
- * page: their Minecraft head (the 8x8 face FriendsController cached from
- * Mojang, drawn pixel for pixel; a neutral tile with a user icon until it
- * is there), their name, and a quiet line under it (where
- * they are, or what the row is about). Whatever goes inside the row
- * (buttons, a ⋯) lands on its right.
+ * One person in a list, on the Friends page and in Home's side panel: their
+ * head (FriendHead, with its presence dot), their name, and a quiet line
+ * under it (where they are, or what the row is about). Whatever goes inside
+ * the row (Join, a ⋯, buttons) lands on its right, in `trailing`.
  *
- * `presence` ("online", "playing", "offline", or "" for someone who is not
- * a friend yet) lights a small dot before the line and quiets an offline
- * friend's name. `detailStrong` sets the line in the normal text colour
- * instead of the secondary one: the server a friend is on is the point of
- * the row. A row is only a button (hover overlay, focus, clicks) when
- * `interactive` is set; on the Friends page it is a plain row.
+ * The row has no box: it sits on the page and takes the library list's
+ * neutral hover fill. `compact` is Home's panel size, with its narrower
+ * inset. `interactive` makes the whole row a button (`clicked()`, a focus
+ * ring); on the Friends page a row is only a row, with its own buttons.
+ *
+ * `presence` is "online", "playing", "offline", or "" for someone who is
+ * not a friend (yet). The line is `detail` and, after a dot, `detailSuffix`
+ * (the game version); `detailTone` ("primary", "secondary" or "faint")
+ * sets how loud `detail` is: "faint" for "Last seen", which is the least
+ * of the row. A host too long for the row is shortened in the middle, so
+ * its end stays and the version sits right behind it.
  */
-AbstractButton {
+Item {
     id: root
 
     property string name
     // The head's picture (FriendsController's `face`), "" until it is cached.
     property string face
-    property string detail
     property string presence: ""
-    property bool detailStrong: false
+    property string detail
+    property string detailSuffix
+    property string detailTone: "secondary"
+    property bool compact: false
     property bool interactive: false
+    // The pointer is on the row; the buttons that only show then read it.
+    readonly property bool hovered: hoverHandler.hovered
     default property alias trailing: trailingRow.data
 
-    // A head is pixel art: a multiple of 8, so every texel is the same size.
-    readonly property int headSize: 32
-    readonly property int dotSize: 6
-    readonly property real offlineOpacity: 0.65
-    readonly property bool lit: root.presence === "online" || root.presence === "playing"
+    signal clicked()
+
+    // The fill the head's ring has to match.
+    readonly property color fill: root.hovered || root.visualFocus ? Theme.palette.surfaceHover : Theme.palette.canvas
+    readonly property int headSize: root.compact ? 32 : 40
+    // A row only takes focus from the Tab key, so focus is a keyboard ring.
+    readonly property bool visualFocus: root.interactive && root.activeFocus
 
     implicitWidth: 280
     implicitHeight: root.headSize + Theme.space.sm * 2
-    hoverEnabled: root.interactive
-    focusPolicy: root.interactive ? Qt.StrongFocus : Qt.NoFocus
-    leftPadding: Theme.space.sm
-    rightPadding: Theme.space.sm
+    activeFocusOnTab: root.interactive
 
-    Accessible.name: root.detail.length > 0 ? qsTr("%1, %2").arg(root.name).arg(root.detail) : root.name
+    Accessible.role: root.interactive ? Accessible.Button : Accessible.ListItem
+    Accessible.name: root.detail.length > 0
+                     ? qsTr("%1, %2").arg(root.name).arg(root.detail + (root.detailSuffix.length > 0 ? " " + root.detailSuffix : ""))
+                     : root.name
 
-    background: Rectangle {
+    Keys.onReturnPressed: if (root.interactive) root.clicked()
+    Keys.onSpacePressed: if (root.interactive) root.clicked()
+
+    HoverHandler {
+        id: hoverHandler
+        cursorShape: root.interactive ? Qt.PointingHandCursor : Qt.ArrowCursor
+    }
+    TapHandler {
+        enabled: root.interactive
+        gesturePolicy: TapHandler.ReleaseWithinBounds
+        onTapped: root.clicked()
+    }
+
+    Rectangle {
+        anchors.fill: parent
         radius: Theme.radius.md
-        color: root.interactive && root.down ? Theme.palette.pressedOverlay
-             : root.interactive && root.hovered ? Theme.palette.hoverOverlay : "transparent"
+        color: root.hovered || root.visualFocus ? Theme.palette.surfaceHover : "transparent"
         border.width: root.visualFocus ? Theme.focus.width : 0
         border.color: Theme.palette.focusRing
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
-    contentItem: RowLayout {
+    RowLayout {
+        anchors.fill: parent
+        // On the Friends page the row's head, name and buttons stand on the
+        // self card's inset, so the page reads as one set of columns.
+        anchors.leftMargin: root.compact ? Theme.space.sm : Theme.space.lg
+        anchors.rightMargin: root.compact ? Theme.space.sm : Theme.space.lg
         spacing: Theme.space.md
 
-        // A friend's head is dimmed while they are offline.
+        // Compact rows share Home's panel with Recent worlds, whose text
+        // starts after a Theme.control.height tile: the head takes that
+        // much room, so the names of the two lists line up.
         Item {
-            Layout.preferredWidth: root.headSize
+            Layout.alignment: Qt.AlignVCenter
+            Layout.preferredWidth: root.compact ? Theme.control.height : root.headSize
             Layout.preferredHeight: root.headSize
-            opacity: root.presence === "offline" ? root.offlineOpacity : 1
-            Accessible.ignored: true
 
-            Rectangle {
-                anchors.fill: parent
-                visible: head.status !== Image.Ready
-                color: Theme.palette.surfaceSunken
-
-                MeshIcon {
-                    anchors.centerIn: parent
-                    iconName: "user"
-                    size: Theme.icon.md
-                    color: Theme.palette.textTertiary
-                }
-            }
-            Image {
-                id: head
-                anchors.fill: parent
-                source: root.face
-                smooth: false
-                mipmap: false
-                fillMode: Image.Stretch
+            FriendHead {
+                anchors.verticalCenter: parent.verticalCenter
+                size: root.headSize
+                face: root.face
+                presence: root.presence
+                ringColor: root.fill
             }
         }
 
         Column {
             Layout.fillWidth: true
             Layout.minimumWidth: 0
+            Layout.alignment: Qt.AlignVCenter
             spacing: Theme.space.xxs
 
             Text {
@@ -105,23 +120,35 @@ AbstractButton {
             }
 
             Row {
+                id: detailRow
                 width: parent.width
                 spacing: Theme.space.xs
                 visible: root.detail.length > 0
 
-                Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: root.lit
-                    width: root.dotSize
-                    height: width
-                    radius: width / 2
-                    color: Theme.palette.success
+                // The elided text is worked out here, not by the Text: an
+                // elided Text keeps its full box and leaves a gap before the
+                // version.
+                TextMetrics {
+                    id: detailMetrics
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.label.pixelSize
+                    text: root.detail
+                    elide: Text.ElideMiddle
+                    elideWidth: Math.max(0, detailRow.width - (suffix.visible ? suffix.implicitWidth + detailRow.spacing : 0))
                 }
                 Text {
-                    width: parent.width - (root.lit ? root.dotSize + parent.spacing : 0)
-                    text: root.detail
-                    elide: Text.ElideRight
-                    color: root.detailStrong ? Theme.palette.textPrimary : Theme.palette.textSecondary
+                    text: detailMetrics.elidedText
+                    color: root.detailTone === "primary" ? Theme.palette.textPrimary
+                         : root.detailTone === "faint" ? Theme.palette.textTertiary
+                         : Theme.palette.textSecondary
+                    font.family: Theme.font.family
+                    font.pixelSize: Theme.type.label.pixelSize
+                }
+                Text {
+                    id: suffix
+                    visible: root.detailSuffix.length > 0
+                    text: "· " + root.detailSuffix
+                    color: Theme.palette.textSecondary
                     font.family: Theme.font.family
                     font.pixelSize: Theme.type.label.pixelSize
                 }
@@ -130,6 +157,7 @@ AbstractButton {
 
         Row {
             id: trailingRow
+            Layout.alignment: Qt.AlignVCenter
             spacing: Theme.space.xs
         }
     }

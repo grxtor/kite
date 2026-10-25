@@ -22,6 +22,8 @@ Item {
     property alias body: bodyLabel.text
     property string actionText: ""
     property string actionIcon: ""
+    // False while what the action asks is under way.
+    property bool actionEnabled: true
     // Opt-in: true makes this fill its own visual parent and settle its
     // content near the top third of it instead of dead centre -- for a host
     // whose empty state sits in an otherwise-empty, very tall scrolling
@@ -36,6 +38,12 @@ Item {
     signal actionTriggered()
 
     default property alias illustration: illustrationSlot.data
+    // Something under the text and over the action (Friends' own name, to
+    // copy). Nothing there takes no room; `extraShown` hides it while it has
+    // nothing to say (a child's own `visible` cannot do it: it follows its
+    // parent's).
+    property alias extra: extraSlot.data
+    property bool extraShown: extraSlot.children.length > 0
 
     // A fixed reading width, not the column's implicit one: the column is
     // as wide as this item (below), so taking its width from the column made
@@ -86,12 +94,21 @@ Item {
             visible: text.length > 0
         }
 
+        Item {
+            id: extraSlot
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: childrenRect.width
+            height: childrenRect.height
+            visible: root.extraShown
+        }
+
         Button {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.actionText
             highlighted: true
             icon.source: root.actionIcon.length > 0 ? Icons.url(root.actionIcon) : ""
             visible: root.actionText.length > 0
+            enabled: root.actionEnabled
             onClicked: root.actionTriggered()
         }
     }

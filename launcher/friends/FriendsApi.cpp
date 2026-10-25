@@ -38,6 +38,15 @@ namespace FriendsApi
 		const QString RateLimited = QStringLiteral("rate_limited");
 	} // namespace Code
 
+	namespace MojangError
+	{
+		const QString Forbidden =
+			QStringLiteral("ForbiddenOperationException");
+		const QString InsufficientPrivileges =
+			QStringLiteral("InsufficientPrivilegesException");
+		const QString UserBanned = QStringLiteral("UserBannedException");
+	} // namespace MojangError
+
 	namespace
 	{
 		/* The server's own limits (src/schemas.ts, serverAddress.ts). */
@@ -45,6 +54,9 @@ namespace FriendsApi
 		constexpr int kMaxVersionLength = 32;
 		constexpr int kMaxHostLength = 253;
 		constexpr int kMaxPort = 65535;
+		/* The access token is renewed when it has less than this left: a
+		 * sign-in takes seconds, not minutes. */
+		constexpr qint64 kTokenMarginSeconds = 5 * 60;
 		const QString kUuidPattern = QStringLiteral(
 			"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
 			"[0-9a-fA-F]{12}$");
@@ -56,6 +68,14 @@ namespace FriendsApi
 			"(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]\\d|\\d)$");
 		const QString kNumericLabelPattern =
 			QStringLiteral("^(?:\\d+|0x[0-9a-f]*)$");
+		/* What an IPv6 address is written with, once lower-cased. A zone id
+		 * (fe80::1%en0) is not among them: QHostAddress takes anything after
+		 * the % for one, spaces and "${...}" included. */
+		const QString kIpv6CharsPattern = QStringLiteral("^[0-9a-f:.]+$");
+		/* Waits after a failed sign-in, by how often it has failed. */
+		constexpr int kSignInBackoffMs[] = {60 * 1000, 2 * 60 * 1000,
+											5 * 60 * 1000, 15 * 60 * 1000};
+		const QString kLocalhostName = QStringLiteral("localhost");
 		const QString kBadVersionChars =
 			QStringLiteral("[^A-Za-z0-9._+ -]");
 
@@ -152,6 +172,9 @@ namespace FriendsApi
 			settings.visibility = object.value("visibility").toString();
 			settings.hideServer = object.value("hideServer").toBool();
 			settings.shareIpServers = object.value("shareIpServers").toBool();
+			/* An older server does not know the field; joining is on by
+			 * default, as it is there. */
+			settings.allowJoin = object.value("allowJoin").toBool(true);
 			return settings;
 		}
 
@@ -275,7 +298,8 @@ namespace FriendsApi
 		}
 		if (host.contains(':')) {
 			QHostAddress address;
-			return address.setAddress(host) &&
+			return matches(kIpv6CharsPattern, host) &&
+						   address.setAddress(host) &&
 						   address.protocol() ==
 							   QAbstractSocket::IPv6Protocol
 					   ? host
@@ -299,6 +323,61 @@ namespace FriendsApi
 			return QString();
 		}
 		return host;
+	}
+
+	bool isLoopbackHost(const QString& host)
+	{
+		if (host == kLocalhostName ||
+			host.endsWith(QLatin1Char('.') + kLocalhostName)) {
+			return true;
+		}
+		QHostAddress address;
+		if (!address.setAddress(host)) {
+			return false;
+		}
+		return address.isLoopback() || address == QHostAddress::AnyIPv4 ||
+			   address == QHostAddress::AnyIPv6;
+	}
+
+	int signInBackoffMs(int failures)
+	{
+		constexpr int last =
+			int(sizeof(kSignInBackoffMs) / sizeof(kSignInBackoffMs[0])) - 1;
+		return kSignInBackoffMs[qBound(0, failures - 1, last)];
+	}
+
+	RenewalStep renewalStep(const QDateTime& expiry, const QDateTime& now,
+							bool accountActive, bool queued, bool asked,
+							bool timedOut)
+	{
+		if (!expiry.isValid() ||
+			expiry > now.addSecs(kTokenMarginSeconds) || timedOut) {
+			return RenewalStep::Proceed;
+		}
+		if (accountActive) {
+			return RenewalStep::Wait;
+		}
+		if (!asked) {
+			return RenewalStep::AskForRenewal;
+		}
+		/* Asked, and the account is not refreshing: it still waits its turn
+		 * (the list is idle between two refreshes, so "nothing runs" does not
+		 * say it ran), or it ran and this is what it left. */
+		return queued ? RenewalStep::Wait : RenewalStep::Proceed;
+	}
+
+	bool accountChangeRetriesSignIn(int failures, const QString& failedIdentity,
+									const QString& identity,
+									const QString& refusedProfile,
+									const QString& profile)
+	{
+		if (failures == 0) {
+			return true;
+		}
+		if (!refusedProfile.isEmpty() && refusedProfile == profile) {
+			return false;
+		}
+		return failedIdentity != identity;
 	}
 
 	QByteArray challengeBody(const QString& name)
@@ -356,7 +435,7 @@ namespace FriendsApi
 		if (kVisibilities.contains(visibility)) {
 			body.insert("visibility", visibility);
 		}
-		for (const char* key : {"hideServer", "shareIpServers"}) {
+		for (const char* key : {"hideServer", "shareIpServers", "allowJoin"}) {
 			if (partial.value(key).typeId() == QMetaType::Bool) {
 				body.insert(key, partial.value(key).toBool());
 			}
@@ -426,6 +505,9 @@ namespace FriendsApi
 			status.instance = object.value("instance").toString();
 			status.version = object.value("version").toString();
 			status.world = parseWorld(object.value("world"));
+			/* An older server does not send it: not the same as "no". */
+			status.joinableSaid = object.value("joinable").isBool();
+			status.joinable = object.value("joinable").toBool();
 		} else {
 			status.lastSeenAt = parseTime(object.value("lastSeenAt"));
 		}
@@ -521,5 +603,10 @@ namespace FriendsApi
 			error.code = QStringLiteral("unknown");
 		}
 		return error;
+	}
+
+	QString parseMojangError(const QByteArray& body)
+	{
+		return objectOf(body).value("error").toString();
 	}
 } // namespace FriendsApi

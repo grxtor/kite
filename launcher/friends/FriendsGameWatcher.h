@@ -38,6 +38,11 @@ class LaunchTask;
  * Minecraft version, and where in the world its log says the player is
  * (FriendsLogRules). Follows the instances of the list, including ones
  * added later, and says changed() when the answer does.
+ *
+ * A game counts once its launch is known (launchTaskChanged), and only for
+ * the profile it is played as: a game played offline, as a demo or as another
+ * account is nothing the signed-in account's friends are told about
+ * (presence()).
  */
 class FriendsGameWatcher : public QObject
 {
@@ -47,7 +52,10 @@ class FriendsGameWatcher : public QObject
 	explicit FriendsGameWatcher(std::shared_ptr<InstanceList> instances,
 								QObject* parent = nullptr);
 
-	FriendsApi::Presence presence() const;
+	/// What friends of @p profileId (the profile Friends is signed in as)
+	/// may be told: the latest running game when it is played as that
+	/// profile, nothing otherwise.
+	FriendsApi::Presence presence(const QString& profileId) const;
 
   signals:
 	void changed();
@@ -57,6 +65,11 @@ class FriendsGameWatcher : public QObject
 	void watch(const std::shared_ptr<BaseInstance>& instance);
 	void onRunningChanged(BaseInstance* instance, bool running);
 	void onLaunchTask(BaseInstance* instance, LaunchTask* task);
+	/// The launch of @p instance is known, played as @p profile ("" if not
+	/// as an account's own identity): it counts as running if it does.
+	void count(BaseInstance* instance, const QString& profile);
+	/// The latest running game, whoever plays it.
+	FriendsApi::Presence latest() const;
 	void onLogLine(BaseInstance* instance, const QString& line);
 	void forget(BaseInstance* instance);
 	void removeRunning(BaseInstance* instance);
@@ -66,7 +79,12 @@ class FriendsGameWatcher : public QObject
 	std::shared_ptr<InstanceList> m_instances;
 	/// Instances connected to, with their world while they run.
 	QHash<BaseInstance*, FriendsApi::World> m_worlds;
-	/// The running ones, oldest first.
+	/// The profile each instance with a known launch is played as, while it
+	/// runs ("" when not as an account's own identity).
+	QHash<BaseInstance*, QString> m_profiles;
+	/// The running ones with a known launch, oldest first.
 	std::vector<BaseInstance*> m_running;
+	/// What changed() last said: the latest game and who plays it.
 	FriendsApi::Presence m_last;
+	QString m_lastProfile;
 };

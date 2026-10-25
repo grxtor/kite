@@ -7,76 +7,126 @@ import Kite.Theme
 
 /*
  * The Friends page's "Requests" tab: people asking to be your friend
- * (accept, decline, or block them) above the requests you sent (cancel).
+ * (Accept, Decline, or block them from the ⋯, the page's FriendPersonMenu)
+ * above the requests you sent (marked as sent, with Cancel), each a caption
+ * over rows on the page. A row's buttons wait for the answer to its click
+ * (FriendsPending).
  */
 Item {
     id: root
 
     // QmlShell.friends (FriendsController), or null.
     property var controller: null
+    // The page's FriendPersonMenu.
+    property var menu: null
+    // The server answers: the buttons need it, reading the list does not.
+    property bool actionsEnabled: true
 
-    signal blockRequested(string uuid, string name)
+    readonly property var incoming: root.controller ? root.controller.incoming : []
+    readonly property var outgoing: root.controller ? root.controller.outgoing : []
+    readonly property bool hasRequests: root.incoming.length > 0 || root.outgoing.length > 0
+    // Not before they have been read: an empty list that is still arriving
+    // is not "no requests".
+    readonly property bool empty: !!root.controller && root.controller.loaded && !root.hasRequests
 
-    readonly property var rows: {
-        var rows = []
-        var incoming = root.controller ? root.controller.incoming : []
-        var outgoing = root.controller ? root.controller.outgoing : []
-        for (var i = 0; i < incoming.length; ++i)
-            rows.push({ incoming: true, uuid: incoming[i].uuid, name: incoming[i].name, face: incoming[i].face })
-        for (var j = 0; j < outgoing.length; ++j)
-            rows.push({ incoming: false, uuid: outgoing[j].uuid, name: outgoing[j].name, face: outgoing[j].face })
-        return rows
+    FriendsPending {
+        id: pending
+        controller: root.controller
+        actions: ["accept", "decline", "cancelRequest"]
     }
 
-    ListView {
+    FriendsListScroll {
         id: list
         anchors.fill: parent
-        anchors.margins: Theme.space.xs
-        clip: true
-        model: root.rows
-        boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar {}
+        visible: root.hasRequests
+        actionsEnabled: root.actionsEnabled
+        spacing: Theme.space.sm
 
-        delegate: FriendRow {
-            id: row
-            required property var modelData
-            width: list.width
-            face: modelData.face
-            name: modelData.name
-            detail: modelData.incoming ? qsTr("Wants to be your friend") : qsTr("Waiting for them to answer")
+        Column {
+            width: parent.width
+            visible: root.incoming.length > 0
+            spacing: Theme.space.xxs
 
-            Button {
-                visible: row.modelData.incoming
-                buttonSize: "sm"
-                text: qsTr("Accept")
-                onClicked: root.controller.accept(row.modelData.uuid)
+            FriendsSectionHeader {
+                width: parent.width
+                text: qsTr("INCOMING — %1").arg(root.incoming.length)
             }
-            Button {
-                visible: row.modelData.incoming
-                buttonSize: "sm"
-                text: qsTr("Decline")
-                onClicked: root.controller.decline(row.modelData.uuid)
+            Repeater {
+                model: root.incoming
+                delegate: FriendRow {
+                    id: incomingRow
+                    required property var modelData
+                    width: list.width
+                    face: modelData.face
+                    name: modelData.name
+                    detail: qsTr("Wants to be your friend")
+
+                    Button {
+                        buttonSize: "sm"
+                        enabled: !pending.has(incomingRow.modelData.uuid)
+                        text: qsTr("Accept")
+                        icon.source: Icons.url("check")
+                        onClicked: pending.send(incomingRow.modelData.uuid, () => root.controller.accept(incomingRow.modelData.uuid))
+                    }
+                    Button {
+                        buttonSize: "sm"
+                        variant: "ghost"
+                        enabled: !pending.has(incomingRow.modelData.uuid)
+                        text: qsTr("Decline")
+                        icon.source: Icons.url("x")
+                        onClicked: pending.send(incomingRow.modelData.uuid, () => root.controller.decline(incomingRow.modelData.uuid))
+                    }
+                    FriendMoreButton {
+                        menu: root.menu
+                        personUuid: incomingRow.modelData.uuid
+                        personName: incomingRow.modelData.name
+                        canRemove: false
+                    }
+                }
             }
-            Button {
-                visible: !row.modelData.incoming
-                buttonSize: "sm"
-                text: qsTr("Cancel")
-                onClicked: root.controller.cancelRequest(row.modelData.uuid)
+        }
+
+        Column {
+            width: parent.width
+            visible: root.outgoing.length > 0
+            spacing: Theme.space.xxs
+
+            FriendsSectionHeader {
+                width: parent.width
+                text: qsTr("SENT — %1").arg(root.outgoing.length)
             }
-            FriendMoreButton {
-                visible: row.modelData.incoming
-                canRemove: false
-                onBlockRequested: root.blockRequested(row.modelData.uuid, row.modelData.name)
+            Repeater {
+                model: root.outgoing
+                delegate: FriendRow {
+                    id: sentRow
+                    required property var modelData
+                    width: list.width
+                    face: modelData.face
+                    name: modelData.name
+                    detail: qsTr("Request sent")
+                    detailTone: "faint"
+
+                    Button {
+                        buttonSize: "sm"
+                        variant: "ghost"
+                        enabled: !pending.has(sentRow.modelData.uuid)
+                        text: qsTr("Cancel")
+                        onClicked: pending.send(sentRow.modelData.uuid, () => root.controller.cancelRequest(sentRow.modelData.uuid))
+                    }
+                    // The ⋯ column the incoming rows have, so the buttons
+                    // of both groups end on one line.
+                    Item { width: Theme.control.heightSm; height: 1 }
+                }
             }
         }
     }
 
     EmptyState {
-        anchors.centerIn: parent
-        width: parent.width
-        visible: root.rows.length === 0
+        anchors.fill: parent
+        visible: root.empty
+        upperThird: true
         title: qsTr("No friend requests")
         body: qsTr("Requests you get, and requests you send, wait here until they are answered.")
-        MeshIcon { iconName: "user"; size: Theme.icon.lg + Theme.space.md; color: Theme.palette.textTertiary }
+        SoftIconCircle { iconName: "user" }
     }
 }

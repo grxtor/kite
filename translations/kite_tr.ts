@@ -920,7 +920,7 @@ This action cannot be undone.</source>
 <context>
     <name>Application</name>
     <message>
-        <location filename="../launcher/Application.cpp" line="+1158"/>
+        <location filename="../launcher/Application.cpp" line="+1161"/>
         <source>Settings</source>
         <translation>Ayarlar</translation>
     </message>
@@ -3140,6 +3140,26 @@ The author may have blocked third-party launchers, or there may be no build for 
     </message>
 </context>
 <context>
+    <name>CopyName</name>
+    <message>
+        <location filename="../launcher/qml/Components/CopyName.qml" line="+53"/>
+        <source>Copy your name, %1</source>
+        <translation>Adını kopyala: %1</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <location line="+8"/>
+        <location line="+19"/>
+        <source>Copied</source>
+        <translation>Kopyalandı</translation>
+    </message>
+    <message>
+        <location line="-19"/>
+        <source>Copy your name</source>
+        <translation>Adını kopyala</translation>
+    </message>
+</context>
+<context>
     <name>CrashReportDialog</name>
     <message>
         <location filename="../launcher/crashreporter/CrashReportDialog.cpp" line="+93"/>
@@ -4950,16 +4970,165 @@ Lütfen tekrar dene.</translation>
         <source>Minecraft</source>
         <translation>Minecraft</translation>
     </message>
+    <message>
+        <location line="+95"/>
+        <source>Singleplayer</source>
+        <translation>Tek oyunculu</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Playing</source>
+        <translation>Oynuyor</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>On a server</source>
+        <translation>Bir sunucuda</translation>
+    </message>
+    <message>
+        <location line="+25"/>
+        <source>Friends needs a Minecraft account that is signed in with Microsoft.</source>
+        <translation>Arkadaşlık için Microsoft ile giriş yapmış bir Minecraft hesabı gerekir.</translation>
+    </message>
+</context>
+<context>
+    <name>FriendJoinDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendJoinDialog.qml" line="+86"/>
+        <source>No Minecraft %1 instance</source>
+        <translation>Minecraft %1 kurulumun yok</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>%1 is on %2 with Minecraft %3. Create a %3 instance, then press Join again once it&apos;s ready.</source>
+        <translation>%1, %2 sunucusunda Minecraft %3 ile oynuyor. %3 sürümünde bir kurulum oluştur, hazır olunca yeniden Katıl&apos;a bas.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 is on %2, playing their instance &quot;%4&quot; (Minecraft %3).</source>
+        <translation>%1, kendi &quot;%4&quot; kurulumuyla %2 sunucusunda (Minecraft %3).</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 is on %2 with Minecraft %3.</source>
+        <translation>%1, Minecraft %3 ile %2 sunucusunda.</translation>
+    </message>
+    <message>
+        <location line="-17"/>
+        <source>Join with which instance?</source>
+        <translation>Hangi kurulumla katılacaksın?</translation>
+    </message>
+    <message>
+        <location line="+28"/>
+        <source>Or join with another version (may not connect)</source>
+        <translation>Ya da başka bir sürümle katıl (bağlanamayabilir)</translation>
+    </message>
+    <message>
+        <location line="+60"/>
+        <source>Vanilla</source>
+        <translation>Vanilla</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>%1, %2, running</source>
+        <translation>%1, %2, çalışıyor</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1, %2</source>
+        <translation>%1, %2</translation>
+    </message>
+    <message>
+        <location line="+66"/>
+        <source>Running</source>
+        <translation>Çalışıyor</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Can&apos;t start</source>
+        <translation>Başlatılamıyor</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Create %1 instance</source>
+        <translation>%1 kurulumu oluştur</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Join</source>
+        <translation>Katıl</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Join anyway</source>
+        <translation>Yine de katıl</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+</context>
+<context>
+    <name>FriendJoinFlow</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendJoinFlow.qml" line="+59"/>
+        <source>%1 is already running. Quit it, then press Join.</source>
+        <translation>%1 zaten açık. Kapatıp Katıl&apos;a yeniden bas.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 can&apos;t start. Fix it, then press Join.</source>
+        <translation>%1 başlatılamıyor. Düzelttikten sonra Katıl&apos;a yeniden bas.</translation>
+    </message>
+    <message>
+        <location line="+25"/>
+        <source>No Minecraft %1 instance yet</source>
+        <translation>Henüz Minecraft %1 kurulumun yok</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>%1 is already running</source>
+        <translation>%1 zaten açık</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 can&apos;t start</source>
+        <translation>%1 başlatılamıyor</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Start %1 and join %2</source>
+        <translation>%1 kurulumunu başlat ve %2 sunucusuna katıl</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Choose an instance and join %1</source>
+        <translation>Bir kurulum seç ve %1 sunucusuna katıl</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Starting %2 to join %1…</source>
+        <translation>%1 sunucusuna katılmak için %2 açılıyor…</translation>
+    </message>
 </context>
 <context>
     <name>FriendMoreButton</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendMoreButton.qml" line="+22"/>
+        <location filename="../launcher/qml/Components/FriendMoreButton.qml" line="+27"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+1"/>
+        <source>More options for %1</source>
+        <translation>%1 için daha fazla seçenek</translation>
+    </message>
+</context>
+<context>
+    <name>FriendPersonMenu</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendPersonMenu.qml" line="+43"/>
         <source>Remove friend…</source>
         <translation>Arkadaşlıktan çıkar…</translation>
     </message>
@@ -4972,35 +5141,53 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendRow</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendRow.qml" line="+49"/>
+        <location filename="../launcher/qml/Components/FriendRow.qml" line="+56"/>
         <source>%1, %2</source>
         <translation>%1, %2</translation>
     </message>
 </context>
 <context>
+    <name>FriendStatusRow</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendStatusRow.qml" line="+31"/>
+        <source>%1 doesn&apos;t let friends join</source>
+        <translation>%1 arkadaşlarının katılmasına izin vermiyor</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Joining off</source>
+        <translation>Katılım kapalı</translation>
+    </message>
+</context>
+<context>
     <name>FriendsBlockedTab</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsBlockedTab.qml" line="+38"/>
+        <location filename="../launcher/qml/Components/FriendsBlockedTab.qml" line="+41"/>
+        <source>BLOCKED — %1</source>
+        <translation>ENGELLENENLER — %1</translation>
+    </message>
+    <message>
+        <location line="+14"/>
         <source>Unblock</source>
         <translation>Engeli kaldır</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+13"/>
         <source>No one is blocked</source>
-        <translation>Kimse engellenmedi</translation>
+        <translation>Engellenen kimse yok</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Someone you block cannot send you requests or see when you are online. They are not told.</source>
-        <translation>Engellediğin kişi sana istek gönderemez ve çevrimiçi olduğunu göremez. Ona haber verilmez.</translation>
+        <translation>Engellediğin kişi sana istek gönderemez ve senin çevrimiçi olduğunu göremez. Ona haber verilmez.</translation>
     </message>
 </context>
 <context>
     <name>FriendsController</name>
     <message>
         <location filename="../launcher/friends/FriendsActions.cpp" line="+64"/>
-        <source>Friends are turned off</source>
-        <translation>Arkadaşlar kapalı</translation>
+        <source>Friends is turned off</source>
+        <translation>Arkadaşlık kapalı</translation>
     </message>
     <message>
         <location line="+4"/>
@@ -5013,12 +5200,12 @@ Lütfen tekrar dene.</translation>
         <translation>bu oyuncu</translation>
     </message>
     <message>
-        <location line="+37"/>
-        <source>No Kite player is called %1</source>
-        <translation>%1 adında bir Kite oyuncusu yok</translation>
+        <location line="+45"/>
+        <source>No Kite player is called %1. Ask them to get Kite at kiteclient.com.</source>
+        <translation>%1 adında bir Kite oyuncusu yok. Kite&apos;ı kiteclient.com adresinden indirmesini iste.</translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location line="+5"/>
         <source>%1 is already your friend</source>
         <translation>%1 zaten arkadaşın</translation>
     </message>
@@ -5091,7 +5278,7 @@ Lütfen tekrar dene.</translation>
         <translation>%1 arkadaşın değil</translation>
     </message>
     <message>
-        <location line="+44"/>
+        <location line="+49"/>
         <source>%1 is blocked</source>
         <translation>%1 engellendi</translation>
     </message>
@@ -5116,100 +5303,111 @@ Lütfen tekrar dene.</translation>
         <translation>Değiştirilecek bir şey yok</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+18"/>
+        <source>Kite&apos;s friends server did not save that setting</source>
+        <translation>Kite&apos;ın arkadaşlık sunucusu bu ayarı kaydetmedi</translation>
+    </message>
+    <message>
+        <location line="+3"/>
         <source>Saved</source>
         <translation>Kaydedildi</translation>
     </message>
     <message>
-        <location line="+21"/>
+        <location line="+17"/>
+        <source>A delete is already under way; wait for it to finish</source>
+        <translation>Bir silme işlemi zaten sürüyor; bitmesini bekle</translation>
+    </message>
+    <message>
+        <location line="+33"/>
         <source>Your friends account and its data were deleted</source>
         <translation>Arkadaşlık hesabın ve verilerin silindi</translation>
     </message>
     <message>
-        <location filename="../launcher/friends/FriendsPoll.cpp" line="+46"/>
-        <source>Kite&apos;s friends server can&apos;t be reached</source>
-        <translation>Kite&apos;ın arkadaşlık sunucusuna ulaşılamıyor</translation>
+        <location filename="../launcher/friends/FriendsPoll.cpp" line="+49"/>
+        <source>Kite&apos;s friends server can&apos;t be reached.</source>
+        <translation>Kite&apos;ın arkadaşlık sunucusuna ulaşılamıyor.</translation>
     </message>
     <message>
         <location line="+12"/>
-        <source>Too many requests; try again in a minute</source>
-        <translation>Çok fazla istek; bir dakika sonra tekrar dene</translation>
+        <source>Too many requests; try again in a minute.</source>
+        <translation>Çok fazla istek; bir dakika sonra tekrar dene.</translation>
     </message>
     <message>
         <location line="+3"/>
-        <source>Your Kite session expired; try again</source>
-        <translation>Kite oturumun doldu; tekrar dene</translation>
+        <source>Your Kite session expired; try again.</source>
+        <translation>Kite oturumun doldu; tekrar dene.</translation>
     </message>
     <message>
         <location line="+3"/>
-        <source>Minecraft&apos;s session server is not answering; try again later</source>
-        <translation>Minecraft oturum sunucusu yanıt vermiyor; sonra tekrar dene</translation>
+        <location filename="../launcher/friends/FriendsSignIn.cpp" line="+326"/>
+        <source>Minecraft&apos;s session server is not answering; try again later.</source>
+        <translation>Minecraft oturum sunucusu yanıt vermiyor; sonra tekrar dene.</translation>
     </message>
     <message>
         <location line="+3"/>
-        <source>Something went wrong (%1)</source>
-        <translation>Bir şeyler ters gitti (%1)</translation>
+        <source>Something went wrong (%1).</source>
+        <translation>Bir şeyler ters gitti (%1).</translation>
     </message>
     <message>
-        <location line="+35"/>
-        <source>Still signing in; try again in a moment</source>
-        <translation>Giriş hâlâ yapılıyor; biraz sonra tekrar dene</translation>
+        <location line="+82"/>
+        <source>Your Minecraft account changed; try again.</source>
+        <translation>Minecraft hesabın değişti; tekrar dene.</translation>
     </message>
     <message>
-        <location filename="../launcher/friends/FriendsSignIn.cpp" line="+91"/>
-        <source>Friends need a Minecraft account that is signed in with Microsoft</source>
-        <translation>Arkadaşlar için Microsoft ile giriş yapılmış bir Minecraft hesabı gerekir</translation>
+        <location line="+15"/>
+        <source>Still signing in; try again in a moment.</source>
+        <translation>Giriş hâlâ yapılıyor; biraz sonra tekrar dene.</translation>
     </message>
     <message>
-        <location line="+6"/>
-        <source>Your Minecraft account needs to sign in again</source>
-        <translation>Minecraft hesabının yeniden giriş yapması gerekiyor</translation>
+        <location filename="../launcher/friends/FriendsSignIn.cpp" line="-118"/>
+        <source>Friends needs a Minecraft account that is signed in with Microsoft.</source>
+        <translation>Arkadaşlık için Microsoft ile giriş yapmış bir Minecraft hesabı gerekir.</translation>
     </message>
     <message>
-        <location line="+43"/>
-        <source>Minecraft&apos;s session server can&apos;t be reached</source>
-        <translation>Minecraft oturum sunucusuna ulaşılamıyor</translation>
+        <location line="+14"/>
+        <source>Your Minecraft account needs to sign in again.</source>
+        <translation>Minecraft hesabının yeniden giriş yapması gerekiyor.</translation>
+    </message>
+    <message>
+        <location line="+73"/>
+        <source>Minecraft&apos;s session server can&apos;t be reached.</source>
+        <translation>Minecraft oturum sunucusuna ulaşılamıyor.</translation>
+    </message>
+    <message>
+        <location line="+19"/>
+        <source>Multiplayer is turned off for this Microsoft account.</source>
+        <translation>Bu Microsoft hesabı için çok oyunculu mod kapalı.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Minecraft did not accept the sign-in; sign in to your account again</source>
-        <translation>Minecraft girişi kabul etmedi; hesabına yeniden giriş yap</translation>
+        <source>This Minecraft account is banned from multiplayer.</source>
+        <translation>Bu Minecraft hesabı çok oyunculu moddan yasaklı.</translation>
     </message>
     <message>
-        <location line="+33"/>
-        <source>Minecraft did not confirm the sign-in; try again in a moment</source>
-        <translation>Minecraft girişi doğrulamadı; biraz sonra tekrar dene</translation>
+        <location line="+4"/>
+        <source>Minecraft did not accept the sign-in; sign in to your account again.</source>
+        <translation>Minecraft girişi kabul etmedi; hesabına yeniden giriş yap.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Something went wrong (Minecraft %1).</source>
+        <translation>Bir şeyler ters gitti (Minecraft %1).</translation>
+    </message>
+    <message>
+        <location line="+35"/>
+        <source>Minecraft did not confirm the sign-in; try again in a moment.</source>
+        <translation>Minecraft girişi doğrulamadı; biraz sonra tekrar dene.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/friends/FriendsController.cpp" line="+271"/>
+        <source>Friends was turned on before the delete finished; delete again if you still want it</source>
+        <translation>Silme bitmeden Arkadaşlık açıldı; hâlâ istiyorsan yeniden sil</translation>
     </message>
 </context>
 <context>
     <name>FriendsDisplay</name>
     <message>
-        <location filename="../launcher/friends/FriendsDisplay.cpp" line="+79"/>
-        <source>Just now</source>
-        <translation>Az önce</translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>%1 min ago</source>
-        <translation>%1 dk önce</translation>
-    </message>
-    <message>
-        <location line="+4"/>
-        <source>%1 h ago</source>
-        <translation>%1 sa önce</translation>
-    </message>
-    <message>
-        <location line="+4"/>
-        <source>Yesterday</source>
-        <translation>Dün</translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>%1 days ago</source>
-        <translation>%1 gün önce</translation>
-    </message>
-    <message>
-        <location line="+16"/>
+        <location filename="../launcher/friends/FriendsDisplay.cpp" line="+115"/>
         <source>On a server</source>
         <translation>Bir sunucuda</translation>
     </message>
@@ -5219,108 +5417,201 @@ Lütfen tekrar dene.</translation>
         <translation>Sunucu: %1</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Single-player</source>
-        <translation>Tek oyunculu</translation>
-    </message>
-    <message>
-        <location line="+2"/>
+        <location line="+5"/>
         <source>Playing</source>
         <translation>Oynuyor</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>Online</source>
-        <translation>Çevrimiçi</translation>
-    </message>
-    <message>
-        <location line="+5"/>
+        <location line="-19"/>
         <source>Last seen %1</source>
         <translation>Son görülme: %1</translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location line="-18"/>
+        <source>Last seen just now</source>
+        <translation>Az önce görüldü</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Last seen %1 min ago</source>
+        <translation>%1 dk önce görüldü</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Last seen %1 h ago</source>
+        <translation>%1 sa önce görüldü</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Last seen yesterday</source>
+        <translation>Dün görüldü</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Last seen %1 days ago</source>
+        <translation>%1 gün önce görüldü</translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <source>Singleplayer</source>
+        <translation>Tek oyunculu</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>In Kite</source>
+        <translation>Kite&apos;ta</translation>
+    </message>
+    <message>
+        <location line="+7"/>
         <source>Offline</source>
         <translation>Çevrimdışı</translation>
     </message>
 </context>
 <context>
-    <name>FriendsFriendsTab</name>
+    <name>FriendsEmptyState</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsFriendsTab.qml" line="+53"/>
+        <location filename="../launcher/qml/Components/FriendsEmptyState.qml" line="+23"/>
         <source>No friends yet</source>
         <translation>Henüz arkadaşın yok</translation>
     </message>
     <message>
+        <location line="+2"/>
+        <source>Your friends need Kite too. Add them by their Minecraft name, or send them yours so they can add you:</source>
+        <translation>Arkadaşlarının da Kite kullanması gerekir. Minecraft adıyla ekle ya da seni eklemeleri için adını gönder:</translation>
+    </message>
+    <message>
         <location line="+1"/>
-        <source>Add one by their Minecraft name. They need to have turned friends on in Kite too.</source>
-        <translation>Minecraft adıyla birini ekle. Onun da Kite&apos;ta arkadaşları açmış olması gerekir.</translation>
+        <source>Your friends need Kite too. Add them by their Minecraft name.</source>
+        <translation>Arkadaşlarının da Kite kullanması gerekir. Onları Minecraft adıyla ekle.</translation>
     </message>
 </context>
 <context>
-    <name>FriendsOptInDialog</name>
+    <name>FriendsFriendsTab</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsOptInDialog.qml" line="+18"/>
-        <source>Turn on friends?</source>
-        <translation>Arkadaşlar açılsın mı?</translation>
+        <location filename="../launcher/qml/Components/FriendsFriendsTab.qml" line="+42"/>
+        <source>PLAYING — %1</source>
+        <translation>OYUNDA — %1</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Turn on</source>
-        <translation>Aç</translation>
+        <location line="+9"/>
+        <source>ONLINE — %1</source>
+        <translation>ÇEVRİMİÇİ — %1</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>OFFLINE — %1</source>
+        <translation>ÇEVRİMDIŞI — %1</translation>
+    </message>
+</context>
+<context>
+    <name>FriendsGroup</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendsGroup.qml" line="+52"/>
+        <source>Join</source>
+        <translation>Katıl</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Join %1 on %2</source>
+        <translation>%1 ile %2 sunucusuna katıl</translation>
+    </message>
+</context>
+<context>
+    <name>FriendsNotice</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendsNotice.qml" line="+46"/>
+        <source>Friends is on. You are invisible: your friends see you as offline, and nothing about what you play.</source>
+        <translation>Arkadaşlık açık. Görünmezsin: arkadaşların seni çevrimdışı görür, ne oynadığını da göremez.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Your friends will see your Minecraft name, whether you are online, the instance and Minecraft version you play, and the name of the server you are on. A server reached by a raw IP address, or on your home network, is never named.</source>
-        <translation>Arkadaşların Minecraft adını, çevrimiçi olup olmadığını, oynadığın kurulumu ve Minecraft sürümünü, bir de bağlı olduğun sunucunun adını görür. Ham IP adresiyle ya da ev ağında bağlandığın bir sunucunun adı hiçbir zaman gösterilmez.</translation>
+        <source>Friends is on. Your friends can see when you&apos;re online and what you&apos;re playing: instance and Minecraft version, but not the server.</source>
+        <translation>Arkadaşlık açık. Çevrimiçi olduğunu, oynadığın kurulumu ve Minecraft sürümünü arkadaşların görebilir; sunucuyu göremez.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Friends is on. Your friends can see when you&apos;re online and what you&apos;re playing: instance, Minecraft version and server.</source>
+        <translation>Arkadaşlık açık. Çevrimiçi olduğunu, oynadığın kurulumu, Minecraft sürümünü ve sunucuyu arkadaşların görebilir.</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>You can go invisible or hide the server whenever you like in Settings. While this is off, Kite sends nothing.</source>
-        <translation>Ayarlar&apos;dan istediğin zaman görünmez olabilir ya da sunucuyu gizleyebilirsin. Bu kapalıyken Kite hiçbir şey göndermez.</translation>
+        <source>Friends is on. Your friends can see when you&apos;re online and what you&apos;re playing: instance, Minecraft version and server. They can join you there.</source>
+        <translation>Arkadaşlık açık. Çevrimiçi olduğunu, oynadığın kurulumu, Minecraft sürümünü ve sunucuyu arkadaşların görebilir; o sunucuda sana katılabilirler.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Friends is on. You appear offline.</source>
+        <translation>Arkadaşlık açık. Çevrimdışı görünüyorsun.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Friends is on. Your friends see you online, but not your server.</source>
+        <translation>Arkadaşlık açık. Arkadaşların seni çevrimiçi görür, sunucunu göremez.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Friends is on. Your friends see your server.</source>
+        <translation>Arkadaşlık açık. Arkadaşların sunucunu görür.</translation>
+    </message>
+    <message>
+        <location line="+46"/>
+        <location line="+43"/>
+        <source>Settings</source>
+        <translation>Ayarlar</translation>
+    </message>
+    <message>
+        <location line="-38"/>
+        <location line="+29"/>
+        <source>Got it</source>
+        <translation>Anladım</translation>
+    </message>
+    <message>
+        <location line="-79"/>
+        <source>Friends is on. Your friends see your server and can join you.</source>
+        <translation>Arkadaşlık açık. Arkadaşların sunucunu görür ve sana katılabilir.</translation>
     </message>
 </context>
 <context>
     <name>FriendsPage</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsPage.qml" line="+128"/>
+        <location filename="../launcher/qml/Components/FriendsPage.qml" line="+133"/>
+        <source>Can&apos;t update friends right now. Showing them as of %1.</source>
+        <translation>Arkadaşlar şu an güncellenemiyor. %1 itibarıyla gösteriliyor.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Can&apos;t update friends right now.</source>
+        <translation>Arkadaşlar şu an güncellenemiyor.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Trying…</source>
+        <translation>Deneniyor…</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+34"/>
         <source>Friends</source>
         <translation>Arkadaşlar</translation>
     </message>
     <message>
-        <location line="-30"/>
-        <source>Minecraft name</source>
-        <translation>Minecraft adı</translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>Minecraft name of the friend to add</source>
-        <translation>Eklenecek arkadaşın Minecraft adı</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Add</source>
-        <translation>Ekle</translation>
-    </message>
-    <message>
-        <location line="+9"/>
-        <source>A Minecraft name has 1 to 16 letters, numbers or underscores.</source>
-        <translation>Minecraft adı 1 ile 16 arasında harf, rakam ya da alt çizgiden oluşur.</translation>
-    </message>
-    <message>
-        <location line="+13"/>
+        <location line="+4"/>
         <source>Requests</source>
         <translation>İstekler</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+3"/>
         <source>Blocked</source>
         <translation>Engellenenler</translation>
     </message>
     <message>
-        <location line="+61"/>
-        <source>Remove %1?</source>
-        <translation>%1 kaldırılsın mı?</translation>
+        <location line="+60"/>
+        <source>Remove %1 from friends?</source>
+        <translation>%1 arkadaşlıktan çıkarılsın mı?</translation>
     </message>
     <message>
         <location line="+0"/>
@@ -5329,56 +5620,61 @@ Lütfen tekrar dene.</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Remove</source>
-        <translation>Kaldır</translation>
-    </message>
-    <message>
-        <location line="+0"/>
         <source>Block</source>
         <translation>Engelle</translation>
     </message>
     <message>
+        <location line="+0"/>
+        <source>Remove friend</source>
+        <translation>Arkadaşlıktan çıkar</translation>
+    </message>
+    <message>
         <location line="+2"/>
         <source>%1 will no longer see when you are online, and you will not see them. You can add each other again later.</source>
-        <translation>%1 artık çevrimiçi olduğunu göremez, sen de onu göremezsin. Daha sonra birbirinizi yeniden ekleyebilirsiniz.</translation>
+        <translation>%1 artık senin çevrimiçi olduğunu göremez, sen de onunkini göremezsin. Daha sonra birbirinizi yeniden ekleyebilirsiniz.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Their request is declined, and %1 can no longer send you requests or see when you are online. They are not told.</source>
+        <translation>İsteği reddedilir; %1 artık sana istek gönderemez ve çevrimiçi olduğunu göremez. Ona haber verilmez.</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>%1 will be taken off your friends and can no longer send you requests or see when you are online. They are not told.</source>
-        <translation>%1 arkadaşlarından çıkarılır, sana istek gönderemez ve çevrimiçi olduğunu göremez. Ona haber verilmez.</translation>
+        <translation>%1 arkadaşlarından çıkarılır; sana istek gönderemez ve senin çevrimiçi olduğunu göremez. Ona haber verilmez.</translation>
     </message>
 </context>
 <context>
     <name>FriendsPageState</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsPageState.qml" line="+29"/>
-        <source>Friends are off</source>
-        <translation>Arkadaşlar kapalı</translation>
-    </message>
-    <message>
-        <location line="+1"/>
+        <location filename="../launcher/qml/Components/FriendsPageState.qml" line="+52"/>
         <source>Connecting…</source>
         <translation>Bağlanıyor…</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Friends are not connected</source>
-        <translation>Arkadaşlar bağlı değil</translation>
+        <location line="-1"/>
+        <source>Friends is off</source>
+        <translation>Arkadaşlık kapalı</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Sign in to use Friends</source>
+        <translation>Arkadaşlık için giriş yap</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>See which server your friends are playing on. There is no chat. While friends are off, Kite sends nothing.</source>
-        <translation>Arkadaşlarının hangi sunucuda oynadığını gör. Sohbet yok. Arkadaşlar kapalıyken Kite hiçbir şey göndermez.</translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>Sign in with a Microsoft account to use friends.</source>
-        <translation>Arkadaşları kullanmak için bir Microsoft hesabıyla giriş yap.</translation>
+        <source>Can&apos;t connect</source>
+        <translation>Bağlanılamadı</translation>
     </message>
     <message>
         <location line="+1"/>
+        <source>See which server your friends are on, and join them when they let you. While Friends is off, Kite sends nothing.</source>
+        <translation>Arkadaşlarının hangi sunucuda olduğunu gör, izin verirlerse yanlarına katıl. Arkadaşlık kapalıyken Kite hiçbir şey göndermez.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
         <source>Friends could not connect.</source>
-        <translation>Arkadaşlar bağlanamadı.</translation>
+        <translation>Arkadaşlık sunucusuna bağlanılamadı.</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -5395,31 +5691,46 @@ Lütfen tekrar dene.</translation>
         <source>Try again</source>
         <translation>Tekrar dene</translation>
     </message>
+    <message>
+        <location line="+0"/>
+        <source>Trying…</source>
+        <translation>Deneniyor…</translation>
+    </message>
 </context>
 <context>
     <name>FriendsRequestsTab</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsRequestsTab.qml" line="+46"/>
+        <location filename="../launcher/qml/Components/FriendsRequestsTab.qml" line="+62"/>
         <source>Wants to be your friend</source>
         <translation>Seninle arkadaş olmak istiyor</translation>
     </message>
     <message>
-        <location line="+0"/>
-        <source>Waiting for them to answer</source>
-        <translation>Yanıtı bekleniyor</translation>
+        <location line="-10"/>
+        <source>INCOMING — %1</source>
+        <translation>GELEN — %1</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+15"/>
         <source>Accept</source>
         <translation>Kabul et</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+8"/>
         <source>Decline</source>
         <translation>Reddet</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+21"/>
+        <source>SENT — %1</source>
+        <translation>GÖNDERİLEN — %1</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Request sent</source>
+        <translation>İstek gönderildi</translation>
+    </message>
+    <message>
+        <location line="+7"/>
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
@@ -5432,6 +5743,74 @@ Lütfen tekrar dene.</translation>
         <location line="+1"/>
         <source>Requests you get, and requests you send, wait here until they are answered.</source>
         <translation>Aldığın ve gönderdiğin istekler yanıtlanana kadar burada bekler.</translation>
+    </message>
+</context>
+<context>
+    <name>FriendsSelfCard</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendsSelfCard.qml" line="+44"/>
+        <source>Invisible</source>
+        <translation>Görünmez</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Playing on %1 · friends can join</source>
+        <translation>%1 sunucusunda oynuyorsun · arkadaşların katılabilir</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Playing on %1</source>
+        <translation>%1 sunucusunda oynuyorsun</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Playing · server hidden</source>
+        <translation>Oynuyorsun · sunucu gizli</translation>
+    </message>
+    <message>
+        <location line="-4"/>
+        <source>Not connected · friends see your last status</source>
+        <translation>Bağlı değil · arkadaşların son durumunu görüyor</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Playing · singleplayer</source>
+        <translation>Oynuyorsun · tek oyunculu</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Playing</source>
+        <translation>Oynuyorsun</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Online · anyone with your name can see you</source>
+        <translation>Çevrimiçi · adını bilen herkes seni görebilir</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Online · friends can see you</source>
+        <translation>Çevrimiçi · arkadaşların seni görebilir</translation>
+    </message>
+    <message>
+        <location line="+79"/>
+        <source>Add a friend by name</source>
+        <translation>Adıyla arkadaş ekle</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Minecraft name of the friend to add</source>
+        <translation>Eklenecek arkadaşın Minecraft adı</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Add</source>
+        <translation>Ekle</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>A Minecraft name has 1 to 16 letters, numbers or underscores.</source>
+        <translation>Minecraft adı 1 ile 16 arasında harf, rakam ya da alt çizgiden oluşur.</translation>
     </message>
 </context>
 <context>
@@ -6192,25 +6571,19 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeFriends</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeFriends.qml" line="+62"/>
-        <location line="+45"/>
+        <location filename="../launcher/qml/Components/HomeFriends.qml" line="+103"/>
         <source>Friends</source>
         <translation>Arkadaşlar</translation>
     </message>
     <message>
-        <location line="-31"/>
-        <source>See which server your friends are playing on.</source>
-        <translation>Arkadaşlarının hangi sunucuda oynadığını gör.</translation>
+        <location line="+14"/>
+        <source>All</source>
+        <translation>Tümü</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Sign in with a Microsoft account to use friends.</source>
-        <translation>Arkadaşları kullanmak için bir Microsoft hesabıyla giriş yap.</translation>
-    </message>
-    <message>
-        <location line="+1"/>
+        <location line="+17"/>
         <source>Friends could not connect.</source>
-        <translation>Arkadaşlar bağlanamadı.</translation>
+        <translation>Arkadaşlık sunucusuna bağlanılamadı.</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -6218,42 +6591,65 @@ Lütfen tekrar dene.</translation>
         <translation>Bağlanıyor…</translation>
     </message>
     <message>
-        <location line="+5"/>
-        <source>Turn on</source>
-        <translation>Aç</translation>
-    </message>
-    <message>
-        <location line="+1"/>
+        <location line="+7"/>
         <source>Sign in</source>
         <translation>Giriş yap</translation>
     </message>
     <message>
         <location line="+0"/>
+        <location line="+33"/>
         <source>Try again</source>
         <translation>Tekrar dene</translation>
     </message>
     <message>
-        <location line="+26"/>
+        <location line="+101"/>
+        <source>Add friends who use Kite to see where they play.</source>
+        <translation>Kite kullanan arkadaşlarını ekle, nerede oynadıklarını gör.</translation>
+    </message>
+    <message>
+        <location line="-168"/>
         <source>%1 online</source>
         <translation>%1 çevrimiçi</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+34"/>
+        <location line="+33"/>
+        <source>Trying…</source>
+        <translation>Deneniyor…</translation>
+    </message>
+    <message>
+        <location line="-11"/>
+        <source>Can&apos;t update friends right now.</source>
+        <translation>Arkadaşlar şu an güncellenemiyor.</translation>
+    </message>
+    <message>
+        <location line="+62"/>
+        <source>Join %1</source>
+        <translation>%1 sunucusuna katıl</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>+%1 more</source>
+        <translation>+%1 kişi daha</translation>
+    </message>
+    <message>
+        <location line="+38"/>
         <source>Add a friend</source>
         <translation>Arkadaş ekle</translation>
     </message>
+</context>
+<context>
+    <name>HomeFriendsOfflineStrip</name>
     <message>
-        <location line="+4"/>
-        <source>Manage</source>
-        <translation>Yönet</translation>
+        <location filename="../launcher/qml/Components/HomeFriendsOfflineStrip.qml" line="+31"/>
+        <source>No one&apos;s online right now.</source>
+        <translation>Şu an kimse çevrimiçi değil.</translation>
     </message>
+</context>
+<context>
+    <name>HomeFriendsRequestsLink</name>
     <message>
-        <location line="+9"/>
-        <source>No friends yet. Add one by their Minecraft name.</source>
-        <translation>Henüz arkadaşın yok. Minecraft adıyla birini ekle.</translation>
-    </message>
-    <message>
-        <location line="+17"/>
+        <location filename="../launcher/qml/Components/HomeFriendsRequestsLink.qml" line="+30"/>
         <source>1 friend request</source>
         <translation>1 arkadaşlık isteği</translation>
     </message>
@@ -6379,7 +6775,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomePage</name>
     <message>
-        <location filename="../launcher/qml/Components/HomePage.qml" line="+222"/>
+        <location filename="../launcher/qml/Components/HomePage.qml" line="+227"/>
         <source>Library</source>
         <translation>Kütüphane</translation>
     </message>
@@ -6402,7 +6798,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeSidePanel</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeSidePanel.qml" line="+109"/>
+        <location filename="../launcher/qml/Components/HomeSidePanel.qml" line="+120"/>
         <source>Recent worlds</source>
         <translation>Son dünyalar</translation>
     </message>
@@ -10294,7 +10690,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+298"/>
+        <location filename="../launcher/qml/Main.qml" line="+308"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -10310,15 +10706,15 @@ Neden:
     </message>
     <message>
         <location line="+64"/>
-        <location line="+84"/>
+        <location line="+81"/>
         <location line="+14"/>
         <location line="+0"/>
         <source>Home</source>
         <translation>Ana sayfa</translation>
     </message>
     <message>
-        <location line="-97"/>
-        <location line="+85"/>
+        <location line="-94"/>
+        <location line="+82"/>
         <source>Discover</source>
         <translation>Keşfet</translation>
     </message>
@@ -10334,8 +10730,8 @@ Neden:
         <translation>Hesaplar</translation>
     </message>
     <message>
-        <location line="-85"/>
-        <location line="+86"/>
+        <location line="-82"/>
+        <location line="+83"/>
         <source>Friends</source>
         <translation>Arkadaşlar</translation>
     </message>
@@ -10365,7 +10761,7 @@ Neden:
         <translation>Yeni kurulum</translation>
     </message>
     <message>
-        <location line="+358"/>
+        <location line="+365"/>
         <source>Rename instance</source>
         <translation>Kurulumu yeniden adlandır</translation>
     </message>
@@ -12391,7 +12787,7 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
 <context>
     <name>MinecraftInstance</name>
     <message>
-        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+878"/>
+        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+886"/>
         <source>Kite mod: %1</source>
         <translation>Kite modu: %1</translation>
     </message>
@@ -16707,7 +17103,7 @@ What should happen to %1?</source>
 <context>
     <name>QmlShell</name>
     <message>
-        <location filename="../launcher/qml/QmlShell.cpp" line="+393"/>
+        <location filename="../launcher/qml/QmlShell.cpp" line="+395"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>
@@ -16717,7 +17113,7 @@ What should happen to %1?</source>
         <translation>%1 · Kite Performans</translation>
     </message>
     <message>
-        <location line="+170"/>
+        <location line="+299"/>
         <source>Choose an account</source>
         <translation>Bir hesap seç</translation>
     </message>
@@ -17956,39 +18352,23 @@ Currently installed version: %1</source>
 <context>
     <name>SettingsFriendsSection</name>
     <message>
-        <location filename="../launcher/qml/Components/SettingsFriendsSection.qml" line="+24"/>
-        <location line="+58"/>
+        <location filename="../launcher/qml/Components/SettingsFriendsSection.qml" line="+39"/>
+        <location line="+98"/>
         <source>Friends</source>
         <translation>Arkadaşlar</translation>
     </message>
     <message>
-        <location line="-57"/>
-        <source>See which server your friends are playing on. There is no chat. While friends are off, Kite sends nothing.</source>
-        <translation>Arkadaşlarının hangi sunucuda oynadığını gör. Sohbet yok. Arkadaşlar kapalıyken Kite hiçbir şey göndermez.</translation>
+        <location line="-97"/>
+        <source>See which server your friends are on, and join them when they let you. While Friends is off, Kite sends nothing.</source>
+        <translation>Arkadaşlarının hangi sunucuda olduğunu gör, izin verirlerse yanlarına katıl. Arkadaşlık kapalıyken Kite hiçbir şey göndermez.</translation>
     </message>
     <message>
-        <location line="+19"/>
-        <location line="+4"/>
-        <source>Use friends</source>
-        <translation>Arkadaşları kullan</translation>
-    </message>
-    <message>
-        <location line="-3"/>
+        <location line="+56"/>
         <source>Shows your friends and lets them see you.</source>
         <translation>Arkadaşlarını gösterir ve onların seni görmesini sağlar.</translation>
     </message>
     <message>
-        <location line="+16"/>
-        <source>Signed in as</source>
-        <translation>Giriş yapılan ad</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Your friends find you by this Minecraft name.</source>
-        <translation>Arkadaşların seni bu Minecraft adıyla bulur.</translation>
-    </message>
-    <message>
-        <location line="+2"/>
+        <location line="+21"/>
         <source>Not signed in</source>
         <translation>Giriş yapılmadı</translation>
     </message>
@@ -17998,17 +18378,7 @@ Currently installed version: %1</source>
         <translation>Gizlilik</translation>
     </message>
     <message>
-        <location line="+4"/>
-        <source>Who can see you</source>
-        <translation>Seni kimler görebilir</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Friends see when you are online. Everyone also lets any Kite user find you by name. Invisible shows you as offline.</source>
-        <translation>Arkadaşların çevrimiçi olduğunu görür. Herkes seçeneğinde her Kite kullanıcısı seni adınla bulabilir. Görünmez seçeneğinde çevrimdışı görünürsün.</translation>
-    </message>
-    <message>
-        <location line="+3"/>
+        <location line="+10"/>
         <source>Everyone</source>
         <translation>Herkes</translation>
     </message>
@@ -18018,37 +18388,110 @@ Currently installed version: %1</source>
         <translation>Görünmez</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+9"/>
         <source>Hide which server I am on</source>
         <translation>Hangi sunucuda olduğumu gizle</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Friends see that you are playing, but not where.</source>
-        <translation>Arkadaşların oynadığını görür ama nerede olduğunu görmez.</translation>
+        <location line="+9"/>
+        <location line="+13"/>
+        <source>Not while you are invisible.</source>
+        <translation>Görünmezken kullanılamaz.</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="-20"/>
+        <source>Friends see that you are playing, but not where.</source>
+        <translation>Oynadığını arkadaşların görür ama nerede oynadığını görmez.</translation>
+    </message>
+    <message>
+        <location line="-55"/>
+        <location line="+4"/>
+        <source>Use Friends</source>
+        <translation>Arkadaşlık özelliğini kullan</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Your Minecraft name</source>
+        <translation>Minecraft adın</translation>
+    </message>
+    <message>
+        <location line="+19"/>
+        <source>These show once Kite&apos;s friends server has answered.</source>
+        <translation>Bunlar, Kite&apos;ın arkadaşlık sunucusu yanıt verince görünür.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Who can see me</source>
+        <translation>Beni kimler görebilir</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Friends see when you are online. With Everyone, any Kite user who knows your name sees it too. With Invisible, you appear offline.</source>
+        <translation>Çevrimiçi olduğunu arkadaşların görür. Herkes seçeneğinde adını bilen her Kite kullanıcısı da görebilir. Görünmez seçeneğinde çevrimdışı görünürsün.</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Invisible hides it too.</source>
+        <translation>Görünmezken bu da gizli.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
         <source>Show servers I join by IP address</source>
         <translation>IP adresiyle girdiğim sunucuları göster</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+3"/>
         <source>Servers on your home network, or reached by a raw IP address, stay hidden unless this is on.</source>
-        <translation>Ev ağındaki ya da ham IP adresiyle girilen sunucular, bu açık olmadıkça gizli kalır.</translation>
+        <translation>Ev ağındaki ya da doğrudan IP adresiyle girilen sunucular, bu açık değilse gizli kalır.</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+21"/>
+        <source>Delete my Friends data</source>
+        <translation>Arkadaşlık verilerimi sil</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Delete your Friends data?</source>
+        <translation>Arkadaşlık verilerin silinsin mi?</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Your friends, requests, blocks and settings are deleted from Kite&apos;s server. Friends stays off. This cannot be undone.</source>
+        <translation>Arkadaşların, isteklerin, engellerin ve ayarların Kite sunucusundan silinir. Arkadaşlık kapalı kalır. Bu geri alınamaz.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>This is the data of %1. Your other Minecraft accounts keep theirs.</source>
+        <translation>Bu, %1 hesabının verisi. Diğer Minecraft hesaplarının verisi kalır.</translation>
+    </message>
+    <message>
+        <location line="-87"/>
+        <source>Friends add you by this Minecraft name.</source>
+        <translation>Arkadaşlar seni bu Minecraft adıyla ekler.</translation>
+    </message>
+    <message>
+        <location line="+57"/>
+        <source>Let friends join the server I am on</source>
+        <translation>Arkadaşlarımın bulunduğum sunucuya katılmasına izin ver</translation>
+    </message>
+    <message>
+        <location line="-11"/>
+        <location line="+13"/>
+        <source>Not while you hide which server you are on.</source>
+        <translation>Hangi sunucuda olduğunu gizlerken kullanılamaz.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>A friend gets a Join button next to your name when your server is shown.</source>
+        <translation>Sunucun görünürken arkadaşların, adının yanında bir Katıl düğmesi görür.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
         <source>Your data</source>
         <translation>Verilerin</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>Delete my friends data</source>
-        <translation>Arkadaşlık verilerimi sil</translation>
-    </message>
-    <message>
-        <location line="+1"/>
+        <location line="+3"/>
         <source>Removes your friends, requests, blocks and settings from Kite&apos;s server.</source>
         <translation>Arkadaşlarını, isteklerini, engellerini ve ayarlarını Kite&apos;ın sunucusundan siler.</translation>
     </message>
@@ -18058,19 +18501,14 @@ Currently installed version: %1</source>
         <translation>Sil…</translation>
     </message>
     <message>
-        <location line="+14"/>
-        <source>Delete your friends data?</source>
-        <translation>Arkadaşlık verilerin silinsin mi?</translation>
-    </message>
-    <message>
-        <location line="+1"/>
+        <location line="+10"/>
         <source>Delete</source>
         <translation>Sil</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Your friends, requests, blocks and settings are deleted from Kite&apos;s server, and friends are turned off. This cannot be undone.</source>
-        <translation>Arkadaşların, isteklerin, engellerin ve ayarların Kite&apos;ın sunucusundan silinir ve arkadaşlar kapatılır. Bu geri alınamaz.</translation>
+        <location line="+4"/>
+        <source>Your friends, requests, blocks and settings are deleted from Kite&apos;s server, and Friends is turned off. This cannot be undone.</source>
+        <translation>Arkadaşların, isteklerin, engellerin ve ayarların Kite&apos;ın sunucusundan silinir ve arkadaşlık kapatılır. Bu geri alınamaz.</translation>
     </message>
 </context>
 <context>
@@ -18447,7 +18885,7 @@ Currently installed version: %1</source>
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../launcher/qml/Components/SettingsPage.qml" line="+56"/>
+        <location filename="../launcher/qml/Components/SettingsPage.qml" line="+59"/>
         <source>General</source>
         <translation>Genel</translation>
     </message>
@@ -19438,12 +19876,12 @@ Are you sure?</source>
 <context>
     <name>TabStrip</name>
     <message>
-        <location filename="../launcher/qml/Components/TabStrip.qml" line="+113"/>
+        <location filename="../launcher/qml/Components/TabStrip.qml" line="+116"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+118"/>
+        <location line="+134"/>
         <source>%1, more tabs</source>
         <translation>%1, diğer sekmeler</translation>
     </message>
