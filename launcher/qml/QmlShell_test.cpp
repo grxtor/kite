@@ -35,6 +35,36 @@ class QmlShellTest : public QObject
 	Q_OBJECT
 
   private slots:
+	void joinMatchesOnlyTheExactVersionMostRecentFirst()
+	{
+		const QList<JoinChoice> choices = {
+			{ "1.21.4", 100, "Old" },
+			{ "1.21.1", 500, "Other version" },
+			{ "1.21.4", 900, "New" },
+			{ "1.21.4", 100, "A tie" },
+			{ "", 0, "Unread" },
+		};
+		// Recent first; a tie by name.
+		QCOMPARE(joinMatches(choices, "1.21.4"), (QList<int>{ 2, 3, 0 }));
+		QVERIFY(joinMatches(choices, "1.8.9").isEmpty());
+		QVERIFY(joinMatches(choices, QString()).isEmpty());
+	}
+
+	void joinOthersPutTheSameReleaseLineFirst()
+	{
+		const QList<JoinChoice> choices = {
+			{ "1.19.2", 900, "Newest, far away" },
+			{ "1.21.1", 100, "Same line, old" },
+			{ "1.21.4", 500, "Exact" },
+			{ "1.21.8", 300, "Same line, newer" },
+			{ "", 800, "Unread" },
+		};
+		// Not the exact version, nor an instance with no known version;
+		// 1.21.x before 1.19, each most recent first.
+		QCOMPARE(joinOthers(choices, "1.21.4"), (QList<int>{ 3, 1, 0 }));
+		QVERIFY(joinOthers(choices, QString()).isEmpty());
+	}
+
 	void leavesAnAlreadyCleanNameUnchanged()
 	{
 		QCOMPARE(sanitizedInstanceName(QStringLiteral("Vanilla 1.20.1")),

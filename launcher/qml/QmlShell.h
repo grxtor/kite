@@ -76,6 +76,24 @@ class QEvent;
  * composeSuggestedInstanceName() is. */
 QString sanitizedInstanceName(const QString& name);
 
+/* What Friends' Join knows of an instance when it picks the ones that can
+ * follow a friend into a server. Free-standing, like the helpers above, so
+ * the order can be tested without a LauncherContext. */
+struct JoinChoice
+{
+	QString version;
+	qint64 lastLaunch = 0;
+	QString name;
+};
+/* The indexes into @p choices of those on exactly @p version, the most
+ * recently played first, then by name in the user's language. Empty for an
+ * empty version. */
+QList<int> joinMatches(const QList<JoinChoice>& choices, const QString& version);
+/* The indexes of the others (a known version that is not @p version): those
+ * on its release line (1.21.x for 1.21.4) first, each group ordered as
+ * above. */
+QList<int> joinOthers(const QList<JoinChoice>& choices, const QString& version);
+
 /* The onboarding rules Application::createSetupWizard() used to gate the
  * widget SetupWizard's pages (LanguageWizardPage/JavaWizardPage) -- now
  * used by QmlShell::recomputeSetupSteps() instead, since the QML shell runs
@@ -164,8 +182,9 @@ class QmlShell : public QObject
 	/// Recommended mods and instance presets (see modplatform/BundleCatalog.h).
 	Q_PROPERTY(QObject* bundles READ bundles CONSTANT)
 	/// Who is online and where, from Kite's friends server (see
-	/// friends/FriendsController.h). Off, and silent, until the user turns
-	/// it on.
+	/// friends/FriendsController.h). On by default; contacts nothing once
+	/// the user turns it off in Settings. Null in a build without a friends
+	/// server.
 	Q_PROPERTY(QObject* friends READ friends CONSTANT)
 	/* Distinct groups currently in use, for a "move to group" picker's
 	 * suggestions -- the same list InstanceFilterModel derives for the
@@ -375,7 +394,9 @@ class QmlShell : public QObject
 	QObject* catPacks() const;
 	/// Made on first use, like catPacks().
 	QObject* bundles() const;
-	/// Made on first use; contacts nothing unless FriendsEnabled is set.
+	/// Made on first use; contacts nothing while FriendsEnabled is off (it
+	/// is on unless the user turned it off). Null where the build has no
+	/// friends server (FriendsController::available()).
 	QObject* friends() const;
 
 	/* Everything below just emits the matching *Requested() signal: QmlShell
@@ -460,8 +481,21 @@ class QmlShell : public QObject
 	Q_INVOKABLE void openInstanceFolder(const QString& id);
 	/* Launches instance @p id straight into server @p address (host[:port]),
 	 * the QML-facing replacement for ServersPage's "Join" action
-	 * (ServersPage::on_actionJoin_triggered()). */
-	Q_INVOKABLE void joinServer(const QString& id, const QString& address);
+	 * (ServersPage::on_actionJoin_triggered()). Returns whether the instance
+	 * can start: a running or broken one only gets its Log or edit page
+	 * (Application::launch()), and nothing joins. */
+	Q_INVOKABLE bool joinServer(const QString& id, const QString& address);
+	/* The Minecraft instances whose game version is exactly @p mcVersion
+	 * (their net.minecraft component), the most recently played first:
+	 * [{id, name, iconKey, version, loader, lastLaunch, running,
+	 * canLaunch}]. Friends' Join uses it to pick which instance enters a
+	 * friend's server. Empty for an empty version. */
+	Q_INVOKABLE QVariantList instancesForVersion(const QString& mcVersion) const;
+	/* The other Minecraft instances, same maps: those on the same release
+	 * line as @p mcVersion (1.21.x for 1.21.4) first, then the rest, each
+	 * most recently played first. What Join offers when no instance is on
+	 * the friend's exact version. */
+	Q_INVOKABLE QVariantList otherInstances(const QString& mcVersion) const;
 	/// Opens a folder in the file manager; relative paths are resolved
 	/// against the data folder, which is the working directory.
 	Q_INVOKABLE void openPath(const QString& path);

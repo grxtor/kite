@@ -23,6 +23,11 @@
 
 #include <QStringList>
 
+QString MinecraftServerTarget::quickPlayHost() const
+{
+	return address.contains(':') ? "[" + address + "]" : address;
+}
+
 // FIXME: the way this is written, it can't ever do any sort of validation and
 // can accept total junk
 MinecraftServerTarget MinecraftServerTarget::parse(const QString& fullAddress,

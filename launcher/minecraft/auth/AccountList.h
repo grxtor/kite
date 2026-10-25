@@ -117,6 +117,12 @@ class AccountList : public QAbstractListModel
 	// queuing a refresh will let it go to the back of the queue (unless it's
 	// somewhere inside the queue already)
 	void queueRefresh(QString accountId);
+	// whether the account's refresh still waits in the queue; the list is
+	// idle (isActive()) between two refreshes while it does
+	bool isRefreshQueued(const QString& accountId) const
+	{
+		return m_refreshQueue.contains(accountId);
+	}
 
 	/*!
 	 * Sets the path to load/save the list file from/to.

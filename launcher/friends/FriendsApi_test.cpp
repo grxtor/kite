@@ -42,17 +42,19 @@ namespace
 		"user": { "uuid": "069a79f4-44e9-4726-a5be-fca90e38aaf5", "name": "Notch" } })";
 	const QByteArray kMe = R"({
 		"uuid": "069a79f4-44e9-4726-a5be-fca90e38aaf5", "name": "Notch",
-		"settings": { "visibility": "everyone", "hideServer": true, "shareIpServers": false } })";
+		"settings": { "visibility": "everyone", "hideServer": true, "shareIpServers": false,
+					  "allowJoin": false } })";
 	const QByteArray kFriends = R"({
 		"friends": [
 			{ "uuid": "853c80ef-3c37-49fd-aa49-938b674adae6", "name": "jeb_",
 			  "since": "2026-10-20T12:00:00.000Z",
 			  "status": { "state": "playing", "instance": "Hypixel", "version": "1.8.9",
-						  "world": { "type": "server", "host": "mc.hypixel.net", "port": 25565 } } },
+						  "world": { "type": "server", "host": "mc.hypixel.net", "port": 25565 },
+						  "joinable": true } },
 			{ "uuid": "11111111-1111-4111-8111-111111111111", "name": "Solo",
 			  "since": "2026-10-21T12:00:00.000Z",
 			  "status": { "state": "playing", "instance": "Survival", "version": "1.21.4",
-						  "world": { "type": "singleplayer" } } },
+						  "world": { "type": "singleplayer" }, "joinable": true } },
 			{ "uuid": "22222222-2222-4222-8222-222222222222", "name": "Menus",
 			  "since": "2026-10-21T12:00:00.000Z",
 			  "status": { "state": "playing", "instance": "Survival", "version": "1.21.4",
@@ -60,7 +62,7 @@ namespace
 			{ "uuid": "33333333-3333-4333-8333-333333333333", "name": "Home",
 			  "since": "2026-10-21T12:00:00.000Z",
 			  "status": { "state": "playing", "instance": "Survival", "version": "1.21.4",
-						  "world": { "type": "server" } } },
+						  "world": { "type": "server" }, "joinable": true } },
 			{ "uuid": "44444444-4444-4444-8444-444444444444", "name": "Idle",
 			  "since": "2026-10-21T12:00:00.000Z", "status": { "state": "online" } },
 			{ "uuid": "55555555-5555-4555-8555-555555555555", "name": "Away",
@@ -146,6 +148,22 @@ class FriendsApiTest : public QObject
 			QVERIFY2(normalizeHost(bad).isEmpty(), bad);
 		}
 		QVERIFY(normalizeHost(QString(300, 'a') + ".com").isEmpty());
+	}
+
+	void anIpv6ZoneIdIsNotACleanHost()
+	{
+		// QHostAddress takes anything after the % for a zone id; the host
+		// goes to the game as an argument, so none of it may pass -- "${...}"
+		// would be filled in with the access token, a space would start
+		// another option.
+		for (const char* bad :
+			 {"fe80::1%en0", "fe80::1%${auth_access_token}",
+			  "fe80::1%a ${auth_access_token}", "[fe80::1%en0]",
+			  "fe80::1%x --server evil.example", "::1 --demo", "2001:db8::g"}) {
+			QVERIFY2(normalizeHost(bad).isEmpty(), bad);
+		}
+		QCOMPARE(normalizeHost("2001:DB8::1"), QString("2001:db8::1"));
+		QCOMPARE(normalizeHost("::ffff:1.2.3.4"), QString("::ffff:1.2.3.4"));
 	}
 
 	// ---- Bodies
@@ -239,6 +257,20 @@ class FriendsApiTest : public QObject
 				 QByteArray("{}"));
 	}
 
+	void settingsBodyCarriesAllowJoin()
+	{
+		const auto off = jsonOf(settingsBody({{"allowJoin", false}}));
+		QCOMPARE(off.keys().size(), 1);
+		QVERIFY(off.contains("allowJoin"));
+		QCOMPARE(off.value("allowJoin").toBool(), false);
+		QCOMPARE(jsonOf(settingsBody({{"allowJoin", true}}))
+					 .value("allowJoin")
+					 .toBool(),
+				 true);
+		// Not a bool: left out, like every other key.
+		QCOMPARE(settingsBody({{"allowJoin", "no"}}), QByteArray("{}"));
+	}
+
 	// ---- Answers
 
 	void parsesAChallenge()
@@ -269,12 +301,57 @@ class FriendsApiTest : public QObject
 		QCOMPARE(me->visibility, QString("everyone"));
 		QVERIFY(me->hideServer);
 		QVERIFY(!me->shareIpServers);
+		QVERIFY(!me->allowJoin);
 		const auto settings = parseSettings(
 			R"({"visibility":"invisible","hideServer":false,"shareIpServers":true})");
 		QVERIFY(settings);
 		QCOMPARE(settings->visibility, QString("invisible"));
 		QVERIFY(settings->shareIpServers);
+		// A server that does not send allowJoin has joining on.
+		QVERIFY(settings->allowJoin);
 		QVERIFY(!parseSettings("{}"));
+	}
+
+	void parsesJoinable()
+	{
+		const auto yes = parseStatus(jsonOf(R"({"state": "playing", "version": "1.21.4",
+			"world": {"type": "server", "host": "mc.hypixel.net"}, "joinable": true})"));
+		QVERIFY(yes.joinable);
+		QVERIFY(yes.joinableSaid);
+		// Absent means false, and that the server did not say.
+		const auto absent = parseStatus(jsonOf(R"({"state": "playing", "version": "1.21.4",
+			"world": {"type": "server", "host": "mc.hypixel.net"}})"));
+		QVERIFY(!absent.joinable);
+		QVERIFY(!absent.joinableSaid);
+		// Said no is said.
+		const auto no = parseStatus(jsonOf(R"({"state": "playing", "version": "1.21.4",
+			"world": {"type": "server", "host": "mc.hypixel.net"}, "joinable": false})"));
+		QVERIFY(!no.joinable);
+		QVERIFY(no.joinableSaid);
+		// Only someone playing can be joined.
+		QVERIFY(!parseStatus(jsonOf(R"({"state": "online", "joinable": true})"))
+					 .joinable);
+		QVERIFY(!parseStatus(jsonOf(R"({"state": "offline", "lastSeenAt": null,
+			"joinable": true})")).joinable);
+	}
+
+	void aStatusReplyCarriesJoinable()
+	{
+		// What the server answers to your own report is what friends see of
+		// you, so it carries joinable like a friend's status does.
+		const auto reply = parseStatusReply(R"({
+			"expiresAt": "2026-10-24T18:03:00.000Z",
+			"status": { "state": "playing", "version": "1.21.4",
+						"world": { "type": "server", "host": "mc.hypixel.net" },
+						"joinable": true } })");
+		QVERIFY(reply);
+		QVERIFY(reply->joinable);
+		const auto closed = parseStatusReply(R"({
+			"expiresAt": "x",
+			"status": { "state": "playing", "version": "1.21.4",
+						"world": { "type": "server", "host": "mc.hypixel.net" } } })");
+		QVERIFY(closed);
+		QVERIFY(!closed->joinable);
 	}
 
 	void parsesAStatusReply()
@@ -356,8 +433,8 @@ class FriendsApiTest : public QObject
 		const auto snapshot = parseFriends(kFriends);
 		QVERIFY(snapshot);
 		const QStringList expected = {
-			"On mc.hypixel.net", "Single-player", "Playing", "On a server",
-			"Online",			 "Last seen 2 h ago", "Offline"};
+			"On mc.hypixel.net", "Singleplayer", "Playing", "On a server",
+			"In Kite",			 "Last seen 2 h ago", "Offline"};
 		for (int i = 0; i < expected.size(); ++i) {
 			QCOMPARE(FriendsDisplay::statusText(snapshot->friends.at(i).status, now),
 					 expected.at(i));
@@ -382,8 +459,19 @@ class FriendsApiTest : public QObject
 		QCOMPARE(playing.value("worldType").toString(), QString("server"));
 		QCOMPARE(playing.value("host").toString(), QString("mc.hypixel.net"));
 		QCOMPARE(playing.value("port").toInt(), 25565);
+		QCOMPARE(playing.value("joinable").toBool(), true);
 		QCOMPARE(playing.value("statusText").toString(),
 				 QString("On mc.hypixel.net"));
+
+		// Joinable needs a server with a visible host, whatever the server
+		// said: singleplayer and a hidden host are never joined.
+		const auto solo = FriendsDisplay::friendMap(snapshot->friends.at(1), now);
+		QCOMPARE(solo.value("joinable").toBool(), false);
+		const auto hidden = FriendsDisplay::friendMap(snapshot->friends.at(3), now);
+		QCOMPARE(hidden.value("worldType").toString(), QString("server"));
+		QCOMPARE(hidden.value("joinable").toBool(), false);
+		const auto idle = FriendsDisplay::friendMap(snapshot->friends.at(4), now);
+		QCOMPARE(idle.value("joinable").toBool(), false);
 
 		const auto away = FriendsDisplay::friendMap(snapshot->friends.at(5), now);
 		QCOMPARE(away.value("state").toString(), QString("offline"));
@@ -393,18 +481,300 @@ class FriendsApiTest : public QObject
 		QCOMPARE(away.value("instance").toString(), QString());
 	}
 
-	void relativeTimes()
+	void joinNeedsACleanHost()
 	{
 		const auto now = at("2026-10-24T18:00:00.000Z");
-		auto ago = [&](qint64 seconds) {
-			return FriendsDisplay::relativeTime(now.addSecs(-seconds), now);
+		Friend one;
+		one.uuid = "853c80ef-3c37-49fd-aa49-938b674adae6";
+		one.name = "jeb_";
+		one.status.state = Status::State::Playing;
+		one.status.world.type = World::Type::Server;
+		one.status.joinable = true;
+		one.status.joinableSaid = true;
+
+		one.status.world.host = "mc.hypixel.net";
+		QCOMPARE(FriendsDisplay::friendMap(one, now).value("joinable").toBool(),
+				 true);
+		// Not something the server would have let through.
+		for (const char* host :
+			 {"evil.example --demo", "MC.Hypixel.NET", "mc.hypixel.net.",
+			  "2130706433", ""}) {
+			one.status.world.host = host;
+			QVERIFY2(!FriendsDisplay::friendMap(one, now)
+						  .value("joinable")
+						  .toBool(),
+					 host);
+		}
+		// And not joinable at all when the friend says so -- which a row
+		// says too, instead of just having no Join.
+		one.status.world.host = "mc.hypixel.net";
+		one.status.joinable = false;
+		const auto off = FriendsDisplay::friendMap(one, now);
+		QCOMPARE(off.value("joinable").toBool(), false);
+		QCOMPARE(off.value("joinOff").toBool(), true);
+		one.status.joinable = true;
+		QCOMPARE(FriendsDisplay::friendMap(one, now).value("joinOff").toBool(),
+				 false);
+	}
+
+	void aServerThatSaysNothingIsNotBlamedOnTheFriend()
+	{
+		const auto now = at("2026-10-24T18:00:00.000Z");
+		// What an older server sends: a visible host, no joinable.
+		const auto status = parseStatus(jsonOf(R"({"state": "playing",
+			"version": "1.21.4",
+			"world": {"type": "server", "host": "mc.hypixel.net"}})"));
+		Friend one;
+		one.uuid = "853c80ef-3c37-49fd-aa49-938b674adae6";
+		one.name = "jeb_";
+		one.status = status;
+		const auto map = FriendsDisplay::friendMap(one, now);
+		// No Join, which is the safe side, but not "doesn't let friends
+		// join" either: they never said so.
+		QCOMPARE(map.value("joinable").toBool(), false);
+		QCOMPARE(map.value("joinOff").toBool(), false);
+	}
+
+	void joinNeverLeadsToYourOwnMachine()
+	{
+		const auto now = at("2026-10-24T18:00:00.000Z");
+		Friend one;
+		one.uuid = "853c80ef-3c37-49fd-aa49-938b674adae6";
+		one.name = "jeb_";
+		one.status.state = Status::State::Playing;
+		one.status.world.type = World::Type::Server;
+		one.status.joinable = true;
+		auto joinable = [&](const char* host) {
+			one.status.world.host = host;
+			return FriendsDisplay::friendMap(one, now).value("joinable").toBool();
 		};
-		QCOMPARE(ago(10), QString("Just now"));
-		QCOMPARE(ago(5 * 60), QString("5 min ago"));
-		QCOMPARE(ago(3 * 3600), QString("3 h ago"));
-		QCOMPARE(ago(30 * 3600), QString("Yesterday"));
-		QCOMPARE(ago(12 * 86400), QString("12 days ago"));
-		QVERIFY(!ago(90 * 86400).contains("ago"));
+		// A friend's localhost is not yours.
+		for (const char* host : {"localhost", "mc.localhost", "127.0.0.1",
+								 "127.8.8.8", "::1", "0.0.0.0", "::"}) {
+			QVERIFY2(!joinable(host), host);
+		}
+		// A server on a home network or an IPv6 address can be a friend's
+		// (the same house, a VPN) and stays offered.
+		for (const char* host : {"192.168.1.10", "10.0.0.5", "2001:db8::1",
+								 "mc.hypixel.net", "notlocalhost.com"}) {
+			QVERIFY2(joinable(host), host);
+		}
+		QVERIFY(isLoopbackHost("localhost"));
+		QVERIFY(!isLoopbackHost("localhost.example.com"));
+		QVERIFY(!isLoopbackHost("8.8.8.8"));
+	}
+
+	void whatYouShowIsWhatYouAreDoing()
+	{
+		Presence idle;
+		Presence onServer;
+		onServer.playing = true;
+		onServer.world.type = World::Type::Server;
+		onServer.world.host = "mc.hypixel.net";
+		auto status = [](const Presence& presence, const Settings& settings) {
+			return FriendsDisplay::selfStatusMap(
+				presence, FriendsDisplay::settingsMap(settings));
+		};
+
+		QCOMPARE(status(idle, Settings()).value("playing").toBool(), false);
+		const auto shown = status(onServer, Settings());
+		QCOMPARE(shown.value("host").toString(), QString("mc.hypixel.net"));
+		QCOMPARE(shown.value("joinable").toBool(), true);
+		QCOMPARE(shown.value("serverHidden").toBool(), false);
+
+		Settings noJoin;
+		noJoin.allowJoin = false;
+		QCOMPARE(status(onServer, noJoin).value("joinable").toBool(), false);
+
+		Settings hide;
+		hide.hideServer = true;
+		const auto hidden = status(onServer, hide);
+		QCOMPARE(hidden.value("host").toString(), QString());
+		QCOMPARE(hidden.value("serverHidden").toBool(), true);
+		QCOMPARE(hidden.value("joinable").toBool(), false);
+		QCOMPARE(hidden.value("playing").toBool(), true);
+
+		// A raw IP stays with the server unless it is allowed out.
+		onServer.world.host = "203.0.113.7";
+		QCOMPARE(status(onServer, Settings()).value("serverHidden").toBool(),
+				 true);
+		Settings share;
+		share.shareIpServers = true;
+		QCOMPARE(status(onServer, share).value("host").toString(),
+				 QString("203.0.113.7"));
+
+		Presence solo;
+		solo.playing = true;
+		solo.world.type = World::Type::Singleplayer;
+		const auto alone = status(solo, Settings());
+		QCOMPARE(alone.value("worldType").toString(), QString("singleplayer"));
+		QCOMPARE(alone.value("joinable").toBool(), false);
+	}
+
+	void whatTheServerShowsIsWhatYouSee()
+	{
+		Presence local;
+		local.playing = true;
+		local.world.type = World::Type::Server;
+		local.world.host = "mc.lan";
+		// The server keeps a name that only works on a home network from
+		// friends, which the launcher's own reading of the settings cannot
+		// tell: the answer is the truth.
+		const auto kept = parseStatus(jsonOf(R"({"state": "playing",
+			"version": "1.21.4", "world": {"type": "server"}})"));
+		const auto hidden = FriendsDisplay::selfStatusFromView(local, kept);
+		QCOMPARE(hidden.value("playing").toBool(), true);
+		QCOMPARE(hidden.value("host").toString(), QString());
+		QCOMPARE(hidden.value("serverHidden").toBool(), true);
+		QCOMPARE(hidden.value("joinable").toBool(), false);
+
+		Presence onServer;
+		onServer.playing = true;
+		onServer.world.type = World::Type::Server;
+		onServer.world.host = "mc.hypixel.net";
+		const auto shown = parseStatus(jsonOf(R"({"state": "playing",
+			"version": "1.21.4", "joinable": true,
+			"world": {"type": "server", "host": "mc.hypixel.net"}})"));
+		const auto open = FriendsDisplay::selfStatusFromView(onServer, shown);
+		QCOMPARE(open.value("host").toString(), QString("mc.hypixel.net"));
+		QCOMPARE(open.value("serverHidden").toBool(), false);
+		QCOMPARE(open.value("joinable").toBool(), true);
+		// The server did not say joinable (an older one, or joining off).
+		const auto noJoin = parseStatus(jsonOf(R"({"state": "playing",
+			"version": "1.21.4",
+			"world": {"type": "server", "host": "mc.hypixel.net"}})"));
+		QCOMPARE(FriendsDisplay::selfStatusFromView(onServer, noJoin)
+					 .value("joinable").toBool(),
+				 false);
+
+		// Invisible: the server shows you as offline, whatever you play.
+		const auto offline = parseStatus(jsonOf(
+			R"({"state": "offline", "lastSeenAt": null})"));
+		const auto invisible =
+			FriendsDisplay::selfStatusFromView(onServer, offline);
+		QCOMPARE(invisible.value("playing").toBool(), false);
+		QCOMPARE(invisible.value("joinable").toBool(), false);
+		QCOMPARE(invisible.value("serverHidden").toBool(), false);
+
+		Presence solo;
+		solo.playing = true;
+		solo.world.type = World::Type::Singleplayer;
+		const auto alone = parseStatus(jsonOf(R"({"state": "playing",
+			"version": "1.21.4", "world": {"type": "singleplayer"}})"));
+		const auto soloView = FriendsDisplay::selfStatusFromView(solo, alone);
+		QCOMPARE(soloView.value("worldType").toString(), QString("singleplayer"));
+		QCOMPARE(soloView.value("serverHidden").toBool(), false);
+	}
+
+	void aTokenAboutToExpireIsRenewedOnceAndAwaited()
+	{
+		const auto now = at("2026-10-24T18:00:00.000Z");
+		const auto stale = at("2026-10-24T18:02:00.000Z");
+		const auto fresh = at("2026-10-24T19:00:00.000Z");
+		auto step = [&](const QDateTime& expiry, bool account, bool queued,
+						bool asked, bool timedOut) {
+			return renewalStep(expiry, now, account, queued, asked, timedOut);
+		};
+
+		// A fresh token, or one with no known end, needs nothing.
+		QCOMPARE(step(fresh, true, true, false, false), RenewalStep::Proceed);
+		QCOMPARE(step(QDateTime(), false, false, false, false),
+				 RenewalStep::Proceed);
+		// About to expire: the first time it is asked for, then awaited.
+		QCOMPARE(step(stale, false, false, false, false),
+				 RenewalStep::AskForRenewal);
+		// Its own refresh is under way.
+		QCOMPARE(step(stale, true, true, true, false), RenewalStep::Wait);
+		// Asked, and still in the queue (behind another account's refresh, or
+		// in the pause the list makes after it, when nothing runs): wait for
+		// its turn instead of signing in with the old token.
+		QCOMPARE(step(stale, false, true, true, false), RenewalStep::Wait);
+		// Asked, and out of the queue without running: the refresh ran (or
+		// could not be started), and this is what it left.
+		QCOMPARE(step(stale, false, false, true, false), RenewalStep::Proceed);
+		// Waited long enough.
+		QCOMPARE(step(stale, true, true, true, true), RenewalStep::Proceed);
+		QCOMPARE(step(stale, false, true, true, true), RenewalStep::Proceed);
+	}
+
+	void onlyANewAccountIsAReasonToSignInAgainAtOnce()
+	{
+		// Nothing failed yet: any change is a reason (signed out, no account).
+		QVERIFY(accountChangeRetriesSignIn(0, "", "a|p|n|t", "", "p"));
+		// A game starting or stopping, another account's refresh: the default
+		// account is what it was, so the schedule stands.
+		QVERIFY(!accountChangeRetriesSignIn(2, "a|p|n|t", "a|p|n|t", "", "p"));
+		// Another account, a renewed token, a new name: worth a try.
+		QVERIFY(accountChangeRetriesSignIn(2, "a|p|n|t", "b|q|m|t", "", "q"));
+		QVERIFY(accountChangeRetriesSignIn(2, "a|p|n|t", "a|p|n|u", "", "p"));
+		// Refused for good: a renewed token does not change that, another
+		// profile does.
+		QVERIFY(!accountChangeRetriesSignIn(4, "a|p|n|t", "a|p|n|u", "p", "p"));
+		QVERIFY(accountChangeRetriesSignIn(4, "a|p|n|t", "b|q|m|t", "p", "q"));
+	}
+
+	void aFailedSignInWaitsLongerEachTime()
+	{
+		QCOMPARE(signInBackoffMs(1), 60 * 1000);
+		QCOMPARE(signInBackoffMs(2), 2 * 60 * 1000);
+		QCOMPARE(signInBackoffMs(3), 5 * 60 * 1000);
+		QCOMPARE(signInBackoffMs(4), 15 * 60 * 1000);
+		// And stays there; no failures yet is the shortest wait, not a crash.
+		QCOMPARE(signInBackoffMs(50), 15 * 60 * 1000);
+		QCOMPARE(signInBackoffMs(0), 60 * 1000);
+	}
+
+	void mojangRefusalsAreNamed()
+	{
+		QCOMPARE(parseMojangError(
+					 R"({"error":"InsufficientPrivilegesException",)"
+					 R"("errorMessage":"Multiplayer is disabled"})"),
+				 MojangError::InsufficientPrivileges);
+		QCOMPARE(parseMojangError(R"({"error":"UserBannedException"})"),
+				 MojangError::UserBanned);
+		QCOMPARE(parseMojangError(R"({"error":"ForbiddenOperationException"})"),
+				 MojangError::Forbidden);
+		// An outage's page or an empty answer names nothing.
+		QCOMPARE(parseMojangError("<html>Bad gateway</html>"), QString());
+		QCOMPARE(parseMojangError(QByteArray()), QString());
+	}
+
+	void lastSeenTexts()
+	{
+		const auto now = at("2026-10-24T18:00:00.000Z");
+		auto seen = [&](qint64 seconds) {
+			return FriendsDisplay::lastSeenText(now.addSecs(-seconds), now);
+		};
+		// A whole sentence each, so nothing stands capitalised mid-line.
+		QCOMPARE(seen(10), QString("Last seen just now"));
+		QCOMPARE(seen(5 * 60), QString("Last seen 5 min ago"));
+		QCOMPARE(seen(3 * 3600), QString("Last seen 3 h ago"));
+		QCOMPARE(seen(30 * 3600), QString("Last seen yesterday"));
+		QCOMPARE(seen(12 * 86400), QString("Last seen 12 days ago"));
+		QVERIFY(seen(90 * 86400).startsWith("Last seen "));
+		QVERIFY(!seen(90 * 86400).contains("ago"));
+	}
+
+	void settingsComeBackAsAsked()
+	{
+		const auto saved = FriendsDisplay::settingsMap(Settings{});
+		// Joining is on by default, so an older server that drops the key
+		// still "saves" a request for on: it is on either way.
+		QVERIFY(FriendsDisplay::settingsSaved(
+			settingsBody({{"allowJoin", true}}), saved));
+		// An older server drops "allowJoin": false and answers without it,
+		// which reads as the default, on.
+		QVERIFY(!FriendsDisplay::settingsSaved(
+			settingsBody({{"allowJoin", false}}), saved));
+		Settings changed;
+		changed.hideServer = true;
+		changed.visibility = "invisible";
+		QVERIFY(FriendsDisplay::settingsSaved(
+			settingsBody({{"hideServer", true}, {"visibility", "invisible"}}),
+			FriendsDisplay::settingsMap(changed)));
+		QVERIFY(!FriendsDisplay::settingsSaved(
+			settingsBody({{"hideServer", true}, {"visibility", "everyone"}}),
+			FriendsDisplay::settingsMap(changed)));
 	}
 
 	void peopleAndSettingsMaps()
@@ -421,6 +791,7 @@ class FriendsApiTest : public QObject
 		QCOMPARE(settings.value("visibility").toString(), QString("friends"));
 		QCOMPARE(settings.value("hideServer").toBool(), false);
 		QCOMPARE(settings.value("shareIpServers").toBool(), false);
+		QCOMPARE(settings.value("allowJoin").toBool(), true);
 	}
 
 	// ---- The stored session

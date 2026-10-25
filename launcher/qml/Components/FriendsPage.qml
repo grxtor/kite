@@ -7,43 +7,63 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The friends list in full, its own page in the rail: add someone by their
- * Minecraft name, then three tabs -- Friends (where each one is; ⋯ to remove
- * or block), Requests (accept, decline, cancel) and Blocked (unblock).
- * Removing and blocking ask first. What the server answered comes back as a
- * toast from Main.qml, off FriendsController.actionFinished. While friends
- * are not connected the list gives way to FriendsPageState.
+ * The friends list in full, its own page in the rail: you (FriendsSelfCard,
+ * with where to add someone by their Minecraft name), then three tabs --
+ * Friends (where each one is, with Join where the friend allows it; ⋯ to
+ * remove or block), Requests (accept, decline, cancel) and Blocked
+ * (unblock). Removing and blocking ask first. What the server answered
+ * comes back as a toast from Main.qml, off FriendsController.actionFinished.
+ * While friends are not connected the list gives way to FriendsPageState,
+ * except for a poll that failed after the lists were read: those stay, with
+ * a bar saying they may be out of date, and nothing that needs the server
+ * (Add, Join, ⋯) works until it answers.
+ *
+ * The column hangs from the page title, as every page's content does, and
+ * stops growing at a readable width.
+ *
+ * The first time friends connect, FriendsNotice tops the page.
  */
 Item {
     id: root
 
     // QmlShell.friends (FriendsController), or null.
     property var controller: null
+    // Your own head ("image://accountface/...", QmlShell.accountFace): the
+    // launcher already has it, so it is not fetched again.
+    property string myFace: ""
+    // Main.qml's FriendJoinFlow, which says what a friend's Join starts.
+    property var joinFlow: null
     // "friends", "requests" or "blocked".
     property string tab: "friends"
     // Whether this is the page on screen. Main.qml binds it to its PageSlot's
     // StackLayout.isCurrentItem (see DiscoverPage.shown).
     property bool shown: false
+    // "Try again" in the bar was pressed and has not been answered.
+    property bool retrying: false
 
     // A path for Main.qml's navigate().
     signal navigateRequested(string target)
+    // Join this friend's server (a friend map); Main.qml picks the instance.
+    signal joinRequested(var friend)
 
-    // "off", "noAccount", "signingIn", "error" or "ready"; as HomeFriends
-    // reads it, the controller's own "off" while it is enabled is only the
-    // moment before it connects.
-    readonly property string phase: !root.controller ? "off"
-        : !root.controller.enabled ? "off"
-        : root.controller.state === "off" ? "signingIn" : root.controller.state
+    // "off", "noAccount", "signingIn", "error" or "ready" (Format.friendsPhase()).
+    readonly property string phase: Format.friendsPhase(root.controller)
     readonly property bool connected: root.phase === "ready"
-    readonly property string typedName: nameField.text.trim()
-    // Minecraft's own rule for a name.
-    readonly property bool nameValid: /^[A-Za-z0-9_]{1,16}$/.test(root.typedName)
-    // Past this the add row and the list stop reading as one block; the
-    // column stops growing here on wide windows, as SettingsScroll's does.
-    readonly property int readableWidth: 760
-    // A request is on its way; the name stays in the field until it is
-    // accepted, so a failed one is not typed again.
-    property bool sending: false
+    // The lists are shown, if not trusted: connected, or failing after they
+    // were read.
+    readonly property bool stale: Format.friendsStale(root.controller)
+    readonly property bool showsLists: root.connected || root.stale
+    // When the lists shown were last read, as a time of day ("" if never).
+    readonly property string updatedAt: Format.friendsUpdatedAt(root.controller)
+    // Something to tab between: with no friends, requests or blocks the page
+    // is only you and the way to add someone.
+    readonly property bool hasAnyone: Format.friendsHasAnyone(root.controller, true)
+    // Past this the list stops reading as one block; the column stops
+    // growing here on wide windows, as SettingsScroll's does.
+    readonly property int readableWidth: 880
+    // Where the content starts: under the top bar's title (TopBar.sideMargin).
+    readonly property int sideMargin: Math.max(Theme.space.xl + Theme.space.xs,
+                                               Math.round((root.width - Theme.layout.maxContentWidth) / 2))
 
     function openTab(id) {
         root.tab = id
@@ -58,14 +78,14 @@ Item {
         root.controller.refresh()
         root.controller.refreshBlocked()
     }
-    function submit() {
-        if (!root.nameValid || !root.controller)
-            return
-        root.sending = true
-        root.controller.sendRequest(root.typedName)
+    // The add field, focused: Home's "Add a friend".
+    function focusAddField() {
+        selfCard.focusField()
     }
-    function confirmAction(remove, uuid, name) {
-        confirm.removing = remove
+    // @p mode: "remove" a friend, "block" a friend, or "blockRequest" (the
+    // person is not a friend: their request is what goes).
+    function confirmAction(mode, uuid, name) {
+        confirm.mode = mode
         confirm.targetUuid = uuid
         confirm.targetName = name
         confirm.open()
@@ -76,123 +96,150 @@ Item {
     onConnectedChanged: if (root.shown) root.load()
     Component.onCompleted: if (root.shown) root.load()
 
+    Connections {
+        target: root.controller
+        function onActionFinished(action) {
+            if (action === "refresh")
+                root.retrying = false
+        }
+        // A refresh dropped because friends was turned off meanwhile is
+        // never answered: the flag is for as long as it is failing.
+        function onChanged() {
+            if (root.controller.state !== "error")
+                root.retrying = false
+        }
+    }
+
     ColumnLayout {
         id: content
-        visible: root.connected
+        visible: root.showsLists
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.left: parent.left
         // The page area gives no padding of its own.
+        anchors.leftMargin: root.sideMargin
         anchors.topMargin: Theme.space.xl
         anchors.bottomMargin: Theme.space.lg
-        width: Math.min(root.width - (Theme.space.xl + Theme.space.xs) * 2, root.readableWidth)
-        spacing: Theme.space.md
+        width: Math.min(root.width - root.sideMargin * 2, root.readableWidth)
+        spacing: Theme.space.lg
 
-        RowLayout {
+        // The last lists, which may be old. The retry is the button, so the
+        // words do not also say "try again"; what the server said is the tip.
+        NoticeBar {
+            id: staleBar
             Layout.fillWidth: true
-            spacing: Theme.space.sm
+            visible: root.stale
+            text: root.updatedAt.length > 0
+                  ? qsTr("Can't update friends right now. Showing them as of %1.").arg(root.updatedAt)
+                  : qsTr("Can't update friends right now.")
+            actionText: root.retrying ? qsTr("Trying…") : qsTr("Try again")
+            onActionTriggered: {
+                if (root.retrying)
+                    return
+                root.retrying = true
+                root.controller.refresh()
+            }
 
-            TextField {
-                id: nameField
-                Layout.fillWidth: true
-                placeholderText: qsTr("Minecraft name")
-                maximumLength: 16
-                selectByMouse: true
-                Accessible.name: qsTr("Minecraft name of the friend to add")
-                onAccepted: root.submit()
-            }
-            Button {
-                highlighted: true
-                enabled: root.nameValid && !root.sending
-                text: qsTr("Add")
-                icon.source: Icons.url("plus")
-                onClicked: root.submit()
-            }
+            HoverHandler { id: staleHover }
+            ToolTip.visible: staleHover.hovered && !!root.controller && root.controller.error.length > 0
+            ToolTip.delay: 500
+            ToolTip.text: root.controller ? root.controller.error : ""
         }
 
-        Text {
+        FriendsNotice {
             Layout.fillWidth: true
-            visible: root.typedName.length > 0 && !root.nameValid
-            text: qsTr("A Minecraft name has 1 to 16 letters, numbers or underscores.")
-            wrapMode: Text.Wrap
-            color: Theme.palette.danger
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
+            controller: root.controller
+            onSettingsRequested: root.navigateRequested("settings/friends")
+        }
+
+        FriendsSelfCard {
+            id: selfCard
+            Layout.fillWidth: true
+            controller: root.controller
+            face: root.myFace
+            online: root.connected
         }
 
         TabStrip {
             Layout.fillWidth: true
+            visible: root.hasAnyone
             current: root.tab
             onActivated: (id) => root.tab = id
             tabs: [
                 { id: "friends", label: qsTr("Friends"), count: root.controller ? root.controller.friends.length : 0 },
-                { id: "requests", label: qsTr("Requests"), count: root.controller ? root.controller.incomingCount : 0 },
+                // The number the rail shows while some wait for an answer (on
+                // an accent pill, as there); otherwise the ones you sent, so
+                // the tab never says 0 over rows.
+                { id: "requests", label: qsTr("Requests"),
+                  count: root.controller ? (root.controller.incomingCount > 0 ? root.controller.incomingCount : root.controller.outgoing.length) : 0,
+                  attention: !!root.controller && root.controller.incomingCount > 0 },
                 { id: "blocked", label: qsTr("Blocked"), count: root.controller ? root.controller.blocked.length : 0 }
             ]
         }
 
-        Rectangle {
+        StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            radius: Theme.radius.md
-            color: Theme.palette.surfaceSunken
-            border.width: 1
-            border.color: Theme.palette.border
+            // Nothing to tab between: the Friends tab's invitation.
+            currentIndex: !root.hasAnyone ? 0 : root.tab === "requests" ? 1 : root.tab === "blocked" ? 2 : 0
 
-            StackLayout {
-                anchors.fill: parent
-                currentIndex: root.tab === "requests" ? 1 : root.tab === "blocked" ? 2 : 0
-
-                FriendsFriendsTab {
-                    controller: root.controller
-                    onRemoveRequested: (uuid, name) => root.confirmAction(true, uuid, name)
-                    onBlockRequested: (uuid, name) => root.confirmAction(false, uuid, name)
-                }
-                FriendsRequestsTab {
-                    controller: root.controller
-                    onBlockRequested: (uuid, name) => root.confirmAction(false, uuid, name)
-                }
-                FriendsBlockedTab {
-                    controller: root.controller
-                }
+            // The last lists are for reading: what needs the server waits
+            // (the rows' buttons), and the lists still scroll.
+            FriendsFriendsTab {
+                controller: root.controller
+                menu: personMenu
+                joinFlow: root.joinFlow
+                stale: root.stale
+                actionsEnabled: root.connected
+                onJoinRequested: (friend) => root.joinRequested(friend)
+            }
+            FriendsRequestsTab {
+                controller: root.controller
+                menu: personMenu
+                actionsEnabled: root.connected
+            }
+            FriendsBlockedTab {
+                controller: root.controller
+                actionsEnabled: root.connected
             }
         }
     }
 
-    // Friends off, signed out, connecting or failed: nothing to list.
+    // Friends off, signed out, connecting or failed before anything was
+    // read: nothing to list.
     FriendsPageState {
         anchors.fill: parent
-        visible: !root.connected
+        visible: !root.showsLists
         controller: root.controller
         phase: root.phase
         onNavigateRequested: (target) => root.navigateRequested(target)
     }
 
-    // The answer to Add: only a request that went through empties the field.
-    Connections {
-        target: root.controller
-        function onActionFinished(action, ok, message) {
-            if (action !== "sendRequest")
-                return
-            root.sending = false
-            if (ok)
-                nameField.clear()
-        }
+    // What a row's ⋯ opens. One for the page, not one per row: the lists are
+    // rebuilt whenever they are read again, and a menu in a row would close
+    // under the pointer.
+    FriendPersonMenu {
+        id: personMenu
+        onRemoveRequested: (uuid, name) => root.confirmAction("remove", uuid, name)
+        onBlockRequested: (uuid, name, friend) => root.confirmAction(friend ? "block" : "blockRequest", uuid, name)
     }
 
     // Removing a friend and blocking someone, both after a question.
     ConfirmDialog {
         id: confirm
 
-        property bool removing: true
+        property string mode: "remove"
         property string targetUuid
         property string targetName
+        readonly property bool removing: confirm.mode === "remove"
 
-        title: confirm.removing ? qsTr("Remove %1?").arg(confirm.targetName) : qsTr("Block %1?").arg(confirm.targetName)
-        confirmText: confirm.removing ? qsTr("Remove") : qsTr("Block")
+        title: confirm.removing ? qsTr("Remove %1 from friends?").arg(confirm.targetName) : qsTr("Block %1?").arg(confirm.targetName)
+        confirmText: confirm.removing ? qsTr("Remove friend") : qsTr("Block")
         text: confirm.removing
               ? qsTr("%1 will no longer see when you are online, and you will not see them. You can add each other again later.").arg(confirm.targetName)
-              : qsTr("%1 will be taken off your friends and can no longer send you requests or see when you are online. They are not told.").arg(confirm.targetName)
+              : confirm.mode === "blockRequest"
+                ? qsTr("Their request is declined, and %1 can no longer send you requests or see when you are online. They are not told.").arg(confirm.targetName)
+                : qsTr("%1 will be taken off your friends and can no longer send you requests or see when you are online. They are not told.").arg(confirm.targetName)
         onConfirmed: {
             if (confirm.removing)
                 root.controller.removeFriend(confirm.targetUuid)

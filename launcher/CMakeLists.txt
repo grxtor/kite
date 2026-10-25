@@ -636,6 +636,12 @@ add_unit_test(LaunchPreflight
     LIBS Kite_core
     )
 
+# The address a launch joins, as the game's quick play takes it.
+add_unit_test(MinecraftServerTarget
+    SOURCES minecraft/launch/MinecraftServerTarget_test.cpp
+    LIBS Kite_core
+    )
+
 # FIXME: shares data with FileSystem test
 add_unit_test(ModFolderModel
     SOURCES minecraft/mod/ModFolderModel_test.cpp

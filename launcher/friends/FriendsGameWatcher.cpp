@@ -46,7 +46,20 @@ FriendsGameWatcher::FriendsGameWatcher(std::shared_ptr<InstanceList> instances,
 	watchAll();
 }
 
-FriendsApi::Presence FriendsGameWatcher::presence() const
+FriendsApi::Presence FriendsGameWatcher::presence(const QString& profileId) const
+{
+	if (m_running.empty()) {
+		return {};
+	}
+	const QString played =
+		FriendsApi::undashed(m_profiles.value(m_running.back()));
+	if (played.isEmpty() || played != FriendsApi::undashed(profileId)) {
+		return {};
+	}
+	return latest();
+}
+
+FriendsApi::Presence FriendsGameWatcher::latest() const
 {
 	FriendsApi::Presence presence;
 	if (m_running.empty()) {
@@ -81,10 +94,15 @@ void FriendsGameWatcher::watch(const std::shared_ptr<BaseInstance>& instance)
 				onLaunchTask(raw, task.get());
 			});
 	connect(raw, &QObject::destroyed, this, [this, raw]() { forget(raw); });
-	/* A game already running when the watcher is made. */
+	/* A game already running when the watcher is made; its launch is known as
+	 * far as the instance still holds it. */
 	if (raw->isRunning()) {
-		onRunningChanged(raw, true);
-		onLaunchTask(raw, raw->getLaunchTask().get());
+		auto task = raw->getLaunchTask();
+		if (task) {
+			onLaunchTask(raw, task.get());
+		} else {
+			count(raw, QString());
+		}
 	}
 }
 
@@ -92,7 +110,24 @@ void FriendsGameWatcher::onRunningChanged(BaseInstance* instance, bool running)
 {
 	removeRunning(instance);
 	m_worlds[instance] = {};
-	if (running) {
+	if (!running) {
+		m_profiles.remove(instance);
+	} else if (m_profiles.contains(instance)) {
+		/* The launch was announced first. */
+		m_running.push_back(instance);
+	}
+	/* Otherwise it counts once its launch is announced (create() of a
+	 * LaunchTask sets the instance running before createLaunchTask() says
+	 * who plays it; reporting in between would say "online" for a moment). */
+	emitIfChanged();
+}
+
+void FriendsGameWatcher::count(BaseInstance* instance, const QString& profile)
+{
+	m_profiles[instance] = profile;
+	if (instance->isRunning() &&
+		std::find(m_running.begin(), m_running.end(), instance) ==
+			m_running.end()) {
 		m_running.push_back(instance);
 	}
 	emitIfChanged();
@@ -107,6 +142,7 @@ void FriendsGameWatcher::onLaunchTask(BaseInstance* instance, LaunchTask* task)
 			[this, instance](const QString& line) {
 				onLogLine(instance, line);
 			});
+	count(instance, task->playerProfile());
 }
 
 void FriendsGameWatcher::onLogLine(BaseInstance* instance, const QString& line)
@@ -127,15 +163,19 @@ void FriendsGameWatcher::forget(BaseInstance* instance)
 {
 	removeRunning(instance);
 	m_worlds.remove(instance);
+	m_profiles.remove(instance);
 	emitIfChanged();
 }
 
 void FriendsGameWatcher::emitIfChanged()
 {
-	const auto now = presence();
-	if (now == m_last) {
+	const auto now = latest();
+	const QString profile =
+		m_running.empty() ? QString() : m_profiles.value(m_running.back());
+	if (now == m_last && profile == m_lastProfile) {
 		return;
 	}
 	m_last = now;
+	m_lastProfile = profile;
 	emit changed();
 }

@@ -30,6 +30,10 @@ struct MinecraftServerTarget {
 
 	QString world;
 
+	/// The address as the game's --quickPlayMultiplayer "host:port" takes it:
+	/// an IPv6 address has colons of its own, so it goes in brackets.
+	QString quickPlayHost() const;
+
 	static MinecraftServerTarget parse(const QString& fullAddress,
 									   bool useWorld);
 };

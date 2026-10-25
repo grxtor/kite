@@ -76,6 +76,14 @@ namespace FriendsApi
 		QString instance;
 		QString version;
 		World world;
+		/// Playing only: the friend lets others join the server they are
+		/// on, and the server's host is visible (the server decides; false
+		/// when the field is absent).
+		bool joinable = false;
+		/// The server sent `joinable` at all. One that does not (an older
+		/// one) says nothing about whether the friend allows joining, so
+		/// "false" there is not "turned off".
+		bool joinableSaid = false;
 	};
 
 	struct Challenge {
@@ -94,6 +102,8 @@ namespace FriendsApi
 		QString visibility = QStringLiteral("friends");
 		bool hideServer = false;
 		bool shareIpServers = false;
+		/// Friends may join the server this player is on.
+		bool allowJoin = true;
 	};
 
 	struct Person {
@@ -162,6 +172,17 @@ namespace FriendsApi
 		extern const QString RateLimited;
 	} // namespace Code
 
+	/// The "error" names of Mojang's session server the launcher tells apart.
+	namespace MojangError
+	{
+		/// The token itself was refused: signing in again is the fix.
+		extern const QString Forbidden;
+		/// Multiplayer is off for the Microsoft account (its privacy
+		/// settings, a child account); signing in again changes nothing.
+		extern const QString InsufficientPrivileges;
+		extern const QString UserBanned;
+	} // namespace MojangError
+
 	// ---- URLs. @p base is the server URL with or without a trailing slash.
 	QUrl url(const QString& base, const QString& path);
 	/// A Mojang session server URL: @p base + /session/minecraft/join.
@@ -196,8 +217,52 @@ namespace FriendsApi
 	/// name or an IP address. The server refuses a whole status report for a
 	/// bad host, and reads a name whose last label is a number
 	/// (2130706433, 0x7f.0x1) as an IP address, so those are refused here
-	/// too.
+	/// too. An IPv6 address with a zone id (fe80::1%en0) is refused as well:
+	/// it only means something on the machine that wrote it.
 	QString normalizeHost(const QString& raw);
+	/// Whether @p host (as normalizeHost() gives it) can only mean the
+	/// joiner's own machine: localhost, 127.x.x.x, ::1 or the unspecified
+	/// address. Such a server is never one a friend can be followed to.
+	bool isLoopbackHost(const QString& host);
+
+	/// How long a sign-in that has failed @p failures times in a row waits
+	/// before the next try: the first retry is the next poll tick, then less
+	/// and less often.
+	int signInBackoffMs(int failures);
+
+	/// What a sign-in does about the account's access token (see
+	/// renewalStep()).
+	enum class RenewalStep {
+		/// Sign in with the token as it is.
+		Proceed,
+		/// The token is about to expire and nothing renews it yet: ask the
+		/// account list to, then decide again.
+		AskForRenewal,
+		/// Park the sign-in until the renewal has run.
+		Wait
+	};
+	/// Whether a sign-in has to wait for the launcher to renew the access
+	/// token. @p expiry is when it ends (invalid: not known to be stale);
+	/// @p accountActive is the default account's own refresh under way,
+	/// @p queued that it waits in the account list's queue (behind another
+	/// account's refresh, and then for the pause between two refreshes),
+	/// @p asked that this sign-in already asked for the renewal and
+	/// @p timedOut that it has waited long enough for it.
+	RenewalStep renewalStep(const QDateTime& expiry, const QDateTime& now,
+							bool accountActive, bool queued, bool asked,
+							bool timedOut);
+
+	/// Whether the account list changing is a reason to sign in again at
+	/// once after @p failures failed sign-ins: only when it changed what
+	/// failed. @p failedIdentity and @p identity describe the default account
+	/// (id, profile, token) then and now; a game starting or stopping, or
+	/// another account's refresh, changes neither. An account Mojang refused
+	/// for good (@p refusedProfile, empty if none) stays refused until its
+	/// profile (@p profile) is another one.
+	bool accountChangeRetriesSignIn(int failures, const QString& failedIdentity,
+									const QString& identity,
+									const QString& refusedProfile,
+									const QString& profile);
 
 	// ---- Request bodies.
 	QByteArray challengeBody(const QString& name);
@@ -228,6 +293,9 @@ namespace FriendsApi
 	/// Never empty: a body without the two fields comes back as an
 	/// unknown error.
 	Error parseError(const QByteArray& body);
+	/// The "error" name in an answer of Mojang's session server (see
+	/// MojangError), or an empty string for a body without one.
+	QString parseMojangError(const QByteArray& body);
 	/// The status object of one friend or of PUT /v1/me/status.
 	Status parseStatus(const QJsonObject& object);
 } // namespace FriendsApi

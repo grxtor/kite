@@ -24,6 +24,9 @@
 
 #include "FriendsController.h"
 
+#include <QEventLoop>
+#include <QPointer>
+
 #include <algorithm>
 
 #include "FriendsDisplay.h"
@@ -43,7 +46,7 @@ namespace
 
 QString FriendsController::unreachableText() const
 {
-	return tr("Kite's friends server can't be reached");
+	return tr("Kite's friends server can't be reached.");
 }
 
 QString FriendsController::failureText(const FriendsApi::Reply& reply) const
@@ -55,16 +58,16 @@ QString FriendsController::failureText(const FriendsApi::Reply& reply) const
 		return unreachableText();
 	}
 	if (reply.status == 429) {
-		return tr("Too many requests; try again in a minute");
+		return tr("Too many requests; try again in a minute.");
 	}
 	if (reply.status == 401) {
-		return tr("Your Kite session expired; try again");
+		return tr("Your Kite session expired; try again.");
 	}
 	if (reply.status == 502) {
 		return tr("Minecraft's session server is not answering; try again "
-				  "later");
+				  "later.");
 	}
-	return tr("Something went wrong (%1)")
+	return tr("Something went wrong (%1).")
 		.arg(FriendsApi::parseError(reply.body).code);
 }
 
@@ -86,28 +89,110 @@ bool FriendsController::inBackoff() const
 		   QDateTime::currentDateTimeUtc() < m_backoffUntil;
 }
 
+void FriendsController::afterStatusReports(std::function<void()> then)
+{
+	if (m_statusInFlight == 0) {
+		then();
+		return;
+	}
+	m_afterStatus.push_back(std::move(then));
+}
+
+void FriendsController::statusReportAnswered()
+{
+	if (--m_statusInFlight > 0) {
+		return;
+	}
+	auto waiting = std::move(m_afterStatus);
+	m_afterStatus.clear();
+	for (auto& then : waiting) {
+		then();
+	}
+}
+
+void FriendsController::waitForStatusReports(int timeoutMs)
+{
+	if (m_statusInFlight == 0) {
+		return;
+	}
+	QEventLoop loop;
+	/* The answer may come after the timeout, when the loop is gone. */
+	QPointer<QEventLoop> guard(&loop);
+	QTimer::singleShot(timeoutMs, &loop, &QEventLoop::quit);
+	afterStatusReports([guard]() {
+		if (guard) {
+			guard->quit();
+		}
+	});
+	loop.exec();
+}
+
 void FriendsController::request(const QByteArray& verb, const QString& path,
 								const QByteArray& body, FriendsHttp::Done done,
-								bool retried)
+								bool retried, bool keepAnswer)
 {
 	const int epoch = m_epoch;
+	/* Another account is the default: what is held is the one before's, and
+	 * this request is for the new one. */
+	dropDataOfOtherAccount(defaultProfileId());
+	/* It is held for the account asked for from here on, also before that
+	 * account has a session: another account becoming the default meanwhile
+	 * (while the sign-in waits for a token, say) must drop this request too,
+	 * and not let it go out as the new one. */
+	if (m_dataProfile.isEmpty()) {
+		m_dataProfile = FriendsApi::undashed(defaultProfileId());
+	}
+	const int accountGen = m_accountGen;
+	/* Asked for the account that is the default now: if another one takes
+	 * over before the answer (forgetAccountData()), it is about someone else
+	 * and must not land in the lists. Answered, not dropped, so whatever
+	 * waits for it (the poll, an action) ends. */
+	auto accountChanged = [=]() {
+		FriendsApi::Reply failed;
+		failed.failureText = tr("Your Minecraft account changed; try again.");
+		done(failed);
+	};
 	ensureSession([=](bool signedIn) {
 		if (epoch != m_epoch) {
+			return;
+		}
+		if (accountGen != m_accountGen) {
+			accountChanged();
 			return;
 		}
 		if (!signedIn) {
 			FriendsApi::Reply failed;
 			failed.failureText =
 				m_error.isEmpty()
-					? tr("Still signing in; try again in a moment")
+					? tr("Still signing in; try again in a moment.")
 					: m_error;
 			done(failed);
 			return;
 		}
+		/* Counted from here to its answer, whatever becomes of the answer
+		 * (afterStatusReports()). */
+		const bool statusReport =
+			verb == "PUT" && path == FriendsApi::Path::status();
+		if (statusReport) {
+			++m_statusInFlight;
+		}
 		m_http->send(
 			verb, FriendsApi::url(serverUrl(), path), body, m_session.token,
 			[=](const FriendsApi::Reply& reply) {
+				if (statusReport) {
+					statusReportAnswered();
+				}
 				if (epoch != m_epoch) {
+					return;
+				}
+				if (accountGen != m_accountGen) {
+					/* Gone out for the account before: what it did is done,
+					 * but its answer is no list for this one. */
+					if (keepAnswer) {
+						done(reply);
+					} else {
+						accountChanged();
+					}
 					return;
 				}
 				noteRateLimit(reply);
@@ -115,7 +200,7 @@ void FriendsController::request(const QByteArray& verb, const QString& path,
 					/* Expired or revoked: sign in again, once. */
 					clearSession();
 					emit changed();
-					request(verb, path, body, done, true);
+					request(verb, path, body, done, true, keepAnswer);
 					return;
 				}
 				done(reply);
@@ -134,9 +219,21 @@ void FriendsController::softFail(const FriendsApi::Reply& reply)
 
 void FriendsController::tick()
 {
-	if (!m_enabled || inBackoff()) {
+	if (!m_enabled || inBackoff() || (!sessionUsable() && signInBackedOff())) {
 		return;
 	}
+	if (!sessionUsable() && stillRefused()) {
+		/* Mojang refused this account for good: nothing to ask. */
+		return;
+	}
+	if (m_signingIn) {
+		/* One is under way (it may be waiting for the account's renewal):
+		 * its end polls, and another waiter would only poll twice. */
+		return;
+	}
+	/* A retry of a failed sign-in leaves the error on screen until it
+	 * ends (finishSignIn()). */
+	m_quietSignIn = m_state == State::Error && !sessionUsable();
 	ensureSession([this](bool ok) {
 		if (ok) {
 			poll();
@@ -226,13 +323,20 @@ void FriendsController::sendStatus(std::function<void(bool)> done, bool force)
 		return;
 	}
 	m_lastStatusSent.restart();
-	const auto presence = m_watcher ? m_watcher->presence()
-									: FriendsApi::Presence();
+	const auto presence = gamePresence();
 	request("PUT", FriendsApi::Path::status(),
 			FriendsApi::statusBody(presence),
-			[this, done](const FriendsApi::Reply& reply) {
+			[this, done, presence](const FriendsApi::Reply& reply) {
 				if (!reply.ok()) {
 					softFail(reply);
+				} else if (const auto view =
+							   FriendsApi::parseStatusReply(reply.body)) {
+					/* What friends see of you, from the one who shows it. */
+					const auto before = myStatus();
+					m_myView = SelfView{presence, *view};
+					if (myStatus() != before) {
+						emit changed();
+					}
 				}
 				done(reply.ok());
 			});
@@ -260,6 +364,8 @@ void FriendsController::applySnapshot(
 {
 	/* The status lines carry "5 min ago", so they are worded afresh each
 	 * time, and the view hears of it each time. */
+	m_loaded = true;
+	m_updatedAt = QDateTime::currentDateTimeUtc();
 	m_friends = FriendsDisplay::friendList(snapshot.friends,
 										   QDateTime::currentDateTimeUtc());
 	m_incoming = FriendsDisplay::personList(snapshot.incoming);
@@ -277,11 +383,39 @@ void FriendsController::clearData()
 	m_incoming.clear();
 	m_outgoing.clear();
 	m_blocked.clear();
+	m_loaded = false;
+	m_updatedAt = QDateTime();
+	m_myView.reset();
 	m_settings = FriendsDisplay::settingsMap({});
+	/* The defaults above are not the account's. */
+	m_settingsLoaded = false;
+	m_dataProfile.clear();
+}
+
+void FriendsController::forgetAccountData()
+{
+	++m_accountGen;
+	clearData();
+	/* The new account's settings are read again, and its status goes out at
+	 * once instead of after the other account's gap. */
+	m_lastStatusSent.invalidate();
+	emit changed();
+}
+
+void FriendsController::dropDataOfOtherAccount(const QString& profileId)
+{
+	if (!m_dataProfile.isEmpty() &&
+		m_dataProfile != FriendsApi::undashed(profileId)) {
+		forgetAccountData();
+	}
 }
 
 void FriendsController::onPresenceChanged()
 {
+	if (m_enabled) {
+		/* Your own card says what friends see of you. */
+		emit changed();
+	}
 	if (!m_enabled || !sessionUsable() || m_pushTimer.isActive()) {
 		return;
 	}

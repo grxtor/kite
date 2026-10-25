@@ -39,6 +39,9 @@ Item {
     // QmlShell.friends (FriendsController) for "Friends"; null hides that
     // section.
     property var friends: null
+    // The default account's name if it is a Microsoft one ("" if not): the
+    // account whose Friends data Delete in "Friends" removes.
+    property string friendsAccountName: ""
 
     // Show a folder in the file manager (the General section's Folders).
     signal openPathRequested(string path)
@@ -167,6 +170,7 @@ Item {
             SettingsMinecraftSection {}
             SettingsFriendsSection {
                 controller: root.friends
+                accountName: root.friendsAccountName
             }
             SettingsConsoleSection {}
             SettingsAppearanceSection {

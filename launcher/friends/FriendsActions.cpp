@@ -61,7 +61,7 @@ void FriendsController::finishAction(const QString& action, bool ok,
 bool FriendsController::canAct(const QString& action, const QString* uuid)
 {
 	if (!m_enabled) {
-		finishAction(action, false, tr("Friends are turned off"));
+		finishAction(action, false, tr("Friends is turned off"));
 		return false;
 	}
 	if (uuid && !FriendsApi::isUuid(*uuid)) {
@@ -104,6 +104,13 @@ void FriendsController::refresh()
 	if (!canAct("refresh", nullptr)) {
 		return;
 	}
+	/* "Try again" is a reason to try at once, a refused account included:
+	 * a parent may have changed what Microsoft allows. */
+	m_signInFailures = 0;
+	if (!m_refusedProfile.isEmpty()) {
+		m_refusedProfile.clear();
+		emit changed();
+	}
 	poll([this](bool ok, const QString& message) {
 		finishAction("refresh", ok, message);
 	});
@@ -117,7 +124,10 @@ QString FriendsController::requestErrorText(const FriendsApi::Reply& reply,
 	}
 	const QString code = FriendsApi::parseError(reply.body).code;
 	if (code == FriendsApi::Code::NotFound) {
-		return tr("No Kite player is called %1").arg(name);
+		/* Only a Kite player can be a friend: say where to get it. */
+		return tr("No Kite player is called %1. Ask them to get Kite at "
+				  "kiteclient.com.")
+			.arg(name);
 	}
 	if (code == FriendsApi::Code::AlreadyFriends) {
 		return tr("%1 is already your friend").arg(name);
@@ -258,7 +268,12 @@ void FriendsController::refreshBlocked()
 		return;
 	}
 	loadBlocked([this](const FriendsApi::Reply& reply, bool ok) {
-		finishAction("refreshBlocked", ok, ok ? QString() : failureText(reply));
+		/* A server that cannot be reached fails the poll sent with this read
+		 * too, and the page says so; a second word about it is noise. */
+		const bool unreachable =
+			reply.networkFailed() && reply.failureText.isEmpty();
+		finishAction("refreshBlocked", ok,
+					 ok || unreachable ? QString() : failureText(reply));
 	});
 }
 
@@ -310,18 +325,23 @@ void FriendsController::setSettings(const QVariantMap& partial)
 		return;
 	}
 	act("setSettings", kPatch, FriendsApi::Path::settings(), body,
-		[this](const FriendsApi::Reply& reply, bool* ok) {
+		[this, body](const FriendsApi::Reply& reply, bool* ok) {
 			const auto settings = reply.ok()
 									  ? FriendsApi::parseSettings(reply.body)
 									  : std::nullopt;
 			if (!settings) {
 				return failureText(reply);
 			}
-			*ok = true;
 			m_settings = FriendsDisplay::settingsMap(*settings);
 			emit changed();
 			/* What friends see depends on these. */
 			sendStatus([](bool) {}, true);
+			/* An older server drops a setting it does not know: say so
+			 * instead of "Saved". */
+			if (!FriendsDisplay::settingsSaved(body, m_settings)) {
+				return tr("Kite's friends server did not save that setting");
+			}
+			*ok = true;
 			return tr("Saved");
 		},
 		false);
@@ -329,21 +349,51 @@ void FriendsController::setSettings(const QVariantMap& partial)
 
 void FriendsController::deleteAccount()
 {
-	if (!canAct("deleteAccount", nullptr)) {
+	/* With Friends off it still works: someone who turned it off has to be
+	 * able to delete what the server holds without turning it on and being
+	 * seen. It signs in for this request alone (the session is dropped after
+	 * it, and nothing is reported or read), and Friends stays off. */
+	const bool wasOff = !m_enabled;
+	if (wasOff) {
+		if (m_deletingOff) {
+			/* Said, not dropped: nothing else would tell that the first one
+			 * is still under way. */
+			finishAction("deleteAccount", false,
+						 tr("A delete is already under way; wait for it to "
+							"finish"));
+			return;
+		}
+		m_deletingOff = true;
+	} else if (!canAct("deleteAccount", nullptr)) {
 		return;
 	}
+	/* The account this deletes is the default one now, which the dialog
+	 * named: request() does not send it for another that becomes the default
+	 * while it signs in (it fails instead), and passes on the answer of one
+	 * that has gone out (keepAnswer). */
 	request(kDelete, FriendsApi::Path::me(), QByteArray(),
-			[this](const FriendsApi::Reply& reply) {
+			[this, wasOff](const FriendsApi::Reply& reply) {
 				if (!reply.ok()) {
+					if (wasOff) {
+						/* Out again, as it never was. */
+						m_deletingOff = false;
+						if (!m_session.token.isEmpty()) {
+							signOutQuietly(m_session.token);
+						}
+						clearSession();
+						setState(State::Off);
+					}
 					finishAction("deleteAccount", false, failureText(reply));
 					return;
 				}
 				/* Gone on the server: nothing left to tell it. */
 				LAUNCHER->settings()->set(kEnabledSetting, false);
 				stop(false);
+				m_deletingOff = false;
 				m_faces->clearCache();
 				finishAction("deleteAccount", true,
 							 tr("Your friends account and its data were "
 								"deleted"));
-			});
+			},
+			false, true);
 }

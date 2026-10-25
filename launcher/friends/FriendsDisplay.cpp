@@ -20,7 +20,10 @@
 #include "FriendsDisplay.h"
 
 #include <QCoreApplication>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLocale>
+#include <QRegularExpression>
 
 namespace FriendsDisplay
 {
@@ -31,11 +34,11 @@ namespace FriendsDisplay
 		constexpr qint64 kHoursPerDay = 24;
 		constexpr qint64 kDaysPerMonth = 30;
 
-		/* The same context as the controller's own texts, so one lupdate
-		 * entry per string. */
+		/* The context lupdate files these strings under: it names the
+		 * namespace's own tr(), whatever context is passed on here. */
 		QString tr(const char* text)
 		{
-			return QCoreApplication::translate("FriendsController", text);
+			return QCoreApplication::translate("FriendsDisplay", text);
 		}
 
 		QString iso(const QDateTime& time)
@@ -71,31 +74,34 @@ namespace FriendsDisplay
 		}
 	} // namespace
 
-	QString relativeTime(const QDateTime& then, const QDateTime& now)
+	QString lastSeenText(const QDateTime& then, const QDateTime& now)
 	{
+		/* Whole sentences, not a time pasted after "Last seen": "Yesterday"
+		 * and "Just now" would stand capitalised mid-sentence. */
 		const qint64 minutes =
 			then.secsTo(now) / kSecondsPerMinute;
 		if (minutes < 1) {
-			return tr("Just now");
+			return tr("Last seen just now");
 		}
 		if (minutes < kMinutesPerHour) {
-			return tr("%1 min ago").arg(minutes);
+			return tr("Last seen %1 min ago").arg(minutes);
 		}
 		const qint64 hours = minutes / kMinutesPerHour;
 		if (hours < kHoursPerDay) {
-			return tr("%1 h ago").arg(hours);
+			return tr("Last seen %1 h ago").arg(hours);
 		}
 		const qint64 days = hours / kHoursPerDay;
 		if (days == 1) {
-			return tr("Yesterday");
+			return tr("Last seen yesterday");
 		}
 		if (days < kDaysPerMonth) {
-			return tr("%1 days ago").arg(days);
+			return tr("Last seen %1 days ago").arg(days);
 		}
 		const bool sameYear =
 			then.date().year() == now.toLocalTime().date().year();
-		return QLocale().toString(then.toLocalTime().date(),
-								  sameYear ? "MMM d" : "MMM d, yyyy");
+		return tr("Last seen %1")
+			.arg(QLocale().toString(then.toLocalTime().date(),
+									sameYear ? "MMM d" : "MMM d, yyyy"));
 	}
 
 	QString statusText(const FriendsApi::Status& status, const QDateTime& now)
@@ -110,16 +116,18 @@ namespace FriendsDisplay
 							   : tr("On %1").arg(status.world.host);
 				}
 				if (status.world.type == Type::Singleplayer) {
-					return tr("Single-player");
+					return tr("Singleplayer");
 				}
 				return tr("Playing");
 			case State::Online:
-				return tr("Online");
+				/* Online is the launcher being open: under an "Online"
+				 * caption "Online" says nothing, "In Kite" does. */
+				return tr("In Kite");
 			case State::Offline:
 				break;
 		}
 		if (status.lastSeenAt.isValid()) {
-			return tr("Last seen %1").arg(relativeTime(status.lastSeenAt, now));
+			return lastSeenText(status.lastSeenAt, now);
 		}
 		return tr("Offline");
 	}
@@ -139,6 +147,23 @@ namespace FriendsDisplay
 		map["worldType"] = playing ? worldType(status.world) : QString();
 		map["host"] = playing ? status.world.host : QString();
 		map["port"] = playing ? status.world.port : 0;
+		/* Only a server with a visible host can be joined, whatever the
+		 * friend allows. The host goes to the game as the server to enter,
+		 * so one that is not a clean DNS name or IP address (what the
+		 * server itself would have refused) is never offered, nor one that
+		 * only means the joiner's own machine (localhost). */
+		const bool server = playing && status.world.type ==
+										   FriendsApi::World::Type::Server;
+		const bool hostShown = server && !status.world.host.isEmpty();
+		map["joinable"] =
+			hostShown && status.joinable &&
+			FriendsApi::normalizeHost(status.world.host) ==
+				status.world.host &&
+			!FriendsApi::isLoopbackHost(status.world.host);
+		/* A visible server the server says is not joinable: the friend turned
+		 * joining off. One that says nothing (an older server) is not
+		 * blamed on the friend. */
+		map["joinOff"] = hostShown && status.joinableSaid && !status.joinable;
 		map["statusText"] = statusText(status, now);
 		return map;
 	}
@@ -169,10 +194,64 @@ namespace FriendsDisplay
 		return list;
 	}
 
+	QVariantMap selfStatusMap(const FriendsApi::Presence& presence,
+							  const QVariantMap& settings)
+	{
+		using Type = FriendsApi::World::Type;
+		const bool server = presence.playing &&
+							presence.world.type == Type::Server &&
+							!presence.world.host.isEmpty();
+		/* A raw IP address stays hidden unless "Show servers I join by IP
+		 * address" is on (the server applies the same rule). */
+		const bool rawAddress =
+			server && presence.world.host.contains(QRegularExpression(
+						  QStringLiteral("^[0-9.]+$|:")));
+		const bool hidden = settings.value("hideServer").toBool() ||
+							(rawAddress &&
+							 !settings.value("shareIpServers").toBool());
+		const bool shown = server && !hidden;
+		return {{"playing", presence.playing},
+				{"worldType", presence.playing ? worldType(presence.world)
+											   : QString()},
+				{"host", shown ? presence.world.host : QString()},
+				{"serverHidden", server && hidden},
+				{"joinable", shown && settings.value("allowJoin").toBool()}};
+	}
+
+	QVariantMap selfStatusFromView(const FriendsApi::Presence& sent,
+								   const FriendsApi::Status& view)
+	{
+		using Type = FriendsApi::World::Type;
+		const bool playing = view.state == FriendsApi::Status::State::Playing;
+		const bool server = playing && view.world.type == Type::Server;
+		const bool sentServer = sent.playing && sent.world.type == Type::Server &&
+								!sent.world.host.isEmpty();
+		const QString host = server ? view.world.host : QString();
+		return {{"playing", playing},
+				{"worldType", playing ? worldType(view.world) : QString()},
+				{"host", host},
+				/* A server was reported and the server kept its address
+				 * from friends. */
+				{"serverHidden", sentServer && playing && host.isEmpty()},
+				{"joinable", playing && view.joinable}};
+	}
+
 	QVariantMap settingsMap(const FriendsApi::Settings& settings)
 	{
 		return {{"visibility", settings.visibility},
 				{"hideServer", settings.hideServer},
-				{"shareIpServers", settings.shareIpServers}};
+				{"shareIpServers", settings.shareIpServers},
+				{"allowJoin", settings.allowJoin}};
+	}
+
+	bool settingsSaved(const QByteArray& body, const QVariantMap& saved)
+	{
+		const QJsonObject asked = QJsonDocument::fromJson(body).object();
+		for (auto it = asked.begin(); it != asked.end(); ++it) {
+			if (saved.value(it.key()) != it.value().toVariant()) {
+				return false;
+			}
+		}
+		return true;
 	}
 } // namespace FriendsDisplay

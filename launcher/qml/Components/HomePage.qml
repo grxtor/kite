@@ -49,6 +49,8 @@ Item {
     // hero's "Last world".
     // QmlShell.friends (FriendsController), or null.
     property var friends: null
+    // Main.qml's FriendJoinFlow, which says what a friend's Join starts.
+    property var joinFlow: null
     property var recentWorldsModel: null
     // QmlShell.news (NewsModel): Kite's news, newest first, or null.
     property var news: null
@@ -79,8 +81,11 @@ Item {
     signal discoverRequested()
     // "Set up Kite"'s "Sign in with Microsoft".
     signal signInRequested()
-    // The Friends page, on "friends" or "requests".
+    // The Friends page, on "friends" or "requests", or "add" (the add field
+    // focused).
     signal friendsRequested(string tab)
+    // Join a friend's server (a friend map).
+    signal joinRequested(var friend)
     // A Continue playing row's ⋯ (or right-click). The page already opens
     // the library's instance menu for it; this only tells.
     signal menuRequested(string id, Item anchor)
@@ -324,7 +329,10 @@ Item {
         news: root.news
         recentWorldsModel: root.recentWorldsModel
         friends: root.friends
+        joinFlow: root.joinFlow
         onFriendsRequested: (tab) => root.friendsRequested(tab)
+        onNavigateRequested: (target) => root.navigateRequested(target)
+        onJoinRequested: (friend) => root.joinRequested(friend)
         onCreateRequested: root.createRequested()
         onSignInRequested: root.signInRequested()
         onWorldRequested: (id) => root.openInstanceWorldsRequested(id)
