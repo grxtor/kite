@@ -594,6 +594,11 @@ QStringList MinecraftInstance::kiteModArguments() const
 								  ModBridgeProtocol::kPortProperty),
 							  QString::number(m_bridgeGrant.port));
 	}
+	/* A Kite Performance instance opens on the server list by default; the
+	 * mod reads this as the default of its own setting. */
+	if (m_settings->get("KitePerformance").toBool()) {
+		arguments << QStringLiteral("-Dkite.performance=true");
+	}
 	return arguments;
 }
 
