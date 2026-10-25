@@ -33,6 +33,7 @@
 #include "news/NewsChecker.h"
 #include "notifications/NotificationChecker.h"
 #include "core/InstancePathProblems.h"
+#include "modbridge/ModBridge.h"
 #include "ui/InstanceWindow.h"
 #include "ui/MacMenuBar.h"
 
@@ -1186,6 +1187,12 @@ void Application::initSubsystems()
 		updateProxySettings(proxyTypeStr, addr, port, user, pass);
 		qDebug() << "<> Network done.";
 	}
+
+	/* The bridge for the Kite mod of a running game: nothing listens until a
+	 * launch registers a session. */
+	m_modBridge.reset(new ModBridge(
+		QString("%1 %2").arg(BuildConfig.KITE_DISPLAYNAME,
+							 BuildConfig.printableVersionString())));
 
 	/* News and notifications belong to the application rather than to a
 	 * window, so the QML shell and the plugin news API have them too.
@@ -2892,6 +2899,11 @@ NewsChecker* Application::newsChecker() const
 NotificationChecker* Application::notificationChecker() const
 {
 	return m_notificationChecker.get();
+}
+
+ModBridge* Application::modBridge() const
+{
+	return m_modBridge.get();
 }
 
 bool Application::usingQmlShell() const

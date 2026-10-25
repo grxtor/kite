@@ -49,6 +49,7 @@
 #include "minecraft/launch/ModMinecraftJar.h"
 #include "minecraft/launch/PrepareKiteMod.h"
 #include "minecraft/launch/PreparePerformance.h"
+#include "minecraft/launch/StartModBridge.h"
 #include "minecraft/launch/ClaimAccount.h"
 #include "minecraft/launch/ReconstructAssets.h"
 #include "minecraft/launch/ScanModFolders.h"
@@ -200,6 +201,13 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 	 * for this instance through -Dfabric.addMods, so it never lands in the
 	 * mods folder. On by default; it only applies to a Fabric instance. */
 	m_settings->registerSetting("KiteMod", true);
+	/* The game is over: so is its session on the mod bridge. */
+	connect(this, &BaseInstance::runningStatusChanged, this,
+			[this](bool running) {
+				if (!running) {
+					m_bridgeGrant = {};
+				}
+			});
 
 	/* Vanilla only ever reads data packs from saves/<world>/datapacks, so
 	 * an instance-wide folder is meaningless unless a loader such as Paxi
@@ -577,7 +585,21 @@ QStringList MinecraftInstance::kiteModArguments() const
 	if (jar.isEmpty()) {
 		return {};
 	}
-	return {KiteMod::addModsArgument(extraArguments(), jar)};
+	QStringList arguments{KiteMod::addModsArgument(extraArguments(), jar)};
+	if (m_bridgeGrant.valid()) {
+		/* The port only: the token travels in the environment, as argv is
+		 * logged and shows in `ps`. */
+		arguments << QStringLiteral("-D%1=%2")
+						 .arg(QString::fromLatin1(
+								  ModBridgeProtocol::kPortProperty),
+							  QString::number(m_bridgeGrant.port));
+	}
+	return arguments;
+}
+
+void MinecraftInstance::setBridgeGrant(const ModBridgeProtocol::Grant& grant)
+{
+	m_bridgeGrant = grant;
 }
 
 QStringList MinecraftInstance::javaArguments() const
@@ -655,6 +677,10 @@ QProcessEnvironment MinecraftInstance::createEnvironment()
 	auto variables = getVariables();
 	for (auto it = variables.begin(); it != variables.end(); ++it) {
 		env.insert(it.key(), it.value());
+	}
+	if (m_bridgeGrant.valid()) {
+		env.insert(QString::fromLatin1(ModBridgeProtocol::kTokenEnvVar),
+				   m_bridgeGrant.token);
 	}
 	return env;
 }
@@ -1240,6 +1266,11 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 	// verify that minimum Java requirements are met
 	{
 		process->appendStep(new VerifyJavaInstall(pptr));
+	}
+
+	// the Kite mod's way to the launcher, once the mod's jar is known
+	if (kiteModApplies()) {
+		process->appendStep(new StartModBridge(pptr));
 	}
 
 	{

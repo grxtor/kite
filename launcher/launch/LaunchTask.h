@@ -45,6 +45,8 @@ class LaunchTask : public Task
 	void appendStep(shared_qobject_ptr<LaunchStep> step);
 	void prependStep(shared_qobject_ptr<LaunchStep> step);
 	void setCensorFilter(QMap<QString, QString> filter);
+	/// Also hides @p secret in the log from now on, whatever the filter says.
+	void addCensorEntry(const QString& secret, const QString& replacement);
 	void setWrapperCommand(QString wrapperCommand);
 
 	InstancePtr instance()

@@ -22,6 +22,7 @@
 #include <QHash>
 #include <QObject>
 #include <QPointer>
+#include <QSet>
 
 #include <memory>
 #include <vector>
@@ -57,6 +58,13 @@ class FriendsGameWatcher : public QObject
 	/// profile, nothing otherwise.
 	FriendsApi::Presence presence(const QString& profileId) const;
 
+	/// The world @p instance's own Kite mod reports (modbridge/): it replaces
+	/// what the log said and the log's lines are ignored for that game until
+	/// it stops, when the log takes over again for the next one. Ignored for
+	/// a game that does not run.
+	void setReportedWorld(BaseInstance* instance,
+						  const FriendsApi::World& world);
+
   signals:
 	void changed();
 
@@ -82,6 +90,9 @@ class FriendsGameWatcher : public QObject
 	/// The profile each instance with a known launch is played as, while it
 	/// runs ("" when not as an account's own identity).
 	QHash<BaseInstance*, QString> m_profiles;
+	/// The running games whose mod reports the world: the log says nothing
+	/// about them (see setReportedWorld()).
+	QSet<BaseInstance*> m_reported;
 	/// The running ones with a known launch, oldest first.
 	std::vector<BaseInstance*> m_running;
 	/// What changed() last said: the latest game and who plays it.

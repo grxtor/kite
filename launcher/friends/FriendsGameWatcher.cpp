@@ -106,10 +106,23 @@ void FriendsGameWatcher::watch(const std::shared_ptr<BaseInstance>& instance)
 	}
 }
 
+void FriendsGameWatcher::setReportedWorld(BaseInstance* instance,
+										  const FriendsApi::World& world)
+{
+	auto it = m_worlds.find(instance);
+	if (it == m_worlds.end() || !instance->isRunning()) {
+		return;
+	}
+	*it = world;
+	m_reported.insert(instance);
+	emitIfChanged();
+}
+
 void FriendsGameWatcher::onRunningChanged(BaseInstance* instance, bool running)
 {
 	removeRunning(instance);
 	m_worlds[instance] = {};
+	m_reported.remove(instance);
 	if (!running) {
 		m_profiles.remove(instance);
 	} else if (m_profiles.contains(instance)) {
@@ -147,6 +160,9 @@ void FriendsGameWatcher::onLaunchTask(BaseInstance* instance, LaunchTask* task)
 
 void FriendsGameWatcher::onLogLine(BaseInstance* instance, const QString& line)
 {
+	if (m_reported.contains(instance)) {
+		return;
+	}
 	const auto change = FriendsLogRules::fromLine(line);
 	if (change.kind == FriendsLogRules::Change::Kind::None) {
 		return;
@@ -164,6 +180,7 @@ void FriendsGameWatcher::forget(BaseInstance* instance)
 	removeRunning(instance);
 	m_worlds.remove(instance);
 	m_profiles.remove(instance);
+	m_reported.remove(instance);
 	emitIfChanged();
 }
 

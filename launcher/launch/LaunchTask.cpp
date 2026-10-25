@@ -144,6 +144,14 @@ void LaunchTask::setCensorFilter(QMap<QString, QString> filter)
 	m_censorFilter = filter;
 }
 
+void LaunchTask::addCensorEntry(const QString& secret,
+								const QString& replacement)
+{
+	if (!secret.trimmed().isEmpty()) {
+		m_censorFilter[secret] = replacement;
+	}
+}
+
 QString LaunchTask::censorPrivateInfo(QString in)
 {
 	auto iter = m_censorFilter.begin();

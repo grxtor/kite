@@ -153,6 +153,15 @@ QString FriendsFaces::faceUrl(const QString& uuid) const
 		   QString::number(file.lastModified().toMSecsSinceEpoch());
 }
 
+QString FriendsFaces::cachedFacePath(const QString& uuid) const
+{
+	if (!FriendsApi::isUuid(uuid)) {
+		return QString();
+	}
+	const QFileInfo file(pathOf(uuid));
+	return file.isFile() ? file.absoluteFilePath() : QString();
+}
+
 void FriendsFaces::ensure(const QStringList& uuids, const QString& sessionBase)
 {
 	m_sessionBase = sessionBase;

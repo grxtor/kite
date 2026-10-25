@@ -920,12 +920,12 @@ This action cannot be undone.</source>
 <context>
     <name>Application</name>
     <message>
-        <location filename="../launcher/Application.cpp" line="+1161"/>
+        <location filename="../launcher/Application.cpp" line="+1162"/>
         <source>Settings</source>
         <translation>Ayarlar</translation>
     </message>
     <message>
-        <location line="+908"/>
+        <location line="+914"/>
         <source>This installation has an update lock file at: %1
 
 Timestamp: %2
@@ -9894,7 +9894,7 @@ Do you want to play the demo?</source>
         <translation>Başlatmaya hazırlanılıyor</translation>
     </message>
     <message>
-        <location line="+102"/>
+        <location line="+110"/>
         <source>Kite stopped watching the game log because the log length surpassed %1 lines.
 You may have to fix your mods because the game is still logging to files and likely wasting harddrive space at an alarming rate!</source>
         <translation>Günlük uzunluğu %1 satırı aştığı için Kite oyun günlüğünü izlemeyi bıraktı.
@@ -12787,7 +12787,7 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
 <context>
     <name>MinecraftInstance</name>
     <message>
-        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+886"/>
+        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+912"/>
         <source>Kite mod: %1</source>
         <translation>Kite modu: %1</translation>
     </message>
@@ -17103,7 +17103,7 @@ What should happen to %1?</source>
 <context>
     <name>QmlShell</name>
     <message>
-        <location filename="../launcher/qml/QmlShell.cpp" line="+395"/>
+        <location filename="../launcher/qml/QmlShell.cpp" line="+396"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>
@@ -19871,6 +19871,14 @@ Are you sure?</source>
         <location line="+16"/>
         <source>On</source>
         <translation>Açık</translation>
+    </message>
+</context>
+<context>
+    <name>StartModBridge</name>
+    <message>
+        <location filename="../launcher/minecraft/launch/StartModBridge.cpp" line="+50"/>
+        <source>Kite mod: the in-game friends list is not available</source>
+        <translation>Kite modu: oyun içi arkadaş listesi kullanılamıyor</translation>
     </message>
 </context>
 <context>

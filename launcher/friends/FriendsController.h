@@ -34,7 +34,9 @@
 
 #include "FriendsApi.h"
 #include "FriendsHttp.h"
+#include "modbridge/ModBridgeJson.h"
 
+class BaseInstance;
 class FriendsFaces;
 class FriendsGameWatcher;
 
@@ -150,6 +152,21 @@ class FriendsController : public QObject
 	/// turns the feature off. Works with Friends off too: it signs in for
 	/// this one request, reports nothing and leaves Friends off.
 	Q_INVOKABLE void deleteAccount();
+
+	// What the Kite mod's bridge needs (FriendsBridge.cpp, modbridge/)
+	/// The lists as of the last poll, as the mod is told them. Its rev
+	/// changes whenever anything the mod is told does.
+	ModBridgeJson::FriendsView bridgeView();
+	/// Polls the server now, but not more than once in 10 s however often
+	/// it is asked (the mod's refresh button).
+	void bridgeRefresh();
+	/// The cached face of friend @p uuid, "" when there is none or @p uuid
+	/// is not a friend (a request, or a blocked person, is not the mod's
+	/// business).
+	QString bridgeFacePath(const QString& uuid) const;
+	/// The game of @p instance says where the player is, as the mod sees it:
+	/// that is what friends are told (FriendsGameWatcher::setReportedWorld).
+	void reportWorld(BaseInstance* instance, const FriendsApi::World& world);
 
   signals:
 	void changed();
@@ -365,4 +382,10 @@ class FriendsController : public QObject
 		FriendsApi::Status status;
 	};
 	std::optional<SelfView> m_myView;
+
+	/// What bridgeView() last said apart from its rev and time, and the rev
+	/// that went with it.
+	QByteArray m_bridgeDigest;
+	qint64 m_bridgeRev = 0;
+	QElapsedTimer m_lastBridgeRefresh;
 };

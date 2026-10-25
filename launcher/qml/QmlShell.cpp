@@ -69,6 +69,7 @@
 #include "minecraft/PerformanceSetupTask.h"
 #include "modplatform/BundleCatalog.h"
 #include "friends/FriendsController.h"
+#include "modbridge/ModBridge.h"
 #include "settings/Setting.h"
 #include "models/RecentWorldsModel.h"
 #include "models/SettingsAdapter.h"
@@ -1241,6 +1242,10 @@ QObject* QmlShell::friends() const
 	if (!m_friends) {
 		/* The working directory is the data folder, where accounts.json is. */
 		m_friends = std::make_unique<FriendsController>(QDir::currentPath());
+		/* The Kite mod of a running game reads it through the bridge. */
+		if (auto* bridge = LAUNCHER ? LAUNCHER->modBridge() : nullptr) {
+			bridge->setFriends(m_friends.get());
+		}
 	}
 	return expose(m_friends.get());
 }

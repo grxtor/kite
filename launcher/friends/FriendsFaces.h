@@ -59,6 +59,10 @@ class FriendsFaces : public QObject
 	/// The rev changes with the file, so a replaced face is loaded again.
 	QString faceUrl(const QString& uuid) const;
 
+	/// The PNG of a cached face, "" for none or for something that is not a
+	/// UUID with dashes (the mod bridge serves it).
+	QString cachedFacePath(const QString& uuid) const;
+
 	/// Queues the faces of @p uuids that are not cached or are stale.
 	/// @p sessionBase is the Mojang session server (the FriendsMojangSessionUrl
 	/// setting).

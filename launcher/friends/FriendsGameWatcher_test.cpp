@@ -149,6 +149,111 @@ class FriendsGameWatcherTest : public QObject
 		QCOMPARE(spy.count(), 1);
 	}
 
+	void aReportedWorldOverridesTheLog()
+	{
+		Fixture f;
+		FriendsGameWatcher watcher(f.list);
+		auto task = f.start("one");
+		auto* game = f.list->getInstanceById("one").get();
+		task->onLogLine("[12:00:00] [Render thread/INFO]: Connecting to "
+						"mc.hypixel.net, 25565");
+		QCOMPARE(watcher.presence(kMe).world.host, QString("mc.hypixel.net"));
+
+		QSignalSpy spy(&watcher, &FriendsGameWatcher::changed);
+		watcher.setReportedWorld(game, {World::Type::Server, "play.example.net", 25566});
+		QCOMPARE(spy.count(), 1);
+		QCOMPARE(watcher.presence(kMe).world.host, QString("play.example.net"));
+		QCOMPARE(watcher.presence(kMe).world.port, 25566);
+
+		/* The log says something else, and is not believed any more. */
+		task->onLogLine("[12:00:30] [Render thread/INFO]: Connecting to "
+						"other.example.net, 25565");
+		task->onLogLine("[12:00:31] [Server thread/INFO]: Starting integrated "
+						"minecraft server version 1.21.4");
+		QCOMPARE(watcher.presence(kMe).world.host, QString("play.example.net"));
+		QCOMPARE(spy.count(), 1);
+	}
+
+	void aReportedWorldIsAnnouncedOnlyWhenItChanges()
+	{
+		Fixture f;
+		FriendsGameWatcher watcher(f.list);
+		auto task = f.start("one");
+		auto* game = f.list->getInstanceById("one").get();
+		QSignalSpy spy(&watcher, &FriendsGameWatcher::changed);
+		const World server{World::Type::Server, "play.example.net", 25565};
+		watcher.setReportedWorld(game, server);
+		watcher.setReportedWorld(game, server);
+		QCOMPARE(spy.count(), 1);
+		watcher.setReportedWorld(game, {World::Type::Singleplayer, {}, 0});
+		QCOMPARE(watcher.presence(kMe).world.type, World::Type::Singleplayer);
+		QCOMPARE(spy.count(), 2);
+	}
+
+	void aReportOfNoneClearsTheServer()
+	{
+		Fixture f;
+		FriendsGameWatcher watcher(f.list);
+		auto task = f.start("one");
+		auto* game = f.list->getInstanceById("one").get();
+		task->onLogLine("[12:00:00] [Render thread/INFO]: Connecting to "
+						"mc.hypixel.net, 25565");
+		watcher.setReportedWorld(game, {});
+		QCOMPARE(watcher.presence(kMe).world.type, World::Type::None);
+		QVERIFY(watcher.presence(kMe).world.host.isEmpty());
+		QVERIFY(watcher.presence(kMe).playing);
+	}
+
+	void aReportDoesNotSurviveTheGame()
+	{
+		Fixture f;
+		FriendsGameWatcher watcher(f.list);
+		auto task = f.start("one");
+		auto* game = f.list->getInstanceById("one").get();
+		watcher.setReportedWorld(game, {World::Type::Server, "play.example.net", 25565});
+		game->setRunning(false);
+		QVERIFY(!watcher.presence(kMe).playing);
+
+		/* The next game starts in the menus, and its log counts again. */
+		auto again = f.start("one");
+		QCOMPARE(watcher.presence(kMe).world.type, World::Type::None);
+		again->onLogLine("[12:00:00] [Render thread/INFO]: Connecting to "
+						 "mc.hypixel.net, 25565");
+		QCOMPARE(watcher.presence(kMe).world.host, QString("mc.hypixel.net"));
+	}
+
+	void aReportFromAGameThatIsNotRunningIsIgnored()
+	{
+		Fixture f;
+		FriendsGameWatcher watcher(f.list);
+		auto* game = f.list->getInstanceById("one").get();
+		QSignalSpy spy(&watcher, &FriendsGameWatcher::changed);
+		watcher.setReportedWorld(game, {World::Type::Server, "play.example.net", 25565});
+		QCOMPARE(spy.count(), 0);
+		/* ... and it does not leave the next game's log unheard. */
+		auto task = f.start("one");
+		task->onLogLine("[12:00:00] [Render thread/INFO]: Connecting to "
+						"mc.hypixel.net, 25565");
+		QCOMPARE(watcher.presence(kMe).world.host, QString("mc.hypixel.net"));
+	}
+
+	void aReportIsPerGame()
+	{
+		Fixture f;
+		FriendsGameWatcher watcher(f.list);
+		auto first = f.start("one");
+		auto second = f.start("two");
+		auto* firstGame = f.list->getInstanceById("one").get();
+		watcher.setReportedWorld(firstGame, {World::Type::Server, "one.example.net", 25565});
+		/* The latest game is the second, whose log still counts. */
+		second->onLogLine("[12:00:00] [Render thread/INFO]: Connecting to "
+						  "two.example.net, 25565");
+		QCOMPARE(watcher.presence(kMe).instance, QString("Creative"));
+		QCOMPARE(watcher.presence(kMe).world.host, QString("two.example.net"));
+		f.list->getInstanceById("two")->setRunning(false);
+		QCOMPARE(watcher.presence(kMe).world.host, QString("one.example.net"));
+	}
+
 	void theGameEndingClearsEverything()
 	{
 		Fixture f;

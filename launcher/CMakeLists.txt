@@ -474,6 +474,8 @@ set(MINECRAFT_SOURCES
     minecraft/launch/MinecraftServerTarget.h
     minecraft/launch/PrepareKiteMod.cpp
     minecraft/launch/PrepareKiteMod.h
+    minecraft/launch/StartModBridge.cpp
+    minecraft/launch/StartModBridge.h
     minecraft/launch/PreparePerformance.cpp
     minecraft/launch/PreparePerformance.h
     minecraft/launch/PrintInstanceInfo.cpp
@@ -945,6 +947,19 @@ set(FRIENDS_SOURCES
     friends/FriendsSignIn.cpp
     friends/FriendsPoll.cpp
     friends/FriendsActions.cpp
+    friends/FriendsBridge.cpp
+    # The Kite mod <-> launcher bridge (kite-mod/docs/BRIDGE.md).
+    modbridge/ModBridgeProtocol.h
+    modbridge/ModBridgeProtocol.cpp
+    modbridge/ModBridgeAnswers.cpp
+    modbridge/ModBridgeJson.h
+    modbridge/ModBridgeJson.cpp
+    modbridge/ModBridgeSource.h
+    modbridge/FriendsBridgeSource.h
+    modbridge/FriendsBridgeSource.cpp
+    modbridge/ModBridge.h
+    modbridge/ModBridge.cpp
+    modbridge/ModBridgeRoutes.cpp
 )
 
 # The messages and their answers over the README's fixture JSON, the status
@@ -972,6 +987,20 @@ add_unit_test(FriendsGameWatcher
 # accepted), the face cut from a skin, and when a face is stale.
 add_unit_test(FriendsFaces
     SOURCES friends/FriendsFaces_test.cpp
+    LIBS Kite_core
+    )
+
+# The bridge's rules (request reading, Host/Origin/Sec-Fetch, token, limits)
+# and its messages, as pure functions.
+add_unit_test(ModBridgeProtocol
+    SOURCES modbridge/ModBridgeProtocol_test.cpp
+    LIBS Kite_core
+    )
+
+# The bridge over a real loopback socket with a fake friends source:
+# sessions, authentication, the endpoints and the limits.
+add_unit_test(ModBridge
+    SOURCES modbridge/ModBridge_test.cpp
     LIBS Kite_core
     )
 
