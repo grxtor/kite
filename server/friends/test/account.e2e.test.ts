@@ -75,7 +75,7 @@ describe('deleting an account', () => {
     assert.deepEqual(me.body, {
       uuid: leaverUuid,
       name: leaverName,
-      settings: { visibility: 'friends', hideServer: false, shareIpServers: false },
+      settings: { visibility: 'friends', hideServer: false, shareIpServers: false, allowJoin: true },
     });
     const again: Player = { uuid: leaverUuid, name: leaverName, token };
     assert.deepEqual(await s.friendsOf(again), { friends: [], requests: { incoming: [], outgoing: [] } });

@@ -68,7 +68,13 @@ describe('status', () => {
       const { reporter, viewer } = await pair();
       const world = { type: 'server', host: 'mc.hypixel.net', port: 25565 };
       const res = await report(reporter, playing(world));
-      assert.deepEqual(res.status, { state: 'playing', instance: 'Survival 1.21', version: '1.21.4', world });
+      assert.deepEqual(res.status, {
+        state: 'playing',
+        instance: 'Survival 1.21',
+        version: '1.21.4',
+        world,
+        joinable: true,
+      });
       assert.deepEqual(await seen(viewer, reporter), res.status);
     });
 
@@ -95,7 +101,13 @@ describe('status', () => {
     test('playing without a world shows world null', async () => {
       const { reporter, viewer } = await pair();
       const res = await report(reporter, playing());
-      assert.deepEqual(res.status, { state: 'playing', instance: 'Survival 1.21', version: '1.21.4', world: null });
+      assert.deepEqual(res.status, {
+        state: 'playing',
+        instance: 'Survival 1.21',
+        version: '1.21.4',
+        world: null,
+        joinable: false,
+      });
       assert.deepEqual(await seen(viewer, reporter), res.status);
     });
 
@@ -148,7 +160,13 @@ describe('status', () => {
       const { reporter, viewer } = await pair();
       await setSettings(reporter, { hideServer: true });
       const res = await report(reporter, playing({ type: 'server', host: 'mc.hypixel.net', port: 25565 }));
-      assert.deepEqual(res.status, { state: 'playing', instance: 'Survival 1.21', version: '1.21.4', world: null });
+      assert.deepEqual(res.status, {
+        state: 'playing',
+        instance: 'Survival 1.21',
+        version: '1.21.4',
+        world: null,
+        joinable: false,
+      });
       assert.deepEqual(await seen(viewer, reporter), res.status);
     });
 

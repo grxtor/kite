@@ -156,7 +156,7 @@ GET /v1/me
 {
   "uuid": "069a79f4-44e9-4726-a5be-fca90e38aaf5",
   "name": "Notch",
-  "settings": { "visibility": "friends", "hideServer": false, "shareIpServers": false }
+  "settings": { "visibility": "friends", "hideServer": false, "shareIpServers": false, "allowJoin": true }
 }
 ```
 
@@ -172,13 +172,16 @@ GET /v1/me
   (`203.0.113.7`, `1.2.3.4.nip.io`) or a local address (`192.168.1.20`,
   `localhost`, `myserver.local`, `nas.fritz.box`, a single-label name) is
   shown as "a server" without its address. The address is not stored either.
+- `allowJoin`: on by default. Friends may join the server you are on. It
+  only takes effect while they can see the server's address; see `joinable`
+  in [Status objects](#status-objects).
 
 ```http
 PATCH /v1/me/settings
 { "visibility": "everyone", "hideServer": true }
 ```
 
-`200` with the full settings object. Any subset of the three fields may be
+`200` with the full settings object. Any subset of the four fields may be
 sent.
 
 ```http
@@ -231,7 +234,8 @@ PUT /v1/me/status
     "state": "playing",
     "instance": "Survival 1.21",
     "version": "1.21.4",
-    "world": { "type": "server", "host": "mc.hypixel.net", "port": 25565 }
+    "world": { "type": "server", "host": "mc.hypixel.net", "port": 25565 },
+    "joinable": true
   }
 }
 ```
@@ -253,17 +257,23 @@ Everywhere a status is shown it has one of these shapes:
 ```json
 { "state": "offline", "lastSeenAt": "2026-10-24T16:00:00.000Z" }
 { "state": "online" }
-{ "state": "playing", "instance": "Survival 1.21", "version": "1.21.4", "world": <world> }
+{ "state": "playing", "instance": "Survival 1.21", "version": "1.21.4", "world": <world>, "joinable": true }
 ```
 
 `world` is one of:
 
 | `world` | Show as |
 |---|---|
-| `{ "type": "server", "host": "mc.hypixel.net", "port": 25565 }` | "on mc.hypixel.net" (a Join button can use host and port) |
+| `{ "type": "server", "host": "mc.hypixel.net", "port": 25565 }` | "on mc.hypixel.net" (a Join button uses host and port when `joinable`) |
 | `{ "type": "server" }` | "on a server" (the address is a raw IP or local and not shared) |
 | `{ "type": "singleplayer" }` | "Single-player" |
 | `null` | "Playing" (in the menus, or `hideServer` is on) |
+
+`joinable` says whether the launcher may offer to join the player: it is
+`true` only when the player's `allowJoin` is on and `world` is a server with a
+`host`. Single-player, the menus, `hideServer` and an address the player does
+not share all make it `false`. It follows the player's current settings, so
+turning `allowJoin` off takes effect on the next poll.
 
 `lastSeenAt` is the last time the player reported a status, or `null` if never
 or if the player is invisible.
@@ -286,7 +296,8 @@ GET /v1/friends
       "name": "jeb_",
       "since": "2026-10-20T12:00:00.000Z",
       "status": { "state": "playing", "instance": "Hypixel", "version": "1.8.9",
-                  "world": { "type": "server", "host": "mc.hypixel.net", "port": 25565 } }
+                  "world": { "type": "server", "host": "mc.hypixel.net", "port": 25565 },
+                  "joinable": true }
     }
   ],
   "requests": {

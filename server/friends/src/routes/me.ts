@@ -10,12 +10,14 @@ interface SettingsRow {
   visibility: Visibility;
   hide_server: boolean;
   share_ip_servers: boolean;
+  allow_join: boolean;
 }
 
 interface SettingsPatch {
   visibility?: Visibility;
   hideServer?: boolean;
   shareIpServers?: boolean;
+  allowJoin?: boolean;
 }
 
 interface StatusBody {
@@ -25,10 +27,15 @@ interface StatusBody {
   world?: { type: 'server' | 'singleplayer'; host?: string; port?: number } | null;
 }
 
-const settingsColumns = 'visibility, hide_server, share_ip_servers';
+const settingsColumns = 'visibility, hide_server, share_ip_servers, allow_join';
 
 function settingsJson(row: SettingsRow) {
-  return { visibility: row.visibility, hideServer: row.hide_server, shareIpServers: row.share_ip_servers };
+  return {
+    visibility: row.visibility,
+    hideServer: row.hide_server,
+    shareIpServers: row.share_ip_servers,
+    allowJoin: row.allow_join,
+  };
 }
 
 /** Checks which fields go together and turns the reported world into the one to store. */
@@ -62,13 +69,13 @@ export function registerMeRoutes(app: FastifyInstance, ctx: Context) {
 
   app.patch<{ Body: SettingsPatch }>('/v1/me/settings', { schema: { body: settingsBody } }, async (request) => {
     const user = currentUser(request);
-    const { visibility, hideServer, shareIpServers } = request.body;
+    const { visibility, hideServer, shareIpServers, allowJoin } = request.body;
     return withTransaction(ctx.pool, async (client) => {
       const { rows } = await client.query<SettingsRow>(
         `update users set visibility = coalesce($2, visibility), hide_server = coalesce($3, hide_server),
-           share_ip_servers = coalesce($4, share_ip_servers)
+           share_ip_servers = coalesce($4, share_ip_servers), allow_join = coalesce($5, allow_join)
          where uuid = $1 returning ${settingsColumns}`,
-        [user.uuid, visibility ?? null, hideServer ?? null, shareIpServers ?? null],
+        [user.uuid, visibility ?? null, hideServer ?? null, shareIpServers ?? null, allowJoin ?? null],
       );
       const settings = rows[0]!;
       // Invisible means nothing about the player's activity is kept.

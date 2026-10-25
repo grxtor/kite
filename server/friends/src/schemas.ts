@@ -34,6 +34,7 @@ export const settingsBody = {
     visibility: { type: 'string', enum: ['everyone', 'friends', 'invisible'] },
     hideServer: { type: 'boolean' },
     shareIpServers: { type: 'boolean' },
+    allowJoin: { type: 'boolean' },
   },
 } as const;
 

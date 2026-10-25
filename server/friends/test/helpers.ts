@@ -34,6 +34,7 @@ export interface Settings {
   visibility: string;
   hideServer: boolean;
   shareIpServers: boolean;
+  allowJoin: boolean;
 }
 
 export interface MeBody extends UserRef {
@@ -52,6 +53,7 @@ export interface StatusBody {
   instance?: string;
   version?: string;
   world?: WorldBody | null;
+  joinable?: boolean;
 }
 
 export interface FriendEntry extends UserRef {
