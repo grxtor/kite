@@ -195,6 +195,8 @@ set(Kite_QT_COMPONENTS
     Qml
     Quick
     QuickControls2
+    # Its icons are SVG files, which only the Qt SVG image plugin can read.
+    Svg
 )
 
 # 6.4 is the floor because Debian 12 and Ubuntu 24.04 LTS ship Qt 6.4.2 and the

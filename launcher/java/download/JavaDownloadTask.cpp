@@ -112,8 +112,9 @@ void JavaDownloadTask::extractArchive()
 	setStatus(tr("Extracting %1...").arg(m_runtime.name));
 
 	bool success = false;
+	const bool zipArchive = m_archivePath.endsWith(".zip");
 
-	if (m_archivePath.endsWith(".zip")) {
+	if (zipArchive) {
 		// Use QuaZip for zip files
 		auto result = MMCZip::extractDir(m_archivePath, m_targetDir);
 		success = result.has_value();
@@ -158,6 +159,18 @@ void JavaDownloadTask::extractArchive()
 		} else {
 			permissions |= QFileDevice::ReadUser | QFileDevice::WriteUser;
 		}
+#ifndef Q_OS_WIN
+		// A zip brings no Unix permissions along, and a Java runs more than
+		// bin/java: Java 8 starts every child process -- the game, with Kite's
+		// launcher part -- through lib/jspawnhelper.
+		if (zipArchive && !file.isDir() &&
+			(file.dir().dirName() == QLatin1String("bin") ||
+			 file.fileName() == QLatin1String("jspawnhelper") ||
+			 file.fileName() == QLatin1String("jexec"))) {
+			permissions |= QFileDevice::ExeUser | QFileDevice::ExeGroup |
+						   QFileDevice::ExeOther;
+		}
+#endif
 		QFile::setPermissions(filepath, permissions);
 	}
 

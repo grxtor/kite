@@ -27,6 +27,7 @@
 #include <QProcess>
 #include <QDir>
 #include "minecraft/launch/MinecraftServerTarget.h"
+#include "minecraft/RuntimeContext.h"
 
 class ModFolderModel;
 class WorldList;
@@ -203,6 +204,11 @@ class MinecraftInstance : public BaseInstance
 						 MinecraftServerTargetPtr serverToJoin) const;
 
 	virtual JavaVersion getJavaVersion() const;
+
+	/// The OS and the architecture of this instance's Java, which decide
+	/// what libraries and natives it gets. Until a Java is checked, the
+	/// architecture Kite was built for.
+	RuntimeContext runtimeContext() const;
 
   protected:
 	QMap<QString, QString>

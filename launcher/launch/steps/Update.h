@@ -26,6 +26,8 @@
 #include <java/JavaChecker.h>
 #include <net/Mode.h>
 
+#include <functional>
+
 // FIXME: stupid. should be defined by the instance type? or even completely
 // abstracted away...
 class Update : public LaunchStep
@@ -34,6 +36,9 @@ class Update : public LaunchStep
   public:
 	explicit Update(LaunchTask* parent, Net::Mode mode)
 		: LaunchStep(parent), m_mode(mode) {};
+	/// Runs the task @p makeTask makes instead of the instance's whole update.
+	explicit Update(LaunchTask* parent, std::function<Task::Ptr()> makeTask)
+		: LaunchStep(parent), m_makeTask(std::move(makeTask)) {};
 	virtual ~Update() {};
 
 	void executeTask() override;
@@ -64,4 +69,5 @@ class Update : public LaunchStep
 	Task::Ptr m_updateTask;
 	bool m_aborted = false;
 	Net::Mode m_mode = Net::Mode::Offline;
+	std::function<Task::Ptr()> m_makeTask;
 };

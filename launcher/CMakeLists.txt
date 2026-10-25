@@ -513,6 +513,8 @@ set(MINECRAFT_SOURCES
     minecraft/MojangVersionFormat.h
     minecraft/Rule.cpp
     minecraft/Rule.h
+    minecraft/RuntimeContext.cpp
+    minecraft/RuntimeContext.h
     minecraft/OneSixVersionFormat.cpp
     minecraft/OneSixVersionFormat.h
     minecraft/OpSys.cpp
@@ -2221,7 +2223,13 @@ add_unit_test(QmlUiHost
 add_executable(${Kite_Name} MACOSX_BUNDLE WIN32 main.cpp ${KITE_RCS})
 # Keyword signature: qt_import_qml_plugins below links with PRIVATE, and CMake
 # refuses to mix the two forms on one target.
-target_link_libraries(${Kite_Name} PRIVATE Kite_logic Kite_qmlplugin)
+#
+# Qt::Svg is not called from C++. It is linked so that the deployment
+# (qt_deploy_runtime_dependencies, which ships the plugins of the Qt modules
+# kite links) packs the SVG image plugin: without it every icon in the QML
+# interface fails to load ("Unsupported image format") in the macOS bundle.
+target_link_libraries(${Kite_Name} PRIVATE Kite_logic Kite_qmlplugin
+    Qt${QT_VERSION_MAJOR}::Svg)
 
 # Same reason as QmlModule_test: Kite_qml is a static QML module with a
 # separate plugin, and a plain add_executable does not import it. Without this

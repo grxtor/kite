@@ -38,8 +38,8 @@ class LaunchProfile : public ProblemProvider
 	void applyTweakers(const QStringList& tweakers);
 	void applyJarMods(const QList<LibraryPtr>& jarMods);
 	void applyMods(const QList<LibraryPtr>& jarMods);
-	void applyLibrary(LibraryPtr library);
-	void applyMavenFile(LibraryPtr library);
+	void applyLibrary(LibraryPtr library, const RuntimeContext& context);
+	void applyMavenFile(LibraryPtr library, const RuntimeContext& context);
 	void applyMainJar(LibraryPtr jar);
 	void applyProblemSeverity(ProblemSeverity severity);
 	/// clear the profile
@@ -59,7 +59,7 @@ class LaunchProfile : public ProblemProvider
 	const QList<LibraryPtr>& getNativeLibraries() const;
 	const QList<LibraryPtr>& getMavenFiles() const;
 	const LibraryPtr getMainJar() const;
-	void getLibraryFiles(const QString& architecture, QStringList& jars,
+	void getLibraryFiles(const RuntimeContext& context, QStringList& jars,
 						 QStringList& nativeJars, const QString& overridePath,
 						 const QString& tempPath) const;
 	bool hasTrait(const QString& trait) const;

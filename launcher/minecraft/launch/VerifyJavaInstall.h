@@ -21,6 +21,7 @@
 #pragma once
 
 #include <launch/LaunchStep.h>
+#include "java/JavaChecker.h"
 #ifndef Kite_DISABLE_JAVA_DOWNLOADER
 #include "java/download/JavaRuntime.h"
 #include "java/download/JavaDownloadTask.h"
@@ -43,15 +44,39 @@ class VerifyJavaInstall : public LaunchStep
 
   private:
 	int determineRequiredJavaMajor() const;
-	QString findInstalledJava(int requiredMajor) const;
+	struct InstalledJava
+	{
+		QString path;
+		int major = 0;
+		bool native = false; // runs without emulation
+	};
+	/// The best installed Java for @p requiredMajor. With @p preferNative
+	/// off (the version has no natives for this architecture), only Javas
+	/// that run under emulation are considered.
+	InstalledJava findInstalledJava(int requiredMajor, bool preferNative) const;
+	/// Whether this version has LWJGL natives for a Java of the architecture
+	/// Kite was built for. Before LWJGL 3.3 the meta only has them where it
+	/// adds a build of its own (arm64 Macs, ARM Linux); on Windows ARM such a
+	/// version only runs on an x86_64 Java, under emulation.
+	bool nativeJavaCanRun() const;
 	QString javaInstallDir() const;
+	void setJavaPathAndSucceed(const QString& javaPath);
+	// Fails with @p reason, unless an installed Java newer than the one
+	// needed was put aside to fall back on.
+	void failOrUseFallback(const QString& reason);
+
+	InstalledJava m_fallbackJava;
+
+	// Checks the Java this step picked, so its version, architecture and
+	// vendor are recorded before native libraries and JVM arguments are
+	// worked out from them.
+	JavaCheckerPtr m_javaChecker;
 #ifndef Kite_DISABLE_JAVA_DOWNLOADER
 	void autoDownloadJava(int requiredMajor);
 	void fetchVersionList(int requiredMajor);
 	void fetchRuntimes(const QString& versionId, int requiredMajor);
 	void startDownload(const JavaDownload::RuntimeEntry& runtime,
 					   int requiredMajor);
-	void setJavaPathAndSucceed(const QString& javaPath);
 
 	QString m_preferredVendor;
 	NetJob::Ptr m_fetchJob;

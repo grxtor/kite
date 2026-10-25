@@ -1088,7 +1088,8 @@ bool PackProfile::removeComponent_internal(ComponentPtr patch)
 			return true;
 		}
 		QStringList jar, temp1, temp2, temp3;
-		jarMod->getApplicableFiles(currentSystem, jar, temp1, temp2, temp3,
+		jarMod->getApplicableFiles(d->m_instance->runtimeContext(), jar, temp1,
+								   temp2, temp3,
 								   d->m_instance->jarmodsPath().absolutePath());
 		QFileInfo finfo(jar[0]);
 		if (finfo.exists()) {
@@ -1232,24 +1233,38 @@ bool PackProfile::installCustomJar_internal(QString filepath)
 
 std::shared_ptr<LaunchProfile> PackProfile::getProfile() const
 {
+	// Which libraries apply depends on the Java that runs the game, and that
+	// can change (the launch picks one, or CheckJava finds it was replaced),
+	// so a profile made for another one is made again.
+	const RuntimeContext context = d->m_instance->runtimeContext();
+	if (d->m_profile && d->m_profileContext != context) {
+		d->m_profile.reset();
+	}
 	if (!d->m_profile) {
-		try {
-			auto profile = std::make_shared<LaunchProfile>();
-			for (auto file : d->components) {
-				qDebug() << "Applying" << file->getID()
-						 << (file->getProblemSeverity() ==
-									 ProblemSeverity::Error
-								 ? "ERROR"
-								 : "GOOD");
-				file->applyTo(profile.get());
-			}
-			d->m_profile = profile;
-		} catch (const Exception& error) {
-			qWarning() << "Couldn't apply profile patches because: "
-					   << error.cause();
-		}
+		d->m_profile = makeProfile(context);
+		d->m_profileContext = context;
 	}
 	return d->m_profile;
+}
+
+std::shared_ptr<LaunchProfile>
+PackProfile::makeProfile(const RuntimeContext& context) const
+{
+	try {
+		auto profile = std::make_shared<LaunchProfile>();
+		for (auto file : d->components) {
+			qDebug() << "Applying" << file->getID()
+					 << (file->getProblemSeverity() == ProblemSeverity::Error
+							 ? "ERROR"
+							 : "GOOD");
+			file->applyTo(profile.get(), context);
+		}
+		return profile;
+	} catch (const Exception& error) {
+		qWarning() << "Couldn't apply profile patches because: "
+				   << error.cause();
+	}
+	return nullptr;
 }
 
 void PackProfile::setOldConfigVersion(const QString& uid,

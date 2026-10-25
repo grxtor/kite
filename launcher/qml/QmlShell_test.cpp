@@ -104,20 +104,35 @@ class QmlShellTest : public QObject
 	void javaStepNeededWhenHostnameChangedRegardlessOfJavaPath()
 	{
 		QVERIFY(javaSetupStepNeeded(/* hostnameChanged */ true,
-									/* javaPathResolves */ true));
-		QVERIFY(javaSetupStepNeeded(true, false));
+									/* javaPathResolves */ true,
+									/* autoDownload */ true));
+		QVERIFY(javaSetupStepNeeded(true, false, true));
+		QVERIFY(javaSetupStepNeeded(true, false, false));
 	}
 
-	void javaStepNeededWhenJavaPathDoesNotResolve()
+	void javaStepNeededWhenJavaPathDoesNotResolveAndNothingDownloads()
 	{
 		QVERIFY(javaSetupStepNeeded(/* hostnameChanged */ false,
-									/* javaPathResolves */ false));
+									/* javaPathResolves */ false,
+									/* autoDownload */ false));
+	}
+
+	// "Let Kite download the right version for each game" is an answer the
+	// step offers: once it is given, a missing path must not bring the step
+	// back on every start.
+	void javaStepNotNeededWithoutJavaPathWhenKiteDownloadsJava()
+	{
+		QVERIFY(!javaSetupStepNeeded(/* hostnameChanged */ false,
+									 /* javaPathResolves */ false,
+									 /* autoDownload */ true));
 	}
 
 	void javaStepNotNeededWhenHostnameSameAndJavaPathResolves()
 	{
 		QVERIFY(!javaSetupStepNeeded(/* hostnameChanged */ false,
-									 /* javaPathResolves */ true));
+									 /* javaPathResolves */ true,
+									 /* autoDownload */ false));
+		QVERIFY(!javaSetupStepNeeded(false, true, true));
 	}
 };
 

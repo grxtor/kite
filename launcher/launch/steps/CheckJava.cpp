@@ -44,14 +44,23 @@ void CheckJava::executeTask()
 						"override in the instance's settings or disable it.")
 					.arg(m_javaPath),
 				MessageLevel::Warning);
-		} else {
-			emit logLine(QString("The java binary \"%1\" couldn't be found. "
-								 "Please set up java in "
-								 "the settings.")
-							 .arg(m_javaPath),
-						 MessageLevel::Warning);
+			emitFailed(QString("Java path is not valid."));
+			return;
 		}
-		emitFailed(QString("Java path is not valid."));
+		// No usable Java in the global settings is not an error: the
+		// welcome screen offers "let Kite download the right version for
+		// each game" instead of picking one. VerifyJavaInstall, later in
+		// this launch, picks an installed Java that suits this Minecraft
+		// version or downloads one, and records it on the instance.
+		emit logLine(
+			m_javaPath.isEmpty()
+				? QString("No Java is set up. Kite will pick one for this "
+						  "Minecraft version.\n\n")
+				: QString("The java binary \"%1\" couldn't be found. Kite will "
+						  "pick one for this Minecraft version.\n\n")
+					  .arg(m_javaPath),
+			MessageLevel::Kite);
+		emitSucceeded();
 		return;
 	} else {
 		emit logLine("Java path is:\n" + m_javaPath + "\n\n",
@@ -64,10 +73,19 @@ void CheckJava::executeTask()
 	auto storedArchitecture = settings->get("JavaArchitecture").toString();
 	auto storedVersion = settings->get("JavaVersion").toString();
 	auto storedVendor = settings->get("JavaVendor").toString();
+	auto storedRealArchitecture =
+		settings->get("JavaRealArchitecture").toString();
+	// Which Java the values above were recorded for. An instance with a Java
+	// of its own that has no record yet reads the global one's -- reloading
+	// settings even writes those into the instance -- and natives follow the
+	// architecture, so values recorded for another Java are not trusted.
+	auto storedCheckedPath = settings->get("JavaCheckedPath").toString();
 	m_javaUnixTime = javaUnixTime;
 	// if timestamps are not the same, or something is missing, check!
 	if (javaUnixTime != storedUnixTime || storedVersion.size() == 0 ||
-		storedArchitecture.size() == 0 || storedVendor.size() == 0) {
+		storedArchitecture.size() == 0 || storedVendor.size() == 0 ||
+		storedRealArchitecture.size() == 0 ||
+		storedCheckedPath != realJavaPath) {
 		m_JavaChecker = new JavaChecker();
 		emit logLine(QString("Checking Java version..."), MessageLevel::Kite);
 		connect(m_JavaChecker.get(), &JavaChecker::checkFinished, this,
@@ -117,6 +135,9 @@ void CheckJava::checkJavaFinished(JavaCheckResult result)
 									  result.javaVersion.toString());
 			instance->settings()->set("JavaArchitecture",
 									  result.mojangPlatform);
+			instance->settings()->set("JavaRealArchitecture",
+									  result.realPlatform);
+			instance->settings()->set("JavaCheckedPath", result.path);
 			instance->settings()->set("JavaVendor", result.javaVendor);
 			instance->settings()->set("JavaTimestamp", m_javaUnixTime);
 			emitSucceeded();

@@ -63,10 +63,10 @@ QList<std::shared_ptr<Rule>> rulesFromJsonV4(const QJsonObject& objectWithRules)
 		auto osNameVal = osObj.value("name");
 		if (!osNameVal.isString())
 			continue;
-		OpSys requiredOs = OpSys_fromString(osNameVal.toString());
 		QString versionRegex = osObj.value("version").toString();
 		// add a new OS rule
-		rules.append(OsRule::create(action, requiredOs, versionRegex));
+		rules.append(
+			OsRule::create(action, osNameVal.toString(), versionRegex));
 	}
 	return rules;
 }
@@ -86,7 +86,7 @@ QJsonObject OsRule::toJson()
 				   m_result == Allow ? QString("allow") : QString("disallow"));
 	QJsonObject osObj;
 	{
-		osObj.insert("name", OpSys_toString(m_system));
+		osObj.insert("name", m_system);
 		if (!m_version_regexp.isEmpty()) {
 			osObj.insert("version", m_version_regexp);
 		}

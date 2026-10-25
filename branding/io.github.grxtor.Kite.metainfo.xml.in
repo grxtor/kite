@@ -34,7 +34,7 @@
     <memory>2048</memory>
   </recommends>
   <releases>
-    <release version="1.0.0" date="2026-10-18">
+    <release version="1.0.0" date="2026-10-24">
       <description>
         <p>First Kite release, forked from MeshMC 11.</p>
       </description>

@@ -136,6 +136,10 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 		globalSettings->getSetting("JavaArchitecture"), javaOrLocation);
 	m_settings->registerPassthrough(globalSettings->getSetting("JavaVendor"),
 									javaOrLocation);
+	m_settings->registerPassthrough(
+		globalSettings->getSetting("JavaRealArchitecture"), javaOrLocation);
+	m_settings->registerPassthrough(
+		globalSettings->getSetting("JavaCheckedPath"), javaOrLocation);
 
 	// Java auto-download vendor preference
 	auto javaVendorOverride =
@@ -482,9 +486,8 @@ QDir MinecraftInstance::versionsPath() const
 QStringList MinecraftInstance::getClassPath() const
 {
 	QStringList jars, nativeJars;
-	auto javaArchitecture = settings()->get("JavaArchitecture").toString();
 	auto profile = m_components->getProfile();
-	profile->getLibraryFiles(javaArchitecture, jars, nativeJars,
+	profile->getLibraryFiles(runtimeContext(), jars, nativeJars,
 							 getLocalLibraryPath(), binRoot());
 	return jars;
 }
@@ -498,9 +501,8 @@ QString MinecraftInstance::getMainClass() const
 QStringList MinecraftInstance::getNativeJars() const
 {
 	QStringList jars, nativeJars;
-	auto javaArchitecture = settings()->get("JavaArchitecture").toString();
 	auto profile = m_components->getProfile();
-	profile->getLibraryFiles(javaArchitecture, jars, nativeJars,
+	profile->getLibraryFiles(runtimeContext(), jars, nativeJars,
 							 getLocalLibraryPath(), binRoot());
 	return nativeJars;
 }
@@ -839,8 +841,7 @@ MinecraftInstance::createLaunchScript(AuthSessionPtr session,
 	// libraries and class path.
 	{
 		QStringList jars, nativeJars;
-		auto javaArchitecture = settings()->get("JavaArchitecture").toString();
-		profile->getLibraryFiles(javaArchitecture, jars, nativeJars,
+		profile->getLibraryFiles(runtimeContext(), jars, nativeJars,
 								 getLocalLibraryPath(), binRoot());
 		for (auto file : jars) {
 			launchScript += "cp " + file + "\n";
@@ -933,8 +934,7 @@ MinecraftInstance::verboseDescription(AuthSessionPtr session,
 	{
 		out << "Libraries:";
 		QStringList jars, nativeJars;
-		auto javaArchitecture = settings->get("JavaArchitecture").toString();
-		profile->getLibraryFiles(javaArchitecture, jars, nativeJars,
+		profile->getLibraryFiles(runtimeContext(), jars, nativeJars,
 								 getLocalLibraryPath(), binRoot());
 		auto printLibFile = [&](const QString& path) {
 			QFileInfo info(path);
@@ -989,8 +989,8 @@ MinecraftInstance::verboseDescription(AuthSessionPtr session,
 	if (jarMods.size()) {
 		out << "Jar Mods:";
 		for (auto& jarmod : jarMods) {
-			auto displayname = jarmod->displayName(currentSystem);
-			auto realname = jarmod->filename(currentSystem);
+			auto displayname = jarmod->displayName(runtimeContext());
+			auto realname = jarmod->filename(runtimeContext());
 			if (displayname != realname) {
 				out << "  " + displayname + " (" + realname + ")";
 			} else {
@@ -1238,9 +1238,27 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 		if (kiteModApplies()) {
 			process->appendStep(new PrepareKiteMod(pptr));
 		}
-		process->appendStep(new Update(pptr, Net::Mode::Online));
+		process->appendStep(new Update(pptr, [this] {
+			return Task::Ptr(new MinecraftUpdate(
+				this, MinecraftUpdate::Part::VersionInfo));
+		}));
 	} else {
 		process->appendStep(new Update(pptr, Net::Mode::Offline));
+	}
+
+	// Make sure the Java this version needs is set up -- picking an installed
+	// one or downloading it -- once the version info says which one that is,
+	// and before anything that depends on the Java's architecture (which
+	// libraries and natives to download and use) or version (JVM arguments).
+	{
+		process->appendStep(new VerifyJavaInstall(pptr));
+	}
+
+	if (updateOnline) {
+		process->appendStep(new Update(pptr, [this] {
+			return Task::Ptr(
+				new MinecraftUpdate(this, MinecraftUpdate::Part::GameFiles));
+		}));
 	}
 
 	// if there are any jar mods
@@ -1266,11 +1284,6 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 	// reconstruct assets if needed
 	{
 		process->appendStep(new ReconstructAssets(pptr));
-	}
-
-	// verify that minimum Java requirements are met
-	{
-		process->appendStep(new VerifyJavaInstall(pptr));
 	}
 
 	// the Kite mod's way to the launcher, once the mod's jar is known
@@ -1325,6 +1338,13 @@ QString MinecraftInstance::launchMethod()
 JavaVersion MinecraftInstance::getJavaVersion() const
 {
 	return JavaVersion(settings()->get("JavaVersion").toString());
+}
+
+RuntimeContext MinecraftInstance::runtimeContext() const
+{
+	return RuntimeContext::forJava(
+		settings()->get("JavaRealArchitecture").toString(),
+		settings()->get("JavaArchitecture").toString());
 }
 
 std::shared_ptr<ModFolderModel> MinecraftInstance::loaderModList() const
@@ -1415,7 +1435,7 @@ QList<Mod> MinecraftInstance::getJarMods() const
 	QList<Mod> mods;
 	for (auto jarmod : profile->getJarMods()) {
 		QStringList jar, temp1, temp2, temp3;
-		jarmod->getApplicableFiles(currentSystem, jar, temp1, temp2, temp3,
+		jarmod->getApplicableFiles(runtimeContext(), jar, temp1, temp2, temp3,
 								   jarmodsPath().absolutePath());
 		// QString filePath =
 		// jarmodsPath().absoluteFilePath(jarmod->filename(currentSystem));
