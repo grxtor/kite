@@ -18,7 +18,7 @@ export interface Release {
   repoUrl: string | null;
 }
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const FILES = `https://github.com/grxtor/kite/releases/download/v${VERSION}`;
 
 export const release: Release = {
