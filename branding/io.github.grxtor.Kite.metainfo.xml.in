@@ -34,6 +34,16 @@
     <memory>2048</memory>
   </recommends>
   <releases>
+    <release version="1.1.0" date="2026-10-26">
+      <description>
+        <p>Kite Performance, friends and the Kite mod.</p>
+        <ul>
+          <li>Kite Performance: per-instance performance mods installed at Play, and Speed up for vanilla instances.</li>
+          <li>Friends: see which server your friends are on and join them.</li>
+          <li>The Kite mod for Minecraft 26.3: an in-game menu, a HUD editor, HUD modules and in-game friends.</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-10-24">
       <description>
         <p>First Kite release, forked from MeshMC 11.</p>
