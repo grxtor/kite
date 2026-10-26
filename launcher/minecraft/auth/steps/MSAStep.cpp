@@ -81,6 +81,15 @@ void MSAStep::perform()
 {
 	switch (m_action) {
 		case Refresh: {
+			/* With no refresh token Qt only logs a warning and never
+			 * answers, so the account would spin forever. The account
+			 * needs a fresh sign-in: say so and stop. */
+			if (m_data->msaToken.refresh_token.isEmpty()) {
+				emit finished(AccountTaskState::STATE_FAILED_HARD,
+							  tr("Your Microsoft sign-in has expired. Sign "
+								 "in to this account again."));
+				return;
+			}
 			// Load the refresh token from stored account data
 			m_oauth2->setRefreshToken(m_data->msaToken.refresh_token);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
