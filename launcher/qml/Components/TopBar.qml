@@ -21,6 +21,11 @@ import Kite.Theme
  * children (a PageToolbar), is for a TopBar used on its own; the shell keeps
  * that row off (searchVisible: false) and puts the Library's toolbar inside
  * the page area instead.
+ *
+ * What the shell wants at the bar's right end (the friends panel's toggle)
+ * goes in `trailing`, at the window's edge. The bar runs on above a panel
+ * that stands on the right (`rightReserve` is its width), so the title keeps
+ * to the page's column, not the whole window's.
  */
 Item {
     id: root
@@ -42,6 +47,11 @@ Item {
     property bool searchVisible: true
 
     default property alias actions: toolbar.actions
+    // The shell's own buttons, at the right end of the title row.
+    property alias trailing: trailingRow.data
+    // The width of a panel that stands to the right of the page area, under
+    // this bar: the page's column is centred in what is left of the window.
+    property int rightReserve: 0
 
     readonly property int titleRowHeight: Theme.control.heightSm
     readonly property int toolbarRowHeight: Theme.control.heightLg
@@ -55,7 +65,7 @@ Item {
     // wide window whatever centres a Theme.layout.maxContentWidth column --
     // so the title stays aligned with the page below it.
     readonly property int sideMargin: Math.max(Theme.space.xl + Theme.space.xs,
-                                               Math.round((root.width - Theme.layout.maxContentWidth) / 2))
+                                               Math.round((root.width - root.rightReserve - Theme.layout.maxContentWidth) / 2))
 
     // The trail and the title share one face and size; a step is only
     // quieter, and a link back to that level.
@@ -99,7 +109,10 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             Layout.leftMargin: root.sideMargin
-            Layout.rightMargin: root.sideMargin
+            // The page's column ends before the panel; and never under the
+            // trailing buttons, which stand at the window's edge.
+            Layout.rightMargin: Math.max(root.sideMargin + root.rightReserve,
+                                         trailingRow.width + Theme.space.md * 2)
             Layout.preferredHeight: root.titleRowHeight
             spacing: Theme.space.sm
 
@@ -171,5 +184,17 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: root.toolbarRowHeight
         }
+    }
+
+    // On the title row's line, whatever the toolbar row below does; over the
+    // layout, so its buttons are first in line for the pointer.
+    Row {
+        id: trailingRow
+        anchors.right: parent.right
+        anchors.rightMargin: Theme.space.md
+        anchors.top: parent.top
+        anchors.topMargin: Theme.space.sm
+        height: root.titleRowHeight
+        spacing: Theme.space.xs
     }
 }

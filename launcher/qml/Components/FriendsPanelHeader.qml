@@ -44,10 +44,11 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        // The title stands on the rows' heads (the panel's column inset); the
-        // buttons keep their own padding, so their glyphs sit in the corner.
+        // The title stands on the rows' heads and the buttons on their ⋯
+        // (the panel's column inset), so the header and the list share one
+        // set of edges.
         anchors.leftMargin: Theme.space.lg
-        anchors.rightMargin: Theme.space.md
+        anchors.rightMargin: Theme.space.lg
         anchors.topMargin: Theme.space.md
         anchors.bottomMargin: Theme.space.sm
         spacing: Theme.space.xs

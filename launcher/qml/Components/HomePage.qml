@@ -51,6 +51,9 @@ Item {
     property var friends: null
     // Main.qml's FriendJoinFlow, which says what a friend's Join starts.
     property var joinFlow: null
+    // The friends panel on the window's right edge is out: the side panel
+    // leaves the friends to it.
+    property bool friendsInPanel: false
     property var recentWorldsModel: null
     // QmlShell.news (NewsModel): Kite's news, newest first, or null.
     property var news: null
@@ -330,6 +333,7 @@ Item {
         recentWorldsModel: root.recentWorldsModel
         friends: root.friends
         joinFlow: root.joinFlow
+        friendsInPanel: root.friendsInPanel
         onFriendsRequested: (tab) => root.friendsRequested(tab)
         onNavigateRequested: (target) => root.navigateRequested(target)
         onJoinRequested: (friend) => root.joinRequested(friend)

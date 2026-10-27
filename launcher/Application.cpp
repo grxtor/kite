@@ -1156,6 +1156,9 @@ void Application::initSettings()
 	// end-to-end run, not a setting anyone should change.
 	m_settings->registerSetting("FriendsEnabled", true);
 	m_settings->registerSetting("FriendsNoticeSeen", false);
+	// The friends panel on the QML shell's right edge: out unless the user
+	// hid it with the top bar's toggle.
+	m_settings->registerSetting("FriendsPanelOpen", true);
 	m_settings->registerSetting("FriendsServerUrl", BuildConfig.FRIENDS_URL);
 	m_settings->registerSetting("FriendsMojangSessionUrl",
 								QString("https://sessionserver.mojang.com"));

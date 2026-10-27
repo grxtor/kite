@@ -13,12 +13,12 @@ import Kite.Theme
  * name), then three tabs -- Friends (where each one is, with Join where the
  * friend allows it; ⋯ to remove or block), Requests (accept, decline,
  * cancel) and Blocked (unblock). Removing and blocking ask first. What the
- * server answered
- * comes back as a toast from Main.qml, off FriendsController.actionFinished.
- * While friends are not connected the list gives way to FriendsPageState,
- * except for a poll that failed after the lists were read: those stay, with
- * a bar saying they may be out of date, and nothing that needs the server
- * (Add, Join, ⋯) works until it answers.
+ * server answered comes back as a toast from Main.qml, off
+ * FriendsController.actionFinished. While friends are not connected the
+ * list gives way to FriendsPageState, except for a poll that failed after
+ * the lists were read: those stay, with a bar saying they may be out of
+ * date, and nothing that needs the server (Add, Join, ⋯) works until it
+ * answers.
  *
  * The column hangs from the page title, as every page's content does, and
  * stops growing at a readable width.

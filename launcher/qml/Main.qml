@@ -90,6 +90,10 @@ ApplicationWindow {
             var scheme = SettingsStore.string("UiPalette")
             if (scheme === "amethyst" || scheme === "ember" || scheme === "diamond" || scheme === "grass")
                 Theme.scheme = scheme
+            // The friends panel's saved choice, which a window too narrow for
+            // it overrides for this session only.
+            root.friendsPanelOpen = SettingsStore.bool("FriendsPanelOpen")
+                                    && root.width >= root.friendsPanelMinWindow
         }
         onboardingLoader.active = !!root.shell && !!root.shell.setupSteps && root.shell.setupSteps.length > 0
         if (root.devRoute.length > 0)
@@ -153,6 +157,10 @@ ApplicationWindow {
                 Qt.callLater(root.openFriends, "friends")
             else if (key === "friendsTab")
                 Qt.callLater(root.openFriends, value)
+            // The friends panel on the right edge: "friendspanel=closed"
+            // hides it, "=open" shows it (it is out by default).
+            else if (key === "friendspanel")
+                root.setFriendsPanelOpen(value !== "closed")
             else if (key === "gallery")
                 galleryLoader.active = true
             else if (key === "profilemenu")
@@ -258,6 +266,19 @@ ApplicationWindow {
 
     // QmlShell.friends (FriendsController), or null where this build has none.
     readonly property var friendsController: root.shell && root.shell.friends ? root.shell.friends : null
+    // The friends panel on the right edge, on every page (FriendsSidePanel).
+    // Whether it is out is the FriendsPanelOpen setting, which the top bar's
+    // toggle writes. A window narrower than friendsPanelMinWindow starts
+    // without it, leaving the setting alone, so a small window is not
+    // squeezed before the user asks; the toggle can still bring it out.
+    readonly property int friendsPanelMinWindow: 1100
+    property bool friendsPanelOpen: false
+    // A build without friends has no panel and no toggle.
+    readonly property bool friendsPanelShown: !!root.friendsController && root.friendsPanelOpen
+    function setFriendsPanelOpen(open) {
+        root.friendsPanelOpen = open
+        SettingsStore.setValue("FriendsPanelOpen", open)
+    }
     // The Friends page on tab "friends", "requests" or "blocked", or "add":
     // the friends tab with the add field focused. Going there first builds
     // it (PageSlot), so it is there to be given the tab.
@@ -597,24 +618,13 @@ ApplicationWindow {
 
     // The rail's destinations. Home and Library become one page (designs/
     // phase3-scale.md, decision 1), so the rail has no Library of its own;
-    // page=library still routes, and lights Home, until that lands.
+    // page=library still routes, and lights Home, until that lands. Friends
+    // is not here: its list is the panel on the right edge, and the page
+    // (requests, blocked people, adding by name) is reached from that.
     readonly property var navItems: [
         { id: "home", icon: "home", label: qsTr("Home") },
         { id: "discover", icon: "compass", label: qsTr("Discover") }
-    ].concat(root.friendsController ? [{ id: "friends", icon: "users", label: qsTr("Friends") }] : [])
-
-    // The counts on the rail (SidebarNav.badges), kept apart from navItems
-    // so a request coming in never rebuilds the rail's items. Friends: the
-    // requests waiting for an answer, in the accent. Only what needs an
-    // answer: a count of who is online is nearly always there, so it would
-    // read as noise, and Home's panel says it. Nothing while friends are off
-    // or not connected: the number would be stale.
-    readonly property var navBadges: {
-        var friends = root.friendsController
-        if (!friends || !friends.enabled || friends.state !== "ready" || friends.incomingCount === 0)
-            return ({})
-        return ({ friends: { count: friends.incomingCount, tone: "accent" } })
-    }
+    ]
 
     SidebarNav {
         id: sidebar
@@ -632,13 +642,13 @@ ApplicationWindow {
         canExpand: root.width >= 1000
         collapsed: !canExpand || SettingsStore.bool("UiSidebarCollapsed")
         items: root.navItems
-        badges: root.navBadges
         footerItems: [
             { id: "settings", icon: "settings", label: qsTr("Settings") }
         ]
         // A page the rail does not list lights the place it is reached from:
-        // Home for the library and an instance (the breadcrumb's root too),
-        // unless that instance's own tile is in the rail (currentInstanceId).
+        // Home for the library, the Friends page and an instance (the
+        // breadcrumb's root too), unless that instance's own tile is in the
+        // rail (currentInstanceId).
         currentId: root.navItems.some(item => item.id === root.page)
                    || root.page === "settings" || root.page === "accounts" ? root.page : "home"
         currentInstanceId: root.page === "instance" ? root.openedInstanceId : ""
@@ -705,15 +715,47 @@ ApplicationWindow {
                ? root.instanceModel.count : -1
         // The library title row also carries the total play time.
         showPlayTime: root.page === "library"
+        // The title keeps to the page's column, which the friends panel
+        // narrows; the toggle stands at the window's edge, over the panel.
+        rightReserve: friendsPanel.width
+        trailing: [
+            FriendsPanelToggle {
+                visible: !!root.friendsController
+                open: root.friendsPanelOpen
+                // Who is around, once that is known: not from a list the
+                // server is no longer answering for.
+                onlineCount: Format.friendsPhase(root.friendsController) === "ready"
+                             ? root.friendsController.onlineCount : 0
+                surround: root.shellColor
+                onClicked: root.setFriendsPanelOpen(!root.friendsPanelOpen)
+            }
+        ]
+    }
+
+    // The friends list, a narrow panel fixed on the right edge from under
+    // the top bar to the window's bottom, beside the page area and the play
+    // bar, which end where it begins. Its width is 0 while it is in.
+    FriendsSidePanel {
+        id: friendsPanel
+        anchors.right: parent.right
+        anchors.top: topBar.bottom
+        anchors.bottom: parent.bottom
+        open: root.friendsPanelShown
+        controller: root.friendsController
+        joinFlow: friendJoin
+        onFriendsRequested: (tab) => root.openFriends(tab)
+        onNavigateRequested: (target) => root.navigate(target)
+        onJoinRequested: (friend) => friendJoin.join(friend)
     }
 
     // The page area. Clipped, and its rounded rectangle runs on past the
-    // right edge -- and past the bottom while no play bar sits under it --
-    // so only the corners against the shell round off.
+    // right edge (the window's, or where the friends panel begins) -- and
+    // past the bottom while no play bar sits under it -- so only the corners
+    // against the shell round off.
     Item {
         id: panel
         anchors.left: sidebar.right
-        anchors.right: parent.right
+        anchors.right: friendsPanel.left
         anchors.top: topBar.bottom
         anchors.bottom: playDock.visible ? playDock.top : parent.bottom
         clip: true
@@ -873,6 +915,7 @@ ApplicationWindow {
                         msaSignedIn: !!root.shell && root.shell.accountKind === "Microsoft"
                         friends: root.friendsController
                         joinFlow: friendJoin
+                        friendsInPanel: root.friendsPanelShown
                         onFriendsRequested: (tab) => root.openFriends(tab)
                         onJoinRequested: (friend) => friendJoin.join(friend)
 
@@ -1109,7 +1152,7 @@ ApplicationWindow {
         id: playDock
         surround: root.shellColor
         anchors.left: sidebar.right
-        anchors.right: parent.right
+        anchors.right: friendsPanel.left
         anchors.bottom: parent.bottom
         height: implicitHeight
         visible: pageHost.dockVisible && !root.dockSuppressed
@@ -1226,7 +1269,7 @@ ApplicationWindow {
         }
     }
 
-    // A friend's Join, from the Friends page and Home's panel.
+    // A friend's Join, from the Friends page, the friends panel and Home's panel.
     FriendJoinFlow {
         id: friendJoin
         shell: root.shell
