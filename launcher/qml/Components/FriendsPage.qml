@@ -85,10 +85,7 @@ Item {
     // @p mode: "remove" a friend, "block" a friend, or "blockRequest" (the
     // person is not a friend: their request is what goes).
     function confirmAction(mode, uuid, name) {
-        confirm.mode = mode
-        confirm.targetUuid = uuid
-        confirm.targetName = name
-        confirm.open()
+        confirm.ask(mode, uuid, name)
     }
 
     onShownChanged: if (root.shown) root.load()
@@ -225,26 +222,8 @@ Item {
     }
 
     // Removing a friend and blocking someone, both after a question.
-    ConfirmDialog {
+    FriendConfirmDialog {
         id: confirm
-
-        property string mode: "remove"
-        property string targetUuid
-        property string targetName
-        readonly property bool removing: confirm.mode === "remove"
-
-        title: confirm.removing ? qsTr("Remove %1 from friends?").arg(confirm.targetName) : qsTr("Block %1?").arg(confirm.targetName)
-        confirmText: confirm.removing ? qsTr("Remove friend") : qsTr("Block")
-        text: confirm.removing
-              ? qsTr("%1 will no longer see when you are online, and you will not see them. You can add each other again later.").arg(confirm.targetName)
-              : confirm.mode === "blockRequest"
-                ? qsTr("Their request is declined, and %1 can no longer send you requests or see when you are online. They are not told.").arg(confirm.targetName)
-                : qsTr("%1 will be taken off your friends and can no longer send you requests or see when you are online. They are not told.").arg(confirm.targetName)
-        onConfirmed: {
-            if (confirm.removing)
-                root.controller.removeFriend(confirm.targetUuid)
-            else
-                root.controller.block(confirm.targetUuid)
-        }
+        controller: root.controller
     }
 }

@@ -192,6 +192,7 @@ qt_add_qml_module(Kite_qml_components
         FriendStatusRow.qml
         FriendMoreButton.qml
         FriendPersonMenu.qml
+        FriendConfirmDialog.qml
         FriendJoinFlow.qml
         FriendsPending.qml
         FriendJoinDialog.qml

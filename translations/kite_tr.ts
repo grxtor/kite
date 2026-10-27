@@ -4992,6 +4992,44 @@ Lütfen tekrar dene.</translation>
     </message>
 </context>
 <context>
+    <name>FriendConfirmDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendConfirmDialog.qml" line="+34"/>
+        <source>Remove %1 from friends?</source>
+        <translation>%1 arkadaşlıktan çıkarılsın mı?</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Block %1?</source>
+        <translation>%1 engellensin mi?</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Block</source>
+        <translation>Engelle</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Remove friend</source>
+        <translation>Arkadaşlıktan çıkar</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 will no longer see when you are online, and you will not see them. You can add each other again later.</source>
+        <translation>%1 artık senin çevrimiçi olduğunu göremez, sen de onunkini göremezsin. Daha sonra birbirinizi yeniden ekleyebilirsiniz.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Their request is declined, and %1 can no longer send you requests or see when you are online. They are not told.</source>
+        <translation>İsteği reddedilir; %1 artık sana istek gönderemez ve çevrimiçi olduğunu göremez. Ona haber verilmez.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 will be taken off your friends and can no longer send you requests or see when you are online. They are not told.</source>
+        <translation>%1 arkadaşlarından çıkarılır; sana istek gönderemez ve senin çevrimiçi olduğunu göremez. Ona haber verilmez.</translation>
+    </message>
+</context>
+<context>
     <name>FriendJoinDialog</name>
     <message>
         <location filename="../launcher/qml/Components/FriendJoinDialog.qml" line="+86"/>
@@ -5607,41 +5645,6 @@ Lütfen tekrar dene.</translation>
         <location line="+3"/>
         <source>Blocked</source>
         <translation>Engellenenler</translation>
-    </message>
-    <message>
-        <location line="+60"/>
-        <source>Remove %1 from friends?</source>
-        <translation>%1 arkadaşlıktan çıkarılsın mı?</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>Block %1?</source>
-        <translation>%1 engellensin mi?</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Block</source>
-        <translation>Engelle</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>Remove friend</source>
-        <translation>Arkadaşlıktan çıkar</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>%1 will no longer see when you are online, and you will not see them. You can add each other again later.</source>
-        <translation>%1 artık senin çevrimiçi olduğunu göremez, sen de onunkini göremezsin. Daha sonra birbirinizi yeniden ekleyebilirsiniz.</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>Their request is declined, and %1 can no longer send you requests or see when you are online. They are not told.</source>
-        <translation>İsteği reddedilir; %1 artık sana istek gönderemez ve çevrimiçi olduğunu göremez. Ona haber verilmez.</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>%1 will be taken off your friends and can no longer send you requests or see when you are online. They are not told.</source>
-        <translation>%1 arkadaşlarından çıkarılır; sana istek gönderemez ve senin çevrimiçi olduğunu göremez. Ona haber verilmez.</translation>
     </message>
 </context>
 <context>
