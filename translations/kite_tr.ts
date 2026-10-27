@@ -10629,7 +10629,12 @@ Neden:
         <translation>Microsoft hesabıyla giriş yapılıyor.</translation>
     </message>
     <message>
-        <location line="+35"/>
+        <location line="+26"/>
+        <source>Your Microsoft sign-in has expired. Sign in to this account again.</source>
+        <translation>Microsoft oturumunun süresi dolmuş. Bu hesaba yeniden giriş yap.</translation>
+    </message>
+    <message>
+        <location line="+18"/>
         <source>Failed to start local HTTP server for OAuth2 callback.</source>
         <translation>OAuth2 geri çağrısı için yerel HTTP sunucusu başlatılamadı.</translation>
     </message>
