@@ -107,6 +107,10 @@ Column {
                     stale: root.stale
                     compact: true
                     headSlot: row.headSize
+                    // The narrow column cannot fit a host, the version and
+                    // Join: the host is what tells friends apart, so it keeps
+                    // the room and the version is left to the Friends page.
+                    detailSuffix: ""
 
                     Button {
                         id: join

@@ -726,6 +726,8 @@ ApplicationWindow {
                 // server is no longer answering for.
                 onlineCount: Format.friendsPhase(root.friendsController) === "ready"
                              ? root.friendsController.onlineCount : 0
+                requestCount: Format.friendsPhase(root.friendsController) === "ready"
+                              ? root.friendsController.incomingCount : 0
                 surround: root.shellColor
                 onClicked: root.setFriendsPanelOpen(!root.friendsPanelOpen)
             }
