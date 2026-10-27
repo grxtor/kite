@@ -7,11 +7,13 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The friends list in full, its own page in the rail: you (FriendsSelfCard,
- * with where to add someone by their Minecraft name), then three tabs --
- * Friends (where each one is, with Join where the friend allows it; ⋯ to
- * remove or block), Requests (accept, decline, cancel) and Blocked
- * (unblock). Removing and blocking ask first. What the server answered
+ * The friends list in full, a page of its own that the friends panel on the
+ * window's right edge (FriendsSidePanel) opens for what does not fit a narrow
+ * column: you (FriendsSelfCard, with where to add someone by their Minecraft
+ * name), then three tabs -- Friends (where each one is, with Join where the
+ * friend allows it; ⋯ to remove or block), Requests (accept, decline,
+ * cancel) and Blocked (unblock). Removing and blocking ask first. What the
+ * server answered
  * comes back as a toast from Main.qml, off FriendsController.actionFinished.
  * While friends are not connected the list gives way to FriendsPageState,
  * except for a poll that failed after the lists were read: those stay, with

@@ -193,6 +193,12 @@ qt_add_qml_module(Kite_qml_components
         FriendMoreButton.qml
         FriendPersonMenu.qml
         FriendConfirmDialog.qml
+        FriendsSidePanel.qml
+        FriendsPanelHeader.qml
+        FriendsPanelGroup.qml
+        FriendsPanelToggle.qml
+        FriendsStaleBar.qml
+        CountPill.qml
         FriendJoinFlow.qml
         FriendsPending.qml
         FriendJoinDialog.qml
