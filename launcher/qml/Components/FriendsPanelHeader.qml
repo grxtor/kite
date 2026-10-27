@@ -71,8 +71,10 @@ Item {
             }
             Text {
                 width: parent.width
-                visible: root.subtitle.length > 0
-                text: root.subtitle
+                // A non-breaking space when there is nothing to say, so the
+                // header keeps its height as the count comes and goes and the
+                // list under it does not jump.
+                text: root.subtitle.length > 0 ? root.subtitle : "\u00a0"
                 elide: Text.ElideRight
                 color: root.onlineCount > 0 ? Theme.palette.success : Theme.palette.textTertiary
                 font.family: Theme.font.family
