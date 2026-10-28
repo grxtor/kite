@@ -140,8 +140,8 @@ Item {
         root.dragWidth = Math.min(Math.max(wanted, root.stripWidth), root.maxWidth)
     }
     function endDrag() {
-        // Say what was chosen before the drag stops steering the width, so
-        // the width settles on the new mode in one move.
+        // Say what was chosen before the drag ends, so the mode the panel
+        // settles on is the new one, reached in one move.
         if (root.dragWidth < root.snapWidth) {
             if (root.expanded)
                 root.expandedRequested(false)
@@ -150,26 +150,54 @@ Item {
             if (!root.expanded)
                 root.expandedRequested(true)
         }
-        // The slide is switched back on first: letting go makes the width
-        // change in the same breath, and a binding that has not yet heard that
-        // the drag is over would write it with the slide still off, jumping.
-        root.pointerSteers = false
         root.dragging = false
     }
 
     // True from the first turn of the event loop.
     property bool settled: false
-    // The width follows the pointer, so it must not slide after it. True for
-    // as long as `dragging` is, but cleared a moment before it (see endDrag),
-    // which is why it is a property of its own.
-    property bool pointerSteers: false
 
-    width: !root.open ? 0 : root.dragging ? root.dragLiveWidth : root.expanded ? root.fullWidth : root.stripWidth
+    // Which of the four widths the panel has. The slide belongs to a change
+    // of this, not to a change of the width: the window or the rail
+    // changing size moves what fullWidth is, and the panel must keep up
+    // with that at once, as it does with the pointer, or the page area
+    // would sit narrower than minPageWidth until the slide caught up.
+    readonly property string mode: !root.open ? "closed"
+                                   : root.dragging ? "drag"
+                                   : root.expanded ? "full" : "strip"
+
     visible: root.width > 0
     clip: true
-    Behavior on width {
-        enabled: root.settled && !root.pointerSteers
+    // A PropertyChanges binding keeps following its expression for as long
+    // as its state holds, so only the move from one state to another slides.
+    states: [
+        State {
+            name: "closed"
+            when: root.mode === "closed"
+            PropertyChanges { root.width: 0 }
+        },
+        State {
+            name: "strip"
+            when: root.mode === "strip"
+            PropertyChanges { root.width: root.stripWidth }
+        },
+        State {
+            name: "full"
+            when: root.mode === "full"
+            PropertyChanges { root.width: root.fullWidth }
+        },
+        State {
+            name: "drag"
+            when: root.mode === "drag"
+            PropertyChanges { root.width: root.dragLiveWidth }
+        }
+    ]
+    // Into a drag there is no slide: the width follows the pointer. Out of
+    // one there is, to wherever letting go left the panel.
+    transitions: Transition {
+        to: "closed,strip,full"
+        enabled: root.settled
         NumberAnimation {
+            property: "width"
             duration: SettingsStore.bool("UiReduceMotion") ? 0 : Theme.motion.normal
             easing.type: Theme.motion.easing
         }
@@ -267,7 +295,6 @@ Item {
         space: root.parent
         onDragStarted: {
             root.dragWidth = root.width
-            root.pointerSteers = true
             root.dragging = true
         }
         onDragged: (edge) => root.dragTo(edge)
