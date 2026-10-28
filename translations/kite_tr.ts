@@ -5030,6 +5030,24 @@ Lütfen tekrar dene.</translation>
     </message>
 </context>
 <context>
+    <name>FriendHeadCard</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendHeadCard.qml" line="148"/>
+        <source>Join</source>
+        <translation>Katıl</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Join %1 on %2</source>
+        <translation>%1 ile %2 sunucusuna katıl</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>%1 doesn&apos;t let friends join</source>
+        <translation>%1 arkadaşlarının katılmasına izin vermiyor</translation>
+    </message>
+</context>
+<context>
     <name>FriendJoinDialog</name>
     <message>
         <location filename="../launcher/qml/Components/FriendJoinDialog.qml" line="+86"/>
@@ -5701,6 +5719,34 @@ Lütfen tekrar dene.</translation>
     </message>
 </context>
 <context>
+    <name>FriendsPanelFull</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendsPanelFull.qml" line="125"/>
+        <source>IN GAME — %1</source>
+        <translation>OYUNDA — %1</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>ONLINE — %1</source>
+        <translation>ÇEVRİMİÇİ — %1</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>OFFLINE — %1</source>
+        <translation>ÇEVRİMDIŞI — %1</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>Add friends who use Kite to see where they play.</source>
+        <translation>Kite kullanan arkadaşlarını ekle, nerede oynadıklarını gör.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Add a friend</source>
+        <translation>Arkadaş ekle</translation>
+    </message>
+</context>
+<context>
     <name>FriendsPanelGroup</name>
     <message>
         <location filename="../launcher/qml/Components/FriendsPanelGroup.qml" line="+116"/>
@@ -5739,6 +5785,49 @@ Lütfen tekrar dene.</translation>
         <location line="+9"/>
         <source>Friend requests</source>
         <translation>Arkadaşlık istekleri</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>Collapse friends</source>
+        <translation>Arkadaşları daralt</translation>
+    </message>
+</context>
+<context>
+    <name>FriendsPanelStrip</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendsPanelStrip.qml" line="57"/>
+        <source>Friends is off</source>
+        <translation>Arkadaşlık kapalı</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Connecting…</source>
+        <translation>Bağlanıyor…</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Sign in to use Friends</source>
+        <translation>Arkadaşlık için giriş yap</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Can&apos;t connect</source>
+        <translation>Bağlanılamadı</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Expand friends</source>
+        <translation>Arkadaşları genişlet</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Friend requests</source>
+        <translation>Arkadaşlık istekleri</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>Add a friend</source>
+        <translation>Arkadaş ekle</translation>
     </message>
 </context>
 <context>
@@ -5876,34 +5965,6 @@ Lütfen tekrar dene.</translation>
     </message>
 </context>
 <context>
-    <name>FriendsSidePanel</name>
-    <message>
-        <location filename="../launcher/qml/Components/FriendsSidePanel.qml" line="+189"/>
-        <source>IN GAME — %1</source>
-        <translation>OYUNDA — %1</translation>
-    </message>
-    <message>
-        <location line="+12"/>
-        <source>ONLINE — %1</source>
-        <translation>ÇEVRİMİÇİ — %1</translation>
-    </message>
-    <message>
-        <location line="+10"/>
-        <source>OFFLINE — %1</source>
-        <translation>ÇEVRİMDIŞI — %1</translation>
-    </message>
-    <message>
-        <location line="+17"/>
-        <source>Add friends who use Kite to see where they play.</source>
-        <translation>Kite kullanan arkadaşlarını ekle, nerede oynadıklarını gör.</translation>
-    </message>
-    <message>
-        <location line="+4"/>
-        <source>Add a friend</source>
-        <translation>Arkadaş ekle</translation>
-    </message>
-</context>
-<context>
     <name>FriendsStaleBar</name>
     <message>
         <location filename="../launcher/qml/Components/FriendsStaleBar.qml" line="+22"/>
@@ -5919,6 +5980,14 @@ Lütfen tekrar dene.</translation>
         <location line="+0"/>
         <source>Try again</source>
         <translation>Tekrar dene</translation>
+    </message>
+</context>
+<context>
+    <name>FriendsStripHead</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendsStripHead.qml" line="41"/>
+        <source>%1, %2</source>
+        <translation>%1, %2</translation>
     </message>
 </context>
 <context>
