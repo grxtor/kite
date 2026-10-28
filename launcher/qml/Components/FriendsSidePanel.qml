@@ -29,8 +29,8 @@ import Kite.Theme
  * in. Both bodies are built once and never torn down, so the folds in the
  * full panel hold for the session.
  *
- * Home's own side panel leaves the friends to this one only while it is
- * opened out (`expanded`): a strip of heads is not a list to read.
+ * Home's own side panel leaves the friends to this one whenever it is out,
+ * strip or opened out, so no friend is drawn twice side by side.
  */
 Item {
     id: root

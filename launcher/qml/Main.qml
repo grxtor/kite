@@ -950,7 +950,7 @@ ApplicationWindow {
                         msaSignedIn: !!root.shell && root.shell.accountKind === "Microsoft"
                         friends: root.friendsController
                         joinFlow: friendJoin
-                        friendsInPanel: root.friendsPanelShown && root.friendsPanelExpanded
+                        friendsInPanel: root.friendsPanelShown
                         onFriendsRequested: (tab) => root.openFriends(tab)
                         onJoinRequested: (friend) => friendJoin.join(friend)
 

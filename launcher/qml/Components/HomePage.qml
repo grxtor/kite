@@ -51,9 +51,10 @@ Item {
     property var friends: null
     // Main.qml's FriendJoinFlow, which says what a friend's Join starts.
     property var joinFlow: null
-    // The friends panel on the window's right edge is opened out to a list:
-    // the side panel leaves the friends to it. (A strip of heads is not a
-    // list, so the side panel keeps them then.)
+    // The friends panel on the window's right edge is out, as a strip of
+    // heads or opened out to a list: the side panel leaves the friends to
+    // it, so no friend is drawn twice side by side and the panel is not
+    // made wider by a second list of the same people.
     property bool friendsInPanel: false
     property var recentWorldsModel: null
     // QmlShell.news (NewsModel): Kite's news, newest first, or null.
