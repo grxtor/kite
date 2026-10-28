@@ -60,8 +60,8 @@ Item {
                                      : qsTr("Can't connect")
     readonly property string stateIcon: root.failed ? "alert-triangle" : root.signInFirst ? "user" : "users"
 
-    // A head's card and the tip rows would cover are no use once the strip
-    // is out of sight (the panel is hidden, or widened).
+    // A head's card is no use once the strip is out of sight (the panel is
+    // hidden, or opened out), and would be left floating over the page.
     onVisibleChanged: if (!root.visible) card.close()
 
     Column {
