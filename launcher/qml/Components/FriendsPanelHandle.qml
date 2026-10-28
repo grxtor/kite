@@ -67,11 +67,17 @@ MouseArea {
         }
         root.dragged(at - root._grabOffset)
     }
-    onReleased: {
+    function _finish() {
         if (root._dragging)
             root.dragFinished()
         root._dragging = false
     }
+
+    onReleased: root._finish()
+    // The grab was taken away mid-drag (the window lost the focus, say) and
+    // there will be no release to end it: the drag ends where it got to, or
+    // the panel would go on following a pointer that is no longer dragging it.
+    onCanceled: root._finish()
     onDoubleClicked: root.toggleRequested()
 
     Rectangle {
