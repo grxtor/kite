@@ -140,17 +140,25 @@ Item {
             if (!root.expanded)
                 root.expandedRequested(true)
         }
+        // The slide is switched back on first: letting go makes the width
+        // change in the same breath, and a binding that has not yet heard that
+        // the drag is over would write it with the slide still off, jumping.
+        root.pointerSteers = false
         root.dragging = false
     }
 
     // True from the first turn of the event loop.
     property bool settled: false
+    // The width follows the pointer, so it must not slide after it. True for
+    // as long as `dragging` is, but cleared a moment before it (see endDrag),
+    // which is why it is a property of its own.
+    property bool pointerSteers: false
 
     width: !root.open ? 0 : root.dragging ? root.dragWidth : root.expanded ? root.fullWidth : root.stripWidth
     visible: root.width > 0
     clip: true
     Behavior on width {
-        enabled: root.settled && !root.dragging
+        enabled: root.settled && !root.pointerSteers
         NumberAnimation {
             duration: SettingsStore.bool("UiReduceMotion") ? 0 : Theme.motion.normal
             easing.type: Theme.motion.easing
@@ -249,6 +257,7 @@ Item {
         space: root.parent
         onDragStarted: {
             root.dragWidth = root.width
+            root.pointerSteers = true
             root.dragging = true
         }
         onDragged: (edge) => root.dragTo(edge)
