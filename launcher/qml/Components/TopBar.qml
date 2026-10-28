@@ -152,8 +152,12 @@ Item {
             Text {
                 Layout.alignment: Qt.AlignVCenter
                 // Its own width, down to nothing under pressure: a long
-                // instance name elides before the row overflows.
+                // instance name elides before the row overflows. (A layout
+                // keeps an item that does not fill at its preferred width, so
+                // it fills, and is held to the width it wants to stay put.)
+                Layout.fillWidth: true
                 Layout.minimumWidth: 0
+                Layout.maximumWidth: implicitWidth
                 text: root.title
                 elide: Text.ElideRight
                 color: Theme.palette.textPrimary
