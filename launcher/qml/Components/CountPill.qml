@@ -11,6 +11,11 @@ import Kite.Theme
  * (`ringColor`), so it reads as laid in the corner rather than on top of the
  * glyph. `tone` says what the number is: "accent" for something that wants
  * an answer, "success" for who is around.
+ *
+ * It is declared inside the button, as a sibling of the button's own icon,
+ * and an item stacks above its siblings that come before it only if its `z`
+ * says so; hence the `z` below, without which the glyph is drawn over the
+ * digits.
  */
 Rectangle {
     id: root
@@ -23,6 +28,7 @@ Rectangle {
 
     readonly property int cap: 99
 
+    z: 1
     visible: root.count > 0
     width: Math.max(height, label.implicitWidth + Theme.space.sm + Theme.focus.width * 2)
     height: Math.ceil(Theme.type.caption.lineHeightPx) + Theme.focus.width * 2
