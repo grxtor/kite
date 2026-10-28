@@ -1157,8 +1157,12 @@ void Application::initSettings()
 	m_settings->registerSetting("FriendsEnabled", true);
 	m_settings->registerSetting("FriendsNoticeSeen", false);
 	// The friends panel on the QML shell's right edge: out unless the user
-	// hid it with the top bar's toggle.
+	// hid it with the top bar's toggle. It starts as a strip of heads;
+	// FriendsPanelExpanded is whether it is opened out to names and groups,
+	// and FriendsPanelWidth the width (in pixels) the user dragged that to.
 	m_settings->registerSetting("FriendsPanelOpen", true);
+	m_settings->registerSetting("FriendsPanelExpanded", false);
+	m_settings->registerSetting("FriendsPanelWidth", 320);
 	m_settings->registerSetting("FriendsServerUrl", BuildConfig.FRIENDS_URL);
 	m_settings->registerSetting("FriendsMojangSessionUrl",
 								QString("https://sessionserver.mojang.com"));
