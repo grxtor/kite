@@ -68,10 +68,20 @@ Item {
         return friend.state === "playing" ? 0 : friend.state === "online" ? 1 : 2
     }
 
+    // A click on a head: its card opens, or closes if it is the one open.
+    function toggleCard(head, uuid) {
+        if (card.opened && card.friendUuid === uuid)
+            card.close()
+        else
+            card.openFor(head, uuid)
+    }
+
     // A head's card is no use once the strip is out of sight (the panel is
     // hidden, or opened out), and would be left floating over the page.
     onVisibleChanged: if (!root.visible) card.close()
 
+    // A press on these buttons is inside the strip, which the card does not
+    // close for (see FriendHeadCard), so each of them closes it itself.
     Column {
         id: tools
         anchors.horizontalCenter: parent.horizontalCenter
@@ -84,7 +94,10 @@ Item {
             visible: root.showsLists
             iconName: "chevron-left"
             tip: qsTr("Expand friends")
-            onClicked: root.expandRequested()
+            onClicked: {
+                card.close()
+                root.expandRequested()
+            }
         }
         IconButton {
             id: requests
@@ -93,7 +106,10 @@ Item {
             iconName: "bell"
             tip: qsTr("Friend requests")
             Accessible.description: root.incomingCount > 0 ? String(root.incomingCount) : ""
-            onClicked: root.requestsRequested()
+            onClicked: {
+                card.close()
+                root.requestsRequested()
+            }
 
             // On the corner, a little out of it, so it covers less of the glyph.
             CountPill {
@@ -108,7 +124,10 @@ Item {
             visible: root.showsLists
             iconName: "plus"
             tip: qsTr("Add a friend")
-            onClicked: root.addRequested()
+            onClicked: {
+                card.close()
+                root.addRequested()
+            }
         }
         IconButton {
             size: Theme.control.heightSm
@@ -178,7 +197,7 @@ Item {
                             friend: slot.modelData
                             stale: root.stale
                             selected: card.opened && card.friendUuid === slot.modelData.uuid
-                            onClicked: card.openFor(head, slot.modelData.uuid)
+                            onClicked: root.toggleCard(head, slot.modelData.uuid)
                         }
                     }
                 }

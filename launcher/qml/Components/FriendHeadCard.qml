@@ -20,7 +20,10 @@ import Kite.Theme
  * updates the card; it closes when they are no longer on the list.
  *
  * Esc, a click outside it, and choosing from ⋯ (whose question is the
- * panel's FriendConfirmDialog) all close it.
+ * panel's FriendConfirmDialog) all close it. A click on the strip itself does
+ * not: the strip decides what that means (another head moves the card, the
+ * same head closes it), as a press that closed the card first would have the
+ * click on that head open it again.
  */
 Popup {
     id: root
@@ -80,7 +83,7 @@ Popup {
     margins: Theme.space.sm
     // Esc only reaches a popup that has the focus.
     focus: true
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
 
     Connections {
         target: root.menu
