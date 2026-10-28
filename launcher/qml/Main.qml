@@ -646,11 +646,14 @@ ApplicationWindow {
             { id: "settings", icon: "settings", label: qsTr("Settings") }
         ]
         // A page the rail does not list lights the place it is reached from:
-        // Home for the library, the Friends page and an instance (the
-        // breadcrumb's root too), unless that instance's own tile is in the
-        // rail (currentInstanceId).
+        // Home for the library and an instance (the breadcrumb's root too),
+        // unless that instance's own tile is in the rail (currentInstanceId).
+        // The Friends page is reached from the panel on the right edge, not
+        // from the rail, so while it is open nothing here is lit (an empty
+        // id lights nothing).
         currentId: root.navItems.some(item => item.id === root.page)
-                   || root.page === "settings" || root.page === "accounts" ? root.page : "home"
+                   || root.page === "settings" || root.page === "accounts" ? root.page
+                   : root.page === "friends" ? "" : "home"
         currentInstanceId: root.page === "instance" ? root.openedInstanceId : ""
         barBeside: playDock.visible
         recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
