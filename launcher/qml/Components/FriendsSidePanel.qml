@@ -23,8 +23,11 @@ import Kite.Theme
  * setting; closing slides the width to nothing, and the content keeps its own
  * width while it does, so nothing reflows on the way. Folding and unfolding
  * slide the same way, with the heads and the names fading across; dragging
- * follows the pointer without any animation. Both bodies are built once and
- * never torn down, so the folds in the full panel hold for the session.
+ * follows the pointer without any animation, except that the opened-out panel
+ * jumps to its narrowest width the moment the pointer is past the snap point,
+ * so its names are never cut off by a panel narrower than they are laid out
+ * in. Both bodies are built once and never torn down, so the folds in the
+ * full panel hold for the session.
  *
  * Home's own side panel leaves the friends to this one only while it is
  * opened out (`expanded`): a strip of heads is not a list to read.
@@ -83,12 +86,19 @@ Item {
     // The saved width, brought into range: the window may have shrunk since.
     readonly property int fullWidth: Math.min(Math.max(root.expandedWidth, root.minExpandedWidth), root.maxWidth)
 
-    // A drag in progress, and where it has taken the edge.
+    // A drag in progress, and the width the pointer asks for.
     property bool dragging: false
     property int dragWidth: 0
     // What is on show: the opened-out panel, or -- while dragging -- the
     // one that letting go now would leave.
     readonly property bool showsFull: root.dragging ? root.dragWidth >= root.snapWidth : root.expanded
+    // The width the panel has while dragging: the pointer's, except that
+    // from the snap point on it is at least as wide as the opened-out panel
+    // can be used. The names would otherwise be laid out at that width in a
+    // panel narrower than it and cut off at the left; so the edge jumps from
+    // the snap point to the minimum, and the pointer catches up with it.
+    readonly property int dragLiveWidth: root.dragWidth < root.snapWidth ? root.dragWidth
+                                                                         : Math.max(root.dragWidth, root.minExpandedWidth)
 
     // "off", "noAccount", "signingIn", "error" or "ready" (Format.friendsPhase()).
     readonly property string phase: Format.friendsPhase(root.controller)
@@ -154,7 +164,7 @@ Item {
     // which is why it is a property of its own.
     property bool pointerSteers: false
 
-    width: !root.open ? 0 : root.dragging ? root.dragWidth : root.expanded ? root.fullWidth : root.stripWidth
+    width: !root.open ? 0 : root.dragging ? root.dragLiveWidth : root.expanded ? root.fullWidth : root.stripWidth
     visible: root.width > 0
     clip: true
     Behavior on width {
