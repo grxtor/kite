@@ -194,6 +194,9 @@ qt_add_qml_module(Kite_qml_components
         FriendPersonMenu.qml
         FriendConfirmDialog.qml
         FriendsSidePanel.qml
+        FriendsPanelStrip.qml
+        FriendsStripHead.qml
+        FriendHeadCard.qml
         FriendsPanelHeader.qml
         FriendsPanelGroup.qml
         FriendsPanelToggle.qml
