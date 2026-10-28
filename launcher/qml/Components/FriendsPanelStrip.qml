@@ -60,6 +60,14 @@ Item {
                                      : qsTr("Can't connect")
     readonly property string stateIcon: root.failed ? "alert-triangle" : root.signInFirst ? "user" : "users"
 
+    // Every friend in the order the heads stand in: in game, online, offline.
+    readonly property var ordered: root.groups.playing.concat(root.groups.online, root.groups.offline)
+    // Which of those three a friend is in (as Format.friendsGrouped() puts
+    // them), for the hairline between groups.
+    function groupOf(friend) {
+        return friend.state === "playing" ? 0 : friend.state === "online" ? 1 : 2
+    }
+
     // A head's card is no use once the strip is out of sight (the panel is
     // hidden, or opened out), and would be left floating over the page.
     onVisibleChanged: if (!root.visible) card.close()
@@ -151,23 +159,28 @@ Item {
                 spacing: Theme.space.xs
 
                 Repeater {
-                    model: root.groups.playing
-                    delegate: headDelegate
-                }
-                GroupRule {
-                    visible: root.groups.playing.length > 0 && root.groups.online.length > 0
-                }
-                Repeater {
-                    model: root.groups.online
-                    delegate: headDelegate
-                }
-                GroupRule {
-                    visible: root.groups.playing.length + root.groups.online.length > 0
-                             && root.groups.offline.length > 0
-                }
-                Repeater {
-                    model: root.groups.offline
-                    delegate: headDelegate
+                    model: root.ordered
+                    delegate: Column {
+                        id: slot
+                        required property var modelData
+                        required property int index
+
+                        width: heads.width
+                        spacing: Theme.space.xs
+
+                        GroupRule {
+                            visible: slot.index > 0
+                                     && root.groupOf(slot.modelData) !== root.groupOf(root.ordered[slot.index - 1])
+                        }
+                        FriendsStripHead {
+                            id: head
+                            width: slot.width
+                            friend: slot.modelData
+                            stale: root.stale
+                            selected: card.opened && card.friendUuid === slot.modelData.uuid
+                            onClicked: card.openFor(head, slot.modelData.uuid)
+                        }
+                    }
                 }
             }
         }
@@ -198,21 +211,6 @@ Item {
             width: Theme.space.xl
             height: 1
             color: Theme.palette.divider
-        }
-    }
-
-    Component {
-        id: headDelegate
-
-        FriendsStripHead {
-            id: head
-            required property var modelData
-
-            width: heads.width
-            friend: head.modelData
-            stale: root.stale
-            selected: card.opened && card.friendUuid === head.modelData.uuid
-            onClicked: card.openFor(head, head.modelData.uuid)
         }
     }
 
