@@ -91,9 +91,12 @@ ApplicationWindow {
             if (scheme === "amethyst" || scheme === "ember" || scheme === "diamond" || scheme === "grass")
                 Theme.scheme = scheme
             // The friends panel's saved choice, which a window too narrow for
-            // it overrides for this session only.
+            // it overrides for this session only; and whether it is opened
+            // out, and how wide.
             root.friendsPanelOpen = SettingsStore.bool("FriendsPanelOpen")
                                     && root.width >= root.friendsPanelMinWindow
+            root.friendsPanelExpanded = SettingsStore.bool("FriendsPanelExpanded")
+            root.friendsPanelWidth = SettingsStore.number("FriendsPanelWidth")
         }
         onboardingLoader.active = !!root.shell && !!root.shell.setupSteps && root.shell.setupSteps.length > 0
         if (root.devRoute.length > 0)
@@ -158,9 +161,16 @@ ApplicationWindow {
             else if (key === "friendsTab")
                 Qt.callLater(root.openFriends, value)
             // The friends panel on the right edge: "friendspanel=closed"
-            // hides it, "=open" shows it (it is out by default).
-            else if (key === "friendspanel")
+            // hides it, "=strip" shows the strip of heads (the default) and
+            // "=open" opens it out to names and groups; "friendspanelwidth=
+            // 420" is how wide it is opened out. Both are saved, as using
+            // the panel would.
+            else if (key === "friendspanel") {
                 root.setFriendsPanelOpen(value !== "closed")
+                if (value === "strip" || value === "open")
+                    root.setFriendsPanelExpanded(value === "open")
+            } else if (key === "friendspanelwidth")
+                root.setFriendsPanelWidth(parseInt(value))
             else if (key === "gallery")
                 galleryLoader.active = true
             else if (key === "profilemenu")
@@ -271,13 +281,27 @@ ApplicationWindow {
     // toggle writes. A window narrower than friendsPanelMinWindow starts
     // without it, leaving the setting alone, so a small window is not
     // squeezed before the user asks; the toggle can still bring it out.
+    // Out, it is a strip of heads or, opened out, a list with names
+    // (FriendsPanelExpanded) of the width the user dragged it to
+    // (FriendsPanelWidth); both are read once, at start-up, and written when
+    // the panel asks for a change.
     readonly property int friendsPanelMinWindow: 1100
     property bool friendsPanelOpen: false
+    property bool friendsPanelExpanded: false
+    property int friendsPanelWidth: 320
     // A build without friends has no panel and no toggle.
     readonly property bool friendsPanelShown: !!root.friendsController && root.friendsPanelOpen
     function setFriendsPanelOpen(open) {
         root.friendsPanelOpen = open
         SettingsStore.setValue("FriendsPanelOpen", open)
+    }
+    function setFriendsPanelExpanded(expanded) {
+        root.friendsPanelExpanded = expanded
+        SettingsStore.setValue("FriendsPanelExpanded", expanded)
+    }
+    function setFriendsPanelWidth(width) {
+        root.friendsPanelWidth = width
+        SettingsStore.setValue("FriendsPanelWidth", width)
     }
     // The Friends page on tab "friends", "requests" or "blocked", or "add":
     // the friends tab with the add field focused. Going there first builds
@@ -737,17 +761,23 @@ ApplicationWindow {
         ]
     }
 
-    // The friends list, a narrow panel fixed on the right edge from under
-    // the top bar to the window's bottom, beside the page area and the play
-    // bar, which end where it begins. Its width is 0 while it is in.
+    // The friends, fixed on the right edge from under the top bar to the
+    // window's bottom, beside the page area and the play bar, which end
+    // where it begins: a strip of heads, or opened out to a list. Its width
+    // is 0 while it is in, and follows the pointer while it is dragged.
     FriendsSidePanel {
         id: friendsPanel
         anchors.right: parent.right
         anchors.top: topBar.bottom
         anchors.bottom: parent.bottom
         open: root.friendsPanelShown
+        expanded: root.friendsPanelExpanded
+        expandedWidth: root.friendsPanelWidth
+        roomWidth: root.width - sidebar.width
         controller: root.friendsController
         joinFlow: friendJoin
+        onExpandedRequested: (expanded) => root.setFriendsPanelExpanded(expanded)
+        onWidthCommitted: (panelWidth) => root.setFriendsPanelWidth(panelWidth)
         onFriendsRequested: (tab) => root.openFriends(tab)
         onNavigateRequested: (target) => root.navigate(target)
         onJoinRequested: (friend) => friendJoin.join(friend)
@@ -920,7 +950,7 @@ ApplicationWindow {
                         msaSignedIn: !!root.shell && root.shell.accountKind === "Microsoft"
                         friends: root.friendsController
                         joinFlow: friendJoin
-                        friendsInPanel: root.friendsPanelShown
+                        friendsInPanel: root.friendsPanelShown && root.friendsPanelExpanded
                         onFriendsRequested: (tab) => root.openFriends(tab)
                         onJoinRequested: (friend) => friendJoin.join(friend)
 

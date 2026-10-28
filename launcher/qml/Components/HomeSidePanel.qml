@@ -8,7 +8,7 @@ import Kite.Theme
 /*
  * Home's side panel: "Set up Kite" (GettingStartedCard) until both its
  * steps are done, then Friends (HomeFriends, unless the friends panel on the
- * window's right edge is out and has them), then Kite's news, then the
+ * window's right edge is opened out and has them), then Kite's news, then the
  * worlds played most recently across every instance (compact HomeWorldTile
  * rows). Its own column
  * beside the page, scrolling on its own and set off by a hairline; the page
@@ -28,8 +28,8 @@ Item {
     property var friends: null
     // Main.qml's FriendJoinFlow.
     property var joinFlow: null
-    // The friends panel on the window's right edge is out, with the same
-    // friends in it: this panel leaves them to it.
+    // The friends panel on the window's right edge is opened out, with the
+    // same friends in it: this panel leaves them to it.
     property bool friendsInPanel: false
 
     signal createRequested()
@@ -47,7 +47,8 @@ Item {
     readonly property int maxWorlds: 4
     readonly property bool hasWorlds: worldsRepeater.count > 0
 
-    // Whether the friends show here: not while the right-edge panel has them.
+    // Whether the friends show here: not while the right-edge panel, opened
+    // out, has them.
     readonly property bool showsFriends: friendsSection.shown && root.hasInstances && !root.friendsInPanel
 
     // Not the children's `visible`: that follows the panel's own.

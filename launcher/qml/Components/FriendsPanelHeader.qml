@@ -14,7 +14,9 @@ import Kite.Theme
  * narrow column: requests, blocked people and adding by name.
  *
  * The buttons only show while there are lists to look at; with friends off
- * or not connected there is nothing for either to open.
+ * or not connected there is nothing for either to open. The last button
+ * folds the panel back to its strip of heads and is always there: the
+ * panel that explains why friends are not connected can be put away too.
  */
 Item {
     id: root
@@ -33,6 +35,7 @@ Item {
 
     signal addRequested()
     signal requestsRequested()
+    signal collapseRequested()
 
     // Not a word while it is not known; "No one online" only once the
     // friends have been read and there are some.
@@ -107,6 +110,13 @@ Item {
                 count: root.incomingCount
                 ringColor: root.surface
             }
+        }
+        IconButton {
+            Layout.alignment: Qt.AlignVCenter
+            size: Theme.control.heightSm
+            iconName: "chevron-right"
+            tip: qsTr("Collapse friends")
+            onClicked: root.collapseRequested()
         }
     }
 }
