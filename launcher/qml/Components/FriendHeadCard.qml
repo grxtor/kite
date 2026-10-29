@@ -49,9 +49,9 @@ Popup {
 
     // In proportion with the strip's own heads: a click there should not open
     // something three times their size.
-    readonly property int cardWidth: 264
+    readonly property int cardWidth: 232
     // A multiple of 8, like every head.
-    readonly property int headSize: 32
+    readonly property int headSize: 24
 
     signal joinRequested(var friend)
 
@@ -81,7 +81,7 @@ Popup {
     x: -root.width - Theme.space.sm
     y: Math.round(root.centreY - root.height / 2)
     width: root.cardWidth
-    padding: Theme.space.sm + Theme.space.xs
+    padding: Theme.space.sm
     margins: Theme.space.sm
     // Esc only reaches a popup that has the focus.
     focus: true
@@ -99,7 +99,7 @@ Popup {
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: Theme.space.sm + Theme.space.xs
+            spacing: Theme.space.sm
 
             FriendHead {
                 Layout.alignment: Qt.AlignVCenter
@@ -122,8 +122,8 @@ Popup {
                     elide: Text.ElideRight
                     color: Theme.palette.textPrimary
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.bodyStrong.pixelSize
-                    font.weight: Theme.type.bodyStrong.weight
+                    font.pixelSize: Theme.type.label.pixelSize
+                    font.weight: Font.DemiBold
                 }
                 Text {
                     width: parent.width
@@ -131,7 +131,7 @@ Popup {
                     elide: Text.ElideMiddle
                     color: root.status.tone === "faint" ? Theme.palette.textTertiary : Theme.palette.textSecondary
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
+                    font.pixelSize: Theme.type.overline.pixelSize
                 }
             }
 

@@ -31,7 +31,7 @@ Item {
     readonly property real offlineOpacity: 0.55
     readonly property int ringWidth: 2
     // The dot grows with the head.
-    readonly property int dotSize: root.size >= 40 ? 12 : 10
+    readonly property int dotSize: root.size >= 40 ? 12 : root.size > 24 ? 10 : 8
 
     implicitWidth: root.size
     implicitHeight: root.size
