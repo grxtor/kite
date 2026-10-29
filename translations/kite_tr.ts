@@ -824,6 +824,14 @@ This action cannot be undone.</source>
         <source>Close</source>
         <translation>Kapat</translation>
     </message>
+    <message>
+        <source>Microsoft account</source>
+        <translation>Microsoft hesabı</translation>
+    </message>
+    <message>
+        <source>Offline account</source>
+        <translation>Çevrimdışı hesap</translation>
+    </message>
 </context>
 <context>
     <name>AppMenuBar</name>
