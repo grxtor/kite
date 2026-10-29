@@ -47,9 +47,11 @@ Popup {
     readonly property var status: Format.friendStatus(root.friend)
     readonly property bool joinable: root.known && Format.friendJoinable(root.friend)
 
-    readonly property int cardWidth: 296
-    // The big head: a multiple of 8, like every head.
-    readonly property int headSize: 56
+    // In proportion with the strip's own heads: a click there should not open
+    // something three times their size.
+    readonly property int cardWidth: 264
+    // A multiple of 8, like every head.
+    readonly property int headSize: 32
 
     signal joinRequested(var friend)
 
@@ -79,7 +81,7 @@ Popup {
     x: -root.width - Theme.space.sm
     y: Math.round(root.centreY - root.height / 2)
     width: root.cardWidth
-    padding: Theme.space.md
+    padding: Theme.space.sm + Theme.space.xs
     margins: Theme.space.sm
     // Esc only reaches a popup that has the focus.
     focus: true
@@ -93,11 +95,11 @@ Popup {
     }
 
     contentItem: ColumnLayout {
-        spacing: Theme.space.md
+        spacing: Theme.space.sm
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: Theme.space.md
+            spacing: Theme.space.sm + Theme.space.xs
 
             FriendHead {
                 Layout.alignment: Qt.AlignVCenter
@@ -120,8 +122,8 @@ Popup {
                     elide: Text.ElideRight
                     color: Theme.palette.textPrimary
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Theme.type.title.weight
+                    font.pixelSize: Theme.type.bodyStrong.pixelSize
+                    font.weight: Theme.type.bodyStrong.weight
                 }
                 Text {
                     width: parent.width
@@ -129,7 +131,7 @@ Popup {
                     elide: Text.ElideMiddle
                     color: root.status.tone === "faint" ? Theme.palette.textTertiary : Theme.palette.textSecondary
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    font.pixelSize: Theme.type.caption.pixelSize
                 }
             }
 
