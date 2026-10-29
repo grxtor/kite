@@ -97,6 +97,8 @@ ApplicationWindow {
                                     && root.width >= root.friendsPanelMinWindow
             root.friendsPanelExpanded = SettingsStore.bool("FriendsPanelExpanded")
             root.friendsPanelWidth = SettingsStore.number("FriendsPanelWidth")
+            // The labelled sidebar's width, as the user dragged it.
+            root.sidebarWidth = SettingsStore.number("UiSidebarWidth")
         }
         onboardingLoader.active = !!root.shell && !!root.shell.setupSteps && root.shell.setupSteps.length > 0
         if (root.devRoute.length > 0)
@@ -233,8 +235,13 @@ ApplicationWindow {
             // debugShowRequest(): "pickAccount" or "busySkip".
             else if (key === "ask")
                 root.call("debugShowRequest", value)
+            // The sidebar: "sidebar=collapsed" is the rail, anything else the
+            // labelled sidebar; "sidebarwidth=300" is how wide that is. Both
+            // are saved, as using the sidebar would.
             else if (key === "sidebar")
                 SettingsStore.setValue("UiSidebarCollapsed", value === "collapsed")
+            else if (key === "sidebarwidth")
+                root.setSidebarWidth(parseInt(value))
             // The first-run flow over the shell with every step listed, on
             // a data dir that no longer needs it; nothing is saved unless a
             // step is finished.
@@ -272,6 +279,15 @@ ApplicationWindow {
             root.selection.selectOnly(selectedId)
         else
             root.selection.clear()
+    }
+
+    // How wide the user dragged the labelled sidebar to (UiSidebarWidth),
+    // read once at start-up and written when the sidebar asks for a change;
+    // whether it is labelled at all is UiSidebarCollapsed (SidebarNav).
+    property int sidebarWidth: 240
+    function setSidebarWidth(width) {
+        root.sidebarWidth = width
+        SettingsStore.setValue("UiSidebarWidth", width)
     }
 
     // QmlShell.friends (FriendsController), or null where this build has none.
@@ -665,6 +681,14 @@ ApplicationWindow {
         // toggle that could not act.
         canExpand: root.width >= 1000
         collapsed: !canExpand || SettingsStore.bool("UiSidebarCollapsed")
+        expandedWidth: root.sidebarWidth
+        // Less the page area's least width, and the friends panel opened out
+        // to its narrowest when this build has one: so dragging the sidebar
+        // out never squeezes either below what it can be used at, with the
+        // panel out or in.
+        roomWidth: root.width - friendsPanel.minPageWidth
+                   - (root.friendsController ? friendsPanel.minExpandedWidth : 0)
+        onWidthCommitted: (labelledWidth) => root.setSidebarWidth(labelledWidth)
         items: root.navItems
         footerItems: [
             { id: "settings", icon: "settings", label: qsTr("Settings") }

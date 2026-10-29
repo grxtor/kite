@@ -24,6 +24,14 @@ import Kite.Theme
  * at the top), the same items on the same lines, so nothing jumps while it
  * folds. The caller drives that, since only it knows what the window is
  * competing for space with.
+ *
+ * Its right edge can be dragged to any width the labelled sidebar may have
+ * (SidebarEdgeHandle), as the friends panel's left edge can: let go near the
+ * rail's width and it folds to the rail, past that it stays labelled at the
+ * width reached, and a double click on the edge switches. The width is
+ * remembered (Main.qml keeps it as a setting; this only asks, with
+ * `widthCommitted`). Dragging follows the pointer without any animation;
+ * every other change of width slides.
  */
 Rectangle {
     id: root
@@ -36,12 +44,12 @@ Rectangle {
     component CollapseToggle: IconButton {
         size: Theme.control.heightSm
         iconName: "chevron-left"
-        tip: root.collapsed ? qsTr("Expand sidebar") : qsTr("Collapse sidebar")
-        rotation: root.collapsed ? 180 : 0
+        tip: root.railed ? qsTr("Expand sidebar") : qsTr("Collapse sidebar")
+        rotation: root.railed ? 180 : 0
 
         Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
 
-        onClicked: SettingsStore.setValue("UiSidebarCollapsed", !SettingsStore.bool("UiSidebarCollapsed"))
+        onClicked: root.setCollapsed(!SettingsStore.bool("UiSidebarCollapsed"))
     }
 
     // Each entry: { id, icon, label }; icon is a MeshIcon name.
@@ -68,7 +76,16 @@ Rectangle {
     property string accountAvatarSource: ""
     property var accountsController: null
 
+    // The rail at rest. What is on show differs only while the edge is being
+    // dragged (see railed).
     property bool collapsed: true
+    // The width the user gave the labelled sidebar, as saved; it is brought
+    // into range (see fullWidth) rather than trusted.
+    property int expandedWidth: 240
+    // What the sidebar may take of the window: its width less what the pages
+    // and the friends panel need, which the caller knows. The sidebar never
+    // leaves less than this makes it, down to its narrowest.
+    property int roomWidth: 0
     // False while the host keeps the rail whatever the toggle says (a narrow
     // window): the expand toggle hides rather than do nothing.
     property bool canExpand: true
@@ -89,7 +106,11 @@ Rectangle {
     readonly property int itemSize: Theme.control.heightLg
     readonly property int inset: Theme.space.sm
     readonly property int railWidth: root.itemSize + root.inset * 2
-    readonly property int expandedWidth: 240
+    // The labelled sidebar's range: wide enough for "Settings" and a short
+    // instance name beside the icon, and not so wide that the names it has
+    // are all there is to see.
+    readonly property int minExpandedWidth: 200
+    readonly property int maxExpandedWidth: 380
     // From the inner column's left edge; from the rail's own edge it is
     // inset + this, the rail's middle.
     readonly property int railAxis: root.itemSize / 2
@@ -108,6 +129,8 @@ Rectangle {
     signal recentPlayRequested(string id)
     signal newInstanceRequested()
     signal openAccountsRequested()
+    // A drag of the edge ended with the sidebar labelled, at this width.
+    signal widthCommitted(int width)
 
     function openProfileMenu() { accountButton.openMenu() }
 
@@ -118,7 +141,7 @@ Rectangle {
         var fixed = root.bandHeight + root.brandGap + Theme.layout.barHeight
                   + (root.items.length + root.footerItems.length + 1) * pitch
                   + rule.height + rule.Layout.topMargin + rule.Layout.bottomMargin + column.spacing
-                  + (root.collapsed && root.canExpand ? Theme.control.heightSm + column.spacing : 0)
+                  + (root.railed && root.canExpand ? Theme.control.heightSm + column.spacing : 0)
                   + Theme.space.lg
         return Math.max(0, Math.min(root.recentLimit, Math.floor((root.height - fixed) / pitch)))
     }
@@ -155,10 +178,62 @@ Rectangle {
         return null
     }
 
-    implicitWidth: collapsed ? railWidth : expandedWidth
-    color: "transparent"
+    // The widest the labelled sidebar may be: not past maxExpandedWidth, nor
+    // leaving less than roomWidth makes it -- except that it is never
+    // narrower than its names can be laid out in.
+    readonly property int maxWidth: Math.max(root.minExpandedWidth,
+                                             Math.min(root.maxExpandedWidth,
+                                                      root.roomWidth > 0 ? root.roomWidth : root.maxExpandedWidth))
+    // The saved width, brought into range: the window may have shrunk since.
+    readonly property int fullWidth: Math.min(Math.max(root.expandedWidth, root.minExpandedWidth), root.maxWidth)
+    // What is on show: the rail or the labelled sidebar at rest, or -- while
+    // dragging -- the one that letting go now would leave.
+    readonly property bool railed: edge.showsRail
 
-    Behavior on implicitWidth { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+    // Fold or unfold, remembered (the same setting as the toggle's).
+    function setCollapsed(collapsed) {
+        SettingsStore.setValue("UiSidebarCollapsed", collapsed)
+    }
+
+    // True from the first turn of the event loop: the width is set at
+    // start-up from the saved settings, and should appear in place.
+    property bool settled: false
+    Component.onCompleted: Qt.callLater(() => root.settled = true)
+
+    // Which of the three widths the sidebar has. The slide belongs to a
+    // change of this, not to a change of the width, which the window
+    // changing size moves and which must be followed at once.
+    readonly property string mode: edge.dragging ? "drag" : root.collapsed ? "rail" : "full"
+
+    color: "transparent"
+    // Only the move from one state to another slides, into a drag not at all
+    // (the width follows the pointer) and out of one to where it was left.
+    states: [
+        State {
+            name: "rail"
+            when: root.mode === "rail"
+            PropertyChanges { root.implicitWidth: root.railWidth }
+        },
+        State {
+            name: "full"
+            when: root.mode === "full"
+            PropertyChanges { root.implicitWidth: root.fullWidth }
+        },
+        State {
+            name: "drag"
+            when: root.mode === "drag"
+            PropertyChanges { root.implicitWidth: edge.liveWidth }
+        }
+    ]
+    transitions: Transition {
+        to: "rail,full"
+        enabled: root.settled
+        NumberAnimation {
+            property: "implicitWidth"
+            duration: SettingsStore.bool("UiReduceMotion") ? 0 : Theme.motion.normal
+            easing.type: Theme.motion.easing
+        }
+    }
 
     // The selected destination's fill, as one shape that slides from the
     // previous item to the new one instead of each item owning its own
@@ -167,11 +242,12 @@ Rectangle {
         // On the folded rail an instance's own tile shows it is selected
         // (RecentItem.selected, the nose in its cut): the square around it
         // would only frame a picture that already fills its tile.
-        target: root.collapsed && root.selectedIsInstance ? null : root.selectedNavItem
-        collapsed: root.collapsed
+        target: root.railed && root.selectedIsInstance ? null : root.selectedNavItem
+        collapsed: root.railed
         railSquare: root.itemSize
         railAxis: root.railAxis
         cornerRadius: root.itemRadius
+        live: edge.dragging
         // Rows live in two containers (the main column and the foot band),
         // so positions are summed up to this rail rather than read off one
         // layout.
@@ -204,7 +280,7 @@ Rectangle {
             x: root.inset + root.labelX
             anchors.baseline: mark.verticalCenter
             anchors.baselineOffset: -wordmarkInk.tightBoundingRect.y / 2
-            visible: !root.collapsed
+            visible: !root.railed
             text: "Kite"
             color: Theme.palette.textPrimary
             font.family: Theme.font.heading
@@ -219,7 +295,7 @@ Rectangle {
         }
 
         CollapseToggle {
-            visible: !root.collapsed
+            visible: !root.railed
             anchors.right: parent.right
             anchors.rightMargin: root.inset
             anchors.verticalCenter: parent.verticalCenter
@@ -255,7 +331,7 @@ Rectangle {
                 badge: root.badges[modelData.id] ? root.badges[modelData.id].count : 0
                 badgeTone: root.badges[modelData.id] ? root.badges[modelData.id].tone : "accent"
                 selected: root.selectedNavItem === navDelegate
-                collapsed: root.collapsed
+                collapsed: root.railed
                 onClicked: root.itemActivated(modelData.id)
             }
         }
@@ -264,8 +340,8 @@ Rectangle {
         // no "Recent" heading, the icons say what they are.
         Rectangle {
             id: rule
-            Layout.preferredWidth: root.collapsed ? root.itemSize - Theme.space.lg : -1
-            Layout.fillWidth: !root.collapsed
+            Layout.preferredWidth: root.railed ? root.itemSize - Theme.space.lg : -1
+            Layout.fillWidth: !root.railed
             Layout.alignment: Qt.AlignHCenter
             Layout.topMargin: Theme.space.xs
             Layout.bottomMargin: Theme.space.xs
@@ -288,11 +364,11 @@ Rectangle {
                 iconAxis: root.railAxis
                 labelX: root.labelX
                 cornerRadius: root.itemRadius
-                compact: root.collapsed
+                compact: root.railed
                 selected: root.selectedNavItem === recentDelegate
                 // The selection's fill when it sits under this one: only in
                 // the labelled sidebar, the folded rail shows no square.
-                surround: selected && !root.collapsed ? Theme.palette.surfaceRaised : root.surround
+                surround: selected && !root.railed ? Theme.palette.surfaceRaised : root.surround
                 onClicked: root.recentActivated(instanceId)
                 onPlayRequested: root.recentPlayRequested(instanceId)
             }
@@ -307,14 +383,14 @@ Rectangle {
             cornerRadius: root.itemRadius
             iconName: "plus"
             label: qsTr("New instance")
-            collapsed: root.collapsed
+            collapsed: root.railed
             onClicked: root.newInstanceRequested()
         }
 
         Item { Layout.fillHeight: true }
 
         CollapseToggle {
-            visible: root.collapsed && root.canExpand
+            visible: root.railed && root.canExpand
             Layout.alignment: Qt.AlignHCenter
         }
 
@@ -333,7 +409,7 @@ Rectangle {
                 iconName: modelData.icon
                 label: modelData.label
                 selected: root.selectedNavItem === footerDelegate
-                collapsed: root.collapsed
+                collapsed: root.railed
                 onClicked: root.itemActivated(modelData.id)
             }
         }
@@ -356,7 +432,7 @@ Rectangle {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            compact: root.collapsed
+            compact: root.railed
             railSquare: root.itemSize
             iconAxis: root.railAxis
             labelX: root.labelX
@@ -367,5 +443,23 @@ Rectangle {
             controller: root.accountsController
             onOpenAccountsRequested: root.openAccountsRequested()
         }
+    }
+
+    // The right edge, to be dragged; there is none where the window is too
+    // narrow for the labelled sidebar at all.
+    SidebarEdgeHandle {
+        id: edge
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        visible: root.canExpand
+        space: root.parent
+        railWidth: root.railWidth
+        minWidth: root.minExpandedWidth
+        maxWidth: root.maxWidth
+        panelWidth: root.width
+        folded: root.collapsed
+        onFoldRequested: (folded) => root.setCollapsed(folded)
+        onWidthCommitted: (pixels) => root.widthCommitted(pixels)
     }
 }

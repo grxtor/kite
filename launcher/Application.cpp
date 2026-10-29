@@ -907,6 +907,9 @@ void Application::initSettings()
 	// The QML interface's font (Settings > Appearance).
 	m_settings->registerSetting("UiFontFamily", QString("Inter"));
 	m_settings->registerSetting("UiSidebarCollapsed", true);
+	// How wide (in pixels) the user dragged the QML interface's labelled
+	// sidebar to; the rail has a width of its own.
+	m_settings->registerSetting("UiSidebarWidth", 240);
 	// Stops decorative loops (Play sheen) for people who find motion
 	// distracting.
 	m_settings->registerSetting("UiReduceMotion", false);

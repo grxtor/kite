@@ -162,6 +162,7 @@ qt_add_qml_module(Kite_qml_components
         SegmentedControl.qml
         EmptyState.qml
         SidebarNav.qml
+        SidebarEdgeHandle.qml
         NavItem.qml
         NavSelectionIndicator.qml
         AccountChip.qml
@@ -196,7 +197,7 @@ qt_add_qml_module(Kite_qml_components
         FriendsSidePanel.qml
         FriendsPanelFull.qml
         FriendsPanelStrip.qml
-        FriendsPanelHandle.qml
+        PanelEdgeHandle.qml
         FriendsStripHead.qml
         FriendHeadCard.qml
         FriendsPanelHeader.qml

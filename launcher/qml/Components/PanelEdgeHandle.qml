@@ -5,12 +5,13 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The friends panel's left edge, to be taken hold of: a few pixels wide, with
+ * A side panel's inner edge, to be taken hold of: a few pixels wide, with
  * the horizontal resize cursor and a line that shows while the pointer is on
- * it or dragging. It only says where the pointer wants the edge to be
- * (`dragged`, in the coordinates of `space`); FriendsSidePanel decides what
- * width that makes and where it snaps. A double click asks for the other
- * mode.
+ * it or dragging. It sits at the panel's left edge or its right (`side`),
+ * inside the panel. It only says where the pointer wants the edge to be
+ * (`dragged`, in the coordinates of `space`); the panel (FriendsSidePanel on
+ * the right of the window, SidebarNav on the left) decides what width that
+ * makes and where it snaps. A double click asks for the other mode.
  *
  * A press that does not move is not a drag: a click on the edge, or the
  * first half of a double click, leaves the width alone.
@@ -21,6 +22,11 @@ MouseArea {
     // The item the pointer is measured in: the one the panel is laid out in,
     // which does not move as the panel's width changes (the handle does).
     property Item space: null
+
+    // Which edge of the panel this stands on: Qt.LeftEdge for a panel on the
+    // window's right, Qt.RightEdge for one on its left. It decides which side
+    // of the handle the line is drawn on, and what `dragged` reports.
+    property int side: Qt.LeftEdge
 
     // The few pixels that take hold; the line drawn in them is thinner.
     readonly property int grip: Theme.space.sm - Theme.space.xxs
@@ -34,7 +40,8 @@ MouseArea {
     property bool _dragging: false
 
     signal dragStarted()
-    // The panel's left edge should be at @p edge, in `space`.
+    // The panel's edge that this stands on (`side`) should be at @p edge, in
+    // `space`.
     signal dragged(real edge)
     signal dragFinished()
     // Fold or unfold: the other mode.
@@ -46,6 +53,11 @@ MouseArea {
     preventStealing: true
     Accessible.ignored: true
 
+    // The handle's outer side, which is the panel's edge: its left side for a
+    // panel's left edge, its right side for the right one.
+    function _edgeAt(mouse) {
+        return root._pointerIn(mouse) - root._grabOffset + (root.side === Qt.RightEdge ? root.width : 0)
+    }
     function _pointerIn(mouse) {
         return root.mapToItem(root.space, mouse.x, 0).x
     }
@@ -65,7 +77,7 @@ MouseArea {
             root._dragging = true
             root.dragStarted()
         }
-        root.dragged(at - root._grabOffset)
+        root.dragged(root._edgeAt(mouse))
     }
     function _finish() {
         if (root._dragging)
@@ -81,7 +93,7 @@ MouseArea {
     onDoubleClicked: root.toggleRequested()
 
     Rectangle {
-        anchors.left: parent.left
+        x: root.side === Qt.LeftEdge ? 0 : parent.width - width
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: Theme.focus.width

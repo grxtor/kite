@@ -9,7 +9,7 @@ import Kite.Theme
  * launcher has it. It starts as a slim strip of heads (FriendsPanelStrip)
  * that takes next to no room; whoever wants names, groups and Join in plain
  * sight opens it out (FriendsPanelFull) and drags its left edge to the width
- * they like (FriendsPanelHandle). Releasing the drag near the strip's width
+ * they like (PanelEdgeHandle). Releasing the drag near the strip's width
  * folds it back, a double click on the edge or the buttons in either mode
  * switch, and the choice and the width are remembered (Main.qml keeps both
  * as settings; this only asks, with `expandedRequested` and `widthCommitted`).
@@ -133,7 +133,7 @@ Item {
     }
 
     // The pointer wants the left edge at @p edge (in this panel's parent, as
-    // FriendsPanelHandle measures it): the panel is as wide as what is left
+    // PanelEdgeHandle measures it): the panel is as wide as what is left
     // of that up to its right edge, within what it may be.
     function dragTo(edge) {
         var wanted = Math.round(root.x + root.width - edge)
@@ -288,7 +288,7 @@ Item {
         onCollapseRequested: root.expandedRequested(false)
     }
 
-    FriendsPanelHandle {
+    PanelEdgeHandle {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom: parent.bottom
