@@ -412,6 +412,7 @@ void FriendsController::dropDataOfOtherAccount(const QString& profileId)
 
 void FriendsController::onPresenceChanged()
 {
+	followPlay();
 	if (m_enabled) {
 		/* Your own card says what friends see of you. */
 		emit changed();

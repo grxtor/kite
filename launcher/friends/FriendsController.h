@@ -192,6 +192,8 @@ class FriendsController : public QObject
 	void onAccountActivity();
 	void onAboutToQuit();
 	void onPresenceChanged();
+	/// Polls every ten seconds while the account plays, else every minute.
+	void followPlay();
 	void pushStatus();
 	QString storePath() const;
 	QString serverUrl() const;
