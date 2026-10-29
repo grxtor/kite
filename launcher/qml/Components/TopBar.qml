@@ -150,20 +150,30 @@ Item {
             }
 
             Text {
+                id: titleText
                 Layout.alignment: Qt.AlignVCenter
                 // Its own width, down to nothing under pressure: a long
                 // instance name elides before the row overflows. (A layout
                 // keeps an item that does not fill at its preferred width, so
                 // it fills, and is held to the width it wants to stay put.)
+                // That width is measured apart: an elided Text's own
+                // implicitWidth follows the elided text, and held to that the
+                // title elides itself down to "Ho…".
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
-                Layout.maximumWidth: implicitWidth
+                Layout.maximumWidth: Math.ceil(titleMetrics.advanceWidth)
                 text: root.title
                 elide: Text.ElideRight
                 color: Theme.palette.textPrimary
                 font.family: Theme.font.heading
                 font.pixelSize: root.titleSize
                 font.weight: Font.DemiBold
+
+                TextMetrics {
+                    id: titleMetrics
+                    font: titleText.font
+                    text: titleText.text
+                }
             }
 
             Tag {
