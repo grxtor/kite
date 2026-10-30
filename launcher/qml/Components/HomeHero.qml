@@ -2,29 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The top of the Home page, the way Lunar Client opens: one instance, big,
- * and the page's one primary Play. The instance is `rowModel`'s first row
- * -- the shell's heroModel (the selection, else the instance played last,
- * else the first one) or, until that is wired, the instance played last.
+ * The top of the Home page: one instance, big, and the page's one primary
+ * Play. The instance is `rowModel`'s first row -- the shell's heroModel (the
+ * selection, else the instance played last, else the first one) or, until
+ * that is wired, the instance played last.
  *
- * Its picture on the calm tile (HomeHeroTile); its name and what it runs
- * (HomeHeroTitle); label over value, when it was last played, for how long
- * and the world it was last in (HomeHeroFacts); at the card's far edge Play
- * (PlayButton: Stop while it runs, "Starting…" and Cancel while a launch
- * runs) and ▾ for the other ways to play (LaunchOptionsMenu, as on the play
- * bar). The facts sit between the name and Play on a card wide enough to
- * leave room on both sides, so a wide card has no empty middle; else under
- * the name; on a narrow card they become words on the line under it.
+ * This is the hero's model and its signals; how it looks is the page's
+ * look (Theme.look), each its own view of it: the card of the classic look
+ * (HomeHeroCard), the full-bleed stage of Sahne (HomeStageHero), the open
+ * line of Sade (HomeCalmHero) and the words on the sky of Gece
+ * (HomeNightHero). A view reads the instance off this item and sends its
+ * buttons' signals through it, and tells the page how tall it is
+ * (`implicitHeight`), how far under it the next section starts (`gapBelow`)
+ * and where its Play is (`playCenterY`).
  *
- * A real screenshot of the instance is the card's backdrop when it has one
- * (the facts then stay under the name, on its darker side); otherwise the
- * card is the neutral surface -- never a stand-in picture. Clicking the card
- * anywhere else opens the instance page.
+ * The hero spans the page's full width, so a look can bleed to its edges;
+ * the column the page keeps its content in is `columnX` and `columnWidth`.
+ * A real screenshot of the instance, softened to its colours, is the
+ * backdrop when it has one; otherwise the neutral surface -- never a
+ * stand-in picture.
  */
 Item {
     id: root
@@ -66,36 +65,27 @@ Item {
     property string launchStatus: ""
     property real launchProgress: -1
 
+    // The page's column, for views that keep inside it.
+    property real columnX: 0
+    property real columnWidth: width
+
     readonly property bool hasInstance: root.instanceId.length > 0
     readonly property bool launching: root.launchStatus.length > 0
     readonly property bool hasBackdrop: root.coverImage.length > 0
     readonly property string playTimeText: SettingsStore.bool("ShowGameTime") && Number(root.totalTimePlayed) > 0
                                            ? Format.playTime(root.totalTimePlayed) : ""
+    // The screenshot is decoded this small and stretched back up (CoverArt's
+    // photoSoftness): its colours stay, while what was written on it -- a
+    // server's "You are AFK", the crosshair, the HUD -- blurs away instead
+    // of fighting the name.
+    readonly property real backdropSoftness: 0.02
 
-    // Lunar's scale: a big tile, a wide Play.
-    readonly property int tileSize: Theme.control.heightLg * 2 + Theme.space.xxl
-    readonly property int playWidth: 176
-    readonly property int padding: Theme.space.xxl
-    // On a photo the words take the media colours.
-    readonly property color ink: root.hasBackdrop ? Theme.media.text : Theme.palette.textPrimary
-    readonly property color inkSecondary: root.hasBackdrop ? Theme.media.textSecondary : Theme.palette.textSecondary
-    readonly property color inkLabel: root.hasBackdrop ? Theme.media.textSecondary : Theme.palette.textTertiary
-
-    // Where the facts go: beside the name with at least factsGap on either
-    // side, else under it, else nowhere (the line under the name says when
-    // and how long instead). Measured off natural widths only, never off
-    // the layout they change.
-    readonly property int gap: Theme.space.xl
-    readonly property int factsGap: Theme.space.xxl
-    readonly property real innerWidth: root.width - root.padding * 2
-    readonly property real besideName: root.innerWidth - root.tileSize - actions.implicitWidth - root.gap * 2
-    readonly property bool factsBeside: !root.hasBackdrop
-                                        && root.besideName - title.naturalWidth >= factsBelow.naturalWidth + root.factsGap * 2
-    readonly property bool factsUnder: !root.factsBeside && root.besideName >= factsBelow.naturalWidth
-    readonly property bool showsFacts: root.factsBeside || root.factsUnder
+    // What the look's view says about itself.
+    readonly property real gapBelow: view.item ? view.item.gapBelow : 0
+    readonly property real playCenterY: view.item ? view.item.playCenterY : 0
 
     visible: root.hasInstance
-    implicitHeight: root.tileSize + root.padding * 2
+    implicitHeight: view.item ? view.item.implicitHeight : 0
 
     Repeater {
         model: root.rowModel
@@ -145,160 +135,16 @@ Item {
         }
     }
 
-    function openLaunchMenu() {
-        launchMenu.refresh()
-        launchMenu.popup(moreButton, moreButton.width - launchMenu.implicitWidth, moreButton.height + Theme.space.xs)
+
+    Loader {
+        id: view
+        width: root.width
+        sourceComponent: Theme.look === "stage" ? stageView
+                       : Theme.look === "calm" ? calmView
+                       : Theme.look === "night" ? nightView : cardView
     }
-
-    Rectangle {
-        id: card
-        anchors.fill: parent
-        radius: Theme.radius.xl
-        color: Theme.palette.surface
-        border.width: root.hasBackdrop ? 0 : 1
-        border.color: Theme.palette.border
-
-        // Anywhere but its buttons: the instance page.
-        TapHandler {
-            gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: root.openRequested(root.instanceId)
-        }
-
-        // The instance's own newest screenshot, darker on the words' side.
-        CoverArt {
-            anchors.fill: parent
-            visible: root.hasBackdrop
-            source: root.coverImage
-            glyph: ""
-            showLogo: false
-            radius: card.radius
-            scrim: "horizontal"
-            matte: Theme.palette.canvas
-        }
-
-        RowLayout {
-            anchors.fill: parent
-            anchors.margins: root.padding
-            spacing: root.gap
-
-            HomeHeroTile {
-                Layout.preferredWidth: root.tileSize
-                Layout.preferredHeight: root.tileSize
-                Layout.alignment: Qt.AlignVCenter
-                iconKey: root.hasInstance ? (root.iconKey.length > 0 ? root.iconKey : "default") : ""
-                packArt: root.packArt
-                matte: card.color
-            }
-
-            ColumnLayout {
-                // Beside the facts it is only as wide as the name.
-                Layout.fillWidth: !root.factsBeside
-                Layout.preferredWidth: root.factsBeside ? title.naturalWidth : -1
-                Layout.minimumWidth: 0
-                Layout.alignment: Qt.AlignVCenter
-                spacing: 0
-
-                HomeHeroTitle {
-                    id: title
-                    Layout.fillWidth: true
-                    name: root.name
-                    versionText: Format.versionLine(root.loader, root.gameVersion)
-                    hasCrashed: root.hasCrashed
-                    lastLaunch: root.lastLaunch
-                    playTimeText: root.playTimeText
-                    showsWhen: !root.showsFacts
-                    launchStatus: root.launchStatus
-                    launchProgress: root.launchProgress
-                    onMedia: root.hasBackdrop
-                    ink: root.ink
-                    inkSecondary: root.inkSecondary
-                    progressMaxWidth: root.playWidth * 2
-                }
-
-                HomeHeroFacts {
-                    id: factsBelow
-                    Layout.topMargin: Theme.space.md
-                    visible: root.factsUnder && !root.launching
-                    instanceId: root.instanceId
-                    lastLaunch: root.lastLaunch
-                    playTimeText: root.playTimeText
-                    worldsModel: root.worldsModel
-                    ink: root.ink
-                    inkLabel: root.inkLabel
-                    onWorldRequested: (id) => root.worldsRequested(id)
-                }
-            }
-
-            // The facts beside the name, in the middle of the room between
-            // it and Play.
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                visible: root.factsBeside
-
-                HomeHeroFacts {
-                    anchors.centerIn: parent
-                    instanceId: root.instanceId
-                    lastLaunch: root.lastLaunch
-                    playTimeText: root.playTimeText
-                    worldsModel: root.worldsModel
-                    ink: root.ink
-                    inkLabel: root.inkLabel
-                    onWorldRequested: (id) => root.worldsRequested(id)
-                }
-            }
-
-            // The page's one primary button, at the card's far edge: Play,
-            // Stop while the game runs, "Starting…" (and Cancel) while a
-            // launch prepares it; ▾ for the other ways to play.
-            Row {
-                id: actions
-                Layout.alignment: Qt.AlignVCenter
-                spacing: Theme.space.sm
-
-                Button {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: root.launching
-                    buttonSize: "lg"
-                    text: qsTr("Cancel")
-                    onClicked: root.stopRequested(root.instanceId)
-                }
-                PlayButton {
-                    anchors.verticalCenter: parent.verticalCenter
-                    round: false
-                    size: Theme.control.heightLg
-                    implicitWidth: root.playWidth
-                    running: root.isRunning && !root.launching
-                    busy: root.launching
-                    enabled: !root.launching && (root.isRunning || root.canLaunch)
-                    onClicked: root.isRunning ? root.stopRequested(root.instanceId)
-                                              : root.launchRequested(root.instanceId)
-                }
-                IconButton {
-                    id: moreButton
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: !root.isRunning && !root.launching
-                    size: Theme.control.heightLg
-                    flat: false
-                    iconName: "chevron-down"
-                    icon.width: Theme.icon.md
-                    icon.height: Theme.icon.md
-                    tip: qsTr("More ways to play")
-                    enabled: root.canLaunch && !!root.launchOptionsFor
-                    onClicked: launchMenu.visible ? launchMenu.close() : root.openLaunchMenu()
-                }
-            }
-        }
-    }
-
-    LaunchOptionsMenu {
-        id: launchMenu
-        instanceId: root.instanceId
-        optionsFor: root.launchOptionsFor
-        onLaunchModeRequested: (id, mode) => root.launchModeRequested(id, mode)
-        onLaunchAsRequested: (id, accountId) => root.launchAsRequested(id, accountId)
-        onProfilerChosen: (id, key) => root.profilerChosen(id, key)
-        onPerformanceChosen: (id, enabled) => root.performanceChosen(id, enabled)
-        onNavigateRequested: (target) => root.navigateRequested(target)
-    }
+    Component { id: cardView; HomeHeroCard { hero: root } }
+    Component { id: stageView; HomeStageHero { hero: root } }
+    Component { id: calmView; HomeCalmHero { hero: root } }
+    Component { id: nightView; HomeNightHero { hero: root } }
 }

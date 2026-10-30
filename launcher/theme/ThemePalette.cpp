@@ -285,6 +285,51 @@ namespace
 				QColor(0x60, 0x60, 0x60), QColor(0xDC, 0xED, 0xCB), QColor(0x17, 0x31, 0x10),
 				QColor(0x13, 0x13, 0x13), QColor(0xEF, 0xEF, 0xEF)};
 	}
+
+	/* Sahne: Lunar's stage. Hue-less near-black neutrals and a white Play
+	 * with a black label -- no violet anywhere but the logo. The accent
+	 * being white makes selection, switches and links white too. */
+	SchemeColors stage()
+	{
+		return {QColor(0x0E, 0x0E, 0x11), QColor(0x14, 0x14, 0x17), QColor(0x24, 0x24, 0x29),
+				QColor(0x1A, 0x1A, 0x1E), QColor(0x09, 0x09, 0x0B),
+				QColor(0xF4, 0xF4, 0xF5), QColor(0xB4, 0xB4, 0xBB), QColor(0x8B, 0x8B, 0x94),
+				QColor(0x5E, 0x5E, 0x66),
+				QColor(0xF4, 0xF4, 0xF5), QColor(0xFF, 0xFF, 0xFF), QColor(0xD9, 0xD9, 0xDE),
+				QColor(0xFF, 0xFF, 0xFF), QColor(0x0B, 0x0B, 0x0D),
+				QColor(0x6E, 0x6E, 0x76), QColor(0x2A, 0x2A, 0x30), QColor(0xF4, 0xF4, 0xF5),
+				QColor(0x2A, 0x2A, 0x2F), QColor(0x1E, 0x1E, 0x23)};
+	}
+
+	/* Sade: ink-blue neutrals and a fresh green Play with a dark label,
+	 * the calm list look. */
+	SchemeColors calm()
+	{
+		return {QColor(0x10, 0x12, 0x17), QColor(0x16, 0x19, 0x20), QColor(0x22, 0x26, 0x2F),
+				QColor(0x1B, 0x1F, 0x27), QColor(0x0A, 0x0B, 0x0E),
+				QColor(0xEE, 0xF0, 0xF4), QColor(0xAE, 0xB4, 0xBF), QColor(0x85, 0x8C, 0x99),
+				QColor(0x56, 0x5C, 0x68),
+				QColor(0x4A, 0xDE, 0x80), QColor(0x6E, 0xE7, 0xA0), QColor(0x22, 0xC5, 0x5E),
+				QColor(0x6E, 0xE7, 0xA0), QColor(0x05, 0x2E, 0x16),
+				QColor(0x68, 0x70, 0x80), QColor(0x17, 0x3B, 0x27), QColor(0xEE, 0xF0, 0xF4),
+				QColor(0x26, 0x2B, 0x35), QColor(0x1C, 0x20, 0x28)};
+	}
+
+	/* Gece: kiteclient.com's night sky (tokens.css: zenith #150E36, high
+	 * #2B1C76), lavender text, a white Play with the sky's ink on it. The
+	 * sky itself is drawn behind the shell (SkyBackdrop); these opaque
+	 * surfaces are for what floats over it -- menus, dialogs, fields. */
+	SchemeColors night()
+	{
+		return {QColor(0x15, 0x0E, 0x36), QColor(0x1C, 0x14, 0x46), QColor(0x2A, 0x20, 0x60),
+				QColor(0x22, 0x1A, 0x52), QColor(0x0F, 0x0A, 0x28),
+				QColor(0xF2, 0xF0, 0xF8), QColor(0xC3, 0xBB, 0xDB), QColor(0x9A, 0x91, 0xB8),
+				QColor(0x65, 0x5D, 0x85),
+				QColor(0xFF, 0xFF, 0xFF), QColor(0xF1, 0xEC, 0xFF), QColor(0xDC, 0xD2, 0xFF),
+				QColor(0xCB, 0xB8, 0xFF), QColor(0x1A, 0x12, 0x40),
+				QColor(0x7A, 0x70, 0xA0), QColor(0x3A, 0x2A, 0x88), QColor(0xF2, 0xF0, 0xF8),
+				QColor(0x2D, 0x24, 0x68), QColor(0x26, 0x1C, 0x58)};
+	}
 } // namespace
 
 ThemePalette ThemePalette::forScheme(Scheme scheme, bool dark)
@@ -296,6 +341,12 @@ ThemePalette ThemePalette::forScheme(Scheme scheme, bool dark)
 			return build(diamond(dark), dark);
 		case Scheme::Grass:
 			return build(grass(dark), dark);
+		case Scheme::Stage:
+			return build(stage(), true);
+		case Scheme::Calm:
+			return build(calm(), true);
+		case Scheme::Night:
+			return build(night(), true);
 		case Scheme::Amethyst:
 			break;
 	}
@@ -310,6 +361,12 @@ ThemePalette::Scheme ThemePalette::schemeFromName(const QString& name)
 		return Scheme::Diamond;
 	if (name == QStringLiteral("grass"))
 		return Scheme::Grass;
+	if (name == QStringLiteral("stage"))
+		return Scheme::Stage;
+	if (name == QStringLiteral("calm"))
+		return Scheme::Calm;
+	if (name == QStringLiteral("night"))
+		return Scheme::Night;
 	return Scheme::Amethyst;
 }
 
@@ -322,6 +379,12 @@ QString ThemePalette::schemeName(Scheme scheme)
 			return QStringLiteral("diamond");
 		case Scheme::Grass:
 			return QStringLiteral("grass");
+		case Scheme::Stage:
+			return QStringLiteral("stage");
+		case Scheme::Calm:
+			return QStringLiteral("calm");
+		case Scheme::Night:
+			return QStringLiteral("night");
 		case Scheme::Amethyst:
 			break;
 	}

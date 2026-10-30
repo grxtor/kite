@@ -190,12 +190,19 @@ class ThemePalette
 		Amethyst, // violet-black neutrals, electric violet
 		Ember,	  // warm charcoal, lava orange
 		Diamond,  // cool navy, diamond blue
-		Grass	  // hue-less graphite, Minecraft-grass green
+		Grass,	  // hue-less graphite, Minecraft-grass green
+		/* The looks' own palettes (ThemeService::look), dark only: the
+		 * light argument of forScheme() is ignored for them, and the
+		 * palette picker never offers them. */
+		Stage, // Sahne: neutral black, a white Play
+		Calm,  // Sade: ink-blue neutrals, a fresh green Play
+		Night  // Gece: the website's night sky, a white Play
 	};
 
 	static ThemePalette forScheme(Scheme scheme, bool dark);
 	/* "amethyst", "ember", "diamond" or "grass" -- the stored setting
-	 * value. An unknown name falls back to Amethyst. */
+	 * value -- or a look's "stage", "calm" or "night". An unknown name
+	 * falls back to Amethyst. */
 	static Scheme schemeFromName(const QString& name);
 	static QString schemeName(Scheme scheme);
 

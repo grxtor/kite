@@ -58,6 +58,22 @@ SettingsScroll {
         title: qsTr("Theme")
         SettingRow {
             wide: true
+            label: qsTr("Look")
+            description: qsTr("How the launcher looks and how Home is laid out. Stage, Calm and Night are dark and bring their own colours; Classic keeps the palette and mode below.")
+            LookPicker {
+                current: Theme.look
+                onPicked: (look) => {
+                    Theme.look = look
+                    SettingsStore.setValue("UiLook", look)
+                }
+            }
+        }
+        // The palette and the mode are Klasik's own; the other looks bring
+        // theirs.
+        SettingRow {
+            wide: true
+            visible: Theme.look === "classic"
+            showDivider: true
             label: qsTr("Palette")
             description: qsTr("The launcher's colours. Each palette has a dark and a light variant.")
             PalettePicker {
@@ -70,6 +86,7 @@ SettingsScroll {
         }
         SettingChoice {
             key: "UiThemeMode"
+            visible: Theme.look === "classic"
             label: qsTr("Mode")
             showDivider: true
             options: [

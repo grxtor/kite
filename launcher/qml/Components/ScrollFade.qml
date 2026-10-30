@@ -17,8 +17,13 @@ Rectangle {
 
     // May be null for a moment while the page is still being built.
     property Flickable flickable: null
-    // What the content fades into; the page's own background.
-    property color fadeTo: Theme.palette.canvas
+    // What the content fades into; the page's own background -- over the
+    // Gece look's sky, the sky's colour about where a page's top or bottom
+    // edge sits in the window.
+    property color fadeTo: Theme.look === "night" ? Theme.sky.colorAt(root.atTop ? root.skyTop : root.skyBottom)
+                                                  : Theme.palette.canvas
+    readonly property real skyTop: 0.1
+    readonly property real skyBottom: 0.9
     // The top edge instead, while there is content scrolled up above it:
     // anchor it to the Flickable's top. For a list whose rows are cut by a
     // border at both ends.

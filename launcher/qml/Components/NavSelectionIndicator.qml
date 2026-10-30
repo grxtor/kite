@@ -46,6 +46,9 @@ Item {
     // middle, so it neither moves nor jumps while the rail changes width.
     // -1 centres it in the row instead.
     property int railAxis: -1
+    // The rows are being resized under the pointer: the shape's width follows
+    // them at once instead of a moment behind.
+    property bool live: false
 
     // Offset from this Item's own origin to where the hosted rows actually
     // start -- e.g. SidebarNav's rows sit inside a ColumnLayout with
@@ -93,7 +96,7 @@ Item {
 
         Behavior on x { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-        Behavior on width { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        Behavior on width { enabled: !root.live; NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         Behavior on height { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
     }
 

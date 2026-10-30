@@ -7,16 +7,18 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The friends list in full, its own page in the rail: you (FriendsSelfCard,
- * with where to add someone by their Minecraft name), then three tabs --
- * Friends (where each one is, with Join where the friend allows it; ⋯ to
- * remove or block), Requests (accept, decline, cancel) and Blocked
- * (unblock). Removing and blocking ask first. What the server answered
- * comes back as a toast from Main.qml, off FriendsController.actionFinished.
- * While friends are not connected the list gives way to FriendsPageState,
- * except for a poll that failed after the lists were read: those stay, with
- * a bar saying they may be out of date, and nothing that needs the server
- * (Add, Join, ⋯) works until it answers.
+ * The friends list in full, a page of its own that the friends panel on the
+ * window's right edge (FriendsSidePanel) opens for what does not fit a narrow
+ * column: you (FriendsSelfCard, with where to add someone by their Minecraft
+ * name), then three tabs -- Friends (where each one is, with Join where the
+ * friend allows it; ⋯ to remove or block), Requests (accept, decline,
+ * cancel) and Blocked (unblock). Removing and blocking ask first. What the
+ * server answered comes back as a toast from Main.qml, off
+ * FriendsController.actionFinished. While friends are not connected the
+ * list gives way to FriendsPageState, except for a poll that failed after
+ * the lists were read: those stay, with a bar saying they may be out of
+ * date, and nothing that needs the server (Add, Join, ⋯) works until it
+ * answers.
  *
  * The column hangs from the page title, as every page's content does, and
  * stops growing at a readable width.
@@ -85,10 +87,7 @@ Item {
     // @p mode: "remove" a friend, "block" a friend, or "blockRequest" (the
     // person is not a friend: their request is what goes).
     function confirmAction(mode, uuid, name) {
-        confirm.mode = mode
-        confirm.targetUuid = uuid
-        confirm.targetName = name
-        confirm.open()
+        confirm.ask(mode, uuid, name)
     }
 
     onShownChanged: if (root.shown) root.load()
@@ -225,26 +224,8 @@ Item {
     }
 
     // Removing a friend and blocking someone, both after a question.
-    ConfirmDialog {
+    FriendConfirmDialog {
         id: confirm
-
-        property string mode: "remove"
-        property string targetUuid
-        property string targetName
-        readonly property bool removing: confirm.mode === "remove"
-
-        title: confirm.removing ? qsTr("Remove %1 from friends?").arg(confirm.targetName) : qsTr("Block %1?").arg(confirm.targetName)
-        confirmText: confirm.removing ? qsTr("Remove friend") : qsTr("Block")
-        text: confirm.removing
-              ? qsTr("%1 will no longer see when you are online, and you will not see them. You can add each other again later.").arg(confirm.targetName)
-              : confirm.mode === "blockRequest"
-                ? qsTr("Their request is declined, and %1 can no longer send you requests or see when you are online. They are not told.").arg(confirm.targetName)
-                : qsTr("%1 will be taken off your friends and can no longer send you requests or see when you are online. They are not told.").arg(confirm.targetName)
-        onConfirmed: {
-            if (confirm.removing)
-                root.controller.removeFriend(confirm.targetUuid)
-            else
-                root.controller.block(confirm.targetUuid)
-        }
+        controller: root.controller
     }
 }

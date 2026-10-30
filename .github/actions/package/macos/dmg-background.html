@@ -1,0 +1,104 @@
+<!doctype html>
+<!--
+SPDX-FileCopyrightText: 2026 grxtor
+SPDX-License-Identifier: Apache-2.0
+
+The source of dmg-background.png and dmg-background@2x.png: the website's
+dusk sky with Minecraft's flat clouds, the logo, and an arrow between where
+dmg_settings.py puts Kite.app and Applications. Finder writes the icon names
+in black even in dark mode, so the sky is light where the names go.
+
+To render, put kite-mark.png (launcher/resources/multimc/brand) and the
+website's Montserrat-Bold, Inter-Regular and Inter-Medium .woff2 files in a
+fonts/ folder next to this file, then:
+
+  chrome --headless=new --hide-scrollbars --window-size=700,460 \
+    --force-device-scale-factor=1 --screenshot=dmg-background.png dmg-background.html
+  chrome --headless=new --hide-scrollbars --window-size=700,460 \
+    --force-device-scale-factor=2 --screenshot=dmg-background@2x.png dmg-background.html
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: Montserrat; font-weight: 700; src: url(fonts/Montserrat-Bold.woff2); }
+  @font-face { font-family: Inter; font-weight: 400; src: url(fonts/Inter-Regular.woff2); }
+  @font-face { font-family: Inter; font-weight: 500; src: url(fonts/Inter-Medium.woff2); }
+  :root {
+    --sky-zenith: #150e36;
+    --sky-high: #2b1c76;
+    --sky-mid: #5a3ad6;
+    --sky-low: #9b7cff;
+    --sky-horizon: #dccbff;
+    --cloud-top: #fff;
+    --cloud-under: #cbb8ff;
+  }
+  html, body { margin: 0; }
+  body {
+    position: relative;
+    width: 700px;
+    height: 460px;
+    overflow: hidden;
+    color: #fff;
+    -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(70% 40% at 50% 100%, rgb(243 220 255 / 55%), transparent 70%),
+      linear-gradient(180deg, var(--sky-zenith) 0%, var(--sky-high) 30%, var(--sky-mid) 58%,
+                      var(--sky-low) 82%, var(--sky-horizon) 100%);
+  }
+  .logo {
+    position: absolute;
+    top: 30px;
+    left: 312px;
+    width: 76px;
+    height: 76px;
+    filter: drop-shadow(0 10px 22px rgb(13 8 40 / 45%));
+  }
+  .head { position: absolute; top: 128px; left: 0; right: 0; text-align: center; }
+  h1 { margin: 0; font: 700 30px/1 Montserrat; letter-spacing: -0.01em; }
+  p { margin: 12px 0 0; font: 400 14px/1.4 Inter; color: rgb(255 255 255 / 78%); }
+  p b { font-weight: 500; color: #fff; }
+  svg { position: absolute; }
+  .cloud { shape-rendering: crispEdges; }
+</style>
+</head>
+<body>
+<img class="logo" src="kite-mark.png" alt="">
+<div class="head">
+  <h1>Install Kite</h1>
+  <p>Drag <b>Kite</b> onto the <b>Applications</b> folder.</p>
+</div>
+<!-- Icons are 128 pt at x 190 and 510, y 300: the arrow fills the gap less 34 pt each side. -->
+<svg style="left: 0; top: 0" width="700" height="460">
+  <g fill="none" stroke="rgb(255 255 255 / 85%)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M288 300 H412" />
+    <path d="M403 291 L412 300 L403 309" />
+  </g>
+</svg>
+<script>
+  // The website's cloud shapes (website/src/lib/clouds.ts): rows of
+  // x, y, width, height in cells, a white top over a lavender underside.
+  const CLOUDS = {
+    long: [[3, 0, 14, 2], [0, 2, 30, 2], [6, 4, 29, 2]],
+    short: [[4, 0, 12, 2], [0, 2, 28, 3]],
+    wide: [[10, 0, 16, 2], [0, 2, 40, 2], [4, 4, 22, 2]],
+    bank: [[6, 0, 20, 2], [0, 2, 44, 2], [12, 4, 26, 2]],
+  };
+  function cloud(shape, left, top, width, opacity, flip) {
+    const rows = CLOUDS[shape];
+    const w = Math.max(...rows.map((r) => r[0] + r[2]));
+    const h = Math.max(...rows.map((r) => r[1] + r[3])) + 1;
+    const x = (r) => (flip ? w - r[0] - r[2] : r[0]);
+    const rects = (dy) => rows.map((r) => `<rect x="${x(r)}" y="${r[1] + dy}" width="${r[2]}" height="${r[3]}"/>`).join('');
+    document.body.insertAdjacentHTML('beforeend',
+      `<svg class="cloud" viewBox="0 0 ${w} ${h}" style="left:${left}px;top:${top}px;width:${width}px;opacity:${opacity}">` +
+      `<g fill="var(--cloud-under)">${rects(1)}</g><g fill="var(--cloud-top)">${rects(0)}</g></svg>`);
+  }
+  // High clouds 30 pt in from either side; low ones run off both edges.
+  cloud('short', 30, 104, 116, 0.3);
+  cloud('long', 536, 70, 134, 0.26, true);
+  cloud('wide', -30, 414, 250, 0.9);
+  cloud('bank', 440, 408, 290, 0.95);
+</script>
+</body>
+</html>

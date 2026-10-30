@@ -307,6 +307,7 @@ Item {
                         Layout.preferredWidth: root.headerIconSize
                         Layout.preferredHeight: root.headerIconSize
                         iconKey: headerCard.iconKey.length > 0 ? headerCard.iconKey : "default"
+                        instanceId: root.instanceId
                         packArt: headerCard.model.packArt || ""
                         matte: Theme.palette.canvas
                         // The hero's corner is too round at 64 px.

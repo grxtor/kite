@@ -12,6 +12,12 @@ import Kite.Theme
  * again. Two columns on a window wide enough for both to stay readable;
  * hidden with nothing to list.
  *
+ * How the rows look is the page's look (Theme.look): the classic rows
+ * (HomeJumpCard), a row of cards with the instance's screenshot for Sahne
+ * (HomeStageCard), hairline lines on the page for Sade (HomeCalmRow) and a
+ * grid of glass panes for Gece (HomeNightRow). What they list and when it is
+ * read again is the same in all of them.
+ *
  * Both lists are read into plain rows (and read again whenever anything a
  * row shows changes). The never-played ones come off the library's model,
  * which follows the Library's search, so while one is on (`frozen`) they
@@ -37,12 +43,24 @@ Column {
     // shows, for the instance menu.
     signal menuRequested(string id, bool running, string name, string iconKey, Item anchor)
 
+    readonly property string look: Theme.look
     readonly property int maxRows: 4
-    readonly property int gap: Theme.space.md
-    // Below this a row's name and meta crowd its Play.
-    readonly property int rowMinWidth: 480
-    readonly property int columns: root.width >= root.rowMinWidth * 2 + root.gap ? 2 : 1
+    // Between rows, and from the title to the first: Sahne's cards stand
+    // further apart, Sade's rows touch (their hairlines are the gap).
+    readonly property int gap: root.look === "stage" ? Theme.space.lg
+                              : root.look === "calm" ? 0 : Theme.space.md
+    // Below this a row's name and meta crowd its Play; a Sahne card or a
+    // Gece pane is narrower than a classic row.
+    readonly property int rowMinWidth: root.look === "stage" ? 190
+                                     : root.look === "night" ? 300 : 480
+    readonly property int columns: root.look === "stage"
+        ? (root.width >= root.rowMinWidth * root.maxRows + root.gap * (root.maxRows - 1) ? root.maxRows : 2)
+        : root.look === "calm" ? 1
+        : root.width >= root.rowMinWidth * 2 + root.gap ? 2 : 1
     readonly property int rowWidth: Math.floor((root.width - root.gap * (root.columns - 1)) / root.columns)
+    readonly property int titleGap: root.look === "stage" ? Theme.space.md + 2
+                                  : root.look === "calm" ? Theme.space.sm + 2
+                                  : root.look === "night" ? Theme.space.md + 2 : Theme.space.lg
 
     property var playedRows: []
     property var freshRows: []
@@ -64,7 +82,7 @@ Column {
             isRunning: source.isRunning, canLaunch: source.canLaunch, lastLaunch: source.lastLaunch,
             totalTimePlayed: source.totalTimePlayed, gameVersion: source.gameVersion,
             loader: source.loader, iconTint: source.iconTint, packArt: source.packArt || "",
-            hasCrashed: source.hasCrashed
+            coverImage: source.coverImage || "", hasCrashed: source.hasCrashed
         }
     }
     // One more than shown, so the hero's own row can drop out.
@@ -98,9 +116,11 @@ Column {
         required property string loader
         required property var iconTint
         required property var packArt
+        required property string coverImage
         required property bool hasCrashed
         readonly property string signature: [instanceId, name, iconKey, isRunning, canLaunch, lastLaunch,
-                                             totalTimePlayed, gameVersion, loader, packArt, hasCrashed].join("\n")
+                                             totalTimePlayed, gameVersion, loader, packArt, coverImage,
+                                             hasCrashed].join("\n")
     }
     Instantiator {
         id: playedReader
@@ -122,7 +142,7 @@ Column {
     }
 
     visible: root.rows.length > 0
-    spacing: Theme.space.lg
+    spacing: root.titleGap
 
     HomeSectionTitle {
         width: parent.width
@@ -136,28 +156,64 @@ Column {
 
         Repeater {
             model: root.rows
-            delegate: HomeJumpCard {
-                id: row
-                required property var modelData
-                width: root.rowWidth
-                instanceId: modelData.instanceId
-                name: modelData.name
-                iconKey: modelData.iconKey
-                isRunning: modelData.isRunning
-                canLaunch: modelData.canLaunch
-                lastLaunch: modelData.lastLaunch
-                totalTimePlayed: modelData.totalTimePlayed
-                gameVersion: modelData.gameVersion
-                loader: modelData.loader
-                iconTint: modelData.iconTint
-                coverImage: ""
-                packArt: modelData.packArt
-                hasCrashed: modelData.hasCrashed
-                onClicked: root.openRequested(row.instanceId)
-                onPlayRequested: root.launchRequested(row.instanceId)
-                onStopRequested: root.stopRequested(row.instanceId)
-                onMenuRequested: (anchor) => root.menuRequested(row.instanceId, row.isRunning, row.name, row.iconKey, anchor)
-            }
+            delegate: root.look === "stage" ? stageCard
+                    : root.look === "calm" ? calmRow
+                    : root.look === "night" ? nightRow : classicRow
+        }
+    }
+
+    Component {
+        id: classicRow
+        HomeJumpCard {
+            id: row
+            required property var modelData
+            width: root.rowWidth
+            instanceId: modelData.instanceId
+            name: modelData.name
+            iconKey: modelData.iconKey
+            isRunning: modelData.isRunning
+            canLaunch: modelData.canLaunch
+            lastLaunch: modelData.lastLaunch
+            totalTimePlayed: modelData.totalTimePlayed
+            gameVersion: modelData.gameVersion
+            loader: modelData.loader
+            iconTint: modelData.iconTint
+            coverImage: ""
+            packArt: modelData.packArt
+            hasCrashed: modelData.hasCrashed
+            onClicked: root.openRequested(row.instanceId)
+            onPlayRequested: root.launchRequested(row.instanceId)
+            onStopRequested: root.stopRequested(row.instanceId)
+            onMenuRequested: (anchor) => root.menuRequested(row.instanceId, row.isRunning, row.name, row.iconKey, anchor)
+        }
+    }
+    Component {
+        id: stageCard
+        HomeStageCard {
+            required property var modelData
+            row: modelData
+            host: root
+            width: root.rowWidth
+        }
+    }
+    Component {
+        id: calmRow
+        HomeCalmRow {
+            required property var modelData
+            required property int index
+            row: modelData
+            host: root
+            width: root.rowWidth
+            showDivider: index < root.rows.length - 1
+        }
+    }
+    Component {
+        id: nightRow
+        HomeNightRow {
+            required property var modelData
+            row: modelData
+            host: root
+            width: root.rowWidth
         }
     }
 }

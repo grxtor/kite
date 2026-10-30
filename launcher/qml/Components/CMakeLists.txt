@@ -27,6 +27,10 @@ qt_add_qml_module(Kite_qml_components
         CoverArt.qml
         PlaceholderSurface.qml
         InstanceTile.qml
+        SkyBackdrop.qml
+        LookPicker.qml
+        LookMiniature.qml
+        PickerTile.qml
         KiteNose.qml
         InstanceCard.qml
         InstanceListRow.qml
@@ -164,6 +168,7 @@ qt_add_qml_module(Kite_qml_components
         SegmentedControl.qml
         EmptyState.qml
         SidebarNav.qml
+        SidebarEdgeHandle.qml
         NavItem.qml
         NavSelectionIndicator.qml
         AccountChip.qml
@@ -194,6 +199,18 @@ qt_add_qml_module(Kite_qml_components
         FriendStatusRow.qml
         FriendMoreButton.qml
         FriendPersonMenu.qml
+        FriendConfirmDialog.qml
+        FriendsSidePanel.qml
+        FriendsPanelFull.qml
+        FriendsPanelStrip.qml
+        PanelEdgeHandle.qml
+        FriendsStripHead.qml
+        FriendHeadCard.qml
+        FriendsPanelHeader.qml
+        FriendsPanelGroup.qml
+        FriendsPanelToggle.qml
+        FriendsStaleBar.qml
+        CountPill.qml
         FriendJoinFlow.qml
         FriendsPending.qml
         FriendJoinDialog.qml
@@ -218,6 +235,24 @@ qt_add_qml_module(Kite_qml_components
         HomeHeroTile.qml
         HomeHeroTitle.qml
         HomeContinuePlaying.qml
+        HomeLabel.qml
+        HomeGlass.qml
+        HomeGlassButton.qml
+        HomeHeroActions.qml
+        HomeHeroLead.qml
+        HomeHeroCard.qml
+        HomeStageHero.qml
+        HomeStageWorlds.qml
+        HomeCalmHero.qml
+        HomeNightHero.qml
+        HomeRowBase.qml
+        HomeRowTile.qml
+        HomeRowPlay.qml
+        HomeRowMeta.qml
+        HomeStageCard.qml
+        HomeCalmRow.qml
+        HomeNightRow.qml
+        HomeStageSections.qml
         HomePanelHeading.qml
         QuietPlayButton.qml
         HomeWorldTile.qml

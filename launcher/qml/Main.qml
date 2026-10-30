@@ -90,6 +90,18 @@ ApplicationWindow {
             var scheme = SettingsStore.string("UiPalette")
             if (scheme === "amethyst" || scheme === "ember" || scheme === "diamond" || scheme === "grass")
                 Theme.scheme = scheme
+            var look = SettingsStore.string("UiLook")
+            if (look === "stage" || look === "calm" || look === "night" || look === "classic")
+                Theme.look = look
+            // The friends panel's saved choice, which a window too narrow for
+            // it overrides for this session only; and whether it is opened
+            // out, and how wide.
+            root.friendsPanelOpen = SettingsStore.bool("FriendsPanelOpen")
+                                    && root.width >= root.friendsPanelMinWindow
+            root.friendsPanelExpanded = SettingsStore.bool("FriendsPanelExpanded")
+            root.friendsPanelWidth = SettingsStore.number("FriendsPanelWidth")
+            // The labelled sidebar's width, as the user dragged it.
+            root.sidebarWidth = SettingsStore.number("UiSidebarWidth")
         }
         onboardingLoader.active = !!root.shell && !!root.shell.setupSteps && root.shell.setupSteps.length > 0
         if (root.devRoute.length > 0)
@@ -121,6 +133,8 @@ ApplicationWindow {
                 Theme.mode = value
             else if (key === "scheme")
                 Theme.scheme = value
+            else if (key === "look")
+                Theme.look = value
             else if (key === "size") {
                 var wh = value.split("x")
                 root.width = parseInt(wh[0])
@@ -156,6 +170,17 @@ ApplicationWindow {
                 Qt.callLater(root.openFriends, "friends")
             else if (key === "friendsTab")
                 Qt.callLater(root.openFriends, value)
+            // The friends panel on the right edge: "friendspanel=closed"
+            // hides it, "=strip" shows the strip of heads (the default) and
+            // "=open" opens it out to names and groups; "friendspanelwidth=
+            // 420" is how wide it is opened out. Both are saved, as using
+            // the panel would.
+            else if (key === "friendspanel") {
+                root.setFriendsPanelOpen(value !== "closed")
+                if (value === "strip" || value === "open")
+                    root.setFriendsPanelExpanded(value === "open")
+            } else if (key === "friendspanelwidth")
+                root.setFriendsPanelWidth(parseInt(value))
             else if (key === "gallery")
                 galleryLoader.active = true
             else if (key === "profilemenu")
@@ -218,8 +243,13 @@ ApplicationWindow {
             // debugShowRequest(): "pickAccount" or "busySkip".
             else if (key === "ask")
                 root.call("debugShowRequest", value)
+            // The sidebar: "sidebar=collapsed" is the rail, anything else the
+            // labelled sidebar; "sidebarwidth=300" is how wide that is. Both
+            // are saved, as using the sidebar would.
             else if (key === "sidebar")
                 SettingsStore.setValue("UiSidebarCollapsed", value === "collapsed")
+            else if (key === "sidebarwidth")
+                root.setSidebarWidth(parseInt(value))
             // The first-run flow over the shell with every step listed, on
             // a data dir that no longer needs it; nothing is saved unless a
             // step is finished.
@@ -259,8 +289,44 @@ ApplicationWindow {
             root.selection.clear()
     }
 
+    // How wide the user dragged the labelled sidebar to (UiSidebarWidth),
+    // read once at start-up and written when the sidebar asks for a change;
+    // whether it is labelled at all is UiSidebarCollapsed (SidebarNav).
+    property int sidebarWidth: 240
+    function setSidebarWidth(width) {
+        root.sidebarWidth = width
+        SettingsStore.setValue("UiSidebarWidth", width)
+    }
+
     // QmlShell.friends (FriendsController), or null where this build has none.
     readonly property var friendsController: root.shell && root.shell.friends ? root.shell.friends : null
+    // The friends panel on the right edge, on every page (FriendsSidePanel).
+    // Whether it is out is the FriendsPanelOpen setting, which the top bar's
+    // toggle writes. A window narrower than friendsPanelMinWindow starts
+    // without it, leaving the setting alone, so a small window is not
+    // squeezed before the user asks; the toggle can still bring it out.
+    // Out, it is a strip of heads or, opened out, a list with names
+    // (FriendsPanelExpanded) of the width the user dragged it to
+    // (FriendsPanelWidth); both are read once, at start-up, and written when
+    // the panel asks for a change.
+    readonly property int friendsPanelMinWindow: 1100
+    property bool friendsPanelOpen: false
+    property bool friendsPanelExpanded: false
+    property int friendsPanelWidth: 320
+    // A build without friends has no panel and no toggle.
+    readonly property bool friendsPanelShown: !!root.friendsController && root.friendsPanelOpen
+    function setFriendsPanelOpen(open) {
+        root.friendsPanelOpen = open
+        SettingsStore.setValue("FriendsPanelOpen", open)
+    }
+    function setFriendsPanelExpanded(expanded) {
+        root.friendsPanelExpanded = expanded
+        SettingsStore.setValue("FriendsPanelExpanded", expanded)
+    }
+    function setFriendsPanelWidth(width) {
+        root.friendsPanelWidth = width
+        SettingsStore.setValue("FriendsPanelWidth", width)
+    }
     // The Friends page on tab "friends", "requests" or "blocked", or "add":
     // the friends tab with the add field focused. Going there first builds
     // it (PageSlot), so it is there to be given the tab.
@@ -413,8 +479,9 @@ ApplicationWindow {
     }
 
     // The play bar shows on Home, Discover, Friends, Settings and Accounts,
-    // keeping the selected instance one click away. Home has it too: the
-    // hero scrolls away under Continue playing and the library, the bar stays. The
+    // keeping the selected instance one click away. Home has it once the
+    // hero has scrolled away under Continue playing and the library
+    // (dockHeldByHero). The
     // instance page's header is that page's Play, and the bar would only
     // repeat it there; the library page that once had it is no longer in the
     // rail.
@@ -426,6 +493,11 @@ ApplicationWindow {
     // that page's Install is the primary action. Moot while the instance
     // page has no bar at all, kept so bringing the bar back there keeps it.
     readonly property bool dockSuppressed: root.page === "instance" && !!instancePage && instancePage.browsing === true
+    // On Home, while the hero's own Play is on screen: the hero shows the
+    // bar's instance (both follow the selection), so the bar would be a
+    // second Play for it. Read off the page on screen, as dockVisible is.
+    readonly property bool dockHeldByHero: pageStack.currentIndex === pageHost.pageOrder.indexOf("home")
+                                           && homePage.heroPlayInView
 
     // The pages built on demand (PageSlot): null until first shown. Setting
     // root.page builds the page at once, so code that sends the user
@@ -580,16 +652,35 @@ ApplicationWindow {
     // the canvas is ever behind the shell, so glass over the canvas and this
     // tint of it are the same colour.
     readonly property color shellColor: Qt.tint(Theme.palette.canvas, Theme.glass.fill)
+    // The Gece look: the whole window is the night sky (SkyBackdrop), and the
+    // shell, the page panel and the friends panel stay transparent over it,
+    // without the panel's corner matte. shellColor still rounds what needs a
+    // solid colour around it (an icon that fills its tile).
+    readonly property bool skyLook: Theme.look === "night"
     // The panel's corner: Modrinth's "inset window" corner, the dialog's
     // radius.xl -- the one surface as big as a dialog.
     readonly property int panelRadius: Theme.radius.xl
+    // macOS: the title bar lies over the shell (QmlShell, MacWindowChrome),
+    // its traffic lights at the left end of the sidebar's brand band. How
+    // far they reach, and how tall a bar has them in its middle; both 0
+    // everywhere else. Full screen hides them.
+    property int windowControlsWidth: 0
+    property int titleBarHeight: 0
+    readonly property int windowControlsInset: root.visibility === Window.FullScreen ? 0 : root.windowControlsWidth
     // The top bar: Modrinth's 48, one rail square tall -- the same line the
-    // sidebar's brand band sits on.
-    readonly property int shellBarHeight: Theme.control.heightLg
+    // sidebar's brand band sits on. On macOS the height that has the
+    // traffic lights in its middle, which AppKit alone decides.
+    readonly property int shellBarHeight: root.titleBarHeight > 0 ? root.titleBarHeight : Theme.control.heightLg
+
+    SkyBackdrop {
+        anchors.fill: parent
+        visible: root.skyLook
+        barHeight: root.shellBarHeight
+    }
 
     Rectangle {
         anchors.fill: parent
-        color: root.shellColor
+        color: root.skyLook ? "transparent" : root.shellColor
 
         Rectangle {
             width: parent.width
@@ -598,26 +689,35 @@ ApplicationWindow {
         }
     }
 
+    // macOS: with the title bar laid over the shell, the shell's own top
+    // band is what moves the window, and a double click zooms it, as a
+    // title bar does. Under the rail and the top bar, so their buttons
+    // still take their clicks.
+    Item {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        height: root.shellBarHeight
+        enabled: root.windowControlsWidth > 0
+
+        DragHandler {
+            target: null
+            onActiveChanged: if (active) root.startSystemMove()
+        }
+        TapHandler {
+            onDoubleTapped: root.visibility === Window.Maximized ? root.showNormal() : root.showMaximized()
+        }
+    }
+
     // The rail's destinations. Home and Library become one page (designs/
     // phase3-scale.md, decision 1), so the rail has no Library of its own;
-    // page=library still routes, and lights Home, until that lands.
+    // page=library still routes, and lights Home, until that lands. Friends
+    // is not here: its list is the panel on the right edge, and the page
+    // (requests, blocked people, adding by name) is reached from that.
     readonly property var navItems: [
         { id: "home", icon: "home", label: qsTr("Home") },
         { id: "discover", icon: "compass", label: qsTr("Discover") }
-    ].concat(root.friendsController ? [{ id: "friends", icon: "users", label: qsTr("Friends") }] : [])
-
-    // The counts on the rail (SidebarNav.badges), kept apart from navItems
-    // so a request coming in never rebuilds the rail's items. Friends: the
-    // requests waiting for an answer, in the accent. Only what needs an
-    // answer: a count of who is online is nearly always there, so it would
-    // read as noise, and Home's panel says it. Nothing while friends are off
-    // or not connected: the number would be stale.
-    readonly property var navBadges: {
-        var friends = root.friendsController
-        if (!friends || !friends.enabled || friends.state !== "ready" || friends.incomingCount === 0)
-            return ({})
-        return ({ friends: { count: friends.incomingCount, tone: "accent" } })
-    }
+    ]
 
     SidebarNav {
         id: sidebar
@@ -626,6 +726,7 @@ ApplicationWindow {
         anchors.bottom: parent.bottom
         width: implicitWidth
         bandHeight: root.shellBarHeight
+        controlsWidth: root.windowControlsInset
         surround: root.shellColor
         // The icon rail (Modrinth's) unless the labelled sidebar was asked
         // for -- the persisted toggle (SidebarNav's own CollapseToggle), on
@@ -634,16 +735,27 @@ ApplicationWindow {
         // toggle that could not act.
         canExpand: root.width >= 1000
         collapsed: !canExpand || SettingsStore.bool("UiSidebarCollapsed")
+        expandedWidth: root.sidebarWidth
+        // Less the page area's least width, and the friends panel opened out
+        // to its narrowest when this build has one: so dragging the sidebar
+        // out never squeezes either below what it can be used at, with the
+        // panel out or in.
+        roomWidth: root.width - friendsPanel.minPageWidth
+                   - (root.friendsController ? friendsPanel.minExpandedWidth : 0)
+        onWidthCommitted: (labelledWidth) => root.setSidebarWidth(labelledWidth)
         items: root.navItems
-        badges: root.navBadges
         footerItems: [
             { id: "settings", icon: "settings", label: qsTr("Settings") }
         ]
         // A page the rail does not list lights the place it is reached from:
         // Home for the library and an instance (the breadcrumb's root too),
         // unless that instance's own tile is in the rail (currentInstanceId).
+        // The Friends page is reached from the panel on the right edge, not
+        // from the rail, so while it is open nothing here is lit (an empty
+        // id lights nothing).
         currentId: root.navItems.some(item => item.id === root.page)
-                   || root.page === "settings" || root.page === "accounts" ? root.page : "home"
+                   || root.page === "settings" || root.page === "accounts" ? root.page
+                   : root.page === "friends" ? "" : "home"
         currentInstanceId: root.page === "instance" ? root.openedInstanceId : ""
         barBeside: playDock.visible
         recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
@@ -682,6 +794,7 @@ ApplicationWindow {
         anchors.right: parent.right
         anchors.top: parent.top
         height: root.shellBarHeight
+        leftReserve: Math.max(0, root.windowControlsInset - sidebar.width)
         searchVisible: false
         title: root.page === "home" ? qsTr("Home")
              : root.page === "settings" ? qsTr("Settings")
@@ -708,15 +821,55 @@ ApplicationWindow {
                ? root.instanceModel.count : -1
         // The library title row also carries the total play time.
         showPlayTime: root.page === "library"
+        // The title keeps to the page's column, which the friends panel
+        // narrows; the toggle stands at the window's edge, over the panel.
+        rightReserve: friendsPanel.width
+        trailing: [
+            FriendsPanelToggle {
+                visible: !!root.friendsController
+                open: root.friendsPanelOpen
+                // Who is around, once that is known: not from a list the
+                // server is no longer answering for.
+                onlineCount: Format.friendsPhase(root.friendsController) === "ready"
+                             ? root.friendsController.onlineCount : 0
+                requestCount: Format.friendsPhase(root.friendsController) === "ready"
+                              ? root.friendsController.incomingCount : 0
+                surround: root.shellColor
+                onClicked: root.setFriendsPanelOpen(!root.friendsPanelOpen)
+            }
+        ]
+    }
+
+    // The friends, fixed on the right edge from under the top bar to the
+    // window's bottom, beside the page area and the play bar, which end
+    // where it begins: a strip of heads, or opened out to a list. Its width
+    // is 0 while it is in, and follows the pointer while it is dragged.
+    FriendsSidePanel {
+        id: friendsPanel
+        anchors.right: parent.right
+        anchors.top: topBar.bottom
+        anchors.bottom: parent.bottom
+        open: root.friendsPanelShown
+        expanded: root.friendsPanelExpanded
+        expandedWidth: root.friendsPanelWidth
+        roomWidth: root.width - sidebar.width
+        controller: root.friendsController
+        joinFlow: friendJoin
+        onExpandedRequested: (expanded) => root.setFriendsPanelExpanded(expanded)
+        onWidthCommitted: (panelWidth) => root.setFriendsPanelWidth(panelWidth)
+        onFriendsRequested: (tab) => root.openFriends(tab)
+        onNavigateRequested: (target) => root.navigate(target)
+        onJoinRequested: (friend) => friendJoin.join(friend)
     }
 
     // The page area. Clipped, and its rounded rectangle runs on past the
-    // right edge -- and past the bottom while no play bar sits under it --
-    // so only the corners against the shell round off.
+    // right edge (the window's, or where the friends panel begins) -- and
+    // past the bottom while no play bar sits under it -- so only the corners
+    // against the shell round off.
     Item {
         id: panel
         anchors.left: sidebar.right
-        anchors.right: parent.right
+        anchors.right: friendsPanel.left
         anchors.top: topBar.bottom
         anchors.bottom: playDock.visible ? playDock.top : parent.bottom
         clip: true
@@ -728,7 +881,7 @@ ApplicationWindow {
             width: parent.width + root.panelRadius
             height: parent.height + panel.overhangBottom
             radius: root.panelRadius
-            color: Theme.palette.canvas
+            color: root.skyLook ? "transparent" : Theme.palette.canvas
         }
 
         ColumnLayout {
@@ -844,6 +997,17 @@ ApplicationWindow {
                     }
                 }
 
+                // The still cat picture (Settings > Appearance > Cat picture),
+                // under the pages rather than over them: what a page draws --
+                // a card, a list, a button -- always covers it, so in a small
+                // window it never sits on top of the content, only in the
+                // page's empty space.
+                Loader {
+                    anchors.fill: parent
+                    active: SettingsStore.bool("TheCat")
+                    source: active ? "qrc:/qt/qml/Kite/Components/CatPicture.qml" : ""
+                }
+
                 StackLayout {
                     id: pageStack
                     anchors.fill: parent
@@ -876,6 +1040,7 @@ ApplicationWindow {
                         msaSignedIn: !!root.shell && root.shell.accountKind === "Microsoft"
                         friends: root.friendsController
                         joinFlow: friendJoin
+                        friendsInPanel: root.friendsPanelShown
                         onFriendsRequested: (tab) => root.openFriends(tab)
                         onJoinRequested: (friend) => friendJoin.join(friend)
 
@@ -1076,12 +1241,6 @@ ApplicationWindow {
                     }
                 }
 
-                // The still cat picture (Settings > Appearance > Cat picture).
-                Loader {
-                    anchors.fill: parent
-                    active: SettingsStore.bool("TheCat")
-                    source: active ? "qrc:/qt/qml/Kite/Components/CatPicture.qml" : ""
-                }
             }
         }
 
@@ -1093,6 +1252,7 @@ ApplicationWindow {
             height: panelFill.height
 
             CornerMatte {
+                visible: !root.skyLook
                 matte: root.shellColor
                 cornerRadius: root.panelRadius
                 outline: Theme.palette.border
@@ -1112,10 +1272,10 @@ ApplicationWindow {
         id: playDock
         surround: root.shellColor
         anchors.left: sidebar.right
-        anchors.right: parent.right
+        anchors.right: friendsPanel.left
         anchors.bottom: parent.bottom
         height: implicitHeight
-        visible: pageHost.dockVisible && !root.dockSuppressed
+        visible: pageHost.dockVisible && !root.dockSuppressed && !root.dockHeldByHero
         rowModel: root.shell && root.shell.heroModel ? root.shell.heroModel : null
         instanceModel: root.instanceModel
         recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
@@ -1229,7 +1389,7 @@ ApplicationWindow {
         }
     }
 
-    // A friend's Join, from the Friends page and Home's panel.
+    // A friend's Join, from the Friends page, the friends panel and Home's panel.
     FriendJoinFlow {
         id: friendJoin
         shell: root.shell

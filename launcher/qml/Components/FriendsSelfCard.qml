@@ -13,6 +13,10 @@ import Kite.Theme
  * (Settings > Friends) -- and, on the right, where you add someone by their
  * Minecraft name. In a narrow window the add field drops under your name.
  *
+ * No card of its own: it lies on the page as its header, inset so your head
+ * lines up with the friends' heads in the list below. A framed card holding
+ * the framed field and button was a box in a box.
+ *
  * A request is on its way until FriendsController says how it went
  * (actionFinished); the name stays in the field until it is accepted, so a
  * failed one is not typed again.
@@ -65,10 +69,7 @@ Rectangle {
     }
 
     implicitHeight: layout.implicitHeight + Theme.space.lg * 2
-    radius: Theme.radius.lg
-    color: Theme.palette.surface
-    border.width: 1
-    border.color: Theme.palette.border
+    color: "transparent"
 
     GridLayout {
         id: layout
@@ -91,7 +92,8 @@ Rectangle {
                 // Not connected: no dot, as nothing says you are online.
                 presence: !root.online ? ""
                         : root.visibility === "invisible" ? "offline" : root.playing ? "playing" : "online"
-                ringColor: root.color
+                // The page's colour, under the presence dot's ring.
+                ringColor: Theme.palette.canvas
             }
             Column {
                 Layout.fillWidth: true

@@ -39,12 +39,20 @@
 #include <QQuickWindow>
 #include <QUrl>
 
+#ifdef Q_OS_MACOS
+#include <QGuiApplication>
+#include <QQmlProperty>
+
+#include "qml/MacWindowChrome.h"
+#endif
+
 #include "BaseInstance.h"
 #include "minecraft/GraphicsBackend.h"
 #include "minecraft/MinecraftInstance.h"
 #include "FileSystem.h"
 #include "InstanceCopyTask.h"
 #include "InstanceList.h"
+#include "icons/AutoIcons.h"
 #include "icons/IconList.h"
 #include "java/JavaInstallList.h"
 #include "models/AboutInfo.h"
@@ -912,6 +920,31 @@ bool QmlShell::iconFillsTile(const QString& key) const
 	return LAUNCHER->icons()->fillsTile(key);
 }
 
+void QmlShell::refreshAutoIcons()
+{
+	const auto* instances = LAUNCHER->instances().get();
+	QList<AutoIcons::Instance> list;
+	for (int i = 0; i < instances->count(); ++i) {
+		const InstancePtr instance = instances->at(i);
+		list.append({instance->id(), instance->iconKey()});
+	}
+	const QString stored = LAUNCHER->settings()->get("UiAutoIcons").toString();
+	const QHash<QString, QString> map =
+		AutoIcons::assign(list, AutoIcons::fromJson(stored), AutoIcons::pool());
+	// QJsonObject writes its keys sorted, so an unchanged map reads the same.
+	const QString json = AutoIcons::toJson(map);
+	if (json != stored)
+		LAUNCHER->settings()->set("UiAutoIcons", json);
+
+	QVariantMap exposed;
+	for (auto it = map.begin(); it != map.end(); ++it)
+		exposed.insert(it.key(), it.value());
+	if (exposed == m_autoIcons)
+		return;
+	m_autoIcons = exposed;
+	emit autoIconsChanged();
+}
+
 QString QmlShell::iconsDir() const
 {
 	return LAUNCHER->icons()->getDirectory();
@@ -1441,6 +1474,28 @@ bool QmlShell::load()
 			emit iconRevisionChanged();
 		});
 	});
+	// The auto icons follow the library: rows in or out, or an icon key
+	// changing (InstanceList reports iconKey as Qt::DecorationRole).
+	auto* instanceList = LAUNCHER->instances().get();
+	const auto scheduleAutoIcons = [this]() {
+		if (m_autoIconsPending)
+			return;
+		m_autoIconsPending = true;
+		QTimer::singleShot(0, this, [this]() {
+			m_autoIconsPending = false;
+			refreshAutoIcons();
+		});
+	};
+	connect(instanceList, &QAbstractItemModel::rowsInserted, this, scheduleAutoIcons);
+	connect(instanceList, &QAbstractItemModel::rowsRemoved, this, scheduleAutoIcons);
+	connect(instanceList, &QAbstractItemModel::modelReset, this, scheduleAutoIcons);
+	connect(instanceList, &QAbstractItemModel::dataChanged, this,
+			[scheduleAutoIcons](const QModelIndex&, const QModelIndex&, const QList<int>& roles) {
+				if (roles.isEmpty() || roles.contains(Qt::DecorationRole))
+					scheduleAutoIcons();
+			});
+	refreshAutoIcons();
+
 	m_recent = std::make_unique<InstanceFilterModel>();
 	m_recent->setRecentFirst(true);
 	m_recent->setSourceModel(LAUNCHER->instances().get());
@@ -1539,6 +1594,24 @@ bool QmlShell::load()
 	/* Tells whether the window is really closing, not merely hidden --
 	 * see eventFilter() and closed()'s doc comment. */
 	m_window->installEventFilter(this);
+
+#ifdef Q_OS_MACOS
+	/* The title bar lies over the shell's top bar rather than above it.
+	 * Main.qml makes the bar as tall as the one the traffic lights sit in
+	 * the middle of, and moves what the sidebar's band holds past them.
+	 * Cocoa only: an offscreen snapshot window has no NSView behind it. */
+	if (QGuiApplication::platformName() == QLatin1String("cocoa")) {
+		const MacWindowChrome::Geometry chrome = MacWindowChrome::mergeTitleBar(m_window);
+		if (chrome.controlsWidth > 0) {
+			/* ApplicationWindow keeps its content out of the safe area,
+			 * which now takes in the title bar. A write through QQmlProperty
+			 * drops the binding that keeps the two in step. */
+			QQmlProperty::write(m_window, QStringLiteral("topPadding"), 0);
+			m_window->setProperty("windowControlsWidth", chrome.controlsWidth);
+			m_window->setProperty("titleBarHeight", chrome.barHeight);
+		}
+	}
+#endif
 
 	/* Imports asked for before there was a window to ask in -- see
 	 * requestImport(). Main.qml's handler exists now: the engine's load()

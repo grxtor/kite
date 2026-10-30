@@ -73,21 +73,17 @@ Dialog {
             lineHeight: Theme.type.label.lineHeight
         }
 
-        Rectangle {
+        // The versions lie on the dialog itself, no framed well around them
+        // (VersionRow).
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumHeight: root.listMinHeight
-            radius: Theme.radius.md
-            color: Theme.palette.surfaceSunken
-            border.width: 1
-            border.color: Theme.palette.border
 
             ListView {
                 id: versionList
                 anchors.fill: parent
-                anchors.margins: Theme.space.xs
                 clip: true
-                spacing: Theme.space.xxs
                 model: root.versions
                 boundsBehavior: Flickable.StopAtBounds
                 ScrollBar.vertical: ScrollBar {}
@@ -99,6 +95,7 @@ Dialog {
                     entry: modelData
                     picked: root.pickedVersion === index
                     installed: modelData.id === root.installedId
+                    lastRow: index === versionList.count - 1
                     onClicked: root.pickedVersion = index
                 }
             }

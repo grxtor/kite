@@ -15,6 +15,8 @@ Item {
 
     // The instanceicon provider's key, or empty for no icon.
     property string iconKey: ""
+    // The instance's id: for the built-in icon a generic one was given.
+    property string instanceId: ""
     // The pack's own logo, or empty.
     property string packArt: ""
     // What lies around the tile, for the logo's rounded corners.
@@ -25,7 +27,9 @@ Item {
     property bool lifted: false
 
     readonly property real iconShare: 0.84
-    readonly property bool iconFills: root.iconKey.length > 0 && Icons.fillsTile(root.iconKey)
+    // Its own icon, or the built-in one it was given (Icons.displayKey).
+    readonly property string drawnKey: Icons.displayKey(root.iconKey, root.instanceId)
+    readonly property bool iconFills: root.drawnKey.length > 0 && Icons.fillsTile(root.drawnKey)
     readonly property bool showsPackArt: root.packArt.length > 0 && packLogo.status === Image.Ready
 
     InstanceTile {
@@ -39,7 +43,7 @@ Item {
             visible: !root.showsPackArt
             width: root.iconFills ? root.width : Math.round(root.width * root.iconShare)
             height: width
-            source: root.iconKey.length > 0 ? Icons.instanceIcon(root.iconKey) : ""
+            source: root.drawnKey.length > 0 ? Icons.instanceIcon(root.drawnKey) : ""
             sourceSize: Qt.size(width, height)
             fillMode: Image.PreserveAspectFit
             smooth: true

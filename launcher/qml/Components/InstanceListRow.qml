@@ -68,9 +68,11 @@ Item {
     readonly property int squareSize: Theme.control.heightLg
     readonly property real iconShare: 0.84
     readonly property int iconSize: Math.round(squareSize * iconShare)
-    readonly property bool iconFills: Icons.fillsTile(root.iconKey)
+    // Its own icon, or the built-in one it was given (Icons.displayKey).
+    readonly property string drawnKey: Icons.displayKey(root.iconKey, root.instanceId)
+    readonly property bool iconFills: Icons.fillsTile(root.drawnKey)
     readonly property int runningDotSize: 9
-    readonly property string iconSource: Icons.instanceIcon(root.iconKey)
+    readonly property string iconSource: Icons.instanceIcon(root.drawnKey)
     readonly property int versionColumnWidth: 168
     readonly property int lastPlayedColumnWidth: 104
     readonly property int playTimeColumnWidth: 84

@@ -42,6 +42,11 @@ namespace
 {
 	/* The poll: a status and the friends, once a minute. */
 	constexpr int kPollIntervalMs = 60 * 1000;
+	/* While the account plays, every ten seconds instead: the game's own
+	 * mod tells of a friend joining a server, and a minute late is too late
+	 * to join them. Six polls a minute stay well inside the server's limit
+	 * per account (120). */
+	constexpr int kPlayingPollIntervalMs = 10 * 1000;
 	/* Telling the server we left, as the launcher quits, may take this long
 	 * and no longer. */
 	constexpr int kQuitGoOfflineMs = 1500;
@@ -284,10 +289,21 @@ void FriendsController::start()
 	m_watcher = std::make_unique<FriendsGameWatcher>(LAUNCHER->instances());
 	connect(m_watcher.get(), &FriendsGameWatcher::changed, this,
 			&FriendsController::onPresenceChanged);
+	followPlay();
 	m_pollTimer.start();
 	setState(sessionUsable() ? State::Ready : State::SigningIn);
 	emit changed();
 	tick();
+}
+
+void FriendsController::followPlay()
+{
+	const int interval = gamePresence().playing ? kPlayingPollIntervalMs
+												: kPollIntervalMs;
+	/* setInterval() restarts a running timer: only when it changes. */
+	if (m_pollTimer.interval() != interval) {
+		m_pollTimer.setInterval(interval);
+	}
 }
 
 void FriendsController::stop(bool tellServer)
