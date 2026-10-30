@@ -39,6 +39,13 @@
 #include <QQuickWindow>
 #include <QUrl>
 
+#ifdef Q_OS_MACOS
+#include <QGuiApplication>
+#include <QQmlProperty>
+
+#include "qml/MacWindowChrome.h"
+#endif
+
 #include "BaseInstance.h"
 #include "minecraft/MinecraftInstance.h"
 #include "FileSystem.h"
@@ -1559,6 +1566,24 @@ bool QmlShell::load()
 	/* Tells whether the window is really closing, not merely hidden --
 	 * see eventFilter() and closed()'s doc comment. */
 	m_window->installEventFilter(this);
+
+#ifdef Q_OS_MACOS
+	/* The title bar lies over the shell's top bar rather than above it.
+	 * Main.qml makes the bar as tall as the one the traffic lights sit in
+	 * the middle of, and moves what the sidebar's band holds past them.
+	 * Cocoa only: an offscreen snapshot window has no NSView behind it. */
+	if (QGuiApplication::platformName() == QLatin1String("cocoa")) {
+		const MacWindowChrome::Geometry chrome = MacWindowChrome::mergeTitleBar(m_window);
+		if (chrome.controlsWidth > 0) {
+			/* ApplicationWindow keeps its content out of the safe area,
+			 * which now takes in the title bar. A write through QQmlProperty
+			 * drops the binding that keeps the two in step. */
+			QQmlProperty::write(m_window, QStringLiteral("topPadding"), 0);
+			m_window->setProperty("windowControlsWidth", chrome.controlsWidth);
+			m_window->setProperty("titleBarHeight", chrome.barHeight);
+		}
+	}
+#endif
 
 	/* Imports asked for before there was a window to ask in -- see
 	 * requestImport(). Main.qml's handler exists now: the engine's load()

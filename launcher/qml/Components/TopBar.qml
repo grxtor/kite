@@ -52,12 +52,20 @@ Item {
     // The width of a panel that stands to the right of the page area, under
     // this bar: the page's column is centred in what is left of the window.
     property int rightReserve: 0
+    // What stands over the bar's left end (macOS's traffic lights, when the
+    // rail beside the bar is narrower than they are): the title starts
+    // after it.
+    property int leftReserve: 0
 
     readonly property int titleRowHeight: Theme.control.heightSm
     readonly property int toolbarRowHeight: Theme.control.heightLg
     implicitHeight: Theme.space.sm + titleRowHeight
                     + (root.searchVisible ? Theme.space.xs + toolbarRowHeight : 0)
                     + Theme.space.sm
+    // The rows' padding: on a bar taller than they need (the shell's on
+    // macOS, as tall as the title bar), half of what is left besides, so
+    // they sit in its middle.
+    readonly property int verticalInset: Theme.space.sm + Math.max(0, Math.floor((root.height - root.implicitHeight) / 2))
 
     function focusSearch() { toolbar.focusSearch() }
 
@@ -102,13 +110,13 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.topMargin: Theme.space.sm
-        anchors.bottomMargin: Theme.space.sm
+        anchors.topMargin: root.verticalInset
+        anchors.bottomMargin: root.verticalInset
         spacing: Theme.space.xs
 
         RowLayout {
             Layout.fillWidth: true
-            Layout.leftMargin: root.sideMargin
+            Layout.leftMargin: Math.max(root.sideMargin, root.leftReserve)
             // The page's column ends before the panel; and never under the
             // trailing buttons, which stand at the window's edge.
             Layout.rightMargin: Math.max(root.sideMargin + root.rightReserve,
@@ -207,7 +215,7 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: Theme.space.md
         anchors.top: parent.top
-        anchors.topMargin: Theme.space.sm
+        anchors.topMargin: root.verticalInset
         height: root.titleRowHeight
         spacing: Theme.space.xs
     }

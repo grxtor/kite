@@ -98,6 +98,12 @@ Rectangle {
     property color surround: "transparent"
     // The band at the top, on the top bar's line (Main.qml's shellBarHeight).
     property int bandHeight: Theme.control.heightLg
+    // What the window's own buttons take at the band's left end: macOS's
+    // traffic lights, once the title bar lies over the band (Main.qml's
+    // windowControlsInset). The mark and the wordmark move past them, each
+    // shown only while it fits before the fold toggle -- so the rail, too
+    // narrow for anything past the lights, shows just the lights.
+    property int controlsWidth: 0
 
     // The rail's geometry. Every item is one square (Modrinth's 48), inset
     // the same on both sides of the rail; the square's middle is the rail's
@@ -266,8 +272,9 @@ Rectangle {
 
         BrandMark {
             id: mark
-            x: root.inset + root.railAxis - width / 2
+            x: root.controlsWidth > 0 ? root.controlsWidth : root.inset + root.railAxis - width / 2
             anchors.verticalCenter: parent.verticalCenter
+            visible: root.controlsWidth === 0 || x + width + Theme.space.md <= bandToggle.x
             size: root.brandExtent
         }
 
@@ -277,10 +284,10 @@ Rectangle {
         // rect's own height runs a pixel below it).
         Text {
             id: wordmark
-            x: root.inset + root.labelX
+            x: root.controlsWidth > 0 ? mark.x + mark.width + Theme.space.md : root.inset + root.labelX
             anchors.baseline: mark.verticalCenter
             anchors.baselineOffset: -wordmarkInk.tightBoundingRect.y / 2
-            visible: !root.railed
+            visible: !root.railed && (root.controlsWidth === 0 || x + width + Theme.space.md <= bandToggle.x)
             text: "Kite"
             color: Theme.palette.textPrimary
             font.family: Theme.font.heading
@@ -295,6 +302,7 @@ Rectangle {
         }
 
         CollapseToggle {
+            id: bandToggle
             visible: !root.railed
             anchors.right: parent.right
             anchors.rightMargin: root.inset

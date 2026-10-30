@@ -657,9 +657,17 @@ ApplicationWindow {
     // The panel's corner: Modrinth's "inset window" corner, the dialog's
     // radius.xl -- the one surface as big as a dialog.
     readonly property int panelRadius: Theme.radius.xl
+    // macOS: the title bar lies over the shell (QmlShell, MacWindowChrome),
+    // its traffic lights at the left end of the sidebar's brand band. How
+    // far they reach, and how tall a bar has them in its middle; both 0
+    // everywhere else. Full screen hides them.
+    property int windowControlsWidth: 0
+    property int titleBarHeight: 0
+    readonly property int windowControlsInset: root.visibility === Window.FullScreen ? 0 : root.windowControlsWidth
     // The top bar: Modrinth's 48, one rail square tall -- the same line the
-    // sidebar's brand band sits on.
-    readonly property int shellBarHeight: Theme.control.heightLg
+    // sidebar's brand band sits on. On macOS the height that has the
+    // traffic lights in its middle, which AppKit alone decides.
+    readonly property int shellBarHeight: root.titleBarHeight > 0 ? root.titleBarHeight : Theme.control.heightLg
 
     SkyBackdrop {
         anchors.fill: parent
@@ -675,6 +683,26 @@ ApplicationWindow {
             width: parent.width
             height: 1
             color: Theme.glass.highlight
+        }
+    }
+
+    // macOS: with the title bar laid over the shell, the shell's own top
+    // band is what moves the window, and a double click zooms it, as a
+    // title bar does. Under the rail and the top bar, so their buttons
+    // still take their clicks.
+    Item {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        height: root.shellBarHeight
+        enabled: root.windowControlsWidth > 0
+
+        DragHandler {
+            target: null
+            onActiveChanged: if (active) root.startSystemMove()
+        }
+        TapHandler {
+            onDoubleTapped: root.visibility === Window.Maximized ? root.showNormal() : root.showMaximized()
         }
     }
 
@@ -695,6 +723,7 @@ ApplicationWindow {
         anchors.bottom: parent.bottom
         width: implicitWidth
         bandHeight: root.shellBarHeight
+        controlsWidth: root.windowControlsInset
         surround: root.shellColor
         // The icon rail (Modrinth's) unless the labelled sidebar was asked
         // for -- the persisted toggle (SidebarNav's own CollapseToggle), on
@@ -762,6 +791,7 @@ ApplicationWindow {
         anchors.right: parent.right
         anchors.top: parent.top
         height: root.shellBarHeight
+        leftReserve: Math.max(0, root.windowControlsInset - sidebar.width)
         searchVisible: false
         title: root.page === "home" ? qsTr("Home")
              : root.page === "settings" ? qsTr("Settings")
