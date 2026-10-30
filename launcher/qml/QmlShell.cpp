@@ -40,6 +40,7 @@
 #include <QUrl>
 
 #include "BaseInstance.h"
+#include "minecraft/GraphicsBackend.h"
 #include "minecraft/MinecraftInstance.h"
 #include "FileSystem.h"
 #include "InstanceCopyTask.h"
@@ -371,6 +372,33 @@ void QmlShell::setPerformanceExcluded(const QString& id,
 bool QmlShell::performanceSupported(const QString& mcVersion) const
 {
 	return PerformanceSetup::supportsVersion(mcVersion);
+}
+
+/// Whether the instance's Minecraft version has the Graphics API setting.
+static bool
+hasGraphicsBackend(const std::shared_ptr<MinecraftInstance>& instance)
+{
+	return GraphicsBackend::supportsVersion(
+		instance->getPackProfile()->getComponentVersion(
+			QStringLiteral("net.minecraft")));
+}
+
+QString QmlShell::graphicsBackend(const QString& id) const
+{
+	auto instance = minecraftInstanceById(id);
+	if (!instance || !hasGraphicsBackend(instance)) {
+		return QString();
+	}
+	return GraphicsBackend::read(instance->gameRoot());
+}
+
+bool QmlShell::setGraphicsBackend(const QString& id, const QString& backend)
+{
+	auto instance = minecraftInstanceById(id);
+	if (!instance || !hasGraphicsBackend(instance) || instance->isRunning()) {
+		return false;
+	}
+	return GraphicsBackend::write(instance->gameRoot(), backend);
 }
 
 QObject* QmlShell::performanceSetup(const QString& id) const

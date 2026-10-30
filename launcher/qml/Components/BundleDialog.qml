@@ -20,6 +20,11 @@ import Kite.Theme
  *    stores the switch and the unticked mods (QmlShell), and hands the
  *    ticked ones that are missing to installRequested.
  *
+ * Kite Performance also has a Graphics API row (Automatic, Vulkan or
+ * OpenGL) on Minecraft 26.2 and later. It is the game's own setting in
+ * options.txt, applied whether or not the mode is on, and locked while the
+ * game runs.
+ *
  * OptiFine and Sodium or Iris do not run together; a warning says so
  * while both would be there.
  */
@@ -40,6 +45,13 @@ Dialog {
     // its mods; read each time the dialog opens.
     property var installed: []
     property bool optiFine: false
+    // Whether the instance is running (its options.txt is the game's then).
+    property bool running: false
+    // The game's Graphics API for the instance when it has one: "default",
+    // "vulkan" or "opengl"; "" when its version has no such setting.
+    property string graphicsBackend: ""
+    // Saving the Graphics API failed; the dialog stays open.
+    property bool graphicsFailed: false
     property string current: ""
     // The mods unticked when the dialog opened.
     property var excluded: []
@@ -56,6 +68,12 @@ Dialog {
         && (root.checkedAll.indexOf(root.sodiumId) >= 0 || root.checkedAll.indexOf(root.irisId) >= 0)
     readonly property int preferredWidth: 600
     readonly property int listHeight: 400
+    readonly property int graphicsBoxWidth: Theme.control.heightLg * 4
+    readonly property var graphicsChoices: [
+        { id: "default", label: qsTr("Automatic") },
+        { id: "vulkan", label: "Vulkan" },
+        { id: "opengl", label: "OpenGL" }
+    ]
 
     // The catalog's own name for a bundle, in the selected language.
     function bundleLabel(id) {
@@ -92,13 +110,22 @@ Dialog {
         if (root.performance && root.shell) {
             modeSwitch.checked = root.shell.performanceEnabled(root.instanceId)
             root.excluded = root.shell.performanceExcluded(root.instanceId)
+            root.graphicsBackend = root.shell.graphicsBackend(root.instanceId)
+            graphicsBox.currentIndex = graphicsBox.indexOfValue(root.graphicsBackend)
         }
+        root.graphicsFailed = false
         root.current = root.bundleIds[0]
         root.open()
     }
-    // Kite Performance's Save: the settings first, then the mods still to
-    // install (none while the mode is off).
+    // Kite Performance's Save: the settings first (a failed Graphics API
+    // keeps the dialog open), then the mods still to install (none while
+    // the mode is off).
     function save() {
+        if (graphicsRow.visible && graphicsBox.currentValue !== root.graphicsBackend
+                && !root.shell.setGraphicsBackend(root.instanceId, graphicsBox.currentValue)) {
+            root.graphicsFailed = true
+            return
+        }
         root.shell.setPerformanceExcluded(root.instanceId, root.uncheckedDefaults())
         root.shell.setPerformanceEnabled(root.instanceId, modeSwitch.checked)
         root.close()
@@ -138,6 +165,27 @@ Dialog {
             Switch {
                 id: modeSwitch
                 Accessible.name: modeRow.label
+            }
+        }
+
+        SettingRow {
+            id: graphicsRow
+            Layout.fillWidth: true
+            Layout.leftMargin: -Theme.space.lg
+            Layout.rightMargin: -Theme.space.lg
+            visible: root.performance && root.graphicsBackend.length > 0
+            label: qsTr("Graphics API")
+            description: root.running
+                ? qsTr("The game is running. This can be changed once it closes.")
+                : qsTr("Vulkan is often smoother, most of all on Windows. Automatic leaves it to the game.")
+            ComboBox {
+                id: graphicsBox
+                width: root.graphicsBoxWidth
+                model: root.graphicsChoices
+                textRole: "label"
+                valueRole: "id"
+                enabled: !root.running
+                Accessible.name: graphicsRow.label
             }
         }
 
@@ -185,6 +233,12 @@ Dialog {
                 }
                 onItemAdded: root.recount()
             }
+        }
+
+        NoticeBar {
+            Layout.fillWidth: true
+            visible: root.graphicsFailed
+            text: qsTr("Could not save the graphics API.")
         }
 
         NoticeBar {

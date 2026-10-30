@@ -704,6 +704,7 @@ Item {
         BundleDialog {
             shell: root.shell
             instanceId: root.instanceId
+            running: !!root.content && root.content.running
             bundles: root.shell ? root.shell.bundles : null
             updater: root.content ? root.content.updater : null
             onInstallRequested: (ids) => root.withLoader(() => flows.installBundle(ids))

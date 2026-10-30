@@ -1683,7 +1683,12 @@ This cannot be undone.</source>
 <context>
     <name>BundleDialog</name>
     <message>
-        <location filename="../launcher/qml/Components/BundleDialog.qml" line="+65"/>
+        <location filename="../launcher/qml/Components/BundleDialog.qml" line="+73"/>
+        <source>Automatic</source>
+        <translation>Otomatik</translation>
+    </message>
+    <message>
+        <location line="+10"/>
         <source>Performance</source>
         <translation>Performans</translation>
     </message>
@@ -1693,7 +1698,7 @@ This cannot be undone.</source>
         <translation>Konfor</translation>
     </message>
     <message>
-        <location line="+55"/>
+        <location line="+64"/>
         <location line="+16"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
@@ -1709,12 +1714,32 @@ This cannot be undone.</source>
         <translation>İşaretli modlar, her oynadığında kurulu tutulur.</translation>
     </message>
     <message>
-        <location line="+43"/>
+        <location line="+13"/>
+        <source>Graphics API</source>
+        <translation>Grafik API&apos;si</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The game is running. This can be changed once it closes.</source>
+        <translation>Oyun açık. Kapandığında değiştirebilirsin.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Vulkan is often smoother, most of all on Windows. Automatic leaves it to the game.</source>
+        <translation>Vulkan çoğu zaman daha akıcıdır, özellikle Windows&apos;ta. Otomatik&apos;te seçimi oyun yapar.</translation>
+    </message>
+    <message>
+        <location line="+48"/>
         <source>Nothing in this bundle for this loader.</source>
         <translation>Bu paketin bu yükleyici için bir şeyi yok.</translation>
     </message>
     <message>
         <location line="+13"/>
+        <source>Could not save the graphics API.</source>
+        <translation>Grafik API&apos;si kaydedilemedi.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
         <source>OptiFine is installed. Sodium and Iris don&apos;t run alongside it: remove OptiFine, or untick them.</source>
         <translation>OptiFine yüklü. Sodium ve Iris onunla birlikte çalışmaz: OptiFine&apos;ı kaldır ya da bunların işaretini kaldır.</translation>
     </message>
@@ -2853,7 +2878,7 @@ The author may have blocked third-party launchers, or there may be no build for 
         <translation>Yükleyici seç…</translation>
     </message>
     <message>
-        <location line="+105"/>
+        <location line="+106"/>
         <source>List saved.</source>
         <translation>Liste kaydedildi.</translation>
     </message>
@@ -17194,7 +17219,7 @@ What should happen to %1?</source>
 <context>
     <name>QmlShell</name>
     <message>
-        <location filename="../launcher/qml/QmlShell.cpp" line="+397"/>
+        <location filename="../launcher/qml/QmlShell.cpp" line="+425"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>

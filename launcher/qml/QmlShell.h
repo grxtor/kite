@@ -452,6 +452,17 @@ class QmlShell : public QObject
 	 * release from 1.16 on or a numbered one (26.1.2); not "1.12.2",
 	 * "1.8.9", snapshots or betas. */
 	Q_INVOKABLE bool performanceSupported(const QString& mcVersion) const;
+	/* The game's own Graphics API setting (26.2 and later) for instance
+	 * @p id, read from its options.txt: "default" (Automatic), "vulkan" or
+	 * "opengl"; "" when the id is not a Minecraft instance or its version
+	 * has no such setting. */
+	Q_INVOKABLE QString graphicsBackend(const QString& id) const;
+	/* Writes it back to the instance's options.txt, every other line kept.
+	 * False -- nothing changed -- for an unknown id, a version without the
+	 * setting, a running game (it rewrites options.txt when it quits), an
+	 * unknown @p backend or a failed write. */
+	Q_INVOKABLE bool setGraphicsBackend(const QString& id,
+										const QString& backend);
 	/* "Speed up" on a modded instance: turns the mode on and does the
 	 * setup now. The TaskWatcher of that setup, or null (and nothing
 	 * changed) when the instance is running, is not a Minecraft instance,

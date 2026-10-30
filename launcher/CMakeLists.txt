@@ -403,6 +403,8 @@ set(MINECRAFT_SOURCES
     # Minecraft support
     minecraft/PresetDefaults.h
     minecraft/PresetDefaults.cpp
+    minecraft/GraphicsBackend.h
+    minecraft/GraphicsBackend.cpp
     minecraft/KiteModRules.h
     minecraft/KiteModRules.cpp
     minecraft/PerformanceSetupRules.h
@@ -1935,6 +1937,12 @@ add_unit_test(BundleCatalog
 # keys a version reads, and that an existing options.txt is never replaced.
 add_unit_test(PresetDefaults
     SOURCES minecraft/PresetDefaults_test.cpp
+    LIBS Kite_core
+    )
+# The game's own Graphics API setting: which versions have it, and that
+# options.txt is read and written in place with every other line kept.
+add_unit_test(GraphicsBackend
+    SOURCES minecraft/GraphicsBackend_test.cpp
     LIBS Kite_core
     )
 # Kite Performance's decisions: what is wanted given the catalog, the
