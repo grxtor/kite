@@ -34,6 +34,19 @@
     <memory>2048</memory>
   </recommends>
   <releases>
+    <release version="1.2.0" date="2026-10-30">
+      <description>
+        <p>Looks, the friends panel and a choice of graphics API.</p>
+        <ul>
+          <li>Looks: Sahne, Sade and Gece beside Klasik, picked in Settings with a preview of each one's Home.</li>
+          <li>Friends panel on every page: a strip of heads at the window's right edge that opens into the full list, with Join.</li>
+          <li>Kite Performance: Vulkan or OpenGL for Minecraft 26.2 and later.</li>
+          <li>New instance: the type beside the version, and Kite Performance's mods picked one by one.</li>
+          <li>macOS: the title bar is part of Kite's top bar, and the disk image opens on Kite's sky and asks to agree to the licence.</li>
+          <li>A Microsoft account without a refresh token asks for a new sign-in.</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.1.0" date="2026-10-26">
       <description>
         <p>Kite Performance, friends and the Kite mod.</p>
