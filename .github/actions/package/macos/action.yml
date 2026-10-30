@@ -146,18 +146,19 @@ runs:
       env:
         INSTALL_DIR: install
       run: |
-        cd ${{ env.INSTALL_DIR }}
+        # dmgbuild lays out the window and adds the licence without driving Finder.
+        python3 -m venv "$RUNNER_TEMP/dmgbuild"
+        "$RUNNER_TEMP/dmgbuild/bin/pip" install --quiet dmgbuild==1.6.7 ds_store==1.3.3 mac_alias==2.2.3
 
-        mkdir -p src
-        cp -R "Kite.app" src/
-
-        ln -s /Applications src/
-
-        hdiutil create \
-            -volname "Kite ${{ inputs.version }}" \
-            -srcfolder src \
-            -ov -format ULMO \
-            "../Kite.dmg"
+        PACKAGE_DIR='${{ github.action_path }}'
+        "$RUNNER_TEMP/dmgbuild/bin/dmgbuild" \
+            -s "$PACKAGE_DIR/dmg_settings.py" \
+            -D app="${{ env.INSTALL_DIR }}/Kite.app" \
+            -D background="$PACKAGE_DIR/dmg-background.png" \
+            -D icon=branding/io.github.grxtor.Kite.icns \
+            -D license=LICENSE \
+            "Kite ${{ inputs.version }}" \
+            Kite.dmg
 
     - name: Make Sparkle signature
       shell: bash
