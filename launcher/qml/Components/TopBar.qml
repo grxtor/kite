@@ -62,10 +62,6 @@ Item {
     implicitHeight: Theme.space.sm + titleRowHeight
                     + (root.searchVisible ? Theme.space.xs + toolbarRowHeight : 0)
                     + Theme.space.sm
-    // The rows' padding: on a bar taller than they need (the shell's on
-    // macOS, as tall as the title bar), half of what is left besides, so
-    // they sit in its middle.
-    readonly property int verticalInset: Theme.space.sm + Math.max(0, Math.floor((root.height - root.implicitHeight) / 2))
 
     function focusSearch() { toolbar.focusSearch() }
 
@@ -109,9 +105,14 @@ Item {
     }
 
     ColumnLayout {
-        anchors.fill: parent
-        anchors.topMargin: root.verticalInset
-        anchors.bottomMargin: root.verticalInset
+        id: rows
+        anchors.left: parent.left
+        anchors.right: parent.right
+        // As tall as the rows, in the bar's middle: a bar taller than they
+        // need (the shell's on macOS, as tall as the title bar) shares the
+        // rest above and below them.
+        anchors.verticalCenter: parent.verticalCenter
+        height: root.implicitHeight - 2 * Theme.space.sm
         spacing: Theme.space.xs
 
         RowLayout {
@@ -214,8 +215,7 @@ Item {
         id: trailingRow
         anchors.right: parent.right
         anchors.rightMargin: Theme.space.md
-        anchors.top: parent.top
-        anchors.topMargin: root.verticalInset
+        anchors.top: rows.top
         height: root.titleRowHeight
         spacing: Theme.space.xs
     }
