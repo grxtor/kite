@@ -964,6 +964,17 @@ ApplicationWindow {
                     }
                 }
 
+                // The still cat picture (Settings > Appearance > Cat picture),
+                // under the pages rather than over them: what a page draws --
+                // a card, a list, a button -- always covers it, so in a small
+                // window it never sits on top of the content, only in the
+                // page's empty space.
+                Loader {
+                    anchors.fill: parent
+                    active: SettingsStore.bool("TheCat")
+                    source: active ? "qrc:/qt/qml/Kite/Components/CatPicture.qml" : ""
+                }
+
                 StackLayout {
                     id: pageStack
                     anchors.fill: parent
@@ -1197,12 +1208,6 @@ ApplicationWindow {
                     }
                 }
 
-                // The still cat picture (Settings > Appearance > Cat picture).
-                Loader {
-                    anchors.fill: parent
-                    active: SettingsStore.bool("TheCat")
-                    source: active ? "qrc:/qt/qml/Kite/Components/CatPicture.qml" : ""
-                }
             }
         }
 

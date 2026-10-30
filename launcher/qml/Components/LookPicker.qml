@@ -25,10 +25,17 @@ Grid {
         { id: "classic", label: qsTr("Classic"), note: qsTr("Your palette, light or dark") }
     ]
 
-    // The narrowest tile whose longest note still fits on one line; below
-    // it the tiles go two by two.
-    readonly property int minTileWidth: 170
-    readonly property int tileHeight: 150
+    // The narrowest tile whose miniature still reads; below it the tiles go
+    // two by two.
+    readonly property int minTileWidth: 220
+    // PickerTile's padding round the miniature, and the name and note under
+    // it with their spacing.
+    readonly property int tilePadding: Theme.space.sm
+    readonly property int captionHeight: 64
+    readonly property int previewHeight: Math.round((root.tileWidth - root.tilePadding * 2) * root.miniatureAspect)
+    // LookMiniature's design shape (designHeight / designWidth).
+    readonly property real miniatureAspect: 180 / 320
+    readonly property int tileHeight: root.previewHeight + root.captionHeight
     readonly property bool fitsInOneRow: (width - spacing * (looks.length - 1)) / looks.length >= minTileWidth
     readonly property real tileWidth: (width - spacing * (columns - 1)) / columns
 
@@ -44,6 +51,7 @@ Grid {
             required property var modelData
             width: root.tileWidth
             height: root.tileHeight
+            previewHeight: root.previewHeight
             label: modelData.label
             note: modelData.note
             chosen: root.current === modelData.id
