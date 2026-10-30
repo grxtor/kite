@@ -904,9 +904,18 @@ void Application::initSettings()
 	m_settings->registerSetting("UiThemeMode", QString("dark"));
 	// Colour scheme of the QML interface: amethyst, ember or diamond.
 	m_settings->registerSetting("UiPalette", QString("amethyst"));
+	// The QML interface's look: stage (Sahne), calm (Sade), night (Gece),
+	// or classic, which keeps UiPalette and UiThemeMode.
+	m_settings->registerSetting("UiLook", QString("stage"));
+	// The built-in icon each instance without one of its own was given for
+	// those looks (icons/AutoIcons.h), as a JSON object of id -> icon key.
+	m_settings->registerSetting("UiAutoIcons", QString());
 	// The QML interface's font (Settings > Appearance).
 	m_settings->registerSetting("UiFontFamily", QString("Inter"));
 	m_settings->registerSetting("UiSidebarCollapsed", true);
+	// How wide (in pixels) the user dragged the QML interface's labelled
+	// sidebar to; the rail has a width of its own.
+	m_settings->registerSetting("UiSidebarWidth", 240);
 	// Stops decorative loops (Play sheen) for people who find motion
 	// distracting.
 	m_settings->registerSetting("UiReduceMotion", false);
@@ -1156,6 +1165,13 @@ void Application::initSettings()
 	// end-to-end run, not a setting anyone should change.
 	m_settings->registerSetting("FriendsEnabled", true);
 	m_settings->registerSetting("FriendsNoticeSeen", false);
+	// The friends panel on the QML shell's right edge: out unless the user
+	// hid it with the top bar's toggle. It starts as a strip of heads;
+	// FriendsPanelExpanded is whether it is opened out to names and groups,
+	// and FriendsPanelWidth the width (in pixels) the user dragged that to.
+	m_settings->registerSetting("FriendsPanelOpen", true);
+	m_settings->registerSetting("FriendsPanelExpanded", false);
+	m_settings->registerSetting("FriendsPanelWidth", 320);
 	m_settings->registerSetting("FriendsServerUrl", BuildConfig.FRIENDS_URL);
 	m_settings->registerSetting("FriendsMojangSessionUrl",
 								QString("https://sessionserver.mojang.com"));

@@ -11,7 +11,8 @@ import Kite.Theme
  * corner of the page area. A still picture: it never takes a click, never
  * moves and stays well back from the content.
  *
- * Loaded by Main.qml over the page area, only while the TheCat setting is on.
+ * Loaded by Main.qml under the pages, only while the TheCat setting is on:
+ * a page's own cards and lists cover it, so it shows in the empty space.
  */
 Item {
     id: root

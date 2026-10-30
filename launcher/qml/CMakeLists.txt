@@ -59,6 +59,15 @@ target_sources(Kite_qml PRIVATE
     ModIconProvider.cpp
 )
 
+# macOS: the title bar laid over the shell's top bar. AppKit comes with
+# Kite_core.
+if(APPLE)
+    target_sources(Kite_qml PRIVATE
+        MacWindowChrome.h
+        MacWindowChrome.mm
+    )
+endif()
+
 # The QML side reads the core's models. It does not see QtWidgets: Kite_core
 # cannot link them, and nothing here asks for them.
 target_link_libraries(Kite_qml PUBLIC

@@ -392,6 +392,8 @@ set(ICONS_SOURCES
     icons/MMCIcon.cpp
     icons/IconList.h
     icons/IconList.cpp
+    icons/AutoIcons.h
+    icons/AutoIcons.cpp
     icons/GameTextureIcons.h
     icons/GameTextureIcons.cpp
     icons/GameTextureRecipes.h
@@ -2010,6 +2012,14 @@ add_unit_test(IconList
     SOURCES icons/IconList_test.cpp
     LIBS Kite_core Qt${QT_VERSION_MAJOR}::Gui
     )
+
+# Pure bookkeeping (who gets which built-in icon), so it is built from its
+# one source file and needs nothing but QtCore.
+add_unit_test(AutoIcons
+    SOURCES icons/AutoIcons_test.cpp icons/AutoIcons.cpp
+    LIBS Qt${QT_VERSION_MAJOR}::Core
+    )
+target_include_directories(AutoIcons_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Client jars built inside the test from generated PNGs -- never Mojang's
 # own textures -- read into icons and cached; IconList_test covers how

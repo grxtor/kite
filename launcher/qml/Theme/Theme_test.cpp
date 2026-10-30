@@ -155,6 +155,27 @@ class ThemeTest : public QObject
 		QCOMPARE(service->scheme(), QStringLiteral("ember"));
 		QCOMPARE(service->previewPalette(QStringLiteral("diamond")).accent,
 				 ThemePalette::forScheme(ThemePalette::Scheme::Diamond, true).accent);
+
+		// A look brings its own dark palette whatever the mode, and going
+		// back to "classic" restores the scheme and mode it left; an unknown
+		// look changes nothing.
+		themeRef->setProperty("mode", QStringLiteral("light"));
+		QSignalSpy toNight(service, &ThemeService::changed);
+		themeRef->setProperty("look", QStringLiteral("night"));
+		QCOMPARE(toNight.count(), 1);
+		QCOMPARE(root->property("dark").toBool(), true);
+		QCOMPARE(root->property("canvasColor").value<QColor>(),
+				 ThemePalette::forScheme(ThemePalette::Scheme::Night, true).canvas);
+
+		QSignalSpy unknownLook(service, &ThemeService::changed);
+		service->setLook(QStringLiteral("nonsense"));
+		QCOMPARE(unknownLook.count(), 0);
+		QCOMPARE(service->look(), QStringLiteral("night"));
+
+		themeRef->setProperty("look", QStringLiteral("classic"));
+		QCOMPARE(root->property("dark").toBool(), false);
+		QCOMPARE(root->property("accent").value<QColor>(),
+				 ThemePalette::forScheme(ThemePalette::Scheme::Ember, false).accent);
 	}
 };
 

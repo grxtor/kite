@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import QtQuick.Controls
 import Kite.Theme
 
 /*
@@ -47,144 +46,85 @@ Grid {
     Repeater {
         model: root.schemes
 
-        delegate: AbstractButton {
+        delegate: PickerTile {
             id: card
             required property var modelData
             // Re-read whenever the mode flips, so the previews follow it.
             readonly property var colors: Theme.dark, Theme.previewPalette(modelData.id)
-            readonly property bool chosen: root.current === modelData.id
 
             width: root.tileWidth
             height: root.tileHeight
-            hoverEnabled: true
-            Accessible.name: modelData.label
-            Accessible.role: Accessible.RadioButton
-            Accessible.checked: chosen
+            previewHeight: root.previewHeight
+            previewOutline: card.colors.border
+            label: modelData.label
+            note: modelData.note
+            chosen: root.current === modelData.id
             onClicked: root.picked(modelData.id)
 
-            background: Rectangle {
-                radius: Theme.radius.lg
-                color: Theme.palette.surfaceRaised
-                border.width: card.chosen ? 2 : 1
-                border.color: card.chosen ? Theme.palette.accent
-                              : card.hovered ? Theme.palette.borderStrong : Theme.palette.border
-                Behavior on border.color { ColorAnimation { duration: Theme.motion.fast } }
-            }
+            // The miniature launcher.
+            Rectangle {
+                id: preview
+                anchors.fill: parent
+                radius: Theme.radius.md
+                color: card.colors.canvas
+                border.width: 1
+                border.color: card.colors.border
+                clip: true
 
-            contentItem: Column {
-                spacing: Theme.space.sm
-
-                // The miniature launcher.
                 Rectangle {
-                    id: preview
-                    width: parent.width
-                    height: root.previewHeight
-                    radius: Theme.radius.md
-                    color: card.colors.canvas
-                    border.width: 1
-                    border.color: card.colors.border
-                    clip: true
-
+                    id: miniSidebar
+                    x: 0
+                    width: root.miniSidebarWidth
+                    height: parent.height
+                    color: card.colors.surface
                     Rectangle {
-                        id: miniSidebar
-                        x: 0
-                        width: root.miniSidebarWidth
-                        height: parent.height
-                        color: card.colors.surface
-                        Rectangle {
-                            x: 6; y: 10
-                            width: 22; height: 6
+                        x: 6; y: 10
+                        width: 22; height: 6
+                        radius: Theme.radius.xs
+                        color: card.colors.accentSubtle
+                        Rectangle { width: 2; height: parent.height; color: card.colors.accent }
+                    }
+                    Repeater {
+                        model: 2
+                        delegate: Rectangle {
+                            required property int index
+                            x: 6; y: 22 + index * 10
+                            width: 18; height: 4
                             radius: Theme.radius.xs
-                            color: card.colors.accentSubtle
-                            Rectangle { width: 2; height: parent.height; color: card.colors.accent }
+                            color: card.colors.textTertiary
+                            opacity: 0.6
                         }
-                        Repeater {
-                            model: 2
-                            delegate: Rectangle {
-                                required property int index
-                                x: 6; y: 22 + index * 10
-                                width: 18; height: 4
-                                radius: Theme.radius.xs
-                                color: card.colors.textTertiary
-                                opacity: 0.6
-                            }
-                        }
-                    }
-                    Row {
-                        id: miniCards
-                        x: miniSidebar.width + root.miniGap
-                        y: 10
-                        spacing: root.miniGap
-                        Repeater {
-                            model: 3
-                            delegate: Rectangle {
-                                // Three cards fill what the sidebar leaves,
-                                // at any tile width.
-                                width: (preview.width - miniCards.x - root.miniGap * 3) / 3
-                                height: 30
-                                radius: Theme.radius.sm
-                                color: card.colors.surfaceRaised
-                                border.width: 1
-                                border.color: card.colors.border
-                            }
-                        }
-                    }
-                    Rectangle {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.horizontalCenterOffset: miniSidebar.width / 2
-                        anchors.bottom: parent.bottom
-                        anchors.bottomMargin: 8
-                        width: 64; height: 18
-                        radius: Theme.radius.sm
-                        color: card.colors.accent
                     }
                 }
-
-                // Name and the chosen-mark on one line, the note under
-                // them at the tile's full width.
-                Column {
-                    width: parent.width
-                    Row {
-                        width: parent.width
-                        spacing: Theme.space.xs
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - check.width - parent.spacing
-                            text: card.modelData.label
-                            elide: Text.ElideRight
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.bodyStrong.pixelSize
-                            font.weight: Theme.type.bodyStrong.weight
-                        }
-                        Rectangle {
-                            id: check
-                            width: Theme.icon.md
-                            height: width
-                            radius: width / 2
-                            color: card.chosen ? Theme.palette.accent : "transparent"
-                            border.width: card.chosen ? 0 : 1
-                            border.color: Theme.palette.borderStrong
-                            MeshIcon {
-                                anchors.centerIn: parent
-                                visible: card.chosen
-                                iconName: "check"
-                                size: Theme.icon.sm - 2
-                                color: Theme.palette.textOnAccent
-                            }
+                Row {
+                    id: miniCards
+                    x: miniSidebar.width + root.miniGap
+                    y: 10
+                    spacing: root.miniGap
+                    Repeater {
+                        model: 3
+                        delegate: Rectangle {
+                            // Three cards fill what the sidebar leaves,
+                            // at any tile width.
+                            width: (preview.width - miniCards.x - root.miniGap * 3) / 3
+                            height: 30
+                            radius: Theme.radius.sm
+                            color: card.colors.surfaceRaised
+                            border.width: 1
+                            border.color: card.colors.border
                         }
                     }
-                    Text {
-                        width: parent.width
-                        text: card.modelData.note
-                        elide: Text.ElideRight
-                        color: Theme.palette.textTertiary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.caption.pixelSize
-                    }
+                }
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.horizontalCenterOffset: miniSidebar.width / 2
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 8
+                    width: 64; height: 18
+                    radius: Theme.radius.sm
+                    color: card.colors.accent
                 }
             }
-            padding: Theme.space.sm
         }
     }
 }

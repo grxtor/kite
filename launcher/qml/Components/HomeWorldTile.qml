@@ -16,6 +16,11 @@ import Kite.Theme
  * Clicking it opens that instance's Worlds tab. A row in a list rather than
  * a card of its own: no fill or border at rest, the hover overlay under the
  * pointer.
+ *
+ * In the Sahne, Sade and Gece looks the text is a step smaller (as in their
+ * mockups), and on glass (`glass`: the Sahne stage's world panel) the row
+ * has no fill of its own and its words are white on whatever the glass is
+ * over, and the icon keeps the game's square corners.
  */
 AbstractButton {
     id: control
@@ -26,7 +31,13 @@ AbstractButton {
     required property var lastPlayed
     required property string instanceId
     required property string instanceName
+    property bool glass: false
 
+    readonly property bool compact: Theme.look !== "classic"
+    readonly property int nameSize: control.compact ? Theme.type.label.pixelSize : Theme.type.bodyStrong.pixelSize
+    readonly property int metaSize: control.compact ? Theme.type.caption.pixelSize : Theme.type.label.pixelSize
+    readonly property color nameInk: control.glass ? Theme.media.text : Theme.palette.textPrimary
+    readonly property color metaInk: control.glass ? Qt.rgba(1, 1, 1, 0.55) : Theme.palette.textSecondary
     readonly property bool hasIcon: control.iconUrl.length > 0 && worldIcon.status !== Image.Error
     // A compact row: a control-high icon square and a little air.
     readonly property int squareSize: Theme.control.height
@@ -49,7 +60,7 @@ AbstractButton {
     background: Rectangle {
         id: card
         radius: Theme.radius.md
-        color: Theme.palette.canvas
+        color: control.glass ? "transparent" : Theme.palette.canvas
         border.width: control.visualFocus ? Theme.focus.width : 0
         border.color: Theme.palette.focusRing
 
@@ -86,8 +97,11 @@ AbstractButton {
                 smooth: false
                 asynchronous: true
             }
+            // On glass no one colour lies around the icon (the sky or a
+            // photo shows through), so a matte would show as dark corners:
+            // there the world's icon keeps the game's own square corners.
             CornerMatte {
-                visible: control.hasIcon
+                visible: control.hasIcon && !control.glass
                 cornerRadius: Theme.radius.md
                 matte: card.color
             }
@@ -115,9 +129,9 @@ AbstractButton {
                 width: parent.width
                 text: control.worldName
                 elide: Text.ElideRight
-                color: Theme.palette.textPrimary
+                color: control.nameInk
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.bodyStrong.pixelSize
+                font.pixelSize: control.nameSize
                 font.weight: Theme.type.bodyStrong.weight
             }
 
@@ -132,17 +146,17 @@ AbstractButton {
                     width: Math.max(0, Math.min(implicitWidth, metaRow.width - whenText.implicitWidth))
                     text: control.instanceName
                     elide: Text.ElideRight
-                    color: Theme.palette.textSecondary
+                    color: control.metaInk
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    font.pixelSize: control.metaSize
                 }
                 Text {
                     id: whenText
                     readonly property string when: Format.lastPlayed(control.lastPlayed)
                     text: (control.instanceName.length > 0 && when.length > 0 ? "  •  " : "") + when
-                    color: Theme.palette.textSecondary
+                    color: control.metaInk
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    font.pixelSize: control.metaSize
                 }
             }
         }

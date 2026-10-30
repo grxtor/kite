@@ -6,10 +6,11 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One person in a list, on the Friends page and in Home's side panel: their
- * head (FriendHead, with its presence dot), their name, and a quiet line
- * under it (where they are, or what the row is about). Whatever goes inside
- * the row (Join, a ⋯, buttons) lands on its right, in `trailing`.
+ * One person in a list, on the Friends page, in Home's side panel and in the
+ * friends panel on the window's right edge: their head (FriendHead, with its
+ * presence dot), their name, and a quiet line under it (where they are, or
+ * what the row is about). Whatever goes inside the row (Join, a ⋯, buttons)
+ * lands on its right, in `trailing`.
  *
  * The row has no box: it sits on the page and takes the library list's
  * neutral hover fill. `compact` is Home's panel size, with its narrower
@@ -44,6 +45,12 @@ Item {
     // The fill the head's ring has to match.
     readonly property color fill: root.hovered || root.visualFocus ? Theme.palette.surfaceHover : Theme.palette.canvas
     readonly property int headSize: root.compact ? 32 : 40
+    // The room the head takes before the text starts. Compact rows on Home
+    // keep a Theme.control.height tile's worth (below), so their names line
+    // up with Recent worlds; the friends panel on the right edge has no such
+    // list beside it and asks for the head's own width, which buys the name
+    // and the buttons in its narrow column that much more room.
+    property int headSlot: root.compact ? Theme.control.height : root.headSize
     // A row only takes focus from the Tab key, so focus is a keyboard ring.
     readonly property bool visualFocus: root.interactive && root.activeFocus
 
@@ -91,7 +98,7 @@ Item {
         // much room, so the names of the two lists line up.
         Item {
             Layout.alignment: Qt.AlignVCenter
-            Layout.preferredWidth: root.compact ? Theme.control.height : root.headSize
+            Layout.preferredWidth: root.headSlot
             Layout.preferredHeight: root.headSize
 
             FriendHead {

@@ -12,7 +12,8 @@ import Kite.Theme
  * logo, "Title by author", one line of description (or the install's
  * progress), and "Installed" once it is. Rows share one card and are split
  * by hairlines; hover and the picked row share one look -- a lifted inset
- * strip with a hairline, no accent -- the way PackRow's and the Library's do.
+ * strip, no hairline and no accent: a frame inside the card would be a box
+ * in a box. The logo sits on the strip with no tile of its own.
  */
 AbstractButton {
     id: row
@@ -66,12 +67,8 @@ AbstractButton {
             // and its hairline, no accent. The edge fades in from its own
             // colour at zero alpha, so it never greys on the way.
             readonly property bool lifted: row.selected || row.hovered
-            readonly property color edge: Theme.neutral.borderHover
             color: lifted ? Theme.palette.surfaceHover : Theme.palette.surface
-            border.width: 1
-            border.color: lifted ? edge : Qt.rgba(edge.r, edge.g, edge.b, 0)
             Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
-            Behavior on border.color { ColorAnimation { duration: Theme.motion.fast } }
         }
         Rectangle {
             anchors.left: parent.left
@@ -104,11 +101,6 @@ AbstractButton {
             Layout.preferredWidth: row.logoSize
             Layout.preferredHeight: row.logoSize
 
-            Rectangle {
-                anchors.fill: parent
-                radius: Theme.radius.sm
-                color: Theme.palette.surfaceSunken
-            }
             Image {
                 anchors.fill: parent
                 source: row.logoUrl

@@ -55,11 +55,7 @@ Rectangle {
                 Layout.preferredHeight: root.logoSize
                 Layout.alignment: Qt.AlignTop
 
-                Rectangle {
-                    anchors.fill: parent
-                    radius: Theme.radius.md
-                    color: Theme.palette.surfaceSunken
-                }
+                // No tile of its own behind the logo: it sits on the panel.
                 Image {
                     anchors.fill: parent
                     source: root.project ? root.project.logoUrl : ""
@@ -148,21 +144,17 @@ Rectangle {
             }
         }
 
-        Rectangle {
+        // The versions lie on the panel itself, no framed well around them
+        // (VersionRow): what the list does not fill is the panel.
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumHeight: root.versionListMinHeight
-            radius: Theme.radius.sm
-            color: Theme.palette.surfaceSunken
-            border.width: 1
-            border.color: Theme.palette.border
 
             ListView {
                 id: versionList
                 anchors.fill: parent
-                anchors.margins: Theme.space.xs
                 clip: true
-                spacing: Theme.space.xxs
                 model: root.owner.versions
                 boundsBehavior: Flickable.StopAtBounds
                 ScrollBar.vertical: ScrollBar {}
@@ -173,6 +165,7 @@ Rectangle {
                     width: versionList.width - Theme.space.sm
                     entry: modelData
                     picked: root.owner.pickedVersion === index
+                    lastRow: index === versionList.count - 1
                     onClicked: root.owner.pickedVersion = index
                 }
 

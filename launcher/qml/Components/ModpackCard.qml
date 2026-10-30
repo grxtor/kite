@@ -145,12 +145,7 @@ AbstractButton {
             Layout.preferredHeight: root.logoSize
             Layout.alignment: Qt.AlignTop
 
-            Rectangle {
-                anchors.fill: parent
-                radius: Theme.radius.lg
-                color: Theme.dark ? Theme.palette.surfaceRaised : Theme.palette.surfaceSunken
-                visible: !root.skeleton
-            }
+            // No tile of its own behind the logo: it sits on the card.
             Skeleton {
                 anchors.fill: parent
                 radius: Theme.radius.lg

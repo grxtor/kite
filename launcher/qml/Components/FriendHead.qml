@@ -13,7 +13,9 @@ import Kite.Theme
  * head rather than laid over it.
  *
  * `presence` is "online", "playing", "offline" or "" (no dot, full colour:
- * someone who is not a friend yet, or you). An offline head is dimmed.
+ * someone who is not a friend yet, or you). An offline head is dimmed. In a
+ * game the dot is filled; only in Kite it is a hollow ring, so a strip of
+ * heads tells the two apart without names.
  */
 Item {
     id: root
@@ -29,7 +31,7 @@ Item {
     readonly property real offlineOpacity: 0.55
     readonly property int ringWidth: 2
     // The dot grows with the head.
-    readonly property int dotSize: root.size >= 40 ? 12 : 10
+    readonly property int dotSize: root.size >= 40 ? 12 : root.size > 24 ? 10 : 8
 
     implicitWidth: root.size
     implicitHeight: root.size
@@ -82,7 +84,9 @@ Item {
             width: root.dotSize
             height: width
             radius: width / 2
-            color: Theme.palette.success
+            color: root.presence === "playing" ? Theme.palette.success : root.ringColor
+            border.width: root.presence === "playing" ? 0 : root.ringWidth
+            border.color: Theme.palette.success
         }
     }
 }

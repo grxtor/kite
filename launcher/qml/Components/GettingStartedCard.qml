@@ -19,6 +19,9 @@ Rectangle {
     property bool hasInstances: false
     // A Microsoft account is signed in.
     property bool signedIn: false
+    // No fill or hairline of its own, for a host that is already a panel
+    // (Sade's and Gece's side panels): a card in it would be a box in a box.
+    property bool flat: false
 
     signal createRequested()
     signal signInRequested()
@@ -30,8 +33,8 @@ Rectangle {
 
     implicitHeight: column.implicitHeight + Theme.space.md * 2
     radius: Theme.radius.lg
-    color: Theme.palette.surface
-    border.width: 1
+    color: root.flat ? "transparent" : Theme.palette.surface
+    border.width: root.flat ? 0 : 1
     border.color: Theme.palette.border
 
     /*

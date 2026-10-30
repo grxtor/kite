@@ -26,8 +26,9 @@ T.Slider {
         implicitHeight: Theme.icon.md - Theme.space.xxs
         radius: width / 2
         // White in both themes, like Switch's knob; a hairline keeps it
-        // from melting into light mode's pale groove and white cards.
-        color: Theme.media.text
+        // from melting into light mode's pale groove and white cards. On a
+        // near-white accent it takes the accent's ink, as Switch's does.
+        color: Theme.lightAccent ? Theme.palette.textOnAccent : Theme.media.text
         border.width: Theme.dark ? 0 : 1
         border.color: Qt.rgba(0, 0, 0, 0.12)
         opacity: control.enabled ? 1.0 : Theme.opacity.disabled

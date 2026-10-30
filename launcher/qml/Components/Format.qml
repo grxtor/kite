@@ -171,6 +171,13 @@ QtObject {
         return { text: friend.statusText, suffix: "", tone: friend.state === "offline" ? "faint" : "secondary" }
     }
 
+    // The same second line on one line, for a tip or a card: "mc.example.net
+    // · 1.21.4", "In Kite", "Last seen 3 h ago".
+    function friendStatusLine(friend) {
+        var status = root.friendStatus(friend)
+        return status.suffix ? status.text + " · " + status.suffix : status.text
+    }
+
     // Whether Join shows: playing on a server whose host is visible, and the
     // friend lets others join (FriendsDisplay already ands the three). The
     // game version is what picks the instance, so it has to be known too.

@@ -32,6 +32,19 @@ QtObject {
     // "amethyst", "ember", "diamond" or "grass".
     property string scheme: ThemeService.scheme
     onSchemeChanged: ThemeService.scheme = scheme
+    // "stage" (Sahne), "calm" (Sade), "night" (Gece) or "classic"; see
+    // ThemeService.look. Pages that lay themselves out per look read this.
+    property string look: ThemeService.look
+    onLookChanged: ThemeService.look = look
+    // Whether what lies behind the shell is one solid colour: every look but
+    // Gece, whose sky shows through. A corner matte (KiteShape.matte,
+    // CornerMatte) can only round a picture over a solid colour; over the
+    // sky it would paint a halo, so there pictures keep square corners.
+    readonly property bool solidShell: look !== "night"
+    // Whether the accent is near white (Sahne's and Gece's Play): a white
+    // knob on it would vanish, so a switch's or slider's knob takes the
+    // accent's own ink instead.
+    readonly property bool lightAccent: palette.accent.hslLightness > 0.8
     function previewPalette(name) { return ThemeService.previewPalette(name) }
 
     // Modrinth's own rhythm (0.5 / 0.75 / 1 / 1.5 rem), measured off its
@@ -175,6 +188,31 @@ QtObject {
     // Text and shading laid over a screenshot or other artwork. The art is
     // what it is in either theme, so these do not follow the palette: light
     // text over a dark fade reads on any picture, in dark and light mode.
+    // The Gece look's night sky from top to bottom (SkyBackdrop), after
+    // kiteclient.com's tokens.css; colorAt() is its colour at a share of the
+    // window's height, for what has to fade into it (ScrollFade).
+    readonly property QtObject sky: QtObject {
+        readonly property color zenith: "#120C2E"
+        readonly property color high: "#1A1148"
+        readonly property color low: "#2B1C76"
+        readonly property color horizon: "#4A2FC0"
+        readonly property real highAt: 0.38
+        readonly property real lowAt: 0.74
+
+        function colorAt(position) {
+            var stops = [[0, zenith], [highAt, high], [lowAt, low], [1, horizon]]
+            var p = Math.max(0, Math.min(1, position))
+            for (var i = 1; i < stops.length; ++i) {
+                if (p <= stops[i][0]) {
+                    var t = (p - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0])
+                    var a = stops[i - 1][1], b = stops[i][1]
+                    return Qt.rgba(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, 1)
+                }
+            }
+            return horizon
+        }
+    }
+
     readonly property QtObject media: QtObject {
         readonly property color text: "#FFFFFF"
         readonly property color textSecondary: Qt.rgba(1, 1, 1, 0.80)

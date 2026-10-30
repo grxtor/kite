@@ -51,7 +51,24 @@ ThemeService::ThemeService(QObject* parent)
 
 ThemePalette ThemeService::palette() const
 {
+	// A look brings its own palette (its name is its scheme's); "classic"
+	// follows the picked scheme and mode.
+	if (m_look != QStringLiteral("classic"))
+		return ThemePalette::forScheme(ThemePalette::schemeFromName(m_look), true);
 	return ThemePalette::forScheme(m_scheme, m_dark);
+}
+
+void ThemeService::setLook(const QString& look)
+{
+	if (look != QStringLiteral("classic") && look != QStringLiteral("stage") &&
+		look != QStringLiteral("calm") && look != QStringLiteral("night")) {
+		qWarning() << "ThemeService: ignoring unknown look" << look;
+		return;
+	}
+	if (look == m_look)
+		return;
+	m_look = look;
+	emit changed();
 }
 
 void ThemeService::setScheme(const QString& scheme)

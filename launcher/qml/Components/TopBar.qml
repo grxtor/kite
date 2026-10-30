@@ -21,6 +21,11 @@ import Kite.Theme
  * children (a PageToolbar), is for a TopBar used on its own; the shell keeps
  * that row off (searchVisible: false) and puts the Library's toolbar inside
  * the page area instead.
+ *
+ * What the shell wants at the bar's right end (the friends panel's toggle)
+ * goes in `trailing`, at the window's edge. The bar runs on above a panel
+ * that stands on the right (`rightReserve` is its width), so the title keeps
+ * to the page's column, not the whole window's.
  */
 Item {
     id: root
@@ -42,12 +47,25 @@ Item {
     property bool searchVisible: true
 
     default property alias actions: toolbar.actions
+    // The shell's own buttons, at the right end of the title row.
+    property alias trailing: trailingRow.data
+    // The width of a panel that stands to the right of the page area, under
+    // this bar: the page's column is centred in what is left of the window.
+    property int rightReserve: 0
+    // What stands over the bar's left end (macOS's traffic lights, when the
+    // rail beside the bar is narrower than they are): the title starts
+    // after it.
+    property int leftReserve: 0
 
     readonly property int titleRowHeight: Theme.control.heightSm
     readonly property int toolbarRowHeight: Theme.control.heightLg
     implicitHeight: Theme.space.sm + titleRowHeight
                     + (root.searchVisible ? Theme.space.xs + toolbarRowHeight : 0)
                     + Theme.space.sm
+    // The rows' padding: on a bar taller than they need (the shell's on
+    // macOS, as tall as the title bar), half of what is left besides, so
+    // they sit in its middle.
+    readonly property int verticalInset: Theme.space.sm + Math.max(0, Math.floor((root.height - root.implicitHeight) / 2))
 
     function focusSearch() { toolbar.focusSearch() }
 
@@ -55,7 +73,7 @@ Item {
     // wide window whatever centres a Theme.layout.maxContentWidth column --
     // so the title stays aligned with the page below it.
     readonly property int sideMargin: Math.max(Theme.space.xl + Theme.space.xs,
-                                               Math.round((root.width - Theme.layout.maxContentWidth) / 2))
+                                               Math.round((root.width - root.rightReserve - Theme.layout.maxContentWidth) / 2))
 
     // The trail and the title share one face and size; a step is only
     // quieter, and a link back to that level.
@@ -92,14 +110,17 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.topMargin: Theme.space.sm
-        anchors.bottomMargin: Theme.space.sm
+        anchors.topMargin: root.verticalInset
+        anchors.bottomMargin: root.verticalInset
         spacing: Theme.space.xs
 
         RowLayout {
             Layout.fillWidth: true
-            Layout.leftMargin: root.sideMargin
-            Layout.rightMargin: root.sideMargin
+            Layout.leftMargin: Math.max(root.sideMargin, root.leftReserve)
+            // The page's column ends before the panel; and never under the
+            // trailing buttons, which stand at the window's edge.
+            Layout.rightMargin: Math.max(root.sideMargin + root.rightReserve,
+                                         trailingRow.width + Theme.space.md * 2)
             Layout.preferredHeight: root.titleRowHeight
             spacing: Theme.space.sm
 
@@ -137,16 +158,30 @@ Item {
             }
 
             Text {
+                id: titleText
                 Layout.alignment: Qt.AlignVCenter
                 // Its own width, down to nothing under pressure: a long
-                // instance name elides before the row overflows.
+                // instance name elides before the row overflows. (A layout
+                // keeps an item that does not fill at its preferred width, so
+                // it fills, and is held to the width it wants to stay put.)
+                // That width is measured apart: an elided Text's own
+                // implicitWidth follows the elided text, and held to that the
+                // title elides itself down to "Ho…".
+                Layout.fillWidth: true
                 Layout.minimumWidth: 0
+                Layout.maximumWidth: Math.ceil(titleMetrics.advanceWidth)
                 text: root.title
                 elide: Text.ElideRight
                 color: Theme.palette.textPrimary
                 font.family: Theme.font.heading
                 font.pixelSize: root.titleSize
                 font.weight: Font.DemiBold
+
+                TextMetrics {
+                    id: titleMetrics
+                    font: titleText.font
+                    text: titleText.text
+                }
             }
 
             Tag {
@@ -171,5 +206,17 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: root.toolbarRowHeight
         }
+    }
+
+    // On the title row's line, whatever the toolbar row below does; over the
+    // layout, so its buttons are first in line for the pointer.
+    Row {
+        id: trailingRow
+        anchors.right: parent.right
+        anchors.rightMargin: Theme.space.md
+        anchors.top: parent.top
+        anchors.topMargin: root.verticalInset
+        height: root.titleRowHeight
+        spacing: Theme.space.xs
     }
 }

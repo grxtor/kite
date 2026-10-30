@@ -233,22 +233,21 @@ Item {
                 id: pickerRow
                 spacing: Theme.space.sm
 
-                // A neutral tile, the icon filling about 80 % of it -- the
-                // same tile every instance icon sits on (designs/
-                // phase3-scale.md, decision 3), never one tinted from it.
-                // An instance's, so in the kite's cut, raised on hover.
+                // The icon itself, filling about 80 % of the square, with
+                // no tile of its own (InstanceTile): an instance's, so in
+                // the kite's cut, raised on hover.
                 KiteShape {
                     Layout.preferredWidth: pickerButton.tileSize
                     Layout.preferredHeight: pickerButton.tileSize
                     radius: Theme.radius.md
-                    color: Theme.palette.surfaceRaised
-                    borderWidth: 1
-                    borderColor: Theme.palette.border
+                    color: "transparent"
                     lifted: pickerButton.hovered
-                    readonly property bool iconFills: root.hasInstance && Icons.fillsTile(root.dockIconKey)
+                    // Its own icon, or the built-in one it was given.
+                    readonly property string drawnKey: Icons.displayKey(root.dockIconKey, root.dockInstanceId)
+                    readonly property bool iconFills: root.hasInstance && Icons.fillsTile(drawnKey)
                     // An opaque square icon fills the tile, rounded in the
                     // colour around it: the bar under the button's tint.
-                    matte: !iconFills ? "transparent"
+                    matte: !iconFills || !Theme.solidShell ? "transparent"
                          : Qt.tint(root.surround, pickerButton.down ? Theme.palette.pressedOverlay
                                    : pickerButton.hovered || picker.visible ? Theme.palette.hoverOverlay : "transparent")
 
@@ -257,7 +256,7 @@ Item {
                         width: parent.iconFills ? parent.width : Math.round(pickerButton.tileSize * 0.8)
                         height: width
                         visible: root.hasInstance
-                        source: root.dockIconKey.length > 0 ? Icons.instanceIcon(root.dockIconKey) : ""
+                        source: parent.drawnKey.length > 0 ? Icons.instanceIcon(parent.drawnKey) : ""
                         sourceSize: Qt.size(width, height)
                         fillMode: Image.PreserveAspectFit
                     }
@@ -602,7 +601,7 @@ Item {
                             Image {
                                 Layout.preferredWidth: 28
                                 Layout.preferredHeight: 28
-                                source: row.iconKey.length > 0 ? Icons.instanceIcon(row.iconKey) : ""
+                                source: row.iconKey.length > 0 ? Icons.instanceIcon(Icons.displayKey(row.iconKey, row.instanceId)) : ""
                                 // A fixed size, not Qt.size(width, height): this
                                 // Image's own width/height come from Layout.
                                 // preferred* rather than a literal, and tying

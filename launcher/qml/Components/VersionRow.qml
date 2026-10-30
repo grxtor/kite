@@ -11,9 +11,13 @@ import Kite.Theme
  * One version of a project in a pick-one list -- Add content's version
  * panel and "Change version…" -- with what it runs on, greyed out (and
  * saying why) when it does not fit this instance. `entry` is one item of
- * ContentBrowser.versions / ContentUpdateController.versions. The picked
- * row is ticked and keeps the hover look (a lifted fill and a hairline, no
- * accent); `installed` adds a tag for the version the instance has now.
+ * ContentBrowser.versions / ContentUpdateController.versions.
+ *
+ * No box of its own: the rows lie on their panel, split by hairlines. The
+ * picked one is a filled radio ring and bold, the rest a hollow ring; hover
+ * only brightens the ring. A filled strip for the pick, inside a framed
+ * list, inside the panel, was a box in a box in a box. `installed` adds
+ * "Installed" in the success colour, as words, not a chip.
  */
 AbstractButton {
     id: root
@@ -22,32 +26,53 @@ AbstractButton {
     property var entry: ({})
     property bool picked: false
     property bool installed: false
+    // The last row draws no hairline under itself.
+    property bool lastRow: false
 
     // Two lines at the list scale (body over label) with air around them.
     readonly property int rowHeight: Theme.control.heightLg + Theme.space.sm
+    readonly property int ringSize: Theme.icon.md
+    readonly property int ringWidth: 2
+    readonly property int dotSize: 8
 
     height: root.rowHeight
     hoverEnabled: true
 
-    background: Rectangle {
-        // Picked looks like hovered. Both fade in from their own colour at
-        // zero alpha, so nothing greys on the way from "transparent".
-        readonly property bool lifted: root.picked || root.hovered
-        readonly property color fill: Theme.palette.surfaceHover
-        readonly property color edge: Theme.neutral.borderHover
-        radius: Theme.radius.md
-        color: lifted ? fill : Qt.rgba(fill.r, fill.g, fill.b, 0)
-        border.width: 1
-        border.color: lifted ? edge : Qt.rgba(edge.r, edge.g, edge.b, 0)
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
-        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast } }
+    background: Item {
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            height: 1
+            visible: !root.lastRow
+            color: Theme.palette.divider
+        }
     }
     contentItem: RowLayout {
-        spacing: Theme.space.sm
+        spacing: Theme.space.md
+
+        // The radio ring: filled with the accent and a dot when picked.
+        Rectangle {
+            Layout.preferredWidth: root.ringSize
+            Layout.preferredHeight: root.ringSize
+            radius: width / 2
+            color: root.picked ? Theme.palette.accent : "transparent"
+            border.width: root.picked ? 0 : root.ringWidth
+            border.color: root.hovered ? Theme.palette.textSecondary : Theme.palette.borderStrong
+            Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
+
+            Rectangle {
+                anchors.centerIn: parent
+                visible: root.picked
+                width: root.dotSize
+                height: width
+                radius: width / 2
+                color: Theme.palette.textOnAccent
+            }
+        }
         Column {
             Layout.fillWidth: true
             Layout.minimumWidth: 0
-            Layout.leftMargin: Theme.space.sm
             spacing: 0
             Text {
                 width: parent.width
@@ -76,16 +101,14 @@ AbstractButton {
                 font.pixelSize: Theme.type.label.pixelSize
             }
         }
-        Tag {
+        Text {
+            Layout.rightMargin: Theme.space.sm
             visible: root.installed
             text: qsTr("Installed")
-        }
-        MeshIcon {
-            Layout.rightMargin: Theme.space.sm
-            visible: root.picked
-            iconName: "check"
-            size: Theme.icon.sm
-            color: Theme.palette.accentText
+            color: Theme.palette.success
+            font.family: Theme.font.family
+            font.pixelSize: Theme.type.label.pixelSize
+            font.weight: Font.DemiBold
         }
     }
 }

@@ -240,11 +240,7 @@ Item {
                     Layout.preferredHeight: root.logoSize
                     Layout.alignment: Qt.AlignTop
 
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: Theme.radius.xl
-                        color: Theme.dark ? Theme.palette.surfaceRaised : Theme.palette.surfaceSunken
-                    }
+                    // No tile of its own behind the logo: it sits on the page.
                     Image {
                         id: logoImg
                         anchors.fill: parent

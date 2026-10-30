@@ -240,20 +240,30 @@ Item {
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.label.pixelSize
             }
-            // Signing in with Microsoft is what this page is for, so it is
-            // the primary action and comes first -- except while the hero
-            // offers "Use this account" (no default chosen yet), which is
-            // then the screen's one primary action instead.
+            // Someone is signed in already (this row only shows then; the
+            // empty state asks for the first sign-in), so the page is about
+            // the accounts it has: another one is one button, whose menu
+            // says which kind, rather than "Sign in with Microsoft" over an
+            // account that is signed in.
             Button {
-                variant: (!root.heroItem || root.heroIsDefault) ? "primary" : "secondary"
-                text: qsTr("Sign in with Microsoft")
-                icon.source: Icons.url("user")
-                onClicked: root.startMicrosoftLogin()
-            }
-            Button {
+                id: addAccountButton
                 variant: "secondary"
-                text: qsTr("Add offline account")
-                onClicked: offlineDialog.open()
+                text: qsTr("Add account")
+                icon.source: Icons.url("plus")
+                onClicked: addAccountMenu.popup(addAccountButton, 0, addAccountButton.height + Theme.space.xs)
+
+                Menu {
+                    id: addAccountMenu
+                    MenuItem {
+                        text: qsTr("Microsoft account")
+                        icon.source: Icons.url("user")
+                        onTriggered: root.startMicrosoftLogin()
+                    }
+                    MenuItem {
+                        text: qsTr("Offline account")
+                        onTriggered: offlineDialog.open()
+                    }
+                }
             }
         }
 
