@@ -61,11 +61,13 @@ T.Switch {
             y: (track.height - height) / 2
             x: Math.max(inset, Math.min(track.width - width - inset,
                                         control.visualPosition * (track.width - width)))
-            // Always white, in every scheme and both themes: the track says
-            // on/off, the knob is just the thing you drag. A knob that also
-            // changed colour (dark on green, light on grey, inverted in light
-            // mode) read as a second, competing state.
-            color: Theme.media.text
+            // White in every scheme and both themes: the track says on/off,
+            // the knob is just the thing you drag. A knob that also changed
+            // colour (dark on green, light on grey, inverted in light mode)
+            // read as a second, competing state. The one exception is a
+            // near-white accent (Theme.lightAccent), where a white knob on
+            // the "on" track would not show at all.
+            color: control.checked && Theme.lightAccent ? Theme.palette.textOnAccent : Theme.media.text
             border.width: Theme.dark ? 0 : 1
             border.color: Qt.rgba(0, 0, 0, 0.08)
 

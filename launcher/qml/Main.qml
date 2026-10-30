@@ -90,6 +90,9 @@ ApplicationWindow {
             var scheme = SettingsStore.string("UiPalette")
             if (scheme === "amethyst" || scheme === "ember" || scheme === "diamond" || scheme === "grass")
                 Theme.scheme = scheme
+            var look = SettingsStore.string("UiLook")
+            if (look === "stage" || look === "calm" || look === "night" || look === "classic")
+                Theme.look = look
             // The friends panel's saved choice, which a window too narrow for
             // it overrides for this session only; and whether it is opened
             // out, and how wide.
@@ -130,6 +133,8 @@ ApplicationWindow {
                 Theme.mode = value
             else if (key === "scheme")
                 Theme.scheme = value
+            else if (key === "look")
+                Theme.look = value
             else if (key === "size") {
                 var wh = value.split("x")
                 root.width = parseInt(wh[0])
@@ -471,8 +476,9 @@ ApplicationWindow {
     }
 
     // The play bar shows on Home, Discover, Friends, Settings and Accounts,
-    // keeping the selected instance one click away. Home has it too: the
-    // hero scrolls away under Continue playing and the library, the bar stays. The
+    // keeping the selected instance one click away. Home has it once the
+    // hero has scrolled away under Continue playing and the library
+    // (dockHeldByHero). The
     // instance page's header is that page's Play, and the bar would only
     // repeat it there; the library page that once had it is no longer in the
     // rail.
@@ -484,6 +490,11 @@ ApplicationWindow {
     // that page's Install is the primary action. Moot while the instance
     // page has no bar at all, kept so bringing the bar back there keeps it.
     readonly property bool dockSuppressed: root.page === "instance" && !!instancePage && instancePage.browsing === true
+    // On Home, while the hero's own Play is on screen: the hero shows the
+    // bar's instance (both follow the selection), so the bar would be a
+    // second Play for it. Read off the page on screen, as dockVisible is.
+    readonly property bool dockHeldByHero: pageStack.currentIndex === pageHost.pageOrder.indexOf("home")
+                                           && homePage.heroPlayInView
 
     // The pages built on demand (PageSlot): null until first shown. Setting
     // root.page builds the page at once, so code that sends the user
@@ -638,6 +649,11 @@ ApplicationWindow {
     // the canvas is ever behind the shell, so glass over the canvas and this
     // tint of it are the same colour.
     readonly property color shellColor: Qt.tint(Theme.palette.canvas, Theme.glass.fill)
+    // The Gece look: the whole window is the night sky (SkyBackdrop), and the
+    // shell, the page panel and the friends panel stay transparent over it,
+    // without the panel's corner matte. shellColor still rounds what needs a
+    // solid colour around it (an icon that fills its tile).
+    readonly property bool skyLook: Theme.look === "night"
     // The panel's corner: Modrinth's "inset window" corner, the dialog's
     // radius.xl -- the one surface as big as a dialog.
     readonly property int panelRadius: Theme.radius.xl
@@ -645,9 +661,15 @@ ApplicationWindow {
     // sidebar's brand band sits on.
     readonly property int shellBarHeight: Theme.control.heightLg
 
+    SkyBackdrop {
+        anchors.fill: parent
+        visible: root.skyLook
+        barHeight: root.shellBarHeight
+    }
+
     Rectangle {
         anchors.fill: parent
-        color: root.shellColor
+        color: root.skyLook ? "transparent" : root.shellColor
 
         Rectangle {
             width: parent.width
@@ -826,7 +848,7 @@ ApplicationWindow {
             width: parent.width + root.panelRadius
             height: parent.height + panel.overhangBottom
             radius: root.panelRadius
-            color: Theme.palette.canvas
+            color: root.skyLook ? "transparent" : Theme.palette.canvas
         }
 
         ColumnLayout {
@@ -1192,6 +1214,7 @@ ApplicationWindow {
             height: panelFill.height
 
             CornerMatte {
+                visible: !root.skyLook
                 matte: root.shellColor
                 cornerRadius: root.panelRadius
                 outline: Theme.palette.border
@@ -1214,7 +1237,7 @@ ApplicationWindow {
         anchors.right: friendsPanel.left
         anchors.bottom: parent.bottom
         height: implicitHeight
-        visible: pageHost.dockVisible && !root.dockSuppressed
+        visible: pageHost.dockVisible && !root.dockSuppressed && !root.dockHeldByHero
         rowModel: root.shell && root.shell.heroModel ? root.shell.heroModel : null
         instanceModel: root.instanceModel
         recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null

@@ -67,7 +67,9 @@ AbstractButton {
     // An opaque square icon (Icons.fillsTile) fills the tile instead, its
     // corners rounded in `surround`: what the rail shows around the tile
     // (SidebarNav sets it), under this item's hover or press tint.
-    readonly property bool iconFills: Icons.fillsTile(control.iconKey)
+    readonly property bool iconFills: Icons.fillsTile(control.drawnKey)
+    // Its own icon, or the built-in one it was given (Icons.displayKey).
+    readonly property string drawnKey: Icons.displayKey(control.iconKey, control.instanceId)
     property color surround: "transparent"
     // The open instance. On the folded rail its tile lights the kite's
     // nose in its own cut, as a selected library card does, instead of
@@ -81,7 +83,10 @@ AbstractButton {
         x: control.compact ? control.iconAxis - width / 2 : 0
         y: control.compact ? (control.height - height) / 2 : 0
         radius: control.cornerRadius
-        color: control.down ? Theme.palette.pressedOverlay
+        // On the icon rail the tile itself answers the pointer (it lifts);
+        // a square behind it made a box around a box.
+        color: control.compact ? "transparent"
+             : control.down ? Theme.palette.pressedOverlay
              : control.hovered ? Theme.palette.hoverOverlay : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
@@ -99,19 +104,19 @@ AbstractButton {
             width: control.tileSize
             height: control.tileSize
             radius: Theme.radius.sm
-            color: Theme.palette.surfaceRaised
-            borderWidth: 1
-            borderColor: Theme.palette.border
+            // No fill or hairline: the icon is the picture (InstanceTile).
+            color: "transparent"
             lifted: control.hovered
-            matte: !control.iconFills ? "transparent"
-                 : Qt.tint(control.surround, control.down ? Theme.palette.pressedOverlay
+            matte: !control.iconFills || !Theme.solidShell ? "transparent"
+                 : Qt.tint(control.surround, control.compact ? "transparent"
+                                            : control.down ? Theme.palette.pressedOverlay
                                             : control.hovered ? Theme.palette.hoverOverlay : "transparent")
 
             Image {
                 anchors.centerIn: parent
                 width: control.iconFills ? parent.width : control.pictureSize
                 height: width
-                source: Icons.instanceIcon(control.iconKey)
+                source: Icons.instanceIcon(control.drawnKey)
                 sourceSize: Qt.size(width * 2, height * 2)
                 fillMode: Image.PreserveAspectFit
             }

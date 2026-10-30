@@ -198,6 +198,19 @@ class ThemePaletteTest : public QObject
 				 S::Amethyst);
 	}
 
+	/// The looks' palettes are dark only and clear the same bars.
+	void test_everyLook()
+	{
+		using S = ThemePalette::Scheme;
+		for (S scheme : {S::Stage, S::Calm, S::Night}) {
+			const QString name = ThemePalette::schemeName(scheme);
+			checkTheme(ThemePalette::forScheme(scheme, true), qPrintable(name));
+			QCOMPARE(ThemePalette::forScheme(scheme, false),
+					 ThemePalette::forScheme(scheme, true));
+			QCOMPARE(ThemePalette::schemeFromName(name), scheme);
+		}
+	}
+
 	/// The two themes have to disagree somewhere, and a palette has to
 	/// agree with an identical copy of itself -- the two ends of what
 	/// operator==/operator!= are for.

@@ -44,6 +44,7 @@
 #include "FileSystem.h"
 #include "InstanceCopyTask.h"
 #include "InstanceList.h"
+#include "icons/AutoIcons.h"
 #include "icons/IconList.h"
 #include "java/JavaInstallList.h"
 #include "models/AboutInfo.h"
@@ -884,6 +885,31 @@ bool QmlShell::iconFillsTile(const QString& key) const
 	return LAUNCHER->icons()->fillsTile(key);
 }
 
+void QmlShell::refreshAutoIcons()
+{
+	const auto* instances = LAUNCHER->instances().get();
+	QList<AutoIcons::Instance> list;
+	for (int i = 0; i < instances->count(); ++i) {
+		const InstancePtr instance = instances->at(i);
+		list.append({instance->id(), instance->iconKey()});
+	}
+	const QString stored = LAUNCHER->settings()->get("UiAutoIcons").toString();
+	const QHash<QString, QString> map =
+		AutoIcons::assign(list, AutoIcons::fromJson(stored), AutoIcons::pool());
+	// QJsonObject writes its keys sorted, so an unchanged map reads the same.
+	const QString json = AutoIcons::toJson(map);
+	if (json != stored)
+		LAUNCHER->settings()->set("UiAutoIcons", json);
+
+	QVariantMap exposed;
+	for (auto it = map.begin(); it != map.end(); ++it)
+		exposed.insert(it.key(), it.value());
+	if (exposed == m_autoIcons)
+		return;
+	m_autoIcons = exposed;
+	emit autoIconsChanged();
+}
+
 QString QmlShell::iconsDir() const
 {
 	return LAUNCHER->icons()->getDirectory();
@@ -1413,6 +1439,28 @@ bool QmlShell::load()
 			emit iconRevisionChanged();
 		});
 	});
+	// The auto icons follow the library: rows in or out, or an icon key
+	// changing (InstanceList reports iconKey as Qt::DecorationRole).
+	auto* instanceList = LAUNCHER->instances().get();
+	const auto scheduleAutoIcons = [this]() {
+		if (m_autoIconsPending)
+			return;
+		m_autoIconsPending = true;
+		QTimer::singleShot(0, this, [this]() {
+			m_autoIconsPending = false;
+			refreshAutoIcons();
+		});
+	};
+	connect(instanceList, &QAbstractItemModel::rowsInserted, this, scheduleAutoIcons);
+	connect(instanceList, &QAbstractItemModel::rowsRemoved, this, scheduleAutoIcons);
+	connect(instanceList, &QAbstractItemModel::modelReset, this, scheduleAutoIcons);
+	connect(instanceList, &QAbstractItemModel::dataChanged, this,
+			[scheduleAutoIcons](const QModelIndex&, const QModelIndex&, const QList<int>& roles) {
+				if (roles.isEmpty() || roles.contains(Qt::DecorationRole))
+					scheduleAutoIcons();
+			});
+	refreshAutoIcons();
+
 	m_recent = std::make_unique<InstanceFilterModel>();
 	m_recent->setRecentFirst(true);
 	m_recent->setSourceModel(LAUNCHER->instances().get());

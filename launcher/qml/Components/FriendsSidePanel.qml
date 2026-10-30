@@ -203,9 +203,10 @@ Item {
         }
     }
 
+    // Transparent over the Gece look's sky, like the page beside it.
     Rectangle {
         anchors.fill: parent
-        color: Theme.palette.canvas
+        color: Theme.look === "night" ? "transparent" : Theme.palette.canvas
     }
     // Set off from the page by a hairline, as Home's side panel is, and
     // the page panel's top edge carries on across.

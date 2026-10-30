@@ -7,10 +7,11 @@ import Kite.Theme
 /*
  * The square a list row starts with -- a row of Content's table (PackRow)
  * or of any other instance tab (TabListRow): the thing's own picture when
- * it has one, otherwise its kind's glyph, on the neutral tile Home and the
- * library give an instance icon (PlaceholderSurface). A logo (a mod's, a
- * server's favicon) sits inside the tile, filling most of it; a picture of
- * a place (a world's icon.png) fills it edge to edge.
+ * it has one, otherwise its kind's glyph. No tile of its own: the picture
+ * sits on the row, as an instance's icon does (InstanceTile) -- a tile in a
+ * row card was a box in a box. A logo (a mod's, a server's favicon) fills
+ * most of the square; a picture of a place (a world's icon.png) fills it
+ * edge to edge, its corners rounded in `matte`.
  */
 Item {
     id: root
@@ -29,10 +30,6 @@ Item {
     implicitWidth: Theme.control.heightLg
     implicitHeight: Theme.control.heightLg
 
-    PlaceholderSurface {
-        anchors.fill: parent
-        radius: Theme.radius.md
-    }
     Image {
         id: picture
         anchors.fill: parent
@@ -59,6 +56,5 @@ Item {
         visible: root.fill && root.hasPicture
         cornerRadius: Theme.radius.md
         matte: root.matte
-        outline: Theme.palette.border
     }
 }

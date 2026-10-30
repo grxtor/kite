@@ -20,6 +20,9 @@ Column {
 
     // QmlShell.news (NewsModel): Kite's news, newest first, or null.
     property var news: null
+    // Cards with no fill or hairline at rest, for a host that is already a
+    // panel (Sade's and Gece's side panels); hover still lifts one.
+    property bool flat: false
 
     readonly property int maxEntries: 3
     // Older than this, a post is history rather than news.
@@ -116,8 +119,9 @@ Column {
                 id: cardFill
                 radius: Theme.radius.lg
                 color: card.down ? Theme.palette.surfaceRaised
-                     : card.hovered ? Theme.palette.surfaceHover : Theme.palette.surface
-                border.width: card.visualFocus ? Theme.focus.width : 1
+                     : card.hovered ? Theme.palette.surfaceHover
+                     : root.flat ? "transparent" : Theme.palette.surface
+                border.width: card.visualFocus ? Theme.focus.width : root.flat ? 0 : 1
                 border.color: card.visualFocus ? Theme.palette.focusRing
                             : card.hovered ? Theme.neutral.borderHover : Theme.palette.border
                 Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }

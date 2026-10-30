@@ -205,6 +205,10 @@ class QmlShell : public QObject
 	 * QML caches image://instanceicon/<key> by URL, so Icons.instanceIcon()
 	 * appends this as `?rev=`; see InstanceIconProvider.h. */
 	Q_PROPERTY(int iconRevision READ iconRevision NOTIFY iconRevisionChanged)
+	/* Instance id -> the built-in icon that instance was given while its
+	 * own is the generic one (icons/AutoIcons.h), kept in the UiAutoIcons
+	 * setting so nobody's icon moves; QML's Icons.displayKey() reads it. */
+	Q_PROPERTY(QVariantMap autoIcons READ autoIcons NOTIFY autoIconsChanged)
 
 	/* Onboarding: the widget SetupWizard (LanguageWizardPage/JavaWizardPage)
 	 * used to run before the main window -- including under the QML shell,
@@ -597,6 +601,7 @@ class QmlShell : public QObject
 
 	QStringList setupSteps() const;
 	int iconRevision() const { return m_iconRevision; }
+	QVariantMap autoIcons() const { return m_autoIcons; }
 	/* Recomputes setupSteps() from live settings, exactly like
 	 * Application::createSetupWizard() did once at startup for the widget
 	 * wizard -- called once from the constructor, and again whenever QML
@@ -674,6 +679,8 @@ class QmlShell : public QObject
 	void iconImported(const QString& key);
 	/// iconRevision() moved.
 	void iconRevisionChanged();
+	/// autoIcons() moved.
+	void autoIconsChanged();
 
 	/// setupSteps() moved.
 	void setupStepsChanged();
@@ -756,6 +763,11 @@ class QmlShell : public QObject
 	 * changed icon), so every bound Image reloads once. */
 	int m_iconRevision = 0;
 	bool m_iconRevisionPending = false;
+	/* autoIcons(). Recomputed once per event-loop turn after the instance
+	 * list gains or loses rows or an icon key changes. */
+	void refreshAutoIcons();
+	QVariantMap m_autoIcons;
+	bool m_autoIconsPending = false;
 	bool m_javaDetecting = false;
 
 	/* requestImport() sources that arrived before load() loaded the root

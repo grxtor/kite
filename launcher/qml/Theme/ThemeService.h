@@ -50,12 +50,17 @@ class ThemeService : public QObject
 	Q_PROPERTY(QString mode READ mode WRITE setMode NOTIFY changed)
 	/* "amethyst", "ember", "diamond" or "grass" -- see ThemePalette::Scheme. */
 	Q_PROPERTY(QString scheme READ scheme WRITE setScheme NOTIFY changed)
+	/* The launcher's look (the "UiLook" setting): "stage" (Sahne), "calm"
+	 * (Sade) or "night" (Gece), each with its own dark palette and Home
+	 * layout; or "classic", which follows `scheme` and `mode`. */
+	Q_PROPERTY(QString look READ look WRITE setLook NOTIFY changed)
 
   public:
 	explicit ThemeService(QObject* parent = nullptr);
 
 	ThemePalette palette() const;
-	bool dark() const { return m_dark; }
+	// A look other than "classic" is always dark.
+	bool dark() const { return m_dark || m_look != QStringLiteral("classic"); }
 	QString mode() const { return m_mode; }
 
 	/* Accepts "system", "dark" or "light"; anything else is rejected with a
@@ -69,6 +74,10 @@ class ThemeService : public QObject
 	/* @p scheme's palette in the current mode, for a picker that shows
 	 * every scheme side by side without switching to it. */
 	Q_INVOKABLE ThemePalette previewPalette(const QString& scheme) const;
+
+	QString look() const { return m_look; }
+	/* Unknown names are rejected with a warning, like setMode(). */
+	void setLook(const QString& look);
 
   signals:
 	void changed();
@@ -88,4 +97,7 @@ class ThemeService : public QObject
 	// applies the persisted "UiPalette" setting (or for a consumer that never
 	// does, e.g. a unit test constructing ThemeService directly).
 	ThemePalette::Scheme m_scheme = ThemePalette::Scheme::Amethyst;
+	// "classic" until Main.qml applies the persisted "UiLook" setting, so a
+	// consumer that never does (a unit test) keeps the scheme's palette.
+	QString m_look = QStringLiteral("classic");
 };

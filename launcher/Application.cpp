@@ -904,6 +904,12 @@ void Application::initSettings()
 	m_settings->registerSetting("UiThemeMode", QString("dark"));
 	// Colour scheme of the QML interface: amethyst, ember or diamond.
 	m_settings->registerSetting("UiPalette", QString("amethyst"));
+	// The QML interface's look: stage (Sahne), calm (Sade), night (Gece),
+	// or classic, which keeps UiPalette and UiThemeMode.
+	m_settings->registerSetting("UiLook", QString("stage"));
+	// The built-in icon each instance without one of its own was given for
+	// those looks (icons/AutoIcons.h), as a JSON object of id -> icon key.
+	m_settings->registerSetting("UiAutoIcons", QString());
 	// The QML interface's font (Settings > Appearance).
 	m_settings->registerSetting("UiFontFamily", QString("Inter"));
 	m_settings->registerSetting("UiSidebarCollapsed", true);

@@ -14,6 +14,11 @@ import Kite.Theme
  * beside the page, scrolling on its own and set off by a hairline; the page
  * decides whether there is room for it, and hides it when it has nothing to
  * show (`hasContent`).
+ *
+ * Sade pads it more generously, with the hairline kept and its headings as
+ * small labels; Gece drops the hairline and makes the whole panel one glass
+ * pane over the night sky, as tall as its content (`naturalHeight`) -- the
+ * page places it.
  */
 Item {
     id: root
@@ -46,6 +51,14 @@ Item {
     signal worldRequested(string instanceId)
 
     readonly property int maxWorlds: 4
+    // The night sky's pane; Sade and the classic look have a hairline.
+    readonly property bool glass: Theme.look === "night"
+    readonly property int padding: Theme.look === "calm" ? Theme.space.xl + Theme.space.xs
+                                 : root.glass ? Theme.space.lg + Theme.space.xs : Theme.space.lg
+    readonly property int topPadding: Theme.look === "calm" ? Theme.space.xxl + Theme.space.xs - 2
+                                    : root.glass ? Theme.space.lg + Theme.space.xs : Theme.space.xl
+    // What the panel needs to show everything without scrolling.
+    readonly property real naturalHeight: column.y + column.height + root.topPadding
     readonly property bool hasWorlds: worldsRepeater.count > 0
 
     // Whether the friends show here: not while the right-edge panel has
@@ -67,14 +80,20 @@ Item {
         anchors.bottom: parent.bottom
         width: 1
         color: Theme.palette.divider
+        visible: !root.glass
+    }
+    HomeGlass {
+        anchors.fill: parent
+        visible: root.glass
+        radius: Theme.radius.xl
     }
 
     Flickable {
         id: flick
         anchors.fill: parent
-        anchors.leftMargin: 1
+        anchors.leftMargin: root.glass ? 0 : 1
         contentWidth: width
-        contentHeight: column.y + column.height + Theme.space.xl
+        contentHeight: column.y + column.height + root.topPadding
         boundsBehavior: Flickable.StopAtBounds
         clip: true
 
@@ -82,12 +101,14 @@ Item {
 
         Column {
             id: column
-            x: Theme.space.lg
-            y: Theme.space.xl
-            width: flick.width - Theme.space.lg * 2
+            x: root.padding
+            y: root.topPadding
+            width: flick.width - root.padding * 2
             spacing: Theme.space.xl
 
             GettingStartedCard {
+                // Sade's and Gece's panels are the surface; no card in them.
+                flat: Theme.look === "calm" || root.glass
                 id: gettingStarted
                 width: parent.width
                 visible: gettingStarted.shown
@@ -113,6 +134,7 @@ Item {
             }
 
             HomeNews {
+                flat: Theme.look === "calm" || root.glass
                 id: newsList
                 width: parent.width
                 news: root.news
@@ -146,6 +168,7 @@ Item {
                             id: tile
                             x: -Theme.space.sm
                             width: column.width + Theme.space.sm * 2
+                            glass: root.glass
                             worldName: model.worldName
                             folderName: model.folderName
                             iconUrl: model.iconUrl

@@ -27,6 +27,10 @@ qt_add_qml_module(Kite_qml_components
         CoverArt.qml
         PlaceholderSurface.qml
         InstanceTile.qml
+        SkyBackdrop.qml
+        LookPicker.qml
+        LookMiniature.qml
+        PickerTile.qml
         KiteNose.qml
         InstanceCard.qml
         InstanceListRow.qml
@@ -229,6 +233,24 @@ qt_add_qml_module(Kite_qml_components
         HomeHeroTile.qml
         HomeHeroTitle.qml
         HomeContinuePlaying.qml
+        HomeLabel.qml
+        HomeGlass.qml
+        HomeGlassButton.qml
+        HomeHeroActions.qml
+        HomeHeroLead.qml
+        HomeHeroCard.qml
+        HomeStageHero.qml
+        HomeStageWorlds.qml
+        HomeCalmHero.qml
+        HomeNightHero.qml
+        HomeRowBase.qml
+        HomeRowTile.qml
+        HomeRowPlay.qml
+        HomeRowMeta.qml
+        HomeStageCard.qml
+        HomeCalmRow.qml
+        HomeNightRow.qml
+        HomeStageSections.qml
         HomePanelHeading.qml
         QuietPlayButton.qml
         HomeWorldTile.qml
