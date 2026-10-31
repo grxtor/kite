@@ -105,9 +105,9 @@ namespace
 		return ProbedJava{JavaVersion(version), arch};
 	}
 
-	// Whether a JVM that reports os.arch @p arch runs natively for the
-	// architecture Kite was built for, the one its Java downloads are for
-	// too. On an Apple Silicon Mac an x86_64 Java only runs under Rosetta.
+	// Whether a JVM reporting os.arch @p arch runs natively for the
+	// architecture Kite was built for (an x86_64 Java on Apple Silicon only
+	// runs under Rosetta).
 	bool runsNatively(const QString& arch)
 	{
 		return RuntimeContext::normalizeArchitecture(arch) ==
@@ -115,9 +115,8 @@ namespace
 				   QSysInfo::buildCpuArchitecture());
 	}
 
-	// Whether @p javaBinary sits in a Java installation (<home>/bin/java,
-	// with the "release" file every JDK and JRE has in <home>) rather than
-	// being a stub or a link elsewhere.
+	// Whether @p javaBinary sits in a Java installation (<home>/bin/java with a
+	// "release" file in <home>), not a stub or a link elsewhere.
 	bool isJavaInstallation(const QString& javaBinary)
 	{
 		return QFileInfo(QDir(QFileInfo(javaBinary).absolutePath())
@@ -163,15 +162,12 @@ VerifyJavaInstall::findInstalledJava(int requiredMajor,
 	JavaUtils javaUtils;
 	QList<QString> systemJavas = javaUtils.FindJavaPaths();
 	QSet<QString> seenPaths;
-	// The closest major at or above the requirement, not the first one
-	// found: with Java 17 and 25 installed, 1.20.4 gets 17. Between two of
-	// the same major, one that runs natively comes first, but not before a
-	// closer major: a mod loader may not start on a newer Java than its
-	// version was made for, while emulation only makes it slower. (With
-	// @p preferNative off, only Javas that run under emulation count.) Then one
-	// inside a Java installation comes before a stub like macOS's
-	// /usr/bin/java, which runs whichever Java is newest and so can change
-	// under the version recorded for it.
+	// The closest major at or above the requirement (Java 17 and 25 installed:
+	// 1.20.4 gets 17). Within a major a native Java comes first, but never
+	// before a closer major: a loader may not start on a newer Java, while
+	// emulation only slows it. (With @p preferNative off only emulated Javas
+	// count.) Then one inside an installation beats a stub like macOS's
+	// /usr/bin/java, which runs whichever Java is newest.
 	InstalledJava best;
 	std::tuple<int, bool, bool> bestRank; // lower is better
 	for (const QString& javaPath : systemJavas) {
@@ -186,7 +182,7 @@ VerifyJavaInstall::findInstalledJava(int requiredMajor,
 		const int major = probed->version.major();
 		const bool native = runsNatively(probed->arch);
 		// A version with no natives for this architecture cannot run on a
-		// native Java at all.
+		// native Java.
 		if (native && !preferNative)
 			continue;
 		const auto rank = std::make_tuple(major, native != preferNative,
@@ -239,9 +235,9 @@ void VerifyJavaInstall::executeTask()
 
 	auto javaVersion = m_inst->getJavaVersion();
 	int requiredMajor = determineRequiredJavaMajor();
-	// CheckJava lets a launch through with no usable Java when none is set
-	// up (the welcome screen's "let Kite download the right version"), so a
-	// recorded version alone does not mean there is a Java to run.
+	// CheckJava lets a launch through with no usable Java (welcome screen's
+	// "let Kite download the right version"), so a recorded version is no proof
+	// of one.
 	const bool javaPathResolves =
 		!QStandardPaths::findExecutable(
 			 FS::ResolveExecutable(
@@ -274,12 +270,10 @@ void VerifyJavaInstall::executeTask()
 
 	const bool preferNative = nativeJavaCanRun();
 	const auto existingJava = findInstalledJava(requiredMajor, preferNative);
-	// With no Java set up, each version gets the major it asks for, the way
-	// the official launcher does it, and that major is downloaded when it is
-	// not installed. A newer one is not enough for old versions: the
-	// LaunchWrapper of Forge up to 1.12.2 does not run on Java 9 and later.
-	// Nor is one that runs under emulation when a native one can be had --
-	// or a native one when the version has no natives for it.
+	// With no Java set up, each version gets the major it asks for, downloaded
+	// if missing. A newer one is not enough for old versions (Forge's
+	// LaunchWrapper up to 1.12.2 fails on Java 9+), nor an emulated one when a
+	// native exists, nor a native one when the version has no natives for it.
 	// An installed one is still used if no download works out.
 	if (!existingJava.path.isEmpty() &&
 		(javaPathResolves || (existingJava.major == requiredMajor &&
@@ -293,8 +287,8 @@ void VerifyJavaInstall::executeTask()
 	}
 	m_fallbackJava = existingJava;
 
-	// Kite downloads Java for its own architecture, which this version has
-	// no natives for.
+	// Kite downloads Java for its own architecture, which this version has no
+	// natives for.
 	if (!preferNative) {
 		failOrUseFallback(
 			tr("This version has no native libraries for %1. Install an "
@@ -536,11 +530,10 @@ void VerifyJavaInstall::setJavaPathAndSucceed(const QString& javaPath)
 	emit logLine(tr("Java path set to: %1").arg(javaPath),
 				 MessageLevel::Kite);
 
-	// What CheckJava records for a Java it checks, recorded for this one
-	// too: the native libraries and the classpath follow the architecture,
-	// and the JVM arguments follow the version (an unknown one adds
-	// -XX:PermSize, which modern Java refuses to start with). Without this
-	// they would still describe the Java used before, or none at all.
+	// Record what CheckJava records for a checked Java: natives and classpath
+	// follow the architecture, JVM arguments the version (an unknown one adds
+	// -XX:PermSize, which modern Java refuses). Otherwise they describe the old
+	// Java.
 	m_javaChecker = new JavaChecker();
 	m_javaChecker->m_path = javaPath;
 	connect(m_javaChecker.get(), &JavaChecker::checkFinished, this,

@@ -35,8 +35,7 @@ namespace
 {
 	constexpr int kHttpOk = 200;
 	constexpr int kHttpNotFound = 404;
-	/* Answers come off a zero-length timer, so a resolution is over in a
-	 * few event-loop turns; this is only the ceiling for a loaded machine. */
+	/* Answers come off a zero-length timer; this is only the ceiling for a loaded machine. */
 	constexpr int kResolveTimeoutMs = 10000;
 
 	/* What a CannedNetwork says to a request whose URL contains `urlHas`,
@@ -97,9 +96,8 @@ namespace
 		qint64 m_read = 0;
 	};
 
-	/* A network that never leaves the machine: it answers from a table, in
-	 * the order the table was filled, and says 404 to anything else. It
-	 * keeps the URLs it was asked for. */
+	/* A network that never leaves the machine: it answers from a table in fill
+	 * order, 404 to anything else, and keeps the URLs it was asked for. */
 	class CannedNetwork : public QNetworkAccessManager
 	{
 	  public:
@@ -260,14 +258,11 @@ namespace
 } // namespace
 
 /*
- * The review before an install, fed through applyResolution() - the seam
- * the dependency resolver's answer goes through - so no provider is ever
- * asked anything. install() itself downloads, and is only checked for
- * refusing to run before the review is ready.
- *
- * The mod health check's wanted projects do go through the resolver, over a
- * CannedNetwork that answers from a table: the lookups, their fall-through
- * to CurseForge and what comes out are what is checked there.
+ * The review before an install, fed through applyResolution() (the seam the
+ * resolver's answer goes through), so no provider is asked anything; install()
+ * is only checked for refusing to run before the review is ready. The health
+ * check's wanted projects do go through the resolver, over a CannedNetwork:
+ * lookups, fall-through to CurseForge and the outcome are checked there.
  */
 class ContentInstallReviewTest : public QObject
 {
@@ -651,9 +646,7 @@ class ContentInstallReviewTest : public QObject
 		QTest::addColumn<int>("wantedDelayMs");
 		QTest::addColumn<int>("projectDelayMs");
 
-		/* The two answers can arrive in either order, or the wanted one in
-		 * between the other chain claiming the project and recording it;
-		 * the outcome is the same. */
+		/* The two answers can arrive in either order; the outcome is the same. */
 		QTest::newRow("the wanted lookup answers first") << 0 << 0;
 		QTest::newRow("the mod's own chain answers first") << 80 << 0;
 		QTest::newRow("noted while the project is still on its way") << 30 << 120;

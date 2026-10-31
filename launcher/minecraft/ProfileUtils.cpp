@@ -87,7 +87,6 @@ namespace ProfileUtils
 	{
 		auto outError = std::make_shared<VersionFile>();
 		outError->uid = outError->name = fileId;
-		// outError->filename = filepath;
 		outError->addProblem(ProblemSeverity::Error, error);
 		return outError;
 	}

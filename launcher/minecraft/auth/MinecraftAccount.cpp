@@ -58,8 +58,8 @@ QString MinecraftAccount::gameUuid() const
 
 QString MinecraftAccount::uuidFromUsername(const QString& username)
 {
-	/* UUID.nameUUIDFromBytes(): the MD5 of the name, with the version
-	 * nibble set to 3 and the variant bits to IETF. */
+	// UUID.nameUUIDFromBytes(): the MD5 of the name, version nibble 3, IETF
+	// variant.
 	constexpr int kVersionByte = 6;
 	constexpr int kVariantByte = 8;
 	QByteArray digest = QCryptographicHash::hash(
@@ -229,8 +229,7 @@ bool MinecraftAccount::shouldFetchGameFiles(
 
 QNetworkInformation::Reachability MinecraftAccount::networkReachability()
 {
-	// Loaded once; where the platform has no backend there is no answer, and
-	// "unknown" is treated as "try".
+	// Loaded once; with no backend the answer is "unknown", treated as "try".
 	static const bool loaded = QNetworkInformation::loadDefaultBackend();
 	if (!loaded || !QNetworkInformation::instance()) {
 		return QNetworkInformation::Reachability::Unknown;
@@ -242,11 +241,10 @@ void MinecraftAccount::fillSession(AuthSessionPtr session)
 {
 	if (data.type == AccountType::Offline) {
 		session->status = AuthSession::PlayableOffline;
-		/* No sign-in, so never "online" -- but the game still has to come
-		 * from somewhere. Offline here means "no login", not "no network":
-		 * only an explicit offline launch (wants_online was cleared by
-		 * LaunchController: Play offline, or skipping the account refresh)
-		 * or a missing network keeps the update offline. */
+		// No sign-in, so never "online", but the game still has to come from
+		// somewhere: offline here means "no login", not "no network". Only an
+		// explicit offline launch (wants_online cleared by LaunchController) or
+		// a missing network keeps the update offline.
 		session->fetch_game_files =
 			shouldFetchGameFiles(session->wants_online, networkReachability());
 		session->wants_online = false;

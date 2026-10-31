@@ -7,9 +7,8 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * A row of cat pictures to choose from (Settings > Appearance): every pack
- * CatPackList finds, shown as a small picture with its name under it, the
- * chosen one outlined. The choice is the BackgroundCat setting.
+ * A row of cat pictures to choose from (Settings > Appearance): every pack CatPackList finds, with its name under it,
+ * the chosen one outlined. The choice is the BackgroundCat setting.
  */
 Flow {
     id: root
@@ -17,8 +16,7 @@ Flow {
     property var source: SettingsStore
     property string key: "BackgroundCat"
     readonly property var packs: LauncherStore.catPacks ? LauncherStore.catPacks.packs : []
-    // The pack in use; with none chosen yet (or a pack that is gone) the
-    // first one, which is what the cat shows too.
+    // The pack in use; with none chosen yet, or a pack that is gone, the first one (what the cat shows too).
     readonly property string current: {
         var chosen = root.source.string(root.key)
         for (var i = 0; i < root.packs.length; ++i)

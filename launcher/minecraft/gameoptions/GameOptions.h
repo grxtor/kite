@@ -33,8 +33,8 @@ class GameOptions : public QAbstractListModel
 {
 	Q_OBJECT
   public:
-	/* Named roles, so a QML ListView (which only ever sees column 0) can
-	 * still get at what the widget view shows as column 1. */
+	// Named roles, so a QML ListView (column 0 only) can reach what the widget
+	// view shows as column 1.
 	enum ModelRoles {
 		KeyRole = Qt::UserRole,
 		ValueRole
@@ -55,17 +55,15 @@ class GameOptions : public QAbstractListModel
 	bool reload();
 	bool save();
 
-	/* Sets one option and writes options.txt straight back. The file is
-	 * re-read first, so whatever the game wrote since it was loaded is
-	 * kept: every other line, unknown keys included, stays as it is and
-	 * where it is, and only this key's value changes (a key the file lacks
-	 * is appended). The model then shows the file as written.
-	 *
-	 * Refused -- false, nothing written -- for a key or value that cannot
-	 * be one options.txt line, for "version" (that line is the game's),
-	 * and when there is no options.txt yet: the game writes the whole file
-	 * on first launch, and a partial one with no version would be run
-	 * through the game's data fixers as if it were ancient. */
+	// Sets one option and writes options.txt straight back. The file is re-read
+	// first so whatever the game wrote since is kept: every other line, unknown
+	// keys included, stays where it is, and only this key's value changes (a
+	// missing key is appended). The model then shows the file as written.
+	//
+	// Refused (false, nothing written) for a key or value that cannot be one
+	// options.txt line, for "version" (the game's line), and when there is no
+	// options.txt yet: the game writes the whole file on first launch, and a
+	// partial one with no version would go through the data fixers as ancient.
 	Q_INVOKABLE bool setValue(const QString& key, const QString& value);
 
   private:

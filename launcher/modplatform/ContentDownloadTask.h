@@ -39,26 +39,20 @@ class ContentDownloadTask : public Task
 								 const QString& targetDir,
 								 QObject* parent = nullptr);
 
-	/* When provided, the downloader writes a provenance sidecar for every
-	 * file it places on disk and removes the sidecar for any file it
-	 * supersedes (`DownloadItem::replacesFileName`). The pointer is held
-	 * by shared ownership so callers can hand off the model-owned index
-	 * without lifetime concerns. */
+	/* When set, a provenance sidecar is written for every file placed on disk
+	 * and removed for any file superseded (`DownloadItem::replacesFileName`). */
 	void setMetadataIndex(std::shared_ptr<ModMetadataIndex> index);
 
-	/* The progress dialog carries a Skip button, so this has to be able
-	 * to give up part way through. What is already on disk stays there:
-	 * the folder model rescans afterwards either way. */
+	/* The progress dialog has a Skip button. What is already on disk stays;
+	 * the folder model rescans anyway. */
 	bool canAbort() const override
 	{
 		return true;
 	}
 
-	/* Whether this stopped because the user said so, as opposed to a
-	 * transfer going wrong. Task itself does not tell the two apart -
-	 * emitAborted() sets the fail reason to "Aborted." - and the caller
-	 * has to, since there is nothing to complain about when the answer
-	 * is yes. */
+	/* Whether the user stopped it, as opposed to a transfer going wrong:
+	 * emitAborted() sets the reason to "Aborted.", so the caller tells them
+	 * apart. */
 	bool wasAborted() const
 	{
 		return m_aborted;
@@ -83,8 +77,7 @@ class ContentDownloadTask : public Task
 	NetJob::Ptr m_netJob;
 	std::shared_ptr<ModMetadataIndex> m_metadata;
 
-	/* Latched by abort(). Aborting the job makes it report failed() as
-	 * it unwinds, and that must not turn into a second verdict on top of
-	 * the aborted one. */
+	/* Latched by abort(): the job reports failed() as it unwinds, which must
+	 * not be a second verdict. */
 	bool m_aborted = false;
 };

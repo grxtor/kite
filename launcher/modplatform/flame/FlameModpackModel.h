@@ -32,28 +32,14 @@
 
 class ModrinthModpackDetail;
 
-/* CurseForge *modpack* search results for QML - the widget-free
- * replacement for ui/pages/modplatform/flame/FlameModel.h
- * (Flame::ListModel), which backs FlamePage.
+/* CurseForge modpack search results for QML. Same shape as
+ * ModrinthModpackModel, so the Discover page works on either. `detail` is
+ * a ModrinthModpackDetail whose `body` here is HTML (see `bodyFormat`).
  *
- * Deliberately the same shape as ModrinthModpackModel - the same
- * properties, the same invokables and the same role names - so the
- * Discover page and its ModpackCard/ModpackDetail work on either through
- * one set of bindings: a provider switch only swaps which model they look
- * at. `detail` is a ModrinthModpackDetail, which despite its name is a
- * plain holder for one pack's title, body, versions and gallery; its
- * `body` here is CurseForge's HTML rather than Modrinth's Markdown (see
- * `bodyFormat`).
- *
- * CurseForge needs an API key (BuildConfig.CURSEFORGE_API_KEY); without
- * one every request is refused, so search() says so in `error` instead of
- * asking, and `keyMissing` lets the page explain it up front.
- *
- * Logos are plain CDN URLs for QML's Image to fetch; nothing here caches
- * a QIcon. install() names the new instance's icon from the launcher's
- * disk cache when the widget page has already fetched the logo there,
- * the built-in CurseForge icon otherwise.
- */
+ * Without an API key (BuildConfig.CURSEFORGE_API_KEY) every request is
+ * refused: search() says so in `error` and `keyMissing` lets the page
+ * explain it. Logos are CDN URLs for QML's Image; install() names the new
+ * instance's icon from the disk cache if present, else the built-in one. */
 class FlameModpackModel : public QAbstractListModel
 {
 	Q_OBJECT
@@ -62,8 +48,7 @@ class FlameModpackModel : public QAbstractListModel
 	Q_PROPERTY(QVariantList sortOptions READ sortOptions CONSTANT)
 	Q_PROPERTY(QString gameVersion READ gameVersion WRITE setGameVersion
 				   NOTIFY gameVersionChanged)
-	/* "" = any loader; otherwise one of "fabric"/"forge"/"neoforge"/
-	 * "quilt". */
+	/* "" = any loader; otherwise "fabric"/"forge"/"neoforge"/"quilt". */
 	Q_PROPERTY(
 		QString loader READ loader WRITE setLoader NOTIFY loaderChanged)
 	Q_PROPERTY(bool searching READ searching NOTIFY searchingChanged)
@@ -72,16 +57,13 @@ class FlameModpackModel : public QAbstractListModel
 	Q_PROPERTY(int count READ count NOTIFY countChanged)
 	Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 	Q_PROPERTY(QObject* detail READ detail CONSTANT)
-	/// "CurseForge", for copy that names the provider.
 	Q_PROPERTY(QString providerName READ providerName CONSTANT)
-	/// "html": `detail.body` is HTML (ModrinthModpackModel's is Markdown).
 	Q_PROPERTY(QString bodyFormat READ bodyFormat CONSTANT)
 	/// This build has no CurseForge API key, so nothing can be searched.
 	Q_PROPERTY(bool keyMissing READ keyMissing CONSTANT)
 
   public:
-	/* The same role names ModrinthModpackModel has, so one delegate
-	 * reads either. */
+	/* Same role names as ModrinthModpackModel, so one delegate reads both. */
 	enum Roles {
 		ProjectIdRole = Qt::UserRole + 1,
 		SlugRole,
@@ -100,9 +82,8 @@ class FlameModpackModel : public QAbstractListModel
 	};
 	Q_ENUM(Roles)
 
-	/* One search hit: what Flame::loadIndexedPack() reads (and its check
-	 * that the pack has a usable file), plus what a card shows that the
-	 * widget list never needed. */
+	/* One search hit: what Flame::loadIndexedPack() reads, plus what a card
+	 * shows. */
 	struct Pack {
 		Flame::IndexedPack base;
 		QString slug;
@@ -110,11 +91,9 @@ class FlameModpackModel : public QAbstractListModel
 		int thumbsUp = 0;
 		QString dateModified;
 		QStringList categories;
-		/* Minecraft versions of its latest files, newest first. */
 		QStringList gameVersions;
-		/* Screenshot URLs, as the gallery shows them. */
 		QStringList screenshots;
-		/* The file CurseForge features: featured in the version box. */
+		/* The file CurseForge features; featured in the version box. */
 		int mainFileId = 0;
 	};
 
@@ -126,8 +105,6 @@ class FlameModpackModel : public QAbstractListModel
 				 int role = Qt::DisplayRole) const override;
 	QHash<int, QByteArray> roleNames() const override;
 
-	/* See ModrinthModpackModel: QML-facing overloads sharing a name with
-	 * QAbstractItemModel virtuals of another arity. */
 	using QAbstractItemModel::canFetchMore;
 	using QAbstractItemModel::fetchMore;
 	using QAbstractItemModel::sort;
@@ -180,49 +157,39 @@ class FlameModpackModel : public QAbstractListModel
 	}
 	bool keyMissing() const;
 
-	/// Starts a fresh search; cancels one already in flight.
 	Q_INVOKABLE void search();
-	/// The next page of the current search, when there is one.
 	Q_INVOKABLE void fetchMore();
-	/// Fetches the file list and long description of one pack into
-	/// `detail`; a newer call drops a stale reply.
+	/// Fetches the file list and long description into `detail`; a stale
+	/// reply is dropped.
 	Q_INVOKABLE void loadDetail(const QString& projectId);
-	/* The InstanceImportTask FlamePage::suggestCurrent() builds for a
-	 * pack picked in the widget browser, started, with a TaskWatcher for
-	 * it (parented to this model). `versionId` must be one of the ids in
-	 * `detail.versions` for `projectId`; nullptr otherwise. Files the
-	 * author keeps off third-party downloads are asked about through the
-	 * UiHost (its blockedMods question) as the import runs. */
+	/* Builds and starts the InstanceImportTask for a pack and returns a
+	 * TaskWatcher for it (parented to this model). `versionId` must be in
+	 * `detail.versions` for `projectId`; nullptr otherwise. Files blocked
+	 * from third-party downloads are asked about through the UiHost. */
 	Q_INVOKABLE QObject* install(const QString& projectId,
 								 const QString& versionId,
 								 const QString& instanceName,
 								 const QString& group);
 
-	/* The search URL: FlameApi::modpackSearchUrl() plus the game version
-	 * and loader the Discover page filters by. Static, so it can be
-	 * tested without the network. */
+	/* FlameApi::modpackSearchUrl() plus the Discover page's game version and
+	 * loader. Static, for tests. */
 	static QUrl searchUrl(const QString& term, int sortIndex, int offset,
 						  const QString& gameVersion, const QString& loader);
-	/* JSON -> rows; `totalCount` gets CurseForge's pagination total, or
-	 * -1 when the reply does not say. Static, for tests. */
+	/* JSON -> rows; `totalCount` gets the pagination total, or -1. Static,
+	 * for tests. */
 	static QList<Pack> parseSearchResults(const QByteArray& bytes,
 										  int& totalCount);
-	/* JSON -> the `versions` of the detail, newest first, in the shape
-	 * ModrinthModpackModel::parseVersionsJson() gives (id, name,
-	 * versionNumber, gameVersions, loaders, datePublished, downloadUrl,
-	 * featured). A file with no API download URL gets its browser
-	 * download address instead, as FlamePage did. Static, for tests. */
+	/* JSON -> the detail's `versions`, newest first, in the shape of
+	 * ModrinthModpackModel::parseVersionsJson(). A file with no API download
+	 * URL gets its browser download address. Static, for tests. */
 	static QVariantList parseVersionsJson(const QByteArray& bytes,
 										  const QString& projectId,
 										  int mainFileId);
-	/* The description endpoint's reply -> its HTML, made safe to show
-	 * as rich text (sanitizeBody()). */
+	/* The description reply -> HTML safe for rich text (sanitizeBody()). */
 	static QString parseBody(const QByteArray& bytes);
-	/* @p html without what a rich-text view cannot show and should not
-	 * fetch: embedded players and frames, scripts and styles, and links
-	 * left with nothing in them. Pictures stay -- CurseForge descriptions
-	 * are mostly pictures -- and RichBody lays them out; a video embed
-	 * would only be fetched as a broken image. */
+	/* @p html without what a rich-text view cannot show or should not fetch:
+	 * embedded players and frames, scripts, styles and empty links. Pictures
+	 * stay. */
 	static QString sanitizeBody(const QString& html);
 
   signals:

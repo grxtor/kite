@@ -25,26 +25,21 @@
 #include <QString>
 
 /*
- * On-disk cache of the logos installed mods and packs declare for
- * themselves (fabric.mod.json "icon", mods.toml "logoFile", pack.png, ...),
- * so a mod list can show them without reopening every jar each time it is
- * drawn.
+ * On-disk cache of the logos mods and packs declare (fabric.mod.json "icon",
+ * mods.toml "logoFile", pack.png, ...), so a mod list need not reopen every jar
+ * each time it draws.
  *
- * KEY. One key per file *version*: the SHA-1 of the file's absolute path
- * (with a trailing ".disabled" dropped, so toggling a mod off and on reuses
- * the same entry) plus its modification time. A jar replaced by a newer
- * build therefore gets a new key -- a cache miss, never a stale logo -- and
- * no invalidation logic is needed. The key is plain lowercase hex, which is
- * also what makes it safe to put in an image:// URL and to turn back into a
- * path: isValidKey() rejects anything else, so a key can never point
- * outside directory().
+ * KEY. One key per file version: the SHA-1 of the file's absolute path (a
+ * trailing ".disabled" dropped, so toggling reuses the entry) plus its
+ * modification time. A replaced jar gets a new key, never a stale logo. The key
+ * is lowercase hex, safe in an image:// URL; isValidKey() rejects anything else
+ * so a key can never point outside directory().
  *
  * WRITES. store() runs on LocalModParseTask's worker thread. It decodes the
  * logo, shrinks anything larger than kMaxExtent (keeping the aspect ratio;
- * smaller pixel-art logos are kept as they are, for the provider to scale),
- * and saves it as PNG through QSaveFile, so a reader never sees a half
- * written file. Entries for files that no longer exist are not pruned; each
- * is a few KiB.
+ * smaller pixel art is kept) and saves PNG through QSaveFile, so a reader never
+ * sees a half-written file. Entries for files that no longer exist are not
+ * pruned; each is a few KiB.
  */
 namespace ModIconCache
 {
@@ -54,9 +49,9 @@ namespace ModIconCache
 	/// Encoded logos above this are ignored rather than decoded.
 	constexpr qint64 kMaxEncodedBytes = 4 * 1024 * 1024;
 
-	/// "<data dir>/cache/LocalModIcons", next to the launcher's other
-	/// caches. Resolved against the current directory, which the launcher
-	/// sets to its data directory at startup -- call it after that.
+	/// "<data dir>/cache/LocalModIcons". Resolved against the current
+	/// directory, which the launcher sets to its data directory at startup:
+	/// call it after that.
 	QString directory();
 
 	QString keyFor(const QFileInfo& file);

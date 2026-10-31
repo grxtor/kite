@@ -41,8 +41,7 @@ QString makePng(const QString& dir, const QString& name, const QSize& size)
 	return image.save(path, "PNG") ? path : QString();
 }
 
-// Mirrors the QML-side encoding this provider expects -- see the class
-// comment on ScreenshotThumbnailProvider for why encode/decode round-trip.
+// The QML-side encoding this provider expects.
 QString encodeAsId(const QString& path)
 {
 	return QString::fromUtf8(QUrl::toPercentEncoding(path));
@@ -51,9 +50,7 @@ QString encodeAsId(const QString& path)
 
 /*
  * Unit test for ScreenshotThumbnailProvider. Drives requestImageResponse()
- * directly rather than through a QQmlEngine -- QQuickAsyncImageProvider
- * needs nothing but a QGuiApplication to construct and run its worker, and
- * the response's finished() signal is exactly what QML itself waits on.
+ * directly, without a QQmlEngine; finished() is what QML waits on.
  */
 class ScreenshotThumbnailProviderTest : public QObject
 {
@@ -80,8 +77,8 @@ class ScreenshotThumbnailProviderTest : public QObject
 		std::unique_ptr<QQuickTextureFactory> factory(
 			response->textureFactory());
 		QVERIFY(factory != nullptr);
-		// 800x400 kept-aspect into a 200x200 box: width fills the box,
-		// height follows the 2:1 ratio -- never square-padded.
+		// 800x400 into a 200x200 box: width fills it, height follows the 2:1
+		// ratio, never square-padded.
 		QCOMPARE(factory->textureSize(), QSize(200, 100));
 	}
 
@@ -104,10 +101,8 @@ class ScreenshotThumbnailProviderTest : public QObject
 		QVERIFY(firstFactory != nullptr);
 		QCOMPARE(firstFactory->textureSize(), QSize(128, 128));
 
-		// Same path, same mtime, same requested box: a second request
-		// should still succeed (whether served from cache or decoded
-		// again is an implementation detail -- the observable contract is
-		// just that it returns the same, correct result).
+		// Same path, mtime and box: a second request must return the same
+		// result, cached or decoded again.
 		std::unique_ptr<QQuickImageResponse> second(
 			provider.requestImageResponse(encodeAsId(path), QSize(128, 128)));
 		QSignalSpy secondFinished(second.get(),
@@ -161,10 +156,8 @@ class ScreenshotThumbnailProviderTest : public QObject
 
 int main(int argc, char* argv[])
 {
-	// Same reasoning as InstanceIconProvider_test.cpp/
-	// AccountFaceProvider_test.cpp: QQuickTextureFactory needs a
-	// QGuiApplication, and forcing offscreen keeps this runnable on a
-	// headless runner.
+	// QQuickTextureFactory needs a QGuiApplication; offscreen keeps this
+	// runnable on a headless runner.
 	qputenv("QT_QPA_PLATFORM", "offscreen");
 
 	QGuiApplication app(argc, argv);

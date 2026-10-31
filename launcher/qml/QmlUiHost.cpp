@@ -57,12 +57,8 @@ namespace
 		return QStringLiteral("info");
 	}
 
-	/* Same guard QmlShell::expose() applies to everything it hands to
-	 * QML: without it, the engine would try to garbage-collect a QObject
-	 * that a C++ stack frame -- here, whichever UiHost call is still
-	 * running -- still owns. Kept local rather than reusing
-	 * QmlShell::expose() so this file does not need to know QmlShell
-	 * exists. */
+	// Keeps the engine from deleting a QObject that a running UiHost call
+	// still owns on the C++ stack.
 	QObject* exposeToQml(QObject* object)
 	{
 		if (object) {
@@ -71,9 +67,7 @@ namespace
 		return object;
 	}
 
-	/* Indeterminate and uncancellable, like WidgetUiHost's own
-	 * ProgressDialogBusy -- there is nothing here for the caller to
-	 * report progress on or to abort. */
+	// Indeterminate and uncancellable.
 	class BusyToken final : public UiHost::BusyIndicator
 	{
 	  public:
@@ -94,18 +88,13 @@ namespace
 	};
 } // namespace
 
-/* ---------------------------------------------------------------------- */
-/* QmlUiRequest                                                            */
-/* ---------------------------------------------------------------------- */
-
 QmlUiRequest::QmlUiRequest(Kind kind, QString title, QString text,
 						   QObject* parent)
 	: QObject(parent), m_kind(kind), m_title(std::move(title)),
 	  m_text(std::move(text))
 {
 	if (m_kind == Kind::UntrustedMods) {
-		/* Same friction UntrustedModsDialog applies with its checkbox --
-		 * see kConfirmDelayMs there. */
+		// Deliberate friction before the accept action.
 		m_confirmDelayMs = 3000;
 	}
 }
@@ -343,10 +332,7 @@ void QmlUiRequest::rescanDownloads()
 
 void QmlUiRequest::checkProfileName(const QString& name)
 {
-	/* Same shape ("[a-zA-Z0-9_]{3,16}") ProfileSetupDialog.cpp validates
-	 * the field with before ever asking the network -- checked here,
-	 * locally, so a name that can never be valid does not cost a round
-	 * trip. */
+	// Checked locally so a name that can never be valid costs no round trip.
 	static const QRegularExpression permittedName(
 		QStringLiteral("^[a-zA-Z0-9_]{3,16}$"));
 	if (!permittedName.match(name).hasMatch()) {
@@ -371,22 +357,15 @@ void QmlUiRequest::submitProfileName(const QString& name)
 	emit submitNameRequested(name);
 }
 
-/* ---------------------------------------------------------------------- */
-/* QmlUiHost                                                               */
-/* ---------------------------------------------------------------------- */
-
 QmlUiHost::QmlUiHost(QObject* parent) : QObject(parent)
 {
 }
 
 QmlUiHost::~QmlUiHost()
 {
-	/* Every request still on the stack belongs to a runRequest() call
-	 * further down the C++ call stack (see the class comment) -- still
-	 * perfectly valid objects, just not owned by this one. Rejecting each
-	 * lets those calls unwind instead of waiting forever for an answer
-	 * nobody can give once this object is gone; runRequest() notices this
-	 * object is gone (QPointer) when it resumes and skips touching it. */
+	// Each request belongs to a runRequest() call further down the stack.
+	// Rejecting it lets that call unwind instead of waiting forever;
+	// runRequest() notices this object is gone through its QPointer.
 	for (QmlUiRequest* request : std::as_const(m_stack)) {
 		request->reject();
 	}
@@ -432,9 +411,8 @@ void QmlUiHost::skipBusy()
 	if (m_busy.isEmpty() || !m_busy.last().onSkip) {
 		return;
 	}
-	/* A copy: the callback typically ends the wait that owns this busy
-	 * indication, which destroys it and removes its entry from m_busy
-	 * while the callback is still running. */
+	// A copy: the callback typically ends the wait that owns this busy
+	// indication, removing its m_busy entry while the callback still runs.
 	const auto onSkip = m_busy.last().onSkip;
 	onSkip();
 }
@@ -462,44 +440,30 @@ QmlUiHost::showBusy(const QString& text, const QString& skipLabel,
 
 void QmlUiHost::runRequest(QmlUiRequest& request)
 {
-	/* Diagnostic for exactly the failure PRESENTER READINESS (see the class
-	 * comment) guards against: a call reaching this object before anything
-	 * routes here only once ready, or a future bug in that gate, hangs
-	 * silently otherwise -- this line is what tells a log reader which
-	 * call it was. */
+	// Diagnostic: shows which call hung if one reaches here with no presenter.
 	qDebug() << "QmlUiHost: asking" << request.kind() << "-" << request.title();
 
 	QEventLoop loop;
-	/* Queued rather than the default direct connection: a QML binding
-	 * reacting to currentChanged() below could in principle answer the
-	 * request synchronously, before this function reaches loop.exec() --
-	 * a direct connection would call loop.quit() before there is a loop
-	 * to quit yet. Queuing means the call is delivered once the loop is
-	 * actually pumping events, whichever order these end up running in. */
+	// Queued: a QML binding reacting to currentChanged() below could answer
+	// before loop.exec() runs, and a direct quit() would find no loop yet.
 	connect(&request, &QmlUiRequest::answered, &loop, &QEventLoop::quit,
 			Qt::QueuedConnection);
-	/* A quit is answered the same way reject() answers it, so a task
-	 * blocked here cannot keep the application from exiting -- it sees
-	 * the same "gave up" result a real "no" would have produced. */
+	// A quit rejects the request, so a blocked task cannot keep the
+	// application from exiting.
 	connect(qApp, &QCoreApplication::aboutToQuit, &loop,
 			[&request]() { request.reject(); }, Qt::QueuedConnection);
 
 	m_stack.append(&request);
 	emit currentChanged();
 
-	/* Constructed *before* loop.exec(), while this object is definitely
-	 * still alive: QPointer only guards safely against a destruction it
-	 * was watching for from the start -- building one from `this` after
-	 * the fact, once this object might already be gone, would dereference
-	 * freed memory instead of reporting null. */
+	// Constructed before loop.exec(): one made from `this` after the object
+	// might be gone would read freed memory.
 	QPointer<QmlUiHost> self(this);
 
 	loop.exec();
 
-	/* This object may already be gone -- destroyed while `request` was
-	 * still pending, which rejected it exactly the way the branch above
-	 * does (see the destructor) and is why loop.exec() just returned.
-	 * Nothing below may run in that case. */
+	// If this object was destroyed while the request was pending (the
+	// destructor rejected it), nothing below may run.
 	if (self) {
 		Q_ASSERT(!m_stack.isEmpty() && m_stack.last() == &request);
 		m_stack.removeLast();
@@ -547,14 +511,11 @@ QmlUiHost::pickAccount(const QString& title, const QString& text,
 			options.append(QVariantMap{});
 			continue;
 		}
-		// The same id AccountFaceProvider takes: offline accounts have no
-		// profile id (see QmlShell::accountFace()).
+		// Offline accounts have no profile id.
 		const QString faceId = account->profileId().isEmpty()
 								   ? account->internalId()
 								   : account->profileId();
 		options.append(QVariantMap{
-			// The Minecraft name, as the Accounts page shows it; for a
-			// Microsoft account without a profile it says so itself.
 			{ QStringLiteral("name"), account->profileName() },
 			{ QStringLiteral("kind"), account->isMSA()
 										  ? QStringLiteral("Microsoft")
@@ -578,10 +539,8 @@ QmlUiHost::pickAccount(const QString& title, const QString& text,
 
 namespace
 {
-	/* The starting value of every input node under @p node, keyed by id
-	 * -- what PluginUiRenderer's collectValues() would read straight after
-	 * building the same document: a toggle's, text or number field's and
-	 * choice's "value" prop, or each type's empty value without one. */
+	// The starting value of every input node under @p node, keyed by id: its
+	// "value" prop, or the type's empty value without one.
 	void collectModalFields(const QJsonObject& node, QVariantMap& fields)
 	{
 		const QString type = node.value(QStringLiteral("type")).toString();
@@ -660,10 +619,8 @@ bool QmlUiHost::resolveBlockedMods(const QString& title, const QString& text,
 	QmlUiRequest request(QmlUiRequest::Kind::BlockedMods, title, text);
 	request.setBlockedMods(mods);
 
-	/* Same Downloads-folder watch BlockedModsDialog::setupWatch() and
-	 * scanDownloadsFolder() run, kept here rather than in QmlUiRequest so
-	 * the request stays a plain data-plus-answer object -- this is the
-	 * one kind whose data changes while it is pending, not just once. */
+	// Watches the Downloads folder: the one kind whose data changes while it
+	// is pending.
 	const QString downloadDir =
 		QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
 	QFileSystemWatcher watcher;
@@ -690,7 +647,7 @@ bool QmlUiHost::resolveBlockedMods(const QString& title, const QString& text,
 	}
 	connect(&request, &QmlUiRequest::rescanRequested, &request,
 			[&rescan]() { rescan(); });
-	rescan(); // same initial scan the widget dialog runs from its constructor
+	rescan();
 
 	runRequest(request);
 	return request.accepted();
@@ -698,10 +655,6 @@ bool QmlUiHost::resolveBlockedMods(const QString& title, const QString& text,
 
 bool QmlUiHost::confirmUntrustedMods(const QStringList& suspectPaths)
 {
-	/* WidgetUiHost's version of this question carries no title/text of its
-	 * own -- UntrustedModsDialog.ui hardcodes them -- so this reproduces
-	 * that copy verbatim for QML to show the same way it shows any other
-	 * request's title/text. */
 	QmlUiRequest request(
 		QmlUiRequest::Kind::UntrustedMods, tr("Easy There!"),
 		tr("This modpack installs code that is not hosted on Modrinth or "
@@ -735,11 +688,6 @@ UiHost::UpdateChoice QmlUiHost::offerUpdate(const QString& currentVersion,
 
 namespace
 {
-	/* Mirrors ProfileSetupDialog.cpp's checkFinished()/setupProfileFinished()
-	 * -- kept as a separate copy rather than shared with the widget dialog
-	 * (which stays untouched, per the audit's "widget UI keeps its dialog")
-	 * the same way PluginSurfaceModel duplicates PluginUiRenderer's node
-	 * handling instead of sharing it (see PluginSurfaceModel.cpp). */
 	QString minecraftServicesBearer(const MinecraftAccountPtr& account)
 	{
 		return QStringLiteral("Bearer %1")
@@ -759,16 +707,9 @@ bool QmlUiHost::setupProfile(MinecraftAccountPtr account)
 			[&request, account](const QString& name) {
 				auto* checkReq = new AuthRequest(&request);
 				QPointer<QmlUiRequest> guard(&request);
-				/* checkNameRequested is a direct connection (both objects
-				 * are on this thread), so checkSequence() here already
-				 * reflects the bump checkProfileName() just made for this
-				 * exact call -- capturing it now gives this network round
-				 * trip a fixed identity to compare against whatever the
-				 * latest check is once the response comes back, however
-				 * much later that is or however many newer checks have
-				 * started in between (see QmlUiRequest::checkSequence()'s
-				 * comment; mirrors ProfileSetupDialog's isChecking/
-				 * currentCheck guard). */
+				// checkNameRequested is a direct connection, so checkSequence()
+				// already holds the bump from this call. Comparing it when the
+				// response arrives drops stale responses.
 				const int seq = request.checkSequence();
 				connect(
 					checkReq, &AuthRequest::finished, &request,
@@ -780,12 +721,8 @@ bool QmlUiHost::setupProfile(MinecraftAccountPtr account)
 							return;
 						}
 						if (guard->checkSequence() != seq) {
-							/* A newer checkProfileName() call has started
-							 * (or already finished) since this one was
-							 * issued -- this response is for a name the UI
-							 * has moved on from; applying it now would
-							 * overwrite a newer, still-in-flight or already
-							 * -settled status with a stale one. */
+							// A newer check has started since: this response
+							// is for a name the UI has moved on from.
 							return;
 						}
 						if (error != QNetworkReply::NoError) {
@@ -846,11 +783,9 @@ bool QmlUiHost::setupProfile(MinecraftAccountPtr account)
 						}
 						guard->setProfileSubmitting(false);
 						if (error == QNetworkReply::NoError) {
-							/* Same as ProfileSetupDialog::setupProfileFinished():
-							 * the response has the new profile in it, but
-							 * there is nothing here that needs it -- the
-							 * caller (LaunchController) just re-fills the
-							 * session and continues the normal login flow. */
+							// Nothing needs the profile in the response; the
+							// caller re-fills the session and continues the
+							// login.
 							guard->accept();
 							return;
 						}
@@ -894,10 +829,7 @@ std::optional<QString> QmlUiHost::pickFile(FilePickerMode mode,
 	if (!request.accepted()) {
 		return std::nullopt;
 	}
-	/* QML hands back whatever a QtQuick.Dialogs FileDialog's selectedFile
-	 * gives it -- a file:// URL string, the same convention
-	 * InstanceDetails::importIcon() and NewInstanceController already
-	 * unwrap this way for a QML FileDialog's result. */
+	// A QML FileDialog's selectedFile is a file:// URL string.
 	const QUrl url(request.answeredText());
 	return url.isLocalFile() ? url.toLocalFile() : request.answeredText();
 }

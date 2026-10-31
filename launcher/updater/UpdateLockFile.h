@@ -57,13 +57,10 @@ namespace UpdateLockFile
 	//! The pass that owns the lock while the installation is being written.
 	inline constexpr int kInstallStage = 2;
 
-	//! Absolute path of the lock file for \a dataDir.
 	QString lockPath(const QString& dataDir);
 
-	//! Absolute path of \a fileName within \a dataDir.
 	QString markerPath(const QString& dataDir, const QString& fileName);
 
-	//! Absolute path of the update log for \a dataDir.
 	QString updateLogPath(const QString& dataDir);
 
 	bool read(const QString& path, Contents* contents);

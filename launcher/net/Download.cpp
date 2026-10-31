@@ -44,9 +44,8 @@ namespace Net
 	{
 		QJsonObject obj;
 		obj[QStringLiteral("reason")] = reason;
-		/* Each of these is omitted rather than sent empty: the header is
-		 * a statement about the download, and "loader: nothing" is a
-		 * claim we would be making up. */
+		/* Omitted rather than sent empty: an empty header would be a made-up
+		 * claim. */
 		if (!gameVersion.isEmpty()) {
 			obj[QStringLiteral("game_version")] = gameVersion;
 		}
@@ -120,7 +119,6 @@ namespace Net
 				qCDebug(netLog) << "Downloading" << m_url.toString();
 				break;
 			case Job_Failed_Proceed: // this is meaningless in this context. We
-									 // do need a sink.
 			case Job_NotStarted:
 			case Job_Failed:
 				emit failed(m_index_within_job);
@@ -139,8 +137,8 @@ namespace Net
 			request.setRawHeader("Accept", "application/json");
 		}
 
-		/* Attribution for the file being fetched, when the caller said
-		 * what it is for and this is a host that understands it. */
+		/* Attribution for the file, when the caller said what it is for and the
+		 * host understands it. */
 		if (!m_modrinthMeta.isEmpty() &&
 			m_url.host() == ModrinthApi::cdnHost()) {
 			request.setRawHeader("modrinth-download-meta",
@@ -180,7 +178,6 @@ namespace Net
 					return;
 				}
 			}
-			// error happened during download.
 			qCCritical(netLog) << "Failed" << m_url.toString()
 							   << "with reason" << error;
 			m_status = Job_Failed;
@@ -207,40 +204,27 @@ namespace Net
 			m_reply->header(QNetworkRequest::LocationHeader).toUrl();
 		if (!redirect.isValid()) {
 			if (!m_reply->hasRawHeader("Location")) {
-				// no redirect -> it's fine to continue
 				return false;
 			}
-			// there is a Location header, but it's not correct. we need to
-			// apply some workarounds...
+			// A Location header that is not valid needs workarounds.
 			QByteArray redirectBA = m_reply->rawHeader("Location");
 			if (redirectBA.size() == 0) {
-				// empty, yet present redirect header? WTF?
 				return false;
 			}
 			QString redirectStr = QString::fromUtf8(redirectBA);
 
 			if (redirectStr.startsWith("//")) {
-				/*
-				 * IF the URL begins with //, we need to insert the URL scheme.
-				 * See: https://bugreports.qt.io/browse/QTBUG-41061
-				 * See: http://tools.ietf.org/html/rfc3986#section-4.2
-				 */
+				// URL begins with //: insert the scheme (QTBUG-41061, RFC 3986 4.2).
 				redirectStr = m_reply->url().scheme() + ":" + redirectStr;
 			} else if (redirectStr.startsWith("/")) {
-				/*
-				 * IF the URL begins with /, we need to process it as a relative
-				 * URL
-				 */
+				// URL begins with /: process as a relative URL.
 				auto url = m_reply->url();
 				url.setPath(redirectStr, QUrl::TolerantMode);
 				redirectStr = url.toString();
 			}
 
-			/*
-			 * Next, make sure the URL is parsed in tolerant mode. Qt doesn't
-			 * parse the location header in tolerant mode, which causes issues.
-			 * FIXME: report Qt bug for this
-			 */
+			// Parse in tolerant mode; Qt does not for the Location header.
+			// FIXME: report Qt bug
 			redirect = QUrl(redirectStr, QUrl::TolerantMode);
 			if (!redirect.isValid()) {
 				qCWarning(netLog)
@@ -261,13 +245,11 @@ namespace Net
 
 	void Download::downloadFinished()
 	{
-		// handle HTTP redirection first
 		if (handleRedirect()) {
 			qCDebug(netLog) << "Download redirected:" << m_url.toString();
 			return;
 		}
 
-		// if the download failed before this point ...
 		if (m_status == Job_Failed_Proceed) {
 			qCDebug(netLog) << "Download failed but we are allowed to proceed:"
 							<< m_url.toString();
@@ -291,7 +273,6 @@ namespace Net
 			return;
 		}
 
-		// make sure we got all the remaining data, if any
 		auto data = m_reply->readAll();
 		if (data.size()) {
 			qCDebug(netLog) << "Writing extra" << data.size() << "bytes to"
@@ -299,7 +280,6 @@ namespace Net
 			m_status = m_sink->write(data);
 		}
 
-		// otherwise, finalize the whole graph
 		m_status = m_sink->finalize(*m_reply.get());
 		if (m_status != Job_Finished) {
 			qCDebug(netLog)
@@ -323,8 +303,6 @@ namespace Net
 				qCCritical(netLog) << "Failed to process response chunk for"
 								   << m_target_path;
 			}
-			// qDebug() << "Download" << m_url.toString() << "gained" <<
-			// data.size() << "bytes";
 		} else {
 			qCCritical(netLog) << "Cannot write to" << m_target_path
 							   << "- illegal status" << m_status;

@@ -21,12 +21,8 @@
 
 #include "ModFolderModel.h"
 
-/* Backs the instance's `shaderpacks` folder.
- *
- * Shader packs used to be served by ResourcePackFolderModel, which meant
- * the column tooltips talked about resource packs and any zip at all
- * could be dropped in. They are a distinct format with their own layout,
- * so they get their own model. */
+// Backs the instance's `shaderpacks` folder. A distinct format with its own
+// layout, so it has its own model rather than reusing resource packs.
 class ShaderPackFolderModel : public ModFolderModel
 {
 	Q_OBJECT

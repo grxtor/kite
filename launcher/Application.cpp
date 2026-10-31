@@ -247,9 +247,7 @@ namespace
 
 namespace
 {
-	// All four layouts, built once. Plain goes into the log file, coloured
-	// goes to the console, and the source location suffix depends on whether
-	// the message that is being formatted actually carries one.
+	// Four layouts, built once.
 	const QString& logPattern(bool coloured, bool withSourceLocation)
 	{
 		static const QString patterns[] = {
@@ -264,24 +262,16 @@ namespace
 	void appDebugOutput(QtMsgType type, const QMessageLogContext& context,
 						const QString& msg)
 	{
-		// The log file is a plain QFile and messages also arrive from worker
-		// threads, so the whole handler is serialised. That also keeps the
-		// pattern swapping below from being observed by another thread.
+		// The log file is a plain QFile and messages arrive from worker
+		// threads, so the handler is serialised; that also keeps the pattern
+		// swap below from being seen by another thread.
 		static QMutex mutex;
 		QMutexLocker locker(&mutex);
 
-		// Formatting is handed to Qt instead of being assembled here, because
-		// that is what gives us the message's category and a readable
-		// function name; the context argument used to be dropped on the floor.
-		//
-		// NOTE: when QT_MESSAGE_PATTERN is set in the environment, Qt ignores
-		// qSetMessagePattern() completely, so both copies come out in the
-		// user's own layout and the console one loses its colour. That is
-		// Qt's documented precedence, and it was measured, not assumed.
-		// Qt's prebuilt libraries carry no message log context, so their
-		// warnings would end in "(unknown:0)" if the suffix were static -
-		// and a good half of a typical log is Qt talking about the network.
-		// Measured, probe9.
+		// Formatting goes through Qt for the category and function name.
+		// QT_MESSAGE_PATTERN in the environment makes Qt ignore
+		// qSetMessagePattern(). Qt's own libraries carry no log context, hence
+		// no static location suffix.
 		const bool located = context.line != 0;
 
 		qSetMessagePattern(logPattern(false, located));
@@ -292,58 +282,26 @@ namespace
 			APPLICATION->logFile->flush();
 		}
 
-		// Only pay for the second rendering when the console can actually
-		// render escape sequences. When it cannot - a redirect, a pipe, an
-		// old console host, or NO_COLOR - the plain copy is what it gets,
-		// instead of the escapes it would print verbatim.
+		// Rendered only when the console understands escapes; otherwise it
+		// gets the plain copy.
 		QString console = plain;
 		if (Logging::consoleColourEnabled()) {
 			qSetMessagePattern(logPattern(true, located));
 			console = qFormatLogMessage(type, context, msg);
-			// Leave a plain layout installed: it is the one that belongs in a
-			// file, and it is what anything formatting outside this handler
-			// gets.
+			// Leave a plain layout installed: it is what anything formatting
+			// outside this handler gets.
 			qSetMessagePattern(logPattern(false, located));
 		}
 
 		QTextStream(stderr) << console.toLocal8Bit() << '\n';
 		fflush(stderr);
 	}
-
-	[[maybe_unused]] QString getIdealPlatform(QString currentPlatform)
-	{
-		auto info = Sys::getKernelInfo();
-		switch (info.kernelType) {
-			case Sys::KernelType::Darwin: {
-				if (info.kernelMajor >= 17) {
-					// macOS 10.13 or newer
-					return "osx64-5.15.2";
-				} else {
-					// macOS 10.12 or older
-					return "osx64";
-				}
-			}
-			case Sys::KernelType::Windows: {
-				// FIXME: 5.15.2 is not stable on Windows, due to a large number
-				// of completely unpredictable and hard to reproduce issues
-				break;
-			}
-			case Sys::KernelType::Undetermined:
-				[[fallthrough]];
-			case Sys::KernelType::Linux: {
-				break;
-			}
-		}
-		return currentPlatform;
-	}
-
 } // namespace
 
 Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 {
-	/* Before anything else: things constructed further down this function
-	 * already reach services through LAUNCHER->, and they would see a null
-	 * context otherwise. */
+	/* First: things constructed below already reach services through
+	 * LAUNCHER-> and would see a null context. */
 	LauncherContext::setInstance(this);
 	m_uiHost = std::make_unique<WidgetUiHost>();
 
@@ -385,22 +343,16 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 		return;
 	}
 
-	// CLI fast path
-	// When running a CLI-only command we need almost nothing from the
-	// full application stack.  Load only settings (for InstanceDir) and
-	// the instance list, execute the command, then bail out.  This
-	// avoids starting the network, translations, themes, plugins,
-	// analytics, logging, and the GUI — which also prevents the
-	// "corrupted double-linked list" crash that occurs when static
-	// destructors in plugin modules run after Qt is torn down.
+	// CLI fast path: needs only the settings and instance list. Skipping
+	// network, plugins and the GUI also avoids a "corrupted double-linked
+	// list" crash from plugin static destructors running after Qt is torn
+	// down.
 	if (m_cliListInstances || !m_cliInstanceInfoId.isEmpty() ||
 		!m_cliExportId.isEmpty()) {
 		initSettings();
 
-		// Load instance list
-		/* The CLI path lists and exports instances, so it has to see the
-		 * additional folders too - otherwise "list instances" would
-		 * disagree with the window that shows them. */
+		/* The additional folders too, or "list instances" would disagree with
+		 * the window. */
 		QStringList instDirs;
 		instDirs << m_settings->get("InstanceDir").toString();
 		instDirs << InstanceList::decodeInstanceDirList(
@@ -433,11 +385,9 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 
 	initSubsystems();
 
-	// Initialize the plugin system — scans mmcmodules directories
-	// and loads all discovered .mmco modules.
-	// NOTE: parent is nullptr — unique_ptr is the sole owner.
-	// Do NOT pass `this` as QObject parent, or the PluginManager
-	// will be double-freed (once by unique_ptr, once by ~QObject).
+	// Scans the mmcmodules directories and loads all discovered .mmco modules.
+	// The parent is nullptr: unique_ptr is the sole owner, and passing `this`
+	// would free the PluginManager twice.
 	m_pluginManager = std::make_unique<PluginManager>(this, nullptr);
 	m_authRequestDecorator =
 		std::make_unique<PluginAuthRequestDecorator>(m_pluginManager.get());
@@ -452,9 +402,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 void Application::initPlatform()
 {
 #if defined Q_OS_WIN32
-	// attach the parent console
 	if (AttachConsole(ATTACH_PARENT_PROCESS)) {
-		// Reopen and sync all the I/O after attaching to parent console
 		if (freopen("CON", "w", stdout)) {
 			std::ios_base::sync_with_stdio();
 		}
@@ -471,9 +419,8 @@ void Application::initPlatform()
 		consoleAttached = true;
 	}
 #endif
-	// After the console is attached and the streams are reopened, because the
-	// answer depends on what stderr ends up pointing at. Before the message
-	// handler is installed, so the very first line is already correct.
+	// After the streams are reopened (the answer depends on where stderr ends
+	// up) and before the message handler is installed.
 	Logging::prepareConsoleColour();
 	setOrganizationName(BuildConfig.KITE_NAME);
 	setOrganizationDomain(BuildConfig.KITE_DOMAIN);
@@ -501,7 +448,6 @@ void Application::initPlatform()
 	}
 #endif
 
-	// Don't quit on hiding the last window
 	this->setQuitOnLastWindowClosed(false);
 }
 
@@ -511,76 +457,62 @@ QHash<QString, QVariant> Application::parseCommandLine(int& argc, char** argv)
 
 	Parser parser(FlagStyle::GNU, ArgumentStyle::SpaceAndEquals);
 
-	// --help
 	parser.addSwitch("help");
 	parser.addShortOpt("help", 'h');
 	parser.addDocumentation("help", "Display this help and exit.");
-	// --version
 	parser.addSwitch("version");
 	parser.addShortOpt("version", 'V');
 	parser.addDocumentation("version", "Display program version and exit.");
-	// --dir
 	parser.addOption("dir");
 	parser.addShortOpt("dir", 'd');
 	parser.addDocumentation(
 		"dir", "Use the supplied folder as application root "
 			   "instead of the binary location (use '.' for current)");
-	// --launch
 	parser.addOption("launch");
 	parser.addShortOpt("launch", 'l');
 	parser.addDocumentation("launch",
 							"Launch the specified instance (by instance ID)");
-	// --server
 	parser.addOption("server");
 	parser.addShortOpt("server", 's');
 	parser.addDocumentation("server",
 							"Join the specified server on launch (only valid "
 							"in combination with --launch)");
-	// --world
 	parser.addOption("world");
 	parser.addShortOpt("world", 'w');
 	parser.addDocumentation("world",
 							"Open the specified singleplayer world on launch, "
 							"by its save folder name (only valid in "
 							"combination with --launch)");
-	// --profile
 	parser.addOption("profile");
 	parser.addShortOpt("profile", 'a');
 	parser.addDocumentation("profile",
 							"Use the account specified by its profile name "
 							"(only valid in combination with --launch)");
-	// --alive
 	parser.addSwitch("alive");
 	parser.addDocumentation("alive", "Write a small '" + liveCheckFile +
 										 "' file after Kite starts");
-	// --import
 	parser.addOption("import");
 	parser.addShortOpt("import", 'I');
 	parser.addDocumentation(
 		"import", "Import instance from specified zip (local path or URL)");
 
-	// --list-instances  (CLI)
 	parser.addSwitch("list-instances");
 	parser.addShortOpt("list-instances", 'L');
 	parser.addDocumentation("list-instances", "List all instances and exit.");
-	// --instance-info  (CLI)
 	parser.addOption("instance-info");
 	parser.addShortOpt("instance-info", 'i');
 	parser.addDocumentation("instance-info",
 							"Show detailed information about the specified "
 							"instance (by ID) and exit.");
-	// --export  (CLI)
 	parser.addOption("export");
 	parser.addShortOpt("export", 'E');
 	parser.addDocumentation("export",
 							"Export the specified instance to a zip file. "
 							"Requires --output to set the destination path.");
-	// --output  (CLI, used with --export)
 	parser.addOption("output");
 	parser.addShortOpt("output", 'o');
 	parser.addDocumentation("output", "Output file path (used with --export).");
 
-	// parse the arguments
 	try {
 		args = parser.parse(arguments());
 	} catch (const ParsingError& e) {
@@ -592,14 +524,12 @@ QHash<QString, QVariant> Application::parseCommandLine(int& argc, char** argv)
 		return args;
 	}
 
-	// display help and exit
 	if (args["help"].toBool()) {
 		QTextStream(stdout) << parser.compileHelp(arguments()[0]);
 		m_status = Application::Succeeded;
 		return args;
 	}
 
-	// display version and exit
 	if (args["version"].toBool()) {
 		QTextStream(stdout)
 			<< "Version " << BuildConfig.printableVersionString() << "\n";
@@ -735,13 +665,8 @@ bool Application::resolveDataPath(const QHash<QString, QVariant>& args,
 
 bool Application::initPeerInstance()
 {
-	/*
-	 * Establish the mechanism for communication with an already running
-	 * Kite that uses the same data path. If there is one, tell it what
-	 * the user actually wanted to do and exit. We want to initialize this
-	 * before logging to avoid messing with the log of a potential already
-	 * running copy.
-	 */
+	/* If an instance already runs on the same data path, tell it what the user
+	 * wanted and exit. Before logging, to leave its log untouched. */
 	auto appID = ApplicationId::fromPathAndVersion(
 		QDir::currentPath(), BuildConfig.printableVersionString());
 
@@ -827,7 +752,6 @@ bool Application::initLogging(const QString& dataPath)
 void Application::setupPaths(const QString& binPath, const QString& origcwdPath,
 							 const QString& adjustedBy)
 {
-	// Root path is used for updates.
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
 	QDir foo(FS::PathCombine(binPath, ".."));
 	m_rootPath = foo.absolutePath();
@@ -836,8 +760,8 @@ void Application::setupPaths(const QString& binPath, const QString& origcwdPath,
 #elif defined(Q_OS_MAC)
 	QDir foo(FS::PathCombine(binPath, "../.."));
 	m_rootPath = foo.absolutePath();
-	// on macOS, touch the root to force Finder to reload the .app metadata
-	// (and fix any icon change issues)
+	// macOS: touch the root so Finder reloads the .app metadata (icon
+	// changes).
 	FS::updateTimestamp(m_rootPath);
 #endif
 
@@ -892,44 +816,32 @@ void Application::initSettings()
 {
 	m_settings.reset(
 		new INISettingsObject(BuildConfig.KITE_CONFIGFILE, this));
-	// Updates
 	m_settings->registerSetting("UpdateChannel", BuildConfig.VERSION_CHANNEL);
 	m_settings->registerSetting("AutoUpdate", true);
 
-	// Theming
 	m_settings->registerSetting("IconTheme", QString("pe_colored"));
 	m_settings->registerSetting("ApplicationTheme", QString("system"));
-	// The QML interface's own light/dark choice; the widget theme above
-	// keeps its separate list of themes.
 	m_settings->registerSetting("UiThemeMode", QString("dark"));
 	// Colour scheme of the QML interface: amethyst, ember or diamond.
 	m_settings->registerSetting("UiPalette", QString("amethyst"));
 	// The QML interface's look: stage (Sahne), calm (Sade), night (Gece),
 	// or classic, which keeps UiPalette and UiThemeMode.
 	m_settings->registerSetting("UiLook", QString("stage"));
-	// The built-in icon each instance without one of its own was given for
-	// those looks (icons/AutoIcons.h), as a JSON object of id -> icon key.
+	// Built-in icon per instance without its own, per look
+	// (icons/AutoIcons.h): a JSON object of id -> icon key.
 	m_settings->registerSetting("UiAutoIcons", QString());
-	// The QML interface's font (Settings > Appearance).
 	m_settings->registerSetting("UiFontFamily", QString("Inter"));
 	m_settings->registerSetting("UiSidebarCollapsed", true);
-	// How wide (in pixels) the user dragged the QML interface's labelled
-	// sidebar to; the rail has a width of its own.
 	m_settings->registerSetting("UiSidebarWidth", 240);
-	// Stops decorative loops (Play sheen) for people who find motion
-	// distracting.
 	m_settings->registerSetting("UiReduceMotion", false);
 
-	/* Screen-top menu bar. Only macOS has one; elsewhere the setting is
-	 * carried but never acted on. The second key is what this shipped as
-	 * originally, kept so existing configs still read. */
+	/* Screen-top menu bar (macOS only; elsewhere carried but unused). The
+	 * second key is the original name, kept so existing configs still read. */
 	m_settings->registerSetting(
 		{MacMenuBar::settingKey(), MacMenuBar::legacySettingKey()}, true);
 
-	// Notifications
 	m_settings->registerSetting("ShownNotifications", QString());
 
-	// Remembered state
 	m_settings->registerSetting("LastUsedGroupForNewInstance", QString());
 
 	QString defaultMonospace;
@@ -959,80 +871,51 @@ void Application::initSettings()
 	m_settings->registerSetting("ConsoleMaxLines", 100000);
 	m_settings->registerSetting("ConsoleOverflowStop", true);
 
-	// Folders
 	m_settings->registerSetting("InstanceDir", "instances");
-	/* Extra instance folders, searched after the primary one.
-	 *
-	 * Instances found in these are listed and launched exactly like the
-	 * ones in "InstanceDir"; the primary folder keeps its special roles -
-	 * it is the default destination for new instances, and it holds the
-	 * group file. Empty by default, so a launcher nobody has configured
-	 * behaves exactly as it did when there was only one folder.
-	 *
-	 * Held as a JSON array in a single string, not as a QStringList:
-	 * INIFile saves every value through QVariant::toString(), which is
-	 * empty for a multi-element list, so a list would not survive being
-	 * written and read back. Use InstanceList::decodeInstanceDirList() and
-	 * encodeInstanceDirList() at the boundary rather than touching the
-	 * raw value.
-	 */
+	/* Extra instance folders searched after the primary one. Held as a JSON
+	 * array in one string, not a QStringList: INIFile saves values through
+	 * QVariant::toString(), which is empty for a multi-element list. Use
+	 * InstanceList::decodeInstanceDirList() and encodeInstanceDirList(). */
 	m_settings->registerSetting("AdditionalInstanceDirs", QString());
-	/* Which folder the new-instance dialog opens on. A single path, so it
-	 * needs no encoding; empty until the user has created something, which
-	 * the dialog reads as "the primary folder". */
+	/* Empty until the user has created something, which reads as the primary
+	 * folder. */
 	m_settings->registerSetting("LastUsedInstDirForNewInstance", QString());
 	m_settings->registerSetting({"CentralModsDir", "ModsDir"}, "mods");
 	m_settings->registerSetting("IconsDir", "icons");
 	m_settings->registerSetting("SkinsDir", "skins");
     m_settings->registerSetting("JavaDir", "java");
 
-	/* Whether installing a modpack that is already installed offers to
-	 * update that instance instead of creating a second one.
-	 *
-	 * Phrased as "skip" so that false - the default, and what every
-	 * existing config reads as - means the question gets asked. Anyone
-	 * who deliberately keeps several copies of a pack around is the one
-	 * person for whom the question is only ever noise, and this is how
-	 * they turn it off. */
+	/* Whether installing an already-installed modpack offers to update that
+	 * instance instead of creating a second. Phrased as "skip" so the default
+	 * (false) asks the question. */
 	m_settings->registerSetting("SkipModpackUpdatePrompt", false);
 
-	/* Whether creating or updating an instance also fetches the game's
-	 * own files - version metadata, libraries, assets - instead of
-	 * leaving all of it to the first launch.
-	 *
-	 * On by default: the download happens either way, and doing it while
-	 * the user is already waiting for an install to finish is time they
-	 * have agreed to spend. The alternative is that the first launch of a
-	 * freshly installed pack is the slow one, which is the worst moment
-	 * for it. */
+	/* Whether creating or updating an instance also fetches the game's own
+	 * files. On by default: otherwise the first launch of a fresh pack is the
+	 * slow one. */
 	m_settings->registerSetting("DownloadGameFilesDuringInstanceCreation",
 								true);
 
-	// Editors
 	m_settings->registerSetting("JsonEditor", QString());
 
-	// Language
 	m_settings->registerSetting("Language", QString());
 
-	// Console
 	m_settings->registerSetting("ShowConsole", false);
 	m_settings->registerSetting("AutoCloseConsole", false);
 	m_settings->registerSetting("ShowConsoleOnError", true);
 	m_settings->registerSetting("LogPrePostOutput", true);
 
-	// Window Size
 	m_settings->registerSetting({"LaunchMaximized", "MCWindowMaximize"}, false);
 	m_settings->registerSetting({"MinecraftWinWidth", "MCWindowWidth"}, 854);
 	m_settings->registerSetting({"MinecraftWinHeight", "MCWindowHeight"}, 480);
 
-	// Proxy Settings
 	m_settings->registerSetting("ProxyType", "None");
 	m_settings->registerSetting({"ProxyAddr", "ProxyHostName"}, "127.0.0.1");
 	m_settings->registerSetting("ProxyPort", 8080);
 	m_settings->registerSetting({"ProxyUser", "ProxyUsername"}, "");
 	m_settings->registerSetting({"ProxyPass", "ProxyPassword"}, "");
 
-	// Memory — compute reasonable defaults based on system RAM
+	// Memory defaults from system RAM.
 	int defaultMinMem = 512;
 	int defaultMaxMem = 1024;
 	{
@@ -1058,15 +941,12 @@ void Application::initSettings()
 								defaultMaxMem);
 	m_settings->registerSetting("PermGen", 128);
 
-	// CurseForge API key — baked in at compile time via BuildConfig.
-	// Exposed as a read-only app setting so .mmco plugins can read it
-	// through the MMCOContext::app_setting_get channel (ABI 3). Plugins
-	// cannot link BuildConfig directly: the SDK is Qt-only and the
-	// BuildConfig symbol is not part of the plugin ABI.
+	// CurseForge API key, baked in via BuildConfig. Exposed as a read-only
+	// setting so .mmco plugins can read it through
+	// MMCOContext::app_setting_get (ABI 3); they cannot link BuildConfig.
 	m_settings->registerSetting("CurseForgeAPIKey", "");
 	m_settings->set("CurseForgeAPIKey", BuildConfig.CURSEFORGE_API_KEY);
 
-	// Java Settings
 	m_settings->registerSetting("JavaPath", "");
 	m_settings->registerSetting("JavaTimestamp", 0);
 	m_settings->registerSetting("JavaArchitecture", "");
@@ -1079,41 +959,30 @@ void Application::initSettings()
 	m_settings->registerSetting("LastHostname", "");
 	m_settings->registerSetting("JvmArgs", "");
 
-	// Java auto-download
 	m_settings->registerSetting("JavaAutoDownload", true);
 	m_settings->registerSetting("JavaAutoDownloadVendor", "net.minecraft.java");
 
-	// Native library workarounds
 	m_settings->registerSetting("UseNativeOpenAL", false);
 	m_settings->registerSetting("UseNativeGLFW", false);
 
-	// Game time
 	m_settings->registerSetting("ShowGameTime", true);
 	m_settings->registerSetting("ShowGlobalGameTime", true);
 	m_settings->registerSetting("RecordGameTime", true);
 
-	// Minecraft launch method
 	m_settings->registerSetting("MCLaunchMethod", "KitePart");
 
-	// Wrapper command for launch
 	m_settings->registerSetting("WrapperCommand", "");
 
-	// Custom Commands
 	m_settings->registerSetting({"PreLaunchCommand", "PreLaunchCmd"}, "");
 	m_settings->registerSetting({"PostExitCommand", "PostExitCmd"}, "");
 
-	// Instance backups.
-	//
-	// The legacy synonym is the key the out-of-tree BackupSystem .mmco
-	// plugin registered through app_setting_register() — same config
-	// file, so anyone who had pre-launch snapshots switched on keeps
-	// them after the plugin graduated into core. The old key is dropped
-	// from kite.cfg the first time the setting is written.
+	// Instance backups. The legacy synonym is the key the old BackupSystem
+	// .mmco plugin registered; it is dropped from kite.cfg the first time the
+	// setting is written.
 	m_settings->registerSetting(
 		{"BackupBeforeLaunch", "plugin.backup_system.BackupBeforeLaunch"},
 		false);
 
-	// The cat
 	m_settings->registerSetting("TheCat", false);
 	m_settings->registerSetting("BackgroundCat", QString("kitteh"));
 	m_settings->registerSetting("CatOpacity", 100);
@@ -1122,16 +991,12 @@ void Application::initSettings()
 	m_settings->registerSetting("InstGrouped", true);
 	m_settings->registerSetting("SelectedInstance", QString());
 
-	// Toolbar customization
 	m_settings->registerSetting("ToolbarsLocked", false);
 
-	/* Whether the main window keeps its menu bar and gives up the main
-	 * toolbar. Off means the toolbar stays and tapping Alt shows the menu
-	 * bar for a moment. No effect on macOS, where the menu bar is native
-	 * and always present. */
+	/* Menu bar instead of the main toolbar (off: Alt shows the menu bar
+	 * briefly). No effect on macOS (native menu bar). */
 	m_settings->registerSetting("MenuBarInsteadOfToolBar", false);
 
-	// Window state and geometry
 	m_settings->registerSetting("MainWindowState", "");
 	m_settings->registerSetting("MainWindowGeometry", "");
 
@@ -1155,20 +1020,15 @@ void Application::initSettings()
 
 	m_settings->registerSetting("DataPackDownloadGeometry", "");
 
-	// paste.ee API key
 	m_settings->registerSetting("PasteEEAPIKey", "kite");
 
-	// Friends (server/friends/): on unless the user turned it off in
-	// Settings (a stored false stays off). FriendsNoticeSeen is the
-	// one-time "Friends is on" card, dismissed for good once either of its
-	// buttons is pressed. The Mojang URL is a test hook for the local
-	// end-to-end run, not a setting anyone should change.
+	// Friends (server/friends/): on unless turned off. FriendsNoticeSeen is
+	// the one-time "Friends is on" card. The Mojang URL is a test hook for the
+	// local end-to-end run.
 	m_settings->registerSetting("FriendsEnabled", true);
 	m_settings->registerSetting("FriendsNoticeSeen", false);
-	// The friends panel on the QML shell's right edge: out unless the user
-	// hid it with the top bar's toggle. It starts as a strip of heads;
-	// FriendsPanelExpanded is whether it is opened out to names and groups,
-	// and FriendsPanelWidth the width (in pixels) the user dragged that to.
+	// Friends panel on the QML shell's right edge. FriendsPanelExpanded: names
+	// and groups shown; FriendsPanelWidth: pixel width the user dragged it to.
 	m_settings->registerSetting("FriendsPanelOpen", true);
 	m_settings->registerSetting("FriendsPanelExpanded", false);
 	m_settings->registerSetting("FriendsPanelWidth", 320);
@@ -1176,7 +1036,6 @@ void Application::initSettings()
 	m_settings->registerSetting("FriendsMojangSessionUrl",
 								QString("https://sessionserver.mojang.com"));
 
-	// Init page provider
 	{
 		m_globalSettingsProvider =
 			std::make_shared<GenericPageProvider>(tr("Settings"));
@@ -1196,7 +1055,6 @@ void Application::initSettings()
 
 void Application::initSubsystems()
 {
-	// initialize network access and proxy setup
 	{
 		m_network = new QNetworkAccessManager();
 		QString proxyTypeStr = settings()->get("ProxyType").toString();
@@ -1208,25 +1066,22 @@ void Application::initSubsystems()
 		qDebug() << "<> Network done.";
 	}
 
-	/* The bridge for the Kite mod of a running game: nothing listens until a
-	 * launch registers a session. */
+	/* The Kite mod bridge: nothing listens until a launch registers a session. */
 	m_modBridge.reset(new ModBridge(
 		QString("%1 %2").arg(BuildConfig.KITE_DISPLAYNAME,
 							 BuildConfig.printableVersionString())));
 
-	/* News and notifications belong to the application rather than to a
-	 * window, so the QML shell and the plugin news API have them too.
-	 * Nothing is fetched yet -- see startBackgroundChecks(). Feed 0 is
-	 * ours; anything after it comes from -DKite_NEWS_EXTRA_FEEDS at
-	 * build time. */
+	/* News and notifications belong to the application (the QML shell and the
+	 * plugin news API use them too). Nothing is fetched until
+	 * startBackgroundChecks(). Feed 0 is ours; later ones come from
+	 * -DKite_NEWS_EXTRA_FEEDS. */
 	{
 		QStringList feeds{ BuildConfig.NEWS_RSS_URL };
 		feeds.append(BuildConfig.NEWS_EXTRA_FEEDS.split(QLatin1Char(';'),
 														Qt::SkipEmptyParts));
 		m_newsChecker.reset(new NewsChecker(m_network, feeds));
-		/* Re-publish a finished load as MMCO_HOOK_NEWS_UPDATED: this is
-		 * the only place that knows when every feed has landed, which is
-		 * what the hook promises its listeners. */
+		/* Re-published as MMCO_HOOK_NEWS_UPDATED here, the only place that
+		 * knows when every feed has landed. */
 		connect(m_newsChecker.get(), &NewsChecker::newsLoaded, this, [this]() {
 			if (m_pluginManager) {
 				m_pluginManager->dispatchHook(MMCO_HOOK_NEWS_UPDATED);
@@ -1240,7 +1095,7 @@ void Application::initSubsystems()
 		notifications->setApplicationFullVersion(BuildConfig.FULL_VERSION_STR);
 		m_notificationChecker.reset(notifications);
 		/* MainWindow shows its own dialogs for these; the QML shell asks
-		 * through UiHost, once its presenter can answer. */
+		 * through UiHost once its presenter can answer. */
 		connect(m_notificationChecker.get(),
 				&NotificationChecker::notificationCheckFinished, this,
 				[this]() {
@@ -1251,7 +1106,6 @@ void Application::initSubsystems()
 				});
 	}
 
-	// load translations
 	{
 		m_translations.reset(new TranslationsModel("translations"));
 		auto bcp47Name = m_settings->get("Language").toString();
@@ -1260,18 +1114,14 @@ void Application::initSubsystems()
 		qDebug() << "<> Translations loaded.";
 	}
 
-	// The updater is created before the main window on purpose: MainWindow's
-	// constructor connects to it, so an updater made afterwards would be one
-	// nothing is listening to. There is therefore no window to anchor its
-	// dialogs to yet, which only matters for the "On Launch" check below.
+	// Created before the main window, whose constructor connects to it; so no
+	// window exists yet to anchor its dialogs (matters only for the "On
+	// Launch" check).
 	if (updaterEnabled()) {
 		qDebug() << "Initializing the updater";
 		[[maybe_unused]] const auto startUpdater =
 			[this](ExternalUpdater* updater) {
 				m_updater.reset(updater);
-				// A build follows the channel it was published on unless the
-				// user has said otherwise, so a stable install is never
-				// handed a pre-release by default.
 				m_updater->setBetaAllowed(BuildConfig.UPDATE_CHANNEL ==
 										  QLatin1String("beta"));
 				qDebug() << "<> Updater started.";
@@ -1282,16 +1132,12 @@ void Application::initSubsystems()
 		startUpdater(new MacSparkleUpdater());
 #endif
 #else
-		/* Its "On Launch" check runs, and asks about what it finds, inside
-		 * its constructor. Under the QML shell nothing can answer yet and
-		 * uiHost() would hand it the widget dialogs, so it is made once the
-		 * QML presenter is up (or, if the QML shell fails to load, just
-		 * before the widget window). Under the widget UI this runs now. */
+		/* The "On Launch" check asks questions from the constructor. Under the
+		 * QML shell nothing can answer yet, so it is made once the QML
+		 * presenter is up (or before the widget window if QML fails to load). */
 		runWhenQmlPresenterReady([this, startUpdater]() {
 			startUpdater(new KiteExternalUpdater(
 				m_rootPath, m_dataPath,
-				// Migrates the launcher's old "check on start" setting into
-				// the updater's config, once. See the constructor.
 				m_settings->get("AutoUpdate").toBool()));
 		});
 #endif
@@ -1299,7 +1145,6 @@ void Application::initSubsystems()
 		qDebug() << "<> Updater not available for this build.";
 	}
 
-	// Instance icons
 	{
 		auto setting = APPLICATION->settings()->getSetting("IconsDir");
 		QStringList instFolders = {":/icons/multimc/32x32/instances/",
@@ -1314,7 +1159,6 @@ void Application::initSubsystems()
 		qDebug() << "<> Instance icons intialized.";
 	}
 
-	// Icon themes
 	{
 		// TODO: icon themes and instance icons do not mesh well together.
 		// Rearrange and fix discrepancies! set icon theme search path!
@@ -1325,13 +1169,11 @@ void Application::initSubsystems()
 		qDebug() << "<> Icon themes initialized.";
 	}
 
-	// Initialize widget themes
 	{
 		m_themeManager = std::make_unique<ThemeManager>();
 		qDebug() << "<> Widget themes initialized.";
 	}
 
-	// initialize and load all instances
 	{
 		auto InstDirSetting = m_settings->getSetting("InstanceDir");
 		auto AdditionalInstDirsSetting =
@@ -1342,12 +1184,10 @@ void Application::initSubsystems()
 		instDirs << InstanceList::decodeInstanceDirList(
 			AdditionalInstDirsSetting->get());
 
-		// instance path: check for problems with '!' in instance path and
-		// warn the user in the log and remember that we have to show him a
-		// dialog when the gui starts (if it does so)
-		/* Every folder is checked, not just the primary one: the '!' problem
-		 * is Java's and it does not care which of our folders the instance
-		 * it was handed came out of. */
+		// Warn in the log about '!' in an instance path, and remember to show
+		// the dialog when the GUI starts.
+		/* Every folder is checked: the '!' problem is Java's and does not care
+		 * which folder the instance came from. */
 		for (const QString& instDir : instDirs) {
 			qDebug() << "Instance path              : " << instDir;
 			if (FS::checkProblemticPathJava(QDir(instDir))) {
@@ -1360,8 +1200,8 @@ void Application::initSubsystems()
 		m_instances.reset(new InstanceList(m_settings, instDirs, this));
 		connect(InstDirSetting.get(), &Setting::SettingChanged,
 				m_instances.get(), &InstanceList::on_InstFolderChanged);
-		/* The same slot for both settings: it re-reads the pair and rebuilds
-		 * the folder list, because which folder is primary depends on both. */
+		/* One slot for both settings: it re-reads the pair and rebuilds the
+		 * folder list, since which folder is primary depends on both. */
 		connect(AdditionalInstDirsSetting.get(), &Setting::SettingChanged,
 				m_instances.get(), &InstanceList::on_InstFolderChanged);
 		qDebug() << "Loading Instances...";
@@ -1369,7 +1209,6 @@ void Application::initSubsystems()
 		qDebug() << "<> Instances loaded.";
 	}
 
-	// and accounts
 	{
 		m_accounts.reset(new AccountList(this));
 		qDebug() << "Loading accounts...";
@@ -1379,7 +1218,6 @@ void Application::initSubsystems()
 		qDebug() << "<> Accounts loaded.";
 	}
 
-	// init the http meta cache
 	{
 		m_metacache.reset(new HttpMetaCache("metacache"));
 		m_metacache->addBase("asset_indexes",
@@ -1421,7 +1259,6 @@ void Application::initSubsystems()
 		qDebug() << "<> Cache initialized.";
 	}
 
-	// now we have network, download translation updates
 	m_translations->downloadIndex();
 
 	// FIXME: what to do with these?
@@ -1438,10 +1275,9 @@ void Application::initSubsystems()
 
 	connect(this, &Application::aboutToQuit, [this]() {
 		if (m_instances) {
-			// save any remaining instance state
 			m_instances->saveNow();
 		}
-		// Shut down plugins while the log file and Qt are still alive
+		// Shut plugins down while the log file and Qt are still alive.
 		if (m_pluginManager) {
 			m_pluginManager->shutdownAll();
 		}
@@ -1459,10 +1295,9 @@ void Application::initSubsystems()
 
 namespace
 {
-	// Defined further down, next to showMainWindow() -- forward-declared
-	// here so createSetupWizard() can skip the widget wizard when the QML
-	// shell will handle onboarding itself (see QmlShell::recomputeSetupSteps(),
-	// which runs the same rules below).
+	// Defined below, next to showMainWindow(); declared here so
+	// createSetupWizard() can skip the widget wizard when the QML shell
+	// handles onboarding.
 	bool useQmlShell();
 } // namespace
 
@@ -1662,11 +1497,9 @@ void Application::performMainStartupAction()
 				qDebug() << "   Launching with account" << m_profileToUse;
 			}
 
-			/* A launch straight from the command line opens no main
-			 * window, as with the widget UI. Under the QML shell the shell
-			 * is still loaded, only hidden, so that the launch asks its
-			 * questions there -- the window shows itself for them, see
-			 * ensureQmlShell() -- and never through widget dialogs. */
+			/* A command-line launch opens no main window. Under the QML shell
+			 * it is still loaded, hidden, so questions are asked there and
+			 * never through widget dialogs. */
 			if (useQmlShell()) {
 				ensureQmlShell();
 			}
@@ -1675,7 +1508,6 @@ void Application::performMainStartupAction()
 		}
 	}
 	if (!m_mainWindow) {
-		// normal main window
 		showMainWindow(false);
 		qDebug() << "<> Main window shown.";
 	}
@@ -1687,15 +1519,13 @@ void Application::performMainStartupAction()
 
 void Application::importFromUrl(const QUrl& url)
 {
-	/* An import asks its questions in a window: MainWindow's own import
-	 * route, or the QML shell's New instance dialog. A launcher started
-	 * with --launch has neither on screen, and a second process can still
-	 * send it an "import" message, so bring the usual window up first. */
+	/* An import asks its questions in a window; a launcher started with
+	 * --launch has none on screen, so bring the usual one up first. */
 	if (!m_mainWindow && !m_qmlWindowShown) {
 		showMainWindow();
 	}
 	if (m_qmlShell) {
-		// Same local-file/URL split MainWindow::droppedURLs() makes.
+		// Same local-file/URL split as MainWindow::droppedURLs().
 		m_qmlShell->requestImport(url.isLocalFile() ? url.toLocalFile()
 													: url.toString());
 	} else if (m_mainWindow) {
@@ -1714,23 +1544,19 @@ void Application::showFatalErrorMessage(const QString& title,
 
 Application::~Application()
 {
-	/* Stop handing out a context that is being torn down. Anything still
-	 * running past this point has to cope with LAUNCHER being null, which is
-	 * what the accessor documents. */
+	/* Stop handing out a context that is being torn down; anything still
+	 * running must cope with LAUNCHER being null. */
 	LauncherContext::setInstance(nullptr);
 
-	// Shut down plugin system before tearing down the rest.
-	// shutdownAll() was already called from aboutToQuit; this
-	// is a no-op guard for any other exit path.
+	// Shut the plugin system down first. shutdownAll() already ran from
+	// aboutToQuit; this guards other exit paths.
 	if (m_pluginManager) {
 		m_pluginManager->shutdownAll();
 	}
 
-	// Shut down logger by setting the logger function to nothing
 	qInstallMessageHandler(nullptr);
 
 #if defined Q_OS_WIN32
-	// Detach from Windows console
 	if (consoleAttached) {
 		fclose(stdout);
 		fclose(stdin);
@@ -1864,11 +1690,9 @@ bool Application::launch(InstancePtr instance, LaunchMode mode,
 						 MinecraftServerTargetPtr serverToJoin,
 						 MinecraftAccountPtr accountToUse)
 {
-	/* LaunchController asks everything (which account, a profile name, an
-	 * offline player name, ...) through UiHost. Under the QML shell those
-	 * questions must wait for its presenter instead of falling back to the
-	 * widget host, so a launch that comes in before then is held until it
-	 * is up -- see qmlShellChosen(). */
+	/* LaunchController asks everything through UiHost. Under the QML shell
+	 * those questions wait for its presenter instead of using the widget host,
+	 * so an early launch is held until it is up. */
 	if (qmlShellChosen() && !usingQmlShell()) {
 		runWhenQmlPresenterReady(
 			[this, instance, mode, serverToJoin, accountToUse]() {
@@ -1893,11 +1717,10 @@ bool Application::launch(InstancePtr instance, LaunchMode mode,
 		controller->setOnline(mode != LaunchMode::Offline);
 		controller->setDemoMode(mode == LaunchMode::Demo);
 
-		/* The profiler follows the instance, not the click. An unknown key
-		 * is left alone rather than cleared: this build simply has no such
-		 * profiler, which is not the same as the user not wanting one.
-		 * A known but misconfigured one is still handed over, so that
-		 * LaunchController says so instead of quietly running unprofiled. */
+		/* The profiler follows the instance, not the click. An unknown key is
+		 * left alone (this build has no such profiler); a known but
+		 * misconfigured one is still handed over, so LaunchController reports
+		 * it. */
 		const QString profilerKey = instance->profilerKey();
 		if (!profilerKey.isEmpty()) {
 			auto profiler = m_profilers.value(profilerKey, nullptr);
@@ -1926,19 +1749,14 @@ bool Application::launch(InstancePtr instance, LaunchMode mode,
 		controller->start();
 		return true;
 	} else if (instance->isRunning()) {
-		// Same widget behaviour as before (showInstanceWindow(instance,
-		// "console")) when the QML shell is off - see showInstanceLog()'s
-		// own doc comment; under it, this raises the QML window on the
-		// instance's Log tab instead of a widget InstanceWindow.
+		// Widget UI: showInstanceWindow(instance, "console"). QML shell:
+		// raises its window on the instance's Log tab.
 		showInstanceLog(instance);
 		return true;
 	} else if (instance->canEdit()) {
-		// Same reasoning as the isRunning() branch above, but not through
-		// showInstanceLog(): its widget fallback is always
-		// showInstanceWindow(instance, "console"), while this branch's
-		// own widget behaviour opens on the window's own default page
-		// instead (showInstanceWindow(instance), no explicit page) - kept
-		// exactly as it was when the QML shell is off.
+		// As above, but not via showInstanceLog(): its widget fallback is
+		// always the console page, while this branch opens the window's
+		// default page.
 		if (qmlShellChosen()) {
 			showQmlShellWindow(false);
 			m_qmlShell->showInstanceLogRequested(instance->id());
@@ -1999,9 +1817,9 @@ bool Application::updatesAreAllowed()
 
 QString Application::updaterBinaryName()
 {
-	// Kept in step with KiteExternalUpdater::updaterBinaryRelativePath();
-	// that is the one that actually launches it. Duplicated only because the
-	// macOS build does not compile that class at all.
+	// Kept in step with KiteExternalUpdater::updaterBinaryRelativePath(),
+	// which actually launches it; duplicated because the macOS build does not
+	// compile that class.
 #if defined(Q_OS_WIN32)
 	return QStringLiteral("kite-updater.exe");
 #else
@@ -2019,9 +1837,8 @@ bool Application::updaterEnabled()
 	return false;
 #endif
 #else
-	// A distribution package takes over updating and simply does not ship the
-	// updater; offering updates in that case would produce a menu entry that
-	// can only ever fail.
+	// A distribution package takes over updating and does not ship the
+	// updater; offering updates would show a menu entry that can only fail.
 	return BuildConfig.UPDATER_ENABLED &&
 		   QFileInfo(FS::PathCombine(m_rootPath, updaterBinaryName())).isFile();
 #endif
@@ -2035,9 +1852,6 @@ void Application::triggerUpdateCheck()
 		return;
 	}
 
-	// The channel is not re-applied here: it is a property of the build, set
-	// once when the updater is created. Writing it again on every check would
-	// keep overwriting the config for no reason.
 	qDebug() << "Checking for updates.";
 	m_updater->checkForUpdates();
 }
@@ -2048,8 +1862,6 @@ void Application::connectUpdaterToQmlShell()
 		return;
 	}
 	m_qmlShell->setUpdaterAvailable(updaterEnabled() && m_updater);
-	/* The Updates settings read and write the updater's own schedule;
-	 * without a backend that section hides itself. */
 	if (m_updater && updaterEnabled()) {
 		ExternalUpdater* updater = m_updater.get();
 		m_qmlShell->updateSettingsController()->setBackend(
@@ -2074,19 +1886,14 @@ bool Application::reportUpdateMarkers()
 		return contents;
 	};
 
-	/* This runs from init(), before useQmlShell()/showMainWindow() has
-	 * chosen a UI -- so under the QML shell there is no window yet to
-	 * answer a UiHost call either (see QmlUiHost's PRESENTER READINESS
-	 * comment). Queue what would have been a QMessageBox instead of
-	 * showing one, and let showMainWindow() run the queue once its
-	 * QmlUiHost reports presenterReady() -- see m_pendingQmlPresenterCalls
-	 * (the same queue runWhenQmlPresenterReady() adds to).
-	 * The classic path below is entirely unchanged when this is false. */
+	/* Runs from init(), before a UI is chosen, so under the QML shell no
+	 * window can answer a UiHost call yet: queue what would have been a
+	 * QMessageBox and let showMainWindow() run it once the QmlUiHost reports
+	 * presenterReady(). */
 	const bool qml = useQmlShell();
 
-	// A lock left behind means an update started and never finished, so this
-	// installation may be a mix of two versions. That is not something to
-	// carry on from silently.
+	// A leftover lock means an update started and never finished, so the
+	// installation may mix two versions.
 	const QString lockPath = UpdateLockFile::lockPath(m_dataPath);
 	if (QFileInfo::exists(lockPath)) {
 		UpdateLockFile::Contents lock;
@@ -2204,8 +2011,7 @@ bool Application::reportUpdateMarkers()
 								  UiHost::Severity::Information);
 			});
 		} else {
-			// Shown without blocking startup: the news is good, and the
-			// details are there for anyone who wants them.
+			// Shown without blocking startup.
 			auto* box = new QMessageBox(QMessageBox::Information,
 										tr("Update Succeeded"), text,
 										QMessageBox::Ok);
@@ -2235,7 +2041,6 @@ void Application::controllerSucceeded()
 	auto id = controller->id();
 	auto& extras = m_instanceExtras[id];
 
-	// on success, do...
 	if (controller->instance()->settings()->get("AutoCloseConsole").toBool()) {
 		if (extras.window) {
 			extras.window->close();
@@ -2244,12 +2049,10 @@ void Application::controllerSucceeded()
 	extras.controller.reset();
 	subRunningInstance();
 
-	// quit when there are no more windows.
 	if (shouldExitNow()) {
 		m_status = Status::Succeeded;
-		// Qualified explicitly so a future refactor of this class cannot
-		// silently turn this into ::exit() (libc, no Qt shutdown) by adding
-		// a member or free function named exit() that shadows this call.
+		// Qualified so a member or free function named exit() cannot turn this
+		// into ::exit() (libc, no Qt shutdown).
 		QCoreApplication::exit(0);
 	}
 }
@@ -2263,29 +2066,21 @@ void Application::controllerFailed(const QString& error)
 	auto id = controller->id();
 	auto& extras = m_instanceExtras[id];
 
-	// on failure, do... nothing
 	extras.controller.reset();
 	subRunningInstance();
 
-	// quit when there are no more windows.
 	if (shouldExitNow()) {
 		m_status = Status::Failed;
-		// See controllerSucceeded()'s exit(0) for why this is qualified.
 		QCoreApplication::exit(1);
 	}
 }
 
 namespace
 {
-	/* Wraps the built-in global-settings page provider and appends any
-	 * pages contributed by plugins via MMCO_HOOK_UI_GLOBAL_SETTINGS_PAGES.
-	 *
-	 * This mirrors what InstancePageProvider does for instance pages: the
-	 * hook is dispatched every time the dialog is built, so plugin pages
-	 * are created fresh on each open (PageDialog takes ownership) and
-	 * never accumulate. Without this bridge the hook is defined but never
-	 * fired, so plugins such as OfflineWiki that register a global page
-	 * through it stay invisible. */
+	/* Appends pages contributed by plugins
+	 * (MMCO_HOOK_UI_GLOBAL_SETTINGS_PAGES) to the global-settings pages. The
+	 * hook is dispatched each time the dialog is built, so plugin pages are
+	 * created fresh on every open (PageDialog takes ownership). */
 	class PluginAugmentedPageProvider : public BasePageProvider
 	{
 	  public:
@@ -2303,10 +2098,9 @@ namespace
 				APPLICATION->pluginManager()->dispatchHook(
 					MMCO_HOOK_UI_GLOBAL_SETTINGS_PAGES, &evt);
 
-				/* ABI 5 — every MMCO_UI_ANCHOR_GLOBAL_SETTINGS surface
-				 * (ui_surface_create) is stacked as a titled section
-				 * inside one host-built "Plugins" page, appended here
-				 * alongside whatever the raw hook above still added. */
+				/* ABI 5: every MMCO_UI_ANCHOR_GLOBAL_SETTINGS surface
+				 * (ui_surface_create) is stacked as a titled section in one
+				 * host-built "Plugins" page. */
 				if (BasePage* pluginsPage =
 						APPLICATION->pluginManager()->createGlobalSettingsPluginsPage())
 					pages.append(pluginsPage);
@@ -2348,11 +2142,8 @@ void Application::registerGlobalSettingsPage(std::function<BasePage*()> creator)
 
 namespace
 {
-	/* The QML user interface is a preview. It is always compiled -- so it
-	 * cannot rot unnoticed -- but only shown when asked for. The build option
-	 * Kite_QML_UI picks the default; KITE_QML_UI in the environment
-	 * overrides it either way, so both interfaces can be compared from the
-	 * same binary. */
+	/* Kite_QML_UI sets the default interface; KITE_QML_UI in the environment
+	 * overrides it ("0" selects the widget UI). */
 	bool useQmlShell()
 	{
 #ifdef KITE_QML_UI_DEFAULT
@@ -2372,19 +2163,14 @@ bool Application::ensureQmlShell()
 	if (m_qmlShell) {
 		return true;
 	}
-	// Not tried again: the widget window has taken over by now.
+	// Not tried again: the widget window has taken over.
 	if (m_qmlShellLoadFailed) {
 		return false;
 	}
 	m_qmlShell = std::make_unique<QmlShell>();
 
-	/* QmlShell cannot see PluginManager (Kite_qml does not link
-	 * Kite_logic, which is where the plugin host lives) -- this
-	 * factory is the bridge, installed once here the same way the
-	 * signal connections below wire up the widget-side actions
-	 * QmlShell itself cannot reach. Harmless to install again for a
-	 * second shell: it is process-wide state, and this whole function
-	 * only runs once per m_qmlShell. */
+	/* QmlShell cannot see PluginManager (Kite_qml does not link Kite_logic),
+	 * so this factory is the bridge. */
 	QmlShell::setPluginSurfaceFactory(
 		[this](int anchor, const QString& anchorContext) -> QObject* {
 			if (!m_pluginManager) {
@@ -2394,8 +2180,6 @@ bool Application::ensureQmlShell()
 				m_pluginManager.get(), anchor, anchorContext));
 		});
 
-	/* The same list the widget launch menu's profiler entries come from,
-	 * checked afresh each time a QML "Play options" menu opens. */
 	m_qmlShell->setProfilersProvider([this]() {
 		QVariantList list;
 		for (auto it = m_profilers.constBegin(); it != m_profilers.constEnd();
@@ -2417,10 +2201,9 @@ bool Application::ensureQmlShell()
 							   : nullptr;
 	});
 
-	/* Counted and closed through the same path as MainWindow, so the
-	 * launcher quits when its last window goes, as it always has -- but
-	 * only while showQmlShellWindow() counts it as open: a hidden shell
-	 * (see performMainStartupAction()) is not a window anyone closed. */
+	/* Counted and closed like MainWindow, so the launcher quits when its last
+	 * window goes, but only while showQmlShellWindow() counts it as open (a
+	 * hidden shell is not a window anyone closed). */
 	connect(m_qmlShell.get(), &QmlShell::closed, this, [this]() {
 		if (!m_qmlWindowShown) {
 			return;
@@ -2429,9 +2212,8 @@ bool Application::ensureQmlShell()
 		on_windowClose();
 	});
 
-	/* QmlShell cannot see widget code, so it only emits these
-	 * signals; the actual actions - the same ones the widget menus
-	 * already run - are wired up here. */
+	/* QmlShell cannot see widget code: it emits these signals and the actions
+	 * are wired up here. */
 	connect(m_qmlShell.get(), &QmlShell::launchRequested, this,
 			[this](const QString& id) {
 				if (auto inst = instances()->getInstanceById(id)) {
@@ -2447,7 +2229,6 @@ bool Application::ensureQmlShell()
 				if (mode == QLatin1String("offline")) {
 					launch(inst, LaunchMode::Offline);
 				} else if (mode == QLatin1String("demo")) {
-					// Same check as the widget launch menu's Launch Demo.
 					auto minecraft =
 						std::dynamic_pointer_cast<MinecraftInstance>(inst);
 					if (!minecraft || !minecraft->supportsDemo()) {
@@ -2486,8 +2267,7 @@ bool Application::ensureQmlShell()
 				}
 				launch(inst, LaunchMode::Normal, nullptr, account);
 			});
-	/* "Check for updates" (the macOS menu bar, the Updates settings):
-	 * QmlShell cannot reach the updater itself. */
+	/* QmlShell cannot reach the updater (macOS menu bar, Updates settings). */
 	connect(m_qmlShell.get(), &QmlShell::checkForUpdatesRequested, this,
 			&Application::triggerUpdateCheck);
 	connectUpdaterToQmlShell();
@@ -2513,28 +2293,19 @@ bool Application::ensureQmlShell()
 			});
 
 	if (!m_qmlShell->load()) {
-		/* A QML load failure must not leave the user with nothing on
-		 * screen: showMainWindow() falls through to the widget window. */
 		qWarning() << "QML shell failed to load; using the widget window";
 		m_qmlShell.reset();
 		m_qmlShellLoadFailed = true;
 
-		/* The QmlUiHost that would have shown these never came up.
-		 * uiHost() now falls back to the widget host and qmlShellChosen()
-		 * is false since the load failed, so they still reach the user
-		 * (a held launch takes the widget path) instead of being silently
-		 * dropped. */
+		/* The QmlUiHost never came up; uiHost() falls back to the widget host
+		 * and qmlShellChosen() is false, so these still reach the user. */
 		runPendingQmlPresenterCalls();
 		return false;
 	}
 
-	/* Runs whatever waited for the presenter -- reportUpdateMarkers() at
-	 * init(), runWhenQmlPresenterReady() since (see
-	 * m_pendingQmlPresenterCalls) -- the moment QmlUiHost can actually
-	 * show a request. Wired here rather than right after QmlShell's
-	 * construction above: QmlShell only builds its QmlUiHost inside
-	 * load(), so m_qmlShell->uiHost() is null before this point and the
-	 * qobject_cast below would always fail silently. */
+	/* Runs what waited for the presenter once QmlUiHost can show a request.
+	 * Wired here, not after QmlShell's construction: it builds its QmlUiHost
+	 * inside load(), so uiHost() is null before this point. */
 	if (auto* host = qobject_cast<QmlUiHost*>(m_qmlShell->uiHost())) {
 		connect(host, &QmlUiHost::presenterReadyChanged, this,
 				[this, host]() {
@@ -2543,9 +2314,6 @@ bool Application::ensureQmlShell()
 					}
 				});
 
-		/* The window may still be hidden -- a launch straight from the
-		 * command line keeps it so (see performMainStartupAction()). A
-		 * question, or a wait the user should see, brings it up. */
 		const auto reveal = [this, host]() {
 			if (!m_qmlWindowShown && (host->current() || host->busy())) {
 				showQmlShellWindow(false);
@@ -2554,11 +2322,10 @@ bool Application::ensureQmlShell()
 		connect(host, &QmlUiHost::currentChanged, this, reveal);
 		connect(host, &QmlUiHost::busyChanged, this, reveal);
 
-		/* presenterReady() is normally already true here (the QML window
-		 * finished its Component.onCompleted during load()), so
-		 * presenterReadyChanged() would never fire again to trigger the
-		 * flush. Run the queue once here too; the lambda above is a no-op
-		 * if it later fires with nothing left queued. */
+		/* presenterReady() is normally already true here
+		 * (Component.onCompleted ran during load()), so
+		 * presenterReadyChanged() would not fire again; run the queue once
+		 * here too. */
 		if (host->presenterReady()) {
 			runPendingQmlPresenterCalls();
 		}
@@ -2574,14 +2341,10 @@ void Application::showQmlShellWindow(bool minimized)
 	m_qmlWindowShown = true;
 	m_openWindows++;
 
-	/* The widget MainWindow fires MMCO_HOOK_UI_MAIN_READY itself, from
-	 * its own constructor (see ui/MainWindow.cpp) -- the QML shell has no
-	 * equivalent place to hang that off of, so this is it: once, the
-	 * first time the shell's root window is on screen, with every widget
-	 * handle in the payload null (see PluginHooks.h). Plugins are already
-	 * initialised by this point -- initializeAll() runs during
-	 * Application::init(), well before any window is shown -- so every
-	 * hook registration this dispatch could reach is already in place. */
+	/* The widget MainWindow fires MMCO_HOOK_UI_MAIN_READY from its
+	 * constructor; the QML shell has no equivalent, so it fires once here, the
+	 * first time its root window is on screen, with every widget handle null.
+	 * Plugins are initialised by then. */
 	if (!m_qmlMainReadyDispatched) {
 		m_qmlMainReadyDispatched = true;
 		if (m_pluginManager) {
@@ -2646,8 +2409,7 @@ void Application::startBackgroundChecks()
 		return;
 	}
 	m_backgroundChecksStarted = true;
-	// No-op if MainWindow already started it; it shows "Loading news..."
-	// from its own constructor.
+	// No-op if MainWindow already started it.
 	m_newsChecker->reloadNews();
 	m_notificationChecker->checkForNotifications();
 	if (qmlShellChosen()) {
@@ -2717,13 +2479,10 @@ InstanceWindow* Application::showInstanceWindow(InstancePtr instance,
 		window->activateWindow();
 	} else {
 		window = new InstanceWindow(instance);
-		// On Wayland, set the transient parent so the compositor
-		// (Mutter/GNOME) knows this window belongs to the main
-		// window and can manage stacking/focus correctly.
-		// This must happen before show() so the compositor sees
-		// the relationship when the surface is first mapped.
+		// Wayland: set the transient parent so the compositor manages stacking
+		// and focus; must happen before show(), when the surface is first
+		// mapped.
 		if (m_mainWindow) {
-			// Ensure both windows have native handles
 			window->winId();
 			if (window->windowHandle() && m_mainWindow->windowHandle()) {
 				window->windowHandle()->setTransientParent(
@@ -2759,9 +2518,7 @@ void Application::on_windowClose()
 	if (mainWindow) {
 		m_mainWindow = nullptr;
 	}
-	// quit when there are no more windows.
 	if (shouldExitNow()) {
-		// See controllerSucceeded()'s exit(0) for why this is qualified.
 		QCoreApplication::exit(0);
 	}
 }
@@ -2774,7 +2531,6 @@ QString Application::msaClientId() const
 void Application::updateProxySettings(QString proxyTypeStr, QString addr,
 									  int port, QString user, QString password)
 {
-	// Set the application proxy settings.
 	if (proxyTypeStr == "SOCKS5") {
 		QNetworkProxy::setApplicationProxy(QNetworkProxy(
 			QNetworkProxy::Socks5Proxy, addr, port, user, password));
@@ -2782,12 +2538,9 @@ void Application::updateProxySettings(QString proxyTypeStr, QString addr,
 		QNetworkProxy::setApplicationProxy(QNetworkProxy(
 			QNetworkProxy::HttpProxy, addr, port, user, password));
 	} else if (proxyTypeStr == "None") {
-		// If we have no proxy set, set no proxy and return.
 		QNetworkProxy::setApplicationProxy(
 			QNetworkProxy(QNetworkProxy::NoProxy));
 	} else {
-		// If we have "Default" selected, set Qt to use the system proxy
-		// settings.
 		QNetworkProxyFactory::setUseSystemConfiguration(true);
 	}
 
@@ -2854,21 +2607,10 @@ QString Application::getJarsPath()
 		}
 		return FS::PathCombine(appDir, "jars");
 #elif defined(Q_OS_MAC)
-		// Inside the .app bundle applicationDirPath() returns
-		//   <bundle>/Contents/MacOS
-		// Java archives are installed under
-		//   <bundle>/Contents/Resources/jars
-		// instead of beside the executable, because Apple's
-		// codesign refuses to seal the main executable while
-		// non-Mach-O files live under Contents/MacOS — the strict-
-		// validation pass treats every such file as an unsigned
-		// subcomponent and aborts with
-		//     "code object is not signed at all
-		//      In subcomponent: .../jars/JavaCheck.jar"
-		// (See JARS_DEST_DIR in the top-level CMakeLists.txt and
-		// the macOS bundle anatomy guide.) We still check the
-		// legacy Contents/MacOS/jars location as a fallback so
-		// older installs and ad-hoc developer builds keep working.
+		// macOS: Java archives live in <bundle>/Contents/Resources/jars, not
+		// Contents/MacOS, because codesign refuses to seal the main executable
+		// while non-Mach-O files sit there. Contents/MacOS/jars is still
+		// checked as a fallback for older installs and developer builds.
 		auto appDir = QCoreApplication::applicationDirPath();
 		auto resourcesJars = FS::PathCombine(appDir, "..", "Resources", "jars");
 		if (QDir(resourcesJars).exists()) {
@@ -2894,15 +2636,11 @@ AuthRequestDecorator* Application::authRequestDecorator() const
 
 UiHost* Application::uiHost() const
 {
-	/* Prefer the QML shell's own UiHost while it is the active UI (see
-	 * useQmlShell() and showMainWindow()): m_qmlShell is only non-null
-	 * once its show() has succeeded, and uiHostInterface() on it is only
-	 * non-null once show() has created it *and* some QML item has called
-	 * setPresenterReady(true) on it (see QmlUiHost's class comment) --
-	 * both conditions this checks implicitly by falling through to the
-	 * widget host otherwise. Every call site reaches this fresh
-	 * (LAUNCHER->uiHost()->...) rather than caching the pointer, so
-	 * switching which one answers from one call to the next is safe. */
+	/* Prefer the QML shell's own UiHost while it is the active UI: m_qmlShell
+	 * is non-null once show() has succeeded, and its uiHostInterface() once a
+	 * QML item called setPresenterReady(true); otherwise fall through to the
+	 * widget host. Call sites reach this fresh, so the answer may change
+	 * between calls. */
 	if (m_qmlShell) {
 		if (auto* host = m_qmlShell->uiHostInterface()) {
 			return host;
@@ -2933,10 +2671,9 @@ bool Application::usingQmlShell() const
 
 bool Application::qmlShellChosen() const
 {
-	/* The decision, not the object: plugins initialise and the updater
-	 * starts before ensureQmlShell() has made the shell, and they must
-	 * already wait for it (or be declined) rather than take the widget
-	 * path. False again once the QML shell has failed to load. */
+	/* The decision, not the object: plugins initialise and the updater starts
+	 * before ensureQmlShell() has made the shell, and must already wait for
+	 * it. False again once the QML shell failed to load. */
 	return m_qmlShell != nullptr || (useQmlShell() && !m_qmlShellLoadFailed);
 }
 
@@ -2951,9 +2688,9 @@ void Application::runWhenQmlPresenterReady(std::function<void()> call)
 
 void Application::runPendingQmlPresenterCalls()
 {
-	/* Taken out first: a call may queue again (a launch while the
-	 * presenter has gone away again, say), and that must land in the
-	 * next batch rather than in the list being walked. */
+	/* Taken out first: a call may queue again (e.g. a launch after the
+	 * presenter went away) and must land in the next batch, not the list being
+	 * walked. */
 	const auto pending = std::move(m_pendingQmlPresenterCalls);
 	m_pendingQmlPresenterCalls.clear();
 	for (const auto& call : pending) {
@@ -2974,10 +2711,8 @@ void Application::showInstanceLog(InstancePtr instance)
 			return;
 		}
 		// The request can arrive with the QML window minimized or behind
-		// others (a background crash, or - see launch()'s own
-		// isRunning()/canEdit() branches - a second Play click while
-		// nothing new needs launching): raise it the same way clicking
-		// the dock/taskbar icon would, so the log actually gets seen.
+		// others (a background crash, a second Play click): raise it as the
+		// dock or taskbar icon would, so the log gets seen.
 		showQmlShellWindow(false);
 		m_qmlShell->showInstanceLogRequested(instance->id());
 		return;

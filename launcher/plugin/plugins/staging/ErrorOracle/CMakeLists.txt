@@ -1,8 +1,5 @@
-# Kite standalone plugin build bootstrap.
-# When this plugin is built from Kite's main tree, the parent project
-# already provides Qt, Kite::SDK, output directories, and signing helpers.
-# When this directory is configured as its own repository, provide those
-# pieces here so the plugin can be built with only an installed Kite SDK.
+# Standalone build bootstrap: when this directory is its own project, provide what the Kite tree
+# normally gives a plugin (Qt, Kite::SDK, output directories, signing helpers).
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     cmake_minimum_required(VERSION 3.21)
     project(ErrorOracle LANGUAGES CXX)
@@ -29,23 +26,11 @@ endif()
 # SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 #
-# ErrorOracle — Kite plugin (.mmco)
-#
-# LLM-free crash / log analyser. Two layers:
-#
-#   1. A built-in rule pack (rules/*.json) shipped with the plugin
-#      mapping regex patterns to remediation advice. Loaded once at
-#      init time.
-#
-#   2. A *learning* layer that tracks (rule, instance) -> outcome
-#      pairs over time, persists them under <plugin_data>/learn.json,
-#      and re-ranks rule suggestions for an instance based on what
-#      worked last time. Pure local statistics, no network.
-#
-# Users can drop additional rule packs into
-# <plugin_data>/userrules/*.json without recompiling — the rule
-# engine watches that directory at init time and reloads when the
-# user clicks the "Reload rules" button.
+# ErrorOracle: Kite plugin (.mmco). LLM-free crash / log analyser: a built-in rule pack
+# (rules/*.json, loaded once at init) mapping regex patterns to advice, plus a learning layer that
+# tracks (rule, instance) -> outcome pairs under <plugin_data>/learn.json and re-ranks suggestions
+# per instance (local statistics, no network). Extra rule packs go in
+# <plugin_data>/userrules/*.json without recompiling; the "Reload rules" button reloads them.
 
 set(ERR_SOURCES
     ErrorOraclePlugin.cpp
@@ -82,19 +67,12 @@ foreach(CFG ${CMAKE_CONFIGURATION_TYPES})
     )
 endforeach()
 
-# Install the bundled rule pack as PLUGIN DATA, not next to the
-# .mmco. On macOS the .mmco lives under Contents/PlugIns/mmcmodules,
-# which Apple's codesign treats as nested-code territory; dropping
-# JSON files there causes
-#   "code object is not signed at all
-#    In subcomponent: .../PlugIns/mmcmodules/ErrorOracle/rules/jvm.json"
-# at signing time. MMCO_PLUGIN_DATA_DEST_DIR resolves to:
-#   Linux/Windows -> <install>/mmcmodules        (legacy, next to .mmco)
-#   macOS         -> Kite.app/Contents/Resources/MMCOPluginData
-# The runtime lookup chain in ErrorOraclePlugin::builtInRulesDir
-# probes the platform-specific location first, then falls back to
-# the legacy "next to the .mmco" path so older installs and ad-hoc
-# developer builds keep working.
+# Install the bundled rule pack as PLUGIN DATA, not next to the .mmco: on macOS codesign treats
+# Contents/PlugIns/mmcmodules as nested code and rejects JSON files there ("code object is not
+# signed at all"). MMCO_PLUGIN_DATA_DEST_DIR is <install>/mmcmodules on Linux/Windows (next to the
+# .mmco) and Kite.app/Contents/Resources/MMCOPluginData on macOS.
+# ErrorOraclePlugin::builtInRulesDir probes the platform location first, then the legacy
+# next-to-.mmco path.
 install(DIRECTORY rules
     DESTINATION "${MMCO_PLUGIN_DATA_DEST_DIR}/ErrorOracle"
     FILES_MATCHING PATTERN "*.json"

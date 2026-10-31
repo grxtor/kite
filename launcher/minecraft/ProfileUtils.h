@@ -28,9 +28,6 @@ namespace ProfileUtils
 	/// Read and parse a OneSix format order file
 	bool readOverrideOrders(QString path, PatchOrder& order);
 
-	/// Write a OneSix format order file
-	bool writeOverrideOrders(QString path, const PatchOrder& order);
-
 	/// Parse a version file in JSON format
 	VersionFilePtr parseJsonFile(const QFileInfo& fileInfo,
 								 const bool requireOrder);

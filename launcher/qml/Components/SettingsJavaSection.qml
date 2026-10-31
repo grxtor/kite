@@ -8,14 +8,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The "Java & memory" section of SettingsPage.qml: how much memory
- * Minecraft gets and which Java runtime runs it, launcher-wide. Each
- * instance can override these in its own InstanceJavaSettings.qml.
- *
- * The Java rows (path with Choose, Browse and Test, JVM arguments, the
- * download vendor, the Java Kite downloaded) work through JavaStore; see
- * JavaPathRow.qml and friends. PermGen only appears for a Java old enough
- * to use it.
+ * The "Java & memory" section of SettingsPage.qml: how much memory Minecraft gets
+ * and which Java runtime runs it, launcher-wide. Instances can override these in
+ * InstanceJavaSettings.qml. PermGen only appears for a Java old enough to use it.
  */
 SettingsScroll {
     id: root

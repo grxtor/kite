@@ -42,15 +42,11 @@
 
 namespace
 {
-	/* CurseForge warns about packs asking for more than this, so the
-	 * figure suggested stops here however much the instance itself is
-	 * allowed to use. The same cap as ExportPackDialog's. */
+	/* CurseForge warns about packs asking for more; the suggested figure stops here. */
 	constexpr int MAX_SUGGESTED_MEMORY_MIB = 1024 * 12;
 
-	/* No icons at all. The platform's own lookup is a call per file, and
-	 * this model is pointed at an entire instance (see
-	 * ui/FastFileIconProvider); the QML tree draws its folder and file
-	 * glyphs from the "isDir" role instead. */
+	/* No icons: the platform lookup costs a call per file over a whole instance;
+	 * QML draws its glyphs from the "isDir" role. */
 	class NoFileIcons : public QAbstractFileIconProvider
 	{
 	  public:
@@ -97,7 +93,6 @@ class ExportFileTree : public FileIgnoreProxy
 		return files->isDir(mapToSource(index));
 	}
 
-	/* After the ignore lists changed. */
 	void refilter()
 	{
 		invalidateRowsFilter();
@@ -120,10 +115,8 @@ InstanceExportController::InstanceExportController(InstancePtr instance,
 {
 	m_fileSystem->setIconProvider(m_icons.get());
 
-	/* Rooted at the instance folder in every format, even though a pack's
-	 * tree starts at the game folder, so the paths it records line up
-	 * with the zip export's: all three share one `.packignore`, and a
-	 * file unchecked in one should stay unchecked in the others. */
+	/* Rooted at the instance folder in every format so recorded paths line up with
+	 * the zip export's: all three share one `.packignore`. */
 	m_tree->setSourceModel(m_fileSystem.get());
 	applyIgnoreLists();
 	m_tree->loadBlockedPathsFromFile(ignoreFileName());
@@ -141,10 +134,8 @@ InstanceExportController::InstanceExportController(InstancePtr instance,
 
 InstanceExportController::~InstanceExportController()
 {
-	/* A worker thread may still be inside a running export. Stop it, and
-	 * keep the task alive until it has wound down rather than pulling it
-	 * out from under that thread; its filter is a snapshot (see
-	 * snapshotFilter()), so it needs nothing else of ours. */
+	/* A worker thread may still be inside a running export: stop it and keep the
+	 * task alive until it winds down. */
 	if (m_task && m_task->isRunning()) {
 		Task::Ptr task = m_task;
 		connect(task.get(), &Task::finished, task.get(),
@@ -183,9 +174,8 @@ QModelIndex InstanceExportController::filesRoot() const
 	const QString root = m_format == Format::Zip ? m_instance->instanceRoot()
 												 : m_instance->gameRoot();
 	QModelIndex index = m_fileSystem->index(root);
-	/* A game folder that is not there yet (an instance never started)
-	 * shows the instance folder instead: an invalid root would make the
-	 * tree start at the top of the disk. */
+	/* Without a game folder yet, show the instance folder: an invalid root would
+	 * start the tree at the top of the disk. */
 	if (!index.isValid()) {
 		index = m_fileSystem->index(m_instance->instanceRoot());
 	}
@@ -295,8 +285,7 @@ void InstanceExportController::setRecommendedMemory(int mib)
 
 bool InstanceExportController::ready() const
 {
-	/* Only Modrinth insists: `versionId` is required in an mrpack index,
-	 * where a CurseForge manifest is content with an empty version. */
+	/* Only Modrinth insists: an mrpack index requires `versionId`. */
 	return m_format != Format::ModrinthPack || !m_packVersion.trimmed().isEmpty();
 }
 
@@ -335,9 +324,8 @@ QObject* InstanceExportController::exportTo(const QString& urlOrPath)
 		setError(tr("Choose where to save the export."));
 		return nullptr;
 	}
-	/* `.zip` is left alone on a Modrinth pack: an mrpack is a zip, and a
-	 * user who typed that extension meant it. Anything else gains the
-	 * real one, so the file is not one the catalogue refuses to read. */
+	/* A `.zip` is left alone on a Modrinth pack (an mrpack is a zip); anything
+	 * else gains the real extension. */
 	const bool named =
 		output.endsWith(fileExtension(), Qt::CaseInsensitive) ||
 		(m_format == Format::ModrinthPack &&
@@ -392,9 +380,8 @@ void InstanceExportController::saveChoices()
 	if (m_recommendMemory) {
 		settings->set("ExportRecommendedRAM", m_recommendedMemory);
 	} else {
-		/* Reset rather than set to zero: the setting's own default is "do
-		 * not state a requirement", and storing a zero on top of it would
-		 * keep whatever figure the field happened to show. */
+		/* Reset, not zero: the setting's default is "no requirement", and zero would
+		 * keep the field's figure. */
 		settings->reset("ExportRecommendedRAM");
 	}
 }
@@ -412,30 +399,21 @@ void InstanceExportController::applyIgnoreLists()
 	const QDir instanceDir(m_instance->instanceRoot());
 	const QString prefix = instanceDir.relativeFilePath(m_instance->gameRoot());
 
-	/* Things that are not part of an instance so much as debris it
-	 * produces. Hidden rather than merely unchecked: an export carrying
-	 * somebody's crash reports and caches is bigger and no more useful,
-	 * and there is no version of "yes, please include my logs" worth
-	 * offering a checkbox for. */
+	/* Debris an instance produces, hidden rather than offered as a checkbox. */
 	auto& paths = m_tree->ignoreFilesWithPath();
 	paths.clear();
 	for (const char* path :
 		 {"logs", "crash-reports", ".cache", ".fabric", ".quilt"}) {
 		paths.insert(FS::PathCombine(prefix, QString::fromLatin1(path)));
 	}
-	/* The instance's own backups are zip files already; shipping them
-	 * inside another zip doubles its size for nothing. They live beside
-	 * the game folder, so the path is the instance root's, not @c prefix. */
+	/* Backups are zips already; they live beside the game folder, so the path is
+	 * the instance root's, not @c prefix. */
 	paths.insert(QStringLiteral(".backups"));
-	/* Pictures the launcher renders from the instance's icon: the game
-	 * folder's icon.png on every launch (the macOS dock icon), and a
-	 * desktop shortcut's icon in the instance folder. A built-in icon may be
-	 * drawn from the player's own Minecraft textures (GameTextureIcons),
-	 * which are Mojang's and must never leave in an export; and these are
-	 * rendered again whenever they are needed anyway. A file in the
-	 * instance folder named after the icon key is kept: that is how an
-	 * export carries a custom icon (saveInstanceIcon(), and the importer's
-	 * IconUtils::findBestIconIn()). */
+	/* Icons the launcher renders itself: the game folder's icon.png and a shortcut
+	 * icon. A built-in icon may be drawn from Mojang's textures (GameTextureIcons),
+	 * which must never leave in an export. A file named after the icon key in the
+	 * instance folder is kept: that is how an export carries a custom icon
+	 * (saveInstanceIcon()). */
 	for (const QString& rendered :
 		 {FS::PathCombine(prefix, QStringLiteral("icon.png")),
 		  QStringLiteral("Icon.icns"), QStringLiteral("icon.ico"),
@@ -453,12 +431,9 @@ void InstanceExportController::applyIgnoreLists()
 	m_tree->ignoreFilesWithSuffix().clear();
 
 	if (m_format != Format::Zip && m_minecraft) {
-		/* The sidecars that record where each managed file came from.
-		 * They are this launcher's bookkeeping, and in a pack they would
-		 * be wrong: the manifest is what tells an installer where the
-		 * files come from. Spelled out rather than asked of
-		 * ModMetadataIndex, whose accessor creates the directory it
-		 * names. */
+		/* Metadata sidecars are launcher bookkeeping and wrong in a pack, whose
+		 * manifest says where files come from. Spelled out because ModMetadataIndex's
+		 * accessor creates the directory it names. */
 		m_tree->ignoreFilesWithSuffix().append(QStringLiteral(".pw.toml"));
 		for (const QString& folder :
 			 {m_minecraft->modsRoot(), m_minecraft->coreModsDir(),
@@ -476,9 +451,8 @@ void InstanceExportController::applyIgnoreLists()
 
 MMCZip::FilterFileFunction InstanceExportController::snapshotFilter() const
 {
-	/* The tree stays live while the export runs, and a pack export asks
-	 * its filter from a worker thread. A copy answers the same question
-	 * from data nobody else touches. */
+	/* The tree stays live during the export and a pack export asks its filter from
+	 * a worker thread; a copy answers from data nobody else touches. */
 	auto copy = std::make_shared<FileIgnoreProxy>(m_instance->instanceRoot(),
 												  nullptr);
 	copy->blockedPaths() = m_tree->blockedPaths();
@@ -529,13 +503,11 @@ Task* InstanceExportController::buildTask(const QString& output)
 
 void InstanceExportController::saveInstanceIcon() const
 {
-	/* Without a launcher (a unit test) there is no icon list to ask. */
 	if (!LAUNCHER) {
 		return;
 	}
 	const QString key = m_instance->iconKey();
 	const MMCIcon* icon = LAUNCHER->icons()->icon(key);
-	/* A built-in icon needs nothing: the importing launcher has it too. */
 	if (!icon || icon->isBuiltIn()) {
 		return;
 	}
@@ -586,9 +558,8 @@ void InstanceExportController::loadPackFields()
 
 	const int recommended = settings->get("ExportRecommendedRAM").toInt();
 	m_recommendMemory = recommended > 0;
-	/* Off, but with a figure already in the field: the instance's own
-	 * allocation is the only informed guess there is, and the user should
-	 * see what they would be publishing before agreeing to publish it. */
+	/* Off but with a figure in the field: the instance's own allocation is the
+	 * only informed guess, and the user should see what they would publish. */
 	m_recommendedMemory =
 		recommended > 0
 			? recommended

@@ -5,26 +5,18 @@ import QtQuick
 import Kite.Theme
 
 /*
- * What every "Continue playing" row of the Sahne, Sade and Gece looks does
- * the same, so each look's row is only its drawing: hover, a click that
- * opens the instance page, a right-click for its menu, the keyboard (Return
- * opens, Space plays or stops, the menu key opens the menu) and a focus
- * ring. The row is one of HomeContinuePlaying's plain row objects; its
- * `host` is that list, whose signals carry the actions out. Children go in
- * as the row's content, over the tap handlers, so a Play inside one still
- * gets first refusal on a press.
+ * What every "Continue playing" row of the Sahne, Sade and Gece looks does the same: hover, click opens the
+ * instance page, right-click the menu, keyboard (Return opens, Space plays or stops, menu key opens the menu),
+ * focus ring. `host` is HomeContinuePlaying. Children go in over the tap handlers, so a Play inside one gets first
+ * refusal on a press.
  */
 Item {
     id: root
 
-    // One of HomeContinuePlaying's rows (instanceId, name, iconKey, ...).
     required property var row
-    // HomeContinuePlaying: openRequested, launchRequested, stopRequested and
-    // menuRequested(id, running, name, iconKey, anchor) are its signals.
+    // HomeContinuePlaying: openRequested, launchRequested, stopRequested and menuRequested are its signals.
     required property Item host
-    // The focus ring's corner radius, around the row's own.
     property int cornerRadius: Theme.radius.lg
-    // Whether the pointer is over the row (or its keyboard focus is on it).
     readonly property bool hovered: hoverHandler.hovered
     readonly property bool running: root.row.isRunning
     readonly property bool playable: root.row.isRunning || root.row.canLaunch
@@ -36,7 +28,6 @@ Item {
         else
             root.host.launchRequested(root.row.instanceId)
     }
-    // @p anchor: the ⋯ button, or null for the pointer.
     function openMenu(anchor) {
         root.host.menuRequested(root.row.instanceId, root.row.isRunning, root.row.name, root.row.iconKey, anchor)
     }
@@ -62,8 +53,6 @@ Item {
         onTapped: { root.forceActiveFocus(); root.openMenu(null) }
     }
 
-    // Keyboard focus ring, outset so it never competes with the row's own
-    // edge.
     Rectangle {
         anchors.fill: parent
         anchors.margins: -Theme.space.xs

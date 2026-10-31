@@ -7,22 +7,18 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The "About" section of SettingsPage.qml: which Kite this is, where to
- * get help, the credits and the licences -- the widget About dialog plus
- * the Help menu's links, all from QmlShell.about (AboutInfo, read from the
- * build itself). The licence text is long, so it only loads on request.
+ * The "About" section of SettingsPage.qml: which Kite this is, help, credits and
+ * licences, all from QmlShell.about (AboutInfo). The licence text is long, so it
+ * only loads on request.
  */
 SettingsScroll {
     id: root
 
     // QmlShell.about (AboutInfo), or null.
     property var about: null
-    // Read by SettingsPage.qml's section list.
     readonly property bool shown: !!root.about
     property bool licencesOpen: false
 
-    // One build fact: a label and its value, selectable so it can be
-    // copied into a bug report.
     component FactRow: SettingRow {
         id: fact
         property string value

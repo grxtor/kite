@@ -35,13 +35,10 @@
 
 namespace
 {
-	/* A face is looked at again after this long. */
 	constexpr qint64 kFaceMaxAgeSeconds = 24 * 60 * 60;
-	/* Mojang is asked about this many friends at once. */
 	constexpr int kMaxParallel = 3;
 	constexpr int kRequestTimeoutMs = 15000;
-	/* A profile is a few hundred bytes plus a signed texture value; a skin
-	 * is about 1 KiB. Anything far beyond is not one. */
+	/* A profile is a few hundred bytes plus a signed texture value; a skin about 1 KiB. */
 	constexpr qint64 kMaxProfileBytes = 64 * 1024;
 	constexpr qint64 kMaxSkinBytes = 256 * 1024;
 	constexpr int kHttpOk = 200;
@@ -107,7 +104,6 @@ std::optional<QUrl> FriendsFaces::skinUrlFromProfile(const QByteArray& profile,
 			return std::nullopt;
 		}
 		if (host == kTexturesHost && url.port() == -1) {
-			/* Mojang still words these as http. */
 			url.setScheme("https");
 			return url;
 		}
@@ -268,7 +264,6 @@ void FriendsFaces::get(const QUrl& url, qint64 maxBytes, Body done)
 void FriendsFaces::cancel()
 {
 	++m_epoch;
-	/* What was cut short did not fail: it may be asked again at once. */
 	for (const QString& uuid : m_running) {
 		m_tried.remove(uuid);
 	}

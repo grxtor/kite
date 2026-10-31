@@ -2,26 +2,10 @@
 # SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 #
-# libdecor plugin bridge — exposes the bundled libdecor headers so the
-# DisplayServerTweaks plugin can `dlopen()` libdecor at runtime without
-# baking a hard link dependency into the .mmco.
-#
-# We deliberately do NOT build libdecor here:
-#   1. libdecor wants Meson, not CMake.
-#   2. Hard-linking libdecor would require Wayland at .mmco load time
-#      even on X11-only systems, which would prevent the plugin from
-#      loading on those systems.
-#
-# Instead, we:
-#   • install or use the system's libdecor at runtime (the plugin
-#     `dlopen()`s `libdecor-0.so.0`); and
-#   • use the headers from the submodule at build time so we have a
-#     stable, reproducible struct/enum layout regardless of what
-#     version the host happens to install.
-#
-# Public targets:
-#   KitePlugins::LibDecorHeaders — INTERFACE target carrying just the
-#                                    include directory.
+# Exposes the bundled libdecor headers as `KitePlugins::LibDecorHeaders`. libdecor
+# itself is not built (it needs Meson) and not linked: a hard link would need
+# Wayland to load the .mmco on X11-only systems, so the plugin dlopen()s
+# libdecor-0.so.0. The submodule headers keep the struct layout stable.
 
 if(TARGET KitePlugins::LibDecorHeaders)
     return()

@@ -8,11 +8,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One line about the state of the page above its content -- "The game is
- * running...", "This instance has no mod loader", "Updating 3 files..." --
- * in the same tinted block InstanceSettingsTab uses for its own lock
- * notice, with an optional action at its end and, for work in progress, a
- * progress line along its foot.
+ * One line about the state of the page above its content ("The game is
+ * running...", "Updating 3 files...") with an optional action at its end and,
+ * for work in progress, a progress line along its foot.
  */
 Rectangle {
     id: root

@@ -23,12 +23,7 @@
 #include <Cocoa/Cocoa.h>
 #include <Sparkle/Sparkle.h>
 
-/*!
- * Reports Sparkle's `canCheckForUpdates` to whoever is interested.
- *
- * Sparkle publishes it as a KVO-observable property; Qt wants a signal. This
- * object is the whole of the translation: it observes, and calls a block.
- */
+/*! Reports Sparkle's KVO-observable `canCheckForUpdates` through a block (Qt wants a signal). */
 @interface KiteUpdaterObserver : NSObject
 
 @property(nonatomic, readonly) SPUUpdater* updater;
@@ -78,9 +73,7 @@
 
 @end
 
-/*!
- * Answers Sparkle's questions about which appcast channels we accept.
- */
+/*! Answers Sparkle's questions about which appcast channels we accept. */
 @interface KiteUpdaterDelegate : NSObject <SPUUpdaterDelegate>
 
 @property(nonatomic, copy) NSSet<NSString*>* allowedChannels;
@@ -107,15 +100,14 @@ class MacSparkleUpdater::Private
 
 MacSparkleUpdater::MacSparkleUpdater() : priv(new MacSparkleUpdater::Private())
 {
-	// Qt does not set Cocoa up for us in every configuration, and Sparkle
-	// needs a running AppKit and an autorelease pool.
+	// Qt does not set Cocoa up in every configuration; Sparkle needs a running AppKit and an
+	// autorelease pool.
 	NSApplicationLoad();
 	priv->pool = [[NSAutoreleasePool alloc] init];
 
 	priv->delegate = [[KiteUpdaterDelegate alloc] init];
 
-	// startingUpdater:true is what arms Sparkle's own schedule, so no timer
-	// of ours is involved on macOS.
+	// startingUpdater:true arms Sparkle's own schedule, so no timer of ours is involved.
 	priv->controller = [[SPUStandardUpdaterController alloc]
 		initWithStartingUpdater:true
 				updaterDelegate:priv->delegate
@@ -124,8 +116,7 @@ MacSparkleUpdater::MacSparkleUpdater() : priv(new MacSparkleUpdater::Private())
 	priv->observer = [[KiteUpdaterObserver alloc]
 		initWithUpdater:priv->controller.updater];
 
-	// Explicit capture: the block outlives this constructor and must not be
-	// mistaken for capturing anything else.
+	// Explicit capture: the block outlives this constructor.
 	MacSparkleUpdater* self_ = this;
 	priv->observer.onCanCheckChanged = ^(bool canCheck) {
 	  emit self_->canCheckForUpdatesChanged(canCheck);
@@ -146,8 +137,8 @@ MacSparkleUpdater::~MacSparkleUpdater()
 
 void MacSparkleUpdater::checkForUpdates()
 {
-	// Sparkle's own interactive path: it shows the progress and the "you are
-	// up to date" alert itself, which is why this class has no dialogs.
+	// Sparkle's own interactive path shows the progress and "up to date" alert itself, so this
+	// class has no dialogs.
 	[priv->controller checkForUpdates:nil];
 }
 

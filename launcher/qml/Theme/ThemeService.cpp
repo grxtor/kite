@@ -25,10 +25,8 @@
 
 namespace
 {
-	/* QStyleHints::colorScheme() would answer this directly, but it is Qt
-	 * 6.5+ and the floor here is 6.4. lightnessF() < 0.5 on the window colour
-	 * is the same heuristic ui/themes/ThemeManager.cpp already uses
-	 * (resolveIconTheme()) to tell a dark system palette from a light one. */
+	// QStyleHints::colorScheme() needs Qt 6.5, so a window colour with
+	// lightnessF() < 0.5 stands for a dark system palette.
 	bool systemPrefersDark()
 	{
 		return qGuiApp->palette().color(QPalette::Window).lightnessF() < 0.5;
@@ -38,10 +36,8 @@ namespace
 ThemeService::ThemeService(QObject* parent)
 	: QObject(parent)
 {
-	/* QGuiApplication::paletteChanged() has been deprecated in favour of
-	 * QEvent::ApplicationPaletteChange since Qt 6.0, but it is still emitted
-	 * on the 6.4 floor and needs no application-wide event filter just for
-	 * this one listener. */
+	// paletteChanged() is deprecated since Qt 6.0 but still emitted, and
+	// needs no application-wide event filter.
 	QT_WARNING_PUSH
 	QT_WARNING_DISABLE_DEPRECATED
 	connect(qGuiApp, &QGuiApplication::paletteChanged, this,
@@ -51,8 +47,7 @@ ThemeService::ThemeService(QObject* parent)
 
 ThemePalette ThemeService::palette() const
 {
-	// A look brings its own palette (its name is its scheme's); "classic"
-	// follows the picked scheme and mode.
+	// A look brings its own palette; "classic" follows scheme and mode.
 	if (m_look != QStringLiteral("classic"))
 		return ThemePalette::forScheme(ThemePalette::schemeFromName(m_look), true);
 	return ThemePalette::forScheme(m_scheme, m_dark);
@@ -107,9 +102,8 @@ void ThemeService::setMode(const QString& mode)
 	else
 		m_dark = systemPrefersDark();
 
-	// The mode itself changed either way, so the whole theme is announced as
-	// one unit even on the rare switch that leaves `dark` unchanged (e.g.
-	// "system" -> "light" while the system is already light).
+	// Announced as one unit even when `dark` is unchanged ("system" -> "light"
+	// on a light system).
 	emit changed();
 }
 

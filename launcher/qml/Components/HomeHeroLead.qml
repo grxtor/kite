@@ -6,12 +6,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * What the Sahne and Gece heroes say and do, stacked: a small "Last played"
- * eyebrow, the instance's name at 46-48 px (stepping down to fit), the line
- * of icons under it (what it runs, when, how long), then Play and ▾ as
- * glass. The two looks differ only in where they put this column, what they
- * lay it over, its ink and the glow under Play -- all inputs here. The
- * instance and the signals belong to the HomeHero it belongs to.
+ * What the Sahne and Gece heroes say and do, stacked: a "Last played" eyebrow, the name (stepping down to fit),
+ * the line of icons, then Play and ▾ as glass. The looks differ only in where they put this column, what they lay
+ * it over, its ink and the glow under Play.
  */
 ColumnLayout {
     id: root
@@ -22,7 +19,6 @@ ColumnLayout {
     property color inkSecondary: Theme.palette.textSecondary
     property color eyebrowInk: Theme.palette.textTertiary
 
-    // Where Play's middle is, in this column's own coordinates.
     readonly property real playCenterY: actions.y + actions.height / 2
 
     readonly property int eyebrowSize: 11

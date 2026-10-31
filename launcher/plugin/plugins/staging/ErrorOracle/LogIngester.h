@@ -1,8 +1,7 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
- * LogIngester — pulls the latest log + crash-report text out of an
- * instance for the analysis engine to chew on.
+ * LogIngester: pulls the latest log and crash-report text out of an instance for the analysis engine.
  */
 
 #pragma once

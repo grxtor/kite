@@ -43,8 +43,8 @@ namespace
 		return file.write(content) == content.size();
 	}
 
-	// CRC-32 as the zip format wants it. Spelled out here so the test does
-	// not depend on which compression library the launcher happens to link.
+	// CRC-32 as zip wants it, spelled out so the test does not depend on the
+	// linked compression library.
 	quint32 crc32Of(const QByteArray& data)
 	{
 		static quint32 table[256];
@@ -80,17 +80,10 @@ namespace
 		out.append(static_cast<char>((value >> 24) & 0xFF));
 	}
 
-	/* Write a zip the way Info-ZIP, 7-Zip and every modpack site's build
-	 * pipeline write one: stored entries whose local header already carries
-	 * the CRC and the sizes, followed by a central directory.
-	 *
-	 * MMCZip::compressDir cannot stand in for this. libarchive's writer does
-	 * not know the sizes up front, so it emits a zero CRC in the local
-	 * header and puts the real one in a trailing data descriptor - which
-	 * happens to make truncation loud. The archives we download are not
-	 * built that way, and the interesting failure only shows up on the
-	 * layout they do use.
-	 */
+	/* Writes a zip the way Info-ZIP, 7-Zip and modpack pipelines do: stored
+	 * entries with the CRC and sizes already in the local header, then a
+	 * central directory. compressDir cannot stand in: libarchive's writer puts
+	 * the real CRC in a trailing data descriptor, which makes truncation loud. */
 	bool writeStoredZip(const QString& path,
 						const QList<QPair<QString, QByteArray>>& entries)
 	{
@@ -166,8 +159,6 @@ namespace
 		return file.write(zip) == zip.size();
 	}
 
-	// Cut a file down to `size` bytes, the way an interrupted download or a
-	// mirror serving half a file leaves it.
 	bool truncateFile(const QString& path, qint64 size)
 	{
 		QFile file(path);
@@ -177,7 +168,6 @@ namespace
 		return file.resize(size);
 	}
 
-	// Offset of the n-th (1-based) local file header in a zip.
 	qint64 localHeaderOffset(const QString& path, int nth)
 	{
 		QFile file(path);
@@ -229,8 +219,6 @@ class MMCZipTest : public QObject
 	Q_OBJECT
   private slots:
 
-	// A zip/jar jar mod replaces game class files, META-INF of the game jar
-	// is dropped and no path ends up in the jar twice.
 	void test_CreateModdedJar_ZipMod()
 	{
 		QTemporaryDir tempDir;
@@ -269,8 +257,6 @@ class MMCZipTest : public QObject
 				 QByteArray("vanilla-bar"));
 	}
 
-	// A folder jar mod has to be merged into the jar root, otherwise its class
-	// files never replace the ones of the game.
 	void test_CreateModdedJar_FolderMod()
 	{
 		QTemporaryDir tempDir;
@@ -303,7 +289,6 @@ class MMCZipTest : public QObject
 				 QByteArray("folder-modded-foo"));
 	}
 
-	// The jar is only reported as created when it really was written.
 	void test_CreateModdedJar_MissingSourceJarFails()
 	{
 		QTemporaryDir tempDir;
@@ -324,8 +309,6 @@ class MMCZipTest : public QObject
 		QVERIFY(!QFile::exists(targetJar));
 	}
 
-	// Baseline for the two truncation tests below: an archive that is all
-	// there extracts completely.
 	void test_ExtractSubDir_CompleteArchive()
 	{
 		QTemporaryDir tempDir;
@@ -345,8 +328,6 @@ class MMCZipTest : public QObject
 		QCOMPARE(countFilesUnder(target), 3);
 	}
 
-	// The whole archive, laid out the way the packs we download are, still
-	// extracts completely.
 	void test_ExtractSubDir_CompleteStoredArchive()
 	{
 		QTemporaryDir tempDir;
@@ -366,8 +347,6 @@ class MMCZipTest : public QObject
 				 QByteArray(4000, 'c'));
 	}
 
-	// Several files out of one pass, from a file and from memory - which is
-	// where a jar bundled inside another one is read.
 	void test_ReadFilesFromZip_OnePassFromFileAndMemory()
 	{
 		QTemporaryDir tempDir;
@@ -386,7 +365,6 @@ class MMCZipTest : public QObject
 		QCOMPARE(fromFile.size(), 3);
 		QCOMPARE(fromFile.value("a.txt"), QByteArray("alpha"));
 		QCOMPARE(fromFile.value("dir/b.txt"), QByteArray("bravo"));
-		// An empty file is there, with nothing in it; a missing one is not.
 		QVERIFY(fromFile.contains("empty.txt"));
 		QVERIFY(fromFile.value("empty.txt").isEmpty());
 		QVERIFY(!fromFile.contains("missing.txt"));
@@ -406,12 +384,10 @@ class MMCZipTest : public QObject
 		QVERIFY(MMCZip::readFilesFromZip(zip, {}).isEmpty());
 	}
 
-	// A download that stopped on an entry boundary still looks like a
-	// perfectly readable zip to a streaming reader: it walks local headers
-	// until the bytes run out and calls that the end of the archive. So
-	// extraction reports success for the entries that made it and the
-	// instance ends up quietly missing mods - no error anywhere, nothing to
-	// re-download, and a pack that breaks at launch instead.
+	// A download that stopped on an entry boundary still looks like a readable
+	// zip to a streaming reader, which walks local headers until the bytes run
+	// out. Extraction would report success and the instance would quietly miss
+	// mods.
 	void test_ExtractSubDir_TruncatedOnEntryBoundaryIsRejected()
 	{
 		QTemporaryDir tempDir;
@@ -434,7 +410,6 @@ class MMCZipTest : public QObject
 		QCOMPARE(countFilesUnder(target), 0);
 	}
 
-	// The same cut, this time in the middle of an entry's data.
 	void test_ExtractSubDir_StoredTruncatedMidEntryIsRejected()
 	{
 		QTemporaryDir tempDir;
@@ -458,9 +433,9 @@ class MMCZipTest : public QObject
 		QCOMPARE(countFilesUnder(target), 0);
 	}
 
-	// The same, cut in the middle of an entry's compressed data - where a
-	// streaming reader gets as far as a CRC mismatch. Nothing half-written
-	// may be left behind for the game to load.
+	// Cut in the middle of an entry's compressed data, where a streaming
+	// reader gets as far as a CRC mismatch. Nothing half-written may be left
+	// behind for the game to load.
 	void test_ExtractSubDir_TruncatedMidEntryIsRejected()
 	{
 		QTemporaryDir tempDir;
@@ -486,38 +461,20 @@ class MMCZipTest : public QObject
 		QCOMPARE(countFilesUnder(target), 0);
 	}
 
-	/* An instance exports to, and imports from, a path that is not ASCII.
-	 *
-	 * Not about the zip format: about the file name handed to libarchive.
-	 * archive_write_open_filename() and archive_read_open_filename() take a
-	 * `char*`, and on Windows libarchive hands it to the narrow CRT entry
-	 * points, which decode it in the active ANSI code page -- so UTF-8
-	 * bytes, which is what this code used to pass, are the one encoding
-	 * guaranteed to be wrong there. Instances live under the user profile,
-	 * so for a user named Şafak every export and every import failed, with
-	 * "No such file or directory" as the only explanation.
-	 *
-	 * Passes on Linux either way, where the byte path is already UTF-8. It
-	 * is here as the case that fails if someone reaches for the narrow call
-	 * again, and as the case a Windows run has to get through.
-	 *
-	 * The entry names are compared against the literal above, which holds on
-	 * every platform only because MMCZip composes the names it reads --
-	 * libarchive hands them back decomposed on macOS, on purpose, and this
-	 * case is what notices if entryPathName() stops undoing that.
-	 */
+	/* An instance exports to and imports from a non-ASCII path (a user named
+	 * Şafak failed every export). On Windows libarchive decodes a `char*` name
+	 * in the ANSI code page, so UTF-8 bytes are wrong there; Linux passes
+	 * either way. Entry names match the literal on every platform because
+	 * MMCZip composes them to NFC. */
 	void test_NonAsciiPathRoundTrip()
 	{
 		QTemporaryDir tempDir;
 		QVERIFY(tempDir.isValid());
 		QDir root(tempDir.path());
 
-		// Turkish, Cyrillic and CJK together, so no single-byte code page
-		// can hold the name. Written as UTF-8 bytes rather than as the
-		// characters themselves because MSVC decodes a plain literal in the
-		// build machine's ANSI code page unless it is passed /utf-8, which
-		// this build does not -- and a test about mis-encoded paths must not
-		// depend on how the compiler read its own source.
+		// Turkish, Cyrillic and CJK together, so no single-byte code page can
+		// hold the name. Written as UTF-8 bytes because MSVC decodes a plain
+		// literal in the build machine's ANSI code page unless passed /utf-8.
 		const QString awkward = QString::fromUtf8(
 			"\xC5\x9E"                                          // Ş U+015E
 			"afak-"                                             //
@@ -525,7 +482,6 @@ class MMCZipTest : public QObject
 			"-"                                                 //
 			"\xE6\x97\xA5\xE6\x9C\xAC\xE8\xAA\x9E");            // 日本語
 
-		// Stands in for C:\Users\Şafak\AppData\Roaming\Kite\instances.
 		auto home = root.absoluteFilePath(awkward);
 		auto packDir = home + "/pack";
 		QVERIFY(writeFile(packDir + "/mods/a.jar", QByteArray(400, 'a')));
@@ -533,15 +489,11 @@ class MMCZipTest : public QObject
 
 		const QString noteEntry = awkward + QStringLiteral("/note.txt");
 
-		// The archive's own name is awkward too: an export is named after
-		// the instance, and instances get named in the user's language.
 		auto zip = home + "/" + awkward + ".zip";
 		QVERIFY2(MMCZip::compressDir(zip, packDir, nullptr),
 				 "could not write an archive to a non-ASCII path");
 		QVERIFY(QFileInfo::exists(zip));
 
-		// Reading it back: the open, the entry list, and a single entry
-		// fetched by name are three separate paths through MMCZip.
 		auto entries = MMCZip::listEntries(zip);
 		QCOMPARE(countEntries(entries, "mods/a.jar"), 1);
 		QCOMPARE(countEntries(entries, noteEntry), 1);

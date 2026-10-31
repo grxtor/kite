@@ -33,8 +33,7 @@
 
 namespace
 {
-	/* The global settings every BaseInstance constructor overrides or
-	 * passes through - the same set InstanceList_test.cpp registers. */
+	/* The global settings every BaseInstance constructor needs (as in InstanceList_test.cpp). */
 	SettingsObjectPtr makeGlobalSettings(const QString& dir)
 	{
 		auto settings = std::make_shared<INISettingsObject>(
@@ -83,11 +82,10 @@ namespace
 } // namespace
 
 /*
- * LibraryController over a real InstanceList of NullInstances in a
- * temporary folder. The group file (instgroups.json) is written to the
- * current directory, so each test runs from its own temporary one.
- * Undoing a delete is only exercised for the "nothing to undo" case:
- * trashing for real would put test folders in the user's trash.
+ * LibraryController over a real InstanceList of NullInstances in a temporary
+ * folder. The group file (instgroups.json) goes to the current directory, so
+ * each test runs from its own temporary one. Undo is only exercised for
+ * "nothing to undo": trashing for real would put test folders in the user's trash.
  */
 class LibraryControllerTest : public QObject
 {

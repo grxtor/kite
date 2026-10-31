@@ -105,11 +105,9 @@ class SkinsControllerTest : public QObject
 		QVERIFY(!skins.remove("Villain").isEmpty());
 	}
 
-	// The arm width picked for the skin the account wears stays picked:
-	// the folder rescan that the library's own index write sets off, and a
-	// fresh library over the same folder (the dialog opened again), used to
-	// put the profile's width back. A change made elsewhere -- in game, on
-	// another machine -- still comes through.
+	// The arm width picked for the worn skin stays picked across the folder rescan
+	// the library's own index write sets off, and a fresh library over the same
+	// folder; a change made elsewhere still comes through.
 	void slimStaysOnTheWornSkin()
 	{
 		QTemporaryDir library;
@@ -171,10 +169,8 @@ class SkinsControllerTest : public QObject
 		QVERIFY(find(reopened.skins(), "Hero").value("slim").toBool());
 	}
 
-	// The game's nine default skins, apart from the user's own: each in
-	// both arm widths, ready once its texture is in the cache (here put
-	// there by hand, as a finished download would), and marked worn when
-	// the account wears that texture.
+	// The nine default skins, each in both arm widths, ready once its texture is in
+	// the cache (put there by hand), marked worn when the account wears that texture.
 	void defaultSkinsComeFromTheCache()
 	{
 		QTemporaryDir data;
@@ -243,8 +239,7 @@ class SkinsControllerTest : public QObject
 				 QString("https://textures.minecraft.net/texture/"
 						 "1a4af718455d4aab528e7a61f86fa25e6a369d1768dcb13f7df319a713eb810b"));
 		QVERIFY(!urls.contains(DefaultSkins::fallbackUrl(true)));
-		// Noor is drawn slim by default; its classic texture is this one
-		// (checked against the client jar's wide/noor.png).
+		// Noor is drawn slim by default; this is its classic texture.
 		QVERIFY(DefaultSkins::galleryUrl("Noor", false).endsWith(
 			"90e75cd429ba6331cd210b9bd19399527ee3bab467b5a9f61cb8a27b177f6789"));
 		// Kept under the texture's own hash.

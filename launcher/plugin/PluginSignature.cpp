@@ -41,13 +41,8 @@
 #include <QtEndian>
 #include <memory>
 
-/*
- * KITE_PLUGIN_SIGNATURES is defined in launcher/CMakeLists.txt:
- *   1 → full GpgME-backed verifier (Linux, macOS, MinGW Windows)
- *   0 → stub verifier that always reports modules as unsigned. Used on
- *       MSVC where upstream gpgme has no working build (autotools-only,
- *       C++ ABI incompatibilities with MSVC).
- */
+/* KITE_PLUGIN_SIGNATURES is defined in launcher/CMakeLists.txt: 1 = GpgME-backed verifier, 0 = stub
+ * that reports every module as unsigned (MSVC, where gpgme has no working build). */
 #ifndef KITE_PLUGIN_SIGNATURES
 #define KITE_PLUGIN_SIGNATURES 1
 #endif
@@ -66,11 +61,8 @@ namespace PluginSignature
 
 	namespace
 	{
-		/* Mutex protects the static keyring-path override, the cached
-		 * verification results, and the long-lived GpgME context. We use
-		 * a single recursive-style guard for everything because the
-		 * critical sections are tiny — none of them perform I/O while
-		 * holding the lock. */
+		/* Guards the keyring-path override, the verification cache and the GpgME context. Critical
+		 * sections are tiny and do no I/O under the lock. */
 		QMutex g_mutex;
 		QString g_keyringPath;
 
@@ -85,26 +77,10 @@ namespace PluginSignature
 			g_gpgmeInitialised = true;
 		}
 
-		/* ─── Persistent GpgME context ────────────────────────────
-		 *
-		 * Creating a fresh GpgME::Context for every plugin is the
-		 * single biggest bottleneck in the original implementation —
-		 * each construction:
-		 *   • forks/execs gpg-agent (or pipes to an existing one),
-		 *   • loads the trusted keyring from disk,
-		 *   • parses every key in it,
-		 *   • does a TLS-style handshake over the agent socket.
-		 *
-		 * On a typical Linux desktop with 8 plugins that's 8 × ~80 ms
-		 * = ~640 ms of pure startup latency. Keeping a single context
-		 * alive for the life of the process drops that to about
-		 * 8 × 5 ms (= one cheap RPC per verify).
-		 *
-		 * The context is created lazily on first verification and
-		 * torn down implicitly at process exit (std::unique_ptr in
-		 * static storage). Guarded by g_mutex; GpgME contexts are not
-		 * thread-safe individually, but our verify path serialises
-		 * around g_mutex anyway, so the singleton is safe. */
+		/* Persistent GpgME context. A context per plugin forks/execs gpg-agent, loads and parses
+		 * the keyring and handshakes over the agent socket (about 80 ms each); one context is
+		 * created lazily on first verification and lives for the process. Guarded by g_mutex: GpgME
+		 * contexts are not thread-safe individually, and verification serialises on g_mutex anyway. */
 		std::unique_ptr<GpgME::Context> g_gpgCtx;
 		QString g_gpgCtxHome; // tracks the home dir the singleton was built for
 
@@ -114,8 +90,6 @@ namespace PluginSignature
 			if (g_gpgCtx && g_gpgCtxHome == g_keyringPath)
 				return g_gpgCtx.get();
 
-			// Either we don't have one yet, or the keyring path changed
-			// since the last call — rebuild.
 			g_gpgCtx.reset(GpgME::Context::createForProtocol(GpgME::OpenPGP));
 			if (!g_gpgCtx)
 				return nullptr;
@@ -129,38 +103,11 @@ namespace PluginSignature
 		}
 #endif
 
-		/* ─── Persistent verification cache ────────────────────────
-		 *
-		 * Keyed on (absolute path, file size, mtime in milliseconds).
-		 * The (size, mtime) tuple is the canonical "did anything
-		 * change?" fingerprint on Linux/macOS/Windows. If a packager
-		 * touches the file (chmod, chown, attribute change) without
-		 * actually rewriting bytes mtime stays put, but size doesn't
-		 * change either, so the cache stays valid. If they *do*
-		 * rewrite bytes (strip, chrpath, repackage) mtime moves and
-		 * the cache entry is invalidated automatically.
-		 *
-		 * The schema is intentionally simple JSON so it's easy to
-		 * inspect and easy to delete by hand if something goes wrong:
-		 *
-		 *   {
-		 *     "schema": 1,
-		 *     "entries": [
-		 *       {
-		 *         "path": "/usr/lib/mmcmodules/BackupSystem.mmco",
-		 *         "size": 524288,
-		 *         "mtime_ms": 1715608800123,
-		 *         "state": "Valid",
-		 *         "detail": "Good signature",
-		 *         "fingerprint": "0123ABCD..."
-		 *       },
-		 *       …
-		 *     ]
-		 *   }
-		 *
-		 * Cache size is bounded by the number of installed plugins
-		 * (~tens), so we don't bother with LRU eviction.
-		 */
+		/* Persistent verification cache keyed on (absolute path, file size, mtime in ms): rewriting the bytes
+		 * (strip, repackage) moves mtime and invalidates the entry; attribute-only changes leave it valid.
+		 * Plain JSON, easy to inspect or delete by hand:
+		 *   {"schema": 1, "entries": [{"path", "size", "mtime_ms", "state", "detail", "fingerprint"}, ...]}
+		 * Bounded by the number of installed plugins, so no LRU eviction. */
 		struct CacheKey {
 			QString path;
 			qint64 size;
@@ -285,36 +232,15 @@ namespace PluginSignature
 			g_cacheDirty = false;
 		}
 
-		/* OSI-approved SPDX identifier allow-list.
-		 *
-		 * Source of truth: the OSI License Index
-		 *   <https://opensource.org/licenses/>
-		 * cross-referenced against the SPDX License List
-		 *   <https://spdx.org/licenses/>
-		 *
-		 * Snapshot taken from SPDX License List 3.24+ — every identifier
-		 * in the "OSI Approved" section below is flagged
-		 * "OSI Approved? Yes" upstream. A handful of non-OSI but widely
-		 * accepted FSF-libre / public-domain identifiers (CC0-1.0,
-		 * Unlicense, WTFPL, Vim, BSD-3-Clause-Clear, …) follow in their
-		 * own block so that public-domain dedications and niche
-		 * permissive picks do not force authors into the signing pipeline
-		 * unnecessarily.
-		 *
-		 * Names are stored lower-case so the lookup is case-insensitive.
-		 *
-		 * Maintenance: when SPDX adds a new OSI-approved license, append
-		 * the lower-cased identifier here. Do NOT remove identifiers —
-		 * doing so retroactively breaks every plugin that uses them. */
+		/* Allow-list of OSI-approved SPDX identifiers (SPDX License List 3.24+), lower-cased for case-insensitive
+		 * lookup, followed by a few non-OSI libre / public-domain ones so such plugins need not be signed.
+		 * Append new OSI identifiers; never remove one, that would break every plugin using it. */
 		const QSet<QString>& ossSpdxIds()
 		{
 			static const QSet<QString> ids = {
-				/* ══ OSI-approved ══════════════════════════════════ */
 
-				/* ── 0–9 ─────────────────────────────────────────── */
 				QStringLiteral("0bsd"),
 
-				/* ── A ───────────────────────────────────────────── */
 				QStringLiteral("aal"),
 				QStringLiteral("afl-1.1"),
 				QStringLiteral("afl-1.2"),
@@ -336,7 +262,6 @@ namespace PluginSignature
 				QStringLiteral("artistic-1.0-perl"),
 				QStringLiteral("artistic-2.0"),
 
-				/* ── B ───────────────────────────────────────────── */
 				QStringLiteral("bsd-1-clause"),
 				QStringLiteral("bsd-2-clause"),
 				QStringLiteral("bsd-2-clause-patent"),
@@ -345,7 +270,6 @@ namespace PluginSignature
 				QStringLiteral("bsd-3-clause-modification"),
 				QStringLiteral("bsl-1.0"),
 
-				/* ── C ───────────────────────────────────────────── */
 				QStringLiteral("cal-1.0"),
 				QStringLiteral("cal-1.0-combined-work-exception"),
 				QStringLiteral("catosl-1.1"),
@@ -360,7 +284,6 @@ namespace PluginSignature
 				QStringLiteral("cpl-1.0"),
 				QStringLiteral("cua-opl-1.0"),
 
-				/* ── E ───────────────────────────────────────────── */
 				QStringLiteral("ecl-1.0"),
 				QStringLiteral("ecl-2.0"),
 				QStringLiteral("efl-1.0"),
@@ -372,11 +295,9 @@ namespace PluginSignature
 				QStringLiteral("eupl-1.1"),
 				QStringLiteral("eupl-1.2"),
 
-				/* ── F ───────────────────────────────────────────── */
 				QStringLiteral("fair"),
 				QStringLiteral("frameworx-1.0"),
 
-				/* ── G ───────────────────────────────────────────── */
 				QStringLiteral("gpl-2.0"),
 				QStringLiteral("gpl-2.0-only"),
 				QStringLiteral("gpl-2.0-or-later"),
@@ -384,19 +305,15 @@ namespace PluginSignature
 				QStringLiteral("gpl-3.0-only"),
 				QStringLiteral("gpl-3.0-or-later"),
 
-				/* ── H ───────────────────────────────────────────── */
 				QStringLiteral("hpnd"),
 
-				/* ── I ───────────────────────────────────────────── */
 				QStringLiteral("intel"),
 				QStringLiteral("ipa"),
 				QStringLiteral("ipl-1.0"),
 				QStringLiteral("isc"),
 
-				/* ── J ───────────────────────────────────────────── */
 				QStringLiteral("jam"),
 
-				/* ── L ───────────────────────────────────────────── */
 				QStringLiteral("lgpl-2.0"),
 				QStringLiteral("lgpl-2.0-only"),
 				QStringLiteral("lgpl-2.0-or-later"),
@@ -411,7 +328,6 @@ namespace PluginSignature
 				QStringLiteral("liliq-rplus-1.1"),
 				QStringLiteral("lppl-1.3c"),
 
-				/* ── M ───────────────────────────────────────────── */
 				QStringLiteral("miros"),
 				QStringLiteral("mit"),
 				QStringLiteral("mit-0"),
@@ -426,7 +342,6 @@ namespace PluginSignature
 				QStringLiteral("mulanpsl-2.0"),
 				QStringLiteral("multics"),
 
-				/* ── N ───────────────────────────────────────────── */
 				QStringLiteral("nasa-1.3"),
 				QStringLiteral("naumen"),
 				QStringLiteral("ncsa"),
@@ -434,7 +349,6 @@ namespace PluginSignature
 				QStringLiteral("nposl-3.0"),
 				QStringLiteral("ntp"),
 
-				/* ── O ───────────────────────────────────────────── */
 				QStringLiteral("ofl-1.1"),
 				QStringLiteral("ofl-1.1-no-rfn"),
 				QStringLiteral("ofl-1.1-rfn"),
@@ -445,52 +359,41 @@ namespace PluginSignature
 				QStringLiteral("osl-2.1"),
 				QStringLiteral("osl-3.0"),
 
-				/* ── P ───────────────────────────────────────────── */
 				QStringLiteral("php-3.0"),
 				QStringLiteral("php-3.01"),
 				QStringLiteral("postgresql"),
 				QStringLiteral("python-2.0"),
 				QStringLiteral("python-2.0.1"),
 
-				/* ── Q ───────────────────────────────────────────── */
 				QStringLiteral("qpl-1.0"),
 
-				/* ── R ───────────────────────────────────────────── */
 				QStringLiteral("rpl-1.1"),
 				QStringLiteral("rpl-1.5"),
 				QStringLiteral("rpsl-1.0"),
 				QStringLiteral("rscpl"),
 
-				/* ── S ───────────────────────────────────────────── */
 				QStringLiteral("simpl-2.0"),
 				QStringLiteral("sissl"),
 				QStringLiteral("sleepycat"),
 				QStringLiteral("spl-1.0"),
 
-				/* ── U ───────────────────────────────────────────── */
 				QStringLiteral("ucl-1.0"),
 				QStringLiteral("upl-1.0"),
 
-				/* ── V ───────────────────────────────────────────── */
 				QStringLiteral("vsl-1.0"),
 
-				/* ── W ───────────────────────────────────────────── */
 				QStringLiteral("w3c"),
 				QStringLiteral("w3c-19980720"),
 				QStringLiteral("w3c-20150513"),
 				QStringLiteral("watcom-1.0"),
 
-				/* ── X ───────────────────────────────────────────── */
 				QStringLiteral("xnet"),
 
-				/* ── Z ───────────────────────────────────────────── */
 				QStringLiteral("zlib"),
 				QStringLiteral("zpl-2.0"),
 				QStringLiteral("zpl-2.1"),
 
-				/* ══ Non-OSI but widely accepted libre ════════════ *
-				 * These pass FSF / Debian / Fedora as free-software
-				 * licenses even though they are not on the OSI list. */
+				/* Non-OSI, but accepted as free software by FSF / Debian / Fedora. */
 				QStringLiteral("bsd-3-clause-clear"),
 				QStringLiteral("bsd-4-clause"),
 				QStringLiteral("cc0-1.0"),
@@ -500,24 +403,19 @@ namespace PluginSignature
 				QStringLiteral("vim"),
 				QStringLiteral("wtfpl"),
 
-				/* ══ Kite's own modular-GPL identifier ══════════ *
-				 * Plugins shipped under the launcher's combined GPL +
-				 * MMCO-Module-Exception SPDX expression are recognised
-				 * as a single atomic identifier here so splitSpdx() does
-				 * not have to special-case the "WITH" clause. */
+				/* Kite's combined GPL + MMCO-Module-Exception expression, kept as one atom so
+				 * splitSpdx() need not special-case WITH. */
 				QStringLiteral("gpl-3.0-or-later with "
 							   "licenseref-kite-mmco-module-exception-1.0"),
 			};
 			return ids;
 		}
 
-		/* Split an SPDX expression into the atomic license identifiers
-		 * that compose it. Handles AND / OR / WITH operators by simple
-		 * tokenisation — we don't try to fully parse precedence. */
+		/* Splits an SPDX expression into atomic license identifiers on AND / OR / WITH by simple
+		 * tokenisation; precedence is not parsed. */
 		QStringList splitSpdx(const QString& expr)
 		{
 			QString s = expr.toLower().trimmed();
-			// Drop parentheses
 			s.replace('(', ' ');
 			s.replace(')', ' ');
 
@@ -539,8 +437,7 @@ namespace PluginSignature
 					continue;
 				}
 				if (t == QStringLiteral("with")) {
-					// keep accumulating into current so "GPL-3.0 WITH foo"
-					// stays a single atom
+					// Keep accumulating so "GPL-3.0 WITH foo" stays one atom.
 					current += QLatin1Char(' ');
 					current += t;
 					current += QLatin1Char(' ');
@@ -562,15 +459,12 @@ namespace PluginSignature
 			return;
 		g_keyringPath = path;
 #if KITE_PLUGIN_SIGNATURES
-		// Drop the cached context so the next verify() rebuilds it
-		// against the new home directory.
+		// Drop the cached context so the next verify() rebuilds it for the new home directory.
 		g_gpgCtx.reset();
 		g_gpgCtxHome.clear();
 #endif
-		// Keyring change is rare (once at startup), but if it does
-		// happen we have to invalidate the cache too — a different
-		// keyring may legitimately reach a different verdict for the
-		// exact same payload bytes.
+		// A different keyring may reach a different verdict for the same bytes, so the cache goes
+		// too.
 		g_cache.clear();
 		g_cacheDirty = true;
 	}
@@ -601,8 +495,8 @@ namespace PluginSignature
 		for (const QString& atom : atoms) {
 			if (whitelist.contains(atom))
 				return true;
-			// Also accept a bare "with"-prefixed atom whose head id is OSS
-			// (e.g. "gpl-3.0-or-later with classpath-exception-2.0").
+			// Also accept a "with"-prefixed atom whose head id is OSS (e.g. "gpl-3.0-or-later with
+			// classpath-exception-2.0").
 			const int withIdx = atom.indexOf(QStringLiteral(" with "));
 			if (withIdx > 0) {
 				const QString head = atom.left(withIdx).trimmed();
@@ -648,7 +542,6 @@ namespace PluginSignature
 		quint64 sigSize = qFromLittleEndian<quint64>(
 			reinterpret_cast<const uchar*>(footerBytes.constData()));
 
-		// Sanity: signature must fit before the footer.
 		if (sigSize == 0 || static_cast<qint64>(sigSize) > size - footerSize) {
 			out.malformed = true;
 			return out;
@@ -657,7 +550,6 @@ namespace PluginSignature
 		const qint64 payloadSize =
 			size - footerSize - static_cast<qint64>(sigSize);
 
-		// Read payload then signature.
 		if (!f.seek(0)) {
 			out.malformed = true;
 			return out;
@@ -688,21 +580,17 @@ namespace PluginSignature
 #if !KITE_PLUGIN_SIGNATURES
 		(void)payload;
 		(void)signature;
-		// Stub build (MSVC): no GpgME backend is linked. Report an
-		// engine-unavailable Error so the license/signature policy
-		// treats the module the same way it would on a Linux box
-		// without a working keyring. OSS modules still load; non-OSS
-		// modules are rejected with SignatureRequired.
+		// Stub build (MSVC): no GpgME backend. Report an engine-unavailable Error so policy treats
+		// the module as on a Linux box without a keyring: OSS modules load, the rest are rejected
+		// with SignatureRequired.
 		detail = QStringLiteral(
 			"GPG verification is not available in this build of Kite");
 		return PluginSignatureState::Error;
 #else
 		ensureGpgmeInit();
 
-		// Engine check is cheap once gpg-agent is up; GpgME caches the
-		// answer internally. Still worth keeping because it gives us a
-		// readable error message if the agent is unreachable on this
-		// system at all.
+		// Cheap once gpg-agent is up (GpgME caches the answer); gives a readable error if the agent
+		// is unreachable.
 		const auto err = GpgME::checkEngine(GpgME::OpenPGP);
 		if (err) {
 			detail = QStringLiteral("GpgME engine unavailable: %1")
@@ -710,15 +598,9 @@ namespace PluginSignature
 			return PluginSignatureState::Error;
 		}
 
-		// Acquire the long-lived GpgME::Context under the mutex.
-		// gpgContextLocked() builds it on first use and rebuilds it
-		// only if the keyring path has been re-configured since the
-		// last call. Verification itself runs inside the lock too,
-		// because GpgME::Context instances are not thread-safe — but
-		// the work is short (single RPC to gpg-agent) and the caller
-		// gains far more from parallel I/O on the OUTER side (reading
-		// trailers off disk) than it could ever gain from concurrent
-		// GpgME calls.
+		// Verification runs under g_mutex: GpgME::Context is not thread-safe and the work is one
+		// short RPC to gpg-agent. gpgContextLocked() builds the context on first use and rebuilds
+		// it if the keyring path changed.
 		QMutexLocker lock(&g_mutex);
 		GpgME::Context* ctx = gpgContextLocked();
 		if (!ctx) {
@@ -791,11 +673,8 @@ namespace PluginSignature
 	PluginSignatureState verifyFile(const QString& filePath, QString& detail,
 									QString& fingerprint, bool bypassCache)
 	{
-		// ── Cache lookup ───────────────────────────────────────
-		// Build the (path, size, mtime_ms) key from the file's metadata.
-		// stat()-level metadata is far cheaper than reading the whole
-		// payload + signature and shelling out to gpg-agent — on a
-		// modern SSD it's a single inode lookup.
+		// Cache lookup keyed on (path, size, mtime_ms): stat() metadata is far cheaper than reading
+		// the payload and calling gpg-agent.
 		QFileInfo fi(filePath);
 		CacheKey key;
 		key.path = fi.absoluteFilePath();
@@ -812,7 +691,7 @@ namespace PluginSignature
 			}
 		}
 
-		// ── Slow path: read the trailer and verify ─────────────
+		// Slow path: read the trailer and verify.
 		ExtractedTrailer trailer = extractTrailer(filePath);
 
 		PluginSignatureState state;
@@ -829,13 +708,9 @@ namespace PluginSignature
 				verify(trailer.payload, trailer.signature, detail, fingerprint);
 		}
 
-		// ── Memoise the result ─────────────────────────────────
-		// Every terminal state is cached, including failures: a
-		// BadSignature outcome must remain BadSignature across
-		// launcher restarts unless the file is actually rewritten
-		// (which would change mtime + size and bust the entry).
-		// Error states (gpg-agent down, etc.) are NOT cached so a
-		// transient agent failure doesn't poison the cache.
+		// Memoise every terminal state, failures included, so BadSignature survives restarts unless
+		// the file is rewritten. Error states (gpg-agent down) are not cached, so a transient
+		// failure cannot poison the cache.
 		if (state != PluginSignatureState::Error) {
 			QMutexLocker lock(&g_mutex);
 			CacheEntry entry;

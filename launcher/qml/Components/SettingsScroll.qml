@@ -6,14 +6,8 @@ import QtQuick
 import QtQuick.Controls
 import Kite.Theme
 
-// One settings section: a page heading (what this section is, and why you'd
-// come here) over a scrolling column of groups, kept to a readable width on
-// wide windows.
-//
-// The column runs to the same right edge as the header above it: the
-// scroll bar overlays the cards instead of keeping an empty gutter beside
-// them, and the bottom rows fade out (ScrollFade) rather than being sliced
-// off by the window edge while there is more below.
+// One settings section: a page heading over a scrolling column of groups, kept to a readable width
+// on wide windows. The scroll bar overlays the cards, and the bottom rows fade out (ScrollFade).
 Item {
     id: root
 
@@ -21,8 +15,7 @@ Item {
     property string description
     default property alias groups: column.data
 
-    // Past this the rows' label-left/control-right layout stops reading as
-    // one line; the column stops growing here on wide windows.
+    // Past this the label-left/control-right layout stops reading as one line.
     readonly property int readableWidth: 760
 
     Accessible.name: title

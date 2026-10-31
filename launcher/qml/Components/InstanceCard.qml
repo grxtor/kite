@@ -7,29 +7,9 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One instance in the library grid, the way Modrinth App's library shows
- * one: a large square, a small inset from the card's edge, with the
- * instance's icon all but filling a calm neutral tile (InstanceTile),
- * then the name and what it runs. A pack installed from a platform shows
- * its own logo across the whole square instead. Most instances have no
- * screenshot, so the card is built around the icon, never around an empty
- * cover.
- *
- * Nothing here is ever a stand-in picture, and hovering changes the card,
- * never what is in it: no screenshot swaps in, no chip appears on the art.
- *
- * Used directly as a delegate -- the required properties are filled from
- * InstanceList's named roles, so this file never mentions role numbers.
- *
- * Play sits in the square's bottom-right corner and fades in on hover
- * (always, as Stop, while running); click selects, double-click plays,
- * right-click or ⋯ -- a bare glyph beside the name -- asks the page for the
- * instance menu.
- *
- * While a launch runs, the launch takes Play's place, as on the play bar
- * (PlayDock): the square dims, its corner chip says "Starting…", a bar runs
- * along its foot, and the line under the name gives the stage
- * ("Downloading assets") and how far it is.
+ * One instance in the library grid: its icon (or a pack's logo) on a neutral
+ * tile, then name and loader/version. Used directly as a delegate; the
+ * required properties are filled from InstanceList's named roles.
  */
 Item {
     id: root
@@ -43,15 +23,14 @@ Item {
     required property string gameVersion
     required property string loader
     required property color iconTint
-    // Newest screenshot url (InstanceList's coverImage role); unused here,
-    // required so the card takes the same roles as Continue playing's.
+    // InstanceList's coverImage role; unused here, required so the card takes the same roles as
+    // other delegates.
     required property string coverImage
-    // A platform pack's own logo (InstanceList's packArt role), shown across
-    // the square; "" for every other instance. Not required, so a static
-    // review page need not pass it -- InstanceSection forwards it.
+    // A platform pack's logo (InstanceList's packArt role) across the square; not required, so
+    // static review pages need not pass it.
     property string packArt: ""
-    // Empty while nothing is being launched; progress is 0..1, or negative
-    // while the launch cannot say how far along it is.
+    // Empty while nothing launches; progress is 0..1, negative when the launch cannot say how far
+    // along it is.
     required property string launchStatus
     required property real launchProgress
 
@@ -60,7 +39,6 @@ Item {
     property bool forceHovered: false
 
     signal clicked()
-    signal doubleClicked()
     signal playRequested()
     signal stopRequested()
     // @p anchor: the ⋯ button when that asked, so the menu opens under it;
@@ -69,28 +47,18 @@ Item {
 
     readonly property bool hovered: forceHovered || hoverHandler.hovered
     readonly property bool launching: launchStatus.length > 0
-    // The pack's logo, once it has really loaded; until then (or if it
-    // cannot load) the icon stays on the plain surface.
     readonly property bool showsPackArt: root.packArt.length > 0 && packLogo.status === Image.Ready
-    // The square sits a small inset from the card's edge, as Modrinth's
-    // picture does; the text sits a little further in, under its edge.
     readonly property int inset: Theme.space.sm
     readonly property int textInset: Theme.space.md
     readonly property int squareSize: Math.max(0, width - inset * 2)
-    // The icon all but fills the square (Modrinth's picture fills its own):
-    // the card's picture, with only a rim of the calm tile around it.
     readonly property real iconShare: 0.82
     readonly property int iconSize: Math.round(squareSize * iconShare)
-    // Its own icon, or the built-in one it was given (Icons.displayKey).
     readonly property string drawnKey: Icons.displayKey(root.iconKey, root.instanceId)
     readonly property bool iconFills: Icons.fillsTile(root.drawnKey)
     readonly property int squareRadius: Theme.radius.md
-    // Play and ⋯ on the square, and their distance from its corners.
     readonly property int playSize: Theme.control.height
     readonly property int cornerInset: Theme.space.sm
     readonly property int runningDotSize: 7
-    // A key the instanceicon provider resolves to its generic icon, so the
-    // square is never empty.
     readonly property string iconSource: Icons.instanceIcon(root.drawnKey)
 
     implicitWidth: 180
@@ -112,8 +80,6 @@ Item {
         id: card
         anchors.fill: parent
         radius: Theme.radius.lg
-        // Hover lifts the card: one step lighter and a small shadow under
-        // it, never a zoom.
         color: root.hovered || root.selected ? Theme.palette.surfaceHover : Theme.palette.surface
 
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
@@ -125,8 +91,8 @@ Item {
             Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         }
 
-        // ReleaseWithinBounds grabs on press, so the page's "click empty
-        // space to deselect" handler underneath never sees a card click.
+        // ReleaseWithinBounds grabs on press, so the page's click-to-deselect handler never sees a
+        // card click.
         TapHandler {
             acceptedButtons: Qt.LeftButton
             gesturePolicy: TapHandler.ReleaseWithinBounds
@@ -139,8 +105,6 @@ Item {
             onTapped: { root.forceActiveFocus(); root.clicked(); root.menuRequested(null) }
         }
 
-        // The instance's tile, raised while the card is hovered; a picture
-        // across it gets its corners in the card's own colour.
         InstanceTile {
             id: square
             x: root.inset
@@ -151,9 +115,7 @@ Item {
             matte: root.showsPackArt || root.iconFills ? card.color : "transparent"
             lifted: root.hovered
 
-            // The instance's icon, centred, or across the tile when it is an
-            // opaque square. The provider renders it at the requested size,
-            // so it stays sharp at any card width.
+            // The provider renders at the requested size, so it stays sharp at any card width.
             Image {
                 anchors.centerIn: parent
                 visible: !root.showsPackArt
@@ -166,7 +128,6 @@ Item {
                 mipmap: true
             }
 
-            // A pack's own logo is square, made to be shown this way.
             Image {
                 id: packLogo
                 anchors.fill: parent
@@ -179,7 +140,6 @@ Item {
                 asynchronous: true
             }
 
-            // While launching the square dims and a bar runs along its foot.
             KiteShape {
                 anchors.fill: parent
                 radius: root.squareRadius
@@ -199,11 +159,8 @@ Item {
                 progress: root.launchProgress
             }
 
-            // Running: a small chip in the corner with a status dot,
-            // "Starting…" until the game is actually up (an instance counts
-            // as running from the moment its launch begins). An opaque
-            // surface chip, so it reads on the plain square and on a
-            // screenshot alike.
+            // Running chip; "Starting…" until the game is up (an instance counts as running from
+            // the moment its launch begins).
             Rectangle {
                 visible: root.isRunning || root.launching
                 anchors.left: parent.left
@@ -222,8 +179,6 @@ Item {
                     spacing: Theme.space.xs
                     Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
-                        // A perfect circle: computed half-width, not a
-                        // radius token.
                         width: root.runningDotSize; height: width; radius: width / 2
                         color: root.launching ? Theme.palette.warning : Theme.palette.success
                     }
@@ -245,7 +200,6 @@ Item {
                 size: root.playSize
                 running: root.isRunning
                 enabled: root.isRunning || root.canLaunch
-                // A plain fade, no overshoot scale-in (design-plan.md §4/§2.4).
                 opacity: !root.launching && (root.hovered || root.isRunning) ? 1 : 0
                 visible: opacity > 0
                 focusPolicy: Qt.NoFocus
@@ -277,10 +231,6 @@ Item {
             ToolTip.text: root.name
         }
 
-        // What it runs -- loader and version, nothing else, as Modrinth's
-        // card says it (when it was last played is in the list view, on
-        // Continue playing and on the instance page). While a launch runs: its stage
-        // on the left, how far on the right.
         Item {
             id: meta
             anchors.top: title.bottom
@@ -292,8 +242,7 @@ Item {
                 id: versionText
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                // Short of ⋯ at the line's end (moreButton), shown or not,
-                // so nothing reflows under the pointer.
+                // Short of ⋯ (moreButton), shown or not, so nothing reflows under the pointer.
                 width: Math.min(implicitWidth, parent.width - moreButton.width)
                 text: root.launching ? root.launchStatus : Format.versionLine(root.loader, root.gameVersion)
                 elide: Text.ElideRight
@@ -308,7 +257,6 @@ Item {
                 visible: text.length > 0 && versionText.implicitWidth + Theme.space.sm + implicitWidth <= parent.width
                 text: root.launching && root.launchProgress >= 0 ? qsTr("%1%").arg(Math.round(root.launchProgress * 100)) : ""
                 color: Theme.palette.textSecondary
-                // Digits of one width, so the number does not jitter.
                 font.features: ({ "tnum": 1 })
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.label.pixelSize
@@ -316,13 +264,8 @@ Item {
         }
     }
 
-    // ⋯ at the end of the version line, a bare glyph -- no chip of its own
-    // on the card -- shown while the card is hovered. On that line rather
-    // than the name's, so a long name keeps the card's whole width.
     IconButton {
         id: moreButton
-        // Placed rather than anchored: the line is the card's child, this
-        // the card's sibling.
         x: card.width - width - (root.textInset - Theme.space.xs)
         y: meta.y + (meta.height - height) / 2
         size: Theme.control.heightSm
@@ -336,9 +279,6 @@ Item {
         onClicked: root.menuRequested(moreButton)
     }
 
-    // The card's hairline, drawn over everything so the pictures' corner
-    // matte never paints across it. Selected keeps the hover look (fill and
-    // border), with no accent ring.
     Rectangle {
         anchors.fill: card
         radius: card.radius
@@ -349,8 +289,7 @@ Item {
     }
 
     Rectangle {
-        // Keyboard focus ring, outset so it never competes with the
-        // selected state: 4px out from the card's corner.
+        // Outset so it never competes with the selected state.
         anchors.fill: card
         anchors.margins: -Theme.space.xs
         radius: card.radius + Theme.space.xs

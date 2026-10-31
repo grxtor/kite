@@ -25,13 +25,8 @@
 
 class QAbstractItemModel;
 
-/*
- * "Find" in a log list: which rows of a list model contain some text.
- *
- * LogTab.qml walks matches with next/previous and highlights them, so what
- * it needs from C++ is the list of matching row numbers - cheap to compute
- * here over a live log of tens of thousands of lines, slow in JavaScript.
- */
+/* "Find" in a log list: LogTab.qml walks the matching row numbers, which are
+ * cheap to compute here over tens of thousands of lines and slow in JavaScript. */
 namespace LogFind
 {
 	/// Rows of @p model (a flat list) whose string value for @p role

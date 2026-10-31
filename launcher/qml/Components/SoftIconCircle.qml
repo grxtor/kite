@@ -15,7 +15,6 @@ Rectangle {
     property string iconName
     property string tone: "accent"
     property int diameter: 72
-    // The glyph takes this share of the disc.
     readonly property real iconShare: 0.46
 
     implicitWidth: root.diameter

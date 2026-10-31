@@ -27,21 +27,10 @@
 
 #include "tasks/Task.h"
 
-/* A QML-facing observer for one running Task.
- *
- * QML has no idea what a Task is - it is a plain QObject with plain
- * signals, not a QML type - so a page that wants to show progress for an
- * instance install (or any other core Task) needs something with
- * Q_PROPERTYs it can bind to instead. This is that adapter: it watches one
- * Task for its whole run and mirrors what it says into properties, plus a
- * single finished(bool) signal for "the whole thing is over, here is
- * whether it worked".
- *
- * Deliberately generic - nothing here mentions instances or Modrinth. A
- * model that starts a Task (ModrinthModpackModel::install(), for
- * instance) wraps it in one of these and hands the result back to QML;
- * the Task itself is never exposed.
- */
+/* A QML-facing observer for one running Task. QML cannot use a Task, so this
+ * adapter mirrors its status into Q_PROPERTYs and emits finished(bool) when
+ * the whole thing is over. Generic: a model that starts a Task wraps it in one
+ * of these and hands it to QML; the Task itself is never exposed. */
 class TaskWatcher : public QObject
 {
 	Q_OBJECT
@@ -56,9 +45,9 @@ class TaskWatcher : public QObject
 		QString instanceId READ instanceId NOTIFY instanceIdChanged)
 
   public:
-	/* @p task is the Task to watch - already constructed, not necessarily
-	 * started yet. Connections are made here, in the constructor, so that
-	 * nothing the task does before the caller starts it is missed. */
+	/* @p task is already constructed, not necessarily started. Connections are
+	 * made in the constructor so nothing the task does before the caller
+	 * starts it is missed. */
 	explicit TaskWatcher(Task::Ptr task, QObject* parent = nullptr);
 	~TaskWatcher() override;
 
@@ -66,17 +55,15 @@ class TaskWatcher : public QObject
 	{
 		return m_title;
 	}
-	/* Set by whoever creates the watcher - a Task has no notion of a
-	 * user-facing title of its own. */
+	/* Set by whoever creates the watcher; a Task has no user-facing title. */
 	void setTitle(const QString& title);
 
 	QString status() const
 	{
 		return m_status;
 	}
-	/* 0..1, or -1 while the task has not reported a total yet (an
-	 * indeterminate/"busy" state, same convention as Task itself:
-	 * progress(current, total) with total <= 0). */
+	/* 0..1, or -1 while the task has not reported a total yet (indeterminate,
+	 * as Task itself: progress(current, total) with total <= 0). */
 	double progress() const
 	{
 		return m_progress;
@@ -93,26 +80,22 @@ class TaskWatcher : public QObject
 	{
 		return m_failed;
 	}
-	/* The failure reason, if any. Empty while running or on success. */
 	QString error() const
 	{
 		return m_error;
 	}
-	/* The id the new instance will have, when that is knowable ahead of
-	 * time. It usually is not: InstanceList only settles on a final,
-	 * deduplicated instance id once the staged directory is committed,
-	 * after the wrapped task has already succeeded - see
-	 * InstanceList::commitStagedInstance(). So this stays empty unless
-	 * the creator calls setInstanceId() with something it already knows. */
+	/* The id the new instance will have, when knowable ahead of time. Usually
+	 * it is not: InstanceList settles on a final id only when the staged
+	 * directory is committed (InstanceList::commitStagedInstance()), so this
+	 * stays empty unless the creator calls setInstanceId(). */
 	QString instanceId() const
 	{
 		return m_instanceId;
 	}
 	void setInstanceId(const QString& instanceId);
 
-	/* The task being watched, for a caller that needs to reach it
-	 * directly (to abort it, for instance). May be null if this watcher
-	 * was never given one. */
+	/* The task being watched, e.g. to abort it. May be null if the watcher was
+	 * never given one. */
 	Task* task() const
 	{
 		return m_task.get();
@@ -128,8 +111,8 @@ class TaskWatcher : public QObject
 	void errorChanged();
 	void instanceIdChanged();
 
-	/* The task is over, one way or the other. Fired exactly once, right
-	 * after succeeded/failed settle to their final values. */
+	/* The task is over, one way or the other; fired once, right after
+	 * succeeded/failed settle. */
 	void finished(bool ok);
 
   private slots:
@@ -156,11 +139,10 @@ class TaskWatcher : public QObject
 	QString m_instanceId;
 
 	/* Progress notifications are throttled to ~10/s: a download can call
-	 * Task::setProgress() far faster than any QML binding needs to
-	 * repaint, and every NOTIFY firing means every binding using it
-	 * re-evaluates. Leading value is applied immediately; anything that
-	 * arrives before the window is up is coalesced into one trailing
-	 * emit, so the last value is never lost. */
+	 * Task::setProgress() far faster than QML needs, and every NOTIFY
+	 * re-evaluates its bindings. The leading value applies at once; later ones
+	 * in the window coalesce into one trailing emit, so the last is never
+	 * lost. */
 	static constexpr int kProgressThrottleMs = 100;
 	QElapsedTimer m_progressThrottle;
 	QTimer m_progressFlushTimer;

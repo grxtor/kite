@@ -112,7 +112,6 @@ class BundleCatalogTest : public QObject
 		QCOMPARE(catalog.presets().first().toMap().value("name").toString(),
 				 QString("Fast"));
 
-		/* Turkish asked for, only English written: English. */
 		catalog.setLanguage("tr");
 		QCOMPARE(catalog.presets().first().toMap().value("summary").toString(),
 				 QString("Quick"));
@@ -120,7 +119,6 @@ class BundleCatalogTest : public QObject
 		QCOMPARE(mods.first().toMap().value("summary").toString(),
 				 QString("English only"));
 
-		/* English asked for, only Turkish written: whatever there is. */
 		catalog.setLanguage("en");
 		QCOMPARE(catalog.mods({"pvp"}, "forge").first().toMap()
 					 .value("bundleName").toString(),
@@ -171,15 +169,14 @@ class BundleCatalogTest : public QObject
 
 		const QVariantList mods = catalog.mods({"speed", "pvp"}, "forge");
 		QCOMPARE(projectsOf(mods), (QStringList{"shared", "forgeonly"}));
-		/* The first bundle wins. */
 		QCOMPARE(mods.first().toMap().value("bundle").toString(), QString("speed"));
 		QCOMPARE(mods.last().toMap().value("bundle").toString(), QString("speed"));
 	}
 
 	void aMissedModDoesNotHideItsTwin()
 	{
-		/* The Forge-only copy is dropped for Fabric; it must not count as
-		 * listed, or a later bundle's copy for every loader would vanish. */
+		/* The Forge-only copy is dropped for Fabric and must not count as listed,
+		 * or a later bundle's copy for every loader would vanish. */
 		BundleCatalog catalog;
 		QVERIFY(catalog.loadFromJson(R"({
 			"formatVersion": 1, "presets": [],
@@ -249,7 +246,6 @@ class BundleCatalogTest : public QObject
 
 	void theBuiltInCatalogIsValid()
 	{
-		/* The constructor loads :/kite/bundles.json. */
 		BundleCatalog catalog;
 		const QVariantList presets = catalog.presets();
 		QVERIFY(!presets.isEmpty());
@@ -257,7 +253,6 @@ class BundleCatalogTest : public QObject
 			const QVariantMap preset = value.toMap();
 			const QStringList bundles = preset.value("bundles").toStringList();
 			QVERIFY(!bundles.isEmpty());
-			/* Every bundle a preset names has mods for its loader. */
 			QVERIFY2(!catalog.mods(bundles, preset.value("loader").toString())
 						  .isEmpty(),
 					 qPrintable(preset.value("id").toString()));
@@ -277,8 +272,7 @@ class BundleCatalogTest : public QObject
 
 	void theBuiltInCatalogRequiresWhatItLists()
 	{
-		/* Picking a mod picks what it requires too, so each of those has
-		 * to be in the same list. */
+		/* Picking a mod picks what it requires, so those must be in the list. */
 		BundleCatalog catalog;
 		for (const QString& loader : {"fabric", "forge", "neoforge", "quilt"}) {
 			const QVariantList mods = catalog.mods({"performance", "comfort"}, loader);

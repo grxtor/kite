@@ -24,8 +24,8 @@
 #include "modplatform/technic/TechnicModpackModel.h"
 
 /* The static, network-free halves of TechnicModpackModel against canned
- * Technic replies: the search addresses, the hits, and the metadata that
- * decides between a Solder install and a single zip. */
+ * replies: search addresses, hits, and the metadata that decides between
+ * a Solder install and a single zip. */
 class TechnicModpackModelTest : public QObject
 {
 	Q_OBJECT
@@ -40,7 +40,6 @@ class TechnicModpackModelTest : public QObject
 
 		const QUrl search = TechnicModpackModel::searchUrl("tekkit & friends");
 		QVERIFY(search.path().endsWith("/search"));
-		/* One parameter, "&" and all. */
 		QCOMPARE(QUrlQuery(search).queryItemValue("q", QUrl::FullyDecoded),
 				 QString("tekkit & friends"));
 
@@ -93,7 +92,6 @@ class TechnicModpackModelTest : public QObject
 		QCOMPARE(TechnicModpackModel::solderPackUrl(solderPack),
 				 QString("https://solder.technicpack.net/api/modpack/tekkitmain"));
 
-		/* Nothing to install from. */
 		TechnicModpackModel::Pack empty;
 		QVERIFY(!TechnicModpackModel::parseMetadata("{\"url\": null}", empty));
 		QVERIFY(!empty.metadataLoaded);

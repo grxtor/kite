@@ -5,20 +5,15 @@ import QtQuick
 import Kite.Theme
 
 /*
- * A section heading on the Home page ("Continue playing", "Library"). One
- * height for every heading, so every heading-to-content gap on the page
- * matches. In the classic look it is bold, in the heading face; Sahne sets
- * it semibold at 18 with the section's count (`detail`) beside it in a
- * quiet size; Sade and Gece turn it into a small uppercase, letter-spaced
- * label (lavender on the night sky) with the count after a dot.
+ * A section heading on the Home page ("Continue playing", "Library"), one height for every heading. Classic: bold, in
+ * the heading face; Sahne: semibold at 18 with the count (`detail`) beside it; Sade and Gece: a small uppercase,
+ * letter-spaced label with the count after a dot.
  */
 Item {
     id: root
 
     property string text: ""
-    // The section's count: `detail` ("16 instances") beside the title in
-    // Sahne; `count` (16) after a dot in Sade and Gece; neither in the
-    // classic look.
+    // The section's count: `detail` ("16 instances") in Sahne; `count` (16) after a dot in Sade and Gece.
     property string detail: ""
     property int count: 0
 
@@ -31,7 +26,6 @@ Item {
                   : root.look === "stage" ? Theme.type.heading.lineHeightPx
                   : Theme.control.heightSm
 
-    // The classic and Sahne title.
     Text {
         id: title
         visible: !root.isLabel
@@ -56,7 +50,6 @@ Item {
         font.weight: Font.Medium
     }
 
-    // The Sade and Gece label.
     HomeLabel {
         visible: root.isLabel
         anchors.verticalCenter: parent.verticalCenter

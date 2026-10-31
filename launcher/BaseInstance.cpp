@@ -53,23 +53,19 @@ BaseInstance::BaseInstance(SettingsObjectPtr globalSettings,
 	m_settings->registerSetting("totalTimePlayed", 0);
 	m_settings->registerSetting("lastTimePlayed", 0);
 
-	/* Shortcuts this instance has had written for it, as a compact JSON
-	 * array. One string keeps it to a single INI key, and the list is
-	 * short enough that nothing here needs to be fast. */
+	/* Shortcuts this instance has had written, as a compact JSON array; one
+	 * string keeps it to a single INI key. */
 	m_settings->registerSetting("shortcuts", QString());
 
-	/* Which profiler this instance launches under. Empty means none. This
-	 * is a property of the instance rather than of one click on a menu
-	 * entry, so that Launch Offline (and anything else that starts the
-	 * game) profiles too. */
+	/* Which profiler this instance launches under; empty means none. A
+	 * property of the instance, not of one menu click, so Launch Offline and
+	 * anything else that starts the game profiles too. */
 	m_settings->registerSetting("Profiler", "");
 
-	/* Pack-source provenance keys (consumed by the PackUpdater
-	 * plugin via instance_setting_get). All optional — empty string
-	 * means "not a pack-managed instance" or "we couldn't recover
-	 * this field". InstanceImportTask writes these when a pack is
-	 * imported through Modrinth / CurseForge; PackUpdater's attach
-	 * UI can also write them after the fact. */
+	/* Pack-source provenance keys, read by the PackUpdater plugin via
+	 * instance_setting_get. All optional: empty means not pack-managed or not
+	 * recoverable. InstanceImportTask writes them on import; PackUpdater's
+	 * attach UI can write them later. */
 	m_settings->registerSetting("PackProvider", "");
 	m_settings->registerSetting("PackId", "");
 	m_settings->registerSetting("PackSlug", "");
@@ -80,20 +76,15 @@ BaseInstance::BaseInstance(SettingsObjectPtr globalSettings,
 	m_settings->registerSetting("PackInstalledAt", "");
 	m_settings->registerSetting("PackManifestSha512", "");
 
-	/* The pack's own title, as the catalogue spells it. Separate from
-	 * "name" because the user may rename the instance and we still
-	 * want to be able to say which pack it is. Instances imported
-	 * before this key existed leave it empty; managedPackName() falls
-	 * back rather than showing a blank field. */
+	/* The pack's own title as the catalogue spells it, separate from "name"
+	 * since the user may rename the instance. Empty for instances imported
+	 * before this key existed; managedPackName() falls back. */
 	m_settings->registerSetting("PackName", "");
 
-	/* An update source the user supplied by hand, for instances with
-	 * no catalogue entry (drag-dropped zips, hand-made instances).
-	 * Remembered so the field is still filled in next time the page
-	 * is opened. */
+	/* An update source the user supplied by hand, for instances with no
+	 * catalogue entry (drag-dropped zips, hand-made instances). */
 	m_settings->registerSetting("PackUpdateUrl", "");
 
-	// Custom Commands
 	auto commandSetting = m_settings->registerSetting(
 		{"OverrideCommands", "OverrideLaunchCmd"}, false);
 	m_settings->registerOverride(globalSettings->getSetting("PreLaunchCommand"),
@@ -103,7 +94,6 @@ BaseInstance::BaseInstance(SettingsObjectPtr globalSettings,
 	m_settings->registerOverride(globalSettings->getSetting("PostExitCommand"),
 								 commandSetting);
 
-	// Console
 	auto consoleSetting = m_settings->registerSetting("OverrideConsole", false);
 	m_settings->registerOverride(globalSettings->getSetting("ShowConsole"),
 								 consoleSetting);
@@ -291,12 +281,9 @@ QString BaseInstance::notes() const
 	return m_settings->get("notes").toString();
 }
 
-/* ---- Managed pack provenance ------------------------------------------
- *
- * Every getter trims. These keys are written by the importer, but they
- * are also plain text in instance.cfg, and a stray trailing space in a
- * pack id turns into a 404 that is very hard to read back from a log.
- */
+/* Every getter trims: these keys are plain text in instance.cfg, and a stray
+ * trailing space in a pack id becomes a 404 that is hard to read back from a
+ * log. */
 
 QString BaseInstance::managedPackProvider() const
 {
@@ -319,10 +306,8 @@ QString BaseInstance::managedPackName() const
 	if (!recorded.isEmpty()) {
 		return recorded;
 	}
-	/* Older imports never recorded the title. The slug is the next best
-	 * thing - it is derived from the title and is at least stable - and
-	 * failing that the instance name, which the user chose and will
-	 * recognise even if it is not what the catalogue calls the pack. */
+	/* Older imports never recorded the title. The slug is derived from it and
+	 * stable; failing that, the instance name the user chose. */
 	const QString slug = managedPackSlug();
 	if (!slug.isEmpty()) {
 		return slug;
@@ -352,9 +337,8 @@ bool BaseInstance::isManagedPack() const
 
 bool BaseInstance::hasManagedPackId() const
 {
-	/* An id without a provider does not say which API to ask, and a
-	 * provider without an id gives every endpoint nothing to key on, so
-	 * a catalogue lookup needs both. */
+	/* An id without a provider does not say which API to ask, and a provider
+	 * without an id gives every endpoint nothing to key on. */
 	return !managedPackProvider().isEmpty() && !managedPackId().isEmpty();
 }
 
@@ -367,9 +351,8 @@ void BaseInstance::setManagedPackUpdateUrl(const QString& url)
 {
 	const QString trimmed = url.trimmed();
 	if (managedPackUpdateUrl() == trimmed) {
-		// Writing a setting writes a file; this one is fed by a
-		// textChanged signal, so it would otherwise write on every
-		// keystroke that does not change the trimmed value.
+		// Writing a setting writes a file, and this is fed by textChanged, so
+		// skip keystrokes that do not change the trimmed value.
 		return;
 	}
 	m_settings->set("PackUpdateUrl", trimmed);
@@ -409,9 +392,8 @@ QList<ShortcutData> BaseInstance::shortcuts() const
 			continue;
 		}
 
-		/* Whatever is no longer there is no longer ours: the user has
-		 * moved or removed it by hand, and something else may well be
-		 * sitting at that path now. */
+		/* What is no longer there is no longer ours: the user moved or removed
+		 * it, and something else may sit at that path now. */
 		if (!QFileInfo::exists(filePath)) {
 			qDebug() << "Forgetting shortcut" << name << "of instance" << id()
 					 << "-- nothing at" << filePath << "any more";
@@ -433,8 +415,6 @@ void BaseInstance::registerShortcut(const ShortcutData& shortcut)
 	QList<ShortcutData> current = shortcuts();
 
 	/* Writing over an existing shortcut is one shortcut, not two. */
-	/* QList::removeIf() is Qt 6.1+; the erase-remove idiom is equivalent and
-	 * compiles against both Qt 5 and Qt 6. */
 	current.erase(std::remove_if(current.begin(), current.end(),
 								 [&shortcut](const ShortcutData& known) {
 									 return known.filePath ==

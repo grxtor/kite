@@ -28,17 +28,9 @@
 #include <memory>
 
 /*
- * Base for the two Meta version-list proxies below: both need the same
- * loading/error tracking and the same "newest first" fallback ordering, and
- * differ only in which rows they keep. QtCore only, same rule as the other
- * QML-facing models here (InstanceFilterModel, SettingsAdapter, ...): no
- * QtWidgets, no ui/.
- *
- * Roles are looked up by NAME from the source model's roleNames() rather
- * than assumed to be BaseVersionList's own enum values, the same reasoning
- * InstanceFilterModel.h gives for doing that with InstanceList: this then
- * works against a fake version list numbering its roles differently (see
- * NewInstanceController_test.cpp), not only against the real one.
+ * Base for the two Meta version-list proxies: shared loading/error tracking
+ * and "newest first" fallback ordering. Roles are looked up by name from the
+ * source model, so a list that numbers its roles differently works too.
  */
 class VersionListLoadingProxy : public QSortFilterProxyModel
 {
@@ -47,12 +39,8 @@ class VersionListLoadingProxy : public QSortFilterProxyModel
 	Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
 	Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 	Q_PROPERTY(int count READ count NOTIFY countChanged)
-	/* The versionId of the first row after filtering and sorting - "the
-	 * newest build that fits the current filter". Used to default a
-	 * selection without trusting the source list's own idea of
-	 * "recommended", which knows nothing about this proxy's filter (see
-	 * NewInstanceController::onLoaderListFirstVersionIdChanged()). Empty
-	 * when nothing currently matches. */
+	/* versionId of the first row after filtering and sorting (the newest build
+	 * that fits the filter). Empty when nothing matches. */
 	Q_PROPERTY(QString firstVersionId READ firstVersionId NOTIFY
 				   firstVersionIdChanged)
 
@@ -82,17 +70,11 @@ class VersionListLoadingProxy : public QSortFilterProxyModel
 	void firstVersionIdChanged();
 
   protected:
-	/* Hook for a subclass to resolve whatever extra role it filters rows
-	 * on, called after the roles this base class needs are resolved and
-	 * before the base class model is set. @p sourceModel may be null. */
+	/* Resolves extra roles the subclass filters on; called before the base model
+	 * is set. @p sourceModel may be null. */
 	virtual void resolveRoles(QAbstractItemModel* sourceModel)
 	{
 		Q_UNUSED(sourceModel);
-	}
-
-	int versionIdRole() const
-	{
-		return m_versionIdRole;
 	}
 
 	bool lessThan(const QModelIndex& left,
@@ -103,11 +85,6 @@ class VersionListLoadingProxy : public QSortFilterProxyModel
 	void setError(const QString& error);
 	/// Recomputes count/firstVersionId, emitting only what actually moved.
 	void refreshDerived();
-	/* Starts the source list's load task if it has one and it is not
-	 * loaded already - the same thing
-	 * VersionSelectWidget::loadList() does for the widget's own version
-	 * pickers (ui/widgets/VersionSelectWidget.cpp), via the same
-	 * BaseVersionList::getLoadTask() / Meta::BaseEntity::load() API. */
 	void startLoadIfNeeded();
 
 	int m_versionIdRole = -1;
@@ -117,21 +94,15 @@ class VersionListLoadingProxy : public QSortFilterProxyModel
 	QString m_firstVersionId;
 };
 
-/*
- * Meta::VersionList for "net.minecraft" (BaseVersionList; see
- * meta/VersionList.h), filtered to release builds by default and sorted
- * newest first - the same default VanillaPage's checkboxes start on
- * (ui/pages/modplatform/VanillaPage.cpp), minus its separate "experiments"
- * toggle, which nothing here exposes; an experiment build is always hidden.
- */
+/* Meta version list for "net.minecraft": release builds by default, newest
+ * first. Experiments are always hidden. */
 class MinecraftVersionListProxy : public VersionListLoadingProxy
 {
 	Q_OBJECT
 
 	Q_PROPERTY(bool showSnapshots READ showSnapshots WRITE setShowSnapshots
 				   NOTIFY showSnapshotsChanged)
-	/// Alpha, beta and old-snapshot builds - VanillaPage's other three
-	/// checkboxes, collapsed into one: nothing here needs to tell them apart.
+	/// Alpha, beta and old-snapshot builds.
 	Q_PROPERTY(bool showOldVersions READ showOldVersions WRITE
 				   setShowOldVersions NOTIFY showOldVersionsChanged)
 
@@ -165,15 +136,9 @@ class MinecraftVersionListProxy : public VersionListLoadingProxy
 	bool m_showOldVersions = false;
 };
 
-/*
- * One loader's Meta::VersionList - whichever
- * NewInstanceController::loader currently names - filtered to the builds
- * that apply to one Minecraft version: "exact if present", the same rule
- * LoaderVersionPage applies via VersionSelectWidget::setExactIfPresentFilter()
- * (ui/dialogs/InstallLoaderDialog.cpp). A build that names no Minecraft
- * version (Fabric Loader, Quilt Loader) is always kept; one that does must
- * match minecraftVersion exactly.
- */
+/* One loader's version list filtered to one Minecraft version ("exact if
+ * present"). A build that names no Minecraft version (Fabric Loader, Quilt
+ * Loader) is always kept. */
 class LoaderVersionListProxy : public VersionListLoadingProxy
 {
 	Q_OBJECT
@@ -185,8 +150,7 @@ class LoaderVersionListProxy : public VersionListLoadingProxy
 	{
 		return m_minecraftVersion;
 	}
-	/// Re-filters in place; does not reload, since it is the loader (not the
-	/// Minecraft version) that decides which list is the source model.
+	/// Re-filters in place; does not reload.
 	void setMinecraftVersion(const QString& version);
 
   protected:
@@ -199,47 +163,23 @@ class LoaderVersionListProxy : public VersionListLoadingProxy
 	QString m_minecraftVersion;
 };
 
-/* The Minecraft version (+ loader brand, if one is given) the way
- * VanillaPage::suggestCurrent() suggests a name for the widget's vanilla-only
- * flow (ui/pages/modplatform/VanillaPage.cpp), extended with the loader
- * since this flow can add one at creation. Empty if @p minecraftVersion is.
- *
- * Free-standing so it can be unit-tested without a LauncherContext: it
- * touches nothing but the loader table in minecraft/Component.h. @p loader
- * is "", "fabric", "quilt", "forge" or "neoforge" - see
- * NewInstanceController::loader(). */
+/* Minecraft version plus loader brand, if given. Empty if @p minecraftVersion
+ * is. @p loader is "", "fabric", "quilt", "forge" or "neoforge". */
 QString composeSuggestedInstanceName(const QString& minecraftVersion,
 									 const QString& loader);
 
-/* Suggested display name for an import source: a local file path, a
- * "file://" URL from a picker, or a pasted http(s) link - the same "file
- * name minus extension" rule the widget's ImportPage::updateState() uses
- * (ui/pages/modplatform/ImportPage.cpp), including its "?client=y"
- * CurseForge download-link rewrite. Empty if @p source is empty or names
- * no file name QUrl can find.
- *
- * Free-standing for the same reason as composeSuggestedInstanceName()
- * above: testable without a LauncherContext. */
+/* Suggested name for an import source (local path, "file://" URL or http(s)
+ * link): the file name minus extension, with CurseForge's "?client=y"
+ * rewritten. Empty if there is none. */
 QString suggestedImportName(const QString& source);
 
-/* True if @p source is something InstanceImportTask could plausibly import:
- * a remote http(s)/ftp URL (existence can only be found out by trying), or
- * a local path that exists and has a modpack-archive extension - the same
- * gate the widget's ImportPage::updateState() applies before offering the
- * pack (ui/pages/modplatform/ImportPage.cpp), so the QML Import button
- * doesn't light up for a typo'd local path or a non-archive file only to
- * fail later, after the task has already started. Empty or unparsable
- * input is never valid.
- *
- * Free-standing for the same reason as suggestedImportName() above. */
+/* True if @p source is a remote http(s)/ftp URL or an existing local file with
+ * a modpack-archive extension. Empty or unparsable input is never valid. */
 bool importSourceLooksValid(const QString& source);
 
 /*
- * QML-facing "New instance" flow: picks a Minecraft version and, optionally,
- * a mod loader and its version, and builds the same task the widget's
- * NewInstanceDialog + VanillaPage build for a vanilla instance
- * (ui/dialogs/NewInstanceDialog.cpp, ui/pages/modplatform/VanillaPage.cpp)
- * plus the loader component if one was picked - see create().
+ * QML-facing "New instance" flow: Minecraft version, optional loader and its
+ * version; builds the creation task (see create()).
  */
 class NewInstanceController : public QObject
 {
@@ -253,22 +193,16 @@ class NewInstanceController : public QObject
 		QString loader READ loader WRITE setLoader NOTIFY loaderChanged)
 	/// The chosen loader's version list, filtered to selectedMinecraftVersion.
 	Q_PROPERTY(QObject* loaderVersions READ loaderVersions CONSTANT)
-	/// Convenience mirror of loaderVersions.loading, for QML that does not
-	/// need the rest of the loader version list's own state.
 	Q_PROPERTY(bool loaderLoading READ loaderLoading NOTIFY
 				   loaderLoadingChanged)
 
 	Q_PROPERTY(QString selectedMinecraftVersion READ selectedMinecraftVersion
 				   NOTIFY selectedMinecraftVersionChanged)
-	/// Defaults to the newest build that fits once loaderVersions settles -
-	/// see onLoaderListFirstVersionIdChanged() - until selectLoaderVersion()
-	/// is called explicitly.
+	/// Defaults to the newest fitting build until selectLoaderVersion() is called.
 	Q_PROPERTY(QString selectedLoaderVersion READ selectedLoaderVersion NOTIFY
 				   selectedLoaderVersionChanged)
 
-	/// Existing instance groups, sorted and deduplicated the way
-	/// NewInstanceDialog's constructor prepares its own combo box; "" first,
-	/// for "no group" (ui/dialogs/NewInstanceDialog.cpp).
+	/// Existing groups, sorted and deduplicated; "" first for "no group".
 	Q_PROPERTY(QStringList groups READ groups CONSTANT)
 
   public:
@@ -298,39 +232,19 @@ class NewInstanceController : public QObject
 
 	Q_INVOKABLE void selectMinecraftVersion(const QString& version);
 	Q_INVOKABLE void selectLoaderVersion(const QString& version);
-	/// See composeSuggestedInstanceName() above.
 	Q_INVOKABLE QString suggestedName() const;
-	/* Builds and starts the instance-creation task, wrapped the same way
-	 * MainWindow::createInstanceFromDialog() wraps NewInstanceDialog's
-	 * (ui/MainWindow.cpp), and returns a TaskWatcher for it (parented to
-	 * this controller, so QML gets it as CppOwnership without needing its
-	 * own expose() call - see QmlShell::expose()). Null if no Minecraft
-	 * version is selected yet, or if selectedMinecraftVersion names no
-	 * version the metadata index actually has.
-	 *
-	 * @p gameFiles false skips the pre-download of the game's files that
-	 * the global setting would otherwise do while the task runs - for a
-	 * caller that does not want the user waiting on it (the Kite
-	 * Performance instance, which goes on to install its mods in the
-	 * background). The files then come with the first launch. */
+	/* Builds and starts the creation task; returns a TaskWatcher parented to this
+	 * controller. Null if no Minecraft version is selected or the index lacks it.
+	 * @p gameFiles false skips pre-downloading the game's files (they come with
+	 * the first launch). */
 	Q_INVOKABLE QObject* create(const QString& name, const QString& group,
 								const QString& iconKey, bool gameFiles = true);
 
-	/// Wraps suggestedImportName() above for QML - see its comment.
 	Q_INVOKABLE QString suggestedNameForImportSource(const QString& source) const;
-	/// Wraps importSourceLooksValid() above for QML - see its comment.
 	Q_INVOKABLE bool isImportSourceValid(const QString& source) const;
-	/* Builds and starts an import of a local archive/export or a modpack
-	 * download URL - the same InstanceImportTask the widget's ImportPage +
-	 * NewInstanceDialog build (ui/pages/modplatform/ImportPage.cpp,
-	 * ui/dialogs/NewInstanceDialog.cpp) - and returns a TaskWatcher for
-	 * it, same CppOwnership reasoning as create() above (parented to this
-	 * controller, so QML gets it as CppOwnership without needing its own
-	 * expose() call). Any question the import needs to ask (blocked or
-	 * untrusted mods, replacing an existing pack) goes through
-	 * LAUNCHER->uiHost(), already wired for both UIs - see
-	 * InstanceImportTask.cpp. Null if @p source is empty or
-	 * QUrl::fromUserInput() cannot make sense of it. */
+	/* Builds and starts an import of a local archive or modpack URL; returns a
+	 * TaskWatcher parented to this controller. Questions the import asks go
+	 * through LAUNCHER->uiHost(). Null if @p source is empty or not a usable URL. */
 	Q_INVOKABLE QObject* importFrom(const QString& source, const QString& name,
 									const QString& group,
 									const QString& iconKey);
@@ -342,11 +256,8 @@ class NewInstanceController : public QObject
 	void selectedLoaderVersionChanged();
 
   private:
-	/// Points loaderVersions at m_loader's list (or clears it) and re-applies
-	/// the current selectedMinecraftVersion filter.
 	void refreshLoaderSource();
-	/// Defaults selectedLoaderVersion once loaderVersions settles, unless
-	/// selectLoaderVersion() was already called for this loader/MC version.
+	/// Defaults selectedLoaderVersion unless selectLoaderVersion() was already called.
 	void onLoaderListFirstVersionIdChanged();
 
 	std::unique_ptr<MinecraftVersionListProxy> m_minecraftVersions;

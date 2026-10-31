@@ -6,21 +6,18 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The Friends page's "Blocked" tab: people who can neither send you a
- * request nor see when you are online, each with an Unblock that waits for
- * its answer (FriendsPending).
+ * The Friends page's "Blocked" tab: people who can neither send you a request nor see when you are online, each with
+ * an Unblock that waits for its answer (FriendsPending).
  */
 Item {
     id: root
 
-    // QmlShell.friends (FriendsController), or null.
+    // FriendsController, or null.
     property var controller: null
-    // The server answers: Unblock needs it, reading the list does not.
     property bool actionsEnabled: true
 
     readonly property var blocked: root.controller ? root.controller.blocked : []
-    // Not before the lists have been read: an empty list that is still
-    // arriving is not "no one".
+    // Not before the lists have been read: an empty list that is still arriving is not "no one".
     readonly property bool empty: !!root.controller && root.controller.loaded && root.blocked.length === 0
 
     FriendsPending {
@@ -55,7 +52,6 @@ Item {
                     text: qsTr("Unblock")
                     onClicked: pending.send(row.modelData.uuid, () => root.controller.unblock(row.modelData.uuid))
                 }
-                // The ⋯ column the Requests tab's rows have.
                 Item { width: Theme.control.heightSm; height: 1 }
             }
         }

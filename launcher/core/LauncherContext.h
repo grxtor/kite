@@ -45,46 +45,29 @@ namespace Meta
 	class Index;
 }
 
-/*
- * The launcher services that code outside the user interface is allowed to
- * reach for.
- *
- * Everything here used to be read off `Application`, which derives from
- * QApplication and owns the main window, the settings dialog and the theme
- * manager. That made every file that wanted, say, the network manager depend
- * transitively on QtWidgets and on the entire widget page tree -- which is
- * exactly what stops the core from being reused under a QML user interface.
- *
- * So the dependency is inverted: `Application` implements this interface and
- * registers itself, and the core reaches services through LAUNCHER-> instead
- * of APPLICATION->. Nothing declared here is allowed to mention QtWidgets, and
- * nothing here returns a widget, a window or a dialog. Asking the user a
- * question is not a service -- that inversion belongs to UiHost.
- *
- * QIcon is fine despite appearances: it lives in QtGui, not QtWidgets. QML
- * cannot consume it, so getThemedIcon() is a transitional accessor that the
- * image-provider work will eventually replace with icon names.
- */
+/* The launcher services that code outside the UI may reach for. `Application`
+ * implements this and registers itself, so the core uses LAUNCHER-> instead of
+ * APPLICATION-> and does not drag in QtWidgets. Nothing here may mention
+ * QtWidgets or return a widget, window or dialog; questions to the user go
+ * through UiHost. getThemedIcon() is transitional (QIcon is QtGui, but QML
+ * cannot use it). */
 class LauncherContext
 {
   public:
 	virtual ~LauncherContext() = default;
 
-	/* Null before Application's constructor has run and after it has been
-	 * destroyed -- notably in the crash handler, which runs while the
-	 * application object is being torn down. Callers on those paths must
-	 * check. */
+	/* Null before Application's constructor has run and after it was
+	 * destroyed, notably in the crash handler during teardown. Callers on
+	 * those paths must check. */
 	static LauncherContext* instance();
 
 	virtual std::shared_ptr<SettingsObject> settings() const = 0;
 	virtual std::shared_ptr<InstanceList> instances() const = 0;
 	virtual std::shared_ptr<IconList> icons() const = 0;
 	virtual shared_qobject_ptr<AccountList> accounts() const = 0;
-	/* Not const: Application::translations() is loaded once during startup
-	 * and just returns it, but Application::javalist() builds its
-	 * JavaInstallList lazily on first call. Needed by QmlShell (Kite_qml,
-	 * which links this core and not Application/Kite_logic) for the QML
-	 * shell's own onboarding -- see QmlShell::languages()/javaInstalls(). */
+	/* Not const: javalist() builds its JavaInstallList lazily on first call.
+	 * Needed by QmlShell (Kite_qml links this core, not Application) for
+	 * onboarding. */
 	virtual std::shared_ptr<TranslationsModel> translations() = 0;
 	virtual std::shared_ptr<JavaInstallList> javalist() = 0;
 
@@ -96,31 +79,27 @@ class LauncherContext
 	virtual QString getJarsPath() = 0;
 	virtual QString msaClientId() const = 0;
 
-	/* Applies a proxy configuration to the whole application immediately
-	 * (QNetworkProxy::setApplicationProxy() and friends), the same way the
-	 * widget ProxyPage's apply button does. @p proxyTypeStr is one of
-	 * "None", "Default", "SOCKS5", "HTTP". Needed by QmlShell, which
-	 * cannot see Application/QNetworkProxy from Kite_qml -- see
-	 * QmlShell::applyProxySettings(). */
+	/* Applies a proxy configuration to the whole application at once
+	 * (QNetworkProxy::setApplicationProxy() and friends), like the widget
+	 * ProxyPage's apply button. @p proxyTypeStr is one of "None", "Default",
+	 * "SOCKS5", "HTTP". Needed by QmlShell, which cannot see Application. */
 	virtual void updateProxySettings(QString proxyTypeStr, QString addr,
 									 int port, QString user,
 									 QString password) = 0;
 
-	/* Null when no plugin host is present -- plugins are an optional build
-	 * (Kite_PLUGINS, OFF by default). Core code calls through this rather
-	 * than reaching PluginManager directly, because PluginManager renders
-	 * plugin-supplied user interface and therefore pulls in QtWidgets. */
+	/* Null when no plugin host is present (plugins are an optional build,
+	 * Kite_PLUGINS). Core code calls through this because PluginManager
+	 * renders plugin UI and pulls in QtWidgets. */
 	virtual AuthRequestDecorator* authRequestDecorator() const = 0;
 
-	/* Never null: a core task that has to ask the user a question cannot
-	 * meaningfully carry on without an answer, so the shell installs one
-	 * before anything that might ask is allowed to run. */
+	/* Never null: a core task that must ask the user cannot carry on without
+	 * an answer, so the shell installs one before anything that might ask
+	 * runs. */
 	virtual UiHost* uiHost() const = 0;
 
-	/* The launcher's news feeds and its notification check, owned by the
-	 * application and shared by whichever UI is up (MainWindow, the QML
-	 * shell) and by the plugin news API. Null where there are none -- a
-	 * test or tool context, which is why these are not pure. */
+	/* The launcher's news feeds and notification check, owned by the
+	 * application and shared by whichever UI is up and by the plugin news API.
+	 * Null in a test or tool context, which is why these are not pure. */
 	virtual NewsChecker* newsChecker() const
 	{
 		return nullptr;
@@ -129,8 +108,8 @@ class LauncherContext
 	{
 		return nullptr;
 	}
-	/* The bridge the Kite mod of a running game talks to the launcher
-	 * through. Null where there is none (a test or tool context). */
+	/* The bridge the Kite mod of a running game talks to the launcher through.
+	 * Null in a test or tool context. */
 	virtual ModBridge* modBridge() const
 	{
 		return nullptr;
@@ -138,8 +117,7 @@ class LauncherContext
 
   protected:
 	/* Called by the implementation's constructor/destructor. Registering is
-	 * not thread safe and is expected to happen once, on the main thread,
-	 * before anything else runs. */
+	 * not thread safe: once, on the main thread, before anything else runs. */
 	static void setInstance(LauncherContext* context);
 };
 

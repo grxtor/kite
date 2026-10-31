@@ -34,16 +34,11 @@ class InstanceList;
 class LaunchTask;
 
 /*
- * What the launcher can say about the game right now: whether an instance
- * runs (the most recently started one, if several do), its name and
- * Minecraft version, and where in the world its log says the player is
- * (FriendsLogRules). Follows the instances of the list, including ones
- * added later, and says changed() when the answer does.
- *
- * A game counts once its launch is known (launchTaskChanged), and only for
- * the profile it is played as: a game played offline, as a demo or as another
- * account is nothing the signed-in account's friends are told about
- * (presence()).
+ * What the launcher can say about the game right now: whether an instance runs
+ * (the most recently started, if several), its name and Minecraft version, and
+ * where its log says the player is (FriendsLogRules). Says changed() when the
+ * answer does. A game counts once its launch is known, and only for the profile
+ * it is played as: offline, demo or other-account play is not told to friends.
  */
 class FriendsGameWatcher : public QObject
 {
@@ -58,10 +53,9 @@ class FriendsGameWatcher : public QObject
 	/// profile, nothing otherwise.
 	FriendsApi::Presence presence(const QString& profileId) const;
 
-	/// The world @p instance's own Kite mod reports (modbridge/): it replaces
-	/// what the log said and the log's lines are ignored for that game until
-	/// it stops, when the log takes over again for the next one. Ignored for
-	/// a game that does not run.
+	/// The world @p instance's Kite mod reports (modbridge/) replaces what the log
+	/// said; the log is ignored for that game until it stops. Ignored for a game
+	/// that does not run.
 	void setReportedWorld(BaseInstance* instance,
 						  const FriendsApi::World& world);
 
@@ -73,10 +67,8 @@ class FriendsGameWatcher : public QObject
 	void watch(const std::shared_ptr<BaseInstance>& instance);
 	void onRunningChanged(BaseInstance* instance, bool running);
 	void onLaunchTask(BaseInstance* instance, LaunchTask* task);
-	/// The launch of @p instance is known, played as @p profile ("" if not
-	/// as an account's own identity): it counts as running if it does.
+	/// @p profile is "" if not played as an account's own identity.
 	void count(BaseInstance* instance, const QString& profile);
-	/// The latest running game, whoever plays it.
 	FriendsApi::Presence latest() const;
 	void onLogLine(BaseInstance* instance, const QString& line);
 	void forget(BaseInstance* instance);
@@ -85,10 +77,8 @@ class FriendsGameWatcher : public QObject
 
   private:
 	std::shared_ptr<InstanceList> m_instances;
-	/// Instances connected to, with their world while they run.
 	QHash<BaseInstance*, FriendsApi::World> m_worlds;
-	/// The profile each instance with a known launch is played as, while it
-	/// runs ("" when not as an account's own identity).
+	/// The profile each instance with a known launch is played as while it runs.
 	QHash<BaseInstance*, QString> m_profiles;
 	/// The running games whose mod reports the world: the log says nothing
 	/// about them (see setReportedWorld()).

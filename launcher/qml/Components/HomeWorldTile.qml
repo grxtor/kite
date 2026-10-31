@@ -7,20 +7,9 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One world in "Recent worlds" on Home's side panel: a compact list row --
- * the world's own icon (or, lacking one, a neutral globe on the calm
- * surface, the Worlds tab's own fallback), the world's name, and which
- * instance it belongs to with when it was last played. Filled from the
- * shell's recentWorlds model (RecentWorldsModel's roles).
- *
- * Clicking it opens that instance's Worlds tab. A row in a list rather than
- * a card of its own: no fill or border at rest, the hover overlay under the
- * pointer.
- *
- * In the Sahne, Sade and Gece looks the text is a step smaller (as in their
- * mockups), and on glass (`glass`: the Sahne stage's world panel) the row
- * has no fill of its own and its words are white on whatever the glass is
- * over, and the icon keeps the game's square corners.
+ * One world in "Recent worlds" on Home's side panel: icon (a neutral globe without one), name, and its instance
+ * with when it was last played. Clicking opens that instance's Worlds tab. On glass (`glass`) the row has no fill,
+ * white words and square icon corners.
  */
 AbstractButton {
     id: control
@@ -39,7 +28,6 @@ AbstractButton {
     readonly property color nameInk: control.glass ? Theme.media.text : Theme.palette.textPrimary
     readonly property color metaInk: control.glass ? Qt.rgba(1, 1, 1, 0.55) : Theme.palette.textSecondary
     readonly property bool hasIcon: control.iconUrl.length > 0 && worldIcon.status !== Image.Error
-    // A compact row: a control-high icon square and a little air.
     readonly property int squareSize: Theme.control.height
     readonly property int rowHeight: control.squareSize + Theme.space.sm * 2
 
@@ -55,8 +43,6 @@ AbstractButton {
     ToolTip.delay: 500
     ToolTip.text: qsTr("%1 — %2").arg(control.worldName).arg(control.instanceName)
 
-    // The panel's own colour under it at rest (the icon's corner matte
-    // paints in it), the hover and press overlays over that.
     background: Rectangle {
         id: card
         radius: Theme.radius.md
@@ -85,9 +71,7 @@ AbstractButton {
                 anchors.fill: parent
                 radius: Theme.radius.md
             }
-            // The game saves icon.png at 64x64 and shows it pixel-sharp,
-            // so it is drawn the same way: at its own size, unfiltered,
-            // rather than smoothed into a blur.
+            // The game saves icon.png at 64x64 and shows it pixel-sharp: drawn at its own size, unfiltered.
             Image {
                 id: worldIcon
                 anchors.fill: parent
@@ -97,17 +81,14 @@ AbstractButton {
                 smooth: false
                 asynchronous: true
             }
-            // On glass no one colour lies around the icon (the sky or a
-            // photo shows through), so a matte would show as dark corners:
-            // there the world's icon keeps the game's own square corners.
+            // On glass no one colour lies around the icon, so a matte would show as dark corners.
             CornerMatte {
                 visible: control.hasIcon && !control.glass
                 cornerRadius: Theme.radius.md
                 matte: card.color
             }
-            // No icon.png: a neutral globe, as on the instance's Worlds
-            // tab. A landscape here would pass for a real view of the
-            // world, and two worlds would share one.
+            // No icon.png: a neutral globe; a landscape would pass for a real view of the world and two worlds would
+            // share one.
             MeshIcon {
                 anchors.centerIn: parent
                 visible: !control.hasIcon
@@ -135,8 +116,7 @@ AbstractButton {
                 font.weight: Theme.type.bodyStrong.weight
             }
 
-            // "Hardcore Survival  •  1 h ago": the instance's name gives way
-            // first, so the time stays whole.
+            // The instance's name gives way first, so the time stays whole.
             Row {
                 id: metaRow
                 width: parent.width

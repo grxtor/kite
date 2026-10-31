@@ -69,11 +69,9 @@ class LaunchTask : public Task
 		return m_pid;
 	}
 
-	/**
-	 * @brief the profile id the game is played as, for the friends feature:
-	 * set only when that is the signed-in account's own identity (an online
-	 * launch, no demo), "" for anything else (offline, a demo, not known).
-	 */
+	/// The profile id the game is played as, for the friends feature: set only
+	/// for the signed-in account's own identity (online launch, no demo), ""
+	/// otherwise.
 	void setPlayerProfile(const QString& profileId)
 	{
 		m_playerProfile = profileId;
@@ -101,12 +99,9 @@ class LaunchTask : public Task
 
 	bool canAbort() const override;
 
-	/**
-	 * @brief whether an abort has already been requested and accepted
-	 *
-	 * Both this and a launch step that refuses to be interrupted make
-	 * canAbort() false, and the two need different things said to the user.
-	 */
+	/// Whether an abort has already been requested and accepted. This and a
+	/// launch step that refuses interruption both make canAbort() false, and
+	/// the user needs different words for each.
 	bool isAborting() const
 	{
 		return state == LaunchTask::Aborted;
@@ -123,20 +118,13 @@ class LaunchTask : public Task
 	virtual void emitSucceeded() override;
 
   signals:
-	/**
-	 * @brief emitted when the launch preparations are done
-	 */
+	/// Emitted when the launch preparations are done.
 	void readyForLaunch();
 
 	void requestProgress(Task* task);
 
-	void requestLogging();
-
-	/**
-	 * @brief emitted for every line the launch prints, game output
-	 * included, after private values are censored. For code that reads the
-	 * log as it goes (the friends feature) without owning the LogModel.
-	 */
+	/// Emitted for every line the launch prints, game output included, after
+	/// censoring; for code that reads the log without owning the LogModel.
 	void logLineReceived(const QString& line);
 
   public slots:
@@ -151,14 +139,10 @@ class LaunchTask : public Task
   private: /*methods */
 	void finalizeSteps(bool successful, const QString& error);
 
-	/* Start @p step and, for as long as it runs, relay its status()/
-	 * progress() onto our own - the same way Update relays the update
-	 * task it wraps onto itself. This is what lets something outside the
-	 * step list (InstanceList's launch progress tracking, in particular)
-	 * watch the launch as a whole instead of having to know which step
-	 * is currently running. A step that names no stage of its own shows
-	 * as "Preparing to launch", with no progress.
-	 */
+	// Starts @p step and relays its status()/progress() onto ours while it
+	// runs, so code outside the step list (InstanceList's progress tracking)
+	// can watch the launch as a whole. A step that names no stage shows
+	// "Preparing to launch", with no progress.
 	void startStep(const shared_qobject_ptr<LaunchStep>& step);
 
   protected: /* data */

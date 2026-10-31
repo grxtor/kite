@@ -38,36 +38,20 @@ class Mod;
 class QTimer;
 
 /*
- * Everything ContentTab.qml does to an instance's content folders that the
- * widget ModFolderPage (and its CoreModFolderPage / GlobalDataPackPage
- * variants) could do: one searchable list per kind, bulk enable, disable
- * and remove over a selection, the project page and the configs folder,
- * and "Export list" through ContentListExport.
+ * ContentTab.qml's backend: one searchable list per kind, bulk
+ * enable/disable/remove, the project page, the configs folder and "Export
+ * list". Rows are addressed by ContentFilterModel's `key`, not row number, so
+ * a selection survives sorting and searching. Created lazily by InstanceDetails
+ * and parented to it; every object handed to QML is parented to this controller.
  *
- * Kinds: "mods", "coremods", "resourcepacks", "shaderpacks",
- * "texturepacks", "datapacks". `kinds` lists the ones this instance has
- * right now:
- *   - coremods only on legacy Forge (Forge on a Minecraft released before
- *     the legacy cutoff, CoreModFolderPage::shouldDisplay()), or when the
- *     coremods folder already has something in it. Checked without
- *     building the folder model, which would create the folder.
- *   - texturepacks only on instances that predate resource packs.
- *   - datapacks (the instance-wide folder for Paxi-style loaders) only
- *     while the instance's GlobalDataPacksEnabled setting is on, at
- *     GlobalDataPacksPath; the list follows both settings as they change.
- *
- * Rows are addressed by ContentFilterModel's `key`, not by row number,
- * so a selection survives sorting, searching and toggling.
- *
- * `health` is the mods folder's health check (ModHealthModel): redone,
- * a moment after the folder or the instance's loader changes, from what
- * the files say about themselves.
- *
- * Created lazily by InstanceDetails::content() and parented to it; every
- * object handed to QML from here is parented to this controller, so the
- * QML engine never takes ownership of one.
- *
- * Core, like the rest of models/: QtCore only, no QtWidgets, no ui/.
+ * Kinds: "mods", "coremods", "resourcepacks", "shaderpacks", "texturepacks",
+ * "datapacks"; `kinds` lists the ones this instance has now:
+ *   - coremods: legacy Forge, or when the coremods folder already has files
+ *     (checked without building the folder model, which would create it).
+ *   - texturepacks: only instances that predate resource packs.
+ *   - datapacks: while GlobalDataPacksEnabled is on, at GlobalDataPacksPath.
+ * `health` is the mods folder's health check, redone shortly after the folder
+ * or the loader changes.
  */
 class InstanceContentController : public QObject
 {
@@ -75,18 +59,11 @@ class InstanceContentController : public QObject
 
 	Q_PROPERTY(QStringList kinds READ kinds NOTIFY kindsChanged)
 	Q_PROPERTY(bool running READ running NOTIFY runningChanged)
-	/// Whether the instance has a mod loader component. Mods need one; see
-	/// ModFolderPage::ensureModLoaderPresent().
 	Q_PROPERTY(bool hasModLoader READ hasModLoader NOTIFY hasModLoaderChanged)
-	/// <game root>/config, for "Open configs folder".
 	Q_PROPERTY(QString configsDir READ configsDir CONSTANT)
-	/// Why the last saveText() failed; empty after a success.
 	Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
-	/// Updates, version changes, dependency checks and metadata resets
-	/// for these folders (ContentUpdateController).
 	Q_PROPERTY(QObject* updater READ updater CONSTANT)
-	/// What is wrong with the mods folder: missing, switched-off and
-	/// wrong-version dependencies, clashes, duplicates (ModHealthModel).
+	/// Missing, switched-off and wrong-version dependencies, clashes, duplicates (ModHealthModel).
 	Q_PROPERTY(QObject* health READ health CONSTANT)
 
   public:
@@ -108,33 +85,24 @@ class InstanceContentController : public QObject
 	QObject* updater() const;
 	QObject* health() const;
 
-	/// The folder model behind @p kind (building it if needed), or null -
-	/// for ContentUpdateController, which works on the folders directly.
+	/// Builds the folder model if needed; null if the kind is missing. For ContentUpdateController.
 	std::shared_ptr<ModFolderModel> folderFor(const QString& kind) const
 	{
 		return folderModel(kind);
 	}
-	/// Tells the list for @p kind that the rows with @p keys changed in a
-	/// way the folder model does not notice (a forgotten origin).
+	/// For rows changed in a way the folder model does not notice (a forgotten origin).
 	void refreshRows(const QString& kind, const QStringList& keys);
 
-	/// The searchable list for @p kind (a ContentFilterModel), or null if
-	/// this instance does not have that kind right now.
+	/// A ContentFilterModel, or null if this instance does not have @p kind now.
 	Q_INVOKABLE QObject* model(const QString& kind);
-	/// The folder behind @p kind, or "" if it has none right now.
 	Q_INVOKABLE QString dir(const QString& kind) const;
-	/// Whether files of @p kind may be added, removed or switched now:
-	/// always for the kinds the game reloads on its own (resource packs,
-	/// shader packs, data packs), only while it is not running otherwise -
-	/// the same split as ModPlatform::allowsChangesWhileRunning().
+	/// Always for kinds the game reloads itself (resource, shader, data packs);
+	/// otherwise only while it is not running.
 	Q_INVOKABLE bool changesAllowed(const QString& kind) const;
-	/// Returns how many files actually changed state.
 	Q_INVOKABLE int setEnabled(const QString& kind, const QStringList& keys,
 							   bool enabled);
-	/// Deletes the files; returns how many were removed.
 	Q_INVOKABLE int remove(const QString& kind, const QStringList& keys);
-	/// @p fileUrlOrPath: a file:// URL (as a QML FileDialog hands out) or
-	/// a plain local path.
+	/// @p fileUrlOrPath: a file:// URL or a local path.
 	Q_INVOKABLE bool install(const QString& kind,
 							 const QString& fileUrlOrPath);
 
@@ -146,32 +114,24 @@ class InstanceContentController : public QObject
 								   const QString& format,
 								   const QStringList& fields,
 								   const QString& lineTemplate) const;
-	/// ".html", ".md", ... for @p format.
 	Q_INVOKABLE QString exportExtension(const QString& format) const;
-	/// The starting line for a custom template, in @p format's shape.
 	Q_INVOKABLE QString exampleLine(const QString& format) const;
-	/// Where a save dialog should start: <Documents>/<@p name><extension>
-	/// as a file:// URL, with characters no file system takes removed.
+	/// <Documents>/<@p name><extension> as a file:// URL, with characters no file system takes removed.
 	Q_INVOKABLE QString suggestedExportUrl(const QString& name,
 										   const QString& format) const;
-	/// Writes @p text (UTF-8) to @p fileUrlOrPath; false and lastError
-	/// set on failure.
+	/// UTF-8; false with lastError set on failure.
 	Q_INVOKABLE bool saveText(const QString& fileUrlOrPath,
 							  const QString& text);
 
-	/// One export row for @p mod: what the archive says about itself
-	/// first, the version recorded at install time second - the order
-	/// ModFolderPage::on_actionExportList_triggered() uses.
+	/// The version the archive declares first, the one recorded at install time second.
 	static ContentListExport::Item exportItemFor(const Mod& mod,
 												 const ModMetadataIndex* index);
 	static ContentListExport::Format formatFromString(const QString& format);
 	static ContentListExport::Fields fieldsFromStrings(const QStringList& fields);
-	/// ContentListExport::render() with the strings above.
 	static QString renderExport(const QList<ContentListExport::Item>& items,
 								const QString& format,
 								const QStringList& fields,
 								const QString& lineTemplate);
-	/// Whether a game running does not lock @p kind - see changesAllowed().
 	static bool kindAllowsChangesWhileRunning(const QString& kind);
 	/// file:// URL or plain path -> local path.
 	static QString localPath(const QString& fileUrlOrPath);
@@ -183,38 +143,27 @@ class InstanceContentController : public QObject
 	void lastErrorChanged();
 
   private:
-	/// The folder model behind @p kind, building it if needed; null if
-	/// this instance does not have that kind right now.
 	std::shared_ptr<ModFolderModel> folderModel(const QString& kind) const;
 	ContentFilterModel* filterModel(const QString& kind) const;
 	bool showsCoreMods() const;
 	bool globalDataPacksEnabled() const;
 	void refreshHasModLoader();
-	/// Checks the mods folder again once the changes of the moment have
-	/// settled: files are read one at a time, each announcing itself.
+	/// Waits for changes to settle: files are read one at a time, each announcing itself.
 	void scheduleHealthCheck();
 	void runHealthCheck();
-	/// The global data pack folder moved or was switched on or off.
 	void onGlobalDataPacksChanged();
 	void setLastError(const QString& error);
 
   private:
 	MinecraftInstance* m_instance = nullptr;
-	/// kind -> list, created on first model() call. Owned via QObject
-	/// parentage (parent is `this`).
+	/// kind -> list, created on first model() call; parented to this.
 	QHash<QString, ContentFilterModel*> m_models;
-	/// The folder models this controller started watching itself (the
-	/// ones InstanceDetails does not already watch), stopped again in the
-	/// destructor.
+	/// Folder models watched here (not by InstanceDetails); stopped in the destructor.
 	QList<std::shared_ptr<ModFolderModel>> m_watched;
 	bool m_hasModLoader = false;
 	QString m_lastError;
-	/// Owned via QObject parentage (parent is `this`).
 	ContentUpdateController* m_updater = nullptr;
-	/// Owned via QObject parentage (parent is `this`); null without an
-	/// instance.
 	ModHealthModel* m_health = nullptr;
-	/// Single-shot, owned via QObject parentage; restarted by every
-	/// change, so a folder being read is checked once, after the last file.
+	/// Single-shot, restarted by every change: a folder being read is checked once, after the last file.
 	QTimer* m_healthTimer = nullptr;
 };

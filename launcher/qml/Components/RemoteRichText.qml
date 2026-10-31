@@ -6,51 +6,37 @@ import QtQuick
 import Kite.Theme
 
 /*
- * Markdown or HTML from the network -- a pack's description, a changelog,
- * release notes, a plugin's text -- shown as a read-only TextEdit that looks
- * like the Text it replaces. Plain text has no images: Text is fine for it.
+ * Markdown or HTML from the network (pack descriptions, changelogs, release
+ * notes) shown as a read-only TextEdit that looks like Text. Text (Qt 6.11)
+ * crashes the launcher when a remotely linked image fails while another is
+ * still loading; TextEdit survives that.
  *
- * Why not Text: such content links images from wherever its author put
- * them, and Text (Qt 6.11) crashes the launcher when one of them fails (a
- * 404, a refused connection, a YouTube page in an <img>) while another is
- * still loading. TextEdit loads them its own way and survives that.
+ * Set `source`, not `text`: TextEdit's `text` reads back as the re-serialised
+ * document. Markdown paragraphs are spaced from the document font's point
+ * size, so load() parses with the application font and only then switches to
+ * the theme's pixel size.
  *
- * Set `source`, not `text`: TextEdit's `text` reads back as the document
- * re-serialised (never empty for HTML), so test `source` for emptiness too.
- *
- * Markdown paragraphs are spaced from the point size of the font the
- * document has when the text is parsed; a pixel-sized font has none, which
- * leaves the paragraphs touching. Text parses with the application font, so
- * load() does the same and only then switches to the theme's pixel size.
- *
- * `article`: `source` is a whole page written by RichBody (C++,
- * models/RichBody.h) -- a pack's description -- and reads like one: a type
- * scale for the headings, spaced paragraphs and lists, pictures as their
- * own centred blocks no wider than the text, quiet rules, links in the
- * accent colour. The look comes from the stylesheet below, built from the
- * theme, so it follows a theme switch.
+ * `article`: `source` is a whole page from RichBody (models/RichBody.h), styled
+ * by the stylesheet below, which follows the theme.
  */
 TextEdit {
     id: root
 
     property string source: ""
-    // "markdown" or "html"
     property string format: "markdown"
     property bool article: false
     property int pixelSize: Theme.type.body.pixelSize
     readonly property font displayFont: Qt.font({ family: Theme.font.family, pixelSize: root.pixelSize })
     property bool loaded: false
 
-    // The article's type scale, the theme's own steps: h1 the heading size,
-    // h2 the subheading size, h3 the title size.
     readonly property int h1Size: Theme.type.heading.pixelSize
     readonly property int h2Size: Theme.type.subheading.pixelSize
     readonly property int h3Size: Theme.type.title.pixelSize
     readonly property int minorHeadingSize: Theme.type.bodyStrong.pixelSize
     readonly property int lineHeightPercent: Math.round(Theme.type.body.lineHeight * 100)
 
-    // An opaque "#rrggbb" for the stylesheet (rich text reads no alpha):
-    // translucent tokens are laid over the page colour first.
+    // An opaque "#rrggbb" for the stylesheet (rich text reads no alpha): translucent tokens are
+    // laid over the page colour.
     function cssColor(c) {
         return Qt.tint(Theme.palette.canvas, c).toString()
     }
@@ -90,7 +76,6 @@ TextEdit {
     readOnly: true
     selectByMouse: false
     activeFocusOnPress: false
-    // Set by load(), with the text, so the two always change together.
     textFormat: TextEdit.MarkdownText
     wrapMode: TextEdit.Wrap
     color: Theme.palette.textSecondary
@@ -121,7 +106,6 @@ TextEdit {
         root.load()
     }
 
-    // A link is something to click: say so with the cursor.
     HoverHandler {
         cursorShape: root.hoveredLink.length > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
     }

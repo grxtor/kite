@@ -32,21 +32,10 @@ class BaseInstance;
 
 /*
  * QML-facing view of one instance's Modrinth/CurseForge provenance and
- * available updates - the widget-free replacement for ManagedPackPage,
- * scoped to instances that have a catalogue id (hasManagedPackId()).
- *
- * The no-pack-id mode ManagedPackPage also offers (update from a hand-typed
- * URL or a local file) is deliberately not reproduced here: that mode
- * exists for instances an older Kite, or a drag-and-drop import, recorded
- * without ever storing a catalogue id, and covering it would mean adding a
- * QML file picker for an import path this pass has not had time to verify
- * end to end. hasPackId is false for that case so a QML tab can say so
- * rather than pretend the feature works.
- *
- * Created lazily by InstanceDetails::managedPack() - see that method - and
- * only when isSupported() actually says yes, mirroring ManagedPackPage::
- * isSupported() exactly (a provider Kite recognises, and a CurseForge
- * build actually compiled with an API key).
+ * available updates, for instances with a catalogue id. A pack without one (an
+ * old import) cannot be updated from a hand-typed URL here: hasPackId is false
+ * so the tab can say so. Created lazily by InstanceDetails::managedPack(), only
+ * when isSupported() says yes.
  */
 class ManagedPackController : public QObject
 {
@@ -58,25 +47,17 @@ class ManagedPackController : public QObject
 	Q_PROPERTY(QString packId READ packId CONSTANT)
 	Q_PROPERTY(QString installedVersionName READ installedVersionName CONSTANT)
 	Q_PROPERTY(QString installedVersionId READ installedVersionId CONSTANT)
-	/// False for a pack Kite knows the provider of but not the catalogue
-	/// id of (an old import) - fetchVersions()/updateToVersion() are both
-	/// no-ops while this is false. See the class comment.
+	/// False for a pack with a known provider but no catalogue id (an old import);
+	/// fetchVersions()/updateToVersion() are no-ops then.
 	Q_PROPERTY(bool hasPackId READ hasPackId CONSTANT)
-	/// QVariantList of {id, label, name, minecraft, releaseType, current,
-	/// installable, changelog}, newest first - empty until fetchVersions()
-	/// succeeds. `label` is the widget page's one-line form; `name`,
-	/// `minecraft` and `releaseType` ("release", "beta", "alpha" or "")
-	/// are the same facts apart.
+	/// {id, label, name, minecraft, releaseType ("release", "beta", "alpha" or ""),
+	/// current, installable, changelog}, newest first; empty until fetchVersions() succeeds.
 	Q_PROPERTY(QVariantList versions READ versions NOTIFY versionsChanged)
-	/// Name filter for the "update from a file" dialog, e.g.
-	/// "Modrinth pack (*.mrpack *.zip)": what this pack's provider ships.
+	/// Name filter for the "update from a file" dialog, e.g. "Modrinth pack (*.mrpack *.zip)".
 	Q_PROPERTY(QString fileFilter READ fileFilter CONSTANT)
-	/// Whether the instance is running: an update replaces files the game
-	/// has open, so updateToVersion()/updateFromFile() refuse then, and the
-	/// tab greys its buttons out by this.
+	/// An update replaces files the game has open, so updates refuse while running.
 	Q_PROPERTY(bool running READ running NOTIFY runningChanged)
 	Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
-	/// Empty on success, or while nothing has failed yet.
 	Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 
   public:
@@ -84,21 +65,13 @@ class ManagedPackController : public QObject
 								   QObject* parent = nullptr);
 	~ManagedPackController() override;
 
-	/// Whether an instance page should offer this at all - mirrors
-	/// ManagedPackPage::isSupported() exactly (see its own comment):
-	/// a provider Kite recognises, and - for CurseForge - a build that
-	/// actually has an API key compiled in.
+	/// A known provider, and for CurseForge a build with an API key compiled in.
 	static bool isSupported(const BaseInstance* instance);
 
 	enum class Provider { Unknown, Modrinth, CurseForge };
-	/// Maps the `PackProvider` string onto the enum - mirrors
-	/// ManagedPackPage::providerFromString() exactly (see its own comment
-	/// on "flame" as a CurseForge synonym). Public, unlike the rest of this
-	/// class's internals, so it can be unit tested without a BaseInstance -
-	/// same reasoning as ContentBrowser::isVersionCompatible().
+	/// Maps the `PackProvider` string onto the enum ("flame" is a CurseForge
+	/// synonym). Public for unit tests.
 	static Provider providerFromString(const QString& provider);
-	/// The "update from a file" name filter for @p provider - public and
-	/// static for the same reason as providerFromString().
 	static QString fileFilterFor(Provider provider);
 
 	QString providerLabel() const;
@@ -123,28 +96,18 @@ class ManagedPackController : public QObject
 		return m_error;
 	}
 
-	/// Fetches the pack's version list. A no-op once already loaded (or
-	/// loading) - see reload() to force a refresh.
+	/// No-op once loaded or loading; see reload().
 	Q_INVOKABLE void fetchVersions();
-	/// Drops whatever was loaded and fetches again - for a "Reload" action
-	/// after a failure.
+	/// Drops what was loaded and fetches again.
 	Q_INVOKABLE void reload();
-	/// Replaces this instance with version `versions()[index]` in place,
-	/// the same InstanceImportTask-based update ManagedPackPage::
-	/// updatePack() runs for a catalogue-selected version (trusted source,
-	/// since the download URL came from the catalogue itself). Returns a
-	/// TaskWatcher, or null when `index` is out of range, that version has
-	/// no download (CurseForge withholds some), or the instance is
-	/// currently running.
+	/// Replaces this instance with version `versions()[index]` in place (trusted:
+	/// the URL came from the catalogue). TaskWatcher, or null for a bad index, a
+	/// version with no download (CurseForge withholds some) or a running instance.
 	Q_INVOKABLE QObject* updateToVersion(int index);
-	/// Replaces this instance with the modpack archive at @p file (a local
-	/// path from a file dialog), the same import ManagedPackPage::
-	/// updateFromFile() runs. Works for a pack with no catalogue id too,
-	/// which is what it is for. An archive on disk says nothing reliable
-	/// about which catalogue version it is, so no version is recorded, and
-	/// the source is not trusted (untrusted mods are asked about before
-	/// they install). Returns a TaskWatcher, or null when @p file is not an
-	/// existing file or the instance is running.
+	/// Replaces this instance with the archive at @p file; works for a pack without
+	/// a catalogue id. No version is recorded and the source is untrusted
+	/// (untrusted mods are asked about). TaskWatcher, or null if @p file does not
+	/// exist or the instance is running.
 	Q_INVOKABLE QObject* updateFromFile(const QUrl& file);
 
   signals:
@@ -164,8 +127,7 @@ class ManagedPackController : public QObject
 						 const QString& versionId, const QString& versionName,
 						 const QString& title);
 
-	/// Borrowed - valid for this controller's whole lifetime (parented to
-	/// the InstanceDetails that owns both).
+	/// Borrowed; valid for this controller's lifetime (both are parented to InstanceDetails).
 	BaseInstance* m_instance;
 	Provider m_provider = Provider::Unknown;
 

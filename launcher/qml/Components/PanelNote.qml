@@ -5,8 +5,7 @@ import QtQuick
 import Kite.Theme
 
 /*
- * A line or two of quiet explanation in a card or a side panel (Friends'
- * notice, Home's panel when friends are not connected): wrapped secondary
+ * A line or two of quiet explanation in a card or side panel: wrapped secondary
  * text at the label size. Give it a width.
  */
 Text {

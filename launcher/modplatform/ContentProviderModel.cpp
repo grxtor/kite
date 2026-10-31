@@ -41,8 +41,7 @@ ContentProviderModel::ContentProviderModel(const ModPlatform::ContentApi& api,
 
 ContentProviderModel::~ContentProviderModel()
 {
-	/* The search job writes straight into a member buffer, so it must
-	 * not outlive us. */
+	/* The search job writes into a member buffer, so it must not outlive us. */
 	if (m_searchJob) {
 		m_searchJob->abort();
 	}
@@ -71,9 +70,7 @@ QVariant ContentProviderModel::data(const QModelIndex& index, int role) const
 
 	switch (role) {
 		case Qt::DisplayRole:
-			/* Left as the plain name: if a view is ever shown without
-			 * ProjectItemDelegate attached, the default delegate paints
-			 * this and the list stays readable. */
+			/* The plain name, so a view without ProjectItemDelegate stays readable. */
 			return project.name;
 
 		case Qt::ToolTipRole:
@@ -94,17 +91,13 @@ QVariant ContentProviderModel::data(const QModelIndex& index, int role) const
 		}
 
 		case Qt::SizeHintRole:
-			/* Fixed row height: enough for the title plus two lines of
-			 * description, independent of the view's icon size. */
+			/* Fixed height: title plus two lines of description. */
 			return QSize(0, 58);
 
 		case Qt::CheckStateRole:
-			/* Every row gets a box, installed or not. Re-picking a row
-			 * that is already on disk is how a version is changed: the
-			 * conflict analyzer turns it into a replacement, or drops it
-			 * when the same version was chosen. Whether it is installed
-			 * only affects how the row is painted, which the delegate
-			 * asks for separately through ProjectItemRole::Installed. */
+			/* Every row gets a box: re-picking an installed row is how a version is
+			 * changed (the conflict analyzer makes it a replacement or drops it).
+			 * Installed only affects painting, via ProjectItemRole::Installed. */
 			return m_selectedNames.contains(project.normalizedName)
 					   ? Qt::Checked
 					   : Qt::Unchecked;
@@ -116,8 +109,7 @@ QVariant ContentProviderModel::data(const QModelIndex& index, int role) const
 			return project.name;
 
 		case ProjectItemRole::Description:
-			/* Full text, unlike the pre-truncated tooltip above: the
-			 * delegate does its own wrapping and eliding to fit. */
+			/* Full text; the delegate wraps and elides it. */
 			return project.description;
 
 		case ProjectItemRole::Installed:
@@ -154,10 +146,9 @@ QHash<int, QByteArray> ContentProviderModel::roleNames() const
 
 Qt::ItemFlags ContentProviderModel::flags(const QModelIndex& index) const
 {
-	/* Deliberately no Qt::ItemIsUserCheckable: this model has no
-	 * setData(), and the flag would make the base delegate try to toggle
-	 * through it. The checkbox is driven by the delegate's
-	 * checkboxClicked() signal instead. */
+	/* No Qt::ItemIsUserCheckable: there is no setData(), so the base
+	 * delegate would try to toggle through it. The delegate's
+	 * checkboxClicked() drives the checkbox. */
 	return QAbstractListModel::flags(index);
 }
 
@@ -217,8 +208,7 @@ void ContentProviderModel::loadCategories()
 	});
 	connect(job, &NetJob::failed, this, [job, response](QString reason) {
 		job->deleteLater();
-		/* Not worth bothering the user with: the panel just goes
-		 * without its category group. */
+		/* The panel just goes without its category group. */
 		qWarning() << "Could not load categories:" << reason;
 	});
 
@@ -275,8 +265,7 @@ void ContentProviderModel::setSearchFilters(
 
 	m_filters = filters;
 
-	/* Nothing has been asked for yet, so there is nothing to redo - the
-	 * first search will pick the new filters up by itself. */
+	/* Nothing asked yet; the first search picks the filters up. */
 	if (!m_searched) {
 		return;
 	}
@@ -292,10 +281,8 @@ void ContentProviderModel::setSearchFilters(
 
 void ContentProviderModel::search(const QString& term, int sortIndex)
 {
-	/* A repeat of the query that is already on screen is ignored, but
-	 * only when the rows really are the answer to a search: coming back
-	 * from a single-project lookup has to run the search even though the
-	 * term did not change. */
+	/* A repeat of the query on screen is ignored, but not when coming back
+	 * from a single-project lookup. */
 	if (m_searched && m_projectLookupId.isEmpty() && m_searchTerm == term &&
 		m_sortIndex == sortIndex) {
 		return;
@@ -307,9 +294,8 @@ void ContentProviderModel::search(const QString& term, int sortIndex)
 	m_projectLookupId.clear();
 
 	if (m_searchJob) {
-		/* A reply for the previous query is still on its way. Mark the
-		 * intent first, then abort: aborting can complete synchronously,
-		 * and the handler needs to see the new state. */
+		/* A reply for the previous query is in flight. Set the state before
+		 * aborting: abort can complete synchronously and the handler reads it. */
 		m_searchState = ResetRequested;
 		m_searchJob->abort();
 		return;
@@ -325,8 +311,8 @@ void ContentProviderModel::searchProject(const QString& projectId)
 	}
 
 	m_searched = true;
-	/* No term to speak of, and clearing it means a later search() for
-	 * whatever is in the search box is never mistaken for a repeat. */
+	/* Clearing the term keeps a later search() for the box's contents from
+	 * being taken as a repeat. */
 	m_searchTerm.clear();
 	m_projectLookupId = projectId;
 
@@ -396,8 +382,7 @@ void ContentProviderModel::searchRequestFinished()
 	m_searchJob.reset();
 
 	if (m_searchState == ResetRequested) {
-		/* These results answer a query the user has already moved on
-		 * from. Throw them away and ask again with the current one. */
+		/* These answer a query the user has moved on from: ask again. */
 		searchRequestFailed();
 		return;
 	}
@@ -409,9 +394,8 @@ void ContentProviderModel::searchRequestFinished()
 	if (m_projectLookupId.isEmpty()) {
 		newList = parseSearchResponse(m_searchResponse, totalHits);
 	} else {
-		/* One project, or none if the reply held nothing usable. Either
-		 * way this is the whole answer, so the size below - being under
-		 * a page - settles the paging state as Finished. */
+		/* One project, or none; either way the whole answer, so the size (under
+		 * a page) settles the paging state as Finished. */
 		auto project = parseProjectResponse(m_searchResponse);
 		if (!project.projectId.isEmpty()) {
 			newList.append(project);
@@ -425,8 +409,8 @@ void ContentProviderModel::searchRequestFinished()
 	}
 
 	if (!newList.isEmpty()) {
-		/* Work out which of the new results the filter lets through
-		 * before touching the model, so the inserted range is right. */
+		/* Work out which new results pass the filter before touching the model,
+		 * so the inserted range is right. */
 		QList<int> added;
 		const int firstStorage = m_projects.size();
 		for (int i = 0; i < newList.size(); ++i) {
@@ -471,12 +455,8 @@ void ContentProviderModel::searchRequestFailed()
 		return;
 	}
 
-	/* Deliberately not the reference launcher's behaviour for a
-	 * single-project lookup that 404s: it flips the model back into a
-	 * plain search and asks the provider for the literal string "#<id>",
-	 * which returns whatever that happens to match. There is nothing to
-	 * show for a project that is gone, so the list stays empty and the
-	 * page says so. */
+	/* A single-project lookup that 404s leaves the list empty and the page
+	 * says so; no fallback search for the literal string "#<id>". */
 	m_searchState = Finished;
 	emit searchStateChanged();
 }
@@ -511,9 +491,7 @@ void ContentProviderModel::loadEntry(int viewRow)
 		query.mcVersions = m_filters.mcVersions;
 		query.loaders = m_filters.loaders;
 
-		/* Held by both handlers rather than deleted by hand in each: only
-		 * one of them runs, and if the job is destroyed without either
-		 * firing the buffer still goes with it. */
+		/* Held by both handlers; freed with the job if neither fires. */
 		auto response = std::make_shared<QByteArray>();
 		auto* job = new NetJob(QString("%1::Versions(%2)")
 								   .arg(m_api.id(), projectId),
@@ -526,14 +504,11 @@ void ContentProviderModel::loadEntry(int viewRow)
 					job->deleteLater();
 					applyVersions(generation, projectId, *response);
 				});
-		/* `response` is captured here too, unused, so that the buffer is
-		 * plainly owned by the job's handlers whichever one runs. */
 		connect(job, &NetJob::failed, this,
 				[this, job, response, generation, projectId](QString) {
 					job->deleteLater();
-					/* Empty payload: the row is marked as loaded with no
-					 * versions, which the page shows as "no valid
-					 * version found" rather than spinning forever. */
+					/* Empty payload: the row is marked loaded with no versions, shown as
+					 * "no valid version found" instead of spinning. */
 					applyVersions(generation, projectId, QByteArray());
 				});
 		job->start();
@@ -567,8 +542,7 @@ void ContentProviderModel::applyVersions(quint64 generation,
 										 const QString& projectId,
 										 const QByteArray& bytes)
 {
-	/* The list may have been replaced, or the row may have moved, while
-	 * this was in flight. */
+	/* The list may have been replaced, or the row moved, in flight. */
 	if (generation != m_generation) {
 		return;
 	}
@@ -586,8 +560,7 @@ void ContentProviderModel::applyVersions(quint64 generation,
 
 	const int row = viewRowOfStorage(storage);
 	if (row < 0) {
-		/* Filtered out of the list while we were waiting; the data is
-		 * kept, but nobody is looking at it. */
+		/* Filtered out while waiting; the data is kept. */
 		return;
 	}
 
@@ -629,7 +602,6 @@ void ContentProviderModel::setInstalledIndex(
 	}
 
 	if (m_hideInstalled) {
-		/* Which rows are visible just changed under us. */
 		rebuildVisibleRows();
 		return;
 	}
@@ -653,8 +625,8 @@ void ContentProviderModel::applyInstalledState(
 		return;
 	}
 
-	/* Two-step lookup: the exact project first, then the name key -
-	 * which also catches the same mod installed from the other site. */
+	/* The exact project first, then the name key, which also catches the
+	 * same mod installed from the other site. */
 	if (!project.projectId.isEmpty()) {
 		const auto byProject =
 			m_installedIndex->findByPlatformProject(m_api.id(),

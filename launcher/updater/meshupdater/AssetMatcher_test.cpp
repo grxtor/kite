@@ -22,35 +22,19 @@
 
 #include "updater/meshupdater/AssetMatcher.h"
 
-/*!
- * Which release file belongs on which installation.
+/*! Which release file belongs on which installation. The fixture is the `files:` list of
+ * .github/workflows/release.yml, copied entry for entry with ${VERSION} spelled out; that workflow is the
+ * authority on what a release contains. Not taken from a published release: those predate Qt5 support and
+ * use older naming. The build side comes from build.yml's matrix (ARTIFACT_NAME "<artifact-name>-Qt<qt-major>",
+ * which reaches the updater as BuildConfig.BUILD_ARTIFACT).
  *
- * The fixture is the `files:` list of .github/workflows/release.yml, copied
- * entry for entry, with ${VERSION} spelled out. That workflow is the only
- * authority on what a release contains: it is what uploads the files, so a
- * name that does not appear there cannot exist, and a name that does will
- * exist in the next release whether or not it exists in the last one.
- *
- * Deliberately *not* taken from a published release. The published ones were
- * built before Qt5 support was added and use the older naming; testing
- * against them pins a contract that has already been replaced, and would
- * report the workflow as the thing that is wrong.
- *
- * The build side of the pairing comes from .github/workflows/build.yml, whose
- * matrix sets ARTIFACT_NAME to "<artifact-name>-Qt<qt-major>" -- which is
- * what reaches the updater as BuildConfig.BUILD_ARTIFACT.
- *
- * Every rule here exists for a quirk of that naming that no single-platform
- * test run can see:
- *
+ * Naming quirks the rules cover:
  *   - Qt5 and Qt6 are two complete lines in the same release
- *   - the words come in a different order on either side, e.g. the build
- *     "Windows-MinGW-w64-Qt6" is published as "Kite-Windows-MinGW-Qt6-w64-"
+ *   - word order differs between build and file: build "Windows-MinGW-w64-Qt6" is published as
+ *     "Kite-Windows-MinGW-Qt6-w64-"
  *   - Windows ships three packages per line (portable, installer, plain)
  *   - macOS says "Intel"/"ARM" where Linux says "x86_64"/"aarch64"
- *   - the AppImages put the architecture after the Qt version, the Linux
- *     tarballs put it before
- */
+ *   - AppImages put the architecture after the Qt version, Linux tarballs before it */
 class AssetMatcherTest : public QObject
 {
 	Q_OBJECT
@@ -61,12 +45,8 @@ class AssetMatcherTest : public QObject
 		return QStringLiteral("v11.0.0");
 	}
 
-	/*!
-	 * The `files:` list of release.yml, in its own order.
-	 *
-	 * Kept in that order, rather than sorted, so that a diff against the
-	 * workflow is a straight read down both columns.
-	 */
+	/*! The `files:` list of release.yml in its own order, so a diff against the workflow reads
+	 * straight down. */
 	static QStringList releaseAssetNames()
 	{
 		const QString v = version();
@@ -151,12 +131,8 @@ class AssetMatcherTest : public QObject
 		return names;
 	}
 
-	/*!
-	 * Every build in build.yml's matrix, paired with how it can be installed.
-	 *
-	 * Used by the invariants below, so that adding a platform to the matrix
-	 * and forgetting it here is the only way to escape them.
-	 */
+	/*! Every build in build.yml's matrix paired with how it can be installed, for the invariants
+	 * below. */
 	static QList<AssetMatcher::Installation> everyBuild()
 	{
 		return {
@@ -188,14 +164,8 @@ class AssetMatcherTest : public QObject
 
 	// -- The release, from every build's point of view ---------------------
 
-	/*!
-	 * Each build finds exactly one file, and the right one.
-	 *
-	 * One table, one row per build in the matrix; a failing row names the
-	 * platform it broke on. Expectations are read off release.yml by hand,
-	 * which is the point -- if the workflow and this table disagree, one of
-	 * the two is wrong and a human has to say which.
-	 */
+	/*! Each build finds exactly one file, and the right one. Expectations are read off release.yml
+	 * by hand; if the workflow and this table disagree, a human decides which is wrong. */
 	void tst_Release_data()
 	{
 		QTest::addColumn<QString>("artifact");
@@ -237,10 +207,9 @@ class AssetMatcherTest : public QObject
 			<< "Windows-MSVC-Qt6" << true << false << false
 			<< QStringLiteral("Kite-Windows-MSVC-Qt6-Portable-%1.zip").arg(v);
 
-		// A non-portable Windows installation gets the installer, never the
-		// plain archive: the installer owns the uninstall entry and the
-		// registry keys that unpacking a zip over the top would leave
-		// pointing at the old version.
+		// A non-portable Windows installation gets the installer, never the plain archive: the
+		// installer owns the uninstall entry and registry keys that unzipping over the top would
+		// leave pointing at the old version.
 		QTest::newRow("Windows MSVC Qt5 installed")
 			<< "Windows-MSVC-Qt5" << false << false << false
 			<< QStringLiteral("Kite-Windows-MSVC-Qt5-Setup-%1.exe").arg(v);
@@ -257,9 +226,8 @@ class AssetMatcherTest : public QObject
 			<< QStringLiteral("Kite-Windows-MSVC-Qt6-arm64-Setup-%1.exe")
 				   .arg(v);
 
-		// -- Windows MinGW: the build says "w64-Qt6", the file says
-		//    "Qt6-w64". Matching the artifact name as one substring finds
-		//    nothing here, which is why the words are matched as a set.
+		// -- Windows MinGW: the build says "w64-Qt6", the file "Qt6-w64"; matching the artifact name as
+		//    one substring finds nothing, so the words are matched as a set.
 		QTest::newRow("Windows MinGW Qt5 portable")
 			<< "Windows-MinGW-w64-Qt5" << true << false << false
 			<< QStringLiteral("Kite-Windows-MinGW-Qt5-w64-Portable-%1.zip")
@@ -303,8 +271,8 @@ class AssetMatcherTest : public QObject
 		const QStringList picked =
 			pickedNames(install(artifact, portable, appImage, arm64));
 
-		// One match, not "at least one": a second would put a file picker in
-		// front of a user who never asked for a choice.
+		// One match, not "at least one": a second would put a file picker in front of a user who
+		// never asked.
 		QCOMPARE(picked, QStringList{expected});
 	}
 
@@ -327,13 +295,8 @@ class AssetMatcherTest : public QObject
 		}
 	}
 
-	/*!
-	 * The Qt5 and Qt6 lines never cross.
-	 *
-	 * Both are published in full in every release, so this is not
-	 * hypothetical: a Qt5 build that took the Qt6 archive would replace its
-	 * own Qt libraries with ones its binaries cannot load.
-	 */
+	/*! The Qt5 and Qt6 lines never cross: both are published in full, and a Qt5 build taking the Qt6
+	 * archive would replace its Qt libraries with ones its binaries cannot load. */
 	void tst_QtLinesNeverCross()
 	{
 		for (const AssetMatcher::Installation& what : everyBuild()) {
@@ -353,11 +316,8 @@ class AssetMatcherTest : public QObject
 		}
 	}
 
-	/*!
-	 * An x86_64 build is never offered an ARM package, or the other way
-	 * round -- across all three spellings in use: "aarch64" on Linux,
-	 * "arm64" on Windows, and a bare "ARM" on macOS.
-	 */
+	/*! An x86_64 build is never offered an ARM package or vice versa, across "aarch64" (Linux),
+	 * "arm64" (Windows) and a bare "ARM" (macOS). */
 	void tst_ArchitectureIsNeverCrossed()
 	{
 		for (const AssetMatcher::Installation& what : everyBuild()) {
@@ -403,10 +363,8 @@ class AssetMatcherTest : public QObject
 		}
 	}
 
-	/*!
-	 * An AppImage cannot be updated by unpacking a tarball over it -- it is
-	 * one mounted file -- and a normal installation has no use for one.
-	 */
+	/*! An AppImage cannot be updated by unpacking a tarball over it (one mounted file), and a normal
+	 * installation has no use for one. */
 	void tst_AppImageNessIsNeverCrossed()
 	{
 		for (const AssetMatcher::Installation& what : everyBuild()) {
@@ -440,12 +398,8 @@ class AssetMatcherTest : public QObject
 		}
 	}
 
-	/*!
-	 * A build that cannot say what it is matches nothing.
-	 *
-	 * BUILD_ARTIFACT is empty for a local build, and the worst outcome there
-	 * is overwriting a developer's tree with a release.
-	 */
+	/*! A build that cannot say what it is matches nothing: BUILD_ARTIFACT is empty for a local
+	 * build, and overwriting a developer's tree with a release is the worst outcome. */
 	void tst_LocalBuildMatchesNothing()
 	{
 		QVERIFY(pickedNames(install(QString(), true, false, false)).isEmpty());
@@ -468,8 +422,8 @@ class AssetMatcherTest : public QObject
 		QTest::newRow("artifact name") << "windows-mingw-w64-qt6" << 6;
 		QTest::newRow("source tarball states nothing")
 			<< "kite-v11.0.0.tar.gz" << 0;
-		// The separator is part of the pattern, so a word merely containing
-		// "qt" followed by digits is not a Qt version.
+		// The separator is part of the pattern: a word merely containing "qt" and digits is not a
+		// Qt version.
 		QTest::newRow("no separator, no version") << "kiteqt6.zip" << 0;
 	}
 
@@ -480,14 +434,9 @@ class AssetMatcherTest : public QObject
 		QCOMPARE(AssetMatcher::qtMajorFromName(lowerName), expected);
 	}
 
-	/*!
-	 * An asset that states no Qt version is still accepted.
-	 *
-	 * Nothing release.yml publishes today looks like this. It is here for the
-	 * day Qt5 support is dropped and the token goes away again: the rule has
-	 * to survive that without matching nothing at all. See the comment in
-	 * AssetMatcher::consider().
-	 */
+	/*! An asset that states no Qt version is still accepted. Nothing in release.yml looks like this
+	 * today; it is for the day Qt5 support is dropped and the token goes away, when the rule must
+	 * not match nothing (see AssetMatcher::consider()). */
 	void tst_UnstatedQtIsAccepted()
 	{
 		const QList<GitHubReleaseAsset> untagged = assetsFrom(
@@ -502,12 +451,8 @@ class AssetMatcherTest : public QObject
 
 	// -- Other separate product lines --------------------------------------
 
-	/*!
-	 * The legacy Windows line shares every other word with the ordinary one.
-	 *
-	 * release.yml builds its name by appending "-Legacy" to the same stem, so
-	 * without this rule an ordinary install would quietly drift onto it.
-	 */
+	/*! The legacy Windows line shares every other word with the ordinary one (release.yml appends
+	 * "-Legacy" to the same stem), so without this rule an ordinary install would drift onto it. */
 	void tst_LegacyLineIsNotOfferedToAnOrdinaryBuild()
 	{
 		const QList<GitHubReleaseAsset> legacy = assetsFrom(
@@ -529,13 +474,8 @@ class AssetMatcherTest : public QObject
 
 	// -- The log contract --------------------------------------------------
 
-	/*!
-	 * Every asset is accounted for in the log, accepted or not.
-	 *
-	 * "Why did it pick that file" is the first question when an update goes
-	 * wrong, and on a user's machine the log is the only thing that can
-	 * answer it.
-	 */
+	/*! Every asset is accounted for in the log, accepted or not: on a user's machine the log is the
+	 * only thing that can answer "why did it pick that file". */
 	void tst_EveryAssetIsExplainedInTheLog()
 	{
 		QStringList log;

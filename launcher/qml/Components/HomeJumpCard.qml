@@ -8,19 +8,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One "Continue playing" row on the Home page, under the hero: a compact
- * 64px row with the instance's icon square (the library card's, smaller),
- * its name -- and
- * a "New" chip until it has been played -- one line of what it runs and
- * when it was last played, how long it has been played, Play and ⋯. Play is
- * a secondary one (QuietPlayButton): the play bar's is the page's one
- * primary button. Used through a wrapper against the shell's recentModel,
- * with the same named roles InstanceCard reads.
- *
- * Clicking the row opens the instance page; Play plays it (Stop while it
- * runs); ⋯ or a right-click asks the page for the instance menu. After a
- * crash the sub-line says "Crashed last time" in place of when -- a calm
- * reminder, not an alarm.
+ * One "Continue playing" row on Home: icon square, name with a "New" chip until first played, what it runs and
+ * when it was last played, play time, Play and ⋯. Used through a wrapper against recentModel, with the roles
+ * InstanceCard reads. After a crash the sub-line says "Crashed last time" in place of when.
  */
 Item {
     id: root
@@ -35,29 +25,20 @@ Item {
     required property string gameVersion
     required property string loader
     required property color iconTint
-    // Newest screenshot url (InstanceList's coverImage role), or "". Not
-    // shown in the row (HomePage puts the played-last one in its header);
-    // kept so the row takes the same roles as the library's card.
+    // Newest screenshot url, or "". Not shown in the row; kept so the row takes the same roles as the library card.
     required property string coverImage
-    // A platform pack's own logo (InstanceList's packArt role), or "": shown
-    // across the icon square, as on the library card.
     property string packArt: ""
-    // Set by LaunchTask around the game process exit.
     required property bool hasCrashed
 
     signal clicked()
     signal playRequested()
     signal stopRequested()
-    // @p anchor: the ⋯ button when that asked, so the menu opens under it;
-    // null for a right-click, which opens it at the pointer.
+    // @p anchor: the ⋯ button, or null for a right-click (the menu then opens at the pointer).
     signal menuRequested(Item anchor)
 
     readonly property bool hovered: hoverHandler.hovered
     readonly property bool showsPackArt: root.packArt.length > 0 && packLogo.status === Image.Ready
-    // Never launched: the row says so with a "New" chip.
     readonly property bool isNew: !(Number(root.lastLaunch) > 0)
-    // Compact, a step below the hero: a 64px row, a 40px icon square the
-    // icon all but fills, as the library card's does.
     readonly property int rowHeight: Theme.control.heightLg + Theme.space.lg
     readonly property int squareSize: Theme.control.height
     readonly property real iconShare: 0.84
@@ -67,7 +48,6 @@ Item {
     readonly property string playTimeText: SettingsStore.bool("ShowGameTime") && !root.isNew
                                            ? Format.playTime(root.totalTimePlayed) : ""
     readonly property string versionText: Format.versionLine(root.loader, root.gameVersion)
-    // Play time is the part that gives way on a narrow row.
     readonly property int playTimeMinWidth: 520
 
     implicitWidth: 640
@@ -99,8 +79,7 @@ Item {
             Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         }
 
-        // Declared before the content, so Play (a real control further
-        // down) still gets first refusal on a press inside its own bounds.
+        // Declared before the content so Play still gets first refusal on a press inside its bounds.
         TapHandler {
             acceptedButtons: Qt.LeftButton
             gesturePolicy: TapHandler.ReleaseWithinBounds
@@ -122,7 +101,6 @@ Item {
                 Layout.preferredWidth: root.squareSize
                 Layout.preferredHeight: root.squareSize
                 radius: Theme.radius.md
-                // Rounds the logo's corners in the row's own colour.
                 matte: root.showsPackArt || root.iconFills ? card.color : "transparent"
                 lifted: root.hovered
 
@@ -155,9 +133,7 @@ Item {
                 Layout.minimumWidth: 0
                 spacing: Theme.space.xxs
 
-                // The name, and "New" beside it until the first launch.
-                // Placed by hand: a layout sizing the name from its own
-                // width loops.
+                // Placed by hand: a layout sizing the name from its own width loops.
                 Item {
                     Layout.fillWidth: true
                     implicitHeight: Theme.type.title.lineHeightPx
@@ -173,8 +149,6 @@ Item {
                         font.pixelSize: Theme.type.title.pixelSize
                         font.weight: Theme.type.title.weight
                     }
-                    // The accent as an outline and its text colour: no
-                    // tinted fill.
                     Rectangle {
                         id: newChip
                         visible: root.isNew
@@ -199,8 +173,6 @@ Item {
                     }
                 }
 
-                // "Fabric 1.21.4 • 3 days ago", or the crash in place of
-                // when.
                 Row {
                     Layout.fillWidth: true
                     spacing: Theme.space.xs
@@ -234,7 +206,6 @@ Item {
                 }
             }
 
-            // How long it has been played: a quiet fact before Play.
             Row {
                 visible: root.playTimeText.length > 0 && root.width >= root.playTimeMinWidth
                 spacing: Theme.space.xs
@@ -255,7 +226,6 @@ Item {
                 }
             }
 
-            // Secondary: on Home the play bar's Play is the one primary.
             QuietPlayButton {
                 Layout.leftMargin: Theme.space.sm
                 running: root.isRunning
@@ -276,8 +246,7 @@ Item {
         }
     }
 
-    // The hairline, over everything so the logo's corner matte never
-    // paints across it.
+    // Over everything so the logo's corner matte never paints across it.
     Rectangle {
         anchors.fill: card
         radius: card.radius
@@ -288,8 +257,6 @@ Item {
     }
 
     Rectangle {
-        // Keyboard focus ring, outset so it never competes with the
-        // row's own border -- the same idiom InstanceCard uses.
         anchors.fill: card
         anchors.margins: -Theme.space.xs
         radius: card.radius + Theme.space.xs

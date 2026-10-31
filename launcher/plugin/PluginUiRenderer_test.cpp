@@ -40,8 +40,7 @@
 
 namespace
 {
-	/* A doc exercising every one of the 14 node types, nested so
-	 * containers (column/row/section) get covered too. */
+	/* One doc with all 14 node types, nested so containers (column/row/section) are covered. */
 	const char* kFullDoc =
 		"{\n"
 		"  \"type\": \"mmco-ui/1\",\n"
@@ -92,9 +91,6 @@ class PluginUiRendererTest : public QObject
 	Q_OBJECT
 
   private slots:
-	/* Every node type produces the expected concrete widget class, with
-	 * props applied (label text, checked state, value, enabled, list
-	 * columns/rows). */
 	void test_rendersEveryNodeType()
 	{
 		QVector<Event> events;
@@ -160,8 +156,6 @@ class PluginUiRendererTest : public QObject
 		QCOMPARE(surface->nodeType("nosuchnode"), QString());
 	}
 
-	/* ui_surface_set (PluginUiRenderer::setNodeProps) patches a single
-	 * node's props in place without disturbing the rest of the tree. */
 	void test_setNodePropsPatchesInPlace()
 	{
 		auto surface = PluginUiRenderer::build(QString::fromUtf8(kFullDoc),
@@ -175,7 +169,6 @@ class PluginUiRendererTest : public QObject
 		QVERIFY(surface->setNodeProps("tg1", patch));
 		QVERIFY(toggle->isChecked());
 
-		/* The button next to it is untouched. */
 		auto* button = surface->rootWidget()->findChild<QPushButton*>("btn1");
 		QCOMPARE(button->text(), QStringLiteral("Click Me"));
 
@@ -184,15 +177,12 @@ class PluginUiRendererTest : public QObject
 		QVERIFY(surface->setNodeProps("btn1", btnPatch));
 		QVERIFY(!button->isEnabled());
 
-		/* Unknown node id fails cleanly. */
 		QVERIFY(!surface->setNodeProps("does-not-exist", patch));
 	}
 
-	/* The widget a surface is shown in may be torn down before the
-	 * surface itself -- PluginManager's RendererOwner is a sibling QObject
-	 * of the root inside a settings group box, and the group box deletes
-	 * its child widgets first. Destroying the surface afterwards must not
-	 * delete the root a second time, and updating it must fail cleanly. */
+	/* PluginManager's RendererOwner sits beside the root in a group box that deletes its children
+	 * first: destroying the surface afterwards must not double-delete the root, and updating it
+	 * must fail cleanly. */
 	void test_surfaceOutlivesItsParentWidget()
 	{
 		auto surface = PluginUiRenderer::build(QString::fromUtf8(kFullDoc),
@@ -206,8 +196,6 @@ class PluginUiRendererTest : public QObject
 		surface.reset();
 	}
 
-	/* ui_surface_set_rows (PluginUiRenderer::setRows) replaces a list's
-	 * rows without touching its columns. */
 	void test_setRowsReplacesListContent()
 	{
 		auto surface = PluginUiRenderer::build(QString::fromUtf8(kFullDoc),
@@ -230,16 +218,13 @@ class PluginUiRendererTest : public QObject
 		QVERIFY(surface->setRows("lst1", rows));
 		QCOMPARE(list->topLevelItemCount(), 2);
 		QCOMPARE(list->topLevelItem(1)->text(0), QStringLiteral("Y1"));
-		/* Columns untouched by setRows(). */
 		QCOMPARE(list->headerItem()->text(0), QStringLiteral("Col1"));
 
-		/* Wrong node type refuses. */
 		QVERIFY(!surface->setRows("btn1", rows));
 	}
 
-	/* A button click and a toggle flip each fire exactly the event the
-	 * ABI promises: event="click"/"change", node_id matching the node,
-	 * value_json carrying the new value for "change". */
+	/* A click and a toggle flip fire event="click"/"change" with the node id; "change" carries the
+	 * new value in value_json. */
 	void test_buttonAndToggleEmitExpectedEvents()
 	{
 		QVector<Event> events;
@@ -266,8 +251,6 @@ class PluginUiRendererTest : public QObject
 		QCOMPARE(events.first().valueJson, QStringLiteral("true"));
 	}
 
-	/* The declarative tray-menu doc (button/separator/section) builds a
-	 * real QMenu and wires clicks through the same event sink shape. */
 	void test_buildTrayMenu()
 	{
 		const char* menuDoc =
@@ -306,7 +289,6 @@ class PluginUiRendererTest : public QObject
 		QCOMPARE(events.first().nodeId, QStringLiteral("open"));
 		QCOMPARE(events.first().event, QStringLiteral("click"));
 
-		/* The nested submenu's own action fires with its own id. */
 		actions.at(2)->menu()->actions().first()->trigger();
 		QCOMPARE(events.size(), 2);
 		QCOMPARE(events.last().nodeId, QStringLiteral("inst-1"));
@@ -315,10 +297,8 @@ class PluginUiRendererTest : public QObject
 
 int main(int argc, char* argv[])
 {
-	/* PluginUiRenderer builds real QWidgets, so this test needs a full
-	 * QApplication (not QGuiApplication). Default to the offscreen
-	 * platform plugin when the environment hasn't already picked one,
-	 * so the binary also runs standalone outside `ctest`. */
+	/* Needs a full QApplication (real QWidgets); defaults to the offscreen platform so the binary
+	 * also runs outside ctest. */
 	if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM"))
 		qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("offscreen"));
 

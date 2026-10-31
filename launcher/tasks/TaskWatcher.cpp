@@ -31,9 +31,8 @@ TaskWatcher::TaskWatcher(Task::Ptr task, QObject* parent)
 		return;
 	}
 
-	/* Picked up as they stand right now, in case the task was already
-	 * doing something before this watcher was attached to it (started()
-	 * only fires once, from inside start()). */
+	/* Picked up as they stand, in case the task was already doing something
+	 * before this watcher attached (started() fires once, inside start()). */
 	m_status = m_task->getStatus();
 	m_running = m_task->isRunning();
 	m_succeeded = m_task->wasSuccessful();
@@ -108,8 +107,6 @@ void TaskWatcher::setProgressValue(double value)
 		return;
 	}
 
-	/* Within the throttle window: remember it and make sure a trailing
-	 * flush is scheduled, but do not fire NOTIFY yet. */
 	if (!m_progressFlushPending) {
 		m_progressFlushPending = true;
 		const int remaining =
@@ -132,8 +129,8 @@ void TaskWatcher::flushProgress()
 void TaskWatcher::onSucceeded()
 {
 	setRunning(false);
-	/* The final value is never dropped on the floor by the throttle,
-	 * even if a flush was still pending. */
+	/* The final value is never dropped by the throttle, even with a flush
+	 * pending. */
 	m_progressFlushTimer.stop();
 	m_progressFlushPending = false;
 	m_progress = 1.0;

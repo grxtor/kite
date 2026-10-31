@@ -25,35 +25,27 @@
 
 #include "modplatform/ContentApi.h"
 
-/* URL builder for the CurseForge (Flame) API. */
 class FlameApi final : public ModPlatform::ContentApi
 {
   public:
 	static const FlameApi& get();
 
-	/* Host serving the REST API. Net::Download attaches the x-api-key
-	 * header to requests for exactly this host, so the two must agree -
-	 * that is why the host is published here rather than spelled out
-	 * again in the networking layer. */
+	/* Host serving the REST API. Net::Download attaches the x-api-key header
+	 * to requests for exactly this host, so the two must agree. */
 	static QString apiHost();
-	/* Scheme + host + version prefix, no trailing slash. */
 	static QString apiBase();
-	/* Host serving the website. Files whose author opted out of
-	 * third-party downloads have no API download URL and have to be
-	 * fetched through the site instead. */
+	/* Host serving the website, through which files whose author opted out
+	 * of third-party downloads must be fetched. */
 	static QString siteHost();
 
-	/* Minecraft, in CurseForge's game list. */
 	static int minecraftGameId();
-	/* Section id for modpacks. Deliberately not part of ContentType:
-	 * modpacks create instances rather than being installed into one. */
+	/* Section id for modpacks; not a ContentType, as they create instances. */
 	static int modpackClassId();
 
 	QString id() const override;
 	QString displayName() const override;
 	int searchPageSize() const override;
-	/* CurseForge's search indexes neither the environment a project runs
-	 * in nor its licence. */
+	/* CurseForge's search indexes neither environment nor licence. */
 	bool supportsExtendedFilters() const override
 	{
 		return false;
@@ -68,51 +60,37 @@ class FlameApi final : public ModPlatform::ContentApi
 	QUrl categoriesUrl(ModPlatform::ContentType contentType) const override;
 	QUrl projectPageUrl(const QString& projectId) const override;
 
-	/* Metadata for one specific file of one project. */
 	static QUrl fileUrl(const QString& projectId, const QString& fileId);
 
-	/* Every file of a project, with no version or loader filter. */
 	static QUrl allProjectFilesUrl(const QString& projectId);
 
-	/* The versions owning a set of file fingerprints.
-	 *
-	 * A POST, unlike everything else here, because the question is a
-	 * list - see Net::JsonPost. There is no per-file equivalent to fall
-	 * back on: CurseForge indexes files by FlameFingerprint and by
-	 * nothing else, so an export that wants to name mods in a manifest
-	 * rather than ship them has no other route. Answers with
-	 * `data.exactMatches`, each entry carrying the `file` it matched. */
+	/* The versions owning a set of file fingerprints. A POST (the question
+	 * is a list, see Net::JsonPost): CurseForge indexes files only by
+	 * FlameFingerprint, so exports have no other route. Answers with
+	 * `data.exactMatches`, each carrying the `file` it matched. */
 	static QUrl matchFingerprintsUrl();
 
-	/* Several projects at once, by id. Also a POST, for the same reason.
-	 *
-	 * Used after a fingerprint match, which names a project by number
-	 * only: the slug and the author list that a mod list has to print
-	 * are not in that answer. Answers with `data` as an array. */
+	/* Several projects by id; also a POST. Needed after a fingerprint match,
+	 * which names a project by number only: the slug and authors a mod list
+	 * prints are not in that answer. Answers with `data` as an array. */
 	static QUrl projectsUrl();
 
-	/* Changelog for one file, as HTML wrapped in a `data` string.
-	 *
-	 * A request per file, unlike Modrinth which ships changelogs with
-	 * the version list. That asymmetry is the reason the managed-pack
-	 * page fetches changelogs lazily instead of all at once: a pack with
-	 * two hundred files would otherwise mean two hundred requests to
-	 * open a tab. */
+	/* Changelog for one file, as HTML wrapped in a `data` string. One
+	 * request per file (Modrinth ships changelogs with the version list), so
+	 * the managed-pack page fetches them lazily. */
 	static QUrl fileChangelogUrl(const QString& projectId,
 								 const QString& fileId);
 
-	/* Modpack browsing. Separate from searchUrl() because it searches a
-	 * different section and takes no version or loader filter. */
+	/* Modpack browsing: a different section, with no version or loader
+	 * filter. */
 	static QUrl modpackSearchUrl(const QString& term, int sortIndex,
 								 int offset);
 
-	/* Narrow mod-name lookup, used when a dependency could not be
-	 * resolved on its own platform and we go looking for it here.
-	 * `term` must already be percent-encoded. */
+	/* Narrow mod-name lookup for a dependency not found on its own
+	 * platform. `encodedTerm` must already be percent-encoded. */
 	static QUrl nameSearchUrl(const QString& encodedTerm, int limit = 5);
 
-	/* Browser download link for a file with no API download URL. Opening
-	 * it in a browser is the sanctioned way to obtain such files. */
+	/* Browser download link for a file with no API download URL. */
 	static QString browserDownloadUrl(const QString& projectId,
 									  const QString& fileId);
 };

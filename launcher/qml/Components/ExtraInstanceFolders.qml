@@ -9,11 +9,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Extra folders Kite also looks in for instances (Settings > General).
- * The main instance folder stays where new instances are made; these only
- * add instances that already live elsewhere. Each row has a ⋯ menu to open
- * or remove it, and "Add folder…" picks the next one. Removing a folder only
- * stops Kite looking there: nothing is deleted.
+ * Extra folders Kite also looks in for instances (Settings > General); the main instance folder stays where new
+ * instances are made. Each row has a ⋯ menu to open or remove it, and "Add folder…" picks the next. Removing a folder
+ * only stops Kite looking there: nothing is deleted.
  */
 Column {
     id: root
@@ -23,7 +21,6 @@ Column {
 
     signal openRequested(string path)
 
-    // The folder a menu is about.
     property string target
 
     visible: !!folders

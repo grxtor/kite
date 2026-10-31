@@ -13,7 +13,7 @@
 namespace
 {
 	/* FNV-1a over the id's UTF-8: unlike qHash it is not seeded per run, so
-	 * an instance's first slot is the same on every start and machine. */
+	 * the first slot is stable across starts and machines. */
 	quint32 stableHash(const QString& text)
 	{
 		const quint32 offsetBasis = 2166136261u;
@@ -51,8 +51,7 @@ QHash<QString, QString> AutoIcons::assign(const QList<Instance>& instances,
 	if (pool.isEmpty())
 		return result;
 
-	// In id order, so who wins a contested slot never depends on how the
-	// list happened to be sorted.
+	// In id order, so a contested slot never depends on list order.
 	QList<Instance> generic;
 	for (const Instance& instance : instances) {
 		if (isGeneric(instance.iconKey))
@@ -81,8 +80,8 @@ QHash<QString, QString> AutoIcons::assign(const QList<Instance>& instances,
 				break;
 			}
 		}
-		// A library with more generic instances than the pool has icons
-		// shares them from here on, each keeping its hashed slot.
+		// More generic instances than icons share them, each keeping its hashed
+		// slot.
 		result.insert(instance.id, chosen);
 		used.insert(chosen);
 	}

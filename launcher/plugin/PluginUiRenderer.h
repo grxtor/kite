@@ -32,37 +32,25 @@
 class QWidget;
 class QMenu;
 
-/*
- * PluginUiRenderer — turns an "mmco-ui/1" JSON document (the format
- * MMCOContext::ui_surface_create / ui_surface_update / ui_modal_run
- * take, see PluginAPI.h S33) into a live QWidget tree, Kite_logic
- * side (it builds real widgets, so it cannot live in the Qt-free SDK).
+/* Turns an "mmco-ui/1" JSON document (MMCOContext::ui_surface_create, PluginAPI.h S33) into a live QWidget
+ * tree. It builds real widgets, so it lives in Kite_logic rather than the Qt-free SDK.
  *
- * Fourteen node types are understood:
- *   Containers (have "children"):        column, row, section
- *   Content leaves:                      heading, text, separator,
- *                                         progress
- *   Interactive leaves:                  button, toggle, text_field,
- *                                         number_field, choice, list,
- *                                         link
+ * Fourteen node types:
+ *   containers (have "children")  column, row, section
+ *   content leaves                heading, text, separator, progress
+ *   interactive leaves            button, toggle, text_field, number_field, choice, list, link
  *
- * Every node may carry a plugin-assigned "id" (used for events and for
- * PluginManager::api_ui_surface_set / _set_rows) and a flat "props"
- * object. No colour/font/geometry prop exists on any node — the host
- * owns all presentation.
+ * A node may carry a plugin-assigned "id" (events, api_ui_surface_set / _set_rows) and a flat "props"
+ * object. No colour/font/geometry prop exists: the host owns presentation.
  *
- * A RenderedSurface owns exactly one top-level QWidget (rootWidget()),
- * created once and never replaced — setDocument() rebuilds everything
- * *inside* it, so a caller that has parented rootWidget() somewhere
- * never has to reparent anything again. RenderedSurface does not
- * delete rootWidget() itself; whoever parents it into a page/dialog
- * owns it the normal Qt way (parent-child cascade on destruction).
- */
+ * A RenderedSurface owns one top-level QWidget (rootWidget()), created once and never replaced;
+ * setDocument() rebuilds *inside* it, so a caller that parented it never reparents. RenderedSurface does
+ * not delete rootWidget(): whoever parents it owns it the normal Qt way. */
 class PluginUiRenderer
 {
   public:
-	/* nodeId, event ("click" / "change" / "select" / "activate"),
-	 * value_json (a JSON-encoded value, or "" when not applicable). */
+	/* nodeId, event ("click" / "change" / "select" / "activate"), value_json (JSON-encoded, or ""
+	 * when not applicable). */
 	using EventSink = std::function<void(
 		const QString& nodeId, const QString& event, const QString& valueJson)>;
 
@@ -75,36 +63,29 @@ class PluginUiRenderer
 		RenderedSurface(const RenderedSurface&) = delete;
 		RenderedSurface& operator=(const RenderedSurface&) = delete;
 
-		/* The single stable top-level widget. Never null after
-		 * construction; never replaced by any of the calls below. */
+		/* The stable top-level widget; never null after construction, never replaced. */
 		QWidget* rootWidget() const
 		{
 			return m_root.data();
 		}
 
-		/* Parse and (re)build the whole tree from an "mmco-ui/1"
-		 * document. Returns false on malformed JSON / missing root,
-		 * in which case rootWidget() is left empty. */
+		/* Parses and (re)builds the whole tree; false on malformed JSON or a missing root
+		 * (rootWidget() is then left empty). */
 		bool setDocument(const QJsonObject& doc);
 
-		/* Patch one node's `props` in place (merged over the existing
-		 * props for that node). Returns false if node_id is unknown or
-		 * the node type doesn't understand one of the given keys. */
+		/* Patches one node's `props` in place (merged over the existing ones); false if node_id is
+		 * unknown or the node type does not understand a key. */
 		bool setNodeProps(const QString& nodeId, const QJsonObject& props);
 
-		/* Replace a `list` node's `rows` array in place, leaving its
-		 * `columns` untouched. Returns false if node_id doesn't name a
-		 * `list` node. */
+		/* Replaces a `list` node's `rows`, leaving `columns` alone; false if node_id is not a
+		 * `list`. */
 		bool setRows(const QString& nodeId, const QJsonArray& rows);
 
-		/* Look up the node type for `nodeId` ("button", "toggle", …),
-		 * or an empty string if unknown. Used by ui_modal_run to spot
-		 * which button fired. */
+		/* The node type for `nodeId` ("button", "toggle", ...), or empty if unknown; ui_modal_run
+		 * uses it to spot which button fired. */
 		QString nodeType(const QString& nodeId) const;
 
-		/* Current value of every interactive node (toggle/text_field/
-		 * number_field/choice), keyed by node id — used to build
-		 * ui_modal_run's "fields" result object. */
+		/* Current value of every interactive node, keyed by node id (ui_modal_run's "fields"). */
 		QJsonObject collectValues() const;
 
 	  private:
@@ -118,25 +99,20 @@ class PluginUiRenderer
 		void clearRoot();
 
 		EventSink m_sink;
-		/* Stable identity; content rebuilt in place. A QPointer because
-		 * whatever it gets parented under may delete it first: when a
-		 * settings group box is torn down it deletes its child widgets,
-		 * this root among them, before the RendererOwner sibling that
-		 * owns this surface. */
+		/* Stable identity, content rebuilt in place. A QPointer because the parent may delete it
+		 * first: a torn-down settings group box deletes its children before the RendererOwner
+		 * sibling that owns this surface. */
 		QPointer<QWidget> m_root;
 		QHash<QString, NodeEntry> m_nodes;
 	};
 
-	/* Parse `jsonDoc` (an "mmco-ui/1" document) and build a live
-	 * surface. Never returns null — a malformed document renders as an
-	 * empty surface (setDocument()'s return value already logged the
-	 * problem via qWarning). */
+	/* Parses `jsonDoc` and builds a live surface. Never null: a malformed document renders empty
+	 * (setDocument()'s failure is logged via qWarning). */
 	static std::unique_ptr<RenderedSurface> build(const QString& jsonDoc,
 												  EventSink sink);
 
-	/* Parse a tray-menu document (small tree of button/separator/section
-	 * nodes — section = submenu) and populate `menu` with QActions wired
-	 * to `sink(nodeId, "click", "")`. Returns false on malformed JSON. */
+	/* Parses a tray-menu document (button/separator/section nodes; section = submenu) and populates
+	 * `menu` with QActions wired to sink(nodeId, "click", ""). False on malformed JSON. */
 	static bool buildTrayMenu(QMenu* menu, const QString& jsonDoc,
 							 EventSink sink);
 };

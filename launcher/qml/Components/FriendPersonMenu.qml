@@ -6,14 +6,9 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * What can be done to a person on the Friends page: remove them from your
- * friends, or block them. One of these lives on the page and every row's ⋯
- * (FriendMoreButton) opens it for its person, so the open menu does not
- * belong to a row: a list that is read again while it is open (a poll, a
- * head arriving) rebuilds its rows, and a menu in one would vanish.
- *
- * It only says what was asked for; the page confirms and acts. Someone who
- * is not a friend (a request) cannot be removed, only blocked.
+ * What can be done to a person on the Friends page: remove them from your friends, or block them (a non-friend can
+ * only be blocked). One lives on the page and every row's ⋯ opens it: a list read again while a menu is open
+ * rebuilds its rows, and a menu in one would vanish. It only says what was asked for; the page confirms and acts.
  */
 Menu {
     id: root
@@ -26,7 +21,6 @@ Menu {
     // `friend`: they are on your list, so blocking also removes them.
     signal blockRequested(string uuid, string name, bool friend)
 
-    // Opens under @p button with its right edge on the button's.
     function openFor(button, uuid, name, removable) {
         root.personUuid = uuid
         root.personName = name

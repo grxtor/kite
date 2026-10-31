@@ -36,15 +36,10 @@ enum class TaskStepState { Waiting, Running, Failed, Succeeded };
 
 Q_DECLARE_METATYPE(TaskStepState)
 
-/**
- * A snapshot of one step of a multi step task.
- *
- * Multi step tasks (see Task::isMultiStep) report every step they are made of
- * through Task::stepProgress, so the UI can show one line per step instead of
- * a single opaque progress bar. A step keeps the same uid for its whole
- * lifetime, which lets the UI update the line it already has instead of piling
- * up new ones.
- */
+/** A snapshot of one step of a multi step task. Multi step tasks
+ * (Task::isMultiStep) report each step through Task::stepProgress so the UI
+ * can show one line per step. A step keeps its uid for its whole lifetime, so
+ * the UI updates the line it has instead of adding new ones. */
 struct TaskStepProgress {
 	QUuid uid;
 	qint64 current = 0;
@@ -91,32 +86,22 @@ class Task : public QObject
 	bool isFinished() const;
 	bool wasSuccessful() const;
 
-	/*!
-	 * Whether the task stopped because someone called abort().
-	 *
-	 * Stopping on request is reported through the same failed() signal as
-	 * a genuine failure - there is no separate signal for it - so code
-	 * that turns failed() into a message in front of the user has no
-	 * other way to tell the two apart, and ends up announcing "Aborted."
-	 * as though something had gone wrong. The state was always recorded;
-	 * it was simply not readable from outside.
-	 */
+	/* Whether the task stopped because someone called abort(). Stopping on
+	 * request is reported through failed() like a genuine failure, so this is
+	 * the only way to tell them apart (e.g. to avoid announcing "Aborted." as
+	 * an error). */
 	bool wasAborted() const;
 
-	/*!
-	 * A multi step task is a task that is made up of several other tasks.
-	 * Such a task reports the state of each of its steps through the
-	 * stepProgress signal, on top of its own overall progress.
-	 */
+	/* A multi step task is made up of several other tasks and reports each
+	 * step through the stepProgress signal, on top of its own overall
+	 * progress. */
 	virtual bool isMultiStep() const
 	{
 		return false;
 	}
 
-	/*!
-	 * The state of every step this task is currently made of, for callers that
-	 * connect to an already running task and need to catch up.
-	 */
+	/* The state of every step this task is made of, for callers connecting to
+	 * an already running task. */
 	virtual TaskStepProgressList getStepProgress() const
 	{
 		return {};
@@ -131,10 +116,8 @@ class Task : public QObject
 		return m_uid;
 	}
 
-	/*!
-	 * Returns the string that was passed to emitFailed as the error message
-	 * when the task failed. If the task hasn't failed, returns an empty string.
-	 */
+	/* The error message passed to emitFailed(); empty if the task has not
+	 * failed. */
 	QString failReason() const;
 
 	virtual QStringList warnings() const;
@@ -149,10 +132,8 @@ class Task : public QObject
 		return m_status;
 	}
 
-	/*!
-	 * Secondary, usually shorter piece of status shown next to the status
-	 * line - a byte count, an item count, that kind of thing.
-	 */
+	/* Secondary, usually shorter status shown next to the status line (a byte
+	 * count, an item count). */
 	QString getDetails()
 	{
 		return m_details;
@@ -171,20 +152,14 @@ class Task : public QObject
   protected:
 	void logWarning(const QString& line);
 
-	/*!
-	 * Announce whatever canAbort() currently answers.
-	 *
-	 * Called by a task at the points where that answer changes. Reading it
-	 * back through the virtual rather than taking a parameter means the
-	 * button and abort() itself can never disagree about whether there is
-	 * anything to abort.
-	 */
+	/* Announces whatever canAbort() currently answers; called where that
+	 * answer changes. Read through the virtual so the button and abort()
+	 * cannot disagree. */
 	void reportAbortStatus()
 	{
 		emit abortStatusChanged(canAbort());
 	}
 
-	/*! Relabel the button offering abort() - see abortButtonTextChanged. */
 	void setAbortButtonText(const QString& text)
 	{
 		emit abortButtonTextChanged(text);
@@ -201,29 +176,17 @@ class Task : public QObject
 	void failed(QString reason);
 	void status(QString status);
 	void details(QString details);
-	//! Emitted by multi step tasks whenever one of their steps moves along.
 	void stepProgress(TaskStepProgress const& step_progress);
 
-	/*!
-	 * The answer to canAbort() has changed.
-	 *
-	 * canAbort() is computed rather than stored, so nothing can tell from
-	 * the outside when it starts or stops being true - a task that changes
-	 * its mind mid-run has to say so. A task that never emits this is a
-	 * task whose abort button keeps whatever state the caller gave it,
-	 * which is what every task did before this existed.
-	 */
+	/* The answer to canAbort() has changed. canAbort() is computed, so a task
+	 * whose answer changes mid-run has to say so; a task that never emits this
+	 * keeps whatever abort-button state the caller gave it. */
 	void abortStatusChanged(bool abortable);
 
-	/*!
-	 * The button offering abort() should be relabelled.
-	 *
-	 * Because "abort" is not always what pressing it does. A task that has
-	 * already produced its result and is only running an optional extra
-	 * step is not cancelled by that button - the step is skipped and the
-	 * task still succeeds. Saying "Abort" there promises a rollback that
-	 * is not going to happen.
-	 */
+	/* The button offering abort() should be relabelled: pressing it does not
+	 * always cancel (a task that has produced its result and runs an optional
+	 * extra step merely skips it), and "Abort" would promise a rollback that
+	 * will not happen. */
 	void abortButtonTextChanged(QString text);
 
   public slots:
@@ -241,17 +204,13 @@ class Task : public QObject
 	virtual void emitAborted();
 	virtual void emitFailed(QString reason);
 
-	/*!
-	 * Passes a step reported by a child task on to our own listeners, so that
-	 * steps of nested multi step tasks stay visible all the way up.
-	 */
+	/* Passes a child task's step on to our own listeners so steps of nested
+	 * multi step tasks stay visible all the way up. */
 	virtual void propagateStepProgress(TaskStepProgress const& step_progress);
 
-	/*!
-	 * Wires an inner task so that its steps show up among ours. Use this when
-	 * a task hands the actual work to a single task of its own, which would
-	 * otherwise report its steps to nobody.
-	 */
+	/* Wires an inner task so its steps show up among ours; for a task that
+	 * hands the work to a single task of its own, which would otherwise report
+	 * its steps to nobody. */
 	void propagateStepsFrom(Task* other);
 
   public slots:

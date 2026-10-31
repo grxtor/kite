@@ -42,8 +42,7 @@
 
 namespace
 {
-	/* Encode `s` as a JSON string literal (quoted, escaped) — used for
-	 * every value_json payload whose value is a string. */
+	/* Encodes `s` as a JSON string literal (quoted, escaped) for every string value_json payload. */
 	QString jsonQuoteString(const QString& s)
 	{
 		QJsonArray tmp;
@@ -54,8 +53,7 @@ namespace
 		return QString::fromUtf8(bytes);
 	}
 
-	/* Clear and rebuild a `list` node's rows. Shared by initial render
-	 * and setRows() so the two never drift apart. */
+	/* Clears and rebuilds a `list` node's rows; shared by the initial render and setRows(). */
 	void populateListRows(QTreeWidget* tree, const QJsonArray& rows)
 	{
 		tree->clear();
@@ -80,10 +78,8 @@ PluginUiRenderer::RenderedSurface::RenderedSurface(EventSink sink)
 
 PluginUiRenderer::RenderedSurface::~RenderedSurface()
 {
-	/* m_root may already be gone: a parent it was placed under deletes
-	 * its children before sibling QObjects such as RendererOwner get to
-	 * delete this surface. QPointer is null by then, and deleting null
-	 * is a no-op. */
+	/* m_root may already be gone: its parent deletes children before sibling QObjects such as
+	 * RendererOwner delete this surface. QPointer is null by then and deleting null is a no-op. */
 	delete m_root.data();
 }
 
@@ -334,8 +330,7 @@ QWidget* PluginUiRenderer::RenderedSurface::renderNode(const QJsonObject& node)
 	if (widget)
 		widget->setVisible(props.value(QStringLiteral("visible")).toBool(true));
 	if (!id.isEmpty() && indexTarget) {
-		/* Stable objectName so tests (and any future QSS theming) can
-		 * findChild<T>(id) instead of reaching into m_nodes. */
+		/* Stable objectName so tests can findChild<T>(id). */
 		indexTarget->setObjectName(id);
 		m_nodes.insert(id, NodeEntry{indexTarget, type});
 	}
@@ -344,8 +339,7 @@ QWidget* PluginUiRenderer::RenderedSurface::renderNode(const QJsonObject& node)
 
 bool PluginUiRenderer::RenderedSurface::setDocument(const QJsonObject& doc)
 {
-	/* The page this surface was shown on is gone; a plugin updating it
-	 * afterwards has nothing left to draw into. */
+	/* The page this surface was shown on is gone; nothing left to draw into. */
 	if (!m_root)
 		return false;
 	clearRoot();

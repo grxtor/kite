@@ -29,57 +29,25 @@
 #include <icons/IconList.h>
 
 /*
- * Bridges IconList (QIcon, launcher/icons/IconList.h) into QML, which has no
- * way to display a QIcon. A delegate writes
+ * Bridges IconList into QML, which cannot display a QIcon:
  *
  *     Image { source: "image://instanceicon/" + iconKey }
  *
- * where iconKey is the string role InstanceList::roleNames() exposes for
- * Qt::DecorationRole (see InstanceList.h/.cpp) -- the same key
- * InstanceProxyModel::data() already resolves through IconList::getIcon()
- * for the QtWidgets grid.
+ * Pixmap provider: QIcon and QPixmap are GUI-thread-only, and Pixmap is the
+ * only type Qt Quick guarantees calls requestPixmap() on the GUI thread.
  *
- * THREADING. This derives from QQuickImageProvider with ImageType::Pixmap,
- * not QQuickAsyncImageProvider and not ImageType::Image. Qt Quick only
- * guarantees a Pixmap-type provider's requestPixmap() is called on the GUI
- * thread; ImageType::Image can be serviced from a loader thread once the
- * engine's threaded image loading kicks in, and QQuickAsyncImageProvider is
- * explicitly meant to do its work off-thread. QIcon and QPixmap are GUI-only
- * types -- constructing, copying or painting either off the GUI thread is
- * undefined behaviour -- so Pixmap is the only one of the three that keeps
- * this code where it is safe to touch them.
+ * requestedSize is in device pixels; an empty one falls back to a fixed
+ * extent. *size is the pixmap actually returned.
  *
- * SIZE. requestedSize arrives already in device pixels; QML has already
- * folded in the device pixel ratio before calling requestPixmap(), so it is
- * used as-is here, with no extra multiplication. An invalid or empty
- * requestedSize (the default QSize(), or an explicit zero) falls back to a
- * fixed default extent instead. *size is always set to the pixmap actually
- * returned, which is not necessarily requestedSize.
+ * QML caches a resolved URL by id, so id may carry a "<key>?rev=N" query. It
+ * is stripped before lookup and only forces a refetch.
  *
- * CACHE-BUSTING. QML caches a resolved image://<provider>/<id> URL by id, so
- * once IconList::iconUpdated(key) fires there is otherwise no way to make an
- * already-bound Image re-fetch the same key. id may carry a "<key>?rev=N"
- * query string; requestPixmap() strips everything from the first '?' onward
- * before looking the key up, so N has no effect on which icon comes back --
- * it exists purely so a caller can change it to make QML treat the URL as
- * new. Bumping N when iconUpdated fires is left to whoever wires this
- * provider into the engine.
+ * An unknown or empty key falls back to IconList::getIcon()'s "grass"
+ * builtin; only if that is also null is a plain pixmap drawn, so callers never
+ * get a null QPixmap.
  *
- * UNKNOWN KEYS. An unknown or empty key is not special-cased here:
- * IconList::getIcon() already falls back to the "grass" builtin for those
- * (and for the literal key "default"), which is the same fallback
- * InstanceProxyModel::data() relies on today. Only if that also somehow
- * comes back null (no IconList given, or "grass" itself unavailable) does
- * this provider draw a plain fallback pixmap of its own, so a caller never
- * receives a null QPixmap.
- *
- * OWNERSHIP. Takes the IconList as a std::shared_ptr rather than a raw
- * pointer because that is how the rest of the launcher already holds it --
- * Application::icons() returns std::shared_ptr<IconList>, not a
- * QObject-parented instance -- so this provider shares the same object
- * instead of assuming a global. It reaches for neither APPLICATION nor
- * LAUNCHER: the list is injected by whoever constructs the provider, which
- * is what makes it constructible with a throwaway IconList in a test.
+ * The IconList is injected as a shared_ptr, so a test can pass a throwaway
+ * one.
  */
 class InstanceIconProvider : public QQuickImageProvider
 {

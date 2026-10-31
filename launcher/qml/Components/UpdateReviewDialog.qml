@@ -8,13 +8,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * "Check for updates": the check's progress, then what it found -- each
- * file from the version installed now to the newest one that runs on this
- * instance, with a link to what changed -- to tick and update. The QML
- * replacement for ModUpdateDialog and the progress dialog before it.
- * Closing it while it checks gives up on the check.
- *
- * As tall as its rows, up to a limit; past that the list scrolls.
+ * "Check for updates": the check's progress, then each file from the installed
+ * version to the newest one that runs on this instance, with a link to what
+ * changed, to tick and update. Closing it while it checks gives up on the check.
  */
 Dialog {
     id: root
@@ -38,7 +34,6 @@ Dialog {
         root.open()
     }
 
-    // The "All" box: ticked, unticked, or some of them.
     function allState() {
         if (!root.updates || root.updates.checkedCount === 0)
             return Qt.Unchecked
@@ -50,10 +45,7 @@ Dialog {
     width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
     height: Math.min(root.maxHeight, implicitHeight, parent ? parent.height - Theme.space.xxl * 2 : root.maxHeight)
     modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
     topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
     bottomPadding: Theme.space.sm
     closePolicy: Popup.CloseOnEscape
     title: qsTr("Updates")
@@ -72,7 +64,6 @@ Dialog {
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
-        // While checking: what it is doing, and how far along.
         ColumnLayout {
             Layout.fillWidth: true
             visible: root.checking
@@ -150,7 +141,6 @@ Dialog {
             spacing: Theme.space.sm
 
             CheckBox {
-                // Box edge on the content edge.
                 leftPadding: 0
                 visible: !root.checking && root.count > 1
                 text: qsTr("All")

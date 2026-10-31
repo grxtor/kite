@@ -36,8 +36,7 @@
 namespace
 {
 
-	// Config keys, in one place so the updater binary and the launcher cannot
-	// drift apart on their spelling.
+	// Config keys in one place so the updater binary and the launcher agree on spelling.
 	constexpr auto kConfigFileName = "kite_update.cfg";
 	constexpr auto kKeyAllowBeta = "allow_beta";
 	constexpr auto kKeyAutoCheck = "auto_check";
@@ -48,28 +47,19 @@ namespace
 	//! Once a day, when the config says nothing.
 	constexpr int kDefaultIntervalSeconds = 86400;
 
-	//! The check is a child process; give it a chance to start, then to finish.
 	constexpr int kStartTimeoutMs = 5000;
 	constexpr int kFinishTimeoutMs = 60000;
 
-	/*!
-	 * Exit codes of `kite-updater --check-only`.
-	 *
-	 * 100 is used for "yes" rather than 2 so that it cannot be confused with
-	 * a crash, a signal, or Qt's own failure paths.
-	 */
+	/*! Exit codes of `kite-updater --check-only`. 100 rather than 2 for "yes" so it cannot be
+	 * confused with a crash, a signal or Qt's failure paths. */
 	enum CheckExitCode {
 		NoUpdate = 0,
 		CheckError = 1,
 		UpdateAvailable = 100,
 	};
 
-	/*!
-	 * Folds raw child output into the message body.
-	 *
-	 * UiHost::message() has no "Show Details" affordance to tuck this
-	 * behind, so it goes in the body instead when there is any.
-	 */
+	/*! Folds raw child output into the message body: UiHost::message() has no "Show Details"
+	 * affordance. */
 	QString withDetails(const QString& text, const QString& details = QString())
 	{
 		if (details.isEmpty())
@@ -77,14 +67,9 @@ namespace
 		return text + QLatin1String("\n\n") + details;
 	}
 
-	/*!
-	 * Split off the first line of \a text, returning it and leaving the rest
-	 * in \a text.
-	 *
-	 * The check protocol is three header lines followed by release notes that
-	 * are themselves multi-line, so the parser consumes exactly three lines
-	 * and treats everything after them as the body.
-	 */
+	/*! Splits off the first line of \a text and returns it. The check protocol is three header lines
+	 * followed by multi-line release notes, so the parser takes exactly three lines and treats the
+	 * rest as the body. */
 	QString takeLine(QString& text)
 	{
 		const int newline = text.indexOf(QLatin1Char('\n'));
@@ -131,8 +116,8 @@ KiteExternalUpdater::KiteExternalUpdater(const QString& appDir,
 
 	m_allowBeta = m_settings->value(kKeyAllowBeta, false).toBool();
 
-	// First run against this config: adopt whatever the launcher's own
-	// setting used to say, then record it so this only happens once.
+	// First run against this config: adopt the launcher's own setting, then record it so this
+	// happens once.
 	if (!m_settings->contains(kKeyAutoCheck)) {
 		m_autoCheck = autoCheckDefault;
 		m_settings->setValue(kKeyAutoCheck, m_autoCheck);
@@ -145,8 +130,7 @@ KiteExternalUpdater::KiteExternalUpdater(const QString& appDir,
 		m_settings->value(kKeyUpdateInterval, kDefaultIntervalSeconds)
 			.toInt(&intervalOk);
 	if (!intervalOk) {
-		// A hand-edited config with garbage in it must not disable updates
-		// forever; fall back rather than treating it as "On Launch".
+		// A hand-edited config with garbage must not disable updates forever; fall back.
 		qWarning() << "Updater: unreadable" << kKeyUpdateInterval
 				   << "in the update config; using the default.";
 		m_updateInterval = kDefaultIntervalSeconds;
@@ -157,9 +141,8 @@ KiteExternalUpdater::KiteExternalUpdater(const QString& appDir,
 		m_lastCheck = QDateTime::fromString(stored.toString(), Qt::ISODate);
 	}
 
-	// Single-shot: every path out of a check re-arms the timer itself, so a
-	// repeating timer would only add the risk of a check storm if one of them
-	// ever failed to.
+	// Single-shot: every path out of a check re-arms the timer, so a repeating timer would only
+	// risk a check storm.
 	m_updateTimer.setSingleShot(true);
 	connect(&m_updateTimer, &QTimer::timeout, this,
 			&KiteExternalUpdater::autoCheckTimerFired);
@@ -187,10 +170,8 @@ QString KiteExternalUpdater::updaterExecutablePath() const
 
 QStringList KiteExternalUpdater::commonArguments() const
 {
-	// The updater resolves its own paths from the data directory, so it is
-	// told which one to use rather than guessing -- a portable install and a
-	// system-wide one disagree about that, and only the launcher knows which
-	// this is.
+	// The updater is told the data directory rather than guessing: portable and system-wide
+	// installs disagree, and only the launcher knows.
 	QStringList args = {QStringLiteral("--dir"), m_dataDir.absolutePath()};
 	if (m_allowBeta)
 		args.append(QStringLiteral("--pre-release"));
@@ -212,9 +193,8 @@ void KiteExternalUpdater::checkForUpdates(bool triggeredByUser)
 	m_checking = true;
 	emit canCheckForUpdatesChanged(false);
 
-	// The check blocks, so the busy indication exists to prove the launcher
-	// has not simply frozen. An automatic check gets none: nobody asked, and
-	// a window stealing focus during startup is worse than no feedback.
+	// The check blocks, so a busy indication shows the launcher is not frozen. Automatic checks get
+	// none: a window stealing focus at startup is worse than no feedback.
 	std::unique_ptr<UiHost::BusyIndicator> busy;
 	if (triggeredByUser)
 		busy = LAUNCHER->uiHost()->showBusy(tr("Checking for updates..."));
@@ -301,7 +281,6 @@ void KiteExternalUpdater::checkForUpdates(bool triggeredByUser)
 
 		case CheckExitCode::UpdateAvailable: {
 			// Three header lines, then the release notes verbatim:
-			//
 			//     Name: Kite 7.20.0
 			//     Version: v7.20.0
 			//     TimeStamp: 2026-09-06T12:00:00Z
@@ -316,8 +295,8 @@ void KiteExternalUpdater::checkForUpdates(bool triggeredByUser)
 					 << versionTag << timestamp;
 
 			if (versionTag.isEmpty()) {
-				// Without a tag there is nothing to install and nothing to
-				// remember as skipped, so this is an error, not an offer.
+				// Without a tag there is nothing to install or to remember as skipped: an error,
+				// not an offer.
 				qWarning() << "Updater: the check reported an update but no "
 							  "version tag.";
 				LAUNCHER->uiHost()->message(
@@ -374,9 +353,8 @@ void KiteExternalUpdater::offerUpdate(const QString& versionName,
 	const bool skipped = m_settings->value(versionTag, false).toBool();
 	m_settings->endGroup();
 
-	// A skip only silences the automatic checks. Asking explicitly overrides
-	// it -- otherwise "Check for Updates" would answer nothing at all and
-	// look broken.
+	// A skip silences only automatic checks; an explicit "Check for Updates" overrides it, else it
+	// would look broken.
 	if (skipped && !triggeredByUser) {
 		qDebug() << "Updater:" << versionTag
 				 << "was skipped by the user; staying quiet.";
@@ -394,8 +372,7 @@ void KiteExternalUpdater::offerUpdate(const QString& versionName,
 			break;
 
 		case UiHost::UpdateChoice::Install:
-			// Forget any earlier skip: the user just chose to install this
-			// very version.
+			// Forget any earlier skip: the user chose to install this version.
 			m_settings->remove(versionTag);
 			m_settings->endGroup();
 			m_settings->sync();
@@ -442,9 +419,7 @@ void KiteExternalUpdater::performUpdate(const QString& versionTag)
 		return;
 	}
 
-	// The updater has to replace the files this process is running from, so
-	// there is nothing left to do here but leave. It waits for us to be gone
-	// before it touches anything.
+	// The updater replaces the files this process runs from, so leave; it waits for us to be gone.
 	QCoreApplication::exit();
 }
 
@@ -489,8 +464,7 @@ void KiteExternalUpdater::setBetaAllowed(bool allowed)
 void KiteExternalUpdater::resetAutoCheckTimer()
 {
 	if (!m_autoCheck || m_updateInterval <= 0.0) {
-		// Disabled, or "On Launch" -- which is handled at startup and needs
-		// no timer at all.
+		// Disabled, or "On Launch" (handled at startup): no timer.
 		m_updateTimer.stop();
 		return;
 	}
@@ -502,9 +476,8 @@ void KiteExternalUpdater::resetAutoCheckTimer()
 			static_cast<qint64>(m_updateInterval) - elapsed, 0);
 		timeoutMs = remaining * 1000;
 	}
-	// No record of a previous check leaves timeoutMs at 0, i.e. check as soon
-	// as the event loop turns. That is intentional: a fresh install should
-	// find out it is out of date without waiting a day first.
+	// No record of a previous check leaves timeoutMs at 0: check as soon as the event loop turns,
+	// so a fresh install learns it is out of date without waiting a day.
 
 	timeoutMs = std::min<qint64>(timeoutMs, INT_MAX);
 

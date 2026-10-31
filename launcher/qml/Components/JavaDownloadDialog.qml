@@ -8,11 +8,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Download a Java runtime: pick a vendor, a Java version and a build for
- * this computer, then watch it download. The QML replacement for the
- * widget JavaDownloadDialog; the work is JavaDownloadController's. The
- * runtime lands in Kite's own Java folder, so it shows up under
- * "Downloaded Java" and in the Java picker afterwards.
+ * Download a Java runtime: pick a vendor, a Java version and a build for this
+ * computer, then watch it download. The work is JavaDownloadController's. The
+ * runtime lands in Kite's own Java folder.
  */
 Dialog {
     id: root
@@ -21,17 +19,13 @@ Dialog {
     readonly property bool busy: !!download && download.downloading
     readonly property bool done: !!download && !download.downloading && download.installedPath.length > 0
 
-    // Use the freshly installed Java; the caller writes the setting.
     signal useRequested(string path)
 
     parent: Overlay.overlay
     anchors.centerIn: parent
     width: Math.min(520, parent ? parent.width - Theme.space.xxl * 2 : 520)
     modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
     topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
     bottomPadding: Theme.space.sm
     closePolicy: root.busy ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnPressOutside
     title: qsTr("Download Java")

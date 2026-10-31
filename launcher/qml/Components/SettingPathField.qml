@@ -10,16 +10,10 @@ import Kite.Theme
 
 /*
  * A path setting with a browse button, for the external tool installs and
- * executables under Settings > External tools. Unlike SettingText's plain
- * typed-in paths under General, these are picked from a native dialog, the
- * same way ExternalToolsPage's "..." buttons work: `folder` picks a
- * directory (JProfiler/MCEdit installs); otherwise it picks one file
- * (JVisualVM/the JSON editor, both single executables).
- *
- * `toolId` ("jprofiler"/"jvisualvm"/"mcedit"), when set, also adds a Check
- * button that runs SettingsAdapter::checkExternalTool() and shows the
- * result underneath -- the QML equivalent of the classic page's own Check
- * buttons.
+ * executables under Settings > External tools. `folder` picks a directory
+ * (JProfiler/MCEdit installs), otherwise one file. `toolId`, when set, adds a
+ * Check button that runs SettingsAdapter::checkExternalTool() and shows the
+ * result underneath.
  */
 SettingRow {
     id: root

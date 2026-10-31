@@ -47,8 +47,8 @@
 
 namespace
 {
-	/* CurseForge wraps its replies in {"data": ...}; the widget code
-	 * accepts a bare value too, for the older API shape. */
+	/* CurseForge wraps replies in {"data": ...}; a bare value is accepted
+	 * too (older API shape). */
 	QJsonValue dataOf(const QJsonDocument& doc)
 	{
 		if (doc.isObject() && doc.object().contains(QStringLiteral("data"))) {
@@ -67,9 +67,8 @@ FlameModpackModel::FlameModpackModel(QObject* parent)
 		entry[QStringLiteral("label")] = sorting.readableName;
 		m_sortOptions.append(entry);
 	}
-	/* Popularity rather than the first entry ("Featured"), which is
-	 * CurseForge's own curated order and rarely what someone browsing
-	 * wants. */
+	/* Popularity, not the first entry ("Featured", CurseForge's curated
+	 * order). */
 	m_sort = QStringLiteral("2");
 }
 
@@ -143,7 +142,6 @@ QVariant FlameModpackModel::data(const QModelIndex& index, int role) const
 			return pack.screenshots.isEmpty() ? QString()
 											  : pack.screenshots.first();
 		case AccentColorRole:
-			/* CurseForge has no brand colour per project. */
 			return QVariant();
 		default:
 			return QVariant();
@@ -275,8 +273,7 @@ void FlameModpackModel::search()
 		return;
 	}
 	if (m_searchJob) {
-		/* Marked before abort(), which can finish synchronously - same
-		 * pattern as ModrinthModpackModel::search(). */
+		/* Set before abort(), which can finish synchronously. */
 		m_restartPending = true;
 		m_searchJob->abort();
 		return;
@@ -340,9 +337,8 @@ void FlameModpackModel::onSearchSucceeded()
 		emit countChanged();
 	}
 
-	/* A page can come back short of packs that failed validation, so the
-	 * total decides when it says one; the page size only when it does
-	 * not. */
+	/* A page can be short of packs that failed validation, so the total
+	 * decides when present, the page size otherwise. */
 	const int pageSize = FlameApi::get().searchPageSize();
 	m_nextOffset += pageSize;
 	const bool lastPage = totalCount >= 0 ? m_nextOffset >= totalCount
@@ -382,8 +378,7 @@ FlameModpackModel::parseSearchResults(const QByteArray& bytes, int& totalCount)
 		QJsonObject obj = raw.toObject();
 		Pack pack;
 		try {
-			/* Also drops a pack with no usable file, as the widget list
-			 * did. */
+			/* Also drops a pack with no usable file. */
 			Flame::loadIndexedPack(pack.base, obj);
 		} catch (const JSONValidationError& e) {
 			qWarning() << "Error while loading modpack from CurseForge:"
@@ -457,7 +452,6 @@ QVariantList FlameModpackModel::parseVersionsJson(const QByteArray& bytes,
 		if (file.id <= 0) {
 			continue;
 		}
-		/* CurseForge mixes loaders into the game version list. */
 		QStringList gameVersions;
 		QStringList loaders;
 		for (const auto& tagRaw : Json::ensureArray(obj, "gameVersions")) {
@@ -471,8 +465,8 @@ QVariantList FlameModpackModel::parseVersionsJson(const QByteArray& bytes,
 		const QString name = Json::ensureString(obj, "displayName", QString());
 		QString downloadUrl = Json::ensureString(obj, "downloadUrl", QString());
 		if (downloadUrl.isEmpty()) {
-			/* The author keeps it off third-party downloads; the browser
-			 * address is the sanctioned way to get it (FlamePage). */
+			/* The author keeps it off third-party downloads; the browser address is
+			 * the sanctioned way (FlamePage). */
 			downloadUrl =
 				FlameApi::browserDownloadUrl(projectId, QString::number(file.id));
 		}
@@ -492,8 +486,8 @@ QVariantList FlameModpackModel::parseVersionsJson(const QByteArray& bytes,
 		files.append(file);
 	}
 
-	/* Newest first: by date when both have one, by file id (which only
-	 * ever grows) otherwise - Flame::loadIndexedPackVersions()'s order. */
+	/* Newest first: by date when both have one, else by file id (only ever
+	 * grows), as Flame::loadIndexedPackVersions() does. */
 	std::stable_sort(files.begin(), files.end(), [](const File& a, const File& b) {
 		if (a.date.isValid() && b.date.isValid() && a.date != b.date) {
 			return a.date > b.date;
@@ -517,7 +511,6 @@ QString FlameModpackModel::sanitizeBody(const QString& html)
 	const auto options = QRegularExpression::CaseInsensitiveOption |
 						 QRegularExpression::DotMatchesEverythingOption;
 	QString out = html;
-	/* Elements whose content goes with them. */
 	for (const char* tag : {"script", "style", "iframe", "video", "audio", "object"}) {
 		const QString name = QString::fromLatin1(tag);
 		out.remove(QRegularExpression(
@@ -525,13 +518,12 @@ QString FlameModpackModel::sanitizeBody(const QString& html)
 		out.remove(QRegularExpression(
 			QStringLiteral("<%1\\b[^>]*/?>").arg(name), options));
 	}
-	/* Empty elements. Not img: RichBody lays pictures out as blocks of
-	 * their own and loads only http(s) ones. */
+	/* Empty elements. Not img: RichBody lays pictures out and loads only
+	 * http(s) ones. */
 	for (const char* tag : {"embed", "source"}) {
 		out.remove(QRegularExpression(
 			QStringLiteral("<%1\\b[^>]*>").arg(QString::fromLatin1(tag)), options));
 	}
-	/* Links that only held an embed. */
 	out.remove(QRegularExpression(QStringLiteral("<a\\b[^>]*>\\s*</a\\s*>"), options));
 	return out.trimmed();
 }
@@ -571,7 +563,6 @@ void FlameModpackModel::loadDetail(const QString& projectId)
 	if (const Pack* pack = packFor(projectId)) {
 		m_detail->setTitle(pack->base.name);
 		mainFileId = pack->mainFileId;
-		/* The search hit already carries the screenshots. */
 		QVariantList gallery;
 		for (const QString& url : pack->screenshots) {
 			QVariantMap entry;
@@ -641,9 +632,9 @@ void FlameModpackModel::fetchDetailVersions(const QString& projectId,
 	auto response = std::make_shared<QByteArray>();
 	auto* job = new NetJob(QStringLiteral("Flame::PackVersions(%1)").arg(projectId),
 						   LAUNCHER->network());
-	/* Every file in one request - the default page would show some
-	 * arbitrary window of a long-lived pack's history. No loader filter:
-	 * a modpack ships its own. */
+	/* Every file in one request: the default page shows an arbitrary window
+	 * of a long-lived pack's history. No loader filter: a modpack ships its
+	 * own. */
 	ModPlatform::VersionQuery query;
 	query.projectId = projectId;
 	job->addNetAction(Net::Download::makeByteArray(
@@ -672,9 +663,7 @@ void FlameModpackModel::fetchDetailVersions(const QString& projectId,
 
 QString FlameModpackModel::resolveIconKey(const Flame::IndexedPack& pack) const
 {
-	/* The bucket and key the widget CurseForge page (FlameModel.cpp,
-	 * FlamePage::suggestCurrent()) has always used, so a logo fetched
-	 * there already helps here. A disk-only lookup; never downloads. */
+	/* Shares the widget page's bucket and key. Disk-only; never downloads. */
 	const QString logo = pack.logoName.section(QLatin1Char('.'), 0, 0);
 	if (!logo.isEmpty() && !pack.logoUrl.isEmpty()) {
 		MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
@@ -720,11 +709,9 @@ QObject* FlameModpackModel::install(const QString& projectId,
 		return nullptr;
 	}
 
-	/* What FlamePage::suggestCurrent() builds for the widget dialog, and
-	 * NewInstanceDialog/MainWindow then name, place and start. The
-	 * import reads the pack's manifest, resolves its files (asking about
-	 * any the authors keep off third-party downloads through the UiHost)
-	 * and installs its loader. */
+	/* The import reads the manifest, resolves its files (asking through the
+	 * UiHost about those kept off third-party downloads) and installs the
+	 * loader. */
 	auto* importTask = new InstanceImportTask(QUrl(downloadUrl));
 	importTask->setTrustedSource(true);
 

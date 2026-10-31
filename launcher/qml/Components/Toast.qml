@@ -7,13 +7,9 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * A short note at the bottom of the window that goes away by itself --
- * "Instance deleted", "Copy failed: ..." -- for outcomes worth saying but
- * not worth a dialog. show() replaces whatever is showing.
- *
- * With an action ("Undo", "Show in folder") it stays twice as long, and it
- * never goes while the pointer is on it: an action pulled away mid-reach is
- * worse than none.
+ * A short note at the bottom of the window that goes away by itself. show()
+ * replaces whatever is showing. With an action ("Undo", "Show in folder") it
+ * stays twice as long, and never goes while the pointer is on it.
  */
 GlassSurface {
     id: root
@@ -23,12 +19,9 @@ GlassSurface {
     property string actionText: ""
     property var actionCallback: null
 
-    // Drives every animated property below; show()/hide() only ever flip
-    // this, so the slide+fade always run the same way in both directions.
+    // Drives every animated property below, so the slide and fade run the same way in both directions.
     property bool shown: false
 
-    // @p actionLabel/@p callback are optional -- most calls just say
-    // something happened and are left with no button at all.
     function show(message, messageTone, actionLabel, callback) {
         label.text = message
         root.tone = messageTone || "neutral"
@@ -48,16 +41,12 @@ GlassSurface {
     anchors.bottomMargin: Theme.space.xl
     width: Math.min(row.implicitWidth + Theme.space.lg * 2, parent.width - Theme.space.xxl * 2)
     height: Theme.control.heightLg
-    // A popup: the glass treatment and a menu's soft shadow. The tone shows
-    // in the icon alone, not in a coloured stripe down one side.
     radius: Theme.radius.lg
     level: Theme.elevation.md
     opacity: shown ? 1 : 0
     visible: opacity > 0
     z: 1000
 
-    // Slides up out of the bottom margin as it fades in, and back down as
-    // it fades out.
     transform: Translate {
         y: root.shown ? 0 : Theme.space.md + root.height * 0.15
         Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }

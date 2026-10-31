@@ -8,21 +8,10 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Browse modpacks and install them as new instances, without leaving the
- * main window, from Modrinth, CurseForge, FTB, ATLauncher or Technic -- a
- * provider drop-down lists whichever of them the shell hands this page a
- * model for. One toolbar row and a table of results (ModpackCard rows), as
- * on Modrinth and in the CurseForge app. A pack exported from anywhere else can still be imported
- * from its .zip via the New instance dialog's Import mode.
- *
- * `model` is the shell's ModrinthModpackModel; the others are
- * FlameModpackModel, FtbModpackModel, AtlModpackModel and
- * TechnicModpackModel. All share the same properties, invokables and row
- * roles, so everything below works on `active`, whichever the switch
- * picked -- query/loader/sort in, search()/fetchMore() to run, rows out,
- * plus a lazily loaded `detail`. Each provider keeps its own results.
- * Filters a provider cannot answer (a loader on ATLauncher or Technic, a
- * sort on Technic) are left out rather than shown doing nothing.
+ * Browse modpacks and install them as new instances: a provider drop-down (Modrinth, CurseForge, FTB,
+ * ATLauncher, Technic) over a toolbar and a table of ModpackCard rows. The provider models share
+ * properties, invokables and row roles, so everything works on `active`. Filters a provider cannot
+ * answer are left out.
  */
 Item {
     id: root
@@ -36,7 +25,6 @@ Item {
     property var technicModel: null
     property string provider: "modrinth"
 
-    // Every provider the shell has a model for, in the switch's order.
     readonly property var providers: [
         { value: "modrinth", label: "Modrinth", model: root.model },
         { value: "curseforge", label: "CurseForge", model: root.curseForgeModel },
@@ -45,15 +33,12 @@ Item {
         { value: "technic", label: "Technic", model: root.technicModel }
     ].filter((p) => !!p.model)
     readonly property var current: root.providers.find((p) => p.value === root.provider) || root.providers[0] || null
-    // The model the page is showing.
     readonly property var active: root.current ? root.current.model : null
     readonly property string providerName: root.current ? root.current.label : "Modrinth"
     readonly property bool keyMissing: !!root.active && root.active.keyMissing === true
     // ATLauncher and Technic say nothing about loaders; Technic has no sorts.
     readonly property bool loaderFilterAvailable: root.provider !== "atlauncher" && root.provider !== "technic"
-    // Modrinth installs through the shell; the other models install
-    // themselves (their TaskWatchers are parented to the model, so C++
-    // owns them).
+    // Modrinth installs through the shell; the other models install themselves (C++ owns their TaskWatchers).
     readonly property var activeInstaller: root.provider === "modrinth"
         ? root.installer
         : function (projectId, versionId, name, group) { return root.active.install(projectId, versionId, name, group) }
@@ -62,23 +47,17 @@ Item {
 
     property var openedPack: null
 
-    // The same page frame as Library: content stops at
-    // Theme.layout.maxContentWidth and centres on a wide window, under the
-    // TopBar title that follows the same rule.
     readonly property int pagePadding: Theme.space.xl + Theme.space.xs
     readonly property int emptyStateWidth: 400
     readonly property int contentWidth: Math.max(0, Math.min(width - pagePadding * 2, Theme.layout.maxContentWidth))
     readonly property int contentX: Math.max(pagePadding, Math.round((width - contentWidth) / 2))
 
-    // The toolbar's sizes: the boxes keep a readable width and the search
-    // field takes the rest; on a narrow page the boxes step down first, so
-    // the field keeps room for its placeholder.
+    // On a narrow page the boxes step down first so the search field keeps room for its placeholder.
     readonly property bool narrowToolbar: root.contentWidth < 820
     readonly property int providerWidth: root.narrowToolbar ? 124 : 150
     readonly property int sortWidth: root.narrowToolbar ? 164 : 190
     readonly property int searchMinWidth: 160
     readonly property int filterPanelWidth: 240
-    // Placeholder rows while the first page loads.
     readonly property int skeletonRows: 6
 
     readonly property var loaders: [
@@ -89,7 +68,6 @@ Item {
         { value: "quilt", label: "Quilt" }
     ]
 
-    // Opens the index-th result as if it were clicked.
     function openResult(index) {
         var item = resultsRepeater.itemAt(index)
         if (item)
@@ -102,9 +80,8 @@ Item {
             root.active.loadDetail(pack.projectId)
     }
 
-    // The providers a search has been asked of, so "nothing found" is
-    // never shown for a search that has not happened. Replaced, never
-    // changed in place, so bindings see it.
+    // The providers a search has been asked of, so "nothing found" never shows for a search that has not
+    // happened. Replaced, never changed in place, so bindings see it.
     property var searchedProviders: []
     readonly property bool searched: root.searchedProviders.indexOf(root.provider) >= 0
 
@@ -116,9 +93,7 @@ Item {
         root.active.search()
     }
 
-    // Switches provider, carrying the search words and loader across, and
-    // searches only if the other provider's results do not already answer
-    // them.
+    // Carries the search words and loader across; searches only if the other provider's results do not answer them.
     function setProvider(value) {
         if (value === root.provider)
             return
@@ -135,15 +110,11 @@ Item {
             root.runSearch()
     }
 
-    // Whether this is the page on screen. Main.qml binds it to its
-    // PageSlot's StackLayout.isCurrentItem: the page itself sits in that
-    // Loader, not in the StackLayout, so its own attached one never turns
-    // true. Not `visible`, which can still be true at Component.onCompleted
-    // before StackLayout's next polish hides the pages not shown.
+    // Main.qml binds this to its PageSlot's StackLayout.isCurrentItem: the page sits in a Loader, so its own
+    // attached one never turns true. Not `visible`, which can still be true at Component.onCompleted.
     property bool shown: false
 
-    // First search when the page is first shown -- not at startup, so
-    // opening the launcher never talks to Modrinth on its own.
+    // Searches on first show, not at startup, so opening the launcher never talks to Modrinth on its own.
     function searchIfFirstShown() {
         if (root.shown && !root.searched)
             runSearch()
@@ -152,7 +123,6 @@ Item {
     onModelChanged: searchIfFirstShown()
     Component.onCompleted: searchIfFirstShown()
 
-    // Typing searches once the user pauses, not per keystroke.
     Timer {
         id: debounce
         interval: 350
@@ -168,25 +138,17 @@ Item {
         anchors.fill: parent
         currentIndex: root.openedPack ? 1 : 0
 
-        // Results
         ColumnLayout {
             spacing: Theme.space.lg
 
-            // Where, what, in which order, narrowed how -- one row at every
-            // width, the same order as Add content's (ContentBrowserView):
-            // provider, search, sort, Filters; Import at the row's end, the
-            // spot Library's "New instance" has. The search field gives way
-            // first.
             RowLayout {
                 id: toolbar
-                // The shell's panel adds no padding; the page pads itself.
                 Layout.topMargin: Theme.space.xl
                 Layout.leftMargin: root.contentX
                 Layout.preferredWidth: root.contentWidth
                 Layout.maximumWidth: root.contentWidth
                 spacing: Theme.space.md
 
-                // Where to browse; only once there is somewhere else.
                 ComboBox {
                     id: providerBox
                     Layout.preferredWidth: root.providerWidth
@@ -214,15 +176,12 @@ Item {
                 ComboBox {
                     id: sortBox
                     Layout.preferredWidth: root.sortWidth
-                    // One sort is no choice (Technic).
                     visible: count > 1
                     model: root.active && root.active.sortOptions ? root.active.sortOptions : []
                     textRole: "label"
                     valueRole: "id"
                     Accessible.name: qsTr("Sort modpacks by")
-                    // Each provider has its own sorts and its own pick;
-                    // re-read once the box has the new provider's entries
-                    // (indexOfValue() needs them in place).
+                    // Re-read once the box has the new provider's entries; indexOfValue() needs them.
                     function syncSort() {
                         currentIndex = root.active ? Math.max(0, indexOfValue(root.active.sort)) : 0
                     }
@@ -240,8 +199,6 @@ Item {
                     }
                 }
 
-                // The loader, behind Filters as on Add content -- one
-                // pattern for one kind of choice, not a second pill bar.
                 Button {
                     id: filtersButton
                     visible: root.loaderFilterAvailable
@@ -278,10 +235,8 @@ Item {
                                     readonly property bool current: !!root.active && root.active.loader === modelData.value
                                     Layout.fillWidth: true
                                     text: modelData.label
-                                    // Checked follows the provider's own
-                                    // loader (each provider keeps its own); a
-                                    // click only asks, and puts the binding
-                                    // it breaks back.
+                                    // Checked follows the provider's loader; a click only asks, and restores the
+                                    // binding it breaks.
                                     autoExclusive: false
                                     checked: loaderRadio.current
                                     onClicked: {
@@ -308,7 +263,6 @@ Item {
                 }
             }
 
-            // Results: a list of cards (ModpackCard), like Modrinth App's.
             Flickable {
                 id: flick
                 Layout.fillWidth: true
@@ -327,8 +281,6 @@ Item {
                 readonly property int placeholderRows: root.active && root.active.searching
                                                        ? (root.active.count === 0 ? root.skeletonRows : 1) : 0
 
-                // One card per pack with a 12px gap, as Modrinth App
-                // lists its search results.
                 Column {
                     id: content
                     x: root.contentX
@@ -359,9 +311,6 @@ Item {
                         }
                     }
 
-                    // Shimmering cards while the first page is still
-                    // loading, or one trailing card while a further page
-                    // is being fetched -- never a bare spinner.
                     Repeater {
                         model: flick.placeholderRows
                         delegate: ModpackCard {
@@ -373,7 +322,6 @@ Item {
             }
         }
 
-        // Detail
         ModpackDetail {
             pack: root.openedPack || ({})
             detail: root.active ? root.active.detail : null
@@ -388,8 +336,6 @@ Item {
         }
     }
 
-    // The results' last visible row fades out at the play bar instead of
-    // being cut (the detail view has its own).
     ScrollFade {
         anchors.left: parent.left
         anchors.right: parent.right
@@ -411,9 +357,6 @@ Item {
         actionIcon: "refresh"
         onActionTriggered: root.runSearch()
 
-        // The same plain line icon Library's empty state uses: a search
-        // glyph for "nothing matched", the warning glyph for a failed
-        // request -- that is a fault, not an empty result.
         MeshIcon {
             iconName: root.active && root.active.error.length > 0 ? "alert-triangle" : "search"
             size: 40
@@ -421,9 +364,7 @@ Item {
         }
     }
 
-    // A build without a CurseForge API key cannot ask CurseForge anything;
-    // say so rather than show a failed search. (Only CurseForge needs a
-    // key.)
+    // A build without a CurseForge API key cannot ask CurseForge anything.
     EmptyState {
         anchors.centerIn: parent
         width: Math.min(parent.width - root.pagePadding * 2, root.emptyStateWidth)

@@ -77,7 +77,6 @@ BaseVersionList::RoleList BaseVersionList::providesRoles() const
 
 int BaseVersionList::rowCount(const QModelIndex&) const
 {
-	// Return count
 	return count();
 }
 

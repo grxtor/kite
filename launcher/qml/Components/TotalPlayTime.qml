@@ -7,17 +7,13 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * "179 h 41 min played" behind the hourglass (the play-time glyph
- * everywhere): the QML counterpart of the classic window's status-bar total,
- * as a quiet fact in the Library's title row (TopBar's showPlayTime). Shown
- * only while Settings > Minecraft > "Show total play time" is on and
- * something has been played, so a page can drop it in without checking
- * either.
+ * "179 h 41 min played" behind the hourglass: a quiet fact in the Library's title
+ * row (TopBar's showPlayTime). Shown only while Settings > Minecraft > "Show
+ * total play time" is on and something has been played.
  */
 Row {
     id: root
 
-    // Whether the page wants it at all (TopBar shows it on the Library).
     property bool wanted: true
     readonly property string total: LauncherStore.playTime
                                     ? Format.playTime(LauncherStore.playTime.totalSeconds) : ""

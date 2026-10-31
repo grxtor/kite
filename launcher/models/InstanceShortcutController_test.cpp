@@ -237,8 +237,7 @@ class InstanceShortcutControllerTest : public QObject
 
 int main(int argc, char* argv[])
 {
-	// QIcon and QImage need a QGuiApplication; offscreen keeps this runnable
-	// on a headless runner, as in GameTextureIcons_test.cpp.
+	// QIcon and QImage need a QGuiApplication; offscreen keeps this runnable headless.
 	qputenv("QT_QPA_PLATFORM", "offscreen");
 
 	QGuiApplication app(argc, argv);

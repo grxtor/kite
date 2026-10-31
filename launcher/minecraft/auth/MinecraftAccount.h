@@ -44,25 +44,14 @@ class MinecraftAccount;
 typedef shared_qobject_ptr<MinecraftAccount> MinecraftAccountPtr;
 Q_DECLARE_METATYPE(MinecraftAccountPtr)
 
-/**
- * A profile within someone's Mojang account.
- *
- * Currently, the profile system has not been implemented by Mojang yet,
- * but we might as well add some things for it in Kite right now so
- * we don't have to rip the code to pieces to add it later.
- */
+/** A profile within a Mojang account. */
 struct AccountProfile {
 	QString id;
 	QString name;
 	bool legacy;
 };
 
-/**
- * Object that stores information about a certain Mojang account.
- *
- * Said information may include things such as that account's username, client
- * token, and access token if the user chose to stay logged in.
- */
+/** Stores information about a certain Mojang account. */
 class MinecraftAccount : public QObject, public Usable
 {
 	Q_OBJECT
@@ -118,18 +107,17 @@ class MinecraftAccount : public QObject, public Usable
 
 	/*!
 	 * The UUID the game is launched with (--uuid, AuthSession::uuid): the
-	 * Microsoft profile's id, or for an offline account uuidFromUsername()
-	 * of its name -- the same every launch, so the player's advancements,
-	 * statistics and pets in a world stay theirs, and the same id an
-	 * offline-mode server gives that name. Not internalId(): that is the
-	 * account list's own bookkeeping and is made up afresh every run.
+	 * Microsoft profile's id, or for an offline account uuidFromUsername() of
+	 * its name. Stable across launches, so advancements, statistics and pets
+	 * stay the player's, and the same id an offline-mode server gives that
+	 * name. Not internalId(), which is made up afresh every run.
 	 */
 	QString gameUuid() const;
 
 	/*!
-	 * Java's UUID.nameUUIDFromBytes("OfflinePlayer:" + @p username) -- the
-	 * version 3 UUID vanilla gives an offline player -- as 32 hex digits
-	 * without dashes, the form profile ids take.
+	 * Java's UUID.nameUUIDFromBytes("OfflinePlayer:" + @p username), the
+	 * version 3 UUID vanilla gives an offline player, as 32 hex digits without
+	 * dashes.
 	 */
 	static QString uuidFromUsername(const QString& username);
 
@@ -180,9 +168,8 @@ class MinecraftAccount : public QObject, public Usable
 
 	void fillSession(AuthSessionPtr session);
 
-	/// Whether an offline account's launch may download the game's files:
-	/// the user asked for an online launch and the network is not known to
-	/// be down. See AuthSession::fetch_game_files.
+	/// Whether an offline account's launch may download the game's files: the
+	/// user asked for an online launch and the network is not known to be down.
 	static bool shouldFetchGameFiles(
 		bool wantsOnline, QNetworkInformation::Reachability reachability);
 	/// The platform's current view of the network (Unknown where it has none).
@@ -194,9 +181,7 @@ class MinecraftAccount : public QObject, public Usable
 	}
 
   signals:
-	/**
-	 * This signal is emitted when the account changes
-	 */
+	/** Emitted when the account changes. */
 	void changed();
 
 	void activityChanged(bool active);

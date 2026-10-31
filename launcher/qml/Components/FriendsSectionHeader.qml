@@ -5,12 +5,10 @@ import QtQuick
 import Kite.Theme
 
 /*
- * A small caps caption over a group of people ("PLAYING — 2"), the one use
- * of Theme's overline. The caller gives the words already in capitals, so a
+ * A small caps caption over a group of people ("PLAYING — 2"). The caller gives the words already in capitals, so a
  * language's own rules for them (Turkish dotted İ) are the translator's.
  */
 Text {
-    // The caption sits over its rows' heads, not their hover fill.
     leftPadding: Theme.space.lg
     topPadding: Theme.space.sm
     bottomPadding: Theme.space.xs

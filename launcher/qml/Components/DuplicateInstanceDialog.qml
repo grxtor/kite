@@ -8,20 +8,13 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * "Duplicate…": a copy of one instance under a new name, with the copy
- * dialog's choices -- its worlds, its play time, its icon. The QML
- * replacement for CopyInstanceDialog; the copy itself is
- * LibraryController.duplicate() (core), so it lands in the same group as
- * the original.
- *
- * Set targetId, targetGroup, sourceName and iconKey, then open(). The copy
- * runs after the dialog closes; `started(name, watcher)` hands its
- * TaskWatcher to whoever reports how it went.
+ * "Duplicate…": a copy of one instance under a new name, with the choices of its worlds, play time and icon. Set
+ * targetId, targetGroup, sourceName and iconKey, then open(). The copy (LibraryController.duplicate(), in the same
+ * group) runs after the dialog closes; `started(name, watcher)` hands on its TaskWatcher.
  */
 Dialog {
     id: root
 
-    // LibraryController.
     property var library: null
     property string targetId
     property string targetGroup
@@ -50,10 +43,7 @@ Dialog {
     anchors.centerIn: parent
     width: Math.min(root.dialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.dialogWidth)
     modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
     topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
     bottomPadding: Theme.space.sm
     closePolicy: Popup.CloseOnEscape
     title: qsTr("Duplicate “%1”").arg(root.sourceName)
@@ -77,7 +67,6 @@ Dialog {
             Layout.fillWidth: true
             spacing: Theme.space.md
 
-            // The copy's icon; a click picks another.
             AbstractButton {
                 id: iconButton
                 Layout.preferredWidth: root.iconTileSize
@@ -93,7 +82,6 @@ Dialog {
                     iconPicker.current = root.iconKey
                     iconPicker.open()
                 }
-                // The copy's icon, on the tile every instance icon sits on.
                 background: InstanceTile {
                     radius: Theme.radius.sm
                     borderColor: iconButton.hovered ? Theme.palette.borderStrong : Theme.palette.border
@@ -132,7 +120,6 @@ Dialog {
             spacing: 0
             CheckBox {
                 id: savesBox
-                // Box edge on the content edge, under the icon.
                 leftPadding: 0
                 text: qsTr("Copy worlds")
             }

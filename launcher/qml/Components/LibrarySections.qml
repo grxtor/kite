@@ -6,20 +6,11 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The library's instances: every group as its own collapsible section
- * (InstanceSection), the instance ⋯ menu (InstanceMenu), the group dialogs
- * and the Export/Create shortcut flows. It has no scrolling or page frame
- * of its own, so two pages can share it: LibraryPage puts it in a Flickable
- * on its own, and HomePage puts it under "Continue playing" in the same
- * Flickable.
- *
- * Its height is its content's. The host hands it the Flickable it sits in,
- * so dragging an instance towards the edge of the view scrolls that view.
- *
- * Without `sectionModelFor` there are no per-group models to show, and the
- * whole (search-filtered) `instanceModel` is one section without a header --
- * as it is when the library is set to show no groups (`instanceModel`'s
- * `grouped` off, which orders it without them).
+ * The library's instances: every group as a collapsible section, the instance
+ * ⋯ menu, the group dialogs and the Export/Create shortcut flows. No scrolling
+ * of its own, so LibraryPage and HomePage can share it; its height is its
+ * content's. Without `sectionModelFor`, `instanceModel` is one section
+ * without a header.
  */
 Item {
     id: root
@@ -29,23 +20,16 @@ Item {
     property var sectionModelFor: null
     property string searchText: ""
     property string selectedId: ""
-    // "grid" (InstanceCard tiles) or "list" (dense InstanceListRow rows).
     property string viewMode: "grid"
-    // The view this sits in, for scrolling while an instance is dragged.
     property Flickable flickable: null
 
-    // The ⋯ menu's Play options (LaunchOptionsMenu.qml): what it offers comes
-    // from launchOptionsFor(id) -- Main.qml's launchOptions() -- and its
-    // choices leave as the signals below.
+    // The ⋯ menu's Play options (LaunchOptionsMenu.qml); choices leave as the signals below.
     property var launchOptionsFor: null
-    // id -> export / shortcut controller (QmlShell, set in Main.qml). The ⋯
-    // menu offers "Export…" and "Create shortcut…" once these are set.
+    // id -> export / shortcut controller; the ⋯ menu offers "Export…" and "Create shortcut…" once set.
     property var exportControllerFor: null
     property var shortcutControllerFor: null
-    // LibraryController (QmlShell's `library`): group management, folds
-    // that persist, dragging an instance onto a group, the instance's
-    // folders and Duplicate with options. Until it is set the sections keep
-    // session-only folds and Duplicate goes out as duplicateRequested.
+    // LibraryController: group management, persistent folds, group drops, folders and Duplicate
+    // with options. Without it folds are session-only and Duplicate goes out as duplicateRequested.
     property var library: null
 
     signal selectRequested(string id)
@@ -64,12 +48,8 @@ Item {
     signal performanceChosen(string id, bool enabled)
     signal navigateRequested(string target)
 
-    // Modrinth App's grid: a 12px gap between cards.
     readonly property int gutter: Theme.space.md
-    // Cards grow to fill the row between these, adding a column once there
-    // is room for one more at the minimum -- so the row is always full
-    // width, never a strip of small cards with the rest of it empty.
-    // Modrinth's are 160-180 wide, mostly their picture.
+    // Cards grow to fill the row, adding a column once one more fits at this minimum.
     readonly property int minCardWidth: 168
     readonly property int maxCardWidth: 200
     readonly property int columns: root.columnsFor(root.width)
@@ -80,9 +60,8 @@ Item {
                                     && !(root.instanceModel && root.instanceModel.grouped === false)
     readonly property var groups: root.instanceModel && root.instanceModel.groups ? root.instanceModel.groups : []
 
-    // An instance being dragged to another group: the host's view holds
-    // still under it (see `flickable`), and scrolls when the pointer nears
-    // its top or bottom edge so a group out of view can still be reached.
+    // An instance is being dragged to another group: the host's view holds still and scrolls near
+    // its top or bottom edge.
     property bool dragging: false
     property real dragSceneY: 0
     readonly property int autoScrollEdge: Theme.space.xxl * 2
@@ -98,8 +77,7 @@ Item {
         return columns
     }
 
-    // Which groups are folded away: the library's, kept in the group file,
-    // or a session-only list without one.
+    // Folded groups: the library's, kept in the group file, or session-only without one.
     property var sessionCollapsed: []
     readonly property var collapsedGroups: root.library ? root.library.collapsedGroups : root.sessionCollapsed
     function setCollapsed(group, collapsed) {
@@ -131,12 +109,8 @@ Item {
                 section.openGroupMenu()
         }
     }
-    // The instance ⋯ menu for @p id, under @p anchor -- the cards' own, and
-    // HomePage's "Continue playing" rows', which pass the @p name and
-    // @p iconKey they already show for when there is no `library` to
-    // describe the instance.
-    // Without an anchor (a review snapshot has no mouse to open it at) it
-    // opens at the top-left of the cards.
+    // The instance ⋯ menu for @p id under @p anchor; `name`/`iconKey` are used when there is no
+    // `library` to describe the instance. Without an anchor it opens at the top-left of the cards.
     function openInstanceMenu(id, running, anchor, name, iconKey) {
         var info = root.library ? root.library.describe(id) : ({})
         instanceMenu.openFor(id, !!running, info.name || name || "", info.iconKey || iconKey || "",
@@ -159,9 +133,8 @@ Item {
                 required property string modelData
                 width: sectionsColumn.width
                 title: modelData.length > 0 ? modelData : qsTr("Ungrouped")
-                // Ungrouped instances get no header, as in MultiMC and
-                // Prism: a named "Ungrouped" group read as one more group
-                // the user had made.
+                // Ungrouped instances get no header: a named "Ungrouped" group read as one more
+                // user group.
                 showHeader: modelData.length > 0
                 group: modelData
                 model: root.sectionModelFor(modelData)
@@ -170,11 +143,9 @@ Item {
                 gutter: root.gutter
                 selectedId: root.selectedId
                 viewMode: root.viewMode
-                // Without a header there is nothing to unfold it with.
                 collapsed: !root.searching && modelData.length > 0 && root.collapsedGroups.indexOf(modelData) >= 0
                 onToggleRequested: root.setCollapsed(modelData, root.collapsedGroups.indexOf(modelData) < 0)
                 manageable: !!root.library && modelData.length > 0
-                // Somewhere else to drop it only with two groups or more.
                 dragEnabled: !!root.library && root.groups.length > 1
                 onRenameGroupRequested: (group) => {
                     groupRenameDialog.group = group
@@ -196,7 +167,6 @@ Item {
             }
         }
 
-        // No per-group models: every instance, in one section.
         InstanceSection {
             visible: !root.grouped
             width: sectionsColumn.width
@@ -235,7 +205,6 @@ Item {
         onNavigateRequested: (target) => root.navigateRequested(target)
     }
 
-    // "Export…" and "Create shortcut…": the dialogs and their toast.
     InstanceExportFlows {
         id: flows
         exportControllerFor: root.exportControllerFor

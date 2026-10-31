@@ -29,9 +29,9 @@
 
 #include "ModDetails.h"
 
-/* The readers of the individual metadata formats, and what more than one of
- * them needs. Private to the ModMetadata*.cpp files: ModMetadataReader.h is
- * what the rest of the program sees. */
+// The readers of the individual metadata formats, and what more than one needs.
+// Private to the ModMetadata*.cpp files; the rest of the program sees
+// ModMetadataReader.h.
 namespace ModMetadata::detail
 {
 	// What ModDetails::loaders and ModDependency::loader call each loader.
@@ -42,8 +42,8 @@ namespace ModMetadata::detail
 	inline const QString kLoaderNeoForge = QStringLiteral("neoforge");
 	inline const QString kLoaderLiteLoader = QStringLiteral("liteloader");
 
-	/* Another id a file answers to. One id for one file: the first
-	 * declaration wins, and a mod listed twice is still one mod. */
+	// Another id a file answers to. One id for one file: the first declaration
+	// wins and a mod listed twice is still one mod.
 	inline void addProvided(ModDetails& details, const ProvidedMod& mod)
 	{
 		if (mod.id.isEmpty()) {

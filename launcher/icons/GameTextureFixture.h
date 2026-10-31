@@ -29,11 +29,9 @@
 #include "FileSystem.h"
 #include "MMCZip.h"
 
-/*
- * For tests only: client jars built at runtime out of generated PNGs, laid
+/* For tests only: client jars built at runtime from generated PNGs, laid
  * out where the launcher keeps a downloaded one. No Mojang texture is
- * involved anywhere -- only the paths are the game's.
- */
+ * involved; only the paths are the game's. */
 namespace GameTextureFixture
 {
 	inline QImage filled(int width, int height, QRgb colour)
@@ -51,8 +49,8 @@ namespace GameTextureFixture
 	}
 
 	/* A client jar for @p version under @p librariesDir holding @p textures,
-	 * each under the game's texture root at the path it is paired with.
-	 * False when it could not be written. */
+	 * each at its paired path under the texture root. False if it could not
+	 * be written. */
 	inline bool writeJar(const QString& librariesDir, const QString& version,
 						 const QList<QPair<QString, QImage>>& textures)
 	{
@@ -62,7 +60,6 @@ namespace GameTextureFixture
 		}
 		QFile::remove(path);
 		MMCZip::ZipWriter jar(path);
-		// Something besides textures, as a real jar has.
 		bool written =
 			jar.open() &&
 			jar.addFile(QStringLiteral("net/minecraft/client/Main.class"),

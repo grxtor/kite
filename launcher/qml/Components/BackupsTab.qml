@@ -9,11 +9,8 @@ import QtQuick.Dialogs
 import Kite.Theme
 
 /*
- * Instance backups (zip snapshots of the whole instance folder) -- the
- * widget-free replacement for BackupPage. Create/restore/export/import all
- * run off the GUI thread behind a TaskWatcher (see BackupController), so
- * this tab shows one progress row for whichever of them is currently in
- * flight rather than blocking.
+ * Instance backups (zip snapshots of the instance folder). Create/restore/export/import run off the GUI thread
+ * behind a TaskWatcher (BackupController); one progress row shows whichever is in flight.
  */
 Item {
     id: root
@@ -24,29 +21,22 @@ Item {
     readonly property int count: list.count
     readonly property bool running: !!root.controller && root.controller.running
 
-    // The TaskWatcher of whichever action is currently running, if any.
     property var watcher: null
     readonly property bool busy: !!root.watcher && root.watcher.running
-    // Set when an action call refuses to even start (restoreBackup()
-    // returning null because the instance is running) - the watcher stays
-    // null in that case, so this is the only way the tab has to tell the
-    // user why nothing happened.
+    // Set when an action refuses to start (restoreBackup() returns null while the instance runs): the watcher stays
+    // null, so this is how the tab says why nothing happened.
     property string actionError: ""
 
-    // BackupController's timestampText is "yyyy-MM-dd HH:mm:ss" local time;
-    // read back into a date so it reads like every other date in the app.
+    // timestampText is "yyyy-MM-dd HH:mm:ss" local time; read back into a date.
     function backupAge(timestampText) {
         var ms = new Date(String(timestampText).replace(" ", "T")).getTime()
         return isNaN(ms) ? timestampText : Format.lastPlayed(ms)
     }
-    // Whether a backup was made without a label, and so is named after its
-    // creation time ("2026-09-18_09-00-00.zip").
+    // Whether a backup has no label and is named after its creation time ("2026-09-18_09-00-00.zip").
     function namedByTime(name) {
         return /^\d{4}-\d{2}-\d{2}[_ T-]\d{2}[-.:]\d{2}[-.:]\d{2}$/.test(String(name).replace(/\.zip$/i, ""))
     }
-    // What a backup is called in the list. One named after its creation time
-    // reads as that date and time instead of a file name. A labelled one
-    // keeps its label; either way ".zip" is not part of the name.
+    // One named after its creation time reads as that date; a labelled one keeps its label; ".zip" is never shown.
     function backupTitle(name, timestampText) {
         var bare = String(name).replace(/\.zip$/i, "")
         if (!root.namedByTime(name))
@@ -61,8 +51,7 @@ Item {
         restoreConfirm.open()
     }
 
-    // A different instance's controller: whatever this tab was doing
-    // belonged to the previous one.
+    // A different instance's controller: what this tab was doing belonged to the previous one.
     onControllerChanged: {
         root.watcher = null
         root.actionError = ""
@@ -81,7 +70,6 @@ Item {
                 icon.source: Icons.url("download")
                 onClicked: importDialog.open()
             }
-            // Secondary: the play bar's Play is this page's primary action.
             Button {
                 enabled: !root.busy
                 text: qsTr("Create backup")
@@ -137,7 +125,6 @@ Item {
             spacing: Theme.space.sm
             boundsBehavior: Flickable.StopAtBounds
             model: root.model
-            // Overlays the rows' right edge rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
             delegate: TabListRow {
@@ -149,8 +136,6 @@ Item {
 
                 width: list.width
                 title: root.backupTitle(row.name, row.timestampText)
-                // When the title is already the date, only the size is left
-                // to say.
                 meta: root.namedByTime(row.name) ? row.sizeText
                                                  : [root.backupAge(row.timestampText), row.sizeText].join("  •  ")
                 thumb.glyph: "archive"
@@ -196,7 +181,6 @@ Item {
         }
     }
 
-    // Rows fade out at the fold instead of being sliced by the play bar.
     ScrollFade {
         anchors.left: parent.left
         anchors.right: parent.right

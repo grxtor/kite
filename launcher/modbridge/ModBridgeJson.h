@@ -39,7 +39,6 @@ namespace ModBridgeJson
 	/// What the bridge serves of the friends data: a snapshot of
 	/// FriendsController (friends in FriendsDisplay::friendMap's shape).
 	struct FriendsView {
-		/// Changes whenever anything served here does.
 		qint64 rev = 0;
 		bool enabled = false;
 		/// "off" | "signedOut" | "connecting" | "ready" | "error"
@@ -51,21 +50,18 @@ namespace ModBridgeJson
 		QVariantList friends;
 	};
 
-	/// The game a session belongs to.
 	struct InstanceInfo {
 		QString id;
 		QString name;
 		QString version;
 	};
 
-	/// The answer to /v1/join.
 	struct JoinAnswer {
 		bool ok = false;
 		/// "unknown_friend" | "offline" | "not_joinable" | "friends_off"
 		QString reason;
 		QString host;
 		int port = 0;
-		/// The friend's Minecraft version.
 		QString version;
 		/// It is the one this game runs.
 		bool versionMatch = false;
@@ -80,7 +76,6 @@ namespace ModBridgeJson
 						 bool friendsEnabled, const QString& friendsState);
 	QByteArray friendsBody(const FriendsView& view);
 
-	/// The uuid (with dashes) of {"uuid": "..."}; either spelling is read.
 	std::optional<QString> parseJoinUuid(const QByteArray& body);
 	/// Whether @p uuid is a friend who can be followed, from @p view; the
 	/// friend's version is compared with @p gameVersion.

@@ -8,75 +8,27 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The Home page, Kite's own way in: the instance to play, big, with the
- * page's one primary Play (HomeHero, Lunar's single dominant launch); the
- * other instances to get back to under it ("Continue playing",
- * HomeContinuePlaying); then the whole Library, its toolbar and every
- * group -- all in one scrolling column. Beside them, on a wide enough
- * window, a side panel (HomeSidePanel): "Set up Kite" and Kite's news. The
- * default start page and the sidebar's first item. The play bar shows
- * here too (Main.qml's dockVisibleFor), but only once the hero's Play has
- * scrolled away (heroPlayInView), so Play stays in reach without showing
- * twice.
- *
- * The Continue playing rows' Plays are secondary (QuietPlayButton), and a
- * row's ⋯ opens the same instance menu as the library's cards.
- *
- * LOOKS. This page is the router for Theme.look: "classic" is the page
- * above; "stage" (Sahne) bleeds the hero across the top as a stage with the
- * recent worlds on it, lays "Continue playing" as cards, drops the side
- * column and puts "Set up Kite" and the news in sections of their own;
- * "calm" (Sade) has no boxes -- an open hero, hairline rows, small labels
- * and a side panel with a hairline; "night" (Gece) floats glass panes on the
- * night sky Main.qml draws, so this page paints no background of its own.
- * Every look's pieces are components of their own (HomeHero picks the hero's
- * view, HomeContinuePlaying the rows'); this file only places them.
- *
- * LIBRARY. LibrarySections, the very sections the Library page shows, under
- * a toolbar of its own (HomeLibraryToolbar): search, sort, grid or list,
- * New instance. The search filters `instanceModel` -- the shell's library
- * proxy, the one every section model follows -- and is put back on it
- * whenever this page is shown again, so the Library page's own search
- * never leaves Home filtered by words it does not show.
- *
- * Everything here comes from models the shell already keeps locally, so
- * opening this page makes no network call. The page builds no models
- * itself.
+ * The Home page: hero, "Continue playing" and the library in one scrolling column, with a side panel on wide windows.
+ * Routes Theme.look ("classic", "stage", "calm", "night") to the pieces of each look; builds no models itself.
  */
 Item {
     id: root
 
-    // Most recently played instances first; never-played ones left out
-    // (QmlShell.recentModel).
+    // Most recently played first; never-played instances left out.
     property var recentModel: null
-    // The hero's instance: a model whose one row is it (QmlShell.heroModel,
-    // bound in Main.qml to the selection, else the instance played last,
-    // else the first). Until it is set the hero shows recentModel's first
-    // row.
+    // A model whose one row is the hero's instance; recentModel's first row until it is set.
     property var heroModel: null
-    // The library, search-filtered (QmlShell's instance proxy).
     property var instanceModel: null
-    // QmlShell.recentWorlds: the side panel's "Recent worlds", and the
-    // hero's "Last world".
-    // QmlShell.friends (FriendsController), or null.
+    // FriendsController, or null.
     property var friends: null
-    // Main.qml's FriendJoinFlow, which says what a friend's Join starts.
     property var joinFlow: null
-    // The friends panel on the window's right edge is out, as a strip of
-    // heads or opened out to a list: the side panel leaves the friends to
-    // it, so no friend is drawn twice side by side and the panel is not
-    // made wider by a second list of the same people.
+    // The friends panel on the right edge is out; the side panel leaves the friends to it.
     property bool friendsInPanel: false
     property var recentWorldsModel: null
-    // QmlShell.news (NewsModel): Kite's news, newest first, or null.
     property var news: null
-    // Whether a Microsoft account is signed in: "Set up Kite"'s second
-    // step.
     property bool msaSignedIn: false
 
-    // -- The library sections' inputs; the same names as LibraryPage's ----
-    // group -> that group's model (QmlShell.sectionModel). Without it the
-    // library is one grid with no group headers.
+    // group -> that group's model; without it the library is one grid with no headers.
     property var sectionModelFor: null
     property string selectedId: ""
     property var library: null
@@ -84,29 +36,18 @@ Item {
     property var exportControllerFor: null
     property var shortcutControllerFor: null
 
-    // Play and Stop (the hero's Cancel too), from the hero and the rows.
     signal launchRequested(string id)
     signal stopRequested(string id)
-    // Opens the instance page: the hero, a row, or a card's ⋯ > Open.
     signal openInstanceRequested(string id)
-    // Opens the instance page on its Worlds tab: a recent world, or the
-    // hero's last one.
     signal openInstanceWorldsRequested(string id)
-    // New instance: the toolbar, "Set up Kite" and the empty page.
     signal createRequested()
     signal discoverRequested()
-    // "Set up Kite"'s "Sign in with Microsoft".
     signal signInRequested()
-    // The Friends page, on "friends" or "requests", or "add" (the add field
-    // focused).
+    // tab: "friends", "requests" or "add".
     signal friendsRequested(string tab)
-    // Join a friend's server (a friend map).
     signal joinRequested(var friend)
-    // A Continue playing row's ⋯ (or right-click). The page already opens
-    // the library's instance menu for it; this only tells.
+    // A Continue playing row's ⋯; the page already opens the instance menu, this only tells.
     signal menuRequested(string id, Item anchor)
-    // The library's cards and their ⋯ menu, as LibraryPage's; the
-    // launch-option ones come from the hero's ▾ too.
     signal selectRequested(string id)
     signal folderRequested(string id)
     signal renameRequested(string id, string name)
@@ -120,9 +61,7 @@ Item {
     signal performanceChosen(string id, bool enabled)
     signal navigateRequested(string target)
 
-    // The library's own review routes (Main.qml's "export=", "shortcut=",
-    // "librarymenu=", "groupmenu=" and "duplicate="), for when they point
-    // here.
+    // Review routes, forwarded to the library sections.
     function exportInstance(id, format) { sections.exportInstance(id, format) }
     function createShortcut(id) { sections.createShortcut(id) }
     function openInstanceMenu(id) { sections.openInstanceMenu(id, false, null, "", "") }
@@ -130,28 +69,21 @@ Item {
     function duplicateInstance(id) { sections.duplicateInstance(id) }
     function focusSearch() { toolbar.focusSearch() }
 
-    // Kite's news as the side panel shows it: every post read off `news`,
-    // the newest one still worth showing (or null), and whether there is
-    // one.
     readonly property var newsEntries: side.newsEntries
     readonly property var featuredNews: side.featuredNews
     readonly property bool hasNews: side.hasNews
 
-    // "grid" or "list"; session-only, like LibraryPage's.
     property string viewMode: "grid"
     readonly property string searchText: toolbar.searchText
     readonly property bool searching: root.searchText.length > 0
 
-    // Whether the hero's Play is on screen: the middle of its card, where
-    // Play sits, has not scrolled away. Main.qml keeps the play bar away
-    // until it has, so one instance never shows two Plays at once.
+    // Main.qml keeps the play bar away until the hero's Play has scrolled away.
     readonly property bool heroPlayInView: hero.visible && flick.visible
                                            && flick.contentY < hero.y + hero.playCenterY
 
     readonly property string look: Theme.look
     readonly property bool isStage: root.look === "stage"
     readonly property bool isNight: root.look === "night"
-    // The page's side padding: what the looks' mockups keep.
     readonly property int stagePadding: 44
     readonly property int openPadding: 40
     readonly property int pagePadding: root.isStage ? root.stagePadding
@@ -159,15 +91,10 @@ Item {
                                      : root.openPadding
     readonly property int emptyStateWidth: 400
     readonly property int libraryCount: root.instanceModel && root.instanceModel.count !== undefined ? root.instanceModel.count : 0
-    // A search that matches nothing still has a library behind it.
     readonly property bool hasLibrary: root.libraryCount > 0 || root.searching
 
-    // Modrinth's side panel is about 300 wide; it shows only while the main
-    // column keeps at least sideMinMainWidth beside it. Gece's is a glass
-    // pane inset from the page's edges: narrower, and the main column
-    // reserves the pane and its inset on both sides, so the page's scroll
-    // bar runs in the gap before the glass instead of across it. Sahne has
-    // none (its sections are in the column).
+    // Shown only while the main column keeps sideMinMainWidth beside it. Gece's glass pane is inset,
+    // so the scroll bar runs in the gap before it.
     readonly property int sidePaneWidth: root.isNight ? 282 : 300
     readonly property int sideInset: root.isNight ? Theme.space.xl + Theme.space.xs + Theme.space.xxs : 0
     readonly property int sideWidth: root.sidePaneWidth + root.sideInset * 2
@@ -175,8 +102,6 @@ Item {
     readonly property bool showSide: !root.isStage && side.hasContent
                                      && root.width - root.sideWidth - root.pagePadding * 2 >= root.sideMinMainWidth
 
-    // The main column: the page left of the side panel, minus its padding,
-    // never wider than Theme.layout.maxContentWidth, centred.
     readonly property int mainWidth: root.showSide ? root.width - root.sideWidth : root.width
     readonly property int contentWidth: Math.max(0, Math.min(root.mainWidth - root.pagePadding * 2, Theme.layout.maxContentWidth))
     readonly property int contentX: Math.round((root.mainWidth - root.contentWidth) / 2)
@@ -202,16 +127,13 @@ Item {
 
         ScrollBar.vertical: ScrollBar {}
 
-        // Clicking the empty page clears the selection, as on Library.
         MouseArea {
             width: flick.width
             height: Math.max(flick.height, flick.contentHeight)
             onClicked: root.selectRequested("")
         }
 
-        // The hero spans the page, so a look can bleed to its edges; it
-        // keeps its own words inside the column (columnX, columnWidth) and
-        // pads its own top, since the shell's panel adds no padding.
+    // Spans the page so a look can bleed to its edges; pads its own top.
         HomeHero {
             id: hero
             x: 0
@@ -255,7 +177,6 @@ Item {
                 }
             }
 
-            // Sahne has no side column: what it holds is in sections here.
             HomeStageSections {
                 id: stageSections
                 width: parent.width
@@ -267,7 +188,6 @@ Item {
                 onSignInRequested: root.signInRequested()
             }
 
-            // -- Library ----------------------------------------------------
             Column {
                 width: parent.width
                 spacing: Theme.space.lg
@@ -327,7 +247,6 @@ Item {
                     onNavigateRequested: (target) => root.navigateRequested(target)
                 }
 
-                // A search that matched nothing, in place of the cards.
                 Item {
                     visible: root.searching && root.libraryCount === 0
                     width: parent.width
@@ -362,12 +281,9 @@ Item {
         flickable: flick
     }
 
-    // Nothing in the library yet: the way in, in the middle of the page
-    // (the side panel stays away until there is something to put in it).
     HomeEmptyState {
         x: Math.round((root.mainWidth - width) / 2)
         anchors.verticalCenter: parent.verticalCenter
-        // A readable measure for the body text; EmptyState caps it.
         width: Math.min(root.mainWidth - root.pagePadding * 2, root.emptyStateWidth)
         visible: !root.hasLibrary
         onCreateRequested: root.createRequested()
@@ -376,8 +292,7 @@ Item {
 
     HomeSidePanel {
         id: side
-        // Gece's is a glass pane as tall as what it holds, inset from the
-        // page's edges; the others run the page's full height.
+        // Gece's pane is as tall as its content and inset from the page's edges; the others run the full height.
         x: root.width - width - root.sideInset
         y: root.sideInset
         width: root.sidePaneWidth

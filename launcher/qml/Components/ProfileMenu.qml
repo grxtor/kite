@@ -8,13 +8,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The account dropdown opened from ProfileButton: who is playing, a quick
- * switch to any other signed-in account, and the account actions that used
- * to live at the foot of the sidebar. Everything that takes more than one
- * click -- signing in, adding an offline account, managing skins -- goes to
- * the Accounts page instead of repeating that flow here (see
- * openAccountsRequested()); this menu only ever does the one-click things
- * itself: switching the default account, and signing out of it.
+ * The account dropdown opened from ProfileButton: who is playing, a quick switch
+ * to another signed-in account and sign-out. Anything longer (signing in,
+ * offline accounts, skins) goes to the Accounts page (openAccountsRequested()).
  */
 Popup {
     id: root
@@ -29,10 +25,8 @@ Popup {
 
     readonly property var accounts: root.controller ? root.controller.accounts : null
 
-    // Every other account's row and shown name, plus which row is the
-    // default (for "Sign out"), gathered the same way AccountsPage finds
-    // its own hero row: a zero-size probe per row rather than paging
-    // through the model by hand.
+    // Every other account's row and shown name, plus the default row (for "Sign out"), gathered
+    // like AccountsPage finds its hero row: a zero-size probe per row.
     property var otherAccounts: []
     property int defaultRow: -1
     function rebuildAccounts() {
@@ -74,11 +68,10 @@ Popup {
         }
     }
 
-    // One size for every head here, so the names share a column; a
-    // multiple of 8, the face's own pixel grid (see PlayerHead).
+    // One size for every head so names share a column; a multiple of 8, the face's pixel grid (see
+    // PlayerHead).
     readonly property int headSize: 32
-    // Changes when the game's default skins arrive, so a skinless account's
-    // head is fetched again (AccountsController.defaultSkinsRevision).
+    // Changes when the default skins arrive, so a skinless account's head is fetched again.
     readonly property int faceRevision: root.controller && root.controller.defaultSkinsRevision !== undefined
                                         ? root.controller.defaultSkinsRevision : 0
 
@@ -92,13 +85,10 @@ Popup {
         RowLayout {
             Layout.fillWidth: true
             Layout.margins: Theme.space.sm
-            // The same inset as the account rows below (ItemDelegate's
-            // horizontal padding), so avatars and names share one column.
             Layout.leftMargin: Theme.space.md
             Layout.rightMargin: Theme.space.md
             spacing: Theme.space.sm
 
-            // The player's head, as on the button that opened this menu.
             PlayerHead {
                 size: root.headSize
                 source: root.avatarSource
@@ -132,9 +122,6 @@ Popup {
 
         MenuSeparator { Layout.fillWidth: true; visible: root.otherAccounts.length > 0 }
 
-        // The other accounts, one click to switch to -- each row is the
-        // player's head and name, which says what it does without a caps
-        // "SWITCH ACCOUNT" overline above it.
         Repeater {
             model: root.otherAccounts
             delegate: ItemDelegate {
@@ -148,9 +135,8 @@ Popup {
                     root.close()
                 }
 
-                // The row's own head (PlayerHead), not ItemDelegate's
-                // alpha-recoloured icon slot -- a skin texture must never be
-                // tinted like a line icon.
+                // PlayerHead, not ItemDelegate's alpha-recoloured icon slot: a skin texture must
+                // never be tinted like a line icon.
                 contentItem: RowLayout {
                     spacing: Theme.space.sm
 
@@ -170,11 +156,8 @@ Popup {
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.body.pixelSize
                     }
-                    // Defensive only: otherAccounts excludes the default row
-                    // by construction (see rebuildAccounts), so this never
-                    // shows today -- but if it is ever listed, it should
-                    // read as the active one rather than an identical,
-                    // ambiguous row.
+                    // Defensive: otherAccounts excludes the default row, but if it is ever listed
+                    // it should read as the active one.
                     MeshIcon {
                         visible: switchRow.modelData.isDefault === true
                         iconName: "check"

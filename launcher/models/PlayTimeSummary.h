@@ -22,13 +22,9 @@
 
 #include <QObject>
 
-/*
- * The launcher's total play time across every instance, for the quiet
- * "Total play time" line the Library shows when ShowGlobalGameTime is on
- * (what MainWindow::updateStatusCenter() put in the status bar). It follows
- * the instance list: any change to the list or to an instance's data
- * recounts, which is a short loop over a handful of numbers.
- */
+/* Total play time across every instance, for the Library's "Total play time"
+ * line (ShowGlobalGameTime). Recounts on any change to the instance list or an
+ * instance's data. */
 class PlayTimeSummary : public QObject
 {
 	Q_OBJECT
@@ -42,7 +38,6 @@ class PlayTimeSummary : public QObject
 
 	qint64 totalSeconds() const;
 
-	/// Counts again.
 	Q_INVOKABLE void refresh();
 
   signals:

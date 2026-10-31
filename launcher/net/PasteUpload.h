@@ -54,7 +54,6 @@ class PasteUpload : public Task
 
   private:
 	bool parseResult(QJsonDocument doc);
-	QString m_error;
 	QString m_pasteID;
 	QString m_pasteLink;
 	QString m_key;

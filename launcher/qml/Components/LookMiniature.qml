@@ -6,15 +6,8 @@ import Kite.Theme
 
 /*
  * One look drawn as a small launcher in its own colours and layout, for
- * LookPicker: the rail with real instance icons, then Home as that look lays
- * it out -- Sahne's blurred stage with a white Play, the worlds on glass and
- * a row of cards; Sade's flat hero, green Play, hairline rows and side
- * column; Gece's night sky with glass rows and pane; Klasik's framed hero
- * and rows in the palette picked for it. Words are bars at this size, so
- * the choice is made by looking.
- *
- * Drawn once in a fixed design space (designWidth x designHeight) and
- * scaled to the tile, so every coordinate below is in those units.
+ * LookPicker. Drawn once in a fixed design space (designWidth x designHeight)
+ * and scaled to the tile, so every coordinate below is in those units.
  */
 Rectangle {
     id: root
@@ -26,7 +19,6 @@ Rectangle {
 
     readonly property int designWidth: 320
     readonly property int designHeight: 180
-    // The height a host gives this for a width, to keep the design's shape.
     readonly property real aspect: designHeight / designWidth
 
     readonly property bool night: root.look === "night"
@@ -42,13 +34,10 @@ Rectangle {
     border.color: root.colors.border
     clip: true
 
-    // -- Pieces, in design units -------------------------------------------
-    // A line of words.
     component Bar: Rectangle {
         height: 3
         radius: 1.5
     }
-    // An instance's real icon (Icons), pixel-sharp.
     component Icon: Image {
         property string key: "default"
         width: 12
@@ -57,7 +46,6 @@ Rectangle {
         sourceSize: Qt.size(48, 48)
         smooth: false
     }
-    // Play: the look's filled button with its glyph and a word.
     component Play: Rectangle {
         property color ink: "black"
         width: 34
@@ -78,7 +66,6 @@ Rectangle {
             color: parent.ink
         }
     }
-    // A world in a side list: its picture and two lines.
     component World: Item {
         property color picture: "gray"
         property color ink: "white"
@@ -96,7 +83,6 @@ Rectangle {
         transformOrigin: Item.TopLeft
         scale: root.width / root.designWidth
 
-        // -- The shell: sky or frame, rail and top bar ------------------
         SkyBackdrop {
             anchors.fill: parent
             visible: root.night
@@ -113,13 +99,11 @@ Rectangle {
             }
         }
         Rectangle {
-            // The shell around the page.
             anchors.fill: parent
             visible: !root.night
             color: root.colors.surface
         }
         Rectangle {
-            // The page panel, its corner against the shell rounded.
             x: 26; y: 18
             width: parent.width - x + 8
             height: parent.height - y + 8
@@ -143,7 +127,6 @@ Rectangle {
             Icon { key: "diamond"; width: 14; height: 14 }
         }
 
-        // -- Home, as the look lays it out ------------------------------
         Loader {
             anchors.fill: parent
             sourceComponent: root.look === "stage" ? stageHome
@@ -155,7 +138,6 @@ Rectangle {
     Component {
         id: stageHome
         Item {
-            // The stage: the hero's screenshot as colour, fading to the page.
             Rectangle {
                 x: 26; y: 18; width: 294; height: 84
                 gradient: Gradient {
@@ -178,7 +160,6 @@ Rectangle {
             Bar { x: 36; y: 56; width: 46; height: 2.5; color: root.inkSoft }
             Play { x: 36; y: 65; color: root.colors.accent; ink: root.colors.textOnAccent }
             Rectangle { x: 73; y: 65; width: 11; height: 11; radius: 3; color: root.glass }
-            // Recent worlds on dark glass.
             Rectangle {
                 x: 236; y: 24; width: 76; height: 50; radius: 6
                 color: Qt.rgba(0, 0, 0, 0.35)
@@ -246,7 +227,6 @@ Rectangle {
                     }
                 }
             }
-            // The side column, set off by a hairline.
             Rectangle { x: 228; y: 18; width: 0.75; height: 162; color: root.colors.divider }
             Bar { x: 236; y: 26; width: 34; height: 2; color: root.inkFaint }
             Column {
@@ -287,7 +267,6 @@ Rectangle {
                     }
                 }
             }
-            // The side pane, one glass.
             Rectangle {
                 x: 236; y: 24; width: 76; height: 60; radius: 6
                 color: root.glass

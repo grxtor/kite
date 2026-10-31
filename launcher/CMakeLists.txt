@@ -1,19 +1,12 @@
 project(application)
 
-################################ FILES ################################
-
-######## Sources and headers ########
-
 include (UnitTest)
 
 set(CORE_SOURCES
-    # The services the core is allowed to reach for, and the interfaces it
-    # declares for things it needs but must not depend on. Nothing here may
-    # mention QtWidgets.
+    # Core sources: no QtWidgets.
     core/LauncherContext.h
     core/LauncherContext.cpp
 
-    # QDesktopServices lives in QtGui; opening a URL or a folder is not UI.
     DesktopServices.h
     DesktopServices.cpp
     core/AuthRequestDecorator.h
@@ -21,15 +14,11 @@ set(CORE_SOURCES
     core/InstancePathProblems.h
     core/InstancePathProblems.cpp
 
-    # WCAG 2.1 contrast math for the token-based theme. Confined to QtGui,
-    # same as the block above -- no QtWidgets, no ui/.
     theme/Contrast.h
     theme/Contrast.cpp
     theme/ThemePalette.h
     theme/ThemePalette.cpp
 
-    # What the QML instance grid needs in place of the widget proxy and
-    # QItemSelectionModel. Core, like the blocks above: no QtWidgets, no ui/.
     models/InstanceFilterModel.h
     models/InstanceFilterModel.cpp
     models/IdSelectionModel.h
@@ -102,8 +91,7 @@ set(CORE_SOURCES
     models/ComponentTools.cpp
     models/CatPackList.h
     models/CatPackList.cpp
-    # The cat pack classes and discovery: QtCore only, shared by the widget
-    # ThemeManager and the QML shell's CatPackList.
+    # From ui/themes, but QtCore only.
     ui/themes/CatPack.h
     ui/themes/CatPack.cpp
     models/ContentUpdateController.h
@@ -120,7 +108,6 @@ set(CORE_SOURCES
     models/RichBody.cpp
     modplatform/BlockedMod.h
 
-    # LOGIC - Base classes and infrastructure
     BaseInstaller.h
     BaseInstaller.cpp
     BaseVersionList.h
@@ -148,15 +135,11 @@ set(CORE_SOURCES
     MMCStrings.h
     MMCStrings.cpp
 
-    # The long-running halves of MMCZip, as tasks: an archive big enough to
-    # need a progress bar is an archive big enough to need a way out, and
-    # neither is possible from inside a single blocking call.
     archive/ExportToZipTask.h
     archive/ExportToZipTask.cpp
     archive/ExtractZipTask.h
     archive/ExtractZipTask.cpp
 
-    # Basic instance manipulation tasks (derived from InstanceTask)
     InstanceCreationTask.h
     InstanceCreationTask.cpp
     InstanceCopyTask.h
@@ -164,28 +147,19 @@ set(CORE_SOURCES
     InstanceImportTask.h
     InstanceImportTask.cpp
 
-    # Use tracking separate from memory management
     Usable.h
 
-    # Prefix tree where node names are strings between separators
     SeparatorPrefixTree.h
 
-    # The checkable file tree the export dialogs are built around, and the
-    # icon provider that keeps pointing it at an entire instance directory
-    # from costing a per-file platform lookup.
     FileIgnoreProxy.h
     FileIgnoreProxy.cpp
 
-    # Writing a shortcut to an instance: the platform half both user
-    # interfaces share (ui/ShortcutUtils adds the widget dialogs on top).
     InstanceShortcuts.h
     InstanceShortcuts.cpp
 
-    # String filters
     Filter.h
     Filter.cpp
 
-    # JSON parsing helpers
     Json.h
     Json.cpp
 
@@ -194,32 +168,24 @@ set(CORE_SOURCES
 
     Exception.h
 
-    # RW lock protected map
     RWStorage.h
 
-    # A variable that has an implicit default value and keeps track of changes
     DefaultVariable.h
 
-    # a smart pointer wrapper intended for safer use with Qt signal/slot mechanisms
     QObjectPtr.h
 
-    # Compression support
     GZip.h
     GZip.cpp
 
-    # Command line parameter parsing
     Commandline.h
     Commandline.cpp
 
-    # Version number string support
     Version.h
     Version.cpp
 
-    # A Recursive file system watcher
     RecursiveFileSystemWatcher.h
     RecursiveFileSystemWatcher.cpp
 
-    # Time
     MMCTime.h
     MMCTime.cpp
 )
@@ -241,7 +207,6 @@ add_unit_test(MMCZip
     )
 
 set(PATHMATCHER_SOURCES
-    # Path matchers
     pathmatcher/FSTreeMatcher.h
     pathmatcher/IPathMatcher.h
     pathmatcher/MultiMatcher.h
@@ -249,7 +214,6 @@ set(PATHMATCHER_SOURCES
 )
 
 set(NET_SOURCES
-    # network stuffs
     net/ByteArraySink.h
     net/ChecksumValidator.h
     net/Download.cpp
@@ -263,8 +227,6 @@ set(NET_SOURCES
     net/NetAction.h
     net/NetJob.cpp
     net/NetJob.h
-    # The one API question that does not fit in a URL, and so cannot be a
-    # Net::Download. See net/JsonPost.h.
     net/JsonPost.cpp
     net/JsonPost.h
     net/PasteUpload.cpp
@@ -278,7 +240,6 @@ add_unit_test(FileSink
     LIBS Kite_logic
     )
 
-# Game launch logic
 set(LAUNCH_SOURCES
     launch/steps/CheckJava.cpp
     launch/steps/CheckJava.h
@@ -304,13 +265,8 @@ set(LAUNCH_SOURCES
     launch/LogModel.h
 )
 
-# macOS updates go through Sparkle, which replaces the whole signed .app
-# bundle. Sparkle is not packaged in vcpkg, so the upstream release archive is
-# fetched and hash-checked here.
-#
-# Detected before the source list below, because whether MacSparkleUpdater can
-# be compiled at all depends on the framework being present -- and a source
-# file that needs headers we do not have is a build failure, not a fallback.
+# Sparkle is not packaged in vcpkg: fetch the release archive, hash-checked.
+# Probed before the source list: MacSparkleUpdater cannot compile without the framework's headers.
 set(Kite_SPARKLE_ENABLED OFF)
 if(APPLE AND NOT "${MACOSX_SPARKLE_UPDATE_PUBLIC_KEY}" STREQUAL "" AND NOT "${MACOSX_SPARKLE_UPDATE_FEED_URL}" STREQUAL "")
     if(NOT EXISTS "${MACOSX_SPARKLE_DIR}/Sparkle.framework")
@@ -326,19 +282,11 @@ if(APPLE AND NOT "${MACOSX_SPARKLE_UPDATE_PUBLIC_KEY}" STREQUAL "" AND NOT "${MA
         set(Kite_SPARKLE_ENABLED ON)
         message(STATUS "Sparkle updater: ${SPARKLE_FRAMEWORK}")
     else()
-        # Not fatal: a build without Sparkle simply has no updater on macOS,
-        # which is better than not building at all.
         message(WARNING "Sparkle.framework was not found under ${MACOSX_SPARKLE_DIR}; macOS updates will be disabled.")
     endif()
 endif()
 
-# Updater, launcher side.
-#
-# The launcher never checks for updates itself: it drives the standalone
-# kite-updater executable (built below) so that there is exactly one
-# implementation of "which release applies to this install". macOS is the
-# exception -- there Sparkle replaces the whole .app bundle, signature check
-# included, and reimplementing that would mean reimplementing code signing.
+# The launcher drives the standalone kite-updater; macOS uses Sparkle instead.
 set(UPDATE_SOURCES
     updater/ExternalUpdater.h
     updater/UpdateLockFile.h
@@ -359,23 +307,18 @@ else()
     )
 endif()
 
-# Rarely used notifications
 set(NOTIFICATIONS_SOURCES
-    # Notifications - short warning messages
     notifications/NotificationChecker.h
     notifications/NotificationChecker.cpp
 )
 
-# Backend for the news bar... there's usually no news.
 set(NEWS_SOURCES
-    # News System
     news/NewsChecker.h
     news/NewsChecker.cpp
     news/NewsEntry.h
     news/NewsEntry.cpp
 )
 
-# Instance backup snapshots (was the BackupSystem .mmco plugin)
 set(BACKUP_SOURCES
     backup/BackupManager.h
     backup/BackupManager.cpp
@@ -383,9 +326,7 @@ set(BACKUP_SOURCES
     backup/BackupTask.cpp
 )
 
-# Icon interface
 set(ICONS_SOURCES
-    # Icons System and related code
     icons/IconUtils.h
     icons/IconUtils.cpp
     icons/MMCIcon.h
@@ -400,9 +341,7 @@ set(ICONS_SOURCES
     icons/GameTextureRecipes.cpp
 )
 
-# Support for Minecraft instances and launch
 set(MINECRAFT_SOURCES
-    # Minecraft support
     minecraft/PresetDefaults.h
     minecraft/PresetDefaults.cpp
     minecraft/GraphicsBackend.h
@@ -581,11 +520,9 @@ set(MINECRAFT_SOURCES
     minecraft/mod/DataPackFolderModel.h
     minecraft/mod/DataPackFolderModel.cpp
 
-    # Assets
     minecraft/AssetsUtils.h
     minecraft/AssetsUtils.cpp
 
-    # Minecraft services
     minecraft/services/CapeChange.cpp
     minecraft/services/CapeChange.h
     minecraft/services/SkinUpload.cpp
@@ -593,7 +530,6 @@ set(MINECRAFT_SOURCES
     minecraft/services/SkinDelete.cpp
     minecraft/services/SkinDelete.h
 
-    # Local skin library
     minecraft/skins/SkinEntry.cpp
     minecraft/skins/SkinEntry.h
     minecraft/skins/SkinLibrary.cpp
@@ -641,14 +577,11 @@ add_unit_test(Library
     LIBS Kite_logic
     )
 
-# Launch preflight: an offline account may still download the game's files, and
-# a failed offline metadata load fails the launch with a reason.
 add_unit_test(LaunchPreflight
     SOURCES minecraft/LaunchPreflight_test.cpp
     LIBS Kite_core
     )
 
-# The address a launch joins, as the game's quick play takes it.
 add_unit_test(MinecraftServerTarget
     SOURCES minecraft/launch/MinecraftServerTarget_test.cpp
     LIBS Kite_core
@@ -661,30 +594,21 @@ add_unit_test(ModFolderModel
     LIBS Kite_logic
     )
 
-# Builds its jars and pack folders in a temp directory, so it needs no
-# testdata: logo lookup per metadata format, the on-disk icon cache, and the
-# iconUrl role ModFolderModel derives from it.
 add_unit_test(LocalModParseTask
     SOURCES minecraft/mod/LocalModParseTask_test.cpp
     LIBS Kite_logic
     )
 
-# Fabric predicates and Maven ranges against made-up versions, including the
-# free-text ones that must come back Unknown rather than a guess.
 add_unit_test(VersionRange
     SOURCES minecraft/mod/VersionRange_test.cpp
     LIBS Kite_core
     )
 
-# The mod health check over made-up folders: missing, switched-off and
-# wrong-version dependencies, clashes, duplicates, files for another loader.
 add_unit_test(ModHealth
     SOURCES minecraft/mod/ModHealth_test.cpp
     LIBS Kite_core
     )
 
-# options.txt editing against a temp file: one line changed in place, the
-# rest (unknown keys, order, the game's own later writes) left alone.
 add_unit_test(GameOptions
     SOURCES minecraft/gameoptions/GameOptions_test.cpp
     LIBS Kite_core
@@ -700,7 +624,6 @@ add_unit_test(World
     LIBS Kite_logic
     )
 
-# the screenshots feature
 set(SCREENSHOTS_SOURCES
     screenshots/Screenshot.h
     screenshots/ImgurUpload.h
@@ -717,7 +640,6 @@ add_unit_test(ScreenshotListModel
     )
 
 set(TASKS_SOURCES
-    # Tasks
     tasks/Task.h
     tasks/Task.cpp
     tasks/ConcurrentTask.h
@@ -729,7 +651,6 @@ set(TASKS_SOURCES
 )
 
 set(SETTINGS_SOURCES
-    # Settings
     settings/INIFile.cpp
     settings/INIFile.h
     settings/INISettingsObject.cpp
@@ -786,15 +707,12 @@ set(TRANSLATIONS_SOURCES
     translations/POTranslator.cpp
 )
 
-# Model bookkeeping, the bundled languages and the data dir override -- no
-# network, same reasoning as the IconList test below.
 add_unit_test(TranslationsModel
     SOURCES translations/TranslationsModel_test.cpp
     LIBS Kite_core
     )
 
 set(TOOLS_SOURCES
-    # Tools
     tools/BaseExternalTool.cpp
     tools/BaseExternalTool.h
     tools/BaseProfiler.cpp
@@ -808,7 +726,6 @@ set(TOOLS_SOURCES
 )
 
 set(META_SOURCES
-    # Metadata sources
     meta/JsonFormat.cpp
     meta/JsonFormat.h
     meta/BaseEntity.cpp
@@ -833,7 +750,6 @@ set(FTB_SOURCES
 )
 
 set(FLAME_SOURCES
-    # Flame
     modplatform/flame/FlamePackIndex.cpp
     modplatform/flame/FlamePackIndex.h
     modplatform/flame/PackManifest.h
@@ -844,8 +760,6 @@ set(FLAME_SOURCES
     modplatform/flame/FlameContentModel.cpp
     modplatform/flame/FlameApi.h
     modplatform/flame/FlameApi.cpp
-    # The file identifier CurseForge looks files up by, and the export
-    # that has to compute it to name a mod instead of shipping it.
     modplatform/flame/FlameFingerprint.h
     modplatform/flame/FlameFingerprint.cpp
     modplatform/flame/FlamePackExportTask.h
@@ -931,8 +845,6 @@ add_unit_test(PackContents
     LIBS Kite_logic
     )
 
-# The friends list: Kite's friends server (server/friends/), the sign-in
-# with Mojang's session server and the game log rules for "who is where".
 set(FRIENDS_SOURCES
     friends/FriendsApi.h
     friends/FriendsApi.cpp
@@ -954,7 +866,6 @@ set(FRIENDS_SOURCES
     friends/FriendsPoll.cpp
     friends/FriendsActions.cpp
     friends/FriendsBridge.cpp
-    # The Kite mod <-> launcher bridge (kite-mod/docs/BRIDGE.md).
     modbridge/ModBridgeProtocol.h
     modbridge/ModBridgeProtocol.cpp
     modbridge/ModBridgeAnswers.cpp
@@ -968,54 +879,40 @@ set(FRIENDS_SOURCES
     modbridge/ModBridgeRoutes.cpp
 )
 
-# The messages and their answers over the README's fixture JSON, the status
-# lines, and the session file.
 add_unit_test(FriendsApi
     SOURCES friends/FriendsApi_test.cpp
     LIBS Kite_core
     )
 
-# What the game log says about where the player is, for 1.8.9, 1.21.x and
-# 26.x, and what must not count.
 add_unit_test(FriendsLogRules
     SOURCES friends/FriendsLogRules_test.cpp
     LIBS Kite_core
     )
 
-# The watcher over a real InstanceList of NullInstances: running, the most
-# recent of several, and the world following the log lines of its launch.
 add_unit_test(FriendsGameWatcher
     SOURCES friends/FriendsGameWatcher_test.cpp
     LIBS Kite_core
     )
 
-# A friend's head: the skin URL from Mojang's profile (and which hosts are
-# accepted), the face cut from a skin, and when a face is stale.
 add_unit_test(FriendsFaces
     SOURCES friends/FriendsFaces_test.cpp
     LIBS Kite_core
     )
 
-# The bridge's rules (request reading, Host/Origin/Sec-Fetch, token, limits)
-# and its messages, as pure functions.
 add_unit_test(ModBridgeProtocol
     SOURCES modbridge/ModBridgeProtocol_test.cpp
     LIBS Kite_core
     )
 
-# The bridge over a real loopback socket with a fake friends source:
-# sessions, authentication, the endpoints and the limits.
 add_unit_test(ModBridge
     SOURCES modbridge/ModBridge_test.cpp
     LIBS Kite_core
     )
 
 set(PLUGIN_SOURCES
-    # Supplies core-declared interfaces that need the plugin host to run.
     plugin/PluginAuthRequestDecorator.h
     plugin/PluginAuthRequestDecorator.cpp
 
-    # MMCO Plugin System
     plugin/MMCOFormat.h
     plugin/PluginHooks.h
     plugin/PluginAPI.h
@@ -1044,12 +941,7 @@ add_unit_test(Index
     LIBS Kite_logic
     )
 
-################################ COMPILE ################################
-
-# zlib, libarchive, cmark and toml++ are resolved in the top-level
-# CMakeLists.txt -- from vcpkg under the presets, from the system package when
-# configured without the vcpkg toolchain. nbt++ is a subtree under libraries/
-# and is built here. Either way the imported target names below are the same.
+# zlib, libarchive, cmark and toml++ come from the top-level CMakeLists.txt; nbt++ is built here.
 
 set(LOGIC_SOURCES
     ${CORE_SOURCES}
@@ -1080,22 +972,18 @@ set(LOGIC_SOURCES
 )
 
 SET(KITE_SOURCES
-    # Application base
     Application.h
     Application.cpp
     ApplicationMessage.h
     ApplicationMessage.cpp
 
-    # GUI - general utilities
     VersionProxyModel.h
     VersionProxyModel.cpp
     HoeDown.h
 
-    # Super secret!
     KonamiCode.h
     KonamiCode.cpp
 
-    # Bundled resources
     resources/backgrounds/backgrounds.qrc
     resources/multimc/multimc.qrc
     resources/pe_dark/pe_dark.qrc
@@ -1112,9 +1000,6 @@ SET(KITE_SOURCES
     resources/shaders/shaders.qrc
     ${CMAKE_BINARY_DIR}/${Kite_AppBinaryName}.qrc
 
-    # Icons
-
-    # GUI - windows
     ui/GuiUtil.h
     ui/GuiUtil.cpp
     ui/ColorCache.h
@@ -1136,7 +1021,6 @@ SET(KITE_SOURCES
     SkinUtils.cpp
     SkinUtils.h
 
-    # GUI - setup wizard
     ui/setupwizard/SetupWizard.h
     ui/setupwizard/SetupWizard.cpp
     ui/setupwizard/BaseWizardPage.h
@@ -1145,7 +1029,6 @@ SET(KITE_SOURCES
     ui/setupwizard/LanguageWizardPage.cpp
     ui/setupwizard/LanguageWizardPage.h
 
-    # GUI - themes
     ui/themes/FusionTheme.cpp
     ui/themes/FusionTheme.h
     ui/themes/BrightTheme.cpp
@@ -1165,23 +1048,18 @@ SET(KITE_SOURCES
     ui/themes/ThemeManager.cpp
     ui/themes/ThemeManager.h
 
-    # Processes
     ui/LaunchController.h
     ui/LaunchController.cpp
 
-    # page provider for instances
     ui/InstancePageProvider.h
 
-    # Common java checking UI
     ui/JavaCommon.h
     ui/JavaCommon.cpp
 
-    # GUI - paged dialog base
     ui/pages/BasePage.h
     ui/pages/BasePageContainer.h
     ui/pages/BasePageProvider.h
 
-    # GUI - instance pages
     ui/pages/instance/BackupPage.cpp
     ui/pages/instance/BackupPage.h
     ui/pages/instance/GameOptionsPage.cpp
@@ -1214,7 +1092,6 @@ SET(KITE_SOURCES
     ui/pages/instance/WorldListPage.cpp
     ui/pages/instance/WorldListPage.h
 
-    # GUI - global settings pages
     ui/pages/global/AccountListPage.cpp
     ui/pages/global/AccountListPage.h
     ui/pages/global/AppearancePage.cpp
@@ -1236,7 +1113,6 @@ SET(KITE_SOURCES
     ui/pages/global/PasteEEPage.cpp
     ui/pages/global/PasteEEPage.h
 
-    # GUI - platform pages
     ui/pages/modplatform/VanillaPage.cpp
     ui/pages/modplatform/VanillaPage.h
 
@@ -1282,7 +1158,6 @@ SET(KITE_SOURCES
     ui/pages/modplatform/ImportPage.cpp
     ui/pages/modplatform/ImportPage.h
 
-    # GUI - dialogs
     ui/dialogs/AboutDialog.cpp
     ui/dialogs/AboutDialog.h
     ui/dialogs/BlockedModsDialog.cpp
@@ -1349,7 +1224,6 @@ SET(KITE_SOURCES
     ui/dialogs/UntrustedModsDialog.h
 
 
-    # GUI - widgets
     ui/widgets/Common.cpp
     ui/widgets/Common.h
     ui/widgets/CustomCommands.cpp
@@ -1394,7 +1268,6 @@ SET(KITE_SOURCES
     ui/widgets/WideBar.h
     ui/widgets/WideBar.cpp
 
-    # GUI - instance group view
     ui/instanceview/InstanceProxyModel.cpp
     ui/instanceview/InstanceProxyModel.h
     ui/instanceview/AccessibleInstanceView.cpp
@@ -1463,20 +1336,14 @@ set(KITE_UI_FILES
     ui/MainWindow.ui
 )
 
-# Forms used by *both* the launcher and the standalone updater.
-#
-# They have to be wrapped exactly once: two qt_wrap_ui calls for the same
-# form in the same directory would declare two rules generating the same
-# ui_*.h, which CMake rejects. Listing the generated sources in both targets
-# is fine -- the rule stays single, and each target simply depends on it.
+# Wrapped once: two qt_wrap_ui calls for the same form would declare two rules for the same ui_*.h.
+# Both targets list the generated sources; the rule stays single.
 set(KITE_SHARED_UI_FILES
     ui/dialogs/ProgressDialog.ui
     ui/widgets/TaskStepProgressBar.ui
 )
 
-# qt6_wrap_ui explicitly rather than the versionless qt_wrap_ui: the latter is
-# a no-op unless QT_DEFAULT_MAJOR_VERSION happens to be set, which would
-# silently generate no ui_*.h headers at all.
+# Not the versionless qt_wrap_ui: it is a no-op unless QT_DEFAULT_MAJOR_VERSION is set.
 qt6_wrap_ui(KITE_UI ${KITE_UI_FILES})
 qt6_wrap_ui(KITE_SHARED_UI ${KITE_SHARED_UI_FILES})
 
@@ -1512,43 +1379,24 @@ set(KITE_QRC_FILES
     ${CMAKE_BINARY_DIR}/${Kite_AppBinaryName}.qrc
 )
 
-# Same reasoning as KITE_UI above: never rely on the versionless wrapper.
 qt6_add_resources(KITE_RESOURCES ${KITE_QRC_FILES})
 
-######## Windows resource files ########
 if(WIN32)
     set(KITE_RCS ${CMAKE_BINARY_DIR}/${Kite_AppBinaryName}.rc)
 endif()
 
-# Add executable
-# The launcher is two libraries.
-#
-# Kite_core is everything that works without a user interface: instances,
-# downloads, authentication, mod platforms, settings. It must not link
-# QtWidgets -- that is what lets a QML shell reuse it -- and it is not allowed
-# to know the plugin host or anything under ui/ exists.
-#
-# Kite_logic is the plugin host and the widget user interface, built on top
-# of the core. It keeps its old name so the application and the unit tests that
-# link it need no change. The plugin host sits here rather than in the core for
-# now: PluginManager renders plugin-supplied widgets and includes MainWindow, so
-# it and the widget UI depend on each other until the declarative plugin ABI
-# replaces that.
+# Kite_core works without a user interface: it must not link QtWidgets or know about the plugin host
+# or ui/. Kite_logic is the plugin host and the widget UI on top of it.
 add_library(Kite_core STATIC ${LOGIC_SOURCES})
 
-# The recommended-mods catalog, embedded as :/kite/bundles.json. In the core
-# so BundleCatalog finds it in the tests as well as in the launcher.
+# Embedded as :/kite/bundles.json; in the core so tests find it too.
 qt6_add_resources(Kite_core kite_bundles
     PREFIX "/kite"
     BASE "${CMAKE_CURRENT_SOURCE_DIR}/resources/kite"
     FILES resources/kite/bundles.json)
 
-# Bundled translations: every translations/kite_<lang>.ts is compiled to a .qm
-# with lrelease and embedded in the core as :/i18n/kite_<lang>.qm, next to
-# :/i18n/stats.txt ("<lang> <translated> <total>" per line, counted from the
-# .ts here because a .qm cannot tell how complete it is). The resources are
-# self-registering, nothing in the code refers to them at build time; without
-# Qt LinguistTools or without any .ts the launcher is simply English only.
+# kite_<lang>.ts -> :/i18n/kite_<lang>.qm, plus :/i18n/stats.txt ("<lang> <translated> <total>",
+# counted from the .ts: a .qm cannot tell). No LinguistTools or no .ts: English only.
 if(Qt${QT_VERSION_MAJOR}LinguistTools_FOUND)
     file(GLOB KITE_TS_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/translations/kite_*.ts")
     if(KITE_TS_FILES)
@@ -1582,14 +1430,11 @@ endif()
 add_library(Kite_logic STATIC ${PLUGIN_SOURCES} ${KITE_SOURCES} ${KITE_UI} ${KITE_SHARED_UI} ${KITE_RESOURCES})
 target_link_libraries(Kite_logic Kite_core)
 
-# Declared after Kite_logic because it links against it.
 add_unit_test(CustomTheme
     SOURCES ui/themes/CustomTheme_test.cpp
     LIBS Kite_logic
     )
 
-# Kite_logic: the plugin host lives there until the declarative plugin ABI
-# lets it move out of the widget UI's target.
 add_unit_test(PluginLoader
     SOURCES plugin/PluginLoader_test.cpp
     LIBS Kite_logic
@@ -1615,7 +1460,7 @@ add_unit_test(Contrast
     LIBS Kite_logic
     )
 
-# Links the core alone, not Kite_logic: the palette is core and this proves it.
+# Links the core alone, to prove the palette is core.
 add_unit_test(ThemePalette
     SOURCES theme/ThemePalette_test.cpp
     LIBS Kite_core
@@ -1626,11 +1471,6 @@ add_unit_test(InstanceFilterModel
     LIBS Kite_core
     )
 
-# Mostly exercises InstanceList::newestScreenshotUrl() directly (see
-# InstanceList_test.cpp) - a full InstanceList needs a SettingsObjectPtr and
-# real BaseInstance subclasses, which is more than that one lookup needs to
-# be tested. HasCrashedRole has no such helper, so one test builds that
-# fixture (InstanceList + NullInstance) instead.
 add_unit_test(InstanceList
     SOURCES InstanceList_test.cpp
     LIBS Kite_core
@@ -1641,8 +1481,6 @@ add_unit_test(LaunchProgressTracker
     LIBS Kite_core
     )
 
-# The stage a launch reports per step (LaunchTask::startStep()), with
-# NullInstance and hand-made steps -- no game, no network.
 add_unit_test(LaunchTask
     SOURCES launch/LaunchTask_test.cpp
     LIBS Kite_core
@@ -1658,53 +1496,26 @@ add_unit_test(SettingsAdapter
     LIBS Kite_core
     )
 
-# Exercises only InstanceLogBridge: a full MinecraftInstance (needed for
-# InstanceDetails' mods/worlds/components) is impractical to construct here,
-# but InstanceLogBridge only needs a BaseInstance and a LaunchTask, and
-# NullInstance + LaunchTask::create() are both concrete enough to drive by
-# hand.
 add_unit_test(InstanceLogBridge
     SOURCES models/InstanceDetails_test.cpp
     LIBS Kite_core
     )
 
-# Covers what is testable without a LauncherContext or network: AccountList's
-# QML roles (including the ones added for this page) and the parts of
-# AccountsController that only touch AccountList/MinecraftAccount --
-# add/remove/default and offline validation. loginMicrosoft() itself needs
-# LAUNCHER->network() (via MSAStep) and is not exercised here.
 add_unit_test(AccountsController
     SOURCES models/AccountsController_test.cpp
     LIBS Kite_core
     )
 
-# Covers what is testable without a LauncherContext or network: the two
-# Meta version-list proxies (filtering, sorting, loading/error) against a
-# fake BaseVersionList, and the two free-standing suggested-name helpers
-# (create mode's composeSuggestedInstanceName(), import mode's
-# suggestedImportName()). NewInstanceController's own create()/importFrom()
-# need LAUNCHER->metadataIndex()/instances() and are not exercised here.
 add_unit_test(NewInstanceController
     SOURCES models/NewInstanceController_test.cpp
     LIBS Kite_core
     )
 
-# Needs neither a BaseInstance nor a LauncherContext - only a directory to
-# read/write servers.dat under, the same reason OtherLogsModel_test.cpp
-# drives that model directly against a temp directory. BackupController and
-# WorldDataPacksController (the other new InstanceDetails-owned models this
-# phase added) both need a real MinecraftInstance/BaseInstance and are not
-# exercised here, the same reason models/InstanceDetails_test.cpp only
-# exercises InstanceLogBridge.
 add_unit_test(ServersListModel
     SOURCES models/ServersListModel_test.cpp
     LIBS Kite_core
     )
 
-# JavaController/JavaDownloadController: the pure parts (JVM-argument check,
-# managed-runtime scan and removal on a temporary directory, meta-server
-# JSON parsing from fixtures). Actually running JavaChecker or the download
-# needs a LauncherContext and the network, so those are not exercised here.
 add_unit_test(JavaController
     SOURCES models/JavaController_test.cpp
     LIBS Kite_core
@@ -1714,14 +1525,10 @@ add_unit_test(JavaDownloadController
     LIBS Kite_core
     )
 
-# FolderSettingsController: the path rules ("!" in a path, Flatpak portal
-# folders, duplicate extra folders) as pure functions. Moving a folder asks
-# through UiHost and writes settings, which need a LauncherContext.
 add_unit_test(FolderSettingsController
     SOURCES models/FolderSettingsController_test.cpp
     LIBS Kite_core
     )
-# UpdateSettingsController against a fake updater backend.
 add_unit_test(UpdateSettingsController
     SOURCES models/UpdateSettingsController_test.cpp
     LIBS Kite_core
@@ -1730,33 +1537,20 @@ add_unit_test(PlayTimeSummary
     SOURCES models/PlayTimeSummary_test.cpp
     LIBS Kite_core
     )
-# ComponentTools: the uid/name rules for a new component and the file
-# filtering, plus every action refusing politely without an instance.
 add_unit_test(ComponentTools
     SOURCES models/ComponentTools_test.cpp
     LIBS Kite_core
     )
-# CatPackList: discovery of built-in, loose and manifest packs against a
-# temporary folder, and the seasonal pictures.
 add_unit_test(CatPackList
     SOURCES models/CatPackList_test.cpp
     LIBS Kite_core
     )
 
-# Exercises only providerFromString() - the one static, instance-free helper
-# ManagedPackController has. isSupported()/fetchVersions()/updateToVersion()
-# all need a real BaseInstance and are not exercised here, the same reason
-# models/ContentBrowser_test.cpp only exercises its own static helpers.
 add_unit_test(ManagedPackController
     SOURCES models/ManagedPackController_test.cpp
     LIBS Kite_core
     )
 
-# Exercises RecentWorldsModel::scan() - the static, pure worker a rescan
-# hands to QtConcurrent::run() - directly against a temporary directory, plus
-# the async rescan-trigger/debounce orchestration around it against a real
-# InstanceList (NullInstance fixture, same as InstanceList_test.cpp's
-# HasCrashedRole tests) - that needs no real MinecraftInstance either.
 add_unit_test(RecentWorldsModel
     SOURCES models/RecentWorldsModel_test.cpp
     LIBS Kite_core
@@ -1782,7 +1576,6 @@ add_unit_test(SkinsController
     LIBS Kite_core
     )
 
-# Sign-in replies are logged with their tokens redacted.
 add_unit_test(AuthParsers
     SOURCES minecraft/auth/Parsers_test.cpp
     LIBS Kite_core
@@ -1793,30 +1586,21 @@ add_unit_test(InstancePathProblems
     LIBS Kite_core
     )
 
-# A trivial Task subclass drives status/progress/success/failure by hand;
-# no LauncherContext or network needed.
 add_unit_test(TaskWatcher
     SOURCES tasks/TaskWatcher_test.cpp
     LIBS Kite_core
     )
 
-# Exercises only the static JSON parsing helpers (canned search/version
-# replies), not the model itself - see the class comment on
-# ModrinthModpackModel::parseSearchResults().
 add_unit_test(ModrinthModpackModel
     SOURCES modplatform/modrinth/ModrinthModpackModel_test.cpp
     LIBS Kite_core
     )
 
-# A pack description (Markdown with raw HTML, or HTML) -> the plain article
-# HTML the Discover detail page shows; no network, no model.
 add_unit_test(RichBody
     SOURCES models/RichBody_test.cpp
     LIBS Kite_core
     )
 
-# WP8: the same static, network-free halves for CurseForge - canned search,
-# file list and description replies, and the search URL's filters.
 add_unit_test(FlameModpackModel
     SOURCES modplatform/flame/FlameModpackModel_test.cpp
     LIBS Kite_core
@@ -1838,24 +1622,11 @@ add_unit_test(TechnicModpackModel
     LIBS Kite_core
     )
 
-# Exercises only ContentBrowser's static, network-free helpers
-# (isVersionCompatible(), sortOptionsFor()) - constructing a full
-# MinecraftInstance to drive the browser itself is impractical here, the
-# same reason models/InstanceDetails_test.cpp only exercises
-# InstanceLogBridge.
 add_unit_test(ContentBrowser
     SOURCES models/ContentBrowser_test.cpp
     LIBS Kite_core
     )
 
-# install() itself needs a PackProfile, which needs a MinecraftInstance -
-# impractical to construct here, the same reason ContentBrowser_test.cpp
-# above only exercises its static helpers. installSequence() is the one
-# static helper LoaderInstaller has: the pure ordering install() drives
-# itself by - see its own comment for why that order is worth a test on
-# its own. OtherLogsModel needs neither a profile nor an instance - just a
-# path and a filter - so it gets a full test against a temp directory
-# instead.
 add_unit_test(LoaderInstaller
     SOURCES models/LoaderInstaller_test.cpp
     LIBS Kite_core
@@ -1866,60 +1637,41 @@ add_unit_test(OtherLogsModel
     LIBS Kite_core
     )
 
-# WP7: request composition (key resolution, size limits, .gz reading) and the
-# no-network error path; the PasteUpload round trip itself needs the network.
 add_unit_test(LogUploader
     SOURCES models/LogUploader_test.cpp
     LIBS Kite_core
     )
 
-# The launcher's own logs: only the data folder itself is listed (not the
-# instances under it), delete-all leaves everything else alone.
 add_unit_test(LauncherLogs
     SOURCES models/LauncherLogs_test.cpp
     LIBS Kite_core
     )
 
-# The Imgur upload's link composition and its refusal paths; the upload itself
-# needs the network and a client id.
 add_unit_test(ScreenshotUploader
     SOURCES models/ScreenshotUploader_test.cpp
     LIBS Kite_core
     )
 
-# World install from a generated zip (a minimal level.dat), and MCEdit lookup.
 add_unit_test(WorldTools
     SOURCES models/WorldTools_test.cpp
     LIBS Kite_core
     )
 
-# Legacy instance upgrade: recognising a LegacyInstance, naming the copy,
-# refusing anything else. The copy itself is LegacyUpgradeTask's.
 add_unit_test(LegacyUpgrade
     SOURCES models/LegacyUpgrade_test.cpp
     LIBS Kite_core
     )
 
-# Log "Find": matching rows of a list model, including a real LogModel.
 add_unit_test(LogFind
     SOURCES models/LogFind_test.cpp
     LIBS Kite_core
     )
 
-# Exercised against a real GameOptions (a temp options.txt, no instance
-# needed - see GameOptions' own constructor) rather than a fake model:
-# nothing here is specific to GameOptions, but it is the one real source
-# this filter is built for.
 add_unit_test(KeyValueFilterModel
     SOURCES models/KeyValueFilterModel_test.cpp
     LIBS Kite_core
     )
 
-# WP2b: the content list search proxy and list export, driven against a real
-# ModFolderModel over a temp folder of jars; the install review against its
-# applyResolution() seam, so no network is needed. InstanceContentController
-# itself needs a MinecraftInstance and is exercised through its static
-# helpers only, the same reason ContentBrowser_test.cpp is.
 add_unit_test(ContentFilterModel
     SOURCES models/ContentFilterModel_test.cpp
     LIBS Kite_core
@@ -1928,61 +1680,38 @@ add_unit_test(ContentInstallReview
     SOURCES models/ContentInstallReview_test.cpp
     LIBS Kite_core
     )
-# The recommended-mods catalog: parsing and validation, language fallback,
-# loader filtering and de-duplication over a small catalog, and the catalog built
-# into the launcher. Previews and installs need a provider and are not run.
 add_unit_test(BundleCatalog
     SOURCES modplatform/BundleCatalog_test.cpp
     LIBS Kite_core
     )
-# What a preset sets besides its mods: the memory table, which options.txt
-# keys a version reads, and that an existing options.txt is never replaced.
 add_unit_test(PresetDefaults
     SOURCES minecraft/PresetDefaults_test.cpp
     LIBS Kite_core
     )
-# The game's own Graphics API setting: which versions have it, and that
-# options.txt is read and written in place with every other line kept.
 add_unit_test(GraphicsBackend
     SOURCES minecraft/GraphicsBackend_test.cpp
     LIBS Kite_core
     )
-# Kite Performance's decisions: what is wanted given the catalog, the
-# exclusions and what is installed, which jars have no record, the hash
-# lookup's request and answer, and the stored exclusion list.
 add_unit_test(PerformanceSetupTask
     SOURCES minecraft/PerformanceSetupTask_test.cpp
     LIBS Kite_core
     )
-# Kite mod's decisions: the manifest's parsing and what it skips, the build
-# picked for a Minecraft and loader version, when the mod applies, the merged
-# -Dfabric.addMods argument and the jar cache.
 add_unit_test(KiteModRules
     SOURCES minecraft/KiteModRules_test.cpp
     LIBS Kite_core
     )
-# The mods tab's health list over made-up issues: one row per problem, the
-# action each kind offers, and the per-file lookups behind a row's badge.
 add_unit_test(ModHealthModel
     SOURCES models/ModHealthModel_test.cpp
     LIBS Kite_core
     )
-# WP2a: the update list, the selection filter for a check, which recorded
-# files the dependency check asks about, and forgetting origins on a temp
-# folder. The checks and downloads themselves ask a provider.
 add_unit_test(ContentUpdateController
     SOURCES models/ContentUpdateController_test.cpp
     LIBS Kite_core
     )
-# The Markdown export list escapes only what changes meaning in place.
 add_unit_test(ContentListExport
     SOURCES modplatform/ContentListExport_test.cpp
     LIBS Kite_core
     )
-# WP1: a plain zip export of a NullInstance over a temp folder (ignore lists,
-# .packignore, unchecking through the tree model) and its failures; the pack
-# formats need a MinecraftInstance and the network. The shortcut test writes
-# into a temp folder only, with a stand-in LauncherContext for the icon list.
 add_unit_test(InstanceExportController
     SOURCES models/InstanceExportController_test.cpp
     LIBS Kite_core Qt${QT_VERSION_MAJOR}::Gui
@@ -1991,10 +1720,6 @@ add_unit_test(InstanceShortcutController
     SOURCES models/InstanceShortcutController_test.cpp
     LIBS Kite_core Qt${QT_VERSION_MAJOR}::Gui
     )
-# WP11: groups (rename, delete, fold, move), folders and a duplicate with
-# options, against a real InstanceList of NullInstances in a temp folder.
-# Undoing a delete is exercised only for "nothing to undo": a real trash
-# would fill the user's own.
 add_unit_test(LibraryController
     SOURCES models/LibraryController_test.cpp
     LIBS Kite_core
@@ -2005,25 +1730,17 @@ add_unit_test(IconTheme
     LIBS Kite_logic
     )
 
-# Model bookkeeping only (roleNames(), builtin vs. file-based) -- no
-# compiled icon theme resource needed, unlike IconTheme/InstanceIconProvider,
-# since addThemeIcon()/addIcon() never render anything.
 add_unit_test(IconList
     SOURCES icons/IconList_test.cpp
     LIBS Kite_core Qt${QT_VERSION_MAJOR}::Gui
     )
 
-# Pure bookkeeping (who gets which built-in icon), so it is built from its
-# one source file and needs nothing but QtCore.
 add_unit_test(AutoIcons
     SOURCES icons/AutoIcons_test.cpp icons/AutoIcons.cpp
     LIBS Qt${QT_VERSION_MAJOR}::Core
     )
 target_include_directories(AutoIcons_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Client jars built inside the test from generated PNGs -- never Mojang's
-# own textures -- read into icons and cached; IconList_test covers how
-# IconList prefers them, over the same fixture (icons/GameTextureFixture.h).
 add_unit_test(GameTextureIcons
     SOURCES icons/GameTextureIcons_test.cpp
     LIBS Kite_core Qt${QT_VERSION_MAJOR}::Gui
@@ -2036,10 +1753,9 @@ set_tests_properties(IconTheme PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_PLATFORMTHEME="
     )
 
-# Core headers are included by their path under launcher/ ("core/UiHost.h",
-# "InstanceList.h"), so that directory is part of the core's interface. Stated
-# here rather than left to CMAKE_INCLUDE_CURRENT_DIR, which only covers targets
-# declared in this directory -- the QML module is declared in launcher/qml/.
+# Core headers are included by their path under launcher/ ("core/UiHost.h"), so that directory is
+# part of the core's interface; CMAKE_INCLUDE_CURRENT_DIR does not reach the QML module declared in
+# launcher/qml/.
 target_include_directories(Kite_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(Kite_core PUBLIC
@@ -2055,14 +1771,9 @@ if(Kite_DISABLE_JAVA_DOWNLOADER)
     target_compile_definitions(Kite_core PUBLIC Kite_DISABLE_JAVA_DOWNLOADER)
 endif()
 
-# Keep the function/line of every log message in *all* configurations. Qt only
-# fills the QMessageLogContext in while QT_NO_DEBUG is absent, which CMake
-# defines for every config except Debug - so without this, official builds log
-# no source locations at all and the log is much harder to act on. PUBLIC
-# because the message logger macros expand at every call site, including the
-# ones in the application target.
-# Cost, knowingly accepted: __FILE__ is baked into the binary for each
-# translation unit that logs, so the binary grows and carries build paths.
+# Keep the function/line of every log message in all configurations: Qt fills QMessageLogContext
+# only while QT_NO_DEBUG is absent. PUBLIC because the message logger macros expand at every call
+# site.
 target_compile_definitions(Kite_core PUBLIC QT_MESSAGELOGCONTEXT)
 target_link_libraries(Kite_core PUBLIC
     Qt${QT_VERSION_MAJOR}::Core
@@ -2077,12 +1788,10 @@ target_link_libraries(Kite_core PUBLIC
     LocalPeer::LocalPeer
 )
 
-# QtWidgets is linked here and only here. See Kite_core_link_check below for
-# how that is enforced rather than merely intended.
+# QtWidgets is linked here and only here (enforced by Kite_core_link_check).
 target_link_libraries(Kite_logic Qt${QT_VERSION_MAJOR}::Widgets)
 
-# Application decides at startup whether to show MainWindow or the QML shell,
-# so it needs the shell compiled in either way. See useQmlShell().
+# Application picks MainWindow or the QML shell at startup, so the shell is compiled in either way.
 target_link_libraries(Kite_logic Kite_qml)
 if(Kite_QML_UI)
     target_compile_definitions(Kite_logic PRIVATE KITE_QML_UI_DEFAULT)
@@ -2095,14 +1804,9 @@ if(UNIX AND NOT APPLE)
     target_link_libraries(Kite_logic ${CMAKE_DL_LIBS})
 endif()
 
-# GpgME (C++ bindings) — MMCO plugin signature verification.
-# Only linked when Kite_PLUGIN_SIGNATURES is ON (default off on MSVC,
-# because upstream gpgme does not support MSVC). When disabled,
-# PluginSignature.cpp compiles into a stub that reports every module
-# as unsigned and never tries to include any gpgme++ headers.
+# GpgME (C++ bindings): MMCO plugin signature verification. Off by default on MSVC, which gpgme does
+# not support; when off, PluginSignature.cpp is a stub that reports every module as unsigned.
 if(Kite_PLUGIN_SIGNATURES)
-    # Gpgmepp or GpgmeppStatic, depending on the linkage of the installation
-    # that was found; resolved in the top-level CMakeLists.
     target_link_libraries(Kite_logic ${Kite_GpgmeppTarget})
     target_compile_definitions(Kite_logic PRIVATE KITE_PLUGIN_SIGNATURES=1)
 else()
@@ -2110,8 +1814,7 @@ else()
 endif()
 
 if(APPLE)
-    # PUBLIC on the core: MacSparkleUpdater.mm is core and imports Cocoa, and
-    # ThemeManager.mm in Kite_logic inherits it from there.
+    # PUBLIC: ThemeManager.mm in Kite_logic also needs Cocoa.
     target_link_libraries(Kite_core PUBLIC
         "-framework AppKit"
         "-framework Foundation"
@@ -2122,88 +1825,50 @@ if(APPLE)
 endif()
 
 if(Kite_SPARKLE_ENABLED)
-    # PUBLIC: Application.cpp decides which updater to construct on the
-    # strength of this define, and it is compiled into the application target
-    # as well as into the logic library.
+    # PUBLIC: Application.cpp, in the application target, tests this define too.
     target_compile_definitions(Kite_core PUBLIC KITE_SPARKLE_ENABLED)
     target_include_directories(Kite_core PRIVATE "${MACOSX_SPARKLE_DIR}")
     target_link_libraries(Kite_core PUBLIC ${SPARKLE_FRAMEWORK})
 
-    # Sparkle has to ship inside the bundle: it is loaded at runtime, and it
-    # is what checks the signature of the update it installs.
+    # Sparkle ships inside the bundle: it is loaded at runtime.
     install(DIRECTORY "${MACOSX_SPARKLE_DIR}/Sparkle.framework"
         DESTINATION "${FRAMEWORK_DEST_DIR}"
         USE_SOURCE_PERMISSIONS)
 endif()
 
-######## The core must link without QtWidgets ########
-
-# Not linking Qt::Widgets into Kite_core is not enough on its own to keep
-# widgets out of it. A static library is never linked by itself -- unresolved
-# symbols are left for the final executable, which does link QtWidgets through
-# Kite_logic -- and on macOS all Qt frameworks sit in one directory, so
-# #include <QtWidgets/QWidget> resolves through the framework search path even
-# without the target. Either way a widget dependency would slip in unnoticed.
-#
-# So link the core, whole, into a program that has nothing else. Every object
-# in the archive is pulled in whether or not anything calls it, and the program
-# is given nothing that could satisfy a QtWidgets symbol. If any core object
-# needs one, this target fails to link and the build breaks, on every platform,
-# in CI and locally alike. It is part of `all` on purpose.
+# Not linking Qt::Widgets into Kite_core is not enough: a static library resolves nothing by itself,
+# and on macOS the framework path finds <QtWidgets/...> anyway. So link the whole core into a
+# program with nothing else: a QtWidgets symbol in any core object fails the link on every platform.
+# Part of `all` on purpose.
 add_executable(Kite_core_link_check core/CoreLinkCheck.cpp)
 target_link_libraries(Kite_core_link_check PRIVATE
     "$<LINK_LIBRARY:WHOLE_ARCHIVE,Kite_core>")
 
-# Listed as a test as well, so the invariant has a name in the ctest output
-# and is not only visible as a link step when it fails.
 add_test(NAME CoreLinksWithoutQtWidgets COMMAND Kite_core_link_check)
 
-######## QML user interface module ########
-
-# Defined in its own directory so the module's resource aliases stay clean; see
-# launcher/qml/CMakeLists.txt for why. Kept as a separate target rather than
-# being attached to the application so that QmlModule_test can link the same
-# module and instantiate it headlessly -- attaching it to the executable would
-# bury the compiled .qml inside the app binary, out of reach of any test.
+# A separate target, not part of the application, so QmlModule_test can link and instantiate the
+# same module headlessly.
 add_subdirectory(qml)
 
-# Proves the QML toolchain end to end: module built, resources at the expected
-# prefix, engine can instantiate the root component. All three fail silently
-# otherwise -- a green build and an application that renders nothing.
-# Kite_qml is linked explicitly: it carries the compiled .qml resources and
-# puts the module plugins in the link closure, which is where
-# qt_import_qml_plugins looks for them. Relying on qmlimportscanner to find
-# them from the test's sources alone worked on macOS but left Main.qml out of
-# the resources on Linux.
+# Kite_qml is linked explicitly: it carries the compiled .qml and puts the module plugins in the
+# link closure that qt_import_qml_plugins scans (scanning the test's sources alone left Main.qml out
+# of the resources on Linux).
 add_unit_test(QmlModule
     SOURCES qml/QmlModule_test.cpp
     LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
     )
 
-# qt_add_qml_module builds the module as a static library plus a separate QML
-# plugin, and the engine refuses the module without it. qt_add_executable would
-# emit the import automatically during finalization, but add_unit_test uses a
-# plain add_executable, so it has to be asked for by hand -- otherwise the test
-# links and then fails at runtime with 'plugin "Kite_qmlplugin" not found'.
-# The root module's own plugin is linked explicitly above: nothing imports
-# "Kite", so qmlimportscanner only found it by accident -- the implicit "QML"
-# import resolved to launcher/qml/qmldir on case-insensitive file systems --
-# and on Linux it was missing.
+# add_unit_test uses a plain add_executable, so the QML plugin import must be asked for by hand, or
+# the test fails at runtime with 'plugin "Kite_qmlplugin" not found'. Kite_qmlplugin is linked above
+# because nothing imports "Kite".
 qt_import_qml_plugins(QmlModule_test)
 
-# Kite_logic rather than the core: the built-in icons are compiled from
-# multimc.qrc into Kite_logic, and a test where every key falls back to the
-# default icon would prove nothing.
+# Kite_logic, not the core: the built-in icons are compiled into Kite_logic.
 add_unit_test(InstanceIconProvider
     SOURCES qml/InstanceIconProvider_test.cpp
     LIBS Kite_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 
-# Exercises only AccountFaceProvider::faceFromSkin(), the pure compositing
-# helper -- requestPixmap() itself needs a real LauncherContext/AccountList,
-# which is neither cheap nor hermetic to fake here. Kite_logic (rather than
-# just Kite_core) because AccountFaceProvider.cpp lives in Kite_qml,
-# which Kite_logic links.
 add_unit_test(AccountFaceProvider
     SOURCES qml/AccountFaceProvider_test.cpp
     LIBS Kite_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
@@ -2219,42 +1884,25 @@ add_unit_test(ModIconProvider
     LIBS Kite_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 
-# Exercises only sanitizedInstanceName(), the free-standing helper
-# renameInstance()/duplicateInstance() build on -- the rest of QmlShell needs
-# a real LauncherContext, same reason NewInstanceController_test.cpp only
-# covers composeSuggestedInstanceName(). Kite_logic because QmlShell.cpp
-# lives in Kite_qml, which Kite_logic links.
 add_unit_test(QmlShell
     SOURCES qml/QmlShell_test.cpp
     LIBS Kite_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 
-# Drives QmlUiHost headlessly: answers a pending request from a queued
-# QTimer the way QML would, and checks cancellation (quit and this object's
-# own destruction) and busy nesting. Kite_logic because QmlUiHost.cpp
-# lives in Kite_qml, which Kite_logic links.
 add_unit_test(QmlUiHost
     SOURCES qml/QmlUiHost_test.cpp
     LIBS Kite_logic Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Gui
     )
 
 add_executable(${Kite_Name} MACOSX_BUNDLE WIN32 main.cpp ${KITE_RCS})
-# Keyword signature: qt_import_qml_plugins below links with PRIVATE, and CMake
-# refuses to mix the two forms on one target.
-#
-# Qt::Svg is not called from C++. It is linked so that the deployment
-# (qt_deploy_runtime_dependencies, which ships the plugins of the Qt modules
-# kite links) packs the SVG image plugin: without it every icon in the QML
-# interface fails to load ("Unsupported image format") in the macOS bundle.
+# Keyword signature: qt_import_qml_plugins links with PRIVATE and CMake refuses to mix the two
+# forms. Qt::Svg is linked only so deployment packs the SVG image plugin; without it QML icons fail
+# to load in the macOS bundle.
 target_link_libraries(${Kite_Name} PRIVATE Kite_logic Kite_qmlplugin
     Qt${QT_VERSION_MAJOR}::Svg)
 
-# Same reason as QmlModule_test: Kite_qml is a static QML module with a
-# separate plugin, and a plain add_executable does not import it. Without this
-# the launcher links and then fails at runtime with 'plugin "Kite_qmlplugin"
-# not found' the moment the QML shell loads. Kite_qmlplugin is linked
-# explicitly above for the same reason as there: the scan finds it only on
-# case-insensitive file systems.
+# Imports the static QML plugins; without it the launcher fails at runtime with 'plugin
+# "Kite_qmlplugin" not found'.
 qt_import_qml_plugins(${Kite_Name})
 
 # Export all symbols so dlopen()'ed .mmco plugins can resolve launcher symbols at runtime
@@ -2269,16 +1917,13 @@ if(DEFINED Kite_AppBinaryName)
 endif()
 if(APPLE)
     set_target_properties(${Kite_Name} PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/MacOSXBundleInfo.plist.in")
-    # The top-level install() only puts the icon into the installed Kite.app;
-    # without this the build-tree kite.app has no Contents/Resources and the
-    # Dock and Finder fall back to the generic app icon.
+    # The top-level install() only covers the installed Kite.app; the build-tree bundle needs its
+    # icon too.
     set(KITE_ICNS "${CMAKE_CURRENT_SOURCE_DIR}/../${Kite_Branding_ICNS}")
     set_source_files_properties(${KITE_ICNS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     target_sources(${Kite_Name} PRIVATE ${KITE_ICNS})
-    # Same for the Java helpers: without them the build-tree kite.app cannot
-    # start a game ("Could not find or load main class
-    # io.github.grxtor.EntryPoint"). Application::getJarsPath() looks in
-    # Contents/Resources/jars.
+    # Application::getJarsPath() looks in Contents/Resources/jars; without the Java helpers the
+    # build-tree bundle cannot start a game.
     get_target_property(KITE_NEWLAUNCH_JAR NewLaunch JAR_FILE)
     get_target_property(KITE_JAVACHECK_JAR JavaCheck JAR_FILE)
     set_source_files_properties(${KITE_NEWLAUNCH_JAR} ${KITE_JAVACHECK_JAR}
@@ -2296,29 +1941,10 @@ if(DEFINED Kite_APP_BINARY_DEFS)
 endif()
 
 if(APPLE)
-    # CMake derives an app bundle's *directory* name from the target's
-    # OUTPUT_NAME, and there is no property to decouple the two: with
-    # OUTPUT_NAME "kite" the only thing install(TARGETS ... BUNDLE) can
-    # produce is "kite.app" (RUNTIME DESTINATION is silently ignored for
-    # bundle targets, and omitting BUNDLE DESTINATION is a hard error).
-    #
-    # Everything else, however, installs into "Kite.app": BINARY_DEST_DIR,
-    # FRAMEWORK_DEST_DIR, RESOURCES_DEST_DIR, JARS_DEST_DIR, the MMCO_*
-    # directories, the .icns/Assets.car rules in the top-level CMakeLists,
-    # the qt_deploy_runtime_dependencies() call below and the macOS
-    # packaging action. On a case-insensitive volume the two spellings
-    # collapse into whichever directory is created first, so the mismatch
-    # only shows up as odd casing; on a case-sensitive one the install
-    # splits in half — a bundle without a binary next to a binary without
-    # a bundle.
-    #
-    # Install the bundle into a staging directory (a name that cannot
-    # collide with Kite.app under either casing rule) and merge it into
-    # place. The staging hop is not cosmetic: install(TARGETS) is what
-    # rewrites the build RPATH into INSTALL_RPATH via install_name_tool,
-    # and it only does that for the copy it makes itself. Copying the
-    # build-tree bundle directly would ship a binary still pointing at the
-    # build directory.
+    # CMake names the bundle directory after OUTPUT_NAME ("kite.app"), but everything else installs
+    # into "Kite.app"; on a case-sensitive volume the install would split in half. So install the
+    # bundle into a staging directory and merge it in. The staging hop is needed: only
+    # install(TARGETS) rewrites the build RPATH into INSTALL_RPATH, and only for its own copy.
     set(Kite_BundleStagingDir "_kite_bundle_staging")
 
     install(TARGETS ${Kite_Name}
@@ -2327,8 +1953,7 @@ if(APPLE)
         LIBRARY DESTINATION ${LIBRARY_DEST_DIR}
     )
 
-    # Runs before the qt_deploy_runtime_dependencies() script registered
-    # below, which expects the binary to already sit at
+    # Runs before the qt_deploy_runtime_dependencies() script, which expects the binary at
     # ${BINARY_DEST_DIR}/$<TARGET_FILE_NAME>.
     install(CODE "
         set(_kite_prefix \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}\")
@@ -2354,19 +1979,13 @@ else()
 endif()
 
 
-############################## Standalone updater ##############################
-
-# The updater is a separate executable on purpose. It has to replace the very
-# libraries the launcher runs from, and a process cannot delete an image it
-# has mapped -- so the code that does the replacing must not be part of the
-# launcher. macOS is excluded: there Sparkle does the job from inside the
-# launcher (see MacSparkleUpdater).
+# A separate executable: it replaces the libraries the launcher runs from, and a process cannot
+# delete an image it has mapped. macOS is excluded: Sparkle does the job there.
 if(NOT APPLE)
     set(MESHUPDATER_UI_FILES
         updater/meshupdater/SelectReleaseDialog.ui
     )
 
-    # Never the versionless wrapper, for the same reason as KITE_UI above.
     qt6_wrap_ui(MESHUPDATER_UI ${MESHUPDATER_UI_FILES})
 
     set(MESHUPDATER_SOURCES
@@ -2383,12 +2002,10 @@ if(NOT APPLE)
         updater/meshupdater/UpdaterDialogs.h
         updater/meshupdater/UpdaterDialogs.cpp
 
-        # Shared with the launcher: the marker files are an interface between
-        # the two, so there is one definition of them and not two.
         updater/UpdateLockFile.h
         updater/UpdateLockFile.cpp
 
-        # Borrowed from the launcher, all free of Application dependencies.
+        # From the launcher; none depend on Application.
         ArchiveOpen.h
         Version.h
         Version.cpp
@@ -2402,8 +2019,6 @@ if(NOT APPLE)
         tasks/Task.h
         tasks/Task.cpp
 
-        # The download uses the launcher's own progress dialog, so it looks
-        # like every other download Kite does.
         ui/dialogs/ProgressDialog.h
         ui/dialogs/ProgressDialog.cpp
         ui/widgets/TaskStepProgressBar.h
@@ -2423,8 +2038,7 @@ if(NOT APPLE)
         BuildConfig
     )
 
-    # WIN32: no console window while updating. Diagnostics go to the log file,
-    # and --debug borrows the parent console when there is one.
+    # WIN32: no console window; diagnostics go to the log file, --debug borrows the parent console.
     add_executable(kite-updater WIN32 updater/meshupdater/updater_main.cpp)
     if(WIN32)
         target_sources(kite-updater PRIVATE updater/meshupdater/updater.exe.manifest)
@@ -2432,8 +2046,7 @@ if(NOT APPLE)
     target_link_libraries(kite-updater kite_updater_logic)
 
     if(MSVC)
-        # The manifest above is embedded explicitly; letting the linker
-        # generate one as well is an error.
+        # The manifest is embedded explicitly; a linker-generated one as well is an error.
         target_link_options(kite-updater PRIVATE "/MANIFEST:NO")
     endif()
 
@@ -2441,9 +2054,7 @@ if(NOT APPLE)
         set_target_properties(kite-updater PROPERTIES INSTALL_RPATH "${Kite_BINARY_RPATH}")
     endif()
 
-    # Next to the launcher, which is where KiteExternalUpdater looks for it
-    # -- and where Application::updaterEnabled() checks before offering
-    # updates at all.
+    # Next to the launcher: KiteExternalUpdater and Application::updaterEnabled() look for it there.
     install(TARGETS kite-updater
         RUNTIME DESTINATION "${BINARY_DEST_DIR}"
     )
@@ -2458,26 +2069,19 @@ if(NOT APPLE)
         LIBS kite_updater_logic LibArchive::LibArchive
         )
 
-    # The file the two passes of an install hand over through.
     add_unit_test(UpdateLockFile
         SOURCES updater/UpdateLockFile_test.cpp
         LIBS kite_updater_logic
         )
 endif()
 
-#### The bundle mess! ####
-# Bundle utilities are used to complete the portable packages - they add all the libraries that would otherwise be missing on the target system.
-# NOTE: it seems that this absolutely has to be here, and nowhere else.
+# Bundle utilities complete the portable packages with the libraries the target system lacks. This
+# has to stay here.
 if(WIN32 OR (UNIX AND APPLE))
     if(WIN32)
-        # Find windeployqt directly — Qt's qt_generate_deploy_script tries to find
-        # windeployqt.debug.bat for Debug builds, which may not be available.
-        #
-        # Deriving the directory from the qmake target alone is not enough:
-        # depending on how Qt was packaged the host tools can sit somewhere
-        # other than next to qmake, so qmake is asked directly as well. And
-        # packagings that carry Qt 5 and Qt 6 side by side suffix the tool
-        # name to keep the two apart, hence the name list.
+        # Find windeployqt directly: qt_generate_deploy_script looks for windeployqt.debug.bat on
+        # Debug builds, which may not exist. The host tools may not sit next to qmake, so qmake is
+        # asked as well; side-by-side Qt packagings suffix the tool name.
         get_target_property(_qt_qmake_loc Qt${QT_VERSION_MAJOR}::qmake IMPORTED_LOCATION)
         get_filename_component(_qt_bin_dir "${_qt_qmake_loc}" DIRECTORY)
 
@@ -2497,9 +2101,6 @@ if(WIN32 OR (UNIX AND APPLE))
         )
 
         if(NOT WINDEPLOYQT_EXECUTABLE)
-            # Report what was actually searched. The bare "not found" this
-            # used to print gave nothing to act on, which is expensive when
-            # the only place it reproduces is a CI runner.
             message(FATAL_ERROR
                 "windeployqt not found.\n"
                 "  Names searched      : windeployqt, "
@@ -2515,15 +2116,9 @@ if(WIN32 OR (UNIX AND APPLE))
 
         message(STATUS "windeployqt: ${WINDEPLOYQT_EXECUTABLE}")
 
-        # windeployqt's option set is not stable across Qt releases:
-        # --skip-plugin-types and --no-system-dxc-compiler are Qt 6 additions
-        # (and the latter only appeared partway through the Qt 6 series). Qt 5's
-        # windeployqt does not merely ignore them, it bails out with
-        # "Unknown options: ..." and a non-zero exit code, which fails install.
-        #
-        # Deriving the option list from the Qt version would mean encoding which
-        # release added what, so the tool is asked directly instead: anything it
-        # does not advertise in its help output is left off the command line.
+        # Not every windeployqt knows --skip-plugin-types and --no-system-dxc-compiler (the latter
+        # came partway through Qt 6), and unknown options fail install, so ask the tool which
+        # switches its help output advertises.
         execute_process(
             COMMAND "${WINDEPLOYQT_EXECUTABLE}" --help
             OUTPUT_VARIABLE _windeployqt_help_out
@@ -2533,8 +2128,7 @@ if(WIN32 OR (UNIX AND APPLE))
         # Some builds print the usage text on stderr, so consider both streams.
         set(_windeployqt_help "${_windeployqt_help_out}${_windeployqt_help_err}")
         if(NOT _windeployqt_help_result EQUAL 0)
-            # Not fatal: the optional switches below are optimisations, and
-            # dropping them only means a slightly larger deployment.
+            # Not fatal: dropping the optional switches only makes the deployment larger.
             message(WARNING
                 "Could not query '${WINDEPLOYQT_EXECUTABLE} --help' "
                 "(exit code: ${_windeployqt_help_result}). Deploying with the "
@@ -2543,18 +2137,9 @@ if(WIN32 OR (UNIX AND APPLE))
             set(_windeployqt_help "")
         endif()
 
-        # Understood by both Qt 5 and Qt 6 windeployqt.
-        # install-qt-action and MSYS2 only provide release Qt, so always use
-        # --release even when the app itself is built in Debug mode.
-        #
-        # --qmldir points windeployqt at our QML sources so qmlimportscanner
-        # can see what our own qt_add_qml_module() modules import (Kite,
-        # Kite.Theme, Kite.Style and Kite.Components are compiled into
-        # kite.exe as static QML modules, but the Qt-provided modules they
-        # import -- QtQuick, QtQuick.Controls, QtQml, ... -- are not, and
-        # still have to be deployed as plugins). --no-quick-import used to be
-        # passed here, which skipped QML deployment entirely and left the
-        # QML shell unable to find QtQuick.Controls at runtime.
+        # install-qt-action and MSYS2 only provide release Qt, so always pass --release. --qmldir
+        # lets qmlimportscanner see what our QML modules import; those Qt modules (QtQuick, ...) are
+        # not compiled in and must be deployed.
         set(WINDEPLOYQT_OPTIONS
             --release
             --no-opengl-sw
@@ -2594,9 +2179,8 @@ if(WIN32 OR (UNIX AND APPLE))
 
         message(STATUS "windeployqt options: ${WINDEPLOYQT_OPTIONS}")
 
-        # Pre-render the options as one quoted argument per line. Expanding the
-        # list directly into the install(CODE) string would paste it in
-        # semicolon-separated, i.e. as a single bogus argument.
+        # One quoted argument per line: a list expanded into install(CODE) would become one
+        # semicolon-joined argument.
         set(WINDEPLOYQT_OPTIONS_CODE "")
         foreach(_windeployqt_opt IN LISTS WINDEPLOYQT_OPTIONS)
             string(APPEND WINDEPLOYQT_OPTIONS_CODE "\n                    \"${_windeployqt_opt}\"")
@@ -2604,26 +2188,10 @@ if(WIN32 OR (UNIX AND APPLE))
     endif()
 
     if(UNIX AND APPLE)
-        # qt_deploy_runtime_dependencies() below only follows *linked*
-        # libraries and Qt's regular (dlopen()'d-by-plugin-type) plugins; it
-        # does not know about QML modules, which are dlopen()'d by URI at
-        # run time. Our own modules (Kite, Kite.Theme, Kite.Style,
-        # Kite.Components) are compiled into kite itself via
-        # qt_import_qml_plugins() and need nothing here. The modules those
-        # import from Qt -- QtQuick, QtQuick.Controls, QtQml, ... -- are not
-        # compiled in and are otherwise entirely missing from the bundle.
-        #
-        # Deploy exactly the Qt QML modules launcher/qml/ imports, found with
-        # qmlimportscanner, rather than the whole of $QT_QML_DIR (which also
-        # contains Quick3D, WebEngine, positioning, etc. that this UI never
-        # touches). Done ahead of the qt_deploy_runtime_dependencies() call
-        # below so its ADDITIONAL_LIBRARIES can include these plugins: each
-        # one has its own dependencies (e.g. libqtquickcontrols2plugin.dylib
-        # needs QtQuickControls2Impl.framework) that nothing linked into
-        # kite itself pulls in, and qt_deploy_runtime_dependencies is the
-        # tool that already knows how to resolve and copy those correctly
-        # (whole .framework bundles, symlink chains and all) rather than
-        # reimplementing that here.
+        # Qt QML modules are loaded by URI at run time, which qt_deploy_runtime_dependencies() does
+        # not follow. Deploy exactly the ones launcher/qml imports (via qmlimportscanner), before
+        # that call so its ADDITIONAL_LIBRARIES resolves each plugin's own dependencies. The Kite.*
+        # modules are compiled in.
         find_program(QMLIMPORTSCANNER_EXECUTABLE
             NAMES qmlimportscanner
             HINTS
@@ -2653,12 +2221,8 @@ if(WIN32 OR (UNIX AND APPLE))
                 "(exit code: ${_qml_scan_result})")
         endif()
 
-        # Pull "relativePath" out of the scanner's JSON by hand rather than
-        # depending on CMake 3.19's string(JSON ...), which the floor here
-        # does not guarantee. Modules the scanner could not resolve on disk
-        # (our own Kite.* modules, looked up only via -importPath) have no
-        # "relativePath" key at all, so they never match and are correctly
-        # left out -- they are compiled in, not deployed.
+        # Reads "relativePath" by regex. Modules without one (our own Kite.*) are compiled in and
+        # left out.
         string(REGEX MATCHALL "\"relativePath\": *\"[^\"]*\""
             _qml_relpath_matches "${_qml_scan_json}")
         set(KITE_QT_QML_MODULES "")
@@ -2678,16 +2242,8 @@ if(WIN32 OR (UNIX AND APPLE))
         endif()
         message(STATUS "Qt QML modules to bundle into ${Kite_Name}.app: ${KITE_QT_QML_MODULES}")
 
-        # Destination-relative path of each module's plugin binary (if any),
-        # once copied below -- NOT the original file under $QT_QML_DIR.
-        # ADDITIONAL_LIBRARIES further down is resolved by
-        # file(GET_RUNTIME_DEPENDENCIES) against the *installed* copy (a
-        # relative path there is looked up under the deploy tool's own
-        # runtime install prefix, same as EXECUTABLE above); pointing it at
-        # $QT_QML_DIR instead would have it run install_name_tool/codesign
-        # machinery against files in the Qt installation itself -- rewriting
-        # a shared, developer-machine-wide Qt install as a side effect of
-        # packaging our own app is not something a build should ever do.
+        # Paths of the plugin binaries as installed, not under $QT_QML_DIR: ADDITIONAL_LIBRARIES
+        # would otherwise run install_name_tool/codesign against the Qt installation itself.
         set(KITE_QT_QML_PLUGIN_FILES "")
         foreach(_qml_module IN LISTS KITE_QT_QML_MODULES)
             file(GLOB _qml_module_plugin_libs "${QT_QML_DIR}/${_qml_module}/*.dylib")
@@ -2697,35 +2253,18 @@ if(WIN32 OR (UNIX AND APPLE))
             endforeach()
         endforeach()
 
-        # Pre-render as one quoted argument per line, same reason as
-        # WINDEPLOYQT_OPTIONS_CODE above: splicing the list directly into the
-        # CONTENT string would paste it in semicolon-separated.
         set(KITE_QT_QML_PLUGIN_FILES_CODE "")
         foreach(_qml_plugin_file IN LISTS KITE_QT_QML_PLUGIN_FILES)
             string(APPEND KITE_QT_QML_PLUGIN_FILES_CODE "\n                    \"${_qml_plugin_file}\"")
         endforeach()
 
         foreach(_qml_module IN LISTS KITE_QT_QML_MODULES)
-            # Copy only the files ${_qml_module} owns directly (its qmldir,
-            # plugin binary, any local .qml/.qmltypes) -- not recursively.
-            # $QT_QML_DIR nests *other*, unrelated QML modules as
-            # subdirectories of shared parents (QtQuick/ alone also holds
-            # WebEngine's Pdf/, Qt3D's Scene2D and Scene3D, VirtualKeyboard,
-            # Timeline, ...), and a plain recursive install(DIRECTORY) would
-            # have pulled all of that in too. Any subdirectory that genuinely
-            # is a module we need is already its own separate entry here
-            # (qmlimportscanner reports e.g. "QtQuick/Controls/Basic/impl"
-            # alongside "QtQuick/Controls/Basic"), so nothing needs to
-            # recurse by hand. FOLLOW_SYMLINK_CHAIN matters on installations
-            # (e.g. Homebrew's, where every file here is itself a symlink
-            # into a completely different keg directory) where a plain copy
-            # would reproduce a dangling symlink instead of the real file.
-            #
-            # Runs ahead of the qt_deploy_runtime_dependencies() script below
-            # (registered via install(SCRIPT), further down) so that by the
-            # time it inspects ${KITE_QT_QML_PLUGIN_FILES}, those files
-            # already exist at their *installed* location -- install rules
-            # run in registration order within a directory.
+            # Copy only the files each module owns directly, not recursively: $QT_QML_DIR nests
+            # unrelated modules under shared parents (QtQuick/ also holds WebEngine's Pdf/, Qt3D,
+            # ...), and qmlimportscanner lists wanted subdirectories as their own entries.
+            # FOLLOW_SYMLINK_CHAIN matters on Homebrew, where every file is a symlink into another
+            # keg. Install rules run in registration order, so this precedes the
+            # qt_deploy_runtime_dependencies() script below.
             install(CODE "
                 file(GLOB _qml_module_files LIST_DIRECTORIES false
                     \"${QT_QML_DIR}/${_qml_module}/*\")
@@ -2738,23 +2277,8 @@ if(WIN32 OR (UNIX AND APPLE))
             ")
         endforeach()
 
-        # qt_generate_deploy_script/qt_deploy_runtime_dependencies need Qt 6.3+,
-        # which the 6.4 floor guarantees. This replaced a macdeployqt shell-out
-        # that only existed for the Qt 5 build.
-        #
-        # ADDITIONAL_LIBRARIES: qt_deploy_runtime_dependencies() above only
-        # follows *linked* libraries and Qt's regular
-        # (dlopen()'d-by-plugin-type) plugins; it does not know about QML
-        # modules, which are dlopen()'d by URI at run time. Our own modules
-        # (Kite, Kite.Theme, Kite.Style, Kite.Components) are
-        # compiled into kite itself via qt_import_qml_plugins() and need
-        # nothing here. The Qt QML plugins copied in just above are not
-        # compiled in, though, and have dependencies of their own (e.g.
-        # libqtquickcontrols2plugin.dylib needs QtQuickControls2Impl.framework)
-        # that nothing linked into kite itself pulls in -- ADDITIONAL_LIBRARIES
-        # is what makes qt_deploy_runtime_dependencies also resolve and copy
-        # those (whole .framework bundles, symlink chains and all) rather
-        # than reimplementing that here.
+        # ADDITIONAL_LIBRARIES makes qt_deploy_runtime_dependencies() also resolve and copy the QML
+        # plugins' own dependencies (e.g. QtQuickControls2Impl.framework), as whole frameworks.
         qt_generate_deploy_script(
             TARGET ${Kite_Name}
             OUTPUT_SCRIPT QT_DEPLOY_SCRIPT
@@ -2776,18 +2300,9 @@ if(WIN32 OR (UNIX AND APPLE))
         )
 
         foreach(_qml_module IN LISTS KITE_QT_QML_MODULES)
-            # Each plugin .dylib in ${_qml_module} carries an @loader_path
-            # (or @rpath) reference to sibling Qt frameworks, resolved
-            # relative to *its original location* inside the Qt install
-            # ($QT_QML_DIR/${_qml_module}, some fixed number of directories
-            # above $QT_LIBS_DIR). That relationship does not hold once the
-            # plugin is copied into Contents/Resources/qml/... -- Frameworks
-            # sits somewhere else entirely. install_name_tool -add_rpath
-            # points it at the real Frameworks directory too; this adds a
-            # working rpath rather than replacing the existing (now
-            # irrelevant) one, so it is harmless if the plugin also has some
-            # already-working entry, and safe to re-run against an existing
-            # install (a duplicate -add_rpath just fails and is ignored).
+            # A copied plugin's @loader_path/@rpath references to sibling Qt frameworks only
+            # resolved from its original place in the Qt install. Add an rpath to the real
+            # Frameworks directory; a duplicate -add_rpath just fails and is ignored.
             file(RELATIVE_PATH _qml_module_to_frameworks
                 "${CMAKE_INSTALL_PREFIX}/${QML_DEST_DIR}/${_qml_module}"
                 "${CMAKE_INSTALL_PREFIX}/${FRAMEWORK_DEST_DIR}")
@@ -2806,14 +2321,9 @@ if(WIN32 OR (UNIX AND APPLE))
         endforeach()
     endif()
 
-    # Bundle our linked dependencies
-    # Collect bin/ directories from CMAKE_PREFIX_PATH (both CMake variable and
-    # environment variable) so RUNTIME_DEPENDENCY_SET can locate third-party
-    # DLLs that live in a dependency prefix.
-    #
-    # nbt++/rainbow are NOT handled here: they are our own targets in
-    # this build tree, and the top-level CMakeLists.txt installs them directly
-    # to the right place. Everything else under libraries/ links statically.
+    # Collect bin/ directories from CMAKE_PREFIX_PATH (variable and environment) so
+    # RUNTIME_DEPENDENCY_SET can find third-party DLLs. nbt++/rainbow are installed by the top-level
+    # CMakeLists.txt; everything else under libraries/ links statically.
     set(_prefix_path_bins "")
     foreach(_prefix IN LISTS CMAKE_PREFIX_PATH)
         list(APPEND _prefix_path_bins "${_prefix}/bin")
@@ -2844,8 +2354,6 @@ if(WIN32 OR (UNIX AND APPLE))
     )
 
     if(WIN32)
-        # Deploy Qt plugins and DLLs using windeployqt. WINDEPLOYQT_OPTIONS is
-        # assembled above from the switches this windeployqt actually supports.
         install(CODE "
             execute_process(
                 COMMAND \"${WINDEPLOYQT_EXECUTABLE}\"${WINDEPLOYQT_OPTIONS_CODE}
@@ -2860,19 +2368,10 @@ if(WIN32 OR (UNIX AND APPLE))
             endif()
         ")
 
-        #################### OpenSSL runtime (Windows) ####################
-        #
-        # Qt resolves OpenSSL with dlopen/LoadLibrary rather than linking it,
-        # so neither windeployqt nor install(RUNTIME_DEPENDENCY_SET) ever sees
-        # it and the package ships without a TLS backend. Qt 6 hides this on
-        # Windows by falling back to its Schannel plugin, so a package without
-        # OpenSSL still works there -- but only over Schannel.
-        #
-        # The libraries are named rather than searched for on purpose: which
-        # OpenSSL is correct depends on the *Qt build*, not on the machine
-        # (MSYS2's Qt wants the 3.x ABI), and picking up whatever happens to sit
-        # in a bin directory is how you end up shipping a DLL Qt cannot use.
-        # CI passes the exact files.
+        # Qt loads OpenSSL with LoadLibrary rather than linking it, so
+        # neither windeployqt nor RUNTIME_DEPENDENCY_SET sees it; without it Qt falls back to
+        # Schannel. The libraries are named, not searched for: the right OpenSSL depends on the Qt
+        # build (MSYS2's Qt wants the 3.x ABI), and CI passes the exact files.
         if(Kite_BUNDLE_OPENSSL_LIBS)
             foreach(_openssl_lib IN LISTS Kite_BUNDLE_OPENSSL_LIBS)
                 if(NOT EXISTS "${_openssl_lib}")
@@ -2927,21 +2426,13 @@ if(WIN32 OR (UNIX AND APPLE))
         ]])
     endif()
 
-    # Add qt.conf - tell Qt where to find plugins relative to the executable
-    #
-    # QmlImports is the Qt 6 key for this (Qt 6 ignores the older Qt 5
-    # Qml2Imports key); it has to be set explicitly here, same as Plugins,
-    # because nothing else on Windows/macOS writes a qt.conf for this install.
-    # QT_CONF_PLUGINS_DEST/QT_CONF_QML_DEST (set in the top-level
-    # CMakeLists.txt, next to PLUGIN_DEST_DIR/QML_DEST_DIR) are where
-    # windeployqt (Windows) / the QML deploy step above (macOS) actually put
-    # Qt's plugins and QML modules, expressed the way qt.conf expects them on
-    # each platform -- which is *not* the same as the install()-DESTINATION
-    # form PLUGIN_DEST_DIR/QML_DEST_DIR use elsewhere in this file.
+    # qt.conf tells Qt where plugins and QML modules are, relative to the executable. QmlImports is
+    # the Qt 6 key and must be set explicitly, like Plugins, since nothing else on Windows/macOS
+    # writes a qt.conf. The QT_CONF_*_DEST variables (top-level CMakeLists.txt) are those paths in
+    # qt.conf form, not the install() DESTINATION form.
     install(
         CODE "file(WRITE \"\${CMAKE_INSTALL_PREFIX}/${RESOURCES_DEST_DIR}/qt.conf\" \"[Paths]\nPlugins = ${QT_CONF_PLUGINS_DEST}\nQmlImports = ${QT_CONF_QML_DEST}\n\")"
     )
-    # Add qtlogging.ini as a config file
     install(
         FILES "qtlogging.ini"
         DESTINATION ${CMAKE_INSTALL_PREFIX}/${RESOURCES_DEST_DIR}

@@ -117,7 +117,6 @@ namespace Meta
 	{
 		const QVector<VersionListPtr> lists =
 			std::dynamic_pointer_cast<Index>(other)->m_lists;
-		// initial load, no need to merge
 		if (m_lists.isEmpty()) {
 			beginResetModel();
 			m_lists = lists;

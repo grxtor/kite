@@ -108,10 +108,9 @@ namespace ModpacksCH
 		bool serverOnly;
 		bool optional;
 		int64_t updated;
-		/* The file's CurseForge project and file, when FTB serves it from
-		 * CurseForge's CDN; 0 otherwise. A file the author keeps off
-		 * third-party downloads is refused there, and these ids are what
-		 * the user is pointed at to fetch it by hand. */
+		/* The CurseForge project and file when FTB serves it from CurseForge's
+		 * CDN, else 0. A file kept off third-party downloads is refused there;
+		 * these ids point the user to fetch it by hand. */
 		int curseforgeProject = 0;
 		int curseforgeFile = 0;
 	};

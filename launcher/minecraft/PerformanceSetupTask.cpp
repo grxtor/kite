@@ -53,8 +53,8 @@ void PerformanceSetupTask::executeTask()
 	m_mcVersion = profile->getComponentVersion(QStringLiteral("net.minecraft"));
 	m_loader = profile->primaryModLoader();
 	if (!PerformanceSetup::hasLoader(m_loader)) {
-		/* A vanilla instance is never changed: Kite Performance makes
-		 * a separate, modded one for it instead. */
+		// A vanilla instance is never changed: Performance makes a separate
+		// modded one.
 		finish(tr("Kite Performance needs a mod loader; this instance is "
 				  "left as it is"));
 		return;

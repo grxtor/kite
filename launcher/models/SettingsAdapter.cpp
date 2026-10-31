@@ -39,8 +39,7 @@ SettingsAdapter::SettingsAdapter(SettingsObjectPtr settings, QObject* parent)
 			[this](const Setting& setting, QVariant value) {
 				emit valueChanged(setting.id(), value);
 			});
-	// Resetting removes the stored value, so the effective value becomes
-	// the default again -- report that, not an invalid QVariant.
+	// Resetting removes the stored value: report the default, not an invalid QVariant.
 	connect(m_settings.get(), &SettingsObject::settingReset, this,
 			[this](const Setting& setting) {
 				emit valueChanged(setting.id(), setting.get());
@@ -82,9 +81,7 @@ void SettingsAdapter::setValue(const QString& id, const QVariant& value)
 
 	QVariant converted = value;
 	QVariant defVal = setting->defValue();
-	// Only convert against a default that actually pins down a type --
-	// settings registered with no default (an invalid QVariant) have
-	// nothing to convert to, so whatever QML sent is stored as-is.
+	// Settings registered with no default have no type to convert to; QML's value is stored as-is.
 	if (defVal.isValid() && converted.isValid() &&
 		converted.metaType() != defVal.metaType() &&
 		!converted.convert(defVal.metaType())) {

@@ -5,13 +5,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * One "Continue playing" card of the Sahne look: 156 px tall, rounded, on
- * the raised surface -- or, when the instance has a screenshot of its own,
- * over that screenshot under a dark fade at the foot. Top: what it runs as
- * a chip (or "Crashed last time" as a warning one) and how long it has been
- * played; bottom: the name and "Fabric 26.3 • 4 days ago". Under the
- * pointer a 40 px Play in the kite's cut appears at the bottom right (Stop
- * while it runs). Clicking opens the instance page; a right-click its menu.
+ * One "Continue playing" card of the Sahne look: 156 px tall, on the raised surface or over the instance's
+ * screenshot under a dark fade. A chip with what it runs (or "Crashed last time") and play time at the top; name
+ * and "Fabric 26.3 • 4 days ago" at the bottom; a 40 px Play appears under the pointer.
  */
 HomeRowBase {
     id: root
@@ -22,7 +18,6 @@ HomeRowBase {
     readonly property int playSize: Theme.control.height
     readonly property int nameSize: 16
     readonly property bool hasPhoto: root.row.coverImage.length > 0
-    // Text over a screenshot takes the media colours.
     readonly property color ink: root.hasPhoto ? Theme.media.text : Theme.palette.textPrimary
     readonly property color inkSecondary: root.hasPhoto ? Theme.media.textSecondary : Theme.palette.textSecondary
     readonly property string loaderText: root.row.loader.length > 0 ? root.row.loader : qsTr("Vanilla")
@@ -34,7 +29,6 @@ HomeRowBase {
 
     implicitHeight: root.cardHeight
 
-    // A chip: a small rounded label, with a warning icon when it is one.
     component Chip: Rectangle {
         property string text
         property color ink: Theme.media.textSecondary
@@ -75,7 +69,6 @@ HomeRowBase {
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
-    // Its newest screenshot, with the fade the words sit on.
     CoverArt {
         anchors.fill: parent
         visible: root.hasPhoto
@@ -87,7 +80,6 @@ HomeRowBase {
         matte: Theme.palette.canvas
     }
 
-    // The hairline a hovered card gets, over the picture.
     Rectangle {
         anchors.fill: parent
         radius: Theme.radius.lg

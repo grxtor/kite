@@ -29,12 +29,9 @@
 
 namespace
 {
-	/* Mirrors PluginUiRenderer.cpp's (anonymous-namespace, so unreachable
-	 * from here) jsonQuoteString(): the widget renderer's own convention
-	 * for a string value_json (text_field/choice change, list select/
-	 * activate). Duplicated rather than exported from PluginUiRenderer for
-	 * one extra caller — six lines, and the convention itself is what
-	 * needs to match, not the code. */
+	/* Mirrors PluginUiRenderer.cpp's jsonQuoteString() (anonymous namespace, unreachable from
+	 * here): the convention for a string value_json must match, so it is duplicated rather than
+	 * exported. */
 	QString quoteJsonString(const QString& s)
 	{
 		QJsonArray tmp;
@@ -56,12 +53,9 @@ PluginSurfaceModel::PluginSurfaceModel(PluginManager* manager, int anchor,
 		connect(m_manager, &PluginManager::surfacesChanged, this,
 				&PluginSurfaceModel::refresh);
 	}
-	/* Virtual dispatch during construction always resolves to this class,
-	 * never a subclass's override — so a fetchSurfaces() test seam (see
-	 * PluginSurfaceModel.h) only takes effect once construction has
-	 * finished and the subclass calls refresh() itself, same as everyone
-	 * else changing what fetchSurfaces() would return. This first call
-	 * just seeds m_rows from `manager` (or empty, with a null one). */
+	/* Virtual dispatch in a constructor never reaches a subclass's fetchSurfaces() override, so the
+	 * test seam takes effect only when the subclass calls refresh() itself; this call seeds m_rows
+	 * from `manager` (empty for null). */
 	refresh();
 }
 
@@ -183,8 +177,7 @@ void PluginSurfaceModel::refresh()
 		m_rows.append(row);
 	}
 
-	// Drop bookkeeping for surfaces that no longer exist, so a destroyed
-	// surface's id doesn't linger in these maps forever.
+	// Drop bookkeeping for destroyed surfaces.
 	for (auto it = m_revisions.begin(); it != m_revisions.end();) {
 		if (seen.contains(it.key()))
 			++it;
@@ -224,8 +217,8 @@ QString PluginSurfaceModel::valueToJson(const QVariant& value)
 	default:
 		break;
 	}
-	// Anything else -- a string, or a list row's id -- quoted the same way
-	// a text_field/choice change or a list select/activate is.
+	// A string or a list row's id: quoted like a text_field/choice change or a list
+	// select/activate.
 	return quoteJsonString(value.toString());
 }
 

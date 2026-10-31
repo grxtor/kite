@@ -7,15 +7,11 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One row of an instance tab's list -- a world, a server, a data pack, a
- * backup, a component -- so those tabs read as one set, at the scale of
- * Home's rows and Content's table: a card with the thing's square
- * (RowThumb), its name over one line of what it is ("Survival  •  Day 12
- * •  Yesterday"), and its own controls on the right (a button, a switch,
- * ⋯). A right-click asks for the row's menu.
- *
- * Items declared inside go to the controls on the right; `badges` go after
- * the meta line. `thumb` is the RowThumb itself.
+ * One row of an instance tab's list (a world, a server, a data pack, a backup,
+ * a component): a card with a square (RowThumb), a name over one line of meta
+ * and the row's controls on the right. A right-click asks for the row's menu.
+ * Items declared inside go to the controls; `badges` go after the meta line;
+ * `thumb` is the RowThumb itself.
  *
  *     TabListRow {
  *         title: name
@@ -32,7 +28,6 @@ Rectangle {
 
     property string title
     property string meta
-    // Switched off: what it is fades, its controls stay as they are.
     property bool dimmed: false
     readonly property alias thumb: thumb
     default property alias actions: actionRow.data
@@ -72,7 +67,6 @@ Rectangle {
             Layout.fillWidth: true
             Layout.minimumWidth: 0
             spacing: Theme.space.xxs
-            // As Content's switched-off rows: faded, still readable.
             opacity: root.dimmed ? Theme.opacity.disabled + 0.2 : 1
 
             Text {

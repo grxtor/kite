@@ -60,7 +60,6 @@ namespace Meta
 			return "index.json";
 		}
 
-		// queries
 		VersionListPtr get(const QString& uid);
 		VersionPtr get(const QString& uid, const QString& version);
 		bool hasUid(const QString& uid) const;

@@ -9,33 +9,23 @@ import QtQuick.Dialogs
 import Kite.Theme
 
 /*
- * Where this instance's modpack came from, and what other versions of it
- * exist -- the widget-free replacement for ManagedPackPage, scoped to
- * instances with a catalogue id (see ManagedPackController's class
- * comment for what is deliberately not reproduced here).
- *
- * The page header already names the pack, so this tab starts at what the
- * header cannot say: the installed version, a drop-down of the others with
- * an Update button, and -- only once there is a version to read about --
- * its changelog.
+ * Where this instance's modpack came from and what other versions exist: the
+ * installed version, a drop-down of the others with an Update button, and the
+ * changelog of the picked one.
  */
 Item {
     id: root
 
     // InstanceDetails.managedPack (ManagedPackController), or null.
     property var controller: null
-    // The TaskWatcher of an update in progress, if any.
     property var watcher: null
     readonly property bool updating: !!root.watcher && root.watcher.running
 
     readonly property var versions: root.controller ? root.controller.versions : []
     readonly property bool hasVersions: !!root.controller && root.controller.hasPackId && root.versions.length > 0
-    // The version the drop-down shows, or null.
     readonly property var picked: root.hasVersions && versionBox.currentIndex >= 0
                                   && versionBox.currentIndex < root.versions.length
                                   ? root.versions[versionBox.currentIndex] : null
-    // One line per version for the drop-down: its name, the Minecraft it is
-    // for, and a word where it is not a plain release or is the installed one.
     readonly property var versionLabels: root.versions.map((v) => {
         var label = String(v.name || v.label)
         if (v.minecraft)
@@ -48,40 +38,28 @@ Item {
     })
     readonly property int versionBoxWidth: 360
 
-    // Emitted once an update has landed on disk: this instance has just
-    // been replaced, so the page showing it -- including this tab's own
-    // controller -- is no longer trustworthy to keep looking at. See
-    // ManagedPackController::updateToVersion()'s own comment.
+    // Emitted once an update has landed on disk: this instance was just replaced, so the page
+    // showing it (including this controller) is stale.
     signal updated()
 
-    // Fires once at creation (the property's initial binding still counts
-    // as a change from its declared `null` default) and again every time
-    // this tab's instance page opens a different instance - see
-    // VersionTab.qml's minecraftVersions binding for the same "read/bind
-    // triggers the fetch" idiom, here made explicit since fetchVersions()
-    // is a method, not a property getter.
+    // Fires at creation (the initial binding counts as a change from `null`) and whenever the page
+    // opens another instance; fetchVersions() is a method, so the fetch is explicit.
     onControllerChanged: {
         root.watcher = null
         if (root.controller)
             root.controller.fetchVersions()
     }
 
-    // The lowercase URI scheme of "s" (e.g. "https" for "https://x"), or
-    // null if it has none.
     function schemeOf(s) {
         var m = /^([a-zA-Z][a-zA-Z0-9+.-]*):/.exec(String(s))
         return m ? m[1].toLowerCase() : null
     }
 
     /*
-     * Mirrors ManagedPackPage.cpp's anchorClicked guard exactly: a
-     * changelog is remote, untrusted text, and handing an arbitrary
-     * scheme to the desktop is how a "file:" or worse ends up being
-     * opened, so only http(s) links are ever passed on. A schemeless
-     * link is CurseForge's outbound redirect, which in changelog HTML
-     * arrives as the relative "linkout?remoteUrl=<percent-encoded>" --
-     * the real destination is in the query, decoded and scheme-checked
-     * the same way before it is allowed through.
+     * A changelog is remote, untrusted text: only http(s) links are passed on. A
+     * schemeless link is CurseForge's outbound redirect, the relative
+     * "linkout?remoteUrl=<percent-encoded>"; its real destination is in the
+     * query, decoded and scheme-checked the same way.
      */
     function openChangelogLink(link) {
         var url = String(link)
@@ -157,8 +135,6 @@ Item {
                 visible: root.controller && root.controller.packUrl.length > 0
                 onClicked: Qt.openUrlExternally(root.controller.packUrl)
             }
-            // An update from a pack file on this computer: works for any
-            // pack, including one with no catalogue id.
             HoverReason {
                 reason: root.controller && root.controller.running
                         ? qsTr("The game is running. The pack can be updated once it closes.") : ""
@@ -201,8 +177,7 @@ Item {
             text: qsTr("Kite does not have a catalogue id on record for this pack, so it cannot list other versions here. You can still update it from a pack file, or install the pack again from Discover for a specific version.")
         }
 
-        // What went wrong in plain words only: the catalogue's own message
-        // is a raw job string meant for the log, not the user.
+        // Plain words only: the catalogue's own message is a raw job string meant for the log.
         NoticeBar {
             Layout.fillWidth: true
             visible: !!root.controller && root.controller.hasPackId && root.controller.error.length > 0
@@ -222,8 +197,7 @@ Item {
             font.pixelSize: Theme.type.body.pixelSize
         }
 
-        // The other versions, as a drop-down: the newest is picked at first,
-        // so its changelog is there to read before updating to it.
+        // The newest is picked first, so its changelog is there to read before updating.
         Rectangle {
             Layout.fillWidth: true
             visible: root.hasVersions
@@ -255,10 +229,6 @@ Item {
                 Item { Layout.fillWidth: true }
                 Button {
                     enabled: !root.updating && !!root.picked && root.picked.installable && !root.picked.current
-                    // The tab's one main action, shown as such only while it
-                    // would do something: a version other than the installed
-                    // one is picked (the newest, by default, when there is
-                    // an update).
                     highlighted: enabled
                     text: qsTr("Update")
                     icon.source: Icons.url("download")
@@ -285,7 +255,6 @@ Item {
                 clip: true
                 ScrollBar.vertical: ScrollBar {}
 
-                // A changelog may link images; see RemoteRichText.
                 RemoteRichText {
                     id: changelog
                     width: parent.width
@@ -298,7 +267,6 @@ Item {
             }
         }
 
-        // Pushes the rows above to the top when there is no changelog box.
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true

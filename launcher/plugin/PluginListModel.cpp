@@ -82,7 +82,6 @@ QVariant PluginListModel::data(const QModelIndex& index, int role) const
 		case CanToggleRole:
 			return !superseded;
 		case DependenciesRole: {
-			// The same wording PluginsDialog's details pane uses.
 			QStringList parts;
 			for (const auto& dependency : mod.dependencies) {
 				QString part = dependency.name;

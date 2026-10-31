@@ -25,45 +25,25 @@
 #include <QJsonObject>
 #include <QString>
 
-/* One skin in the local skin library.
- *
- * A skin is a PNG file on disk plus three pieces of metadata that the file
- * itself cannot carry: which arm width the player model should use, which
- * cape was worn with it, and the profile texture URL it was last uploaded
- * as. The URL is what lets the library recognise "this saved skin is the
- * one the account is currently wearing" after a restart, since the account
- * only ever tells us a URL.
- *
- * The file name (without extension) is the identity of the entry: it is the
- * display name, the key the library and the dialog pass around, and what
- * renaming changes. Nothing else is unique -- two files can easily hold the
- * same pixels.
- *
- * Deliberately a plain value type, not a QObject: the library keeps these in
- * a QList and hands out raw pointers into it, and copies are made freely
- * while rebuilding that list.
- */
+// One skin in the local skin library: a PNG plus the metadata the file cannot
+// carry (arm width, cape, last uploaded texture URL). The file name without
+// extension is the entry's identity. A plain value type: the library copies
+// entries freely and hands out pointers into its list.
 class SkinEntry
 {
   public:
-	/* Arm width of the player model this texture was drawn for.
-	 *
-	 * Named after what it actually controls rather than after Steve and
-	 * Alex, because the mapping between the two is a UI label, not a fact
-	 * about the texture. The wire format spells these "CLASSIC" and "SLIM";
-	 * see armsToken(). */
+	// Arm width of the player model; the profile API spells these "CLASSIC" and
+	// "SLIM" (see armsToken()).
 	enum class Arms { Classic, Slim };
 
 	SkinEntry() = default;
 
-	/* Adopt a PNG that is already sitting in the library directory. */
 	explicit SkinEntry(const QString& pngPath);
 
-	/* Restore an entry from the library index. `record` supplies the
-	 * metadata, `libraryDir` is where the PNG named in it lives. */
+	// Restores an entry from the library index; `libraryDir` holds the PNG.
 	SkinEntry(const QDir& libraryDir, const QJsonObject& record);
 
-	/* Display name and library key: the file name minus ".png". */
+	// Display name and library key: the file name minus ".png".
 	QString name() const;
 
 	QString path() const
@@ -71,15 +51,13 @@ class SkinEntry
 		return m_path;
 	}
 
-	/* The normalised 64x64 texture. Empty if the file could not be read or
-	 * is not a skin; see isUsable(). */
+	// The normalised 64x64 texture; empty if the file is not a skin.
 	QImage texture() const
 	{
 		return m_texture;
 	}
 
-	/* Flat 36x36 front-and-back sprite, for the list view and for the
-	 * fallback preview when there is no OpenGL. */
+	// Flat 36x36 front-and-back sprite.
 	QImage thumbnail() const
 	{
 		return m_thumbnail;
@@ -95,7 +73,7 @@ class SkinEntry
 		return m_arms;
 	}
 
-	/* The spelling the profile API uses: "CLASSIC" or "SLIM". */
+	// "CLASSIC" or "SLIM", as the profile API spells it.
 	QString armsToken() const;
 
 	QString textureUrl() const
@@ -103,31 +81,23 @@ class SkinEntry
 		return m_textureUrl;
 	}
 
-	/* The arm width the account was last seen wearing this skin with, for
-	 * the entry whose textureUrl() the account wears. A rescan compares the
-	 * profile against it, not against arms(), so it can tell a change made
-	 * elsewhere (in game, on another machine) from a width picked here and
-	 * not worn yet. */
+	// The arm width the account was last seen wearing this skin with. A rescan
+	// compares the profile against it, not arms(), to tell a change made
+	// elsewhere from a width picked here and not worn yet.
 	Arms wornArms() const
 	{
 		return m_wornArms;
 	}
 
-	/* @p image in the one shape every texture here has: 64x64, ARGB32,
-	 * base layer opaque, a legacy 64x32 skin widened (its left limbs
-	 * mirrored from the right). Anything that is not a skin comes back
-	 * untouched. For skins that are not files, such as an account's. */
+	// Brings @p image to 64x64 ARGB32 with an opaque base layer, widening a
+	// legacy 64x32 skin. Non-skins come back untouched.
 	static QImage normalisedTexture(const QImage& image);
 
-	/* Whether this is a skin at all: 64 pixels wide and either 32 (legacy)
-	 * or 64 pixels tall. Everything else -- HD skins, arbitrary images, a
-	 * PNG that failed to decode -- is rejected. */
+	// Whether this is a skin: 64 pixels wide and 32 (legacy) or 64 tall.
 	bool isUsable() const;
 
-	/* Rename the file on disk, and with it this entry's identity.
-	 *
-	 * Fails without touching anything if the target name is already taken,
-	 * so a rename can never silently swallow another skin. */
+	// Renames the file on disk, and with it the entry's identity. Fails without
+	// changes if the target name is taken.
 	bool renameTo(const QString& newName);
 
 	void setCapeId(const QString& capeId)
@@ -135,8 +105,7 @@ class SkinEntry
 		m_capeId = capeId;
 	}
 
-	/* Also regenerates the thumbnail: arm width changes which columns of
-	 * the texture the arms are drawn from. */
+	// Also regenerates the thumbnail.
 	void setArms(Arms arms);
 
 	void setTextureUrl(const QString& url)
@@ -149,8 +118,7 @@ class SkinEntry
 		m_wornArms = arms;
 	}
 
-	/* Re-read the PNG from disk. Used when the directory watcher reports
-	 * that the file changed underneath us. */
+	// Re-reads the PNG from disk.
 	void reload();
 
 	QJsonObject toRecord() const;

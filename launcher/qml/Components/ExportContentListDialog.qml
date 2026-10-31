@@ -9,24 +9,18 @@ import QtQuick.Dialogs
 import Kite.Theme
 
 /*
- * "Export list…": the instance's mods (or packs) as text to paste or keep
- * -- HTML, Markdown, plain text, JSON, CSV, or a line of your own with
- * {name}, {version} and friends filled in. The QML replacement for
- * ExportListDialog; the text itself comes from ContentListExport through
- * InstanceContentController.exportText(), so both UIs write the same thing.
- *
- * The preview is exactly what is saved or copied.
+ * "Export list…": the instance's mods (or packs) as text to paste or keep -- HTML, Markdown, plain text, JSON, CSV or
+ * a line of your own with {name}, {version} and friends. The text comes from ContentListExport through
+ * InstanceContentController.exportText(); the preview is exactly what is saved or copied.
  */
 Dialog {
     id: root
 
-    // InstanceContentController, and what to export from it: the rows with
-    // these keys, or every row when empty.
+    // InstanceContentController. `keys` picks the rows to export; every row when empty.
     property var controller: null
     property string kind: "mods"
     property var keys: []
     property string noun: qsTr("mods")
-    // The instance's name, for the suggested file name.
     property string listName: ""
 
     signal saved(string path)
@@ -83,10 +77,7 @@ Dialog {
     width: Math.min(640, parent ? parent.width - Theme.space.xxl * 2 : 640)
     height: Math.min(620, parent ? parent.height - Theme.space.xxl * 2 : 620)
     modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
     topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
     bottomPadding: Theme.space.sm
     title: root.keys.length > 0 ? qsTr("Export %1 selected").arg(root.keys.length) : qsTr("Export list")
 
@@ -118,7 +109,6 @@ Dialog {
                 valueRole: "value"
                 Component.onCompleted: currentIndex = indexOfValue(root.format)
                 onActivated: {
-                    // A custom line starts from the format it replaces.
                     if (currentValue === "custom" && root.lineTemplate.length === 0 && root.controller)
                         root.lineTemplate = root.controller.exampleLine(root.format)
                     root.format = currentValue
@@ -127,7 +117,6 @@ Dialog {
             Item { Layout.fillWidth: true }
         }
 
-        // What each line carries, for the built-in formats.
         Flow {
             Layout.fillWidth: true
             visible: !root.custom
@@ -136,7 +125,6 @@ Dialog {
                 model: root.fieldOptions
                 CheckBox {
                     required property var modelData
-                    // Box edge on the content edge, under "Format".
                     leftPadding: 0
                     text: modelData.label
                     checked: root.fields.indexOf(modelData.value) >= 0
@@ -145,7 +133,6 @@ Dialog {
             }
         }
 
-        // A line of your own.
         ColumnLayout {
             Layout.fillWidth: true
             visible: root.custom
@@ -272,8 +259,7 @@ Dialog {
         }
     }
 
-    // QML has no clipboard API of its own; an invisible text edit does
-    // (same as LogTab).
+    // QML has no clipboard API of its own; an invisible text edit does (as in LogTab).
     TextEdit {
         id: clipboardHelper
         visible: false

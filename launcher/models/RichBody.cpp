@@ -37,18 +37,14 @@
 
 namespace
 {
-// An image the author sized this small (width or height, in pixels) is an
-// icon or an emoji in a line of text, not a picture: it stays inline.
+// Images this small (width or height, px) are icons or emoji and stay inline.
 constexpr int kInlineImageMaxSize = 48;
 
-// Line breaks inside one paragraph (<br>, or a hard break in Markdown)
-// come through the parsers as this character.
+// Line breaks within a paragraph come through the parsers as this character.
 constexpr char16_t kLineSeparator = 0x2028;
 
-/* Stand-ins for the raw HTML that Qt's Markdown parser loses (see
- * protectHtml()), from the Unicode private use area, so no real text can
- * contain them. An image is kImageOpen, its index in the image list, then
- * kImageClose. */
+/* Stand-ins (private use area) for raw HTML that Qt's Markdown parser loses.
+ * An image is kImageOpen, its index in the image list, then kImageClose. */
 constexpr char16_t kImageOpen = 0xE000;
 constexpr char16_t kImageClose = 0xE001;
 constexpr char16_t kBreakToken = 0xE002;
@@ -80,15 +76,13 @@ QString attr(const QString& value)
 	return value.trimmed().toHtmlEscaped();
 }
 
-/* A picture as the body names it. Width and height are the author's, in
- * pixels, or 0 when not given (or given in percent). */
+/* Width and height are the author's, in pixels, or 0 when not given (or in percent). */
 struct ImageRef {
 	QString src;
 	QString href;
 	int width = 0;
 	int height = 0;
 
-	// Sized, and small in every dimension it was given.
 	bool isIcon() const
 	{
 		return (width > 0 || height > 0) && width <= kInlineImageMaxSize &&
@@ -100,8 +94,7 @@ const auto kCaseless = QRegularExpression::CaseInsensitiveOption |
 					   QRegularExpression::DotMatchesEverythingOption;
 const QRegularExpression kLeadingSpace(QStringLiteral("^\\s+"));
 
-// The value of attribute @p name in the HTML tag @p tag, entities for "&"
-// and quotes undone; empty when absent.
+// Attribute @p name of HTML tag @p tag, entities undone; empty when absent.
 QString tagAttribute(const QString& tag, const QString& name)
 {
 	const QRegularExpression re(
@@ -131,8 +124,7 @@ int pixels(const QString& value)
 	return ok && result > 0 ? result : 0;
 }
 
-// Players, scripts and the like: nothing rich text can show, in either
-// format.
+// Players, scripts and the like: nothing rich text can show.
 QString withoutEmbeds(QString html)
 {
 	static const QRegularExpression dropped(
@@ -143,14 +135,12 @@ QString withoutEmbeds(QString html)
 	return html.remove(dropped);
 }
 
-/* Qt's Markdown parser hands inline HTML to its HTML importer one balanced
- * element at a time, and a void element (<img>, <br>, <hr>) never balances:
- * it and everything after it in the body vanish. It also loses the link
- * around a Markdown image ([![alt](src)](href)). So before parsing, those
- * become tokens the writer turns back into pictures, breaks and rules; and
- * the purely presentational wrappers (<center>, <div>, <details>) go, since
- * an open one swallows every Markdown block up to its closing tag into one
- * paragraph. */
+/* Qt's Markdown parser feeds inline HTML to its HTML importer one balanced
+ * element at a time, and a void element (<img>, <br>, <hr>) never balances: it
+ * and everything after it vanish. It also loses the link around a Markdown
+ * image. So these become tokens the writer turns back into pictures, breaks
+ * and rules; presentational wrappers (<center>, <div>, <details>) go, since an
+ * open one swallows every Markdown block up to its closing tag. */
 QString protectHtml(QString text, QList<ImageRef>& images)
 {
 	static const QRegularExpression htmlLinkedImage(
@@ -213,14 +203,10 @@ QString protectHtml(QString text, QList<ImageRef>& images)
 	return text.replace(wrapper, QStringLiteral("\n"));
 }
 
-/* A Markdown body cut where CommonMark itself switches between Markdown
- * and raw HTML: a line opening a block-level tag starts an HTML block,
- * which runs to the next blank line, and is HTML through and through (a
- * pack page written as one long HTML document is one such block). Each
- * piece goes to the parser that reads it properly -- HTML to Qt's HTML
- * importer, which has none of the Markdown parser's trouble with it
- * (protectHtml()) -- in order, into one document. Fenced code stays
- * Markdown, exactly as written. */
+/* Cuts a Markdown body where CommonMark switches to raw HTML (a line opening a
+ * block-level tag starts an HTML block, up to the next blank line). HTML pieces
+ * go to Qt's HTML importer, the rest to the Markdown parser, in order, into one
+ * document. Fenced code stays Markdown. */
 void readMarkdown(QTextDocument& document, const QString& body,
 				  QList<ImageRef>& images)
 {
@@ -240,7 +226,6 @@ void readMarkdown(QTextDocument& document, const QString& body,
 			return;
 		}
 		if (!first) {
-			// A fresh, plain block: not the end of a list or a heading.
 			cursor.insertBlock(QTextBlockFormat(), QTextCharFormat());
 		}
 		first = false;
@@ -248,8 +233,7 @@ void readMarkdown(QTextDocument& document, const QString& body,
 			cursor.insertHtml(withoutEmbeds(lines.join(QLatin1Char('\n'))));
 			return;
 		}
-		// Prose is protected a stretch at a time (a tag may span lines);
-		// fenced code goes in as written.
+		// Prose is protected a stretch at a time (a tag may span lines).
 		QStringList markdown;
 		QStringList prose;
 		bool inCode = false;
@@ -304,19 +288,15 @@ void readMarkdown(QTextDocument& document, const QString& body,
 	insert(run, runIsHtml);
 }
 
-/* One piece of a paragraph, in order: a run of formatted text, a line
- * break, a picture, or a horizontal rule. */
+/* One piece of a paragraph, in order: text, line break, picture or rule. */
 struct Piece {
 	enum Kind { Text, Break, Image, Rule } kind = Text;
 	QString html;
-	// Text only: whether it shows anything at all.
 	bool blank = true;
 };
 
-/* A horizontal rule. Not <hr>: Qt Quick's TextEdit draws that in the
- * body text's colour, far louder than a divider should be. A full-width
- * cell one pixel of type high takes its colour from the stylesheet
- * (`td.rule`) instead. */
+/* Not <hr>: Qt Quick's TextEdit draws that in the body colour, far too loud.
+ * A full-width one-pixel cell takes its colour from the stylesheet (`td.rule`). */
 QString ruleHtml()
 {
 	return QStringLiteral("<table class=\"rule\" width=\"100%\" cellspacing=\"0\" "
@@ -364,8 +344,7 @@ class Writer
 		return list->format().style() <= QTextListFormat::ListDecimal;
 	}
 
-	// Closes every open list deeper than (or beside) @p keep; all of them
-	// for nullptr.
+	// Closes every open list deeper than (or beside) @p keep; all of them for nullptr.
 	void closeLists(QTextList* keep)
 	{
 		while (!m_lists.isEmpty() && m_lists.last() != keep &&
@@ -400,8 +379,7 @@ class Writer
 	{
 		QString html = QStringLiteral("<img src=\"%1\" style=\"max-width: 100%\"")
 						   .arg(attr(image.src));
-		// The author's width, if any, still applies below the cap; the
-		// height follows from the picture's own aspect ratio.
+		// The author's width still applies below the cap; the height follows the aspect ratio.
 		if (image.width > 0) {
 			html += QStringLiteral(" width=\"%1\"").arg(image.width);
 		}
@@ -425,7 +403,6 @@ class Writer
 		if (format.fontItalic()) {
 			html = QStringLiteral("<i>") + html + QStringLiteral("</i>");
 		}
-		// A heading is bold already; saying so again changes nothing.
 		if (!heading && format.fontWeight() >= QFont::DemiBold) {
 			html = QStringLiteral("<b>") + html + QStringLiteral("</b>");
 		}
@@ -436,8 +413,7 @@ class Writer
 		return html;
 	}
 
-	// @p splitImages: pictures become Piece::Image; otherwise (a list item,
-	// a table cell) they stay inline, as icons always do.
+	// @p splitImages: pictures become Piece::Image; otherwise they stay inline.
 	void appendImage(QList<Piece>& result, ImageRef image,
 					 const QTextCharFormat& format, bool splitImages) const
 	{
@@ -452,8 +428,6 @@ class Writer
 					   imageHtml(image), false});
 	}
 
-	// The text of one fragment, cut at line breaks and at the tokens
-	// protectHtml() left in it.
 	void appendText(QList<Piece>& result, const QString& text,
 					const QTextCharFormat& format, bool heading,
 					bool splitImages) const
@@ -512,8 +486,7 @@ class Writer
 				image.hasProperty(QTextFormat::ImageWidth) ? qRound(image.width()) : 0,
 				image.hasProperty(QTextFormat::ImageHeight) ? qRound(image.height())
 															: 0};
-			// One object character per picture: a fragment can hold
-			// several copies of the same one.
+			// One object character per picture: a fragment can hold several copies of one.
 			for (int i = 0; i < fragment.length(); ++i) {
 				appendImage(result, ref, format, splitImages);
 			}
@@ -521,9 +494,7 @@ class Writer
 		return result;
 	}
 
-	// The pieces of one paragraph, as paragraphs of text and rows of
-	// pictures. One line break stays a <br>; two or more in a row (an
-	// author's spacer) end the paragraph instead.
+	// One line break stays a <br>; two or more in a row end the paragraph.
 	void writeParagraphs(const QList<Piece>& all, const QString& open,
 						 const QString& close)
 	{
@@ -570,7 +541,6 @@ class Writer
 					break;
 				case Piece::Text:
 					if (piece.blank && !textShows) {
-						// Space before anything shows, or between pictures.
 						break;
 					}
 					flushImages();
@@ -580,7 +550,6 @@ class Writer
 						text.append(QStringLiteral("<br>"));
 					}
 					pendingBreaks = 0;
-					// A paragraph starts on its first word.
 					text.append(textShows ? piece.html
 										  : QString(piece.html).remove(kLeadingSpace));
 					textShows = textShows || !piece.blank;

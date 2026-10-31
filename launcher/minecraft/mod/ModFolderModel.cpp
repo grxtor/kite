@@ -64,9 +64,8 @@ ModFolderModel::ModFolderModel(const QString& dir)
 	connect(m_watcher, &QFileSystemWatcher::directoryChanged, this,
 			&ModFolderModel::directoryChanged);
 
-	// Persistent metadata index — sibling `.index/` directory. Loaded
-	// eagerly so install/dep tasks see the previous install state right
-	// away.
+	// Persistent metadata index in the sibling `.index/` directory, loaded
+	// eagerly so install and dependency tasks see the previous install state.
 	m_metadata = std::make_shared<ModMetadataIndex>(m_dir);
 	m_metadata->load();
 }
@@ -175,12 +174,8 @@ void ModFolderModel::finishUpdate()
 	{
 		QSet<QString> added = newSet;
 		added.subtract(currentSet);
-		// Qt's QAbstractItemModel::beginInsertRows() asserts "last >= first".
-		// When `added` is empty, `mods.size() + added.size() - 1` is
-		// `mods.size() - 1`, i.e. one less than `first` (`mods.size()`),
-		// which trips that assert. This happened on every directory-watcher
-		// tick that removed mods (or changed none), since this block ran
-		// unconditionally regardless of whether there was anything to add.
+		// beginInsertRows() asserts "last >= first", which an empty `added`
+		// would violate.
 		if (!added.isEmpty()) {
 			beginInsertRows(QModelIndex(), mods.size(),
 							mods.size() + added.size() - 1);
@@ -331,7 +326,6 @@ bool ModFolderModel::installMod(const QString& filename)
 				return false;
 			}
 			if (m_metadata) {
-				// Drop the old sidecar; we are replacing the file.
 				m_metadata->remove(QFileInfo(existing).fileName());
 			}
 			qDebug() << existing << "has been deleted (replacing).";
@@ -344,8 +338,8 @@ bool ModFolderModel::installMod(const QString& filename)
 		}
 		FS::updateTimestamp(newpath);
 
-		// Record a "local" provenance sidecar so duplicate detection and
-		// the conflict analyzer can reason about manually-added files.
+		// Record a "local" sidecar so duplicate detection and the conflict
+		// analyzer can reason about manually added files.
 		if (m_metadata) {
 			ModMetadataIndex::Entry e;
 			e.fileName = QFileInfo(newpath).fileName();
@@ -485,9 +479,8 @@ QVariant ModFolderModel::data(const QModelIndex& index, int role) const
 					return QVariant();
 			}
 
-		// Named roles for QML: a ListView only ever binds to column 0, so
-		// these return the same data as the columns above regardless of
-		// `column`, making it all reachable from a single delegate.
+		// Named roles for QML: a ListView binds to column 0 only, so these
+		// return the same data as the columns above whatever `column` is.
 		case NameRole:
 			return mods[row].name();
 		case VersionRole:
@@ -559,9 +552,8 @@ bool ModFolderModel::setModStatus(int row,
 	}
 	modsIndex.remove(oldId);
 	modsIndex[newId] = row;
-	// The on-disk file name changed (toggled `.disabled` suffix); migrate
-	// the sidecar so it tracks the new name. canonicalFileName() collapses
-	// both forms so this is a no-op on the metadata payload itself.
+	// The on-disk name changed (`.disabled` toggled): migrate the sidecar so it
+	// follows. canonicalFileName() collapses both forms.
 	if (m_metadata) {
 		m_metadata->rename(oldId, newId);
 	}

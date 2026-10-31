@@ -6,18 +6,14 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Play (Stop while the game runs) as an icon on a small square in the
- * kite's cut, for the Sahne, Sade and Gece looks' rows and cards: quiet at
- * rest -- the host's own fill and ink -- and filled with the accent once
- * its row is lit (hovered). Stop is the danger fill whatever the row is
- * doing, so it can never be mistaken for Play. The page's one primary Play
- * is the hero's; this is its quiet sibling.
+ * Play (Stop while the game runs) as an icon on a small square in the kite's cut, for the Sahne, Sade and Gece
+ * rows and cards: quiet at rest, filled with the accent once its row is lit (hovered). Stop is the danger fill
+ * whatever the row is doing, so it is never mistaken for Play.
  */
 AbstractButton {
     id: control
 
     property bool running: false
-    // The row is hovered: the button takes the accent.
     property bool lit: false
     property int size: Theme.control.heightSm + Theme.space.xs
     property int iconSize: Theme.icon.sm - 2

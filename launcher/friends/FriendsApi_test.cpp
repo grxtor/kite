@@ -152,10 +152,8 @@ class FriendsApiTest : public QObject
 
 	void anIpv6ZoneIdIsNotACleanHost()
 	{
-		// QHostAddress takes anything after the % for a zone id; the host
-		// goes to the game as an argument, so none of it may pass -- "${...}"
-		// would be filled in with the access token, a space would start
-		// another option.
+		// A zone id (after the %) would reach the game as an argument: "${...}" would
+		// be filled with the access token, a space would start another option.
 		for (const char* bad :
 			 {"fe80::1%en0", "fe80::1%${auth_access_token}",
 			  "fe80::1%a ${auth_access_token}", "[fe80::1%en0]",
@@ -337,8 +335,7 @@ class FriendsApiTest : public QObject
 
 	void aStatusReplyCarriesJoinable()
 	{
-		// What the server answers to your own report is what friends see of
-		// you, so it carries joinable like a friend's status does.
+		// The server's answer to your own report is what friends see of you, so it carries joinable.
 		const auto reply = parseStatusReply(R"({
 			"expiresAt": "2026-10-24T18:03:00.000Z",
 			"status": { "state": "playing", "version": "1.21.4",
@@ -463,8 +460,7 @@ class FriendsApiTest : public QObject
 		QCOMPARE(playing.value("statusText").toString(),
 				 QString("On mc.hypixel.net"));
 
-		// Joinable needs a server with a visible host, whatever the server
-		// said: singleplayer and a hidden host are never joined.
+		// Joinable needs a server with a visible host: singleplayer and a hidden host are never joined.
 		const auto solo = FriendsDisplay::friendMap(snapshot->friends.at(1), now);
 		QCOMPARE(solo.value("joinable").toBool(), false);
 		const auto hidden = FriendsDisplay::friendMap(snapshot->friends.at(3), now);
@@ -505,8 +501,7 @@ class FriendsApiTest : public QObject
 						  .toBool(),
 					 host);
 		}
-		// And not joinable at all when the friend says so -- which a row
-		// says too, instead of just having no Join.
+		// Not joinable at all when the friend says so, which a row says too.
 		one.status.world.host = "mc.hypixel.net";
 		one.status.joinable = false;
 		const auto off = FriendsDisplay::friendMap(one, now);
@@ -529,8 +524,7 @@ class FriendsApiTest : public QObject
 		one.name = "jeb_";
 		one.status = status;
 		const auto map = FriendsDisplay::friendMap(one, now);
-		// No Join, which is the safe side, but not "doesn't let friends
-		// join" either: they never said so.
+		// No Join (the safe side), but not "doesn't let friends join" either: they never said so.
 		QCOMPARE(map.value("joinable").toBool(), false);
 		QCOMPARE(map.value("joinOff").toBool(), false);
 	}
@@ -617,9 +611,8 @@ class FriendsApiTest : public QObject
 		local.playing = true;
 		local.world.type = World::Type::Server;
 		local.world.host = "mc.lan";
-		// The server keeps a name that only works on a home network from
-		// friends, which the launcher's own reading of the settings cannot
-		// tell: the answer is the truth.
+		// The server keeps a home-network name from friends, which the launcher's
+		// reading of the settings cannot tell: the answer is the truth.
 		const auto kept = parseStatus(jsonOf(R"({"state": "playing",
 			"version": "1.21.4", "world": {"type": "server"}})"));
 		const auto hidden = FriendsDisplay::selfStatusFromView(local, kept);
@@ -685,12 +678,11 @@ class FriendsApiTest : public QObject
 				 RenewalStep::AskForRenewal);
 		// Its own refresh is under way.
 		QCOMPARE(step(stale, true, true, true, false), RenewalStep::Wait);
-		// Asked, and still in the queue (behind another account's refresh, or
-		// in the pause the list makes after it, when nothing runs): wait for
-		// its turn instead of signing in with the old token.
+		// Asked, and still queued (behind another account, or in the pause after it):
+		// wait instead of signing in with the old token.
 		QCOMPARE(step(stale, false, true, true, false), RenewalStep::Wait);
-		// Asked, and out of the queue without running: the refresh ran (or
-		// could not be started), and this is what it left.
+		// Asked, and out of the queue without running: the refresh ran (or could not
+		// start); this is what it left.
 		QCOMPARE(step(stale, false, false, true, false), RenewalStep::Proceed);
 		// Waited long enough.
 		QCOMPARE(step(stale, true, true, true, true), RenewalStep::Proceed);
@@ -701,14 +693,12 @@ class FriendsApiTest : public QObject
 	{
 		// Nothing failed yet: any change is a reason (signed out, no account).
 		QVERIFY(accountChangeRetriesSignIn(0, "", "a|p|n|t", "", "p"));
-		// A game starting or stopping, another account's refresh: the default
-		// account is what it was, so the schedule stands.
+		// A game starting or stopping, another account's refresh: the default account is unchanged.
 		QVERIFY(!accountChangeRetriesSignIn(2, "a|p|n|t", "a|p|n|t", "", "p"));
 		// Another account, a renewed token, a new name: worth a try.
 		QVERIFY(accountChangeRetriesSignIn(2, "a|p|n|t", "b|q|m|t", "", "q"));
 		QVERIFY(accountChangeRetriesSignIn(2, "a|p|n|t", "a|p|n|u", "", "p"));
-		// Refused for good: a renewed token does not change that, another
-		// profile does.
+		// Refused for good: only another profile changes that.
 		QVERIFY(!accountChangeRetriesSignIn(4, "a|p|n|t", "a|p|n|u", "p", "p"));
 		QVERIFY(accountChangeRetriesSignIn(4, "a|p|n|t", "b|q|m|t", "p", "q"));
 	}
@@ -758,12 +748,10 @@ class FriendsApiTest : public QObject
 	void settingsComeBackAsAsked()
 	{
 		const auto saved = FriendsDisplay::settingsMap(Settings{});
-		// Joining is on by default, so an older server that drops the key
-		// still "saves" a request for on: it is on either way.
+		// Joining is on by default, so an older server dropping the key still "saves" on.
 		QVERIFY(FriendsDisplay::settingsSaved(
 			settingsBody({{"allowJoin", true}}), saved));
-		// An older server drops "allowJoin": false and answers without it,
-		// which reads as the default, on.
+		// An older server drops "allowJoin": false and answers without it, which reads as on.
 		QVERIFY(!FriendsDisplay::settingsSaved(
 			settingsBody({{"allowJoin", false}}), saved));
 		Settings changed;

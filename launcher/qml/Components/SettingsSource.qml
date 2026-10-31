@@ -5,10 +5,9 @@
 import QtQuick
 
 /*
- * What setting rows read and write through: one SettingsAdapter (the
- * launcher's, or one instance's). `revision` moves on every change, so a
- * binding that reads value() through here re-evaluates when anything --
- * this page, the widget dialog, a plugin -- changes a setting.
+ * What setting rows read and write through: one SettingsAdapter (the launcher's or
+ * one instance's). `revision` moves on every change, so a binding that reads
+ * value() through here re-evaluates when anything changes a setting.
  */
 QtObject {
     id: store
@@ -23,7 +22,6 @@ QtObject {
     }
 
     function value(key) {
-        // Reading revision makes every caller's binding depend on it.
         return store.revision >= 0 && store.adapter ? store.adapter.value(key) : undefined
     }
 

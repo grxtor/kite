@@ -42,9 +42,8 @@ bool writeFile(const QString& path, const QByteArray& contents,
 	if (file.write(contents) != contents.size()) {
 		return false;
 	}
-	// Flushed before the explicit mtime is set, same as
-	// ScreenshotListModel_test.cpp's helper - a write landing after
-	// setFileTime() would bump the mtime back to "now".
+	// Flushed before the explicit mtime is set: a write landing after
+	// setFileTime() would bump the mtime back to now.
 	if (!file.flush()) {
 		return false;
 	}
@@ -54,11 +53,9 @@ bool writeFile(const QString& path, const QByteArray& contents,
 	return timeSet;
 }
 
-/* Same set of global settings models/InstanceDetails_test.cpp's
- * makeGlobalSettings() registers - BaseInstance's constructor (run for
- * every concrete instance InstanceList::loadInstance() creates) overrides
- * or passes through exactly these ids, and a globalSettings without one of
- * them makes registration hand back a null Setting. */
+/* The global settings BaseInstance's constructor overrides or passes through
+ * (as InstanceDetails_test registers); without one, registration hands back a
+ * null Setting. */
 SettingsObjectPtr makeGlobalSettings(QTemporaryDir& dir)
 {
 	auto settings =
@@ -76,19 +73,10 @@ SettingsObjectPtr makeGlobalSettings(QTemporaryDir& dir)
 }
 } // namespace
 
-/*
- * The first few tests exercise InstanceList::newestScreenshotUrl() - the
- * lookup CoverImageRole schedules a background scan for in data() - directly,
- * rather than through a full InstanceList: that needs a SettingsObjectPtr and
- * real BaseInstance subclasses to construct, which would make those tests
- * about instance bookkeeping InstanceList already has other coverage for,
- * not about the screenshot lookup itself. HasCrashedRole has no such
- * standalone helper - the flag lives on BaseInstance - and CoverImageRole's
- * own async scheduling/caching/invalidation needs a real row to ask data()
- * about, so those tests build the minimal real InstanceList+NullInstance
- * fixture instead (same fixture shape as models/InstanceDetails_test.cpp's),
- * waiting out the background scan with QTRY_COMPARE.
- */
+/* The first tests call InstanceList::newestScreenshotUrl() directly, without a
+ * full InstanceList. HasCrashedRole and CoverImageRole's async scan/cache need
+ * a real row, so those tests build a minimal InstanceList + NullInstance
+ * fixture and wait out the scan with QTRY_COMPARE. */
 class InstanceListTest : public QObject
 {
 	Q_OBJECT
@@ -159,10 +147,6 @@ class InstanceListTest : public QObject
 
 		const QString instRoot = QDir(instsDir.path()).filePath("testinst");
 		QVERIFY(QDir().mkpath(instRoot));
-		/* Unrecognized InstanceType, same as a folder InstanceList itself
-		 * cannot make sense of: loadInstance() falls back to NullInstance
-		 * for anything that is not OneSix/Nostalgia/Legacy, which is the
-		 * one concrete BaseInstance simple enough to construct here. */
 		QVERIFY(writeFile(QDir(instRoot).filePath("instance.cfg"),
 						   "InstanceType=NullTest\n",
 						   QDateTime::currentDateTime()));
@@ -192,9 +176,6 @@ class InstanceListTest : public QObject
 				 false);
 	}
 
-	/* PackArtRole: empty for an instance not installed from a platform; for
-	 * a platform pack whose icon is not an icon file (no LauncherContext
-	 * here, so no icon list at all), the pack's upstream logo URL. */
 	void packArtRoleOnlyForPlatformPacks()
 	{
 		QTemporaryDir globalDir;
@@ -239,11 +220,9 @@ class InstanceListTest : public QObject
 		QVERIFY(instsDir.isValid());
 		SettingsObjectPtr globalSettings = makeGlobalSettings(globalDir);
 
-		/* Canonicalized before anything is built from it: InstanceList
-		 * itself canonicalizes every configured instance root (resolving
-		 * a symlink like macOS's /var -> /private/var), so building
-		 * expectedUrl from the raw, un-resolved QTemporaryDir path would
-		 * compare two spellings of the same file and never match. */
+		/* Canonicalized: InstanceList canonicalizes every instance root
+		 * (resolving e.g. macOS's /var -> /private/var), so expectedUrl built
+		 * from the raw QTemporaryDir path would never match. */
 		const QString instsRoot =
 			QFileInfo(instsDir.path()).canonicalFilePath();
 		const QString instRoot = QDir(instsRoot).filePath("testinst");
@@ -265,11 +244,8 @@ class InstanceListTest : public QObject
 		const QModelIndex idx = list.getInstanceIndexById("testinst");
 		QVERIFY(idx.isValid());
 
-		// Nothing cached yet - data() must answer immediately (empty)
-		// rather than block on the directory scan, and repeated asks before
-		// the scan comes back must not queue a second one (no direct probe
-		// for that here, but a duplicate scan finishing later would still
-		// only re-publish the same, correct URL below).
+		// Nothing cached yet: data() must answer immediately (empty) rather
+		// than block on the scan.
 		QCOMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
 				 QString());
 		QCOMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
@@ -287,8 +263,6 @@ class InstanceListTest : public QObject
 		QVERIFY(instsDir.isValid());
 		SettingsObjectPtr globalSettings = makeGlobalSettings(globalDir);
 
-		// See coverImageRoleScansAsynchronouslyAndCachesResult() for why
-		// this is canonicalized first.
 		const QString instsRoot =
 			QFileInfo(instsDir.path()).canonicalFilePath();
 		const QString instRoot = QDir(instsRoot).filePath("testinst");
@@ -312,22 +286,19 @@ class InstanceListTest : public QObject
 		const QModelIndex idx = list.getInstanceIndexById("testinst");
 		QVERIFY(idx.isValid());
 
-		// Let the first scan land and populate the cache.
 		QCOMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
 				 QString());
 		QTRY_COMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
 					 expectedUrl);
 
-		// A play session ending is exactly when a new screenshot tends to
-		// appear, so the cached cover is dropped - immediately, not only
-		// once a fresh scan happens to finish.
+		// A play session ending is when a new screenshot tends to appear, so
+		// the cached cover is dropped immediately, not only when a fresh scan
+		// finishes.
 		inst->setRunning(true);
 		inst->setRunning(false);
 		QCOMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
 				 QString());
 
-		// data() above already asked again, which schedules a fresh scan;
-		// it eventually lands the same (still correct) URL.
 		QTRY_COMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
 					 expectedUrl);
 	}

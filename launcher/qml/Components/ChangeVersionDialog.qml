@@ -8,13 +8,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * "Change version…" for one installed file: every version of its project
- * that the provider has for this instance, listed the way Add content
- * lists them (VersionRow), the installed one tagged. Picking another and
- * pressing Install hands a ContentInstallReview back through
- * reviewRequested() -- the same path an Add content install takes, so
- * what it needs comes along and the old file is replaced in place.
- * The QML replacement for ModFolderPage's version-change dialog.
+ * "Change version…" for one installed file: every version of its project for this instance, listed as in Add
+ * content (VersionRow), the installed one tagged. Install hands a ContentInstallReview back through
+ * reviewRequested(), so what it needs comes along and the old file is replaced.
  */
 Dialog {
     id: root
@@ -38,10 +34,7 @@ Dialog {
     width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
     height: Math.min(root.preferredHeight, parent ? parent.height - Theme.space.xxl * 2 : root.preferredHeight)
     modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
     topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
     bottomPadding: Theme.space.sm
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     title: root.controller ? qsTr("Change version of %1").arg(root.controller.versionsTitle) : ""
@@ -51,8 +44,7 @@ Dialog {
         icon: "layers"
     }
 
-    // The newest compatible one that is not the installed one, so the
-    // likely choice is already picked.
+    // Preselects the newest compatible version that is not the installed one.
     onVersionsChanged: {
         let pick = root.versions.findIndex((v) => v.isCompatible && v.id !== root.installedId)
         if (pick < 0)
@@ -73,8 +65,6 @@ Dialog {
             lineHeight: Theme.type.label.lineHeight
         }
 
-        // The versions lie on the dialog itself, no framed well around them
-        // (VersionRow).
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true

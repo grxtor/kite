@@ -33,8 +33,7 @@ ContentFilterModel::ContentFilterModel(QObject* parent)
 	setSortCaseSensitivity(Qt::CaseInsensitive);
 	setDynamicSortFilter(true);
 
-	/* `count` follows whatever changes the visible rows: a search, a file
-	 * appearing or going, or the source being swapped out. */
+	/* `count` follows whatever changes the visible rows. */
 	connect(this, &QAbstractItemModel::rowsInserted, this,
 			&ContentFilterModel::countChanged);
 	connect(this, &QAbstractItemModel::rowsRemoved, this,
@@ -176,7 +175,6 @@ QString ContentFilterModel::homepageFor(const Mod& mod,
 	if (index) {
 		const ModMetadataIndex::Entry entry = index->get(keyFor(mod));
 		if (entry.hasPlatformOrigin()) {
-			/* Each provider owns the shape of its own addresses. */
 			if (entry.platform == ModrinthApi::get().id()) {
 				return ModrinthApi::get()
 					.projectPageUrl(entry.projectId)
@@ -187,8 +185,6 @@ QString ContentFilterModel::homepageFor(const Mod& mod,
 			}
 		}
 	}
-	/* What the archive says about itself, so a file added by hand still
-	 * has somewhere to go. */
 	return mod.homeurl();
 }
 
@@ -251,6 +247,5 @@ bool ContentFilterModel::lessThan(const QModelIndex& left,
 	if (byName != 0) {
 		return byName < 0;
 	}
-	/* Two copies of the same mod: keep them in a stable order. */
 	return keyFor(a).compare(keyFor(b), Qt::CaseInsensitive) < 0;
 }

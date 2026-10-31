@@ -65,8 +65,6 @@ namespace Json
 	QJsonArray requireArray(const QJsonDocument& doc,
 							const QString& what = "Document");
 
-	/////////////////// WRITING ////////////////////
-
 	void writeString(QJsonObject& to, const QString& key, const QString& value);
 	void writeStringList(QJsonObject& to, const QString& key,
 						 const QStringList& values);
@@ -90,8 +88,6 @@ namespace Json
 		}
 		return array;
 	}
-
-	////////////////// READING ////////////////////
 
 	/// @throw JsonException
 	template <typename T>
@@ -144,8 +140,6 @@ namespace Json
 	template <>
 	QUrl requireIsType<QUrl>(const QJsonValue& value, const QString& what);
 
-	// the following functions are higher level functions, that make use of the
-	// above functions for type conversion
 	template <typename T>
 	T ensureIsType(const QJsonValue& value, const T default_ = T(),
 				   const QString& what = "Value")
@@ -248,8 +242,6 @@ namespace Json
 		return ensureIsArrayOf<T>(parent.value(key), default_, localWhat);
 	}
 
-// this macro part could be replaced by variadic functions that just pass on
-// their arguments, but that wouldn't work well with IDE helpers
 #define JSON_HELPERFUNCTIONS(NAME, TYPE)                                       \
 	inline TYPE require##NAME(const QJsonValue& value,                         \
 							  const QString& what = "Value")                   \

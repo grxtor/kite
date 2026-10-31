@@ -123,9 +123,8 @@ QVariant GameOptions::data(const QModelIndex& index, int role) const
 				return contents[row].value;
 			}
 
-		// Named roles for QML: a ListView only ever binds to column 0, so
-		// these return the key/value pair regardless of `column`, making
-		// both reachable from a single delegate.
+		// Named roles for QML: a ListView binds to column 0 only, so these
+		// return the key/value pair whatever `column` is.
 		case KeyRole:
 			return contents[row].key;
 		case ValueRole:

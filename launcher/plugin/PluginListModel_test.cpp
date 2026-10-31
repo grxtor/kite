@@ -26,8 +26,7 @@
 
 namespace
 {
-	/* Canned modules and an in-memory "disabled" set instead of a real
-	 * PluginManager -- the same test seam PluginSurfaceModel_test uses. */
+	/* Canned modules and an in-memory disabled set instead of a real PluginManager. */
 	class TestPluginListModel : public PluginListModel
 	{
 	  public:
@@ -136,7 +135,6 @@ class PluginListModelTest : public QObject
 		QCOMPARE(restart.count(), 1); // still needed, not signalled again
 	}
 
-	// A plugin the launcher has absorbed cannot be switched back on.
 	void supersededModulesCannotBeToggled()
 	{
 		TestPluginListModel model;

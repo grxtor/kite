@@ -8,14 +8,10 @@ import Kite.Theme
 
 /*
  * One skin in the skin editor's library (SkinCapeEditor.qml): its flat
- * front-and-back sprite, its name under it (and as a tooltip, for a name
- * too long to show whole), and a mark on the one the account wears. Used
- * for the user's own skins and for the game's default ones alike.
- *
- * Click selects it. `menuEnabled` tiles also open actions: right click, or
- * the ⋯ that shows on hover (over the sprite, so only while pointed at).
- * A tile whose texture has not downloaded yet (`ready` false) shows a
- * loading block instead of the sprite and cannot be picked.
+ * front-and-back sprite, its name under it and a mark on the one the account
+ * wears. Click selects it; `menuEnabled` tiles also open actions on right click
+ * or the ⋯ shown on hover. A tile whose texture has not downloaded (`ready`
+ * false) shows a loading block and cannot be picked.
  */
 AbstractButton {
     id: tile

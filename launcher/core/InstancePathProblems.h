@@ -24,21 +24,14 @@
 #include <QString>
 #include <QStringList>
 
-/*
- * Instance folders that are known to cause trouble -- the checks
- * MainWindow::checkInstancePathForProblems() used to run inline, here so
- * that the QML shell can run them too and report them through UiHost:
- *   - a '!' anywhere in the path, which Java mis-reads;
- *   - a folder inside an archive viewer's unpack area ("Rar$"), or inside
- *     a temporary folder, which the system may delete without warning.
- * Every configured folder is checked, and every problem names the folder
- * it is about.
- */
+/* Instance folders known to cause trouble, checked from the QML shell (and
+ * MainWindow) and reported through UiHost: a '!' anywhere in the path, which
+ * Java mis-reads; a folder inside an archive viewer's unpack area ("Rar$") or
+ * a temporary folder, which the system may delete. Every configured folder is
+ * checked, and each problem names its folder. */
 struct InstancePathProblem {
 	QString folder;
-	/// What is wrong; may contain simple HTML (<br/>).
 	QString text;
-	/// What to do about it; may contain simple HTML.
 	QString advice;
 };
 

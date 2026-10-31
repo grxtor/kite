@@ -36,8 +36,8 @@
 
 namespace
 {
-	/* Mojang may not know the join yet when the login asks: ask again
-	 * after a second, up to this many times in all. */
+	/* Mojang may not know the join yet when the login asks: retried after a
+	 * second, this many attempts in all. */
 	constexpr int kLoginAttempts = 3;
 	constexpr int kNotJoinedRetryMs = 1000;
 	constexpr int kMojangNoContent = 204;
@@ -45,12 +45,10 @@ namespace
 	constexpr int kHttpForbidden = 403;
 	constexpr int kHttpTooManyRequests = 429;
 	constexpr int kHttpServerError = 500;
-	/* A sign-in Mojang refused for a reason no new sign-in changes (the
-	 * account may not play multiplayer) is not retried at all (refused());
-	 * should it be, it counts as this many failures already. */
+	/* A refused sign-in is not retried (refused()); if it is, it counts as this
+	 * many failures already. */
 	constexpr int kRefusedSignInFailures = 4;
-	/* The tick is a minute apart and never exact; this much early is on
-	 * time. */
+	/* Ticks are a minute apart and never exact; this much early is on time. */
 	constexpr int kBackoffSlackMs = 30 * 1000;
 } // namespace
 
@@ -73,7 +71,6 @@ void FriendsController::finishSignIn(bool ok)
 	m_renewalTimer.stop();
 	m_renewalTimedOut = false;
 	m_quietSignIn = false;
-	/* Per sign-in: however it ended, the next may ask for a renewal again. */
 	m_renewalAsked = false;
 	if (ok) {
 		m_signInFailures = 0;
@@ -89,8 +86,8 @@ void FriendsController::failSignIn(const QString& message, bool needsSignIn)
 {
 	setState(State::Error, message, needsSignIn);
 	++m_signInFailures;
-	/* What it failed with: only a change to that is news (onAccountsChanged).
-	 * The account the sign-in started with, not the default one now. */
+	/* The account the sign-in started with, not the default now; only a change to
+	 * it is news (onAccountsChanged). */
 	m_failedIdentity = m_signInTarget.identity;
 	finishSignIn(false);
 }
@@ -102,8 +99,7 @@ void FriendsController::refuseAccount(const QString& message)
 	m_refusedText = message;
 	failSignIn(message);
 	m_signInFailures = kRefusedSignInFailures;
-	/* The error may be the one already shown (a refused retry): the views
-	 * still have to hear that this is final. */
+	/* The error may already be shown (a refused retry); views still have to hear it is final. */
 	emit changed();
 }
 
@@ -123,7 +119,6 @@ bool FriendsController::waitForRenewedToken()
 	if (!account) {
 		return false;
 	}
-	/* An unset expiry is not known to be stale. */
 	const QDateTime expiry = account->accountData()->yggdrasilToken.notAfter;
 	const QDateTime now = QDateTime::currentDateTimeUtc();
 	auto step = [&]() {
@@ -136,10 +131,8 @@ bool FriendsController::waitForRenewedToken()
 		m_renewalAsked = true;
 		accounts->requestRefresh(account->internalId());
 	}
-	/* Asked again after asking: the account refreshes now, or is still queued
-	 * (behind another account's refresh, and the pause after it: the list is
-	 * idle then, but the account has not run), or it ran and this is what it
-	 * left. */
+	/* Asked again after asking: the account is refreshing, still queued, or ran
+	 * and this is what it left. */
 	return step() == FriendsApi::RenewalStep::Wait;
 }
 
@@ -158,8 +151,7 @@ void FriendsController::onRenewalTimeout()
 	if (!m_awaitingRenewal) {
 		return;
 	}
-	/* Whatever holds the renewal up, a sign-in with the token there is can
-	 * only say so. */
+	/* Whatever holds the renewal up, signing in with the current token can only say so. */
 	m_renewalTimedOut = true;
 	m_awaitingRenewal = false;
 	startSignIn();
@@ -179,11 +171,10 @@ bool FriendsController::dropIfAccountChanged(const QString& sessionToken)
 		account->profileId() == m_signInTarget.profileId) {
 		return false;
 	}
-	/* The default account changed while this sign-in was on its way
-	 * (onAccountsChanged() leaves a sign-in under way alone). What comes back
-	 * is about the account before: no session, failure or refusal of it is
-	 * kept or counted against the new one. Sign in again for the account that
-	 * is the default now; whoever waits for a session goes on waiting for it. */
+	/* The default account changed mid sign-in (onAccountsChanged() leaves one under
+	 * way alone): what comes back is about the previous account, so none of it is
+	 * kept or counted against the new one. Sign in again for the new default;
+	 * whoever waits for a session keeps waiting. */
 	if (!sessionToken.isEmpty()) {
 		signOutQuietly(sessionToken);
 	}
@@ -198,7 +189,6 @@ void FriendsController::startSignIn()
 	auto accounts = LAUNCHER->accounts();
 	auto account = accounts ? accounts->defaultAccount() : nullptr;
 	if (!account || !account->isMSA() || !account->hasProfile()) {
-		/* An offline account has no Mojang session to prove anything with. */
 		if (!m_session.token.isEmpty()) {
 			signOutQuietly(m_session.token);
 			clearSession();
@@ -211,28 +201,24 @@ void FriendsController::startSignIn()
 		finishSignIn(false);
 		return;
 	}
-	/* Whatever this sign-in ends with is about this account, also when
-	 * another one is the default by then (dropIfAccountChanged()). */
+	/* This outcome is about this account even if another becomes default (dropIfAccountChanged()). */
 	m_signInTarget = {account->internalId(), account->profileId(),
 					  accountIdentity()};
-	/* Not the lists of the account that was the default before, whatever
-	 * becomes of this sign-in. */
+	/* Not the lists of the previous default, whatever becomes of this sign-in. */
 	dropDataOfOtherAccount(account->profileId());
 	if (account->accessToken().isEmpty()) {
 		failSignIn(tr("Your Minecraft account needs to sign in again."), true);
 		return;
 	}
 	if (stillRefused()) {
-		/* Mojang said no to this account, and nothing has changed: do not
-		 * ask again (refresh() and a new default account clear it). */
+		/* Mojang said no and nothing has changed: do not ask again (refresh() and a new default clear it). */
 		setState(State::Error, m_refusedText);
 		finishSignIn(false);
 		return;
 	}
-	/* The launcher renews the access token as it starts, which takes a
-	 * moment; Mojang refuses the old one, and "sign in again" would be a
-	 * wrong thing to say about that. Wait for it (see onAccountsChanged()),
-	 * but not for ever. */
+	/* The launcher renews the access token as it starts, and Mojang refuses the old
+	 * one; "sign in again" would be wrong to say. Wait for the renewal
+	 * (onAccountsChanged()), but not for ever. */
 	if (waitForRenewedToken()) {
 		if (!m_quietSignIn) {
 			setState(State::SigningIn);
@@ -244,7 +230,6 @@ void FriendsController::startSignIn()
 		return;
 	}
 	if (!m_session.token.isEmpty()) {
-		/* Another account, a new name or an old token. */
 		signOutQuietly(m_session.token);
 		clearSession();
 	}
@@ -304,29 +289,24 @@ void FriendsController::joinMojang(const FriendsApi::Challenge& challenge,
 void FriendsController::failMojangJoin(const FriendsApi::Reply& reply)
 {
 	const QString error = FriendsApi::parseMojangError(reply.body);
-	/* The only trace of why: the state log shows the words, not the code. */
 	qWarning() << "Friends: Mojang's session server refused the join with"
 			   << reply.status << error;
 	if (error == FriendsApi::MojangError::InsufficientPrivileges) {
-		/* Not the token's fault: no sign-in fixes it, and asking every
-		 * minute only adds to Mojang's load. */
+		/* Not the token's fault: no sign-in fixes it, and asking every minute adds to Mojang's load. */
 		refuseAccount(
 			tr("Multiplayer is turned off for this Microsoft account."));
 	} else if (error == FriendsApi::MojangError::UserBanned) {
 		refuseAccount(tr("This Minecraft account is banned from multiplayer."));
 	} else if (reply.status == kHttpUnauthorized ||
 			   reply.status == kHttpForbidden) {
-		/* Only a refusal of the token itself is the account's to fix. */
 		failSignIn(tr("Minecraft did not accept the sign-in; sign in to your "
 					  "account again."),
 				   true);
 	} else if (reply.status == kHttpTooManyRequests ||
 			   reply.status >= kHttpServerError) {
-		/* An outage or a rate limit passes by itself. */
 		failSignIn(tr("Minecraft's session server is not answering; try again "
 					  "later."));
 	} else {
-		/* Anything else is not Mojang being away: say what came back. */
 		failSignIn(tr("Something went wrong (Minecraft %1).").arg(reply.status));
 	}
 }
@@ -345,7 +325,6 @@ void FriendsController::login(const FriendsApi::Challenge& challenge,
 			noteRateLimit(reply);
 			const auto session =
 				reply.ok() ? FriendsApi::parseSession(reply.body) : std::nullopt;
-			/* A session of the account before is signed out again, not kept. */
 			if (dropIfAccountChanged(session ? session->token : QString())) {
 				return;
 			}

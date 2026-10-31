@@ -55,7 +55,6 @@ namespace
 		return !object.value(key).toString().isEmpty();
 	}
 
-	/* What is wrong with @p root, or "" when it is a catalog. */
 	QString problemWith(const QJsonObject& root)
 	{
 		if (root.value("formatVersion").toInt() != kFormatVersion) {
@@ -93,7 +92,6 @@ namespace
 		return QString();
 	}
 
-	/* A mod with no `loaders` list is offered everywhere. */
 	bool offeredFor(const QJsonObject& mod, const QString& loader)
 	{
 		const QJsonValue loaders = mod.value("loaders");
@@ -207,7 +205,6 @@ QVariantList BundleCatalog::mods(const QStringList& bundleIds,
 								 const QString& loader) const
 {
 	QVariantList result;
-	/* Vanilla has nothing to load a mod with. */
 	if (loader.isEmpty()) {
 		return result;
 	}
@@ -286,7 +283,6 @@ bool BundleCatalog::applyPresetDefaults(const QString& instanceId,
 		return false;
 	}
 
-	/* The global minimum stays unless the preset's maximum is lower. */
 	const int maxMemory =
 		PresetDefaults::maxMemoryMiB(Sys::getSystemRam() / Sys::mebibyte);
 	const int minMemory = std::min(
@@ -344,14 +340,12 @@ void BundleCatalog::refresh()
 	m_refreshed = true;
 
 	auto entry = context->metacache()->resolveEntry("general", kCatalogPath);
-	/* Asked again every run, so a new catalog shows up without waiting. */
 	entry->setStale(true);
 	m_refreshJob.reset(new NetJob(tr("Recommended mods"), context->network()));
 	m_refreshJob->addNetAction(Net::Download::makeCached(
 		QUrl(BuildConfig.META_URL + kCatalogPath), entry));
 	connect(m_refreshJob.get(), &NetJob::succeeded, this,
 			[this, entry] { onRefreshed(entry->getFullPath()); });
-	/* The server may not have a catalog yet; the built-in one stays. */
 	connect(m_refreshJob.get(), &NetJob::failed, this, [](QString reason) {
 		qCDebug(metaLog) << "No newer bundle catalog:" << reason;
 	});

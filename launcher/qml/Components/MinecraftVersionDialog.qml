@@ -8,24 +8,15 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Pick a Minecraft version for this instance - the QML replacement for the
- * plain VersionSelectDialog VersionPage's "Change version" opens for the
- * net.minecraft component. Snapshots and old versions are hidden by
- * default, the same starting point VanillaPage gives a new instance.
+ * Pick a Minecraft version for this instance. Snapshots and old versions are
+ * hidden by default.
  */
 Dialog {
     id: root
 
-    // InstanceDetails.
     property var details: null
-    // Not a binding to details.minecraftVersions: that getter builds the
-    // proxy and starts its download the first time anything reads it (see
-    // InstanceDetails::minecraftVersions()), and this dialog is
-    // instantiated eagerly with the rest of VersionTab.qml's children -
-    // reading it here would fetch the version list every time the
-    // instance page opens, whether or not this dialog ever does. Set from
-    // onOpened below instead, so opening the tab stays network-free -
-    // mirrors ContentBrowserView.qml's own visible-gated first search.
+    // Not a binding to details.minecraftVersions: the getter starts the version download, and this
+    // dialog is built eagerly. Set from onOpened.
     property var versions: null
 
     parent: Overlay.overlay
@@ -33,10 +24,7 @@ Dialog {
     width: Math.min(560, parent ? parent.width - Theme.space.xxl * 2 : 560)
     height: Math.min(600, parent ? parent.height - Theme.space.xxl * 2 : 600)
     modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
     topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
     bottomPadding: Theme.space.sm
     title: qsTr("Change Minecraft version")
 

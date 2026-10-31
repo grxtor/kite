@@ -6,26 +6,20 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The "Launcher logs" section of SettingsPage.qml: Kite's own log files
- * (not a game's -- those are on each instance's Log tab), the widget
- * KiteLogsDialog without the dialog. Pick a run's log, search it, copy it,
- * upload it for a bug report, delete old ones. Kite-0 is the current run.
- *
- * The files come from `launcherLogs` (QmlShell.launcherLogs, handed down by
- * SettingsPage); until there is one the section stays out of the list.
+ * The "Launcher logs" section of SettingsPage.qml: Kite's own log files (a game's
+ * are on each instance's Log tab): pick a run's log, search, copy, upload for a
+ * bug report, delete old ones. Kite-0 is the current run.
  */
 SettingsScroll {
     id: root
 
     // QmlShell.launcherLogs (LauncherLogs: logs, uploader, folder), or null.
     property var launcherLogs: null
-    // Asks the app to show a folder in the file manager.
     signal openPathRequested(string path)
-    // Read by SettingsPage.qml's section list.
     readonly property bool shown: !!root.launcherLogs
 
-    // The viewer is not a settings row: it gets a fixed height, tall enough
-    // to read a stretch of log without the page itself scrolling.
+    // Not a settings row: a fixed height, tall enough to read a stretch of log without the page
+    // scrolling.
     readonly property int viewerHeight: 520
 
     title: qsTr("Launcher logs")

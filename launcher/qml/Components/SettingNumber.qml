@@ -21,7 +21,6 @@ SettingRow {
     signal changed(int value)
 
     SpinBox {
-        id: control
         width: 168
         from: root.from
         to: root.to

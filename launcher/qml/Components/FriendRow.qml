@@ -6,29 +6,14 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One person in a list, on the Friends page, in Home's side panel and in the
- * friends panel on the window's right edge: their head (FriendHead, with its
- * presence dot), their name, and a quiet line under it (where they are, or
- * what the row is about). Whatever goes inside the row (Join, a ⋯, buttons)
- * lands on its right, in `trailing`.
- *
- * The row has no box: it sits on the page and takes the library list's
- * neutral hover fill. `compact` is Home's panel size, with its narrower
- * inset. `interactive` makes the whole row a button (`clicked()`, a focus
- * ring); on the Friends page a row is only a row, with its own buttons.
- *
- * `presence` is "online", "playing", "offline", or "" for someone who is
- * not a friend (yet). The line is `detail` and, after a dot, `detailSuffix`
- * (the game version); `detailTone` ("primary", "secondary" or "faint")
- * sets how loud `detail` is: "faint" for "Last seen", which is the least
- * of the row. A host too long for the row is shortened in the middle, so
- * its end stays and the version sits right behind it.
+ * One person in a list (Friends page, Home's side panel, right-edge panel): head with presence dot, name, a quiet
+ * line; whatever goes inside lands on the right, in `trailing`. `presence`: "online", "playing", "offline" or ""
+ * (not a friend yet). `detailTone`: "primary", "secondary" or "faint".
  */
 Item {
     id: root
 
     property string name
-    // The head's picture (FriendsController's `face`), "" until it is cached.
     property string face
     property string presence: ""
     property string detail
@@ -36,20 +21,15 @@ Item {
     property string detailTone: "secondary"
     property bool compact: false
     property bool interactive: false
-    // The pointer is on the row; the buttons that only show then read it.
     readonly property bool hovered: hoverHandler.hovered
     default property alias trailing: trailingRow.data
 
     signal clicked()
 
-    // The fill the head's ring has to match.
     readonly property color fill: root.hovered || root.visualFocus ? Theme.palette.surfaceHover : Theme.palette.canvas
     readonly property int headSize: root.compact ? 32 : 40
-    // The room the head takes before the text starts. Compact rows on Home
-    // keep a Theme.control.height tile's worth (below), so their names line
-    // up with Recent worlds; the friends panel on the right edge has no such
-    // list beside it and asks for the head's own width, which buys the name
-    // and the buttons in its narrow column that much more room.
+    // The room the head takes before the text starts: compact rows keep a Theme.control.height tile so names
+    // line up with Recent worlds; the right-edge panel uses the head's own width.
     property int headSlot: root.compact ? Theme.control.height : root.headSize
     // A row only takes focus from the Tab key, so focus is a keyboard ring.
     readonly property bool visualFocus: root.interactive && root.activeFocus
@@ -87,15 +67,10 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        // On the Friends page the row's head, name and buttons stand on the
-        // self card's inset, so the page reads as one set of columns.
         anchors.leftMargin: root.compact ? Theme.space.sm : Theme.space.lg
         anchors.rightMargin: root.compact ? Theme.space.sm : Theme.space.lg
         spacing: Theme.space.md
 
-        // Compact rows share Home's panel with Recent worlds, whose text
-        // starts after a Theme.control.height tile: the head takes that
-        // much room, so the names of the two lists line up.
         Item {
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredWidth: root.headSlot
@@ -132,8 +107,7 @@ Item {
                 spacing: Theme.space.xs
                 visible: root.detail.length > 0
 
-                // The elided text is worked out here, not by the Text: an
-                // elided Text keeps its full box and leaves a gap before the
+                // The elided text is worked out here: an elided Text keeps its full box and leaves a gap before the
                 // version.
                 TextMetrics {
                     id: detailMetrics

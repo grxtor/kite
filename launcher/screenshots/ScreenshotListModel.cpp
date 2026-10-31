@@ -118,10 +118,7 @@ void ScreenshotListModel::setDirectory(const QString& directory)
 	}
 	emit directoryChanged();
 
-	// A directory switch is a direct, user-visible request (opening a
-	// different instance's screenshots) -- refresh right away rather than
-	// through the debounce timer, which exists only to coalesce bursts of
-	// filesystem events.
+	// A directory switch refreshes at once, not through the debounce timer.
 	m_refreshTimer.stop();
 	refreshNow();
 }
@@ -176,8 +173,8 @@ bool ScreenshotListModel::rename(int row, const QString& newName)
 	}
 	const QString target = QDir(QFileInfo(entry.path).absolutePath())
 							   .absoluteFilePath(fileName);
-	// QFile::rename() overwrites nothing, but a name that differs from an
-	// existing file only by case would on a case-insensitive filesystem.
+	// QFile::rename() overwrites nothing, but a case-only difference would on
+	// a case-insensitive filesystem.
 	for (const Entry& other : m_entries) {
 		if (other.name.compare(fileName, Qt::CaseInsensitive) == 0 &&
 			other.path != entry.path) {
@@ -237,9 +234,8 @@ QString ScreenshotListModel::renamedFileName(const QString& currentName,
 void ScreenshotListModel::onWatcherDirectoryChanged(const QString& path)
 {
 	Q_UNUSED(path);
-	// Restarting an already-running single-shot timer pushes its
-	// deadline out, so a burst of signals in under kRefreshDebounceMs
-	// collapses into the one refresh that follows the last of them.
+	// Restarting the single-shot timer pushes its deadline out, so a burst
+	// ends in one refresh.
 	m_refreshTimer.start(kRefreshDebounceMs);
 }
 
@@ -247,10 +243,8 @@ void ScreenshotListModel::refreshNow()
 {
 	QList<Entry> fresh = listEntries(m_directory);
 
-	// The watcher silently drops a path that stops existing and never
-	// re-adds it on its own -- re-arm it here so a directory that
-	// reappears (or appears for the first time) between refreshes is
-	// picked up by the next one.
+	// The watcher drops a vanished path and never re-adds it: re-arm it so a
+	// reappearing directory is picked up.
 	if (!m_directory.isEmpty() && QDir(m_directory).exists() &&
 		!m_watcher->directories().contains(m_directory)) {
 		m_watcher->addPath(m_directory);
@@ -304,8 +298,7 @@ ScreenshotListModel::listEntries(const QString& directory)
 		entries.append(entry);
 	}
 
-	// Newest-modified first; the name is only a tiebreak, to keep the
-	// order deterministic between two refreshes of files sharing an mtime.
+	// Newest first; the name only breaks mtime ties.
 	std::sort(entries.begin(), entries.end(),
 			  [](const Entry& a, const Entry& b) {
 				  if (a.modifiedMs != b.modifiedMs) {

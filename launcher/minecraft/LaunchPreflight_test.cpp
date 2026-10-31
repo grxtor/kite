@@ -27,13 +27,10 @@
 
 using Reach = QNetworkInformation::Reachability;
 
-/*
- * Two launch fixes found by a real launch on a fresh data folder:
- *  - an offline account must still be allowed to download the game's files
- *    (AuthSession::fetch_game_files), unlike an explicit offline launch;
- *  - a failed offline metadata load must fail the launch with a real
- *    reason instead of starting java with an empty profile.
- */
+// Launch preflight: an offline account must still be allowed to download the
+// game's files (AuthSession::fetch_game_files), unlike an explicit offline
+// launch; a failed offline metadata load must fail the launch with a real
+// reason instead of starting java with an empty profile.
 class LaunchPreflightTest : public QObject
 {
 	Q_OBJECT

@@ -9,20 +9,13 @@ import QtQuick.Dialogs
 import Kite.Theme
 
 /*
- * The instance's components: Minecraft, a mod loader, LWJGL, and anything
- * else installed alongside them - the widget-free replacement for
- * VersionPage. Long operations (installing/updating a component) run
- * through PackProfile's own `task`, shown as a thin progress bar rather
- * than a blocking dialog. Each row's actions sit behind its ⋯ menu (also
- * on right-click); only the on/off switch stays out in the row. The
- * toolbar's "More" menu holds the rarer actions: reloading, an empty component,
- * jar mods, a replacement Minecraft.jar, downloading the game files again,
- * and the libraries and game folders.
+ * The instance's components: Minecraft, a mod loader, LWJGL and anything else
+ * installed. Long operations run through PackProfile's own `task`, shown as a
+ * thin progress bar rather than a blocking dialog.
  */
 Item {
     id: root
 
-    // InstanceDetails.
     property var details: null
     readonly property var components: root.details ? root.details.components : null
     readonly property var installer: root.details ? root.details.loaderInstaller : null
@@ -34,10 +27,8 @@ Item {
     property var downloadWatcher: null
     readonly property bool downloading: !!root.downloadWatcher && root.downloadWatcher.running
 
-    // PackProfile reports its failures in launcher terms; the one a player
-    // most often meets (the version metadata could not be fetched or
-    // checked) is said here in plain words instead. Anything else is shown
-    // as it comes -- those already name what failed.
+    // PackProfile reports failures in launcher terms; the common one (version metadata could not be
+    // fetched or checked) is said in plain words, anything else is shown as it comes.
     readonly property string unresolvedError: qsTranslate("ComponentUpdateTask",
         "Instance has unresolved dependencies while loading/checking for launch.")
     function friendlyError(error) {
@@ -70,8 +61,6 @@ Item {
                     onClicked: moreMenu.popup(moreButton, moreButton.width - moreMenu.width, moreButton.height)
                 }
             }
-            // Secondary, like the rest of the toolbar: the play bar's Play
-            // is this page's one primary action.
             Button {
                 enabled: !root.locked && !!root.installer && !!root.components && !root.components.busy
                 text: qsTr("Install loader")
@@ -89,8 +78,6 @@ Item {
             text: root.lockedReason
         }
 
-        // The result of "Download all files" (progress, or why it failed) and
-        // anything else the extra actions have to say.
         NoticeBar {
             Layout.fillWidth: true
             readonly property bool failed: !!root.downloadWatcher && root.downloadWatcher.failed
@@ -180,18 +167,14 @@ Item {
             }
         }
 
-        // One card per component, the same rows as Content's -- no panel
-        // behind them running empty to the bottom of the page.
         ListView {
             id: list
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            // The same row rhythm as every list tab (see PackList).
             spacing: Theme.space.sm
             boundsBehavior: Flickable.StopAtBounds
             model: root.components
-            // Overlays the rows' right edge rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
             delegate: componentDelegate
@@ -207,7 +190,6 @@ Item {
         MeshIcon { iconName: "package"; size: 40; color: Theme.palette.textTertiary }
     }
 
-    // Rows fade out at the fold instead of being sliced by the play bar.
     ScrollFade {
         anchors.left: parent.left
         anchors.right: parent.right
@@ -234,12 +216,9 @@ Item {
             required property bool isRevertible
             required property bool hasVersionList
 
-            // Whether this component has a patch file to edit; refreshed
-            // when its menu opens.
             property bool hasFile: false
             readonly property bool changeable: uid === "net.minecraft" || root.loaderUids.indexOf(uid) >= 0
 
-            // Whether the ⋯ menu would hold anything at all.
             readonly property bool hasActions: isMoveable || (changeable && hasVersionList)
                                                || (isCustomizable && !isCustom) || isRevertible || isRemovable
 
@@ -247,7 +226,6 @@ Item {
             title: row.name
             meta: row.version
             dimmed: !row.isEnabled
-            // Minecraft itself, or the loader / library laid over it.
             thumb.glyph: row.uid === "net.minecraft" ? "cube" : "layers"
             onMenuRequested: if (row.hasActions) rowMenu.popup()
 
@@ -276,8 +254,6 @@ Item {
 
             IconButton {
                 id: moreButton
-                // Keeps the switches in one column whether or not a row
-                // has a menu.
                 opacity: row.hasActions ? 1 : 0
                 enabled: row.hasActions
                 iconName: "more"
@@ -285,12 +261,10 @@ Item {
                 onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
             }
 
-            // Hidden entries are zeroed as well: a hidden item still takes
-            // its row in a Menu.
+            // Hidden entries are zeroed as well: a hidden item still takes its row in a Menu.
             Menu {
                 id: rowMenu
-                // Looked up each time the menu opens: customizing a
-                // component creates its file.
+                // Looked up on every open: customizing a component creates its file.
                 onAboutToShow: row.hasFile = !!root.tools && root.tools.hasJsonFile(row.index)
                 MenuItem {
                     visible: row.changeable && row.hasVersionList
@@ -363,14 +337,11 @@ Item {
         }
     }
 
-    // Every loader uid this launcher knows how to install - used to decide
-    // whether a row's uid can open the loader dialog (vs. the Minecraft
-    // version dialog, vs. no "change version" action at all for a
-    // component this tab does not have a picker for, e.g. LWJGL).
+    // Every loader uid this launcher can install; decides whether a row can open the loader dialog,
+    // the Minecraft version dialog, or has no "change version" action (e.g. LWJGL).
     readonly property var loaderUids: root.installer ? root.installer.loaders.map(function (l) { return l.uid }) : []
 
-    // For review snapshots (Main.qml's "review=<name>" dev route, through
-    // InstancePage): the More menu, or the add-a-component dialog.
+    // For the "review=<name>" dev route: the More menu, or the add-a-component dialog.
     function review(name) {
         if (name === "versionmore")
             moreMenu.popup(moreButton, moreButton.width - moreMenu.width, moreButton.height)

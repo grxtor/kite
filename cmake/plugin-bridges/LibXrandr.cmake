@@ -2,13 +2,9 @@
 # SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 #
-# libXrandr plugin bridge — exposes bundled libXrandr headers for the
-# DisplayServerTweaks plugin. Like libdecor, we resolve libXrandr.so via
-# dlopen() at runtime so the plugin remains loadable on Wayland-only
-# systems and inside Flatpak sandboxes that don't expose the X libs.
-#
-# Public targets:
-#   KitePlugins::LibXrandrHeaders — INTERFACE with the include dir.
+# Exposes the bundled libXrandr headers as `KitePlugins::LibXrandrHeaders`. Like
+# libdecor, libXrandr.so is dlopen()ed so the plugin loads on Wayland-only
+# systems and in Flatpak sandboxes without the X libs.
 
 if(TARGET KitePlugins::LibXrandrHeaders)
     return()

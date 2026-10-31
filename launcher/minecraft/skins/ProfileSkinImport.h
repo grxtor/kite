@@ -30,19 +30,18 @@ class NetJob;
 
 /* Download another player's skin by username, into a file.
  *
- * Three requests that each depend on the one before it:
+ * Three requests, each needing the one before:
  *
  *   1. name  -> uuid     api.minecraftservices.com/.../lookup/name/<name>
  *   2. uuid  -> profile  sessionserver.mojang.com/.../profile/<uuid>
  *   3. url   -> png      whatever the profile's SKIN texture points at
  *
- * The URL for each step is only known once the previous one has answered, so
- * this is one task that runs three jobs in sequence rather than a job with
- * three actions queued up front.
+ * Each URL is only known once the previous step answered, so this is one task
+ * running three jobs in sequence.
  *
- * On failure the reason is deliberately short and non-technical ("failed to
- * get user UUID"): the caller puts it inside a sentence naming the player, so
- * it has to read as a clause rather than as a sentence of its own.
+ * Failure reasons are short and non-technical ("failed to get user UUID"): the
+ * caller puts them inside a sentence naming the player, so they read as a
+ * clause.
  */
 class ProfileSkinImport : public Task
 {
@@ -57,14 +56,14 @@ class ProfileSkinImport : public Task
 		return true;
 	}
 
-	/* Where the PNG was written. Valid only after success. */
+	// Where the PNG was written. Valid only after success.
 	QString targetPath() const
 	{
 		return m_targetPath;
 	}
 
-	/* The profile's texture URL, so the imported skin can be recognised as
-	 * the one that player wears. */
+	// The profile's texture URL, so the imported skin is recognised as the one
+	// that player wears.
 	QString textureUrl() const
 	{
 		return m_textureUrl;
@@ -75,8 +74,8 @@ class ProfileSkinImport : public Task
 		return m_arms;
 	}
 
-	/* The cape the player is wearing, under the placeholder id the session
-	 * server forces on us. Empty when they have none. */
+	// The cape the player wears, under the placeholder id the session server
+	// forces on us. Empty when none.
 	QString capeId() const
 	{
 		return m_capeId;
@@ -101,8 +100,7 @@ class ProfileSkinImport : public Task
 	QString m_capeId;
 	SkinEntry::Arms m_arms = SkinEntry::Arms::Classic;
 
-	/* Reused for each step; replaced rather than accumulated so that abort()
-	 * only ever has one thing to stop. */
+	// Reused for each step and replaced, so abort() has only one thing to stop.
 	shared_qobject_ptr<NetJob> m_job;
 	QByteArray m_response;
 };

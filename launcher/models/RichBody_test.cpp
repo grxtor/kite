@@ -49,9 +49,8 @@ class RichBodyTest : public QObject
 		QVERIFY(html(QString()).isEmpty());
 	}
 
-	// The Cobbleverse page: a banner, then "Welcome to..." on the next
-	// line of the same paragraph. The picture gets its own centred block,
-	// before the text and not beside it.
+	// The Cobbleverse page: a banner, then "Welcome to..." on the next line of the
+	// same paragraph; the picture gets its own centred block before the text.
 	void imageLeavesItsParagraph()
 	{
 		const QString out = markdown(QStringLiteral(
@@ -164,8 +163,7 @@ class RichBodyTest : public QObject
 int main(int argc, char* argv[])
 {
 	// RichBody renders through QTextDocument and QFont, which need a
-	// QGuiApplication; offscreen keeps this runnable on a headless runner, as
-	// in GameTextureIcons_test.cpp.
+	// QGuiApplication; offscreen keeps this runnable headless.
 	qputenv("QT_QPA_PLATFORM", "offscreen");
 
 	QGuiApplication app(argc, argv);

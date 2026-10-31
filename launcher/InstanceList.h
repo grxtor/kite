@@ -49,23 +49,20 @@ enum class InstCreateError {
 
 enum class GroupsState { NotLoaded, Steady, Dirty };
 
-/// One shortcut that went to the trash along with its instance, and
-/// where it went, so that both halves can be put back.
+/// A shortcut that went to the trash with its instance, and where it went, so
+/// both can be put back.
 struct TrashedShortcut {
 	ShortcutData shortcut;
 	QString trashPath;
 };
 
-/// Everything needed to undo one trashInstance() call.
 struct TrashedInstance {
 	InstanceId id;
-	/// Display name as it was, for the offer to restore it. The instance's
-	/// own config file is in the trash, so this cannot be looked up later.
+	/// Display name as it was: the instance's config file is in the trash, so
+	/// it cannot be looked up later.
 	QString name;
-	/// The folder it came from, and where it goes back to.
 	QString path;
 	QString trashPath;
-	/// The group it was in, which is not recorded inside the folder.
 	GroupId group;
 	QList<TrashedShortcut> shortcuts;
 };
@@ -75,12 +72,10 @@ class InstanceList : public QAbstractListModel
 	Q_OBJECT
 
   public:
-	/* @p instDirs are the instance roots, most important first. The first
-	 * one is the primary folder: it is where a new instance goes when
-	 * nothing asked for somewhere specific, and where the group file
-	 * lives. Duplicates and paths that cannot be created are dropped, so
-	 * the list this ends up with may be shorter than the one passed in.
-	 */
+	/* @p instDirs are the instance roots, most important first. The first is
+	 * the primary folder: where a new instance goes when nothing asked for
+	 * somewhere specific. Duplicates and paths that cannot be created are
+	 * dropped. */
 	explicit InstanceList(SettingsObjectPtr settings,
 						  const QStringList& instDirs, QObject* parent = 0);
 	virtual ~InstanceList();
@@ -102,26 +97,19 @@ class InstanceList : public QAbstractListModel
 		InstanceIDRole = 0x34B1CB49		  ///< Return id if the instance
 	};
 
-	/* GroupRole is pinned to Qt::UserRole on purpose: InstanceView.h (the
-	 * still-shipping QtWidgets instance grid) independently declares
-	 * InstanceViewRoles::GroupRole = Qt::UserRole, ProgressValueRole =
-	 * Qt::UserRole + 1 and ProgressMaximumRole = Qt::UserRole + 2, and
-	 * reads those numerically rather than through this enum. Renumbering
-	 * GroupRole here would desync the two, and a new role at +1 or +2
-	 * would silently collide with the progress roles. QmlRoles below
-	 * therefore starts at Qt::UserRole + 10, leaving 257 and 258 reserved
-	 * for InstanceView.h until the widget grid is deleted. */
+	/* GroupRole is pinned to Qt::UserRole: InstanceView.h (the widget instance
+	 * grid) declares its own GroupRole = Qt::UserRole, ProgressValueRole = +1
+	 * and ProgressMaximumRole = +2 and reads them numerically. QmlRoles
+	 * therefore starts at Qt::UserRole + 10. */
 	static_assert(int(GroupRole) == int(Qt::UserRole),
 				  "GroupRole is numerically pinned to InstanceViewRoles::GroupRole "
 				  "in InstanceView.h; do not renumber");
 
-	/* Roles added for the QML instance list. instanceId, name, iconKey,
-	 * instanceRoot and group are named in roleNames() but reuse the
-	 * InstanceIDRole/Qt::DisplayRole/Qt::DecorationRole/Qt::ToolTipRole/
-	 * GroupRole cases already handled in data() - only the ten below are
-	 * genuinely new. InstancePointerRole is deliberately left unnamed: it
-	 * is a raw void*, and QML has no way to dereference one; a QML
-	 * delegate reaches an instance by instanceId instead. */
+	/* Roles for the QML instance list. instanceId, name, iconKey, instanceRoot
+	 * and group are named in roleNames() but reuse existing data() cases; only
+	 * the ten below are new. InstancePointerRole is left unnamed: it is a raw
+	 * void* QML cannot dereference, so a delegate reaches an instance by
+	 * instanceId. */
 	enum QmlRoles {
 		IsRunningRole = Qt::UserRole + 10,
 		CanLaunchRole,
@@ -130,52 +118,31 @@ class InstanceList : public QAbstractListModel
 		GameVersionRole,
 		LoaderRole,
 		IconTintRole,
-		/* Human-readable status/step text of the instance's active
-		 * launch task (e.g. "Downloading assets..."). Empty when no
-		 * launch is in progress, and empty again once the game is
-		 * running - pair it with LaunchProgressRole to tell those two
+		/* Status/step text of the instance's active launch task (e.g.
+		 * "Downloading assets..."). Empty when no launch is in progress and
+		 * once the game is running; pair with LaunchProgressRole to tell those
 		 * apart. */
 		LaunchStatusRole,
-		/* 0..1 while the active launch task reports determinate
-		 * progress; -1 while it is indeterminate; and -1 as well when
-		 * nothing is happening at all, in which case LaunchStatusRole
-		 * is also empty. */
+		/* 0..1 while the launch task reports determinate progress; -1 while
+		 * indeterminate, and also when nothing is happening (LaunchStatusRole
+		 * is then empty too). */
 		LaunchProgressRole,
 		/* file:// URL of the newest image in the instance's screenshots
-		 * folder (the same folder InstanceDetails::screenshotsDir()
-		 * resolves for the Screenshots tab), or an empty string when it
-		 * has none or has not been looked up yet. The lookup
-		 * (newestScreenshotUrl(), a directory scan) runs on a QThreadPool
-		 * worker thread rather than inside data() itself - see
-		 * scheduleCoverImageScan() - so data() always returns immediately:
-		 * the cached value from m_coverImageCache if there is one, or an
-		 * empty string while the first scan for that row is still in
-		 * flight. The cache entry is dropped and dataChanged is emitted for
-		 * the row when the instance stops running, since a play session
-		 * commonly leaves new screenshots behind - see
-		 * emitIsRunningChanged(). */
+		 * folder, or empty when there is none or it is not looked up yet. The
+		 * scan runs on a worker (scheduleCoverImageScan()), so data() returns
+		 * the cached value or empty at once; the entry is dropped when the
+		 * instance stops running. */
 		CoverImageRole,
-		/* Whether the instance's last launch crashed - BaseInstance::
-		 * hasCrashed(), set by LaunchTask around the game process exit.
-		 * setCrashed() already emits BaseInstance::propertiesChanged(),
-		 * which InstanceList::propertiesChanged() (connected for every
-		 * instance in add()) turns into a row-wide dataChanged(); no
-		 * separate notification wiring is needed here. */
+		/* Whether the instance's last launch crashed
+		 * (BaseInstance::hasCrashed()). setCrashed() already emits
+		 * propertiesChanged(), which add() turns into a row-wide
+		 * dataChanged(), so no separate notification is needed. */
 		HasCrashedRole,
-		/* The pack's own picture, for the cover (when there is no screenshot)
-		 * of an instance installed from a platform (BaseInstance::
-		 * isManagedPack()): "image://instanceicon/<key>" when its icon is
-		 * an icon file (the pack's logo, which the install put in the
-		 * icons folder), else the logo's upstream URL (PackIconUrl), else
-		 * an empty string - as it is for every other instance, whose
-		 * cover is its newest screenshot or a plain surface. */
+		/* Cover picture of an instance installed from a platform (when there
+		 * is no screenshot): "image://instanceicon/<key>" if its icon is an
+		 * icon file, else the logo's upstream URL (PackIconUrl), else empty. */
 		PackArtRole
 	};
-	/*!
-	 * \brief Error codes returned by functions in the InstanceList class.
-	 * NoError Indicates that no error occurred.
-	 * UnknownError indicates that an unspecified error occurred.
-	 */
 	enum InstListError { NoError = 0, UnknownError };
 
 	InstancePtr at(int i) const
@@ -193,17 +160,11 @@ class InstanceList : public QAbstractListModel
 
 	InstancePtr getInstanceById(QString id) const;
 
-	/* An instance that was installed from @p packId on @p provider, if
-	 * there is one.
-	 *
-	 * Asked before installing a modpack, so that installing a pack the
-	 * user already has can offer to update that instance instead of
-	 * quietly producing a second copy of it.
-	 *
-	 * Only the first match is returned. Having two instances of the same
-	 * pack is a perfectly reasonable thing - one to play, one to
-	 * experiment in - and nothing here could pick between them; the
-	 * caller is offering the user a choice, not making one. */
+	/* An instance installed from @p packId on @p provider, if there is one;
+	 * asked before installing a modpack so a pack the user already has can
+	 * offer to update it instead of making a second copy. Only the first match
+	 * is returned: two instances of one pack is reasonable (play, experiment)
+	 * and nothing here could pick. */
 	InstancePtr getInstanceByManagedPack(const QString& provider,
 										 const QString& packId) const;
 
@@ -216,129 +177,69 @@ class InstanceList : public QAbstractListModel
 
 	void deleteGroup(const GroupId& name);
 
-	/**
-	 * Move every instance in group @p from into group @p to, keeping
-	 * whether the group was collapsed. Renaming onto a group that already
-	 * exists merges the two. Does nothing for an empty name on either side:
-	 * "no group" has no name to change, and renaming a group to nothing is
-	 * what deleteGroup() does.
-	 */
+	/** Moves every instance in group @p from into group @p to, keeping whether
+	 * the group was collapsed; renaming onto an existing group merges them.
+	 * Does nothing for an empty name on either side ("no group" has no name,
+	 * and renaming a group to nothing is deleteGroup()). */
 	void renameGroup(const GroupId& from, const GroupId& to);
 
 	/// Delete an instance and its shortcuts for good. False when the
 	/// instance folder could not be removed (or the id is unknown).
 	bool deleteInstance(const InstanceId& id);
 
-	/**
-	 * Move an instance and its shortcuts to the platform's trash.
-	 *
-	 * Returns false if the platform has no usable trash, or if the move
-	 * failed; in both cases nothing has been removed and the caller
-	 * should offer deleteInstance() instead.
-	 */
+	/** Moves an instance and its shortcuts to the platform's trash. False if
+	 * there is no usable trash or the move failed; nothing has been removed
+	 * then and the caller should offer deleteInstance(). */
 	bool trashInstance(const InstanceId& id);
 
-	/// Whether there is anything left to undo.
 	bool trashedSomething() const;
 
-	/**
-	 * Display name of the instance undoTrashInstance() would put back, so
-	 * that the offer to restore it can say which one it means. Empty when
-	 * there is nothing to restore.
-	 *
-	 * Read from the record rather than from disk: the instance's own
-	 * config file is in the trash by now.
-	 */
+	/** Display name of the instance undoTrashInstance() would put back, so the
+	 * restore offer can name it; empty when there is nothing to restore. Read
+	 * from the record: the instance's config file is in the trash. */
 	QString lastTrashedName() const;
 
-	/**
-	 * Put the most recently trashed instance back, shortcuts included.
-	 *
-	 * Returns true when there was nothing to do. Returns false if a part
-	 * could not be restored; the entry is then kept only when the
-	 * instance folder itself is still in the trash, so that a second
-	 * attempt can retry it.
-	 */
+	/** Puts the most recently trashed instance back, shortcuts included. True
+	 * when there was nothing to do. False if a part could not be restored; the
+	 * entry is kept only if the instance folder is still in the trash, so a
+	 * retry is possible. */
 	bool undoTrashInstance();
 
-	// Wrap an instance creation task in some more task machinery and make it
-	// ready to be used
 	Task* wrapInstanceTask(InstanceTask* task);
 
-	/**
-	 * Create a new empty staging area for instance creation and @return a
-	 * path/key top commit it later. Used by instance manipulation tasks.
-	 *
-	 * @p targetDir names which configured instance root to stage inside;
-	 * empty means the primary one. Staging inside the destination root is
-	 * not an implementation detail - committing is a rename, and a rename
-	 * only works within one filesystem. Staging somewhere else would turn
-	 * every install on a second drive into a full copy.
-	 *
-	 * Returns an empty string on failure, including when @p targetDir is
-	 * not a configured root: an unknown destination is a caller bug or a
-	 * folder the user removed from the settings while a task was queued,
-	 * and guessing at a substitute would put the instance somewhere
-	 * nobody asked for.
-	 */
+	/** Creates an empty staging area for instance creation; returns a path/key
+	 * to commit it later. @p targetDir names the configured root to stage
+	 * inside (empty: the primary one); a commit is a rename, which works only
+	 * within one filesystem. Empty string on failure, including an unknown @p
+	 * targetDir, which is never guessed. */
 	QString getStagedInstancePath(const QString& targetDir = QString());
 
-	/// The folder new instances go to when nothing asks for another one.
 	QString primaryDir() const
 	{
 		return m_instDirs.isEmpty() ? QString() : m_instDirs.first();
 	}
 
-	/// Every configured instance root, primary first.
 	QStringList instanceDirs() const
 	{
 		return m_instDirs;
 	}
 
-	/* The "AdditionalInstanceDirs" setting, decoded and encoded.
-	 *
-	 * It is stored as a JSON array inside a single string rather than as a
-	 * QStringList, because INIFile writes every value out through
-	 * QVariant::toString() - and that yields an *empty string* for a list
-	 * holding anything other than exactly one element. Stored as a list,
-	 * the setting would come back empty on the next launch and the user's
-	 * extra folders would quietly disappear. Prism can store a list
-	 * directly because it keeps settings in QSettings; we cannot.
-	 *
-	 * JSON rather than a joined string because these are filesystem paths,
-	 * and any separator worth picking is a character that some path is
-	 * allowed to contain.
-	 */
+	/* The "AdditionalInstanceDirs" setting, decoded and encoded. Stored as a
+	 * JSON array in a single string, not a QStringList: INIFile writes values
+	 * through QVariant::toString(), which is empty for a list of anything but
+	 * one element. JSON rather than a joined string because any separator is a
+	 * character some path may contain. */
 	static QStringList decodeInstanceDirList(const QVariant& value);
 	static QVariant encodeInstanceDirList(const QStringList& dirs);
 
-	/**
-	 * Commit the staging area given by @keyPath to the provider - used when
-	 * creation succeeds. Used by instance manipulation tasks.
-	 *
-	 * With @p overrideInstanceId empty this creates a new instance: the
-	 * staging directory is moved into place under an id derived from
-	 * @p instanceName, and the group index gains an entry.
-	 *
-	 * With @p overrideInstanceId set, the staging directory is instead
-	 * merged over that existing instance, which is how a modpack update
-	 * lands. The instance keeps its id, its directory and its group -
-	 * @p instanceName and @p groupName are then only used for the new
-	 * instance's own name - so that everything referring to it by id
-	 * (shortcuts, the group index, play-time records) stays valid.
-	 *
-	 * @p filesToRemove are absolute paths deleted only after an override
-	 * has landed successfully - the files a pack update makes obsolete.
-	 * Ignored when not overriding.
-	 *
-	 * @p removalWarnings, when given, collects a ready-to-show message
-	 * for every one of those files that could not be deleted. Failing to
-	 * delete is not failing to update - the new version is already in
-	 * place and consistent - but it does leave a mod behind that the
-	 * pack no longer includes, and the user is the only one who can do
-	 * anything about that. So it is handed back for the task to report
-	 * rather than being buried in the log.
-	 */
+	/** Commits the staging area @keyPath when creation succeeds. With @p
+	 * overrideInstanceId empty it creates a new instance under an id derived
+	 * from @p instanceName. With it set, the staging directory is merged over
+	 * that instance (how a modpack update lands), keeping its id, directory
+	 * and group; @p instanceName/@p groupName then only name the new instance.
+	 * @p filesToRemove (absolute paths) are deleted only after an override
+	 * landed; @p removalWarnings collects a message for each that could not be
+	 * deleted. */
 	bool commitStagedInstance(const QString& keyPath,
 							  const QString& instanceName,
 							  const QString& groupName,
@@ -346,35 +247,15 @@ class InstanceList : public QAbstractListModel
 							  const QStringList& filesToRemove = {},
 							  QStringList* removalWarnings = nullptr);
 
-	/**
-	 * Destroy a previously created staging area given by @keyPath - used when
-	 * creation fails. Used by instance manipulation tasks.
-	 */
 	bool destroyStagingPath(const QString& keyPath);
 
 	int getTotalPlayTime();
 
-	/* Newest-modified png/jpg/jpeg directly inside @p screenshotsDir, as a
-	 * file:// URL Image.source can load, or an empty string if the
-	 * directory has none (including if it does not exist). A one-shot
-	 * scan with no watcher of its own - CoverImageRole's cache in data()
-	 * is what keeps this from running on every paint. Pure (no access to
-	 * this InstanceList or any QObject), so scheduleCoverImageScan() can
-	 * also run it on a QThreadPool worker thread instead of calling it
-	 * straight from data().
-	 *
-	 * Mirrors ScreenshotListModel::listEntries()'s newest-first ordering
-	 * (mtime descending, file name as a tiebreak) so the cover always
-	 * agrees with what the Screenshots tab shows as its first entry, but
-	 * does not call into it: that model's directory scan is private, and
-	 * building a full ScreenshotListModel (with its own QFileSystemWatcher)
-	 * just to read one path back out would be a heavier and stranger tool
-	 * than a plain directory listing needs.
-	 *
-	 * Exposed as a static, pure function - rather than folded straight
-	 * into data() - so this lookup can be unit-tested on its own, without
-	 * constructing a full InstanceList plus a BaseInstance.
-	 */
+	/* Newest-modified png/jpg/jpeg directly inside @p screenshotsDir as a
+	 * file:// URL, or empty. Pure (no InstanceList or QObject access), so it
+	 * can run on a worker thread and be tested directly. Same order as
+	 * ScreenshotListModel::listEntries() (mtime descending, file name
+	 * tiebreak). */
 	static QString newestScreenshotUrl(const QString& screenshotsDir);
 
 	Qt::DropActions supportedDragActions() const override;
@@ -416,54 +297,38 @@ class InstanceList : public QAbstractListModel
 	QList<InstanceId> discoverInstances();
 	InstancePtr loadInstance(const InstanceId& id);
 
-	/* Which root @p id was discovered in.
-	 *
-	 * Falls back to the primary folder for an id nothing has discovered
-	 * yet - an instance being committed right now is the normal case - so
-	 * callers get a usable path rather than an empty string.
-	 */
+	/* Which root @p id was discovered in. Falls back to the primary folder for
+	 * an id nothing has discovered yet (an instance being committed right
+	 * now), so callers get a usable path. */
 	QString rootDirOf(const InstanceId& id) const;
 
-	/* Which configured root contains @p stagingPath, or empty if none do.
-	 *
-	 * The staging directory was created inside its destination root on
-	 * purpose, so this reads the answer back off the path instead of
-	 * trusting a second copy of it to still agree by commit time.
-	 */
+	/* Which configured root contains @p stagingPath, or empty. The staging
+	 * directory was created inside its destination root, so this reads the
+	 * answer off the path instead of trusting a second copy of it. */
 	QString rootForStaging(const QString& stagingPath) const;
 
-	/* Canonicalise, deduplicate and create @p dirs.
-	 *
-	 * Resolution only - deliberately kept apart from adopting the result,
-	 * because the caller has to be able to compare the new list against
-	 * the one in use, and act on the old one, before the switch happens.
-	 */
+	/* Canonicalises, deduplicates and creates @p dirs. Resolution only, kept
+	 * apart from adopting the result so the caller can compare the new list
+	 * against the one in use, and act on the old one, before the switch. */
 	QStringList resolveInstanceDirs(const QStringList& dirs) const;
 
-	/* Adopt @p resolved as the configured roots, moving the filesystem
-	 * watcher onto them. */
 	void applyInstanceDirs(const QStringList& resolved);
 
-	/* Wire @p inst's launch-progress reporting for the QML roles:
-	 * a LaunchProgressTracker (parented to the instance, so it goes away
-	 * with it) watches whichever LaunchTask is current, and dataChanged
-	 * is emitted for this instance's row whenever that changes or
-	 * isRunning() does. Called once, from add(). */
+	/* Wires @p inst's launch-progress reporting for the QML roles: a
+	 * LaunchProgressTracker (parented to the instance) watches the current
+	 * LaunchTask, and dataChanged is emitted for the row whenever that changes
+	 * or isRunning() does. Called once, from add(). */
 	void trackLaunchProgress(BaseInstance* inst);
 	void emitLaunchProgressChanged(BaseInstance* inst);
-	/* Emits IsRunningRole's dataChanged, and - when @p inst just stopped -
-	 * also drops its m_coverImageCache entry and emits dataChanged for
-	 * CoverImageRole, since a session that just ended is exactly when a
-	 * new screenshot is likely to have appeared. */
+	/* Emits IsRunningRole's dataChanged and, when @p inst just stopped, drops
+	 * its m_coverImageCache entry and emits CoverImageRole's, since a new
+	 * screenshot is likely. */
 	void emitIsRunningChanged(BaseInstance* inst);
-	/* Starts a background scan of @p screenshotsDir for CoverImageRole's
-	 * data() case, unless one for @p id is already running. Runs
-	 * newestScreenshotUrl() on a QThreadPool worker thread; when it
-	 * finishes, the result is stored in m_coverImageCache and dataChanged
-	 * is emitted for that row's CoverImageRole - unless m_coverImageGeneration
-	 * moved on for @p id while the scan was in flight (the instance stopped
-	 * running - see emitIsRunningChanged()), in which case the result is
-	 * discarded as stale and a fresh scan is started in its place. */
+	/* Starts a background scan of @p screenshotsDir for CoverImageRole unless
+	 * one for @p id is running. The result goes to m_coverImageCache and
+	 * dataChanged is emitted, unless m_coverImageGeneration moved on meanwhile
+	 * (the instance stopped running): then it is discarded and a fresh scan
+	 * started. */
 	void scheduleCoverImageScan(const InstanceId& id,
 								const QString& screenshotsDir);
 
@@ -475,44 +340,32 @@ class InstanceList : public QAbstractListModel
 	QSet<QString> m_groupNameCache;
 
 	SettingsObjectPtr m_globalSettings;
-	/// Instance roots, canonical and deduplicated, primary first.
 	QStringList m_instDirs;
-	/* Which root each discovered instance lives in.
-	 *
-	 * Instance ids are directory names, so the same id can exist in two
-	 * roots; discoverInstances() keeps the first it sees and this map is
-	 * what every later path calculation goes through, instead of assuming
-	 * one folder. Rebuilt from scratch on every discovery pass - a stale
-	 * entry would point an instance at the wrong disk.
-	 */
+	/* Which root each discovered instance lives in. Ids are directory names,
+	 * so the same id can exist in two roots; discoverInstances() keeps the
+	 * first it sees. Rebuilt on every discovery pass, since a stale entry
+	 * would point an instance at the wrong disk. */
 	QHash<InstanceId, QString> m_instanceRootDirMap;
 	QFileSystemWatcher* m_watcher;
 	// FIXME: this is so inefficient that looking at it is almost painful.
 	QSet<QString> m_collapsedGroups;
 	QMap<InstanceId, GroupId> m_instanceGroupIndex;
 	QSet<InstanceId> instanceSet;
-	/// Trashed instances, most recent last, for undoTrashInstance().
 	QList<TrashedInstance> m_trashHistory;
 	bool m_groupsLoaded = false;
 	bool m_instancesProbed = false;
-	/* One tracker per instance, for LaunchStatusRole/LaunchProgressRole -
-	 * see trackLaunchProgress(). The tracker itself is owned by the
-	 * instance (QObject parenting); this is only a lookup table for
-	 * data(), kept in sync with the instance's destroyed() signal. */
+	/* One tracker per instance, for LaunchStatusRole/LaunchProgressRole. The
+	 * instance owns the tracker (QObject parenting); this is a lookup table
+	 * for data(), kept in sync with the instance's destroyed() signal. */
 	QHash<BaseInstance*, LaunchProgressTracker*> m_launchTrackers;
-	/* Newest-screenshot URL per instance id, for CoverImageRole - filled
-	 * lazily by data() rather than scanned for every row on every paint,
-	 * and dropped for a row when its instance stops running (see
-	 * emitIsRunningChanged()). Mutable because data() is const; an id
-	 * absent from this map simply has not been looked up yet, and a
-	 * present empty string means "looked up, no screenshot found". */
+	/* Newest-screenshot URL per instance id for CoverImageRole, filled lazily
+	 * by data() and dropped when the instance stops running. Mutable because
+	 * data() is const; an absent id has not been looked up, a present empty
+	 * string means "looked up, none found". */
 	mutable QHash<InstanceId, QString> m_coverImageCache;
-	/* Ids with a CoverImageRole scan currently running on a worker thread -
-	 * see scheduleCoverImageScan(). Guards against data() queuing a second
-	 * QtConcurrent::run() for the same id while the first has not returned;
-	 * mutable for the same reason m_coverImageCache is. */
+	/* Ids with a cover scan running on a worker thread; stops data() queuing a
+	 * second QtConcurrent::run() for the same id. Mutable like
+	 * m_coverImageCache. */
 	mutable QSet<InstanceId> m_coverImageScansPending;
-	/* Bumped for an id whenever emitIsRunningChanged() invalidates its
-	 * cached cover - see scheduleCoverImageScan()'s doc comment for why. */
 	QHash<InstanceId, int> m_coverImageGeneration;
 };

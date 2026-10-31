@@ -30,26 +30,14 @@ class ModFolderModel;
 class ModMetadataIndex;
 
 /*
- * What ContentTab.qml lists for one content folder: the folder's
- * ModFolderModel sorted by name and narrowed by a search, plus the details
- * the widget page showed in its info panel (MCModInfoFrame) as roles of
- * their own, so one delegate can show them without a second lookup.
- *
- * The QML-side replacement for ModFolderPage's ModSortProxy: the search
- * matches the same fields that proxy did (name, description, authors),
- * plus the file name, which is how people tell two copies of a mod apart.
- *
- * Rows are addressed by `key` (the file name without a ".disabled"
- * suffix, ModMetadataIndex::canonicalFileName()) rather than by row: rows
- * move as the list is sorted, searched and toggled, but a key stays the
- * same when a file is switched off and on again, so a selection made in
- * QML survives all three.
- *
- * Holds a shared_ptr to its folder model, so a model the instance has
- * already replaced (the global data pack folder is rebuilt whenever its
- * settings change) stays valid until this proxy is pointed at the new one.
- *
- * Core, like the rest of models/: QtCore only, no QtWidgets, no ui/.
+ * What ContentTab.qml lists for one content folder: the ModFolderModel sorted
+ * by name and narrowed by a search (name, description, authors and file name),
+ * plus per-file details as roles. Rows are addressed by `key`
+ * (the file name without ".disabled", ModMetadataIndex::canonicalFileName()),
+ * which survives sorting, searching and switching a file off and on. Holds a
+ * shared_ptr to its folder model, so a model the instance has replaced (the
+ * global data pack folder is rebuilt when its settings change) stays valid
+ * until this proxy is repointed.
  */
 class ContentFilterModel : public QSortFilterProxyModel
 {
@@ -58,25 +46,19 @@ class ContentFilterModel : public QSortFilterProxyModel
 	/// Case-insensitive; empty shows everything.
 	Q_PROPERTY(QString filterText READ filterText WRITE setFilterText NOTIFY
 				   filterTextChanged)
-	/// Rows left after the search.
 	Q_PROPERTY(int count READ count NOTIFY countChanged)
-	/// Rows in the folder, searched or not.
 	Q_PROPERTY(int totalCount READ totalCount NOTIFY countChanged)
 
   public:
-	/* Past ModFolderModel's own named roles (Qt::UserRole..+4), which this
-	 * proxy passes through untouched. */
+	/* Past ModFolderModel's own named roles (Qt::UserRole..+4), passed through untouched. */
 	enum ExtraRoles {
 		KeyRole = Qt::UserRole + 100,
 		FileNameRole,
 		DescriptionRole,
-		/// QStringList.
 		AuthorsRole,
-		/// The project page on the platform it was installed from, or the
-		/// address the file itself declares; empty when neither exists.
+		/// Platform project page, or the address the file declares; empty if neither.
 		HomepageRole,
-		/// "Modrinth" / "CurseForge" when the file was installed from one,
-		/// empty otherwise.
+		/// "Modrinth" / "CurseForge", or empty.
 		SourceRole
 	};
 
@@ -101,10 +83,8 @@ class ContentFilterModel : public QSortFilterProxyModel
 	int count() const;
 	int totalCount() const;
 
-	/// Source indexes (into folderModel()) of the rows with these keys,
-	/// searched or not; keys that name nothing are skipped.
+	/// Source indexes of the rows with these keys, searched or not; unknown keys are skipped.
 	QModelIndexList sourceIndexesForKeys(const QStringList& keys) const;
-	/// The keys of the rows the search currently shows, top to bottom.
 	Q_INVOKABLE QStringList visibleKeys() const;
 	/// Re-announces the rows with @p keys, for a change the folder model
 	/// cannot see (the sidecar behind `source`/`homepage`).
@@ -112,14 +92,11 @@ class ContentFilterModel : public QSortFilterProxyModel
 
 	/// ModMetadataIndex::canonicalFileName() of the mod's file.
 	static QString keyFor(const Mod& mod);
-	/// Same rule as ModFolderPage::homepageForRow(): the page of the
-	/// platform the file was installed from first, the address the file
-	/// declares itself second. @p index may be null.
+	/// Platform page first, the address the file declares second. @p index may be null.
 	static QString homepageFor(const Mod& mod, const ModMetadataIndex* index);
 	/// "Modrinth" / "CurseForge" / "". @p index may be null.
 	static QString sourceFor(const Mod& mod, const ModMetadataIndex* index);
-	/// Whether @p text (already trimmed) appears in the mod's name,
-	/// description, authors or file name, ignoring case.
+	/// Whether @p text (trimmed) appears in the name, description, authors or file name, ignoring case.
 	static bool matches(const Mod& mod, const QString& text);
 
   signals:

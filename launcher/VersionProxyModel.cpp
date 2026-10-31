@@ -75,16 +75,7 @@ VersionProxyModel::VersionProxyModel(QObject* parent)
 			&VersionProxyModel::sourceRowsAboutToBeRemoved);
 	connect(filterModel, &QAbstractItemModel::rowsRemoved, this,
 			&VersionProxyModel::sourceRowsRemoved);
-	// FIXME: implement when needed
-	/*
-	connect(replacing, &QAbstractItemModel::rowsAboutToBeMoved, this,
-	&VersionProxyModel::sourceRowsAboutToBeMoved); connect(replacing,
-	&QAbstractItemModel::rowsMoved, this, &VersionProxyModel::sourceRowsMoved);
-	connect(replacing, &QAbstractItemModel::layoutAboutToBeChanged, this,
-	&VersionProxyModel::sourceLayoutAboutToBeChanged); connect(replacing,
-	&QAbstractItemModel::layoutChanged, this,
-	&VersionProxyModel::sourceLayoutChanged);
-	*/
+	// FIXME: moved rows and layout changes of the source are not forwarded.
 	connect(filterModel, &QAbstractItemModel::modelAboutToBeReset, this,
 			&VersionProxyModel::sourceAboutToBeReset);
 	connect(filterModel, &QAbstractItemModel::modelReset, this,
@@ -124,7 +115,6 @@ QVariant VersionProxyModel::headerData(int section, Qt::Orientation orientation,
 				return tr("The name of the version.");
 			case ParentVersion:
 				return tr("Minecraft version"); // FIXME: this should come from
-												// metadata
 			case Branch:
 				return tr("The version's branch");
 			case Type:
@@ -274,7 +264,6 @@ QModelIndex VersionProxyModel::mapToSource(const QModelIndex& proxyIndex) const
 QModelIndex VersionProxyModel::index(int row, int column,
 									 const QModelIndex& parent) const
 {
-	// no trees here... shoo
 	if (parent.isValid()) {
 		return QModelIndex();
 	}
@@ -304,7 +293,6 @@ void VersionProxyModel::sourceDataChanged(
 	if (source_top_left.parent() != source_bottom_right.parent())
 		return;
 
-	// whole row is getting changed
 	auto topLeft = createIndex(source_top_left.row(), 0);
 	auto bottomRight =
 		createIndex(source_bottom_right.row(), columnCount() - 1);
@@ -315,13 +303,11 @@ void VersionProxyModel::setSourceModel(QAbstractItemModel* replacingRaw)
 {
 	auto replacing = dynamic_cast<BaseVersionList*>(replacingRaw);
 
-	// Temporarily disconnect filterModel's reset signals so that the inner
-	// filterModel->setSourceModel() call does not emit a second
-	// modelAboutToBeReset / modelReset, which would cause our
-	// beginResetModel / endResetModel to be called twice (once from here
-	// and once from sourceAboutToBeReset / sourceReset). Qt prints
-	// "beginResetModel called without endResetModel" in that case and the
-	// model's internal state gets corrupted, leading to crashes.
+	// Temporarily disconnect filterModel's reset signals so its
+	// setSourceModel() does not emit a second modelAboutToBeReset /
+	// modelReset, which would run our beginResetModel / endResetModel twice
+	// (Qt prints "beginResetModel called without endResetModel" and the state
+	// gets corrupted).
 	disconnect(filterModel, &QAbstractItemModel::modelAboutToBeReset, this,
 			   &VersionProxyModel::sourceAboutToBeReset);
 	disconnect(filterModel, &QAbstractItemModel::modelReset, this,
@@ -338,12 +324,6 @@ void VersionProxyModel::setSourceModel(QAbstractItemModel* replacingRaw)
 		if (roles.contains(BaseVersionList::VersionRole)) {
 			m_columns.push_back(Name);
 		}
-		/*
-		if(roles.contains(BaseVersionList::ParentVersionRole))
-		{
-			m_columns.push_back(ParentVersion);
-		}
-		*/
 		if (roles.contains(BaseVersionList::ArchitectureRole)) {
 			m_columns.push_back(Architecture);
 		}
@@ -369,7 +349,6 @@ void VersionProxyModel::setSourceModel(QAbstractItemModel* replacingRaw)
 		endResetModel();
 	}
 
-	// Reconnect now that our own reset pair is done.
 	connect(filterModel, &QAbstractItemModel::modelAboutToBeReset, this,
 			&VersionProxyModel::sourceAboutToBeReset);
 	connect(filterModel, &QAbstractItemModel::modelReset, this,

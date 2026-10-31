@@ -7,10 +7,8 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Grid or list, as a launcher's library toolbar offers it: two small icon
- * buttons side by side, the current view's one lit (the Style ToolButton's
- * checked look), each named by its tooltip. One click switches; clicking
- * the lit one does nothing.
+ * Grid or list, as a library toolbar offers it: two small icon buttons, the
+ * current view's one lit, each named by its tooltip.
  */
 Row {
     id: root
@@ -39,7 +37,6 @@ Row {
             padding: 0
             display: AbstractButton.IconOnly
             icon.source: Icons.url(option.modelData.icon)
-            // IconButton's glyph size, so the toolbar's icons match.
             icon.width: Theme.icon.sm + 2
             icon.height: Theme.icon.sm + 2
             // Mirrors `active` for the look and for accessibility; the

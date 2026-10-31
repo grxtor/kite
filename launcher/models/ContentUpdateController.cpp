@@ -45,9 +45,6 @@ namespace
 	const QString kOptiFine = QStringLiteral("optifine");
 } // namespace
 
-// ---------------------------------------------------------------------------
-// ContentUpdateList
-
 ContentUpdateList::ContentUpdateList(QObject* parent)
 	: QAbstractListModel(parent)
 {
@@ -79,7 +76,6 @@ QString
 ContentUpdateList::changelogUrl(const ModUpdateCheckTask::UpdateInfo& update)
 {
 	if (update.platform == ModrinthApi::get().id()) {
-		/* The version page leads with its changelog. */
 		return QStringLiteral("https://modrinth.com/mod/%1/version/%2")
 			.arg(update.item.projectId, update.newVersionId);
 	}
@@ -139,7 +135,6 @@ void ContentUpdateList::setUpdates(
 	for (const auto& update : updates) {
 		m_rows.append({update, true});
 	}
-	/* By name, the order the Content tab lists them in. */
 	std::sort(m_rows.begin(), m_rows.end(), [](const Row& a, const Row& b) {
 		return a.update.name.compare(b.update.name, Qt::CaseInsensitive) < 0;
 	});
@@ -180,9 +175,6 @@ void ContentUpdateList::setAllChecked(bool checked)
 		setChecked(row, checked);
 	}
 }
-
-// ---------------------------------------------------------------------------
-// ContentUpdateController
 
 ContentUpdateController::ContentUpdateController(
 	MinecraftInstance* instance, InstanceContentController* lists,
@@ -275,9 +267,8 @@ QList<ModPlatform::SelectedMod> ContentUpdateController::resolvableEntries(
 		if (!entry.hasPlatformOrigin()) {
 			continue;
 		}
-		/* Either identifier will do: a file installed from an mrpack has
-		 * no version id recorded, and the resolver can look a version up
-		 * by its hash instead (ModFolderPage::verifyDependencies()). */
+		/* Either identifier will do: a file from an mrpack has no version id, and the
+		 * resolver can look a version up by hash. */
 		if (entry.versionId.isEmpty() && entry.sha1.isEmpty()) {
 			continue;
 		}
@@ -304,7 +295,6 @@ ContentUpdateController::MissingPlan ContentUpdateController::planMissing(
 	for (size_t row = 0; row < folder.size(); ++row) {
 		files.insert(ContentFilterModel::keyFor(folder.at(row)), &folder.at(row));
 	}
-	/* What a person calls a file: the mod's name, else the file's own. */
 	const auto nameOf = [&files](const QString& key) {
 		const Mod* mod = files.value(key, nullptr);
 		if (!mod) {
@@ -333,7 +323,6 @@ ContentUpdateController::MissingPlan ContentUpdateController::planMissing(
 			requiredBy.append(name);
 		}
 
-		/* On disk it may be switched off, so the name is the file's own. */
 		const QString replaceKey = replaceKeys.value(i);
 		if (files.contains(replaceKey) && !plan.replacements.contains(id)) {
 			plan.replacements.insert(
@@ -342,8 +331,7 @@ ContentUpdateController::MissingPlan ContentUpdateController::planMissing(
 		}
 	}
 
-	/* Only a file with a recorded origin can say what it needs exactly;
-	 * the others have only their name to give. */
+	/* Only a file with a recorded origin can say what it needs exactly. */
 	auto index = folder.metadataIndex();
 	QList<ModMetadataIndex::Entry> origins;
 	QSet<QString> seen;
@@ -433,9 +421,8 @@ QObject* ContentUpdateController::checkForUpdates(const QString& kind,
 		return nullptr;
 	}
 
-	/* Something to ask about at all: a file with a recorded origin among
-	 * the ones asked for. Without one the check would only report that
-	 * there was nothing to check. */
+	/* Needs a file with a recorded origin among those asked for; otherwise the
+	 * check would only report nothing to check. */
 	auto index = folder->metadataIndex();
 	const QSet<QString> wanted(keys.begin(), keys.end());
 	bool anyTracked = false;
@@ -506,7 +493,6 @@ QObject* ContentUpdateController::applyUpdates()
 	task->setMetadataIndex(m_updatesFolder->metadataIndex());
 	QObject* watcher = watchDownload(
 		task, tr("Updating %n file(s)", "", int(items.size())), m_updatesFolder);
-	/* Applied: the same list must not be offered twice. */
 	m_updates->clear();
 	return watcher;
 }
@@ -550,8 +536,6 @@ bool ContentUpdateController::loadVersions(const QString& kind,
 	}
 	setLastError(QString());
 
-	/* The same query Add content makes: this instance's version, and its
-	 * loader for content that has one. */
 	const QString mc = mcVersion();
 	ModPlatform::SearchFilters filters;
 	filters.mcVersions = ModPlatform::singleVersionList(mc);
@@ -614,8 +598,6 @@ void ContentUpdateController::onVersionsEntryUpdated(int row)
 	}
 	const auto* project = model->projectAt(0);
 	if (!project || !project->versionsLoaded) {
-		/* The description arrived first; the versions are still on
-		 * their way. */
 		return;
 	}
 	ModPlatform::ContentType type = ModPlatform::ContentType::Mod;
@@ -659,10 +641,8 @@ QObject* ContentUpdateController::reviewVersion(const QString& versionId)
 	const auto mod = ContentBrowser::selectionFrom(
 		*project, *version, m_versionsModel->platformId(), mcVersion(),
 		loaderName);
-	/* The conflict analyzer turns a pick of something already on disk
-	 * into an in-place replacement, so this is the whole of "change
-	 * version": ModFolderPage::on_actionChangeVersion_triggered() reaches
-	 * the same install path. */
+	/* The conflict analyzer turns a pick of something already on disk into an
+	 * in-place replacement: that is "change version". */
 	auto* review = new ContentInstallReview(
 		mod, mcVersion(), loaderName, m_versionsFolder,
 		type == ModPlatform::ContentType::Mod, this);
@@ -800,7 +780,6 @@ int ContentUpdateController::resetMetadata(const QString& kind,
 	}
 	const int removed = forgetOrigins(*folder, keys);
 	if (removed > 0 && m_lists) {
-		/* Where a row came from is one of its roles. */
 		m_lists->refreshRows(kind, keys);
 	}
 	return removed;

@@ -41,9 +41,7 @@ namespace FriendsLogRules
 {
 	struct Change {
 		enum class Kind {
-			/// Not a line that says anything about the world.
 			None,
-			/// The player is now in @p world.
 			Set,
 			/// The player is nowhere known (a connect to something that is
 			/// not a host).
@@ -58,7 +56,6 @@ namespace FriendsLogRules
 
 	Change fromLine(const QString& line);
 
-	/// The world after @p change: @p current, replaced or cleared.
 	FriendsApi::World apply(const Change& change,
 							const FriendsApi::World& current);
 } // namespace FriendsLogRules

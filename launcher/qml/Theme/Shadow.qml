@@ -3,16 +3,14 @@
 
 import QtQuick
 
-// A soft drop shadow under a raised surface: a card lifting on hover, a
-// menu, a dialog. Drawn as a stack of translucent rounded rects that fan out
-// from the surface's edge, since the 6.4 floor has no MultiEffect to blur a
-// real one; the stack fades towards its rim, which reads as a blur at these
-// strengths.
+// A drop shadow under a raised surface, drawn as a stack of translucent
+// rounded rects fanning out from its edge, since Qt 6.4 has no MultiEffect to
+// blur a real one; the fade towards the rim reads as a blur.
 //
-// Place it as a child of the surface Rectangle, with `radius` matching that
-// surface's own and `level` one of Theme.elevation's sm/md/lg. It fills its
-// parent and sits under it (z -1), so it never darkens the surface itself.
-// Fade it with `opacity` (a card's hover), never by changing `level`.
+// Place it as a child of the surface Rectangle, with a matching `radius` and
+// `level` one of Theme.elevation's sm/md/lg. It sits under its parent (z -1),
+// so it never darkens the surface. Fade it with `opacity`, never by changing
+// `level`.
 Item {
     id: shadow
 

@@ -27,18 +27,12 @@
 
 class PluginManager;
 
-/*
- * Every plugin module the launcher found, for the QML Settings section
- * "Installed plugins" -- what the widget PluginsDialog lists: name and
- * version, author, description, licence, source link, signature, status
- * (loaded, or why not), dependencies, and whether the user wants it
- * enabled. Like the dialog, switching a plugin on or off is remembered
- * for the next start (PluginManager::setModuleDisabled()); nothing loads
- * or unloads while the launcher runs, which `restartNeeded` reports.
- *
- * Lives in Kite_logic next to PluginManager; QmlShell hands one out
- * through a factory Application installs (QmlShell::pluginList()).
- */
+/* Every plugin module the launcher found, for the QML Settings section "Installed plugins" (what
+ * the widget PluginsDialog lists: name, version, author, description, licence, source link,
+ * signature, status, dependencies, and the enabled wish). Switching a plugin is remembered for the
+ * next start (PluginManager::setModuleDisabled()); nothing loads or unloads at runtime, which
+ * `restartNeeded` reports. Lives in Kite_logic; QmlShell hands one out through a factory
+ * (QmlShell::pluginList()). */
 class PluginListModel : public QAbstractListModel
 {
 	Q_OBJECT
@@ -74,8 +68,7 @@ class PluginListModel : public QAbstractListModel
 		DependenciesRole,
 	};
 
-	/* @p manager is not owned and must outlive this model; null gives an
-	 * empty list (and is what the test subclass passes). */
+	/* @p manager is not owned and must outlive the model; null gives an empty list. */
 	explicit PluginListModel(PluginManager* manager, QObject* parent = nullptr);
 
 	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -85,8 +78,7 @@ class PluginListModel : public QAbstractListModel
 	int count() const;
 	bool restartNeeded() const;
 
-	/* Remembers that the user wants plugin @p row on or off from the next
-	 * start, the way PluginsDialog's check box does. No-op for a plugin
+	/* Remembers that the user wants plugin @p row on or off from the next start. No-op for a plugin
 	 * that cannot be toggled. */
 	Q_INVOKABLE void setEnabled(int row, bool enabled);
 
@@ -100,8 +92,7 @@ class PluginListModel : public QAbstractListModel
 	void restartNeededChanged();
 
   protected:
-	/* The test seam, as in PluginSurfaceModel: by default these read and
-	 * write the PluginManager given to the constructor. */
+	/* Test seam: by default these read and write the PluginManager given to the constructor. */
 	virtual QVector<PluginMetadata> fetchModules() const;
 	virtual bool isUserDisabled(const QString& name) const;
 	virtual void setUserDisabled(const QString& name, bool disabled);

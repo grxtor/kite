@@ -30,7 +30,6 @@
 
 namespace
 {
-	/* The mod asks to refresh as often as its player presses a button. */
 	constexpr int kMinBridgeRefreshGapMs = 10 * 1000;
 } // namespace
 

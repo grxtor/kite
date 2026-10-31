@@ -27,10 +27,8 @@ namespace Contrast
 
 	namespace
 	{
-		/* WCAG 2.1 SC 1.4.3: linearises a single sRGB channel already
-		 * normalised to [0, 1]. The 0.03928 breakpoint and the two branches
-		 * either side of it come straight from the spec -- there is no
-		 * simpler formula that covers both of them at once. */
+		/* WCAG 2.1 SC 1.4.3: linearises one sRGB channel normalised to [0, 1];
+		 * the 0.03928 breakpoint and both branches come from the spec. */
 		qreal linearize(qreal channel)
 		{
 			return channel <= 0.03928 ? channel / 12.92

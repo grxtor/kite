@@ -81,7 +81,6 @@ void WorldDataPacksController::openForWorld(int row)
 		world.name().isEmpty() ? world.folderName() : world.name();
 
 	if (m_model && QDir(m_model->dir().absolutePath()) == QDir(folder)) {
-		// Already showing this world - the name may still have changed.
 		m_worldName = name;
 		emit modelChanged();
 		return;
@@ -100,10 +99,8 @@ void WorldDataPacksController::openForWorld(int row)
 	m_sorted->setDynamicSortFilter(true);
 	m_sorted->sort(0);
 
-	// Mirrors InstanceDetails.cpp's startWatchingFresh(): a folder that
-	// already exists (this world had data packs before) needs an explicit
-	// update() too, since startWatching() only runs one on its very first
-	// call ever for a given QFileSystemWatcher path.
+	// A folder that already exists needs an explicit update(): startWatching() only
+	// runs one on its first call per path.
 	const bool wasValid = m_model->isValid() && m_model->dir().exists();
 	m_model->startWatching();
 	if (wasValid) {

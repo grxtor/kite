@@ -57,9 +57,7 @@ jobs:
 
           tar --exclude='.git' -czf Kite-${{ env.VERSION }}.tar.gz Kite-${{ env.VERSION }}
 
-          # The artifacts are named Kite-<artifact-name>-..., so the Qt
-          # version is not right after "MSVC"/"MinGW-w64"; NAME below
-          # rebuilds the published names.
+          # NAME rebuilds the published names from the artifact names.
           for d in Kite-Windows-MSVC*; do
             cd "${d}" || continue
             LEGACY="$(echo -n ${d} | grep -o Legacy || true)"

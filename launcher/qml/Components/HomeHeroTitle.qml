@@ -6,47 +6,32 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The words at the top of Home's hero (HomeHero): the instance's name at
- * display size, what it runs and whether it crashed last time, and -- when
- * the hero has no room for its facts -- when it was last played and for how
- * long; while a launch runs, its stage and a bar.
- *
- * The Sahne, Sade and Gece looks set it bigger or smaller (`nameSize`) and
- * turn the line under the name into icons (`iconMeta`: layers, clock,
- * hourglass), which always says when and how long.
+ * The words at the top of Home's hero: the instance's name, what it runs and whether it crashed last time, and,
+ * when the hero has no room for its facts, when it was last played and for how long; while a launch runs, its
+ * stage and a bar. Sahne, Sade and Gece set `nameSize` and turn the line under the name into icons (`iconMeta`).
  */
 ColumnLayout {
     id: root
 
     property string name: ""
-    // Format.versionLine()'s "Fabric 1.21.4".
     property string versionText: ""
     property bool hasCrashed: false
     property var lastLaunch: 0
     property string playTimeText: ""
-    // Whether the line under the name also says when and how long.
     property bool showsWhen: true
     property string launchStatus: ""
     property real launchProgress: -1
-    // Over a screenshot: the bar takes its media look.
     property bool onMedia: false
     property color ink: Theme.palette.textPrimary
     property color inkSecondary: Theme.palette.textSecondary
     property int progressMaxWidth: Theme.control.heightLg * 8
-    // The name's size and line height (a multiplier); the Sahne look sets
-    // 48, Sade 36, Gece 46.
     property int nameSize: Theme.type.display.pixelSize
     property real nameLineHeight: 1.0
-    // The line under the name as icons and facts (layers + what it runs,
-    // clock + when, hourglass + how long) instead of words and bullets.
     property bool iconMeta: false
     property int metaSize: Theme.type.body.pixelSize
-    // Between the facts of the icon line.
     property int metaSpacing: Theme.space.lg
 
-    // As wide as the name and what it runs need, whatever else the line
-    // says. Rounded up: a layout rounds widths, and a name a fraction too
-    // narrow elides.
+    // Rounded up: a layout rounds widths, and a name a fraction too narrow elides.
     readonly property int naturalWidth: Math.ceil(Math.max(nameText.implicitWidth, identity.implicitWidth))
     readonly property bool launching: root.launchStatus.length > 0
     readonly property string playedText: Number(root.lastLaunch) > 0
@@ -55,7 +40,6 @@ ColumnLayout {
 
     readonly property int metaIconSize: 16
 
-    // One fact of the icon line: its icon, then the words.
     component MetaFact: Row {
         property string iconName
         property string text
@@ -84,8 +68,6 @@ ColumnLayout {
         id: nameText
         Layout.fillWidth: true
         text: root.name
-        // A name too long for the room steps down to the heading size
-        // before it elides.
         fontSizeMode: Text.HorizontalFit
         minimumPixelSize: Theme.type.heading.pixelSize
         elide: Text.ElideRight
@@ -97,8 +79,6 @@ ColumnLayout {
         font.weight: Theme.type.display.weight
     }
 
-    // The icon line: what it runs, the crash if it crashed (else when it
-    // was played), how long it has been played.
     Row {
         Layout.fillWidth: true
         visible: root.iconMeta
@@ -138,15 +118,11 @@ ColumnLayout {
         }
     }
 
-    // "Fabric 1.21.4", the crash if it crashed; with showsWhen also
-    // "• Played 2 h ago • ⌛ 3 h 15 min".
     Row {
         Layout.fillWidth: true
         visible: !root.iconMeta
         spacing: Theme.space.sm
 
-        // What it runs and whether it crashed: what the name's side
-        // always needs, whatever else the line says.
         Row {
             id: identity
             anchors.verticalCenter: parent.verticalCenter
@@ -205,7 +181,6 @@ ColumnLayout {
         }
     }
 
-    // While a launch runs: what it is doing, and how far.
     Column {
         Layout.fillWidth: true
         Layout.maximumWidth: root.progressMaxWidth

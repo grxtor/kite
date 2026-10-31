@@ -64,9 +64,9 @@ class World
 	{
 		return m_gameType;
 	}
-	/* The in-game day the world is on - the daylight cycle day the game
-	 * itself counts, not the time the world has been running. Empty for
-	 * worlds whose level.dat records no daylight clock. */
+	// The in-game day the world is on: the daylight cycle day the game counts,
+	// not the time the world has run. Empty for worlds with no daylight clock
+	// in level.dat.
 	std::optional<int64_t> dayCount() const
 	{
 		return m_dayCount;

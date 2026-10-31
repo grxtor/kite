@@ -6,19 +6,9 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * A FriendRow for one of your friends (a friend map, FriendsController.
- * friends): their head, name and where they are. Whatever goes inside it
- * (Join, ⋯) lands on its right.
- *
- * A friend on a visible server who does not let others join has no Join,
- * which would look like a bug: the row says so. On the Friends page a faint
- * "Joining off" shows in Join's place while the pointer is on the row, with
- * the reason as its tooltip; in the compact Home panel the row's own
- * tooltip says it.
- *
- * `stale`: the list is the last one read and may be out of date (the server
- * is not answering), so nobody is shown as around right now: no presence
- * dot, though an offline head stays dimmed.
+ * A FriendRow for one of your friends (a friend map). On a visible server where the friend does not let others
+ * join there is no Join: the Friends page shows a faint "Joining off" on row hover, the compact Home panel a
+ * tooltip. `stale`: the list is the last one read, so no presence dot.
  */
 FriendRow {
     id: root
@@ -42,11 +32,9 @@ FriendRow {
     ToolTip.delay: root.tipDelayMs
     ToolTip.text: root.joinOffTip
 
-    // Its room is kept, so the name does not shorten as it appears.
     Text {
         visible: !root.compact && root.joinOff
-        // A Row puts a short child at its top; the buttons beside it are
-        // centred, so the label is too.
+        // A Row puts a short child at its top; the buttons beside it are centred.
         anchors.verticalCenter: parent.verticalCenter
         text: qsTr("Joining off")
         color: Theme.palette.textTertiary

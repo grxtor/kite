@@ -7,30 +7,17 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * You, at the top of the Friends page: your head and name (a click copies
- * it, to send to someone), what your friends can see of you right now --
- * online, the server you play on and whether they can join you there
- * (Settings > Friends) -- and, on the right, where you add someone by their
- * Minecraft name. In a narrow window the add field drops under your name.
- *
- * No card of its own: it lies on the page as its header, inset so your head
- * lines up with the friends' heads in the list below. A framed card holding
- * the framed field and button was a box in a box.
- *
- * A request is on its way until FriendsController says how it went
- * (actionFinished); the name stays in the field until it is accepted, so a
- * failed one is not typed again.
+ * You, at the top of the Friends page: head and name (a click copies it), what friends can see of you, and where
+ * to add someone by Minecraft name. A request is on its way until FriendsController says how it went
+ * (actionFinished); the name stays in the field until it is accepted.
  */
 Rectangle {
     id: root
 
-    // QmlShell.friends (FriendsController), or null.
+    // FriendsController, or null.
     property var controller: null
-    // Your head (QmlShell.accountFace), "" for none.
     property string face: ""
-    // The friends server answers: without it a request cannot go and the
-    // status below is not known to have reached anyone (the page keeps the
-    // last lists while it does not).
+    // The friends server answers; without it a request cannot go.
     property bool online: true
 
     readonly property string typedName: nameField.text.trim()
@@ -42,8 +29,7 @@ Rectangle {
     // What friends see of you: playing, worldType, host, serverHidden, joinable.
     readonly property var mine: root.controller ? root.controller.myStatus : ({})
     readonly property bool playing: !!root.mine.playing && root.visibility !== "invisible"
-    // The line under your name, as friends would read you. Not while the
-    // server does not answer: nothing says friends see you then.
+    // Not while the server does not answer: nothing says friends see you then.
     readonly property string statusLine: !root.online ? qsTr("Not connected · friends see your last status")
         : root.visibility === "invisible" ? qsTr("Invisible")
         : root.playing && root.mine.host ? (root.mine.joinable ? qsTr("Playing on %1 · friends can join").arg(root.mine.host)
@@ -53,7 +39,6 @@ Rectangle {
         : root.playing ? qsTr("Playing")
         : root.visibility === "everyone" ? qsTr("Online · anyone with your name can see you")
         : qsTr("Online · friends can see you")
-    // Below this the add field goes under your name.
     readonly property int sideBySideWidth: 640
     readonly property int addFieldWidth: 232
 
@@ -61,7 +46,6 @@ Rectangle {
         nameField.forceActiveFocus()
     }
     function submit() {
-        // Enter in the field gets here too, past the Add button's own wait.
         if (!root.nameValid || !root.controller || root.sending || !root.online)
             return
         root.sending = true
@@ -88,11 +72,9 @@ Rectangle {
                 Layout.alignment: Qt.AlignVCenter
                 size: Theme.control.height
                 face: root.face
-                // Invisible is how you look to others: no dot, a dimmed head.
-                // Not connected: no dot, as nothing says you are online.
+                // Invisible: no dot, a dimmed head. Not connected: no dot, as nothing says you are online.
                 presence: !root.online ? ""
                         : root.visibility === "invisible" ? "offline" : root.playing ? "playing" : "online"
-                // The page's colour, under the presence dot's ring.
                 ringColor: Theme.palette.canvas
             }
             Column {
@@ -156,7 +138,6 @@ Rectangle {
         }
     }
 
-    // The answer to Add: only a request that went through empties the field.
     Connections {
         target: root.controller
         function onActionFinished(action, ok, message) {
@@ -166,8 +147,7 @@ Rectangle {
             if (ok)
                 nameField.clear()
         }
-        // Friends turned off and on while a request was out: its answer is
-        // dropped, so it is not waited for.
+        // Friends turned off and on while a request was out: its answer is dropped, so it is not waited for.
         function onChanged() {
             if (root.sending && root.controller.state !== "ready")
                 root.sending = false

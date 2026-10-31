@@ -6,11 +6,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The hero of the Sade look: no card. A 96 px tile in the kite's cut, the
- * name at 36 px with the line of icons under it, and Play (the calm green)
- * with ▾ at the far edge, all on the page. Behind the top of the page, the
- * instance's newest screenshot as a faint glow that fades into the page; no
- * screenshot, no glow. A view of the HomeHero it belongs to.
+ * The hero of the Sade look: no card. A 96 px tile in the kite's cut, the name at 36 px with the line of icons under
+ * it, and Play with ▾ at the far edge, all on the page, over a faint glow of the instance's newest screenshot (none
+ * without one). A view of the HomeHero it belongs to.
  */
 Item {
     id: root
@@ -20,7 +18,6 @@ Item {
     readonly property int tileSize: 96
     readonly property int topInset: 44
     readonly property int glowHeight: 330
-    // How much of the screenshot shows, and from where it fades out.
     readonly property real glowOpacity: 0.32
     readonly property real glowFadeFrom: 0.3
     readonly property int gap: Theme.space.xl
@@ -34,7 +31,6 @@ Item {
 
     implicitHeight: root.topInset + root.tileSize
 
-    // The glow: the screenshot softened to its colours, then faded out.
     Item {
         anchors.left: parent.left
         anchors.right: parent.right
@@ -61,7 +57,6 @@ Item {
         }
     }
 
-    // Anywhere but its buttons: the instance page.
     TapHandler {
         gesturePolicy: TapHandler.ReleaseWithinBounds
         onTapped: root.hero.openRequested(root.hero.instanceId)

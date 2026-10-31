@@ -28,7 +28,6 @@ AtlOptionalModsModel::AtlOptionalModsModel(
 		m_index.insert(m_mods.at(i).name, i);
 		m_selection.insert(m_mods.at(i).name, false);
 	}
-	/* Where the pack says to start. */
 	for (int i = 0; i < m_mods.size(); ++i) {
 		setMod(i, m_mods.at(i).selected);
 	}
@@ -148,7 +147,6 @@ void AtlOptionalModsModel::setMod(int index, bool enable)
 	}
 	m_selection[mod.name] = enable;
 
-	/* One of a group at a time. */
 	if (enable && !mod.group.isEmpty()) {
 		for (int i = 0; i < m_mods.size(); ++i) {
 			if (i != index && m_mods.at(i).group == mod.group) {
@@ -158,8 +156,7 @@ void AtlOptionalModsModel::setMod(int index, bool enable)
 	}
 
 	for (const QString& dependencyName : mod.depends) {
-		/* A pack naming a dependency it does not list (the widget model
-		 * would have taken the first mod instead). */
+		/* A pack naming a dependency it does not list. */
 		if (!m_index.contains(dependencyName)) {
 			continue;
 		}
@@ -167,7 +164,6 @@ void AtlOptionalModsModel::setMod(int index, bool enable)
 		if (enable) {
 			setMod(dependencyIndex, true);
 		}
-		/* Who needs a hidden dependency, so it can go when nothing does. */
 		QStringList& dependants = m_dependants[dependencyName];
 		if (enable) {
 			if (!dependants.contains(mod.name)) {
@@ -182,7 +178,6 @@ void AtlOptionalModsModel::setMod(int index, bool enable)
 		}
 	}
 
-	/* Unticking a mod unticks what depends on it. */
 	if (!enable) {
 		const QStringList dependants = m_dependants.value(mod.name);
 		for (const QString& dependantName : dependants) {

@@ -134,7 +134,6 @@ namespace AssetsUtils
 
 		for (QVariantMap::const_iterator iter = map.begin(); iter != map.end();
 			 ++iter) {
-			// qDebug() << iter.key();
 
 			QVariant variant = iter.value();
 			QVariantMap nested_objects = variant.toMap();
@@ -144,8 +143,6 @@ namespace AssetsUtils
 			for (QVariantMap::const_iterator nested_iter =
 					 nested_objects.begin();
 				 nested_iter != nested_objects.end(); ++nested_iter) {
-				// qDebug() << nested_iter.key() <<
-				// nested_iter.value().toString();
 				QString key = nested_iter.key();
 				QVariant value = nested_iter.value();
 

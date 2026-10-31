@@ -6,11 +6,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * Profilers, MCEdit, and the editor used for JSON/text files -- the QML
- * equivalent of the classic ExternalToolsPage. Each path is picked from a
- * native dialog (see SettingPathField.qml) rather than typed by hand, and
- * JProfiler/JVisualVM/MCEdit each get a Check button next to their path,
- * same as the classic page.
+ * Profilers, MCEdit and the editor used for JSON/text files. Each path is picked
+ * from a native dialog (SettingPathField.qml); JProfiler, JVisualVM and MCEdit
+ * get a Check button.
  */
 SettingsScroll {
     title: qsTr("External tools")
@@ -39,8 +37,7 @@ SettingsScroll {
         }
     }
 
-    // MCEdit has not been updated since 2018; the group stays for anyone who
-    // already set a path, and is left out for everyone else.
+    // MCEdit is unmaintained: shown only to those who already set a path.
     SettingsGroup {
         width: parent.width
         visible: SettingsStore.string("MCEditPath").length > 0

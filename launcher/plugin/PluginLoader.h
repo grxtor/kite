@@ -28,22 +28,12 @@
 
 #include <cstdint>
 
-/*
- * PluginLoader — scans known directories for .mmco module files and
- * performs the low-level dlopen / symbol resolution.
- *
- * It does NOT call mmco_init(); that is the PluginManager's job.
- *
- * In addition to loading, the loader runs the *trust pre-flight*: it
- * extracts and verifies any GPG signature trailer, then applies the
- * "OSS license → signature optional / otherwise mandatory" policy. A
- * module that fails the policy is returned with `disabled=true` set so
- * that the manager skips it without unloading the shared library (the
- * library may still be needed by other tooling, e.g. the about dialog).
- *
- * Modules whose name appears in the disabled-set passed to discoverModules()
- * are likewise returned with disabled=true.
- */
+/* Scans the known directories for .mmco files and does the low-level dlopen / symbol resolution;
+ * mmco_init() is PluginManager's job. Also runs the trust pre-flight: extracts and verifies any GPG
+ * trailer and applies the policy "OSS license = signature optional, otherwise mandatory". A module
+ * failing the policy, or named in the disabled set passed to discoverModules(), is returned with
+ * disabled=true so the manager skips it without unloading the library (the about dialog may still
+ * need it). */
 
 class PluginLoader
 {
@@ -51,60 +41,32 @@ class PluginLoader
 	PluginLoader();
 	~PluginLoader();
 
-	/*
-	 * Scan all configured search paths and return metadata for every
-	 * valid .mmco module found.
-	 *
-	 * `disabledNames` is a case-insensitive set of module names that
-	 * should be marked PluginDisableReason::UserDisabled. The .mmco file
-	 * is still opened (so the metadata block can be displayed in the
-	 * plugins dialog), but the module's `disabled` flag is set and the
-	 * caller must not call mmco_init() on it.
-	 */
+	/* Scans all search paths and returns metadata for every valid .mmco. `disabledNames` is a
+	 * case-insensitive set of module names to mark PluginDisableReason::UserDisabled: the file is
+	 * still opened so the dialog can show its metadata, but the caller must not call mmco_init() on
+	 * it. */
 	QVector<PluginMetadata>
 	discoverModules(const QSet<QString>& disabledNames = {}) const;
 
-	/*
-	 * Open a single .mmco file: dlopen, validate magic/ABI, resolve
-	 * entry points. On success the returned PluginMetadata has
-	 * loaded == true. On failure loaded == false and libraryHandle
-	 * is nullptr.
-	 */
+	/* Opens one .mmco: dlopen, validate magic/ABI, resolve entry points. Success gives loaded ==
+	 * true; failure gives loaded == false and a null libraryHandle. */
 	PluginMetadata loadModule(const QString& path) const;
 
-	/*
-	 * Close a previously loaded module.
-	 */
 	static void unloadModule(PluginMetadata& meta);
 
-	/*
-	 * Build the PluginDisableReason and human-readable, translated detail
-	 * for a module whose declared abi_version falls outside
-	 * [abiMin, abiMax]. Only called by loadModule() once it has already
-	 * decided the range check failed, but kept as its own static
-	 * function -- and public -- so the reason/message formatting can be
-	 * unit-tested without dlopen()'ing a real .mmco file: the wording
-	 * depends only on these plain values, never on anything read from
-	 * the module beyond the name loadModule() already captured.
-	 *
-	 * `moduleName` is the module's declared name, or empty if
-	 * mmco_module_info::name was null/blank; `fallbackLabel` (typically
-	 * the .mmco file path) is used in the message in that case so the
-	 * user still gets something to identify the module by.
-	 */
+	/* Builds the PluginDisableReason and translated detail for a module whose abi_version is
+	 * outside [abiMin, abiMax]. Public and separate from loadModule() so the wording can be
+	 * unit-tested without dlopen(). `moduleName` may be empty (null or blank
+	 * mmco_module_info::name); `fallbackLabel` (typically the file path) identifies the module
+	 * then. */
 	static PluginDisableReason
 	classifyAbiMismatch(const QString& moduleName, const QString& fallbackLabel,
 						uint32_t builtForAbi, uint32_t abiMin, uint32_t abiMax,
 						QString& outDetail);
 
-	/*
-	 * Return the ordered list of directories that will be scanned.
-	 */
 	QStringList searchPaths() const;
 
-	/*
-	 * Prepend extra search paths (e.g. from settings).
-	 */
+	/* Prepends an extra search path (e.g. from settings). */
 	void addSearchPath(const QString& path);
 
   private:
@@ -114,9 +76,8 @@ class PluginLoader
 	QVector<PluginMetadata>
 	scanDirectory(const QString& dir, const QSet<QString>& disabledNames) const;
 
-	/* Run the trust pre-flight on `meta`: verify the GPG trailer (if any)
-	 * and apply the license-based signature policy. Updates the
-	 * signature_state / disabled fields on `meta`. Called from
-	 * loadModule() before that function returns. */
+	/* Runs the trust pre-flight on `meta`: verifies the GPG trailer (if any) and applies the
+	 * license-based signature policy, updating signature_state / disabled. Called from loadModule()
+	 * before it returns. */
 	static void verifySignatureAndPolicy(PluginMetadata& meta);
 };

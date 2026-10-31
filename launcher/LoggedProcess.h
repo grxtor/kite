@@ -23,10 +23,8 @@
 #include <QProcess>
 #include "MessageLevel.h"
 
-/*
- * This is a basic process.
- * It has line-based logging support and hides some of the nasty bits.
- */
+/* A basic process with line-based logging; hides some of QProcess's nastier
+ * bits. */
 class LoggedProcess : public QProcess
 {
 	Q_OBJECT
@@ -56,9 +54,6 @@ class LoggedProcess : public QProcess
 	void stateChanged(LoggedProcess::State state);
 
   public slots:
-	/**
-	 * @brief kill the process - equivalent to kill -9
-	 */
 	void kill();
 
   private slots:
@@ -68,31 +63,13 @@ class LoggedProcess : public QProcess
 	void on_error(QProcess::ProcessError error);
 	void on_stateChange(QProcess::ProcessState);
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0) && defined(Q_OS_UNIX)
-  protected:
-	/**
-	 * @brief put the child into a new process group so kill() reaches the
-	 *        whole tree
-	 *
-	 * Qt 6 does this with setChildProcessModifier() in the constructor;
-	 * Qt 5 has no such setter and expects this protected virtual to be
-	 * overridden instead. Both run in the child between fork() and exec(),
-	 * so only async-signal-safe calls belong here.
-	 */
-	void setupChildProcess() override;
-#endif
-
   private:
 	void changeState(LoggedProcess::State state);
 
 #ifdef Q_OS_WIN
-	/**
-	 * @brief put the child into a fresh job object
-	 *
-	 * Called once the child actually exists. Without this, kill() can only
-	 * reach the direct child - which is the wrapper command when one is
-	 * configured, leaving java (and whatever java spawned) alive.
-	 */
+	/** Puts the child into a fresh job object once it exists; otherwise kill()
+	 * reaches only the direct child (the wrapper command when one is
+	 * configured), leaving java alive. */
 	void assignToJobObject();
 #endif
 
@@ -105,10 +82,9 @@ class LoggedProcess : public QProcess
 	bool m_is_aborting = false;
 	bool m_is_detachable = false;
 #ifdef Q_OS_WIN
-	// The job object the child was assigned to, or null if we never got one
-	// (then kill() falls back to only killing the direct child).
-	// Typed as void* on purpose: this is a Windows HANDLE, but keeping it
-	// opaque means windows.h stays out of every translation unit that
+	// The job object the child was assigned to, or null if none was obtained
+	// (kill() then reaches only the direct child). void* because it is a
+	// Windows HANDLE, keeping windows.h out of every translation unit that
 	// launches a process.
 	void* m_job = nullptr;
 #endif

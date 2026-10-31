@@ -19,8 +19,6 @@ Rectangle {
     property var current
     signal activated(var value)
 
-    // The selected segment sits this far inside the track: its 1px border
-    // plus a space.xxs gap.
     readonly property int inset: Theme.space.xxs + 1
 
     implicitWidth: row.implicitWidth + inset * 2
@@ -45,12 +43,12 @@ Rectangle {
                 readonly property bool selected: modelData.value === root.current
 
                 height: root.height - root.inset * 2
-                // Whole pixels: a fractional segment width put every control
-                // after it on a half pixel, blurring 1px borders.
+                // Whole pixels: a fractional width put every control after it on a half pixel,
+                // blurring 1px borders.
                 width: Math.ceil(label.implicitWidth) + Theme.space.lg * 2
                 hoverEnabled: true
-                // `checked` only mirrors `selected` (for accessibility); the
-                // button must not toggle it itself, which would drop the binding.
+                // `checked` only mirrors `selected`; the button must not toggle it, which would
+                // drop the binding.
                 checked: selected
                 Accessible.role: Accessible.PageTab
                 Accessible.name: modelData.label

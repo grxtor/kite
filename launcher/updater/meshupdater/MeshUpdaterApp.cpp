@@ -58,18 +58,13 @@
 namespace
 {
 
-	//! Releases per API request. GitHub allows up to 100; 30 keeps the first
-	//! (and usually only) page small, which is what a check pays for.
+	//! Releases per request; GitHub allows 100, 30 keeps the usual single page small.
 	constexpr int kReleasesPerPage = 30;
 
-	//! How long the installed launcher gets to answer --version.
 	constexpr int kVersionQueryTimeoutMs = 5000;
 
-	/*!
-	 * Everything goes through the log file, because this process usually has
-	 * nowhere else to write: it is built for the windowing subsystem so that
-	 * updating does not flash a console at the user.
-	 */
+	/*! Everything goes through the log file: this process is built for the windowing subsystem so
+	 * updating does not flash a console, and has nowhere else to write. */
 	void updaterMessageHandler(QtMsgType type, const QMessageLogContext& context,
 							   const QString& message)
 	{
@@ -94,13 +89,8 @@ namespace
 	}
 
 #if defined(Q_OS_WIN32)
-	/*!
-	 * Borrow the console of whoever started us, if there is one.
-	 *
-	 * A windowed executable has no console of its own, so --debug would
-	 * otherwise print into the void when the updater is run by hand. When the
-	 * launcher starts it, stdout is a pipe and none of this applies.
-	 */
+	/*! Borrows the console of whoever started us. A windowed executable has none, so --debug would
+	 * print into the void when the updater is run by hand. */
 	void attachParentConsole();
 #endif
 
@@ -110,15 +100,8 @@ namespace
 		return QLocale().formattedDataSize(bytes);
 	}
 
-	/*!
-	 * Copy \a from onto \a to, replacing whatever is there.
-	 *
-	 * QFile::copy refuses to overwrite, and the launcher's FS::copy is a
-	 * directory copier without an overwrite mode -- and pulling FileSystem in
-	 * would drag the launcher's path matchers along with it. Installing an
-	 * update is precisely "overwrite the old file", so it gets its own
-	 * three-line helper.
-	 */
+	/*! Copies \a from onto \a to, replacing what is there. QFile::copy refuses to overwrite, and
+	 * FS::copy has no overwrite mode and would pull in the launcher's path matchers. */
 	bool copyOverFile(const QString& from, const QString& to, QString* error)
 	{
 		if (!QDir().mkpath(QFileInfo(to).absolutePath())) {
@@ -128,29 +111,22 @@ namespace
 			return false;
 		}
 
-		// symlinkTarget() before exists(): a QFileInfo on a symlink answers
-		// about the file it points at, and the whole point here is to ask
-		// about the link itself.
+		// symlinkTarget() before exists(): a QFileInfo on a symlink describes its target.
 		const QFileInfo source(from);
 		const bool sourceIsSymlink = source.isSymLink();
 
 		if ((sourceIsSymlink || QFile::exists(to)) && QFileInfo(to).exists() &&
 			!QFile::remove(to)) {
-			// On Windows a file that some process still has mapped cannot be
-			// deleted, but it can be renamed out of the way. That is the case
-			// this whole two-pass design exists to avoid, so if it happens
-			// here something is still running and the caller needs to know.
+			// On Windows a file that is still mapped cannot be deleted. The two-pass design exists
+			// to avoid that, so if it happens something is still running.
 			*error = QStringLiteral("could not replace %1")
 						 .arg(QDir::toNativeSeparators(to));
 			return false;
 		}
 
 		if (sourceIsSymlink) {
-			// Recreate the link rather than the file it points at. The
-			// bundled lib/ directory is mostly soname links -- libX11.so.6 ->
-			// libX11.so.6.4.0 -- and following them would replace 90-odd
-			// links with 90-odd full copies of the libraries, growing the
-			// installation by more than the update itself.
+			// Recreate the link, not its target: lib/ is mostly soname links, and following them
+			// would grow the installation by dozens of full copies.
 			const QString linkTarget = source.symLinkTarget();
 			const QString relativeTarget =
 				QDir(source.absolutePath()).relativeFilePath(linkTarget);
@@ -220,11 +196,8 @@ namespace
 			qWarning() << "Could not fully remove" << path;
 	}
 
-	/*!
-	 * On Windows, keep the shell from deciding that a program with "update"
-	 * in its name must want administrator rights. It does not: it writes only
-	 * where the launcher already writes.
-	 */
+	/*! On Windows, keeps the shell from deciding that a program with "update" in its name wants
+	 * administrator rights (it writes only where the launcher writes). */
 	void applyInvokerCompatibility(QProcess* process)
 	{
 #if defined(Q_OS_WIN32)
@@ -237,14 +210,8 @@ namespace
 #endif
 	}
 
-	/*!
-	 * Whether a downloaded file is something to unpack rather than to run.
-	 *
-	 * This is not the same question AssetMatcher asks. There the point is
-	 * which file to fetch; here it is what to do with the one already on
-	 * disk -- unpack it and hand over to the second pass, or start it and
-	 * let an installer take over.
-	 */
+	/*! Whether a downloaded file is to be unpacked and handed to the second pass rather than run as
+	 * an installer. Not AssetMatcher's question, which is which file to fetch. */
 	bool isArchiveName(const QString& lowerName)
 	{
 		return lowerName.endsWith(QLatin1String(".zip")) ||
@@ -252,14 +219,8 @@ namespace
 			   lowerName.endsWith(QLatin1String(".tgz"));
 	}
 
-	/*!
-	 * The name a first pass gives to a copy of itself.
-	 *
-	 * Deliberately not the updater's own name: nothing in a release is
-	 * called this, so such a copy can never be mistaken for a file that
-	 * belongs to the release, and the second pass can delete it by name
-	 * without having to work out where it came from.
-	 */
+	/*! The name a first pass gives to a copy of itself. Deliberately not the updater's own name, so
+	 * the copy is never mistaken for a release file and the second pass can delete it by name. */
 	QString installStageAgentName()
 	{
 #if defined(Q_OS_WIN32)
@@ -269,37 +230,22 @@ namespace
 #endif
 	}
 
-	/*!
-	 * Where a copy of this updater goes when it has to run on its own.
-	 *
-	 * Under the data directory, not the installation: the installation is
-	 * what the second pass overwrites, and a program cannot be run from
-	 * underneath itself.
-	 */
+	/*! Where a copy of this updater runs on its own: under the data directory, not the installation,
+	 * because the second pass overwrites the installation and a program cannot run from underneath
+	 * itself. */
 	inline constexpr auto kInstallStageDirName = "kite_update_stage2";
 
-	//! How long a candidate for the second pass gets to answer --self-test.
 	constexpr int kSelfTestTimeoutMs = 15000;
 
-	//! How long the second pass gets to take the update over.
 	constexpr int kTakeoverTimeoutMs = 30000;
 
-	//! How long the second pass waits for the first one to exit.
 	constexpr int kFirstPassExitTimeoutMs = 30000;
 
-	//! How often the two passes look at the lock file while waiting.
 	constexpr int kHandshakePollMs = 200;
 
-	/*!
-	 * Whether \a path contains \a needle as literal bytes.
-	 *
-	 * Used to ask a binary whether it was built with an option, before
-	 * running it to find out. An updater from a release older than that
-	 * option has no idea what to do with it: on some platforms it puts up a
-	 * dialog that nobody is there to dismiss, and every probe then costs its
-	 * full timeout. This is a gate and not an answer -- a match only earns
-	 * the binary the right to be asked properly.
-	 */
+	/*! Whether \a path contains \a needle as literal bytes. A gate before running a binary to ask
+	 * whether it knows an option: an older updater may put up a dialog nobody dismisses and cost
+	 * the full timeout. A match only earns the right to ask properly. */
 	bool fileContainsBytes(const QString& path, const QByteArray& needle)
 	{
 		if (needle.isEmpty())
@@ -309,8 +255,7 @@ namespace
 		if (!file.open(QIODevice::ReadOnly))
 			return false;
 
-		// Read in chunks that overlap by just under the needle's length, so
-		// a match that straddles a chunk boundary is still found.
+		// Chunks overlap by just under the needle's length so a match across a boundary is found.
 		constexpr qint64 kChunkSize = 1 << 20;
 		const qint64 overlap = needle.size() - 1;
 		QByteArray window;
@@ -326,13 +271,8 @@ namespace
 		return false;
 	}
 
-	/*!
-	 * Whether a process is still running.
-	 *
-	 * Tells a second pass that died before taking the lock -- so nothing was
-	 * copied and the installation is untouched -- from one that is running
-	 * but has not got there yet, where nothing can be assumed.
-	 */
+	/*! Whether a process is still running. Tells a second pass that died before taking the lock
+	 * (installation untouched) from one that has not got there yet. */
 	bool processAlive(qint64 pid);
 
 } // namespace
@@ -374,8 +314,7 @@ namespace
 		CloseHandle(handle);
 		return alive;
 #else
-		// EPERM means the process exists but belongs to someone else, which
-		// for this question is still "running".
+		// EPERM: the process exists but belongs to someone else, which still counts as running.
 		return ::kill(static_cast<pid_t>(pid), 0) == 0 || errno == EPERM;
 #endif
 	}
@@ -397,11 +336,8 @@ bool MeshUpdaterApp::handleSelfTest(int argc, char** argv)
 	if (!asked)
 		return false;
 
-	// argv is scanned by hand and answered before anything else happens, so
-	// that a probe costs nothing and needs neither a display nor a writable
-	// data directory. The version goes along with the token because the log
-	// of a failed hand-off is much easier to read when it says which build
-	// answered.
+	// Answered before anything else, so a probe needs no display or writable data directory. The
+	// version rides along with the token so a failed hand-off's log says which build answered.
 	QTextStream out(stdout);
 	out << kSelfTestToken << ' ' << BuildConfig.printableVersionString()
 		<< '\n';
@@ -483,13 +419,9 @@ MeshUpdaterApp::MeshUpdaterApp(int& argc, char** argv) : QApplication(argc, argv
 	logStartupInfo(dirOption.isEmpty() ? tr("default") : tr("command line"),
 				   binPath);
 
-	// Second pass?
-	//
-	// Decided here, before anything that describes an installation, because
-	// this pass is not running from one: it may be a copy of this binary in a
-	// directory of its own, with no launcher beside it, no portable marker
-	// and nothing to check for updates. Everything it needs is the staged
-	// release it was pointed at and the data directory it was given.
+	// Second pass: decided before anything that describes an installation, since this pass may be a
+	// copy in a directory of its own with no launcher beside it. It needs only the staged release
+	// and the data directory it was given.
 	m_finishUpdateDir = parser.value(QStringLiteral("finish-update"));
 	if (!m_finishUpdateDir.isEmpty()) {
 		m_finishUpdateDir = QDir(m_finishUpdateDir).absolutePath();
@@ -498,11 +430,9 @@ MeshUpdaterApp::MeshUpdaterApp(int& argc, char** argv) : QApplication(argc, argv
 					   .absoluteFilePath(
 						   QLatin1String(UpdateLockFile::kUnpackMarkerName));
 			   QFileInfo::exists(marker)) {
-		// No --finish-update, but a marker at our own root: we are a copy of
-		// the updater inside the unpacked release, started by a first pass
-		// from before --finish-update existed. The root, not the binary's
-		// directory -- on Linux this binary lives in bin/ while the marker
-		// sits one level up, beside the tree being installed.
+		// No --finish-update but a marker at our root: a copy inside the unpacked release, started
+		// by a first pass that predates --finish-update. The root, not the binary's directory: on
+		// Linux the binary is in bin/ and the marker one level up.
 		m_finishUpdateDir = m_rootPath;
 	}
 
@@ -513,8 +443,8 @@ MeshUpdaterApp::MeshUpdaterApp(int& argc, char** argv) : QApplication(argc, argv
 					QLatin1String(UpdateLockFile::kUnpackMarkerName));
 		const QString target = readTextFile(marker).trimmed();
 		if (target.isEmpty()) {
-			// Without a target there is nowhere to install; refusing beats
-			// guessing and overwriting the wrong directory.
+			// Without a target there is nowhere to install; refuse rather than overwrite the wrong
+			// directory.
 			showFatalError(tr("Update Failed"),
 						   tr("The update marker at %1 does not say where to "
 							  "install to.")
@@ -536,18 +466,16 @@ MeshUpdaterApp::MeshUpdaterApp(int& argc, char** argv) : QApplication(argc, argv
 	}
 
 #if defined(Q_OS_MAC)
-	// macOS bundles are updated by Sparkle, from inside the launcher. This
-	// binary should not even be installed there; if it somehow runs, it must
-	// not start replacing files in a signed bundle.
+	// macOS bundles are updated by Sparkle from inside the launcher; never replace files in a
+	// signed bundle.
 	showFatalError(tr("macOS Is Not Supported"),
 				   tr("The updater does not support installations on macOS. "
 					  "Updates are handled by the launcher itself."));
 	return;
 #endif
 
-	// An AppImage is a single file, mounted read-only at a temporary path.
-	// Nothing inside it can be replaced, so updating means replacing the file
-	// -- which is AppImageUpdate's job, not ours.
+	// An AppImage is one read-only file mounted at a temporary path; updating means replacing the
+	// file, which is AppImageUpdate's job.
 	if (binPath.startsWith(QLatin1String("/tmp/.mount_"))) {
 		m_isAppImage = true;
 		m_appImagePath =
@@ -590,10 +518,7 @@ MeshUpdaterApp::MeshUpdaterApp(int& argc, char** argv) : QApplication(argc, argv
 
 	m_status = Initialized;
 
-	// A lambda rather than &MeshUpdaterApp::loadReleaseList: the functor
-	// overload of invokeMethod wants something callable with no arguments,
-	// and whether a bare member function pointer qualifies depends on the Qt
-	// version.
+	// A lambda: the functor overload of invokeMethod wants something callable with no arguments.
 	QMetaObject::invokeMethod(
 		this, [this]() { loadReleaseList(); }, Qt::QueuedConnection);
 }
@@ -627,8 +552,7 @@ bool MeshUpdaterApp::resolvePaths(const QString& dirOption)
 {
 	const QString binPath = applicationDirPath();
 
-	// The root is what gets replaced by an update, so it has to be the
-	// directory layout's top -- which is not the binary's directory on every
+	// The root is the top of the directory layout, which is not the binary's directory on every
 	// platform.
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD) || defined(Q_OS_OPENBSD)
 	m_rootPath = QDir(binPath + QLatin1String("/..")).absolutePath();
@@ -640,15 +564,14 @@ bool MeshUpdaterApp::resolvePaths(const QString& dirOption)
 	m_rootPath = binPath;
 #endif
 
-	// portable.txt next to the installation means the data lives inside it,
-	// which is also what decides whether we install a portable artifact.
+	// portable.txt beside the installation means the data lives inside it, and decides whether a
+	// portable artifact is installed.
 	const QString portableMarker =
 		QDir(m_rootPath).absoluteFilePath(QStringLiteral("portable.txt"));
 	m_isPortable = QFileInfo::exists(portableMarker);
 
 	if (!dirOption.isEmpty()) {
-		// The launcher passes its own data directory; it is the only party
-		// that knows for certain which one is in use.
+		// The launcher passes its data directory; only it knows which one is in use.
 		m_dataPath = QDir(dirOption).absolutePath();
 	} else if (const QString fromEnvironment =
 				   QProcessEnvironment::systemEnvironment().value(
@@ -685,9 +608,7 @@ bool MeshUpdaterApp::startLogging()
 		return false;
 	}
 
-	// A check and an install are separate runs with separate stories; keeping
-	// their logs apart means the install log is not buried under a day's worth
-	// of hourly checks.
+	// Check and install logs are kept apart so an install log is not buried under hourly checks.
 	const QString base =
 		QDir(logDir).absoluteFilePath(BuildConfig.KITE_NAME +
 									  QStringLiteral("Updater") +
@@ -724,8 +645,7 @@ bool MeshUpdaterApp::startLogging()
 		"%{if-critical}C%{endif}%{if-fatal}F%{endif}"
 		" | %{if-category}[%{category}]: %{endif}%{message}"));
 
-	// The launcher's logging rules apply to the updater too, so that turning
-	// a category on for debugging does not have to be done twice.
+	// The launcher's logging rules apply to the updater too.
 	const QString rulesPath =
 		QDir(m_dataPath).absoluteFilePath(QStringLiteral("qtlogging.ini"));
 	if (QFileInfo::exists(rulesPath)) {
@@ -792,9 +712,7 @@ void MeshUpdaterApp::requestReleasePage(const QString& apiUrl, int page)
 								.arg(page);
 	m_currentUrl = pageUrl;
 
-	// Braces, not parentheses: QNetworkRequest request(QUrl(pageUrl)) is a
-	// function declaration as far as the language is concerned, and every
-	// use of it below then fails with something that reads like nonsense.
+	// Braces: QNetworkRequest request(QUrl(pageUrl)) parses as a function declaration.
 	QNetworkRequest request{QUrl(pageUrl)};
 	request.setRawHeader("Accept", "application/vnd.github+json");
 	request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
@@ -823,9 +741,8 @@ void MeshUpdaterApp::requestReleasePage(const QString& apiUrl, int page)
 					return;
 				}
 
-				// A full page might not be the last one. GitHub does send a
-				// Link header, but "the page was short" needs no parsing and
-				// cannot be broken by a proxy rewriting headers.
+				// A full page may not be the last. The Link header exists, but "the page was short"
+				// needs no parsing and survives proxies that rewrite headers.
 				if (found == kReleasesPerPage) {
 					requestReleasePage(apiUrl, page + 1);
 					return;
@@ -863,13 +780,8 @@ bool MeshUpdaterApp::loadInstalledVersionFromExe(const QString& exePath)
 		return false;
 	}
 
-	// The launcher prints two labelled lines:
-	//
-	//     Version 7.19.0
-	//     Git 0123abc
-	//
-	// Parsed by label rather than by position, so an extra line of warning
-	// output on stderr cannot shift the answer.
+	// The launcher prints labelled lines ("Version 7.19.0", "Git 0123abc"); parsed by label so
+	// extra stderr warnings cannot shift the answer.
 	QString version;
 	QString commit;
 	const QStringList lines =
@@ -922,9 +834,8 @@ GitHubRelease MeshUpdaterApp::latestRelease() const
 {
 	GitHubRelease latest;
 	for (const GitHubRelease& release : publishedReleases()) {
-		// Ordered by version, not by publication date: a hotfix for an older
-		// line can be published after a newer release, and picking by date
-		// would offer it as an upgrade.
+		// Ordered by version, not publication date: a hotfix for an older line can be published
+		// after a newer release.
 		if (!latest.isValid() || latest.version < release.version)
 			latest = release;
 	}
@@ -942,8 +853,8 @@ GitHubRelease MeshUpdaterApp::releaseForVersion(const QString& wanted) const
 {
 	const Version wantedVersion(GitHub::normalizeVersionTag(wanted));
 	for (const GitHubRelease& release : m_releases) {
-		// Match on the tag first: that is what the launcher passed us, and it
-		// is unambiguous even when two tags normalise to the same version.
+		// Match the tag first: it is what the launcher passed, and is unambiguous even when two
+		// tags normalise to one version.
 		if (release.tagName == wanted || release.version == wantedVersion)
 			return release;
 	}
@@ -988,8 +899,8 @@ void MeshUpdaterApp::run()
 
 	if (m_installedVersion.isEmpty() &&
 		!loadInstalledVersionFromExe(m_launcherExecutable)) {
-		// Falling back to our own build details is right far more often than
-		// it is wrong: the updater ships with the launcher it updates.
+		// The updater ships with the launcher it updates, so its own build details are usually
+		// right.
 		qWarning() << "Falling back to the updater's own build version.";
 		useBuiltInVersion();
 	}
@@ -1009,9 +920,8 @@ void MeshUpdaterApp::run()
 	const bool updateNeeded = needsUpdate(latest);
 
 	if (m_checkOnly) {
-		// The launcher parses exactly these three labelled lines and treats
-		// the rest of stdout as release notes. Keep them in step with
-		// KiteExternalUpdater::checkForUpdates().
+		// The launcher parses exactly these three labelled lines and treats the rest of stdout as
+		// release notes. Keep in step with KiteExternalUpdater::checkForUpdates().
 		m_status = Succeeded;
 		if (!updateNeeded) {
 			qDebug() << "No update needed.";
@@ -1036,9 +946,8 @@ void MeshUpdaterApp::run()
 	}
 
 	if (m_isFlatpak) {
-		// A Flatpak install is owned by Flatpak: its files are in a read-only
-		// deployment and replacing them from outside would either fail or
-		// break the install's integrity.
+		// A Flatpak install is owned by Flatpak (read-only deployment); replacing files from
+		// outside would fail or break its integrity.
 		showFatalError(
 			tr("Updating Flatpak Is Not Supported"),
 			tr("This is the Flatpak build of %1, which is updated through "
@@ -1054,9 +963,8 @@ void MeshUpdaterApp::run()
 	}
 
 	if (m_isAppImage) {
-		// One file, updated in place by AppImageUpdate over zsync -- which
-		// transfers only the changed blocks, and is what the .zsync files in
-		// our releases are published for.
+		// One file, updated in place by AppImageUpdate over zsync, which transfers only the changed
+		// blocks.
 		if (!updateNeeded && !m_forceUpdate) {
 			m_status = Succeeded;
 			QCoreApplication::exit(ExitSuccess);
@@ -1105,10 +1013,8 @@ void MeshUpdaterApp::run()
 QList<GitHubReleaseAsset>
 MeshUpdaterApp::matchingAssets(const GitHubRelease& release) const
 {
-	// The rules themselves live in AssetMatcher, free of BuildConfig and of
-	// the filesystem, so they can be exercised against every platform's
-	// naming at once instead of only the one this build happens to be. This
-	// function's job is just to describe the installation.
+	// The rules live in AssetMatcher, free of BuildConfig and the filesystem, so tests can cover
+	// every platform's naming; this function describes the installation.
 	AssetMatcher::Installation installation;
 	installation.buildArtifact = BuildConfig.BUILD_ARTIFACT;
 	installation.portable = m_isPortable;
@@ -1127,9 +1033,8 @@ MeshUpdaterApp::matchingAssets(const GitHubRelease& release) const
 	const QList<GitHubReleaseAsset> matching =
 		AssetMatcher::select(release.assets, installation, &decisions);
 
-	// Every asset, accepted or not, with the reason. "Why did it pick that
-	// file" is the first question when an update goes wrong, and the log is
-	// all there is to answer it with.
+	// Every asset, accepted or not, with the reason: the log is the only answer to "why did it pick
+	// that file".
 	for (const QString& line : decisions) {
 		qDebug().noquote() << " " << line;
 	}
@@ -1174,8 +1079,8 @@ void MeshUpdaterApp::performUpdate(const GitHubRelease& release)
 	if (candidates.size() == 1) {
 		chosen = candidates.first();
 	} else {
-		// More than one file fits. That is unusual enough that guessing would
-		// be guessing about something the user can see and we cannot.
+		// More than one file fits; guessing would be guessing about something only the user can
+		// see.
 		qDebug() << "More than one asset matches; asking." << candidates;
 		chosen = askWhichAsset(candidates);
 	}
@@ -1199,8 +1104,7 @@ void MeshUpdaterApp::performUpdate(const GitHubRelease& release)
 
 QString MeshUpdaterApp::downloadAsset(const GitHubReleaseAsset& asset)
 {
-	// Downloads go to the data directory, not to the installation: a failed
-	// update should leave nothing behind inside the install tree.
+	// Downloads go to the data directory so a failed update leaves nothing in the install tree.
 	const QString downloadDir =
 		QDir(m_dataPath).absoluteFilePath(QStringLiteral("update-download"));
 	if (!QDir().mkpath(downloadDir)) {
@@ -1244,9 +1148,8 @@ void MeshUpdaterApp::installFrom(const QString& archivePath)
 
 	const QString lockPath = UpdateLockFile::lockPath(m_dataPath);
 	if (QFileInfo::exists(lockPath)) {
-		// Either another update is genuinely running, or a previous one died
-		// and left the installation in an unknown state. The user is the only
-		// one who can tell which, so they get to decide.
+		// Either another update is running or a previous one died and left the installation in an
+		// unknown state; only the user can tell which.
 		UpdateLockFile::Contents previous;
 		UpdateLockFile::read(lockPath, &previous);
 
@@ -1278,10 +1181,8 @@ void MeshUpdaterApp::installFrom(const QString& archivePath)
 		box.adjustSize();
 
 		if (box.exec() != QMessageBox::Ignore) {
-			// A choice, not a failure -- so no error dialog on top of the one
-			// the user just answered. The lock stays: it is not ours, it
-			// describes an earlier attempt, and the launcher reports it at
-			// startup where there is room to explain it properly.
+			// A choice, not a failure, so no error dialog. The lock stays: it describes an earlier
+			// attempt, and the launcher reports it at startup.
 			abortWith(tr("The update was aborted: an update lock from an "
 						 "earlier attempt is present at %1.")
 						  .arg(lockPath));
@@ -1291,8 +1192,8 @@ void MeshUpdaterApp::installFrom(const QString& archivePath)
 
 	clearUpdateLog();
 
-	// Kept next to the markers so the launcher can show what it just updated
-	// to, even though the release list is long gone by then.
+	// Kept next to the markers so the launcher can show what it updated to after the release list
+	// is gone.
 	writeTextFile(UpdateLockFile::markerPath(
 					  m_dataPath, QLatin1String(UpdateLockFile::kChangelogName)),
 				  m_installRelease.body);
@@ -1315,23 +1216,14 @@ void MeshUpdaterApp::installFrom(const QString& archivePath)
 		logUpdate(tr("Updating the installation at %1").arg(m_rootPath));
 		unpackAndHandOff(archivePath);
 
-		// The one place the lock is let go of.
-		//
-		// From here the lock means "the installation may be a mix of two
-		// versions", and the launcher stops at startup to say so. That is
-		// only true once the second pass has taken the update over; every
-		// other way out of unpackAndHandOff left the installation exactly as
-		// it was, and leaving a lock behind for those teaches the user to
-		// click through the one warning that matters.
-		//
-		// The exception is a second pass that was started, never confirmed
-		// and is still running: what it did cannot be known, so the warning
-		// is exactly right and the lock stays.
+		// The one place the lock is released. It means "the installation may be a mix of two
+		// versions", true only once the second pass took over; every other exit left the
+		// installation as it was. Exception: a second pass that was started, never confirmed and
+		// still runs. What it did is unknown, so the lock stays.
 		if (!m_handedOver && !m_installStateUnknown)
 			releaseLockNothingChanged();
 
-		// And only now, with the lock dealt with either way, is the user
-		// told about it. See deferFailure().
+		// Only now, with the lock dealt with, is the user told (see deferFailure()).
 		if (!m_deferredFailureTitle.isEmpty())
 			showFatalError(m_deferredFailureTitle, m_deferredFailureText);
 		return;
@@ -1352,26 +1244,19 @@ void MeshUpdaterApp::runInstaller(const QString& installerPath)
 					  : tr("The installer could not be started: %1")
 							.arg(proc.errorString()));
 
-	// From here the installer owns the installation, including restarting the
-	// launcher, so there is nothing left for this process to supervise.
+	// The installer owns the installation from here, including restarting the launcher.
 	m_status = started ? Succeeded : Failed;
 	QCoreApplication::exit(started ? ExitSuccess : ExitFailed);
 }
 
 void MeshUpdaterApp::unpackAndHandOff(const QString& archivePath)
 {
-	// Unpack and check the release over *before* touching the installation.
-	//
-	// The other order looks harmless -- the backup only copies -- but it
-	// spends several hundred megabytes and a minute of the user's time on a
-	// release that may turn out to be unusable. It also leaves a backup
-	// directory behind for an update that never happened, which is the sort
-	// of debris a user then has to work out the meaning of.
+	// Unpack and check the release before touching the installation: backing up first would waste
+	// minutes and leave a backup directory behind for an update that never happened.
 	const QString stagingDir = QDir(m_dataPath).absoluteFilePath(
 		QLatin1String(UpdateLockFile::kStagingDirName));
 
-	// Whatever a previous attempt left here is not what we just downloaded,
-	// and mixing the two would install a blend of two releases.
+	// A previous attempt's leftovers would mix two releases.
 	removeDirectoryTree(stagingDir);
 
 	const ReleaseArchive::Result unpacked =
@@ -1392,16 +1277,12 @@ void MeshUpdaterApp::unpackAndHandOff(const QString& archivePath)
 					   QString::number(unpacked.linkCount),
 					   formatBytes(unpacked.byteCount), stagingDir));
 
-	// Release archives come both ways: contents at the top level, or wrapped
-	// in one versioned directory.
+	// Archives have their contents at the top level or wrapped in one versioned directory.
 	const QString releaseRoot =
 		ReleaseArchive::descendIntoSingleRoot(stagingDir);
 
-	// The launcher is what an update installs, so a release without one is
-	// not a release. In a bundle this file is a hard link to the sharun
-	// loader, which is worth saying when it is missing: an extractor that
-	// dropped the links also dropped the libraries, and the release would not
-	// have run once installed.
+	// A release without a launcher is not a release. In a bundle the file is a hard link to the
+	// sharun loader; if it is missing, an extractor dropped the links and the libraries too.
 	const QString stagedLauncher = QDir(releaseRoot).absoluteFilePath(
 #if defined(Q_OS_WIN32)
 		launcherBinaryName()
@@ -1426,9 +1307,8 @@ void MeshUpdaterApp::unpackAndHandOff(const QString& archivePath)
 		return;
 	}
 
-	// Which binary will run the second pass, proven to run before anything is
-	// committed to it. This process cannot install the update itself: the
-	// files it would overwrite include the libraries it is running from.
+	// The binary that runs the second pass, proven to run before anything is committed. This
+	// process cannot install: the files it would overwrite include the libraries it runs from.
 	const QString stageProgram = prepareInstallStageProgram(releaseRoot);
 	if (stageProgram.isEmpty()) {
 		logUpdate(tr("No usable second pass was found for this release."));
@@ -1447,13 +1327,11 @@ void MeshUpdaterApp::unpackAndHandOff(const QString& archivePath)
 		return;
 	}
 
-	// Only now is the release known to be installable, so this is where the
-	// installation starts being touched.
+	// The release is installable; from here the installation gets touched.
 	logUpdate(tr("Backing up the current installation"));
 	backupInstallation();
 
-	// The marker is how the second pass knows it is a second pass, and where
-	// to install to.
+	// The marker tells the second pass that it is one, and where to install.
 	const QString marker = QDir(releaseRoot).absoluteFilePath(
 		QLatin1String(UpdateLockFile::kUnpackMarkerName));
 	if (!writeTextFile(marker, m_rootPath)) {
@@ -1467,8 +1345,7 @@ void MeshUpdaterApp::unpackAndHandOff(const QString& archivePath)
 	QStringList arguments{QStringLiteral("--dir"), m_dataPath,
 						  QStringLiteral("--finish-update"), releaseRoot};
 	if (logToConsole) {
-		// A hand-off started from a terminal should keep logging to it, or
-		// the interesting half of the update becomes invisible.
+		// Keep logging to the terminal the hand-off was started from.
 		arguments.append(QStringLiteral("--debug"));
 	}
 
@@ -1497,13 +1374,9 @@ void MeshUpdaterApp::unpackAndHandOff(const QString& archivePath)
 		return;
 	}
 
-	// Started is not the same as running the update.
-	//
-	// startDetached() only reports that the process was created, and a
-	// process that exits immediately -- because it is an updater from an
-	// older release that does not understand this command line -- reports
-	// exactly the same thing. Saying "handed over" on that evidence is how an
-	// update comes to be reported as successful while nothing was installed.
+	// Started is not running the update: startDetached() only reports that the process was created,
+	// also for an older updater that exits at once on this command line. Calling that handed over
+	// reports success with nothing installed.
 	if (!waitForInstallStageTakeover(stagePid)) {
 		const bool stillRunning = processAlive(stagePid);
 		m_installStateUnknown = stillRunning;
@@ -1538,8 +1411,8 @@ void MeshUpdaterApp::unpackAndHandOff(const QString& archivePath)
 		return;
 	}
 
-	// Exiting is the point: it releases every file this process had open in
-	// the installation the second pass is about to overwrite.
+	// Exiting releases every file this process holds in the installation the second pass
+	// overwrites.
 	m_handedOver = true;
 	logUpdate(tr("Handed the update over to the second pass (pid %1).")
 				  .arg(stagePid));
@@ -1551,9 +1424,8 @@ QString MeshUpdaterApp::realUpdaterBinaryIn(const QString& root) const
 {
 	const QString name = QFileInfo(updaterBinaryName()).fileName();
 
-	// In a sharun bundle bin/<name> is a hard link to the loader, which
-	// carries none of the updater's own code: it dispatches by the name it
-	// was invoked under into the shared/bin beside it.
+	// In a sharun bundle bin/<name> is a hard link to the loader, which holds none of the updater's
+	// code: it dispatches by invoked name into shared/bin.
 	const QString shared = QDir(root).absoluteFilePath(
 		QStringLiteral("shared/bin/%1").arg(name));
 	if (QFileInfo(shared).isFile())
@@ -1564,9 +1436,8 @@ QString MeshUpdaterApp::realUpdaterBinaryIn(const QString& root) const
 
 QString MeshUpdaterApp::ownUpdaterBinaryPath() const
 {
-	// Copying the loader instead of the executable behind it would copy no
-	// code of ours at all -- and in the staged release it would dispatch
-	// into the very updater this is trying not to depend on.
+	// Copying the loader would copy none of our code and, staged, would dispatch into the very
+	// updater we try not to depend on.
 	const QString real = realUpdaterBinaryIn(m_rootPath);
 	if (QFileInfo(real).isFile())
 		return real;
@@ -1614,8 +1485,7 @@ bool MeshUpdaterApp::probeUpdaterBinary(const QString& program)
 		return false;
 	}
 	if (!probe.waitForFinished(kSelfTestTimeoutMs)) {
-		// An older updater shown an option it does not know may put a dialog
-		// up and wait for someone to dismiss it, which nobody is going to.
+		// An older updater given an unknown option may put up a dialog nobody dismisses.
 		probe.kill();
 		probe.waitForFinished(1000);
 		logUpdate(tr("%1 did not answer the self test within %2 seconds.")
@@ -1647,20 +1517,15 @@ QString MeshUpdaterApp::prepareInstallStageProgram(const QString& releaseRoot)
 
 	logUpdate(tr("Looking for a program to install the update with."));
 
-	// 1. The updater that came with the release.
-	//
-	// When it understands this protocol it is the best answer available: its
-	// libraries are the ones it was built against, and it leaves nothing
-	// behind in the installation. Releases from before the protocol existed
-	// take a different command line and would exit without doing anything,
-	// which is what the self test is here to catch.
+	// 1. The updater that came with the release. When it understands this protocol its libraries
+	// are the ones it was built against and it leaves nothing behind. Older releases take a
+	// different command line and exit without doing anything, which the self test catches.
 	const QString releaseUpdater =
 		QDir(releaseRoot).absoluteFilePath(updaterBinaryName());
 	logUpdate(tr("Trying the release's own updater at %1").arg(releaseUpdater));
 
-	// The code is looked at before it is run. In a bundle the file above is a
-	// hard link to the loader, which contains none of the updater's own
-	// strings, so the executable behind it is the one to ask.
+	// Look at the code before running it: in a bundle the file above is a hard link to the loader,
+	// which holds none of the updater's strings.
 	const QString releaseUpdaterCode = realUpdaterBinaryIn(releaseRoot);
 	if (!fileContainsBytes(releaseUpdaterCode,
 						   QByteArrayLiteral("finish-update"))) {
@@ -1671,18 +1536,14 @@ QString MeshUpdaterApp::prepareInstallStageProgram(const QString& releaseRoot)
 		return releaseUpdater;
 	}
 
-	// 2. This updater, copied into the unpacked release.
-	//
-	// It runs against the release's libraries, which works for the usual
-	// direction of an update and can fail when installing something old
-	// enough to predate them -- the self test decides which it is, before
-	// anything depends on the answer.
+	// 2. This updater copied into the unpacked release. It runs against the release's libraries:
+	// fine for the usual upgrade direction, may fail for a release old enough to predate them. The
+	// self test decides.
 	const QString sharedBin =
 		QDir(releaseRoot).absoluteFilePath(QStringLiteral("shared/bin"));
 	if (QFileInfo(sharedBin).isDir()) {
-		// A bundle runs everything through its loader, which finds the
-		// executable by the name it was invoked under, so both halves have to
-		// be put in place under the agent's name.
+		// A bundle runs everything through its loader, which finds the executable by invoked name,
+		// so both halves go in place under the agent's name.
 		QString loader = QDir(releaseRoot).absoluteFilePath(
 			QStringLiteral("sharun"));
 		if (!QFileInfo(loader).isFile())
@@ -1710,11 +1571,8 @@ QString MeshUpdaterApp::prepareInstallStageProgram(const QString& releaseRoot)
 			return agent;
 	}
 
-	// 3. This updater, on its own, in the data directory.
-	//
-	// For an installation that does not carry its libraries -- a local build
-	// against the system Qt, most of all -- a plain copy runs perfectly well
-	// and depends on nothing that the update is about to replace.
+	// 3. This updater on its own in the data directory, for installations that carry no libraries
+	// (e.g. a local build against system Qt); it depends on nothing the update replaces.
 	const QString standaloneDir = QDir(m_dataPath).absoluteFilePath(
 		QLatin1String(kInstallStageDirName));
 	removeDirectoryTree(standaloneDir);
@@ -1750,14 +1608,12 @@ bool MeshUpdaterApp::waitForInstallStageTakeover(qint64 stagePid)
 			return true;
 		}
 
-		// A process that is gone is never going to claim anything, so there
-		// is no point waiting out the rest of the timeout -- and the caller
-		// can then say that nothing was installed rather than that nothing
-		// is known.
+		// A gone process never claims anything: stop waiting, so the caller can say nothing was
+		// installed rather than nothing is known.
 		if (stagePid > 0 && !processAlive(stagePid))
 			return false;
 
-		// The progress dialog from the backup is still up at this point.
+		// The backup's progress dialog is still up.
 		QCoreApplication::processEvents();
 		QThread::msleep(kHandshakePollMs);
 	}
@@ -1778,9 +1634,8 @@ void MeshUpdaterApp::backupInstallation()
 	if (stamp.isEmpty())
 		stamp = QStringLiteral("unknown");
 
-	// The commit is only appended when there is one. It is missing whenever
-	// the version was given on the command line rather than read from the
-	// launcher, and "backup_9.0.0-" reads like a truncated name.
+	// The commit is missing when the version came from the command line; avoid a name like
+	// "backup_9.0.0-".
 	if (!m_installedGitCommit.isEmpty())
 		stamp += QLatin1Char('-') + m_installedGitCommit.left(10);
 
@@ -1793,8 +1648,7 @@ void MeshUpdaterApp::backupInstallation()
 		return;
 	}
 
-	// Written where the launcher can find it, so a user who needs to roll back
-	// by hand does not have to go hunting.
+	// Written where the launcher can find it, for a manual roll-back.
 	writeTextFile(
 		UpdateLockFile::markerPath(
 			m_dataPath, QLatin1String(UpdateLockFile::kBackupMarkerName)),
@@ -1818,8 +1672,8 @@ void MeshUpdaterApp::backupInstallation()
 
 		const QFileInfo info(path);
 		if (info.isDir()) {
-			// Directories are walked rather than copied wholesale, so the
-			// user's own files inside them are not duplicated.
+			// Walk directories rather than copying wholesale, so the user's own files inside are
+			// not duplicated.
 			QDirIterator iterator(path, QDir::Files | QDir::NoDotAndDotDot,
 								  QDirIterator::Subdirectories);
 			while (iterator.hasNext()) {
@@ -1869,9 +1723,8 @@ void MeshUpdaterApp::backupInstallation()
 
 	logUpdate(tr("Backed the installation up to %1").arg(backupDir));
 
-	// Here rather than after the install: this is the last moment at which
-	// m_rootPath is the installation. The second pass runs from the staging
-	// directory, where "backup_*" would match nothing.
+	// Last moment m_rootPath is the installation; the second pass runs from the staging directory,
+	// where "backup_*" matches nothing.
 	pruneBackups();
 }
 
@@ -1879,8 +1732,8 @@ qint64 MeshUpdaterApp::claimLockForInstallStage(const QString& targetDir)
 {
 	const QString lockPath = UpdateLockFile::lockPath(m_dataPath);
 
-	// Whatever the first pass wrote is kept, so that a lock left behind by a
-	// failed install still says which versions it was between.
+	// Keep what the first pass wrote so a lock left by a failed install still says which versions
+	// it was between.
 	UpdateLockFile::Contents lock;
 	UpdateLockFile::read(lockPath, &lock);
 	const qint64 firstPass = lock.stage == 1 ? lock.pid : 0;
@@ -1896,9 +1749,8 @@ qint64 MeshUpdaterApp::claimLockForInstallStage(const QString& targetDir)
 	if (UpdateLockFile::write(lockPath, lock)) {
 		logUpdate(tr("Took the update lock over (pid %1).").arg(lock.pid));
 	} else {
-		// Worth continuing: the install itself does not depend on the lock.
-		// The first pass will report that the hand-off went unconfirmed,
-		// which is the honest outcome when this cannot be written.
+		// Continue: the install does not depend on the lock. The first pass reports the unconfirmed
+		// hand-off.
 		logUpdate(tr("Could not take the update lock at %1 over.")
 					  .arg(lockPath));
 	}
@@ -1919,9 +1771,8 @@ void MeshUpdaterApp::removeInstallStageAgents(const QString& root)
 	for (const QString& path : candidates) {
 		if (!QFileInfo::exists(path))
 			continue;
-		// Deleting the file this process is running from is allowed on the
-		// platforms where a first pass has to resort to this, and the copy
-		// is already mapped by then.
+		// Deleting the running file is allowed on the platforms where a first pass resorts to this;
+		// the copy is already mapped.
 		if (QFile::remove(path))
 			logUpdate(tr("Removed the second pass's copy at %1").arg(path));
 		else
@@ -1938,13 +1789,11 @@ void MeshUpdaterApp::finishUpdate(const QString& sourceDir,
 					   QDir::toNativeSeparators(targetDir),
 					   QDir::toNativeSeparators(applicationFilePath())));
 
-	// Before anything is copied, and before waiting for anything: this is
-	// the first pass's only proof that its hand-off worked.
+	// Before copying or waiting: the first pass's only proof that its hand-off worked.
 	const qint64 firstPass = claimLockForInstallStage(targetDir);
 
-	// The first pass has to be gone before its files are replaced. On
-	// Windows a mapped executable cannot be deleted at all, which is the
-	// reason installing takes two passes in the first place.
+	// The first pass must be gone before its files are replaced; a mapped executable cannot be
+	// deleted on Windows, which is why installing takes two passes.
 	if (firstPass > 0 && firstPass != QCoreApplication::applicationPid()) {
 		QElapsedTimer timer;
 		timer.start();
@@ -1966,17 +1815,15 @@ void MeshUpdaterApp::finishUpdate(const QString& sourceDir,
 		}
 	}
 
-	// Even once the process is gone, give the operating system a moment to
-	// actually release its files before overwriting them.
+	// Give the OS a moment to release the files even after the process is gone.
 	QThread::sleep(1);
 
-	// Any copy of the updater a first pass had to put into the staged release
-	// to get here is not part of that release, and must not be installed.
+	// A first pass's updater copies in the staged release are not part of it and must not be
+	// installed.
 	removeInstallStageAgents(sourceDir);
 
-	// The whole unpacked tree is the source. It is passed in rather than
-	// taken from this binary's location, because this binary may be a copy
-	// living beside the tree rather than inside it.
+	// The whole unpacked tree is the source, passed in because this binary may be a copy beside the
+	// tree.
 	const QDir source(sourceDir);
 	const QDir target(targetDir);
 	const QStringList fileList = installedFileList(source);
@@ -2049,8 +1896,8 @@ void MeshUpdaterApp::finishUpdate(const QString& sourceDir,
 	progress.setValue(done);
 	QCoreApplication::processEvents();
 
-	// The launcher reports both outcomes on its next start, with this log
-	// attached -- which is the only reason a failed update is not silent.
+	// The launcher reports both outcomes on its next start with this log attached; otherwise a
+	// failed update would be silent.
 	const QString marker = UpdateLockFile::markerPath(
 		m_dataPath,
 		QLatin1String(failed ? UpdateLockFile::kFailMarkerName
@@ -2084,9 +1931,8 @@ void MeshUpdaterApp::finishUpdate(const QString& sourceDir,
 
 bool MeshUpdaterApp::updateAppImage()
 {
-	// AppImageUpdate reads the update information embedded in the AppImage
-	// itself and fetches only the changed blocks over zsync, which is why our
-	// releases publish a .zsync file next to every .AppImage.
+	// AppImageUpdate reads the update information embedded in the AppImage and fetches only changed
+	// blocks over zsync (we publish a .zsync next to every .AppImage).
 	QStringList candidates = {
 		QDir(m_rootPath).absoluteFilePath(
 			QStringLiteral("bin/AppImageUpdate.AppImage")),
@@ -2144,9 +1990,8 @@ QStringList MeshUpdaterApp::installedFileList(const QDir& root) const
 		root.absoluteFilePath(QStringLiteral("manifest.txt"));
 
 	if (QFileInfo(manifestPath).isFile()) {
-		// The packaging writes this, so it is the authority on which files
-		// belong to Kite -- and, just as importantly, which files in the
-		// same directory belong to the user.
+		// The packaging writes manifest.txt, so it knows which files belong to Kite and which to
+		// the user.
 		QStringList entries;
 		const QStringList lines =
 			readTextFile(manifestPath).split(QLatin1Char('\n'));
@@ -2186,9 +2031,7 @@ QStringList MeshUpdaterApp::installedFileList(const QDir& root) const
 	return {
 		QStringLiteral("bin"),
 		QStringLiteral("lib"),
-		// Fedora and openSUSE install libraries into lib64, so a build
-		// installed there has its plugin SDK libraries in a directory the
-		// other distributions do not have at all.
+		// Fedora and openSUSE install libraries into lib64.
 		QStringLiteral("lib64"),
 		QStringLiteral("share"),
 		QStringLiteral("plugins"),
@@ -2215,8 +2058,7 @@ void MeshUpdaterApp::releaseLockNothingChanged()
 
 void MeshUpdaterApp::pruneBackups()
 {
-	// Two is enough to roll back the update that just happened and the one
-	// before it, which is as far as anyone has ever needed to go by hand.
+	// Two is enough to roll back the last update and the one before.
 	constexpr int kBackupsToKeep = 2;
 
 	QDir root(m_rootPath);
@@ -2245,9 +2087,8 @@ void MeshUpdaterApp::fail(const QString& reason)
 	m_status = Failed;
 
 	if (m_checkOnly) {
-		// The launcher turns exit status 1 into "Update Check Error" and puts
-		// stderr behind "Show Details", so the reason has to go there rather
-		// than into a dialog no automatic check would ever show.
+		// The launcher maps exit status 1 to "Update Check Error" and shows stderr behind "Show
+		// Details"; no dialog for an unattended check.
 		QTextStream errorStream(stderr);
 		errorStream << reason << '\n';
 		errorStream.flush();
@@ -2278,7 +2119,7 @@ void MeshUpdaterApp::showFatalError(const QString& title, const QString& text)
 	m_status = Failed;
 
 	if (m_checkOnly) {
-		// See fail(): a check runs unattended, so it reports and exits.
+		// A check runs unattended: report and exit.
 		QTextStream errorStream(stderr);
 		errorStream << title << ": " << text << '\n';
 		errorStream.flush();
@@ -2292,8 +2133,7 @@ void MeshUpdaterApp::showFatalError(const QString& title, const QString& text)
 	box.setIcon(QMessageBox::Critical);
 	box.setStandardButtons(QMessageBox::Ok);
 	box.setDefaultButton(QMessageBox::Ok);
-	// Paths and versions in these messages are what a user ends up pasting
-	// into a bug report.
+	// Users paste these paths and versions into bug reports.
 	box.setTextInteractionFlags(Qt::TextSelectableByMouse |
 								Qt::TextBrowserInteraction);
 	box.setMinimumWidth(460);

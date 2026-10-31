@@ -6,11 +6,7 @@ import QtQuick
 import QtQuick.Controls
 import Kite.Theme
 
-/*
- * A square, quiet button that is only an icon, with its label as a tooltip
- * and as the accessible name -- an icon alone says nothing to a screen
- * reader.
- */
+/* A square, quiet icon-only button; its label is the tooltip and the accessible name. */
 Button {
     id: control
 

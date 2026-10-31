@@ -6,12 +6,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * Small tinted chip for a status word ("Beta", "Modded", "Update
- * available"...), the same height and corners as Tag so the two line up
- * side by side.
- * "neutral" has no matching pair in the token contract (every other tone is
- * <tone>/<tone>Subtle), so it falls back to the general-purpose
- * surfaceOverlay/textSecondary tokens rather than a made-up colour.
+ * Small tinted chip for a status word ("Beta", "Modded"), the same height and
+ * corners as Tag. "neutral" has no <tone>/<tone>Subtle pair in the token contract,
+ * so it falls back to surfaceOverlay/textSecondary.
  */
 Rectangle {
     id: root

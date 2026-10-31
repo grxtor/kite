@@ -24,16 +24,10 @@
 #include <QString>
 #include <QVariantList>
 
-/*
- * The cat pictures the launcher can show, for QML: the same packs the
- * classic Appearance page offers (the built-in ones, and anything the user
- * dropped into the data folder's "catpacks" folder). Which pack is in use
- * is the BackgroundCat setting and whether one shows at all is TheCat; both
- * are plain settings, so nothing here touches them.
- *
- * Seasonal pictures (Christmas, Halloween) are already picked by the pack
- * itself, so `source` is today's picture.
- */
+/* The cat pictures the launcher can show: the built-in packs plus anything in
+ * the data folder's "catpacks" folder. Which pack is used (BackgroundCat) and
+ * whether one shows (TheCat) are plain settings. Seasonal pictures are picked
+ * by the pack itself, so `source` is today's picture. */
 class CatPackList : public QObject
 {
 	Q_OBJECT
@@ -41,7 +35,6 @@ class CatPackList : public QObject
 	/// [{id, name, source}] in a stable order; `source` is a URL an Image
 	/// can load (qrc: for the built-in ones, file: for the user's).
 	Q_PROPERTY(QVariantList packs READ packs NOTIFY packsChanged)
-	/// Where users put their own packs.
 	Q_PROPERTY(QString folder READ folder CONSTANT)
 
   public:
@@ -54,7 +47,6 @@ class CatPackList : public QObject
 	}
 	QString folder() const;
 
-	/// Looks for packs again, e.g. after the user added one to the folder.
 	Q_INVOKABLE void refresh();
 
 	/// The picture URL of pack @p id, or of the first pack if there is no
@@ -65,9 +57,7 @@ class CatPackList : public QObject
 	/// QML loads it from.
 	static QString toUrl(const QString& path);
 
-	/// Every pack under @p folder as the rows of `packs`, with seasonal
-	/// pictures chosen for @p date. Public so a test can point it at a
-	/// temporary folder.
+	/// Every pack under @p folder as `packs` rows, seasonal pictures chosen for @p date. Public for tests.
 	static QVariantList list(const QString& folder, const QDate& date);
 
   signals:

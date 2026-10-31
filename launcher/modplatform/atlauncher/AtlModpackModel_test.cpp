@@ -26,9 +26,9 @@
 #include "meta/Version.h"
 #include "modplatform/atlauncher/AtlModpackModel.h"
 
-/* The static, network-free halves of AtlModpackModel: the catalogue and
- * its filters, the local search and sorts, the version list, and which
- * loader versions an open-loader pack is offered. */
+/* The static, network-free halves of AtlModpackModel: the catalogue, local
+ * search and sorts, the version list, and the loader versions offered to
+ * an open-loader pack. */
 class AtlModpackModelTest : public QObject
 {
 	Q_OBJECT
@@ -72,8 +72,6 @@ class AtlModpackModelTest : public QObject
 	void test_CatalogueKeepsWhatAtlPageListed()
 	{
 		const auto packs = catalogue();
-		/* Public, not "system", with a version; the broken entry is
-		 * skipped rather than losing the list. */
 		QCOMPARE(packs.size(), 2);
 		QCOMPARE(packs.at(0).name, QString("Sky Factory"));
 		QCOMPARE(packs.at(1).name, QString("Allomancy Pack"));
@@ -83,7 +81,6 @@ class AtlModpackModelTest : public QObject
 	void test_FilterAndSort()
 	{
 		const auto packs = catalogue();
-		/* ATLauncher's own order: lower position first. */
 		QCOMPARE(AtlModpackModel::filterAndSort(packs, "", "", "popularity"),
 				 (QList<int>{1, 0}));
 		QCOMPARE(AtlModpackModel::filterAndSort(packs, "", "", "name"),
@@ -126,7 +123,6 @@ class AtlModpackModelTest : public QObject
 
 		const auto forMc = AtlModpackModel::versionChoices(all, "1.20.1", 5);
 		QCOMPARE(forMc.size(), 2);
-		/* Recommended first. */
 		QCOMPARE(forMc.first()->version(), QString("47.2.0"));
 		QCOMPARE(AtlModpackModel::versionChoices(all, "", 5).size(), 3);
 		QCOMPARE(AtlModpackModel::versionChoices(all, "", 1).size(), 1);

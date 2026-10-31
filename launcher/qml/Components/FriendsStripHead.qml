@@ -6,32 +6,21 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One friend in the friends strip: only their head (FriendHead, with the
- * presence dot) on a square that takes the lists' hover fill. The name and
- * where they are come as a tip at its left -- above or below would cover the
- * next head -- and a click opens the friend's card (FriendHeadCard), which
- * is where Join and ⋯ are.
- *
- * `stale`: the list is the last one read and may be out of date, so nobody
- * is shown as around right now: no presence dot, though an offline head
- * stays dimmed (as FriendStatusRow does).
+ * One friend in the friends strip: only their head (FriendHead) on a square with the lists' hover fill. The name
+ * and where they are come as a tip at its left (above or below would cover the next head); a click opens the
+ * friend's card (FriendHeadCard). `stale`: the list is the last one read, so no presence dot.
  */
 AbstractButton {
     id: root
 
-    // A friend map (FriendsController.friends).
     property var friend: ({})
     property bool stale: false
-    // This friend's card is the one open.
     property bool selected: false
 
-    // A head is pixel art: a multiple of 8 (see FriendHead).
     readonly property int headSize: 40
     readonly property int tipDelayMs: 500
-    // The fill the head's ring has to match.
     readonly property color fill: root.hovered || root.selected || root.visualFocus
                                   ? Theme.palette.surfaceHover : Theme.palette.canvas
-    // The pointer has rested on the head long enough for the tip.
     property bool tipReady: false
 
     implicitWidth: Theme.control.heightLg
@@ -66,7 +55,6 @@ AbstractButton {
     }
 
     ToolTip {
-        // The card says it all once it is open.
         visible: root.tipReady && !root.selected
         x: -width - Theme.space.sm
         y: (root.height - height) / 2

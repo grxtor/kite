@@ -7,13 +7,11 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One setting: what it is and what it does on the left, its control on the
- * right. `wide` puts the control under the text instead, for text fields
- * that need the room; a row too narrow to give its text `labelMinWidth`
- * beside the control (a narrow window) does the same by itself. `topAligned` lines the text up with the control's
- * first line instead of centring both, for a control with more under that
- * line (a slider with a hint below it); the label
- * centres on the first `controlLineHeight` pixels of the control.
+ * One setting: what it is on the left, its control on the right. `wide` puts the
+ * control under the text, as does a row too narrow to give its text
+ * `labelMinWidth`. `topAligned` lines the text up with the control's first line
+ * (for a control with more under it); the label centres on the first
+ * `controlLineHeight` pixels of the control.
  */
 Item {
     id: root

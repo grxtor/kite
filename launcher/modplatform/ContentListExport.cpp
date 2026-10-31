@@ -31,15 +31,12 @@ namespace
 	using ContentListExport::Fields;
 	using ContentListExport::Item;
 
-	/* Escapes only what would change the text's meaning where it sits in a
-	 * list line: a backslash, a backtick, `*`, brackets, `<` (a tag), and an
-	 * underscore at a word's edge. Dots, dashes, parentheses and the like
-	 * stay as they are: escaping every punctuation mark made a plain
-	 * "Entity Culling [1.7.2]" read as "[1\.7\.2]" in the preview and in
-	 * anything that does not render Markdown. An underscore between two
-	 * letters or digits ("mod_name_1") is not emphasis in CommonMark. A
-	 * leading "12." or "12)" would open a nested numbered list, so its dot
-	 * is escaped. */
+	/* Escapes only what would change the text's meaning in a list line:
+	 * backslash, backtick, `*`, brackets, `<` and an underscore at a word's
+	 * edge. Other punctuation stays (escaping all of it made "[1.7.2]" read
+	 * "[1\.7\.2]" where Markdown is not rendered). An underscore between
+	 * letters or digits is not emphasis in CommonMark. A leading "12." or
+	 * "12)" would open a nested numbered list, so its dot is escaped. */
 	QString markdownEscaped(const QString& text)
 	{
 		QString out;
@@ -147,8 +144,7 @@ namespace
 		QStringList lines;
 		for (const Item& item : items) {
 			QString line = item.name;
-			/* The address goes straight after the name here, unlike the
-			 * marked-up formats where it wraps it. */
+			/* Here the address follows the name; marked-up formats wrap it. */
 			if (fields.testFlag(ContentListExport::Url)
 				&& !item.url.isEmpty()) {
 				line += QStringLiteral(" (%1)").arg(item.url);
@@ -211,8 +207,8 @@ namespace
 				columns << item.version;
 			}
 			if (fields.testFlag(ContentListExport::Authors)) {
-				/* Quoted only when there is more than one, because the
-				 * separator between them is the column separator. */
+				/* Quoted only with more than one, as the separator is the column
+				 * separator. */
 				QString authors;
 				if (item.authors.size() == 1) {
 					authors = item.authors.constLast();
@@ -246,8 +242,7 @@ QString ContentListExport::render(const QList<Item>& items, Format format,
 		case Format::Csv:
 			return csvList(items, fields);
 		case Format::Custom:
-			/* Has no fixed shape to render; the caller is expected to
-			 * use the template overload. */
+			/* No fixed shape; the caller uses the template overload. */
 			return QString();
 	}
 	return QString();

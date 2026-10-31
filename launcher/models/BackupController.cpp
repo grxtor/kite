@@ -48,10 +48,9 @@ QString humanFileSize(qint64 bytes)
 }
 } // namespace
 
-/* One row per backup, newest first - BackupManager::listBackups() already
- * sorts that way. A thin QAbstractListModel rather than a QVariantList
- * property: the list can be long on an instance backed up often, and a list
- * view should not have to rebuild every row's delegate on every refresh(). */
+/* One row per backup, newest first (BackupManager::listBackups() sorts that
+ * way). A list model rather than a QVariantList property, so a list view need
+ * not rebuild every delegate on refresh(). */
 class BackupListModel : public QAbstractListModel
 {
 	Q_OBJECT
@@ -117,12 +116,8 @@ class BackupListModel : public QAbstractListModel
 	QList<BackupEntry> m_entries;
 };
 
-/* Runs one BackupManager operation (restore/export/import/delete) off the
- * GUI thread - the same QtConcurrent::run()+QFutureWatcher shape
- * BackupTask.cpp uses for createBackup(), which every one of those blocks
- * on for just as long on a large instance. Kept local rather than added to
- * backup/ itself: nothing here needs progress reporting the way a
- * compression pass does (see BackupManager::ProgressFn), only a plain
+/* Runs one BackupManager operation (restore/export/import/delete) off the GUI
+ * thread, like BackupTask.cpp does for createBackup(); only a plain
  * succeeded/failed at the end. */
 class BackupJobTask : public Task
 {
@@ -176,9 +171,7 @@ BackupController::BackupController(InstancePtr instance, QObject* parent)
 	m_model.reset(list);
 	refresh();
 
-	// Mirrors WorldDataPacksController's own unlocked/runningStatusChanged
-	// wiring: `running` needs to track the instance live, not just at
-	// restoreBackup() time, so the tab can warn before the click too.
+	// `running` tracks the instance live, so the tab can warn before the click.
 	connect(m_instance.get(), &BaseInstance::runningStatusChanged, this,
 			&BackupController::runningChanged);
 }
@@ -203,8 +196,7 @@ void BackupController::refresh()
 
 QObject* BackupController::createBackup(const QString& label)
 {
-	// BackupManager itself is cheap to copy (three QStrings) - captured by
-	// value so the worker thread never touches `this`.
+	// Cheap to copy (three QStrings); captured by value so the worker never touches `this`.
 	BackupManager manager = m_manager;
 	const QString labelCopy = label;
 

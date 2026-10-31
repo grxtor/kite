@@ -8,28 +8,16 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * A checklist of the catalog's mods (BundleCatalog::mods()), shared by the
- * Content tab's Add-ons and Kite Performance dialogs (BundleDialog). Each
- * row has the mod's icon, its name and a line about it. Rows are grouped
- * under a small heading per category, and per bundle too when the list
- * spans more than one.
- *
- * Ticks start from each mod's own default, bar the ones in `excluded`, and
- * are re-seeded whenever `mods` changes. A mod the instance already has is
- * shown ticked and locked, with an "Installed" tag, and is left out of
- * `checkedProjects`. A mod servers ban (`serverSafe: false`) carries a
- * warning under its summary.
+ * A checklist of the catalog's mods (BundleCatalog::mods()), shared by BundleDialog's Add-ons and Kite
+ * Performance. Ticks start from each mod's default bar `excluded`, re-seeded when `mods` changes. Installed mods
+ * are ticked, locked and left out of `checkedProjects`; a mod servers ban (`serverSafe: false`) carries a warning.
  */
 ListView {
     id: root
 
-    // BundleCatalog::mods() rows.
     property var mods: []
-    // Modrinth project ids the instance already has.
     property var installed: []
-    // Project ids that start unticked although the catalog ticks them.
     property var excluded: []
-    // What the user has ticked, installed mods excluded.
     readonly property var checkedProjects: {
         const out = []
         for (let i = 0; i < root.mods.length; ++i) {
@@ -39,7 +27,6 @@ ListView {
         }
         return out
     }
-    // The catalog's defaults the user unticked, installed ones aside.
     readonly property var uncheckedDefaults: {
         const out = []
         for (const mod of root.mods) {
@@ -52,13 +39,10 @@ ListView {
     // project id -> ticked; replaced whole on every change so bindings follow.
     property var ticks: ({})
 
-    // The box (which has padding of its own) and the headings start on the
-    // content edge.
     readonly property int rowPadding: 0
     readonly property int headingGap: Theme.space.md
     readonly property int iconSize: Theme.control.heightLg
 
-    // Headings and mod rows in one flat list.
     readonly property var rows: {
         const out = []
         const bundles = new Set(root.mods.map((m) => m.bundle))
@@ -113,8 +97,6 @@ ListView {
         implicitHeight: isMod ? modRow.implicitHeight : heading.implicitHeight + (entry.index === 0 ? 0 : root.headingGap)
         height: implicitHeight
 
-        // "Performance" over "Speed": the bundle's name louder than the
-        // category's.
         Text {
             id: heading
             visible: !entry.isMod
@@ -149,7 +131,6 @@ ListView {
                 }
             }
 
-            // The picture and the text tick the row too, not just the box.
             RowLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: Theme.space.xs
@@ -161,8 +142,6 @@ ListView {
                     onTapped: root.setTick(entry.mod.project, root.ticks[entry.mod.project] !== true)
                 }
 
-                // The mod's own icon, on the neutral tile; the package glyph
-                // while it loads, or when there is none.
                 RowThumb {
                     Layout.preferredWidth: root.iconSize
                     Layout.preferredHeight: root.iconSize

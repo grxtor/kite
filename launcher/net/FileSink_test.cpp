@@ -29,17 +29,9 @@
 
 namespace
 {
-	/* A server that answers HTTP badly on purpose.
-	 *
-	 * Downloads only break in ways worth testing when the other end
-	 * misbehaves - a body that stops halfway, an error page where a file
-	 * was expected - so the responses are written out by hand rather than
-	 * left to a real HTTP server that would insist on being correct.
-	 *
-	 * Each entry in the script covers one request, so a test can say "cut
-	 * the first attempt short, then serve it properly" and check what the
-	 * retry ends up with.
-	 */
+	/* A server that answers HTTP badly on purpose, with hand-written responses.
+	 * Each script entry covers one request, so a test can cut the first
+	 * attempt short and then serve it properly. */
 	class ScriptedServer : public QObject
 	{
 		Q_OBJECT
@@ -94,9 +86,7 @@ namespace
 			}
 			m_pending.remove(socket);
 
-			// Past the end of the script every further request gets the
-			// last scripted answer, so a test does not have to predict how
-			// many times the job will retry.
+			// Past the script's end every request gets the last answer.
 			const Reply reply =
 				m_script.isEmpty()
 					? Reply::Whole
@@ -113,10 +103,8 @@ namespace
 					socket->write(m_body);
 					break;
 				case Reply::CutShort:
-					/* The length header promises the whole file and then
-					 * the connection goes away mid-body - a dropped
-					 * transfer, or a mirror serving a file it only has
-					 * part of. */
+					/* The length header promises the whole file, then the connection goes
+					 * away mid-body. */
 					writeHead(socket, "200 OK", m_body.size());
 					socket->write(m_body.left(m_body.size() / 3));
 					break;
@@ -161,8 +149,7 @@ namespace
 		int m_served = 0;
 	};
 
-	// Body big enough that a third of it is a meaningful amount of file,
-	// small enough that the tests stay instant.
+	// A third of it is a meaningful amount, and tests stay instant.
 	QByteArray packBody()
 	{
 		QByteArray body;
@@ -182,8 +169,7 @@ namespace
 		return file.readAll();
 	}
 
-	/* Run a one-file download job to completion. Returns true if the job
-	 * succeeded. */
+	/* Runs a one-file download job to completion; true if it succeeded. */
 	bool runDownload(const QUrl& url, const QString& target)
 	{
 		auto network = shared_qobject_ptr<QNetworkAccessManager>(
@@ -205,8 +191,7 @@ class FileSinkTest : public QObject
 	Q_OBJECT
   private slots:
 
-	// The ordinary case, so the tests below are known to be measuring
-	// misbehaviour and not a broken harness.
+	// The ordinary case, to rule out a broken harness.
 	void test_WholeBodyIsStored()
 	{
 		QTemporaryDir tempDir;
@@ -220,10 +205,8 @@ class FileSinkTest : public QObject
 		QCOMPARE(readAll(target), packBody());
 	}
 
-	// A body that stops short of its own Content-Length is not the file.
-	// Nothing may be left on disk claiming to be it: the next thing to
-	// touch that path is an unpacker, and half an archive unpacks to a CRC
-	// error rather than to a complaint about the download.
+	// A body short of its Content-Length is not the file; nothing may be left
+	// on disk claiming to be it.
 	void test_CutShortBodyIsNotStored()
 	{
 		QTemporaryDir tempDir;
@@ -238,11 +221,9 @@ class FileSinkTest : public QObject
 				 "an incomplete download must not be left behind");
 	}
 
-	// The point of the retries: one cut transfer, then a good one, has to
-	// end with the whole file. This is where a per-sink byte count instead
-	// of a per-attempt one bites - the retry delivers every byte and is
-	// still rejected, because the bytes of the failed attempt are counted
-	// with it, and the download that would have worked never does.
+	// One cut transfer, then a good one, must end with the whole file. A
+	// per-sink byte count would reject the retry by counting the failed
+	// attempt's bytes.
 	void test_RetryAfterCutShortStoresWholeBody()
 	{
 		QTemporaryDir tempDir;
@@ -258,10 +239,8 @@ class FileSinkTest : public QObject
 		QCOMPARE(readAll(target), packBody());
 	}
 
-	// An error page is not a modpack. Storing one used to leave the HTML
-	// sitting where the archive should be - and through the metacache it
-	// was stored as a fresh, checksummed cache entry, so every later
-	// attempt was a cache hit on a file that had never been the download.
+	// An error page is not a modpack: it must not be stored, nor cached as a
+	// fresh metacache entry.
 	void test_NotFoundBodyIsNotStored()
 	{
 		QTemporaryDir tempDir;
@@ -276,8 +255,7 @@ class FileSinkTest : public QObject
 				 "the body of a 404 must not be stored as the file");
 	}
 
-	// Same for a gateway that is having a bad day, which is the answer a
-	// busy mirror gives.
+	// Same for a gateway error from a busy mirror.
 	void test_ServerErrorBodyIsNotStored()
 	{
 		QTemporaryDir tempDir;
@@ -291,8 +269,7 @@ class FileSinkTest : public QObject
 		QVERIFY(!QFile::exists(target));
 	}
 
-	// A transfer that fails once with an error page and then succeeds still
-	// has to end up with the file, not with the page.
+	// An error page followed by success must end with the file.
 	void test_RetryAfterErrorPageStoresWholeBody()
 	{
 		QTemporaryDir tempDir;

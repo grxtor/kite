@@ -22,12 +22,8 @@
 
 #include "models/ManagedPackController.h"
 
-/* Exercises only providerFromString() - the one static, instance-free
- * helper this class has. isSupported()/fetchVersions()/updateToVersion()
- * all need a real BaseInstance (and, for the CurseForge branch, a
- * LauncherContext to read the API key setting from), which is impractical
- * to construct here - the same reason models/ContentBrowser_test.cpp only
- * exercises ContentBrowser's own static helpers. */
+/* Exercises only the static, instance-free providerFromString()/fileFilterFor();
+ * the rest needs a real BaseInstance and LauncherContext. */
 class ManagedPackControllerTest : public QObject
 {
 	Q_OBJECT
@@ -49,7 +45,6 @@ void ManagedPackControllerTest::providerFromString()
 			Provider::Modrinth);
 	QCOMPARE(ManagedPackController::providerFromString("curseforge"),
 			Provider::CurseForge);
-	// "flame" is what the upstream launchers call CurseForge.
 	QCOMPARE(ManagedPackController::providerFromString("flame"),
 			Provider::CurseForge);
 	QCOMPARE(ManagedPackController::providerFromString("Flame"),

@@ -25,8 +25,8 @@
 
 namespace Technic
 {
-	// not exporting it, only used in SingleZipPackInstallTask,
-	// InstanceImportTask and SolderPackInstallTask
+	// Not exported; used by SingleZipPackInstallTask, InstanceImportTask and
+	// SolderPackInstallTask.
 	class TechnicPackProcessor : public QObject
 	{
 		Q_OBJECT

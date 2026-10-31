@@ -67,8 +67,8 @@ void ProfileSkinImport::lookUpUuid()
 
 	m_response.clear();
 	m_job = new NetJob(tr("Look up user"), LAUNCHER->network());
-	/* Percent-encoded: Mojang names are restricted to word characters today,
-	 * but this string comes straight out of a text field. */
+	// Percent-encoded: Mojang names are word characters today, but this string
+	// comes straight from a text field.
 	const QString endpoint =
 		QString::fromLatin1(kNameLookupEndpoint) +
 		QString::fromUtf8(QUrl::toPercentEncoding(m_username));
@@ -94,9 +94,8 @@ void ProfileSkinImport::lookUpUuid()
 
 		m_uuid = doc.object().value(QStringLiteral("id")).toString();
 		if (m_uuid.isEmpty()) {
-			/* A name that nobody owns answers with a body that has no id
-			 * rather than with an HTTP error, so this is the branch an
-			 * ordinary typo lands in. */
+			// A name nobody owns answers with a body that has no id, not an
+			// HTTP error; an ordinary typo lands here.
 			emitFailed(tr("user id is empty"));
 			return;
 		}
@@ -136,9 +135,9 @@ void ProfileSkinImport::fetchProfile()
 		m_capeId = profile.currentCape;
 
 		if (m_textureUrl.isEmpty()) {
-			/* The parser substitutes a default skin URL when the player has
-			 * none, so an empty one here means the payload was malformed in
-			 * a way the parser accepted. */
+			// The parser substitutes a default skin URL when the player has
+			// none, so an empty one here means a malformed payload the parser
+			// accepted.
 			emitFailed(tr("failed to parse get user profile response"));
 			return;
 		}

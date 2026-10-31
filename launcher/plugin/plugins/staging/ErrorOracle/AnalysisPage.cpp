@@ -25,9 +25,8 @@ namespace
 		}
 	}
 
-	/* Inverse of PluginUiRenderer's jsonQuoteString: unwraps a bare JSON
-	 * scalar (as delivered in MMCOUiEventCallback's value_json for
-	 * "select"/"activate" events) back into a plain QString. */
+	/* Inverse of PluginUiRenderer's jsonQuoteString: unwraps the bare JSON scalar in value_json of
+	 * "select"/"activate" events into a QString. */
 	QString jsonStringValue(const QString& valueJson)
 	{
 		if (valueJson.isEmpty())
@@ -41,14 +40,9 @@ namespace
 		return jd.array().first().toString();
 	}
 
-	/* The promote-to-rule prompt: three text fields (title, optional
-	 * regex pattern, advice) plus a Save/Cancel button row, run
-	 * through ui_modal_run. Replaces the QDialog the QWidget-era page
-	 * used to build directly — the page has no QWidget of its own to
-	 * parent a dialog to any more. The node set has no multi-line text
-	 * editor, so the advice field is a single-line text_field (a
-	 * behavioural narrowing from the old QTextEdit — long advice text
-	 * still works, it just doesn't wrap on screen while typing). */
+	/* The promote-to-rule prompt, run through ui_modal_run: three text fields (title, optional
+	 * regex pattern, advice) plus Save/Cancel. The node set has no multi-line editor, so advice is
+	 * a single-line text_field. */
 	QByteArray buildPromoteDoc(const QString& fingerprint, const QString& sampleLine)
 	{
 		const QJsonObject info{

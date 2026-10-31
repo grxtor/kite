@@ -145,18 +145,14 @@ bool FileIgnoreProxy::setFilterState(QModelIndex index, Qt::CheckState state)
 	auto blockedPath = relPath(fsm->filePath(sourceIndex));
 	bool changed = false;
 	if (state == Qt::Unchecked) {
-		// blocking a path
 		auto& node = m_blocked.insert(blockedPath);
-		// get rid of all blocked nodes below
 		node.clear();
 		changed = true;
 	} else if (state == Qt::Checked || state == Qt::PartiallyChecked) {
 		if (!m_blocked.remove(blockedPath)) {
 			auto cover = m_blocked.cover(blockedPath);
 			qDebug() << "Blocked by cover" << cover;
-			// uncover
 			m_blocked.remove(cover);
-			// block all contents, except for any cover
 			QModelIndex rootIndex = fsm->index(FS::PathCombine(m_root, cover));
 			QModelIndex doing = rootIndex;
 			int row = 0;
@@ -173,12 +169,10 @@ bool FileIgnoreProxy::setFilterState(QModelIndex index, Qt::CheckState state)
 					}
 				}
 				auto relpath = relPath(fsm->filePath(node));
-				if (blockedPath.startsWith(relpath)) // cover found?
+				if (blockedPath.startsWith(relpath))
 				{
-					// continue processing cover later
 					todo.push(node);
 				} else {
-					// or just block this one.
 					m_blocked.insert(relpath);
 				}
 				row++;
@@ -187,9 +181,7 @@ bool FileIgnoreProxy::setFilterState(QModelIndex index, Qt::CheckState state)
 		changed = true;
 	}
 	if (changed) {
-		// update the thing
 		emit dataChanged(index, index, {Qt::CheckStateRole});
-		// update everything above index
 		QModelIndex up = index.parent();
 		while (1) {
 			if (!up.isValid())
@@ -197,7 +189,6 @@ bool FileIgnoreProxy::setFilterState(QModelIndex index, Qt::CheckState state)
 			emit dataChanged(up, up, {Qt::CheckStateRole});
 			up = up.parent();
 		}
-		// and everything below the index
 		QModelIndex doing = index;
 		int row = 0;
 		QStack<QModelIndex> todo;
@@ -216,7 +207,6 @@ bool FileIgnoreProxy::setFilterState(QModelIndex index, Qt::CheckState state)
 			todo.push(node);
 			row++;
 		}
-		// siblings and unrelated nodes are ignored
 	}
 	return true;
 }

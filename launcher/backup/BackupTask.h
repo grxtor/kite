@@ -26,47 +26,28 @@
 #include "backup/BackupManager.h"
 #include "tasks/Task.h"
 
-/*
- * BackupTask — creates one instance backup on a worker thread.
- *
- * Compressing a whole instance takes long enough that doing it on the
- * GUI thread freezes the window for the duration; that freeze is the
- * reason the BackupSystem plugin was rewritten to use the host's
- * background-hook facility before it moved into core. Here the same job
- * is an ordinary Task, so the launch sequence and the backup page get
- * off-thread execution, a real progress bar and the usual failure
- * reporting for free.
- *
- * The threading is the same shape as PluginHookTask / InstanceCopyTask:
- * QtConcurrent::run() on the global pool plus a QFutureWatcher, with
- * progress marshalled back onto the task's own thread.
- */
+/* Creates one instance backup on a worker thread, so compressing a whole
+ * instance does not freeze the GUI. QtConcurrent::run() plus a
+ * QFutureWatcher, as in PluginHookTask / InstanceCopyTask, with progress
+ * marshalled back onto the task's thread. */
 class BackupTask : public Task
 {
 	Q_OBJECT
   public:
-	/*!
-	 * \param label Optional label folded into the backup file name,
-	 *        e.g. "pre-launch".
-	 */
+	/*! \param label Optional label folded into the backup file name, e.g.
+	 * "pre-launch". */
 	BackupTask(QString instanceId, QString instanceRoot, QString label = {},
 			   QObject* parent = nullptr);
 	~BackupTask() override;
 
-	/*!
-	 * A partially written archive is of no use to anybody and
-	 * MMCZip::compressDir() has no interruption point, so there is
-	 * nothing meaningful to abort.
-	 */
+	/*! MMCZip::compressDir() has no interruption point, and a partial archive
+	 * is useless. */
 	bool canAbort() const override
 	{
 		return false;
 	}
 
-	/*!
-	 * The backup that was created. Only meaningful once the task has
-	 * succeeded.
-	 */
+	/*! The backup created; only meaningful after the task succeeded. */
 	const BackupEntry& result() const
 	{
 		return m_result;
@@ -76,8 +57,8 @@ class BackupTask : public Task
 	void executeTask() override;
 
   private:
-	/* Called on the worker thread; hops onto our own thread before
-	 * touching anything the UI is connected to. */
+	/* Called on the worker thread; hops to our thread before touching what
+	 * the UI is connected to. */
 	void reportProgress(const QString& status, const QString& details,
 						qint64 current, qint64 total);
 	void backupFinished();

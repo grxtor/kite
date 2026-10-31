@@ -171,9 +171,6 @@ class Library
 	/// Returns true if the library is to always be checked for updates
 	bool isAlwaysStale() const;
 
-	/// Return true if the library requires forge XZ hacks
-	bool isForge() const;
-
 	// Get a list of downloads for this library
 	QList<NetAction::Ptr> getDownloads(const RuntimeContext& context,
 									   class HttpMetaCache* cache,

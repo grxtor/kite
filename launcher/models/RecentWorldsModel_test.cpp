@@ -32,37 +32,17 @@
 #include "NullInstance.h"
 #include "settings/INISettingsObject.h"
 
-/*
- * Exercises RecentWorldsModel::scan() directly against a temporary
- * directory - the pure, static part of the model that does the actual
- * filesystem/level.dat work (see the class comment's SCANNING section) and
- * is what a rescan actually gets right or wrong. Constructing a real
- * InstanceList of real MinecraftInstance objects, just to drive scan()
- * itself through the model's InstanceList* constructor, would need a full
- * instance setup (PackProfile, a version, ...) far beyond what scanning
- * worlds needs to be tested - the same tradeoff models/ContentBrowser_test.cpp
- * and models/InstanceDetails_test.cpp make.
- *
- * The async orchestration around scan() - scheduleRescan()'s rescan
- * triggers and debounce/coalescing - is a different concern and does not
- * need a real MinecraftInstance to exercise: the tests near the bottom of
- * this file build a real InstanceList with the same NullInstance fixture
- * InstanceList_test.cpp uses for HasCrashedRole, which is enough to drive
- * InstanceList's rowsInserted/rowsRemoved/dataChanged signals.
- */
+/* Exercises RecentWorldsModel::scan() directly against a temporary directory (a
+ * real InstanceList of MinecraftInstances would need a full instance setup).
+ * The tests near the bottom build an InstanceList with the NullInstance fixture
+ * of InstanceList_test.cpp to drive the rescan triggers and debounce. */
 namespace
 {
 	using Entry = RecentWorldsModel::Entry;
 	using Source = RecentWorldsModel::InstanceWorldSource;
 
-	/*
-	 * Minimal big-endian NBT writer - just enough level.dat to make
-	 * World::isValid() true and give it a LastPlayed value, the only two
-	 * things scan() reads through World. Reduced copy of the writer
-	 * minecraft/World_test.cpp keeps for its own (much larger) set of
-	 * level.dat shapes; not shared with it because both are private to
-	 * their own translation unit.
-	 */
+	/* Minimal big-endian NBT writer: just enough level.dat for World::isValid() and
+	 * a LastPlayed value. A reduced copy of the writer in minecraft/World_test.cpp. */
 	const quint8 TAG_END = 0;
 	const quint8 TAG_LONG = 4;
 	const quint8 TAG_COMPOUND = 10;
@@ -117,7 +97,6 @@ namespace
 		return root;
 	}
 
-	/// Writes a valid, minimal world folder at @p worldPath.
 	bool writeWorld(const QString& worldPath, qint64 lastPlayedMs)
 	{
 		if (!QDir().mkpath(worldPath)) {
@@ -145,11 +124,8 @@ namespace
 		return source;
 	}
 
-	/* Same set of global settings InstanceList_test.cpp's
-	 * makeGlobalSettings() registers - BaseInstance's constructor overrides
-	 * or passes through exactly these ids, and a globalSettings without one
-	 * of them makes registration hand back a null Setting. Not shared with
-	 * that file for the same reason its own helpers are not shared here. */
+	/* The global settings InstanceList_test.cpp's makeGlobalSettings() registers;
+	 * BaseInstance's constructor needs them or registration returns a null Setting. */
 	SettingsObjectPtr makeGlobalSettings(QTemporaryDir& dir)
 	{
 		auto settings =
@@ -166,13 +142,8 @@ namespace
 		return settings;
 	}
 
-	/// Writes a minimal instance.cfg with an InstanceType loadInstance()
-	/// does not recognize, so it falls back to NullInstance - the same
-	/// fixture shape InstanceList_test.cpp uses for HasCrashedRole. A real
-	/// MinecraftInstance is not needed here: these tests drive the async
-	/// scan orchestration (rescan triggers/coalescing), not scan() itself,
-	/// and a NullInstance is enough to exercise InstanceList's rowsInserted/
-	/// rowsRemoved/dataChanged signals RecentWorldsModel listens to.
+	/// Writes an instance.cfg with an unknown InstanceType, so loadInstance() falls
+	/// back to NullInstance (enough for InstanceList's row signals).
 	bool writeNullInstanceCfg(const QString& instRoot)
 	{
 		if (!QDir().mkpath(instRoot)) {
@@ -245,7 +216,6 @@ class RecentWorldsModelTest : public QObject
 			RecentWorldsModel::scan({makeSource(savesDir)}, 3);
 
 		QCOMPARE(result.size(), 3);
-		// Still newest-first after the cap.
 		QCOMPARE(result.at(0).lastPlayed, Q_INT64_C(5000));
 		QCOMPARE(result.at(1).lastPlayed, Q_INT64_C(4000));
 		QCOMPARE(result.at(2).lastPlayed, Q_INT64_C(3000));
@@ -357,8 +327,7 @@ class RecentWorldsModelTest : public QObject
 		QCOMPARE(result.at(0).instanceIconKey, QString("grass"));
 	}
 
-	/// A null InstanceList (nothing to show yet) is a valid, empty model
-	/// rather than a crash - see the constructor's doc comment.
+	/// A null InstanceList is a valid, empty model.
 	void nullInstanceListIsAnEmptyModel()
 	{
 		RecentWorldsModel model(nullptr);
@@ -390,15 +359,9 @@ class RecentWorldsModelTest : public QObject
 				 QByteArray("instanceIconKey"));
 	}
 
-	/*
-	 * The tests below drive a real InstanceList (NullInstance fixture, as
-	 * InstanceList_test.cpp uses for HasCrashedRole) instead of scan(): they
-	 * cover scheduleRescan()'s rescan triggers and debounce/coalescing, not
-	 * the filesystem scan itself. A NullInstance is not a MinecraftInstance,
-	 * so startScan() always hands scan() an empty source list here - the
-	 * model reset each rescan produces is still observable and is all these
-	 * tests need.
-	 */
+	/* The tests below drive a real InstanceList (NullInstance fixture) to cover
+	 * scheduleRescan()'s triggers and coalescing. startScan() always hands scan() an
+	 * empty source list here; the model reset each rescan produces is still observable. */
 
 	void rowsInsertedTriggersRescan()
 	{
@@ -413,14 +376,10 @@ class RecentWorldsModelTest : public QObject
 
 		RecentWorldsModel model(&list);
 		QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
-		// Construction schedules its own initial scan.
 		QVERIFY(resetSpy.wait());
 		resetSpy.clear();
 
-		// InstanceList::add() (via loadList() discovering a new instance)
-		// emits a genuine rowsInserted - see the class comment's RESCAN
-		// TRIGGERS section for why that, not instancesChanged(), is what
-		// scheduleRescan() is wired to.
+		// InstanceList::add() emits a genuine rowsInserted, which scheduleRescan() is wired to.
 		const QString instRoot = QDir(instsDir.path()).filePath("newinst");
 		QVERIFY(writeNullInstanceCfg(instRoot));
 		QCOMPARE(list.loadList(), InstanceList::NoError);
@@ -449,8 +408,7 @@ class RecentWorldsModelTest : public QObject
 		QVERIFY(resetSpy.wait());
 		resetSpy.clear();
 
-		// Starting a run alone must not schedule a rescan - only a stop is
-		// interesting (see the class comment).
+		// Starting a run alone must not schedule a rescan, only a stop.
 		inst->setRunning(true);
 		QVERIFY(!resetSpy.wait(500));
 
@@ -479,18 +437,14 @@ class RecentWorldsModelTest : public QObject
 		QVERIFY(resetSpy.wait());
 		resetSpy.clear();
 
-		// A rename, an icon change and the hasCrashed flag all go through
-		// InstanceList::propertiesChanged(), which emits dataChanged with
-		// an empty role list - not IsRunningRole, so none of these must
-		// schedule a rescan.
+		// Rename, icon change and hasCrashed go through propertiesChanged() (dataChanged
+		// with no role list), so none must schedule a rescan.
 		inst->setName("Renamed");
 		inst->setIconKey("grass");
 		inst->setCrashed(true);
 		QVERIFY(!resetSpy.wait(500));
 
-		// Sanity check that the spy above would have caught a real
-		// rescan: a genuine running -> stopped transition still schedules
-		// one.
+		// Sanity check: a real running -> stopped transition still schedules one.
 		inst->setRunning(true);
 		inst->setRunning(false);
 		QVERIFY(resetSpy.wait());

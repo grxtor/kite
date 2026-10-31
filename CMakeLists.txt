@@ -7,25 +7,12 @@ cmake_minimum_required(VERSION 3.24)
 # Required for CMAKE_MSVC_DEBUG_INFORMATION_FORMAT to work (avoids /Zi PDB conflicts with sccache)
 cmake_policy(SET CMP0141 NEW)
 
-# Required so CMAKE_MSVC_RUNTIME_LIBRARY controls the CRT (/MD vs /MDd) instead
-# of it being baked into CMAKE_CXX_FLAGS. The CRT is pinned to /MD in the
-# if(MSVC) block below, to match how the vcpkg dependencies are built; see the
-# note there. Must be set before project().
+# Lets CMAKE_MSVC_RUNTIME_LIBRARY control the CRT. Must be set before project().
 cmake_policy(SET CMP0091 NEW)
 
-# Never search our own install prefix when resolving find_package().
-#
-# The presets install into <source>/install, and project() would otherwise add
-# CMAKE_INSTALL_PREFIX to CMAKE_SYSTEM_PREFIX_PATH — so after one
-# `cmake --install`, the next configure starts finding our own installed
-# artifacts as if they were system packages. That is how a half-installed ECM
-# (only ECMConfig.cmake landed under install/share/ECM, none of the modules)
-# made find_package(ECM) succeed against a broken prefix and took the whole
-# configure down with "could not find ECMUseFindModules.cmake".
-#
-# Nothing we legitimately depend on lives in our own install tree, so refusing
-# to look there removes that entire class of self-poisoning. Must be set before
-# project(), which is when CMAKE_SYSTEM_PREFIX_PATH is built.
+# Keeps find_package() from finding a previous `cmake --install` into
+# <source>/install (a half-installed ECM broke configure). Must be set before
+# project().
 set(CMAKE_FIND_NO_INSTALL_PREFIX TRUE)
 
 project(Kite)
@@ -92,7 +79,7 @@ else()
     if(UNIX AND APPLE)
         set(CMAKE_CXX_FLAGS " -stdlib=libc++ ${CMAKE_CXX_FLAGS}")
     endif()
-    # FIXME: readd this: set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Werror=return-type")
+    # FIXME: readd -Werror=return-type for Debug
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DQT_NO_DEPRECATED_WARNINGS=Y")
 endif()
 
@@ -141,25 +128,13 @@ endif()
 
 ################################ 3rd Party Libs ################################
 
-# Find the required Qt parts
-#
-# Kite builds against Qt 6 only. Qt 5 support was dropped with the move to a
-# QML user interface: Qt Quick Controls, qt_add_qml_module and the QML tooling
-# the UI relies on are Qt 6 APIs.
-#
-# Every subdirectory still reaches Qt through the ${QT_VERSION_MAJOR}
-# indirection rather than hardcoding Qt6::, so this stays the single place that
-# names the major version.
+# Qt 6 only. Subdirectories reach Qt through ${QT_VERSION_MAJOR}.
 set(QT_VERSION_MAJOR 6)
 
-# Still a cache variable so that scripts and CI invocations that pass
-# -DKite_QT_VERSION_MAJOR=5 fail loudly instead of quietly building Qt 6 when
-# they asked for something else.
-# The QML user interface is always built; this only picks which interface the
-# launcher opens by default. KITE_QML_UI=1 or =0 in the environment overrides
-# it at run time.
+# Only picks the default interface; KITE_QML_UI=1 or =0 in the environment overrides it.
 option(Kite_QML_UI "Open the QML user interface instead of the QtWidgets one by default" ON)
 
+# A cache variable so that -DKite_QT_VERSION_MAJOR=5 fails loudly.
 set(Kite_QT_VERSION_MAJOR "6" CACHE STRING "Major Qt version to build against (6 only)")
 set_property(CACHE Kite_QT_VERSION_MAJOR PROPERTY STRINGS "6")
 
@@ -169,14 +144,8 @@ if(NOT Kite_QT_VERSION_MAJOR STREQUAL "6")
         "The QML user interface depends on Qt 6 modules.")
 endif()
 
-# OpenSSL libraries to copy into the package (Windows). Qt loads OpenSSL at
-# runtime instead of linking it, so nothing in the normal deployment chain
-# picks it up; see the "OpenSSL runtime (Windows)" block in
-# launcher/CMakeLists.txt for why this is spelled out by hand.
-#
-# Which files are correct depends on the Qt build: MSYS2's Qt needs the 3.x
-# ABI (libssl-3-x64.dll, libcrypto-3-x64.dll). CI fills this in; leaving it
-# empty only affects packaging, not the build.
+# Windows: Qt loads OpenSSL at run time, so deployment misses it. MSYS2's Qt
+# needs the 3.x ABI (libssl-3-x64.dll, libcrypto-3-x64.dll). CI fills this in.
 set(Kite_BUNDLE_OPENSSL_LIBS "" CACHE STRING
     "Semicolon-separated list of OpenSSL runtime libraries to ship inside the package")
 
@@ -191,18 +160,14 @@ set(Kite_QT_COMPONENTS
     OpenGL
     # Qt 6 split QOpenGLWidget out of QtWidgets into its own module.
     OpenGLWidgets
-    # The QML user interface.
     Qml
     Quick
     QuickControls2
-    # Its icons are SVG files, which only the Qt SVG image plugin can read.
+    # The QML icons are SVG files, read by the Qt SVG image plugin.
     Svg
 )
 
-# 6.4 is the floor because Debian 12 and Ubuntu 24.04 LTS ship Qt 6.4.2 and the
-# launcher should still build from source there. Everything the QML UI needs
-# exists in 6.4: qt_add_qml_module and QML_SINGLETON/QML_ELEMENT (6.2),
-# QQmlEngine::retranslate (5.10), IconImage's color property (6.0).
+# Debian 12 and Ubuntu 24.04 ship Qt 6.4.
 set(Kite_QT_MINIMUM_VERSION "6.4.0")
 
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${Kite_QT_COMPONENTS})
@@ -218,13 +183,8 @@ endif()
 message(STATUS "Building against Qt ${_projt_qt_version} (major version ${QT_VERSION_MAJOR})")
 unset(_projt_qt_version)
 
-# Qt Quick 3D, for the optional 3D skin preview (launcher/qml/Skin3D/) --
-# never added to Kite_QT_COMPONENTS above: unlike everything there, the
-# 6.4 floor must keep building without it, so it is looked for but not
-# required. Kite_ENABLE_SKIN3D defaults to whatever was found, and is the one
-# switch that decides whether launcher/qml/CMakeLists.txt descends into
-# Skin3D/ at all; turning it OFF by hand leaves the flat skin view even when
-# Quick3D is present, but it can never turn ON what was not found.
+# Qt Quick 3D (3D skin preview) is optional, so it is not in Kite_QT_COMPONENTS.
+# Kite_ENABLE_SKIN3D can turn it off by hand, never on.
 find_package(Qt${QT_VERSION_MAJOR} OPTIONAL_COMPONENTS Quick3D)
 option(Kite_ENABLE_SKIN3D "Build the 3D skin preview (needs Qt Quick 3D)" ${Qt${QT_VERSION_MAJOR}Quick3D_FOUND})
 if(Kite_ENABLE_SKIN3D AND NOT Qt${QT_VERSION_MAJOR}Quick3D_FOUND)
@@ -233,9 +193,7 @@ if(Kite_ENABLE_SKIN3D AND NOT Qt${QT_VERSION_MAJOR}Quick3D_FOUND)
 endif()
 message(STATUS "3D skin preview (Qt Quick3D): ${Kite_ENABLE_SKIN3D}")
 
-# Qt Linguist tools (lrelease), which compile translations/kite_*.ts into the
-# .qm files bundled in the launcher. Optional: without them the build still
-# works, it just ships English only (see launcher/CMakeLists.txt).
+# lrelease compiles translations/kite_*.ts; without it the build ships English only.
 find_package(Qt${QT_VERSION_MAJOR} OPTIONAL_COMPONENTS LinguistTools)
 message(STATUS "Bundled translations (Qt LinguistTools): ${Qt${QT_VERSION_MAJOR}LinguistTools_FOUND}")
 
@@ -255,15 +213,11 @@ include(QMakeQuery)
 QUERY_QMAKE(QT_INSTALL_PLUGINS QT_PLUGINS_DIR)
 QUERY_QMAKE(QT_INSTALL_LIBS QT_LIBS_DIR)
 QUERY_QMAKE(QT_INSTALL_LIBEXECS QT_LIBEXECS_DIR)
-# Where Qt's own QML modules (QtQuick, QtQuick.Controls, ...) live in the Qt
-# installation used for the build. Needed at packaging time: our own QML
-# modules are compiled into the launcher, but Qt's are not, and have to be
-# deployed and pointed at explicitly (see launcher/CMakeLists.txt).
+# Qt's own QML modules are not compiled into the launcher; they are deployed from here.
 QUERY_QMAKE(QT_INSTALL_QML QT_QML_DIR)
 
-# Map missing multi-config configurations to available ones.
-# Monorepo libraries are built with single-config (Ninja), but Kite uses
-# Ninja Multi-Config which validates all configurations at configure time.
+# The libraries are built single-config, but Ninja Multi-Config validates every
+# configuration at configure time.
 set(CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO RelWithDebInfo Release Debug "")
 set(CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL MinSizeRel Release Debug "")
 
@@ -284,18 +238,9 @@ if(NOT LibArchive_FOUND)
     pkg_check_modules(libarchive REQUIRED IMPORTED_TARGET GLOBAL libarchive)
     add_library(LibArchive::LibArchive ALIAS PkgConfig::libarchive)
 elseif(WIN32)
-    # On Windows libarchive calls BCrypt* unconditionally (archive_util.c's
-    # temp file helper, plus the CNG crypto backend vcpkg enables there), so a
-    # static libarchive hands those symbols to whoever links it. FindLibArchive
-    # reports nothing but the library file itself and vcpkg's wrapper only adds
-    # the compression libraries, so without this every consumer fails to link
-    # with undefined BCrypt* symbols.
+    # Static libarchive calls BCrypt* on Windows and FindLibArchive does not
+    # report it, so consumers fail to link with undefined BCrypt* symbols.
     # ref. https://github.com/libarchive/libarchive/issues/3375
-    #
-    # Done once here rather than per target: the launcher, classparser and the
-    # updater all pick the dependency up through this imported target. bcrypt
-    # is a system import library, so it is harmless when libarchive is shared
-    # and nothing actually references those symbols.
     set_property(TARGET LibArchive::LibArchive APPEND PROPERTY INTERFACE_LINK_LIBRARIES bcrypt)
 endif()
 
@@ -348,10 +293,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 ####################################### Branding #######################################
 
-######## Firstly, dont touch here, this section calculate Git commit, branch; Timestamp
-######## and initialize targets for print version sections.
+######## Git commit, branch and build timestamp ########
 
-#### Check the current Git commit and branch
 include(GetGitRevisionDescription)
 get_git_head_revision(Kite_GIT_REFSPEC Kite_GIT_COMMIT ALLOW_LOOKING_ABOVE_CMAKE_SOURCE_DIR)
 git_get_exact_tag(Kite_GIT_TAG)
@@ -363,11 +306,10 @@ message(STATUS "Git tag: ${Kite_GIT_TAG}")
 string(TIMESTAMP TODAY "%Y-%m-%d")
 set(Kite_BUILD_TIMESTAMP "${TODAY}")
 
-#### Custom target to just print the version.
 add_custom_target(version echo "Version: ${Kite_RELEASE_VERSION_NAME}")
 add_custom_target(tcversion echo "\\#\\#teamcity[setParameter name=\\'env.KITE_VERSION\\' value=\\'${Kite_RELEASE_VERSION_NAME}\\']")
 
-######## Secondly, please set version numbers ########
+######## Version numbers ########
 set(Kite_VERSION_MAJOR    1)
 set(Kite_VERSION_MINOR    2)
 set(Kite_VERSION_HOTFIX   0)
@@ -377,38 +319,27 @@ set(Kite_RELEASE_TWO_NAME "${Kite_VERSION_MAJOR}.${Kite_VERSION_MINOR}")
 set(Kite_VERSION_NAME4 "${Kite_VERSION_MAJOR}.${Kite_VERSION_MINOR}.${Kite_VERSION_HOTFIX}.0")
 set(Kite_VERSION_NAME4_COMMA "${Kite_VERSION_MAJOR},${Kite_VERSION_MINOR},${Kite_VERSION_HOTFIX},0")
 
-######## Thirdly, please define URLs and API keys ########
+######## URLs and API keys ########
 
 set(Kite_NEWS_RSS_URL "" CACHE STRING "URL to fetch Kite's news RSS feed from.")
 set(Kite_NEWS_EXTRA_FEEDS "" CACHE STRING "Semicolon-separated list of extra RSS feed URLs shown alongside the launcher's own news feed.")
 
-# Build number
 set(Kite_VERSION_BUILD -1 CACHE STRING "Build number. -1 for no build number.")
 
 set(Kite_BUILD_ARTIFACT "" CACHE STRING "Name of the CI build this is, matched against release asset names.")
 
-# Build platform.
 set(Kite_BUILD_PLATFORM "" CACHE STRING "A short string identifying the platform that this build was built for. Only used by the notification system and to display in the about dialog.")
 
-# Updater: the repository releases are read from.
 set(Kite_UPDATER_GITHUB_REPO "" CACHE STRING "GitHub repository the updater reads releases from. Defaults to Kite_Git.")
 
-# Updater: the release channel this build subscribes to.
-#
-# A "beta" build has pre-releases enabled by default, so a beta user is never
-# stranded on an older version than the stable line. Users can change this
-# afterwards; this only sets the default.
-#
-# This is deliberately NOT Kite_VERSION_CHANNEL / BuildConfig.VERSION_CHANNEL,
-# which is just the git branch name and purely informational.
+# A beta build enables pre-releases by default; users can change that. Not
+# Kite_VERSION_CHANNEL, which is the git branch name.
 set(Kite_UPDATE_CHANNEL "stable" CACHE STRING "Release channel this build subscribes to: stable | beta.")
 set_property(CACHE Kite_UPDATE_CHANNEL PROPERTY STRINGS stable beta)
 
 string(TOLOWER "${Kite_UPDATE_CHANNEL}" Kite_UPDATE_CHANNEL_EFFECTIVE)
 if(Kite_UPDATE_CHANNEL_EFFECTIVE STREQUAL "")
-    # CMakePresets forwards this from the environment, and an unset environment
-    # variable expands to an empty string. Fall back to the safe channel rather
-    # than shipping a build that accepts everything.
+    # CMakePresets forwards an unset environment variable as an empty string.
     set(Kite_UPDATE_CHANNEL_EFFECTIVE "stable")
 elseif(NOT Kite_UPDATE_CHANNEL_EFFECTIVE MATCHES "^(stable|beta)$")
     message(FATAL_ERROR
@@ -416,54 +347,38 @@ elseif(NOT Kite_UPDATE_CHANNEL_EFFECTIVE MATCHES "^(stable|beta)$")
 endif()
 message(STATUS "Update channel: ${Kite_UPDATE_CHANNEL_EFFECTIVE}")
 
-# Notification URL
 set(Kite_NOTIFICATION_URL "" CACHE STRING "URL for checking for notifications.")
 
-# The metadata server: Kite's own, generated hourly on the Dokploy server by a
-# fork of Project Tick's meta generator (/opt/kite-meta). It also serves the
-# fmllibs and the launcher maven the meta points at. Keep the trailing slash:
-# the meta and Java download code append paths to it.
+# Keep the trailing slash: the meta and Java download code append paths to it.
 set(Kite_META_URL "https://meta.kiteclient.com/" CACHE STRING "URL to fetch Kite's meta files from.")
 
-# The friends server (server/friends/): who is online and on which server.
-# Contacted unless the user turns friends off in Settings; empty, it turns the
-# feature off for the build (no rail entry, nothing sent). Keep the trailing
-# slash.
+# Empty turns friends off for the build. Keep the trailing slash.
 set(Kite_FRIENDS_URL "https://api.kiteclient.com/" CACHE STRING "URL of Kite's friends server.")
 
-# Translations are bundled in the app (translations/kite_*.ts). Leave this empty
-# so Kite never downloads any; set it to a server that serves index_v2.json and
-# the .qm files listed in it to get downloadable updates on top of the bundle.
+# Empty: Kite never downloads translations. Otherwise a server serving index_v2.json
+# and the .qm files it lists.
 set(Kite_TRANSLATIONS_URL "" CACHE STRING "URL to download translation updates from (empty: bundled translations only).")
 
-# Microsoft Client ID
-# Our own Azure app, approved for the Minecraft API. Empty hides Microsoft sign-in.
+# Empty hides Microsoft sign-in.
 set(Kite_MICROSOFT_CLIENT_ID "3e21e33c-8db3-41f9-bbd3-8309b8c41203" CACHE STRING "Azure application (client) ID for Microsoft sign-in")
 
-# paste.ee API key
 set(Kite_PASTE_EE_API_KEY "" CACHE STRING "API key you can get from paste.ee when you register an account")
 
-# Imgur API Client ID
 set(Kite_IMGUR_CLIENT_ID "" CACHE STRING "Client ID you can get from Imgur when you register an application")
 
-# CurseForge API key
 set(Kite_CURSEFORGE_API_KEY "" CACHE STRING "API key for the CurseForge API (get one at https://console.curseforge.com/)")
 
-# Bug tracker URL
 set(Kite_BUG_TRACKER_URL "" CACHE STRING "URL for the bug tracker.")
 
-# Discord URL
 set(Kite_DISCORD_URL "" CACHE STRING "URL for the Discord guild.")
 
-# Subreddit URL
 set(Kite_SUBREDDIT_URL "" CACHE STRING "URL for the subreddit.")
 
-# Feature flags
 set(Kite_UNLEASH_URL "" CACHE STRING "GitLab Unleash-compatible feature flags endpoint.")
 set(Kite_UNLEASH_INSTANCE_ID "" CACHE STRING "Unleash instance id. Set this to enable runtime feature flags.")
 set(Kite_UNLEASH_APP_NAME "" CACHE STRING "Unleash application name / environment (UNLEASH-APPNAME). Must match the flag's environment spec, e.g. 'production'.")
 
-######## Fourthly, please define Kite attributes ########
+######## Kite attributes ########
 
 set(Kite_CommonName "Kite")
 set(Kite_AppBinaryName "kite")
@@ -479,15 +394,13 @@ set(Kite_ConfigFile "kite.cfg")
 set(Kite_Git "https://github.com/grxtor/kite")
 set(Kite_Patreon_Url "")
 
-# Releases are published on the source repository, so that is where the
-# updater looks unless a build says otherwise.
 if(Kite_UPDATER_GITHUB_REPO STREQUAL "")
     set(Kite_UPDATER_GITHUB_REPO "${Kite_Git}")
 endif()
 message(STATUS "Updater repository: ${Kite_UPDATER_GITHUB_REPO}")
 set(Kite_Authors "Based on MeshMC by Project Tick and MultiMC by the MultiMC Contributors. Licensed under the Apache License, Version 2.0.")
 
-######## Lastly, configure placeholders
+######## Configure placeholders ########
 
 set(Kite_SVGFileName "${Kite_AppID}.svg")
 set(Kite_Branding_ICNS "branding/${Kite_AppID}.icns")
@@ -558,16 +471,9 @@ if(UNIX AND APPLE)
     set(PLUGIN_DEST_DIR "${Kite_Name}.app/Contents/MacOS")
     set(RESOURCES_DEST_DIR "${Kite_Name}.app/Contents/Resources")
     set(JARS_DEST_DIR "${Kite_Name}.app/Contents/Resources/jars")
-    # Where Qt's own QML modules land inside the bundle. Contents/Resources
-    # (rather than next to PLUGIN_DEST_DIR in Contents/MacOS) so it matches
-    # what qt.conf's QmlImports key below is written relative to.
     set(QML_DEST_DIR "${Kite_Name}.app/Contents/Resources/qml")
-    # qt.conf's [Paths] entries are, on macOS, resolved relative to the
-    # bundle's Contents/ directory (verified empirically: a value of
-    # "Foo.app/Contents/MacOS" written into Contents/Resources/qt.conf came
-    # out as Contents/Foo.app/Contents/MacOS, one "Contents/" too many) --
-    # not relative to CMAKE_INSTALL_PREFIX like PLUGIN_DEST_DIR/QML_DEST_DIR
-    # (used for actual install() DESTINATION arguments) have to be.
+    # On macOS qt.conf's [Paths] are relative to the bundle's Contents/, not to
+    # CMAKE_INSTALL_PREFIX like the install() destinations above.
     set(QT_CONF_PLUGINS_DEST "MacOS")
     set(QT_CONF_QML_DEST "Resources/qml")
     set(BUNDLE_DEST_DIR ".")
@@ -576,7 +482,6 @@ if(UNIX AND APPLE)
     set(MMCO_PLUGIN_DATA_DEST_DIR
         "${Kite_Name}.app/Contents/Resources/MMCOPluginData")
 
-    # Mac bundle settings
     set(MACOSX_BUNDLE_BUNDLE_NAME "${Kite_DisplayName}")
     set(MACOSX_BUNDLE_INFO_STRING "${Kite_DisplayName}: A custom launcher for Minecraft that allows you to easily manage multiple installations of Minecraft at once.")
     set(MACOSX_BUNDLE_GUI_IDENTIFIER "${Kite_AppID}")
@@ -585,9 +490,7 @@ if(UNIX AND APPLE)
     set(MACOSX_BUNDLE_LONG_VERSION_STRING "${Kite_RELEASE_VERSION_NAME}")
     set(MACOSX_BUNDLE_ICON_FILE ${Kite_AppID}.icns)
     set(MACOSX_BUNDLE_COPYRIGHT "${Kite_Copyright_Mac}")
-    # Lets macOS turn away a build made for a newer system with its own
-    # message, rather than the app crashing inside Qt (the Legacy release
-    # targets 12, the others 13). Left out when no target is set.
+    # Lets macOS refuse a build for a newer system instead of the app crashing inside Qt.
     if(CMAKE_OSX_DEPLOYMENT_TARGET)
         set(MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION_KEY
             "<key>LSMinimumSystemVersion</key>\n    <string>${CMAKE_OSX_DEPLOYMENT_TARGET}</string>")
@@ -599,7 +502,6 @@ if(UNIX AND APPLE)
     set(MACOSX_SPARKLE_SHA256 "fd5681ee92bf238aaac2d08214ceaf0cc8976e452d7f882d80bac1e61581f3b1" CACHE STRING "SHA256 checksum for Sparkle release archive")
     set(MACOSX_SPARKLE_DIR "${CMAKE_BINARY_DIR}/frameworks/Sparkle")
 
-    # Add the icon
     install(FILES ${Kite_Branding_ICNS} DESTINATION ${RESOURCES_DEST_DIR} RENAME ${Kite_AppID}.icns)
 
     find_program(ACTOOL_EXE actool DOC "Path to the apple asset catalog compiler")
@@ -680,7 +582,6 @@ elseif(UNIX)
         install(FILES ${Kite_ManPage} DESTINATION "${KDE_INSTALL_MANDIR}/man6")
     endif()
 
-    # Install basic runner script if component "portable" is selected
     configure_file(launcher/Kite.in "${CMAKE_CURRENT_BINARY_DIR}/KiteScript" @ONLY)
     install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/KiteScript" DESTINATION "." RENAME ${Kite_Name} COMPONENT portable EXCLUDE_FROM_ALL)
 
@@ -690,24 +591,15 @@ elseif(WIN32)
     set(PLUGIN_DEST_DIR ".")
     set(FRAMEWORK_DEST_DIR ".")
     set(RESOURCES_DEST_DIR ".")
-    # windeployqt's own default destination for the Qt QML modules it deploys
-    # (see the --qmldir call in launcher/CMakeLists.txt); qt.conf's
-    # QmlImports key below points here too.
+    # windeployqt's default destination for Qt's QML modules.
     set(QML_DEST_DIR "qml")
-    # On Windows qt.conf's [Paths] entries are relative to qt.conf's own
-    # directory (RESOURCES_DEST_DIR, "."), same as PLUGIN_DEST_DIR/QML_DEST_DIR
-    # already are -- no bundle-style adjustment needed here.
+    # On Windows qt.conf's [Paths] are relative to qt.conf's own directory.
     set(QT_CONF_PLUGINS_DEST "${PLUGIN_DEST_DIR}")
     set(QT_CONF_QML_DEST "${QML_DEST_DIR}")
     set(JARS_DEST_DIR "jars")
-    # Windows keeps the flat layout it has always used: .mmco files
-    # next to kite.exe under <install>/mmcmodules. Variable exists
-    # so plugin CMakeLists files can refer to it uniformly.
+    # Flat layout: .mmco files next to kite.exe under <install>/mmcmodules.
     set(MMCO_MODULES_DEST_DIR "${BINARY_DEST_DIR}/mmcmodules")
-    # Windows has no codesign-style strict mode that distinguishes
-    # code from data inside the plugin directory, so plugin data
-    # can stay alongside the .mmco. Variable mirrors the macOS one
-    # for cross-platform plugin CMakeLists.
+    # No strict codesign mode, so plugin data can sit beside the .mmco.
     set(MMCO_PLUGIN_DATA_DEST_DIR "${MMCO_MODULES_DEST_DIR}")
 else()
     message(FATAL_ERROR "Platform not supported")
@@ -718,15 +610,8 @@ endif()
 include(ExternalProject)
 set_directory_properties(PROPERTIES EP_BASE External)
 
-# Everything under libraries/ is built as part of this build tree, statically,
-# unless the library hardcodes SHARED (rainbow) or opts out itself
-# (nbt++, via NBT_BUILD_SHARED). This matches what the old pre-built
-# dependency prefix shipped, so linkage does not change — only where the
-# objects come from.
-#
-# Cache entry rather than a plain variable: subprojects under libraries/ read
-# this through option(), and a cache entry is the one form that wins there
-# whichever CMP0077 mode their cmake_minimum_required happens to select.
+# libraries/ builds statically, except rainbow (hardcodes SHARED) and nbt++
+# (NBT_BUILD_SHARED).
 
 ############################### internal libraries ############################
 option(NBT_BUILD_SHARED "Build NBT shared library" ON)
@@ -741,20 +626,11 @@ add_subdirectory(libraries/xz-embedded) # xz compression
 add_subdirectory(libraries/rainbow) # Qt extension for colors
 add_subdirectory(libraries/localpeer) # fork of a library from Qt solutions
 add_subdirectory(libraries/classparser) # Java class file parser
-add_subdirectory(libraries/katabasis) # An OAuth2 library that tried to do too much
+add_subdirectory(libraries/katabasis) # OAuth2 library
 
-# Two libraries under libraries/ build as shared objects (rainbow hardcodes
-# SHARED, nbt++ opts in via NBT_BUILD_SHARED), so they have to be deployed
-# where the launcher can load them: alongside the binary on Windows,
-# LIBRARY_DEST_DIR elsewhere (covered by the RPATH, $ORIGIN/../lib).
-#
-# Installed explicitly rather than left to install(RUNTIME_DEPENDENCY_SET),
-# which scans the built binary and searches a directory list — it did not pick
-# these up. Their own subprojects do install them, but to
-# ${CMAKE_INSTALL_BINDIR} (install/bin/) while kite.exe sits at the install
-# root, so the launcher died on startup with "nbt++.dll not found". These are
-# our own targets and we know exactly where they belong; no point rediscovering
-# it by scanning a binary.
+# The shared libraries go where the launcher loads them: beside the binary on
+# Windows, covered by the RPATH elsewhere. Installed by hand: RUNTIME_DEPENDENCY_SET
+# missed them, and their own install() puts them in bin/, away from kite.exe.
 set_target_properties(nbt++ rainbow PROPERTIES
     VERSION   "${Kite_RELEASE_VERSION_NAME}"
     SOVERSION "${Kite_VERSION_MAJOR}")
@@ -767,9 +643,8 @@ install(TARGETS nbt++ rainbow
     RUNTIME DESTINATION "${BINARY_DEST_DIR}"
     LIBRARY DESTINATION "${PRIVATE_LIBRARY_DEST_DIR}")
 
-# The Java helpers are built in-tree now, so their jars come out of the build
-# directory. The launcher looks for them by exact name under JARS_DEST_DIR
-# (see Application::getJarsPath()), which is not where install_jar() puts them.
+# The launcher looks for the jars by exact name under JARS_DEST_DIR, not where
+# install_jar() puts them.
 get_target_property(JAVACHECK_JAR JavaCheck JAR_FILE)
 get_target_property(NEWLAUNCH_JAR NewLaunch JAR_FILE)
 install(FILES "${JAVACHECK_JAR}" DESTINATION "${JARS_DEST_DIR}" RENAME "JavaCheck.jar")
@@ -781,13 +656,13 @@ add_subdirectory(buildconfig)
 
 add_subdirectory(launcher/crashreporter)
 
-# NOTE: this must always be last to appease the CMake deity of quirky install command evaluation order.
+# Must be last: install() commands run in evaluation order.
 add_subdirectory(launcher)
 
 if(Kite_PLUGINS)
-    # Plugin SDK (INTERFACE library — headers only, must come before plugins)
+    # The SDK must come before the plugins.
     add_subdirectory(launcher/plugin/sdk)
 
-    # In-tree .mmco plugins (after launcher so Kite_logic target is available)
+    # After launcher: needs the Kite_logic target.
     add_subdirectory(launcher/plugin/plugins)
 endif()

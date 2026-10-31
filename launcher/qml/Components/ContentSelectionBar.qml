@@ -8,24 +8,18 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The bar ContentTab shows over its list while rows are ticked: how many,
- * tick or untick all of them, and what can be done with them. A raised
- * neutral bar -- the accent stays on the ticks themselves -- whose
- * checkbox sits in the rows' own checkbox column. Enable, Disable and
- * Remove are off while the game holds the files (with the reason on
- * hover); Export always works. Its ⋯ menu checks just these for updates
- * or forgets where they came from.
+ * The bar ContentTab shows over its list while rows are ticked: how many, tick or untick all, and what can be done
+ * with them. Enable, Disable and Remove are off while the game holds the files (with the reason on hover); Export
+ * always works. Its ⋯ menu checks just these for updates or forgets where they came from.
  */
 Rectangle {
     id: root
 
-    // The PackList whose selection this acts on, and its model.
     property var list: null
     property var listModel: null
     property bool unlocked: false
     property string lockedReason: ""
 
-    // Whether these files can come from a provider (updates, origins).
     property bool updatable: false
 
     signal enableRequested(bool enabled)
@@ -34,7 +28,6 @@ Rectangle {
     signal checkUpdatesRequested()
     signal resetMetadataRequested()
 
-    // Whether every row the search shows is ticked.
     readonly property bool allShown: {
         if (!root.list)
             return false

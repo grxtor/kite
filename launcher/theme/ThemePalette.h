@@ -25,27 +25,13 @@
 #include <QObject>
 #include <QString>
 
-/*
- * The semantic colour tokens for the token-based QML theme -- "modern
- * launcher": dark-first, soft, with a strong accent.
+/* Semantic colour tokens for the QML theme, named for the role a colour
+ * plays, never its hue. meshDark() and meshLight() are the same token set
+ * with different values.
  *
- * Every field is named for what it means (textPrimary, danger, accent...),
- * never for what it looks like -- there is no "cyan500" here, because a QML
- * component should ask for the role a colour plays, not memorise which raw
- * hue currently fills it. That is also why meshDark() and meshLight() are
- * the same token set with different values rather than two unrelated
- * colour lists: any component that binds to a token once works under
- * either theme without caring which one is active.
- *
- * Q_GADGET rather than QObject: a palette carries no identity and emits no
- * signals, it is a value copied around the way a QColor is, and MEMBER
- * properties let QML read every token without a getter written per field.
- *
- * Nothing in this header hand-types a contrast ratio. What each token has
- * to clear against what it sits on is asserted in ThemePalette_test.cpp
- * against Contrast::ratio() and Contrast::compositeOver(), not transcribed
- * into a comment where it could quietly go stale.
- */
+ * A Q_GADGET: a value type like QColor, with MEMBER properties readable
+ * from QML. Contrast minimums per token are asserted in
+ * ThemePalette_test.cpp, not written here. */
 class ThemePalette
 {
 	Q_GADGET
@@ -94,60 +80,46 @@ class ThemePalette
 	Q_PROPERTY(QColor tooltipText MEMBER tooltipText)
 
   public:
-	/* Elevation, darkest/most-recessed to lightest/most-elevated in both
-	 * themes: surfaceSunken sits below canvas (inset fields), surface holds
-	 * ordinary panels, surfaceRaised is for cards, surfaceOverlay is for
-	 * popovers and modals -- the layer furthest off the canvas. */
+	/* Elevation, most recessed to most elevated: surfaceSunken (inset
+	 * fields), canvas, surface (panels), surfaceRaised (cards),
+	 * surfaceOverlay (popovers, modals). */
 	QColor canvas;
 	QColor surface;
 	QColor surfaceRaised;
 	QColor surfaceOverlay;
 	QColor surfaceSunken;
-	/* The fill a card or row on canvas/surface takes under the pointer --
-	 * one soft step up, never a different hue. Controls that already sit
-	 * on surfaceRaised (a secondary button) use hoverOverlay instead. */
+	/* Fill of a card or row on canvas/surface under the pointer. Controls
+	 * on surfaceRaised use hoverOverlay instead. */
 	QColor surfaceHover;
 
 	QColor textPrimary;
 	QColor textSecondary;
 
-	/* WCAG AA only requires 3:1 for text this size or larger (18pt+, or
-	 * 14pt+ bold) -- callers must not reach for textTertiary on ordinary
-	 * body copy, since it is only guaranteed to clear the large-text
-	 * minimum, not the normal-text one. */
+	/* Only guaranteed 3:1 (large text): not for ordinary body copy. */
 	QColor textTertiary;
 
-	/* No contrast minimum applies: a disabled control is meant to read as
-	 * unavailable, not as dim body text held to the same bar. */
+	/* No contrast minimum: disabled controls are meant to read as
+	 * unavailable. */
 	QColor textDisabled;
 
-	/* Text painted on top of a filled `accent` surface, e.g. a primary
-	 * button's label. */
+	/* Text on a filled `accent` surface, e.g. a primary button label. */
 	QColor textOnAccent;
 
 	QColor accent;
 	QColor accentHover;
 	QColor accentPressed;
 
-	/* Tinted background, not a solid fill -- e.g. a selected filter chip.
-	 * Translucent, so it always reads correctly composited over whatever
-	 * surface it is painted on rather than only over one hard-coded colour. */
+	/* Translucent tint (e.g. selected filter chip), so it composites over
+	 * any surface. */
 	QColor accentSubtle;
 
-	/* The accent hue used AS text/icon colour directly on canvas or
-	 * surface (a link, an active-tab label) -- kept separate from `accent`
-	 * because a colour bright enough to read as a strong filled surface is
-	 * not necessarily the shade that clears 4.5:1 as text on that theme's
-	 * background, and vice versa. */
+	/* The accent as text/icon colour on canvas or surface (links, active
+	 * tab). Separate from `accent`, whose shade may not clear 4.5:1 as text. */
 	QColor accentText;
 
-	/* Decorative hairline. It is intentionally allowed to fall under the
-	 * WCAG 1.4.11 non-text minimum of 3:1 (see the measured ratio in
-	 * ThemePalette_test.cpp) because it only separates two surfaces that
-	 * already read as distinct regions on their own, rather than carrying
-	 * information by itself. Anything that must stay perceivable on its
-	 * own -- an input outline, a required separator -- uses borderStrong
-	 * instead, which the test does hold to 3:1. */
+	/* Decorative hairline, allowed under the WCAG 1.4.11 3:1 minimum since
+	 * it only separates regions that already read as distinct. Anything that
+	 * must stay perceivable on its own uses borderStrong. */
 	QColor border;
 	QColor borderStrong;
 	QColor divider;
@@ -165,50 +137,40 @@ class ThemePalette
 	QColor hoverOverlay;
 	QColor pressedOverlay;
 
-	/* Solid fills, not translucent overlays -- a selected row's background
-	 * and a tooltip's background need to carry their own contrast without
-	 * depending on what happens to be behind them. */
+	/* Solid, not translucent: they must carry their own contrast. */
 	QColor selection;
 	QColor selectionText;
 
-	/* Translucent black/white, meant to sit behind a modal (scrim) or
-	 * under a raised surface (shadow). Neither is measured for text
-	 * contrast -- nothing is ever read directly off them. */
+	/* Translucent black/white behind a modal (scrim) or under a raised
+	 * surface (shadow). Not measured for text contrast. */
 	QColor scrim;
 	QColor shadow;
 	QColor tooltipBackground;
 	QColor tooltipText;
 
-	/* The launcher's colour schemes. Each is one accent over its own set
-	 * of neutrals, in a dark and a light variant; the user picks the
-	 * scheme and the mode independently. Amethyst is the default again
-	 * (phase 02): the violet comes from Kite's own logo, and its neutrals
-	 * now carry a trace of that violet so the accent belongs to them --
-	 * see ThemeService's own default and the UiPalette setting. */
+	/* The launcher's colour schemes: one accent over its own neutrals, in a
+	 * dark and a light variant, picked independently of the mode. */
 	enum class Scheme
 	{
 		Amethyst, // violet-black neutrals, electric violet
 		Ember,	  // warm charcoal, lava orange
 		Diamond,  // cool navy, diamond blue
 		Grass,	  // hue-less graphite, Minecraft-grass green
-		/* The looks' own palettes (ThemeService::look), dark only: the
-		 * light argument of forScheme() is ignored for them, and the
-		 * palette picker never offers them. */
+		/* The looks' own palettes (ThemeService::look), dark only: forScheme()
+		 * ignores `light` for them and the palette picker never offers them. */
 		Stage, // Sahne: neutral black, a white Play
 		Calm,  // Sade: ink-blue neutrals, a fresh green Play
 		Night  // Gece: the website's night sky, a white Play
 	};
 
 	static ThemePalette forScheme(Scheme scheme, bool dark);
-	/* "amethyst", "ember", "diamond" or "grass" -- the stored setting
-	 * value -- or a look's "stage", "calm" or "night". An unknown name
-	 * falls back to Amethyst. */
+	/* "amethyst", "ember", "diamond", "grass" (the stored setting value) or
+	 * a look's "stage", "calm", "night". Unknown falls back to Amethyst. */
 	static Scheme schemeFromName(const QString& name);
 	static QString schemeName(Scheme scheme);
 
-	/* Amethyst's two variants -- kept named "mesh" for the callers (mostly
-	 * tests) that want a fixed, scheme-independent palette rather than
-	 * whatever the user has picked; see forScheme() for that. */
+	/* Amethyst's two variants, for callers (mostly tests) wanting a fixed
+	 * palette independent of the user's pick; see forScheme(). */
 	static ThemePalette meshDark();
 	static ThemePalette meshLight();
 

@@ -35,22 +35,17 @@
 
 namespace
 {
-	/* The uids are what the metadata server publishes and what the pack
-	 * importers write, so they are not ours to pick. Note that NeoForge
-	 * is "net.neoforged", not the longer "net.neoforged.neoforge": the
-	 * long form matches nothing here and had already caused the download
-	 * dialog to search with no loader filter at all.
-	 *
-	 * Forge, NeoForge, Fabric and Quilt each patch the game in ways the
-	 * others do not expect, so any two of them together is a broken
-	 * instance. Quilt is listed against Fabric even though Quilt runs
-	 * Fabric mods, because the clash is between two loader components
-	 * both claiming to be the entry point, not between the mods.
-	 *
-	 * LiteLoader conflicts with nothing. It predates the rest and was
-	 * built to sit alongside Forge, a pairing people still legitimately
-	 * run on 1.12 and earlier; refusing it would break working setups to
-	 * enforce a rule that does not apply to it. */
+	// The uids are what the metadata server publishes and the pack importers
+	// write. NeoForge is "net.neoforged", not "net.neoforged.neoforge": the
+	// long form matches nothing here.
+	//
+	// Forge, NeoForge, Fabric and Quilt each patch the game in ways the others
+	// do not expect, so any two together break an instance. Quilt is listed
+	// against Fabric although it runs Fabric mods: the clash is between two
+	// loader components both claiming to be the entry point.
+	//
+	// LiteLoader conflicts with nothing: it was built to sit alongside Forge,
+	// and people still run that pairing on 1.12 and earlier.
 	const QList<ModLoaderInfo>& loaderTable()
 	{
 		static const QList<ModLoaderInfo> table = {

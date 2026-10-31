@@ -26,9 +26,8 @@
 #include "modplatform/modpacksch/FTBPackInstallTask.h"
 #include "modplatform/modpacksch/FtbModpackModel.h"
 
-/* The static, network-free halves of FtbModpackModel: the catalogue index,
- * one pack's reply (built here with every field ModpacksCH::loadModpack()
- * requires), the local search and sorts, and the version list. */
+/* The static, network-free halves of FtbModpackModel: the index, one pack's
+ * reply, local search and sorts, and the version list. */
 class FtbModpackModelTest : public QObject
 {
 	Q_OBJECT
@@ -106,10 +105,8 @@ class FtbModpackModelTest : public QObject
 				 QString("https://cdn.example/splash.png"));
 		QVERIFY(FtbModpackModel::artUrl(parsed, "logo").isEmpty());
 
-		/* A pack with no version is skipped, as the widget list did. */
 		ModpacksCH::Modpack dud;
 		QVERIFY(!FtbModpackModel::parsePack(pack(1, "Dud", 0, 0, {}, {}), dud));
-		/* A reply missing required fields does not parse. */
 		ModpacksCH::Modpack broken;
 		QVERIFY(!FtbModpackModel::parsePack("{\"id\": 3}", broken));
 	}
@@ -131,24 +128,20 @@ class FtbModpackModelTest : public QObject
 			packs.append(p);
 		}
 
-		/* Most played first by default. */
 		QCOMPARE(FtbModpackModel::filterAndSort(packs, "", "", "plays"),
 				 (QList<int>{1, 0, 2}));
 		QCOMPARE(FtbModpackModel::filterAndSort(packs, "", "", "installs"),
 				 (QList<int>{2, 0, 1}));
 		QCOMPARE(FtbModpackModel::filterAndSort(packs, "", "", "name"),
 				 (QList<int>{2, 1, 0}));
-		/* Name, summary or tag. */
 		QCOMPARE(FtbModpackModel::filterAndSort(packs, "skyblock", "", "plays"),
 				 QList<int>{0});
 		QCOMPARE(FtbModpackModel::filterAndSort(packs, "EVOLUTION", "", "plays"),
 				 QList<int>{1});
-		/* A loader rules out only packs tagged with another one. */
 		QCOMPARE(FtbModpackModel::filterAndSort(packs, "", "neoforge", "plays"),
 				 (QList<int>{1, 2}));
 	}
 
-	/* What the install does with a file it could not fetch. */
 	void test_FailedDownloadsSplit()
 	{
 		QJsonObject obj{
@@ -193,14 +186,12 @@ class FtbModpackModelTest : public QObject
 		QCOMPARE(blocked.first().targetPath, QString("/staging/mods/Computronics.jar"));
 		QVERIFY(unrecoverable.isEmpty());
 
-		/* No CurseForge ids: nothing to send the user to. */
 		blocked.clear();
 		ModpacksCH::classifyFailedDownloads({"https://dist.modpacks.ch/Other.jar"},
 											files, targets, blocked, unrecoverable);
 		QVERIFY(blocked.isEmpty());
 		QCOMPARE(unrecoverable, QStringList{"Other.jar"});
 
-		/* What the user is told: a few names, then a count. */
 		QCOMPARE(ModpacksCH::undownloadableMessage({"a.jar"}),
 				 QString("Could not download a.jar."));
 		QCOMPARE(ModpacksCH::undownloadableMessage({"a.jar", "b.jar", "c.jar", "d.jar"}),
@@ -221,7 +212,6 @@ class FtbModpackModelTest : public QObject
 			p));
 		const QVariantList versions = FtbModpackModel::versionEntries(p);
 		QCOMPARE(versions.size(), 3);
-		/* Newest first; the newest release is featured, not the beta. */
 		QCOMPARE(versions.at(0).toMap().value("name").toString(), QString("1.2.0-beta"));
 		QVERIFY(!versions.at(0).toMap().value("featured").toBool());
 		QCOMPARE(versions.at(1).toMap().value("id").toString(), QString("11"));

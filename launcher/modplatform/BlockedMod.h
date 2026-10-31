@@ -22,15 +22,10 @@
 
 #include <QString>
 
-/*
- * A pack file the provider's API refuses to hand out, which the user has to
- * fetch by hand.
- *
- * `found` is written by whoever is watching the download folder, so this
- * travels from the install task out to the user interface and back with the
- * answer filled in. It used to be declared inside BlockedModsDialog.h, which
- * meant the install task included a QDialog header to describe its own data.
- */
+/* A pack file the provider's API refuses to hand out, which the user has
+ * to fetch by hand. `found` is written by whoever watches the download
+ * folder, so this travels from the install task to the UI and back with
+ * the answer. */
 struct BlockedMod {
 	int projectId;
 	int fileId;

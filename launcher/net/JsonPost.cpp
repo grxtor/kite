@@ -41,22 +41,20 @@ namespace Net
 	void JsonPost::executeTask()
 	{
 		setStatus(m_name);
-		/* Indeterminate rather than 0/1: the request is one step whose
-		 * duration is the server's to decide, and a bar that sits at 0%
-		 * reads as stuck. */
+		/* Indeterminate: the duration is the server's to decide, and 0% reads as
+		 * stuck. */
 		setProgress(0, 0);
 
 		QNetworkRequest request(m_url);
-		/* The uncached identity: this request is never served from a
-		 * cache and must never be put in one. The answer describes the
-		 * files the user has on disk at this moment. */
+		/* The uncached identity: never served from or put in a cache; the
+		 * answer describes the user's files right now. */
 		request.setHeader(QNetworkRequest::UserAgentHeader,
 						  BuildConfig.USER_AGENT_UNCACHED);
 		request.setHeader(QNetworkRequest::ContentTypeHeader,
 						  QStringLiteral("application/json"));
 		request.setRawHeader("Accept", "application/json");
 
-		/* The same condition Net::Download applies. See the header. */
+		/* The same condition as Net::Download. */
 		if (!BuildConfig.CURSEFORGE_API_KEY.isEmpty() &&
 			m_url.host() == FlameApi::apiHost()) {
 			request.setRawHeader("x-api-key",
@@ -72,9 +70,7 @@ namespace Net
 	{
 		m_aborted = true;
 		if (m_reply) {
-			/* Triggers finished(), which is where the verdict is
-			 * emitted - so there is exactly one of them however the
-			 * request ended. */
+			/* Triggers finished(), where the single verdict is emitted. */
 			m_reply->abort();
 			return true;
 		}

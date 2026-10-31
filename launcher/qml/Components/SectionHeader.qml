@@ -6,11 +6,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * A group's title row: name, an optional item count, and -- when the group
- * can fold -- a chevron after them that turns to show the collapsed state.
- * A page-level section title: Theme's heading, like Home's ("Continue
- * playing", "Library"). The library's own group headers (InstanceSection)
- * sit a level under a page's sections and stay at title size.
+ * A group's title row: name, an optional item count and, when the group can fold,
+ * a chevron that turns to show the collapsed state. A page-level section title
+ * in Theme's heading size; InstanceSection's group headers stay at title size.
  */
 Item {
     id: root

@@ -47,18 +47,15 @@
 
 namespace
 {
-	/* The folders an mrpack manifest is allowed to name files in. A pack
-	 * that lists anything else is one our own importer would refuse, so
-	 * files outside these travel inside `overrides/` regardless of
-	 * whether Modrinth happens to know them. */
+	/* Folders an mrpack manifest may name files in; anything else travels
+	 * in `overrides/`. */
 	const QStringList EXPORTABLE_PREFIXES = {
 		QStringLiteral("mods/"), QStringLiteral("coremods/"),
 		QStringLiteral("resourcepacks/"), QStringLiteral("texturepacks/"),
 		QStringLiteral("shaderpacks/")};
 
-	/* Only these are worth hashing. Everything else in those folders -
-	 * a README, a leftover .bak, a config the user dropped next to a
-	 * mod - is not a thing the catalogue has a version for. */
+	/* Only these are worth hashing: the catalogue has no version for a
+	 * README or a stray .bak. */
 	const QStringList EXPORTABLE_EXTENSIONS = {QStringLiteral("jar"),
 											   QStringLiteral("litemod"),
 											   QStringLiteral("zip")};
@@ -72,19 +69,9 @@ namespace
 		bool ok = false;
 	};
 
-	/*
-	 * Both digests an mrpack entry carries, in one pass over the file.
-	 *
-	 * The manifest names sha1 and sha512 together, and the file has to
-	 * be read to produce either, so reading it twice to produce one each
-	 * would double the cost of the slowest part of an export.
-	 *
-	 * These are always computed from the bytes on disk, never taken from
-	 * a sidecar that claims them: a sidecar records what was downloaded,
-	 * and a file that has been touched since would ship with a hash that
-	 * no longer describes it - which turns into a corruption error for
-	 * whoever installs the pack, blamed on their download.
-	 */
+	/* Both mrpack digests in one pass over the file. Always computed from
+	 * the bytes on disk: a sidecar hash goes stale once the file is touched,
+	 * and the installer would see a corrupt download. */
 	Digests digestsOf(const QString& path)
 	{
 		QFile file(path);
@@ -133,9 +120,8 @@ namespace
 			return false;
 		}
 
-		/* `.disabled` is accepted alongside the bare suffix: a disabled
-		 * mod is still a mod the manifest can name, and marking it
-		 * optional is exactly what the optional-files option is for. */
+		/* `.disabled` is accepted too: a disabled mod can be named and marked
+		 * optional. */
 		for (const QString& extension : EXPORTABLE_EXTENSIONS) {
 			if (relative.endsWith(QLatin1Char('.') + extension) ||
 				relative.endsWith(QLatin1Char('.') + extension +
@@ -146,8 +132,7 @@ namespace
 		return false;
 	}
 
-	/* Whether a recorded download URL is one an mrpack may name, and
-	 * therefore one we are willing to publish. See the header. */
+	/* Whether a recorded download URL is one an mrpack may name. */
 	bool isNameableUrl(const QString& url)
 	{
 		if (url.isEmpty()) {
@@ -171,8 +156,7 @@ ModrinthPackExportTask::ModrinthPackExportTask(
 void ModrinthPackExportTask::executeTask()
 {
 	setStatus(tr("Searching for files..."));
-	/* Indeterminate: the file count is the first thing the scan finds
-	 * out, so until it comes back there is no total to show. */
+	/* Indeterminate until the scan knows the file count. */
 	setProgress(0, 0);
 
 	connect(&m_scanWatcher, &QFutureWatcher<ScanResult>::finished, this,
@@ -184,15 +168,12 @@ void ModrinthPackExportTask::executeTask()
 bool ModrinthPackExportTask::abort()
 {
 	if (m_aborted.exchange(true)) {
-		/* Already aborting. The verdict is on its way from whichever
-		 * phase latched it first; a second one would be a second
-		 * finished() for the same task. */
+		/* Already aborting; a second verdict would be a second finished(). */
 		return true;
 	}
 
-	/* Copied out and cleared before any of them is touched: aborting a
-	 * job can settle it synchronously, and its handler removes itself
-	 * from this very list. */
+	/* Copied and cleared first: aborting a job can settle it synchronously
+	 * and its handler removes itself from this list. */
 	const QList<QPointer<NetJob>> jobs = m_activeJobs;
 	m_activeJobs.clear();
 	for (const QPointer<NetJob>& job : jobs) {
@@ -202,17 +183,15 @@ bool ModrinthPackExportTask::abort()
 	}
 
 	if (m_zipTask) {
-		/* The zip is the only phase that can stop cleanly on its own and
-		 * report it, so let it: it also has a half-written archive to
-		 * remove, which we must not race. */
+		/* The zip stops cleanly on its own and removes its half-written
+		 * archive, which must not be raced. */
 		m_zipTask->abort();
 		return true;
 	}
 
 	if (m_scanWatcher.isRunning()) {
-		/* The scan cannot be interrupted inside a file, but it checks
-		 * the flag between them. onScanFinished() sees it and emits, so
-		 * emitting here as well would be the second verdict. */
+		/* The scan checks the flag between files; onScanFinished() emits, so
+		 * emitting here would be a second verdict. */
 		return true;
 	}
 
@@ -228,14 +207,12 @@ ModrinthPackExportTask::ScanResult ModrinthPackExportTask::scanFiles() const
 	if (!MMCZip::collectFileListRecursively(m_gameRoot.absolutePath(),
 										   QString(), &files, m_filter)) {
 		/* ok stays false: a partial list would export an instance with
-		 * files silently missing from it. */
+		 * files missing. */
 		return result;
 	}
 	result.files = files;
 
-	/* One sidecar index per folder that turned out to hold candidates,
-	 * loaded once. Reading `mods/.index` again for every jar in `mods/`
-	 * would be the dominant cost of the scan for a large pack. */
+	/* One sidecar index per folder, loaded once. */
 	QHash<QString, std::shared_ptr<ModMetadataIndex>> indices;
 
 	for (const QFileInfo& file : files) {
@@ -251,9 +228,8 @@ ModrinthPackExportTask::ScanResult ModrinthPackExportTask::scanFiles() const
 
 		const Digests digests = digestsOf(file.absoluteFilePath());
 		if (!digests.ok) {
-			/* Unreadable, so it cannot be named - but it is still the
-			 * user's file and still belongs in the pack. Left out of
-			 * both maps, which is what puts it in `overrides/`. */
+			/* Unreadable, so it cannot be named, but it still belongs in the
+			 * pack: left out of both maps, it lands in `overrides/`. */
 			continue;
 		}
 
@@ -323,10 +299,8 @@ void ModrinthPackExportTask::lookUpPendingFiles()
 	m_lookupsOutstanding = m_lookupsTotal;
 	setProgress(0, m_lookupsTotal);
 
-	/* Every lookup is started now rather than one after another. They
-	 * are independent, and the network layer queues what it cannot send
-	 * at once; walking them in sequence would make an export of a pack
-	 * with a hundred hand-installed mods a hundred round trips long. */
+	/* All lookups start now; the network layer queues what it cannot send
+	 * at once. */
 	for (const PendingFile& pending : m_pending) {
 		auto response = std::make_shared<QByteArray>();
 		auto* job = new NetJob(QString("MR::ExportLookup(%1)").arg(pending.path),
@@ -345,8 +319,7 @@ void ModrinthPackExportTask::lookUpPendingFiles()
 			}
 
 			if (m_aborted.load()) {
-				/* abort() has already reported, or is about to. Nothing
-				 * here may add a second verdict. */
+				/* abort() has reported or will; no second verdict. */
 				return;
 			}
 
@@ -360,10 +333,8 @@ void ModrinthPackExportTask::lookUpPendingFiles()
 				[settle, response] { settle(*response); });
 		connect(job, &NetJob::failed, this,
 				[settle, response](const QString& reason) {
-					/* Not an error: a mod that is not on Modrinth simply
-					 * travels inside the pack. Settled with an empty
-					 * reply so it takes the "unresolved" path rather
-					 * than being dropped and leaving the count short. */
+					/* Not an error: a mod that is not on Modrinth travels inside the
+					 * pack. Settled with an empty reply so the count stays right. */
 					qDebug() << "Modrinth export lookup failed:" << reason;
 					settle(QByteArray());
 				});
@@ -388,10 +359,8 @@ void ModrinthPackExportTask::recordLookupResult(const PendingFile& pending,
 		const QJsonObject file = value.toObject();
 		const QJsonObject hashes = file.value("hashes").toObject();
 
-		/* The version owns several files - the mod, its sources, a
-		 * javadoc jar - and only one of them is the file on disk. Picked
-		 * by our own digest rather than by the `primary` flag, which
-		 * points at whatever the author uploaded first. */
+		/* The version owns several files (mod, sources, javadoc); pick the
+		 * one on disk by our digest, not by the `primary` flag. */
 		if (hashes.value("sha1").toString().compare(
 				pending.sha1, Qt::CaseInsensitive) != 0) {
 			continue;
@@ -399,8 +368,8 @@ void ModrinthPackExportTask::recordLookupResult(const PendingFile& pending,
 
 		const QString url = file.value("url").toString();
 		if (!isNameableUrl(url)) {
-			/* Answered with a file served from somewhere we would not
-			 * install from. Ships in `overrides/` instead. */
+			/* Served from somewhere we would not install from: ships in
+			 * `overrides/`. */
 			return;
 		}
 
@@ -409,9 +378,8 @@ void ModrinthPackExportTask::recordLookupResult(const PendingFile& pending,
 		resolved.sha1 = pending.sha1;
 		resolved.sha512 = pending.sha512;
 		resolved.size = pending.size;
-		/* No side: a version says nothing about the environment it runs
-		 * in - that lives on the project - and guessing "both" here
-		 * would be indistinguishable from having been told. */
+		/* No side: a version says nothing about the environment (that lives
+		 * on the project), and guessing "both" would pass as known. */
 		m_resolved.insert(pending.path, resolved);
 		return;
 	}
@@ -438,18 +406,15 @@ void ModrinthPackExportTask::buildZip()
 	auto* zip = new MMCZip::ExportToZipTask(m_output, m_gameRoot, m_files,
 										   QStringLiteral("overrides/"), true);
 	zip->addExtraFile(QStringLiteral("modrinth.index.json"), generateIndex());
-	/* Everything the manifest named is downloaded on install, so
-	 * carrying it as well would double the size of the pack for no
-	 * benefit. */
+	/* The manifest's files are downloaded on install; carrying them too
+	 * would double the pack. */
 	zip->setExcludeFiles(m_resolved.keys());
 
 	m_zipTask.reset(zip);
 
-	/* There is no separate "aborted" signal to listen for: a Task that
-	 * stops on request reports it as a failure whose reason says so. So
-	 * the flag we latched in abort() is what tells the two apart, and it
-	 * has to be consulted on both paths - the archive may well have
-	 * succeeded in the instant before the user's click arrived. */
+	/* A stopped Task reports a failure, so the flag latched in abort()
+	 * tells abort from failure. Consulted on both paths: the archive may
+	 * succeed just before the click. */
 	connect(zip, &Task::succeeded, this, [this] {
 		m_zipTask.reset();
 		if (m_aborted.load()) {
@@ -467,8 +432,6 @@ void ModrinthPackExportTask::buildZip()
 		emitFailed(reason);
 	});
 
-	/* The archive is the long part, so its progress is this task's
-	 * progress rather than a step inside it. */
 	connect(zip, &Task::progress, this, &Task::setProgress);
 	connect(zip, &Task::status, this, &Task::setStatus);
 	propagateStepsFrom(zip);
@@ -483,9 +446,8 @@ QByteArray ModrinthPackExportTask::generateIndex() const
 	index["game"] = "minecraft";
 	index["name"] = m_name;
 	index["versionId"] = m_version;
-	/* Omitted rather than written empty: the field is optional, and an
-	 * empty summary displayed as the pack's description is worse than no
-	 * description at all. */
+	/* Omitted rather than empty: an empty summary would show as the
+	 * description. */
 	if (!m_summary.isEmpty()) {
 		index["summary"] = m_summary;
 	}
@@ -493,10 +455,8 @@ QByteArray ModrinthPackExportTask::generateIndex() const
 	if (m_instance) {
 		auto profile = m_instance->getPackProfile();
 
-		/* The loaders an mrpack can express, under the names it knows
-		 * them by. A loader the instance does not have contributes
-		 * nothing: an empty version string here would be read as "this
-		 * pack needs Forge" by whoever installs it. */
+		/* The loaders an mrpack can express. A missing loader contributes
+		 * nothing: an empty version would read as "needs Forge". */
 		const QList<QPair<QString, QString>> dependencyUids = {
 			{QStringLiteral("minecraft"), QStringLiteral("net.minecraft")},
 			{QStringLiteral("quilt-loader"),
@@ -526,10 +486,8 @@ QByteArray ModrinthPackExportTask::generateIndex() const
 
 		const QFileInfo pathInfo(path);
 		if (m_optionalFiles && pathInfo.suffix() == QStringLiteral("disabled")) {
-			/* Named under the enabled name, and marked optional. The
-			 * `.disabled` suffix is this launcher's way of turning a mod
-			 * off; shipped verbatim it would land as a file no loader
-			 * reads, in a pack whose author meant to offer a choice. */
+			/* Named under the enabled name and marked optional: `.disabled` is
+			 * this launcher's off switch and no loader reads such a file. */
 			path = pathInfo.dir().filePath(pathInfo.completeBaseName());
 			env["client"] = "optional";
 			env["server"] = "optional";
@@ -538,9 +496,8 @@ QByteArray ModrinthPackExportTask::generateIndex() const
 			env["server"] = "required";
 		}
 
-		/* A client-only mod is still a mod a client needs. Only the
-		 * server side is narrowed, because a file marked server-only in
-		 * an mrpack is one a client install skips entirely. */
+		/* Only the server side is narrowed: a client-only mod is still needed
+		 * by a client, and server-only files are skipped on client installs. */
 		if (resolved.side == QStringLiteral("client")) {
 			env["server"] = "unsupported";
 		}

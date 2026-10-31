@@ -7,13 +7,8 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Centered "nothing here" placeholder, shared by InstanceGrid (zero
- * instances) and anything else that needs the same shape later.
- *
- * The illustration is a default-property slot rather than an iconSource
- * string: callers vary from a single glyph (Gallery, InstanceGrid) to a
- * fuller drawing, and a slot lets either be dropped in without this file
- * needing to know which.
+ * Centered "nothing here" placeholder. The illustration is a default-property slot so callers can drop in a glyph or
+ * a fuller drawing.
  */
 Item {
     id: root
@@ -22,32 +17,21 @@ Item {
     property alias body: bodyLabel.text
     property string actionText: ""
     property string actionIcon: ""
-    // False while what the action asks is under way.
     property bool actionEnabled: true
-    // Opt-in: true makes this fill its own visual parent and settle its
-    // content near the top third of it instead of dead centre -- for a host
-    // whose empty state sits in an otherwise-empty, very tall scrolling
-    // column (a list that would hold a handful of rows' worth of real
-    // content were it not empty), where centering wastes most of that
-    // height (design-plan.md §4 "Empty states"/§5). Every existing centred
-    // call site (`anchors.centerIn: parent` and similar) is unaffected:
-    // this only changes anything once a caller opts in, since a plain Item
-    // still just takes its content's own implicit size otherwise.
+    // Opt-in: fills the parent and settles the content near the top third instead of dead centre, for an empty
+    // state in an otherwise empty, very tall scrolling column.
     property bool upperThird: false
 
     signal actionTriggered()
 
     default property alias illustration: illustrationSlot.data
-    // Something under the text and over the action (Friends' own name, to
-    // copy). Nothing there takes no room; `extraShown` hides it while it has
-    // nothing to say (a child's own `visible` cannot do it: it follows its
-    // parent's).
+    // Something under the text and over the action. Nothing there takes no room; `extraShown` hides it while it has
+    // nothing to say (a child's own `visible` follows its parent's).
     property alias extra: extraSlot.data
     property bool extraShown: extraSlot.children.length > 0
 
-    // A fixed reading width, not the column's implicit one: the column is
-    // as wide as this item (below), so taking its width from the column made
-    // the pair settle on nothing and the body wrapped a word per line.
+    // A fixed reading width: the column is as wide as this item, so taking its width from the column made the body
+    // wrap a word per line.
     readonly property int readingWidth: 320
     implicitWidth: root.upperThird && root.parent ? root.parent.width : root.readingWidth
     implicitHeight: root.upperThird && root.parent ? root.parent.height : column.implicitHeight
@@ -55,10 +39,7 @@ Item {
     Column {
         id: column
         anchors.horizontalCenter: parent.horizontalCenter
-        // In the default (non-upperThird) mode this Item is always exactly
-        // column's own size, so this is 0 regardless of how a caller
-        // anchors the Item itself -- the same effective position
-        // `anchors.centerIn: parent` gave before.
+        // In the default mode the root is exactly the column's size, so y is 0 however a caller anchors the root.
         y: root.upperThird ? Math.max(0, Math.round(parent.height * 0.30 - height / 2))
                             : Math.round((parent.height - height) / 2)
         spacing: Theme.space.md

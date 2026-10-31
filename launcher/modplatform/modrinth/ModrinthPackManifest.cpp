@@ -36,15 +36,10 @@ static void loadFile(Modrinth::File& f, QJsonObject& fileObj)
 
 	f.fileSize = Json::ensureInteger(fileObj, "fileSize", 0);
 
-	/* The `env` block, read for the client side only - a server entry
-	 * says nothing about whether we should install the file.
-	 *
-	 * An absent block, and an absent `client` inside a present one, both
-	 * mean "required". The spec leaves the latter undefined, and of the
-	 * two readings available this is the one that cannot silently drop a
-	 * file the pack went to the trouble of shipping: a mod installed
-	 * that the user can turn off is a smaller mistake than a mod missing
-	 * with nothing said about it. */
+	/* The `env` block, client side only. An absent block, or an absent
+	 * `client` in a present one (undefined by the spec), means "required":
+	 * a mod the user can turn off is a smaller mistake than one silently
+	 * missing. */
 	auto env = Json::ensureObject(fileObj, "env");
 	if (!env.isEmpty()) {
 		const QString clientSupport =

@@ -102,7 +102,6 @@ namespace ATLauncher
 
 		bool client;
 
-		// computed
 		bool effectively_hidden;
 	};
 

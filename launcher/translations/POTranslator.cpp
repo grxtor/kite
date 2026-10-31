@@ -118,7 +118,6 @@ class ParserArray : public QByteArray
 						break;
 					}
 					case 'x': {
-						// chomp the 'x'
 						i++;
 						int hex_start = i;
 						while (isxdigit(operator[](i))) {
@@ -209,7 +208,6 @@ void POTranslatorPrivate::reload()
 		}
 
 		if (!line.size()) {
-			// NIL
 		} else if (line[0] == '#') {
 			if (line.contains(", fuzzy")) {
 				nextFuzzy = true;

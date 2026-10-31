@@ -7,10 +7,8 @@ pragma Singleton
 import QtQuick
 
 /*
- * Turns the raw numbers InstanceList hands out into short, human text.
- * Units are written out compactly ("3 h ago", "12 h 30 min") so no string
- * here needs a plural form that an untranslated build would print as
- * "hour(s)".
+ * Turns InstanceList's raw numbers into short text. Units are written compactly ("3 h ago") so no
+ * string needs a plural form that an untranslated build would print as "hour(s)".
  */
 QtObject {
     id: root
@@ -36,10 +34,8 @@ QtObject {
         return root.calendarDate(new Date(ms))
     }
 
-    // Older than a month: the month spelled out ("Sep 15"), plus the year
-    // once it is not this year ("Sep 15, 2025") -- never the locale's
-    // numeric short form, which reads "9/15/26" in one place and "15.09.26"
-    // in another, next to "22 days ago" on the same screen.
+    // Older than a month: "Sep 15", plus the year when it is not this year. Never the locale's numeric form, which
+    // differs per locale.
     function calendarDate(date) {
         var sameYear = date.getFullYear() === new Date().getFullYear()
         return date.toLocaleDateString(Qt.locale(), sameYear ? "MMM d" : "MMM d, yyyy")
@@ -72,15 +68,12 @@ QtObject {
     }
 
     /*
-     * A backdrop colour cut from an instance icon's average colour: same
-     * hue, saturation kept in check so neon icons don't glare, lightness
-     * forced to `lightness` so text on top stays readable whatever the
-     * icon looked like. Achromatic icons (hslHue < 0) come out grey.
+     * A backdrop colour from an icon's average colour: same hue, saturation capped, lightness forced to
+     * `lightness` so text on top stays readable. Achromatic icons (hslHue < 0) come out grey.
      */
     function shade(tint, lightness, saturationScale) {
         var hue = tint.hslHue < 0 ? 0 : tint.hslHue
-        // Capped low: a fully saturated plate at low lightness turns into
-        // the murky teal/olive the launcher used to be full of.
+        // Capped low: a fully saturated plate at low lightness turns murky.
         var saturation = Math.min(0.5, tint.hslSaturation * saturationScale)
         return Qt.hsla(hue, saturation, lightness, 1)
     }
@@ -101,22 +94,6 @@ QtObject {
         return Number(n).toLocaleString(Qt.locale(), "f", n < 10 ? 1 : 0) + units[unit]
     }
 
-    /*
-     * A stable colour derived from an id/name string, for a designed
-     * fallback that still tells two accounts (or anything else keyed by an
-     * id rather than an icon) apart -- the same purpose an instance's own
-     * randomly-assigned iconTint role serves, for something that has no
-     * icon of its own to carry one. Feed the result through shade() above
-     * for the actual fill/tint, same as any other tint this file hands out.
-     */
-    function hashTint(seed) {
-        var s = String(seed || "")
-        var hash = 0
-        for (var i = 0; i < s.length; ++i)
-            hash = (hash * 31 + s.charCodeAt(i)) >>> 0
-        return Qt.hsla((hash % 360) / 360, 0.55, 0.55, 1)
-    }
-
     // A local path as a url QML can load: "/a/b" and "C:/a/b" alike.
     function fileUrl(path) {
         if (!path || path.length === 0)
@@ -125,9 +102,7 @@ QtObject {
         return "file://" + (p.charAt(0) === "/" ? "" : "/") + p
     }
 
-    // The reverse of fileUrl() above: a "file://" url (from a FolderDialog/
-    // FileDialog's selectedFolder/selectedFile) as a plain local path --
-    // "file:///a/b" -> "/a/b", "file:///C:/a/b" -> "C:/a/b".
+    // The reverse of fileUrl(): a "file://" url as a plain local path ("file:///C:/a/b" -> "C:/a/b").
     function localPath(url) {
         var s = String(url)
         if (s.indexOf("file://") !== 0)
@@ -138,9 +113,7 @@ QtObject {
         return decodeURIComponent(s)
     }
 
-    // The friends list in the three groups the Friends page and Home's panel
-    // show -- playing, online, offline -- the order the server gave (by
-    // name) holding inside each.
+    // The friends in three groups -- playing, online, offline -- keeping the server's order (by name) inside each.
     function friendsGrouped(friends) {
         var groups = { playing: [], online: [], offline: [] }
         for (var i = 0; i < (friends || []).length; ++i) {
@@ -150,13 +123,9 @@ QtObject {
         return groups
     }
 
-    // The second line of a friend's row: { text, suffix, tone }. On a
-    // server it is the host and the game version after it; singleplayer and
-    // a hidden server say so, with the version too; online and offline are
-    // the line FriendsDisplay worded ("In Kite", "Last seen 3 h ago"), the
-    // offline one "faint". Every line but the offline one is "secondary",
-    // as the other lists' second lines are: the name is the row's loudest
-    // text, and Join marks what can be acted on.
+    // The second line of a friend's row: { text, suffix, tone }. On a server it is the host and game version;
+    // singleplayer and a hidden server say so; online and offline use FriendsDisplay's wording.
+    // Only the offline line is "faint", the rest "secondary".
     function friendStatus(friend) {
         if (friend.state === "playing") {
             if (friend.worldType === "server" && friend.host)
@@ -171,30 +140,25 @@ QtObject {
         return { text: friend.statusText, suffix: "", tone: friend.state === "offline" ? "faint" : "secondary" }
     }
 
-    // The same second line on one line, for a tip or a card: "mc.example.net
-    // · 1.21.4", "In Kite", "Last seen 3 h ago".
+    // The same line on one line, for a tip or a card.
     function friendStatusLine(friend) {
         var status = root.friendStatus(friend)
         return status.suffix ? status.text + " · " + status.suffix : status.text
     }
 
-    // Whether Join shows: playing on a server whose host is visible, and the
-    // friend lets others join (FriendsDisplay already ands the three). The
-    // game version is what picks the instance, so it has to be known too.
+    // Join shows for a visible server whose player lets others join; the game version picks the instance, so it must
+    // be known too.
     function friendJoinable(friend) {
         return friend.state === "playing" && friend.worldType === "server"
                 && !!friend.host && !!friend.version && friend.joinable === true
     }
 
-    // Whether there is no Join for a visible server because its player
-    // turned joining off (a row says so, instead of looking like a bug).
+    // A visible server whose player turned joining off (a row says so).
     function friendJoinOff(friend) {
         return friend.state === "playing" && friend.worldType === "server"
                 && !!friend.host && friend.joinOff === true
     }
 
-    // Why friends ask for a sign-in: said by the Friends page and by Home's
-    // panel alike.
     readonly property string friendsNeedAccount: qsTr("Friends needs a Minecraft account that is signed in with Microsoft.")
 
     // Where a friends view is: "off" (no controller, or turned off),
@@ -206,31 +170,27 @@ QtObject {
         return controller.state === "off" ? "signingIn" : controller.state
     }
 
-    // Signed out, or failed in a way only signing in to the Minecraft
-    // account again fixes: the view offers "Sign in", not "Try again".
+    // Signed out, or failed in a way only signing in again fixes: the view offers "Sign in", not "Try again".
     function friendsSignInFirst(controller) {
         var phase = root.friendsPhase(controller)
         return phase === "noAccount" || (phase === "error" && controller.needsSignIn)
     }
 
-    // A failed poll while the lists are already there: they stay on screen
-    // (a bar says the server is not answering) instead of giving way to the
-    // full-page error.
+    // A failed poll while the lists are already there: they stay on screen under a bar instead of the full-page
+    // error.
     function friendsStale(controller) {
         return root.friendsPhase(controller) === "error" && !root.friendsSignInFirst(controller)
                 && controller.loaded
     }
 
-    // Whether the friends lists have anyone in them: friends and the
-    // requests either way, and with @p withBlocked the people you blocked.
-    // (Not before the lists are read, which is "no one" only by default.)
+    // Whether the lists have anyone in them (friends and requests; with @p withBlocked, blocked people too). False
+    // before they are read.
     function friendsHasAnyone(controller, withBlocked) {
         return !!controller && controller.friends.length + controller.incoming.length
                 + controller.outgoing.length + (withBlocked ? controller.blocked.length : 0) > 0
     }
 
-    // When the friends lists were last read, as a time of day in the
-    // user's format ("14:32"), or "" if they have not been.
+    // Time of day the lists were last read, in the user's format, or "".
     function friendsUpdatedAt(controller) {
         var at = controller ? controller.updatedAtMs : 0
         // (Locale.ShortFormat given to Qt.formatTime() reads as Qt.ISODate:
@@ -238,9 +198,8 @@ QtObject {
         return at > 0 ? new Date(at).toLocaleTimeString(Qt.locale(), Locale.ShortFormat) : ""
     }
 
-    // Where Join sends the game: the host, and the port unless it is the
-    // game's own. An IPv6 host goes in brackets, as parse() of a server
-    // address reads it (it takes them off again for the game).
+    // Where Join sends the game: the host, and the port unless it is the game's own. An IPv6 host goes in brackets,
+    // as parse() reads server addresses.
     readonly property int defaultServerPort: 25565
     function friendAddress(friend) {
         var host = friend.host.indexOf(":") >= 0 ? "[" + friend.host + "]" : friend.host

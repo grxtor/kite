@@ -47,7 +47,6 @@ class AuthFlow : public AccountTask
 	void executeTask() override;
 
   signals:
-	// No extra signals needed - authorizeWithBrowser is on AccountTask
 
   private slots:
 	void stepFinished(AccountTaskState resultingState, QString message);

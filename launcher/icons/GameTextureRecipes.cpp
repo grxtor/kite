@@ -27,23 +27,19 @@
 namespace
 {
 struct Layer {
-	/* Where the texture sits in the jar's texture root, newest layout
-	 * first: 1.13 renamed most block and item textures, and some mobs have
-	 * moved since. */
+	/* Where the texture sits in the jar's texture root, newest layout first
+	 * (1.13 renamed most block and item textures). */
 	QStringList paths;
-	/* The part of it to take; a null rect is the whole texture. */
 	QRect source;
-	/* Where that part goes on the icon. */
 	QPoint at;
 };
 
 struct Recipe {
 	QString key;
-	/* The icon's size before it is padded square; empty is the size of
-	 * the first layer. */
+	/* The icon's size before padding square; empty is the first layer's size. */
 	QSize size;
-	/* The first layer is the icon itself and must be in the jar; the rest
-	 * go over it where the jar has them. */
+	/* The first layer is the icon and must be in the jar; the rest go over
+	 * it where present. */
 	QList<Layer> layers;
 };
 
@@ -52,9 +48,8 @@ Recipe wholeTexture(const QString& key, const QStringList& paths)
 	return {key, QSize(), {{paths, QRect(), QPoint()}}};
 }
 
-/* An 8x8 mob head in the standard entity layout: the front of the head
- * box at (8,8), and the front of its second, outer layer at (40,8) --
- * the same coordinates a player skin uses. */
+/* An 8x8 mob head in the standard entity layout: the head front at (8,8)
+ * and its outer layer at (40,8), as in a player skin. */
 const QSize kHeadSize(8, 8);
 const QRect kHeadFront(8, 8, 8, 8);
 const QRect kHatFront(40, 8, 8, 8);
@@ -114,8 +109,8 @@ const QList<Recipe>& recipes()
 			wholeTexture(QStringLiteral("meat"),
 						 {QStringLiteral("item/cooked_beef.png"),
 						  QStringLiteral("items/beef_cooked.png")}),
-			// No "flame": that key is CurseForge's mark (what an imported
-			// CurseForge pack gets), not fire, so it keeps the upstream logo.
+			// No "flame": that key is CurseForge's mark, not fire, and keeps the
+			// upstream logo.
 			{QStringLiteral("creeper"), kHeadSize, {{creeper, kHeadFront, {}}}},
 			{QStringLiteral("squarecreeper"),
 			 kHeadSize,
@@ -123,8 +118,8 @@ const QList<Recipe>& recipes()
 			{QStringLiteral("skeleton"),
 			 kHeadSize,
 			 {{skeleton, kHeadFront, {}}, {skeleton, kHatFront, {}}}},
-			// The outer layer at (8,24) is its jaw; the eyes are a texture of
-			// their own, drawn over the face.
+			// The outer layer at (8,24) is its jaw; the eyes are a separate texture
+			// drawn over the face.
 			{QStringLiteral("enderman"),
 			 kHeadSize,
 			 {{enderman, kHeadFront, {}},
@@ -135,20 +130,17 @@ const QList<Recipe>& recipes()
 			{QStringLiteral("steve"),
 			 kHeadSize,
 			 {{steve, kHeadFront, {}}, {steve, kHatFront, {}}}},
-			// A 4x6 face with the beak over its middle and the wattle under it.
 			{QStringLiteral("chicken"),
 			 QSize(4, 6),
 			 {{chicken, QRect(3, 3, 4, 6), {}},
 			  {chicken, QRect(16, 2, 4, 2), QPoint(0, 2)},
 			  {chicken, QRect(16, 6, 2, 2), QPoint(1, 4)}}},
-			// An 8x6 face under two ears, with the snout over its bottom rows.
 			{QStringLiteral("fox"),
 			 QSize(8, 8),
 			 {{fox, QRect(7, 11, 8, 6), QPoint(0, 2)},
 			  {fox, QRect(9, 2, 2, 2), QPoint(0, 0)},
 			  {fox, QRect(16, 2, 2, 2), QPoint(6, 0)},
 			  {fox, QRect(9, 21, 4, 2), QPoint(2, 6)}}},
-			// The front of its body, which is its face.
 			{QStringLiteral("bee"),
 			 QSize(7, 7),
 			 {{{QStringLiteral("entity/bee/bee.png")},
@@ -159,8 +151,8 @@ const QList<Recipe>& recipes()
 	return table;
 }
 
-/* The part of a texture @p layer asks for, or a null image when
- * @p textures has none of its paths or the texture is too small for it. */
+/* The part of a texture @p layer asks for, or a null image when none of
+ * its paths is in @p textures or the texture is too small. */
 QImage layerImage(const Layer& layer, const QHash<QString, QImage>& textures)
 {
 	for (const QString& path : layer.paths) {
@@ -170,8 +162,7 @@ QImage layerImage(const Layer& layer, const QHash<QString, QImage>& textures)
 		}
 		QRect source = layer.source;
 		if (source.isNull()) {
-			// An animated texture is a strip of square frames, one under
-			// the other; the first one stands for it.
+			// An animated texture is a strip of square frames; the first stands for it.
 			source = QRect(0, 0, texture->width(),
 						   qMin(texture->width(), texture->height()));
 		}

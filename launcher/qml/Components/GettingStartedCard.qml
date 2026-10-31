@@ -6,29 +6,23 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * "Set up Kite" on Home's side panel: the first two things a new player
- * does, as a checklist. A step already done is
- * struck through and quiet; a step still to do is a button that does it,
- * lighting up under the pointer. The page hides the card once both are
- * done.
+ * "Set up Kite" on Home's side panel: a checklist of the first two things a new player does. A done step is struck
+ * through and quiet; a step still to do is a button. The page hides the card once both are done.
  */
 Rectangle {
     id: root
 
-    // The library has an instance.
     property bool hasInstances: false
-    // A Microsoft account is signed in.
     property bool signedIn: false
-    // No fill or hairline of its own, for a host that is already a panel
-    // (Sade's and Gece's side panels): a card in it would be a box in a box.
+    // No fill or hairline, for a host that is already a panel.
     property bool flat: false
 
     signal createRequested()
     signal signInRequested()
 
     readonly property bool allDone: root.hasInstances && root.signedIn
-    // An empty library has the page's own "Create instance" in front of it;
-    // the checklist comes once there is something to check off.
+    // An empty library has the page's own "Create instance"; the checklist comes once there is something to check
+    // off.
     readonly property bool shown: root.hasInstances && !root.allDone
 
     implicitHeight: column.implicitHeight + Theme.space.md * 2
@@ -37,11 +31,6 @@ Rectangle {
     border.width: root.flat ? 0 : 1
     border.color: Theme.palette.border
 
-    /*
-     * One step: a hollow ring and the words, or -- done -- a filled ring
-     * with a check and the words struck through. Only a step still to do
-     * can be pressed.
-     */
     component Step: AbstractButton {
         id: step
         property bool done: false

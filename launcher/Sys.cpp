@@ -100,7 +100,6 @@ uint64_t Sys::getSystemRam()
 	MEMORYSTATUSEX status;
 	status.dwLength = sizeof(status);
 	GlobalMemoryStatusEx(&status);
-	// bytes
 	return (uint64_t)status.ullTotalPhys;
 #elif defined(Q_OS_UNIX)
 	std::string token;
@@ -115,7 +114,6 @@ uint64_t Sys::getSystemRam()
 				return 0;
 			}
 		}
-		// ignore rest of the line
 		file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	}
 #elif defined(Q_OS_FREEBSD)
@@ -138,13 +136,12 @@ uint64_t Sys::getSystemRam()
 	}
 #endif
 #endif
-	return 0; // nothing found
+	return 0;
 }
 
 bool Sys::isCPU64bit()
 {
 #ifdef Q_OS_MACOS
-	// not even going to pretend I'm going to support anything else
 	return true;
 #elif defined(Q_OS_UNIX) && !defined(Q_OS_MACOS)
 	return isSystem64bit();
@@ -161,10 +158,8 @@ bool Sys::isCPU64bit()
 bool Sys::isSystem64bit()
 {
 #ifdef Q_OS_MACOS
-	// yep. maybe when we have 128bit CPUs on consumer devices.
 	return true;
 #elif defined(Q_OS_UNIX) && !defined(Q_OS_MACOS)
-	// kernel build arch on linux
 	return QSysInfo::currentCpuArchitecture() == "x86_64";
 #elif defined(_WIN64)
 	return true;
@@ -172,7 +167,6 @@ bool Sys::isSystem64bit()
 	BOOL f64 = false;
 	return IsWow64Process(GetCurrentProcess(), &f64) && f64;
 #else
-	// it's some other kind of system...
 	return false;
 #endif
 }
@@ -246,11 +240,10 @@ bool Sys::main_lsb_info(Sys::LsbInfo& out)
 
 bool Sys::fallback_lsb_info(Sys::LsbInfo& out)
 {
-	// running lsb_release failed, try to read the file instead
-	// /etc/lsb-release format, if the file even exists, is non-standard.
-	// Only the `lsb_release` command is specified by LSB. Nonetheless, some
-	// distributions install an /etc/lsb-release as part of the base
-	// distribution, but `lsb_release` remains optional.
+	// lsb_release failed: read the file instead. The format of
+	// /etc/lsb-release, if it exists, is non-standard (only the `lsb_release`
+	// command is specified by LSB), but some distributions ship the file while
+	// `lsb_release` stays optional.
 	QString file = "/etc/lsb-release";
 	if (QFile::exists(file)) {
 		QSettings settings(file, QSettings::IniFormat);
@@ -283,7 +276,6 @@ void Sys::lsb_postprocess(Sys::LsbInfo& lsb, Sys::DistributionInfo& out)
 	} else if (dist == "debian" && vers == "testing") {
 		vers = lsb.codename;
 	} else {
-		// ubuntu, debian, gentoo, scientific, slackware, ... ?
 		auto parts = dist.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
 		if (parts.size()) {
 			dist = parts[0];

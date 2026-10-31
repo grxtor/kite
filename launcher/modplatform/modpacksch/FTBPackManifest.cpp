@@ -144,12 +144,11 @@ static void loadVersionFile(ModpacksCH::VersionFile& a, QJsonObject& obj)
 		a.curseforgeProject = asInt(cf.value("project"));
 		a.curseforgeFile = asInt(cf.value("file"));
 	}
-	// Some files reference CurseForge mods with no direct download URL.
-	// Construct edge CDN URL from CurseForge file ID if available.
+	// No direct download URL: build the edge CDN URL from the CurseForge file
+	// id.
 	if (a.url.isEmpty() && a.curseforgeFile > 0) {
 		int cfFileId = a.curseforgeFile;
-		// CurseForge edge CDN URL format: files/{first 4 digits}/{remaining
-		// digits}/{filename}
+		// Edge CDN URL: files/{first 4 digits}/{remaining digits}/{filename}
 		QString fileIdStr = QString::number(cfFileId);
 		QString prefix = fileIdStr.mid(0, 4);
 		QString suffix = fileIdStr.mid(4);
@@ -188,9 +187,3 @@ void ModpacksCH::loadVersion(ModpacksCH::Version& m, QJsonObject& obj)
 	}
 }
 
-// static void loadVersionChangelog(ModpacksCH::VersionChangelog & m,
-// QJsonObject & obj)
-//{
-//     m.content = Json::requireString(obj, "content");
-//     m.updated = Json::requireInteger(obj, "updated");
-// }

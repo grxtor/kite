@@ -44,8 +44,8 @@ class RecursiveFileSystemWatcher : public QObject
 	}
 
 	// On by default. Off: only @c root itself is listed and watched, not its
-	// subfolders - for a folder (like the launcher's own data folder) that
-	// holds far more than the files being looked for. Set before setRootDir().
+	// subfolders; for a folder (like the launcher's data folder) that holds
+	// far more than the files being looked for. Set before setRootDir().
 	void setRecursive(const bool recursive)
 	{
 		m_recursive = recursive;

@@ -32,8 +32,7 @@
 
 namespace
 {
-// Only a fallback for an invalid/empty requestedSize; mirrors
-// InstanceIconProvider's/AccountFaceProvider's own default-extent fallback.
+// Fallback for an invalid or empty requestedSize.
 constexpr int kDefaultThumbnailExtent = 256;
 
 QSize normalizedBox(const QSize& requestedSize)
@@ -53,12 +52,8 @@ QString cacheKeyFor(const QString& path, qint64 mtimeMs, const QSize& box)
 }
 } // namespace
 
-/* Thread-safe wrapper around QCache<QString, QImage>: QCache itself keeps
- * no locking of its own, but worker threads from the provider's QThreadPool
- * may look up and insert concurrently. Capacity is a plain entry count
- * (QCache's default per-item cost of 1), not a byte budget -- simple, and
- * "small" here only needs to be enough that scrolling a grid back up hits
- * cache rather than re-decoding, not a hard memory ceiling. */
+/* QCache keeps no locking of its own, and the pool's workers look up and
+ * insert concurrently. Capacity is an entry count, not a byte budget. */
 class ScreenshotThumbnailCache
 {
   public:
@@ -86,9 +81,8 @@ class ScreenshotThumbnailCache
 
 namespace
 {
-/* Runs entirely on a QThreadPool worker thread: stats the file, checks the
- * cache, and decodes + scales on a miss. Never touches GUI-thread-only
- * types (QImage is fine off-thread; nothing here is a QPixmap/QIcon). */
+/* Runs on a QThreadPool worker: stats the file, checks the cache, decodes
+ * and scales on a miss. Touches only QImage, never QPixmap/QIcon. */
 class ScreenshotThumbnailRunnable : public QObject, public QRunnable
 {
 	Q_OBJECT
@@ -135,8 +129,7 @@ class ScreenshotThumbnailRunnable : public QObject, public QRunnable
 	}
 
   signals:
-	// Queued across to the response living on the thread that created it;
-	// see ScreenshotImageResponse's constructor.
+	// Queued across to the response's thread.
 	void done(QImage image, QString error);
 
   private:
@@ -155,9 +148,8 @@ class ScreenshotImageResponse : public QQuickImageResponse
 	{
 		auto* runnable = new ScreenshotThumbnailRunnable(
 			path, requestedSize, std::move(cache));
-		// Default (true) autoDelete is fine: the queued connection below
-		// copies its arguments into an event before run() returns, so the
-		// pool deleting the runnable right after has nothing left to race.
+		// autoDelete is fine: the queued connection copies its arguments
+		// before run() returns.
 		connect(runnable, &ScreenshotThumbnailRunnable::done, this,
 				&ScreenshotImageResponse::handleDone, Qt::QueuedConnection);
 		pool->start(runnable);
@@ -192,27 +184,21 @@ class ScreenshotImageResponse : public QQuickImageResponse
 ScreenshotThumbnailProvider::ScreenshotThumbnailProvider()
 	: m_cache(std::make_shared<ScreenshotThumbnailCache>())
 {
-	// A handful of threads is plenty for decoding+scaling screenshot
-	// thumbnails -- mirrors the widget page's own ThumbnailRunnable pool
-	// (max 4, see ScreenshotsPage.cpp) rather than contending with
-	// QThreadPool::globalInstance(), which other subsystems already share.
+	// A private pool avoids contending with the global one other subsystems
+	// share.
 	m_pool.setMaxThreadCount(4);
 }
 
 ScreenshotThumbnailProvider::~ScreenshotThumbnailProvider()
 {
-	// Same reasoning as FilterModel's destructor in ScreenshotsPage.cpp:
-	// give in-flight work a chance to finish rather than destroying the
-	// pool out from under running QRunnables.
+	// Let in-flight work finish rather than destroying the pool under running
+	// QRunnables.
 	m_pool.waitForDone(500);
 }
 
 QQuickImageResponse* ScreenshotThumbnailProvider::requestImageResponse(
 	const QString& id, const QSize& requestedSize)
 {
-	// See the header for why this is safe even if Qt Quick's own URL
-	// handling already undid some of the percent-encoding before id
-	// reached here.
 	const QString path = QUrl::fromPercentEncoding(id.toUtf8());
 	return new ScreenshotImageResponse(path, requestedSize, m_cache, &m_pool);
 }

@@ -26,18 +26,12 @@
 #include "theme/ThemePalette.h"
 
 /*
- * The C++ half of Kite.Theme: owns which palette is active and follows the
- * OS when asked to.
+ * The C++ half of Kite.Theme: owns which palette is active and follows the OS
+ * when asked to. Theme.qml forwards to this singleton; other QML goes through
+ * Theme.*.
  *
- * Registered as this module's QML singleton because Theme.qml -- the
- * documented public surface every other QML file binds to -- needs exactly
- * one instance to forward palette/dark/mode to. Consumers are expected to go
- * through Theme.*, not this type; it is deliberately absent from the
- * contract, ThemePalette's colours pass through untouched.
- *
- * One `changed()` signal covers palette, dark and mode's effect together, so
- * a binding can never observe, say, the new `dark` with the previous
- * `palette` still attached mid-switch.
+ * One `changed()` signal covers palette, dark and mode together, so a binding
+ * never sees the new `dark` with the previous `palette` mid-switch.
  */
 class ThemeService : public QObject
 {
@@ -48,11 +42,11 @@ class ThemeService : public QObject
 	Q_PROPERTY(ThemePalette palette READ palette NOTIFY changed)
 	Q_PROPERTY(bool dark READ dark NOTIFY changed)
 	Q_PROPERTY(QString mode READ mode WRITE setMode NOTIFY changed)
-	/* "amethyst", "ember", "diamond" or "grass" -- see ThemePalette::Scheme. */
+	/* "amethyst", "ember", "diamond" or "grass". */
 	Q_PROPERTY(QString scheme READ scheme WRITE setScheme NOTIFY changed)
-	/* The launcher's look (the "UiLook" setting): "stage" (Sahne), "calm"
-	 * (Sade) or "night" (Gece), each with its own dark palette and Home
-	 * layout; or "classic", which follows `scheme` and `mode`. */
+	/* The "UiLook" setting: "stage" (Sahne), "calm" (Sade) or "night" (Gece),
+	 * each with its own dark palette; or "classic", which follows `scheme`
+	 * and `mode`. */
 	Q_PROPERTY(QString look READ look WRITE setLook NOTIFY changed)
 
   public:
@@ -64,7 +58,7 @@ class ThemeService : public QObject
 	QString mode() const { return m_mode; }
 
 	/* Accepts "system", "dark" or "light"; anything else is rejected with a
-	 * warning and leaves the current mode untouched. */
+	 * warning. */
 	void setMode(const QString& mode);
 
 	QString scheme() const { return ThemePalette::schemeName(m_scheme); }
@@ -83,21 +77,15 @@ class ThemeService : public QObject
 	void changed();
 
   private:
-	/* Re-reads the OS palette while in "system" mode; connected to
-	 * QGuiApplication so a live OS theme switch is picked up without a
-	 * restart. No-op outside "system" mode, and outside a real value change. */
+	/* Follows a live OS theme switch. No-op outside "system" mode or without a
+	 * real change. */
 	void applySystemPalette();
 
-	/* Dark by default: the launcher is designed dark-first. "system" follows
-	 * the OS instead, and is one setting away. */
+	// Dark by default; "system" follows the OS.
 	QString m_mode = QStringLiteral("dark");
 	bool m_dark = true;
-	// Amethyst is the app's default scheme (see ThemePalette.h); this
-	// fallback only matters before Main.qml's own Component.onCompleted
-	// applies the persisted "UiPalette" setting (or for a consumer that never
-	// does, e.g. a unit test constructing ThemeService directly).
+	// Until Main.qml applies the persisted "UiPalette" setting.
 	ThemePalette::Scheme m_scheme = ThemePalette::Scheme::Amethyst;
-	// "classic" until Main.qml applies the persisted "UiLook" setting, so a
-	// consumer that never does (a unit test) keeps the scheme's palette.
+	// "classic" until Main.qml applies the persisted "UiLook" setting.
 	QString m_look = QStringLiteral("classic");
 };

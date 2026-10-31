@@ -34,8 +34,7 @@ namespace FriendsDisplay
 		constexpr qint64 kHoursPerDay = 24;
 		constexpr qint64 kDaysPerMonth = 30;
 
-		/* The context lupdate files these strings under: it names the
-		 * namespace's own tr(), whatever context is passed on here. */
+		/* lupdate files these strings under the namespace's own tr() context. */
 		QString tr(const char* text)
 		{
 			return QCoreApplication::translate("FriendsDisplay", text);
@@ -147,11 +146,10 @@ namespace FriendsDisplay
 		map["worldType"] = playing ? worldType(status.world) : QString();
 		map["host"] = playing ? status.world.host : QString();
 		map["port"] = playing ? status.world.port : 0;
-		/* Only a server with a visible host can be joined, whatever the
-		 * friend allows. The host goes to the game as the server to enter,
-		 * so one that is not a clean DNS name or IP address (what the
-		 * server itself would have refused) is never offered, nor one that
-		 * only means the joiner's own machine (localhost). */
+		/* Only a server with a visible host can be joined. The host goes to the game as
+		 * the server to enter, so one that is not a clean DNS name or IP (the server
+		 * would have refused it) is never offered, nor one that only means the joiner's
+		 * own machine. */
 		const bool server = playing && status.world.type ==
 										   FriendsApi::World::Type::Server;
 		const bool hostShown = server && !status.world.host.isEmpty();
@@ -160,9 +158,7 @@ namespace FriendsDisplay
 			FriendsApi::normalizeHost(status.world.host) ==
 				status.world.host &&
 			!FriendsApi::isLoopbackHost(status.world.host);
-		/* A visible server the server says is not joinable: the friend turned
-		 * joining off. One that says nothing (an older server) is not
-		 * blamed on the friend. */
+		/* The friend turned joining off; a server that says nothing (older) is not blamed on them. */
 		map["joinOff"] = hostShown && status.joinableSaid && !status.joinable;
 		map["statusText"] = statusText(status, now);
 		return map;
@@ -230,8 +226,7 @@ namespace FriendsDisplay
 		return {{"playing", playing},
 				{"worldType", playing ? worldType(view.world) : QString()},
 				{"host", host},
-				/* A server was reported and the server kept its address
-				 * from friends. */
+				/* A server was reported and kept its address from friends. */
 				{"serverHidden", sentServer && playing && host.isEmpty()},
 				{"joinable", playing && view.joinable}};
 	}

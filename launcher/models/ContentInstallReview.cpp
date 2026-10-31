@@ -37,8 +37,6 @@ ContentInstallReview::ContentInstallReview(
 	  m_primaryCount(1), m_mcVersion(mcVersion), m_loader(loader),
 	  m_folder(std::move(folder)), m_resolveDependencies(resolveDependencies)
 {
-	/* The project's own row: what was picked, always installed. Same
-	 * field-by-field copy DownloadSummaryDialog makes. */
 	Row own;
 	own.item.name = mod.name;
 	own.item.fileName = mod.fileName;
@@ -224,9 +222,8 @@ void ContentInstallReview::start()
 		m_resolver->setInstalledIndex(m_folder->metadataIndex());
 	}
 	m_resolver->addWantedProjects(m_wanted);
-	/* A failure is not the end of the install - the widget's Skip does
-	 * not end it either: whatever was resolved before it is offered. An
-	 * abort reports through failed() too. */
+	/* A failure does not end the install: whatever was resolved before it is
+	 * offered. An abort reports through failed() too. */
 	connect(m_resolver, &Task::succeeded, this, &ContentInstallReview::onResolved);
 	connect(m_resolver, &Task::failed, this, [this](QString) { onResolved(); });
 	m_resolver->start();
@@ -266,15 +263,13 @@ void ContentInstallReview::applyResolution(
 		row.requiredBy = dep.requiredBy;
 		row.versionType = dep.versionType;
 		row.maybeInstalled = dep.maybeInstalled;
-		/* A dependency that answers a wanted id with an outdated copy on
-		 * disk replaces that copy. */
+		/* A dependency answering a wanted id with an outdated copy on disk replaces that copy. */
 		const QString replaced = m_replacements.value(dep.slug);
 		if (!dep.slug.isEmpty() && !replaced.isEmpty()) {
 			row.item.replaceExisting = true;
 			row.item.replacesFileName = replaced;
 		}
-		/* "Unticked because a version of this is already installed" -
-		 * unless replacing it is what the row is for. */
+		/* Unticked because a version is already installed, unless replacing it is the point. */
 		row.checked = !dep.maybeInstalled || row.item.replaceExisting;
 		m_rows.append(row);
 	}
@@ -300,7 +295,6 @@ QList<ModPlatform::DownloadItem> ContentInstallReview::downloadItems() const
 
 void ContentInstallReview::setChecked(int row, bool checked)
 {
-	/* The picked project's row is what the install is for. */
 	if (row < m_primaryCount || row >= m_rows.size() ||
 		m_rows[row].checked == checked) {
 		return;
@@ -337,9 +331,8 @@ QObject* ContentInstallReview::install()
 	auto* watcher = new TaskWatcher(Task::Ptr(task), parent());
 	watcher->setTitle(m_title);
 
-	/* Refresh the list afterwards whatever happened - some files may
-	 * have landed before the rest failed - as ModFolderPage::
-	 * reviewAndInstall() does. */
+	/* Refresh the list afterwards whatever happened: some files may have landed
+	 * before the rest failed. */
 	auto folder = m_folder;
 	connect(watcher, &TaskWatcher::finished, watcher,
 			[folder](bool) { folder->update(); });

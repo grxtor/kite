@@ -10,11 +10,8 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Every component, in every state it can be in, on one scrollable page.
- * This is the artifact design review happens against, so each section is
- * labelled and each state called out explicitly rather than left to be
- * inferred from a single "normal" example. All sample data is self
- * contained -- nothing outside this file needs to feed it a model.
+ * Every component, in every state it can be in, on one scrollable page, for design review. All sample data is
+ * self-contained.
  */
 Item {
     id: root
@@ -124,7 +121,6 @@ Item {
                 }
             }
 
-            // Nav Item states: unselected, selected.
             RowLayout {
                 Layout.leftMargin: Theme.space.lg
                 spacing: Theme.space.sm
@@ -133,7 +129,6 @@ Item {
                 NavItem { iconName: "library"; label: qsTr("Selected"); selected: true }
             }
 
-            // Account Chip states: signed in (Microsoft), signed in (Offline), signed out.
             RowLayout {
                 Layout.leftMargin: Theme.space.lg
                 spacing: Theme.space.lg
@@ -321,8 +316,6 @@ Item {
                 Layout.rightMargin: Theme.space.lg
                 spacing: Theme.space.md
 
-                // Every state InstanceCard can be in: rest, forceHovered,
-                // selected, running, never played, launching.
                 Repeater {
                     model: [
                         { instanceId: "card-rest", name: qsTr("Vanilla 1.21.4"), iconKey: "grass", version: "1.21.4", loader: "", last: Date.now() - 2 * 86400000, running: false, hovered: false, selected: false },
@@ -354,8 +347,6 @@ Item {
                 }
             }
 
-            // InstanceListRow mid-launch and running: the list view's side
-            // of the card states above.
             ColumnLayout {
                 Layout.leftMargin: Theme.space.lg
                 Layout.preferredWidth: 760

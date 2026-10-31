@@ -26,12 +26,8 @@
 
 class Usable;
 
-/**
- * Base class for things that can be used by multiple other things and we want
- * to track the use count.
- *
- * @see UseLock
- */
+/** Base class for things used by multiple other things whose use count we
+ * track. @see UseLock */
 class Usable
 {
 	friend class UseLock;
@@ -60,12 +56,7 @@ class Usable
 	std::size_t m_useCount = 0;
 };
 
-/**
- * Lock class to use for keeping track of uses of other things derived from
- * Usable
- *
- * @see Usable
- */
+/** Lock for keeping track of uses of a Usable. @see Usable */
 class UseLock
 {
   public:

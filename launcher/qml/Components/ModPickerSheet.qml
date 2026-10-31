@@ -9,14 +9,10 @@ import Kite.Theme
 
 /*
  * Which catalog mods a Kite Performance instance gets, picked before it is
- * created: a grid of cards in the manner of Lunar Client's mod menu, each
- * switched on or off by a click and saying so in the bar along its foot,
- * with the catalog's categories as filter chips and a search over names and
- * summaries. Turning a mod on turns on what it requires (the catalog's
- * `requires`); turning one off turns off what needs it.
- * Nothing is installed here: Done hands the picked projects back
- * (`picked`), in catalog order, and the caller installs them once the
- * instance exists.
+ * created: a card grid with category chips and a search. Turning a mod on turns
+ * on what it requires; turning one off turns off what needs it. Nothing is
+ * installed here: Done hands the picked projects back (`picked`), in catalog
+ * order.
  */
 Dialog {
     id: root
@@ -33,8 +29,6 @@ Dialog {
     readonly property int preferredWidth: 900
     readonly property int preferredHeight: 680
     readonly property int gap: Theme.space.sm
-    // Cards are never narrower than this; the grid takes as many columns
-    // as fit.
     readonly property int minCardWidth: 190
     readonly property int cardHeight: 156
     readonly property int barHeight: Theme.control.heightSm - Theme.space.xs
@@ -44,7 +38,6 @@ Dialog {
     readonly property var defaults: root.mods.filter((mod) => mod.isDefault === true).map((mod) => mod.project)
     readonly property bool atDefaults: root.picks.length === root.defaults.length
                                        && root.defaults.every((project) => root.picks.indexOf(project) >= 0)
-    // "All", then each category the rows name, in catalog order.
     readonly property var categoryChips: {
         const chips = [{ value: "", label: qsTr("All") }]
         for (const mod of root.mods) {
@@ -55,7 +48,6 @@ Dialog {
     }
     readonly property int shownCount: root.mods.filter((mod) => root.matches(mod, search.text)).length
 
-    // Starts on @p projects, every category and an empty search.
     function openWith(projects) {
         root.picks = projects.slice()
         root.category = ""
@@ -203,9 +195,6 @@ Dialog {
         }
     }
 
-    // One mod: its icon and a Default tag, the name, what it does and what
-    // it needs; the bar along the foot says On or Off. A click anywhere
-    // switches it.
     component ModCard: AbstractButton {
         id: card
 
@@ -236,9 +225,8 @@ Dialog {
                         : card.hovered ? Theme.palette.borderStrong : Theme.palette.border
             Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
-            // The On/Off bar: one rounded strip inside the border, its top
-            // corners clipped off (two strips would double a see-through
-            // fill where they overlap).
+            // One rounded strip inside the border, its top corners clipped off (two strips would
+            // double a see-through fill where they overlap).
             Item {
                 anchors.left: parent.left
                 anchors.right: parent.right

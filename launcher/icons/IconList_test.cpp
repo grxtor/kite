@@ -31,15 +31,10 @@
 
 using GameTextureFixture::filled;
 
-/*
- * Covers IconList::roleNames() -- the QML-facing addition an icon picker
- * grid binds `key`/`name`/`isBuiltin` against (see
- * qml/Components/IconPickerDialog.qml) -- without needing the compiled
- * "multimc" icon theme resource InstanceIconProvider_test.cpp needs for real
- * pixmaps: addThemeIcon()/addIcon() only touch the model's bookkeeping, never
- * render anything. And the game-texture layer over built-in keys, whose
- * pixels come from client jars the test builds itself.
- */
+/* Covers IconList::roleNames() (the `key`/`name`/`isBuiltin` roles of the
+ * QML icon picker) without the compiled "multimc" icon theme, since
+ * addThemeIcon()/addIcon() only touch bookkeeping. Also the game-texture
+ * layer over built-in keys, from client jars the test builds itself. */
 class IconListTest : public QObject
 {
 	Q_OBJECT
@@ -82,8 +77,7 @@ class IconListTest : public QObject
 
 	void fileBasedIconReportsNotBuiltin()
 	{
-		// A 1x1 PNG is enough for QIcon to accept the file -- nothing here
-		// looks at the pixels.
+		// A 1x1 PNG is enough for QIcon to accept the file.
 		const QString path = m_dir->filePath(QStringLiteral("custom.png"));
 		QImage image(1, 1, QImage::Format_RGB32);
 		image.fill(Qt::black);
@@ -102,8 +96,6 @@ class IconListTest : public QObject
 		QVERIFY(!m_icons->data(index, IconList::IsBuiltinRole).toBool());
 	}
 
-	/* The game-texture layer (GameTextureIcons), over client jars built
-	 * from generated PNGs (GameTextureFixture). */
 	void gameTextureReplacesBuiltinIcon()
 	{
 		const QImage grass = filled(16, 16, qRgba(40, 160, 40, 255));
@@ -117,16 +109,13 @@ class IconListTest : public QObject
 		QCOMPARE(updated.count(), 1);
 		QCOMPARE(updated.first().first().toString(), QStringLiteral("grass"));
 		QCOMPARE(pixelOf(QStringLiteral("grass")), grass.pixel(0, 0));
-		// Unknown keys fall back to grass, texture and all.
 		QCOMPARE(pixelOf(QStringLiteral("no-such-key")), grass.pixel(0, 0));
-		// Still a built-in icon, so exporting an instance never copies the
-		// texture into the pack.
+		// Still a built-in icon, so exporting never copies the texture into a pack.
 		const QModelIndex row =
 			m_icons->index(m_icons->getIconIndex(QStringLiteral("grass")));
 		QVERIFY(m_icons->data(row, IconList::IsBuiltinRole).toBool());
 		QVERIFY(m_icons->icon(QStringLiteral("grass"))->isBuiltIn());
 
-		// The jar gone, the built-in icon comes back.
 		QVERIFY(QDir(libraries()).removeRecursively());
 		m_icons->loadGameTextures(libraries(), cache());
 		QCOMPARE(updated.count(), 2);
@@ -142,7 +131,6 @@ class IconListTest : public QObject
 		m_icons->loadGameTextures(libraries(), cache());
 		QSignalSpy updated(m_icons.get(), &IconList::iconUpdated);
 
-		// Nothing new: nothing happens.
 		m_icons->loadGameTextures(libraries(), cache());
 		QCOMPARE(updated.count(), 0);
 
@@ -158,7 +146,6 @@ class IconListTest : public QObject
 		QCOMPARE(updated.count(), 0);
 		QCOMPARE(pixelOf(QStringLiteral("grass")), oldGrass.pixel(0, 0));
 
-		// Once it is whole, its textures take over.
 		const QImage newGrass = filled(16, 16, qRgba(70, 190, 50, 255));
 		writeJar(QStringLiteral("26.3"),
 				 {{QStringLiteral("block/grass_block_side.png"), newGrass}});
@@ -215,9 +202,7 @@ class IconListTest : public QObject
 int main(int argc, char* argv[])
 {
 	/* QImage::save()/addIcon() go through QtGui; offscreen keeps this
-	 * runnable on a headless runner without depending on the harness to
-	 * set QT_QPA_PLATFORM for us -- same reasoning as
-	 * InstanceIconProvider_test.cpp. */
+	 * runnable headless. */
 	qputenv("QT_QPA_PLATFORM", "offscreen");
 
 	QGuiApplication app(argc, argv);

@@ -6,11 +6,8 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The scrolling body of a Friends tab: whatever is declared inside it (the
- * tab's groups of rows) stacks in a column that scrolls, with a scroll bar
- * and the fade at the foot that ScrollFade draws. The three tabs share it.
- *
- * The rows can be switched off (`actionsEnabled`) while the list itself
+ * The scrolling body of a Friends tab: whatever is declared inside it stacks in a column that scrolls, with a scroll
+ * bar and ScrollFade's fade. The three tabs share it. The rows can be switched off (`actionsEnabled`) while the list
  * stays scrollable: disabling the tab would take the scrolling with it.
  */
 Item {
@@ -18,7 +15,6 @@ Item {
 
     default property alias content: column.data
     property alias spacing: column.spacing
-    // False: the rows (their buttons) do nothing, the list still scrolls.
     property bool actionsEnabled: true
 
     Flickable {

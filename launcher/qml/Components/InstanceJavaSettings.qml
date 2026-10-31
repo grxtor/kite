@@ -6,19 +6,16 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The Java part of one instance's settings (InstanceSettingsTab.qml):
- * memory, which Java runs the game (with Choose, Browse and Test, see
- * JavaPathRow.qml), its JVM arguments and the vendor automatic downloads
- * come from. Each group follows the launcher-wide value (Settings, "Java &
- * memory") until switched to "custom for this instance". The tab hands in
- * its own SettingsSource and disables this whole column while the game
- * runs. Downloading and removing Java is launcher-wide, so a link points
- * to Settings for that.
+ * The Java part of one instance's settings (InstanceSettingsTab.qml): memory, the
+ * Java that runs the game, JVM arguments and the vendor for automatic downloads.
+ * Each group follows the launcher-wide value until switched to "custom for this
+ * instance". The tab hands in its own SettingsSource and disables this column
+ * while the game runs. Downloading and removing Java is launcher-wide, so a link
+ * points to Settings for that.
  */
 Column {
     id: root
 
-    // The tab's SettingsSource over this instance's settings.
     property var source
     property int systemMemoryMiB: 8192
 
@@ -56,8 +53,6 @@ Column {
         }
     }
 
-    // The Java choice and, under it, the way to the launcher-wide Java
-    // downloads.
     Column {
         width: parent.width
         spacing: Theme.space.sm

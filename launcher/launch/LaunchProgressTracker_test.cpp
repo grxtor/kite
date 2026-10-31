@@ -27,10 +27,9 @@
 namespace
 {
 
-/* Stands in for a real LaunchTask/launch step: nothing to execute, and
- * Task::emitSucceeded()/emitFailed() forwarded to public wrappers so the
- * test can drive the same lifecycle a real launch would, without needing an
- * instance, launch steps, or a real launch. */
+// Stands in for a real LaunchTask/step: nothing to execute, with
+// Task::emitSucceeded()/emitFailed() exposed so tests can drive the lifecycle
+// without an instance or a real launch.
 class FakeTask : public Task
 {
 	Q_OBJECT
@@ -203,10 +202,9 @@ class LaunchProgressTrackerTest : public QObject
 		QCOMPARE(tracker.progress(), -1.0);
 	}
 
-	/// The whole point of throttling: a burst of updates inside one
-	/// interval must not each produce their own changed() emission, but
-	/// the latest value is still visible immediately, and the coalesced
-	/// update is not simply dropped.
+	/// A burst of updates inside one interval must not each emit changed(), but
+	/// the latest value is visible immediately and the coalesced update is not
+	/// dropped.
 	void test_rapidUpdates_areCoalesced()
 	{
 		LaunchProgressTracker tracker;

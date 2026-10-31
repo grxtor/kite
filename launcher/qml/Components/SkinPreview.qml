@@ -6,19 +6,12 @@ import QtQuick
 import Kite.Theme
 
 /*
- * A skin on a player, as large as the box it is given: in 3D, turned by
- * dragging, where the build has Qt Quick3D (the Skin3D module,
- * Kite_ENABLE_SKIN3D -- `skin3DAvailable`) and the window draws through a 3D
- * graphics API; otherwise the flat front view (`flatSource`, e.g.
- * image://accountface/body/<id>) over the neutral figure, which only holds
- * the place while there is no texture yet (an account without a skin of
- * its own is drawn in the game's default one by AccountFaceProvider, once
- * that has downloaded). Used by the skin editor and
- * the Accounts page's hero. showBack()/showFront() turn the 3D player
- * round (the flat view has no back, so there they do nothing).
- *
- * Behind either view, a soft light: a black or dark skin on a dark surface
- * would otherwise melt into it, only its light parts showing.
+ * A skin on a player, as large as the box it is given: in 3D, turned by dragging,
+ * where the build has Qt Quick3D (`skin3DAvailable`) and the window draws through
+ * a 3D graphics API; otherwise the flat front view (`flatSource`) over the
+ * neutral figure. A soft light sits behind either so a dark skin does not melt
+ * into a dark surface. showBack()/showFront() turn the 3D player round (no-ops
+ * in the flat view).
  */
 Item {
     id: root
@@ -36,9 +29,8 @@ Item {
     property bool skin3DAvailable: false
 
     readonly property bool hasSkin: root.skinTexture.toString().length > 0
-    // Qt Quick3D renders nothing through the software renderer (and the
-    // offscreen review snapshots use it), so the flat view is the honest
-    // choice there too.
+    // Qt Quick3D renders nothing through the software renderer (offscreen review snapshots use it),
+    // so the flat view is used there too.
     readonly property bool threeD: root.skin3DAvailable && root.hasSkin
                                    && GraphicsInfo.api !== GraphicsInfo.Software
                                    && GraphicsInfo.api !== GraphicsInfo.Unknown
@@ -62,16 +54,13 @@ Item {
             item.slim = Qt.binding(() => root.slim)
             item.capeTexture = Qt.binding(() => root.capeTexture)
             item.elytra = Qt.binding(() => root.elytra)
-            // An elytra without a cape is plain, in the flat figure's colour.
             item.plainColor = Qt.binding(() => silhouette.color)
-            // A cut instead of a turn with reduced motion on.
             item.turnDuration = Qt.binding(() => SettingsStore.bool("UiReduceMotion") ? 0 : Theme.motion.slow)
             item.turnEasing = Theme.motion.easing
             item.shadowColor = Qt.binding(() => Theme.palette.shadow)
         }
     }
 
-    // The flat view: a 1:2 figure box, centred, as large as fits.
     Item {
         id: flat
         visible: !preview3d.active || preview3d.status === Loader.Error
@@ -80,8 +69,6 @@ Item {
         height: figureHeight
         anchors.centerIn: parent
 
-        // Under the render while it loads, and in its place without a
-        // skin (the render then comes back transparent).
         SkinSilhouette {
             id: silhouette
             anchors.fill: parent

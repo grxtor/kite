@@ -7,56 +7,28 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Kite.Theme
 
-/*
- * The accounts games are launched with. Microsoft sign-in happens in the
- * browser; this page says so while it waits, and can reopen the page if
- * the browser tab was lost. Offline accounts need a Microsoft account that
- * owns the game first -- the same rule the classic page enforced.
- *
- * A hero at the top shows the account games actually launch with -- the
- * player in its skin (or the game's default Steve/Alex for an account
- * without one), in 3D where Qt Quick3D draws (SkinPreview), and a Microsoft
- * account's capes to wear in one click -- the same way the library's
- * ContinueCard/InstancePage hero leads with the instance that matters most.
- * Every other account is a compact row below it, as wide as the hero.
- *
- * "The default account" is one thing everywhere: the account switcher at
- * the top right (ProfileMenu), "Use this account" here and in the rows all
- * call AccountsController.setDefault(), games launch with
- * AccountList::defaultAccount(), and the hero is whichever row
- * AccountsController.defaultAccountId names.
- */
+/* The accounts games launch with: a hero for the default account and a row for each other one. */
 Item {
     id: root
 
-    // AccountsController: accounts, hasDefault, defaultAccountId,
-    // setDefault, remove, refresh, addOffline, loginMicrosoft,
-    // accountSkinInfo, changeCape.
+    // AccountsController.
     property var controller: null
-    // MicrosoftLoginController of the sign-in in progress, if any. Held
-    // here, on a page that is never destroyed, for as long as it runs.
+    // MicrosoftLoginController of the sign-in in progress; held here because the page is never destroyed.
     property var login: null
 
     readonly property var accounts: controller ? controller.accounts : null
 
-    // The dialogs' widths, before a narrow window takes its margin off.
     readonly property int offlineDialogWidth: 420
     readonly property int loginDialogWidth: 460
     readonly property int skinNoticeWidth: 380
-    // The sign-in dialog's spinner.
     readonly property int loginIndicatorSize: 32
 
-    // Bumped whenever any account's data changes (a refresh landing, a skin
-    // upload finishing...), so the "image://accountface/..." urls below
-    // change and QML actually refetches them -- it caches by url, and
-    // nothing about the url itself would otherwise say a skin changed.
+    // Bumped on any account data change so the image://accountface urls change; QML caches by url.
     property int imageRevision: 0
     Connections {
         target: root.accounts
         function onDataChanged() { root.imageRevision++ }
     }
-    // The game's default skins arriving redraws every account without a
-    // skin of its own (see DefaultSkins).
     Connections {
         target: root.controller
         function onDefaultSkinsRevisionChanged() { root.imageRevision++ }
@@ -71,11 +43,7 @@ Item {
         skinCapeEditor.open()
     }
 
-    // qml-preview-tools has only offline accounts to snapshot with, so no
-    // real row's isMSA role ever lets the skin/cape editor open on its own;
-    // KITE_QML_ROUTE containing "accounts-demo" opens it anyway, filled
-    // with AccountsController::accountSkinInfo(-1)'s canned demo data. See
-    // AccountsController::skinDemoRequested()'s own comment for why -1.
+    // Preview tools have only offline accounts: KITE_QML_ROUTE "accounts-demo" opens the skin editor with demo data.
     Component.onCompleted: {
         if (root.controller && root.controller.skinDemoRequested)
             root.openSkinEditor(-1, "", qsTr("Demo"))
@@ -87,15 +55,8 @@ Item {
         loginDialog.open()
     }
 
-    /*
-     * Which row is the default account: the one whose accountId is the
-     * controller's defaultAccountId -- the account games launch with, read
-     * straight from AccountList::defaultAccount() and notified the moment
-     * it moves -- rather than any row's own isDefault role. AccountList has
-     * no "here is the default row" query of its own, and a Repeater is the
-     * cheapest way to look at every row without paging through count()/
-     * data() by hand -- each probe is a zero-size Item, never drawn.
-     */
+    // The default account's row: its accountId against the controller's defaultAccountId, probed per row by
+    // zero-size items.
     readonly property string defaultAccountId: root.controller ? root.controller.defaultAccountId : ""
     property int defaultIndex: -1
     Repeater {
@@ -105,9 +66,7 @@ Item {
             required property int index
             readonly property bool isDefault: root.defaultAccountId.length > 0
                                               && probe.accountId === root.defaultAccountId
-            // Everything the hero card shows, so it can read this probe
-            // instead of the list's currentItem -- which ListView does not
-            // reliably create for a row it lays out collapsed.
+            // What the hero shows; a ListView's currentItem is not reliably created for a collapsed row.
             required property string profileName
             required property string name
             required property bool isMSA
@@ -126,10 +85,7 @@ Item {
             visible: false
             width: 0
             height: 0
-            // Re-asserts on either change (isDefault flips, e.g. another
-            // account was made default or this one was removed) or a plain
-            // row-index shift (an unrelated row above this one was removed/
-            // inserted) -- either can leave a stale index behind otherwise.
+            // Re-asserts on isDefault or index changes; either can leave a stale index.
             function report() {
                 if (isDefault)
                     root.defaultIndex = index
@@ -141,18 +97,13 @@ Item {
             Component.onCompleted: { report(); claimHero() }
         }
     }
-    // Falls back to the first row so the hero still has someone to show
-    // right after the very first account is added, before it is flagged
-    // default.
+    // Falls back to the first row until the first account is flagged default.
     readonly property int heroIndex: root.defaultIndex >= 0 ? root.defaultIndex
                                     : list.count > 0 ? 0 : -1
-    // The probe above for the hero's row (see its claimHero()).
     property var heroItem: null
     function stateTone(key) {
         switch (key) {
         case "online": return "success"
-        // A sign-in in progress is not news: no blue chip (blue is in no
-        // other place in the Grass scheme).
         case "working": return "neutral"
         case "errored": case "gone": return "danger"
         case "expired": return "warning"
@@ -167,12 +118,8 @@ Item {
     readonly property string heroStatus: heroItem ? heroItem.status : ""
     readonly property string heroStateKey: heroItem ? heroItem.stateKey : ""
     readonly property int heroRow: heroItem ? heroItem.index : -1
-    // Whether launcher/qml/Skin3D (Qt Quick3D) exists -- see SkinPreview.
     property bool skin3DAvailable: false
-    // The hero account's skin facts (AccountsController::accountSkinInfo):
-    // whether there is a skin to draw (its own, or the game's default for
-    // it once downloaded), its arm width, and for a Microsoft account its
-    // capes. Re-read whenever the images are (imageRevision).
+    // accountSkinInfo() of the hero row; re-read with imageRevision.
     readonly property var heroSkin: root.controller && root.heroRow >= 0 && root.imageRevision >= 0
                                     ? root.controller.accountSkinInfo(root.heroRow) : ({})
     readonly property var heroCapes: root.heroIsMSA && root.heroSkin.valid && root.heroSkin.capes
@@ -181,8 +128,6 @@ Item {
     readonly property int heroPreviewWidth: 168
     readonly property int heroPreviewHeight: 200
 
-    // The cape change started from the hero, if any: its tiles wait while
-    // it runs, and a failure is said under them.
     property var capeWatcher: null
     readonly property bool capeBusy: !!root.capeWatcher && root.capeWatcher.running
     property string capeError: ""
@@ -209,29 +154,20 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        // The page area gives no padding of its own.
         anchors.topMargin: Theme.space.xl
         anchors.leftMargin: Theme.space.xl + Theme.space.xs
         anchors.rightMargin: Theme.space.xl + Theme.space.xs
         anchors.bottomMargin: Theme.space.lg
         spacing: Theme.space.lg
 
-        // Every block below spans the same width as the header above the
-        // page (its title on the left, the account button on the right),
-        // up to Theme.layout.maxContentWidth on a wide window.
         RowLayout {
             Layout.fillWidth: true
             Layout.maximumWidth: Theme.layout.maxContentWidth
             Layout.alignment: Qt.AlignHCenter
-            // Redundant with the empty state's own actions below once there
-            // is nothing to manage yet.
+            // The empty state has its own actions.
             visible: list.count > 0
             spacing: Theme.space.sm
 
-            // One short line, so it never wraps into a stray last word
-            // beside the buttons; what a Microsoft account is needed for is
-            // said where it matters (the offline hero's note, the empty
-            // state, the offline dialog).
             Text {
                 Layout.fillWidth: true
                 text: qsTr("Games launch with the default account.")
@@ -240,11 +176,6 @@ Item {
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.label.pixelSize
             }
-            // Someone is signed in already (this row only shows then; the
-            // empty state asks for the first sign-in), so the page is about
-            // the accounts it has: another one is one button, whose menu
-            // says which kind, rather than "Sign in with Microsoft" over an
-            // account that is signed in.
             Button {
                 id: addAccountButton
                 variant: "secondary"
@@ -267,20 +198,14 @@ Item {
             }
         }
 
-        // The account games actually launch with, big -- see heroIndex.
         Rectangle {
             id: hero
             Layout.fillWidth: true
             Layout.maximumWidth: Theme.layout.maxContentWidth
             Layout.alignment: Qt.AlignHCenter
             visible: !!root.heroItem
-            // Taller only when the cape row needs the room.
             implicitHeight: Math.max(root.heroHeight, heroContent.implicitHeight + Theme.space.xl * 2)
             radius: Theme.radius.lg
-            // The plain card look: surface plus border, like every other
-            // card. The player in the account's skin (or the game's default
-            // one) is the hero's visual anchor, not a decorative wash or
-            // gradient.
             color: Theme.palette.surface
             border.width: 1
             border.color: Theme.palette.border
@@ -291,11 +216,8 @@ Item {
                 anchors.margins: Theme.space.xl
                 spacing: Theme.space.xl
 
-                // The player in the account's skin, with its cape, turned by
-                // dragging where it is 3D (the flat front view otherwise).
-                // An account without a skin of its own wears the game's
-                // default for it, as in game; the neutral figure only holds
-                // its place until that default has downloaded.
+                // An account without a skin wears the game's default; a neutral figure holds its place until it
+                // downloads.
                 SkinPreview {
                     id: heroPreview
                     Layout.preferredWidth: root.heroPreviewWidth
@@ -326,9 +248,6 @@ Item {
                         font.weight: Theme.type.display.weight
                     }
 
-                    // Which account games launch with is a fact about the
-                    // account, so it sits with its other facts as a tag --
-                    // not as a shouted label above the name.
                     Row {
                         spacing: Theme.space.sm
                         Tag {
@@ -350,9 +269,6 @@ Item {
                     Text {
                         Layout.fillWidth: true
                         visible: !root.heroIsMSA
-                        // "Custom": the player already wears the game's
-                        // default skin here, offline or not. Short enough
-                        // to stay one line at the narrowest window.
                         text: qsTr("Offline only: online-mode servers and custom skins need a Microsoft account.")
                         wrapMode: Text.Wrap
                         color: Theme.palette.textTertiary
@@ -360,9 +276,6 @@ Item {
                         font.pixelSize: Theme.type.label.pixelSize
                     }
 
-                    // Theme.control.height like every other button on the
-                    // page; the ⋯ is the same bordered square as the rows'
-                    // icon buttons below (AccountRow.qml).
                     Row {
                         topPadding: Theme.space.sm
                         spacing: Theme.space.sm
@@ -375,15 +288,12 @@ Item {
                         }
                         Button {
                             variant: "secondary"
-                            // "and", not "&": a Button reads "&" as a
-                            // keyboard mnemonic and underlines the next letter.
+                            // "and", not "&": a Button reads "&" as a mnemonic.
                             text: qsTr("Skin and cape")
                             icon.source: Icons.url("image")
                             onClicked: root.heroIsMSA ? root.openSkinEditor(root.heroRow, root.heroAccountId, root.heroName)
                                                        : offlineSkinDialog.open()
                         }
-                        // The rest behind ⋯, each with its own words, rather
-                        // than bare refresh and bin glyphs beside "Skin and cape".
                         IconButton {
                             id: heroMoreButton
                             flat: false
@@ -394,8 +304,7 @@ Item {
                             Menu {
                                 id: heroMenu
                                 MenuItem {
-                                    // A hidden item still takes its row in a
-                                    // Menu; zero it as well.
+                                    // A hidden item still takes its row in a Menu; zero it as well.
                                     visible: root.heroIsMSA
                                     height: visible ? implicitHeight : 0
                                     text: qsTr("Sign in again")
@@ -415,9 +324,6 @@ Item {
                         }
                     }
 
-                    // A Microsoft account's capes, worn with one click --
-                    // the same choice as in "Skin and cape", without opening
-                    // it. Compact tiles; each one's name shows on hover.
                     Column {
                         visible: root.heroCapes.length > 0
                         topPadding: Theme.space.md
@@ -498,14 +404,11 @@ Item {
             Layout.alignment: Qt.AlignHCenter
             Layout.fillHeight: true
 
-            // Rows run the full width, the hero card's own: the scroll bar
-            // overlays them rather than keeping a gutter of its own.
             ListView {
                 id: list
                 anchors.fill: parent
                 clip: true
-                // The rows carry their own gap (AccountRow.gap), so the
-                // hidden hero row adds none under the heading.
+                // Rows carry their own gap (AccountRow.gap).
                 spacing: 0
                 boundsBehavior: Flickable.StopAtBounds
                 model: root.accounts
@@ -579,10 +482,7 @@ Item {
         anchors.centerIn: parent
         width: Math.min(root.offlineDialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.offlineDialogWidth)
         modal: true
-        // The title row sets the inset; the gap under it is the dialog's own spacing.
         topPadding: 0
-        // The actions row sets the bottom inset; this and the spacing over it
-        // leave one inset (xl) between the body and the actions.
         bottomPadding: Theme.space.sm
         title: qsTr("Add offline account")
 
@@ -655,10 +555,7 @@ Item {
         anchors.centerIn: parent
         width: Math.min(root.loginDialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.loginDialogWidth)
         modal: true
-        // The title row sets the inset; the gap under it is the dialog's own spacing.
         topPadding: 0
-        // The actions row sets the bottom inset; this and the spacing over it
-        // leave one inset (xl) between the body and the actions.
         bottomPadding: Theme.space.sm
         closePolicy: Popup.NoAutoClose
         title: qsTr("Sign in with Microsoft")
@@ -690,7 +587,6 @@ Item {
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    // The rest of the dialog's width, beside the spinner.
                     width: loginDialog.availableWidth - root.loginIndicatorSize - parent.spacing
                     text: loginDialog.done ? qsTr("Signed in. You're ready to play.")
                         : loginDialog.failed ? (root.login.error || qsTr("Sign-in failed."))
@@ -763,15 +659,10 @@ Item {
         id: offlineSkinDialog
         parent: Overlay.overlay
         anchors.centerIn: parent
-        // A fixed width, not clamped to the window like the others: it fits
-        // the narrowest window anyway, and a width bound to the overlay
-        // made this text-only dialog's height depend on itself.
+        // Not clamped to the window: a width bound to the overlay made this dialog's height depend on itself.
         width: root.skinNoticeWidth
         modal: true
-        // The title row sets the inset; the gap under it is the dialog's own spacing.
         topPadding: 0
-        // The actions row sets the bottom inset; this and the spacing over it
-        // leave one inset (xl) between the body and the actions.
         bottomPadding: Theme.space.sm
         title: qsTr("Skin and cape")
 

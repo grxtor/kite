@@ -8,14 +8,10 @@ import Kite.Theme
 
 /*
  * The scrolling body of an instance tab that is a column of setting groups
- * (Settings, Game options). The tab strip above already names the tab, so
- * there is no heading here -- only an optional one-line description -- and
- * the column runs the full width of the page like every other tab's
- * content, instead of stopping short of the tab strip's right edge the way
- * SettingsScroll's readable-width column does.
- *
- * The scroll bar overlays the groups instead of keeping a gutter, and the
- * bottom rows fade out (ScrollFade) rather than being sliced off.
+ * (Settings, Game options). The tab strip names the tab, so there is no heading,
+ * only an optional description; the column runs the page's full width, unlike
+ * SettingsScroll's readable-width column. The scroll bar overlays the groups and
+ * the bottom rows fade out (ScrollFade).
  */
 Item {
     id: root

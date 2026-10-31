@@ -13,8 +13,7 @@ ApplicationWindow {
 
     required property var instanceModel
     required property var selection
-    // QmlShell: actions (launchInstance, killInstance, ...), account summary
-    // and the extra instance models the library needs.
+    // QmlShell: actions, account summary, extra instance models.
     required property var shell
 
     readonly property string moduleName: "Kite"
@@ -26,17 +25,10 @@ ApplicationWindow {
     title: "Kite"
     color: Theme.palette.canvas
 
-    // Whether launcher/qml/Skin3D was built at all (KITE_HAS_SKIN3D): the
-    // QML shell has no other way to tell a Quick3D-less build apart, and
-    // SkinPreview needs it to fall back to the flat view instead of
-    // loading a module that is not there. Set from
-    // QmlShell::rootProperties(); false is the right default for
-    // QmlModule_test, which never sets it.
+    // Set from QmlShell::rootProperties(); false when Skin3D was not built.
     property bool skin3DAvailable: false
 
-    // The macOS menu bar (AppMenuBar.qml), on the native Cocoa platform
-    // only and with the same switch the widget bar uses -- anywhere else
-    // Qt would draw it inside the window instead, so it stays hidden.
+    // Native Cocoa only; elsewhere Qt would draw the bar inside the window.
     readonly property bool nativeMenuBar: Qt.platform.os === "osx" && Qt.platform.pluginName === "cocoa"
                                           && SettingsStore.bool("MacNativeMenuBar")
     menuBar: AppMenuBar {
@@ -49,9 +41,8 @@ ApplicationWindow {
     }
 
     property string selectedId: ""
-    // "home", "library", "discover", "settings", "instance" or "accounts".
+    // "home", "library", "discover", "settings", "instance", "accounts" or "friends".
     property string page: "home"
-    // The instance the instance page shows.
     property string openedInstanceId: ""
     property var openedDetails: null
 
@@ -73,12 +64,8 @@ ApplicationWindow {
     Component.onCompleted: {
         if (root.shell && root.shell.settings) {
             SettingsStore.adapter = root.shell.settings
-            // Java management (JavaStore.qml), read by the Java settings
-            // rows wherever they appear.
             JavaStore.controller = root.shell.javaController
             JavaStore.download = root.shell.javaDownload
-            // Folder and update settings and the total play time
-            // (LauncherStore.qml), read by Settings and the library.
             LauncherStore.folders = root.shell.folderSettings
             LauncherStore.updates = root.shell.updateSettings
             LauncherStore.playTime = root.shell.playTime
@@ -93,14 +80,11 @@ ApplicationWindow {
             var look = SettingsStore.string("UiLook")
             if (look === "stage" || look === "calm" || look === "night" || look === "classic")
                 Theme.look = look
-            // The friends panel's saved choice, which a window too narrow for
-            // it overrides for this session only; and whether it is opened
-            // out, and how wide.
+            // A window too narrow for the panel overrides the saved choice for this session only.
             root.friendsPanelOpen = SettingsStore.bool("FriendsPanelOpen")
                                     && root.width >= root.friendsPanelMinWindow
             root.friendsPanelExpanded = SettingsStore.bool("FriendsPanelExpanded")
             root.friendsPanelWidth = SettingsStore.number("FriendsPanelWidth")
-            // The labelled sidebar's width, as the user dragged it.
             root.sidebarWidth = SettingsStore.number("UiSidebarWidth")
         }
         onboardingLoader.active = !!root.shell && !!root.shell.setupSteps && root.shell.setupSteps.length > 0
@@ -108,17 +92,10 @@ ApplicationWindow {
             Qt.callLater(root.applyDevRoute)
     }
 
-    // Startup route for review snapshots (KITE_QML_ROUTE): ";"-separated
-    // steps such as "theme=light;scheme=ember;size=1400x900;page=settings;section=java",
-    // "instance=<id>;tab=mods", "page=discover;detail=0", "newinstance",
-    // "gallery" or "page=home;crashed=<id>" (marks that instance as having
-    // crashed last time, for the Home page's chip -- see QmlShell's
-    // debugMarkInstanceCrashed()). "nav=<path>" goes through navigate()
-    // below ("nav=settings/java", "nav=instance/fabric/settings"), and
-    // "import=<path or url>" acts like `kite --import` (onImportRequested).
-    // "page=accounts;accounts-demo" opens the skin editor on demo data
-    // ("accounts-demo=cape" / "=elytra" start on the player's back); that
-    // step is read by AccountsController, not here.
+    // KITE_QML_ROUTE: ";"-separated steps run at start-up for review snapshots,
+    // e.g. "theme=light;scheme=ember;size=1400x900;page=settings;section=java"
+    // or "instance=<id>;tab=mods". "nav=<path>" goes through navigate().
+    // "accounts-demo" is read by AccountsController, not here.
     property string devRoute: ""
     function applyDevRoute() {
         // Routes reach into pages the route may not show; build them all.
@@ -153,9 +130,7 @@ ApplicationWindow {
                 devDetail.start()
             else if (key === "newinstance")
                 root.openNewInstance(value)
-            // The New instance dialog's type, picked (after newinstance):
-            // "loader=fabric", or "loader=performance" for Kite Performance;
-            // "mods" then opens Kite Performance's mod picker.
+            // After newinstance: loader=<kind> (or "performance") picks the type, mods opens the mod picker.
             else if (key === "loader")
                 root.dialog(newInstanceLoader).pickKind(value)
             else if (key === "mods")
@@ -164,17 +139,12 @@ ApplicationWindow {
                 root.navigate(value)
             else if (key === "import")
                 root.openImport(value)
-            // The Friends page; "friendsTab=requests" or "=blocked" opens
-            // it on that tab.
             else if (key === "friends")
                 Qt.callLater(root.openFriends, "friends")
+            // friendsTab: "requests" or "blocked".
             else if (key === "friendsTab")
                 Qt.callLater(root.openFriends, value)
-            // The friends panel on the right edge: "friendspanel=closed"
-            // hides it, "=strip" shows the strip of heads (the default) and
-            // "=open" opens it out to names and groups; "friendspanelwidth=
-            // 420" is how wide it is opened out. Both are saved, as using
-            // the panel would.
+            // friendspanel=closed|strip|open; friendspanelwidth in px. Both are saved.
             else if (key === "friendspanel") {
                 root.setFriendsPanelOpen(value !== "closed")
                 if (value === "strip" || value === "open")
@@ -187,13 +157,10 @@ ApplicationWindow {
                 Qt.callLater(() => sidebar.openProfileMenu())
             else if (key === "picker")
                 Qt.callLater(() => playDock.openPicker())
-            // The play bar's Play options menu, open; "launchmenu=playAs" or
-            // "=profiler" opens that submenu as well.
+            // launchmenu=playAs|profiler also opens that submenu.
             else if (key === "launchmenu")
                 Qt.callLater(playDock.openLaunchMenu, value)
-            // The play bar mid-launch, without a launch: "launching" shows
-            // "Downloading assets" at 42 %, "launching=<stage>:<0..1>" any
-            // stage and progress (-1 for no idea how far).
+            // Play bar mid-launch without a launch: "launching=<stage>:<0..1>" (-1 for unknown progress).
             else if (key === "launching") {
                 var launchArgs = value.length > 0 ? value.split(":") : ["Downloading assets", "0.42"]
                 playDock.previewLaunch = {
@@ -201,58 +168,42 @@ ApplicationWindow {
                     progress: launchArgs.length > 1 ? parseFloat(launchArgs[1]) : -1
                 }
             }
-            // The Export dialog over instance <id>, optionally on a format:
-            // "export=fabric" or "export=fabric:modrinth".
+            // export=<id>[:<format>]
             else if (key === "export") {
                 var exportArgs = value.split(":")
                 Qt.callLater(libraryPage.exportInstance, exportArgs[0], exportArgs[1] || "")
             }
-            // The Create shortcut dialog over instance <id>.
             else if (key === "shortcut")
                 Qt.callLater(libraryPage.createShortcut, value)
-            // The library card ⋯ menu for instance <id>, open.
             else if (key === "librarymenu")
                 Qt.callLater(libraryPage.openInstanceMenu, value)
-            // The group header ⋯ menu of group <name>, open.
             else if (key === "groupmenu")
                 Qt.callLater(libraryPage.openGroupMenu, value)
-            // The duplicate dialog over instance <id>.
             else if (key === "duplicate")
                 Qt.callLater(libraryPage.duplicateInstance, value)
-            // The instance page header ⋯ menu, open (after instance=<id>).
+            // The next keys act on the instance page, after instance=<id>.
             else if (key === "instancemenu")
                 Qt.callLater(instancePage.openHeaderMenu)
-            // The Content tab's "Export list" dialog (after instance=<id>).
             else if (key === "exportlist")
                 Qt.callLater(instancePage.openContentExportList)
-            // Add content's Filters popup (after instance=<id>).
             else if (key === "browsefilters")
                 Qt.callLater(instancePage.openBrowseFilters)
-            // The Content tab's Add-ons and Kite Performance dialogs (after
-            // instance=<id>).
             else if (key === "bundles")
                 Qt.callLater(instancePage.review, "bundles")
             else if (key === "perfdialog")
                 Qt.callLater(instancePage.review, "perfdialog")
-            // A tab's own state, after instance=<id>: "versionmore",
-            // "newcomponent", "otherlogs", "logfind", "shotselect",
-            // "shotrename" -- see InstancePage.review().
+            // review=versionmore|newcomponent|otherlogs|logfind|shotselect|shotrename
             else if (key === "review")
                 Qt.callLater(instancePage.review, value)
-            // A question only a real launch asks -- see QmlShell's
-            // debugShowRequest(): "pickAccount" or "busySkip".
+            // ask=pickAccount|busySkip: questions only a real launch asks.
             else if (key === "ask")
                 root.call("debugShowRequest", value)
-            // The sidebar: "sidebar=collapsed" is the rail, anything else the
-            // labelled sidebar; "sidebarwidth=300" is how wide that is. Both
-            // are saved, as using the sidebar would.
+            // sidebar=collapsed is the rail, anything else the labelled sidebar. Both are saved.
             else if (key === "sidebar")
                 SettingsStore.setValue("UiSidebarCollapsed", value === "collapsed")
             else if (key === "sidebarwidth")
                 root.setSidebarWidth(parseInt(value))
-            // The first-run flow over the shell with every step listed, on
-            // a data dir that no longer needs it; nothing is saved unless a
-            // step is finished.
+            // Every first-run step; nothing is saved unless one is finished.
             else if (key === "onboarding") {
                 onboardingLoader.active = true
                 onboardingLoader.item.steps = ["language", "java", "account", "done"]
@@ -261,11 +212,9 @@ ApplicationWindow {
             }
             else if (key === "crashed")
                 root.call("debugMarkInstanceCrashed", value)
-            // A real click at window point "x,y[,right[,delayMs]]" -- see
-            // QmlShell::debugClick().
+            // click=x,y[,right[,delayMs]]: a real click at a window point.
             else if (key === "click")
                 root.call("debugClick", value)
-            // The icon picker, as the library's "Change icon" opens it.
             else if (key === "iconpicker") {
                 var iconDialog = root.dialog(iconLoader)
                 iconDialog.targetId = root.dockInstanceId
@@ -289,31 +238,22 @@ ApplicationWindow {
             root.selection.clear()
     }
 
-    // How wide the user dragged the labelled sidebar to (UiSidebarWidth),
-    // read once at start-up and written when the sidebar asks for a change;
-    // whether it is labelled at all is UiSidebarCollapsed (SidebarNav).
+    // UiSidebarWidth: read at start-up, written when the sidebar commits a width.
     property int sidebarWidth: 240
     function setSidebarWidth(width) {
         root.sidebarWidth = width
         SettingsStore.setValue("UiSidebarWidth", width)
     }
 
-    // QmlShell.friends (FriendsController), or null where this build has none.
+    // Null where this build has no friends.
     readonly property var friendsController: root.shell && root.shell.friends ? root.shell.friends : null
-    // The friends panel on the right edge, on every page (FriendsSidePanel).
-    // Whether it is out is the FriendsPanelOpen setting, which the top bar's
-    // toggle writes. A window narrower than friendsPanelMinWindow starts
-    // without it, leaving the setting alone, so a small window is not
-    // squeezed before the user asks; the toggle can still bring it out.
-    // Out, it is a strip of heads or, opened out, a list with names
-    // (FriendsPanelExpanded) of the width the user dragged it to
-    // (FriendsPanelWidth); both are read once, at start-up, and written when
-    // the panel asks for a change.
+    // A window narrower than friendsPanelMinWindow starts without the panel and
+    // leaves the FriendsPanelOpen setting alone; the toggle still opens it.
+    // FriendsPanelOpen/Expanded/Width are read at start-up and written on change.
     readonly property int friendsPanelMinWindow: 1100
     property bool friendsPanelOpen: false
     property bool friendsPanelExpanded: false
     property int friendsPanelWidth: 320
-    // A build without friends has no panel and no toggle.
     readonly property bool friendsPanelShown: !!root.friendsController && root.friendsPanelOpen
     function setFriendsPanelOpen(open) {
         root.friendsPanelOpen = open
@@ -327,9 +267,7 @@ ApplicationWindow {
         root.friendsPanelWidth = width
         SettingsStore.setValue("FriendsPanelWidth", width)
     }
-    // The Friends page on tab "friends", "requests" or "blocked", or "add":
-    // the friends tab with the add field focused. Going there first builds
-    // it (PageSlot), so it is there to be given the tab.
+    // tab is "friends", "requests", "blocked" or "add" (the add field focused).
     function openFriends(tab) {
         root.page = "friends"
         friendsPage.tab = tab === "requests" || tab === "blocked" ? tab : "friends"
@@ -337,23 +275,19 @@ ApplicationWindow {
             Qt.callLater(friendsPage.focusAddField)
     }
 
-    // New instance, on Minecraft @p version (a friend's, with none of
-    // yours to follow them): FriendJoinFlow asks for it.
+    // FriendJoinFlow: a new instance on a friend's Minecraft version.
     function createInstanceOn(version) {
         root.openNewInstance("create")
         root.shell.newInstance.selectMinecraftVersion(version)
     }
 
-    // The dialog held by `loader`, built now if it is not yet.
     function dialog(loader) {
         loader.active = true
         return loader.item
     }
-    // Null until first opened.
     readonly property QtObject newInstanceDialog: newInstanceLoader.item
 
-    // mode is "create" (default) or "import" -- see NewInstanceDialog.qml.
-    // source pre-fills import mode's file/URL field; empty otherwise.
+    // mode is "create" (default) or "import"; source pre-fills the import field.
     function openNewInstance(mode, source) {
         if (!root.shell || !root.shell.newInstance)
             return
@@ -364,10 +298,8 @@ ApplicationWindow {
         instanceDialog.open()
     }
 
-    // An import asked for from outside the window: `kite --import`, or a
-    // second launcher passing a file on (QmlShell::requestImport()). With
-    // the dialog already open it takes the new source in place, unless it
-    // is still busy with the last one.
+    // An import from outside the window (`kite --import`, a second launcher).
+    // An open dialog takes the new source in place unless it is still busy.
     function openImport(source) {
         if (!newInstanceDialog || !newInstanceDialog.opened) {
             root.openNewInstance("import", source)
@@ -382,25 +314,14 @@ ApplicationWindow {
     }
 
     /*
-     * Cross-page links: any page can send the user somewhere else in the
-     * app with one call (an instance's Java settings pointing at the
-     * launcher-wide Java section, say). A page declares a signal such as
-     * `signal navigateRequested(string target)` and its handler here
-     * forwards it: `onNavigateRequested: (target) => root.navigate(target)`.
-     *
-     * Targets are paths, given whole or split in two (navigate("settings",
-     * "java") is navigate("settings/java")):
+     * Cross-page links. Targets are paths, whole or split in two
+     * (navigate("settings", "java") is navigate("settings/java")):
      *   "home", "library", "discover", "accounts"
-     *   "friends" or "friends/<tab>"        a FriendsPage.qml tab id
-     *                                       ("friends", "requests", "blocked")
-     *   "settings" or "settings/<section>"  a SettingsPage.qml section id
-     *                                       ("java", "proxy", "about", ...)
+     *   "friends" or "friends/<tab>"
+     *   "settings" or "settings/<section>"
      *   "instance/<id>" or "instance/<id>/<tab>"
-     *                                       an InstancePage.qml tab id
-     *                                       ("settings", "content", "log", ...)
-     * Instance ids are folder names and never contain "/". Returns false,
-     * leaving the current page alone, for a path it does not know or an
-     * instance that does not exist.
+     * Instance ids are folder names and never contain "/". Returns false and
+     * leaves the page alone for an unknown path or instance.
      */
     function navigate(page, sub) {
         var path = sub === undefined || sub === null || String(sub).length === 0
@@ -434,9 +355,7 @@ ApplicationWindow {
         return false
     }
 
-    // Play, everywhere in the shell. With no account at all the launch
-    // flow could only ask whether to open the Accounts page; go there
-    // straight away and say what is missing instead.
+    // With no account, go to Accounts instead of the launch flow's question.
     function launch(id) {
         if (root.sendToAccountsIfNone())
             return
@@ -450,9 +369,7 @@ ApplicationWindow {
         return true
     }
 
-    // The other ways to play (LaunchOptionsMenu.qml): "offline" or "demo"
-    // (QmlShell::launchInstanceMode()), as another account, and the
-    // instance's profiler. All of them need an account.
+    // LaunchOptionsMenu actions; mode is "offline" or "demo".
     function launchMode(id, mode) {
         if (root.sendToAccountsIfNone())
             return
@@ -471,37 +388,24 @@ ApplicationWindow {
         if (root.shell && typeof root.shell.setPerformanceEnabled === "function")
             root.shell.setPerformanceEnabled(id, enabled)
     }
-    // What a LaunchOptionsMenu offers for instance @p id; a page hands this
-    // to its menu as `optionsFor` (see QmlShell::launchOptions()).
     function launchOptions(id) {
         return root.shell && typeof root.shell.launchOptions === "function"
                 ? root.shell.launchOptions(id) : ({})
     }
 
-    // The play bar shows on Home, Discover, Friends, Settings and Accounts,
-    // keeping the selected instance one click away. Home has it once the
-    // hero has scrolled away under Continue playing and the library
-    // (dockHeldByHero). The
-    // instance page's header is that page's Play, and the bar would only
-    // repeat it there; the library page that once had it is no longer in the
-    // rail.
+    // The instance page has no bar: its header carries Play.
     function dockVisibleFor(page) {
         return page === "home" || page === "discover" || page === "settings" || page === "accounts"
                || page === "friends"
     }
-    // Inside an instance, while Content shows its "Add content" browser,
-    // that page's Install is the primary action. Moot while the instance
-    // page has no bar at all, kept so bringing the bar back there keeps it.
+    // While "Add content" is open, its Install is the primary action.
     readonly property bool dockSuppressed: root.page === "instance" && !!instancePage && instancePage.browsing === true
-    // On Home, while the hero's own Play is on screen: the hero shows the
-    // bar's instance (both follow the selection), so the bar would be a
-    // second Play for it. Read off the page on screen, as dockVisible is.
+    // On Home while the hero's Play is on screen the bar would be a second Play.
     readonly property bool dockHeldByHero: pageStack.currentIndex === pageHost.pageOrder.indexOf("home")
                                            && homePage.heroPlayInView
 
-    // The pages built on demand (PageSlot): null until first shown. Setting
-    // root.page builds the page at once, so code that sends the user
-    // somewhere and then hands the page something does it in that order.
+    // Built on demand (PageSlot), null until first shown. Setting root.page
+    // builds the page, so set the page first, then hand it values.
     readonly property Item libraryPage: libraryLoader.item
     readonly property Item settingsPage: settingsLoader.item
     readonly property Item discoverPage: discoverLoader.item
@@ -519,9 +423,9 @@ ApplicationWindow {
             arg === undefined ? root.shell[name]() : root.shell[name](arg)
     }
 
-    // Ctrl+F searches the library, which lives on Home; from another page
-    // it goes there first and the field takes focus once Home is showing
-    // (pageTransition). An instance page keeps its own Ctrl+F (LogTab).
+    // Ctrl+F searches the library on Home; from another page it goes Home
+    // first and focuses the field after the page swap (pageTransition). The
+    // instance page keeps its own Ctrl+F (LogTab).
     property bool focusHomeSearch: false
     Shortcut {
         sequences: [StandardKey.Find]
@@ -535,8 +439,6 @@ ApplicationWindow {
             }
         }
     }
-    // A page's link to Settings > Java (InstanceJavaSettings.qml), sent
-    // through the JavaStore singleton the Java rows already share.
     Connections {
         target: JavaStore
         function onNavigateRequested(target) {
@@ -544,8 +446,6 @@ ApplicationWindow {
         }
     }
 
-    // The game's console, asked for by the launch flow (ShowConsole, or a
-    // crash): the instance page, on its Log tab.
     Connections {
         target: root.shell
         ignoreUnknownSignals: true
@@ -557,8 +457,6 @@ ApplicationWindow {
         function onImportRequested(source) {
             root.openImport(source)
         }
-        // From C++ (QmlShell::requestNavigate()): a launch that needs an
-        // account opens the Accounts page, for one.
         function onNavigateRequested(target) {
             root.navigate(target)
         }
@@ -571,10 +469,7 @@ ApplicationWindow {
         when: !!root.shell && !!root.shell.instancePageModel
     }
 
-    // The play bar's instance: the selection if there is one, otherwise the
-    // most recently played instance, otherwise just the first one -- the
-    // same fallback the library's old hero card used. heroModel is free for
-    // this now that the hero card itself is gone (see LibraryPage.qml).
+    // The selection, else the most recently played instance, else the first.
     readonly property string dockInstanceId: root.selectedId.length > 0 ? root.selectedId
             : (root.shell && root.shell.recentModel && root.shell.recentModel.firstId ? root.shell.recentModel.firstId
             : (root.instanceModel && root.instanceModel.firstId ? root.instanceModel.firstId : ""))
@@ -586,8 +481,6 @@ ApplicationWindow {
         when: !!root.shell && !!root.shell.heroModel
     }
 
-    // Instance management, shared by the library's card menu and the
-    // instance page's own ⋯ menu.
     function askRename(id, name) {
         var renameDialog = root.dialog(renameLoader)
         renameDialog.targetId = id
@@ -619,11 +512,8 @@ ApplicationWindow {
         onActivated: root.openNewInstance()
     }
 
-    // A zip, an .mrpack or a link dropped anywhere on the window opens
-    // import with it, as the widget main window's drop did. First, so it
-    // sits under everything else: NewInstanceDialog's own drop area, and
-    // the library's group drop areas (which take only their own drag),
-    // keep their drops.
+    // A zip, .mrpack or link dropped on the window opens import. Declared first,
+    // so NewInstanceDialog's and the library's drop areas above it keep their drops.
     DropArea {
         anchors.fill: parent
         keys: ["text/uri-list"]
@@ -635,41 +525,23 @@ ApplicationWindow {
         }
     }
 
-    /*
-     * The shell, Modrinth's frame: the sidebar, the top bar and -- on the
-     * pages that have one -- the play bar are one surface (the brief's glass:
-     * a hair lighter than the canvas, with a 1 px light line along its top),
-     * and the page sits in an inset panel on the canvas, its left corners
-     * rounded and a hairline round it, like a sheet laid into the frame.
-     *
-     * The panel is the page area, and everything inside it is the page's
-     * own: the panel adds no padding, so a page pads itself (its content
-     * scrolls up to the panel's top edge) and keeps its side margins as
-     * before. Only the Library has a strip of the shell's inside the panel,
-     * its toolbar (search, sort, view, New instance), above the page.
-     */
-    // Opaque, so the panel's corner matte can match it exactly: nothing but
-    // the canvas is ever behind the shell, so glass over the canvas and this
-    // tint of it are the same colour.
+    // The sidebar, top bar and play bar are one surface (shellColor); the page
+    // sits in an inset panel on the canvas. The panel adds no padding: each
+    // page pads itself and scrolls up to the panel's top edge.
+
+    // Opaque, so the panel's corner matte matches it exactly.
     readonly property color shellColor: Qt.tint(Theme.palette.canvas, Theme.glass.fill)
-    // The Gece look: the whole window is the night sky (SkyBackdrop), and the
-    // shell, the page panel and the friends panel stay transparent over it,
-    // without the panel's corner matte. shellColor still rounds what needs a
-    // solid colour around it (an icon that fills its tile).
+    // Gece: SkyBackdrop fills the window; the shell and both panels stay
+    // transparent over it, without the corner matte.
     readonly property bool skyLook: Theme.look === "night"
-    // The panel's corner: Modrinth's "inset window" corner, the dialog's
-    // radius.xl -- the one surface as big as a dialog.
     readonly property int panelRadius: Theme.radius.xl
-    // macOS: the title bar lies over the shell (QmlShell, MacWindowChrome),
-    // its traffic lights at the left end of the sidebar's brand band. How
-    // far they reach, and how tall a bar has them in its middle; both 0
-    // everywhere else. Full screen hides them.
+    // macOS: the title bar lies over the shell (QmlShell, MacWindowChrome).
+    // Width of the traffic lights and the bar height that centres them; 0
+    // elsewhere. Full screen hides them.
     property int windowControlsWidth: 0
     property int titleBarHeight: 0
     readonly property int windowControlsInset: root.visibility === Window.FullScreen ? 0 : root.windowControlsWidth
-    // The top bar: Modrinth's 48, one rail square tall -- the same line the
-    // sidebar's brand band sits on. On macOS the height that has the
-    // traffic lights in its middle, which AppKit alone decides.
+    // macOS: AppKit decides the height that centres the traffic lights.
     readonly property int shellBarHeight: root.titleBarHeight > 0 ? root.titleBarHeight : Theme.control.heightLg
 
     SkyBackdrop {
@@ -689,31 +561,17 @@ ApplicationWindow {
         }
     }
 
-    // macOS: with the title bar laid over the shell, the shell's own top
-    // band is what moves the window, and a double click zooms it, as a
-    // title bar does. Under the rail and the top bar, so their buttons
-    // still take their clicks.
-    Item {
+    // Under the rail and the top bar, so their buttons still take clicks.
+    WindowDragBand {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
         height: root.shellBarHeight
         enabled: root.windowControlsWidth > 0
-
-        DragHandler {
-            target: null
-            onActiveChanged: if (active) root.startSystemMove()
-        }
-        TapHandler {
-            onDoubleTapped: root.visibility === Window.Maximized ? root.showNormal() : root.showMaximized()
-        }
     }
 
-    // The rail's destinations. Home and Library become one page (designs/
-    // phase3-scale.md, decision 1), so the rail has no Library of its own;
-    // page=library still routes, and lights Home, until that lands. Friends
-    // is not here: its list is the panel on the right edge, and the page
-    // (requests, blocked people, adding by name) is reached from that.
+    // No Library or Friends entry: the library is on Home, the friends in the
+    // right-edge panel.
     readonly property var navItems: [
         { id: "home", icon: "home", label: qsTr("Home") },
         { id: "discover", icon: "compass", label: qsTr("Discover") }
@@ -728,18 +586,12 @@ ApplicationWindow {
         bandHeight: root.shellBarHeight
         controlsWidth: root.windowControlsInset
         surround: root.shellColor
-        // The icon rail (Modrinth's) unless the labelled sidebar was asked
-        // for -- the persisted toggle (SidebarNav's own CollapseToggle), on
-        // every page. A narrow window keeps the rail regardless, rather than
-        // squeezing the pages behind a labelled sidebar, and then offers no
-        // toggle that could not act.
+        // A narrow window always keeps the rail and offers no toggle.
         canExpand: root.width >= 1000
         collapsed: !canExpand || SettingsStore.bool("UiSidebarCollapsed")
         expandedWidth: root.sidebarWidth
-        // Less the page area's least width, and the friends panel opened out
-        // to its narrowest when this build has one: so dragging the sidebar
-        // out never squeezes either below what it can be used at, with the
-        // panel out or in.
+        // Leaves the page area's least width and, with friends, the panel's
+        // narrowest opened-out width, so dragging never squeezes either.
         roomWidth: root.width - friendsPanel.minPageWidth
                    - (root.friendsController ? friendsPanel.minExpandedWidth : 0)
         onWidthCommitted: (labelledWidth) => root.setSidebarWidth(labelledWidth)
@@ -747,12 +599,8 @@ ApplicationWindow {
         footerItems: [
             { id: "settings", icon: "settings", label: qsTr("Settings") }
         ]
-        // A page the rail does not list lights the place it is reached from:
-        // Home for the library and an instance (the breadcrumb's root too),
-        // unless that instance's own tile is in the rail (currentInstanceId).
-        // The Friends page is reached from the panel on the right edge, not
-        // from the rail, so while it is open nothing here is lit (an empty
-        // id lights nothing).
+        // Pages the rail lacks light where they are reached from: Home for the
+        // library and instances. Friends lights nothing (empty id).
         currentId: root.navItems.some(item => item.id === root.page)
                    || root.page === "settings" || root.page === "accounts" ? root.page
                    : root.page === "friends" ? "" : "home"
@@ -760,7 +608,6 @@ ApplicationWindow {
         barBeside: playDock.visible
         recentModel: root.shell && root.shell.recentModel ? root.shell.recentModel : null
         onItemActivated: (id) => root.page = id
-        // A recent instance opens its own page, as a library card does.
         onRecentActivated: (id) => root.openInstance(id)
         onRecentPlayRequested: (id) => root.launch(id)
         onNewInstanceRequested: root.openNewInstance()
@@ -772,8 +619,7 @@ ApplicationWindow {
         onOpenAccountsRequested: root.page = "accounts"
     }
 
-    // The open instance's name, for the top bar's trail: read out of the
-    // instance page's own one-row model, the way PlayDock reads its row.
+    // The open instance's name, read from the instance page model's row.
     property string openedName: ""
     Repeater {
         model: root.shell && root.shell.instancePageModel ? root.shell.instancePageModel : null
@@ -785,9 +631,6 @@ ApplicationWindow {
         }
     }
 
-    // On every page, the instance page too: where you are. Inside an
-    // instance the title is a trail back up -- Home, the instance, and "Add
-    // content" while that is open.
     TopBar {
         id: topBar
         anchors.left: sidebar.right
@@ -819,17 +662,14 @@ ApplicationWindow {
         }
         count: root.page === "library" && root.instanceModel && root.instanceModel.count !== undefined
                ? root.instanceModel.count : -1
-        // The library title row also carries the total play time.
         showPlayTime: root.page === "library"
-        // The title keeps to the page's column, which the friends panel
-        // narrows; the toggle stands at the window's edge, over the panel.
+        // The title keeps to the page's column; the toggle stands over the panel.
         rightReserve: friendsPanel.width
         trailing: [
             FriendsPanelToggle {
                 visible: !!root.friendsController
                 open: root.friendsPanelOpen
-                // Who is around, once that is known: not from a list the
-                // server is no longer answering for.
+                // Counts only while the list is ready.
                 onlineCount: Format.friendsPhase(root.friendsController) === "ready"
                              ? root.friendsController.onlineCount : 0
                 requestCount: Format.friendsPhase(root.friendsController) === "ready"
@@ -840,10 +680,6 @@ ApplicationWindow {
         ]
     }
 
-    // The friends, fixed on the right edge from under the top bar to the
-    // window's bottom, beside the page area and the play bar, which end
-    // where it begins: a strip of heads, or opened out to a list. Its width
-    // is 0 while it is in, and follows the pointer while it is dragged.
     FriendsSidePanel {
         id: friendsPanel
         anchors.right: parent.right
@@ -862,10 +698,8 @@ ApplicationWindow {
         onJoinRequested: (friend) => friendJoin.join(friend)
     }
 
-    // The page area. Clipped, and its rounded rectangle runs on past the
-    // right edge (the window's, or where the friends panel begins) -- and
-    // past the bottom while no play bar sits under it -- so only the corners
-    // against the shell round off.
+    // Clipped; the fill runs past the right and, without a play bar, the bottom
+    // edge, so only the corners against the shell round off.
     Item {
         id: panel
         anchors.left: sidebar.right
@@ -886,24 +720,16 @@ ApplicationWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            // Inside the hairline, which the matte below redraws over the
-            // page; nothing on the right (the window edge) or at the bottom
-            // without a play bar.
+            // Inside the hairline, which the matte redraws over the page.
             anchors.leftMargin: 1
             anchors.topMargin: 1
             anchors.bottomMargin: panel.overhangBottom > 0 ? 0 : 1
             spacing: 0
 
-            // The library's toolbar: the search field gives up its width
-            // first under pressure -- sort/view/New instance keep their own
-            // size, since shrinking a combo box or a labelled button reads
-            // as broken where a narrower search field still reads as a
-            // search field.
+            // The search field narrows first; sort, view and New instance keep their size.
             PageToolbar {
                 id: libraryToolbar
                 Layout.fillWidth: true
-                // The panel adds no padding, so this does its own; the page
-                // under it pads its own top as every page does.
                 Layout.topMargin: Theme.space.xl
                 visible: root.page === "library"
                 searchPlaceholder: qsTr("Search instances")
@@ -915,16 +741,8 @@ ApplicationWindow {
                     model: SettingsStore.instanceSortModes
                     textRole: "label"
                     valueRole: "value"
-                    // InstSortMode is the same launcher-wide setting the
-                    // classic Settings page's "Sort instances by" choice
-                    // writes -- QmlShell already re-sorts every instance
-                    // proxy when it changes, so this needs no plumbing of
-                    // its own beyond reading and writing it. Follows the
-                    // setting rather than reading it once: it is still empty
-                    // when this control completes (root's own
-                    // Component.onCompleted points SettingsStore at the live
-                    // adapter afterwards), and Settings > General changes it
-                    // too.
+                    // Follows the setting: it is still empty when this completes (root's
+                    // onCompleted sets the adapter later) and Settings > General changes it.
                     readonly property string stored: SettingsStore.string("InstSortMode") || "Name"
                     function sync() { currentIndex = Math.max(0, indexOfValue(stored)) }
                     onStoredChanged: sync()
@@ -934,7 +752,6 @@ ApplicationWindow {
                     Accessible.name: qsTr("Sort instances by")
                 }
 
-                // Grid or list: two icon buttons, the current view lit.
                 ViewModeToggle {
                     current: libraryPage ? libraryPage.viewMode : "grid"
                     onActivated: (value) => { if (libraryPage) libraryPage.viewMode = value }
@@ -947,13 +764,8 @@ ApplicationWindow {
                 }
             }
 
-            // A page change fades the outgoing page out, swaps
-            // StackLayout's currentIndex at the (invisible) midpoint, then
-            // fades the incoming one back in with a small upward slide --
-            // StackLayout still flips each page's own `visible` at exactly
-            // that swap instant, same as a plain binding would, so
-            // DiscoverPage's visible-based lazy search is untouched and
-            // Layout sizing still comes from the StackLayout underneath.
+            // Fades the old page out, swaps StackLayout's currentIndex at the
+            // invisible midpoint, then fades the new page in.
             Item {
                 id: pageHost
                 Layout.fillWidth: true
@@ -961,11 +773,8 @@ ApplicationWindow {
                 Layout.minimumWidth: 0
 
                 readonly property var pageOrder: ["home", "library", "settings", "discover", "instance", "accounts", "friends"]
-                // Whether the play bar shows for the page currently on
-                // screen -- updated at the same invisible midpoint as
-                // pageStack's own currentIndex (see pageTransition below),
-                // never straight from root.page, so the bar never appears or
-                // disappears while the old page is still visibly fading.
+                // Updated at the midpoint (pageTransition), not from root.page, so
+                // the bar never changes while the old page is still fading.
                 property bool dockVisible: root.dockVisibleFor(root.page)
 
                 transform: Translate { id: pageSlide }
@@ -997,11 +806,7 @@ ApplicationWindow {
                     }
                 }
 
-                // The still cat picture (Settings > Appearance > Cat picture),
-                // under the pages rather than over them: what a page draws --
-                // a card, a list, a button -- always covers it, so in a small
-                // window it never sits on top of the content, only in the
-                // page's empty space.
+                // Under the pages, so anything a page draws covers it.
                 Loader {
                     anchors.fill: parent
                     active: SettingsStore.bool("TheCat")
@@ -1019,8 +824,6 @@ ApplicationWindow {
                         instanceModel: root.instanceModel
                         recentWorldsModel: root.shell && root.shell.recentWorlds ? root.shell.recentWorlds : null
                         news: root.shell && root.shell.news ? root.shell.news : null
-                        // The hero follows the dock's rule: the selection,
-                        // else the instance played last, else the first.
                         heroModel: root.shell && root.shell.heroModel ? root.shell.heroModel : null
                         sectionModelFor: function (group) {
                             return root.shell && typeof root.shell.sectionModel === "function"
@@ -1070,8 +873,7 @@ ApplicationWindow {
                     PageSlot {
                         id: libraryLoader
                         page: "library"
-                        // A Loader is a focus scope: the page's own focus
-                        // only counts with this set too.
+                        // A Loader is a focus scope; the page's focus only counts with this set.
                         focus: true
                         current: root.page
                         sourceComponent: LibraryPage {
@@ -1083,8 +885,6 @@ ApplicationWindow {
                                 }
                                 searchText: libraryToolbar.searchText
                                 selectedId: root.selectedId
-                                // Groups, undo delete and Duplicate with its own
-                                // dialog (LibraryController).
                                 library: root.shell && root.shell.library ? root.shell.library : null
 
                                 onSelectRequested: (id) => root.selectedId = id
@@ -1106,7 +906,6 @@ ApplicationWindow {
                                     return root.shell && typeof root.shell.shortcutController === "function"
                                            ? root.shell.shortcutController(id) : null
                                 }
-                                // Play options (LaunchOptionsMenu.qml) in the ⋯ menu.
                                 launchOptionsFor: function (id) { return root.launchOptions(id) }
                                 onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
                                 onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
@@ -1174,23 +973,17 @@ ApplicationWindow {
                                 accountAvatarSource: root.shell && root.shell.accountFace ? root.shell.accountFace : ""
                                 accountsController: root.shell && root.shell.accountsController ? root.shell.accountsController : null
                                 onOpenAccountsRequested: root.page = "accounts"
-                                // Back to where the breadcrumb's root points (Home).
                                 onBackRequested: root.page = "home"
                                 onOpenInstanceRequested: (id) => root.openInstance(id)
-                                // The header's own Play and Stop: the one Play on
-                                // this page, the play bar stays away (dockVisibleFor).
                                 onPlayRequested: (id) => root.launch(id)
                                 onStopRequested: (id) => root.call("killInstance", id)
-                                // The header's ⋯ menu manages the instance with the
-                                // same dialogs as the library's own card menu.
                                 manageable: true
                                 library: root.shell && root.shell.library ? root.shell.library : null
                                 onRenameRequested: (id, name) => root.askRename(id, name)
                                 onIconRequested: (id, iconKey) => root.askIcon(id, iconKey)
                                 onGroupRequested: (id, group) => root.askGroup(id, group)
                                 onDeleteRequested: (id, name) => root.askDelete(id, name)
-                                // Two arguments -- root.call() only ever forwards
-                                // one -- so this goes straight to the shell instead.
+                                // root.call() forwards one argument only.
                                 onJoinServerRequested: (id, address) => { if (root.shell) root.shell.joinServer(id, address) }
                                 pluginSurfacesFor: function (anchor, instanceId) {
                                     return root.shell && typeof root.shell.pluginSurfaces === "function"
@@ -1205,7 +998,6 @@ ApplicationWindow {
                                     return root.shell && typeof root.shell.shortcutController === "function"
                                            ? root.shell.shortcutController(id) : null
                                 }
-                                // Play options (LaunchOptionsMenu.qml) in the ⋯ menu.
                                 launchOptionsFor: function (id) { return root.launchOptions(id) }
                                 onLaunchModeRequested: (id, mode) => root.launchMode(id, mode)
                                 onLaunchAsRequested: (id, accountId) => root.launchAs(id, accountId)
@@ -1221,7 +1013,6 @@ ApplicationWindow {
                         current: root.page
                         sourceComponent: AccountsPage {
                                 controller: root.shell && root.shell.accountsController ? root.shell.accountsController : null
-                                // The 3D skin preview needs the Skin3D module.
                                 skin3DAvailable: root.skin3DAvailable
                         }
                     }
@@ -1244,9 +1035,8 @@ ApplicationWindow {
             }
         }
 
-        // Over the page: the shell's colour outside the rounded corners, so
-        // nothing a page draws edge to edge (a scroll fade, a band) squares
-        // them off, and the hairline on top of that.
+        // Over the page: the shell colour outside the rounded corners, so
+        // edge-to-edge content cannot square them off, plus the hairline.
         Item {
             width: panelFill.width
             height: panelFill.height
@@ -1260,14 +1050,8 @@ ApplicationWindow {
         }
     }
 
-    // Part of the frame, under the panel, not a floating overlay: the page
-    // area above shrinks by exactly this bar's height whenever it is
-    // visible, so it can never cover a page's content -- including
-    // Discover's, whose QML this change does not own. visible follows
-    // pageHost.dockVisible rather than root.page directly, so it
-    // appears/disappears at the same invisible mid-fade instant the page
-    // itself swaps at, instead of jumping the layout while the outgoing
-    // page is still visible.
+    // Part of the frame, not an overlay: the page area shrinks by its height.
+    // visible follows pageHost.dockVisible so it changes at the fade midpoint.
     PlayDock {
         id: playDock
         surround: root.shellColor
@@ -1293,9 +1077,8 @@ ApplicationWindow {
         onNavigateRequested: (target) => root.navigate(target)
     }
 
-    // The dialogs below are built the first time one is asked for
-    // (root.dialog()), not at start: a closed Dialog still builds its whole
-    // body.
+    // Dialogs are built on first use (root.dialog()); a closed Dialog still
+    // builds its whole body.
     Loader {
         id: newInstanceLoader
         active: false
@@ -1307,7 +1090,6 @@ ApplicationWindow {
         }
     }
 
-    // Instance management, from the library's menu.
     Loader {
         id: renameLoader
         active: false
@@ -1352,11 +1134,9 @@ ApplicationWindow {
                 if (root.shell.deleteInstance(targetId)) {
                     if (root.selectedId === targetId)
                         root.selectedId = ""
-                    // Deleted from its own page: there is no page left to show.
                     if (root.page === "instance" && root.openedInstanceId === targetId)
                         root.page = "home"
-                    // Undo is offered only when it went to the trash; a
-                    // platform without one deleted it for good.
+                    // Undo only when it went to the trash.
                     var library = root.shell.library
                     if (library && library.canUndoDelete) {
                         var trashedName = library.lastDeletedName
@@ -1376,12 +1156,10 @@ ApplicationWindow {
         }
     }
 
-    // What the friends server answered to something asked of it.
     Connections {
         target: root.friendsController
         function onActionFinished(action, ok, message) {
-            // "Try again" on the page or the panel failing again: what is
-            // wrong is already written there.
+            // A failed "Try again" is already shown on the page or panel.
             if (action === "refresh" && root.friendsController.state === "error")
                 return
             if (message.length > 0)
@@ -1389,7 +1167,6 @@ ApplicationWindow {
         }
     }
 
-    // A friend's Join, from the Friends page, the friends panel and Home's panel.
     FriendJoinFlow {
         id: friendJoin
         shell: root.shell
@@ -1411,16 +1188,13 @@ ApplicationWindow {
 
     Toast {
         id: toast
-        // Over the page, clear of the play bar when there is one.
         anchors.bottomMargin: (playDock.visible ? playDock.height : 0) + Theme.space.xl
     }
 
-    // Questions the core asks while it works, and its "please wait".
     UiRequestDialog {
         id: uiRequests
         host: root.shell && root.shell.uiHost ? root.shell.uiHost : null
-        // Until this exists, the core keeps asking through the classic
-        // dialogs rather than waiting on a question nobody can see.
+        // Until this exists, the core asks through the classic dialogs.
         Component.onCompleted: if (host) host.setPresenterReady(true)
         Component.onDestruction: if (host) host.setPresenterReady(false)
     }
@@ -1433,10 +1207,8 @@ ApplicationWindow {
         onSkipRequested: if (root.shell && root.shell.uiHost) root.shell.uiHost.skipBusy()
     }
 
-    // First run: language, Java, account -- over everything else.
-    // Only built when there is a first-run step to show (and for the
-    // "onboarding" review route). Over everything else, as the view's own
-    // z only orders it inside this Loader.
+    // Built only when a first-run step exists or the "onboarding" route asks.
+    // z: the view's own z orders only inside this Loader.
     Loader {
         id: onboardingLoader
         active: false
@@ -1444,6 +1216,7 @@ ApplicationWindow {
         z: 800
         sourceComponent: OnboardingView {
             shell: root.shell
+            topInset: root.windowControlsInset > 0 ? root.shellBarHeight : 0
             onSignInRequested: {
                 root.page = "accounts"
                 accountsPage.startMicrosoftLogin()

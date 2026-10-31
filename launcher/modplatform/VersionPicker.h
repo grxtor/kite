@@ -24,31 +24,19 @@
 #include <QJsonObject>
 #include <QString>
 
-/* Which file of a project to install, when nobody picked one.
- *
- * The dependency resolver and the update checker both used to take
- * whatever the provider happened to list first. Neither API promises an
- * order, and CurseForge in particular will hand back a file for another
- * loader among the matches, so "first" quietly meant "a build that may
- * not even run here".
- *
- * What both of these do instead, and what the reference launcher does:
- * throw away entries built for a different loader, then take the one
- * published most recently. Deliberately not a version-string
- * comparison - mod version numbering is not semver often enough that
- * sorting by it puts "1.9" above "1.10", while the publish date is
- * stated by both providers and means the same thing on each. */
+/* Which file of a project to install when nobody picked one. Neither API
+ * promises an order, and CurseForge returns files for other loaders among
+ * the matches, so "first" may not run here. Both pickers drop entries for
+ * a different loader and take the most recently published. Not a version
+ * comparison: version numbering is not semver ("1.9" would sort above
+ * "1.10"), while both providers state the publish date. */
 namespace ModPlatform
 {
 
-	/* One entry of a CurseForge /mods/{id}/files reply, or an empty
-	 * object when nothing there is usable. `loader` may be empty, which
-	 * means the caller does not know or does not care.
-	 *
-	 * The Minecraft version is not re-checked: the query already asked
-	 * for it, and CurseForge lists a file's game versions and loaders in
-	 * one and the same array, so telling a missing match from an
-	 * unstated one is guesswork. */
+	/* One entry of a CurseForge /mods/{id}/files reply, or an empty object.
+	 * `loader` may be empty (unknown or irrelevant). The Minecraft version is
+	 * not re-checked: the query asked for it, and CurseForge mixes game
+	 * versions and loaders in one array. */
 	QJsonObject newestCurseForgeFile(const QJsonArray& files,
 									 const QString& loader);
 
@@ -56,12 +44,9 @@ namespace ModPlatform
 	QJsonObject newestModrinthVersion(const QJsonArray& versions,
 									  const QString& loader);
 
-	/* Whether `tag` (already lower-cased or not - compared case
-	 * insensitively) names a mod loader CurseForge might mix into a
-	 * file's "gameVersions" array alongside actual Minecraft versions.
-	 * Exported so that anything else parsing that same mixed array -
-	 * FlameContentModel::parseVersionsResponse(), namely - does not carry
-	 * a second copy of the list to keep in sync with this one. */
+	/* Whether `tag` (compared case-insensitively) names a mod loader that
+	 * CurseForge mixes into a file's "gameVersions" alongside Minecraft
+	 * versions. Shared with FlameContentModel::parseVersionsResponse(). */
 	bool isKnownLoaderName(const QString& tag);
 
 } // namespace ModPlatform

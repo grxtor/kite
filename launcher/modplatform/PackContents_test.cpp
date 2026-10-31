@@ -29,8 +29,6 @@ class PackContentsTest : public QObject
 	Q_OBJECT
   private slots:
 
-	// The ordinary case, so the tests below are known to be measuring
-	// something other than a broken harness.
 	void test_RoundTrip()
 	{
 		QTemporaryDir root;
@@ -44,9 +42,8 @@ class PackContentsTest : public QObject
 		QCOMPARE(read, QStringList({"config/sodium.txt", "mods/sodium.jar"}));
 	}
 
-	// Stored sorted and de-duplicated, so that the same version installed
-	// twice produces the same file and a diff between two versions only
-	// shows what really changed.
+	// Stored sorted and de-duplicated, so identical installs give identical
+	// files.
 	void test_WriteIsSortedAndDeduplicated()
 	{
 		QTemporaryDir root;
@@ -60,9 +57,8 @@ class PackContentsTest : public QObject
 		QCOMPARE(read, QStringList({"mods/a.jar", "mods/b.jar"}));
 	}
 
-	// An instance installed before the launcher recorded this has no list.
-	// That has to be distinguishable from "the version shipped nothing",
-	// because the two mean opposite things for a delete loop.
+	// A missing list (installed before it was recorded) must differ from "the
+	// version shipped nothing": the two mean opposite things for a delete loop.
 	void test_MissingListIsNotReadable()
 	{
 		QTemporaryDir root;
@@ -84,8 +80,8 @@ class PackContentsTest : public QObject
 		QVERIFY(read.isEmpty());
 	}
 
-	// A list written by a future build may mean something else entirely,
-	// and guessing wrong deletes files.
+	// A list from a future build may mean something else; guessing deletes
+	// files.
 	void test_UnknownFormatVersionIsRefused()
 	{
 		QTemporaryDir root;
@@ -124,7 +120,6 @@ class PackContentsTest : public QObject
 	{
 		QCOMPARE(PackContents::normalizePath("mods/sodium.jar"),
 				 QStringLiteral("mods/sodium.jar"));
-		// Written on Windows, read anywhere.
 		QCOMPARE(PackContents::normalizePath("mods\\sodium.jar"),
 				 QStringLiteral("mods/sodium.jar"));
 		QCOMPARE(PackContents::normalizePath("./mods//sodium.jar"),
@@ -132,7 +127,6 @@ class PackContentsTest : public QObject
 		QCOMPARE(PackContents::normalizePath("config/../mods/sodium.jar"),
 				 QStringLiteral("mods/sodium.jar"));
 
-		// Refused rather than repaired: these are fed to a delete loop.
 		QVERIFY(PackContents::normalizePath("").isEmpty());
 		QVERIFY(PackContents::normalizePath(".").isEmpty());
 		QVERIFY(PackContents::normalizePath("../outside.jar").isEmpty());
@@ -154,8 +148,6 @@ class PackContentsTest : public QObject
 		QCOMPARE(read, QStringList({"mods/ok.jar"}));
 	}
 
-	// The whole point: a mod the new version dropped is stale, one it
-	// still ships is not.
 	void test_StaleEntriesFindsDroppedFiles()
 	{
 		const QStringList stale = PackContents::staleEntries(
@@ -165,9 +157,8 @@ class PackContentsTest : public QObject
 		QVERIFY(!stale.contains("mods/kept.jar"));
 	}
 
-	// A file the user put there themselves was never in a list of ours, so
-	// it can never come out of one. An update that ate the user's own mods
-	// would be worse than one that leaves a stale jar behind.
+	// A file the user put there is in no list of ours, so it can never be
+	// removed.
 	void test_StaleEntriesIgnoresUnrecordedFiles()
 	{
 		const QStringList stale =
@@ -177,8 +168,8 @@ class PackContentsTest : public QObject
 		QVERIFY(stale.contains("mods/pack.jar"));
 	}
 
-	// A mod the user turned off is still a file the pack installed, and it
-	// is recorded under the name it had at install time.
+	// A mod the user turned off is still the pack's file, recorded under its
+	// install-time name.
 	void test_StaleEntriesFollowsDisabledRename()
 	{
 		const QStringList stale =
@@ -197,9 +188,8 @@ class PackContentsTest : public QObject
 		QVERIFY(stale.contains("mods/dropped.jar"));
 	}
 
-	// An update that turns a required mod into an optional one installs it
-	// as ".disabled". Deleting the file the update has just written would
-	// be worse than leaving a stale one.
+	// A required-to-optional update installs ".disabled"; deleting the file
+	// just written would be worse than keeping a stale one.
 	void test_StaleEntriesNeverTouchesWhatTheUpdateShips()
 	{
 		const QStringList stale = PackContents::staleEntries(
@@ -219,7 +209,7 @@ class PackContentsTest : public QObject
 	}
 
 	// Stripping ".disabled" off a bare suffix would name the containing
-	// folder, and the caller deletes what it is given.
+	// folder.
 	void test_StaleEntriesNeverNamesAFolder()
 	{
 		const QStringList stale =
@@ -230,16 +220,14 @@ class PackContentsTest : public QObject
 		QVERIFY(!stale.contains("mods/"));
 	}
 
-	// Identical lists mean an update that changed no files - a re-install
-	// of the same version, say. Nothing may be deleted.
+	// Identical lists (a re-install) delete nothing.
 	void test_StaleEntriesOfIdenticalListsIsEmpty()
 	{
 		const QStringList files{"mods/a.jar", "config/a.txt"};
 		QVERIFY(PackContents::staleEntries(files, files).isEmpty());
 	}
 
-	// Written on Windows, diffed on Linux: the same file must not look
-	// like two different ones.
+	// Written on Windows, diffed on Linux: the same file must not differ.
 	void test_StaleEntriesComparesNormalizedPaths()
 	{
 		QVERIFY(PackContents::staleEntries({"mods\\a.jar"}, {"mods/a.jar"})

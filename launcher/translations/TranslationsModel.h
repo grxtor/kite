@@ -30,8 +30,8 @@ class TranslationsModel : public QAbstractListModel
 {
 	Q_OBJECT
   public:
-	// Column-independent roles for QML consumers, additional to the
-	// Qt::UserRole language key already returned by data().
+	// Column-independent roles for QML consumers, beside the Qt::UserRole
+	// language key from data().
 	enum ModelRoles { NameRole = Qt::UserRole + 1, CompletenessRole };
 
 	explicit TranslationsModel(QString path, QObject* parent = 0);
@@ -59,9 +59,7 @@ class TranslationsModel : public QAbstractListModel
 	void downloadTranslation(QString key);
 	void downloadNext();
 
-	// hide copy constructor
 	TranslationsModel(const TranslationsModel&) = delete;
-	// hide assign op
 	TranslationsModel& operator=(const TranslationsModel&) = delete;
 
   private slots:

@@ -20,7 +20,6 @@ class AutoIconsTest : public QObject
 	}
 
   private slots:
-	/// Every generic instance gets an icon from the pool, none twice.
 	void distinct()
 	{
 		const QStringList ids = {"26.1.2", "26.3", "26.3 Fabric", "26.3 NeoForge",
@@ -36,8 +35,8 @@ class AutoIconsTest : public QObject
 		}
 	}
 
-	/// A picked icon (or a pack's own logo) is left alone; "", the grass
-	/// block and a bare platform logo count as generic.
+	/// A picked icon or a pack's own logo is left alone; "", the grass block
+	/// and a bare platform logo count as generic.
 	void pickedIconsAreSkipped()
 	{
 		const QList<AutoIcons::Instance> list = {{"a", "creeper"}, {"b", ""},		   {"c", "default"},
@@ -51,8 +50,6 @@ class AutoIconsTest : public QObject
 		QVERIFY(!map.contains("f"));
 	}
 
-	/// What was given stays given when another instance arrives, even one
-	/// whose hashed slot is the same icon.
 	void earlierIconsStay()
 	{
 		const auto before = AutoIcons::assign(generic({"x", "y"}), {}, AutoIcons::pool());
@@ -64,8 +61,6 @@ class AutoIconsTest : public QObject
 		QVERIFY(after.value("a") != after.value("y"));
 	}
 
-	/// Removed instances, instances that got an icon, and icons no longer in
-	/// the pool drop out of the map.
 	void staleEntriesDrop()
 	{
 		const QHash<QString, QString> previous = {{"gone", "bee"}, {"picked", "fox"}, {"old", "nosuchicon"}};
@@ -76,7 +71,6 @@ class AutoIconsTest : public QObject
 		QVERIFY(AutoIcons::pool().contains(map.value("old")));
 	}
 
-	/// The same library gets the same icons on every run.
 	void deterministic()
 	{
 		const QStringList ids = {"one", "two", "three"};
@@ -84,7 +78,6 @@ class AutoIconsTest : public QObject
 				 AutoIcons::assign(generic(ids), {}, AutoIcons::pool()));
 	}
 
-	/// More generic instances than icons: everyone still gets one.
 	void overflowShares()
 	{
 		const QStringList pool = {"bee", "fox"};

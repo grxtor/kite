@@ -30,19 +30,11 @@
 #include "tasks/Task.h"
 
 /*
- * QML-facing Imgur upload for screenshots - the widget-free replacement for
- * ScreenshotsPage::on_actionUpload_triggered(), which runs the same
- * ImgurUpload / ImgurAlbumCreation net actions behind a modal
- * ProgressDialog and message boxes.
- *
- * One file is uploaded on its own and reported as that picture's link;
- * several are uploaded one by one and gathered into an album, reported as
- * the album's link. The outcome arrives as exactly one of uploaded(url,
- * count) or failed(message); copying the link and saying so is the caller's.
- *
- * `available` is false in a build whose Imgur client id is empty (a local
- * build without one): uploads cannot work there, so the page hides its
- * Upload action rather than offering one that always fails.
+ * QML-facing Imgur upload for screenshots. One file is uploaded on its own and
+ * reported as that picture's link; several go one by one into an album,
+ * reported as the album's link. The outcome arrives as exactly one of
+ * uploaded(url, count) or failed(message). `available` is false in a build
+ * without an Imgur client id, so the page hides Upload.
  */
 class ScreenshotUploader : public QObject
 {
@@ -55,22 +47,18 @@ class ScreenshotUploader : public QObject
 	explicit ScreenshotUploader(QObject* parent = nullptr);
 	~ScreenshotUploader() override;
 
-	/// Whether this build has an Imgur client id to upload with.
 	bool available() const;
 	bool busy() const
 	{
 		return m_task != nullptr;
 	}
 
-	/// The album page for Imgur album id @p albumId.
 	static QString albumUrl(const QString& albumId);
 	/// Empty if every path in @p paths is a readable file and there is at
 	/// least one; otherwise the reason, worded for the user.
 	static QString validate(const QStringList& paths);
 
-	/// Uploads the pictures at @p paths (one: a link to it; several: an
-	/// album). Reports through uploaded()/failed(), never inline. A call
-	/// while `busy` is ignored.
+	/// One path: a link to it; several: an album. Reports through uploaded()/failed(), never inline; ignored while `busy`.
 	Q_INVOKABLE void upload(const QStringList& paths);
 
   signals:
@@ -78,7 +66,6 @@ class ScreenshotUploader : public QObject
 	/// @p url is the picture's (or album's) link, @p count how many pictures
 	/// were uploaded.
 	void uploaded(const QString& url, int count);
-	/// @p message is a sentence fit to show the user.
 	void failed(const QString& message);
 
   private:

@@ -8,9 +8,8 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The JVM arguments field. Memory has its own settings, so arguments that
- * set it by hand (-Xmx, -Xms, PermSize) are called out right under the
- * field while you type, the way the old page warned on save.
+ * The JVM arguments field. Arguments that set memory by hand (-Xmx, -Xms,
+ * PermSize) are called out under the field while you type.
  */
 SettingRow {
     id: root

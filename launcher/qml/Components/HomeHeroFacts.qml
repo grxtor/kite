@@ -5,28 +5,23 @@ import QtQuick
 import Kite.Theme
 
 /*
- * What Home's hero says about its instance beside the name, label over
- * value as a game library's header has it: when it was last played, how
- * long it has been played in all, and the world it was last in -- read off
- * the recent worlds, and a way to its Worlds tab. A fact with nothing to
- * say is left out; "Last played" always shows.
+ * What Home's hero says about its instance beside the name, label over value: when it was last played, how long in
+ * all, and the world it was last in (read off the recent worlds, a way to its Worlds tab). A fact with nothing to say
+ * is left out; "Last played" always shows.
  */
 Row {
     id: root
 
     property string instanceId: ""
     property var lastLaunch: 0
-    // Format.playTime()'s text, or empty to leave the fact out.
     property string playTimeText: ""
-    // QmlShell.recentWorlds (RecentWorldsModel), newest first, or null.
+    // RecentWorldsModel, newest first, or null.
     property var worldsModel: null
-    // The hero's own colours, which follow its backdrop.
     property color ink: Theme.palette.textPrimary
     property color inkLabel: Theme.palette.textTertiary
 
     signal worldRequested(string instanceId)
 
-    // The newest of the recent worlds played in this instance, or empty.
     property string worldName: ""
     function findWorld() {
         for (var i = 0; i < worlds.count; ++i) {
@@ -40,8 +35,8 @@ Row {
     }
     onInstanceIdChanged: Qt.callLater(root.findWorld)
 
-    // Its width whether it is shown or not -- a Row's implicitWidth drops
-    // to nothing while hidden -- for a host deciding where it fits.
+    // Its width whether shown or not (a Row's implicitWidth drops to nothing while hidden), for a host deciding
+    // where it fits.
     readonly property real naturalWidth: {
         var shown = [lastFact, timeFact, worldFact].filter((fact) => fact.says)
         return shown.reduce((sum, fact) => sum + fact.naturalWidth, 0)
@@ -68,11 +63,9 @@ Row {
         property string value
         property color ink
         property color inkLabel
-        // A fact that leads somewhere: the value lights as a link does.
         property bool link: false
         signal clicked()
 
-        // Whether it has anything to say; it shows only then.
         property bool says: true
         readonly property real naturalWidth: Math.max(labelText.implicitWidth, valueText.implicitWidth)
 

@@ -9,20 +9,14 @@ import QtQuick.Dialogs
 import Kite.Theme
 
 /*
- * "Create shortcut…": an icon on the desktop or in the applications list
- * that starts one instance without opening the launcher first. The QML
- * replacement for CreateShortcutDialog; the writing is
- * InstanceShortcutController's, over the same core code the widget dialog
- * uses.
- *
- * "Choose folder…" asks where with a save dialog. The shortcut can also join a
- * server and play as a given account. `created(message)` is the page's
- * cue for a toast; a failure stays here with the reason.
+ * "Create shortcut…": an icon on the desktop or in the applications list that starts one instance without opening
+ * the launcher first, optionally joining a server and playing as a given account. The writing is
+ * InstanceShortcutController's. `created(message)` cues a toast; a failure stays here with the reason.
  */
 Dialog {
     id: root
 
-    // InstanceShortcutController (QmlShell's shortcutController()).
+    // InstanceShortcutController.
     property var controller: null
     signal created(string message)
 
@@ -52,10 +46,7 @@ Dialog {
     anchors.centerIn: parent
     width: Math.min(root.dialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.dialogWidth)
     modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
     topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
     bottomPadding: Theme.space.sm
     closePolicy: Popup.CloseOnEscape
     title: qsTr("Create shortcut")
@@ -138,7 +129,6 @@ Dialog {
             }
         }
 
-        // Choosing among one account is no choice.
         ColumnLayout {
             Layout.fillWidth: true
             visible: root.accounts.length > 1

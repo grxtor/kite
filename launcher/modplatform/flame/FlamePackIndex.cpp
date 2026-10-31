@@ -80,7 +80,6 @@ void Flame::loadIndexedPack(Flame::IndexedPack& pack, QJsonObject& obj)
 	}
 
 	bool found = false;
-	// check if there are some files before adding the pack
 	auto files = Json::ensureArray(obj, "latestFiles");
 	for (auto fileIter : files) {
 		auto file = Json::requireObject(fileIter);
@@ -130,7 +129,6 @@ void Flame::loadIndexedPackVersions(Flame::IndexedPack& pack, QJsonArray& arr)
 			continue;
 		}
 
-		// pick the latest version supported
 		file.mcVersion = versionArray[0].toString();
 		file.version = Json::requireString(version, "displayName");
 		file.downloadUrl = Json::ensureString(version, "downloadUrl", "");

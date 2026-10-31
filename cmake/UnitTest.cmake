@@ -41,10 +41,8 @@ function(add_unit_test name)
         endif()
     endif()
 
-    # Keyword signature, not the plain one: Qt's own helpers (qt_import_qml_plugins,
-    # for instance) link with PRIVATE, and CMake refuses to mix the two forms on the
-    # same target. For an executable the two are otherwise equivalent -- nothing ever
-    # links against a test binary.
+    # Qt's helpers (qt_import_qml_plugins) link PRIVATE, and CMake refuses to mix
+    # the keyword and plain signatures on one target.
     target_link_libraries(${name}_test PRIVATE Qt${QT_VERSION_MAJOR}::Test ${OPT_LIBS})
 
     if(MSVC)

@@ -6,10 +6,9 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
-// Basic's spinner comes from the same private Basic.impl helper that
-// ProgressBar.qml avoids for the same reason (see its comment); this draws a
-// single rounded arc on a Canvas and spins the whole item with a
-// RotationAnimation, which needs nothing beyond QtQuick.
+// Basic's spinner is private to its plugin, which this style does not link
+// (as in ProgressBar.qml); this draws a rounded arc on a Canvas and spins the
+// item with a RotationAnimation.
 T.BusyIndicator {
     id: control
 
@@ -25,9 +24,8 @@ T.BusyIndicator {
         implicitWidth: Theme.control.height
         implicitHeight: Theme.control.height
 
-        // Canvas painting is imperative, not a binding, so a theme swap
-        // (light/dark) needs an explicit repaint trigger -- this property
-        // exists only to give onPaint's colour a dependency to react to.
+        // Canvas painting is imperative, so a theme swap needs a repaint
+        // trigger; this gives onPaint's colour a dependency to react to.
         property color strokeColor: Theme.palette.accent
         onStrokeColorChanged: requestPaint()
 
@@ -53,8 +51,8 @@ T.BusyIndicator {
             ctx.lineCap = "round";
             ctx.strokeStyle = canvas.strokeColor;
             ctx.beginPath();
-            // Three quarters of a turn: enough to read as a ring without
-            // looking like a closed, "finished" circle.
+            // Three quarters of a turn reads as a ring without looking like a
+            // closed, "finished" circle.
             ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 1.5);
             ctx.stroke();
         }

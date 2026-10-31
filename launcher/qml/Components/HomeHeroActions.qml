@@ -6,21 +6,16 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The hero's buttons, whatever the look: Play (Stop while the game runs,
- * "Starting…" and Cancel while a launch prepares it) and ▾ for the other
- * ways to play (LaunchOptionsMenu, as on the play bar). Everything it says
- * and does goes through the hero it belongs to (HomeHero), which holds the
- * instance and the signals; the look only chooses the size, whether ▾ is a
- * translucent glass square (over a photo or the sky).
+ * The hero's buttons, whatever the look: Play (Stop while the game runs, "Starting…" and Cancel while a launch
+ * prepares) and ▾ for the other ways to play (LaunchOptionsMenu). Everything goes through the hero (HomeHero);
+ * the look only chooses the size and whether ▾ is a translucent glass square.
  */
 Row {
     id: root
 
-    // HomeHero: the instance's state, the launch options and the signals.
     required property Item hero
     property int size: Theme.control.heightLg
     property int playWidth: 176
-    // ▾ as a glass square instead of the Style button.
     property bool glass: false
     property color glassFill: Qt.rgba(1, 1, 1, 0.12)
 

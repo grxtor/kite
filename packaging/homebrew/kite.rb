@@ -2,8 +2,7 @@
 cask "kite" do
   version "@VERSION@"
 
-  # The main builds use Qt 6.11, which needs macOS 13. Intel Macs on macOS 12
-  # get the Legacy build (Qt 6.9) instead; there is no Legacy build for ARM.
+  # Qt 6.11 needs macOS 13; Intel Macs on macOS 12 get the Legacy build (Qt 6.9).
   on_arm do
     sha256 "@SHA256:Kite-macOS-ARM-Qt6-@TAG@.zip@"
 
@@ -37,8 +36,8 @@ cask "kite" do
 
   app "Kite.app"
 
-  # Kite is not notarised yet, so Gatekeeper refuses to open a quarantined
-  # copy. Drop this once the release builds are signed with a Developer ID.
+  # Not notarised yet, so Gatekeeper refuses a quarantined copy. Drop this once
+  # builds are signed with a Developer ID.
   postflight_steps do
     run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{appdir}}/Kite.app"]
   end

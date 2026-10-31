@@ -48,17 +48,10 @@ QString ModMetadataIndex::normalizeName(const QString& name)
 {
 	QString n = name.toLower().trimmed();
 
-	/* Only a loader marker comes off, not every bracket.
-	 *
-	 * This used to drop anything in parentheses, which made "Fabric API"
-	 * and "Fabric API (Forge)" - two genuinely different projects, one
-	 * per loader - into the same name. Everything that matches by name
-	 * then treated one as the other: an installed Forge port counted as
-	 * the Fabric mod being present, and the download queue refused the
-	 * second of the pair because it believed it already had it.
-	 *
-	 * Anything else between brackets stays, because it is usually part
-	 * of what the mod is actually called. */
+	// Only a loader marker comes off, not every bracket: "Fabric API" and
+	// "Fabric API (Forge)" are different projects, and merging them made a
+	// Forge port count as the Fabric mod being present and blocked downloads.
+	// Other bracketed text is usually part of the name and stays.
 	static const QRegularExpression loaderMarker(QStringLiteral(
 		"\\s*\\((?:neo\\s*forge|forge|fabric|quilt|liteloader|babric|bta"
 		"|legacy\\s*fabric|ornithe|rift)"
@@ -104,7 +97,7 @@ bool ModMetadataIndex::dropSidecarOwnedBy(const QString& sidecarName,
 	}
 
 	if (canonicalFileName(owner.fileName) != canonicalName) {
-		/* Belongs to another file of the same project - leave it. */
+		// Belongs to another file of the same project: leave it.
 		return false;
 	}
 	if (!QFile::remove(path)) {
@@ -149,17 +142,15 @@ void ModMetadataIndex::load()
 	m_sidecars.clear();
 
 	if (!m_indexDir.exists()) {
-		/* Nothing to load yet — that is fine for a fresh folder. */
+		// Nothing to load yet is fine for a fresh folder.
 		return;
 	}
 
 	const QStringList files =
 		m_indexDir.entryList(QDir::Files | QDir::Readable);
 
-	/* Two passes, legacy format first, so that a folder carrying both
-	 * kinds of sidecar for one file ends up trusting the packwiz one -
-	 * that is the newer of the two by construction, since writing an
-	 * entry replaces its JSON sidecar with a TOML one. */
+	// Two passes, legacy format first, so a folder with both sidecars for one
+	// file trusts the packwiz one (writing an entry replaces its JSON sidecar).
 	for (const QString& name : files) {
 		if (!name.endsWith(QLatin1String(".json"), Qt::CaseInsensitive)) {
 			continue;
@@ -181,7 +172,7 @@ void ModMetadataIndex::load()
 			continue;
 		}
 
-		/* Prune sidecars whose target file has been removed externally. */
+		// Prune sidecars whose target file was removed externally.
 		const QString canon = canonicalFileName(e.fileName);
 		const bool exists =
 			m_folder.exists(canon) ||
@@ -212,10 +203,9 @@ void ModMetadataIndex::load()
 		const Entry e =
 			Packwiz::parse(bytes, Packwiz::slugFromFileName(name));
 		if (!e.isValid()) {
-			/* Not deleted, unlike the legacy format above: this file may
-			 * well have been written by another tool, and throwing away
-			 * something we merely failed to understand is worse than
-			 * ignoring it. */
+			// Not deleted, unlike the legacy format: another tool may have
+			// written it, and discarding what we merely failed to understand is
+			// worse than ignoring it.
 			qWarning() << "ModMetadataIndex: ignoring unreadable sidecar"
 					   << abs;
 			continue;
@@ -226,10 +216,8 @@ void ModMetadataIndex::load()
 			m_folder.exists(canon) ||
 			m_folder.exists(canon + QStringLiteral(".disabled"));
 		if (!exists) {
-			/* Also left in place: in a packwiz pack the sidecar is the
-			 * definition of what belongs here and the file next to it may
-			 * simply not have been downloaded yet. Pruning it would throw
-			 * the pack away. */
+			// Also left: in a packwiz pack the sidecar defines what belongs
+			// here and the file may not be downloaded yet.
 			qDebug() << "ModMetadataIndex: sidecar without a file, skipping"
 					 << abs;
 			continue;
@@ -342,9 +330,9 @@ bool ModMetadataIndex::put(const Entry& entry)
 			if (it.value().compare(name, Qt::CaseInsensitive) != 0) {
 				continue;
 			}
-			/* Another file of this project already answers to the name
-			 * we would like. Taking it would erase that file's history,
-			 * so this one gets the archive-derived name instead. */
+			// Another file of this project already has the name we want; taking
+			// it would erase that file's history, so use the archive-derived
+			// name.
 			name = Packwiz::fallbackSidecarFileName(entry);
 			break;
 		}
@@ -387,10 +375,9 @@ bool ModMetadataIndex::put(const Entry& entry)
 		m_sidecars.insert(canon, name);
 	}
 
-	/* Replace rather than accumulate: an entry that used to live in a
-	 * legacy JSON sidecar, or under a slug we have since learned, must
-	 * leave exactly one file behind. This is also what converts a folder
-	 * to the packwiz format - one entry at a time, as it is written. */
+	// Replace rather than accumulate: an entry from a legacy JSON sidecar, or
+	// under a slug learned since, must leave exactly one file. This also
+	// converts a folder to packwiz, one entry at a time.
 	if (!previous.isEmpty() &&
 		previous.compare(name, Qt::CaseInsensitive) != 0) {
 		dropSidecarOwnedBy(previous, canon);
@@ -413,9 +400,8 @@ bool ModMetadataIndex::remove(const QString& fileName)
 		return dropSidecarOwnedBy(name, canon);
 	}
 
-	/* Nothing recorded, so the index was probably never loaded. Try the
-	 * names this file's sidecar could have been written under - the
-	 * ownership check inside keeps us from deleting a sibling's. */
+	// Nothing recorded, so the index was probably never loaded: try the names
+	// this file's sidecar could have, the ownership check protects a sibling's.
 	QStringList candidates;
 	if (entry.isValid()) {
 		candidates << Packwiz::sidecarFileName(entry)
@@ -452,7 +438,7 @@ void ModMetadataIndex::rename(const QString& oldFileName,
 	const QString oldCanon = canonicalFileName(oldFileName);
 	const QString newCanon = canonicalFileName(newFileName);
 	if (oldCanon == newCanon) {
-		return; /* Toggling enabled/disabled keeps canonical name identical. */
+		return; // Toggling enabled/disabled keeps the canonical name.
 	}
 
 	Entry e;
@@ -477,11 +463,10 @@ void ModMetadataIndex::rename(const QString& oldFileName,
 		newSidecar = m_sidecars.value(newCanon);
 	}
 
-	/* Cleaned up after the new sidecar exists, and only when the name
-	 * really changed: a sidecar is named after the project, so it usually
-	 * keeps its name across a rename and deleting it here would delete
-	 * what put() has just written. The old file still describes the old
-	 * name, which is what the ownership check has to be given. */
+	// Cleaned up after the new sidecar exists, and only if the name changed: a
+	// sidecar is named after the project, so it usually keeps its name across a
+	// rename and deleting it would delete what put() just wrote. The ownership
+	// check gets the old name, which the old file still describes.
 	if (oldSidecar.compare(newSidecar, Qt::CaseInsensitive) != 0) {
 		dropSidecarOwnedBy(oldSidecar, oldCanon);
 	}

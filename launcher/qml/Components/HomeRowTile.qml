@@ -5,17 +5,13 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The instance's tile in the Sade and Gece looks' "Continue playing" rows,
- * in the kite's cut, with no fill of its own: its icon -- or, while that is the
- * generic one, the built-in icon it was given (Icons.displayKey) -- or the
- * pack's own logo, as on every other card. Sized by its host.
+ * The instance's tile in the Sade and Gece looks' "Continue playing" rows, in the kite's cut with no fill of its own:
+ * its icon (the built-in one while it is the generic one, Icons.displayKey) or the pack's logo. Sized by its host.
  */
 KiteShape {
     id: root
 
-    // One of HomeContinuePlaying's rows (instanceId, iconKey, packArt).
     required property var row
-    // What lies around the tile, for a logo's rounded corners.
     property color surround: Theme.palette.canvas
 
     readonly property string drawnKey: Icons.displayKey(root.row.iconKey, root.row.instanceId)

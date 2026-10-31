@@ -33,13 +33,10 @@
 namespace
 {
 
-	/* One Modrinth project object into one result.
-	 *
-	 * A search hit and the reply from /project/{id} carry the same field
-	 * names, with two differences: the hit calls the id "project_id" and
-	 * carries an "author", the project carries neither. Both are handled
-	 * here so the two entry points cannot drift apart. Returns false when
-	 * the object is missing something a row cannot do without. */
+	/* One Modrinth project object into one result. A search hit and
+	 * /project/{id} share field names, except that the hit calls the id
+	 * "project_id" and carries an "author". False when the object lacks
+	 * something a row needs. */
 	bool parseProjectObject(const QJsonObject& obj,
 							ModPlatform::IndexedProject& project)
 	{
@@ -53,8 +50,7 @@ namespace
 			project.description = Json::ensureString(obj, "description", "");
 			project.author = Json::ensureString(obj, "author", "");
 			project.logoUrl = Json::ensureString(obj, "icon_url", "");
-			/* The slug is a stable, filesystem-safe cache key; the title
-			 * is neither. */
+			/* The slug is a stable, filesystem-safe cache key; the title is not. */
 			project.logoKey =
 				project.slug.isEmpty() ? project.projectId : project.slug;
 
@@ -98,8 +94,7 @@ ModrinthContentModel::parseCategoriesResponse(const QByteArray& bytes) const
 		return categories;
 	}
 
-	/* One list covers the whole site, so the entries for other kinds of
-	 * content have to be dropped here. */
+	/* One list covers the whole site, so other content kinds are dropped. */
 	const QString wanted =
 		ModPlatform::contentTypeToModrinthFacet(contentType());
 
@@ -110,8 +105,6 @@ ModrinthContentModel::parseCategoriesResponse(const QByteArray& bytes) const
 			continue;
 		}
 		try {
-			/* Modrinth searches by the name itself, so there is no
-			 * separate id to carry. */
 			const QString name = Json::requireString(obj, "name");
 			categories.append({name, name});
 		} catch (const Json::JsonException& e) {
@@ -226,7 +219,6 @@ QList<ModPlatform::ContentVersion> ModrinthContentModel::parseVersionsResponse(
 			break;
 		}
 
-		/* A version with no downloadable file is of no use to anyone. */
 		if (version.downloadUrl.isEmpty()) {
 			continue;
 		}
@@ -239,8 +231,8 @@ QList<ModPlatform::ContentVersion> ModrinthContentModel::parseVersionsResponse(
 
 QString ModrinthContentModel::parseBodyResponse(const QByteArray& bytes) const
 {
-	/* Modrinth hands out Markdown, so it has to be rendered here - the
-	 * page shows the two providers' descriptions in the same browser. */
+	/* Modrinth hands out Markdown, rendered here so the page shows both
+	 * providers' descriptions in the same browser. */
 	const QJsonDocument doc = QJsonDocument::fromJson(bytes);
 	if (!doc.isObject()) {
 		return QString();

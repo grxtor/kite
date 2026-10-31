@@ -30,14 +30,10 @@ class Task;
 class QTimer;
 
 /**
- * Watches one Task's status()/progress()/finished() signals and turns them
- * into the pair of values a launch card wants to show: a human-readable
- * status line, and a 0..1 progress fraction (-1 while indeterminate, or
- * once nothing is being watched at all).
- *
- * Exists so InstanceList does not have to juggle per-instance
- * QMetaObject::Connection bookkeeping itself, and so this piece can be unit
- * tested against a plain Task subclass instead of a real launch.
+ * Watches one Task's status()/progress()/finished() signals and turns them into
+ * what a launch card shows: a status line and a 0..1 progress fraction (-1
+ * while indeterminate or when nothing is watched). Keeps InstanceList free of
+ * per-instance connection bookkeeping and can be unit tested on a plain Task.
  */
 class LaunchProgressTracker : public QObject
 {
@@ -47,10 +43,9 @@ class LaunchProgressTracker : public QObject
 	explicit LaunchProgressTracker(QObject* parent = nullptr);
 
 	/**
-	 * Start watching @p task instead of whatever was being watched
-	 * before. A null task (or the task already being watched) is a
-	 * no-op / clear(), same as when the watched task finishes or is
-	 * destroyed on its own.
+	 * Watches @p task instead of the previous one. A null or already watched
+	 * task is a no-op / clear(), as when the watched task finishes or is
+	 * destroyed.
 	 */
 	void watch(Task* task);
 
@@ -73,8 +68,8 @@ class LaunchProgressTracker : public QObject
 	}
 
 	/**
-	 * Minimum spacing between changed() emissions, in ms. Defaults to
-	 * ~10/s. Exposed so tests do not have to wait on the real interval.
+	 * Minimum spacing between changed() emissions, in ms (default ~10/s);
+	 * exposed so tests need not wait on the real interval.
 	 */
 	void setMinIntervalMs(int ms)
 	{
@@ -83,12 +78,9 @@ class LaunchProgressTracker : public QObject
 
   signals:
 	/**
-	 * status() and/or progress() have (probably) changed.
-	 *
-	 * Coalesced to at most once per the configured interval while the
-	 * watched task keeps reporting, so a fast-moving download does not
-	 * turn into a redraw storm. The transition to idle (clear(), or the
-	 * watched task finishing/dying) is never delayed by this.
+	 * status() and/or progress() have (probably) changed. Coalesced to at most
+	 * once per interval while the watched task keeps reporting, so a fast
+	 * download is not a redraw storm; the transition to idle is never delayed.
 	 */
 	void changed();
 

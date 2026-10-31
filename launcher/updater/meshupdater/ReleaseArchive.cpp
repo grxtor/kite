@@ -41,7 +41,6 @@
 namespace
 {
 
-	//! 64 KiB at a time: large enough to be cheap, small enough to not matter.
 	constexpr qint64 kCopyBlockSize = 64 * 1024;
 
 	using ArchiveReadPtr =
@@ -55,23 +54,16 @@ namespace
 		return fallback;
 	}
 
-	/*!
-	 * Resolve an archive entry's path against \a destDir, refusing anything
-	 * that escapes it.
-	 *
-	 * QDir::cleanPath collapses "a/../../b" for us; comparing the cleaned
-	 * absolute result against the destination prefix is then enough to catch
-	 * both "../" traversal and absolute paths. Returns an empty string when
-	 * the entry must be rejected.
-	 */
+	/*! Resolves an archive entry's path against \a destDir, returning an empty string for anything
+	 * that escapes it. cleanPath collapses "a/../../b"; comparing the cleaned absolute result with
+	 * the destination prefix catches "../" traversal and absolute paths. */
 	QString safeDestination(const QDir& destDir, const QString& entryPath)
 	{
 		if (entryPath.isEmpty())
 			return {};
 
-		// Windows-style separators appear in archives built on Windows, and a
-		// backslash is a perfectly ordinary character in a POSIX file name --
-		// so normalise before any of the checks below, not after.
+		// Windows archives use backslashes, an ordinary character in POSIX names, so normalise
+		// before the checks.
 		QString normalised = entryPath;
 		normalised.replace(QLatin1Char('\\'), QLatin1Char('/'));
 
@@ -101,15 +93,10 @@ namespace
 		return fallbackValue;
 	}
 
-	/*!
-	 * Where a symlink would land, refusing anything outside \a destDir.
-	 *
-	 * A symlink's target is relative to the directory the link sits in, not
-	 * to the archive root, so it is resolved from there. Nothing is written
-	 * through the link during extraction, but the install pass that follows
-	 * copies files -- and a link pointing out of the tree would send those
-	 * writes anywhere on the disk.
-	 */
+	/*! Where a symlink would land, refusing anything outside \a destDir. The target is relative to
+	 * the link's own directory, not the archive root. Nothing is written through links during
+	 * extraction, but the install pass copies files and a link pointing out of the tree would send
+	 * those writes anywhere. */
 	bool symlinkTargetStaysInside(const QDir& destDir, const QString& linkPath,
 								  const QString& linkTarget)
 	{
@@ -130,18 +117,16 @@ namespace
 					bool hard, QString* error)
 	{
 #if defined(Q_OS_WIN32)
-		// Our Windows artifacts are zips built from a directory tree, so they
-		// contain neither kind. Refusing beats emulating: QFile::link() would
-		// write a .lnk shortcut, which is not a link as far as anything that
-		// opens the file is concerned.
+		// Our Windows artifacts are zips of a directory tree and contain no links; refuse rather
+		// than emulate (QFile::link() would write a .lnk shortcut, not a real link).
 		Q_UNUSED(linkPath)
 		Q_UNUSED(target)
 		Q_UNUSED(hard)
 		*error = QStringLiteral("archive links are not supported on Windows");
 		return false;
 #else
-		// A leftover from an earlier attempt would make the call fail with
-		// EEXIST; the caller has already decided this tree is ours to write.
+		// A leftover from an earlier attempt would fail the call with EEXIST; this tree is ours to
+		// write.
 		QFile::remove(linkPath);
 
 		const int result = hard
@@ -186,8 +171,7 @@ namespace
 				return false;
 			}
 
-			// A sparse entry reports gaps as jumps in the offset; seek so the
-			// hole is preserved rather than shifting the rest of the file.
+			// A sparse entry reports gaps as offset jumps; seek so the hole is preserved.
 			if (!out.seek(offset)) {
 				*error = QStringLiteral("could not seek in %1: %2")
 							 .arg(QDir::toNativeSeparators(path),
@@ -247,9 +231,8 @@ ReleaseArchive::Result ReleaseArchive::extract(const QString& archivePath,
 		return result;
 	}
 
-	// Let libarchive work out what the container is. Release artifacts are
-	// .zip on Windows and macOS and .tar.gz on Linux, and having one code
-	// path for both means neither can rot unnoticed.
+	// Let libarchive detect the container: release artifacts are .zip on Windows and macOS and
+	// .tar.gz on Linux, and one code path keeps neither from rotting.
 	archive_read_support_filter_all(reader.get());
 	archive_read_support_format_all(reader.get());
 
@@ -283,17 +266,15 @@ ReleaseArchive::Result ReleaseArchive::extract(const QString& archivePath,
 
 		const QString target = safeDestination(destination, entryPath);
 		if (target.isEmpty()) {
-			// Refuse the whole archive. A release that contains a path
-			// escaping its own directory is either broken or hostile, and
-			// installing "most of" it is not a sane middle ground.
+			// Refuse the whole archive: a path escaping its directory means broken or hostile, and
+			// installing "most of" it is not sane.
 			result.error =
 				QStringLiteral("the archive contains an unsafe path: %1")
 					.arg(entryPath);
 			return result;
 		}
 
-		// auto, not mode_t: libarchive supplies its own integer type for this
-		// and mode_t does not exist in the MSVC headers at all.
+		// auto, not mode_t: libarchive supplies its own integer type and MSVC has no mode_t.
 		const auto entryType = archive_entry_filetype(entry);
 
 		if (entryType == AE_IFDIR) {
@@ -305,8 +286,7 @@ ReleaseArchive::Result ReleaseArchive::extract(const QString& archivePath,
 			continue;
 		}
 
-		// Everything below writes into the entry's own directory, so make it
-		// before deciding what kind of thing goes in it.
+		// Everything below writes into the entry's own directory.
 		if (!QDir().mkpath(QFileInfo(target).absolutePath())) {
 			result.error =
 				QStringLiteral("could not create %1")
@@ -314,11 +294,9 @@ ReleaseArchive::Result ReleaseArchive::extract(const QString& archivePath,
 			return result;
 		}
 
-		// A hardlink entry carries no data of its own -- it names another
-		// entry, which tar always stores first. This is not an exotic case:
-		// the Linux portable bundle is a sharun bundle, where bin/kite,
-		// bin/kite-updater and sharun are all hardlinks to a single
-		// multi-call loader.
+		// A hardlink entry names another entry, which tar stores first. Not exotic: the Linux
+		// portable bundle is a sharun bundle where bin/kite, bin/kite-updater and sharun are
+		// hardlinks to one multi-call loader.
 		if (const char* hardlink =
 				entryString(archive_entry_hardlink_utf8(entry),
 							archive_entry_hardlink(entry));
@@ -333,8 +311,8 @@ ReleaseArchive::Result ReleaseArchive::extract(const QString& archivePath,
 				return result;
 			}
 			if (!QFileInfo::exists(linkedPath)) {
-				// Out-of-order archive. Failing is right: a launcher that is
-				// a dangling hardlink is not a launcher.
+				// Out-of-order archive; fail, since a launcher that is a dangling hardlink is not a
+				// launcher.
 				result.error = QStringLiteral("the archive hardlinks %1 to %2, "
 											  "which it has not stored yet")
 								   .arg(entryPath, linkedEntry);
@@ -371,9 +349,8 @@ ReleaseArchive::Result ReleaseArchive::extract(const QString& archivePath,
 		}
 
 		if (entryType != AE_IFREG) {
-			// Devices, fifos, sockets. Nothing we publish contains any, and
-			// creating them from a downloaded file is not something an
-			// updater should be able to do.
+			// Devices, fifos, sockets: nothing we publish has any, and an updater should not create
+			// them from a downloaded file.
 			qWarning() << "Skipping special archive entry:" << entryPath;
 			continue;
 		}
@@ -390,9 +367,7 @@ ReleaseArchive::Result ReleaseArchive::extract(const QString& archivePath,
 			return result;
 		}
 
-		// Carry the executable bit over: on Linux and macOS the launcher and
-		// its helpers come out of the archive with it set, and a launcher
-		// that is not executable is an update that bricked the install.
+		// Carry the executable bit over: a launcher that is not executable bricks the install.
 		if (const auto mode = archive_entry_perm(entry); (mode & 0111) != 0) {
 			QFile::setPermissions(target,
 								  QFile::permissions(target) |

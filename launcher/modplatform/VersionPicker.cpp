@@ -27,9 +27,8 @@
 namespace
 {
 
-	/* Loader names as the two providers spell them, lower-cased. Used to
-	 * tell a loader apart from a game version in CurseForge's mixed
-	 * list, so anything else in there is left alone. */
+	/* Loader names as the two providers spell them, lower-cased, to tell a
+	 * loader from a game version in CurseForge's mixed list. */
 	const QStringList& knownLoaderNames()
 	{
 		static const QStringList names = {
@@ -42,19 +41,15 @@ namespace
 		return names;
 	}
 
-	/* Publish dates are RFC 3339 on both providers. Parsed rather than
-	 * compared as text, because an entry with a missing or malformed
-	 * date has to lose to a real one instead of winning on punctuation. */
+	/* Publish dates are RFC 3339. Parsed, not compared as text, so a missing
+	 * or malformed date loses to a real one. */
 	QDateTime parseDate(const QJsonObject& obj, const QString& key)
 	{
 		return QDateTime::fromString(obj.value(key).toString(), Qt::ISODate);
 	}
 
-	/* Whether this entry may run on `loader`.
-	 *
-	 * An entry that states no loader at all is accepted: plenty of
-	 * library mods do not, and refusing them would leave a dependency
-	 * unresolvable for no good reason. */
+	/* Whether this entry may run on `loader`. An entry stating no loader is
+	 * accepted: many library mods state none. */
 	bool loaderMatches(const QStringList& entryLoaders, const QString& loader)
 	{
 		if (loader.isEmpty() || entryLoaders.isEmpty()) {
@@ -82,8 +77,7 @@ QJsonObject ModPlatform::newestCurseForgeFile(const QJsonArray& files,
 			continue;
 		}
 
-		/* CurseForge puts game versions and loader names in the same
-		 * array, so the loader names have to be picked back out of it. */
+		/* CurseForge mixes loader names into the game version array. */
 		QStringList entryLoaders;
 		for (const auto& tagRaw : file.value("gameVersions").toArray()) {
 			const QString tag = tagRaw.toString();

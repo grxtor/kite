@@ -42,8 +42,7 @@ namespace
 		"saves/*/region/\n"
 		"saves/*/playerdata/\n";
 
-	/* Resolve "git" through PATH, preferring the launcher's bundled mirror
-	 * on Windows if one is shipped. */
+	/* Resolves "git" through PATH, preferring a bundled mirror on Windows if one is shipped. */
 	QString gitExecutable()
 	{
 #ifdef Q_OS_WIN
@@ -135,8 +134,7 @@ void GitRepo::writeGitIgnore() const
 
 void GitRepo::writeRepoConfig() const
 {
-	// Pin the author identity locally so we don't depend on the user
-	// having one configured globally.
+	// Pin the author identity locally; do not depend on a global one.
 	runGit({"config", "user.name", kPluginIdentityName});
 	runGit({"config", "user.email", kPluginIdentityEmail});
 	// Disable signing — local snapshots, no need for GPG.
@@ -158,21 +156,10 @@ bool GitRepo::initialize(QString* errorMsg)
 		return false;
 	}
 
-	// We deliberately create a **non-bare** repository whose git-dir
-	// lives at <instance>/.history and whose work-tree is <instance>
-	// itself. Two things matter:
-	//
-	//   1. We do NOT pass `--bare`. A bare repo refuses every command
-	//      that takes `--work-tree`, which means every subsequent
-	//      `git --work-tree=<inst> --git-dir=<.history> add/commit/…`
-	//      would die with "GIT_WORK_TREE not allowed without
-	//      specifying GIT_DIR".
-	//
-	//   2. We pass `--git-dir=<.history>` to plant the repo directory
-	//      directly where we want it, instead of letting git create
-	//      <.history>/.git underneath. `--work-tree` is NOT a valid
-	//      argument to `git init` (it would error out), so we strip
-	//      it from this single call.
+	// A non-bare repository: git-dir <instance>/.history, work-tree <instance>. No --bare: a bare
+	// repo refuses every command taking --work-tree ("GIT_WORK_TREE not allowed without specifying
+	// GIT_DIR"). --git-dir plants the repo directly in .history instead of <.history>/.git;
+	// --work-tree is not valid for `git init`, so it is stripped from this one call.
 	GitResult res;
 	{
 		QString exe = gitExecutable();
@@ -363,8 +350,7 @@ bool GitRepo::restore(const QString& sha, QString* errorMsg)
 		return false;
 	}
 
-	// Safety: first take an auto-snapshot of whatever is dirty so the
-	// user can recover from a botched restore.
+	// Safety: auto-snapshot whatever is dirty so a botched restore is recoverable.
 	commit(QStringLiteral("GitVersioning: auto-snapshot before restore"));
 
 	auto res = runGit({"checkout", sha, "--", "."});
@@ -373,10 +359,8 @@ bool GitRepo::restore(const QString& sha, QString* errorMsg)
 			*errorMsg = QString::fromUtf8(res.stderrBytes);
 		return false;
 	}
-	// After `checkout <sha> -- .`, HEAD didn't move but the index now
-	// matches <sha>. Reset the index to the previous HEAD so subsequent
-	// commits track changes against the restored content (not against
-	// HEAD-before-restore).
+	// After `checkout <sha> -- .` HEAD did not move but the index matches <sha>; reset the index to
+	// the previous HEAD so later commits track changes against the restored content.
 	auto reset = runGit({"reset", "--mixed", "HEAD"});
 	Q_UNUSED(reset);
 

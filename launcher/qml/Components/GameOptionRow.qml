@@ -7,9 +7,8 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One options.txt entry on GameOptionsTab, with the control the game's own
- * Options screen uses for it. `spec` says which (see GameOptionsTab's
- * `optionGroups`):
+ * One options.txt entry on GameOptionsTab, with the control the game's own Options screen uses. `spec` says which
+ * (see GameOptionsTab's `optionGroups`):
  *
  *   kind "slider"  from/to/step in the shown unit, toSlider(raw) -> number,
  *                  toRaw(number) -> string, text(number) -> label
@@ -17,23 +16,19 @@ import Kite.Theme
  *   kind "choice"  choices: [{ value, label }]
  *   kind "text"    text() -> label; read-only
  *
- * A change is written with GameOptions.setValue() the moment it is made
- * (a slider when it is let go); the controls then re-bind to what the file
- * says, so a refused write shows the old value again. A value the control
- * cannot represent (another game version's format, a GUI scale past the
- * list) is shown as written instead, read-only, rather than misread.
+ * A change is written with GameOptions.setValue() at once (a slider when let go); the controls then re-bind to what
+ * the file says, so a refused write shows the old value. A value the control cannot represent (another game
+ * version's format, a GUI scale past the list) is shown as written, read-only.
  */
 SettingRow {
     id: root
 
     property var spec: ({})
     property string raw: ""
-    // The GameOptions model (not the search proxy over it).
     property var store: null
     property bool editable: false
 
-    // The value sits in a fixed-width slot at the slider's right end, so
-    // "8 chunks" growing to "32 chunks" never shifts the slider.
+    // A fixed-width slot at the slider's right end, so "8 chunks" growing to "32 chunks" never shifts it.
     readonly property int sliderWidth: 220
     readonly property int valueWidth: 84
     readonly property int choiceWidth: 160
@@ -45,7 +40,6 @@ SettingRow {
     readonly property bool interactive: understood && spec.kind !== "text"
 
     label: spec.label || ""
-    // Read-only rows are information, not a disabled control.
     enabled: editable || !interactive
 
     function commit(value) {
@@ -80,7 +74,6 @@ SettingRow {
                     value = Qt.binding(() => root.spec.toSlider(root.raw))
                 }
                 onPressedChanged: if (!pressed) save()
-                // Arrow keys move it without ever pressing it.
                 onMoved: if (!pressed) save()
             }
 

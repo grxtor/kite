@@ -120,9 +120,7 @@ void DirectJavaLaunch::on_state(LoggedProcess::State state)
 				emitFailed(tr("Game crashed."));
 				return;
 			}
-			// FIXME: make this work again
-			//  m_postlaunchprocess.processEnvironment().insert("INST_EXITCODE",
-			//  QString(exitCode)); run post-exit
+			// FIXME: INST_EXITCODE is not passed to the post-exit command.
 			emitSucceeded();
 			break;
 		}
@@ -132,9 +130,7 @@ void DirectJavaLaunch::on_state(LoggedProcess::State state)
 						 MessageLevel::Kite);
 			m_parent->setPid(m_process.processId());
 			m_parent->instance()->setLastLaunch();
-			/* The game is up: nothing left to report, so no stage either.
-			 * (KitePartLaunch says the same with readyForLaunch, which
-			 * the launch progress shown on the instance clears on.) */
+			// The game is up: nothing left to report, so no stage either.
 			setStatus(QString());
 			break;
 		default:

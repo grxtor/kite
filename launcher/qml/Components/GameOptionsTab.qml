@@ -8,26 +8,16 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * This instance's options.txt - the widget-free replacement for
- * GameOptionsPage, which only ever showed it.
- *
- * The options a player actually recognises come first, grouped the way the
- * game's own Options screen groups them, in the game's own terms ("Render
- * distance: 12 chunks", not "renderDistance 12") and with the same kind of
- * control (GameOptionRow). A change is written to options.txt at once and
- * applies the next time the game starts; while it is running everything is
- * read-only, since the game rewrites the file as it quits. Every raw key is
- * still there, searchable, behind "All options".
- *
- * A TabScroll, like the Settings tab beside it: no heading (the tab strip
- * names the tab), one line of description, the page's full width.
+ * This instance's options.txt. Recognisable options first, grouped like the game's Options screen with the same
+ * kind of control (GameOptionRow); every raw key is searchable behind "All options". Changes are written at once
+ * and apply on the next start; everything is read-only while the game runs, since it rewrites the file as it
+ * quits.
  */
 TabScroll {
     id: root
 
-    // KeyValueFilterModel over the instance's GameOptions (InstanceDetails.gameOptions).
+    // KeyValueFilterModel over InstanceDetails.gameOptions.
     property var model: null
-    // Whether this instance's game is running (InstancePage.running).
     property bool running: false
     property bool showAll: false
 
@@ -40,12 +30,10 @@ TabScroll {
                  ? qsTr("The game is running. These can be changed again once it closes.")
                  : qsTr("What this instance's game is set to. Changes are saved straight away and apply the next time it starts.")
 
-    // key -> raw value, read from the unfiltered GameOptions underneath the
-    // search proxy, so the groups above never change while searching.
+    // key -> raw value, read below the search proxy so the groups never change while searching.
     property var values: ({})
-    // The keys there are, one per line. A string only notifies when it
-    // actually changes, so the rows below are rebuilt when a key appears or
-    // goes -- never while a value is being edited.
+    // The keys, one per line. A string only notifies when it changes, so the rows are rebuilt when a key
+    // appears or goes, never while a value is edited.
     property string keyList: ""
     function collect() {
         const map = {}
@@ -90,13 +78,11 @@ TabScroll {
         return named.length > 0 ? named.join(", ") : qsTr("None")
     }
 
-    // Row specs for GameOptionRow (its header lists the fields).
     function chunks(label, key, from) {
         return { label: label, key: key, kind: "slider", from: from, to: 32, step: 1,
                  toSlider: (raw) => Number(raw), toRaw: (v) => String(v),
                  text: (v) => qsTr("%1 chunks").arg(v) }
     }
-    // A 0..1 value shown as 0..scale.
     function fraction(label, key, scale, text) {
         return { label: label, key: key, kind: "slider", from: 0, to: scale, step: 1,
                  toSlider: (raw) => Math.round(Number(raw) * scale),
@@ -115,10 +101,8 @@ TabScroll {
     readonly property int unlimitedFps: 260
     readonly property int maxGuiScale: 6
 
-    // { title, rows: [spec] } -- a row only shows when its key is in this
-    // options.txt (fancyGraphics is what versions before 1.16 wrote instead
-    // of graphicsMode).
-    // (Not "groups": that is TabScroll's default property.)
+    // { title, rows: [spec] }; a row shows only when its key is in options.txt (fancyGraphics is what versions
+    // before 1.16 wrote instead of graphicsMode). Not "groups": that is TabScroll's default property.
     readonly property var optionGroups: [
         { title: qsTr("Video"), rows: [
             root.chunks(qsTr("Render distance"), "renderDistance", 2),
@@ -162,8 +146,7 @@ TabScroll {
             root.fraction(qsTr("Mouse sensitivity"), "mouseSensitivity", 200, (v) => qsTr("%1%").arg(v)),
             root.toggle(qsTr("Auto-jump"), "autoJump")
         ] },
-        // Read-only: the language list is the game's own, and packs are
-        // turned on and off on the Content tab.
+        // Read-only: the language list is the game's own, and packs are turned on and off on the Content tab.
         { title: qsTr("Language and packs"), rows: [
             root.info(qsTr("Language"), "lang", root.language),
             root.info(qsTr("Resource packs"), "resourcePacks", root.resourcePacks)
@@ -193,7 +176,6 @@ TabScroll {
         }
     }
 
-    // Every key, raw, for anything the groups above leave out.
     Column {
         width: parent.width
         spacing: Theme.space.sm

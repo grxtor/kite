@@ -24,10 +24,7 @@
 #include <QProcess>
 #include <QDebug>
 
-/**
- * This shouldn't exist, but until QTBUG-9328 and other unreported bugs are
- * fixed, it needs to be a thing.
- */
+/** Needed until QTBUG-9328 and other unreported bugs are fixed. */
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
 
 #include <unistd.h>
@@ -49,25 +46,21 @@ bool IndirectOpen(T callable, qint64* pid_forked = nullptr)
 		qWarning() << "IndirectOpen failed to fork: " << errno;
 		return false;
 	}
-	// child - do the stuff
 	if (pid == 0) {
-		// unset all this garbage so it doesn't get passed to the child process
+		// Unset these so they are not passed to the child process.
 		qunsetenv("LD_PRELOAD");
 		qunsetenv("LD_LIBRARY_PATH");
 		qunsetenv("LD_DEBUG");
 		qunsetenv("QT_PLUGIN_PATH");
 		qunsetenv("QT_FONTPATH");
 
-		// open the URL
 		auto status = callable();
 
-		// detach from the parent process group.
 		setsid();
 
-		// die. now. do not clean up anything, it would just hang forever.
+		// Exit at once without cleanup, which would hang.
 		_exit(status ? 0 : 1);
 	} else {
-		// parent - assume it worked.
 		int status;
 		while (waitpid(pid, &status, 0)) {
 			if (WIFEXITED(status)) {
@@ -142,10 +135,8 @@ namespace DesktopServices
 	bool isFlatpak()
 	{
 #ifdef Q_OS_LINUX
-		/* Both are set by the runtime for every Flatpak app: the marker
-		 * file is what flatpak-spawn and friends look for, and the
-		 * variable is what the app itself is told. Either one alone is
-		 * enough to be sure. */
+		/* Both are set by the runtime for every Flatpak app (the marker file
+		 * is what flatpak-spawn looks for); either one alone suffices. */
 		static const bool sandboxed =
 			QFile::exists(QStringLiteral("/.flatpak-info")) ||
 			qEnvironmentVariableIsSet("FLATPAK_ID");

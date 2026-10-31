@@ -31,11 +31,7 @@
 
 class QNetworkReply;
 
-/**
- * Enum for describing the state of the current task.
- * Used by the getStateMessage function to determine what the status message
- * should be.
- */
+/** The state of the current task; getStateMessage() derives the message. */
 enum class AccountTaskState {
 	STATE_CREATED,
 	STATE_WORKING,
@@ -66,12 +62,7 @@ class AccountTask : public Task
 	void authorizeWithBrowser(const QUrl& url);
 
   protected:
-	/**
-	 * Returns the state message for the given state.
-	 * Used to set the status message for the task.
-	 * Should be overridden by subclasses that want to change messages for a
-	 * given state.
-	 */
+	/** The status message for the given state; override to change messages. */
 	virtual QString getStateMessage() const;
 
   protected slots:

@@ -114,10 +114,8 @@ class NetAction : public QObject
 	/// index within the parent job, FIXME: nuke
 	int m_index_within_job = 0;
 
-	/// the network reply
 	unique_qobject_ptr<QNetworkReply> m_reply;
 
-	/// source URL
 	QUrl m_url;
 
 	qint64 m_progress = 0;

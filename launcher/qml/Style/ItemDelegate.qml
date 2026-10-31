@@ -51,8 +51,8 @@ T.ItemDelegate {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
         }
 
-        // Inside the row rather than around it: rows sit edge to edge in a
-        // list, and an outset ring would be clipped by its neighbours.
+        // Inside the row: rows sit edge to edge, and an outset ring would be
+        // clipped by its neighbours.
         FocusRing {
             anchors.margins: Theme.space.xxs
             baseRadius: Math.max(0, Theme.radius.sm - Theme.space.xxs * 2)

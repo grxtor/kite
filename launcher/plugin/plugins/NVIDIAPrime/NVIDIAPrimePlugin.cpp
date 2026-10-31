@@ -2,9 +2,7 @@
  * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: MIT
  *
- * NVIDIAPrimePlugin — MMCO entry point for the NVIDIA Prime plugin.
- *
- * Forces Minecraft to use the NVIDIA discrete GPU on Optimus laptops.
+ * NVIDIAPrimePlugin: MMCO entry point. Forces Minecraft onto the NVIDIA discrete GPU on Optimus laptops.
  *
  * Behaviour:
  *   - Flatpak:      prepends `prime-run` as a wrapper command.
@@ -13,11 +11,8 @@
  *       __VK_LAYER_NV_optimus=NVIDIA_only
  *       __GLX_VENDOR_LIBRARY_NAME=nvidia
  *
- * ABI 5: the toggle is a declarative GLOBAL_SETTINGS surface (one
- * `toggle` node, same shape as SystemTray's settings surface) instead
- * of a QCheckBox injected into the Minecraft settings page via
- * qApp->allWidgets()/findChild(). The setting is stored under the same
- * key as before: plugin.nvidia_prime.enabled.
+ * The toggle is a declarative GLOBAL_SETTINGS surface (one `toggle` node) stored under
+ * plugin.nvidia_prime.enabled.
  */
 
 #include "plugin/sdk/mmco_cxx_sdk.hpp"
@@ -59,15 +54,8 @@ static void ensureSettingRegistered()
 		g_ctx->app_setting_register(g_ctx->module_handle, SETTING_KEY, "0");
 }
 
-/* ── Settings UI: one ABI 5 GLOBAL_SETTINGS surface ───────────────── *
- *
- * Replaces injectCheckboxIntoMinecraftPage()'s allWidgets()/findChild
- * walk against MinecraftPage's "verticalLayout_3": the host renders
- * this document as a titled section inside its own "Plugins" page
- * every time the global Settings dialog opens, from whatever document
- * is currently stored for this surface — so, like SystemTray's
- * settings surface, this only needs to be created ONCE (here, from
- * mmco_init()), not re-injected on every dialog open. */
+/* Settings UI: one ABI 5 GLOBAL_SETTINGS surface. The host renders the stored document as a titled
+ * section in its "Plugins" page each time Settings opens, so it is created once, from mmco_init(). */
 
 static void on_settings_surface_event(void* /*ud*/, const char* /*surface_id*/,
 									  const char* node_id, const char* event,
@@ -175,9 +163,7 @@ MMCO_EXPORT void mmco_unload()
 	if (g_ctx) {
 		MMCO_LOG(g_ctx, "NVIDIA Prime plugin unloading.");
 	}
-	/* PluginManager tears down every surface this module still owns
-	 * when it unloads (see SurfaceRecord teardown in PluginManager.cpp) —
-	 * we just drop our raw handle so we never touch it again. */
+	/* PluginManager tears down the surfaces this module owns on unload; just drop our raw handle. */
 	g_settingsSurface = nullptr;
 	g_ctx = nullptr;
 }

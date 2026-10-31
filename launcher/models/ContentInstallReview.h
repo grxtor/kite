@@ -33,59 +33,35 @@
 class ModFolderModel;
 
 /*
- * An install plan, shown before anything is downloaded: the QML-facing
- * replacement for DownloadSummaryDialog.
- *
- * Two shapes:
- *   - One picked project (Add content, or "Change version…" in the
- *     Content tab): its own row comes first and is always installed - it
- *     is what the install is for - and start() resolves its required
- *     dependencies (DependencyResolver, mods only) into rows under it.
- *   - Missing dependencies (missingDependencies(), "Verify dependencies"):
- *     the resolver is run over what is already installed, and only what
- *     it finds missing is listed. There is no picked row. The mod health
- *     check's "Install" is this shape too: setWantedProjects() adds the
- *     mods it found missing by id, setReplacements() the outdated copies
- *     they are to replace.
- *
- * Every dependency row can be unticked; one whose project is already on
- * disk at another version starts unticked - DownloadSummaryDialog's own
- * default. Dependencies no provider had a compatible version of are listed
- * in `unresolved`.
- *
- * install() downloads the ticked rows the way the widget page did
- * (conflicts settled by ModInstallConflictAnalyzer - a picked version of
- * something already installed replaces it in place - then one
- * ContentDownloadTask) and hands back a TaskWatcher parented to this
- * review's own parent, so the download outlives the review. install() and
- * cancel() both end the review (deleteLater()).
- *
- * Core, like the rest of models/: QtCore only, no QtWidgets, no ui/.
+ * An install plan shown before anything is downloaded. Two shapes:
+ *   - One picked project: its row comes first and is always installed; start()
+ *     resolves its required dependencies into rows under it.
+ *   - Missing dependencies (missingDependencies()): the resolver runs over what
+ *     is installed and only what is missing is listed; there is no picked row.
+ *     The mod health check's "Install" is this shape too
+ *     (setWantedProjects(), setReplacements()).
+ * Dependency rows can be unticked; one already on disk at another version
+ * starts unticked. Dependencies no provider had a compatible version of are in
+ * `unresolved`. install() downloads the ticked rows (conflicts settled by
+ * ModInstallConflictAnalyzer: a picked version replaces the installed one) and
+ * returns a TaskWatcher parented to the review's parent, so the download
+ * outlives the review. install() and cancel() both end it (deleteLater()).
  */
 class ContentInstallReview : public QAbstractListModel
 {
 	Q_OBJECT
 
-	/// The picked project's name, or a heading for a missing-dependency
-	/// review.
 	Q_PROPERTY(QString title READ title CONSTANT)
-	/// 1 when the first row is a picked project (always installed), 0 for
-	/// a missing-dependency review.
+	/// 1 when the first row is a picked project, 0 for a missing-dependency review.
 	Q_PROPERTY(int primaryCount READ primaryCount CONSTANT)
-	/// Still asking the providers for dependencies.
 	Q_PROPERTY(bool resolving READ resolving NOTIFY stateChanged)
-	/// Resolution is over (or was never needed); install() may be called.
 	Q_PROPERTY(bool ready READ ready NOTIFY stateChanged)
-	/// Whether there is anything to review at all: a dependency, or one
-	/// that could not be found. False means install() can run unasked.
+	/// False means install() can run unasked.
 	Q_PROPERTY(bool needsReview READ needsReview NOTIFY stateChanged)
 	Q_PROPERTY(int dependencyCount READ dependencyCount NOTIFY stateChanged)
-	/// Rows that will be downloaded.
 	Q_PROPERTY(int checkedCount READ checkedCount NOTIFY checkedChanged)
-	/// Dependency rows that will be downloaded.
 	Q_PROPERTY(int checkedDependencyCount READ checkedDependencyCount NOTIFY
 				   checkedChanged)
-	/// Names of required dependencies nothing compatible was found for.
 	Q_PROPERTY(QStringList unresolved READ unresolved NOTIFY stateChanged)
 	Q_PROPERTY(int count READ count NOTIFY stateChanged)
 
@@ -93,31 +69,24 @@ class ContentInstallReview : public QAbstractListModel
 	enum Roles {
 		NameRole = Qt::UserRole + 1,
 		FileNameRole,
-		/// "Modrinth" / "CurseForge".
 		ProviderRole,
-		/// What asked for this dependency, ", "-joined; empty for the
-		/// picked project.
+		/// ", "-joined; empty for the picked project.
 		RequiredByRole,
 		IsDependencyRole,
 		CheckedRole,
-		/// A version of this is already installed.
 		MaybeInstalledRole,
-		/// The file this one replaces, or "".
 		ReplacesRole,
 		/// The author only allows downloads from their own page.
 		BrowserOnlyRole,
-		/// "release" / "beta" / "alpha" / "".
 		VersionTypeRole
 	};
 
-	/// One picked project. @p loader: empty unless the content type uses
-	/// one. Nothing runs until start().
+	/// @p loader: empty unless the content type uses one. Nothing runs until start().
 	ContentInstallReview(const ModPlatform::SelectedMod& mod,
 						 const QString& mcVersion, const QString& loader,
 						 std::shared_ptr<ModFolderModel> folder,
 						 bool resolveDependencies, QObject* parent = nullptr);
-	/// What @p installed (the folder's own recorded files) need and do
-	/// not have. Nothing runs until start().
+	/// What @p installed (the folder's recorded files) need and lack. Nothing runs until start().
 	static ContentInstallReview*
 	missingDependencies(const QList<ModPlatform::SelectedMod>& installed,
 						const QString& title, const QString& mcVersion,
@@ -156,29 +125,21 @@ class ContentInstallReview : public QAbstractListModel
 	QVariant data(const QModelIndex& index, int role) const override;
 	QHash<int, QByteArray> roleNames() const override;
 
-	/// Mods to look up by id, as if the installed ones given to
-	/// missingDependencies() required them (DependencyResolver::
-	/// addWantedProjects). Before start(); a review with no installed mods
-	/// and only these still resolves.
+	/// Mods looked up by id as if the installed ones required them. Before
+	/// start(); a review with only these still resolves.
 	void setWantedProjects(const QList<DependencyResolver::WantedProject>& wanted);
-	/// For the dependency that answers wanted id K (its `slug`): the file
-	/// @p fileByWantedId has under K, which it replaces. Such a row is
-	/// installed as a replacement and starts ticked even though a version
-	/// of it is already on disk - replacing an outdated copy is the point.
-	/// Before start() or applyResolution().
+	/// For the dependency answering wanted id K: the file @p fileByWantedId has
+	/// under K, which it replaces. Such a row starts ticked even though a version
+	/// is on disk. Before start() or applyResolution().
 	void setReplacements(const QHash<QString, QString>& fileByWantedId);
-	/// The folder the rows are installed into, for a review made before the
-	/// instance it is for exists. Before install().
+	/// For a review made before its instance exists. Before install().
 	void setFolder(std::shared_ptr<ModFolderModel> folder);
-	/// Resolves dependencies, or settles at once when there are none to
-	/// look for. Called by whoever created the review.
+	/// Resolves dependencies, or settles at once when there are none.
 	void start();
-	/// Lists @p dependencies under the picked project (if any) and marks
-	/// the review ready - what the resolver's answer goes through. Public
-	/// so the review can be tested without the network.
+	/// Lists @p dependencies under the picked project and marks the review ready;
+	/// public so tests need no network.
 	void applyResolution(const QList<ModPlatform::DependencyInfo>& dependencies,
 						 const QList<ModPlatform::UnresolvedDep>& unresolved);
-	/// The ticked rows, as download items.
 	QList<ModPlatform::DownloadItem> downloadItems() const;
 
 	/// No effect on the picked project's own row.
@@ -187,7 +148,6 @@ class ContentInstallReview : public QAbstractListModel
 	/// Starts the download and ends this review; null (and the review
 	/// stays open) until `ready`, or when nothing is ticked.
 	Q_INVOKABLE QObject* install();
-	/// Stops resolving and ends this review.
 	Q_INVOKABLE void cancel();
 
 	static QString providerName(const QString& platform);
@@ -206,7 +166,6 @@ class ContentInstallReview : public QAbstractListModel
 		bool maybeInstalled = false;
 	};
 
-	/// The missing-dependency shape; see missingDependencies().
 	ContentInstallReview(const QList<ModPlatform::SelectedMod>& resolveFor,
 						 const QString& title, const QString& mcVersion,
 						 const QString& loader,
@@ -214,7 +173,6 @@ class ContentInstallReview : public QAbstractListModel
 						 QObject* parent);
 	void onResolved();
 
-	/// What the resolver is asked about.
 	QList<ModPlatform::SelectedMod> m_resolveFor;
 	QString m_title;
 	int m_primaryCount = 0;
@@ -230,6 +188,5 @@ class ContentInstallReview : public QAbstractListModel
 	bool m_resolving = false;
 	bool m_ready = false;
 	bool m_finished = false;
-	/// Owned via QObject parentage (parent is `this`).
 	QPointer<DependencyResolver> m_resolver;
 };

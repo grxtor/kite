@@ -7,9 +7,8 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The signed-in account at the foot of the sidebar. With no account it
- * turns into a sign-in prompt instead of showing a fake "Guest": playing
- * online needs an account, so that is the one thing worth saying here.
+ * The signed-in account at the foot of the sidebar. With no account it turns into a sign-in prompt instead of a fake
+ * "Guest".
  */
 AbstractButton {
     id: control
@@ -20,7 +19,6 @@ AbstractButton {
     property string avatarSource
 
     readonly property bool signedIn: name.length > 0
-    // A multiple of 8, the face's own pixel grid (see PlayerHead).
     readonly property int headSize: 32
 
     implicitHeight: Theme.control.heightLg + Theme.space.md
@@ -38,8 +36,6 @@ AbstractButton {
     }
 
     contentItem: Item {
-        // The player's head; with no account, a quiet tile with the
-        // user glyph instead (there is no player to draw).
         PlayerHead {
             id: avatar
             anchors.left: parent.left

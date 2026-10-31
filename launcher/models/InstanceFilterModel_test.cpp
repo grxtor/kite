@@ -27,12 +27,9 @@
 namespace
 {
 
-/*
- * Stand-in for InstanceList: exposes the same role NAMES (name, group,
- * instanceId, lastLaunch) but deliberately different role NUMBERS. A test
- * that passes against this only passes because InstanceFilterModel resolves
- * roles by name, not because it happens to reuse InstanceList's own numbers.
- */
+/* Stand-in for InstanceList: same role names (name, group, instanceId,
+ * lastLaunch) but different role numbers, so a pass proves InstanceFilterModel
+ * resolves roles by name. */
 class FakeInstanceModel : public QAbstractListModel
 {
   public:
@@ -93,12 +90,9 @@ class FakeInstanceModel : public QAbstractListModel
 	QList<Row> m_rows;
 };
 
-/*
- * subSortLessThan() reads its sort mode off the live LauncherContext, which
- * nothing in this test binary constructs -- see sortModeSetting()'s own
- * comment. This override stands in for it so the comparator itself (name
- * sort, "LastLaunch" and "TotalTimePlayed") can be exercised directly.
- */
+/* subSortLessThan() reads its sort mode off the live LauncherContext, which
+ * this binary does not construct; this override stands in so the comparator can
+ * be exercised. */
 class SortModeInstanceFilterModel : public InstanceFilterModel
 {
   public:
@@ -115,9 +109,7 @@ class InstanceFilterModelTest : public QObject
 	Q_OBJECT
 
   private slots:
-	/// "Pack 2" has to sort before "Pack 10" -- a plain string compare would
-	/// put "Pack 10" first, which is the exact bug QCollator numeric mode
-	/// exists to avoid.
+	/// "Pack 2" sorts before "Pack 10"; a plain string compare would not.
 	void test_naturalSort_ordersNumericSuffixesNumerically()
 	{
 		FakeInstanceModel source({
@@ -162,8 +154,7 @@ class InstanceFilterModelTest : public QObject
 		QCOMPARE(actual, expected);
 	}
 
-	/// Same-group rows fall through to natural sort; different-group rows
-	/// sort by group first, mirroring the widget proxy's lessThan().
+	/// Same-group rows fall through to natural sort; different groups sort by group first.
 	void test_lessThan_groupsSortBeforeName()
 	{
 		FakeInstanceModel source({
@@ -174,8 +165,6 @@ class InstanceFilterModelTest : public QObject
 		filter.setSourceModel(&source);
 		filter.sort(0);
 
-		// "Alpha Group" sorts before "Zeta Group", so "Zulu" (in Alpha
-		// Group) comes first even though "Alpha" < "Zulu" by name.
 		QCOMPARE(filter.index(0, 0).data(FakeInstanceModel::NameRole).toString(),
 				 QString("Zulu"));
 		QCOMPARE(filter.index(1, 0).data(FakeInstanceModel::NameRole).toString(),
@@ -304,7 +293,6 @@ class InstanceFilterModelTest : public QObject
 				out << filter.index(row, 0).data(FakeInstanceModel::IdRole).toString();
 			return out;
 		};
-		// Ungrouped first, then "Modpacks", then "Vanilla".
 		QCOMPARE(ids(), QStringList({ "d", "b", "c", "a" }));
 
 		QSignalSpy groupedSpy(&filter, &InstanceFilterModel::groupedChanged);
@@ -314,7 +302,6 @@ class InstanceFilterModelTest : public QObject
 		QCOMPARE(ids(), QStringList({ "c", "d", "a", "b" }));
 		QCOMPARE(filter.firstId(), QString("c"));
 
-		// Setting the same value again announces nothing.
 		filter.setGrouped(false);
 		QCOMPARE(groupedSpy.count(), 1);
 
@@ -342,8 +329,7 @@ class InstanceFilterModelTest : public QObject
 		QCOMPARE(filter.index(2, 0).data(FakeInstanceModel::IdRole).toString(), QString("a"));
 	}
 
-	/// Filters set before the source arrives must already see its roles --
-	/// the shell configures its recent and hero proxies exactly this way.
+	/// Filters set before the source arrives must already see its roles.
 	void test_filtersSetBeforeSource_applyToFirstRows()
 	{
 		FakeInstanceModel source({
@@ -364,7 +350,6 @@ class InstanceFilterModelTest : public QObject
 		QCOMPARE(single.firstId(), QString("b"));
 	}
 
-	/// instanceId narrows the proxy to one row -- a single-instance view.
 	void test_instanceId_keepsOnlyThatInstance()
 	{
 		FakeInstanceModel source({
@@ -382,9 +367,7 @@ class InstanceFilterModelTest : public QObject
 		QCOMPARE(filter.firstId(), QString());
 	}
 
-	/// QML delegates reach instanceId/name/group/lastLaunch through the
-	/// proxy by name, so the proxy's roleNames() has to be the source
-	/// model's, not QSortFilterProxyModel's own default.
+	/// QML reaches the roles by name through the proxy, so roleNames() must be the source model's.
 	void test_roleNames_areForwardedFromSourceModel()
 	{
 		FakeInstanceModel source({});
@@ -413,9 +396,7 @@ class InstanceFilterModelTest : public QObject
 		QCOMPARE(filter.index(2, 0).data(FakeInstanceModel::IdRole).toString(), QString("a"));
 	}
 
-	/// Same "InstSortMode" seam, exercising the pre-existing "LastLaunch"
-	/// value: most recently played first, same as recentFirst's ordering
-	/// but as the in-group tie-break rather than a top-level filter.
+	/// The "LastLaunch" mode as the in-group tie-break: most recently played first.
 	void test_subSort_lastLaunch_ordersMostRecentFirst()
 	{
 		FakeInstanceModel source({
@@ -433,9 +414,7 @@ class InstanceFilterModelTest : public QObject
 		QCOMPARE(filter.index(2, 0).data(FakeInstanceModel::IdRole).toString(), QString("a"));
 	}
 
-	/// An unrecognised (or empty, i.e. "Name") sort mode always falls back
-	/// to natural name order, even once totalTimePlayed/lastLaunch roles
-	/// exist and carry data -- "Time played" must never leak in silently.
+	/// An unknown or empty sort mode falls back to natural name order; "Time played" must not leak in.
 	void test_subSort_unknownSortMode_fallsBackToNaturalNameOrder()
 	{
 		FakeInstanceModel source({

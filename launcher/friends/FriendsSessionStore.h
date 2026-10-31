@@ -35,7 +35,6 @@ namespace FriendsSessionStore
 	FriendsApi::Session load(const QString& path);
 	/// Whether the file was written, with owner-only permissions.
 	bool save(const QString& path, const FriendsApi::Session& session);
-	/// Deletes the file.
 	void forget(const QString& path);
 
 	/// Whether @p session can be used at @p now for the account

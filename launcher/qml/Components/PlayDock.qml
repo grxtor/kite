@@ -7,45 +7,16 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Kite.Theme
 
-/*
- * The persistent bottom play bar: the selected instance on the left with a
- * picker to change it, the big Play button anchored at the right so it sits
- * in the window's bottom-right corner. Replaces the library's old
- * "Continue playing" hero -- one always-there place to press Play instead
- * of one that only showed up on the Library page.
- *
- * Part of the shell's frame (Main.qml), under the page panel rather than
- * floating over it: the page area shrinks by exactly this bar's height
- * whenever it is visible, so it can never cover a page's content. The
- * shell paints the surface (the brief's glass, shared with the sidebar and
- * the top bar) and the panel's rounded edge above is the divider, so the
- * bar draws no background of its own.
- *
- * `rowModel` is the shell's heroModel, freed up by removing the library's
- * own hero card; Main.qml points its instanceId at whichever instance this
- * bar should show (see its own dockInstanceId).
- *
- * Play is the one dominant control: 48 px tall, the widest thing in the
- * bar, the primary fill. Beside it, a separate ▾ opens the other ways to play the same
- * instance (LaunchOptionsMenu: offline, demo, as another account, a
- * profiler) -- Lunar's launch button and its version arrow; its choices
- * leave here as signals, like Play itself.
- *
- * No picture behind the controls: the pages above already carry the
- * artwork, and a picture under the bar's own text and Play button only made
- * both harder to read.
- */
+/* The bottom play bar: selected instance, picker, Play and launch options. */
 Item {
     id: root
 
-    // Single-row model (QmlShell.heroModel) already bound to the instance
-    // this bar shows -- see Main.qml's dockInstanceId.
+    // Single-row model (QmlShell.heroModel) bound to the shown instance.
     property var rowModel: null
     // The full library list, for the picker's search field.
     property var instanceModel: null
     // Most-recently-played first, for the picker's default listing.
     property var recentModel: null
-    // Main.qml's selectedId, so the picker can highlight the current row.
     property string selectedId: ""
 
     signal selectRequested(string id)
@@ -55,9 +26,7 @@ Item {
     // The picker's "Create instance", with no instance to pick yet.
     signal createRequested()
 
-    // The Play options menu (LaunchOptionsMenu.qml): what it offers comes
-    // from launchOptionsFor(id) -- Main.qml's launchOptions() -- and its
-    // choices leave as the signals below.
+    // What the Play options menu offers; its choices leave as the signals below.
     property var launchOptionsFor: null
     signal launchModeRequested(string id, string mode)
     signal launchAsRequested(string id, string accountId)
@@ -65,8 +34,7 @@ Item {
     signal performanceChosen(string id, bool enabled)
     signal navigateRequested(string target)
 
-    // Every decorative loop stops when the window is not the active one and
-    // when the user has asked for less motion.
+    // Decorative loops stop while the window is inactive.
     readonly property bool motionEnabled: Qt.application.state === Qt.ApplicationActive
                                           && !SettingsStore.bool("UiReduceMotion")
 
@@ -87,14 +55,11 @@ Item {
     Accessible.role: Accessible.Pane
     Accessible.name: qsTr("Play bar")
 
-    // For a dev-route snapshot ("picker") that needs the instance picker
-    // open without a real click.
+    // Dev-route snapshots open the picker without a click.
     function openPicker() { picker.open() }
 
-    // Opens the Play options menu above its chevron, right-aligned with it
-    // (the bar sits at the bottom of the window, so there is no room
-    // below). Also a dev-route step ("launchmenu", "launchmenu=playAs"),
-    // which can open one of its submenus too.
+    // Opens the Play options menu above its chevron; also a dev-route step ("launchmenu",
+    // "launchmenu=playAs").
     function openLaunchMenu(submenu) {
         if (!root.hasInstance)
             return
@@ -105,15 +70,11 @@ Item {
             Qt.callLater(() => launchMenu.openSubmenu(submenu))
     }
 
-    // -- The current row, read out of rowModel's one row --------------------
-    // A role model with 0-1 rows has no properties of its own to bind
-    // to directly, so a throwaway delegate reads its roles into plain
-    // properties everything else here can use.
+    // A 0-1 row role model has no bindable properties, so a throwaway delegate reads its roles.
     property string dockInstanceId: ""
     property string dockName: ""
     property string dockIconKey: ""
-    // The colour the bar is drawn on (Main.qml's shell), for the corners of
-    // an instance icon that fills its tile.
+    // Colour behind the bar, for the corners of a full-tile icon.
     property color surround: "transparent"
     property bool dockRunning: false
     property bool dockCanLaunch: false
@@ -123,19 +84,15 @@ Item {
     property string dockLaunchStatus: ""
     property real dockLaunchProgress: -1
 
-    // A launch shown without one running, for a dev-route snapshot of the
-    // launching state: { status: "Downloading assets", progress: 0.42 }
-    // (progress -1 for "no idea how far"). Null for the real thing.
+    // A launch shown without one running, for dev-route snapshots: { status, progress }; progress
+    // -1 = unknown.
     property var previewLaunch: null
 
-    // The launch as shown: the instance's own, or the preview.
     readonly property string launchStatus: root.previewLaunch ? String(root.previewLaunch.status || "")
                                                               : root.dockLaunchStatus
     readonly property real launchProgress: root.previewLaunch && root.previewLaunch.progress !== undefined
                                            ? root.previewLaunch.progress : root.dockLaunchProgress
-    // What the launch is doing, as a label ("Downloading assets"): the
-    // stage the launch task names (LaunchTask, MinecraftUpdate), already
-    // without a trailing "..." (LaunchProgressTracker).
+    // Launch stage label ("Downloading assets"), without a trailing "...".
     readonly property string launchStage: root.launchStatus
 
     readonly property bool hasInstance: root.dockInstanceId.length > 0
@@ -183,19 +140,12 @@ Item {
             onLaunchProgressChanged: sync()
         }
     }
-    // No row at all (library empty, or the model has not been pointed at an
-    // id yet): fall back to blank rather than stale leftovers.
+    // No row (empty library or model not pointed yet): blank, not stale.
     onRowModelChanged: if (!rowModel) { dockInstanceId = ""; dockName = "" }
 
-    // Play and its neighbours: the large control height the brief asks of
-    // the main action, and a width that makes it the bar's anchor rather
-    // than one more button.
     readonly property int playHeight: Theme.control.heightLg
     readonly property int playWidth: 176
 
-    // The same column the page above uses (TopBar's rule), so Play's right
-    // edge is the content's right edge and the bar centres with the page on
-    // a wide window.
     readonly property int sideMargin: Math.max(Theme.space.xl + Theme.space.xs,
                                                Math.round((root.width - Theme.layout.maxContentWidth) / 2))
 
@@ -205,14 +155,9 @@ Item {
         anchors.rightMargin: root.sideMargin
         spacing: Theme.space.md
 
-        // The instance this bar plays, as a dropdown button: icon, name and
-        // a chevron, inset the same on every side. Quiet like the account
-        // button (ProfileButton): no plate at rest, the shared hover tint on
-        // hover and while its list is open, the chevron turning over.
         AbstractButton {
             id: pickerButton
             Layout.alignment: Qt.AlignVCenter
-            // The icon tile's size; with the padding, the plate's height.
             readonly property int tileSize: 44
             padding: Theme.space.sm
             implicitWidth: implicitContentWidth + leftPadding + rightPadding
@@ -230,23 +175,17 @@ Item {
             }
 
             contentItem: RowLayout {
-                id: pickerRow
                 spacing: Theme.space.sm
 
-                // The icon itself, filling about 80 % of the square, with
-                // no tile of its own (InstanceTile): an instance's, so in
-                // the kite's cut, raised on hover.
                 KiteShape {
                     Layout.preferredWidth: pickerButton.tileSize
                     Layout.preferredHeight: pickerButton.tileSize
                     radius: Theme.radius.md
                     color: "transparent"
                     lifted: pickerButton.hovered
-                    // Its own icon, or the built-in one it was given.
                     readonly property string drawnKey: Icons.displayKey(root.dockIconKey, root.dockInstanceId)
                     readonly property bool iconFills: root.hasInstance && Icons.fillsTile(drawnKey)
-                    // An opaque square icon fills the tile, rounded in the
-                    // colour around it: the bar under the button's tint.
+                    // An opaque square icon fills the tile, rounded in the colour around it.
                     matte: !iconFills || !Theme.solidShell ? "transparent"
                          : Qt.tint(root.surround, pickerButton.down ? Theme.palette.pressedOverlay
                                    : pickerButton.hovered || picker.visible ? Theme.palette.hoverOverlay : "transparent")
@@ -269,11 +208,8 @@ Item {
                     }
                 }
 
-                // A ColumnLayout, not a plain Column with a fixed width: a
-                // short instance name should sit close to its icon with the
-                // chevron right after it, not leave a dead gap up to a
-                // hard-coded column width -- Layout.maximumWidth below caps
-                // growth (eliding) without forcing short names to stretch.
+                // ColumnLayout, not a fixed-width Column: short names sit close to the chevron;
+                // Layout.maximumWidth caps long ones.
                 ColumnLayout {
                     Layout.alignment: Qt.AlignVCenter
                     spacing: 1
@@ -315,18 +251,12 @@ Item {
 
         Item { Layout.fillWidth: true }
 
-        // Ready / launching / running -- three mutually exclusive faces,
-        // cross-fading into each other rather than swapping abruptly, so a
-        // click's burst on the Play button visibly "morphs" into the
-        // progress display once the real launch status arrives.
+        // Ready / launching / running cross-fade into each other.
         Item {
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredWidth: Math.max(readyFace.implicitWidth, launchingFace.implicitWidth, runningFace.implicitWidth)
             Layout.preferredHeight: root.playHeight
 
-            // Play, and beside it the ▾ for the other ways to play: a
-            // secondary (bordered) button of the same height, so Play stays
-            // the one primary action on screen.
             Row {
                 id: readyFace
                 anchors.right: parent.right
@@ -359,10 +289,6 @@ Item {
                 }
             }
 
-            // Launching, where Play was: what the launch is doing right
-            // now ("Downloading assets") and how far along it is, over a
-            // bar in the accent colour, and Cancel beside it -- the way a
-            // launcher's play button turns into a progress readout.
             RowLayout {
                 id: launchingFace
                 readonly property int readoutWidth: 280
@@ -397,7 +323,6 @@ Item {
                             font.pixelSize: Theme.type.bodyStrong.pixelSize
                             font.weight: Theme.type.bodyStrong.weight
                         }
-                        // Only once the step says how far it is.
                         Text {
                             visible: root.launchProgress >= 0
                             text: qsTr("%1%").arg(Math.round(root.launchProgress * 100))
@@ -405,8 +330,7 @@ Item {
                             font.family: Theme.font.family
                             font.pixelSize: Theme.type.label.pixelSize
                             font.weight: Theme.type.label.weight
-                            // Digits of one width, so the number does not
-                            // jitter as it counts up.
+                            // Equal-width digits stop the number jittering.
                             font.features: ({ "tnum": 1 })
                         }
                     }
@@ -486,54 +410,36 @@ Item {
         onNavigateRequested: (target) => root.navigateRequested(target)
     }
 
-    // -- The instance picker -------------------------------------------------
     Popup {
         id: picker
-        // Over the button that opens it, left edges aligned, with a clear
-        // gap above the bar.
         x: root.sideMargin
         y: -height - Theme.space.md
         width: 360
-        // Every row is this tall: two lines (name, version) and the
-        // delegate's padding. Fixed, so the list can be sized in whole rows.
+        // Fixed, so the list is sized in whole rows.
         readonly property int rowHeight: Theme.control.heightLg + Theme.space.xs
-        // Seven rows at most, whole ones: a longer list scrolls, and its
-        // bottom edge fades (ScrollFade) rather than slicing a row.
         readonly property int visibleRows: 7
         readonly property int listMaxHeight: rowHeight * visibleRows + Theme.space.xs * 2
-        // Search field + the ColumnLayout's own spacing + this popup's own
-        // top/bottom padding -- everything in this popup that is not the
-        // list itself.
-        // Nothing in the library at all (not just no search match): no
-        // search field then, only the way to make the first instance.
         readonly property int recentCount: root.recentModel && root.recentModel.count !== undefined
                                            ? root.recentModel.count : 0
+        // No instances at all (not just no search match): only "Create instance" is offered.
         readonly property bool libraryEmpty: searchField.text.length === 0 && picker.recentCount === 0
                                              && !!root.instanceModel && root.instanceModel.count === 0
-        // Search field + the ColumnLayout's own spacing + this popup's own
-        // top/bottom padding -- everything in this popup that is not the
-        // list itself.
+        // Search field, spacing and padding: everything but the list.
         readonly property int chromeHeight: (picker.libraryEmpty ? 0 : Theme.control.height + Theme.space.sm)
                                             + padding * 2
-        // The list's own height; with no rows, the empty state's.
         readonly property int listAreaHeight: list.count === 0
             ? emptyState.implicitHeight + Theme.space.xl * 2
             : Math.min(listMaxHeight, list.contentHeight + list.topMargin + list.bottomMargin)
         height: chromeHeight + listAreaHeight
         padding: Theme.space.sm
-        // Belt and braces alongside the height match above: nothing paints
-        // past this popup's own rounded background.
         clip: true
 
         property string savedFilter: ""
         onOpened: {
             picker.savedFilter = root.instanceModel ? root.instanceModel.filterText : ""
             searchField.text = ""
-            // The library whole, whatever a page's own search left on it.
             if (root.instanceModel) root.instanceModel.filterText = ""
-            // Ready to type into, but with the plain focused border, not the
-            // keyboard focus ring: nobody tabbed here. (The ring is for
-            // keyboard focus; see Style/TextField.qml.)
+            // Plain focus border, not the keyboard ring: nobody tabbed here.
             searchField.forceActiveFocus(Qt.MouseFocusReason)
         }
         onClosed: if (root.instanceModel) root.instanceModel.filterText = picker.savedFilter
@@ -549,8 +455,6 @@ Item {
                 onTextChanged: if (root.instanceModel) root.instanceModel.filterText = text
             }
 
-            // The list, with a fade over its bottom edge while more rows
-            // wait below it.
             Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: picker.listAreaHeight
@@ -558,17 +462,12 @@ Item {
                 ListView {
                     id: list
                     anchors.fill: parent
-                    // Equal top and bottom breathing room, so a fully scrolled
-                    // list ends with clear space under the last row instead of
-                    // stopping exactly on its bottom edge.
                     topMargin: Theme.space.xs
                     bottomMargin: Theme.space.xs
                     clip: true
                     boundsBehavior: Flickable.StopAtBounds
-                    // The default listing is most-recent-first; typing a search
-                    // switches to the full library so an instance that has
-                    // never been played can still be found. So does a library
-                    // nothing has been played from yet.
+                    // Typing a search, or an unplayed library, switches from the recent list to the
+                    // full library.
                     model: searchField.text.length > 0 || picker.recentCount === 0
                            ? root.instanceModel : root.recentModel
                     ScrollBar.vertical: ScrollBar {}
@@ -584,9 +483,6 @@ Item {
                         width: list.width
                         height: picker.rowHeight
                         hoverEnabled: true
-                        // The instance the bar plays right now -- which is the
-                        // selection when there is one, otherwise the most recent
-                        // -- so the list always shows where "Play" points.
                         readonly property bool current: row.instanceId === root.dockInstanceId
                         highlighted: row.current
 
@@ -602,11 +498,8 @@ Item {
                                 Layout.preferredWidth: 28
                                 Layout.preferredHeight: 28
                                 source: row.iconKey.length > 0 ? Icons.instanceIcon(Icons.displayKey(row.iconKey, row.instanceId)) : ""
-                                // A fixed size, not Qt.size(width, height): this
-                                // Image's own width/height come from Layout.
-                                // preferred* rather than a literal, and tying
-                                // sourceSize back to them is exactly the binding
-                                // loop QQuickImage warns about.
+                                // Fixed size: tying sourceSize to the Image's Layout-driven
+                                // width/height is a binding loop.
                                 sourceSize: Qt.size(56, 56)
                                 fillMode: Image.PreserveAspectFit
                             }

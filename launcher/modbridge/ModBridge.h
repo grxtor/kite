@@ -39,15 +39,11 @@ class QTcpSocket;
 /*
  * The launcher's end of the Kite mod <-> launcher bridge (protocol v1,
  * kite-mod/docs/BRIDGE.md): a tiny HTTP server on 127.0.0.1 that lets the
- * in-game Friends page read the launcher's friends cache and report the
- * world the player is in, instead of talking to the friends server itself.
- *
- * It listens only while a game with the Kite mod runs: registerSession()
- * (a launch step) opens the socket if need be and gives that game its own
- * port and random token, unregisterSession() (the launch ending, the
- * instance stopping or going away) forgets it, and the last one closes the
- * socket. One request per connection, 5 s to send it, 8 connections at
- * most, every other rule in ModBridgeProtocol.
+ * in-game Friends page read the friends cache and report the player's world.
+ * It listens only while a game with the Kite mod runs: registerSession() gives
+ * that game its own port and random token, unregisterSession() forgets it, and
+ * the last one closes the socket. One request per connection; the other rules
+ * are in ModBridgeProtocol.
  */
 class ModBridge : public QObject
 {
@@ -71,20 +67,16 @@ class ModBridge : public QObject
 	bool listening() const;
 	quint16 port() const;
 	int sessionCount() const;
-	/// Connections open now (a request being read, an answer being sent).
 	int connectionCount() const;
-	/// How long a request has to arrive; kRequestTimeoutMs unless a test
-	/// wants it shorter.
+	/// kRequestTimeoutMs unless a test wants it shorter.
 	void setRequestTimeoutMs(int milliseconds);
 
 	/// The friends data to serve (the launcher's controller), and the
 	/// route of reported worlds to it. Null: Friends is off for the game.
 	void setFriends(FriendsController* controller);
-	/// Any other source; replaces setFriends().
 	void setSource(std::shared_ptr<ModBridgeSource> source);
 
   signals:
-	/// The mod of @p instance's game says where the player is.
 	void worldReported(BaseInstance* instance, FriendsApi::World world);
 
   private:
@@ -98,7 +90,6 @@ class ModBridge : public QObject
 		bool answered = false;
 	};
 
-	/// Drops @p instance's session without closing anything; whether it had one.
 	bool forgetSession(BaseInstance* instance);
 
 	// Sockets (ModBridge.cpp)

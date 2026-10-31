@@ -63,9 +63,8 @@ namespace
 		return candidate;
 	}
 
-	/* A skin downloaded from a link: fetched to a temporary file, checked
-	 * to be a skin (a server can answer 200 with an error page), then
-	 * copied into the library under the link's file name. */
+	/* A skin from a link: fetched to a temporary file, checked to be a skin (a
+	 * server can answer 200 with an error page), then copied into the library. */
 	class SkinUrlImportTask final : public Task
 	{
 	  public:
@@ -121,9 +120,8 @@ namespace
 		shared_qobject_ptr<NetJob> m_job;
 	};
 
-	/* Another player's skin, by name (ProfileSkinImport), written into the
-	 * library with what the profile knows and the PNG does not: the arm
-	 * width and the texture's own url. */
+	/* Another player's skin, by name (ProfileSkinImport), written with the arm
+	 * width and texture url the profile knows and the PNG does not. */
 	class SkinUsernameImportTask final : public Task
 	{
 	  public:
@@ -176,9 +174,8 @@ namespace
 		shared_qobject_ptr<ProfileSkinImport> m_import;
 	};
 
-	/* The image urls of the skin PNG at @p path drawn with @p slim arms:
-	 * its normalised texture (for a 3D preview), its flat sprite and its
-	 * front view (for a flat one), through AccountFaceProvider. */
+	/* Image urls of the skin PNG at @p path with @p slim arms: normalised texture
+	 * (3D), flat sprite and front view, via AccountFaceProvider. */
 	QVariantMap imageUrls(const QString& path, bool slim)
 	{
 		// Percent-encoded whole, slashes included, so a path with spaces or
@@ -225,8 +222,6 @@ SkinsController::SkinsController(MinecraftAccountPtr account,
 
 	connect(DefaultSkins::instance(), &DefaultSkins::galleryChanged, this,
 			&SkinsController::defaultSkinsChanged);
-	/* Which default skin is worn follows the profile (a refresh after
-	 * wearing one). */
 	if (m_account) {
 		connect(m_account.get(), &MinecraftAccount::changed, this,
 				&SkinsController::defaultSkinsChanged);

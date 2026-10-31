@@ -23,21 +23,16 @@
 
 namespace Net
 {
-	/*
-	 * Sink object for downloads that uses an external QByteArray it doesn't own
-	 * as a target.
-	 */
+	/* Sink for downloads into an external QByteArray it does not own. */
 	class ByteArraySink : public Sink
 	{
 	  public:
 		ByteArraySink(QByteArray* output)
 			: m_output(output) {
-				  // nil
 			  };
 
 		virtual ~ByteArraySink()
 		{
-			// nil
 		}
 
 	  public:

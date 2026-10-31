@@ -53,20 +53,8 @@ class LogUploader;
 class ScreenshotUploader;
 
 /*
- * QML-facing bridge for one instance's detail page: notes, mods, worlds,
- * the live log, installed components (loader + Minecraft version) and
- * per-instance settings overrides, all in one object so QmlShell only has
- * to hand QML a single thing per open instance.
- *
- * Holds the InstancePtr itself (a shared_ptr): that is what keeps this
- * bridge from outliving the instance in a way that crashes, since the
- * instance simply cannot be destroyed while this bridge is still holding a
- * reference to it. Everything this bridge exposes that it did not create
- * itself (the mod/world/component models) is owned by the instance and
- * only borrowed here - the destructor stops watching them, but never
- * deletes them.
- *
- * Core, like the rest of models/: QtCore only, no QtWidgets, no ui/.
+ * QML bridge for one instance's detail page. Holds the InstancePtr, so the
+ * models borrowed from the instance never outlive it.
  */
 class InstanceDetails : public QObject
 {
@@ -76,115 +64,59 @@ class InstanceDetails : public QObject
 	Q_PROPERTY(QString name READ name NOTIFY nameChanged)
 	Q_PROPERTY(QString gameRoot READ gameRoot CONSTANT)
 	Q_PROPERTY(QString instanceRoot READ instanceRoot CONSTANT)
-	/// SettingsAdapter over this instance's own SettingsObject.
 	Q_PROPERTY(QObject* settings READ settings CONSTANT)
 	Q_PROPERTY(QString notes READ notes WRITE setNotes NOTIFY notesChanged)
 
-	/// The loader mods ModFolderModel (same one ModFolderPage's
-	/// loaderModList() tab shows), or null if this instance is not
-	/// Minecraft-backed.
+	/// Null if this instance is not Minecraft-backed.
 	Q_PROPERTY(QObject* mods READ mods CONSTANT)
 	Q_PROPERTY(QString modsDir READ modsDir CONSTANT)
-	/// Same shape as mods() above, over MinecraftInstance::resourcePackList()
-	/// / shaderPackList(). Null if this instance is not Minecraft-backed.
 	Q_PROPERTY(QObject* resourcePacks READ resourcePacks CONSTANT)
 	Q_PROPERTY(QString resourcePacksDir READ resourcePacksDir CONSTANT)
 	Q_PROPERTY(QObject* shaderPacks READ shaderPacks CONSTANT)
 	Q_PROPERTY(QString shaderPacksDir READ shaderPacksDir CONSTANT)
-	/// Null unless this instance predates resource packs and uses texture
-	/// packs instead (traits() has "texturepacks" - see TexturePackPage's
-	/// own shouldDisplay()); legacy Minecraft only.
+	/// Null unless the instance uses texture packs (legacy Minecraft).
 	Q_PROPERTY(QObject* texturePacks READ texturePacks CONSTANT)
 	Q_PROPERTY(QString texturePacksDir READ texturePacksDir CONSTANT)
-	/// False while the instance is running - same rule ModFolderPage
-	/// enforces for the Mods tab specifically (contentChangesAllowed()).
+	/// False while the instance is running.
 	Q_PROPERTY(bool contentChangesAllowed READ contentChangesAllowed NOTIFY
 				   contentChangesAllowedChanged)
 
-	/// CurseForge/Modrinth search + install for this instance's mods (and
-	/// resource/shader/data packs), the QML-facing replacement for
-	/// DownloadContentDialog. Created lazily on first access, so opening
-	/// this page never touches the network by itself - see
-	/// ContentBrowser's own class comment.
+	/// Created lazily, so opening the page never touches the network.
 	Q_PROPERTY(QObject* contentBrowser READ contentBrowser CONSTANT)
 
 	Q_PROPERTY(QObject* worlds READ worlds CONSTANT)
 	Q_PROPERTY(QString worldsDir READ worldsDir CONSTANT)
-	/// Per-world data packs (saves/&lt;world&gt;/datapacks) - the QML-facing
-	/// replacement for the dialog WorldListPage's "Data packs" action used
-	/// to open. Null if this instance is not Minecraft-backed.
 	Q_PROPERTY(QObject* worldDataPacks READ worldDataPacks CONSTANT)
 
-	/// This instance's servers.dat - the QML-facing replacement for
-	/// ServersPage. Null if this instance is not Minecraft-backed.
 	Q_PROPERTY(QObject* servers READ servers CONSTANT)
-	/// Where servers.dat lives, for an "open folder" action.
 	Q_PROPERTY(QString serversDir READ serversDir CONSTANT)
 
-	/// Backup snapshots of this instance - the QML-facing replacement for
-	/// BackupPage. Always available, regardless of instance type.
 	Q_PROPERTY(QObject* backups READ backups CONSTANT)
 
-	/// This instance's Modrinth/CurseForge provenance - the QML-facing
-	/// replacement for ManagedPackPage. Null unless the instance actually
-	/// qualifies (see ManagedPackController::isSupported()).
+	/// Null unless the instance is a Modrinth/CurseForge pack.
 	Q_PROPERTY(QObject* managedPack READ managedPack CONSTANT)
 
-	/// ScreenshotListModel over the game's screenshots folder.
 	Q_PROPERTY(QObject* screenshots READ screenshots CONSTANT)
 	Q_PROPERTY(QString screenshotsDir READ screenshotsDir CONSTANT)
 
-	/// InstanceLogBridge for the current (or most recent) launch.
 	Q_PROPERTY(QObject* log READ log CONSTANT)
-	/// Every other log file this instance has (logs/*.log*,
-	/// crash-reports/*.txt) - the QML-facing replacement for
-	/// OtherLogsPage. Null if the instance names no log filter at all
-	/// (see BaseInstance::getLogFileMatcher()).
+	/// Null if the instance names no log filter.
 	Q_PROPERTY(QObject* otherLogs READ otherLogs CONSTANT)
-	/// This instance's PackProfile, read-only version list, or null.
 	Q_PROPERTY(QObject* components READ components CONSTANT)
-	/// "net.minecraft"'s version list (MinecraftVersionListProxy - see
-	/// models/NewInstanceController.h, the same proxy the "New instance"
-	/// dialog's own Minecraft version picker uses), for VersionTab.qml's
-	/// "Change Minecraft version" action. Created lazily on first access;
-	/// null if this instance is not Minecraft-backed.
+	/// Created lazily.
 	Q_PROPERTY(QObject* minecraftVersions READ minecraftVersions CONSTANT)
-	/// Installs a mod loader into this instance's components - the
-	/// QML-facing replacement for InstallLoaderDialog. Created lazily on
-	/// first access, same reason as contentBrowser() above. Null if this
-	/// instance is not Minecraft-backed.
+	/// Created lazily.
 	Q_PROPERTY(QObject* loaderInstaller READ loaderInstaller CONSTANT)
-	/// The Version tab's extra actions (empty component, jar mods, download
-	/// all, edit JSON, open folders), or null for a non-Minecraft instance.
-	/// Created on first use.
 	Q_PROPERTY(QObject* componentTools READ componentTools CONSTANT)
-	/// This instance's options.txt as a flat key/value list (GameOptions'
-	/// own `key`/`value` roles, through a KeyValueFilterModel for
-	/// GameOptionsTab.qml's search box) - the QML-facing replacement for
-	/// GameOptionsPage. Unlike that page it can change values: QML calls
-	/// GameOptions::setValue() through the proxy's sourceModel, and only
-	/// while the game is not running (it rewrites the file as it quits;
-	/// the model is reloaded then). Null if this instance is not
-	/// Minecraft-backed.
+	/// options.txt as key/value rows; editable only while the game is not running.
 	Q_PROPERTY(QObject* gameOptions READ gameOptions CONSTANT)
 	Q_PROPERTY(bool isMinecraft READ isMinecraft CONSTANT)
-	/// An old-format (Legacy) instance: it has no mods, version or content
-	/// tabs, only worlds, screenshots, notes and logs, and needs upgrading
-	/// (upgradeLegacy()) before it can be played.
+	/// Old-format instance: needs upgradeLegacy() before it can be played.
 	Q_PROPERTY(bool isLegacy READ isLegacy CONSTANT)
-	/// Searchable lists of every content kind this instance has (mods,
-	/// coremods, resource/shader/texture packs, global data packs) with
-	/// bulk actions and list export - the QML-facing replacement for the
-	/// rest of ModFolderPage and its variants (InstanceContentController).
-	/// Created lazily on first access; null if this instance is not
-	/// Minecraft-backed.
+	/// Created lazily.
 	Q_PROPERTY(QObject* content READ content CONSTANT)
-	/// Uploads a log (the live one, or an "other" log file) to paste.ee and
-	/// hands back its link - LogTab.qml's Upload. Always available.
 	Q_PROPERTY(QObject* logUploader READ logUploader CONSTANT)
-	/// Uploads screenshots to Imgur (one, or several as an album) -
-	/// ScreenshotsTab.qml's Upload. `available` is false in a build without
-	/// an Imgur client id.
+	/// `available` is false in a build without an Imgur client id.
 	Q_PROPERTY(QObject* screenshotUploader READ screenshotUploader CONSTANT)
 
   public:
@@ -202,11 +134,6 @@ class InstanceDetails : public QObject
 
 	QObject* mods() const;
 	QString modsDir() const;
-	Q_INVOKABLE void setModEnabled(int row, bool enabled);
-	Q_INVOKABLE void deleteMod(int row);
-	/// @p fileUrlOrPath: a file:// URL (as a QML FileDialog hands out) or
-	/// a plain local path.
-	Q_INVOKABLE bool installMod(const QString& fileUrlOrPath);
 
 	QObject* resourcePacks() const;
 	QString resourcePacksDir() const;
@@ -215,33 +142,15 @@ class InstanceDetails : public QObject
 	QObject* texturePacks() const;
 	QString texturePacksDir() const;
 
-	/// Generalised form of setModEnabled()/deleteMod()/installMod() above
-	/// (which now just forward to these), covering every folder-backed
-	/// content type this bridge exposes. @p kind is one of "mods",
-	/// "resourcepacks", "shaderpacks", "texturepacks"; a call with any
-	/// other @p kind, or one this instance does not have, is a no-op
-	/// (install() returns false).
-	Q_INVOKABLE void setEnabled(const QString& kind, int row, bool enabled);
-	Q_INVOKABLE void remove(const QString& kind, int row);
-	/// @p fileUrlOrPath: a file:// URL (as a QML FileDialog hands out) or
-	/// a plain local path.
-	Q_INVOKABLE bool install(const QString& kind, const QString& fileUrlOrPath);
-
 	bool contentChangesAllowed() const;
 	QObject* contentBrowser() const;
 
 	QObject* worlds() const;
 	QString worldsDir() const;
 	Q_INVOKABLE void deleteWorld(int row);
-	/// False (no change) for a name that trims to nothing, same rule
-	/// renameInstance() uses.
+	/// False (no change) for a name that trims to nothing.
 	Q_INVOKABLE bool renameWorld(int row, const QString& name);
-	/// Installs a copy of world @p row under a new name in the same
-	/// worlds folder - the QML-facing replacement for WorldListPage's
-	/// "Copy" action. Copies off the GUI thread (a world can run into
-	/// gigabytes) behind a TaskWatcher, the same BackupController shape;
-	/// returns null immediately for an out-of-range row or a name that
-	/// trims to nothing.
+	/// Copies off the GUI thread; null for a bad row or a blank name.
 	Q_INVOKABLE QObject* copyWorld(int row, const QString& name);
 	Q_INVOKABLE bool resetWorldIcon(int row);
 	QObject* worldDataPacks() const;
@@ -268,35 +177,18 @@ class InstanceDetails : public QObject
 
 	QObject* logUploader() const;
 	QObject* screenshotUploader() const;
-	/// Installs a world from a .zip (or a world folder) into this instance's
-	/// worlds folder - the QML-facing replacement for WorldListPage's "Add"
-	/// and drop handling. @p fileUrlOrPath: a file:// URL (as a QML
-	/// FileDialog or DropArea hands out) or a plain local path. Unpacks off
-	/// the GUI thread (a world can run into gigabytes) behind a TaskWatcher;
-	/// returns null at once if the file is not a Minecraft world.
+	/// @p fileUrlOrPath: a file:// URL or a local path. Unpacks off the GUI
+	/// thread; null at once if it is not a Minecraft world.
 	Q_INVOKABLE QObject* installWorld(const QString& fileUrlOrPath);
-	/// Re-reads the worlds folder - WorldsTab.qml's Refresh. The list also
-	/// watches the folder, so this is for when that missed something.
 	Q_INVOKABLE void refreshWorlds();
 	bool isLegacy() const;
-	/// Copies this legacy instance into a new one in the current format -
-	/// the QML-facing replacement for LegacyUpgradePage's button. Returns a
-	/// TaskWatcher (the new instance appears in the library when it
-	/// succeeds), or null if this is not a legacy instance, it is running,
-	/// or the launcher's instance list is not available.
+	/// Returns a TaskWatcher; null if not legacy, running, or no instance list.
 	Q_INVOKABLE QObject* upgradeLegacy();
-	/// Whether Kite's own mod has a build for this instance, by what the
-	/// last fetched manifest says: "available", "noBuild" (none for its
-	/// Minecraft version), "loaderTooOld" (its Fabric Loader is older than
-	/// every build for that version needs) or "unknown" (no manifest yet,
-	/// or not a Minecraft instance). Read again after the game has run: that
-	/// is when the manifest is fetched.
+	/// "available", "noBuild", "loaderTooOld" or "unknown". Read again after the
+	/// game has run: that is when the manifest is fetched.
 	Q_INVOKABLE QString kiteModSupport() const;
-	/// Whether the MCEditPath setting points at a usable MCEdit - the Worlds
-	/// tab shows "Open in MCEdit" only then.
 	Q_INVOKABLE bool mceditConfigured() const;
-	/// Starts MCEdit on world @p row. Empty on success, otherwise a message
-	/// for the user.
+	/// Empty on success, otherwise a message for the user.
 	Q_INVOKABLE QString openWorldInMCEdit(int row);
 
   signals:
@@ -308,111 +200,54 @@ class InstanceDetails : public QObject
 	void onRunningStatusChanged(bool running);
 
   private:
-	/// The source ModFolderModel behind @p kind ("mods", "resourcepacks",
-	/// "shaderpacks", "texturepacks"), or null if @p kind is unrecognised
-	/// or this instance does not have one (e.g. "texturepacks" on a
-	/// non-legacy instance, or any kind on a non-Minecraft instance).
-	ModFolderModel* folderModel(const QString& kind) const;
-	/// The sorted proxy QML sees for @p kind, or null - see folderModel().
-	QSortFilterProxyModel* sortedFolderModel(const QString& kind) const;
-	/// Row @p row of the sorted proxy for @p kind, as an index into its
-	/// source model; invalid if @p kind or @p row is out of range.
-	QModelIndex sourceIndexFor(const QString& kind, int row) const;
-
 	InstancePtr m_instance;
-	/// Non-owning; valid for as long as m_instance is (which is for the
-	/// lifetime of this object). Null when the instance is not Minecraft.
+	/// Non-owning; null when the instance is not Minecraft.
 	MinecraftInstance* m_mc = nullptr;
 
-	/// Borrowed from the instance, not created here - see the class
-	/// comment.
+	/// Borrowed from the instance.
 	std::shared_ptr<ModFolderModel> m_mods;
-	/// What QML sees of m_mods: sorted by name, rows mapped back on write.
 	std::unique_ptr<QSortFilterProxyModel> m_sortedMods;
-	/// Same borrowed/sorted-proxy shape as m_mods/m_sortedMods above.
 	std::shared_ptr<ModFolderModel> m_resourcePacks;
 	std::unique_ptr<QSortFilterProxyModel> m_sortedResourcePacks;
 	std::shared_ptr<ModFolderModel> m_shaderPacks;
 	std::unique_ptr<QSortFilterProxyModel> m_sortedShaderPacks;
-	/// Null unless the instance's traits() has "texturepacks" - see the
-	/// texturePacks Q_PROPERTY comment.
 	std::shared_ptr<ModFolderModel> m_texturePacks;
 	std::unique_ptr<QSortFilterProxyModel> m_sortedTexturePacks;
 	std::shared_ptr<WorldList> m_worlds;
-	/// Created on first worldDataPacks() call, not here - mirrors
-	/// m_contentBrowser below.
 	mutable std::unique_ptr<WorldDataPacksController> m_worldDataPacks;
-	/// Created on first contentBrowser() call, not here - see that
-	/// method and the Q_PROPERTY comment above.
+	/// Created on first access.
 	mutable std::unique_ptr<ContentBrowser> m_contentBrowser;
 
 	std::unique_ptr<SettingsAdapter> m_settings;
 	std::unique_ptr<ScreenshotListModel> m_screenshots;
-	/// Owned via QObject parentage (parent is `this`).
+	/// Owned by QObject parentage.
 	InstanceLogBridge* m_log = nullptr;
-	/// Owned via QObject parentage (parent is `this`); null if the
-	/// instance names no log filter at all - see the otherLogs
-	/// Q_PROPERTY comment.
 	OtherLogsModel* m_otherLogs = nullptr;
-	/// Created on first minecraftVersions() call, not here - mirrors
-	/// m_contentBrowser above. Parented to `this` in that getter (like
-	/// LoaderInstaller's own m_versions - see its constructor comment),
-	/// so it needs no separate expose() call from QmlShell either.
+	/// Parented to `this` in the getter.
 	mutable std::unique_ptr<MinecraftVersionListProxy> m_minecraftVersions;
-	/// Created on first loaderInstaller() call, not here - mirrors
-	/// m_contentBrowser above.
 	mutable std::unique_ptr<LoaderInstaller> m_loaderInstaller;
-	/// Created on first componentTools() call, like m_loaderInstaller.
 	mutable std::unique_ptr<ComponentTools> m_componentTools;
-	/// Borrowed from the instance, not created here - see the class
-	/// comment. Null when the instance is not Minecraft.
+	/// Borrowed from the instance.
 	std::shared_ptr<GameOptions> m_gameOptions;
-	/// Wraps m_gameOptions for gameOptions() above; created together with
-	/// it (both null, or both set, for a non-Minecraft instance) rather
-	/// than lazily, since building it touches no disk or network beyond
-	/// what m_gameOptions itself already did. Parented to `this` - same
-	/// reasoning as LoaderInstaller::m_versions.
+	/// Created with m_gameOptions; both null for a non-Minecraft instance.
 	KeyValueFilterModel* m_gameOptionsFilter = nullptr;
 
-	/// Null when the instance is not Minecraft - see the servers
-	/// Q_PROPERTY comment.
 	std::unique_ptr<ServersListModel> m_servers;
-	/// Always created - see the backups Q_PROPERTY comment. Owned via
-	/// QObject parentage (parent is `this`).
 	BackupController* m_backups = nullptr;
-	/// Created on first managedPack() call, not here - mirrors
-	/// m_contentBrowser above: isSupported() is cheap, but there is no
-	/// reason to build the object at all for the overwhelming majority of
-	/// instances that are not managed packs.
 	mutable std::unique_ptr<ManagedPackController> m_managedPack;
-	/// Set once managedPack() has run isSupported() the first time, so a
-	/// later call does not keep re-checking it (the answer cannot change
-	/// during this bridge's lifetime - it depends only on instance.cfg
-	/// fields and the CurseForge API key).
+	/// Set once isSupported() has run; the answer cannot change.
 	mutable bool m_managedPackChecked = false;
-	/// Created on first content() call, not here - mirrors
-	/// m_contentBrowser above. Owned via QObject parentage (parent is
-	/// `this`).
 	mutable InstanceContentController* m_content = nullptr;
-	/// Always created; owned via QObject parentage (parent is `this`).
 	LogUploader* m_logUploader = nullptr;
 	ScreenshotUploader* m_screenshotUploader = nullptr;
 };
 
-/*
- * QML-facing view of "the current LaunchTask's LogModel", if any.
- *
- * Follows LogPage::setInstanceLaunchTaskChanged: a LaunchTask (and its
- * LogModel) only exists while a launch is in flight, so model() is null
- * between launches and re-points at a fresh LogModel every time
- * BaseInstance starts a new one.
- */
+/* QML view of the current LaunchTask's LogModel; model() is null between launches. */
 class InstanceLogBridge : public QObject
 {
 	Q_OBJECT
 
-	/// The current LaunchTask's LogModel, or null when the instance is
-	/// not currently launching/running.
+	/// Null when the instance is not launching/running.
 	Q_PROPERTY(QObject* model READ model NOTIFY modelChanged)
 	Q_PROPERTY(bool hasLog READ hasLog NOTIFY modelChanged)
 
@@ -424,11 +259,9 @@ class InstanceLogBridge : public QObject
 	bool hasLog() const;
 
 	Q_INVOKABLE void clear();
-	/// The whole log as plain text, e.g. for a QML copy action.
 	Q_INVOKABLE QString text();
 	Q_INVOKABLE void setSuspended(bool suspended);
-	/// Rows of the current log whose line contains @p needle (ignoring case),
-	/// ascending - LogTab.qml's Find. Empty when there is no log.
+	/// Rows whose line contains @p needle (case-insensitive), ascending.
 	Q_INVOKABLE QVariantList findLines(const QString& needle) const;
 
   signals:

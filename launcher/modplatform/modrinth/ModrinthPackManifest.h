@@ -33,20 +33,11 @@ namespace Modrinth
 		QString sha512;
 		int fileSize = 0;
 
-		/*
-		 * What the manifest's `env` block says about this file, from the
-		 * point of view of the only thing this launcher installs: a
-		 * client.
+		/* What the manifest's `env` block says about this file for a client. Both
+		 * default to permissive since `env` is optional.
 		 *
-		 * Both default to the permissive answer, because `env` is
-		 * optional in an mrpack and a pack that says nothing is a pack
-		 * whose files are all simply wanted.
-		 *
-		 * `required` false means the pack is offering the file rather
-		 * than insisting on it, and it is installed turned off.
-		 * `clientSupported` false means the pack says it has no business
-		 * on a client at all, and it is not installed.
-		 */
+		 * `required` false: the pack offers the file, installed turned off.
+		 * `clientSupported` false: not for clients at all, not installed. */
 		bool required = true;
 		bool clientSupported = true;
 	};

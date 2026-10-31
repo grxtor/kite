@@ -133,11 +133,9 @@ class FileSystemTest : public QObject
 			QVERIFY(target_dir.entryList().contains("assets"));
 		};
 
-		// first try variant without trailing /
 		QVERIFY(!folder.endsWith('/'));
 		f();
 
-		// then variant with trailing /
 		folder.append('/');
 		QVERIFY(folder.endsWith('/'));
 		f();
@@ -181,19 +179,12 @@ class FileSystemTest : public QObject
 		QFETCH(QString, iconLocation);
 		QFETCH(QByteArray, result);
 
-		/* createShortcut() takes the full destination without a suffix and
-		 * hands back the path it wrote, rather than taking a folder and
-		 * returning a bool, so the file to read back comes from the call
-		 * itself. testdata/FileSystem-test_createShortcut-unix was
-		 * regenerated for the entry this writes now: it carries a
-		 * Categories= line, quotes Exec= and no longer writes TryExec=. */
 		const QString written = FS::createShortcut(
 			FS::PathCombine(location, name), dest, args, name, iconLocation);
 		QVERIFY(!written.isEmpty());
 		QCOMPARE(QString::fromLocal8Bit(TestsInternal::readFile(written)),
 				 QString::fromLocal8Bit(result));
 
-		// QDir().remove(location);
 	}
 #endif
 };

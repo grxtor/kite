@@ -80,7 +80,6 @@ namespace LegacyFTB
 				&PackInstallTask::onDownloadFailed);
 		connect(netJobContainer.get(), &NetJob::progress, this,
 				&PackInstallTask::onDownloadProgress);
-		// One line per file being downloaded.
 		propagateStepsFrom(netJobContainer.get());
 		netJobContainer->start();
 
@@ -143,7 +142,6 @@ namespace LegacyFTB
 		setStatus(tr("Installing modpack"));
 		QDir unzipMcDir(m_stagingPath + "/unzip/minecraft");
 		if (unzipMcDir.exists()) {
-			// ok, found minecraft dir, move contents to instance dir
 			if (!QDir().rename(m_stagingPath + "/unzip/minecraft",
 							   m_stagingPath + "/.minecraft")) {
 				emitFailed(tr("Failed to move unzipped minecraft!"));
@@ -159,11 +157,8 @@ namespace LegacyFTB
 		instanceSettings->registerSetting("InstanceType", "Legacy");
 		instanceSettings->set("InstanceType", "OneSix");
 
-		/* Held behind a shared_ptr, and by reference below so that the
-		 * rest of this function reads as it did. The pointer is what
-		 * matters: this function ends by handing the instance to
-		 * downloadFiles(), which runs against it after we return, and a
-		 * local object would be gone by then. */
+		/* Behind a shared_ptr: downloadFiles() runs against the instance after
+		 * this function returns. */
 		auto instancePtr = std::make_shared<MinecraftInstance>(
 			m_globalSettings, instanceSettings, m_stagingPath);
 		MinecraftInstance& instance = *instancePtr;
@@ -174,7 +169,6 @@ namespace LegacyFTB
 
 		bool fallback = true;
 
-		// handle different versions
 		QFile packJson(m_stagingPath + "/.minecraft/pack.json");
 		QDir jarmodDir = QDir(m_stagingPath + "/unzip/instMods");
 		if (packJson.exists()) {
@@ -185,7 +179,6 @@ namespace LegacyFTB
 			QJsonDocument doc = QJsonDocument::fromJson(packJson.readAll());
 			packJson.close();
 
-			// we only care about the libs
 			QJsonArray libs = doc.object().value("libraries").toArray();
 
 			foreach (const QJsonValue& value, libs) {
@@ -220,7 +213,6 @@ namespace LegacyFTB
 			fallback = false;
 		}
 
-		// just nuke unzip directory, it s not needed anymore
 		FS::deletePath(m_stagingPath + "/unzip");
 
 		if (fallback) {
@@ -240,7 +232,6 @@ namespace LegacyFTB
 		instance.setIconKey(m_instIcon);
 		instanceSettings->resumeSave();
 
-		/* Finishes the task, whether or not it downloads anything. */
 		downloadFiles(instancePtr);
 	}
 
@@ -250,11 +241,8 @@ namespace LegacyFTB
 			return netJobContainer->abort();
 		}
 
-		/* Past the pack's own download there is still one abortable
-		 * phase: the optional game-file download the base class runs
-		 * after the instance is built. It knows whether that is
-		 * happening, and returns false when it is not - which is the
-		 * answer this used to give unconditionally. */
+		/* One abortable phase remains after the pack download: the optional
+		 * game-file download the base class runs. It returns false if idle. */
 		return InstanceTask::abort();
 	}
 

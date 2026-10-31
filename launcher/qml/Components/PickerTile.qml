@@ -6,16 +6,11 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One choice in a picker of looks or palettes (LookPicker, PalettePicker):
- * a preview drawn by the host -- the tile's children fill its top -- then
- * the name with a round mark when it is the chosen one, and a short note
- * under them. A radio button to accessibility.
- *
- * The preview is a miniature in a rounded frame, but `clip` only clips to
- * its bounding box, so whatever the host draws edge to edge (a sidebar, a
- * sky) would keep square corners. A CornerMatte in the tile's own colour
- * covers them, clipped to the preview so its ring never reaches the tile's
- * border, and `previewOutline` redraws the frame's hairline there.
+ * One choice in a picker of looks or palettes: a preview drawn by the host (the
+ * tile's children fill its top), the name with a round mark when chosen, and a
+ * short note. `clip` only clips to the bounding box, so a CornerMatte in the
+ * tile's colour rounds whatever the host draws edge to edge, and
+ * `previewOutline` redraws the frame's hairline there.
  */
 AbstractButton {
     id: root
@@ -27,7 +22,6 @@ AbstractButton {
     property int previewRadius: Theme.radius.md
     // The hairline the host draws round its preview.
     property color previewOutline: "transparent"
-    // The preview the host draws; it fills the slot above the name.
     default property alias preview: previewHost.data
 
     hoverEnabled: true
@@ -69,8 +63,6 @@ AbstractButton {
             }
         }
 
-        // Name and the chosen-mark on one line, the note under them at the
-        // tile's full width.
         Column {
             width: parent.width
             Row {

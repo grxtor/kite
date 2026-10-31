@@ -37,13 +37,10 @@ class ExternalUpdater : public QObject
 	//! Whether pre-releases are offered alongside stable releases.
 	virtual bool getBetaAllowed() = 0;
 
-	//! \see getAutomaticallyChecksForUpdates
 	virtual void setAutomaticallyChecksForUpdates(bool check) = 0;
 
-	//! \see getUpdateCheckInterval
 	virtual void setUpdateCheckInterval(double seconds) = 0;
 
-	//! \see getBetaAllowed
 	virtual void setBetaAllowed(bool allowed) = 0;
 
   signals:

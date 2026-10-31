@@ -169,9 +169,7 @@ void KitePartLaunch::on_state(LoggedProcess::State state)
 				emitFailed(tr("Game crashed."));
 				return;
 			}
-			// FIXME: make this work again
-			//  m_postlaunchprocess.processEnvironment().insert("INST_EXITCODE",
-			//  QString(exitCode)); run post-exit
+			// FIXME: INST_EXITCODE is not passed to the post-exit command.
 			emitSucceeded();
 			break;
 		}
@@ -206,9 +204,9 @@ void KitePartLaunch::proceed()
 	}
 }
 
-// How long the helper gets to act on "abort" before we stop being polite.
-// Long enough for a healthy helper to shut the game down by itself, short
-// enough that the user does not conclude that Kill did nothing.
+// How long the helper gets to act on "abort" before we stop being polite: long
+// enough for a healthy helper to shut the game down, short enough that Kill
+// does not look broken.
 static constexpr int ABORT_GRACE_MS = 3000;
 
 bool KitePartLaunch::abort()
@@ -217,10 +215,10 @@ bool KitePartLaunch::abort()
 		mayProceed = false;
 		QString launchString("abort\n");
 		m_process.write(launchString.toUtf8());
-		// Writing "abort" only *asks* the helper to quit. A helper that is
-		// itself wedged never reads it, and since the launch task is marked
-		// as aborted either way, the game would be left running with nothing
-		// left for the user to press Kill on. Escalate if it is still there.
+		// Writing "abort" only asks the helper to quit. A wedged helper never
+		// reads it, and the task is marked aborted either way, which would
+		// leave the game running with nothing to Kill. Escalate if it is still
+		// there.
 		QTimer::singleShot(ABORT_GRACE_MS, this, [this]() {
 			auto state = m_process.state();
 			if (state != LoggedProcess::Running &&

@@ -6,9 +6,8 @@ import QtQuick
 import Kite.Theme
 
 /*
- * Three sample log lines in the console font and size from the settings, so
- * a change shows before the game is ever started. The colours are the ones
- * the log uses for errors, warnings and plain messages.
+ * Three sample log lines in the console font and size from the settings, so a change shows before the game
+ * starts. The colours are those the log uses for errors, warnings and plain messages.
  */
 Item {
     id: root

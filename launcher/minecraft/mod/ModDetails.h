@@ -24,10 +24,9 @@
 #include <QString>
 #include <QStringList>
 
-/* One thing a mod's metadata says about another mod: that it needs it,
- * or that it must not run next to it. Only the declarations a loader
- * acts on are kept - "recommends", "suggests" and optional mods.toml
- * entries change nothing about whether the game starts. */
+// One thing a mod's metadata says about another mod: that it needs it, or that
+// it must not run next to it. Only declarations a loader acts on are kept
+// ("recommends", "suggests" and optional mods.toml entries change nothing).
 struct ModDependency {
 	enum class Kind {
 		/// fabric/quilt "depends"; mods.toml mandatory=true or
@@ -56,10 +55,9 @@ struct ModDependency {
 	Syntax syntax = Syntax::Fabric;
 	/// Empty means any version.
 	QStringList versions;
-	/// The metadata it came from: "fabric", "quilt", "forge" or
-	/// "neoforge". A jar built for several loaders declares its
-	/// dependencies once per loader, and only the set of the loader that
-	/// actually reads it applies.
+	/// The metadata it came from: "fabric", "quilt", "forge" or "neoforge". A
+	/// jar built for several loaders declares its dependencies once per loader;
+	/// only the loader that reads it applies.
 	QString loader;
 };
 
@@ -83,19 +81,17 @@ struct ModDetails {
 	/// (fabric/quilt "icon", mods.toml/mcmod.info "logoFile"), or empty.
 	QString icon;
 
-	/// The loaders whose metadata the file carries - "fabric" for
-	/// fabric.mod.json, "quilt" for quilt.mod.json, "forge" for
-	/// META-INF/mods.toml and mcmod.info, "neoforge" for
-	/// META-INF/neoforge.mods.toml (or a mods.toml that requires
-	/// "neoforge"), "liteloader" for litemod.json. Empty when it has none
-	/// of these: a plain library jar, or a file not yet read.
+	/// The loaders whose metadata the file carries: "fabric" (fabric.mod.json),
+	/// "quilt" (quilt.mod.json), "forge" (META-INF/mods.toml, mcmod.info),
+	/// "neoforge" (neoforge.mods.toml, or a mods.toml requiring "neoforge"),
+	/// "liteloader" (litemod.json). Empty for a plain library jar or an unread
+	/// file.
 	QStringList loaders;
-	/// What it needs and what it clashes with, from every metadata file
-	/// it has (see ModDependency::loader).
+	/// What it needs and clashes with, from every metadata file
+	/// (ModDependency::loader).
 	QList<ModDependency> dependencies;
-	/// Ids it answers to besides mod_id: fabric/quilt "provides", the
-	/// other [[mods]] of a mods.toml that declares several, and every mod
-	/// bundled inside it (fabric/quilt "jars", META-INF/jarjar), nested
-	/// ones included.
+	/// Ids it answers to besides mod_id: fabric/quilt "provides", the other
+	/// [[mods]] of a mods.toml, and every mod bundled inside it (fabric/quilt
+	/// "jars", META-INF/jarjar), nested ones included.
 	QList<ProvidedMod> provides;
 };

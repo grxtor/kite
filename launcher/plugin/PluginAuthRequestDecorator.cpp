@@ -38,9 +38,8 @@ bool PluginAuthRequestDecorator::dispatchAuthRequest(QNetworkRequest& request,
 	if (!m_manager)
 		return false;
 
-	/* The add_header callback closes over the request reference and
-	 * appends raw headers. We keep it as a plain C function pointer with a
-	 * sidecar state struct so the closure can survive the C ABI boundary. */
+	/* The add_header callback closes over the request reference and appends raw headers; a plain C
+	 * function pointer plus a sidecar state struct lets the closure cross the C ABI boundary. */
 	struct HeaderCtx {
 		QNetworkRequest* req;
 	};

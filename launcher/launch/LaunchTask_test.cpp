@@ -27,10 +27,9 @@
 #include "launch/LaunchTask.h"
 #include "settings/INISettingsObject.h"
 
-/* What a launch says it is doing, step by step (LaunchTask::startStep()):
- * the stage a step names for itself, "Preparing to launch" for one that
- * names none, and no progress left over from the step before. That is
- * what the play bar shows while a game starts. */
+// What a launch says it is doing, step by step (LaunchTask::startStep()): the
+// stage a step names, "Preparing to launch" for one that names none, and no
+// progress left over from the previous step. The play bar shows it.
 namespace
 {
 	// The global settings BaseInstance's constructor binds to, as in

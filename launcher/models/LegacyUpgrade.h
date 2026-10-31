@@ -27,27 +27,18 @@
 class LegacyUpgradeTask;
 
 /*
- * Upgrading an old-format (Legacy) instance to the current instance format -
- * the widget-free half of LegacyUpgradePage, which also draws the
- * explanation and runs the task behind a modal ProgressDialog.
- *
- * The upgrade copies the instance into a new one ("<name> (Migrated)", same
- * group and icon); the original stays untouched. The caller wraps the task
- * with InstanceList::wrapInstanceTask() so the copy lands in the library,
- * and watches it (see InstanceDetails::upgradeLegacy()).
+ * Upgrading an old-format (Legacy) instance to the current format. The upgrade
+ * copies it into a new instance ("<name> (Migrated)", same group and icon); the
+ * original stays untouched. The caller wraps the task with
+ * InstanceList::wrapInstanceTask() so the copy lands in the library.
  */
 namespace LegacyUpgrade
 {
-	/// Whether @p instance is an old-format (Legacy) instance.
 	bool isLegacy(const InstancePtr& instance);
 
-	/// The name the upgraded copy gets.
 	QString upgradedName(const QString& name);
 
-	/// The upgrade task for @p instance, already named, in @p group and with
-	/// the instance's icon. Null if @p instance is not a legacy instance or
-	/// is running (the old page was not shown for a running instance either:
-	/// the files would be changing under the copy).
+	/// Null if @p instance is not legacy or is running (the files would change under the copy).
 	LegacyUpgradeTask* makeTask(const InstancePtr& instance,
 								const QString& group);
 } // namespace LegacyUpgrade

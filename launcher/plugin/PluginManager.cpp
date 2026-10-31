@@ -121,9 +121,7 @@ void PluginManager::initializeAll()
 {
 	qCDebug(pluginsLog) << "Discovering modules...";
 
-	// Configure GPG keyring location and the verification-result cache
-	// before discovery — the loader's signature pre-flight runs inside
-	// discoverModules() and consumes both.
+	// Keyring path and verification cache feed the signature pre-flight in discoverModules().
 	if (m_app && m_app->settings()) {
 		const QString key = QStringLiteral("plugin.signing.keyring_path");
 		if (!m_app->settings()->contains(key))
@@ -133,10 +131,7 @@ void PluginManager::initializeAll()
 			PluginSignature::setKeyringPath(path);
 	}
 
-	// Cache path lives next to the launcher's other settings. The cache
-	// is the single biggest reason a second-and-later startup is fast:
-	// the (size, mtime) tuple of each .mmco is enough to skip the
-	// GpgME round-trip entirely. First-startup cost stays the same.
+	// The cache is keyed by (size, mtime) of each .mmco and skips the GpgME round-trip.
 	{
 		const QString cacheDir = QStandardPaths::writableLocation(
 			QStandardPaths::AppLocalDataLocation);
@@ -148,9 +143,6 @@ void PluginManager::initializeAll()
 
 	const QSet<QString> disabled = disabledModuleNames();
 	m_modules = m_loader.discoverModules(disabled);
-	// Persist the cache once discovery has settled — every newly-seen
-	// plugin is now memoised so the next launcher startup skips
-	// straight to the cache hit.
 	PluginSignature::flushCache();
 
 	if (m_modules.isEmpty()) {
@@ -158,12 +150,9 @@ void PluginManager::initializeAll()
 		return;
 	}
 
-	// Resolve dependencies and produce a load order.
 	const auto resolved = PluginDependencyResolver::resolve(m_modules);
 
-	// Prepare runtimes and contexts — sized to the full module list so
-	// that disabled modules still have a slot (they just never get an
-	// active context). Indexing stays consistent with m_modules.
+	// Sized to the full module list so indexes match m_modules.
 	m_runtimes.resize(static_cast<size_t>(m_modules.size()));
 	m_contexts.resize(static_cast<size_t>(m_modules.size()));
 
@@ -171,7 +160,6 @@ void PluginManager::initializeAll()
 		auto& meta = m_modules[i];
 
 		if (meta.disabled) {
-			// Defensive — resolver should have excluded these already.
 			qCDebug(pluginsLog) << "Skipping disabled module:" << meta.name
 					 << "-" << meta.disableDetail;
 			continue;
@@ -205,8 +193,6 @@ void PluginManager::initializeAll()
 		emit moduleLoaded(meta.name);
 	}
 
-	// Log the modules that were excluded from the load order so users
-	// can find them in the launcher logs.
 	for (const auto& meta : m_modules) {
 		if (meta.disabled) {
 			qCInfo(pluginsLog).noquote() << "Module" << meta.name
@@ -214,18 +200,9 @@ void PluginManager::initializeAll()
 		}
 	}
 
-	// Wire the Application Qt signals we re-publish as MMCO hooks
-	// (global-settings open, instance-settings-page created). Must
-	// happen before APP_INITIALIZED so plugins that register for
-	// those hooks inside mmco_init() see the very first dispatch.
+	// Before APP_INITIALIZED, so hooks registered in mmco_init() see the first dispatch.
 	connectAppSignals();
 
-	// The news feed list used to be seeded here from BuildConfig. It is
-	// MainWindow's NewsChecker that owns the feeds now — it is
-	// constructed with NEWS_RSS_URL plus NEWS_EXTRA_FEEDS — and the
-	// news_* API reads straight out of it.
-
-	// Fire app-initialized hook
 	dispatchHook(MMCO_HOOK_APP_INITIALIZED);
 }
 
@@ -262,12 +239,8 @@ QSet<QString> PluginManager::disabledModuleNames() const
 		return out;
 	const QString key = QStringLiteral("plugins.disabled");
 
-	// SettingsObject::contains() only reports settings that have been
-	// explicitly registered with registerSetting() — even if the INI
-	// file on disk has a value for that key. If we are the first caller
-	// of the session we must register the setting here, otherwise the
-	// `get()` below would always return an empty default and the user's
-	// disable list would silently be ignored after a restart.
+	// contains() only sees registered settings: register the key first, or the saved disable list
+	// would be ignored after a restart.
 	if (!m_app->settings()->contains(key)) {
 		m_app->settings()->registerSetting(key, QString());
 	}
@@ -288,21 +261,15 @@ void PluginManager::shutdownAll()
 		return;
 	m_shutdownDone = true;
 
-	// Fire shutdown hook before unloading
 	dispatchHook(MMCO_HOOK_APP_SHUTDOWN);
 
-	// Unload in reverse order
 	for (int i = m_modules.size() - 1; i >= 0; --i) {
 		auto& meta = m_modules[i];
 		if (!meta.initialized)
 			continue;
 
 		qCDebug(pluginsLog).noquote() << "Unloading module:" << meta.name;
-		/* Tear down tray icons, menus, actions and close filters owned by
-		 * this module *before* invoking mmco_unload(). The plugin may
-		 * still hold raw pointers to these QObjects in its C state, but
-		 * after this point they are dead — and that is fine because the
-		 * plugin won't touch them once mmco_unload() returns. */
+		// Release tray resources before mmco_unload(); the plugin must not touch them afterwards.
 		releaseTrayResourcesForModule(m_runtimes[i].get());
 		if (meta.unloadFunc) {
 			meta.unloadFunc();
@@ -310,10 +277,7 @@ void PluginManager::shutdownAll()
 		meta.initialized = false;
 	}
 
-	/* Belt-and-braces: if the main window (or, under the QML shell, its
-	 * root QWindow) outlives PluginManager (Application teardown is
-	 * awkward), unhook our event filter so it doesn't fire into a dead
-	 * `this`. */
+	// Unhook the close filter if the main window outlives PluginManager.
 	if (m_closeFilterInstalled) {
 		if (m_filteredMainWindow)
 			m_filteredMainWindow->removeEventFilter(this);
@@ -322,27 +286,14 @@ void PluginManager::shutdownAll()
 		m_closeFilterInstalled = false;
 	}
 
-	// DO NOT call dlclose() or clear() data structures here.
-	//
-	// Plugin .mmco shared libraries statically link Kite_logic
-	// which contains global objects with non-trivial destructors
-	// (e.g. `const Config BuildConfig`).  Modules are opened with
-	// RTLD_NODELETE to prevent their static destructors from running
-	// at exit and corrupting the heap.  Calling dlclose() would
-	// undo that protection.
-	//
-	// Additionally, plugin Q_OBJECT classes (e.g. BackupPage) have
-	// MOC-generated QMetaObject statics registered in Qt's type
-	// system; unmapping that memory causes crashes.
-	// The OS reclaims all process memory at exit.
+	// No dlclose() or clear() here: plugins link Kite_logic statically and are opened with
+	// RTLD_NODELETE so its static destructors do not run at exit; unmapping would also break the
+	// MOC statics of plugin Q_OBJECT classes. The OS reclaims the memory.
 }
 
 bool PluginManager::dispatchHook(uint32_t hook_id, void* payload)
 {
-	/* Snapshot first: a callback is allowed to register or unregister
-	 * hooks, which would invalidate iterators into m_hooks while we
-	 * walk them. The relative order of the registrations is preserved,
-	 * so nothing about the existing dispatch order changes. */
+	// Snapshot: callbacks may (un)register hooks, which would invalidate iterators into m_hooks.
 	QVector<HookRegistration> inlineRegs;
 	QVector<HookRegistration> backgroundRegs;
 	{
@@ -356,9 +307,7 @@ bool PluginManager::dispatchHook(uint32_t hook_id, void* payload)
 		}
 	}
 
-	/* Inline callbacks first. They are the cheap ones by definition, and
-	 * running them up front means a veto from one of them saves us from
-	 * starting the expensive background work at all. */
+	// Inline callbacks first: they are cheap, and a veto skips the background work.
 	for (const auto& reg : inlineRegs) {
 		int rc =
 			reg.callback(reg.module_handle, hook_id, payload, reg.user_data);
@@ -377,26 +326,15 @@ bool PluginManager::dispatchHook(uint32_t hook_id, void* payload)
 bool PluginManager::runBackgroundHooks(uint32_t hook_id, void* payload,
 									   const QVector<HookRegistration>& regs)
 {
-	/* Off-loading only buys us anything while there is an event loop and
-	 * a window to keep responsive. During startup and shutdown there is
-	 * neither, so run the callbacks the old way rather than pop a modal
-	 * dialog at a point where the launcher is not in a state to show
-	 * one. */
-	/* activeWindow() is null whenever the launcher is not the focused
-	 * application, so it answers "where do I parent this dialog", not
-	 * "is there a UI at all". The main window answers the second one:
-	 * it does not exist yet during startup and is gone by shutdown.
-	 * ProgressDialog below needs an actual QWidget parent, which the
-	 * QML shell has none of -- resolveMainWindow() stays widget-only
-	 * and simply returns nullptr under the QML shell, same as during
-	 * startup/shutdown, so the dialog falls back to no parent there. */
+	// Off-loading needs an event loop and a window; at startup and shutdown the callbacks run
+	// synchronously. activeWindow() is null when the launcher is unfocused, so the main window
+	// tells whether a UI exists (resolveMainWindow() returns nullptr under the QML shell).
 	QWidget* owner = QApplication::activeWindow();
 	if (!owner) {
 		owner = resolveMainWindow();
 	}
-	/* Under the QML shell there is no QWidget to parent a ProgressDialog
-	 * to; once its presenter can show a busy indication, the callbacks run
-	 * off the GUI thread the same way, behind that instead. */
+	// The QML shell has no QWidget to parent a ProgressDialog; it waits behind
+	// uiHost()->showBusy().
 	const bool qmlProgress = !m_shutdownDone && m_app && m_app->qmlShellChosen() &&
 							 m_app->usingQmlShell();
 	if (!qmlProgress && (!owner || m_shutdownDone)) {
@@ -432,8 +370,7 @@ bool PluginManager::runBackgroundHooks(uint32_t hook_id, void* payload,
 		auto busy = m_app->uiHost()->showBusy(tr("Waiting for plugins…"));
 		QEventLoop loop;
 		connect(&sequence, &Task::finished, &loop, &QEventLoop::quit);
-		// Queued, so a sequence that finishes at once still finds the
-		// loop running.
+		// Queued, so the loop is running before the sequence can finish.
 		QMetaObject::invokeMethod(&sequence, &Task::start,
 								  Qt::QueuedConnection);
 		loop.exec();
@@ -442,20 +379,15 @@ bool PluginManager::runBackgroundHooks(uint32_t hook_id, void* payload,
 		prog.execWithTask(&sequence);
 	}
 
-	/* Escape dismisses the dialog without stopping anything, and a C
-	 * callback cannot be interrupted anyway. Keep the event loop
-	 * turning until the sequence really has finished — tearing the
-	 * tasks down while a worker is still inside one of them would mean
-	 * blocking the GUI thread in a destructor, which is the freeze we
-	 * came here to get rid of. */
+	// Escape closes the dialog but a C callback cannot be interrupted; keep waiting, since
+	// destroying the tasks while a worker runs would block the GUI thread.
 	if (sequence.isRunning()) {
 		QEventLoop loop;
 		connect(&sequence, &Task::finished, &loop, &QEventLoop::quit);
 		loop.exec();
 	}
 
-	/* A vetoing task fails, which also stops the sequence — so at most
-	 * one of these can be set, and the tasks after it never ran. */
+	// A vetoing task fails the sequence; the tasks after it never ran.
 	for (auto* task : tasks) {
 		if (task->cancelRequested()) {
 			return true;
@@ -720,12 +652,8 @@ void PluginManager::ensurePluginDataDir(PluginMetadata& meta)
 
 namespace
 {
-	/* Thread-local backing store for ScratchString.
-	 *
-	 * Keyed by the ScratchString instance, so each (module, thread)
-	 * pair gets its own buffer. A function-local static keeps the
-	 * initialisation order sane across translation units and lets
-	 * threads that never touch the plugin API pay nothing. */
+	// Thread-local backing store for ScratchString, keyed by instance. A function-local static
+	// avoids cross-TU init order issues.
 	std::unordered_map<const void*, std::string>& scratchStore()
 	{
 		static thread_local std::unordered_map<const void*, std::string> store;
@@ -735,11 +663,8 @@ namespace
 
 PluginManager::ScratchString::~ScratchString()
 {
-	/* Only the destroying thread's entry can be reclaimed here; other
-	 * threads' entries stay behind until that thread exits. They are
-	 * inert: a later ScratchString reusing this address overwrites the
-	 * value before any getter hands it out, and modules live for the
-	 * whole process anyway. */
+	// Only the destroying thread's entry is reclaimed; other entries are inert (overwritten before
+	// any getter hands them out).
 	scratchStore().erase(this);
 }
 
@@ -823,9 +748,7 @@ int PluginManager::api_hook_register_ex(void* mh, uint32_t hook_id,
 	if (!cb)
 		return -1;
 
-	/* Reject flags we don't know: a module built against a newer SDK
-	 * must not silently get the old behaviour for a flag we cannot
-	 * honour. */
+	// Reject unknown flags: a module built against a newer SDK must not silently get old behaviour.
 	constexpr uint32_t known = MMCO_HOOK_FLAG_BACKGROUND;
 	if ((flags & ~known) != 0u) {
 		qWarning() << "[PluginManager] Module"
@@ -851,12 +774,11 @@ int PluginManager::api_progress_report(void* mh, const char* status,
 {
 	auto* task = PluginHookTask::currentOnThisThread();
 	if (!task) {
-		/* Called from an inline callback, or from a thread the plugin
-		 * spawned itself. There is no row to write to. */
+		// No row to write to: inline callback, or a thread the plugin spawned.
 		return -1;
 	}
 	if (mh && task->moduleHandle() != mh) {
-		/* Reporting on behalf of another module is not a thing. */
+		// Cannot report on behalf of another module.
 		return -1;
 	}
 
@@ -911,7 +833,6 @@ int PluginManager::api_setting_set(void* mh, const char* key, const char* value)
 	QString fullKey =
 		QString("plugin.%1.%2").arg(meta.moduleId(), QString::fromUtf8(key));
 
-	// Auto-register the setting if it doesn't exist yet
 	if (!app->settings()->contains(fullKey)) {
 		app->settings()->registerSetting(fullKey, QString());
 	}
@@ -1112,9 +1033,6 @@ int PluginManager::api_instance_set_update_available(void* mh, const char* id,
 	auto* inst = resolveInstance(r, id);
 	if (!inst)
 		return -1;
-	/* setUpdateAvailable already short-circuits on no-op (==value) and
-	 * emits propertiesChanged() so the InstanceView delegate repaints
-	 * the badge. We just normalise the int → bool conversion here. */
 	inst->setUpdateAvailable(value != 0);
 	return 0;
 }
@@ -1127,11 +1045,7 @@ int PluginManager::api_instance_component_set_version(void* mh, const char* id,
 	auto* mc = resolveMC(r, id);
 	if (!mc || !mc->getPackProfile() || !uid || !version)
 		return -1;
-	/* `important=true` matches what InstanceImportTask does for loader
-	 * components, so the resolver treats the version as user-pinned and
-	 * doesn't quietly bump it later. PackUpdater is the user proxy
-	 * here — when it writes a version it means "this is the version
-	 * the pack publisher chose". */
+	// important=true marks the version user-pinned, so the resolver does not bump it later.
 	const bool ok = mc->getPackProfile()->setComponentVersion(
 		QString::fromUtf8(uid), QString::fromUtf8(version),
 		/*important=*/true);
@@ -1169,8 +1083,7 @@ int PluginManager::api_instance_launch(void* mh, const char* id, int online)
 	auto inst = app->instances()->getInstanceById(QString::fromUtf8(id));
 	if (!inst)
 		return -1;
-	/* The C ABI only knows online/offline, so a module cannot ask for the
-	 * demo; the instance's own profiler setting still applies. */
+	// The C ABI knows only online/offline; the instance's profiler setting still applies.
 	const LaunchMode mode =
 		online != 0 ? LaunchMode::Normal : LaunchMode::Offline;
 	return app->launch(inst, mode) ? 0 : -1;
@@ -1407,7 +1320,6 @@ int PluginManager::api_fs_write(void* mh, const char* rel, const void* data,
 	QString path = QDir(QString::fromStdString(r->dataDir))
 					   .filePath(QString::fromUtf8(rel));
 
-	// Ensure parent directory exists
 	QDir().mkpath(QFileInfo(path).absolutePath());
 
 	QFile f(path);
@@ -1439,7 +1351,6 @@ int PluginManager::api_http_get(void* mh, const char* url, MMCOHttpCallback cb,
 	if (!url || !cb)
 		return -1;
 
-	// Validate URL scheme (only http/https allowed)
 	QString qurl = QString::fromUtf8(url);
 	if (!qurl.startsWith("http://") && !qurl.startsWith("https://"))
 		return -1;
@@ -1486,9 +1397,7 @@ int PluginManager::api_http_get_with_headers(void* mh, const char* url,
 		return -1;
 
 	QNetworkRequest request{QUrl(qurl)};
-	/* User-Agent is always launcher-controlled — overrides anything
-	 * the caller passed. Keeps outbound traffic identifiable and
-	 * lets us swap the UA in one place when the version bumps. */
+	// User-Agent is always launcher-controlled.
 	request.setHeader(QNetworkRequest::UserAgentHeader, BuildConfig.USER_AGENT);
 
 	for (int i = 0; i < header_count; ++i) {
@@ -1502,8 +1411,7 @@ int PluginManager::api_http_get_with_headers(void* mh, const char* url,
 		QByteArray value = line.mid(sep + 1).trimmed();
 		if (name.isEmpty())
 			continue;
-		/* Reject caller-supplied User-Agent — see comment above.
-		 * Case-insensitive compare so "user-agent: ..." also bounces. */
+		// Case-insensitive; a caller-supplied User-Agent is rejected.
 		if (name.toLower() == "user-agent")
 			continue;
 		request.setRawHeader(name, value);
@@ -1564,13 +1472,8 @@ int PluginManager::api_http_post(void* mh, const char* url, const void* body,
 
 namespace
 {
-	/* Under the QML shell (Application::qmlShellChosen()) a plugin's
-	 * question goes to QmlUiHost, never to a widget dialog -- not even in
-	 * the moment before the QML presenter is up, when uiHost() would still
-	 * hand out the widget host. A question that needs its answer right
-	 * away cannot wait for the presenter the way a plain message does
-	 * (runWhenQmlPresenterReady()), so it is declined instead: the same
-	 * result as the user cancelling it, which every caller handles. */
+	// Under the QML shell a plugin's question goes to QmlUiHost, never a widget dialog. It cannot
+	// wait for the presenter, so it is declined, which every caller handles like a user cancel.
 	bool qmlPresenterMissing(Application* app, const char* api)
 	{
 		if (app->usingQmlShell()) {
@@ -1584,9 +1487,8 @@ namespace
 
 namespace
 {
-	/* Runs an account task (skin upload/reset, cape change) to its end
-	 * with whichever UI is up: a busy indication under the QML shell, the
-	 * widget ProgressDialog otherwise. True when the task succeeded. */
+	// Runs an account task to its end: busy indication under the QML shell, ProgressDialog
+	// otherwise. True when the task succeeded.
 	bool runAccountTask(Application* app, Task* task, const QString& busyText,
 						const char* api)
 	{
@@ -1615,13 +1517,8 @@ void PluginManager::api_ui_show_message(void* mh, int type, const char* title,
 		QString("[%1] %2").arg(meta.name, QString::fromUtf8(title));
 	QString qmsg = QString::fromUtf8(msg);
 
-	/* Under the QML shell there is no widget window to parent a QMessageBox
-	 * to (see the qml-preview-tools audit, plan item 2) -- route through
-	 * the same UiHost a plugin's message()/confirm() would already reach on
-	 * the core side, instead of a plugin popping a widget the QML shell
-	 * must never show. The classic UI is untouched: qmlShellChosen() is
-	 * false there, so this falls through to the QMessageBox it always
-	 * used. A message sent before the QML presenter is up waits for it. */
+	// Under the QML shell route through UiHost instead of a QMessageBox; a message sent before the
+	// presenter is up waits for it.
 	auto* app = r->manager->m_app;
 	if (app && app->qmlShellChosen()) {
 		UiHost::Severity severity = UiHost::Severity::Information;
@@ -1691,10 +1588,8 @@ int PluginManager::api_zip_compress_dir(void* mh, const char* zip,
 	if (!zip || !dir)
 		return -1;
 
-	/* Inside a background hook this is the slow part of the callback, so
-	 * turn the file count into a real percentage on the plugin's row.
-	 * Called from anywhere else there is nobody listening, and we skip
-	 * the counting pass entirely. */
+	// Inside a background hook report a real percentage on the plugin's row; elsewhere skip the
+	// counting pass.
 	auto* task = PluginHookTask::currentOnThisThread();
 	if (mh && task && task->moduleHandle() != mh) {
 		task = nullptr;
@@ -1702,9 +1597,7 @@ int PluginManager::api_zip_compress_dir(void* mh, const char* zip,
 
 	MMCZip::ProgressFunction progress = nullptr;
 	if (task) {
-		/* One queued UI update per file would drown the event loop on a
-		 * big instance, and the user cannot see more than a percent of
-		 * movement anyway. */
+		// One queued UI update per file would drown the event loop on a big instance.
 		auto lastReported = std::make_shared<qint64>(-1);
 		progress = [task, lastReported](qint64 current, qint64 total) {
 			const qint64 step = qMax(qint64(1), total / 100);
@@ -2225,9 +2118,8 @@ const char* PluginManager::api_ui_file_open_dialog(void* mh, const char* title,
 	std::optional<QString> result;
 	auto* app = r->manager->m_app;
 	if (app && app->qmlShellChosen()) {
-		/* QApplication::activeWindow() is always null under the QML shell
-		 * (see the audit) -- ask through UiHost instead, which shows a
-		 * QtQuick.Dialogs FileDialog rather than this QFileDialog. */
+		// activeWindow() is null under the QML shell: ask through UiHost (QtQuick.Dialogs
+		// FileDialog).
 		if (qmlPresenterMissing(app, "ui_file_open_dialog"))
 			return nullptr;
 		result = app->uiHost()->pickFile(UiHost::FilePickerMode::Open, qtitle,
@@ -2324,50 +2216,25 @@ int PluginManager::api_ui_confirm_dialog(void* mh, const char* title,
 }
 
 /*
- * ─── ABI 5 — Declarative UI surfaces ───────────────────────────────
- *
- * Replaces the deleted S13 imperative widget builder (ui_page_create
- * through ui_tree_row_count) and the deleted ui_register_instance_action
- * / ui_register_instance_action_cb no-ops (both are gone from the ABI
- * entirely as of ABI 5 -- MMCO_ABI_VERSION_MIN jumping to 5 means any
- * module that still called them no longer links, so there is nothing
- * to keep as a compatibility no-op the way there was for ABI 4).
- *
- * A plugin describes a small widget tree as an "mmco-ui/1" JSON
- * document (see PluginUiRenderer.h) and the host renders and owns the
- * real QWidget tree; no QWidget* is ever handed back to a plugin. Each
- * SurfaceRecord's `doc` is the canonical, always-current document --
- * ui_surface_update/_set/_set_rows mutate it whether or not a view is
- * currently on screen, and additionally patch the live widget when one
- * is mounted (see PluginManager.h's SurfaceRecord for the full
- * rationale). The three anchors are realised at three different call
- * sites, all reading from `m_surfaces` fresh every time:
- *   - MMCO_UI_ANCHOR_INSTANCE_PAGE     -> createInstancePages(), called
- *     from InstancePageProvider::getPages().
- *   - MMCO_UI_ANCHOR_GLOBAL_SETTINGS   -> createGlobalSettingsPluginsPage(),
- *     called from Application.cpp's PluginAugmentedPageProvider.
- *   - MMCO_UI_ANCHOR_INSTANCE_SETTINGS -> buildPluginsSectionWidget(),
- *     called from connectAppSignals()'s INSTANCE_SETTINGS_PAGE_CREATED
- *     bridge below.
+ * ABI 5 declarative UI surfaces. A plugin describes a widget tree as an "mmco-ui/1" JSON
+ * document (see PluginUiRenderer.h); the host renders and owns the widgets. SurfaceRecord::doc
+ * stays the canonical document whether or not a view is mounted. Anchors are realised in:
+ *   INSTANCE_PAGE      -> createInstancePages()
+ *   GLOBAL_SETTINGS    -> createGlobalSettingsPluginsPage()
+ *   INSTANCE_SETTINGS  -> buildPluginsSectionWidget()
  */
 
 #include "ui/pages/BasePage.h"
 
 namespace
 {
-	/* Turn a SurfaceRecord's current document into JSON text for
-	 * PluginUiRenderer::build(). */
 	QString surfaceDocToText(const QJsonObject& doc)
 	{
 		return QString::fromUtf8(QJsonDocument(doc).toJson(QJsonDocument::Compact));
 	}
 
-	/* Walks `node`'s subtree for the id `nodeId`; when found, merges
-	 * `patch` into its "props" object (creating one if absent) and
-	 * returns true. Shared by ui_surface_set (an arbitrary props
-	 * patch) and ui_surface_set_rows (a `{"rows": [...]}` patch is
-	 * just another props patch), so both ways of mutating the
-	 * canonical document go through the same tree walk. */
+	// Merges `patch` into the "props" of the node with id `nodeId` (creating it if absent); true
+	// when found.
 	bool patchNodeProps(QJsonObject& node, const QString& nodeId,
 						const QJsonObject& patch)
 	{
@@ -2404,11 +2271,7 @@ namespace
 		return true;
 	}
 
-	/* Ties a PluginUiRenderer::RenderedSurface's lifetime to whatever
-	 * QWidget it ends up parented under -- used when several surfaces
-	 * are stacked into one combined section widget (GLOBAL_SETTINGS /
-	 * INSTANCE_SETTINGS), where the natural container is a plain
-	 * QGroupBox we don't otherwise subclass. */
+	// Ties a RenderedSurface's lifetime to the QWidget it is parented under (stacked sections).
 	class RendererOwner : public QObject
 	{
 	  public:
@@ -2422,11 +2285,7 @@ namespace
 		std::unique_ptr<PluginUiRenderer::RenderedSurface> m_renderer;
 	};
 
-	/* One MMCO_UI_ANCHOR_INSTANCE_PAGE surface, wrapped as its own
-	 * instance-window page -- the declarative replacement for
-	 * GitVersioningPage-style ad-hoc BasePage subclasses. Owns the
-	 * RenderedSurface directly since it never shares its content with
-	 * another page. */
+	// An INSTANCE_PAGE surface wrapped as its own instance-window page; owns its RenderedSurface.
 	class PluginSurfacePage : public QWidget, public BasePage
 	{
 	  public:
@@ -2468,9 +2327,7 @@ namespace
 		std::unique_ptr<PluginUiRenderer::RenderedSurface> m_renderer;
 	};
 
-	/* The single host-built page every MMCO_UI_ANCHOR_GLOBAL_SETTINGS
-	 * surface is stacked into -- see createGlobalSettingsPluginsPage()
-	 * for why one shared page beats one page per plugin. */
+	// The one page every GLOBAL_SETTINGS surface is stacked into.
 	class PluginsGroupPage : public QWidget, public BasePage
 	{
 	  public:
@@ -2623,12 +2480,8 @@ int PluginManager::api_ui_surface_set(void* mh, void* surface, const char* node_
 	const bool foundInDoc = patchDocumentNodeProps(rec->doc, nodeId, props);
 	if (rec->mountedRoot && rec->mountedRenderer)
 		rec->mountedRenderer->setNodeProps(nodeId, props);
-	/* The widget renderer already reflects this patch live via
-	 * mountedRenderer above; surfacesChanged() is the same notification
-	 * for anything reading `doc` instead (a future QML surface model — see
-	 * PluginSurfaceModel), which otherwise never learns a mounted-or-not
-	 * toggle/list/etc. just changed value. Only when the document actually
-	 * moved, same condition ui_surface_update/_create/_destroy already use. */
+	// The mounted renderer is patched above; surfacesChanged() tells readers of `doc`
+	// (PluginSurfaceModel).
 	if (foundInDoc)
 		emit r->manager->surfacesChanged();
 	return foundInDoc ? 0 : -1;
@@ -2658,7 +2511,6 @@ int PluginManager::api_ui_surface_set_rows(void* mh, void* surface,
 	const bool foundInDoc = patchDocumentNodeProps(rec->doc, nodeId, rowsPatch);
 	if (rec->mountedRoot && rec->mountedRenderer)
 		rec->mountedRenderer->setRows(nodeId, rows);
-	/* See api_ui_surface_set() above — same reasoning, same condition. */
 	if (foundInDoc)
 		emit r->manager->surfacesChanged();
 	return foundInDoc ? 0 : -1;
@@ -2699,9 +2551,8 @@ int PluginManager::api_ui_modal_run(void* mh, const char* title,
 	if (err.error != QJsonParseError::NoError || !jd.isObject())
 		return -1;
 
-	/* Drawn by whichever UI is up, through UiHost: the QML shell renders
-	 * the document with PluginNode.qml, the widget UI with
-	 * PluginUiRenderer in a QDialog. */
+	// Drawn through UiHost: PluginNode.qml under the QML shell, PluginUiRenderer in a QDialog
+	// otherwise.
 	if (app->qmlShellChosen() && qmlPresenterMissing(app, "ui_modal_run"))
 		return -1;
 	const auto result = app->uiHost()->runPluginModal(
@@ -2763,9 +2614,7 @@ QWidget* PluginManager::buildPluginsSectionWidget(int anchor,
 		groupLayout->addWidget(renderer->rootWidget());
 		recPtr->mountedRoot = renderer->rootWidget();
 		recPtr->mountedRenderer = renderer.get();
-		/* Ties the RenderedSurface's lifetime to `group` -- released
-		 * automatically when the enclosing page/dialog tears `group`
-		 * down (see RendererOwner above). */
+		// Released with `group` (see RendererOwner).
 		new RendererOwner(std::move(renderer), group);
 		layout->addWidget(group);
 	}
@@ -2776,20 +2625,7 @@ QWidget* PluginManager::buildPluginsSectionWidget(int anchor,
 
 BasePage* PluginManager::createGlobalSettingsPluginsPage()
 {
-	/*
-	 * Design choice (per the migration spec's request to explain it):
-	 * one host-built "Plugins" page stacking every GLOBAL_SETTINGS
-	 * surface as a titled section, rather than one settings-dialog
-	 * page per plugin. A page per plugin would need a stable per-page
-	 * id/title/icon contract long before most plugins have any more
-	 * than a single checkbox to show (see the S18/S19/NVIDIAPrime/
-	 * LinuxPerf migrations -- all one section each), so it would mean
-	 * a Settings dialog sidebar cluttered with one-line pages. Stacking
-	 * sections in one page is exactly what the allWidgets()/findChild
-	 * pattern it replaces already produced visually (one GroupBox per
-	 * plugin inside KitePage/MinecraftPage) -- same look, without the
-	 * plugin ever reaching into host internals to get there.
-	 */
+	// One shared "Plugins" page stacks every GLOBAL_SETTINGS surface as a titled section.
 	QWidget* content =
 		buildPluginsSectionWidget(MMCO_UI_ANCHOR_GLOBAL_SETTINGS, QString());
 	if (!content)
@@ -2935,17 +2771,14 @@ const char* PluginManager::api_ui_plugin_icon(void* mh, const char* name)
 	if (meta.iconSetResource.isEmpty())
 		return nullptr;
 
-	// Normalise the icon-set name: strip leading ':' or '/'.
 	QString setName = meta.iconSetResource;
 	while (setName.startsWith(QLatin1Char(':')) ||
 		   setName.startsWith(QLatin1Char('/')))
 		setName.remove(0, 1);
-	// And the leading "plugins/" if the plugin already includes it.
 	if (setName.startsWith(QLatin1String("plugins/")))
 		setName.remove(0, 8);
 
-	// Candidate paths to try, in order. We accept both common
-	// extensions and the bare name so plugins can pass either.
+	// Candidate paths, tried in order; plugins may pass the name with or without an extension.
 	const QString rawName = QString::fromUtf8(name);
 	QStringList candidates;
 	candidates << QStringLiteral(":/plugins/%1/%2").arg(setName, rawName);
@@ -2970,20 +2803,7 @@ const char* PluginManager::api_ui_plugin_icon(void* mh, const char* name)
 
 /* ── S17 — News API ────────────────────────────────────────────────── */
 
-/*
- * The whole S17 surface is a read-only view onto the application's
- * NewsChecker (Application::newsChecker(), shared by MainWindow and the
- * QML shell alike), which owns every feed — the launcher's own plus the
- * extra ones from Kite_NEWS_EXTRA_FEEDS — parses them, and hands
- * them back merged and sorted newest first.
- *
- * It used to be a cache in this class, with the extra feeds downloaded
- * and parsed here. That never actually worked: every getter called
- * rebuildNewsCache(), which cleared the cache and refilled it from feed
- * 0 alone, so the entries api_news_reload() appended for the extra
- * feeds were wiped before any plugin could read them. Feeds belong to
- * NewsChecker now and there is nothing left to cache.
- */
+// S17 is a read-only view onto Application::newsChecker(), which owns, merges and sorts every feed.
 NewsChecker* PluginManager::newsChecker() const
 {
 	return m_app ? m_app->newsChecker() : nullptr;
@@ -2997,10 +2817,8 @@ QList<NewsEntryPtr> PluginManager::newsEntries() const
 	return checker->getNewsEntries();
 }
 
-/* Every entry getter looks the same: resolve the runtime, take the
- * merged entry list, bounds-check, stash the answer in the module's
- * scratch string so the returned pointer stays valid until its next
- * API call. */
+/* Every entry getter resolves the runtime, bounds-checks the merged list and returns the string
+ * through the module's scratch string, valid until its next API call. */
 #define MMCO_NEWS_ENTRY_STRING(field)                                          \
 	auto* r = rt(mh);                                                          \
 	if (!r)                                                                    \
@@ -3064,14 +2882,8 @@ int PluginManager::api_news_add_feed_url(void* mh, const char* url)
 	if (!r || !url)
 		return -1;
 
-	/* Feeds are fixed at build time (Kite_NEWS_EXTRA_FEEDS) and set up
-	 * with the NewsChecker in one go, because the indices they get are
-	 * handed out to everyone reading the news. Adding one mid-session
-	 * would renumber the list under those readers.
-	 *
-	 * The call used to "succeed" by appending to a list nothing ever
-	 * downloaded from, so no caller can have depended on it working.
-	 * Saying so out loud beats pretending. */
+	// Feeds are fixed at build time (Kite_NEWS_EXTRA_FEEDS); adding one mid-session would renumber
+	// the indices readers hold.
 	qWarning() << "[PluginManager] news_add_feed_url is no longer supported:"
 			   << "feeds are configured at build time. Ignoring"
 			   << QString::fromUtf8(url);
@@ -3115,26 +2927,15 @@ int PluginManager::api_news_reload(void* mh)
 	if (!checker)
 		return -1;
 
-	/* One reload covers every feed. MMCO_HOOK_NEWS_UPDATED is dispatched
-	 * from the newsLoaded() handler once they have all landed, so a
-	 * plugin reading the entries from that hook sees the complete set
-	 * rather than a half-filled list. */
+	// One reload covers every feed; MMCO_HOOK_NEWS_UPDATED fires from newsLoaded() once all have
+	// landed.
 	checker->reloadNews();
 	return 0;
 }
 
-/* ═════════════════════════════════════════════════════════════════════
- * S19 — System Tray  /  S20 — Main Window helpers
- * ═════════════════════════════════════════════════════════════════════
- *
- * All resources are tracked per-module so they can be torn down in
- * releaseTrayResourcesForModule() when a plugin is unloaded. We never
- * hand raw QObject pointers to plugins; everything is opaque.
- *
- * Icon resolution mirrors the existing UI builder: a logical name is
- * first looked up via QIcon::fromTheme(), then treated as a Qt
- * resource path. Empty / null inputs produce a null icon (Qt-safe).
- */
+/* S19 System Tray / S20 Main Window helpers. Resources are tracked per module and torn down in
+ * releaseTrayResourcesForModule(); plugins only get opaque handles. Icon names resolve via
+ * QIcon::fromTheme(), then as a Qt resource path. */
 
 namespace
 {
@@ -3185,9 +2986,7 @@ QWindow* PluginManager::resolveShellWindow()
 	if (!m_app)
 		return nullptr;
 
-	/* Application only ever has a QML shell window when the widget
-	 * MainWindow does not exist (see useQmlShell() in Application.cpp),
-	 * so callers that try resolveMainWindow() first never get both. */
+	// The QML shell window exists only when the widget MainWindow does not (see useQmlShell()).
 	QWindow* window = m_app->qmlShellWindow();
 	if (window)
 		m_filteredShellWindow = window;
@@ -3211,13 +3010,9 @@ void PluginManager::ensureCloseFilterInstalled()
 
 bool PluginManager::eventFilter(QObject* watched, QEvent* event)
 {
-	/* Only filter close events on the main window -- the widget
-	 * MainWindow, or (generalised for the QML shell, which has no such
-	 * widget) its top-level QQuickWindow. QmlShell installs its own
-	 * event filter on the same window to notice a real, un-vetoed close
-	 * (see QmlShell::eventFilter()); being installed later, this filter
-	 * runs first and can stop a vetoed close right here, the same way a
-	 * vetoed close never reaches MainWindow::closeEvent(). */
+	// Filters close events on the main window (widget MainWindow, or the QML shell's QQuickWindow).
+	// QmlShell installs its own filter first, so this later one runs first and can stop a vetoed
+	// close.
 	const bool isMainWindow = watched && watched == m_filteredMainWindow.data();
 	const bool isShellWindow = watched && watched == m_filteredShellWindow.data();
 	if (event && event->type() == QEvent::Close &&
@@ -3235,8 +3030,7 @@ bool PluginManager::eventFilter(QObject* watched, QEvent* event)
 		if (swallow) {
 			auto* ce = static_cast<QCloseEvent*>(event);
 			ce->ignore();
-			/* Hide rather than close — mirrors what tray-aware apps do,
-			 * under either UI. */
+			// Hide rather than close, as tray-aware apps do.
 			if (isMainWindow) {
 				if (auto* mw = qobject_cast<QWidget*>(watched))
 					mw->hide();
@@ -3251,25 +3045,13 @@ bool PluginManager::eventFilter(QObject* watched, QEvent* event)
 
 void PluginManager::releaseTrayResourcesForModule(void* module_handle)
 {
-	/*
-	 * Two cleanup modes:
-	 *
-	 *   • Normal runtime unload  → deleteLater() the QObjects so Qt
-	 *     unwinds them properly on the next event-loop turn.
-	 *
-	 *   • Shutdown mode (m_shutdownDone is true *while we walk the
-	 *     unload loop*)            → just hide() + sever signal
-	 *     connections via the per-tray guard object, but DO NOT delete.
-	 *     Calling deleteLater() during Application teardown trips Qt's
-	 *     own signal/slot doubly-linked-list bookkeeping the same way
-	 *     dlclose() would corrupt it (see the long comment in
-	 *     shutdownAll()) — the OS reclaims everything at process exit
-	 *     anyway.
-	 */
+	// Normal unload: deleteLater() the QObjects. Shutdown (m_shutdownDone): only hide() and sever
+	// the connections via the per-tray guard; deleteLater() during Application teardown corrupts
+	// Qt's signal/slot bookkeeping (see shutdownAll()).
 
 	const bool shuttingDown = m_shutdownDone;
 
-	/* Close filters — pure C-struct entries, safe to drop unconditionally. */
+	// Close filters are pure C-struct entries, safe to drop unconditionally.
 	for (int i = m_closeFilters.size() - 1; i >= 0; --i) {
 		if (m_closeFilters[i].module_handle == module_handle)
 			m_closeFilters.removeAt(i);
@@ -3282,13 +3064,8 @@ void PluginManager::releaseTrayResourcesForModule(void* module_handle)
 		m_closeFilterInstalled = false;
 	}
 
-	/* Tray icons — hide first so the platform plugin lets go of any
-	 * embedded popup menu reference before we touch the QMenu. Each
-	 * tray now owns at most one QMenu directly (ABI 5's api_tray_set_menu
-	 * rebuilds it in place instead of the plugin creating/owning it via
-	 * the removed tray_menu_* family), so it is torn down right here
-	 * alongside the icon — no separate menu/action registries needed
-	 * any more. */
+	// Hide first so the platform plugin lets go of the popup menu before the QMenu is touched. Each
+	// tray owns at most one QMenu, torn down with it.
 	for (int i = m_trayIcons.size() - 1; i >= 0; --i) {
 		if (m_trayIcons[i].module_handle != module_handle)
 			continue;
@@ -3296,9 +3073,7 @@ void PluginManager::releaseTrayResourcesForModule(void* module_handle)
 		auto* guard = m_trayIcons[i].guard;
 		auto* menu = m_trayIcons[i].menu;
 		if (icon) {
-			/* Detach the context menu *before* hiding; some Qt
-			 * platforms (XCB tray) re-enter the menu during hide
-			 * otherwise. */
+			// Detach the context menu before hiding; XCB trays re-enter it during hide.
 			icon->setContextMenu(nullptr);
 			icon->hide();
 			if (!shuttingDown)
@@ -3311,14 +3086,10 @@ void PluginManager::releaseTrayResourcesForModule(void* module_handle)
 		m_trayIcons.removeAt(i);
 	}
 
-	/* ABI 5 — declarative UI surfaces owned by this module. */
 	releaseSurfacesForModule(module_handle);
 
-	/* S23 — instance running-state callbacks owned by this module.
-	 * Deleting each record's guard QObject severs the Qt connection
-	 * to BaseInstance::runningStatusChanged automatically. In shutdown
-	 * mode we leave the guard alone (same rationale as the tray
-	 * section above) and just forget the record. */
+	// Deleting a record's guard severs its connection to runningStatusChanged. Shutdown leaves the
+	// guard alone and just forgets the record.
 	for (int i = m_instanceRunning.size() - 1; i >= 0; --i) {
 		if (m_instanceRunning[i].module_handle != module_handle)
 			continue;
@@ -3336,38 +3107,19 @@ void PluginManager::connectAppSignals()
 	if (!m_app)
 		return;
 
-	/* globalSettingsAboutToOpen → MMCO_HOOK_GLOBAL_SETTINGS_ABOUT_TO_OPEN
-	 *
-	 * Replaces the legacy pattern of plugins doing
-	 *   QObject::connect(APPLICATION,
-	 *                    &Application::globalSettingsAboutToOpen,
-	 *                    g_guard, []{ ... });
-	 * which required the plugin to link against Application::staticMetaObject
-	 * (i.e. against kite.lib / Kite_logic). The bridge re-publishes
-	 * the signal as a hook so plugins reach it through the C ABI only.
-	 *
-	 * The connection is parented on `this` (PluginManager is a QObject),
-	 * so Qt severs it automatically when PluginManager is destroyed. */
+	/* globalSettingsAboutToOpen -> MMCO_HOOK_GLOBAL_SETTINGS_ABOUT_TO_OPEN, so plugins reach it
+	 * through the C ABI without linking Application's metaobject. Parented on `this`: severed with
+	 * PluginManager. */
 	QObject::connect(m_app, &Application::globalSettingsAboutToOpen, this,
 					 [this]() {
 						 this->dispatchHook(
 							 MMCO_HOOK_GLOBAL_SETTINGS_ABOUT_TO_OPEN, nullptr);
 					 });
 
-	/* instanceSettingsPageCreated → MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED
-	 *
-	 * The signal carries (InstanceSettingsPage* page, InstancePtr inst).
-	 * We can't expose the launcher types in the payload (would force a
-	 * launcher include into plugin source), so we project both pointers
-	 * through `void*` slots and let plugins qobject_cast<QWidget*> on
-	 * page_handle if they need to interact with the widget.
-	 *
-	 * We also wire the page's own settingsLoaded / settingsAboutToApply
-	 * signals to the matching ABI 3 hooks, so plugins can mirror values
-	 * in/out of their custom widgets without needing the launcher
-	 * InstanceSettingsPage type. The page itself owns the connection
-	 * (anchored on the page) — when the dialog is destroyed the
-	 * signal is severed and our hook dispatch stops automatically. */
+	/* instanceSettingsPageCreated -> MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED. Page and instance go
+	 * out as void* (no launcher types in the payload); plugins qobject_cast page_handle. The page's
+	 * settingsLoaded / settingsAboutToApply are bridged to the ABI 3 hooks; the connection is
+	 * anchored on the page. */
 	QObject::connect(
 		m_app, &Application::instanceSettingsPageCreated, this,
 		[this](InstanceSettingsPage* page, BaseInstance* inst) {
@@ -3381,13 +3133,8 @@ void PluginManager::connectAppSignals()
 			ev.page_handle = page;
 			this->dispatchHook(MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED, &ev);
 
-			/* ABI 5 — every MMCO_UI_ANCHOR_INSTANCE_SETTINGS surface
-			 * anchored to this instance is stacked as a titled section
-			 * inside one host "Plugins" group, inserted into the
-			 * existing "Workarounds" tab layout the same way
-			 * GitVersioning/LinuxPerf used to inject their own group
-			 * there directly (now done once, here, instead of by each
-			 * plugin walking qApp->allWidgets()/findChild itself). */
+			// INSTANCE_SETTINGS surfaces of this instance are stacked as titled sections in one
+			// host "Plugins" group in the Workarounds tab.
 			if (page && inst) {
 				if (QWidget* section = this->buildPluginsSectionWidget(
 						MMCO_UI_ANCHOR_INSTANCE_SETTINGS, inst->id())) {
@@ -3406,12 +3153,8 @@ void PluginManager::connectAppSignals()
 
 			if (!page)
 				return;
-			/* Capture the raw BaseInstance pointer + a copy of its id
-			 * so the lambdas can re-build the event when the page
-			 * emits its loaded / about-to-apply edges. The pointer
-			 * is owned by the host's InstanceList; the QObject::connect
-			 * receiver-anchor (`page`) guarantees the lambda stops
-			 * firing once the settings dialog is destroyed. */
+			// Capture the raw BaseInstance (owned by InstanceList) and a copy of its id; the
+			// connection anchored on `page` stops with the dialog.
 			BaseInstance* capturedRaw = inst;
 			QByteArray capturedId = idBytes;
 			QObject::connect(page, &InstanceSettingsPage::settingsLoaded, page,
@@ -3500,23 +3243,15 @@ const char* PluginManager::api_ui_themed_icon(void* mh, const char* name)
 	if (!app)
 		return nullptr;
 
-	/* Application::getThemedIcon() returns a QIcon. We can't hand a
-	 * QIcon to a C ABI; we instead return a string the existing
-	 * icon-name parameters of the UI/tray/menu APIs already accept
-	 * (XDG theme name or ":/..." Qt resource path).
-	 *
-	 * Strategy:
-	 *   1. If the launcher's icon list owns an entry under this name,
-	 *      return the themed resource path it resolves to.
-	 *   2. Otherwise fall back to the bare name — QIcon::fromTheme()
-	 *      inside the consumer API will pick it up via the XDG theme. */
+	// A QIcon cannot cross the C ABI: return a name the icon parameters of the UI/tray/menu APIs
+	// accept (the launcher icon list's resource path if it owns the name, else the bare name for
+	// QIcon::fromTheme()).
 	const QString qName = QString::fromUtf8(name);
 	if (app->icons()) {
 		const QIcon icon = app->icons()->getIcon(qName);
 		if (!icon.isNull()) {
-			/* QIcon doesn't expose the originating path, so we just
-			 * return the logical name — the UI APIs already accept
-			 * it and resolve via the same code path. */
+			// QIcon does not expose its path; the logical name resolves the same way in the UI
+			// APIs.
 			r->tempString = qName.toStdString();
 			return r->tempString.c_str();
 		}
@@ -3544,8 +3279,7 @@ int PluginManager::api_instance_running_register(void* mh,
 	if (!inst)
 		return -1;
 
-	/* Replace any existing registration for this (module, instance)
-	 * pair so we never have two callbacks firing for the same edge. */
+	// Replace any registration for this (module, instance) so an edge never fires two callbacks.
 	auto& vec = r->manager->m_instanceRunning;
 	for (int i = vec.size() - 1; i >= 0; --i) {
 		if (vec[i].module_handle == mh && vec[i].instanceId == qId) {
@@ -3558,9 +3292,7 @@ int PluginManager::api_instance_running_register(void* mh,
 	auto* guard = new QObject();
 	InstanceRunningRecord rec{mh, qId, cb, ud, guard};
 
-	/* Capture by value: the bare BaseInstance pointer is what the Qt
-	 * connection actually anchors on; instanceId is copied so we
-	 * survive instance rename / re-bind. */
+	// Captured by value; the id is copied so the callback survives instance rename / re-bind.
 	const QByteArray idUtf8 = qId.toUtf8();
 	QObject::connect(inst.get(), &BaseInstance::runningStatusChanged, guard,
 					 [cb, ud, idUtf8](bool running) {
@@ -3684,8 +3416,7 @@ int PluginManager::api_tray_show_message(void* mh, void* tray_handle,
 			tray->show();
 		tray->showMessage(qtitle, qmsg, micon, msecs);
 		if (!wasVisible) {
-			/* Restore prior state on the next event-loop turn so the
-			 * notification has a chance to be raised. */
+			// Restore on the next event-loop turn so the notification can be raised.
 			QTimer::singleShot(msecs + 200, tray, [tray]() {
 				if (tray)
 					tray->hide();
@@ -3732,8 +3463,7 @@ int PluginManager::api_tray_set_menu(void* mh, void* tray_handle,
 		return -1;
 
 	if (!json_menu_doc) {
-		/* Detach — the ABI 5 equivalent of the old "pass nullptr to
-		 * detach" contract. */
+		// A null document detaches the menu.
 		tray->setContextMenu(nullptr);
 		if (rec->menu) {
 			rec->menu->deleteLater();
@@ -3742,9 +3472,7 @@ int PluginManager::api_tray_set_menu(void* mh, void* tray_handle,
 		return 0;
 	}
 
-	/* One QMenu per tray, owned by the host and rebuilt in place on
-	 * every call — replaces the plugin building/owning a QMenu itself
-	 * via the removed tray_menu_* family. */
+	// One host-owned QMenu per tray, rebuilt in place on every call.
 	if (!rec->menu)
 		rec->menu = new QMenu();
 
@@ -3794,9 +3522,7 @@ int PluginManager::api_tray_set_activation_cb(void* mh, void* tray_handle,
 	for (auto& rec : vec) {
 		if (rec.icon != tray_handle || rec.module_handle != mh)
 			continue;
-		/* Disconnect any previous connection by deleting & recreating
-		 * the per-tray guard QObject. Qt severs every signal
-		 * connection automatically. */
+		// Deleting the per-tray guard severs every previous connection.
 		if (rec.guard)
 			rec.guard->deleteLater();
 		rec.guard = new QObject();
@@ -3822,7 +3548,6 @@ int PluginManager::api_main_window_install_close_filter(
 	auto* self = r->manager;
 
 	if (!cb) {
-		/* Clear all filters registered by this module. */
 		for (int i = self->m_closeFilters.size() - 1; i >= 0; --i) {
 			if (self->m_closeFilters[i].module_handle == mh)
 				self->m_closeFilters.removeAt(i);
@@ -3900,9 +3625,7 @@ int PluginManager::api_main_window_is_visible(void* mh)
 
 namespace
 {
-	/* Resolve an instance pointer by id without polluting the public
-	 * surface with another helper signature. Returns nullptr if the id
-	 * does not resolve or the host has no instance list yet. */
+	// Resolves an instance by id; nullptr if the id is unknown or the instance list is not ready.
 	InstancePtr resolveInstance(Application* app, const char* instance_id)
 	{
 		if (!app || !app->instances() || !instance_id)
@@ -3980,18 +3703,14 @@ int PluginManager::api_instance_setting_register_override(
 	const QString qKey = QString::fromUtf8(key);
 	const QString qGate = QString::fromUtf8(gate_key);
 
-	/* Ensure the per-instance gate exists. The gate is a bool; we
-	 * seed it to false (= use the global default) the first time we
-	 * see this instance. */
+	// Seed the per-instance gate to false (use the global default) the first time.
 	auto gate = inst->settings()->getSetting(qGate);
 	if (!gate)
 		gate = inst->settings()->registerSetting(qGate, false);
 	if (!gate)
 		return -1;
 
-	/* Don't register the override twice: registerOverride() on the
-	 * same key is a no-op-safe in SettingsObject, but checking
-	 * contains() lets us short-circuit before we hit it. */
+	// Skip registerOverride() when the key is already registered.
 	if (inst->settings()->contains(qKey))
 		return 0;
 	auto original = app->settings()->getSetting(qKey);
@@ -4031,10 +3750,7 @@ int PluginManager::api_instance_setting_contains(void* mh,
 
 namespace
 {
-	/* Resolve a MinecraftAccountPtr by the same string id S7's
-	 * account_get_profile_id() returns. Linear scan; the account list is
-	 * tiny (typically < 5 entries) so this is cheaper than maintaining a
-	 * cache that needs invalidation. */
+	// Resolves an account by the id account_get_profile_id() returns (linear scan).
 	MinecraftAccountPtr resolveAccount(Application* app, const char* account_id)
 	{
 		if (!app || !account_id)
@@ -4119,17 +3835,8 @@ const char* PluginManager::api_account_get_skin_variant(void* mh,
 	return r->tempString.c_str();
 }
 
-/* Skin / cape PNG blobs are returned by stashing a pointer-to-bytes
- * inside the per-module ModuleRuntime alongside the existing
- * tempString slot. We can't reuse tempString (it's a std::string and
- * mangles binary data); a separate QByteArray-shaped cache is needed.
- *
- * To avoid bloating ModuleRuntime with another field we re-use
- * tempString as raw bytes — std::string is byte-clean and its
- * c_str()/data() returns a valid pointer for the configured length.
- * The caller treats it as `void*` so the embedded NULs don't matter.
- * Same lifetime contract as every other getter on this struct: valid
- * until the next API call on the same module. */
+/* Skin and cape PNG blobs are returned through ModuleRuntime::tempString (std::string is
+ * byte-clean). The caller treats it as void*; valid until the next API call on the same module. */
 int64_t PluginManager::api_account_get_skin_blob(void* mh,
 												 const char* account_id,
 												 const void** out_ptr)
@@ -4164,12 +3871,7 @@ int PluginManager::api_account_cape_count(void* mh, const char* account_id)
 
 namespace
 {
-	/* Index → cape on the active account.
-	 *
-	 * The index is into the profile service's own ordering, which is what
-	 * MinecraftProfile::capes preserves. It used to be a QMap keyed by cape
-	 * id, so this walked it and got alphabetical-by-UUID order instead --
-	 * stable, but not the order anything else showed the capes in. */
+	// Index into the profile service's own cape order (MinecraftProfile::capes).
 	const Cape* capeAt(MinecraftAccountPtr a, int index)
 	{
 		if (!a || !a->accountData() || index < 0)
@@ -4440,8 +4142,7 @@ int PluginManager::api_process_run(void* mh, const char* program,
 	QStringList argList;
 	argList.reserve(arg_count);
 	for (int i = 0; i < arg_count; ++i) {
-		// argv element passed verbatim — no shell parsing, so there is
-		// no shell-injection surface even with attacker-controlled args.
+		// argv elements are passed verbatim: no shell parsing, so no shell injection.
 		argList << QString::fromUtf8(args[i] ? args[i] : "");
 	}
 
@@ -4450,8 +4151,7 @@ int PluginManager::api_process_run(void* mh, const char* program,
 		proc.setWorkingDirectory(QString::fromUtf8(working_dir));
 	proc.setProgram(QString::fromUtf8(program));
 	proc.setArguments(argList);
-	// Keep stderr separate so it never pollutes the captured stdout the
-	// plugin parses.
+	// Separate stderr so it never pollutes the stdout the plugin parses.
 	proc.setProcessChannelMode(QProcess::SeparateChannels);
 
 	proc.start();

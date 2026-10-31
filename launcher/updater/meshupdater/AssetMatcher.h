@@ -28,11 +28,8 @@
 namespace AssetMatcher
 {
 	struct Installation {
-		/*!
-		 * Name of the CI build, e.g. "Windows-MSVC-Qt6", "Linux-aarch64-Qt6".
-		 * BuildConfig.BUILD_ARTIFACT. Empty means a local build, which has no
-		 * published counterpart and therefore matches nothing.
-		 */
+		/*! CI build name (BuildConfig.BUILD_ARTIFACT), e.g. "Windows-MSVC-Qt6", "Linux-aarch64-Qt6".
+		 * Empty means a local build, which has no published counterpart and matches nothing. */
 		QString buildArtifact;
 
 		//! portable.txt sits in the installation root.
@@ -51,32 +48,17 @@ namespace AssetMatcher
 		QString reason;
 	};
 
-	/*!
-	 * Judge a single asset.
-	 *
-	 * The reason is always filled in, accepted or not, because "why did it
-	 * pick that file" is the first question asked when an update goes wrong
-	 * and the log is all there is to go on.
-	 */
+	/*! Judges a single asset; the reason is always filled in, accepted or not, for the update log. */
 	Decision consider(const GitHubReleaseAsset& asset,
 					  const Installation& installation);
 
-	/*!
-	 * Every asset that belongs on \a installation.
-	 *
-	 * More than one result is possible and is not an error; the caller asks
-	 * the user. \a log, when given, receives one line per asset.
-	 */
+	/*! Every asset that belongs on \a installation. More than one is not an error (the caller asks
+	 * the user). \a log, when given, receives one line per asset. */
 	QList<GitHubReleaseAsset> select(const QList<GitHubReleaseAsset>& assets,
 									 const Installation& installation,
 									 QStringList* log = nullptr);
 
-	/*!
-	 * The Qt major version a name declares through a "-qt<N>" token, or 0.
-	 *
-	 * Exposed for the test, and because the rule around it is the subtle one:
-	 * see the implementation.
-	 */
+	/*! The Qt major version a name declares through a "-qt<N>" token, or 0. Exposed for the test. */
 	int qtMajorFromName(const QString& lowerName);
 
 } // namespace AssetMatcher

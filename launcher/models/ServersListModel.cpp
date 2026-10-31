@@ -58,13 +58,10 @@ QString faviconUrl(const nbt::tag_compound& compound)
 }
 
 /* Same shape as ServersPage.cpp's file-local parseServersDat()/
- * serializeServerDat(): duplicated rather than shared, because the widget
- * version is a static function private to that .cpp, and the whole point
- * of this class is that nothing here links against ui/. */
+ * serializeServerDat(), duplicated because those are private to ui/. */
 std::unique_ptr<nbt::tag_compound> parseServersDat(const QString& filename)
 {
-	// A fresh instance has no servers.dat yet: that is the normal empty
-	// state, not an error worth a critical log line from FS::read().
+	// A fresh instance has no servers.dat yet: a normal empty state, not an error.
 	if (!QFileInfo::exists(filename)) {
 		return nullptr;
 	}
@@ -107,7 +104,6 @@ ServersListModel::ServersListModel(QString gameRoot, QObject* parent)
 			&ServersListModel::directoryChanged);
 
 	m_saveTimer.setSingleShot(true);
-	// Same five-second debounce ServersPage's ServersModel used.
 	m_saveTimer.setInterval(5000);
 	connect(&m_saveTimer, &QTimer::timeout, this, &ServersListModel::saveNow);
 }
@@ -203,10 +199,8 @@ void ServersListModel::cancelSave()
 
 void ServersListModel::updateFsWatch()
 {
-	// Mirrors ServersModel::updateFSObserver(): watch only while the page is
-	// open AND the instance is running (i.e. editing is refused) - never
-	// while the user could be mid-edit, so an external directory change can
-	// never clobber unsaved work.
+	// Watch only while the page is open and the instance is running (editing
+	// refused), so an external change never clobbers unsaved work.
 	const bool watching = m_watcher->directories().contains(m_gameRoot);
 	if (m_observed && m_locked) {
 		if (!watching) {
@@ -241,9 +235,8 @@ void ServersListModel::stopWatching()
 
 void ServersListModel::directoryChanged(const QString&)
 {
-	// A launch writes servers.dat itself (joining a server adds it back to
-	// the top of the list) - reload rather than clobber that with whatever
-	// this model still has queued.
+	// A launch writes servers.dat itself (joining adds the server to the top):
+	// reload rather than clobber it with queued edits.
 	load();
 }
 

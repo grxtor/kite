@@ -25,7 +25,6 @@ const Config BuildConfig;
 
 Config::Config()
 {
-	// Name and copyright
 	KITE_NAME = "@Kite_Name@";
 	KITE_BINARY = "@Kite_AppBinaryName@";
 	KITE_DISPLAYNAME = "@Kite_DisplayName@";
@@ -39,11 +38,9 @@ Config::Config()
 	USER_AGENT = "@Kite_UserAgent@";
 	USER_AGENT_UNCACHED = USER_AGENT + " (Uncached)";
 
-	// Version information
 	VERSION_MAJOR = @Kite_VERSION_MAJOR@;
 	VERSION_MINOR = @Kite_VERSION_MINOR@;
 	VERSION_HOTFIX = @Kite_VERSION_HOTFIX@;
-	VERSION_BUILD = @Kite_VERSION_BUILD@;
 
 	BUILD_PLATFORM = "@Kite_BUILD_PLATFORM@";
 	BUILD_ARTIFACT = "@Kite_BUILD_ARTIFACT@";
@@ -66,8 +63,6 @@ Config::Config()
 	UPDATER_ENABLED =
 		!UPDATER_GITHUB_REPO.isEmpty() && !BUILD_ARTIFACT.isEmpty();
 
-	// VERSION_CHANNEL is still populated from the git branch for informational
-	// use.
 	if (GIT_REFSPEC.startsWith("refs/heads/")) {
 		VERSION_CHANNEL = GIT_REFSPEC;
 		VERSION_CHANNEL.remove("refs/heads/");
@@ -90,13 +85,6 @@ Config::Config()
 	DISCORD_URL = "@Kite_DISCORD_URL@";
 	SUBREDDIT_URL = "@Kite_SUBREDDIT_URL@";
 	PATREON_URL = "@Kite_Patreon_Url@";
-
-	// Feature flags (GitLab Unleash-compatible backend).
-	UNLEASH_URL = "@Kite_UNLEASH_URL@";
-	UNLEASH_INSTANCE_ID = "@Kite_UNLEASH_INSTANCE_ID@";
-	UNLEASH_APP_NAME = "@Kite_UNLEASH_APP_NAME@";
-	FEATURE_FLAGS_ENABLED =
-		!UNLEASH_URL.isEmpty() && !UNLEASH_INSTANCE_ID.isEmpty();
 }
 
 QString Config::printableVersionString() const

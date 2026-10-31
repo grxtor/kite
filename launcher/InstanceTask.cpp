@@ -37,10 +37,9 @@ bool InstanceTask::abort()
 	}
 
 	/* Stopping the game-file download is not cancelling the install: the
-	 * instance is already built, and only its optional head start is
-	 * being given up. So the task ends the way it would have ended
-	 * anyway - the "finished" handler below sees a task that did not
-	 * succeed, says so as a warning, and succeeds. */
+	 * instance is built and only its optional head start is given up. The
+	 * "finished" handler below sees a task that did not succeed, warns, and
+	 * succeeds. */
 	return m_gameFilesTask->abort();
 }
 
@@ -55,47 +54,39 @@ void InstanceTask::downloadFiles(MinecraftInstance* instance)
 
 	auto task = instance->createUpdateTask(Net::Mode::Online);
 	if (!task) {
-		/* Nothing of the sort exists for this instance type. */
 		emitSucceeded();
 		return;
 	}
 
-	/* Held as a member for two reasons: the download outlives this
-	 * function, and canAbort() reads it to know whether the abort button
-	 * means anything at this moment. */
+	/* Held as a member because the download outlives this function and
+	 * canAbort() reads it. */
 	m_gameFilesTask = task;
 
-	/* Now that there is something to abort, say so - and say what
-	 * pressing it actually does.
-	 *
-	 * "Skip", not "Abort": by this point the instance exists and is
-	 * complete. The button gives up the head start on the game's files,
-	 * nothing else, and the task goes on to succeed either way. A button
-	 * still labelled "Abort" here would be offering to undo an install
-	 * that is already finished. */
+	/* Now that there is something to abort, say what pressing it does: "Skip",
+	 * not "Abort", since the instance is complete and the button only gives up
+	 * the head start on the game's files. */
 	reportAbortStatus();
 	setAbortButtonText(tr("Skip"));
 
 	connect(task.get(), &Task::finished, this, [this]() {
 		if (!isRunning()) {
-			/* Already over. Something else has finished this task while
-			 * the download was in flight, and a second ending would have
-			 * the dialog react twice to one install. */
+			/* Already over: something else finished this task while the
+			 * download was in flight, and a second ending would make the
+			 * dialog react twice. */
 			return;
 		}
 
 		auto finished = m_gameFilesTask;
-		/* Cleared before finishing, so canAbort() stops claiming there
-		 * is something left to abort. */
+		/* Cleared before finishing, so canAbort() stops claiming there is
+		 * something to abort. */
 		m_gameFilesTask.reset();
-		/* And the button stops offering it. Left enabled it would be a
-		 * button that does nothing, during the commit that follows. */
+		/* And the button stops offering it; left enabled it would do nothing
+		 * during the commit that follows. */
 		reportAbortStatus();
 
 		if (finished && !finished->wasSuccessful()) {
-			/* A warning rather than a failure - see the header. The pack
-			 * is installed either way and the next launch fetches what
-			 * is missing, exactly as it did before this step existed. */
+			/* A warning, not a failure: the pack is installed either way and
+			 * the next launch fetches what is missing. */
 			const QString reason = finished->failReason();
 			qWarning() << "Could not pre-download game files:" << reason;
 			logWarning(tr("The instance was installed, but its game files "
@@ -110,8 +101,6 @@ void InstanceTask::downloadFiles(MinecraftInstance* instance)
 			[this](qint64 current, qint64 total) {
 				setProgress(current, total);
 			});
-	/* Keeps the individual downloads visible in the dialog rather than
-	 * collapsing them into one opaque bar. */
 	propagateStepsFrom(task.get());
 
 	setStatus(tr("Downloading the game's files..."));
@@ -120,10 +109,9 @@ void InstanceTask::downloadFiles(MinecraftInstance* instance)
 
 void InstanceTask::downloadFiles(std::shared_ptr<MinecraftInstance> instance)
 {
-	/* Taken before the work starts, and deliberately not released when it
-	 * ends: the task itself is destroyed shortly after it finishes, and
-	 * letting the instance go with it is one less order-of-teardown rule
-	 * to get right. */
+	/* Taken before the work starts and deliberately not released when it ends:
+	 * the task is destroyed shortly after finishing, and letting the instance
+	 * go with it is one less teardown-order rule. */
 	m_ownedInstance = std::move(instance);
 	downloadFiles(m_ownedInstance.get());
 }

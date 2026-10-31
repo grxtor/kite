@@ -34,36 +34,16 @@
 class AtlOptionalModsModel;
 #include "modplatform/BlockedMod.h"
 
-/*
- * Questions the core needs answered by a human.
- *
- * Work that runs outside the user interface sometimes has to stop and ask --
- * an install task finding files the provider will not serve, or an update
- * that would overwrite an instance. Those decisions used to be taken by
- * constructing a QDialog inside the task, which put QtWidgets in the
- * dependency graph of code that has nothing to do with drawing.
- *
- * So the core states the question and the shell answers it. What the answer
- * looks like on screen -- a message box today, something in QML later -- is
- * none of the core's business.
- *
- * ON BLOCKING: these are synchronous on purpose. The callers are decision
- * points in the middle of a task, branching immediately on the answer, and
- * making them asynchronous would mean restructuring the control flow of
- * modpack installation for no gain today -- the widget implementation blocks
- * either way. The interface says nothing about how the answer is obtained,
- * so a future implementation is free to pump an event loop or to be called
- * from a worker thread. That cost is real and deferred, not hidden: a
- * blocking call reached from the GUI thread runs a nested event loop, with
- * the re-entrancy that implies.
- */
+/* Questions the core needs answered by a human; the core states them and the
+ * shell answers, so no QtWidgets enters the core. These are synchronous on
+ * purpose: callers branch on the answer mid-task, and a blocking call from the
+ * GUI thread runs a nested event loop, with the re-entrancy that implies. */
 class UiHost
 {
   public:
-	/* Proof that the launcher has not frozen while the caller blocks on
+	/* Shows that the launcher has not frozen while the caller blocks on
 	 * something it cannot report progress for. The indication disappears when
-	 * this object is destroyed, so it cannot be left showing on an early
-	 * return. */
+	 * this object is destroyed, so an early return cannot leave it showing. */
 	class BusyIndicator
 	{
 	  public:
@@ -74,15 +54,11 @@ class UiHost
 
 	virtual ~UiHost() = default;
 
-	/* Not a question -- nothing to answer. For work that blocks without
-	 * being able to say how far along it is.
-	 *
-	 * With @p skipLabel set, the indication also offers one way out: a
-	 * button with that label, which calls @p onSkip ("Play offline" while
-	 * an account refreshes before a launch). The caller decides what
-	 * skipping means; the indication itself stays up until the returned
-	 * object is destroyed, as always. Without a label there is nothing to
-	 * cancel, as before. */
+	/* Not a question. For work that blocks without being able to say how far
+	 * along it is. With @p skipLabel set it also offers a button with that
+	 * label calling @p onSkip ("Play offline" while an account refreshes); the
+	 * caller decides what skipping means. Stays up until the returned object
+	 * is destroyed. */
 	virtual std::unique_ptr<BusyIndicator> showBusy(
 		const QString& text, const QString& skipLabel = QString(),
 		std::function<void()> onSkip = {}) = 0;
@@ -91,12 +67,10 @@ class UiHost
 	virtual void message(const QString& title, const QString& text,
 						 Severity severity) = 0;
 
-	/* A two-way decision. True means the user agreed to go ahead.
-	 *
-	 * The labels are optional: leaving them empty gets the platform's own
-	 * wording. Naming the actions is better where the question is not a
-	 * plain yes/no -- "Remove saves" and "Keep saves" say what will happen,
-	 * where "Yes" and "No" make the reader re-read the question. */
+	/* A two-way decision; true means the user agreed. The labels are optional:
+	 * empty gets the platform's own wording. Naming the actions ("Remove
+	 * saves" / "Keep saves") reads better than "Yes" / "No" where the question
+	 * is not plain yes/no. */
 	virtual bool confirm(const QString& title, const QString& text,
 						 Severity severity,
 						 const QString& acceptLabel = QString(),
@@ -107,29 +81,24 @@ class UiHost
 	virtual int choose(const QString& title, const QString& text,
 					   Severity severity, const QStringList& actions) = 0;
 
-	/* pickAccount()'s answer: an index into the accounts it was given (-1
-	 * when the user backed out) and whether to make that account the
-	 * default from now on. */
+	/* pickAccount()'s answer: an index into the accounts given (-1 when the
+	 * user backed out) and whether to make it the default from now on. */
 	struct AccountChoice {
 		int index = -1;
 		bool makeDefault = false;
 	};
 
-	/* Which of @p accounts to play with, plus a "make this the default"
-	 * option -- what the widget ProfileSelectDialog asks at launch when no
-	 * account is the default. Making it the default is the caller's job;
-	 * this only reports the wish. */
+	/* Which of @p accounts to play with, plus a "make this the default" option
+	 * (what the widget ProfileSelectDialog asks at launch when no account is
+	 * the default). Making it the default is the caller's job; this only
+	 * reports the wish. */
 	virtual AccountChoice pickAccount(
 		const QString& title, const QString& text,
 		const QList<MinecraftAccountPtr>& accounts) = 0;
 
-	/* A single line of free text, pre-filled with @p defaultValue --
-	 * "what should the demo player be called", "what name for offline
-	 * mode". Returns the entered text, or nullopt if the user backed out
-	 * (widget: cancelled/closed the dialog; QML: rejected the request). An
-	 * empty string is a real answer -- callers that want to fall back to
-	 * something else for it do so themselves, the way an empty offline
-	 * name used to fall back to the session's existing one. */
+	/* A single line of free text, pre-filled with @p defaultValue. Returns the
+	 * entered text, or nullopt if the user backed out. An empty string is a
+	 * real answer; callers that want a fallback for it apply it themselves. */
 	virtual std::optional<QString> askText(
 		const QString& title, const QString& text,
 		const QString& defaultValue = QString()) = 0;
@@ -145,28 +114,27 @@ class UiHost
 
 	enum class UpdateChoice { Install, Later, Skip };
 
-	/* A release being offered: the current version, the version on offer,
-	 * and its release notes. Kept separate from choose() because the notes
-	 * are formatted content -- Markdown today -- and a plain message-box
-	 * body would flatten that formatting. */
+	/* A release being offered: the current version, the version on offer and
+	 * its release notes. Separate from choose() because the notes are
+	 * formatted content (Markdown), which a plain message-box body would
+	 * flatten. */
 	virtual UpdateChoice offerUpdate(const QString& currentVersion,
 									 const QString& availableVersion,
 									 const QString& releaseNotes) = 0;
 
-	/* A Microsoft account that owns Minecraft but has never set up a
-	 * profile (username) yet -- checks name availability live as the user
-	 * types and creates the profile once they accept, the way the widget
-	 * ProfileSetupDialog does. Returns true once the profile has actually
-	 * been created; false if the user backed out. */
+	/* A Microsoft account that owns Minecraft but has no profile (username)
+	 * yet: checks name availability live as the user types and creates the
+	 * profile once they accept (as the widget ProfileSetupDialog does). True
+	 * once the profile has been created; false if the user backed out. */
 	virtual bool setupProfile(MinecraftAccountPtr account) = 0;
 
 	enum class FilePickerMode { Open, Save };
 
-	/* A file to open, or a location/name to save to -- what the plugin
-	 * SDK's file dialogs need. @p filter is a Qt filter string ("Images
-	 * (*.png *.jpg)", several groups separated by ";;"); @p defaultPath is
-	 * only meaningful for FilePickerMode::Save (a suggested filename).
-	 * Returns the chosen path, or nullopt if the user cancelled. */
+	/* A file to open, or a location/name to save to, for the plugin SDK's file
+	 * dialogs. @p filter is a Qt filter string ("Images (*.png *.jpg)", groups
+	 * separated by ";;"); @p defaultPath only matters for FilePickerMode::Save
+	 * (a suggested filename). Returns the chosen path, or nullopt if
+	 * cancelled. */
 	virtual std::optional<QString> pickFile(FilePickerMode mode,
 											const QString& title,
 											const QString& defaultPath,
@@ -177,7 +145,6 @@ class UiHost
 	 * components. Clicking any node that reports a click (a button,
 	 * usually) answers it. */
 	struct PluginModalResult {
-		/// The id of the node that was clicked.
 		QString clicked;
 		/// The value of every input node at that moment, keyed by node id:
 		/// toggles (bool), text fields (string), number fields (double),

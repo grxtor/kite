@@ -7,18 +7,10 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The instance library: every group as its own section. The instance most
- * likely to play next no longer gets its own hero card here -- the
- * persistent play bar (PlayDock, in Main.qml) replaces it, showing on every
- * page rather than just this one.
- *
- * The sections, the ⋯ menus and their dialogs are LibrarySections, which
- * HomePage shows too, under "Continue playing"; this page is that and its
- * own scrolling, empty state and page frame.
- *
- * The page never builds models itself. It is handed the search-filtered
- * instance model and a function that returns the model for one group -- all
- * C++ proxies, owned by the shell.
+ * The instance library: every group as its own section (LibrarySections, shared
+ * with HomePage). This page adds scrolling, the empty state and the page
+ * frame. It never builds models: it is handed the search-filtered instance
+ * model and a function returning the model for one group.
  */
 Item {
     id: root
@@ -27,8 +19,7 @@ Item {
     property var sectionModelFor: function (group) { return null }
     property string searchText: ""
     property string selectedId: ""
-    // "grid" (InstanceCard tiles) or "list" (dense InstanceListRow rows);
-    // session-only -- there is no persisted setting for it yet.
+    // "grid" (InstanceCard tiles) or "list" (dense InstanceListRow rows); session-only.
     property string viewMode: "grid"
 
     signal selectRequested(string id)
@@ -44,9 +35,7 @@ Item {
     signal deleteRequested(string id, string name)
     signal clearSearchRequested()
 
-    // The ⋯ menu's Play options (LaunchOptionsMenu.qml): what it offers comes
-    // from launchOptionsFor(id) -- Main.qml's launchOptions() -- and its
-    // choices leave as the signals below.
+    // The ⋯ menu's Play options (LaunchOptionsMenu.qml); choices leave as the signals below.
     property var launchOptionsFor: null
     signal launchModeRequested(string id, string mode)
     signal launchAsRequested(string id, string accountId)
@@ -54,15 +43,11 @@ Item {
     signal performanceChosen(string id, bool enabled)
     signal navigateRequested(string target)
 
-    // id -> export / shortcut controller (QmlShell, set in Main.qml). The ⋯
-    // menu offers "Export…" and "Create shortcut…" once these are set; the
-    // dialogs themselves are LibrarySections' InstanceExportFlows.
+    // id -> export / shortcut controller; the ⋯ menu offers "Export…" and "Create shortcut…" once set.
     property var exportControllerFor: null
     property var shortcutControllerFor: null
-    // LibraryController (QmlShell's `library`, set in Main.qml): group
-    // management, folds that persist, dragging an instance onto a group,
-    // the instance's folders and Duplicate with options. Until it is set
-    // the page keeps its session-only folds and Main.qml's duplicate.
+    // LibraryController: group management, persistent folds, group drops, folders and Duplicate
+    // with options. Without it the page keeps session-only folds and Main.qml's duplicate.
     property var library: null
 
     function exportInstance(id, format) {
@@ -71,26 +56,22 @@ Item {
     function createShortcut(id) {
         sections.createShortcut(id)
     }
-    // For review snapshots (Main.qml's "groupmenu=<name>" and
-    // "duplicate=<id>" dev routes): a group's ⋯ menu, and the duplicate
-    // dialog.
+    // For review snapshots ("groupmenu=<name>", "duplicate=<id>" dev routes): a group's ⋯ menu and
+    // the duplicate dialog.
     function openGroupMenu(group) {
         sections.openGroupMenu(group)
     }
     function duplicateInstance(id) {
         sections.duplicateInstance(id)
     }
-    // The card ⋯ menu for instance @p id, for review snapshots (Main.qml's
-    // "librarymenu=<id>" dev route), at the top-left of the cards.
+    // The card ⋯ menu for @p id at the top-left of the cards, for the "librarymenu=<id>" dev route.
     function openInstanceMenu(id) {
         sections.openInstanceMenu(id, false, null, "", "")
     }
 
     readonly property int pagePadding: Theme.space.xl + Theme.space.xs
     readonly property int emptyStateWidth: 400
-    // On a wide window the content stops at Theme.layout.maxContentWidth
-    // and centres (TopBar uses the same rule, so its title and toolbar stay
-    // over the cards' left edge).
+    // Content stops at Theme.layout.maxContentWidth and centres, like TopBar.
     readonly property int contentWidth: Math.max(0, Math.min(flick.width - pagePadding * 2, Theme.layout.maxContentWidth))
     readonly property int contentX: Math.max(pagePadding, Math.round((flick.width - contentWidth) / 2))
 
@@ -98,10 +79,6 @@ Item {
     readonly property int instanceCount: instanceModel && instanceModel.count !== undefined ? instanceModel.count : 0
 
     Keys.onEscapePressed: root.selectRequested("")
-
-    // No page-wide photo wash behind the grid: the cards' own covers are
-    // the artwork, and the page stays the flat canvas the top bar sits on,
-    // so there is no edge where the two meet.
 
     Flickable {
         id: flick
@@ -114,19 +91,15 @@ Item {
 
         ScrollBar.vertical: ScrollBar {}
 
-        // Clicking the empty page clears the selection.
         MouseArea {
             width: flick.width
             height: Math.max(flick.height, flick.contentHeight)
             onClicked: root.selectRequested("")
         }
 
-        // Every group, the ⋯ menus and their dialogs (shared with Home).
         LibrarySections {
             id: sections
             x: root.contentX
-            // Clear of the toolbar above the page (Main.qml); the shell's
-            // panel adds no padding of its own.
             y: Theme.space.lg
             width: root.contentWidth
             height: implicitHeight
@@ -159,7 +132,6 @@ Item {
         }
     }
 
-    // The last visible row fades out at the play bar instead of being cut.
     ScrollFade {
         anchors.left: parent.left
         anchors.right: parent.right
@@ -169,7 +141,6 @@ Item {
 
     EmptyState {
         anchors.centerIn: parent
-        // A readable measure for the body text; EmptyState caps it.
         width: Math.min(root.width - root.pagePadding * 2, root.emptyStateWidth)
         visible: root.instanceCount === 0
         title: root.searching ? qsTr("No instances match “%1”").arg(root.searchText)

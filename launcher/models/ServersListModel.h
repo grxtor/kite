@@ -35,22 +35,13 @@ namespace nbt
 }
 
 /*
- * QML-facing list of one instance's servers.dat - the widget-free
- * replacement for ServersPage's private ServersModel.
- *
- * Same on-disk format and save-debounce behaviour as the widget version:
- * NBT, saved five seconds after the last edit (or immediately on
- * destruction/lock), reloaded whenever the directory changes underneath it
- * (multiplayer.txt written by another launcher, or the game itself while
- * running). Locked (edits refused) while the instance is running, the same
- * rule ServersPage applied - the game already has the file open.
- *
- * Favicons: servers.dat carries the base64 PNG the server itself sent the
- * last time the game pinged it. The iconUrl role hands that to QML as a
- * data: URL (or "" for a server never pinged); nothing here pings or lets
- * the user set one. Each entry is written back over the compound it was
- * read from, so the favicon -- and any other tag this model does not edit
- * -- survives an edit made here.
+ * QML-facing list of one instance's servers.dat (NBT). Saved five seconds after
+ * the last edit (or at once on destruction/lock), reloaded when the directory
+ * changes underneath it. Locked (edits refused) while the instance runs: the
+ * game has the file open. The iconUrl role hands the stored base64 favicon to
+ * QML as a data: URL; nothing here pings servers. Each entry is written back
+ * over the compound it was read from, so the favicon and any other tag this
+ * model does not edit survive an edit.
  */
 class ServersListModel : public QAbstractListModel
 {
@@ -62,16 +53,13 @@ class ServersListModel : public QAbstractListModel
 	enum Roles {
 		NameRole = Qt::UserRole + 1,
 		AddressRole,
-		/// 0 = ask, 1 = always, 2 = never - same values as the widget's
-		/// Server::AcceptsTextures enum, so a QML combo box can index
-		/// straight into it.
+		/// 0 = ask, 1 = always, 2 = never (the Server::AcceptsTextures values).
 		AcceptTexturesRole,
 		/// "data:image/png;base64,..." for the stored favicon, else "".
 		IconUrlRole,
 	};
 
-	/// @p gameRoot: the instance's gameRoot() - servers.dat lives directly
-	/// under it, same path ServersPage used.
+	/// @p gameRoot: servers.dat lives directly under it.
 	explicit ServersListModel(QString gameRoot, QObject* parent = nullptr);
 	~ServersListModel() override;
 
@@ -84,12 +72,9 @@ class ServersListModel : public QAbstractListModel
 	{
 		return m_locked;
 	}
-	/// Called by InstanceDetails when the instance's running state changes.
 	void setLocked(bool locked);
 
-	/// Starts/stops watching servers.dat's directory for external changes
-	/// and, on stop, flushes any pending save - mirrors ServersModel::
-	/// observe()/unobserve() and BackupPage-style lifetime management.
+	/// Starts/stops watching servers.dat's directory; on stop, flushes any pending save.
 	void startWatching();
 	void stopWatching();
 
@@ -103,8 +88,7 @@ class ServersListModel : public QAbstractListModel
 	Q_INVOKABLE void setAddress(int row, const QString& address);
 	/// @p mode: 0/1/2, see AcceptTexturesRole.
 	Q_INVOKABLE void setAcceptTextures(int row, int mode);
-	/// The address to join, or empty if @p row is out of range or has no
-	/// address set yet - callers should refuse to join in that case.
+	/// Empty if @p row is out of range or has no address (callers should refuse to join).
 	Q_INVOKABLE QString addressOf(int row) const;
 
   signals:
@@ -119,8 +103,7 @@ class ServersListModel : public QAbstractListModel
 		QString address;
 		int acceptTextures = 0;
 		QString iconUrl;
-		/// The entry as read, null for one added here; what saveNow()
-		/// writes the edited fields over.
+		/// The entry as read (null for one added here); saveNow() writes the edited fields over it.
 		std::shared_ptr<const nbt::tag_compound> original;
 	};
 

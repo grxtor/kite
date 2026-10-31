@@ -6,11 +6,10 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
-// Off is an outlined box, on is the accent with a white tick -- the toggle
-// grammar Switch and RadioButton share (phase-02 brief). The outline is
-// borderStrong, not the hairline: a grey fill alone measured 1.4:1 (light)
-// and 1.5:1 (dark) against its surface, under the 3:1 a control's own shape
-// needs (WCAG 1.4.11).
+// Off is an outlined box, on is the accent with a white tick, as in Switch
+// and RadioButton. The outline is borderStrong, not the hairline: a grey fill
+// alone is 1.4:1 (light) / 1.5:1 (dark) against its surface, under the 3:1 a
+// control's shape needs (WCAG 1.4.11).
 T.CheckBox {
     id: control
 
@@ -31,9 +30,8 @@ T.CheckBox {
         x: control.text ? (control.mirrored ? control.width - width - control.rightPadding : control.leftPadding) : control.leftPadding + (control.availableWidth - width) / 2
         y: control.topPadding + (control.availableHeight - height) / 2
 
-        // Checked/partially-checked share the accent fill; only Unchecked is
-        // the outlined box, so this one flag decides the fill, the outline
-        // and which of the two overlay/tint strategies applies.
+        // Checked and partially checked share the accent fill; only Unchecked
+        // is the outlined box.
         readonly property bool boxChecked: control.checkState !== Qt.Unchecked
 
         radius: Theme.radius.indicator
@@ -48,8 +46,8 @@ T.CheckBox {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
         }
 
-        // Pressing an unchecked box darkens it one more step, the way the
-        // checked one drops to accentPressed.
+        // Pressing an unchecked box darkens it a step, as the checked one
+        // drops to accentPressed.
         Rectangle {
             anchors.fill: parent
             radius: parent.radius

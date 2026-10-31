@@ -32,7 +32,7 @@ namespace VersionRangeDetail
 {
 	// ---- Maven ranges (mods.toml) ----------------------------------------
 
-	/* The text of one range; the versions in it are not read yet. */
+	// The text of one range; the versions in it are not read yet.
 	struct Bounds {
 		QString lower;
 		QString upper;
@@ -117,8 +117,8 @@ namespace VersionRangeDetail
 		return ranges;
 	}
 
-	/* A release sorts between its pre-releases and its builds: 1.0-rc1 <
-	 * 1.0 < 1.0-1. */
+	// A release sorts between its pre-releases and its builds: 1.0-rc1 < 1.0 <
+	// 1.0-1.
 	struct MavenVersion {
 		enum class Tier { PreRelease, Release, Build };
 
@@ -164,10 +164,9 @@ namespace VersionRangeDetail
 		return true;
 	}
 
-	/* Only what can be ordered the way Maven orders it. Anything else -
-	 * "+build" suffixes, "_beta", "v1", a qualifier not named above - comes
-	 * back as nothing, because Maven's own treatment of those is not worth
-	 * guessing at. */
+	// Only what orders the way Maven orders it. Anything else ("+build"
+	// suffixes, "_beta", "v1", an unnamed qualifier) comes back as nothing:
+	// Maven's own treatment of those is not worth guessing.
 	inline std::optional<MavenVersion> parseMavenVersion(const QString& text)
 	{
 		const QString trimmed = text.trimmed();

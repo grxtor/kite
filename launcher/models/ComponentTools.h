@@ -31,28 +31,16 @@ class MinecraftInstance;
 class PackProfile;
 
 /*
- * The Version tab's less common actions, for QML: what VersionPage's toolbar
- * did beyond changing versions. Created lazily by
- * InstanceDetails::componentTools() for a Minecraft instance.
- *
- *  - addEmpty(): an empty component with a uid and a name, which the user
- *    then fills in by editing its JSON (the old NewComponentDialog);
- *  - addJarMods() / replaceMainJar(): put files into Minecraft.jar or swap
- *    the jar itself;
- *  - downloadAll(): fetch every library and asset again;
- *  - editComponentJson(): open a component's patch file in the JSON editor
- *    set in Settings, or the system's default for .json files;
- *  - openLibrariesFolder() / openGameFolder().
- *
- * Whether the game is running is the caller's to check (the tab greys these
- * out through InstanceDetails::contentChangesAllowed); nothing here guards
- * against it beyond what PackProfile itself refuses.
+ * The Version tab's less common actions for QML: add an empty component, add
+ * jar mods / replace the main jar, download all again, edit a component's JSON,
+ * open folders. Created lazily by InstanceDetails::componentTools(). Whether the
+ * game is running is the caller's to check; nothing here guards beyond what
+ * PackProfile refuses.
  */
 class ComponentTools : public QObject
 {
 	Q_OBJECT
 
-	/// Why the last action failed, in a sentence; empty after a success.
 	Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 
   public:
@@ -65,52 +53,33 @@ class ComponentTools : public QObject
 		return m_error;
 	}
 
-	/// "My Mod!" -> "io.github.grxtor.custom.mymod": the uid offered when
-	/// the user leaves the field empty. Empty if @p name has no letters.
+	/// "My Mod!" -> "io.github.grxtor.custom.mymod": offered when the uid field is
+	/// empty; empty if @p name has no letters.
 	Q_INVOKABLE static QString suggestUid(const QString& name);
 
-	/*!
-	 * Adds an empty component named @p name. @p uid may be empty, in which
-	 * case suggestUid(@p name) is used. Returns an empty string on success,
-	 * or what is wrong (no name, no uid, a uid already in this instance).
-	 */
+	/// @p uid may be empty (suggestUid() is used). Empty string on success, else what is wrong.
 	Q_INVOKABLE QString addEmpty(const QString& name, const QString& uid);
 
-	/// The first problem with a new component, or an empty string. Public
-	/// so the dialog can check as the user types: @p existingUids are the
-	/// uids already in the instance.
+	/// The first problem with a new component, or empty; public so the dialog can check as the user types.
 	Q_INVOKABLE static QString validateNewComponent(
 		const QString& name, const QString& uid, const QStringList& existingUids);
 
-	/// The uids of the instance's components, for validateNewComponent().
 	Q_INVOKABLE QStringList componentUids() const;
 
-	/// Adds @p files (local files from a file dialog) to Minecraft.jar.
-	/// Returns false if none of them is an existing file.
 	Q_INVOKABLE bool addJarMods(const QList<QUrl>& files);
 
-	/// Replaces Minecraft.jar with @p file. Returns false if it is not an
-	/// existing file.
 	Q_INVOKABLE bool replaceMainJar(const QUrl& file);
 
-	/*!
-	 * Downloads the game's libraries and assets again. Returns a
-	 * TaskWatcher for the download, or null with error() set (no valid
-	 * account, nothing to update).
-	 */
+	/// TaskWatcher, or null with error() set (no valid account, nothing to update).
 	Q_INVOKABLE QObject* downloadAll();
 
-	/// Whether component @p row has a patch file on disk to edit.
 	Q_INVOKABLE bool hasJsonFile(int row) const;
 
-	/// Opens component @p row's patch file in the JSON editor. Returns
-	/// false, with error() set, if there is nothing to open.
 	Q_INVOKABLE bool editComponentJson(int row);
 
 	Q_INVOKABLE void openLibrariesFolder() const;
 	Q_INVOKABLE void openGameFolder() const;
 
-	/// The local paths of @p urls that are existing files.
 	static QStringList existingFiles(const QList<QUrl>& urls);
 
   signals:

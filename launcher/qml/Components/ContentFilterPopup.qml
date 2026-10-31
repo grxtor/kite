@@ -8,30 +8,18 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Add content's filters, the panel the widget download dialog had down its
- * left side (ContentFilterWidget): Minecraft version, loader, environment,
- * categories, and whether to show what is already installed. Opened from
- * the Filters button beside the sort box; each change searches again at
- * once, so there is no Apply. Groups a provider cannot answer (environment
- * and licence on CurseForge, loaders for resource packs) are left out
- * rather than shown doing nothing.
- *
- * One control per kind of choice, as in Modrinth's and Prism's filter
- * lists: check boxes where several can be on (loaders, categories), radio
- * buttons where exactly one is (where it runs), a drop-down for the long
- * version list.
+ * Add content's filters: Minecraft version, loader, environment, categories and whether to show what is installed.
+ * Each change searches again at once, so there is no Apply. Groups a provider cannot answer (environment and licence
+ * on CurseForge, loaders for resource packs) are left out.
  */
 Popup {
     id: root
 
-    // ContentBrowser.
     property var browser: null
 
     readonly property int panelWidth: 380
     readonly property int maxPanelHeight: 520
-    // Room between the panel's top and the play bar, set as it opens: the
-    // panel stops above the bar rather than running under it or off the
-    // window.
+    // Room between the panel's top and the play bar, set as it opens, so the panel stops above the bar.
     property real roomBelow: maxPanelHeight
 
     width: panelWidth
@@ -53,8 +41,7 @@ Popup {
             root.browser.loadFilterOptions()
     }
 
-    // Loaders and categories list in two columns: short words, and a
-    // single column of twenty categories would make the panel scroll.
+    // Short words in two columns; a single column of twenty categories would make the panel scroll.
     readonly property int optionColumns: 2
 
     component GroupTitle: Text {
@@ -80,8 +67,7 @@ Popup {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar {}
 
-        // On the view itself, not its scrolling content, so it stays on
-        // the panel's bottom edge.
+        // On the view itself, not its scrolling content, so it stays on the panel's bottom edge.
         ScrollFade {
             parent: flick
             anchors.left: parent.left
@@ -148,7 +134,6 @@ Popup {
                     Repeater {
                         model: root.browser ? root.browser.loaderOptions : []
                         CheckBox {
-                            // The box on the group title's edge, not 4px in.
                             leftPadding: 0
                             required property var modelData
                             Layout.fillWidth: true
@@ -182,7 +167,6 @@ Popup {
                             { value: "both", label: qsTr("Client and server") }
                         ]
                         RadioButton {
-                            // The box on the group title's edge, not 4px in.
                             leftPadding: 0
                             required property var modelData
                             Layout.fillWidth: true
@@ -210,7 +194,6 @@ Popup {
                     Repeater {
                         model: root.browser ? root.browser.categories : []
                         CheckBox {
-                            // The box on the group title's edge, not 4px in.
                             leftPadding: 0
                             required property var modelData
                             Layout.fillWidth: true
@@ -238,7 +221,6 @@ Popup {
                 Layout.fillWidth: true
                 spacing: Theme.space.xs
                 CheckBox {
-                    // The box on the group title's edge, not 4px in.
                     leftPadding: 0
                     text: qsTr("Hide what is already installed")
                     checked: !!root.browser && root.browser.hideInstalled
@@ -248,7 +230,6 @@ Popup {
                     }
                 }
                 CheckBox {
-                    // The box on the group title's edge, not 4px in.
                     leftPadding: 0
                     visible: !!root.browser && root.browser.extendedFilters
                     text: qsTr("Open source only")

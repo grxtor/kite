@@ -7,10 +7,10 @@ import QtQuick.Controls.impl
 import QtQuick.Templates as T
 import Kite.Theme
 
-// A toolbar/icon button: quiet by default (transparent, only the hover/press
-// overlay shows), with a soft accent-tinted fill when checked so a toggled
-// tool (e.g. a pinned view) reads as "on" without borrowing the primary
-// Button's full accent fill, which is reserved for committing actions.
+// A toolbar/icon button: transparent with only the hover/press overlay, and a
+// soft accent-tinted fill when checked, so a toggled tool reads as "on"
+// without the primary Button's full accent fill, which is for committing
+// actions.
 T.ToolButton {
     id: control
 

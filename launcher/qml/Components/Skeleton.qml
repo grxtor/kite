@@ -6,22 +6,16 @@ import QtQuick
 import Kite.Theme
 
 /*
- * A shimmering placeholder block for content still loading -- a flat tinted
- * rectangle with a soft highlight band sweeping across it on a loop. No
- * shader (the Qt floor here is 6.4): the "shine" is an ordinary horizontal
- * Gradient translated by a NumberAnimation, clipped to this item's bounds.
- *
- * Generic on purpose, so any area can drop it in wherever a spinner would
- * otherwise sit -- a card grid (see ModpackCard's `skeleton` mode), a list
- * row, a single line of text.
+ * A shimmering placeholder block for content still loading: a flat tinted
+ * rectangle with a highlight band sweeping across it. No shader (the Qt floor
+ * is 6.4): the shine is a horizontal Gradient translated by a NumberAnimation.
  */
 Item {
     id: root
 
     property int radius: Theme.radius.md
 
-    // Every decorative loop in the shell stops when the window is not the
-    // active one and when the user has asked for less motion.
+    // Decorative loops stop when the window is inactive or "Reduce motion" is on.
     readonly property bool motionEnabled: Qt.application.state === Qt.ApplicationActive
                                           && !SettingsStore.bool("UiReduceMotion")
 
@@ -30,20 +24,16 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: root.radius
-        // Raised in dark mode: surfaceSunken is near-black there and a
-        // loading card read as a hole rather than as "coming".
+        // Raised in dark mode: surfaceSunken is near-black there and a loading card read as a hole.
         color: Theme.dark ? Theme.palette.surfaceRaised : Theme.palette.surfaceSunken
     }
 
     Rectangle {
         id: sweep
-        // A still placeholder, not a stopped band, under reduced motion.
         visible: !SettingsStore.bool("UiReduceMotion")
         width: Math.max(1, root.width) * 0.4
         height: parent.height
         radius: root.radius
-        // Transparent -> a token's own colour -> transparent, so the sweep
-        // reads as a highlight in both themes without a literal colour.
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0.0; color: Qt.rgba(Theme.palette.surfaceOverlay.r, Theme.palette.surfaceOverlay.g, Theme.palette.surfaceOverlay.b, 0) }

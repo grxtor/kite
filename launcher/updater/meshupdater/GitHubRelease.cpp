@@ -29,10 +29,8 @@ namespace
 
 	QDateTime parseTimestamp(const QJsonValue& value)
 	{
-		// GitHub timestamps are ISO 8601 with a Z suffix. An unparsable one is
-		// left invalid rather than defaulted to the epoch: the release list is
-		// sorted by version, not by date, so a missing date costs nothing but
-		// a fabricated one would be displayed to the user as fact.
+		// GitHub timestamps are ISO 8601 with a Z suffix. An unparsable one stays invalid rather
+		// than defaulting to the epoch, which would be displayed as fact.
 		return QDateTime::fromString(value.toString(), Qt::ISODate);
 	}
 
@@ -72,10 +70,8 @@ int GitHub::parseReleasePage(const QByteArray& response,
 	error->clear();
 
 	if (response.isEmpty()) {
-		// The end of a paged listing is an empty array, but a genuinely empty
-		// body is also what a dropped connection leaves behind. Treated as
-		// "no more releases" either way; the caller has already seen whatever
-		// earlier pages contained.
+		// An empty body ends a paged listing but is also what a dropped connection leaves; treated
+		// as "no more releases" either way.
 		return 0;
 	}
 
@@ -89,9 +85,7 @@ int GitHub::parseReleasePage(const QByteArray& response,
 	}
 
 	if (!document.isArray()) {
-		// This is what a rate limit looks like: a perfectly valid JSON object
-		// carrying a "message" field. Surfacing that message is far more
-		// useful than "unexpected response".
+		// A rate limit is a valid JSON object with a "message" field; surface it.
 		if (document.isObject()) {
 			const QString message =
 				document.object().value("message").toString();
@@ -162,9 +156,8 @@ QString GitHub::releasesApiUrl(const QUrl& repositoryUrl, QString* error)
 		return {};
 	}
 
-	// Only github.com. The API shape below is GitHub's, so pointing this at
-	// any other host would produce requests that cannot be answered -- better
-	// to say so than to fail later with a parse error.
+	// Only github.com: the API shape is GitHub's, so other hosts would produce unanswerable
+	// requests.
 	const QString host = repositoryUrl.host().toLower();
 	if (host != QLatin1String("github.com") &&
 		host != QLatin1String("www.github.com")) {

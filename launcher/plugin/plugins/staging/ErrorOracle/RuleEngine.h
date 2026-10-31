@@ -1,8 +1,7 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
- * RuleEngine — loads JSON rule packs and matches them against log
- * text. Each rule has:
+ * RuleEngine: loads JSON rule packs and matches them against log text. A rule has:
  *
  *   - id        unique stable identifier (used by LearningStore)
  *   - title     short human-readable description of the symptom
@@ -11,11 +10,9 @@
  *   - advice    Markdown remediation text shown in the UI
  *   - tags      bag of strings used for grouping
  *
- * The engine is also responsible for the *learning* feedback loop:
- * after each analysis, the caller may register "I tried this rule's
- * advice and it solved the crash" or "didn't help"; the LearningStore
- * then bumps a per-(rule, instance) score that boosts the rule's
- * suggested order for that instance.
+ * After an analysis the caller may register that a rule's advice solved the crash or did not; the
+ * LearningStore then bumps a per-(rule, instance) score that boosts the rule's suggested order for
+ * that instance.
  */
 
 #pragma once
@@ -52,8 +49,7 @@ class RuleEngine
   public:
 	bool loadDirectory(const QString& dir, QString* errorMsg = nullptr);
 
-	/* Load a rule pack from raw JSON bytes. Used to support
-	 * user-supplied packs that don't live on disk. */
+	/* Loads a rule pack from raw JSON bytes (for user-supplied packs that are not on disk). */
 	bool loadFromBytes(const QByteArray& bytes, const QString& packName,
 					   QString* errorMsg = nullptr);
 
@@ -70,7 +66,6 @@ class RuleEngine
 	 * descending severity, then descending learning score. */
 	QList<Match> analyse(const QString& text) const;
 
-	/* Locate the rule with id `id` and return its index, or -1. */
 	int findRuleIndex(const QString& id) const;
 
   private:

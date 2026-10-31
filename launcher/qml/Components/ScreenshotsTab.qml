@@ -8,17 +8,10 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The instance's screenshots as a grid of thumbnails, newest first.
- * Hovering one raises a scrim with its actions (copy the picture, and a ⋯
- * menu with Open, Rename, Upload and Delete -- also on right-click);
- * clicking the image itself opens it in the system viewer. Thumbnails are
- * decoded off the UI thread by the "screenshot" image provider.
- *
- * Ticking the box that shows on a hovered tile selects it; once anything is
- * selected, clicking a tile toggles it instead of opening it, and the bar
- * above offers Upload and Delete for the whole selection. Upload goes to
- * Imgur (one picture: a link to it; several: an album) and puts the link on
- * the clipboard. It is left out of builds that have no Imgur client id.
+ * The instance's screenshots as a grid of thumbnails, newest first. Ticking a
+ * hovered tile selects it; once anything is selected, clicking a tile toggles
+ * it. Upload goes to Imgur (a link, or an album for several) and is left out
+ * of builds without an Imgur client id.
  */
 Item {
     id: root
@@ -27,22 +20,17 @@ Item {
     // rename(), copyImage(), pathAt().
     property var model: null
     property string directory
-    // InstanceDetails, for the Imgur uploader.
     property var details: null
     readonly property var uploader: details ? details.screenshotUploader : null
     readonly property bool canUpload: !!uploader && uploader.available
     signal openFolderRequested(string path)
 
-    // The narrowest a thumbnail gets before the grid drops a column.
     readonly property int minTileWidth: 240
     readonly property int gap: Theme.space.md
-    // Under each thumbnail: one caption line.
     readonly property int captionHeight: Theme.space.xs + Math.ceil(captionMetrics.height)
 
-    // What a screenshot is called under its thumbnail. The game names them
-    // after the moment they were taken ("2026-09-22_18.00.12.png"), which
-    // reads as a date and time; a screenshot renamed to anything else keeps
-    // its name. Never the file extension.
+    // The game names screenshots after the moment they were taken ("2026-09-22_18.00.12.png"),
+    // shown as a date and time; a renamed one keeps its name. Never the extension.
     function captionOf(name) {
         var bare = root.baseName(name)
         var m = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})\.(\d{2})\.(\d{2})$/.exec(bare)
@@ -52,15 +40,13 @@ Item {
         return qsTr("%1, %2").arg(Format.calendarDate(taken)).arg(taken.toLocaleTimeString(Qt.locale(), Locale.ShortFormat))
     }
 
-    // The selected screenshots, by path: {path: true}. Paths rather than rows
-    // because rows move when a file is added, renamed or deleted.
+    // Selected screenshots by path, {path: true}; paths, not rows, because rows move when files change.
     property var selected: ({})
     property int selectedCount: 0
     // Set by the Upload actions, so only this tab reacts to the result.
     property bool uploading: false
 
-    // For review snapshots (Main.qml's "review=<name>" dev route, through
-    // InstancePage): everything selected, or the first picture's rename.
+    // For the "review=<name>" dev route: everything selected, or the first picture's rename.
     function review(name) {
         if (name === "shotselect") {
             root.selectAll()
@@ -110,8 +96,8 @@ Item {
         return -1
     }
 
-    // The selected paths, or just @p path when nothing is selected (or the
-    // path is outside the selection, as with a right-click on another tile).
+    // The selected paths, or just @p path when nothing is selected or the path is outside the
+    // selection.
     function targets(path) {
         if (root.isSelected(path))
             return Object.keys(root.selected)
@@ -125,8 +111,7 @@ Item {
         root.uploader.upload(paths)
     }
 
-    // Moves @p paths to the trash, last row first so the earlier rows keep
-    // their numbers while it goes.
+    // Moves @p paths to the trash, last row first so earlier rows keep their numbers.
     function removeAll(paths) {
         var rows = []
         for (var i = 0; i < paths.length; ++i) {
@@ -145,7 +130,6 @@ Item {
             toast.show(qsTr("Some screenshots could not be deleted."), "danger")
     }
 
-    // A file name without its extension, for the rename box.
     function baseName(name) {
         var dot = name.lastIndexOf(".")
         return dot > 0 ? name.slice(0, dot) : name
@@ -234,10 +218,8 @@ Item {
             id: grid
             Layout.fillWidth: true
             Layout.fillHeight: true
-            // Each cell carries one gap on its right; the grid is a gap
-            // wider than the page (so `width` below includes it) and the
-            // last column's gap falls outside the content edge, so the
-            // thumbnails run flush with the toolbar's edges.
+            // Each cell carries a gap on its right; the grid is a gap wider than the page so the
+            // last column's gap falls outside and the thumbnails run flush with the toolbar.
             Layout.rightMargin: -root.gap
             clip: true
             boundsBehavior: Flickable.StopAtBounds
@@ -246,9 +228,7 @@ Item {
             readonly property int tileWidth: Math.floor(width / columns) - root.gap
             readonly property int tileHeight: Math.round(tileWidth * 9 / 16)
             cellWidth: tileWidth + root.gap
-            // The caption, then the same gap as between columns.
             cellHeight: tileHeight + root.captionHeight + root.gap
-            // Overlays the thumbnails rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
             delegate: Item {
@@ -279,7 +259,6 @@ Item {
                     clip: true
 
                     Image {
-                        id: thumb
                         anchors.fill: parent
                         source: "image://screenshot/" + encodeURIComponent(cell.path)
                         sourceSize: Qt.size(512, 512)
@@ -287,9 +266,7 @@ Item {
                         asynchronous: true
                     }
 
-                    // A scrim over the foot of the thumbnail, dark regardless
-                    // of theme (like Tag's onMedia mode), so the actions on
-                    // top of it stay readable over any screenshot.
+                    // Dark regardless of theme, so the actions stay readable over any screenshot.
                     Rectangle {
                         anchors.left: parent.left
                         anchors.right: parent.right
@@ -331,9 +308,6 @@ Item {
                         }
                     }
 
-                    // Taking the click, so it opens the picture (or, once
-                    // something is selected, ticks it) instead of the tile's
-                    // controls above doing so.
                     TapHandler {
                         onTapped: {
                             if (root.selectedCount > 0)
@@ -343,8 +317,6 @@ Item {
                         }
                     }
 
-                    // The tick that selects a tile; shown on hover, and on
-                    // every tile once a selection exists.
                     Rectangle {
                         anchors.left: parent.left
                         anchors.top: parent.top
@@ -362,8 +334,7 @@ Item {
                             checked: cell.picked
                             onToggled: {
                                 root.toggleSelected(cell.path)
-                                // toggled() replaced the binding with the
-                                // user's value; put it back.
+                                // toggled() replaced the binding with the user's value; put it back.
                                 checked = Qt.binding(() => cell.picked)
                             }
                             Accessible.name: qsTr("Select %1").arg(cell.name)
@@ -446,7 +417,6 @@ Item {
         }
     }
 
-    // Rows fade out at the fold instead of being sliced by the play bar.
     ScrollFade {
         anchors.left: parent.left
         anchors.right: parent.right
@@ -470,7 +440,6 @@ Item {
         onSubmitted: (text) => {
             var row = root.rowOf(path)
             if (row >= 0 && root.model.rename(row, text)) {
-                // The selection is by path, which just changed.
                 root.clearSelection()
                 close()
             } else {
@@ -485,7 +454,6 @@ Item {
 
     EmptyState {
         anchors.centerIn: parent
-        // Up where the list would start, as on every other tab.
         upperThird: true
         visible: !root.model || root.model.count === 0
         title: qsTr("No screenshots yet")

@@ -37,11 +37,8 @@
 
 namespace
 {
-	/* First role in @p model's roleNames() named @p name, or @p fallback if
-	 * @p model is null or names no role that way. Same helper as
-	 * InstanceFilterModel.cpp's, duplicated rather than shared: both files
-	 * are small and self-contained, and neither is the obvious home for a
-	 * third caller to depend on. */
+	/* First role named @p name in @p model's roleNames(), or @p fallback (also if
+	 * @p model is null). */
 	int roleByName(const QAbstractItemModel* model, const QByteArray& name,
 					int fallback)
 	{
@@ -57,8 +54,7 @@ namespace
 		return fallback;
 	}
 
-	/// The component uid knownModLoaders() (minecraft/Component.h) lists it
-	/// under, or empty for "" (no loader) or an unrecognised name.
+	/// The uid for @p loader in knownModLoaders(), or empty for "" or an unknown name.
 	QString loaderComponentUid(const QString& loader)
 	{
 		if (loader == QLatin1String("fabric")) {
@@ -76,8 +72,6 @@ namespace
 		return QString();
 	}
 } // namespace
-
-// ---- VersionListLoadingProxy -----------------------------------------
 
 VersionListLoadingProxy::VersionListLoadingProxy(QObject* parent)
 	: QSortFilterProxyModel(parent)
@@ -163,8 +157,7 @@ void VersionListLoadingProxy::startLoadIfNeeded()
 
 void VersionListLoadingProxy::setSourceModel(QAbstractItemModel* sourceModel)
 {
-	/* Roles first, same reasoning as InstanceFilterModel::setSourceModel():
-	 * the base class starts filtering as soon as it has a model. */
+	/* Roles first: the base class starts filtering as soon as it has a model. */
 	m_versionIdRole = roleByName(sourceModel, "versionId", -1);
 	m_sortRole = roleByName(sourceModel, "sort", -1);
 	resolveRoles(sourceModel);
@@ -184,18 +177,12 @@ bool VersionListLoadingProxy::lessThan(const QModelIndex& left,
 									   const QModelIndex& right) const
 {
 	if (m_sortRole >= 0) {
-		/* Newest first. */
 		return left.data(m_sortRole).toLongLong() >
 			   right.data(m_sortRole).toLongLong();
 	}
-	/* No sort role to compare on - keep source order. Meta::VersionList
-	 * already sorts its own rows newest-first (VersionList::setVersions(),
-	 * meta/VersionList.cpp), so this still does the right thing for it;
-	 * a fake list in a test controls the order it wants directly. */
+	/* No sort role: keep source order (Meta::VersionList already sorts newest-first). */
 	return left.row() < right.row();
 }
-
-// ---- MinecraftVersionListProxy -----------------------------------------
 
 MinecraftVersionListProxy::MinecraftVersionListProxy(QObject* parent)
 	: VersionListLoadingProxy(parent)
@@ -231,7 +218,6 @@ bool MinecraftVersionListProxy::filterAcceptsRow(
 	int sourceRow, const QModelIndex& sourceParent) const
 {
 	if (m_typeRole < 0) {
-		/* Nothing to filter on - show everything rather than nothing. */
 		return true;
 	}
 	const QString type =
@@ -246,12 +232,9 @@ bool MinecraftVersionListProxy::filterAcceptsRow(
 		type == QLatin1String("old_snapshot")) {
 		return m_showOldVersions;
 	}
-	/* Anything else (e.g. an "experiment" build) - VanillaPage has a
-	 * separate checkbox for that; nothing here does, so it stays hidden. */
+	/* Anything else (an "experiment" build) stays hidden. */
 	return false;
 }
-
-// ---- LoaderVersionListProxy -----------------------------------------
 
 LoaderVersionListProxy::LoaderVersionListProxy(QObject* parent)
 	: VersionListLoadingProxy(parent)
@@ -282,11 +265,8 @@ bool LoaderVersionListProxy::filterAcceptsRow(
 								->index(sourceRow, 0, sourceParent)
 								.data(m_parentVersionRole)
 								.toString();
-	/* "Exact if present" - see the class comment in the header. */
 	return parent.isEmpty() || parent == m_minecraftVersion;
 }
-
-// ---- composeSuggestedInstanceName -----------------------------------------
 
 QString composeSuggestedInstanceName(const QString& minecraftVersion,
 									 const QString& loader)
@@ -301,8 +281,6 @@ QString composeSuggestedInstanceName(const QString& minecraftVersion,
 	return name;
 }
 
-// ---- suggestedImportName -----------------------------------------
-
 QString suggestedImportName(const QString& source)
 {
 	QString input = source.trimmed();
@@ -315,10 +293,8 @@ QString suggestedImportName(const QString& source)
 		return QFileInfo(url.toLocalFile()).completeBaseName();
 	}
 
-	/* CurseForge's own "download" button links end this way; the real
-	 * file name sits one path segment further in, at ".../file". Same
-	 * rewrite ImportPage::updateState() applies before reading the file
-	 * name (ui/pages/modplatform/ImportPage.cpp). */
+	/* CurseForge's download-button links end this way; the real file name is one
+	 * path segment further in, at ".../file". */
 	if (input.endsWith(QLatin1String("?client=y"))) {
 		input.chop(9);
 		input.append(QLatin1String("/file"));
@@ -326,8 +302,6 @@ QString suggestedImportName(const QString& source)
 	}
 	return QFileInfo(url.fileName()).completeBaseName();
 }
-
-// ---- importSourceLooksValid -----------------------------------------
 
 bool importSourceLooksValid(const QString& source)
 {
@@ -341,14 +315,11 @@ bool importSourceLooksValid(const QString& source)
 		return false;
 	}
 	if (!url.isLocalFile()) {
-		/* A remote link - InstanceImportTask is the only thing that can
-		 * actually tell whether it resolves to something importable. */
+		/* A remote link: only InstanceImportTask can tell whether it is importable. */
 		return true;
 	}
 
-	/* Same extension allow-list ImportPage::updateState() checks
-	 * (ui/pages/modplatform/ImportPage.cpp); the real format sniff happens
-	 * inside InstanceImportTask itself. */
+	/* Extension allow-list; the real format sniff happens in InstanceImportTask. */
 	const QFileInfo fi(url.toLocalFile());
 	const QString suffix = fi.suffix().toLower();
 	const bool looksLikeArchive = suffix == QLatin1String("zip") ||
@@ -356,8 +327,6 @@ bool importSourceLooksValid(const QString& source)
 								  suffix == QLatin1String("jar");
 	return fi.exists() && looksLikeArchive;
 }
-
-// ---- NewInstanceController -----------------------------------------
 
 NewInstanceController::NewInstanceController(QObject* parent)
 	: QObject(parent),
@@ -392,10 +361,7 @@ bool NewInstanceController::loaderLoading() const
 
 QStringList NewInstanceController::groups() const
 {
-	/* Same cleanup NewInstanceDialog's constructor applies to
-	 * InstanceList::getGroups() before handing it to its combo box
-	 * (ui/dialogs/NewInstanceDialog.cpp), minus the initialGroup bias -
-	 * this API takes the target group as a create() argument instead. */
+	/* Sorted and deduplicated, "" first (no group). */
 	auto groups = LAUNCHER->instances()->getGroups();
 	groups.removeDuplicates();
 	groups.sort(Qt::CaseInsensitive);
@@ -443,18 +409,16 @@ void NewInstanceController::selectMinecraftVersion(const QString& version)
 	m_selectedMinecraftVersion = version;
 	emit selectedMinecraftVersionChanged();
 
-	/* A loader version picked for the previous Minecraft version may not
-	 * even exist for this one (Forge and NeoForge publish one build per
-	 * game version) - drop it and let onLoaderListFirstVersionIdChanged()
-	 * default to whatever fits the new one. */
+	/* A loader version picked for the previous Minecraft version may not exist for
+	 * this one (Forge and NeoForge publish one build per game version): drop it
+	 * and re-default. */
 	if (!m_selectedLoaderVersion.isEmpty()) {
 		m_selectedLoaderVersion.clear();
 		emit selectedLoaderVersionChanged();
 	}
 
 	m_loaderVersions->setMinecraftVersion(version);
-	/* Same list, same first version: nothing would re-default the pick
-	 * cleared above, so do it now. */
+	/* Same list, same first version: nothing would re-default the cleared pick. */
 	onLoaderListFirstVersionIdChanged();
 }
 
@@ -470,7 +434,6 @@ void NewInstanceController::selectLoaderVersion(const QString& version)
 void NewInstanceController::onLoaderListFirstVersionIdChanged()
 {
 	if (!m_selectedLoaderVersion.isEmpty()) {
-		/* selectLoaderVersion() already named one - do not second-guess it. */
 		return;
 	}
 	const QString first = m_loaderVersions->firstVersionId();
@@ -521,10 +484,9 @@ QObject* NewInstanceController::create(const QString& name,
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(creationTask);
 	auto* watcher = new TaskWatcher(Task::Ptr(wrapped), this);
 	watcher->setTitle(name);
-	/* The final id is only settled when InstanceList commits the staged
-	 * instance, which it announces just before the wrapped task reports
-	 * success - so the watcher has the id by the time finished(true)
-	 * reaches QML. A task that fails commits nothing. */
+	/* The final id is settled when InstanceList commits the staged instance, just
+	 * before the wrapped task reports success, so the watcher has it by
+	 * finished(true). */
 	const auto selected = connect(
 		LAUNCHER->instances().get(), &InstanceList::instanceSelectRequest,
 		watcher, [watcher](const QString& id) { watcher->setInstanceId(id); },
@@ -556,9 +518,7 @@ QObject* NewInstanceController::importFrom(const QString& source,
 		return nullptr;
 	}
 
-	/* Same construction the widget's ImportPage::updateState() uses
-	 * (ui/pages/modplatform/ImportPage.cpp): accepts a bare local path, a
-	 * "file://" URL from a picker, or a typed http(s) address alike. */
+	/* Accepts a bare local path, a "file://" URL or a typed http(s) address alike. */
 	const QUrl url = QUrl::fromUserInput(trimmed);
 	if (!url.isValid() || url.isEmpty()) {
 		return nullptr;

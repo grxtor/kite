@@ -6,19 +6,12 @@ import QtQuick
 import Kite.Theme
 
 /*
- * An account's Minecraft head, the way launchers show who is playing: the
- * front of the skin's head with its hat layer, from AccountFaceProvider
- * (image://accountface/<accountId>), which draws an account without a skin
- * of its own in the game's default Steve or Alex.
- *
- * Pixel art, so drawn pixel for pixel: the provider scales the 8x8 face
- * with nearest-neighbour to exactly the size asked for (sourceSize, which
- * Qt multiplies by the screen's pixel ratio), and nothing smooths it after.
- * Keep `size` a multiple of 8 and every texel comes out the same size.
- *
- * While there is no face to show yet (the default skin still downloading,
- * no account), a quiet square of the same size holds its place. Never a
- * letter: a head is the one avatar a Minecraft player recognises.
+ * An account's Minecraft head: the front of the skin's head with its hat layer,
+ * from AccountFaceProvider (image://accountface/<accountId>), which draws an
+ * account without a skin in the default Steve or Alex. Pixel art: the provider
+ * scales the 8x8 face with nearest-neighbour to exactly `sourceSize`, so keep
+ * `size` a multiple of 8. While there is no face yet, a quiet square holds its
+ * place; never a letter.
  */
 Item {
     id: root

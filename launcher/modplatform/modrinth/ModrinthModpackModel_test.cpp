@@ -23,8 +23,7 @@
 #include "modplatform/modrinth/ModrinthModpackModel.h"
 
 /* Both functions under test are static and touch neither the network nor
- * LauncherContext, exactly so they can be exercised here with canned bytes
- * - see the class comment on ModrinthModpackModel::parseSearchResults(). */
+ * LauncherContext, so they run on canned bytes. */
 class ModrinthModpackModelTest : public QObject
 {
 	Q_OBJECT
@@ -33,12 +32,8 @@ class ModrinthModpackModelTest : public QObject
 
 	void test_ParseSearchResults()
 	{
-		/* Plain (non-raw) string literals, concatenated: moc's lexer
-		 * mishandles a *multi-line* raw string literal (R"(...)") in a
-		 * Q_OBJECT class - it stops finding any class at all, hence the
-		 * escaped quotes here rather than the more readable R"(...)"
-		 * this codebase otherwise uses for a single-line JSON literal
-		 * (see PackContents_test.cpp). */
+		/* Plain string literals, concatenated: moc's lexer mishandles a
+		 * multi-line raw string (R"(...)") in a Q_OBJECT class. */
 		const QByteArray json =
 			"{"
 			"  \"hits\": ["
@@ -77,12 +72,10 @@ class ModrinthModpackModelTest : public QObject
 		const QList<Modrinth::IndexedPack> packs =
 			ModrinthModpackModel::parseSearchResults(json, totalHits);
 
-		/* The third hit has no "title", which loadIndexedPack() requires
-		 * - it must be skipped rather than crashing or aborting the rest
-		 * of the page. */
+		/* The third hit has no "title", which loadIndexedPack() requires: it is
+		 * skipped without aborting the page. */
 		QCOMPARE(packs.size(), 2);
-		/* Read straight off the JSON's own "total_hits", independent of
-		 * how many hits this one page happened to carry. */
+		/* Read from the JSON's "total_hits", not the page's hit count. */
 		QCOMPARE(totalHits, 50);
 
 		const Modrinth::IndexedPack& full = packs.at(0);
@@ -120,9 +113,8 @@ class ModrinthModpackModelTest : public QObject
 		QCOMPARE(minimal.follows, 0);
 		QVERIFY(minimal.gameVersions.isEmpty());
 		QVERIFY(minimal.categories.isEmpty());
-		/* No "display_categories", "featured_gallery", "gallery" or
-		 * "color" at all - every addition above must default cleanly
-		 * rather than require the field to be present. */
+		/* No "display_categories", "featured_gallery", "gallery" or "color": each
+		 * must default cleanly. */
 		QVERIFY(minimal.displayCategories.isEmpty());
 		QVERIFY(minimal.featuredGalleryUrl.isEmpty());
 		QVERIFY(minimal.galleryUrls.isEmpty());
@@ -193,8 +185,7 @@ class ModrinthModpackModelTest : public QObject
 						 "ver1/pack.mrpack"));
 		QCOMPARE(first.value("featured").toBool(), true);
 
-		/* No "primary" flag, but a single file - loadIndexedPackVersions()
-		 * picks it anyway, same as the widget browser has always done. */
+		/* No "primary" flag but a single file: picked anyway. */
 		const QVariantMap second = versions.at(1).toMap();
 		QCOMPARE(second.value("id").toString(), QString("ver2"));
 		QCOMPARE(second.value("gameVersions").toStringList(),

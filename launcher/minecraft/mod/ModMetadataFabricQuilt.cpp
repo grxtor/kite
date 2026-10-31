@@ -36,9 +36,9 @@ using ModMetadata::detail::kLoaderQuilt;
 namespace
 {
 
-	/* fabric.mod.json / quilt.mod.json "icon": one path, or a map of pixel
-	 * size -> path. Takes the largest no bigger than what the cache keeps,
-	 * or failing that the smallest one there is. */
+	// fabric.mod.json / quilt.mod.json "icon": one path, or a map of pixel size
+	// -> path. Takes the largest no bigger than the cache keeps, else the
+	// smallest.
 	QString pickIcon(const QJsonValue& value)
 	{
 		if (value.isString()) {
@@ -68,9 +68,8 @@ namespace
 		return best.isEmpty() ? smallest : best;
 	}
 
-	/* "*" - or nothing at all - is how a version spec says any version will
-	 * do. One such alternative makes the whole list mean that, which is
-	 * what an empty `versions` says. */
+	// "*" (or nothing) means any version will do; one such alternative makes
+	// the whole list mean that, as an empty `versions` does.
 	QStringList collapseAnyVersion(const QStringList& alternatives)
 	{
 		for (const QString& predicate : alternatives) {
@@ -82,8 +81,8 @@ namespace
 		return alternatives;
 	}
 
-	/* A fabric.mod.json dependency is a version string or an array of them,
-	 * which are alternatives. */
+	// A fabric.mod.json dependency is a version string or an array of
+	// alternatives.
 	QStringList fabricVersions(const QJsonValue& value)
 	{
 		QStringList alternatives;
@@ -98,9 +97,8 @@ namespace
 		return collapseAnyVersion(alternatives);
 	}
 
-	/* "depends", "breaks" and "conflicts" are all the same shape: a mod id
-	 * to the versions it is about. ("recommends" and "suggests" are hints
-	 * for the user; the loader does nothing with them.) */
+	// "depends", "breaks" and "conflicts" share a shape: a mod id to its
+	// versions. ("recommends" and "suggests" are hints the loader ignores.)
 	void addFabricDependencies(ModDetails& details, const QJsonObject& table,
 							   ModDependency::Kind kind)
 	{
@@ -111,8 +109,8 @@ namespace
 		}
 	}
 
-	/* An id may carry the maven group of its mod ("org.example:thing");
-	 * what other mods and the game know it by is the part after it. */
+	// An id may carry the maven group of its mod ("org.example:thing"); other
+	// mods and the game know it by the part after it.
 	QString quiltId(const QString& id)
 	{
 		return id.mid(id.lastIndexOf(QLatin1Char(':')) + 1);
@@ -120,8 +118,8 @@ namespace
 
 	QStringList quiltVersionAlternatives(const QJsonValue& versions);
 
-	// Predicates that all have to match go in one string, space separated. A
-	// predicate that takes any version adds nothing to it.
+	// Predicates that must all match go in one space-separated string; one that
+	// takes any version adds nothing.
 	QString joinPredicates(const QString& joined, const QString& predicate)
 	{
 		if (collapseAnyVersion({predicate}).isEmpty()) {
@@ -131,8 +129,8 @@ namespace
 								: joined + QLatin1Char(' ') + predicate;
 	}
 
-	/* "all": every spec of the list has to match. A spec that is itself a
-	 * choice makes one list per alternative. */
+	// "all": every spec must match; a spec that is itself a choice makes one
+	// list per alternative.
 	QStringList quiltAllOf(const QJsonArray& specs)
 	{
 		QStringList joined{QString()};
@@ -148,9 +146,9 @@ namespace
 		return joined;
 	}
 
-	/* A quilt.mod.json "versions": a version spec, a list of them (any may
-	 * match), or {"any": [...]} / {"all": [...]} of the same, nested as
-	 * deep as the author likes. */
+	// A quilt.mod.json "versions": a version spec, a list of them (any may
+	// match), or {"any": [...]} / {"all": [...]} of the same, nested
+	// arbitrarily.
 	QStringList quiltVersionAlternatives(const QJsonValue& versions)
 	{
 		if (versions.isString()) {
@@ -170,9 +168,9 @@ namespace
 		return quiltAllOf(choice.value("all").toArray());
 	}
 
-	/* quilt_loader "depends" / "breaks": a bare id, an object, or an array,
-	 * which is a group of which one suffices - needing one of several is
-	 * not needing any in particular, so those are left out. */
+	// quilt_loader "depends" / "breaks": a bare id, an object, or an array,
+	// which is a group of which one suffices; needing one of several is not
+	// needing any in particular, so those are left out.
 	void addQuiltDependencies(ModDetails& details, const QJsonArray& entries,
 							  ModDependency::Kind kind)
 	{

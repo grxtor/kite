@@ -6,10 +6,9 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
-// Frame stays transparent and only outlines its content -- for a filled
-// surface, use Pane instead. Keeping the two distinct is what lets "surfaces
-// separated by lightness" actually mean something: a Pane inside a Pane
-// reads as a step up in lightness, a Frame around either just groups it.
+// Frame stays transparent and only outlines its content; for a filled surface
+// use Pane. A Pane inside a Pane reads as a step up in lightness, a Frame
+// around either just groups it.
 T.Frame {
     id: control
 

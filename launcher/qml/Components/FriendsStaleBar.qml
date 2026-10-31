@@ -5,18 +5,14 @@ import QtQuick
 import QtQuick.Controls
 
 /*
- * The bar over the friends panel's list when a poll failed after the lists
- * were read: they stay, and this says they may be out of date. The retry is
- * the button, so the words do not also say "try again"; what the server said
- * is the tip. Same as the Friends page's bar, without its "as of" time,
- * which does not fit the panel's width.
+ * The bar over the friends panel's list when a poll failed after the lists were read: they stay, and this says they
+ * may be out of date. Like the Friends page's bar without its "as of" time, which does not fit the panel's width.
  */
 NoticeBar {
     id: root
 
-    // QmlShell.friends (FriendsController), or null.
+    // FriendsController, or null.
     property var controller: null
-    // "Try again" was pressed and has not been answered.
     property bool retrying: false
 
     text: qsTr("Can't update friends right now.")
@@ -34,8 +30,8 @@ NoticeBar {
             if (action === "refresh")
                 root.retrying = false
         }
-        // A refresh dropped because friends was turned off meanwhile is
-        // never answered: the flag is for as long as it is failing.
+        // A refresh dropped because friends was turned off meanwhile is never answered: the flag lasts while it is
+        // failing.
         function onChanged() {
             if (root.controller.state !== "error")
                 root.retrying = false

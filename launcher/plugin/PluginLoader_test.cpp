@@ -23,29 +23,15 @@
 #include "plugin/PluginLoader.h"
 #include "plugin/PluginMetadata.h"
 
-/*
- * PluginLoader::loadModule() dlopen()s a real shared-library file and reads
- * its mmco_module_info symbol -- there is no way to drive it from a unit
- * test without a genuine compiled .mmco fixture, and building one is a
- * CMake/toolchain concern that does not belong in a QtTest binary (no such
- * fixture exists anywhere in this tree today).
- *
- * What loadModule() delegates to for an ABI-mismatched module --
- * PluginLoader::classifyAbiMismatch() -- takes only plain values (the name
- * already captured from the module, the file path, and three ABI numbers)
- * and is exercised directly here instead. It is the piece the design review
- * cared about: given a name, does the rejected module keep its identity and
- * get a reason/message that says why.
- */
+/* loadModule() dlopen()s a real .mmco and no such fixture exists in this tree, so the testable
+ * piece is classifyAbiMismatch(): given a name, a path and three ABI numbers, does a rejected
+ * module keep its identity and get a reason that says why. */
 class PluginLoaderTest : public QObject
 {
 	Q_OBJECT
 
   private slots:
-	/* A module built for an ABI below the host's floor is AbiTooOld, and
-	 * its name, the ABI it was built for, and the host's supported range
-	 * all end up in the message so the user (or a bug report) has
-	 * everything needed without digging through logs. */
+	/* The message carries the module name, the ABI it was built for and the host's supported range. */
 	void test_tooOldCarriesNameAndRange()
 	{
 		QString detail;
@@ -59,9 +45,7 @@ class PluginLoaderTest : public QObject
 		QVERIFY(detail.contains(QStringLiteral("5")));
 	}
 
-	/* Symmetric case: built for an ABI above what this launcher knows
-	 * (a downgrade, or a module built for a future release) comes back
-	 * as AbiTooNew rather than being lumped in with "too old". */
+	/* Built for an ABI above what this launcher knows: AbiTooNew, not lumped in with too old. */
 	void test_tooNewIsDistinguishedFromTooOld()
 	{
 		QString detail;
@@ -75,9 +59,8 @@ class PluginLoaderTest : public QObject
 		QVERIFY(detail.contains(QStringLiteral("9")));
 	}
 
-	/* mmco_module_info::name may be null/blank; loadModule() then passes
-	 * an empty QString as moduleName. The message must still identify
-	 * the module somehow, so it falls back to the file path. */
+	/* A null or blank mmco_module_info::name reaches here as an empty moduleName; the message falls
+	 * back to the file path. */
 	void test_emptyNameFallsBackToPath()
 	{
 		QString detail;

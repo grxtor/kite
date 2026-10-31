@@ -25,9 +25,8 @@
 
 namespace
 {
-	/* A Task that does nothing on its own - executeTask() is a no-op -
-	 * so the test can drive status/progress/success/failure by hand and
-	 * check that TaskWatcher mirrors exactly what was driven. */
+	/* A Task that does nothing on its own, so the test drives status,
+	 * progress, success and failure by hand. */
 	class ScriptedTask : public Task
 	{
 		Q_OBJECT
@@ -101,21 +100,17 @@ class TaskWatcherTest : public QObject
 
 		QSignalSpy progressSpy(&watcher, &TaskWatcher::progressChanged);
 
-		/* The first update always goes straight through - there is
-		 * nothing to coalesce with yet. */
 		task->driveProgress(1, 100);
 		QCOMPARE(progressSpy.count(), 1);
 
-		/* A burst right behind it must not turn into a burst of NOTIFY
-		 * firings; the throttle should coalesce them into (at most) one
-		 * more. */
+		/* A burst right behind it must coalesce into at most one more NOTIFY. */
 		for (int i = 2; i <= 20; ++i) {
 			task->driveProgress(i, 100);
 		}
 		QVERIFY(progressSpy.count() <= 2);
 
-		/* But the last value reported is never lost - it shows up once
-		 * the throttle window has had time to flush. */
+		/* The last value is never lost; it shows up once the throttle window
+		 * has flushed. */
 		QTRY_COMPARE_WITH_TIMEOUT(watcher.progress(), 0.20, 1000);
 	}
 

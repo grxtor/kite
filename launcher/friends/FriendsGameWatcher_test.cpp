@@ -77,9 +77,7 @@ namespace
 			list->loadList();
 		}
 
-		/// Starts the game of @p id, played as @p profile ("" for a launch
-		/// that is not an account's own: offline, a demo), and returns its
-		/// launch task.
+		/// Starts the game of @p id played as @p profile ("" for offline or a demo); returns its launch task.
 		shared_qobject_ptr<LaunchTask> start(const QString& id,
 											 const QString& profile = kMe)
 		{

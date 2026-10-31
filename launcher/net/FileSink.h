@@ -43,11 +43,9 @@ namespace Net
 	  protected: /* data */
 		QString m_filename;
 		bool wroteAnyData = false;
-		/* Bytes handed to the file so far, so that finalize() can tell a
-		 * complete transfer from one the server cut short. Counted here
-		 * rather than asked of the file, because a QSaveFile reports on
-		 * its staging file and what matters is what the network gave
-		 * us. */
+		/* Bytes handed to the file, so finalize() can tell a complete transfer
+		 * from one the server cut short. Counted here because a QSaveFile reports
+		 * on its staging file. */
 		qint64 m_bytesWritten = 0;
 		std::unique_ptr<QSaveFile> m_output_file;
 	};

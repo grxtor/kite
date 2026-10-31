@@ -7,28 +7,22 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Kite.Theme
 
-/*
- * First run: the few choices Kite cannot make on its own -- language,
- * which Java and how much memory, an account -- as one calm, full-window
- * flow instead of a wizard dialog. Only the steps still needed are shown
- * (the shell decides which, with the same rules the classic wizard had);
- * the account step appears when there is no account yet and can be left
- * for later.
- */
+// First run. Shows only the steps the shell still needs.
 Rectangle {
     id: root
 
     property var shell: null
-    // Shown steps, fixed when the flow opens so it does not reshuffle as
-    // each choice is saved.
+    // macOS: the title bar's height when it lies over the window, else 0.
+    property int topInset: 0
+    // Fixed when the flow opens, so saving a choice does not reshuffle it.
     property var steps: []
     property int index: 0
     readonly property string step: steps.length > 0 ? steps[Math.min(index, steps.length - 1)] : ""
     property bool active: false
+    readonly property int contentTop: Math.max(Theme.space.xxl, root.topInset + Theme.space.sm)
 
     signal finished()
     signal signInRequested()
-    // The last step's two ways on, for a library with nothing in it yet.
     signal createInstanceRequested()
     signal discoverRequested()
 
@@ -60,15 +54,13 @@ Rectangle {
         root.finished()
     }
 
-    // Leaves the flow for somewhere to start: New instance or Discover.
     function finishTo(request) {
         root.finish()
         request()
     }
 
-    // The saved language's row, centred: the list opens on it, not on the
-    // first language in the alphabet. TranslationsModel has no key lookup
-    // of its own, so the roles are read row by row.
+    // Opens the list on the saved language. TranslationsModel has no key
+    // lookup, so the rows are searched.
     function showChosenLanguage() {
         var model = languageList.model
         var saved = SettingsStore.string("Language")
@@ -97,16 +89,12 @@ Rectangle {
     visible: active
     color: Theme.palette.canvas
 
-    // Swallow everything underneath while the flow is open.
     MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
 
     RowLayout {
         anchors.fill: parent
         spacing: 0
 
-        // Brand side: who we are and where we are in the flow, on a plain
-        // raised surface fading into the page's own. Neutral on purpose:
-        // the logo carries the violet, the backdrop doesn't tint toward it.
         Rectangle {
             id: sky
             Layout.fillHeight: true
@@ -117,7 +105,6 @@ Rectangle {
                 GradientStop { position: 1.0; color: Theme.palette.surface }
             }
 
-            // The edge against the step, as the shell's own hairlines.
             Rectangle {
                 anchors.right: parent.right
                 width: 1
@@ -128,6 +115,7 @@ Rectangle {
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: Theme.space.xxl
+                anchors.topMargin: root.contentTop
                 spacing: Theme.space.lg
 
                 BrandMark {
@@ -205,7 +193,6 @@ Rectangle {
             }
         }
 
-        // The step itself.
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -213,7 +200,7 @@ Rectangle {
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: Theme.space.xxl
-                anchors.topMargin: Theme.space.xxl + Theme.space.lg
+                anchors.topMargin: root.contentTop + Theme.space.lg
                 spacing: Theme.space.lg
 
                 Text {
@@ -246,7 +233,6 @@ Rectangle {
                     Layout.maximumWidth: 720
                     currentIndex: ["language", "java", "account", "done"].indexOf(root.step)
 
-                    // Language
                     ColumnLayout {
                         spacing: Theme.space.md
                         SearchBox {
@@ -295,7 +281,7 @@ Rectangle {
                                             Layout.leftMargin: Theme.space.md
                                             Layout.fillWidth: true
                                             text: languageRow.name
-                                            // One edge for every name, right-to-left scripts too.
+                                            // Left-aligned for right-to-left scripts too.
                                             horizontalAlignment: Text.AlignLeft
                                             elide: Text.ElideRight
                                             color: languageRow.chosen ? Theme.palette.accentText : Theme.palette.textPrimary
@@ -323,8 +309,8 @@ Rectangle {
                         }
                     }
 
-                    // Java and memory
                     ColumnLayout {
+                        readonly property int javaRowHeight: 52
                         spacing: Theme.space.md
                         SettingsGroup {
                             Layout.fillWidth: true
@@ -359,6 +345,9 @@ Rectangle {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
+                            // As tall as its rows.
+                            Layout.minimumHeight: javaRowHeight * 2
+                            Layout.maximumHeight: Math.max(Layout.minimumHeight, javaList.contentHeight + Theme.space.xs * 2)
                             radius: Theme.radius.lg
                             color: Theme.palette.surface
                             border.width: 1
@@ -378,7 +367,7 @@ Rectangle {
                                     required property bool recommended
                                     readonly property bool chosen: SettingsStore.string("JavaPath") === path
                                     width: javaList.width
-                                    height: 52
+                                    height: javaRowHeight
                                     hoverEnabled: true
                                     onClicked: root.shell.useJava(path)
                                     background: Rectangle {
@@ -408,7 +397,10 @@ Rectangle {
                                                 font.pixelSize: Theme.type.caption.pixelSize
                                             }
                                         }
-                                        Tag { text: String(javaRow.architecture) }
+                                        Tag {
+                                            visible: String(javaRow.architecture) === "32"
+                                            text: qsTr("32-bit")
+                                        }
                                         StatusBadge {
                                             Layout.rightMargin: Theme.space.md
                                             visible: javaRow.recommended
@@ -438,9 +430,9 @@ Rectangle {
                                 }
                             }
                         }
+                        Item { Layout.fillHeight: true }
                     }
 
-                    // Account
                     ColumnLayout {
                         spacing: Theme.space.md
                         Button {
@@ -455,7 +447,7 @@ Rectangle {
                         Item { Layout.fillHeight: true }
                     }
 
-                    // Done: the way on is in the footer.
+                    // Done: its buttons are in the footer.
                     Item {}
                 }
 
@@ -504,5 +496,13 @@ Rectangle {
                 }
             }
         }
+    }
+
+    WindowDragBand {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        height: root.topInset
+        enabled: root.topInset > 0
     }
 }

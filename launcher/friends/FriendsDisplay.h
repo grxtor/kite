@@ -58,17 +58,14 @@ namespace FriendsDisplay
 	/// joinable (they get a Join button).
 	QVariantMap selfStatusMap(const FriendsApi::Presence& presence,
 							  const QVariantMap& settings);
-	/// The same map from what the server answered to the status report
-	/// @p sent: what it shows of you (@p view), which is the truth about
-	/// what friends see -- it hides more than selfStatusMap() can tell
-	/// (names on a home network, a host it refuses) and decides joinable.
+	/// From the server's answer @p view to the status report @p sent: the truth
+	/// about what friends see (it hides more than selfStatusMap() can tell, and
+	/// decides joinable).
 	QVariantMap selfStatusFromView(const FriendsApi::Presence& sent,
 								   const FriendsApi::Status& view);
-	/// visibility, hideServer, shareIpServers, allowJoin.
 	QVariantMap settingsMap(const FriendsApi::Settings& settings);
-	/// Whether every setting in a request body (FriendsApi::settingsBody)
-	/// is as asked in the settings the server answered with (settingsMap).
-	/// A server that does not know a setting drops it from the request and
-	/// answers without it, so it comes back as its default instead.
+	/// Whether every setting in a request body is as asked in the settings the
+	/// server answered with; a server that does not know a setting drops it and
+	/// answers with its default.
 	bool settingsSaved(const QByteArray& body, const QVariantMap& saved);
 } // namespace FriendsDisplay

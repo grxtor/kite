@@ -7,38 +7,24 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The launcher's one most important button. Square and icon-only on a card,
- * wide with a label in the hero; turns into Stop while the game runs, in
- * the danger colour, so the two can never be confused at a glance.
- *
- * `hero` marks the bottom play bar's own instance of this button: the only
- * thing it still changes is a short burst of pixel squares on click.
- *
- * It looks like the Style Button's primary variant (Style/Button.qml): the
- * accent fill with its barely visible top-to-bottom tint, a lighter fill on
- * hover and a darker one when pressed, and no glow. Stop is the danger fill
- * with the same rule as a danger Button's label: the dark theme's light
- * coral takes the canvas' near-black, which reads on it where white did
- * not (2.6:1). Corners are Theme.radius.md in both shapes but for the
- * top-right, cut tight like everything you can launch (KiteShape); the
- * icon-only (`round`) variant is a rounded square, not a circle -- like the
- * rest of an instance's identity it stays off the pill radius.
+ * The launcher's one most important button: square and icon-only on a card,
+ * wide with a label in the hero; turns into Stop (danger colour) while the
+ * game runs. `hero` marks the bottom play bar's instance, which adds a burst
+ * of pixel squares on click. Styled like the primary Style Button, but the
+ * dark theme's light coral danger fill takes the canvas colour for its label
+ * (white reads at 2.6:1); the top-right corner is cut tight (KiteShape).
  */
 AbstractButton {
     id: control
 
     property bool running: false
-    // A launch is being prepared: the button stays in place, says so, and
-    // does not fade like a disabled one.
     property bool busy: false
     property bool round: true
     property int size: Theme.control.height + 4
     property bool hero: false
 
-    // Bumped on every click that should burst -- each pixel-square delegate
-    // below watches this rather than a one-shot Animation's own started()
-    // signal, since an Animation with no child animations to run is not a
-    // reliable way to broadcast "now".
+    // Bumped on every click that should burst; a one-shot Animation with no children is not a
+    // reliable "now" broadcast.
     property int burstSeed: 0
 
     text: busy ? qsTr("Starting…") : running ? qsTr("Stop") : qsTr("Play")
@@ -51,13 +37,9 @@ AbstractButton {
 
     onClicked: if (control.hero && !control.running && !control.busy) control.burstSeed++
 
-    // The one property hover/press are allowed to change: a lighter fill on
-    // hover, a darker one when pressed, animated over Theme.motion.fast --
-    // see the file comment.
     readonly property color fill: running
         ? (down ? Qt.darker(Theme.palette.danger, 1.12) : hovered ? Qt.lighter(Theme.palette.danger, 1.08) : Theme.palette.danger)
         : (down ? Theme.palette.accentPressed : hovered ? Theme.palette.accentHover : Theme.palette.accent)
-    // The label and the glyph, as a filled Style Button picks them.
     readonly property color ink: running && Theme.dark ? Theme.palette.canvas : Theme.palette.textOnAccent
 
     background: KiteShape {
@@ -66,7 +48,6 @@ AbstractButton {
         color: control.fill
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
-        // The barely visible top-to-bottom tint every filled button has.
         KiteShape {
             anchors.fill: parent
             radius: plate.radius
@@ -76,8 +57,6 @@ AbstractButton {
             }
         }
 
-        // Keyboard focus ring, outset so it never competes with the fill,
-        // its own corners parallel to the plate's.
         KiteShape {
             anchors.fill: parent
             anchors.margins: -Theme.space.xxs
@@ -108,7 +87,6 @@ AbstractButton {
                 visible: !control.round
                 text: control.text
                 color: control.ink
-                // A label, so Inter (the brief keeps Montserrat to titles).
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.title.pixelSize
                 font.weight: Font.Bold
@@ -116,9 +94,6 @@ AbstractButton {
         }
     }
 
-    // A short, one-shot burst of small pixel squares in accent colours on
-    // click -- purely decorative, so it runs once and stops rather than
-    // looping; nothing here costs idle CPU once it finishes.
     Item {
         anchors.fill: parent
         visible: control.hero

@@ -8,28 +8,19 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One row of PackList: a tick box, the logo, name and where it is from, its
- * version and file (when the table has room for that column), the on/off
- * switch and the ⋯ menu; clicked, it opens the file's details
- * underneath -- description, authors, version, file, where it was
- * installed from -- the way ModFolderPage's info panel showed them.
- *
- * A row of a table, not a card of its own: rows share PackList's card and
- * are split by hairlines; hover and ticked rows tint their whole width.
- *
- * A mod the health check has something to say about (missing or
- * switched-off dependencies, clashes, doubled files) carries a "Problem"
- * or "Warning" badge before its switch, with the reasons in a tooltip and
- * again, written out, at the top of its details.
+ * One row of PackList: tick box, logo, name and source, version and file (when
+ * the table has room), the on/off switch and the ⋯ menu; clicking opens the
+ * file's details underneath. A mod the health check flags carries a "Problem"
+ * or "Warning" badge before its switch, with the reasons in a tooltip and in
+ * the details.
  */
 Item {
     id: row
 
-    // The PackList this row belongs to: selection, kind, lock state.
     required property var owner
     required property int index
-    // Through `model`: one of the roles is called "enabled", which
-    // as a delegate property would disable the row itself.
+    // Through `model`: one role is called "enabled", which as a delegate property would disable the
+    // row itself.
     required property var model
     readonly property string key: model.key || ""
     readonly property string name: model.name || ""
@@ -37,17 +28,15 @@ Item {
     readonly property bool itemEnabled: model.enabled
     readonly property string iconUrl: model.iconUrl || ""
     readonly property string homepage: model.homepage || ""
-    // "Modrinth" / "CurseForge" when installed from one.
     readonly property string source: model.source || ""
     readonly property bool selected: owner.isSelected(key)
     readonly property bool expanded: owner.expandedKey === key
     // The last row draws no hairline under itself: the card's border ends it.
     property bool lastRow: false
 
-    // The mods folder's health check (ModHealthModel); mods only.
     readonly property var health: owner.kind === "mods" && owner.controller ? owner.controller.health : null
-    // What it found about this file, asked again whenever the check is
-    // redone (`revision` changes), blocking ones first.
+    // What the health check found about this file, blocking ones first; re-read when `revision`
+    // changes.
     readonly property var problems: {
         const h = row.health
         if (!h)
@@ -64,7 +53,6 @@ Item {
     }
 
     height: header.height + (expanded ? details.implicitHeight + Theme.space.md : 0)
-    // "Mod Menu · Modrinth": who made it and where it came from.
     readonly property string byline: {
         const authors = (model.authors || []).join(", ")
         return authors.length > 0 && source.length > 0 ? qsTr("%1 · %2").arg(authors).arg(source)
@@ -74,7 +62,6 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        // Ticked keeps the hover look (the Library's rule), no accent tint.
         color: row.selected || hover.hovered ? Theme.palette.surfaceHover : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
     }
@@ -87,7 +74,6 @@ Item {
         visible: !row.lastRow
     }
 
-    // One "label  value" line of the details.
     component FactLabel: Text {
         color: Theme.palette.textTertiary
         font.family: Theme.font.family
@@ -103,7 +89,6 @@ Item {
 
     HoverHandler { id: hover }
 
-    // Behind the controls, which take their own clicks first.
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -148,8 +133,6 @@ Item {
                 }
             }
 
-            // The file's own logo when it has one; otherwise (and
-            // while it loads) the kind's glyph.
             RowThumb {
                 Layout.preferredWidth: owner.thumbSize
                 Layout.preferredHeight: owner.thumbSize
@@ -172,8 +155,6 @@ Item {
                     font.pixelSize: Theme.type.title.pixelSize
                     font.weight: Theme.type.title.weight
                 }
-                // Who made it and where from -- or, with no Version column
-                // (a narrow table), its version.
                 Text {
                     width: parent.width
                     visible: text.length > 0
@@ -186,7 +167,6 @@ Item {
                 }
             }
 
-            // Version, over the file it comes from.
             Column {
                 visible: owner.showVersionColumn
                 Layout.preferredWidth: owner.versionColumnWidth
@@ -213,9 +193,6 @@ Item {
                 }
             }
 
-            // What the health check found; the tooltip lists it. Its slot
-            // is as wide as the widest badge (PackList), the badge against
-            // the switch.
             Item {
                 visible: owner.healthBadgeWidth > 0
                 Layout.preferredWidth: owner.healthBadgeWidth
@@ -259,7 +236,6 @@ Item {
         }
     }
 
-    // What the file says about itself -- ModFolderPage's info panel.
     ColumnLayout {
         id: details
         visible: row.expanded
@@ -282,7 +258,6 @@ Item {
             lineHeight: Theme.type.label.lineHeight
         }
 
-        // What is wrong with it, each in the colour of its severity.
         ColumnLayout {
             Layout.fillWidth: true
             visible: row.problems.length > 0
@@ -397,7 +372,6 @@ Item {
             visible: owner.updatable
             height: visible ? implicitHeight : 0
         }
-        // Both need a recorded origin: where it was installed from.
         MenuItem {
             visible: owner.updatable
             height: visible ? implicitHeight : 0

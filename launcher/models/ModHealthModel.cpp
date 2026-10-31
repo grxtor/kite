@@ -39,7 +39,6 @@ namespace
 	const QString kForgeUid = QStringLiteral("net.minecraftforge");
 	const QString kNeoForgeUid = QStringLiteral("net.neoforged");
 
-	/* NeoForge's 1.20.1 line still declares itself as "forge". */
 	const QString kNeoForgeAsForgeMinecraft = QStringLiteral("1.20.1");
 } // namespace
 
@@ -115,12 +114,10 @@ void ModHealthModel::setIssues(const QList<ModHealth::Issue>& issues)
 	m_all.clear();
 	m_rows.clear();
 
-	/* The pairs of files already given a Duplicate row, in the order they
-	 * were met: the second copy's issue is the same row seen from the
-	 * other side. */
+	/* Pairs already given a Duplicate row: the second copy's issue is the same row
+	 * seen from the other side. */
 	QSet<QPair<QString, QString>> pairs;
 	for (ModHealth::Issue issue : issues) {
-		/* The game's version is the environment's to say. */
 		if (issue.kind == ModHealth::Kind::WrongMinecraft &&
 			issue.foundVersion.isEmpty()) {
 			issue.foundVersion = m_environment.minecraft;

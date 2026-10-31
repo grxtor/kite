@@ -21,10 +21,8 @@
 
 int main(int argc, char* argv[])
 {
-	// Answered before a QApplication exists, because a probe has to work
-	// where one cannot be constructed: without a display, constructing
-	// QApplication aborts, and "the updater cannot start" would then be
-	// indistinguishable from "there is no screen".
+	// Before a QApplication exists: a probe must work without a display, where constructing
+	// QApplication aborts.
 	if (MeshUpdaterApp::handleSelfTest(argc, argv))
 		return MeshUpdaterApp::ExitSuccess;
 
@@ -33,8 +31,8 @@ int main(int argc, char* argv[])
 	switch (app.status()) {
 		case MeshUpdaterApp::Starting:
 		case MeshUpdaterApp::Initialized:
-			// The work is queued on the event loop, so the exit code comes
-			// from whatever the app passes to QCoreApplication::exit().
+			// The work is queued on the event loop; the exit code comes from
+			// QCoreApplication::exit().
 			return app.exec();
 
 		case MeshUpdaterApp::Succeeded:
@@ -47,7 +45,6 @@ int main(int argc, char* argv[])
 			return MeshUpdaterApp::ExitAborted;
 	}
 
-	// Unreachable unless a new Status is added without being handled here,
-	// which must not silently look like success.
+	// Unreachable unless a Status goes unhandled; that must not look like success.
 	return MeshUpdaterApp::ExitFailed;
 }

@@ -137,8 +137,7 @@ QList<Match> RuleEngine::analyse(const QString& text) const
 		out.append(mt);
 	}
 
-	// Sort by severity desc, then by score desc (score gets populated
-	// later by the LearningStore).
+	// Sort by severity desc, then score desc (score is populated later from LearningStore).
 	std::sort(out.begin(), out.end(), [](const Match& a, const Match& b) {
 		int ra = severityRank(a.severity);
 		int rb = severityRank(b.severity);

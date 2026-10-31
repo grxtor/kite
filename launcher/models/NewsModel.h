@@ -29,22 +29,15 @@
 
 class NewsChecker;
 
-/*
- * The launcher's news for QML: one row per entry of the application's
- * NewsChecker (every feed merged, newest first -- see
- * NewsChecker::getNewsEntries()), following it whenever it finishes
- * loading. The checker belongs to the application (LauncherContext::
- * newsChecker()), which decides when to load; this model never fetches
- * anything itself.
- *
- * Roles: title, link, author, date (a QDateTime).
- */
+/* The launcher's news for QML: one row per entry of the application's
+ * NewsChecker (every feed merged, newest first), following it whenever it
+ * finishes loading. The checker decides when to load; this model never fetches.
+ * Roles: title, link, author, date (a QDateTime). */
 class NewsModel : public QAbstractListModel
 {
 	Q_OBJECT
 
 	Q_PROPERTY(int count READ count NOTIFY entriesChanged)
-	/// The newest entry as {title, link, author, date}, or an empty map.
 	Q_PROPERTY(QVariantMap latest READ latest NOTIFY entriesChanged)
 
   public:
@@ -55,8 +48,7 @@ class NewsModel : public QAbstractListModel
 		DateRole,
 	};
 
-	/* Follows @p checker, which may be null (a build without news, or a
-	 * test that feeds entries through setEntries() instead). */
+	/* @p checker may be null (no news, or a test feeding entries through setEntries()). */
 	explicit NewsModel(NewsChecker* checker = nullptr,
 					   QObject* parent = nullptr);
 
@@ -67,8 +59,7 @@ class NewsModel : public QAbstractListModel
 	int count() const;
 	QVariantMap latest() const;
 
-	/* Replaces every row. Called with the checker's entries each time it
-	 * finishes loading; public so a test can fill the model directly. */
+	/* Replaces every row; public so a test can fill the model directly. */
 	void setEntries(const QList<NewsEntryPtr>& entries);
 
   signals:

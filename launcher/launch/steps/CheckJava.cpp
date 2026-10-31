@@ -47,11 +47,10 @@ void CheckJava::executeTask()
 			emitFailed(QString("Java path is not valid."));
 			return;
 		}
-		// No usable Java in the global settings is not an error: the
-		// welcome screen offers "let Kite download the right version for
-		// each game" instead of picking one. VerifyJavaInstall, later in
-		// this launch, picks an installed Java that suits this Minecraft
-		// version or downloads one, and records it on the instance.
+		// No usable Java in the global settings is not an error: the welcome
+		// screen offers "let Kite download the right version for each game",
+		// and VerifyJavaInstall later in this launch picks or downloads a
+		// suitable Java and records it on the instance.
 		emit logLine(
 			m_javaPath.isEmpty()
 				? QString("No Java is set up. Kite will pick one for this "
@@ -75,10 +74,10 @@ void CheckJava::executeTask()
 	auto storedVendor = settings->get("JavaVendor").toString();
 	auto storedRealArchitecture =
 		settings->get("JavaRealArchitecture").toString();
-	// Which Java the values above were recorded for. An instance with a Java
-	// of its own that has no record yet reads the global one's -- reloading
-	// settings even writes those into the instance -- and natives follow the
-	// architecture, so values recorded for another Java are not trusted.
+	// Which Java the values above were recorded for. An instance with its own
+	// Java but no record reads the global one's (reloading settings even writes
+	// those into the instance), and natives follow the architecture, so values
+	// recorded for another Java are not trusted.
 	auto storedCheckedPath = settings->get("JavaCheckedPath").toString();
 	m_javaUnixTime = javaUnixTime;
 	// if timestamps are not the same, or something is missing, check!

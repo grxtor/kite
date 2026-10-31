@@ -39,15 +39,14 @@
 
 namespace
 {
-	/* Technic answers a missing field with JSON null as often as by
-	 * leaving it out; either way it is "nothing". */
+	/* Technic answers a missing field with JSON null as often as by omitting
+	 * it; either way it is "nothing". */
 	QString stringOf(const QJsonObject& obj, const QString& key)
 	{
 		const QJsonValue value = obj.value(key);
 		return value.isString() ? value.toString() : QString();
 	}
 
-	/* The URL of an image object ({"url": ...}) or a bare string. */
 	QString imageOf(const QJsonObject& obj, const QString& key)
 	{
 		const QJsonValue value = obj.value(key);
@@ -80,7 +79,6 @@ QObject* TechnicModpackModel::detail() const
 
 QVariantList TechnicModpackModel::sortOptions() const
 {
-	/* Technic orders its own answers; there is nothing to choose. */
 	QVariantMap entry;
 	entry[QStringLiteral("id")] = QStringLiteral("relevance");
 	entry[QStringLiteral("label")] = tr("Sort by Relevance");
@@ -105,7 +103,6 @@ QVariant TechnicModpackModel::data(const QModelIndex& index, int role) const
 		case TitleRole:
 			return pack.name;
 		case DescriptionRole:
-			/* Search hits carry no summary; the detail fetch has one. */
 			return pack.description;
 		case AuthorRole:
 			return pack.author;
@@ -208,8 +205,7 @@ QUrl TechnicModpackModel::searchUrl(const QString& term)
 	QUrlQuery query;
 	query.addQueryItem(QStringLiteral("build"), BuildConfig.TECHNIC_API_BUILD);
 	if (!trimmed.isEmpty()) {
-		/* Through QUrlQuery, unlike the widget page's string pasting, so
-		 * an "&" in a search stays part of it. */
+		/* Through QUrlQuery, so an "&" in a search stays part of it. */
 		query.addQueryItem(QStringLiteral("q"), trimmed);
 	}
 	url.setQuery(query);
@@ -241,7 +237,6 @@ TechnicModpackModel::parseSearch(const QByteArray& bytes)
 		Pack pack;
 		pack.name = stringOf(obj, QStringLiteral("name"));
 		pack.slug = stringOf(obj, QStringLiteral("slug"));
-		/* The bare game, which the launcher installs on its own. */
 		if (pack.slug.isEmpty() || pack.name.isEmpty() ||
 			pack.slug == QStringLiteral("vanilla")) {
 			continue;
@@ -265,7 +260,6 @@ bool TechnicModpackModel::parseMetadata(const QByteArray& bytes, Pack& pack)
 	}
 	const QJsonObject obj = doc.object();
 
-	/* A zip to download, or else a Solder server - TechnicPage's order. */
 	const QString zip = stringOf(obj, QStringLiteral("url"));
 	const QString solder = stringOf(obj, QStringLiteral("solder"));
 	if (!zip.isEmpty()) {
@@ -305,7 +299,6 @@ QString TechnicModpackModel::solderPackUrl(const Pack& pack)
 QVariantList TechnicModpackModel::versionEntries(const Pack& pack)
 {
 	QVariantMap entry;
-	/* Solder serves its recommended build; a zip pack is what it is. */
 	entry[QStringLiteral("id")] = QStringLiteral("recommended");
 	entry[QStringLiteral("name")] =
 		pack.version.isEmpty() ? tr("Recommended build") : pack.version;
@@ -443,7 +436,6 @@ void TechnicModpackModel::loadDetail(const QString& projectId)
 			m_detail->setLoading(false);
 			return;
 		}
-		/* The card can show more now: author, summary, background. */
 		const int row = int(pack - m_packs.data());
 		emit dataChanged(index(row), index(row));
 		applyDetail(*pack);
@@ -461,8 +453,7 @@ void TechnicModpackModel::loadDetail(const QString& projectId)
 
 QString TechnicModpackModel::resolveIconKey(const Pack& pack) const
 {
-	/* Where TechnicPage's list keeps logos (TechnicModel::requestLogo()).
-	 * A disk-only lookup; never downloads. */
+	/* Shares the widget page's logo cache. Disk-only; never downloads. */
 	if (!pack.logoName.isEmpty()) {
 		MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
 			QStringLiteral("TechnicPacks"),
@@ -473,7 +464,6 @@ QString TechnicModpackModel::resolveIconKey(const Pack& pack) const
 			return key;
 		}
 	}
-	/* No built-in Technic instance icon; the plain block. */
 	return QStringLiteral("grass");
 }
 
@@ -490,8 +480,6 @@ QObject* TechnicModpackModel::install(const QString& projectId,
 		return nullptr;
 	}
 
-	/* What TechnicPage::metadataLoaded() hands the New instance dialog,
-	 * named and placed the way NewInstanceDialog/MainWindow do. */
 	InstanceTask* task = nullptr;
 	if (pack->isSolder) {
 		task = new Technic::SolderPackInstallTask(

@@ -44,10 +44,9 @@ ModUpdateCheckTask::ModUpdateCheckTask(std::shared_ptr<ModMetadataIndex> index,
 	  m_mcVersion(std::move(mcVersion)), m_loader(std::move(loader)),
 	  m_contentType(contentType)
 {
-	/* A resource pack has no loader, and asking for one would filter
-	 * every candidate out. The kind of content decides this, not the
-	 * caller, so that every page can hand over the instance's loader
-	 * without having to know whether it means anything here. */
+	/* A resource pack has no loader and asking for one filters out every
+	 * candidate. The content type decides, so pages can pass the instance's
+	 * loader unconditionally. */
 	if (!ModPlatform::contentTypeUsesLoader(m_contentType)) {
 		m_loader.clear();
 	}
@@ -55,7 +54,6 @@ ModUpdateCheckTask::ModUpdateCheckTask(std::shared_ptr<ModMetadataIndex> index,
 
 namespace
 {
-	/* Build the per-platform "latest matching version" endpoint URL. */
 	QString buildQueryUrl(const ModMetadataIndex::Entry& e,
 						  const QString& mcVersion, const QString& loader,
 						  ModPlatform::ContentType contentType)
@@ -64,8 +62,7 @@ namespace
 		query.projectId = e.projectId;
 		query.contentType = contentType;
 		query.mcVersions = ModPlatform::singleVersionList(mcVersion);
-		/* Empty for content that knows nothing about loaders; the
-		 * constructor has already cleared it in that case. */
+		/* Empty for content without loaders (the constructor cleared it). */
 		query.loaders = loader.isEmpty()
 							? QStringList()
 							: ModPlatform::singleLoaderList(loader);
@@ -87,9 +84,8 @@ namespace
 		if (!doc.isArray() || doc.array().isEmpty()) {
 			return false;
 		}
-		/* Newest build that runs on this loader, not whichever the
-		 * provider listed first: offering an update to a file that
-		 * cannot load is worse than offering none. */
+		/* Newest build for this loader, not the first listed: an update to a
+		 * file that cannot load is worse than none. */
 		const auto vObj =
 			ModPlatform::newestModrinthVersion(doc.array(), loader);
 		if (vObj.isEmpty()) {
@@ -126,14 +122,10 @@ namespace
 			return false;
 		}
 
-		/* The same bytes we already have, under a version id we never
-		 * recorded.
-		 *
-		 * Comparing ids alone is not enough: a file installed from an
-		 * mrpack has no version id on record - that format lists hashes
-		 * and URLs, nothing else - so every such mod compared unequal to
-		 * the newest version and was offered as an update to itself,
-		 * every time the check ran. The hash settles it. */
+		/* The same bytes under a version id never recorded. Ids alone are not
+		 * enough: an mrpack lists hashes and URLs only, so such files compared
+		 * unequal to the newest version and were offered as updates to
+		 * themselves. */
 		if (!entry.sha1.isEmpty() && !item.sha1.isEmpty() &&
 			item.sha1.compare(entry.sha1, Qt::CaseInsensitive) == 0) {
 			return false;
@@ -206,8 +198,8 @@ namespace
 		out.name = entry.name;
 		out.platform = entry.platform;
 		out.item = item;
-		/* CurseForge has no bare version number; its display name is
-		 * what its own site shows for the file. */
+		/* CurseForge has no bare version number; its display name is what the
+		 * site shows. */
 		out.currentVersionNumber = entry.versionNumber;
 		out.newVersionNumber = Json::ensureString(fObj, "displayName", "");
 		return true;
@@ -256,9 +248,7 @@ void ModUpdateCheckTask::executeTask()
 			continue;
 		}
 
-		/* Held by both handlers rather than freed by hand in each: only
-		 * one of them runs, and if the job dies without either firing
-		 * the buffer goes with it instead of leaking. */
+		/* Held by both handlers; freed with the job if neither fires. */
 		auto response = std::make_shared<QByteArray>();
 		NetJob* job = new NetJob(
 			QString("UpdateCheck(%1:%2)").arg(e.platform, e.projectId),
@@ -274,8 +264,8 @@ void ModUpdateCheckTask::executeTask()
 			m_activeJobs.removeAll(QPointer<NetJob>(job));
 			job->deleteLater();
 			if (m_aborted) {
-				/* Given up on. The count is still kept honest, but no
-				 * verdict follows - see onOneDone(). */
+				/* Given up on: the count stays honest but no verdict follows (see
+				 * onOneDone()). */
 				m_pending--;
 				return;
 			}
@@ -303,7 +293,6 @@ void ModUpdateCheckTask::executeTask()
 							   << reason;
 					onOneDone();
 				});
-		// Show the check as its own line in the progress dialog.
 		propagateStepsFrom(job);
 		job->start();
 	}
@@ -316,9 +305,8 @@ bool ModUpdateCheckTask::abort()
 	}
 	m_aborted = true;
 
-	/* Call off what is still in the air. Each job reports failed() as it
-	 * unwinds, which the handlers above drop because the latch is
-	 * already set. */
+	/* Call off what is in the air; each job's failed() is dropped via the
+	 * latch. */
 	for (const QPointer<NetJob>& job : m_activeJobs) {
 		if (job && job->isRunning()) {
 			job->abort();

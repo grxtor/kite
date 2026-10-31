@@ -7,14 +7,8 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One instance as a banner, with Play as the obvious next step: its newest
- * screenshot (or pack art, or a plain surface -- see CoverArt.qml) behind
- * its icon tile, name, facts and actions. No caps label over the name: the
- * name and its tags say what it is.
- *
- * Only the design gallery (Gallery.qml) shows it now: the library leads
- * with the play bar instead, the instance page has its own header, and
- * Home puts the played-last instance in a header of its own.
+ * One instance as a banner with Play: its newest screenshot (or pack art, or a plain surface, see CoverArt)
+ * behind its icon tile, name, facts and actions.
  */
 Rectangle {
     id: root
@@ -29,23 +23,17 @@ Rectangle {
     required property string gameVersion
     required property string loader
     required property color iconTint
-    // Newest screenshot url (InstanceList's coverImage role), or "" -- the
-    // banner's own full-bleed backdrop.
     required property string coverImage
-    // A platform pack's own logo (InstanceList's packArt role), or "": the
-    // backdrop shows the pack's art when there is no screenshot (CoverArt).
-    // Not required, so a static review page need not pass it.
+    // A platform pack's logo, or ""; optional so a static review page need not pass it.
     property string packArt: ""
     required property string launchStatus
     required property real launchProgress
     readonly property bool launching: launchStatus.length > 0
-    // A picture under the text (screenshot or pack art): media colours.
     readonly property bool hasPhoto: coverImage.length > 0 || art.hasPackArt
 
     readonly property int minHeight: 240
     readonly property int tileSize: 124
     readonly property int tileIconSize: 88
-    // The launch line's longest reading width.
     readonly property int launchWidth: 360
 
     signal playRequested()
@@ -56,7 +44,6 @@ Rectangle {
 
     implicitHeight: Math.max(root.minHeight, content.implicitHeight + Theme.space.xxl * 2)
     radius: Theme.radius.xl
-    // Hidden behind the full-bleed CoverArt below; `outline` draws the edge.
     color: Theme.palette.surface
     // CoverArt's hover zoom would otherwise poke past the rounded corner.
     clip: true
@@ -65,14 +52,10 @@ Rectangle {
         id: art
         anchors.fill: parent
         radius: root.radius
-        // The banner sits straight on the page.
         matte: Theme.palette.canvas
         source: root.coverImage
         packArt: root.packArt
-        // The tile already carries the icon.
         showLogo: false
-        // The plain surface carries the page's own text colours, so it
-        // needs no dark fade.
         scrim: root.hasPhoto ? "horizontal" : "none"
     }
 
@@ -85,8 +68,6 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         spacing: Theme.space.xl
 
-        // The instance's identity on the same neutral tile its library
-        // card uses.
         PlaceholderSurface {
             id: tile
             anchors.verticalCenter: parent.verticalCenter
@@ -115,8 +96,6 @@ Rectangle {
                 width: parent.width
                 text: root.name
                 elide: Text.ElideRight
-                // Over the photo's dark fade the text is light in both
-                // themes; see Theme.media.
                 color: root.hasPhoto ? Theme.media.text : Theme.palette.textPrimary
                 font.family: Theme.font.heading
                 font.pixelSize: Theme.type.display.pixelSize
@@ -137,15 +116,12 @@ Rectangle {
                     iconName: "cube"
                     onMedia: root.hasPhoto
                 }
-                // Clock = when it was last played, hourglass = for how
-                // long in all; the ▶ triangle only ever means Play.
                 Tag {
                     text: Format.lastPlayed(root.lastLaunch)
                     iconName: "clock"
                     onMedia: root.hasPhoto
                 }
                 Tag {
-                    // Hidden while "Show play time per instance" is off.
                     readonly property string played: SettingsStore.bool("ShowGameTime")
                                                      ? Format.playTime(root.totalTimePlayed) : ""
                     visible: played.length > 0
@@ -213,8 +189,7 @@ Rectangle {
         }
     }
 
-    // Drawn last: children paint over the root's own border, and the art
-    // fills the whole card.
+    // Drawn last: children paint over the root's own border.
     Rectangle {
         anchors.fill: parent
         radius: root.radius

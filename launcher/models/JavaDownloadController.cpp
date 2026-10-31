@@ -303,7 +303,6 @@ void JavaDownloadController::selectVendor(const QString& uid)
 		if (parseError.isEmpty() && m_versions.isEmpty()) {
 			setError(tr("This vendor has no Java versions to download."));
 		}
-		// Start from the best choice instead of an empty picker.
 		const QString preselected = defaultVersion(m_versions);
 		if (!preselected.isEmpty()) {
 			selectVersion(preselected);

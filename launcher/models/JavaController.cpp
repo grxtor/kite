@@ -45,9 +45,8 @@ namespace
 #endif
 	}
 
-	/* The first <anything>/bin/java under @p versionDir, or an empty string.
-	 * Archives differ in depth (macOS puts it in Contents/Home/bin), so look
-	 * through the whole folder, as JavaPage::refreshInstalledJavas() did. */
+	/* The first <anything>/bin/java under @p versionDir, or empty. Archives differ
+	 * in depth (macOS: Contents/Home/bin), so the whole folder is searched. */
 	QString findJavaBinary(const QString& versionDir)
 	{
 		QDirIterator it(versionDir, QStringList() << javaBinaryName(),

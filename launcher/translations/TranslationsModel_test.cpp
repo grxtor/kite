@@ -27,16 +27,11 @@
 #include "BuildConfig.h"
 #include "translations/TranslationsModel.h"
 
-/*
- * Covers TranslationsModel: roleNames() -- the QML-facing addition
- * QmlShell::languages() hands to the QML shell's own onboarding language
- * picker (see QmlShell.h's languages Q_PROPERTY comment) -- the languages
- * compiled into the launcher (:/i18n/kite_<lang>.qm, see
- * launcher/CMakeLists.txt) and the data dir override, all without the
- * network: with an empty TRANSLATIONS_BASE_URL nothing is downloaded, which
- * downloadIndex() would otherwise show by dereferencing the (here absent)
- * LAUNCHER.
- */
+/* Covers TranslationsModel: roleNames() (for the QML onboarding language
+ * picker, QmlShell::languages()), the compiled-in languages
+ * (:/i18n/kite_<lang>.qm) and the data dir override. No network: with an
+ * empty TRANSLATIONS_BASE_URL nothing is downloaded, which downloadIndex()
+ * would show by dereferencing the absent LAUNCHER. */
 class TranslationsModelTest : public QObject
 {
 	Q_OBJECT

@@ -27,9 +27,9 @@
 
 #include "VersionRange.h"
 
-/* Pieces shared by the Fabric and Maven matchers behind VersionRange: the
- * three-valued answers and dotted numbers. Private to VersionRange.cpp; the
- * helpers are header-only so the file stays one translation unit. */
+// Pieces shared by the Fabric and Maven matchers behind VersionRange:
+// three-valued answers and dotted numbers. Private to VersionRange.cpp; the
+// helpers are header-only so the file stays one translation unit.
 namespace VersionRangeDetail
 {
 	using VersionRange::Match;

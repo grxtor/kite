@@ -7,21 +7,9 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * A dialog's title row: the title, plain, the same in every dialog. No
- * band, wash, tile or logo behind or beside it -- a dialog about exporting
- * or installing does not need an icon to say so.
- *
- * An icon appears only when the dialog is a warning or an error: pass the
- * icon together with the tone colour (Theme.palette.danger, .warning...).
- * Callers that name an icon but no tone colour (the accent is the default)
- * get the plain title; the icon is a bare glyph in that tone, never a
- * tinted tile.
- *
- * The title is a size over the dialog's own section titles (a form's
- * "Minecraft version", a list's "Files"), which sit at title size, so the
- * dialog's name still leads -- Modrinth's dialog titles stand about 20 px.
- * Every dialog uses this row, rather than the style's plain header, so
- * they all match.
+ * A dialog's title row: the title, plain, the same in every dialog. An icon appears only for a warning or an
+ * error: pass it with the tone colour (Theme.palette.danger, .warning...); without a tone colour the plain title
+ * shows. The title is a size over the dialog's section titles so the dialog's name still leads.
  */
 Item {
     id: root

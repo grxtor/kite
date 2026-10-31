@@ -95,7 +95,6 @@ CrashReportDialog::CrashReportDialog(const QString& pasteLink,
 
 	auto* mainLayout = new QVBoxLayout(this);
 
-	// Error message
 	m_messageLabel = new QLabel(this);
 	m_messageLabel->setText(
 		tr("<h2 style='color: #cc0000;'>Kite has failed</h2>"
@@ -106,13 +105,11 @@ CrashReportDialog::CrashReportDialog(const QString& pasteLink,
 	m_messageLabel->setWordWrap(true);
 	mainLayout->addWidget(m_messageLabel);
 
-	// QR codes area
 	auto* qrGroupBox = new QGroupBox(tr("QR Codes"), this);
 	auto* qrLayout = new QHBoxLayout(qrGroupBox);
 
-	// QR for full log text (truncated to fit QR capacity)
-	// QR version 40 can hold ~4296 bytes; we keep the last 2000 chars
-	// so the most recent (and most relevant) log lines are included.
+	// QR version 40 holds ~4296 bytes: keep the last 2000 chars, the most
+	// relevant log lines.
 	QString truncatedLog = logContent;
 	if (truncatedLog.size() > 2000) {
 		truncatedLog = tr("[...truncated...]\n") + logContent.right(2000);
@@ -134,7 +131,6 @@ CrashReportDialog::CrashReportDialog(const QString& pasteLink,
 	qrLogGroup->addWidget(logQRTitle);
 	qrLayout->addLayout(qrLogGroup);
 
-	// QR for paste.ee link
 	auto* qrPasteGroup = new QVBoxLayout();
 	m_qrPasteLabel = new QLabel(this);
 	m_qrPasteLabel->setAlignment(Qt::AlignCenter);
@@ -153,7 +149,6 @@ CrashReportDialog::CrashReportDialog(const QString& pasteLink,
 
 	mainLayout->addWidget(qrGroupBox);
 
-	// Paste.ee link
 	m_pasteLinkLabel = new QLabel(this);
 	m_pasteLinkLabel->setText(
 		tr("Paste.ee link: <a href=\"%1\">%1</a>").arg(pasteLink));
@@ -163,7 +158,6 @@ CrashReportDialog::CrashReportDialog(const QString& pasteLink,
 	m_pasteLinkLabel->setWordWrap(true);
 	mainLayout->addWidget(m_pasteLinkLabel);
 
-	// Buttons
 	auto* buttonLayout = new QHBoxLayout();
 
 	auto* copyLinkBtn = new QPushButton(tr("Copy Link"), this);

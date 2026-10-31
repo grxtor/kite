@@ -47,11 +47,11 @@ MinecraftUpdate::MinecraftUpdate(MinecraftInstance* inst, Part part,
 	: SequentialTask(parent, QStringLiteral("MinecraftUpdate")), m_inst(inst),
 	  m_part(part)
 {
-	/* The first update of a version downloads its client jar, which the
-	 * built-in instance icons are drawn from when it is the newest (see
-	 * IconList::loadGameTextures()). The icon list is the context, so this
-	 * runs on its thread -- the GUI one -- whichever thread finishes the
-	 * task; and it does nothing unless a newer jar has arrived. */
+	// The first update of a version downloads its client jar, which the
+	// built-in instance icons are drawn from when it is the newest (IconList::
+	// loadGameTextures()). The icon list is the context, so this runs on the
+	// GUI thread whichever thread finishes the task, and does nothing unless a
+	// newer jar has arrived.
 	if (LAUNCHER && LAUNCHER->icons()) {
 		IconList* icons = LAUNCHER->icons().get();
 		connect(this, &Task::succeeded, icons,

@@ -31,25 +31,16 @@
 #include "minecraft/skins/DefaultSkins.h"
 #include "models/AccountsController.h"
 
-/*
- * Covers what does not need a LauncherContext or a network round trip:
- * AccountList's QML roles (including the ones this page added) and the
- * parts of AccountsController that only touch AccountList/MinecraftAccount.
- *
- * MinecraftAccount::createBlankMSA() marks an account as MSA-typed without
- * performing any login; with its entitlement set (createOwningMSA()) that is
- * exactly what addOffline()'s "a Microsoft account owns Minecraft" rule
- * needs in a test. Actually signing in (AccountsController::loginMicrosoft())
- * goes through MSAStep, which reaches LAUNCHER->network() - that needs a
- * real LauncherContext and is deliberately not exercised here, per
- * instructions not to perform network auth calls in tests.
- */
+/* Covers what needs no LauncherContext or network: AccountList's QML roles and
+ * the parts of AccountsController that only touch AccountList/MinecraftAccount.
+ * createBlankMSA() makes an MSA-typed account without a login; with an
+ * entitlement (createOwningMSA()) it satisfies addOffline()'s rule.
+ * loginMicrosoft() reaches LAUNCHER->network() and is not exercised. */
 class AccountsControllerTest : public QObject
 {
 	Q_OBJECT
 
   private:
-	/// A Microsoft account that owns Minecraft, without a login.
 	static MinecraftAccountPtr createOwningMSA()
 	{
 		auto msa = MinecraftAccount::createBlankMSA();
@@ -90,8 +81,7 @@ class AccountsControllerTest : public QObject
 		QVERIFY(!list.data(offlineIdx, AccountList::IsMSARole).toBool());
 		QVERIFY(list.data(msaIdx, AccountList::IsMSARole).toBool());
 
-		// Neither has a Mojang profile id yet, so both fall back to
-		// internalId() - and it must actually distinguish them.
+		// No profile id yet, so both fall back to internalId(), which must distinguish them.
 		const QString offlineId =
 			list.data(offlineIdx, AccountList::AccountIdRole).toString();
 		const QString msaId =
@@ -109,7 +99,6 @@ class AccountsControllerTest : public QObject
 		const QModelIndex idx = list.index(0);
 
 		QVERIFY(!list.data(idx, AccountList::IsDefaultRole).toBool());
-		// createOffline() leaves new offline accounts already Online.
 		QCOMPARE(list.data(idx, AccountList::StateKeyRole).toString(),
 				 QStringLiteral("online"));
 
@@ -188,9 +177,7 @@ class AccountsControllerTest : public QObject
 		QCOMPARE(list->count(), 1);
 	}
 
-	// refresh() on a valid row would start a real MSASilent/QOAuth2 network
-	// task via AccountList::requestRefresh() -> tryNext() -> LAUNCHER-> - not
-	// safe without a LauncherContext. Only the bounds check is exercised.
+	// refresh() on a valid row starts a real network task; only the bounds check is exercised.
 	void test_refresh_outOfRange_isNoOp()
 	{
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());
@@ -211,7 +198,6 @@ class AccountsControllerTest : public QObject
 		QVERIFY(!controller.addOffline("Steve"));
 		QCOMPARE(list->count(), 0);
 
-		// A Microsoft account that does not own the game is not enough.
 		list->addAccount(MinecraftAccount::createBlankMSA());
 		QVERIFY(!controller.addOffline("Steve"));
 		QCOMPARE(list->count(), 1);
@@ -226,8 +212,6 @@ class AccountsControllerTest : public QObject
 		AccountList list;
 		QVERIFY(!list.anyMicrosoftAccountOwnsMinecraft());
 
-		// An offline account "owns" the game for launching, but is no
-		// Microsoft account.
 		list.addAccount(MinecraftAccount::createOffline("Steve"));
 		QVERIFY(!list.anyMicrosoftAccountOwnsMinecraft());
 
@@ -277,18 +261,14 @@ class AccountsControllerTest : public QObject
 		list->addAccount(MinecraftAccount::createOffline("Steve"));
 
 		QVERIFY(!controller.accountSkinInfo(5).value("valid").toBool());
-		// Row 0 exists, but is offline, not a Microsoft account.
 		QVERIFY(!controller.accountSkinInfo(0).value("valid").toBool());
-		// -1 without the demo route set is just another out-of-range row.
 		qunsetenv("KITE_QML_ROUTE");
 		QVERIFY(!controller.skinDemoRequested());
 		QVERIFY(!controller.accountSkinInfo(-1).value("valid").toBool());
 	}
 
-	// qml-preview-tools' snapshot account file only ever has offline
-	// accounts, so this is the only way the skin/cape editor can be
-	// rendered for review -- see AccountsController::skinDemoRequested()'s
-	// own comment.
+	// The snapshot account file only has offline accounts, so this is the only way
+	// to render the skin/cape editor for review.
 	void test_accountSkinInfo_demoRoute_fillsRowMinusOne()
 	{
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());
@@ -334,8 +314,8 @@ class AccountsControllerTest : public QObject
 				 QStringLiteral("https://example.test/cape.png"));
 	}
 
-	// The PR #190 screenshot: every refresh used to append the profile's
-	// capes again, so stored profiles can hold one cape many times over.
+	// Every refresh used to append the profile's capes again, so stored profiles
+	// can hold one cape many times.
 	void test_accountSkinInfo_repeatedCapes_listedOnce()
 	{
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());
@@ -411,17 +391,12 @@ class AccountsControllerTest : public QObject
 		QVERIFY(goodImage.save(path, "PNG"));
 
 		QVERIFY(controller.validateSkinFile(path).isEmpty());
-		// A QML FileDialog hands out a "file://" url rather than a bare path.
 		QVERIFY(controller.validateSkinFile(QUrl::fromLocalFile(path).toString())
 					.isEmpty());
 	}
 
-	// changeSkin()/resetSkin()/changeCape() all start a real network task
-	// (SkinUpload/SkinDelete/CapeChange -> LAUNCHER->network()) once past
-	// their guard clauses - not safe without a LauncherContext, and not
-	// performed here per instructions not to make network calls in tests.
-	// Only the row-out-of-range and non-Microsoft-account guards, which
-	// return before starting anything, are exercised.
+	// These start a real network task past their guard clauses; only the
+	// out-of-range and non-Microsoft guards are exercised.
 	void test_changeSkin_resetSkin_changeCape_outOfRangeOrNonMSA_areNoOp()
 	{
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());
@@ -436,9 +411,8 @@ class AccountsControllerTest : public QObject
 		QVERIFY(!controller.changeCape(0, "cape-1"));
 	}
 
-	// The Accounts page finds its hero by this id, and the account switcher
-	// (ProfileMenu) and "Use this account" both go through setDefault():
-	// all three must agree on one default after a switch.
+	// The Accounts page hero, the account switcher and "Use this account" must
+	// agree on one default after a switch.
 	void test_defaultAccountId_followsSetDefault()
 	{
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());
@@ -460,9 +434,7 @@ class AccountsControllerTest : public QObject
 		QVERIFY(spy.count() > 0);
 	}
 
-	// A view re-reads the isDefault role when dataChanged arrives, so by
-	// then the role must already report the new default -- otherwise the
-	// page keeps showing the old one after a switch.
+	// A view re-reads isDefault on dataChanged, so the role must already report the new default.
 	void test_setDefault_isDefaultRole_isCurrentInDataChanged()
 	{
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());
@@ -500,16 +472,14 @@ class AccountsControllerTest : public QObject
 		QVERIFY(!DefaultSkins::isSlimFor(QStringLiteral("Steve")));
 	}
 
-	// An offline account has no skin of its own, so it wears the game's
-	// default -- once that has been downloaded -- and is still not a valid
-	// target for skin or cape changes.
+	// An offline account wears the game's default skin once downloaded, and is
+	// still not a valid target for skin or cape changes.
 	void test_accountSkinInfo_offlineAccount_wearsTheDefaultSkin()
 	{
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());
 		AccountsController controller(list);
 		auto offline = MinecraftAccount::createOffline("Alex");
 		list->addAccount(offline);
-		// The game's pick for the UUID this account launches with.
 		const bool slim = DefaultSkins::isSlimFor(offline->gameUuid());
 		QCOMPARE(DefaultSkins::isSlim(offline), slim);
 
@@ -533,8 +503,7 @@ class AccountsControllerTest : public QObject
 		DefaultSkins::instance()->setTexture(slim, QImage());
 	}
 
-	// Vanilla's offline UUID: UUID.nameUUIDFromBytes("OfflinePlayer:" +
-	// name). The values are Java's own for these names.
+	// Vanilla's offline UUID: UUID.nameUUIDFromBytes("OfflinePlayer:" + name).
 	void test_uuidFromUsername_matchesVanilla()
 	{
 		QCOMPARE(MinecraftAccount::uuidFromUsername(QStringLiteral("Notch")),
@@ -545,9 +514,7 @@ class AccountsControllerTest : public QObject
 				 QStringLiteral("36532b5ec4423dbba24cc7e55d0f979a"));
 	}
 
-	// The same player every launch: two accounts made for one name (as a
-	// restart reloads it from accounts.json) launch with one UUID, though
-	// their internal ids differ -- and that UUID is what the game gets.
+	// Two accounts made for one name launch with one UUID though their internal ids differ.
 	void test_offlineGameUuid_isStableAndLaunched()
 	{
 		auto first = MinecraftAccount::createOffline("Steve");
@@ -564,9 +531,8 @@ class AccountsControllerTest : public QObject
 		QCOMPARE(session->uuid, first->gameUuid());
 	}
 
-	// The preview wears what the game will: Java's hashCode() parity of
-	// the launch UUID -- odd for "Steve" (slim, Alex's texture), even for
-	// "Alex" (classic, Steve's).
+	// The preview wears what the game will: hashCode() parity of the launch UUID
+	// (odd "Steve": slim; even "Alex": classic).
 	void test_defaultSkin_followsTheLaunchUuid()
 	{
 		auto steve = MinecraftAccount::createOffline("Steve");
@@ -576,7 +542,6 @@ class AccountsControllerTest : public QObject
 		QCOMPARE(DefaultSkins::isSlim(steve),
 				 DefaultSkins::isSlimFor(steve->gameUuid()));
 
-		// A profile's own variant wins over the default.
 		auto msa = MinecraftAccount::createBlankMSA();
 		msa->accountData()->minecraftProfile.id =
 			QStringLiteral("00000000000000000000000000000001");

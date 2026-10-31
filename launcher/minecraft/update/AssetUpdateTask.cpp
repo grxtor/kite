@@ -107,7 +107,6 @@ void AssetUpdateTask::assetIndexFinished()
 				&AssetUpdateTask::progress);
 		connect(downloadJob.get(), &NetJob::status, this,
 				&AssetUpdateTask::setStatus);
-		// Show each asset being fetched as its own line.
 		propagateStepsFrom(downloadJob.get());
 		downloadJob->start();
 		return;

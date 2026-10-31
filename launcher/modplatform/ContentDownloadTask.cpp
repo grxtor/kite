@@ -55,9 +55,8 @@ bool ContentDownloadTask::abort()
 		m_netJob->abort();
 	}
 
-	/* Only a running task may report a verdict - emitAborted() complains
-	 * loudly otherwise - but the latch above still holds, so a task
-	 * called off before it started will simply do nothing. */
+	/* emitAborted() warns unless the task is running; the latch above holds
+	 * either way. */
 	if (isRunning()) {
 		emitAborted();
 	}
@@ -81,11 +80,9 @@ void ContentDownloadTask::executeTask()
 	m_netJob = new NetJob("ContentDownload", LAUNCHER->network());
 
 	int skipped = 0;
-	// Last-resort safety net: even if an upstream stage (dependency
-	// resolver, conflict analyzer) failed to catch it, never let the same
-	// target file name or the same platform+project be queued twice in one
-	// batch. Without this, two versions of the same mod (e.g. one pulled in
-	// as a dependency, one explicitly selected) could download side by side.
+	// Safety net: never queue the same target file name or platform+project
+	// twice in a batch (a dependency plus an explicit selection could
+	// otherwise download two versions of one mod).
 	QSet<QString> queuedFileNames;
 	QSet<QString> queuedProjectKeys;
 	for (const auto& item : m_items) {
@@ -117,9 +114,8 @@ void ContentDownloadTask::executeTask()
 			queuedProjectKeys.insert(projectKey);
 		}
 
-		// Updates explicitly target a different on-disk file ("foo-1.0.jar"
-		// -> "foo-1.1.jar"). Drop the old file (and its sidecar) before
-		// downloading so the directory never holds both versions at once.
+		// An update replaces a differently named file: drop the old file and its
+		// sidecar first so both versions never coexist.
 		if (!item.replacesFileName.isEmpty() &&
 			item.replacesFileName != item.fileName) {
 			const QString oldEnabled = dir.filePath(item.replacesFileName);
@@ -141,8 +137,7 @@ void ContentDownloadTask::executeTask()
 			}
 		}
 
-		// Skip if file already exists with matching SHA1 checksum and the
-		// caller did not request a forced replace.
+		// Skip when a file with a matching SHA1 exists and no replace was forced.
 		if (!item.replaceExisting && QFileInfo::exists(targetPath) &&
 			!item.sha1.isEmpty()) {
 			QFile existingFile(targetPath);
@@ -159,8 +154,7 @@ void ContentDownloadTask::executeTask()
 			}
 		}
 
-		// A forced replace must clear the destination first so the
-		// downloader writes a fresh file rather than appending or failing.
+		// A forced replace clears the destination first.
 		if (item.replaceExisting && QFileInfo::exists(targetPath)) {
 			if (!QFile::remove(targetPath)) {
 				qWarning() << "ContentDownload: cannot replace" << targetPath;
@@ -183,7 +177,6 @@ void ContentDownloadTask::executeTask()
 		qDebug() << "Skipped" << skipped << "already-existing file(s)";
 	}
 
-	// If all files were skipped, nothing to download
 	if (m_netJob->size() == 0) {
 		m_netJob.reset();
 		writeSidecars();
@@ -197,7 +190,6 @@ void ContentDownloadTask::executeTask()
 			&ContentDownloadTask::onDownloadFailed);
 	connect(m_netJob.get(), &NetJob::progress, this,
 			&ContentDownloadTask::onDownloadProgress);
-	// One line per file being downloaded.
 	propagateStepsFrom(m_netJob.get());
 
 	m_netJob->start();
@@ -209,18 +201,15 @@ void ContentDownloadTask::writeSidecars()
 		return;
 	}
 	if (m_aborted) {
-		/* A cancelled batch leaves files in whatever state the transfer
-		 * reached, and a sidecar records a size and a SHA1 as fact. One
-		 * written for a half-finished file would make the update checker
-		 * and the conflict analyzer trust a hash that is simply wrong,
-		 * which is worse than the file having no record at all. */
+		/* A cancelled batch leaves files half done, and a sidecar would record
+		 * their size and SHA1 as fact, misleading the update checker and the
+		 * conflict analyzer. */
 		return;
 	}
 	const QDir dir(m_targetDir);
 	for (const auto& item : m_items) {
-		// We only persist sidecars for items that finished on disk and that
-		// we can reason about later. Pure-local installs are recorded by
-		// ModFolderModel::installMod directly.
+		// Sidecars only for items finished on disk; local installs are recorded
+		// by ModFolderModel::installMod.
 		const QString path = dir.filePath(item.fileName);
 		if (!QFile::exists(path)) {
 			continue;
@@ -232,10 +221,8 @@ void ContentDownloadTask::writeSidecars()
 		e.projectId = item.projectId;
 		e.versionId = item.versionId;
 		e.name = item.name;
-		/* Recorded rather than thrown away: the slug is how the same
-		 * project is recognised across the two providers, and it is what
-		 * a packwiz sidecar is named after. Clearing it here left every
-		 * entry in the index unable to answer either question. */
+		/* Kept: the slug identifies the same project across providers and names
+		 * a packwiz sidecar. */
 		e.slug = item.slug;
 		e.downloadUrl = item.downloadUrl;
 		e.sha1 = item.sha1.toLower();
@@ -259,8 +246,7 @@ void ContentDownloadTask::onDownloadSucceeded()
 void ContentDownloadTask::onDownloadFailed(QString reason)
 {
 	if (m_aborted) {
-		/* This is the aborted job unwinding, not a transfer that went
-		 * wrong. The verdict has already been given. */
+		/* The aborted job unwinding; the verdict was already given. */
 		return;
 	}
 	m_netJob.reset();

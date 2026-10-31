@@ -28,17 +28,15 @@
 class PerformanceSetupTask;
 
 /*
- * "Speed up" for a vanilla instance: the instance itself is never changed.
- * This makes a separate one instead - empty (no worlds, nothing copied),
- * on the same Minecraft version, with the newest Fabric loader - gives it
- * the Performance preset's memory and options.txt with the mode on, and
- * installs the performance mods into it (PerformanceSetupTask).
+ * "Speed up" for a vanilla instance, which is never changed itself. This makes
+ * a separate one: empty (no worlds, nothing copied), same Minecraft version,
+ * newest Fabric loader, the Performance preset's memory and options.txt with
+ * the mode on, plus the performance mods (PerformanceSetupTask).
  *
- * One task for the whole chain, so a single TaskWatcher can follow it. The
- * new instance's id is announced by instanceCreated() as soon as it exists,
- * before the task succeeds; the final status is the summary sentence.
- * Failing to create the instance fails the task; the mods are best effort,
- * like everywhere in Kite Performance.
+ * One task for the whole chain so a single TaskWatcher can follow it.
+ * instanceCreated() announces the new instance's id as soon as it exists,
+ * before the task succeeds; the final status is the summary sentence. Failing
+ * to create the instance fails the task; the mods are best effort.
  */
 class PerformanceInstanceTask : public Task
 {

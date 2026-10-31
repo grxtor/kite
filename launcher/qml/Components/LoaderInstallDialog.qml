@@ -8,10 +8,8 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Pick a mod loader and a version of it, and install it - the QML
- * replacement for InstallLoaderDialog. Turning off a conflicting loader
- * (LoaderInstaller.conflictName) is confirmed here rather than asked about
- * silently: the picker itself has no other destructive step.
+ * Pick a mod loader and a version of it, and install it. Turning off a
+ * conflicting loader (LoaderInstaller.conflictName) is confirmed here.
  */
 Dialog {
     id: root
@@ -26,10 +24,7 @@ Dialog {
     width: Math.min(680, parent ? parent.width - Theme.space.xxl * 2 : 680)
     height: Math.min(600, parent ? parent.height - Theme.space.xxl * 2 : 600)
     modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
     topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
     bottomPadding: Theme.space.sm
     title: qsTr("Install a mod loader")
 

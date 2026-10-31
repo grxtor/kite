@@ -8,77 +8,45 @@ import QtQuick.Dialogs
 import QtQuick.Layouts
 import Kite.Theme
 
-/*
- * A new instance, in one of two modes:
- *  - "create": pick a Minecraft version and, if wanted, a mod loader; name
- *    it; create.
- *  - "import": a local .zip/.mrpack export (CurseForge, Modrinth, MultiMC,
- *    Prism...) or a direct download URL, staged through the same
- *    InstanceImportTask the widget dialog used.
- * Modpacks browsed by project (Modrinth) come from Discover instead; other
- * catalogue browsing (CurseForge/FTB/ATLauncher/Technic) is not built in
- * QML yet -- their exported .zip files import here (the import pane's note).
- *
- * In create mode the name follows the chosen version ("Minecraft 1.21.4",
- * "1.21.4 Fabric") until the user types one of their own; in import mode it
- * follows the picked file/URL the same way.
- */
+/* A new instance: "create" (version and optional loader) or "import" (a local .zip/.mrpack or a URL). */
 Dialog {
     id: root
 
-    // NewInstanceController; set when the dialog opens, so the version list
-    // is only fetched once someone actually wants a new instance.
+    // NewInstanceController; set when the dialog opens so the version list is fetched lazily.
     property var controller: null
     // TaskWatcher of the creation/import in progress.
     property var watcher: null
     property bool nameEdited: false
-    // IconList model for the icon picker below, or null to hide it (the
-    // integrator wires the shell's iconsModel in; without it the button
-    // still shows the default icon, just with nothing to pick from).
+    // IconList model for the icon picker; null hides the picker.
     property var iconsModel: null
     property string selectedIcon: "default"
 
-    // "create" or "import" -- set by the integrator before open(), e.g.
-    // Main.qml's openNewInstance(mode).
+    // "create" or "import"; set before open().
     property string mode: "create"
-    // The QML shell: which versions have Kite Performance, and its bundle
-    // catalog and speedUp() to set an instance up once it exists.
+    // The QML shell: Kite Performance version support, its bundle catalog and speedUp().
     property var shell: null
-    // Kite Performance is the picked type: Fabric, the performance mods and
-    // its own name. Picking another type turns it off.
+    // Kite Performance is the picked type (Fabric plus the performance mods); another type turns it
+    // off.
     property bool performanceMode: false
-    // Project ids of the catalog mods picked for Kite Performance in the mod
-    // picker, or null for the catalog's defaults.
+    // Catalog mod project ids picked in the mod picker; null for the catalog defaults.
     property var modPicks: null
-    // Raw text of the chosen file/URL in import mode.
     property string importSource: ""
-    // What import mode's file/URL field starts with when the dialog opens:
-    // a file or link handed in from outside (`kite --import`, see
-    // Main.qml's openImport()); empty for a dialog opened from a button.
+    // Starting value of the import field: a file or link handed in from outside (`kite --import`).
     property string presetSource: ""
 
     signal created()
-    // A Kite Performance instance was created and its mods are installing in
-    // the background: the integrator opens it on its mods.
+    // A Kite Performance instance was created and its mods install in the background.
     signal openInstanceRequested(string id)
 
     readonly property bool creating: !!watcher && watcher.running
-    // The ⚡ pick only applies to creating; an import started after it is a
-    // plain one.
+    // The Kite Performance pick only applies to creating.
     readonly property bool performanceCreate: root.mode === "create" && root.performanceMode
-    // Rows of the version list that always stay visible; a shorter window
-    // scrolls the dialog instead of squeezing the list.
+    // Version-list rows that always stay visible; a shorter window scrolls the dialog.
     readonly property int versionListRows: 4
     readonly property int versionListMinHeight: versionListRows * Theme.control.height + Theme.space.xs * 2 + 2
-    // The type list's column, wide enough for the performance mods' icons
-    // on one line; the version list takes the rest.
     readonly property int kindColumnWidth: 296
-    // Each loader wears the logo the launcher already ships for it (the
-    // iconName column of knownModLoaders(), served by the instanceicon
-    // provider); the unmodified game gets the grass block, the default
-    // instance icon. `fit` evens out how big they read: a solid square (the
-    // grass block, NeoForge's framed pixel art) looks larger than a mark
-    // with air around it at the same box.
+    // Loader logos come from knownModLoaders() via the instanceicon provider; `fit` evens out how
+    // big square and airy marks read.
     readonly property var loaders: [
         { value: "", label: qsTr("Vanilla"), iconKey: "grass", fit: 0.78 },
         { value: "fabric", label: "Fabric", iconKey: "fabricmc", fit: 1.0 },
@@ -87,7 +55,6 @@ Dialog {
         { value: "neoforge", label: "NeoForge", iconKey: "neoforged", fit: 0.78 }
     ]
 
-    // The widest date a row shows (a long month name and a two-digit day).
     TextMetrics {
         id: dateSample
         font.family: Theme.font.family
@@ -103,8 +70,7 @@ Dialog {
         return ""
     }
 
-    // Start on the newest version of the list shown, so Create works
-    // straight away; an explicit pick is never overridden.
+    // Start on the newest listed version so Create works at once; an explicit pick is never overridden.
     function selectDefaultVersion() {
         if (!root.controller || root.controller.selectedMinecraftVersion.length > 0)
             return
@@ -113,10 +79,8 @@ Dialog {
             root.controller.selectMinecraftVersion(first)
     }
 
-    // The controller names a vanilla instance by its bare version ("26.3"),
-    // which reads as a number in the library rather than a name; it gets
-    // the game's name in front. A modded one ("26.3 Fabric") already says
-    // what it is.
+    // The controller names vanilla by its bare version ("26.3"), which reads as a number; it gets
+    // the game's name in front.
     function refreshSuggestedName() {
         if (root.nameEdited || !root.controller || root.mode === "import")
             return
@@ -128,9 +92,7 @@ Dialog {
         nameField.text = suggested
     }
 
-    // Import names the instance after the pack once one is picked; until
-    // then the field stays empty (its placeholder says so) instead of
-    // carrying over the create pane's "Minecraft 26.3".
+    // Import names the instance after the pack once picked; until then the field stays empty.
     function refreshImportName() {
         if (root.nameEdited || !root.controller)
             return
@@ -146,17 +108,12 @@ Dialog {
             refreshSuggestedName()
     }
 
-    // Called from the URL field, the file picker and the drop area alike,
-    // so all three keep the field, the property and the suggested name in
-    // sync with each other regardless of which one changed.
     function setImportSource(source) {
         root.importSource = source
         sourceField.text = source
         refreshImportName()
     }
 
-    // A row of the type list: Kite Performance is Fabric with the
-    // performance mods and its own name; any other row is that loader, plain.
     function pickKind(kind) {
         if (kind === kindList.performanceKind) {
             root.controller.loader = "fabric"
@@ -167,14 +124,11 @@ Dialog {
         }
     }
 
-    // Kite Performance has mods for releases from 1.16 on; while it is the
-    // type, the other versions cannot be picked.
+    // Kite Performance supports releases from 1.16 on.
     function versionFits(version) {
         return !root.performanceMode || (!!root.shell && root.shell.performanceSupported(version))
     }
 
-    // Every catalog mod Kite Performance can bring: the performance bundle
-    // and the comfort one.
     function catalogMods() {
         return root.shell && root.shell.bundles ? root.shell.bundles.mods(["performance", "comfort"], "fabric") : []
     }
@@ -182,7 +136,6 @@ Dialog {
         return root.modPicks !== null ? root.modPicks
              : root.catalogMods().filter((mod) => mod.isDefault === true).map((mod) => mod.project)
     }
-    // The rows of the picked mods, for the type list's icons and summary.
     function pickedMods() {
         const picked = root.pickedProjects()
         return root.catalogMods().filter((mod) => picked.indexOf(mod.project) >= 0)
@@ -192,18 +145,15 @@ Dialog {
         modPicker.openWith(root.pickedProjects())
     }
 
-    // A Kite Performance instance leaves the game's files for the first Play:
-    // the user would otherwise wait on them before leaving this dialog.
+    // A Kite Performance instance leaves the game files for the first Play, so the dialog does not
+    // wait on them.
     function create() {
         root.watcher = root.controller.create(nameField.text.trim(), groupField.text.trim(), root.selectedIcon,
                                               !root.performanceCreate)
     }
 
-    // The instance exists: its memory and options.txt, then the mods, which
-    // install in the background while the integrator shows the instance.
-    // The setup keeps the performance bundle's defaults installed on every
-    // Play, so the ones turned off are excluded for good; every other pick
-    // is installed once, with them.
+    // Sets memory and options.txt, then installs the mods in the background. Turned-off bundle
+    // defaults are excluded for good; other picks install once.
     function installPerformance() {
         const id = root.watcher.instanceId
         const picked = root.pickedProjects()
@@ -231,29 +181,20 @@ Dialog {
     parent: Overlay.overlay
     anchors.centerIn: parent
     width: Math.min(860, parent ? parent.width - Theme.space.xxl * 2 : 860)
-    // Taller windows get a taller version list (it fills the height), up
-    // to this; a short one scrolls the form.
+    // Taller windows get a taller version list up to this; a short one scrolls the form.
     readonly property int maxHeight: 760
     height: Math.min(root.maxHeight, parent ? parent.height - Theme.space.xxl * 2 : root.maxHeight)
-    // The tabs belong to the title: right under it, not a padding's width
-    // further down like a dialog's body.
     topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
     bottomPadding: Theme.space.sm
     modal: true
     closePolicy: root.creating ? Popup.NoAutoClose : Popup.CloseOnEscape
     title: root.mode === "import" ? qsTr("Import instance") : qsTr("New instance")
 
-    // The plain title every dialog has; no logo or icon tile in front.
     header: DialogHeader {
         title: root.title
     }
 
-    // root.mode itself is left alone here -- the integrator sets it right
-    // before open(), e.g. Main.qml's openNewInstance(mode). Before the
-    // dialog shows, so a pick made right after open() (Main.qml's
-    // "loader=" route step) is not reset.
+    // root.mode is left alone: a pick made right after open() must not be reset.
     onAboutToShow: {
         root.watcher = null
         root.performanceMode = false
@@ -299,16 +240,14 @@ Dialog {
         }
     }
 
-    // Scrolls when the window is too short for the whole form (860x540),
-    // so the version list never has to give up its rows to fit it.
+    // Scrolls on a short window so the version list keeps its rows.
     contentItem: Flickable {
         id: scroller
         clip: true
         contentWidth: width
         contentHeight: body.height
         boundsBehavior: Flickable.StopAtBounds
-        // Always showing while the form is taller than the dialog, so a
-        // short window says there is more (the loader tiles) below.
+        // Always visible while the form overflows, so a short window shows there is more below.
         readonly property bool overflowing: body.implicitHeight > scroller.height
         ScrollBar.vertical: ScrollBar {
             policy: scroller.overflowing ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
@@ -316,8 +255,7 @@ Dialog {
 
     ColumnLayout {
         id: body
-        // Leaves the always-on scroll bar its own strip instead of
-        // drawing it over the switches and the group field.
+        // Leaves the always-on scroll bar its own strip.
         width: scroller.width - (scroller.overflowing ? Theme.space.md : 0)
         height: Math.max(scroller.height, implicitHeight)
         spacing: Theme.space.lg
@@ -333,12 +271,10 @@ Dialog {
             onActivated: (id) => root.mode = id
         }
 
-        // Name and group
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.space.md
 
-            // A tile as tall as the labelled name field beside it.
             AbstractButton {
                 id: iconButton
                 Layout.alignment: Qt.AlignBottom
@@ -351,8 +287,6 @@ Dialog {
                 ToolTip.text: qsTr("Change icon")
                 onClicked: iconPicker.open()
 
-                // A control, so a control's corner, on the tile every
-                // instance icon sits on; hover moves the border alone.
                 background: InstanceTile {
                     radius: Theme.radius.sm
                     borderColor: iconButton.hovered ? Theme.palette.borderStrong : Theme.palette.border
@@ -449,19 +383,16 @@ Dialog {
             Layout.fillHeight: true
             currentIndex: root.mode === "import" ? 1 : 0
 
-        // Create: what the instance runs on, beside the Minecraft version.
         RowLayout {
             spacing: Theme.space.xl
 
-        // Type: Kite Performance, the unmodified game or a mod loader.
         ColumnLayout {
             Layout.fillWidth: false
             Layout.preferredWidth: root.kindColumnWidth
             Layout.fillHeight: true
             spacing: Theme.space.md
 
-            // As tall as the version column's heading with its filter
-            // button, so both lists start on one line.
+            // Matches the version column's heading height so both lists start level.
             Text {
                 Layout.fillWidth: true
                 Layout.preferredHeight: Theme.control.heightSm
@@ -482,14 +413,11 @@ Dialog {
                        : root.controller ? root.controller.loader : ""
                 performanceAvailable: !!root.shell && !!root.controller
                                       && root.shell.performanceSupported(root.controller.selectedMinecraftVersion)
-                // Read again on every pick, after the catalog may have loaded.
                 pickedMods: root.performanceMode ? root.pickedMods() : []
                 onPicked: (kind) => root.pickKind(kind)
                 onEditModsRequested: root.openModPicker()
             }
 
-            // The picked loader's version; names the loader as well
-            // ("Fabric 0.20.1"), so the box says whose version it is.
             ComboBox {
                 id: loaderVersionBox
                 Layout.fillWidth: true
@@ -502,15 +430,14 @@ Dialog {
                            : count === 0 ? qsTr("None for this version")
                            : root.loaderLabel(root.controller.loader) + " "
                              + (currentIndex >= 0 ? currentText : root.controller.selectedLoaderVersion)
-                // The controller may have picked a version before the rows
-                // reached this box; line the two up whenever either moves.
+                // The controller may pick before the rows arrive; line the two up whenever either
+                // moves.
                 function syncToController() {
                     if (root.controller)
                         currentIndex = indexOfValue(root.controller.selectedLoaderVersion)
                 }
                 onCountChanged: syncToController()
                 onActivated: root.controller.selectLoaderVersion(currentValue)
-                // Follow the controller's pick (it defaults to the newest).
                 Connections {
                     target: root.controller
                     ignoreUnknownSignals: true
@@ -521,7 +448,6 @@ Dialog {
             Item { Layout.fillHeight: true }
         }
 
-        // Minecraft version
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -540,8 +466,6 @@ Dialog {
                 font.pixelSize: Theme.type.title.pixelSize
                 font.weight: Font.Bold
             }
-            // Snapshots and old versions are rarely wanted: a menu rather
-            // than two switches, lit while either is on.
             IconButton {
                 id: filterButton
                 readonly property bool filtering: !!root.controller
@@ -577,8 +501,6 @@ Dialog {
             Layout.minimumHeight: root.versionListMinHeight
             Layout.preferredHeight: root.versionListMinHeight
             radius: Theme.radius.lg
-            // The dialog's own surface inside a hairline: a dark well read
-            // as a hole in it.
             color: "transparent"
             border.width: 1
             border.color: Theme.palette.border
@@ -601,16 +523,13 @@ Dialog {
                     required property var time
                     readonly property bool selected: !!root.controller && root.controller.selectedMinecraftVersion === version
 
-                    // Full width: the scroll bar overlays the rows rather
-                    // than keeping a gutter beside them.
+                    // Full width: the scroll bar overlays the rows.
                     width: versions.width
                     height: Theme.control.height
                     hoverEnabled: true
                     enabled: root.versionFits(version)
                     onClicked: root.controller.selectMinecraftVersion(version)
 
-                    // The pick-one list's look (VersionRow): the picked row
-                    // is lifted, outlined and ticked; hover only lifts.
                     background: Rectangle {
                         radius: Theme.radius.md
                         color: versionRow.selected ? Theme.palette.surfaceHover
@@ -629,17 +548,13 @@ Dialog {
                             font.pixelSize: Theme.type.body.pixelSize
                             font.weight: versionRow.selected ? Font.Bold : Font.Medium
                         }
-                        // Releases are the list's default and need no
-                        // badge on every row; a snapshot or an old beta/
-                        // alpha does, once the filter above shows them.
+                        // Releases need no badge; a snapshot or old beta/alpha gets one.
                         StatusBadge {
                             visible: versionRow.type !== "release"
                             tone: versionRow.type === "snapshot" ? "warning" : "neutral"
                             text: root.typeLabel(versionRow.type)
                         }
-                        // The suggestion, in the same badge as the type
-                        // right after the version; neutral, so it does not
-                        // turn green on the green selected row.
+                        // Neutral, so it does not turn green on the selected row.
                         StatusBadge {
                             visible: versionRow.recommended
                             text: qsTr("Recommended")
@@ -654,8 +569,7 @@ Dialog {
                             font.family: Theme.font.family
                             font.pixelSize: Theme.type.caption.pixelSize
                         }
-                        // Faded out rather than hidden, so the dates keep
-                        // their column on every row.
+                        // Faded rather than hidden, so the dates keep their column.
                         MeshIcon {
                             Layout.rightMargin: Theme.space.md
                             opacity: versionRow.selected ? 1 : 0
@@ -667,8 +581,6 @@ Dialog {
                 }
             }
 
-            // The first and last visible versions fade into the list's own
-            // surface instead of being cut through mid-row by its border.
             ScrollFade {
                 anchors.left: versions.left
                 anchors.right: versions.right
@@ -707,7 +619,6 @@ Dialog {
         } // version column
         } // create pane
 
-        // Import: a local archive/export, or a direct download URL.
         ColumnLayout {
             spacing: Theme.space.lg
 
@@ -716,14 +627,10 @@ Dialog {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: Theme.radius.lg
-                // Transparent with a dashed outline -- the usual look of a
-                // drop target -- that turns accent while a file is over it.
                 color: "transparent"
 
-                // A Canvas, not a Shape: it draws the same on every render
-                // backend, and this one outline is drawn rarely.
+                // A Canvas draws the same on every render backend.
                 Canvas {
-                    id: dashes
                     anchors.fill: parent
                     readonly property real stroke: dropArea.containsDrag ? 2 : 1
                     readonly property color ink: dropArea.containsDrag ? Theme.palette.accent : Theme.palette.borderStrong
@@ -796,10 +703,8 @@ Dialog {
                                 root.refreshImportName()
                             }
                         }
-                        // A bordered (default) button, not a flat one: a
-                        // flat button's invisible side padding counted in
-                        // the centring and pulled the field + button group
-                        // visibly left of the drop zone's middle.
+                        // A bordered button: a flat one's invisible side padding pulled the field
+                        // and button left of the drop zone's middle.
                         Button {
                             enabled: !root.creating
                             text: qsTr("Browse…")

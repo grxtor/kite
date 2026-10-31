@@ -6,10 +6,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * An old-format (legacy) instance cannot be played or edited, only upgraded
- * into a new copy -- the widget's "Upgrade is required" page, as one notice
- * over the instance page with the upgrade as its action and its progress
- * along the foot. Shows nothing for any other instance.
+ * An old-format (legacy) instance cannot be played or edited, only upgraded into a
+ * new copy: one notice over the instance page with the upgrade as its action.
+ * Shows nothing for any other instance.
  */
 NoticeBar {
     id: root

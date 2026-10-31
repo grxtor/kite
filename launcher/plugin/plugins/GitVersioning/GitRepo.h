@@ -2,20 +2,15 @@
  * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * GitRepo — thin wrapper around `git` (the binary) for the
- * GitVersioning plugin.
+ * GitRepo: thin wrapper around the `git` binary for the GitVersioning plugin.
  *
- * We deliberately do NOT link against libgit2 — it would be a heavy
- * extra dependency for the one-shot commands we actually need. Modern
- * desktops always ship a `git` binary, and Windows users who installed
- * Kite almost certainly also installed Git for Windows. The plugin
- * detects a missing `git` at init time and disables itself cleanly.
+ * libgit2 is not linked: it would be a heavy dependency for a few one-shot commands, and desktops
+ * (and Windows users with Git for Windows) have `git`. A missing `git` is detected at init and the
+ * plugin disables itself.
  *
- * All operations live inside the instance's own `.history/` directory
- * which holds a bare repository plus a working tree that is the
- * instance root (--git-dir / --work-tree mode). The plugin never
- * touches the user's HOME .gitconfig and configures a local
- * author identity scoped to the instance.
+ * Everything lives in the instance's `.history/` directory used as the git-dir, with the instance
+ * root as the work tree (--git-dir / --work-tree). The user's HOME .gitconfig is never touched; a
+ * local author identity is configured per instance.
  */
 
 #pragma once
@@ -64,39 +59,32 @@ class GitRepo
 		return m_instanceRoot;
 	}
 
-	/* Idempotent: creates .history/, runs `git init --bare`, writes a
-	 * sensible .gitignore for the work-tree, and pins the local author
-	 * identity. Returns false on failure. */
+	/* Idempotent: creates .history/ (a non-bare git-dir), writes a .gitignore for the work tree and
+	 * pins the local author identity. False on failure. */
 	bool initialize(QString* errorMsg = nullptr);
 
 	GitRepoStatus status() const;
 
-	/* Stage every tracked + untracked path (respecting .gitignore) and
-	 * commit with the given message. Returns the new short sha, or an
-	 * empty string if nothing changed. */
+	/* Stages every tracked and untracked path (respecting .gitignore) and commits; returns the new
+	 * short sha, or empty if nothing changed. */
 	QString commit(const QString& message, bool isPreLaunch = false,
 				   QString* errorMsg = nullptr);
 
 	/* History, newest first, capped at `limit`. */
 	QList<GitCommit> log(int limit = 200) const;
 
-	/* git diff --shortstat <sha>~..<sha> — fills sizeAdded/sizeRemoved
-	 * on the entry. Cheap, used to populate the UI on demand. */
+	/* git diff --shortstat <sha>~..<sha>; fills sizeAdded/sizeRemoved on the entry. Cheap, for
+	 * on-demand UI. */
 	void fillCommitStats(GitCommit& c) const;
 
-	/* Restore the entire work tree to the state at `sha`. Internally
-	 * does `git checkout <sha> -- .` then `git reset --mixed HEAD`,
-	 * so HEAD stays where it was — restore is reversible by another
-	 * `restore` to a later commit. Returns true on success. */
+	/* Restores the whole work tree to `sha` (`git checkout <sha> -- .` then `git reset --mixed
+	 * HEAD`). HEAD does not move, so a restore is reversible by restoring a later commit. */
 	bool restore(const QString& sha, QString* errorMsg = nullptr);
 
-	/* Resolve `name` (branch / tag / shorthand sha) to a full sha, or
-	 * return an empty string if unknown. */
+	/* Resolves a branch, tag or shorthand sha to a full sha; empty if unknown. */
 	QString resolveRef(const QString& name) const;
 
-	/* Read a single file's contents at the given revision, into a
-	 * QByteArray. Returns an empty QByteArray + sets ok=false on
-	 * failure. */
+	/* Reads one file at a revision; an empty QByteArray and ok=false on failure. */
 	QByteArray showFile(const QString& sha, const QString& path,
 						bool* ok = nullptr) const;
 
@@ -104,9 +92,8 @@ class GitRepo
 	bool tag(const QString& name, const QString& sha = {},
 			 QString* errorMsg = nullptr);
 
-	/* Delete a commit by hard-resetting to its parent. Only allowed
-	 * for the HEAD commit; older commits are immutable to keep the
-	 * history coherent. Returns false otherwise. */
+	/* Deletes the HEAD commit by hard-resetting to its parent. Older commits are immutable to keep
+	 * history coherent; false otherwise. */
 	bool dropHead(QString* errorMsg = nullptr);
 
   private:

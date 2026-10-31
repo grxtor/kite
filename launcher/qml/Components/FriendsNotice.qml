@@ -7,41 +7,25 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The one-time "Friends is on" card, at the top of the Friends page and of
- * Home's friends panel: friends are on from the start, so the first time
- * they connect this says what your friends can see (and that they can join
- * you) and where to change it. What it says follows the account's settings,
- * which live on the server: an account that is invisible, hides its server or
- * does not let friends join (set on another computer, say) is not told the
- * opposite, so it waits until they are read. Either button settles it for
- * good (the FriendsNoticeSeen setting), so the card goes from the page and
- * the panel at once. Settings also asks for the Friends section of Settings
- * (`settingsRequested`).
- *
- * It is a tinted message, not a card, so it does not read as the page's
- * own furniture next to the self card, and lays itself out for its width.
- * On the page it is the whole disclosure, with its buttons beside it; in
- * the narrow panel it is two short lines, a link to Settings and a close,
- * so it does not push the friends below it out of sight.
+ * The one-time "Friends is on" card atop the Friends page and Home's friends panel: says what friends can see of
+ * you and where to change it. It waits until the account's settings (kept on the server) are read. Either button
+ * settles it for good (FriendsNoticeSeen); Settings asks for the Friends section (`settingsRequested`).
  */
 Rectangle {
     id: root
 
-    // QmlShell.friends (FriendsController), or null.
+    // FriendsController, or null.
     property var controller: null
 
-    // Connected, the settings and lists read (the settings come first), and
-    // not yet read by the user.
+    // Connected, settings and lists read, and not yet dismissed.
     readonly property bool due: !!root.controller && root.controller.enabled
                                 && root.controller.state === "ready"
                                 && root.controller.loaded
                                 && !SettingsStore.bool("FriendsNoticeSeen")
-    // What the account shows of you (FriendsController.settings).
     readonly property var privacy: root.controller ? root.controller.settings : ({})
     readonly property bool invisible: root.privacy.visibility === "invisible"
     readonly property bool serverShown: !root.invisible && !root.privacy.hideServer
     readonly property bool joinable: root.serverShown && root.privacy.allowJoin !== false
-    // The words, for the page and for the narrow panel.
     readonly property string fullText: root.invisible
         ? qsTr("Friends is on. You are invisible: your friends see you as offline, and nothing about what you play.")
         : !root.serverShown
@@ -54,7 +38,6 @@ Rectangle {
         : !root.serverShown ? qsTr("Friends is on. Your friends see you online, but not your server.")
         : !root.joinable ? qsTr("Friends is on. Your friends see your server.")
         : qsTr("Friends is on. Your friends see your server and can join you.")
-    // Below this the short form.
     readonly property int fullWidth: 520
     readonly property bool wide: root.width >= root.fullWidth
 
@@ -127,7 +110,6 @@ Rectangle {
             }
             IconButton {
                 Layout.alignment: Qt.AlignTop
-                // Level with the first line of text, not the card's edge.
                 Layout.topMargin: -Theme.space.xs
                 Layout.rightMargin: -Theme.space.xs
                 size: Theme.control.heightSm

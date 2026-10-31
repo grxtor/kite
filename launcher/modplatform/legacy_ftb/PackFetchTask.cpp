@@ -154,7 +154,6 @@ namespace LegacyFTB
 			modpack.broken = false;
 			modpack.bugged = false;
 
-			// remove empty if the xml is bugged
 			for (QString curr : modpack.oldVersions) {
 				if (curr.isNull() || curr.isEmpty()) {
 					modpack.oldVersions.removeAll(curr);

@@ -64,7 +64,6 @@ namespace Bits
 	{
 		out->totalSize = requireInteger(obj, "totalSize");
 		out->id = requireString(obj, "id");
-		// out->known = true;
 	}
 } // namespace Bits
 
@@ -231,7 +230,6 @@ MojangVersionFormat::versionFileFromJson(const QJsonDocument& doc,
 	out->name = "Minecraft";
 	out->uid = "net.minecraft";
 	out->version = out->minecraftVersion;
-	// out->filename = filename;
 
 	if (root.contains("libraries")) {
 		for (auto libVal : requireArray(root.value("libraries"))) {

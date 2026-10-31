@@ -47,7 +47,6 @@ bool GZip::unzip(const QByteArray& compressedBytes,
 	int err = Z_OK;
 
 	while (!done) {
-		// If our output buffer is too small
 		if (strm.total_out >= uncompLength) {
 			uncompressedBytes.resize(uncompLength * 2);
 			uncompLength *= 2;
@@ -56,7 +55,6 @@ bool GZip::unzip(const QByteArray& compressedBytes,
 		strm.next_out = (uint8_t*)(uncompressedBytes.data() + strm.total_out);
 		strm.avail_out = uncompLength - strm.total_out;
 
-		// Inflate another chunk.
 		err = inflate(&strm, Z_SYNC_FLUSH);
 		if (err == Z_STREAM_END)
 			done = true;
@@ -80,8 +78,7 @@ bool GZip::zip(const QByteArray& uncompressedBytes, QByteArray& compressedBytes)
 		return true;
 	}
 
-	/* QByteArray::size() returns int on Qt 5 and qsizetype on Qt 6, so
-	 * std::min cannot deduce one common type on Qt 5. Pin it explicitly. */
+	/* std::min needs one type for both arguments, so pin qsizetype. */
 	unsigned compLength = static_cast<unsigned>(
 		std::min<qsizetype>(16, uncompressedBytes.size()));
 	compressedBytes.clear();

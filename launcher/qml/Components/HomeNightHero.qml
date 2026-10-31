@@ -5,11 +5,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The hero of the Gece look: the words straight on the night sky -- a
- * lavender "Last played", the name at 46 px, the line of icons, then a
- * white Play and ▾ as glass. No card, no
- * backdrop of its own: the sky (Main.qml) is the backdrop, and a
- * screenshot would fight it. A view of the HomeHero it belongs to.
+ * The hero of the Gece look: the words straight on the night sky -- a lavender "Last played", the name at 46 px, the
+ * line of icons, then a white Play and ▾ as glass. No card or backdrop: the sky (Main.qml) is the backdrop. A view of
+ * the HomeHero it belongs to.
  */
 Item {
     id: root
@@ -26,7 +24,6 @@ Item {
 
     implicitHeight: root.topInset + lead.implicitHeight
 
-    // Anywhere but its buttons: the instance page.
     TapHandler {
         gesturePolicy: TapHandler.ReleaseWithinBounds
         onTapped: root.hero.openRequested(root.hero.instanceId)

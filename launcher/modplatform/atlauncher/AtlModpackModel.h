@@ -36,39 +36,25 @@
 class ModrinthModpackDetail;
 class AtlOptionalModsModel;
 
-/* ATLauncher modpacks for QML - the widget-free replacement for
- * ui/pages/modplatform/atlauncher/AtlListModel.h + AtlFilterModel.h,
- * which back AtlPage.
+/* ATLauncher modpacks for QML. Same shape as the other modpack models.
+ * The whole catalogue is one file (packsnew.json); searching and sorting
+ * happen here over public packs with a published version and no "system"
+ * packs. Packs are addressed by safe name.
  *
- * The same shape as ModrinthModpackModel, FlameModpackModel and
- * FtbModpackModel (properties, invokables, role names), so the Discover
- * page shows any of them through one set of bindings. ATLauncher serves
- * its whole catalogue as one file (packsnew.json); searching and sorting
- * happen here, over it, with the widget page's filters: public packs with
- * a published version, no "system" packs. Packs are addressed by their
- * safe name, which is what the install task and the logo address take.
- *
- * Installing asks two questions the widget page answered with its own
- * dialogs (ATLauncher::UserInteractionSupport):
- *   - Which optional mods: an AtlOptionalModsModel, handed to
- *     setOptionalModsHandler()'s callback - the UiHost question the
- *     integrator adds (see the WP8 wiring note). Without one, the pack's
- *     own default selection is installed.
- *   - Which loader version, for the few packs that leave it open: asked
- *     through UiHost::choose() with the recommended and newest few
- *     (versionChoices()); without a host, the recommended one.
- */
+ * Installing asks which optional mods (an AtlOptionalModsModel passed to
+ * the setOptionalModsHandler() callback; the pack's defaults without one)
+ * and, for packs that leave it open, which loader version (UiHost::choose()
+ * with versionChoices(); the recommended one without a host). */
 class AtlModpackModel : public QAbstractListModel
 {
 	Q_OBJECT
 	Q_PROPERTY(QString query READ query WRITE setQuery NOTIFY queryChanged)
 	Q_PROPERTY(QString sort READ sort WRITE setSort NOTIFY sortChanged)
 	Q_PROPERTY(QVariantList sortOptions READ sortOptions CONSTANT)
-	/* "" = any version; otherwise packs with a version for it. */
 	Q_PROPERTY(QString gameVersion READ gameVersion WRITE setGameVersion
 				   NOTIFY gameVersionChanged)
-	/* Kept for the shared bindings; ATLauncher's catalogue does not say
-	 * which loader a pack uses, so it is not used to filter. */
+	/* Kept for the shared bindings; the catalogue does not say which loader
+	 * a pack uses, so it does not filter. */
 	Q_PROPERTY(
 		QString loader READ loader WRITE setLoader NOTIFY loaderChanged)
 	Q_PROPERTY(bool searching READ searching NOTIFY searchingChanged)
@@ -78,7 +64,7 @@ class AtlModpackModel : public QAbstractListModel
 	Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 	Q_PROPERTY(QObject* detail READ detail CONSTANT)
 	Q_PROPERTY(QString providerName READ providerName CONSTANT)
-	/// "markdown": a pack's description is plain text, which reads as such.
+	/// "markdown": a pack's description is plain text.
 	Q_PROPERTY(QString bodyFormat READ bodyFormat CONSTANT)
 	Q_PROPERTY(bool keyMissing READ keyMissing CONSTANT)
 
@@ -101,9 +87,9 @@ class AtlModpackModel : public QAbstractListModel
 	};
 	Q_ENUM(Roles)
 
-	/* Answers "which optional mods" with the ticked names, or nullopt to
-	 * keep the pack's defaults. Runs while the install waits (UiHost's
-	 * blocking convention). */
+	/* Answers "which optional mods" with the ticked names, or nullopt to keep
+	 * the defaults. Runs while the install waits (UiHost's blocking
+	 * convention). */
 	using OptionalModsHandler = std::function<std::optional<QVector<QString>>(
 		const QString& packName, AtlOptionalModsModel& mods)>;
 
@@ -173,40 +159,37 @@ class AtlModpackModel : public QAbstractListModel
 		return false;
 	}
 
-	/// See OptionalModsHandler; set by the shell once UiHost can ask.
+	/// See OptionalModsHandler.
 	void setOptionalModsHandler(OptionalModsHandler handler);
 
-	/// Loads the catalogue the first time; filters and sorts every time.
 	Q_INVOKABLE void search();
 	Q_INVOKABLE void fetchMore() {}
-	/// Fills `detail` from the loaded pack; no request.
 	Q_INVOKABLE void loadDetail(const QString& projectId);
-	/* Starts ATLauncher::PackInstallTask for version `versionId` (one of
-	 * the ids in `detail.versions`) of pack `projectId` (its safe name)
-	 * and returns a TaskWatcher for it (parented to this model); nullptr
-	 * when either names nothing loaded. */
+	/* Starts ATLauncher::PackInstallTask for version `versionId` (in
+	 * `detail.versions`) of pack `projectId` (its safe name) and returns a
+	 * TaskWatcher for it (parented to this model); nullptr when either names
+	 * nothing loaded. */
 	Q_INVOKABLE QObject* install(const QString& projectId,
 								 const QString& versionId,
 								 const QString& instanceName,
 								 const QString& group);
 
-	/* The catalogue -> the packs AtlPage listed: public, not "system",
-	 * with a published version. Static, for tests. */
+	/* The catalogue -> public packs with a published version, no "system"
+	 * packs. Static, for tests. */
 	static QList<ATLauncher::IndexedPack> parseCatalogue(const QByteArray& bytes);
-	/* Positions in @p packs that match @p query and @p gameVersion, in
-	 * @p sort order ("popularity", "name", "gameVersion"). Static. */
+	/* Positions in @p packs matching @p query and @p gameVersion, in @p sort
+	 * order ("popularity", "name", "gameVersion"). Static. */
 	static QList<int> filterAndSort(const QList<ATLauncher::IndexedPack>& packs,
 									const QString& query,
 									const QString& gameVersion,
 									const QString& sort);
-	/* The `versions` of the detail, as the catalogue lists them (newest
-	 * first), in the shared shape. Static. */
+	/* The detail's `versions`, newest first as listed, in the shared shape.
+	 * Static. */
 	static QVariantList versionEntries(const ATLauncher::IndexedPack& pack);
-	/* Where ATLauncher keeps a pack's square logo. */
 	static QString logoUrl(const ATLauncher::IndexedPack& pack);
-	/* The loader versions to offer when a pack leaves its loader open:
-	 * those for @p minecraftVersion (any when empty), recommended ones
-	 * first, at most @p limit. Static. */
+	/* Loader versions to offer when a pack leaves its loader open: those for
+	 * @p minecraftVersion (any when empty), recommended first, at most
+	 * @p limit. Static. */
 	static QList<Meta::VersionPtr>
 	versionChoices(const QVector<Meta::VersionPtr>& versions,
 				   const QString& minecraftVersion, int limit);

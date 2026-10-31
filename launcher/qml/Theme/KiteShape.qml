@@ -3,28 +3,24 @@
 
 import QtQuick
 
-// The kite's cut: a rounded rectangle whose top-right corner is drawn tight
-// (`cutRadius`, Theme.radius.xs), like the nose of the kite in the logo.
-// Only what you can launch wears it -- an instance's tile and Play -- so
-// every such shape is this one item and the cut is the same everywhere;
-// search fields, menus, cards and world tiles stay plain Rectangles.
+// The kite's cut: a rounded rectangle whose top-right corner is tight
+// (`cutRadius`), like the nose of the kite in the logo. Only what you can
+// launch wears it (an instance's tile and Play); search fields, menus, cards
+// and world tiles stay plain Rectangles.
 //
-// The 6.4 floor has no per-corner radius (Rectangle.topRightRadius is 6.7)
-// and QtQuick.Shapes only antialiases through a multisampled layer, too
-// heavy for a grid of cards. So the outline is one ordinary Rectangle drawn
-// three times, each copy clipped to its own share of the shape: the left
-// half and the bottom-right quarter take `radius`, the top-right quarter
-// `cutRadius`. The seams fall on straight runs of every copy, so fill,
-// gradient and hairline meet without a step, and the copies never overlap,
-// so a translucent fill (accentSubtle) stays one even tint. The clips are
-// scissor rectangles and the copies the stock antialiased Rectangle.
+// Qt 6.4 has no per-corner radius (Rectangle.topRightRadius is 6.7) and
+// QtQuick.Shapes only antialiases through a multisampled layer, too heavy for
+// a grid of cards. So the outline is one Rectangle drawn three times, each
+// copy clipped to its share: the left half and the bottom-right quarter take
+// `radius`, the top-right quarter `cutRadius`. The seams fall on straight
+// runs, so fill, gradient and hairline meet without a step, and the copies
+// never overlap, so a translucent fill stays one even tint.
 //
-// Children are drawn over the fill, like a Rectangle's. A picture that runs
-// edge to edge sets `matte` to the colour around the tile, which is then
-// painted over the children outside the outline, the way CornerMatte rounds
-// one; it stays inside the tile's own bounds. `lifted` raises the shape by
-// Theme.space.xxs -- an instance tile while its host is hovered: one
-// translate over Theme.motion.fast, no shadow, no scale.
+// Children are drawn over the fill. A picture that runs edge to edge sets
+// `matte` to the colour around the tile, painted over the children outside
+// the outline, as CornerMatte does, within the tile's bounds. `lifted`
+// raises the shape by Theme.space.xxs: one translate over Theme.motion.fast,
+// no shadow, no scale.
 //
 // Needs to be at least twice `radius` wide and tall.
 Item {

@@ -31,14 +31,9 @@ namespace Ui
 	class SelectReleaseDialog;
 }
 
-/*!
- * "Which release would you like?" -- shown for --select-ui, and whenever the
- * updater is asked to install something other than simply the newest thing.
- *
- * The list is a tree rather than a combo box because the release notes are
- * part of the decision: picking a version updates the pane below it, so the
- * user chooses on the strength of what changed and not just a number.
- */
+/*! "Which release would you like?" Shown for --select-ui and whenever something other than the
+ * newest release is to be installed. A tree rather than a combo box, so the release notes pane
+ * updates with the selection. */
 class SelectReleaseDialog : public QDialog
 {
 	Q_OBJECT
@@ -49,13 +44,8 @@ class SelectReleaseDialog : public QDialog
 						QWidget* parent = nullptr);
 	~SelectReleaseDialog() override;
 
-	/*!
-	 * The release the user settled on.
-	 *
-	 * Invalid (isValid() == false) when the dialog was cancelled, or when it
-	 * was accepted without anything selected -- the caller checks, rather
-	 * than this class inventing a default the user never chose.
-	 */
+	/*! The release the user settled on; invalid when cancelled or accepted with nothing selected
+	 * (the caller checks, no invented default). */
 	GitHubRelease selectedRelease() const
 	{
 		return m_selectedRelease;
@@ -76,18 +66,9 @@ class SelectReleaseDialog : public QDialog
 	Ui::SelectReleaseDialog* ui;
 };
 
-/*!
- * "Which of these files?" -- only reached when one release carries several
- * artifacts that all match this installation.
- *
- * That is rare, and when it happens guessing is worse than asking: the
- * candidates differ in ways (a portable archive versus an installer, one Qt
- * build versus another) that change what the user ends up with.
- *
- * Shares the release dialog's layout with the notes pane hidden -- an asset
- * has no release notes of its own, and inventing a second layout for a rare
- * dialog is how two dialogs end up looking gratuitously different.
- */
+/*! "Which of these files?" Reached only when one release carries several artifacts that match this
+ * installation; guessing is worse than asking, since they differ in what the user ends up with.
+ * Reuses the release dialog's layout with the notes pane hidden. */
 class SelectReleaseAssetDialog : public QDialog
 {
 	Q_OBJECT

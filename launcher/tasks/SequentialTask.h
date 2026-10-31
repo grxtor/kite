@@ -21,13 +21,9 @@
 
 #include "ConcurrentTask.h"
 
-/**
- * Runs its tasks one at a time, in the order they were added, and gives up as
- * soon as one of them fails.
- *
- * Use this when a step only makes sense if the step before it worked out. If
- * the tasks are independent of each other, use ConcurrentTask instead.
- */
+/** Runs its tasks one at a time, in the order added, and gives up as soon as
+ * one fails; for steps that only make sense if the one before worked. For
+ * independent tasks use ConcurrentTask. */
 class SequentialTask : public ConcurrentTask
 {
 	Q_OBJECT

@@ -8,12 +8,10 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One line of a "here is what will be downloaded" list -- InstallReviewDialog
- * (a project and what it needs) and UpdateReviewDialog (updates found):
- * a checkbox, what it is, one line about it, small tags, and an optional
- * link at its end. A row that cannot be left out (`checkable: false`, the
- * project being installed) shows a download mark where the checkbox goes,
- * so the columns stay lined up.
+ * One line of a "here is what will be downloaded" list (InstallReviewDialog,
+ * UpdateReviewDialog): a checkbox, what it is, one line about it, small tags and
+ * an optional link. A row that cannot be left out (`checkable: false`) shows a
+ * download mark where the checkbox goes, so the columns stay lined up.
  */
 Rectangle {
     id: root
@@ -22,7 +20,6 @@ Rectangle {
     property bool checked: false
     property string title: ""
     property string subtitle: ""
-    // The subtitle is a caution ("Another version is already installed").
     property bool subtitleWarning: false
     property var tags: []
     property string linkText: ""

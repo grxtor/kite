@@ -42,11 +42,8 @@ class IconList : public QAbstractListModel
 {
 	Q_OBJECT
   public:
-	/* QML-only role, additive alongside the Qt::DisplayRole/UserRole a
-	 * QListView already gets from data() -- see roleNames(). Numbered like
-	 * InstanceList's own QML-only roles (Qt::UserRole + 10 and up) to leave
-	 * room without colliding if Qt::UserRole itself is ever repurposed
-	 * here. */
+	/* QML-only role, numbered like InstanceList's QML-only roles
+	 * (Qt::UserRole + 10 and up). */
 	enum Roles { IsBuiltinRole = Qt::UserRole + 10 };
 
 	explicit IconList(const QStringList& builtinPaths, QString path,
@@ -54,15 +51,13 @@ class IconList : public QAbstractListModel
 	virtual ~IconList() {};
 
 	QIcon getIcon(const QString& key) const;
-	/* The icon's characteristic colour, for tinting whatever surrounds it:
-	 * an average weighted by opacity and saturation, so a mostly grey icon
-	 * with a coloured accent is tinted by the accent. Cached per key until
-	 * the icon changes; invalid if the icon has no visible pixels. */
+	/* The icon's characteristic colour for tinting its surroundings: an
+	 * average weighted by opacity and saturation. Cached per key until the
+	 * icon changes; invalid if there are no visible pixels. */
 	QColor tint(const QString& key) const;
-	/* Whether the icon is an opaque square to its very edge (a block, a
-	 * mob's face, most pack logos): such a picture fills its tile and takes
-	 * the tile's corners, instead of floating inside it with its own square
-	 * corners against the tile's round ones. Cached like tint(). */
+	/* Whether the icon is an opaque square to its edge (a block, a mob's
+	 * face, most pack logos): it fills its tile and takes the tile's corners.
+	 * Cached like tint(). */
 	bool fillsTile(const QString& key) const;
 	int getIconIndex(const QString& key) const;
 	QString getDirectory() const;
@@ -72,9 +67,7 @@ class IconList : public QAbstractListModel
 	virtual int
 	rowCount(const QModelIndex& parent = QModelIndex()) const override;
 	/* Names Qt::DisplayRole/Qt::UserRole/IsBuiltinRole as `name`/`key`/
-	 * `isBuiltin` so a QML delegate (an icon picker grid) can bind to them
-	 * by name, the way every other QML-facing model here does. Additive:
-	 * the numeric roles a QListView already gets from data() do not move. */
+	 * `isBuiltin` for QML delegates; the numeric roles do not move. */
 	virtual QHash<int, QByteArray> roleNames() const override;
 
 	virtual QStringList mimeTypes() const override;
@@ -101,13 +94,12 @@ class IconList : public QAbstractListModel
 	void stopWatching();
 
 	/* Shows each built-in icon that has a game texture (see
-	 * GameTextureIcons) as that texture instead, read from the newest
-	 * client jar under librariesDir and cached in cacheDir. Built-in icons
-	 * without one, and a custom icon saved under a built-in key, stay as
-	 * they are. Both folders default to the data directory's own, relative
-	 * like IconsDir. Runs once on construction; run it again after a new
-	 * client jar is downloaded -- it does nothing while the newest jar is
-	 * still the one already shown. */
+	 * GameTextureIcons) as that texture, read from the newest client jar
+	 * under librariesDir and cached in cacheDir. Built-in icons without one,
+	 * and a custom icon saved under a built-in key, stay. Both folders
+	 * default to the data directory's own. Runs once on construction; run it
+	 * again after a new client jar is downloaded (it does nothing while the
+	 * newest jar is already shown). */
 	void loadGameTextures(
 		const QString& librariesDir = QStringLiteral("libraries"),
 		const QString& cacheDir = QStringLiteral("cache/gametextures"));
@@ -116,9 +108,7 @@ class IconList : public QAbstractListModel
 	void iconUpdated(QString key);
 
   private:
-	// hide copy constructor
 	IconList(const IconList&) = delete;
-	// hide assign op
 	IconList& operator=(const IconList&) = delete;
 	void reindex();
 	QIcon iconAt(int index) const;

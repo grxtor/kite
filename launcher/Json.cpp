@@ -240,7 +240,7 @@ namespace Json
 	{
 		const QString string = requireIsType<QString>(value, what);
 		const QUuid uuid = QUuid(string);
-		if (uuid.toString() != string) // converts back => valid
+		if (uuid.toString() != string)
 		{
 			throw JsonException(what + " is not a valid UUID");
 		}

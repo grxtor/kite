@@ -36,28 +36,22 @@ namespace Parsers
 
 	bool parseMinecraftProfile(QByteArray& data, MinecraftProfile& output);
 
-	/* Parse a *public* profile from
-	 * sessionserver.mojang.com/session/minecraft/profile/<id>.
-	 *
-	 * Unlike parseMinecraftProfile(), which reads the signed-in account's own
-	 * profile, this describes an arbitrary player: only id, name and texture
-	 * URLs come back, and the textures arrive as a base64 blob. Used to copy
-	 * another player's skin into the local library.
-	 *
-	 * Fills output.skin (with the default Steve/Alex texture when the player
-	 * never set one) and, if the player has a cape, a single cape entry under
-	 * a placeholder id -- the endpoint publishes no cape ids. */
+	// Parses a public profile from sessionserver.mojang.com/session/minecraft/
+	// profile/<id>. Unlike parseMinecraftProfile() (the signed-in account's own
+	// profile) it describes any player: id, name and base64 texture URLs only.
+	// Fills output.skin (the default Steve/Alex texture if none was set) and,
+	// for a cape, one entry under a placeholder id. Used to copy another
+	// player's skin.
 	bool parseMojangSessionProfile(QByteArray& data, MinecraftProfile& output);
 
 	bool parseMinecraftEntitlements(QByteArray& data,
 									MinecraftEntitlement& output);
 	bool parseRolloutResponse(QByteArray& data, bool& result);
 
-	/* @p data, a sign-in service's reply, made fit for the log: the value
-	 * of every token field (Token, access_token, refresh_token, id_token,
-	 * identityToken, at any depth, in any case) becomes "<redacted>", the
-	 * rest stays for debugging. A reply that is not JSON comes back as it
-	 * is, cut to its first 256 bytes. Logs get shared, by Log upload among
-	 * others, and a token in one signs its reader in as the player. */
+	// @p data, a sign-in service's reply, made fit for the log: every token
+	// field (Token, access_token, refresh_token, id_token, identityToken, at
+	// any depth and case) becomes "<redacted>". A reply that is not JSON comes
+	// back cut to 256 bytes. Logs get shared and a token in one signs its
+	// reader in.
 	QByteArray redactTokens(const QByteArray& data);
 } // namespace Parsers

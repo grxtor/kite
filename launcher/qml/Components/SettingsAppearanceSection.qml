@@ -18,7 +18,6 @@ SettingsScroll {
     property var languages: null
     property var selectLanguage: null
 
-    // The language box, as wide as the longest language name needs.
     readonly property int languageBoxWidth: 260
 
     title: qsTr("Appearance")
@@ -30,14 +29,13 @@ SettingsScroll {
             label: qsTr("Display language")
             description: qsTr("Applied immediately.")
             ComboBox {
-                id: languageBox
                 width: root.languageBoxWidth
                 model: root.languages
                 textRole: "name"
                 valueRole: "languageKey"
                 enabled: !!root.languages && !!root.selectLanguage
-                // Follows the setting (changed here, in the old settings
-                // window or by a plugin), not only the first time.
+                // Follows the setting (it can change elsewhere, e.g. a plugin), not only the first
+                // time.
                 readonly property string stored: SettingsStore.string("Language")
                 function syncToSetting() {
                     currentIndex = indexOfValue(stored)
@@ -68,8 +66,7 @@ SettingsScroll {
                 }
             }
         }
-        // The palette and the mode are Klasik's own; the other looks bring
-        // theirs.
+        // The palette and the mode are Klasik's own; the other looks bring theirs.
         SettingRow {
             wide: true
             visible: Theme.look === "classic"
@@ -116,7 +113,6 @@ SettingsScroll {
             description: qsTr("Turns off decorative animation across the launcher.")
         }
     }
-    // The still cat pictures of the classic window.
     SettingsGroup {
         width: parent.width
         title: qsTr("Cat picture")

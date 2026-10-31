@@ -21,21 +21,13 @@ jobs:
         with:
           identifier: grxtor.Kite
           version: ${{ github.event.release.tag_name }}
-          # winget takes one installer per architecture for a package
-          # version. Qt 5 builds are gone, so there is only one x64 installer
-          # to match now -- but the pattern stays explicit anyway.
-          #
-          # The Qt part is not optional either. It used to be absent from the
-          # release names, so a pattern anchored straight after "MSVC" matched
-          # everything; now that "-Qt6-" sits in the middle, an unanchored
-          # pattern matches nothing at all and winget silently gets no
+          # winget takes one installer per architecture. The "-Qt6-" part is
+          # required: without it the pattern matches nothing and winget gets no
           # installers.
           installers-regex: 'Kite-Windows-MSVC-Qt6(?:-arm64|-Legacy)?-Setup-.+\.exe$'
           token: ${{ secrets.WINGET_TOKEN }}
 
-  # Scoop and Homebrew read Kite from repositories of our own, so these two
-  # jobs fill in packaging/ and push the result there. PACKAGES_TOKEN needs
-  # write access to grxtor/scoop-bucket and grxtor/homebrew-tap.
+  # PACKAGES_TOKEN needs write access to grxtor/scoop-bucket and grxtor/homebrew-tap.
   scoop:
     name: Scoop
 

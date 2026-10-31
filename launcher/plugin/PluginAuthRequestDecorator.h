@@ -24,14 +24,9 @@
 
 class PluginManager;
 
-/*
- * Feeds outgoing authentication requests through MMCO_HOOK_AUTH_REQUEST.
- *
- * This used to live inside AuthRequest.cpp, which meant the authentication
- * code reached PluginManager directly -- and PluginManager builds
- * plugin-supplied user interface, so that single call pulled QtWidgets into
- * the core. The hook logic is unchanged; only its address moved.
- */
+/* Feeds outgoing authentication requests through MMCO_HOOK_AUTH_REQUEST. Kept out of
+ * AuthRequest.cpp so authentication code does not reach PluginManager, which builds plugin UI and
+ * would pull QtWidgets into the core. */
 class PluginAuthRequestDecorator final : public AuthRequestDecorator
 {
   public:

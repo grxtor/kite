@@ -6,31 +6,23 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Kite's news on Home's side panel, under "Set up Kite": the latest few
- * posts as cards, newest first, each opening its post in the browser. A
- * card shows the post's own picture only when the post has one (an `image`
- * role -- NewsModel has none yet, so today no card does); never a stand-in.
- *
- * Only news that is still news counts: a release post for the version
- * already running (or an older one) is skipped, and so is anything older
- * than `maxAgeDays`. With nothing left the whole section hides.
+ * Kite's news on Home's side panel: the latest few posts as cards, newest first, each opening its post in the
+ * browser. A card shows a picture only when the post has an `image` role. Release posts for the running version or
+ * older, and posts older than `maxAgeDays`, are skipped; with nothing left the section hides.
  */
 Column {
     id: root
 
-    // QmlShell.news (NewsModel): Kite's news, newest first, or null.
+    // NewsModel, or null.
     property var news: null
-    // Cards with no fill or hairline at rest, for a host that is already a
-    // panel (Sade's and Gece's side panels); hover still lifts one.
+    // No fill or hairline at rest, for a host that is already a panel; hover still lifts a card.
     property bool flat: false
 
     readonly property int maxEntries: 3
-    // Older than this, a post is history rather than news.
     readonly property int maxAgeDays: 90
     readonly property real dayMs: 24 * 60 * 60 * 1000
     readonly property bool hasNews: root.entries.length > 0
 
-    // What NewsModel holds, as plain objects, newest first.
     property var allEntries: []
     function readNews() {
         var entries = []
@@ -49,21 +41,18 @@ Column {
             readonly property string title: model.title || ""
             readonly property string link: model.link || ""
             readonly property var date: model.date
-            // A picture of the post's own, once the model has one.
             readonly property string image: model.image || ""
         }
         onObjectAdded: Qt.callLater(root.readNews)
         onObjectRemoved: Qt.callLater(root.readNews)
     }
 
-    // [major, minor, patch] from the first "1.2" or "1.2.3" in @p text, or
-    // null.
+    // [major, minor, patch] from the first "1.2" or "1.2.3" in @p text, or null.
     function versionOf(text) {
         var match = /(\d+)\.(\d+)(?:\.(\d+))?/.exec(text || "")
         return match ? [parseInt(match[1]), parseInt(match[2]), parseInt(match[3] || "0")] : null
     }
-    // A release post ("Kite Release 9.1.0, now available") for the
-    // version running now or an older one: nothing new to the reader.
+    // A release post ("Kite Release 9.1.0, now available") for the running version or an older one.
     function isOutdatedRelease(title) {
         if (!/releas|available|update/i.test(title))
             return false
@@ -77,7 +66,6 @@ Column {
         }
         return true
     }
-    // The entries still worth showing, newest first, at most maxEntries.
     readonly property var entries: {
         var now = Date.now()
         var shown = []
@@ -145,7 +133,6 @@ Column {
                         mipmap: true
                         asynchronous: true
                     }
-                    // Rounds the picture's corners in the card's own colour.
                     CornerMatte {
                         cornerRadius: Theme.radius.md
                         matte: cardFill.color

@@ -7,14 +7,12 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The mods a Kite Performance instance gets, as a read-only row of their
- * icons with the name as a tooltip, so the user sees what is coming before
- * pressing Create. Wraps onto more lines in a narrow dialog.
+ * The mods a Kite Performance instance gets, as a read-only row of icons with the
+ * name as a tooltip. Wraps onto more lines in a narrow dialog.
  */
 Flow {
     id: root
 
-    // BundleCatalog::mods() rows, all shown.
     property var mods: []
 
     property int iconSize: Theme.control.height

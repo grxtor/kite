@@ -41,7 +41,7 @@ SettingsObject::registerOverride(std::shared_ptr<Setting> original,
 		qCritical() << QString(
 						   "Failed to register setting %1. ID already exists.")
 						   .arg(original->id());
-		return nullptr; // Fail
+		return nullptr;
 	}
 	auto override = std::make_shared<OverrideSetting>(original, gate);
 	override->m_storage = this;
@@ -58,7 +58,7 @@ SettingsObject::registerPassthrough(std::shared_ptr<Setting> original,
 		qCritical() << QString(
 						   "Failed to register setting %1. ID already exists.")
 						   .arg(original->id());
-		return nullptr; // Fail
+		return nullptr;
 	}
 	auto passthrough = std::make_shared<PassthroughSetting>(original, gate);
 	passthrough->m_storage = this;
@@ -76,7 +76,7 @@ std::shared_ptr<Setting> SettingsObject::registerSetting(QStringList synonyms,
 		qCritical() << QString(
 						   "Failed to register setting %1. ID already exists.")
 						   .arg(synonyms.first());
-		return nullptr; // Fail
+		return nullptr;
 	}
 	auto setting = std::make_shared<Setting>(synonyms, defVal);
 	setting->m_storage = this;
@@ -87,7 +87,6 @@ std::shared_ptr<Setting> SettingsObject::registerSetting(QStringList synonyms,
 
 std::shared_ptr<Setting> SettingsObject::getSetting(const QString& id) const
 {
-	// Make sure there is a setting with the given ID.
 	if (!m_settings.contains(id))
 		return NULL;
 

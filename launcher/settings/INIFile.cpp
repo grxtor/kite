@@ -109,12 +109,10 @@ bool INIFile::loadFile(QString fileName)
 bool INIFile::loadFile(QByteArray file)
 {
 	QTextStream in(file);
-	// Qt6 uses UTF-8 by default
 
 	QStringList lines = in.readAll().split('\n');
 	for (int i = 0; i < lines.count(); i++) {
 		QString& lineRaw = lines[i];
-		// Ignore comments.
 		int commentIndex = 0;
 		QString line = lineRaw;
 		// Search for comments until no more escaped # are available

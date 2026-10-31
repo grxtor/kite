@@ -54,8 +54,7 @@ namespace FriendsApi
 		constexpr int kMaxVersionLength = 32;
 		constexpr int kMaxHostLength = 253;
 		constexpr int kMaxPort = 65535;
-		/* The access token is renewed when it has less than this left: a
-		 * sign-in takes seconds, not minutes. */
+		/* The access token is renewed when less than this is left. */
 		constexpr qint64 kTokenMarginSeconds = 5 * 60;
 		const QString kUuidPattern = QStringLiteral(
 			"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
@@ -68,9 +67,8 @@ namespace FriendsApi
 			"(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]\\d|\\d)$");
 		const QString kNumericLabelPattern =
 			QStringLiteral("^(?:\\d+|0x[0-9a-f]*)$");
-		/* What an IPv6 address is written with, once lower-cased. A zone id
-		 * (fe80::1%en0) is not among them: QHostAddress takes anything after
-		 * the % for one, spaces and "${...}" included. */
+		/* IPv6 characters once lower-cased; a zone id (fe80::1%en0) is excluded:
+		 * QHostAddress takes anything after the % for one. */
 		const QString kIpv6CharsPattern = QStringLiteral("^[0-9a-f:.]+$");
 		/* Waits after a failed sign-in, by how often it has failed. */
 		constexpr int kSignInBackoffMs[] = {60 * 1000, 2 * 60 * 1000,
@@ -172,8 +170,7 @@ namespace FriendsApi
 			settings.visibility = object.value("visibility").toString();
 			settings.hideServer = object.value("hideServer").toBool();
 			settings.shareIpServers = object.value("shareIpServers").toBool();
-			/* An older server does not know the field; joining is on by
-			 * default, as it is there. */
+			/* An older server lacks the field; joining defaults to on, as there. */
 			settings.allowJoin = object.value("allowJoin").toBool(true);
 			return settings;
 		}
@@ -360,9 +357,7 @@ namespace FriendsApi
 		if (!asked) {
 			return RenewalStep::AskForRenewal;
 		}
-		/* Asked, and the account is not refreshing: it still waits its turn
-		 * (the list is idle between two refreshes, so "nothing runs" does not
-		 * say it ran), or it ran and this is what it left. */
+		/* Asked, and the account is not refreshing: it is queued, or ran and this is what it left. */
 		return queued ? RenewalStep::Wait : RenewalStep::Proceed;
 	}
 

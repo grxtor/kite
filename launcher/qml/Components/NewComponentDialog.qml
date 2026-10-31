@@ -8,16 +8,13 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Add an empty component to an instance (the old NewComponentDialog): a
- * name and an id. The component starts with no libraries or arguments;
- * the user fills it in by editing its JSON afterwards (⋯ > Edit JSON).
- * The id is what the launcher knows it by, so it must be new to this
- * instance; leaving it empty uses one made from the name.
+ * Add an empty component to an instance: a name and an id. The component starts
+ * with no libraries or arguments; the user fills it in by editing its JSON. The
+ * id must be new to this instance; empty uses one made from the name.
  */
 Dialog {
     id: root
 
-    // ComponentTools (InstanceDetails.componentTools).
     property var tools: null
 
     readonly property string suggestedUid: root.tools ? root.tools.suggestUid(nameField.text) : ""
@@ -33,10 +30,7 @@ Dialog {
     anchors.centerIn: parent
     width: Math.min(root.dialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.dialogWidth)
     modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
     topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
     bottomPadding: Theme.space.sm
     title: qsTr("Add empty component")
 
@@ -64,7 +58,6 @@ Dialog {
             lineHeight: Theme.type.label.lineHeight
         }
 
-        // Each label over its field, as in the other dialogs' forms.
         ColumnLayout {
             Layout.fillWidth: true
             spacing: Theme.space.xs

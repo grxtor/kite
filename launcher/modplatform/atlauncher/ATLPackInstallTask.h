@@ -40,17 +40,12 @@ namespace ATLauncher
 	{
 
 	  public:
-		/**
-		 * Requests a user interaction to select which optional mods should be
-		 * installed.
-		 */
+		/** Asks the user which optional mods to install. */
 		virtual QVector<QString>
 		chooseOptionalMods(QVector<ATLauncher::VersionMod> mods) = 0;
 
-		/**
-		 * Requests a user interaction to select a component version from a
-		 * given version list and constrained to a given Minecraft version.
-		 */
+		/** Asks the user to select a component version from a list, constrained
+		 * to a Minecraft version. */
 		virtual QString chooseVersion(Meta::VersionListPtr vlist,
 									  QString minecraftVersion) = 0;
 	};
@@ -66,11 +61,9 @@ namespace ATLauncher
 
 		bool canAbort() const override
 		{
-			/* Two abortable stretches, with a gap between them: the
-			 * pack's own downloads while `abortable` is set, and the
-			 * optional game-file download the base class runs once the
-			 * instance is built. Answering "always" would light up a
-			 * button that abort() then refuses to act on. */
+			/* Two abortable stretches with a gap: the pack's own downloads while
+			 * `abortable` is set, and the base class's optional game-file download.
+			 * Always answering true would light up a button abort() refuses. */
 			return abortable || InstanceTask::canAbort();
 		}
 		bool abort() override;

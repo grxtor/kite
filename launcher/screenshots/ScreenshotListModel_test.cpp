@@ -40,12 +40,8 @@ bool writeFile(const QString& path, const QByteArray& contents,
 	if (file.write(contents) != contents.size()) {
 		return false;
 	}
-	// Flushed before the explicit mtime is set: QFile may not push
-	// buffered bytes to the OS until this point, and a write landing
-	// after setFileTime() would bump the mtime back to "now" and defeat
-	// the whole point of stamping it -- explicit mtimes, rather than
-	// relying on creation order plus a real sleep, are what keep the
-	// ordering test fast and non-flaky.
+	// Flushed before the mtime is set, or a late write would reset it to
+	// "now". Explicit mtimes keep the ordering test fast and non-flaky.
 	if (!file.flush()) {
 		return false;
 	}
@@ -72,7 +68,6 @@ class ScreenshotListModelTest : public QObject
 						   base.addSecs(-60)));
 		QVERIFY(
 			writeFile(QDir(dir).filePath("newer.jpg"), "bb", base));
-		// Not an image extension: must not show up at all.
 		QVERIFY(writeFile(QDir(dir).filePath("ignored.txt"), "c", base));
 
 		ScreenshotListModel model;
@@ -134,8 +129,7 @@ class ScreenshotListModelTest : public QObject
 		QVERIFY(writeFile(QDir(dir).filePath("added.png"), "x",
 						   QDateTime::currentDateTime()));
 
-		// The watcher + debounce timer are asynchronous; QTRY_COMPARE
-		// polls until the refresh has had time to fire.
+		// The watcher and debounce timer are asynchronous.
 		QTRY_COMPARE(model.count(), 1);
 		QCOMPARE(model
 					 .data(model.index(0), ScreenshotListModel::NameRole)
@@ -223,9 +217,8 @@ class ScreenshotListModelTest : public QObject
 		QCOMPARE(model.count(), 2);
 	}
 
-	// The clipboard itself needs a running GUI application; what can be
-	// checked here is that a bad row or a file that is not a picture is
-	// refused instead of crashing.
+	// Needs a GUI application for the clipboard; here a bad row or a
+	// non-image must be refused without crashing.
 	void copyImageRefusesBadRowsAndNonImages()
 	{
 		QTemporaryDir tempDir;

@@ -246,8 +246,8 @@ namespace Parsers
 			return false;
 		}
 
-		/* Reset for the same reason as the capes below: without an ACTIVE
-		 * skin in this response, the previous refresh's skin would stay. */
+		// Reset like the capes below: without an ACTIVE skin in this response
+		// the previous refresh's skin would stay.
 		output.skin = Skin();
 		auto skinsArray = obj.value("skins").toArray();
 		for (auto skin : skinsArray) {
@@ -275,9 +275,8 @@ namespace Parsers
 		}
 		auto capesArray = obj.value("capes").toArray();
 
-		/* `output` is the account's stored profile, parsed into again on every
-		 * refresh: without this the cape list grew by a full copy each time
-		 * (and was saved that way). */
+		// `output` is the stored profile, parsed into on every refresh; clear
+		// the cape list or it grows by a full copy each time.
 		output.capes.clear();
 		QString currentCape;
 		for (auto cape : capesArray) {
@@ -300,8 +299,8 @@ namespace Parsers
 				continue;
 			}
 
-			/* Appended, not keyed: the service's order is the order the cape
-			 * picker shows. */
+			// Appended, not keyed: the service's order is the cape picker's
+			// order.
 			output.capes.append(capeOut);
 		}
 		output.currentCape = currentCape;
@@ -427,18 +426,15 @@ namespace Parsers
 
 	namespace
 	{
-		/* Which of the two default skins a player without a custom one gets.
-		 *
-		 * The game decides this from the Java hashCode of the profile UUID:
-		 * even means the classic model, odd means slim. Reproducing it means
-		 * folding the 128-bit id down the same way Java's UUID.hashCode()
-		 * does -- xor the two halves, then xor the halves of that. */
+		// Which default skin a player without a custom one gets: the game uses
+		// the Java hashCode of the profile UUID (even = classic, odd = slim).
+		// Fold the 128-bit id as UUID.hashCode() does: xor the two halves, then
+		// the halves of that.
 		bool defaultsToClassicModel(QString uuid)
 		{
 			uuid.remove('-');
 			if (uuid.size() != 32) {
-				/* Not a UUID we can read; classic is the safer guess, since
-				 * it is what the game falls back to as well. */
+				// Not a readable UUID: classic is the game's fallback too.
 				return true;
 			}
 
@@ -456,9 +452,8 @@ namespace Parsers
 			return hashCode % 2 == 0;
 		}
 
-		/* The session server still hands out plain-http texture URLs. Qt will
-		 * follow them, but there is no reason to fetch a skin in the clear
-		 * when the same host serves it over TLS. */
+		// The session server hands out plain-http texture URLs; fetch over TLS,
+		// which the same host serves.
 		QString preferHttps(QString textureUrl)
 		{
 			return textureUrl.replace(
@@ -466,7 +461,6 @@ namespace Parsers
 				QLatin1String("https://textures.minecraft.net"));
 		}
 
-		/* Pull the base64 "textures" property out of a session profile. */
 		QByteArray findTexturePayload(const QJsonArray& properties)
 		{
 			for (const QJsonValue& property : properties) {
@@ -492,11 +486,9 @@ namespace Parsers
 
 	bool parseMojangSessionProfile(QByteArray& data, MinecraftProfile& output)
 	{
-		/* This is the *public* profile endpoint
-		 * (sessionserver.mojang.com/session/minecraft/profile/<id>), not the
-		 * authenticated one parseMinecraftProfile() handles. It describes
-		 * somebody else's account, so it carries no entitlements and no cape
-		 * ids -- only texture URLs, and those are buried in a base64 blob. */
+		// The public profile endpoint (sessionserver.mojang.com/session/minecraft/
+		// profile/<id>), not the authenticated one parseMinecraftProfile() handles.
+		// It has no entitlements or cape ids, only texture URLs in a base64 blob.
 		qCDebug(minecraftauthLog) << "Parsing Mojang session profile...";
 
 		QJsonParseError jsonError;
@@ -540,18 +532,15 @@ namespace Parsers
 		}
 
 		Skin skinOut;
-		/* Start from the default this player would be shown with, so that a
-		 * profile with no SKIN entry still yields something displayable. */
+		// Start from the player's default skin so a profile with no SKIN entry
+		// still yields something displayable.
 		const bool classic = defaultsToClassicModel(output.id);
 		skinOut.variant = classic ? QStringLiteral("CLASSIC")
 								  : QStringLiteral("SLIM");
-		/* The session server omits the SKIN texture entirely for players
-		 * who never set one, so there is no URL to read: point at the
-		 * canonical default skins (MHF_Steve and MHF_Alex), the only way to
-		 * show such a player as the game shows them. */
+		// Players who never set a skin have no SKIN texture: point at the
+		// default skins (MHF_Steve and MHF_Alex), as the game shows them.
 		skinOut.url = DefaultSkins::fallbackUrl(!classic);
-		/* The endpoint does not expose texture ids at all. Nothing downstream
-		 * of here needs one, so it is left empty rather than invented. */
+		// The endpoint exposes no texture ids; left empty, nothing needs one.
 
 		Cape capeOut;
 		bool hasCape = false;
@@ -571,9 +560,8 @@ namespace Parsers
 				}
 				skinOut.url = preferHttps(skinOut.url);
 
-				/* Present only for slim skins; absent means classic, which
-				 * is already what variant holds unless the UUID said
-				 * otherwise -- so read it, but do not require it. */
+				// Present only for slim skins; absent keeps the variant already
+				// chosen.
 				const QJsonValue metadata = texture.value("metadata");
 				if (metadata.isObject()) {
 					getString(metadata.toObject().value("model"),
@@ -585,9 +573,8 @@ namespace Parsers
 					return false;
 				}
 				capeOut.url = preferHttps(capeOut.url);
-				/* No id is published for it either. A stable placeholder is
-				 * enough: this profile is only ever read to copy a look, and
-				 * nothing tries to equip somebody else's cape. */
+				// No id is published; a stable placeholder will do, as this
+				// profile is only read to copy a look.
 				capeOut.id = QStringLiteral("cape");
 				capeOut.alias = QStringLiteral("cape");
 				hasCape = true;

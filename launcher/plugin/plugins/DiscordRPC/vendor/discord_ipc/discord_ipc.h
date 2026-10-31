@@ -1,15 +1,10 @@
 /* SPDX-License-Identifier: MIT
  * Copyright (C) 2026 Project Tick
  *
- * Minimal Qt-only Discord IPC client.
- *
- * Implements the wire side of Discord's local RPC socket
- * (https://discord.com/developers/docs/topics/rpc) — handshake,
- * heartbeat-free framed JSON messages, and the SET_ACTIVITY command.
- *
- * The class hides the platform difference between UNIX domain sockets
- * (Linux/macOS, ~/.config/discord-ipc-N) and Windows named pipes
- * (\\.\pipe\discord-ipc-N) behind QLocalSocket.
+ * Minimal Qt-only Discord IPC client for Discord's local RPC socket
+ * (https://discord.com/developers/docs/topics/rpc): handshake, heartbeat-free framed JSON messages and
+ * the SET_ACTIVITY command. QLocalSocket hides the difference between UNIX domain sockets
+ * (Linux/macOS, ~/.config/discord-ipc-N) and Windows named pipes (discord-ipc-N).
  *
  * Usage:
  *   DiscordIpc ipc;
@@ -19,8 +14,7 @@
  *   ipc.clearActivity();
  *   ipc.disconnectFromDiscord();
  *
- * The class is a QObject so callers can hook into stateChanged() /
- * errorOccurred() signals if they need richer diagnostics.
+ * Connect to stateChanged() / errorOccurred() for diagnostics.
  */
 
 #pragma once
@@ -64,8 +58,7 @@ class DiscordIpc : public QObject
 		return m_state;
 	}
 
-	/* Begin a non-blocking connection attempt. Safe to call repeatedly;
-	 * a no-op if we are already connecting or connected. */
+	/* Begins a non-blocking connection attempt; a no-op if already connecting or connected. */
 	void connectToDiscord();
 	void disconnectFromDiscord();
 
@@ -111,10 +104,8 @@ class DiscordIpc : public QObject
 	DiscordActivity m_pendingActivity;
 	int m_nonce = 0;
 
-	/* Suppress duplicate error spam: when Discord is not running we
-	 * cycle through pipe 0..9 every 5 seconds. Without this flag the
-	 * log fills with "Geçersiz ad" / "ServerNotFoundError" lines
-	 * forever. We emit at most one error per outage window — reset on
-	 * a successful onConnected(). */
+	/* Suppresses repeated errors: with Discord not running we cycle pipe 0..9 every 5 seconds,
+	 * which would fill the log forever. At most one error per outage, reset by a successful
+	 * onConnected(). */
 	bool m_errorEmitted = false;
 };

@@ -39,24 +39,16 @@
 #include "models/NewsModel.h"
 
 /*
- * Smoke test for the QML user interface module.
+ * Smoke test for the QML module: proves qt_add_qml_module ran, the .qml files
+ * are compiled in at the expected resource prefix and the engine can
+ * instantiate the root component. A missing module, a shifted prefix or a
+ * qmlcachegen failure otherwise gives a green build and an application that
+ * shows nothing.
  *
- * This does not test any behaviour; it proves the toolchain is wired up: that
- * qt_add_qml_module ran, that the .qml files were compiled into the binary at
- * the resource prefix we expect, and that the engine can instantiate the root
- * component. Those are exactly the things that break silently -- a missing
- * module, a shifted resource prefix or a qmlcachegen failure all produce a
- * perfectly green build and an application that shows nothing.
- *
- * The URL is spelled out rather than using QQmlComponent::loadFromModule(),
- * which is Qt 6.5+; the project's floor is 6.4 (Debian 12 / Ubuntu 24.04 LTS).
- * qt_add_qml_module is given RESOURCE_PREFIX "/qt/qml" so this path is the
- * same on 6.4 as it is once QTP0001 is available.
+ * The URL is spelled out because QQmlComponent::loadFromModule() needs Qt 6.5.
  */
-/* Stands in for QmlShell where a test needs Main.qml to see one of its
- * signals or properties. Everything else stays absent, as with the plain
- * QObject rootComponentInstantiates() passes: Main.qml checks for each
- * shell member before using it. */
+/* Stands in for QmlShell where Main.qml needs to see one of its signals or
+ * properties; Main.qml checks for each shell member before using it. */
 class FakeShell : public QObject
 {
 	Q_OBJECT
@@ -80,7 +72,7 @@ class FakeShell : public QObject
 	}
 	NewsModel m_news;
 
-	/// What QmlShell::launchInstanceMode() was last asked, as "id:mode".
+	/// The last launchInstanceMode() call, as "id:mode".
 	Q_INVOKABLE void launchInstanceMode(const QString& id, const QString& mode)
 	{
 		lastLaunch = id + QLatin1Char(':') + mode;
@@ -101,8 +93,8 @@ class QmlModuleTest : public QObject
 {
 	Q_OBJECT
 
-	/* Main.qml instantiated with @p shell, or null (with the reason
-	 * already reported through QVERIFY) if it fails to load. */
+	/* Main.qml instantiated with @p shell, or null (reason warned) if it fails
+	 * to load. */
 	std::unique_ptr<QObject> createRoot(QQmlEngine& engine, QObject* shell)
 	{
 		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
@@ -124,8 +116,7 @@ class QmlModuleTest : public QObject
 		return root;
 	}
 
-	/* @p expression evaluated in Main.qml's own scope, where its ids
-	 * (settingsPage, newInstanceDialog, ...) resolve. */
+	/* @p expression evaluated in Main.qml's scope, where its ids resolve. */
 	static QVariant evaluate(QObject* root, const QString& expression)
 	{
 		QQmlExpression expr(qmlContext(root), root, expression);
@@ -137,7 +128,7 @@ class QmlModuleTest : public QObject
 	}
 
 	/* Main.qml's navigate(page, sub); an invalid @p sub reaches it as
-	 * undefined, the way a one-argument call from QML would. */
+	 * undefined. */
 	static bool navigate(QObject* root, const QString& page,
 						 const QVariant& sub = QVariant())
 	{
@@ -152,10 +143,8 @@ class QmlModuleTest : public QObject
 	QObject m_selection;
 
   private slots:
-	/* The same controls style QmlShell::show() selects: components use its
-	 * extra properties (Button.danger, ...), which Qt's default style lacks,
-	 * so without it Main.qml would not load here although it does in the
-	 * application. */
+	/* The style QmlShell::show() selects: components use its extra properties
+	 * (Button.danger, ...), which Qt's default style lacks. */
 	void initTestCase()
 	{
 		QQuickStyle::setStyle(QStringLiteral("Kite.Style"));
@@ -175,11 +164,8 @@ class QmlModuleTest : public QObject
 								.arg(component.errorString())));
 
 		/* The root requires the instance model, the selection and the shell;
-		 * an empty stand-in is enough to prove the component loads, and a
-		 * required property left unset would itself be a load error worth
-		 * catching here. The shell is a plain QObject: this test only proves
-		 * Main.qml accepts something for the property, not what QmlShell
-		 * itself does. */
+		 * empty stand-ins prove the component loads, and a required property
+		 * left unset would itself be a load error. */
 		QStandardItemModel instances;
 		QObject selection;
 		QObject shell;
@@ -192,15 +178,13 @@ class QmlModuleTest : public QObject
 			  QVariant::fromValue<QObject*>(&shell)}}));
 		QVERIFY2(root != nullptr, qPrintable(component.errorString()));
 
-		/* Guards against the component resolving to something default
-		 * constructed: the property only exists on our Main.qml. */
+		// Only our Main.qml has this property.
 		QCOMPARE(root->property("moduleName").toString(),
 				 QStringLiteral("Kite"));
 	}
 
-	/* navigate() is how pages link across the app: whole paths and the
-	 * split (page, sub) form alike, settings sections included, and an
-	 * unknown target changes nothing. */
+	/* Whole paths and the split (page, sub) form, settings sections included;
+	 * an unknown target changes nothing. */
 	void navigateOpensPagesAndSettingsSections()
 	{
 		QQmlEngine engine;
@@ -227,8 +211,8 @@ class QmlModuleTest : public QObject
 		QCOMPARE(root->property("page").toString(), QStringLiteral("library"));
 	}
 
-	/* No instance by that id (this stand-in shell has no instanceDetails()
-	 * at all): refused, and the current page stays. */
+	/* No instance by that id (this stand-in has no instanceDetails()):
+	 * refused, and the page stays. */
 	void navigateRefusesAnUnknownInstance()
 	{
 		QQmlEngine engine;
@@ -242,8 +226,7 @@ class QmlModuleTest : public QObject
 		QCOMPARE(root->property("page").toString(), QStringLiteral("discover"));
 	}
 
-	/* QmlShell::requestNavigate() (a launch that needs an account, say)
-	 * reaches Main.qml's navigate(). */
+	/* QmlShell::requestNavigate() reaches Main.qml's navigate(). */
 	void navigateRequestFromTheShellIsFollowed()
 	{
 		QQmlEngine engine;
@@ -258,8 +241,8 @@ class QmlModuleTest : public QObject
 				 QStringLiteral("java"));
 	}
 
-	/* The Play options: with no account at all, "Play offline" and the demo
-	 * go to the Accounts page instead of launching. */
+	/* With no account, "Play offline" and the demo go to the Accounts page
+	 * instead of launching. */
 	void launchModeNeedsAnAccount()
 	{
 		QQmlEngine engine;
@@ -285,8 +268,8 @@ class QmlModuleTest : public QObject
 		QCOMPARE(root->property("page").toString(), QStringLiteral("accounts"));
 	}
 
-	/* The macOS menu bar only ever shows natively (Cocoa); anywhere else
-	 * -- this offscreen test included -- it stays out of the window. */
+	/* The macOS menu bar shows only natively (Cocoa), not in this offscreen
+	 * test. */
 	void nativeMenuBarStaysOffOutsideCocoa()
 	{
 		QQmlEngine engine;
@@ -298,14 +281,14 @@ class QmlModuleTest : public QObject
 	}
 
 	/* "Installed plugins" draws one row per plugin of its model, with the
-	 * model's own roles (the preview data has no plugins to render). */
+	 * model's own roles. */
 	void pluginListSectionDrawsARowPerPlugin()
 	{
 		QQmlEngine engine;
 		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
 		QQmlComponent component(&engine);
-		// Plain literals rather than a raw string: moc stops parsing the
-		// rest of this file at one.
+		// Plain literals: moc stops parsing the rest of this file at a raw
+		// string.
 		component.setData(
 			"import QtQuick\n"
 			"import Kite.Components\n"
@@ -329,7 +312,7 @@ class QmlModuleTest : public QObject
 		QVERIFY2(section, qPrintable(component.errorString()));
 		QVERIFY(section->property("shown").toBool());
 		QCOMPARE(section->property("count").toInt(), 2);
-		// Every row is a SettingRow carrying its plugin's name and version;
+		// Every row is a SettingRow with its plugin's name and version;
 		// Repeater rows live in the visual tree, not among QObject children.
 		int rows = 0;
 		std::function<void(QQuickItem*)> visit = [&](QQuickItem* item) {
@@ -344,10 +327,8 @@ class QmlModuleTest : public QObject
 		QCOMPARE(rows, 2);
 	}
 
-	/* A switch must go on showing what the model says, also after the user
-	 * has flipped it: a plugin may refuse (or only apply the change at the
-	 * next start), and a switch left showing the click instead of the state
-	 * is the "buttons are wrong until a restart" bug. */
+	/* A switch keeps showing what the model says after a click: a plugin may
+	 * refuse, or apply the change only at the next start. */
 	void pluginSwitchesKeepFollowingTheirModel()
 	{
 		QQmlEngine engine;
@@ -390,10 +371,9 @@ class QmlModuleTest : public QObject
 		QVERIFY(sw->property("checked").toBool());
 	}
 
-	/* The skin editor's arm width radios show what the skin says, also
-	 * after a click: a click only asks the library for the change (refused
-	 * first, then taken), and on a default skin it picks that skin's other
-	 * texture instead of asking the library at all. */
+	/* The skin editor's arm width radios show what the skin says after a
+	 * click: a click only asks the library for the change (refused first, then
+	 * taken), and on a default skin it picks the other texture instead. */
 	void skinArmsRadiosFollowTheSkin()
 	{
 		QQmlEngine engine;
@@ -444,7 +424,7 @@ class QmlModuleTest : public QObject
 		QVERIFY(editor && library);
 		QVERIFY(QMetaObject::invokeMethod(editor, "open"));
 		QTRY_VERIFY(editor->property("opened").toBool());
-		// The review row (-1) opens on its first skin.
+		// Row -1 opens on its first skin.
 		QCOMPARE(editor->property("selectedName").toString(), QStringLiteral("Hero"));
 
 		QQuickItem* classic = nullptr;
@@ -488,8 +468,8 @@ class QmlModuleTest : public QObject
 		QVERIFY(shows(false));
 		QCOMPARE(library->property("asked").toInt(), 3);
 
-		// A default skin: shown with its own width (Alex is slim), and the
-		// radios swap its texture, the library left alone.
+		// A default skin shows its own width (Alex is slim); the radios swap
+		// its texture and leave the library alone.
 		evaluate(editor, QStringLiteral("selectDefault(skins.defaultSkins[0])"));
 		auto selectedPath = [&] {
 			return evaluate(editor, QStringLiteral("selected ? selected.path : ''"))
@@ -519,10 +499,9 @@ class QmlModuleTest : public QObject
 					 QStringLiteral("Kite 7 is out"));
 	}
 
-	/* Home's banner is for news: a release post for the version running
-	 * (or older) is skipped, and nothing older than newsMaxAgeDays gets a
-	 * banner at all -- the feed is newest first, so a stale entry ends the
-	 * search. */
+	/* A release post for the running version (or older) is skipped, and nothing
+	 * older than newsMaxAgeDays gets a banner; the feed is newest first, so a
+	 * stale entry ends the search. */
 	void homeSkipsOutdatedReleasesAndStaleNews()
 	{
 		const QString runningVersion = QCoreApplication::applicationVersion();
@@ -559,11 +538,10 @@ class QmlModuleTest : public QObject
 	}
 
 	/* `kite --import` and the IPC "import" message reach QML as
-	 * QmlShell::importRequested(): the New instance dialog opens in import
-	 * mode with the source already filled in (the A9/A10 fix). The
-	 * stand-in controller is a bare QObject, so the dialog logs TypeErrors
-	 * for the NewInstanceController members it reads; only the two
-	 * properties checked here matter. */
+	 * importRequested(): the New instance dialog opens in import mode with the
+	 * source filled in. The stand-in controller is a bare QObject, so the dialog
+	 * logs TypeErrors for the members it reads; only the two properties checked
+	 * here matter. */
 	void importRequestOpensNewInstanceDialogInImportMode()
 	{
 		QQmlEngine engine;
@@ -583,11 +561,10 @@ class QmlModuleTest : public QObject
 				 source);
 	}
 
-	/* A file dropped on the window opens import with it -- unless a drop
-	 * area inside the pages (the Content tab's mods, the Worlds tab's
-	 * worlds) takes it: Main.qml's window-wide one sits under all of them.
-	 * The inner area here stands in for those, made the way a page's own
-	 * would be stacked: a later item above the window's first child. */
+	/* A file dropped on the window opens import with it, unless a drop area
+	 * inside a page (the Content tab's mods, the Worlds tab's worlds) takes it:
+	 * Main.qml's window-wide one sits under all of them. The inner area here
+	 * stands in for those, stacked as a page's would be. */
 	void windowDropOpensImportUnlessAPageAreaTakesIt()
 	{
 		QQmlEngine engine;
@@ -654,11 +631,8 @@ class QmlModuleTest : public QObject
 
 int main(int argc, char* argv[])
 {
-	/* The test instantiates QML objects but never shows a window. Forcing the
-	 * offscreen platform keeps it runnable on a headless CI runner without
-	 * depending on the harness to set QT_QPA_PLATFORM for us. Qt Quick types
-	 * need a QGuiApplication, so QTEST_GUILESS_MAIN (QCoreApplication) -- what
-	 * the other tests in this tree use -- is not an option here. */
+	/* Offscreen keeps it runnable on a headless runner. Qt Quick needs a
+	 * QGuiApplication, so QTEST_GUILESS_MAIN is not an option. */
 	qputenv("QT_QPA_PLATFORM", "offscreen");
 
 	QGuiApplication app(argc, argv);

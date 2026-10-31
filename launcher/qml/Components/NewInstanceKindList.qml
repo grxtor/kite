@@ -7,13 +7,11 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * What a new instance runs on, as a labelled pick-one list in the list-nav
- * grammar (NavSelectionIndicator slides behind the picked row): Kite
- * Performance first, over a hairline, then the unmodified game and each mod
- * loader with the logo the launcher ships for it. Kite Performance is Fabric
- * with the performance mods; picked, its row opens on the icons of the mods
- * picked for it and offers to edit them (so does a right click on the row),
- * and it is greyed out for a version it has no mods for.
+ * What a new instance runs on, as a pick-one list in the list-nav grammar:
+ * Kite Performance first (Fabric with the performance mods; its row shows the
+ * icons of the picked mods and offers to edit them, also on right-click;
+ * greyed out for a version it has no mods for), then the unmodified game and
+ * each mod loader.
  */
 Item {
     id: root
@@ -47,7 +45,6 @@ Item {
         return null
     }
 
-    // "Sodium, Lithium and 6 more": the first names, then how many follow.
     function modSummary() {
         var names = root.pickedMods.map((mod) => mod.name)
         if (names.length <= 2)
@@ -81,7 +78,6 @@ Item {
             onClicked: root.picked(root.performanceKind)
             onActionTriggered: root.editModsRequested()
 
-            // The row's own menu, as it were: straight to its mods.
             TapHandler {
                 enabled: performanceRow.enabled
                 acceptedButtons: Qt.RightButton
@@ -92,7 +88,6 @@ Item {
             }
         }
 
-        // Kite's own pick above, the plain game and its loaders below.
         Item {
             width: rows.width
             height: Theme.space.sm * 2 + 1
@@ -121,26 +116,19 @@ Item {
         }
     }
 
-    // One row: a logo (or the ⚡) and the label on the first line, then an
-    // optional line under the label and the performance mods' icons.
     component KindRow: AbstractButton {
         id: row
 
         property bool selected: false
-        // instanceicon key of the logo; empty for the ⚡.
         property string iconKey: ""
-        // How much of the logo box the logo fills (NewInstanceDialog.loaders).
         property real fit: 1.0
         property string label
         property string detail: ""
         property var mods: []
-        // A link under the rest, e.g. "Edit mods"; none when empty.
         property string actionText: ""
 
         signal actionTriggered()
 
-        // The logo or the label, whichever is taller, centred in a
-        // control's height on a one-line row.
         readonly property int lineHeight: Math.max(root.logoSize, Math.ceil(Theme.type.body.lineHeightPx))
         readonly property int textX: root.logoSize + Theme.space.md
         readonly property color ink: !row.enabled ? Theme.palette.textTertiary
@@ -160,7 +148,6 @@ Item {
         Accessible.description: row.detail
         Accessible.checked: row.selected
 
-        // Hover and press only; the selection is the indicator behind.
         background: Rectangle {
             radius: Theme.radius.md
             color: row.down ? Theme.palette.pressedOverlay
@@ -230,8 +217,7 @@ Item {
                 font.pixelSize: Theme.type.caption.pixelSize
             }
 
-            // Its text, not the box it pulls out for the chevron, on the
-            // other lines' edge.
+            // Its text, not the box it pulls out for the chevron, aligns with the other lines' edge.
             LinkButton {
                 id: link
                 x: row.textX - link.chevronBearing

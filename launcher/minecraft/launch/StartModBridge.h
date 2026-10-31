@@ -28,16 +28,15 @@ class ModBridge;
 
 /*
  * The launch step, right before the game starts, that gives a game with the
- * Kite mod its way to the launcher (modbridge/ModBridge.h): a session on the
- * bridge, whose port the game gets as a JVM property and whose token it gets
- * in its environment (MinecraftInstance::kiteModArguments() and
- * createEnvironment() add them while the instance holds the grant).
+ * Kite mod its way to the launcher (modbridge/ModBridge.h): a bridge session
+ * whose port goes to the game as a JVM property and whose token goes in its
+ * environment (MinecraftInstance::kiteModArguments() and createEnvironment()
+ * add them while the instance holds the grant).
  *
- * It sits after PrepareKiteMod, so whether the jar is there is known; without
- * the mod, or without a bridge (a tool, a test), it does nothing. It never
- * fails the launch. The session is dropped when the launch ends however it
- * ends (finalize()); the bridge also drops it when the instance stops or is
- * destroyed.
+ * After PrepareKiteMod, so whether the jar is there is known; without the mod
+ * or a bridge (a tool, a test) it does nothing. It never fails the launch. The
+ * session is dropped when the launch ends however it ends (finalize()); the
+ * bridge also drops it when the instance stops or is destroyed.
  */
 class StartModBridge : public LaunchStep
 {

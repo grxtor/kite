@@ -38,30 +38,20 @@ class AccountList : public QAbstractListModel
   public:
 	enum ModelRoles { PointerRole = 0x34B1CB48 };
 
-	/* Roles for the QML account list. VListColumns below is a column index -
-	 * fine for the QtWidgets AccountListPage, which asks for a specific
-	 * column, but invisible to a QML ListView, which only ever binds to
-	 * column 0. These roles hand back whatever ProfileNameColumn,
-	 * TypeColumn and StatusColumn hold, for any column asked, so a QML
-	 * delegate reading column 0 still sees all of it. As with PointerRole
-	 * above, no role here hands QML a raw pointer. */
+	// Roles for the QML account list: a QML ListView binds to column 0 only, so
+	// these return the data of ProfileNameColumn, TypeColumn and StatusColumn
+	// for any column. No role hands QML a raw pointer.
 	enum QmlRoles {
 		NameRole = Qt::UserRole + 10,
 		ProfileNameRole,
 		TypeRole,
 		StatusRole,
 
-		/* Added for the QML Accounts page (AccountsController). TypeRole
-		 * above is a capitalized display string ("Msa"/"Offline"), not
-		 * meant for comparisons, so IsMSARole gives an unambiguous flag
-		 * instead. StateKeyRole is a stable, non-localized key parallel to
-		 * StatusRole's translated display string, for QML that wants to
-		 * branch on state (e.g. to pick a color) without matching
-		 * translated text. AccountIdRole is the id to hand
-		 * AccountFaceProvider (image://accountface/<accountId>): the
-		 * profile id, or the internalId for accounts that have none
-		 * (offline, or MSA before a profile is fetched) -- the same
-		 * fallback QmlShell::accountFace() uses for the default account. */
+		// IsMSARole is an unambiguous flag (TypeRole is a display string).
+		// StateKeyRole is a stable, non-localized key for StatusRole's
+		// translated string. AccountIdRole is the id for AccountFaceProvider
+		// (image://accountface/<accountId>): the profile id, or the internalId
+		// when there is none, as QmlShell::accountFace() does.
 		IsDefaultRole,
 		IsMSARole,
 		StateKeyRole,
@@ -84,7 +74,6 @@ class AccountList : public QAbstractListModel
 	const MinecraftAccountPtr at(int i) const;
 	int count() const;
 
-	//////// List Model Functions ////////
 	QVariant data(const QModelIndex& index, int role) const override;
 	virtual QVariant headerData(int section, Qt::Orientation orientation,
 								int role) const override;
@@ -99,13 +88,8 @@ class AccountList : public QAbstractListModel
 	void removeAccount(QModelIndex index);
 	int findAccountByProfileId(const QString& profileId) const;
 	/*!
-	 * Returns the index of the first **offline** account whose stored
-	 * offlineUsername matches \a username case-insensitively (Minecraft
-	 * itself is case-sensitive but the launcher's profile listing is
-	 * not, and users routinely confuse "Player" with "player").
-	 * Returns -1 if no such account exists. MSA accounts are skipped —
-	 * an MSA profile that happens to share a name with an offline one
-	 * does NOT count as a duplicate.
+	 * Returns the index of the first **offline** account whose offlineUsername
+	 * matches \a username case-insensitively, or -1. MSA accounts are skipped.
 	 */
 	int findOfflineAccountByUsername(const QString& username) const;
 	MinecraftAccountPtr
@@ -125,12 +109,10 @@ class AccountList : public QAbstractListModel
 	}
 
 	/*!
-	 * Sets the path to load/save the list file from/to.
-	 * If autosave is true, this list will automatically save to the given path
-	 * whenever it changes. THIS FUNCTION DOES NOT LOAD THE LIST. If you set
-	 * autosave, be sure to call loadList() immediately after calling this
-	 * function to ensure an autosaved change doesn't overwrite the list you
-	 * intended to load.
+	 * Sets the path to load/save the list file from/to. If autosave is true the
+	 * list saves whenever it changes. THIS FUNCTION DOES NOT LOAD THE LIST:
+	 * call loadList() right after, or an autosave may overwrite the list you
+	 * meant to load.
 	 */
 	void setListFilePath(QString path, bool autosave = false);
 
@@ -142,9 +124,8 @@ class AccountList : public QAbstractListModel
 	void setDefaultAccount(MinecraftAccountPtr profileId);
 	bool anyAccountIsValid();
 
-	/// Whether a Microsoft account that owns Minecraft is in the list. Offline
-	/// accounts hang on this: they are only for play alongside a purchased
-	/// game.
+	/// Whether a Microsoft account that owns Minecraft is in the list; offline
+	/// accounts depend on it.
 	bool anyMicrosoftAccountOwnsMinecraft();
 
 	bool isActive() const;
@@ -163,16 +144,10 @@ class AccountList : public QAbstractListModel
 	void activityChanged(bool active);
 
   public slots:
-	/**
-	 * This is called when one of the accounts changes and the list needs to be
-	 * updated
-	 */
+	/** Called when one of the accounts changes. */
 	void accountChanged();
 
-	/**
-	 * This is called when a (refresh/login) task involving the account starts
-	 * or ends
-	 */
+	/** Called when a refresh/login task for the account starts or ends. */
 	void accountActivityChanged(bool active);
 
 	/**
@@ -193,17 +168,12 @@ class AccountList : public QAbstractListModel
 	QTimer* m_nextTimer;
 	shared_qobject_ptr<AccountTask> m_currentTask;
 
-	/*!
-	 * Called whenever the list changes.
-	 * This emits the listChanged() signal and autosaves the list (if autosave
-	 * is enabled).
-	 */
+	/*! Called whenever the list changes; emits listChanged() and autosaves. */
 	void onListChanged();
 
 	/*!
-	 * Called whenever the active account changes.
-	 * Emits the defaultAccountChanged() signal and autosaves the list if
-	 * enabled.
+	 * Called whenever the active account changes; emits defaultAccountChanged()
+	 * and autosaves.
 	 */
 	void onDefaultAccountChanged();
 
@@ -214,9 +184,6 @@ class AccountList : public QAbstractListModel
 	//! Path to the account list file. Empty string if there isn't one.
 	QString m_listFilePath;
 
-	/*!
-	 * If true, the account list will automatically save to the account list
-	 * path when it changes. Ignored if m_listFilePath is blank.
-	 */
+	/*! Autosave when the list changes; ignored if the path is blank. */
 	bool m_autosave = false;
 };

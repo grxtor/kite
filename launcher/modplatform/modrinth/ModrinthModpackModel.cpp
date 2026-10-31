@@ -39,9 +39,6 @@
 #include "net/HttpMetaCache.h"
 #include "tasks/TaskWatcher.h"
 
-/* ---------------------------------------------------------------- */
-/* ModrinthModpackDetail                                             */
-/* ---------------------------------------------------------------- */
 
 ModrinthModpackDetail::ModrinthModpackDetail(QObject* parent) : QObject(parent)
 {
@@ -111,9 +108,6 @@ void ModrinthModpackDetail::setError(const QString& error)
 	emit errorChanged();
 }
 
-/* ---------------------------------------------------------------- */
-/* ModrinthModpackModel                                               */
-/* ---------------------------------------------------------------- */
 
 ModrinthModpackModel::ModrinthModpackModel(QObject* parent)
 	: QAbstractListModel(parent), m_detail(new ModrinthModpackDetail(this))
@@ -180,9 +174,8 @@ QVariant ModrinthModpackModel::data(const QModelIndex& index, int role) const
 		case GameVersionsRole:
 			return QVariant::fromValue(pack.gameVersions);
 		case CategoriesRole:
-			/* display_categories when the hit had it - the curated
-			 * set Modrinth means for a card - falling back to the
-			 * full technical list otherwise. */
+			/* display_categories (the curated set for a card) when the hit has it,
+			 * else the full technical list. */
 			return QVariant::fromValue(pack.displayCategories.isEmpty()
 										   ? pack.categories
 										   : pack.displayCategories);
@@ -301,12 +294,9 @@ int ModrinthModpackModel::sortIndexOf(const QString& id) const
 void ModrinthModpackModel::search()
 {
 	if (m_searchJob) {
-		/* A reply for the previous query may still be on its way.
-		 * Marked before abort() is called: aborting can complete
-		 * synchronously, and the failure handler needs to already see
-		 * the new intent when that happens - same pattern as
-		 * ContentProviderModel::search() / Modrinth::ListModel::
-		 * searchWithTerm(). */
+		/* A reply for the previous query may be in flight. Set before abort():
+		 * it can complete synchronously and the failure handler must already see
+		 * the new intent. */
 		m_restartPending = true;
 		m_searchJob->abort();
 		return;
@@ -476,7 +466,6 @@ void ModrinthModpackModel::loadDetail(const QString& projectId)
 void ModrinthModpackModel::markDetailPartDone(quint64 generation, bool isBody)
 {
 	if (generation != m_detailGeneration) {
-		/* A newer loadDetail() call has already moved on. */
 		return;
 	}
 	if (isBody) {
@@ -517,14 +506,9 @@ void ModrinthModpackModel::fetchDetailBody(const QString& projectId,
 							m_detail->setTitle(title);
 						}
 
-						/* The full project object carries a richer
-						 * "gallery" than a search hit does: objects
-						 * with their own title/featured flag rather
-						 * than bare URLs (see loadIndexedPack() for
-						 * the search-hit shape). Only entries with a
-						 * URL are kept; featured images are sorted
-						 * first so the detail header always prefers
-						 * one, same as Modrinth's own project page. */
+						/* The full project object has a richer "gallery" than a search hit:
+						 * objects with title/featured rather than bare URLs. Only entries with a
+						 * URL are kept, featured first. */
 						QVariantList gallery;
 						for (const auto& imageRaw :
 							 Json::ensureArray(obj, "gallery")) {
@@ -572,10 +556,8 @@ void ModrinthModpackModel::fetchDetailVersions(const QString& projectId,
 	auto* job = new NetJob(
 		QStringLiteral("Modrinth::PackVersions(%1)").arg(projectId),
 		LAUNCHER->network());
-	/* A modpack ships its own loader, so accept any of them here rather
-	 * than filtering to whatever instance the user might currently have
-	 * selected - same reasoning, and the same call, as
-	 * ModrinthPage::onSelectionChanged(). */
+	/* A modpack ships its own loader, so accept any of them rather than
+	 * filtering to the selected instance's. */
 	job->addNetAction(Net::Download::makeByteArray(
 		ModrinthApi::projectVersionsUrlForLoaders(
 			projectId, {QStringLiteral("forge"), QStringLiteral("fabric"),
@@ -652,12 +634,8 @@ QString ModrinthModpackModel::resolveIconKey(const QString& slug,
 											 const QString& iconUrl) const
 {
 	if (!slug.isEmpty() && !iconUrl.isEmpty()) {
-		/* Same bucket the widget Modrinth page
-		 * (ui/pages/modplatform/modrinth/ModrinthModel.cpp) has always
-		 * cached these icons under, so a pack browsed there before
-		 * already has a hit waiting here. resolveEntry() is a disk-only
-		 * lookup - it never starts a download - and only comes back
-		 * non-stale once it has verified the file is actually there. */
+		/* Shares the widget page's icon bucket. resolveEntry() is disk-only,
+		 * never downloads, and non-stale only once the file is verified present. */
 		MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
 			QStringLiteral("ModrinthPacks"),
 			QStringLiteral("logos/%1").arg(slug));
@@ -715,15 +693,10 @@ QObject* ModrinthModpackModel::install(const QString& projectId,
 		return nullptr;
 	}
 
-	/* Builds exactly what ModrinthPage::suggestCurrent() builds today
-	 * (ui/pages/modplatform/modrinth/ModrinthPage.cpp), and what
-	 * NewInstanceDialog::extractTask() +
-	 * MainWindow::createInstanceFromDialog() then do to it - the four
-	 * setters below and wrapInstanceTask() are that same funnel. The
-	 * only real difference is where the name/group/icon/target
-	 * directory come from: the dialog reads its own widgets, this reads
-	 * the caller's arguments (and the primary instance folder, since a
-	 * headless install has no folder picker). */
+	/* The four setters and wrapInstanceTask() are the funnel the widget
+	 * dialog also uses. Name, group, icon and target directory come from the
+	 * caller's arguments (and the primary instance folder: a headless install
+	 * has no picker). */
 	auto* importTask = new InstanceImportTask(QUrl(downloadUrl));
 	importTask->setTrustedSource(true);
 

@@ -6,40 +6,19 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The friends panel opened out: a header (FriendsPanelHeader), then who is
- * in game, who is online and -- folded away until you open it -- who is
- * offline, each with Join where the friend lets you (FriendsPanelGroup).
- * Removing or blocking someone is the row's ⋯, whose menu is the panel's
- * (`menu`). What does not fit a column stays on the Friends page:
- * requests, blocked people and adding someone by name; the header's two
- * buttons go there.
- *
- * Friends off, signed out, connecting or failed before anything was read:
- * the Friends page's own state (FriendsPageState) stands in for the lists. A
- * poll that failed after the lists were read leaves them, under a bar saying
- * they may be out of date, and nothing that needs the server (Join, ⋯) works
- * until it answers. The first time friends connect, FriendsNotice tops the
- * list: Home's panel does not show friends while this one is opened out, so
- * this is where people are told what their friends can see.
- *
- * FriendsSidePanel builds this once and never tears it down, so the folds
- * below hold for the session; it lays this out at the width the panel has
- * (or is growing to), and leaves it as it is while the panel slides.
+ * The friends panel opened out: header, then who is in game, online and, folded until opened, offline
+ * (FriendsPanelGroup). Requests, blocked people and adding by name stay on the Friends page. FriendsSidePanel
+ * builds this once and never tears it down, so the folds hold for the session.
  */
 Item {
     id: root
 
-    // QmlShell.friends (FriendsController), or null.
+    // FriendsController, or null.
     property var controller: null
-    // Main.qml's FriendJoinFlow, which says what a friend's Join starts.
     property var joinFlow: null
-    // The panel's FriendPersonMenu, which every row's ⋯ opens.
     property var menu: null
 
-    // What FriendsSidePanel works out from the controller, for this and the
-    // strip alike: "off", "noAccount", "signingIn", "error" or "ready"
-    // (Format.friendsPhase()); the server answers; the lists are shown, if
-    // not trusted; the list has been read; and how many friends there are.
+    // Derived by FriendsSidePanel from the controller, for this and the strip alike.
     property string phase: "off"
     property bool connected: false
     property bool stale: false
@@ -49,20 +28,15 @@ Item {
     // Format.friendsGrouped(): { playing, online, offline }.
     property var groups: ({ playing: [], online: [], offline: [] })
 
-    // Which groups show their rows. Offline is the long one and the least
-    // wanted, so it starts folded.
+    // Which groups show their rows; offline starts folded.
     property bool playingOpen: true
     property bool onlineOpen: true
     property bool offlineOpen: false
 
-    // The Friends page, on "friends", "requests" or "blocked", or "add" (the
-    // add field focused).
+    // tab: "friends", "requests", "blocked" or "add".
     signal friendsRequested(string tab)
-    // A path for Main.qml's navigate().
     signal navigateRequested(string target)
-    // Join this friend's server (a friend map); Main.qml picks the instance.
     signal joinRequested(var friend)
-    // Fold the panel back to the strip.
     signal collapseRequested()
 
     FriendsPanelHeader {
@@ -153,7 +127,6 @@ Item {
                     onToggled: root.offlineOpen = !root.offlineOpen
                 }
 
-                // No friends at all (once the list has arrived).
                 Column {
                     visible: root.loaded && root.friendCount === 0
                     width: parent.width
@@ -188,8 +161,6 @@ Item {
         }
     }
 
-    // Friends off, signed out, connecting or failed before anything was
-    // read: nothing to list. The page's own words for it.
     FriendsPageState {
         anchors.left: parent.left
         anchors.right: parent.right

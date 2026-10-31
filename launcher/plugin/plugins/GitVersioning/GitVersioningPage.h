@@ -2,18 +2,13 @@
  * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * GitVersioningPageController — ABI 5 declarative-UI controller for the
- * per-instance "Version History" page.
+ * GitVersioningPageController: ABI 5 declarative-UI controller for the per-instance "Version History" page.
  *
- * This replaces the former GitVersioningPage (a QWidget + BasePage
- * subclass). There is no QWidget here at all: the actual widget tree is
- * built by the host's PluginUiRenderer from the "mmco-ui/1" JSON document
- * this class maintains, and mounted fresh every time the instance window's
- * page list is rebuilt (see PluginManager::createInstancePages). This
- * object just owns the MMCO_UI_ANCHOR_INSTANCE_PAGE surface handle, the
- * cached commit list, and the current row selection, and pushes updates
- * through ui_surface_set / ui_surface_set_rows in response to events
- * delivered through MMCOUiEventCallback.
+ * No QWidget is involved: the host's PluginUiRenderer builds the widgets from the "mmco-ui/1" document
+ * this class maintains, freshly each time the instance window's page list is rebuilt
+ * (PluginManager::createInstancePages). This object owns the MMCO_UI_ANCHOR_INSTANCE_PAGE surface
+ * handle, the cached commit list and the current row selection, and pushes updates through
+ * ui_surface_set / ui_surface_set_rows in response to MMCOUiEventCallback events.
  */
 
 #pragma once
@@ -27,28 +22,19 @@ class GitVersioningPageController
 	GitVersioningPageController(MMCOContext* ctx, QString instanceId,
 								QString instanceRoot);
 
-	/* Builds the initial document from the current git state and
-	 * registers the MMCO_UI_ANCHOR_INSTANCE_PAGE surface. Must be called
-	 * once, before the instance's page list can be requested (i.e.
-	 * before the instance window can be opened for this instance) —
-	 * see GitVersioningPlugin.cpp's MMCO_HOOK_UI_MAIN_READY /
-	 * MMCO_HOOK_INSTANCE_CREATED handlers. */
+	/* Builds the initial document from the current git state and registers the INSTANCE_PAGE
+	 * surface. Call once, before the instance window can be opened (see the UI_MAIN_READY /
+	 * INSTANCE_CREATED handlers in GitVersioningPlugin.cpp). */
 	void createSurface();
 
-	/* Tears the surface down early — used when the instance itself is
-	 * removed while the plugin stays loaded. Safe to call more than
-	 * once. NOT needed on plugin unload: the host tears down every
-	 * surface a module still owns automatically before mmco_unload()
-	 * runs (see PluginManager::releaseSurfacesForModule) — calling this
-	 * afterwards would touch an already-freed handle. */
+	/* Tears the surface down early when the instance is removed while the plugin stays loaded; safe
+	 * to call more than once. Not needed on plugin unload: the host tears down a module's surfaces
+	 * before mmco_unload(), and calling this afterwards would touch a freed handle. */
 	void destroySurface();
 
-	/* Re-reads git state and pushes a fresh status line + row set to the
-	 * surface. Called from the Refresh button's click event and — to
-	 * keep the page as up to date as the old per-open BasePage
-	 * reconstruction used to be — every time this instance's page list
-	 * is about to be rebuilt (see GitVersioningPlugin.cpp's
-	 * MMCO_HOOK_UI_INSTANCE_PAGES handler). */
+	/* Re-reads git state and pushes a fresh status line and row set to the surface. Called from the
+	 * Refresh click and each time this instance's page list is about to be rebuilt
+	 * (UI_INSTANCE_PAGES handler). */
 	void reloadHistory();
 
   private:
@@ -66,12 +52,9 @@ class GitVersioningPageController
 
 	GitCommit selectedCommit() const;
 
-	/* Destructive-action confirmation, routed through the host's
-	 * ui_confirm_dialog (unchanged since ABI 2 — a single opaque host
-	 * dialog, not a persistent widget, so ABI 5 left it as-is). */
+	/* Destructive-action confirmation through the host's ui_confirm_dialog. */
 	bool confirm(const QString& title, const QString& message) const;
-	/* Info/warning toast, routed through the host's ui_show_message
-	 * (also unchanged since ABI 2). type: 0=info, 1=warning. */
+	/* Info/warning toast through ui_show_message. type: 0=info, 1=warning. */
 	void notify(int type, const QString& title, const QString& message) const;
 
 	QJsonObject buildDocument() const;

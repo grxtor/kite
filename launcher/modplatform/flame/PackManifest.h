@@ -26,29 +26,20 @@
 namespace Flame
 {
 	struct File {
-		// NOTE: throws JSONValidationError
 		bool parseFromBytes(const QByteArray& bytes);
 
 		int projectId = 0;
 		int fileId = 0;
-		// NOTE: the opposite to 'optional'. This is at the time of writing
-		// unused.
+		// NOTE: the opposite of 'optional'. Unused at the time of writing.
 		bool required = true;
 
-		// our
 		bool resolved = false;
 		QString fileName;
 		QUrl url;
 
-		/* SHA-1 digest and length of the file, as the API reports them.
-		 *
-		 * Recorded so an update can tell whether the file it is about to
-		 * fetch is already sitting in the instance: two versions of a
-		 * pack are mostly the same files, and the only trustworthy
-		 * answer to "do I already have this one" is what is on disk.
-		 *
-		 * Left empty/zero when the response does not carry them, which
-		 * costs nothing but a download. */
+		/* SHA-1 digest and length as the API reports them, so an update can tell
+		 * the file is already in the instance (two pack versions mostly share
+		 * files). Empty/zero when the response lacks them, which costs a download. */
 		QString sha1;
 		qint64 fileSize = 0;
 

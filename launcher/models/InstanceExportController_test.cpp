@@ -37,8 +37,7 @@
 
 namespace
 {
-	/* The global settings BaseInstance's constructor overrides or passes
-	 * through - the same set InstanceList_test.cpp registers. */
+	/* The global settings BaseInstance's constructor needs (as in InstanceList_test.cpp). */
 	SettingsObjectPtr makeGlobalSettings(const QString& dir)
 	{
 		auto settings = std::make_shared<INISettingsObject>(
@@ -64,7 +63,6 @@ namespace
 		return file.open(QIODevice::WriteOnly) && file.write(data) == data.size();
 	}
 
-	/* Until @p watcher's task is over, one way or the other. */
 	void waitFor(TaskWatcher* watcher)
 	{
 		if (watcher->succeeded() || watcher->failed()) {
@@ -74,8 +72,7 @@ namespace
 		QVERIFY(finished.wait(10000));
 	}
 
-	/* A NullInstance whose game folder can sit beneath it, as a Minecraft
-	 * instance's .minecraft does; empty is the instance folder itself. */
+	/* A NullInstance whose game folder can sit beneath it, as a Minecraft instance's .minecraft does. */
 	class TestInstance : public NullInstance
 	{
 	  public:
@@ -112,12 +109,10 @@ namespace
 } // namespace
 
 /*
- * Drives the controller against a NullInstance over a temporary folder: a
- * plain zip export end to end (the ignore lists, `.packignore`, unchecking
- * a folder through the tree model the QML TreeView uses), and the ways an
- * export can fail to start or fail once started. The pack formats need a
- * MinecraftInstance and the network, and are not exercised here beyond
- * being refused for an instance that is not one.
+ * Drives the controller against a NullInstance over a temporary folder: a plain
+ * zip export end to end, and the ways an export can fail to start or fail once
+ * started. Pack formats need a MinecraftInstance and the network, and are only
+ * checked to be refused for other instances.
  */
 class InstanceExportControllerTest : public QObject
 {
@@ -306,9 +301,8 @@ class InstanceExportControllerTest : public QObject
 
 int main(int argc, char* argv[])
 {
-	// The export reads instance icons as QIcon/QPixmap, which need a
-	// QGuiApplication; offscreen keeps this runnable on a headless runner, as
-	// in GameTextureIcons_test.cpp.
+	// The export reads icons as QIcon/QPixmap, which need a QGuiApplication;
+	// offscreen keeps this runnable headless.
 	qputenv("QT_QPA_PLATFORM", "offscreen");
 
 	QGuiApplication app(argc, argv);

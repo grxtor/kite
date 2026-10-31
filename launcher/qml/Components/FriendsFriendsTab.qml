@@ -5,24 +5,18 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The Friends page's "Friends" tab: everyone on the list in three groups --
- * playing, online, offline -- each a caption over rows that sit on the page
- * (FriendsGroup). With nobody on the list it is FriendsEmptyState instead;
- * until the list has been read it is neither, so a person with friends is
- * not told they have none while it loads.
+ * The Friends page's "Friends" tab: everyone on the list in three groups -- playing, online, offline (FriendsGroup).
+ * With nobody on the list it is FriendsEmptyState; until the list has been read it is neither, so a person with
+ * friends is not told they have none while it loads.
  */
 Item {
     id: root
 
-    // QmlShell.friends (FriendsController), or null.
+    // FriendsController, or null.
     property var controller: null
-    // The page's FriendPersonMenu.
     property var menu: null
-    // Main.qml's FriendJoinFlow.
     property var joinFlow: null
-    // The list is the last one read, not a live one.
     property bool stale: false
-    // The server answers: Join and ⋯ need it, reading the list does not.
     property bool actionsEnabled: true
 
     signal joinRequested(var friend)

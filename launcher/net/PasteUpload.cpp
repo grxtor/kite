@@ -146,7 +146,6 @@ void PasteUpload::executeTask()
 
 void PasteUpload::downloadError(QNetworkReply::NetworkError error)
 {
-	// error happened during download.
 	qCritical() << "Network error: " << error;
 	emitFailed(m_reply->errorString());
 }
@@ -154,7 +153,6 @@ void PasteUpload::downloadError(QNetworkReply::NetworkError error)
 void PasteUpload::downloadFinished()
 {
 	QByteArray data = m_reply->readAll();
-	// if the download succeeded
 	if (m_reply->error() == QNetworkReply::NetworkError::NoError) {
 		m_reply.reset();
 		QJsonParseError jsonError;
@@ -169,7 +167,6 @@ void PasteUpload::downloadFinished()
 			return;
 		}
 	}
-	// else the download failed
 	else {
 		emitFailed(QString("Network error: %1").arg(m_reply->errorString()));
 		m_reply.reset();

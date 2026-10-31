@@ -5,17 +5,13 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The Friends tab with nobody on it: not a blank box but what to do next.
- * The add field is on the page above, so this does not point at it again;
- * friends find each other by Minecraft name -- and have to use Kite too --
- * so it says so and shows yours, ready to copy and send (CopyName's chip).
- * It is an EmptyState like the other tabs', so the three share one type
- * scale and place.
+ * The Friends tab with nobody on it: what to do next. The add field is on the page above; friends find each other by
+ * Minecraft name (and have to use Kite too), so this says so and shows yours, ready to copy (CopyName's chip). An
+ * EmptyState like the other tabs', so the three share one type scale and place.
  */
 EmptyState {
     id: root
 
-    // Your Minecraft name, "" while it is not known.
     property string myName
 
     upperThird: true

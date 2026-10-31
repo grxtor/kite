@@ -9,17 +9,10 @@ import QtQuick.Dialogs as NativeDialogs
 import Kite.Theme
 
 /*
- * Answers the questions the core asks while it works -- "overwrite this?",
- * "which of these?", "which account?", "these mods must be downloaded by
- * hand" -- in the shell's own style instead of widget message boxes.
- * `host` is the shell's QmlUiHost; whenever it has a pending request, this
- * opens on it, and closing it any way other than a button counts as "no".
- *
- * The root is a plain Item, not the Dialog itself: kind == "filePicker"
- * answers through a native QtQuick.Dialogs file dialog instead of this
- * component's own chrome (there is no sensible way to draw an OS file
- * picker inside a themed Dialog body), so the two live as siblings here,
- * both reacting to the same `host`.
+ * Answers the core's questions ("overwrite this?", "which account?", ...) in
+ * the shell's style. The root is a plain Item: kind == "filePicker" answers
+ * through a native file dialog, a sibling of the themed Dialog. Closing any
+ * way other than a button counts as "no".
  */
 Item {
     id: wrapper
@@ -67,10 +60,7 @@ Item {
                     || kind === "optionalMods" ? 620 : 460,
                     parent ? parent.width - Theme.space.xxl * 2 : 460)
     modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
     topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
     bottomPadding: Theme.space.sm
     closePolicy: Popup.CloseOnEscape
     title: request ? request.title : ""
@@ -82,8 +72,6 @@ Item {
     }
 
     onRequestChanged: {
-        // filePicker answers through the native FileDialog below instead
-        // of this Dialog's own body -- see the file-level comment.
         if (kind === "filePicker") {
             return
         }
@@ -109,8 +97,6 @@ Item {
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
-        // The severity icon now leads the header badge instead of sitting
-        // beside the body text, so this is just the text at full width.
         Text {
             Layout.fillWidth: true
             // A plugin modal brings its own text in its document.
@@ -126,7 +112,6 @@ Item {
             onLinkActivated: (link) => Qt.openUrlExternally(link)
         }
 
-        // text: one line to type, prefilled with the suggested answer.
         TextField {
             id: textAnswer
             Layout.fillWidth: true
@@ -145,8 +130,8 @@ Item {
             }
         }
 
-        // Blocked mods: each file, whether it is already downloaded, and
-        // a way to its download page. The folder is watched in C++.
+        // Blocked mods: each file, whether downloaded, and a way to its download page; the folder
+        // is watched in C++.
         Column {
             Layout.fillWidth: true
             visible: root.kind === "blockedMods"
@@ -199,8 +184,6 @@ Item {
             }
         }
 
-        // Untrusted files: what would be written, and a deliberate pause
-        // before it can be accepted.
         Column {
             Layout.fillWidth: true
             visible: root.kind === "untrustedMods"
@@ -248,9 +231,8 @@ Item {
             }
         }
 
-        // Profile setup: a Microsoft account that owns Minecraft but has
-        // never picked a username -- checked live against Mojang's API,
-        // the way the widget ProfileSetupDialog does.
+        // Profile setup: a Microsoft account that owns Minecraft but has no username yet, checked
+        // live against Mojang's API.
         Column {
             Layout.fillWidth: true
             visible: root.kind === "profileSetup"
@@ -301,10 +283,8 @@ Item {
             }
         }
 
-        // pickAccount: which account to play with, and whether it becomes
-        // the default -- the widget ProfileSelectDialog's list and
-        // checkbox. The first account starts selected; double-clicking a
-        // row plays with it straight away.
+        // pickAccount: which account to play with and whether it becomes the default;
+        // double-clicking a row plays with it.
         Column {
             id: accountPicker
             Layout.fillWidth: true
@@ -361,8 +341,6 @@ Item {
                     contentItem: RowLayout {
                         spacing: Theme.space.sm
 
-                        // The player's head, as everywhere an account is
-                        // shown (PlayerHead): never a letter.
                         PlayerHead {
                             Layout.leftMargin: Theme.space.sm
                             size: accountPicker.faceSize
@@ -393,19 +371,14 @@ Item {
 
             CheckBox {
                 id: makeDefaultBox
-                // Its box on the account rows' left edge.
                 leftPadding: 0
                 text: qsTr("Make this the default account")
             }
         }
 
-        // modal: a plugin's one-off prompt (UiHost::runPluginModal()),
-        // drawn by the same PluginNode the plugin settings surfaces use.
-        // This request is the node's sink: a click on any node answers it,
-        // changes are remembered as the prompt's field values.
-        // Built afresh for every modal request (the request goes null
-        // between two of them), since PluginNode's inputs read their
-        // starting values once, when they are created.
+        // modal: a plugin's one-off prompt (UiHost::runPluginModal()); this request is the
+        // PluginNode sink. Built afresh per request, since PluginNode inputs read their starting
+        // values once.
         Loader {
             Layout.fillWidth: true
             active: root.kind === "modal" && !!root.request
@@ -417,9 +390,8 @@ Item {
             }
         }
 
-        // optionalMods: an ATLauncher pack's extra mods, ticked in place on
-        // the request's AtlOptionalModsModel, which applies the pack's own
-        // rules (dependencies, one per group). Hidden rows are libraries.
+        // optionalMods: an ATLauncher pack's extra mods, ticked on the request's
+        // AtlOptionalModsModel, which applies the pack's rules. Hidden rows are libraries.
         Column {
             id: optionalModsBox
             Layout.fillWidth: true
@@ -479,8 +451,6 @@ Item {
                 }
             }
             Row {
-                // Pulled out by the flat button's own padding, so the first
-                // label starts on the list box's edge.
                 x: -recommendedButton.leftPadding
                 spacing: Theme.space.sm
                 Button {
@@ -497,7 +467,6 @@ Item {
             }
         }
 
-        // Update: what changes, in the author's words.
         Column {
             Layout.fillWidth: true
             visible: root.kind === "update"
@@ -521,7 +490,6 @@ Item {
                 width: parent.width
                 height: Math.min(260, notes.implicitHeight + Theme.space.md)
                 visible: notes.source.length > 0
-                // Release notes may link images; see RemoteRichText.
                 RemoteRichText {
                     id: notes
                     width: parent.width
@@ -539,7 +507,6 @@ Item {
         padding: Theme.space.xl
         topPadding: 0
 
-        // choose: one button per action, the first as the primary.
         Repeater {
             model: root.kind === "choose" && root.request ? root.request.actions : []
             delegate: Button {
@@ -551,8 +518,6 @@ Item {
             }
         }
 
-        // pickAccount: play with the selected account.
-        // A launch, so it wears the kite cut like every other Play.
         PlayButton {
             visible: root.kind === "pickAccount"
             round: false
@@ -560,7 +525,6 @@ Item {
             onClicked: accountPicker.play()
         }
 
-        // update: install / later / skip this version.
         Button {
             visible: root.kind === "update"
             highlighted: true
@@ -580,11 +544,8 @@ Item {
             onClicked: root.answer(() => root.request.answerUpdate("later"))
         }
 
-        // profileSetup: Create submits and, unlike every other kind, may
-        // fail without answering the request at all (a taken name, a
-        // server error) -- so this does not go through root.answer(), which
-        // would mark it answered before the request is actually done; only
-        // Cancel (below) ends the request from this footer for this kind.
+        // profileSetup: Create may fail without answering the request (taken name, server error),
+        // so it bypasses root.answer(), which would mark it answered; only Cancel ends the request.
         Button {
             visible: root.kind === "profileSetup"
             highlighted: true
@@ -619,10 +580,8 @@ Item {
     }
     }
 
-    // filePicker: a plugin's open/save dialog, shown natively rather than
-    // inside root's own themed body (see the file-level comment). Plain
-    // accept()/reject() -- the same generic answer mechanism "text" uses --
-    // so QmlUiHost needs no filePicker-specific invokables of its own.
+    // filePicker: a plugin's open/save dialog, shown natively. Plain accept()/reject(), as "text"
+    // does, so QmlUiHost needs no filePicker invokables.
     NativeDialogs.FileDialog {
         id: nativeFileDialog
         readonly property var request: wrapper.host ? wrapper.host.current : null
@@ -641,10 +600,8 @@ Item {
                 var req = wrapper.host ? wrapper.host.current : null
                 if (!req || req.kind !== "filePicker")
                     return
-                // Set fresh before every open(), imperatively rather than as
-                // a binding: FileDialog owns selectedFile once shown (the
-                // user's pick lives there too), so a binding here would only
-                // ever apply once.
+                // Set before every open(), imperatively: FileDialog owns selectedFile once shown,
+                // so a binding would apply only once.
                 nativeFileDialog.selectedFile =
                     req.filePickerMode === "save"
                         ? Format.fileUrl(req.filePickerDefaultPath) : ""

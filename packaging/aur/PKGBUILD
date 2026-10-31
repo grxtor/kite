@@ -31,9 +31,8 @@ package() {
   install -d "$pkgdir/opt/kite" "$pkgdir/usr/bin" "$pkgdir/usr/share"
   bsdtar -xf "$srcdir/$tarball" -C "$pkgdir/opt/kite"
 
-  # pacman updates Kite now. Without portable.txt the data goes to
-  # ~/.local/share/Kite, and without the updater the app stops offering
-  # updates of its own.
+  # pacman updates Kite, so the updater goes. Without portable.txt data lives in
+  # ~/.local/share/Kite.
   rm "$pkgdir/opt/kite/"{portable.txt,manifest.txt} "$pkgdir/opt/kite/bin/kite-updater"
   ln -s /opt/kite/Kite "$pkgdir/usr/bin/kite"
 

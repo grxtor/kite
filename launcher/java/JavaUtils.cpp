@@ -43,9 +43,9 @@ JavaUtils::JavaUtils() {}
 
 QString JavaUtils::managedJavaRoot()
 {
-	/* The JavaDir setting: relative to the data folder (the working
-	 * directory) unless it is absolute. Without a launcher context, or
-	 * with the setting empty, the default "java" applies. */
+	// The JavaDir setting: relative to the data folder (the working directory)
+	// unless absolute. Without a launcher context or with it empty, "java"
+	// applies.
 	QString dir = QStringLiteral("java");
 	if (LAUNCHER && LAUNCHER->settings()) {
 		const QString configured =
@@ -215,7 +215,6 @@ QProcessEnvironment CleanEnviroment()
 			continue;
 		}
 #endif
-		// qDebug() << "Env: " << key << value;
 		env.insert(key, value);
 	}
 #ifdef Q_OS_LINUX

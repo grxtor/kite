@@ -87,7 +87,6 @@ void InstanceImportTask::executeTask()
 				&InstanceImportTask::downloadProgressChanged);
 		connect(job, &NetJob::failed, this,
 				&InstanceImportTask::downloadFailed);
-		// Show the file being fetched as its own line in the dialog.
 		propagateStepsFrom(job);
 		m_filesNetJob->start();
 	}
@@ -103,8 +102,7 @@ void InstanceImportTask::downloadFailed(QString reason)
 {
 	m_filesNetJob.reset();
 	if (m_aborted) {
-		/* Stopping on request arrives here too: a NetJob told to abort
-		 * reports it as a failure. */
+		/* An aborted NetJob reports failure; m_aborted tells the two apart. */
 		emitAborted();
 		return;
 	}
@@ -121,11 +119,8 @@ void InstanceImportTask::processZipPack()
 	setStatus(tr("Inspecting modpack archive"));
 	qDebug() << "Detecting modpack type for" << m_archivePath;
 
-	// Run ALL archive scanning in a background thread so the UI stays
-	// responsive. We also do a single listEntries() pass instead of
-	// calling findFolderOfFileInZip() / entryExists() separately (each of
-	// which would re-open the archive, and findFolderOfFileInZip is
-	// recursive so it opens the archive once per directory level).
+	// Scans the archive off the UI thread in one listEntries() pass;
+	// findFolderOfFileInZip() reopens it per directory level.
 	const QString archivePath = m_archivePath;
 	const QString stagingPath = m_stagingPath;
 
@@ -133,22 +128,19 @@ void InstanceImportTask::processZipPack()
 		DetectResult result;
 		result.extractTarget = stagingPath;
 
-		// Single archive open + single linear scan over all entries.
 		const QStringList entries = MMCZip::listEntries(archivePath);
 
-		// Helper: find the folder prefix (e.g. "root/") for the first
-		// entry whose filename component equals `needle`.
-		// Returns "" (empty, non-null) if found at root.
-		// Returns QString() (null) if not found.
+		// Folder prefix of the first entry whose file name is `needle`: empty
+		// at the root, null if absent.
 		auto findFolder = [&entries](const QString& needle) -> QString {
 			for (const QString& e : entries) {
 				if (e == needle)
-					return QLatin1String(""); // found at root
+					return QLatin1String("");
 				if (e.endsWith(QLatin1Char('/') + needle)) {
 					return e.left(e.lastIndexOf(QLatin1Char('/')) + 1);
 				}
 			}
-			return {}; // null → not found
+			return {};
 		};
 
 		result.mmcRoot = findFolder(QStringLiteral("instance.cfg"));
@@ -160,8 +152,6 @@ void InstanceImportTask::processZipPack()
 			entries.contains(QStringLiteral("bin/modpack.jar/")) ||
 			entries.contains(QStringLiteral("bin/version.json/"));
 
-		// For Technic, create the target subdir now (background thread is
-		// fine for filesystem ops).
 		if (result.technicFound && result.mmcRoot.isNull() &&
 			result.modrinthRoot.isNull()) {
 			QDir extractDir(stagingPath);
@@ -181,16 +171,14 @@ void InstanceImportTask::processZipPack()
 void InstanceImportTask::detectFinished()
 {
 	if (m_aborted) {
-		/* Inspecting the archive cannot be interrupted, so an abort
-		 * during it is reported here, once the scan has run itself
-		 * out. */
+		/* The scan cannot be interrupted, so an abort is reported once it has
+		 * finished. */
 		emitAborted();
 		return;
 	}
 
 	const DetectResult r = m_detectFuture.result();
 
-	// Determine pack type (same priority order as before).
 	QString root;
 	if (!r.mmcRoot.isNull()) {
 		qDebug() << "Kite:" << r.mmcRoot;
@@ -203,8 +191,7 @@ void InstanceImportTask::detectFinished()
 	} else if (r.technicFound) {
 		qDebug() << "Technic";
 		m_modpackType = ModpackType::Technic;
-		/* root stays empty — an empty prefix means the whole archive,
-		 * which is what a Technic pack needs: it ships its files at the
+		/* Root stays empty: a Technic pack ships its files at the archive
 		 * root. */
 	} else if (!r.flameRoot.isNull()) {
 		qDebug() << "Flame:" << r.flameRoot;
@@ -230,9 +217,7 @@ void InstanceImportTask::detectFinished()
 		new MMCZip::ExtractZipTask(m_archivePath, QDir(r.extractTarget), root);
 	m_extractTask.reset(extract);
 
-	/* There is no separate "aborted" signal to listen for: a task that
-	 * stops on request reports it as a failure whose reason says so. The
-	 * flag latched in abort() is what tells the two apart. */
+	/* No separate aborted signal: m_aborted tells an abort from a failure. */
 	connect(extract, &Task::succeeded, this,
 			&InstanceImportTask::extractFinished);
 	connect(extract, &Task::failed, this, [this](const QString& reason) {
@@ -241,9 +226,8 @@ void InstanceImportTask::detectFinished()
 			emitAborted();
 			return;
 		}
-		/* Logged rather than shown: extractFailed() has a better thing
-		 * to say to the user than "Unsupported ZIP compression method",
-		 * and it also has to decide what to do with the archive. */
+		/* Logged only: extractFailed() tells the user more than the zip
+		 * library's reason, and decides what to do with the archive. */
 		qWarning() << "Extracting" << m_archivePath << "failed:" << reason;
 		extractFailed();
 	});
@@ -258,19 +242,14 @@ void InstanceImportTask::detectFinished()
 bool InstanceImportTask::abort()
 {
 	if (m_aborted) {
-		/* Already stopping. The verdict is on its way from whichever
-		 * step is in flight; a second one would be a second finished()
-		 * for the same task. */
+		/* Already stopping; a second verdict would emit finished() twice. */
 		return true;
 	}
 	m_aborted = true;
 
-	/* Whichever step is running is told to stop, and its own handler
-	 * reports the abort. Only one of them can be live at a time, but all
-	 * are checked rather than funnelled through a single "current task"
-	 * pointer: a step added later that forgot to register itself there
-	 * would be a step during which aborting silently did nothing, which
-	 * is the bug this whole change is here to fix. */
+	/* Every running step is told to stop, not just a "current task" pointer's:
+	 * a step that forgot to register there would ignore an abort. Only one is
+	 * live at a time. */
 	if (m_filesNetJob) {
 		m_filesNetJob->abort();
 		return true;
@@ -285,9 +264,8 @@ bool InstanceImportTask::abort()
 	}
 
 	if (m_detectFutureWatcher.isRunning()) {
-		/* Inspecting the archive is one pass over its entry list and
-		 * cannot be interrupted, but it is seconds at worst.
-		 * detectFinished() sees the flag and stops there. */
+		/* Inspecting is one uninterruptible pass; detectFinished() sees the
+		 * flag and stops there. */
 		return true;
 	}
 
@@ -295,19 +273,15 @@ bool InstanceImportTask::abort()
 	return true;
 }
 
-/* The archive could not be unpacked. Not reachable by aborting - that is
- * handled where the flag is checked - so this is always a real failure. */
+/* Always a real failure; aborts are handled where the flag is checked. */
 void InstanceImportTask::extractFailed()
 {
-	/* Only a download we cached is ours to throw away - a file the user
-	 * dragged in belongs to them, and deleting it because we could not
-	 * read it would be unforgivable. */
+	/* Only a cached download is ours to delete; a file the user dragged in is
+	 * theirs. */
 	if (m_archiveEntry) {
 		qWarning() << "Discarding unusable cached archive" << m_archivePath;
-		/* The file itself, not just the entry's freshness: a stale entry
-		 * whose file still exists makes the next request conditional,
-		 * the server answers 304, and we are back to the same damaged
-		 * bytes. */
+		/* Remove the file, not just the entry's freshness: a stale entry whose
+		 * file survives gets a 304 and the same damaged bytes. */
 		if (!QFile::remove(m_archivePath)) {
 			qWarning() << "Could not remove" << m_archivePath;
 		}
@@ -341,12 +315,10 @@ void InstanceImportTask::extractFinished()
 		auto permissions = QFile::permissions(filepath);
 		auto origPermissions = permissions;
 		if (file.isDir()) {
-			// Folder +rwx for current user
 			permissions |= QFileDevice::Permission::ReadUser |
 						   QFileDevice::Permission::WriteUser |
 						   QFileDevice::Permission::ExeUser;
 		} else {
-			// File +rw for current user
 			permissions |= QFileDevice::Permission::ReadUser |
 						   QFileDevice::Permission::WriteUser;
 		}
@@ -383,28 +355,15 @@ void InstanceImportTask::extractFinished()
 
 namespace
 {
-	/* Walk back from a Modrinth CDN download URL to what the catalogue
-	 * calls the file. The CDN path shape is stable:
-	 *
-	 *   https://cdn.modrinth.com/data/{projectId}/versions/{number}/{file}
-	 *
-	 * The project ID is the bare base62 id, not the human slug. The
-	 * segment after "versions" is the version *number* - the human
-	 * "1.1.1+1.17" - and not the version id, which does not appear in the
-	 * URL at all.
-	 *
-	 * Either string comes back empty when parsing fails, which makes the
-	 * caller skip that part of the sidecar. */
+	/* Parses a Modrinth CDN URL
+	 * (https://cdn.modrinth.com/data/{projectId}/versions/{number}/{file})
+	 * into the bare project id and the version number (e.g. "1.1.1+1.17"; the
+	 * version id is not in the URL). Empty strings on failure. */
 	struct ModrinthIds {
 		QString projectId;
-		/* Named for what it is on purpose.
-		 *
-		 * Read as a version id, this string broke everything downstream
-		 * that believed it: dependency resolution asked the version
-		 * endpoint for a name it has never heard of and took the 404 for
-		 * "this mod needs nothing", and the update check compared it
-		 * against real version ids, never matched, and offered every
-		 * modpack-installed mod an update to itself. */
+		/* A version number, not an id: used as one it broke dependency
+		 * resolution and made the update check offer every mod an update to
+		 * itself. */
 		QString versionNumber;
 	};
 
@@ -423,11 +382,8 @@ namespace
 		return out;
 	}
 
-	/* Map a pack-relative `path` (e.g. "mods/sodium.jar") to the
-	 * containing folder of the file on disk. Returns empty when the
-	 * path doesn't sit under one of the indexable mod-like folders
-	 * — there's no sidecar story for arbitrary `config/foo.toml`
-	 * files. */
+	/* Maps a pack-relative `path` (e.g. "mods/sodium.jar") to the folder
+	 * holding its file; empty if not under an indexable mod-like folder. */
 	QString sidecarFolderForPath(const QString& minecraftDir,
 								 const QString& packRelativePath)
 	{
@@ -452,14 +408,9 @@ namespace
 		const QDateTime now = QDateTime::currentDateTimeUtc();
 		for (const auto& f : files) {
 			if (!f.clientSupported) {
-				/* Never installed on a client - see processModrinth - so
-				 * there is no file here for a sidecar to describe. Worth
-				 * skipping explicitly rather than leaving to chance:
-				 * orphaned `.pw.toml` files are deliberately never
-				 * pruned, because in a packwiz pack the sidecar is the
-				 * definition and the file beside it may simply not have
-				 * been downloaded yet. One written here would stay for
-				 * good, claiming a mod the instance does not have. */
+				/* Never installed on a client, so no sidecar: orphaned
+				 * `.pw.toml` files are never pruned, and one written here
+				 * would claim a mod the instance lacks. */
 				continue;
 			}
 			const QString folder = sidecarFolderForPath(minecraftDir, f.path);
@@ -469,26 +420,16 @@ namespace
 			if (ids.projectId.isEmpty())
 				continue;
 
-			/* `QDir folderDir(folder)` (instead of the would-be
-			 * vexing-parse `ModMetadataIndex idx(QDir(folder))`).
-			 * Same end result, no ambiguity for the compiler. */
 			QDir folderDir(folder);
 			ModMetadataIndex idx(folderDir);
 			ModMetadataIndex::Entry e;
 			e.fileName = QFileInfo(f.path).fileName();
 			e.platform = QStringLiteral("modrinth");
 			e.projectId = ids.projectId;
-			/* No version id: an mrpack does not contain one and nothing
-			 * here can invent it. What identifies this exact file is its
-			 * hash, recorded below, and that is what the update check and
-			 * the dependency resolver fall back to. The version *number*
-			 * - all the URL offers - goes in the field that means it,
-			 * where it can be shown to the user without being sent
-			 * somewhere an id is expected. */
+			/* An mrpack has no version id; the recorded hash identifies the
+			 * file, and the version number goes in its own field. */
 			e.versionNumber = ids.versionNumber;
-			/* mrpack manifests don't carry per-file display names;
-			 * the file name is what the user sees in the mod list
-			 * anyway. */
+			/* mrpack manifests carry no display names; use the file name. */
 			e.name = QFileInfo(f.path).completeBaseName();
 			e.downloadUrl = f.downloadUrl.toString();
 			e.sha1 = f.sha1;
@@ -505,9 +446,6 @@ namespace
 		for (const auto& f : files) {
 			if (f.fileName.isEmpty() || f.projectId == 0 || f.fileId == 0)
 				continue;
-			/* `targetFolder` is whatever the manifest declared —
-			 * usually "mods" but resourcepacks/shaderpacks may show
-			 * up too. */
 			const QString folder =
 				FS::PathCombine(minecraftDir, f.targetFolder);
 			QDir folderDir(folder);
@@ -524,21 +462,9 @@ namespace
 		}
 	}
 
-	/* Whether the file at @p path is already exactly the file the pack
-	 * wants there.
-	 *
-	 * Used to skip re-downloading what an update does not change, which
-	 * for a modpack is most of it: two versions of a pack usually differ
-	 * by a handful of mods out of hundreds, and the rest is megabytes we
-	 * would fetch only to write the same bytes back.
-	 *
-	 * The digest is read off the disk rather than compared between the
-	 * two manifests. It costs a pass over files we are keeping, which is
-	 * still far cheaper than downloading them, and it answers the
-	 * question that actually matters: is the file *there* the right one.
-	 * A manifest-to-manifest comparison would happily keep a jar the user
-	 * has since replaced, or one that a half-finished earlier update left
-	 * truncated. */
+	/* Whether the file at @p path already has the expected digest, to skip
+	 * re-downloading what an update does not change. Read off the disk, not
+	 * compared between manifests, so a replaced or truncated jar is caught. */
 	bool fileMatchesHash(const QString& path, const QString& sha1,
 						 qint64 expectedSize)
 	{
@@ -549,8 +475,6 @@ namespace
 		if (!info.isFile()) {
 			return false;
 		}
-		/* Cheap disqualifier first: a stat call rules out most changed
-		 * files without reading them. */
 		if (expectedSize > 0 && info.size() != expectedSize) {
 			return false;
 		}
@@ -567,7 +491,6 @@ namespace
 				   .compare(sha1, Qt::CaseInsensitive) == 0;
 	}
 
-	/* Every file under `dir`, as paths relative to it. */
 	QStringList listFilesRelative(const QString& dir)
 	{
 		QStringList found;
@@ -586,9 +509,8 @@ namespace
 
 void InstanceImportTask::processFlame()
 {
-	/* First, because everything below depends on whether this install is
-	 * replacing an instance - starting with the name of the directory the
-	 * overrides are about to be moved into. */
+	/* Asked first: whether this replaces an instance decides the directory
+	 * name the overrides move into. */
 	if (!resolveUpdateTargetFromCatalogue()) {
 		emitFailed(tr("Installation cancelled."));
 		return;
@@ -623,13 +545,10 @@ void InstanceImportTask::processFlame()
 
 	configureFlameInstance(pack);
 
-	/* The pack's overrides *are* the game directory at this point - the
-	 * folder was renamed into place above and nothing has been downloaded
-	 * into it yet - so this is the one moment where they can be told
-	 * apart from the manifest's files. Read after configuring the
-	 * instance, which is what moves any bundled jar mods out into the
-	 * component patches, so files that are no longer there are not
-	 * recorded as if they were. */
+	/* The overrides are the game directory right now, before any download, so
+	 * this is the only moment to tell them from the manifest's files. Read
+	 * after configuring the instance, which moves bundled jar mods out into
+	 * component patches. */
 	m_packOverridePaths =
 		listFilesRelative(FS::PathCombine(m_stagingPath, gameDirName()));
 
@@ -649,16 +568,10 @@ void InstanceImportTask::processFlame()
 	m_modIdResolver->start();
 }
 
-/* Which catalogue a set of downloads is supposed to be coming from.
- *
- * The two are kept apart on purpose: a Modrinth pack naming a CurseForge
- * CDN (or the other way round) is not a normal thing for a pack to do,
- * and treating either catalogue's network as trusted everywhere would
- * hand any pack a host it can use without being questioned. */
+/* Which catalogue a set of downloads should come from; kept apart so neither
+ * catalogue's network is trusted for the other's packs. */
 enum class ContentSource { Modrinth, CurseForge };
 
-/* Defined further down, next to the reasoning about which hosts are
- * trusted; declared here because both manifest processors ask. */
 static bool isKnownContentHost(const QUrl& url, ContentSource source);
 
 static QString selectFlameIcon(const QString& instIcon,
@@ -670,7 +583,7 @@ static QString selectFlameIcon(const QString& instIcon,
 		return "steve";
 	if (pack.name.contains("FTB") || pack.name.contains("Feed The Beast"))
 		return "ftb_logo";
-	// default to something other than the Kite default to distinguish these
+	// Not the Kite default, so these packs can be told apart.
 	return "flame";
 }
 
@@ -715,7 +628,7 @@ void InstanceImportTask::configureFlameInstance(Flame::Manifest& pack)
 	MinecraftInstance instance(m_globalSettings, instanceSettings,
 							   m_stagingPath);
 	auto mcVersion = pack.minecraft.version;
-	// Hack to correct some 'special sauce'...
+	// Some packs have trailing dots in the Minecraft version.
 	if (mcVersion.endsWith('.')) {
 		mcVersion.remove(QRegularExpression("[.]+$"));
 		logWarning(tr("Mysterious trailing dots removed from Minecraft version "
@@ -725,7 +638,6 @@ void InstanceImportTask::configureFlameInstance(Flame::Manifest& pack)
 	components->buildingFromScratch();
 	components->setComponentVersion("net.minecraft", mcVersion, true);
 
-	// Handle Forge "recommended" version mapping
 	auto& forgeMapping = loaderMappings[0];
 	if (forgeMapping.version == "recommended") {
 		if (forgemap.contains(mcVersion)) {
@@ -750,7 +662,6 @@ void InstanceImportTask::configureFlameInstance(Flame::Manifest& pack)
 		FS::PathCombine(m_stagingPath, gameDirName(), "jarmods");
 	QFileInfo jarmodsInfo(jarmodsPath);
 	if (jarmodsInfo.isDir()) {
-		// install all the jar mods
 		qDebug() << "Found jarmods:";
 		QDir jarmodsDir(jarmodsPath);
 		QStringList jarMods;
@@ -761,15 +672,13 @@ void InstanceImportTask::configureFlameInstance(Flame::Manifest& pack)
 		}
 		auto profile = instance.getPackProfile();
 		profile->installJarMods(jarMods);
-		// nuke the original files
 		FS::deletePath(jarmodsPath);
 	}
 	instance.setName(m_instName);
 
-	/* Persist the pack-source hint so PackUpdater (and any other
-	 * plugin) can read it back through instance_setting_get without
-	 * sniffing the manifest. Prefer the hint set by the browser UI;
-	 * fall back to whatever we can recover from the manifest. */
+	/* Persists the pack-source hint for PackUpdater to read back without
+	 * sniffing the manifest: the browser UI's hint if set, else recovered from
+	 * the manifest. */
 	PackSourceHint hint = m_packHint;
 	if (hint.provider.isEmpty()) {
 		hint.provider = QStringLiteral("curseforge");
@@ -778,9 +687,8 @@ void InstanceImportTask::configureFlameInstance(Flame::Manifest& pack)
 		hint.versionLabel = pack.version;
 	}
 	if (hint.packSlug.isEmpty() && !pack.name.isEmpty()) {
-		/* CurseForge manifests don't carry the URL slug; the pack
-		 * name is the best we have for display until the user
-		 * (re)attaches through the plugin's UI. */
+		/* CurseForge manifests carry no URL slug; the pack name stands in
+		 * until the user attaches the pack. */
 		hint.packSlug = pack.name;
 	}
 	if (hint.packName.isEmpty() && !pack.name.isEmpty()) {
@@ -793,16 +701,9 @@ void InstanceImportTask::onFlameFileResolutionSucceeded()
 {
 	auto results = m_modIdResolver->getResults();
 
-	/* Same check as the Modrinth path, at the equivalent moment: the
-	 * resolver has just turned the manifest's project/file ids into real
-	 * download URLs, so this is the first point at which we know where
-	 * every mod would come from - and it is still before anything has
-	 * been fetched.
-	 *
-	 * Files the resolver could not resolve are left out: they have no URL
-	 * to judge, and they are handled separately as blocked mods, where
-	 * the user fetches them from CurseForge by hand and therefore sees
-	 * exactly what they are getting. */
+	/* Same check as the Modrinth path: the first point where every mod's URL
+	 * is known, before anything is fetched. Unresolved files have no URL to
+	 * judge and are handled as blocked mods. */
 	{
 		QStringList suspect;
 		for (const auto& file : results.files) {
@@ -827,26 +728,16 @@ void InstanceImportTask::onFlameFileResolutionSucceeded()
 
 	m_filesNetJob = new NetJob(tr("Mod download"), LAUNCHER->network());
 
-	// Collect restricted mods that need browser download
 	QList<BlockedMod> blockedMods;
 
-	/* What this version is responsible for, game-relative. Built from
-	 * this loop rather than from the manifest, so that it says what the
-	 * install actually does - including the ".disabled" suffix an
-	 * optional file gets, and excluding the entries we skip. */
+	/* Game-relative paths this version is responsible for, built from this
+	 * loop (so it has the ".disabled" suffix and excludes skipped entries). */
 	QStringList contentPaths = m_packOverridePaths;
 
-	/* On an update, what is already installed is worth looking at before
-	 * fetching anything - see the Modrinth path, which does the same for
-	 * the same reason. A CurseForge pack is where it matters most: they
-	 * are the large ones, and re-fetching a two-gigabyte pack to change
-	 * three mods is twenty minutes of somebody's connection spent
-	 * producing bytes they already had.
-	 *
-	 * Skipping a download leaves that path empty in staging, which is
-	 * what makes this safe: the commit step merges staging over the live
-	 * instance, so a path nothing was staged for keeps the file that is
-	 * already there. */
+	/* On an update, skip files already installed with the right hash;
+	 * re-fetching a large pack to change a few mods is wasteful. A skipped
+	 * path stays empty in staging, so the commit's merge keeps the existing
+	 * file. */
 	QDir installedGameDir;
 	bool canReuseInstalled = false;
 	if (!m_updateTarget.isEmpty()) {
@@ -886,12 +777,9 @@ void InstanceImportTask::onFlameFileResolutionSucceeded()
 				if (isBlocked && !result.fileName.isEmpty()) {
 					blockedMods.append({result.projectId, result.fileId,
 										result.fileName, path, false});
-					/* Recorded even though we are not the ones fetching
-					 * it: the pack asked for this file, and if the user
-					 * does hand it over it belongs to the pack exactly
-					 * like the rest. A path that ends up with no file
-					 * behind it costs nothing - the removal step skips
-					 * what is not there. */
+					/* Recorded although the user fetches it: if handed over it
+					 * belongs to the pack, and a path with no file costs
+					 * nothing. */
 					contentPaths.append(gameRelPath);
 					break;
 				}
@@ -906,13 +794,9 @@ void InstanceImportTask::onFlameFileResolutionSucceeded()
 					if (!result.sha1.isEmpty()) {
 						sawAnyDigest = true;
 					}
-					/* Both names the file could be under. A mod the user
-					 * turned off is still the file the pack asked for,
-					 * and fetching the enabled copy next to it would
-					 * both waste the download and quietly turn the mod
-					 * back on. The name the pack wants is tried first,
-					 * so an unchanged install stays byte-for-byte as it
-					 * was. */
+					/* Both the enabled and disabled names are checked:
+					 * fetching the enabled copy would turn a disabled mod back
+					 * on. The name the pack wants is tried first. */
 					const QString otherRel =
 						result.required
 							? gameRelPath + QLatin1String(".disabled")
@@ -928,9 +812,7 @@ void InstanceImportTask::onFlameFileResolutionSucceeded()
 						}
 					}
 					if (!keep.isEmpty()) {
-						/* Recorded under the name it actually has on
-						 * disk, since that is the file this version is
-						 * responsible for. */
+						/* Recorded under its on-disk name. */
 						contentPaths.append(keep);
 						reusedCount++;
 						break;
@@ -963,16 +845,12 @@ void InstanceImportTask::onFlameFileResolutionSucceeded()
 		qDebug() << "Keeping" << reusedCount
 				 << "file(s) already installed at the right version";
 	} else if (canReuseInstalled && !sawAnyDigest) {
-		/* Worth saying out loud rather than just being slow: without a
-		 * digest from the API there is no way to prove a file on disk is
-		 * the one the pack wants, so every file is fetched again. That is
-		 * correct but expensive, and if it ever becomes the normal case
-		 * the log is where it will show up. */
+		/* Without a digest from the API every file is fetched again; logged
+		 * because that is expensive. */
 		qWarning() << "CurseForge returned no SHA-1 for any file in this "
 					  "version; the whole pack will be downloaded again";
 	}
 
-	// Handle restricted mods via dialog
 	if (!blockedMods.isEmpty()) {
 		if (LAUNCHER->uiHost()->resolveBlockedMods(
 				tr("Restricted Mods"),
@@ -1015,11 +893,8 @@ void InstanceImportTask::onFlameFileResolutionSucceeded()
 		return;
 	}
 
-	/* Same rationale as the Modrinth path: stash file metadata so
-	 * the post-download lambda can drop ModMetadataIndex sidecars
-	 * into `mods/.index/` etc. Without these, the launcher's
-	 * "Check for Updates" pass under the Mods tab silently skips
-	 * every CurseForge-installed mod. */
+	/* Stash file metadata for the sidecars, as in the Modrinth path; without
+	 * them the update check skips CurseForge-installed mods. */
 	const QString sidecarMcPath = FS::PathCombine(m_stagingPath, gameDirName());
 	const QVector<Flame::File> sidecarFiles = results.files;
 
@@ -1027,9 +902,8 @@ void InstanceImportTask::onFlameFileResolutionSucceeded()
 			[this, sidecarMcPath, sidecarFiles]() {
 				writeFlameModSidecars(sidecarMcPath, sidecarFiles);
 				m_filesNetJob.reset();
-				/* The pack is complete; the only thing left is the
-				 * optional head start on the game's own files, which
-				 * finishes the task either way. */
+				/* Only the optional head start on the game's own files is
+				 * left; it finishes the task either way. */
 				downloadFiles(openStagedInstance());
 				return;
 			});
@@ -1039,17 +913,14 @@ void InstanceImportTask::onFlameFileResolutionSucceeded()
 	});
 	connect(m_filesNetJob.get(), &NetJob::progress,
 			[&](qint64 current, qint64 total) { setProgress(current, total); });
-	// One line per mod being downloaded.
 	propagateStepsFrom(m_filesNetJob.get());
 	setStatus(tr("Downloading mods..."));
 	m_filesNetJob->start();
 }
 
-/* Returns what the overrides put into the game directory, as paths
- * relative to it - the pack is as responsible for these as it is for the
- * mods its manifest names, so an update has to account for both. Taken
- * from the override folders before they are copied, which is the last
- * moment they are still distinguishable from what is already there. */
+/* Returns what the overrides put into the game directory (game-relative).
+ * Taken before the copy, the last moment they are distinguishable from what is
+ * already there. */
 static QStringList applyModrinthOverrides(const QString& stagingPath,
 										  const QString& mcPath)
 {
@@ -1081,8 +952,6 @@ static QStringList applyModrinthOverrides(const QString& stagingPath,
 
 void InstanceImportTask::processModrinth()
 {
-	/* Same reason as the Flame path: asked before anything that depends
-	 * on the answer. */
 	if (!resolveUpdateTargetFromCatalogue()) {
 		emitFailed(tr("Installation cancelled."));
 		return;
@@ -1102,7 +971,6 @@ void InstanceImportTask::processModrinth()
 		return;
 	}
 
-	// Move overrides folder contents to the game directory
 	QString mcPath = FS::PathCombine(m_stagingPath, gameDirName());
 
 	QDir mcDir(mcPath);
@@ -1112,21 +980,14 @@ void InstanceImportTask::processModrinth()
 
 	m_packOverridePaths = applyModrinthOverrides(m_stagingPath, mcPath);
 
-	/* Everything that will end up being executed is now knowable: the
-	 * manifest says where each mod comes from, and the overrides have
-	 * already been unpacked, so any jars the pack simply carried are on
-	 * disk. Ask before fetching anything.
-	 *
-	 * Deliberately before the instance is configured - refusing here
-	 * leaves nothing behind but the staging directory, which the staging
-	 * step removes on failure. */
+	/* Every source is known and the overrides are unpacked: ask before
+	 * fetching anything. Before configuring the instance, so refusing leaves
+	 * only the staging directory, which is removed on failure. */
 	{
 		QStringList suspect;
 		for (const auto& file : pack.files) {
-			/* Files the pack marks unsupported on the client are never
-			 * fetched, so they are nothing to warn about: asking the
-			 * user to vouch for a download that is not going to happen
-			 * teaches them to wave the prompt through. */
+			/* Files unsupported on the client are never fetched, so they are
+			 * not worth a warning. */
 			if (!file.clientSupported) {
 				continue;
 			}
@@ -1145,7 +1006,6 @@ void InstanceImportTask::processModrinth()
 		}
 	}
 
-	// Create instance config
 	QString configPath = FS::PathCombine(m_stagingPath, "instance.cfg");
 	auto instanceSettings = std::make_shared<INISettingsObject>(configPath);
 	instanceSettings->registerSetting("InstanceType", "Legacy");
@@ -1159,8 +1019,6 @@ void InstanceImportTask::processModrinth()
 	struct ModLoaderMapping {
 		const QString& version;
 		const char* componentId;
-		/* The same loader as the content platforms name it. Kept next to
-		 * the component id so the two cannot drift apart. */
 		const char* platformName;
 	};
 	const ModLoaderMapping loaders[] = {
@@ -1188,12 +1046,8 @@ void InstanceImportTask::processModrinth()
 
 	instance.setName(m_instName);
 
-	/* Persist pack source — same logic as the Flame path. The
-	 * Modrinth manifest carries name + versionId, so even drag-drop
-	 * imports record enough to drive update checks (we use
-	 * `name` as the slug since Modrinth slugs and pack names align
-	 * for most published packs; the attach UI lets the user fix
-	 * mismatches). */
+	/* Persist the pack source as in the Flame path; `name` stands in for the
+	 * slug (they usually match, and the attach UI fixes mismatches). */
 	PackSourceHint hint = m_packHint;
 	if (hint.provider.isEmpty()) {
 		hint.provider = QStringLiteral("modrinth");
@@ -1212,12 +1066,8 @@ void InstanceImportTask::processModrinth()
 	}
 	writePackSourceToInstance(instance, hint);
 
-	/* What to tell Modrinth these downloads are for.
-	 *
-	 * Authors see their download counts, and a pack install shows up in
-	 * them either way; without this it shows up as though each mod had
-	 * been installed on its own. "update" and "modpack" are the two
-	 * things this task can honestly be doing. */
+	/* Tells Modrinth these downloads are for a pack ("modpack" or "update"),
+	 * not individual mods, for the authors' download counts. */
 	Net::ModrinthDownloadMeta downloadMeta;
 	downloadMeta.reason = m_updateTarget.isEmpty() ? QStringLiteral("modpack")
 												   : QStringLiteral("update");
@@ -1228,31 +1078,17 @@ void InstanceImportTask::processModrinth()
 			break;
 		}
 	}
-	/* Which pack version pulled them in, when we know it. */
 	downloadMeta.dependentOn = m_updateTarget.versionId.isEmpty()
 								   ? pack.versionId
 								   : m_updateTarget.versionId;
 
-	// Download all mod files
 	m_filesNetJob =
 		new NetJob(tr("Modrinth mod download"), LAUNCHER->network());
 	auto minecraftDir = FS::PathCombine(m_stagingPath, gameDirName());
 	auto canonicalBase = QDir(minecraftDir).canonicalPath();
-	/* What this version is responsible for. Built from the same loop that
-	 * queues the downloads, so a file we decided not to install does not
-	 * get recorded as if we had. */
 	QStringList contentPaths = m_packOverridePaths;
 
-	/* On an update, the files already sitting in the instance are worth
-	 * looking at before fetching anything: most of a pack does not change
-	 * between two versions, and re-downloading a file we can prove we
-	 * already have is minutes of somebody's connection spent producing
-	 * identical bytes.
-	 *
-	 * Skipping a download leaves that path empty in the staged instance,
-	 * which is exactly right - the commit step merges staging over the
-	 * live instance, so a path nothing was staged for keeps the file that
-	 * is already there. */
+	/* On an update, skip files already installed with the right hash. */
 	QDir installedGameDir;
 	bool canReuseInstalled = false;
 	if (!m_updateTarget.isEmpty()) {
@@ -1274,24 +1110,17 @@ void InstanceImportTask::processModrinth()
 			continue;
 		}
 		if (!file.clientSupported) {
-			/* The pack says this file has no business on a client, and a
-			 * client is what we are installing. Left out entirely rather
-			 * than installed disabled: a server-only jar sitting in
-			 * mods/ under a ".disabled" name is a file the user never
-			 * asked for and would have to work out for themselves. */
+			/* Client-unsupported files are left out, not installed disabled: a
+			 * server-only jar under ".disabled" is a file the user never asked
+			 * for. */
 			qDebug() << "Skipping file the pack marks unsupported on the "
 						"client:"
 					 << file.path;
 			continue;
 		}
 
-		/* A file the pack offers rather than requires is installed
-		 * turned off, under the name this launcher uses to mean that.
-		 * The same treatment the CurseForge path gives a file its
-		 * manifest marks not-required, so a pack that travels through
-		 * either importer arrives the same way - and so an instance
-		 * exported with disabled mods and imported again still has them
-		 * disabled. */
+		/* An optional file is installed disabled, as in the CurseForge path,
+		 * so exported-then-imported instances keep their disabled mods. */
 		const QString targetPath =
 			file.required ? file.path
 						  : file.path + QLatin1String(".disabled");
@@ -1309,10 +1138,6 @@ void InstanceImportTask::processModrinth()
 			continue;
 		}
 		if (canReuseInstalled) {
-			/* Both names the file could be under. A mod the user turned
-			 * off is still the file the pack asked for, and re-fetching
-			 * the enabled copy next to it would both waste the download
-			 * and quietly turn the mod back on. */
 			const QString installedPath =
 				installedGameDir.absoluteFilePath(file.path);
 			QString keep;
@@ -1324,8 +1149,7 @@ void InstanceImportTask::processModrinth()
 				keep = file.path + QLatin1String(".disabled");
 			}
 			if (!keep.isEmpty()) {
-				/* Recorded under the name it actually has on disk, since
-				 * that is the file this version is responsible for. */
+				/* Recorded under its on-disk name. */
 				contentPaths.append(keep);
 				reusedCount++;
 				continue;
@@ -1350,13 +1174,9 @@ void InstanceImportTask::processModrinth()
 		return;
 	}
 
-	/* Stash a copy of pack files + the staging-instance .minecraft
-	 * dir so the post-download lambda can write mod-metadata
-	 * sidecars without dereferencing a stale stack frame. The
-	 * sidecars are what ModUpdateCheckTask uses to ask Modrinth
-	 * "is there a newer version?" later — without them every mod
-	 * looks like a hand-dropped jar and update detection silently
-	 * does nothing. */
+	/* Copy of the pack files and the staged .minecraft path, so the
+	 * post-download lambda can write sidecars without a stale stack frame;
+	 * without sidecars update detection does nothing. */
 	const QString sidecarMcPath = minecraftDir;
 	const QVector<Modrinth::File> sidecarFiles = pack.files;
 
@@ -1364,9 +1184,6 @@ void InstanceImportTask::processModrinth()
 			[this, sidecarMcPath, sidecarFiles]() {
 				writeModrinthModSidecars(sidecarMcPath, sidecarFiles);
 				m_filesNetJob.reset();
-				/* Same as the CurseForge path: the pack is complete, and
-				 * this finishes the task whether or not it does
-				 * anything. */
 				downloadFiles(openStagedInstance());
 			});
 	connect(m_filesNetJob.get(), &NetJob::failed, [&](QString reason) {
@@ -1375,7 +1192,6 @@ void InstanceImportTask::processModrinth()
 	});
 	connect(m_filesNetJob.get(), &NetJob::progress,
 			[&](qint64 current, qint64 total) { setProgress(current, total); });
-	// One line per mod being downloaded.
 	propagateStepsFrom(m_filesNetJob.get());
 
 	setStatus(tr("Downloading mods..."));
@@ -1387,17 +1203,10 @@ void InstanceImportTask::processTechnic()
 	shared_qobject_ptr<Technic::TechnicPackProcessor> packProcessor =
 		new Technic::TechnicPackProcessor();
 
-	/* The processor does all of its work inside run() and reports the
-	 * outcome through these signals, so the handlers only record what
-	 * happened and the rest is done once run() has returned.
-	 *
-	 * That ordering is the point, not a style choice: the processor
-	 * builds the staged instance.cfg through a settings object of its
-	 * own that lives until run() returns, and an INI settings object
-	 * rewrites the whole file from its in-memory copy on every change.
-	 * Writing to that same file from a second object while the first is
-	 * still alive means whichever saves last silently drops the other's
-	 * keys. */
+	/* The processor works inside run() and reports through these signals;
+	 * handlers only record the outcome. It builds the staged instance.cfg
+	 * through its own settings object, which rewrites the whole file on every
+	 * change, so no second object may write to it while this one lives. */
 	bool processed = false;
 	bool reportedFailure = false;
 	connect(packProcessor.get(), &Technic::TechnicPackProcessor::succeeded,
@@ -1410,37 +1219,27 @@ void InstanceImportTask::processTechnic()
 	packProcessor->run(m_globalSettings, m_instName, m_instIcon, m_stagingPath);
 
 	if (!processed || reportedFailure) {
-		/* Either the processor failed - and has already said why - or it
-		 * finished without reporting anything at all, which we cannot
-		 * treat as an install. */
+		/* Either the processor failed and said why, or it finished without
+		 * reporting; neither counts as an install. */
 		if (!processed && !reportedFailure) {
 			emitFailed(tr("The Technic pack could not be processed."));
 		}
 		return;
 	}
 
-	/* A Technic pack has no manifest naming its files: the archive *is*
-	 * the file list, and by now the processor has unpacked all of it. So
-	 * whatever is in the game directory is precisely what this pack
-	 * shipped, which is what a later update needs to know to clean up
-	 * after it. */
+	/* A Technic pack has no manifest: the archive is the file list, so the
+	 * game directory holds exactly what the pack shipped, which a later update
+	 * needs. */
 	if (!recordPackContents(listFilesRelative(stagedGameDir()))) {
 		emitFailed(tr("Installation cancelled."));
 		return;
 	}
 
-	/* Same reasoning as the Kite path: a Technic archive carries no
-	 * catalogue identity, but this path is reachable as an "update from
-	 * file" of a managed instance, and the staged instance.cfg replaces
-	 * the live one. Without this the instance comes back from a
-	 * successful update no longer recognised as a managed pack.
-	 *
-	 * The instance is reopened here rather than reusing the processor's
-	 * own - that one is gone, by design, see above. A NullInstance is
-	 * enough: only the settings object is needed, and the keys written
-	 * are registered by BaseInstance. Keys already in the file that this
-	 * object never registers are preserved, because the settings object
-	 * saves the copy of the file it loaded. */
+	/* As in the Kite path: reachable as an "update from file" of a managed
+	 * instance, whose live instance.cfg the staged one replaces, so the pack
+	 * identity must be written. The instance is reopened as a NullInstance
+	 * (the processor's is gone); only its settings object is needed, and
+	 * unregistered keys in the file are kept. */
 	QString configPath = FS::PathCombine(m_stagingPath, "instance.cfg");
 	auto instanceSettings = std::make_shared<INISettingsObject>(configPath);
 	NullInstance instance(m_globalSettings, instanceSettings, m_stagingPath);
@@ -1457,13 +1256,10 @@ void InstanceImportTask::processKite()
 
 	NullInstance instance(m_globalSettings, instanceSettings, m_stagingPath);
 
-	// reset time played on import... because packs.
 	instance.resetTimePlayed();
 
-	// Set a new name for the imported instance
 	instance.setName(m_instName);
 
-	// Use user-specified icon if available, otherwise import from the pack
 	if (m_instIcon != "default") {
 		instance.setIconKey(m_instIcon);
 	} else {
@@ -1472,7 +1268,6 @@ void InstanceImportTask::processKite()
 		auto importIconPath =
 			IconUtils::findBestIconIn(instance.instanceRoot(), m_instIcon);
 		if (!importIconPath.isNull() && QFile::exists(importIconPath)) {
-			// import icon
 			auto iconList = LAUNCHER->icons();
 			if (iconList->iconFileExists(m_instIcon)) {
 				iconList->deleteIcon(m_instIcon);
@@ -1481,67 +1276,49 @@ void InstanceImportTask::processKite()
 		}
 	}
 
-	/* Same as the Technic path: a Kite pack is its own file list, so
-	 * what was unpacked is what the pack consists of. */
+	/* A Kite pack is its own file list. */
 	if (!recordPackContents(listFilesRelative(stagedGameDir()))) {
 		emitFailed(tr("Installation cancelled."));
 		return;
 	}
 
-	/* A Kite archive ships its own instance.cfg and says nothing about
-	 * which catalogue pack it is, so there is nothing here to recover a
-	 * hint from - whatever the caller knew is all there is.
-	 *
-	 * It still has to be written, because this path is reachable as an
-	 * update: "update from file" on a managed instance hands us an
-	 * archive that happens to be in this format. The staged instance.cfg
-	 * replaces the live one on commit, so anything not written into it
-	 * is gone - the pack's identity, and with it the page that offered
-	 * the update in the first place. A plain import has no hint and no
-	 * update target, which leaves this a no-op. */
+	/* A Kite archive carries no catalogue identity, but this is reachable as
+	 * an "update from file", and the staged instance.cfg replaces the live
+	 * one, so whatever the caller knew must be written. A plain import has no
+	 * hint: a no-op. */
 	writePackSourceToInstance(instance, m_packHint);
 
 	emitSucceeded();
 }
 
-/* Hosts a modpack's mod downloads are allowed to name without the user
- * being asked about it.
- *
- * Only the two catalogues' own content networks. Anything else may be
- * perfectly innocent - plenty of mods are hosted by their authors - but
- * "innocent" is not something the launcher can establish, and the file
- * is going to be loaded as code by the game. So the answer is to name it
- * and let the user decide, not to guess. */
+/* Hosts a pack's downloads may name without asking the user: only the two
+ * catalogues' content networks. Anything else may be innocent, but the game
+ * loads the file as code, so the user decides. */
 static bool isKnownContentHost(const QUrl& url, ContentSource source)
 {
 	if (url.scheme() != QLatin1String("https")) {
-		/* Plain http means the file can be swapped in transit whatever
-		 * the host says. */
+		/* Plain http can be swapped in transit. */
 		return false;
 	}
 
 	const QString host = url.host().toLower();
 	switch (source) {
 		case ContentSource::Modrinth:
-			/* Not just Modrinth's own CDN: the mrpack format allows a
-			 * manifest to name downloads from a small set of hosts, and
-			 * a pack that points at a GitHub release is conformant
-			 * rather than suspect. Refusing them here would raise an
-			 * untrusted-content warning on packs Modrinth itself
-			 * accepts, which teaches the user that the warning means
-			 * nothing. See ModrinthApi::mrpackHosts(). */
+			/* The mrpack format allows a few other hosts (e.g. a GitHub
+			 * release); refusing them would warn on packs Modrinth accepts.
+			 * See ModrinthApi::mrpackHosts(). */
 			return ModrinthApi::mrpackHosts().contains(host);
 
 		case ContentSource::CurseForge:
-			/* CurseForge serves files from several numbered edge nodes
-			 * under this domain, so it is matched by suffix - anchored
-			 * with the dot so that "notforgecdn.net" cannot pass. */
+			/* CurseForge serves from numbered edge nodes under this domain:
+			 * matched by suffix, anchored with the dot so "notforgecdn.net"
+			 * cannot pass. */
 			if (host == QLatin1String("forgecdn.net") ||
 				host.endsWith(QLatin1String(".forgecdn.net"))) {
 				return true;
 			}
-			/* The site's own download route, which is where we are sent
-			 * for files the API will not hand out directly. */
+			/* The site's own download route, where files the API will not
+			 * serve are sent. */
 			return host == FlameApi::siteHost();
 	}
 	return false;
@@ -1552,10 +1329,8 @@ InstanceImportTask::findBundledCode(const QString& minecraftDir) const
 {
 	QStringList found;
 
-	/* Where the game loads code from. Resource and shader packs are left
-	 * out: they are data, and listing every texture pack in a warning
-	 * about executable content would train the user to click through
-	 * it. */
+	/* Where the game loads code from. Resource and shader packs are data and
+	 * would make the warning noise. */
 	const QStringList codeFolders = {
 		QStringLiteral("mods"), QStringLiteral("coremods"),
 		QStringLiteral("jarmods"), QStringLiteral("plugins")};
@@ -1567,23 +1342,16 @@ InstanceImportTask::findBundledCode(const QString& minecraftDir) const
 			continue;
 		}
 
-		/* Everything in "mods" is reported, whatever it is called.
-		 *
-		 * The extension is not what decides whether a file gets loaded -
-		 * the loader is, and a pack is free to point it at a file named
-		 * anything at all. Filtering on ".jar" here would mean a pack
-		 * could smuggle code past this list by choosing a different
-		 * name, which is precisely the case the list exists for. The
-		 * other three folders only ever hold jars, so filtering there
-		 * costs nothing and keeps the odd stray text file out of a
-		 * security prompt. */
+		/* Everything in "mods" is listed whatever its name: the loader, not
+		 * the extension, decides what is loaded, so filtering on ".jar" would
+		 * let a pack smuggle code past this list. The other folders only hold
+		 * jars. */
 		const bool listEverything = folder == QLatin1String("mods");
 
 		QDirIterator it(path, QDir::Files, QDirIterator::Subdirectories);
 		while (it.hasNext()) {
 			const QString file = it.next();
-			/* ".jar.disabled" counts too - it is one rename away from
-			 * being loaded. */
+			/* ".jar.disabled" counts: it is one rename from being loaded. */
 			if (listEverything ||
 				file.endsWith(QLatin1String(".jar"), Qt::CaseInsensitive) ||
 				file.endsWith(QLatin1String(".jar.disabled"),
@@ -1606,14 +1374,9 @@ MinecraftInstance* InstanceImportTask::openStagedInstance()
 		return nullptr;
 	}
 
-	/* Opened fresh rather than handed down from the code that configured
-	 * the pack. That object is long gone by now, on purpose: an INI
-	 * settings object rewrites the whole file from its in-memory copy on
-	 * every change, so two of them over one instance.cfg means the last
-	 * to write wins and the other's keys vanish. Letting the first one go
-	 * before opening the second is what keeps that from happening - and
-	 * it also means the pack profile it built has been flushed to disk,
-	 * which is what we are about to read. */
+	/* Opened fresh: two INI settings objects over one instance.cfg lose keys
+	 * (each rewrites the whole file), so the first was let go; that also
+	 * flushed the pack profile read next. */
 	auto settings = std::make_shared<INISettingsObject>(configPath);
 	settings->registerSetting("InstanceType", "Legacy");
 	m_gameFilesInstance = std::make_shared<MinecraftInstance>(
@@ -1630,26 +1393,22 @@ bool InstanceImportTask::confirmUntrustedFiles(const QStringList& suspectPaths)
 	qWarning() << "Untrusted modpack carries" << suspectPaths.size()
 			   << "file(s) we cannot vouch for";
 
-	/* A surface of its own, with the files listed on it and consent as a
-	 * separate deliberate act. */
 	return LAUNCHER->uiHost()->confirmUntrustedMods(suspectPaths);
 }
 
 bool InstanceImportTask::resolveUpdateTargetFromCatalogue()
 {
 	if (!m_updateTarget.isEmpty()) {
-		/* The pack page already named the instance to replace. Asking
-		 * again would be asking the user to repeat themselves. */
+		/* The pack page already named the instance to replace. */
 		return true;
 	}
 	if (m_packHint.provider.isEmpty() || m_packHint.packId.isEmpty()) {
-		/* Not a catalogue install, so there is no id to match on. */
+		/* Not a catalogue install: nothing to match on. */
 		return true;
 	}
 	if (LAUNCHER->settings()->get("SkipModpackUpdatePrompt").toBool()) {
-		/* Turned off, so installing means installing: a second instance,
-		 * without the question. Checked before looking anything up so
-		 * that the answer costs nothing when nobody wants it. */
+		/* Switched off: install as a second instance without asking. Checked
+		 * before any lookup so it costs nothing. */
 		return true;
 	}
 
@@ -1665,8 +1424,6 @@ bool InstanceImportTask::resolveUpdateTargetFromCatalogue()
 			? QString()
 			: tr(", at version %1").arg(installedVersion);
 
-	/* Named actions rather than yes/no: there are three answers here and
-	 * two of them install something. */
 	const int choice = LAUNCHER->uiHost()->choose(
 		tr("This modpack is already installed"),
 		tr("The instance \"%1\" was installed from this modpack%2.\n\n"
@@ -1683,9 +1440,8 @@ bool InstanceImportTask::resolveUpdateTargetFromCatalogue()
 		{tr("Update existing instance"), tr("Create separate instance")});
 
 	if (choice == 0) {
-		/* The version fields are the catalogue entry the user picked -
-		 * the same thing the pack page would pass - because the instance
-		 * has to end up claiming the version it now actually has. */
+		/* The version fields are the catalogue entry the user picked: the
+		 * instance must claim the version it now has. */
 		UpdateTarget target;
 		target.instanceId = existing->id();
 		target.versionId = m_packHint.versionId;
@@ -1698,9 +1454,7 @@ bool InstanceImportTask::resolveUpdateTargetFromCatalogue()
 		return true;
 	}
 
-	/* Cancel, or the dialog dismissed without an answer. Treated as "do
-	 * nothing at all", which is the only reading that cannot surprise
-	 * anyone. */
+	/* Cancel or a dismissed dialog means do nothing at all. */
 	return false;
 }
 
@@ -1710,9 +1464,8 @@ QString InstanceImportTask::gameDirName()
 		return m_gameDirName;
 	}
 
-	/* What the importer has always staged, and what every instance it
-	 * created is therefore called. Also the answer for anything that is
-	 * not an update, where there is no existing name to respect. */
+	/* What the importer has always staged; also the answer for anything that
+	 * is not an update. */
 	m_gameDirName = QStringLiteral("minecraft");
 
 	if (m_updateTarget.isEmpty()) {
@@ -1737,8 +1490,8 @@ QString InstanceImportTask::gameDirName()
 
 QString InstanceImportTask::stagedGameDir()
 {
-	/* The same rule MinecraftInstance::gameRoot() applies, so that what
-	 * we read here is what the instance will call its game directory. */
+	/* Same rule as MinecraftInstance::gameRoot(), so this reads what the
+	 * instance will call its game directory. */
 	const QString minecraft = FS::PathCombine(m_stagingPath, "minecraft");
 	const QString dotMinecraft = FS::PathCombine(m_stagingPath, ".minecraft");
 
@@ -1748,21 +1501,14 @@ QString InstanceImportTask::stagedGameDir()
 	if (QFileInfo(dotMinecraft).isDir()) {
 		return dotMinecraft;
 	}
-	/* Neither is there, so there is nothing to enumerate and the answer
-	 * only has to be harmless. */
+	/* Neither exists: nothing to enumerate. */
 	return FS::PathCombine(m_stagingPath, gameDirName());
 }
 
-/* The sidecar recording where the mod at @p gameRelativePath came from,
- * or an empty string when there is none to speak of.
- *
- * @p indexes caches one loaded index per folder, because the answer for
- * one file requires reading every sidecar in its folder.
- *
- * Only the folders that can carry sidecars are looked at, which is the
- * same question sidecarFolderForPath() answers when the sidecars are
- * being written; anything else in a pack - a config file, a script - has
- * no provenance record to clean up. */
+/* The sidecar recording where the mod at @p gameRelativePath came from, or
+ * empty. @p indexes caches one loaded index per folder, since one file's
+ * answer needs every sidecar in its folder. Only folders that can carry
+ * sidecars are looked at, as in sidecarFolderForPath(). */
 static QString sidecarPathForModFile(
 	QHash<QString, std::shared_ptr<ModMetadataIndex>>& indexes,
 	const QDir& gameDir, const QString& gameRelativePath)
@@ -1782,13 +1528,8 @@ static QString sidecarPathForModFile(
 	return index->sidecarPathFor(QFileInfo(gameRelativePath).fileName());
 }
 
-/* Whether the user is willing to let a pack update delete save files it
- * no longer ships.
- *
- * Asked, rather than decided: a world is the one thing in an instance
- * that cannot be downloaded again, and a pack that shipped one has no
- * way of knowing whether the copy on disk is still the one it shipped or
- * a hundred hours of somebody's game. */
+/* Asked, not decided: a world cannot be downloaded again, and the pack cannot
+ * know whether the copy on disk is still the shipped one. */
 static bool askAboutDeletingSaves()
 {
 	return LAUNCHER->uiHost()->confirm(
@@ -1805,28 +1546,22 @@ static bool askAboutDeletingSaves()
 bool InstanceImportTask::recordPackContents(
 	const QStringList& gameRelativePaths)
 {
-	/* Written into the staging directory, so that it travels with the
-	 * files it describes: the commit step merges the staged instance over
-	 * the live one, which replaces the old list at the same moment it
-	 * replaces the old files. */
+	/* Written into staging so it travels with the files it describes: the
+	 * commit's merge replaces the old list together with the old files. */
 	if (!PackContents::write(m_stagingPath, gameRelativePaths)) {
-		/* Not fatal. What is lost is the *next* update's ability to clean
-		 * up after this one; refusing to install a pack that is otherwise
-		 * fine over that would be the worse trade. */
+		/* Not fatal: only the next update's cleanup is lost, which beats
+		 * refusing an otherwise good pack. */
 		qWarning() << "Could not record pack contents in" << m_stagingPath;
 	}
 
 	if (m_updateTarget.isEmpty()) {
-		/* A fresh install replaces nothing, so nothing is stale. */
 		return true;
 	}
 
 	auto previous =
 		LAUNCHER->instances()->getInstanceById(m_updateTarget.instanceId);
 	if (!previous) {
-		/* Gone between the page opening and the update running. The
-		 * commit step will have its own opinion about that; there is
-		 * nothing to clean up here either way. */
+		/* Gone since the page opened; nothing to clean up here. */
 		qWarning() << "Cannot diff pack contents against missing instance"
 				   << m_updateTarget.instanceId;
 		return true;
@@ -1835,9 +1570,8 @@ bool InstanceImportTask::recordPackContents(
 	auto minecraftPrevious =
 		std::dynamic_pointer_cast<MinecraftInstance>(previous);
 	if (!minecraftPrevious) {
-		/* The recorded paths are relative to a game directory, and only a
-		 * Minecraft instance has one. Rather than guess at a directory to
-		 * delete files in, do nothing. */
+		/* Recorded paths are relative to a game directory, which only a
+		 * Minecraft instance has; do nothing rather than guess. */
 		qWarning() << "Not diffing pack contents:" << previous->id()
 				   << "has no game directory";
 		return true;
@@ -1845,11 +1579,8 @@ bool InstanceImportTask::recordPackContents(
 
 	QStringList installedPaths;
 	if (!PackContents::read(previous->instanceRoot(), installedPaths)) {
-		/* Without the list there is no way to tell the pack's files from
-		 * the user's, and the difference decides what gets deleted. So
-		 * the update goes ahead without cleaning up, and says so - the
-		 * leftovers are visible to the user as duplicated mods, and being
-		 * surprised by that is worse than being told. */
+		/* Without the list the pack's files cannot be told from the user's, so
+		 * the update goes ahead without cleanup and says so. */
 		return LAUNCHER->uiHost()->confirm(
 			tr("No file list for the installed version"),
 			tr("The launcher has no record of which files the installed "
@@ -1872,26 +1603,21 @@ bool InstanceImportTask::recordPackContents(
 	}
 
 	const QDir gameDir(minecraftPrevious->gameRoot());
-	/* One index per folder, kept for the length of the loop: reading a
-	 * folder's sidecars means reading every file in its .index, and a
-	 * pack that drops fifty mods drops them out of the same folder. */
+	/* One index per folder for the whole loop: reading a folder's sidecars
+	 * reads every file in its .index. */
 	QHash<QString, std::shared_ptr<ModMetadataIndex>> indexes;
 	for (const QString& relativePath : stale) {
 		const QString absolutePath = gameDir.absoluteFilePath(relativePath);
 
-		/* Checked before anything is asked about it. Most of this list is
-		 * names that were never on disk - the enabled/disabled
-		 * counterpart of every entry, files a blocked download never
-		 * produced - and asking the user about a world that is not there
-		 * would be a prompt about nothing. Safe to decide now: the merge
-		 * cannot create a stale path, because a path the new version
-		 * ships is by definition not stale. */
+		/* Checked before asking: most of this list is names never on disk
+		 * (disabled counterparts, blocked downloads), and a prompt about an
+		 * absent world would be pointless. */
 		if (!QFileInfo::exists(absolutePath)) {
 			continue;
 		}
 
-		/* Case-insensitively, because this is a guard: a pack that spells
-		 * the folder differently should still trip it. */
+		/* Case-insensitive: this is a guard, so a differently spelled folder
+		 * should still trip it. */
 		if (relativePath.startsWith(QLatin1String("saves/"),
 									Qt::CaseInsensitive)) {
 			if (m_savesDeletion == SavesDeletion::NotAsked) {
@@ -1908,14 +1634,8 @@ bool InstanceImportTask::recordPackContents(
 
 		scheduleForRemoval(absolutePath);
 
-		/* And the record of where that file came from.
-		 *
-		 * A sidecar describes exactly one file, so once the file is gone
-		 * it describes nothing. Left behind it is mostly inert - the
-		 * index skips a sidecar whose file is missing - but it is still a
-		 * claim that a mod is installed when it is not, and the next
-		 * thing to write a sidecar for that project would have to work
-		 * around it. */
+		/* And the sidecar for that file: it describes exactly one file, and
+		 * left behind it would still claim an installed mod. */
 		const QString sidecar =
 			sidecarPathForModFile(indexes, gameDir, relativePath);
 		if (!sidecar.isEmpty()) {
@@ -1929,16 +1649,14 @@ bool InstanceImportTask::recordPackContents(
 void InstanceImportTask::carryOverUserSettings(BaseInstance& instance)
 {
 	if (m_updateTarget.isEmpty()) {
-		/* A fresh install has nothing to carry over from. */
 		return;
 	}
 
 	auto previous =
 		LAUNCHER->instances()->getInstanceById(m_updateTarget.instanceId);
 	if (!previous) {
-		/* The instance vanished between the page opening and the update
-		 * running. The staging step will fail to find it too; nothing
-		 * useful to do here beyond not crashing. */
+		/* The instance vanished since the page opened; the staging step fails
+		 * too. */
 		qWarning() << "Cannot carry settings over from missing instance"
 				   << m_updateTarget.instanceId;
 		return;
@@ -1947,14 +1665,10 @@ void InstanceImportTask::carryOverUserSettings(BaseInstance& instance)
 	auto from = previous->settings();
 	auto to = instance.settings();
 
-	/* Settings that describe what the *user* did with this instance, as
-	 * opposed to what the pack is. The pack has no opinion about any of
-	 * them, so an update must not reset them.
-	 *
-	 * Listed explicitly rather than copied wholesale: the staged config
-	 * legitimately owns the pack's own choices - the component versions,
-	 * the icon the pack ships, InstanceType - and blanket-copying would
-	 * put the old pack's versions back and undo the update. */
+	/* Settings that record what the user did with this instance, not what the
+	 * pack is; an update must not reset them. Listed explicitly: copying
+	 * wholesale would restore the old pack's component versions and undo the
+	 * update. */
 	static const char* const carried[] = {
 		"notes",
 		"lastLaunchTime",
@@ -1962,9 +1676,8 @@ void InstanceImportTask::carryOverUserSettings(BaseInstance& instance)
 		"lastTimePlayed",
 		"shortcuts",
 		"Profiler",
-		/* Per-instance overrides. Each pair is an "override this?" flag
-		 * plus the values it guards; the flag alone is meaningless
-		 * without them, so they travel together. */
+		/* Per-instance overrides: each "override this?" flag travels with the
+		 * values it guards. */
 		"OverrideCommands",
 		"PreLaunchCommand",
 		"WrapperCommand",
@@ -1978,9 +1691,8 @@ void InstanceImportTask::carryOverUserSettings(BaseInstance& instance)
 
 	for (const char* key : carried) {
 		if (!from->contains(key) || !to->contains(key)) {
-			/* Either an older config that never had the key, or a
-			 * setting this instance type does not register. Skipping is
-			 * correct: the staged default is then the right answer. */
+			/* Older config without the key, or a setting this instance type
+			 * does not register: the staged default is right. */
 			continue;
 		}
 		to->set(key, from->get(key));
@@ -1990,27 +1702,19 @@ void InstanceImportTask::carryOverUserSettings(BaseInstance& instance)
 void InstanceImportTask::writePackSourceToInstance(BaseInstance& instance,
 												   const PackSourceHint& hint)
 {
-	/* Carrying user settings over is part of finishing an updated
-	 * instance, and every path that writes pack provenance is exactly a
-	 * path that has just finished building one. */
+	/* Carry user settings over once the updated instance is built. */
 	carryOverUserSettings(instance);
 
 	if (hint.isEmpty())
 		return;
 
-	/* These keys mirror what PackUpdater reads back. They were
-	 * pre-registered with sensible defaults in BaseInstance so
-	 * `set()` here uses the correct type and survives a round
-	 * trip through INI serialisation. Empty fields are still
-	 * written explicitly — that way an absent value means "we
-	 * never wrote a hint", while a present-but-empty value means
-	 * "we tried and couldn't recover this one". */
-	/* On an update the version we just installed is the one the page
-	 * asked for, which is more trustworthy than anything recovered from
-	 * the archive: the manifest inside a pack has been known to disagree
-	 * with the catalogue about its own version id. Only override when we
-	 * actually have a value - an update from a local file carries none,
-	 * and there the manifest is all we have. */
+	/* These keys mirror what PackUpdater reads back. Empty fields are written
+	 * explicitly: absent means "never wrote a hint", present-but-empty means
+	 * "could not recover this one". */
+	/* On an update, the installed version is more trustworthy than the
+	 * archive's manifest, which can disagree with the catalogue about its own
+	 * version id. Override only with a real value; an update from a local file
+	 * has none. */
 	QString versionId = hint.versionId;
 	QString versionLabel = hint.versionLabel;
 	if (!m_updateTarget.isEmpty()) {

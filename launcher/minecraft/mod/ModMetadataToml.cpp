@@ -48,9 +48,8 @@ namespace
 		return {};
 	}
 
-	/* The [[dependencies.<modid>]] tables of the mods the file declares.
-	 * Forge only reads those; a table under any other name is not a
-	 * dependency of anything. */
+	// The [[dependencies.<modid>]] tables of the mods the file declares. Forge
+	// reads only those; a table under another name depends on nothing.
 	template <typename Visit>
 	void forEachDependencyTable(const toml::table& root,
 								const QStringList& modIds, Visit visit)
@@ -73,15 +72,12 @@ namespace
 		}
 	}
 
-	/* Forge writes mandatory = true; NeoForge writes type = "required" and
-	 * its siblings. Where both are there, type is the newer and decides.
-	 * Nothing for what changes nothing about whether the game starts:
-	 * optional dependencies.
-	 *
-	 * A dependency that says neither is required in NeoForge's own file -
-	 * that is NeoForge's default, and plenty of mods lean on it (some write
-	 * a "required = true" it never reads) - and not in Forge's, where the
-	 * loader insists on the flag. */
+	// Forge writes mandatory = true; NeoForge writes type = "required" and its
+	// siblings. Where both are present, type is newer and decides. Optional
+	// dependencies yield nothing: they do not affect whether the game starts. A
+	// dependency that says neither is required in NeoForge's file (its default,
+	// and some mods write an unread "required = true") but not in Forge's,
+	// where the loader insists on the flag.
 	std::optional<ModDependency::Kind> tomlDependencyKind(
 		const toml::table& dependency, bool neoforgeFile)
 	{
@@ -109,15 +105,15 @@ namespace
 	{
 		const QString range = tomlString(dependency, "versionRange").trimmed();
 		// A ${...} left in the range is a build that never filled it in;
-		// there is nothing to compare a version against.
+		// nothing to compare against.
 		if (range.isEmpty() || range.contains(kBuildPlaceholder)) {
 			return {};
 		}
 		return {range};
 	}
 
-	/* What the file says about mods other than the one it is shown as: the
-	 * further [[mods]] it declares, and what every one of them needs. */
+	// What the file says about mods other than the one shown: the further
+	// [[mods]] it declares and what each needs.
 	void addTomlRelations(ModDetails& details, const toml::table& root,
 						  const toml::array& mods, bool neoforgeFile)
 	{
@@ -142,13 +138,13 @@ namespace
 		forEachDependencyTable(root, ownIds, [&](const toml::table& table) {
 			const QString id = tomlString(table, "modId");
 			const auto kind = tomlDependencyKind(table, neoforgeFile);
-			// Only a dependency that has to be met says the file is
-			// NeoForge's: Forge's own jars often list neoforge as optional
-			// (PacketFixer), and Forge 1.20.1 loads those.
+			// Only a required dependency marks the file as NeoForge's: Forge's
+			// own jars often list neoforge as optional (PacketFixer), and Forge
+			// 1.20.1 loads those.
 			dependsOnNeoForge |= id == kLoaderNeoForge && kind &&
 								 *kind == ModDependency::Kind::Required;
-			// One declared mod needing another of the same file is not
-			// something to install.
+			// One declared mod needing another of the same file is not to be
+			// installed.
 			if (!kind || id.isEmpty() || ownIds.contains(id)) {
 				return;
 			}

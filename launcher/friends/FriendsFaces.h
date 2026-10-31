@@ -34,24 +34,19 @@
 class QNetworkReply;
 
 /*
- * The friends' heads. The friends server only knows names and UUIDs, so the
- * head of each person comes from Mojang, the source of the skin: the
- * session server's profile (its "textures" property) names the skin, the
- * skin comes from textures.minecraft.net, and the face is cut out of it and
- * kept as a small PNG under <data>/cache/friendfaces/. Nobody else is ever
- * asked about a friend's UUID.
- *
- * ensure() fetches what is missing or older than a day, a few at a time;
- * every failure is silent and tried again the next day (or the next start).
- * changed() says a face arrived. The pure parts are static, so they are
- * tested without a network.
+ * The friends' heads. The server only knows names and UUIDs, so each head comes
+ * from Mojang: the session server's profile ("textures" property) names the
+ * skin, which comes from textures.minecraft.net; the face is cut out and kept
+ * as a small PNG under <data>/cache/friendfaces/. Nobody else is asked about a
+ * friend's UUID. ensure() fetches what is missing or older than a day, a few at
+ * a time; failures are silent and retried the next day. The pure parts are
+ * static, so they are tested without a network.
  */
 class FriendsFaces : public QObject
 {
 	Q_OBJECT
 
   public:
-	/// @p dir is where the PNGs are kept.
 	explicit FriendsFaces(const QString& dir, QObject* parent = nullptr);
 	~FriendsFaces() override;
 
@@ -63,22 +58,19 @@ class FriendsFaces : public QObject
 	/// UUID with dashes (the mod bridge serves it).
 	QString cachedFacePath(const QString& uuid) const;
 
-	/// Queues the faces of @p uuids that are not cached or are stale.
-	/// @p sessionBase is the Mojang session server (the FriendsMojangSessionUrl
-	/// setting).
+	/// Queues the faces of @p uuids that are not cached or are stale. @p sessionBase
+	/// is the FriendsMojangSessionUrl setting.
 	void ensure(const QStringList& uuids, const QString& sessionBase);
 	/// Drops the queue and aborts what is running. Their answers are ignored.
 	void cancel();
-	/// cancel(), and deletes every cached face.
 	void clearCache();
 
 	/// <sessionBase>/session/minecraft/profile/<uuid without dashes>.
 	static QUrl profileUrl(const QString& sessionBase, const QString& uuid);
-	/// The skin's URL from a session server profile: the "textures"
-	/// property, base64 of JSON, whose textures.SKIN.url must be https (or
-	/// http, which is upgraded) on textures.minecraft.net and the profile's
-	/// id must be @p uuid. @p allowLoopback additionally accepts a loopback
-	/// host as it is, for a local mock of Mojang; nothing else is accepted.
+	/// The skin URL from a session server profile's "textures" property (base64
+	/// JSON): textures.SKIN.url must be https (http is upgraded) on
+	/// textures.minecraft.net and the profile id must be @p uuid. @p allowLoopback
+	/// also accepts a loopback host, for a local mock.
 	static std::optional<QUrl> skinUrlFromProfile(const QByteArray& profile,
 												  const QString& uuid,
 												  bool allowLoopback);
@@ -87,7 +79,6 @@ class FriendsFaces : public QObject
 	static QImage faceFromSkinPng(const QByteArray& png);
 	/// Whether a face last written at @p modified needs fetching again.
 	static bool isStale(const QDateTime& modified, const QDateTime& now);
-	/// Whether @p host is this machine (localhost, 127.0.0.1, ::1).
 	static bool isLoopbackHost(const QString& host);
 
   signals:

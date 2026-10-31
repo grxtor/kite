@@ -34,8 +34,7 @@ using GameTextureFixture::filled;
 
 namespace
 {
-/* Every pixel a colour of its own, so a crop can be checked against the
- * exact place it was taken from. */
+/* Every pixel a colour of its own, so a crop can be traced to its source. */
 QImage coordinates(int width, int height)
 {
 	QImage image(width, height, QImage::Format_ARGB32);
@@ -48,12 +47,9 @@ QImage coordinates(int width, int height)
 }
 } // namespace
 
-/*
- * Covers GameTextureIcons and the recipes behind it against client jars
- * this test builds itself out of generated PNGs at the paths the game
- * uses (GameTextureFixture). How IconList shows the result is covered in
- * IconList_test.cpp.
- */
+/* Covers GameTextureIcons and its recipes against client jars built from
+ * generated PNGs (GameTextureFixture). IconList's use is in
+ * IconList_test.cpp. */
 class GameTextureIconsTest : public QObject
 {
 	Q_OBJECT
@@ -78,7 +74,6 @@ class GameTextureIconsTest : public QObject
 			  QStringLiteral("24w14a"), QStringLiteral("1.21-pre1")}) {
 			writeJar(version, {});
 		}
-		// A version folder whose jar never arrived is not a candidate.
 		QVERIFY(QDir().mkpath(libraries() +
 							  QStringLiteral("/com/mojang/minecraft/27.1")));
 
@@ -134,14 +129,12 @@ class GameTextureIconsTest : public QObject
 		const auto images =
 			GameTextureIcons::readFromJar(jarPath(QStringLiteral("1.21.4")));
 		QCOMPARE(images.value(QStringLiteral("tnt")), firstFrame);
-		// "flame" is CurseForge's mark, not fire: never drawn from the jar.
 		QVERIFY(!images.contains(QStringLiteral("flame")));
 	}
 
 	void faceIsCroppedWithItsHat()
 	{
 		QImage skin = coordinates(64, 64);
-		// The hat layer: see-through except for one pixel.
 		for (int y = 8; y < 16; ++y) {
 			for (int x = 40; x < 48; ++x) {
 				skin.setPixel(x, y, qRgba(0, 0, 0, 0));
@@ -170,8 +163,7 @@ class GameTextureIconsTest : public QObject
 		const QImage face =
 			GameTextureIcons::readFromJar(jarPath(QStringLiteral("1.21.4")))
 				.value(QStringLiteral("chicken"));
-		// 4x6 centred in 6x6: the head from (3,3), the beak's front from
-		// (16,2) two rows down, the wattle's from (16,6) under it.
+		// 4x6 centred in 6x6: head from (3,3), beak from (16,2), wattle from (16,6).
 		QCOMPARE(face.size(), QSize(6, 6));
 		QCOMPARE(qAlpha(face.pixel(0, 0)), 0);
 		QCOMPARE(qAlpha(face.pixel(5, 5)), 0);
@@ -199,7 +191,6 @@ class GameTextureIconsTest : public QObject
 		QVERIFY(QFileInfo::exists(cache() +
 								  QStringLiteral("/1.21.4/stone.png")));
 
-		// Same version, other pixels: what comes back is the cache's.
 		writeJar(QStringLiteral("1.21.4"),
 				 {{QStringLiteral("block/stone.png"),
 				   filled(16, 16, qRgba(90, 90, 90, 255))}});
@@ -219,7 +210,6 @@ class GameTextureIconsTest : public QObject
 
 		QVERIFY(loadNewest().isEmpty());
 
-		// Once the jar is whole, it is read after all.
 		const QImage stone = filled(16, 16, qRgba(70, 70, 70, 255));
 		writeJar(QStringLiteral("1.21.4"),
 				 {{QStringLiteral("block/stone.png"), stone}});
@@ -241,14 +231,12 @@ class GameTextureIconsTest : public QObject
 								  .toImage()
 								  .convertToFormat(QImage::Format_ARGB32);
 		QCOMPARE(scaled.size(), QSize(64, 64));
-		// Hard edges: the last pixel of one block and the first of the
-		// next are the two source colours, unblended.
+		// Hard edges: neighbouring blocks are the two source colours, unblended.
 		QCOMPARE(scaled.pixel(31, 0), image.pixel(0, 0));
 		QCOMPARE(scaled.pixel(32, 0), image.pixel(1, 0));
 		QCOMPARE(scaled.pixel(31, 63), image.pixel(0, 1));
 		QCOMPARE(scaled.pixel(32, 63), image.pixel(1, 1));
 
-		// At a device pixel ratio the pixmap is the device size.
 		const QPixmap retina = icon.pixmap(QSize(16, 16), 2.0);
 		QCOMPARE(retina.size(), QSize(32, 32));
 		QCOMPARE(retina.devicePixelRatio(), 2.0);
@@ -276,7 +264,6 @@ class GameTextureIconsTest : public QObject
 		QVERIFY(GameTextureFixture::writeJar(libraries(), version, textures));
 	}
 
-	/* What IconList does: the newest jar, through the cache. */
 	QHash<QString, QImage> loadNewest() const
 	{
 		QString version;
@@ -290,8 +277,7 @@ class GameTextureIconsTest : public QObject
 
 int main(int argc, char* argv[])
 {
-	// QIcon/QPixmap need a QGuiApplication; offscreen keeps this runnable on
-	// a headless runner, as in IconList_test.cpp.
+	// QIcon/QPixmap need a QGuiApplication; offscreen keeps this headless.
 	qputenv("QT_QPA_PLATFORM", "offscreen");
 
 	QGuiApplication app(argc, argv);

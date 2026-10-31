@@ -8,30 +8,24 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The project picked in ContentBrowserView: a compact header, three lines
- * of description, then its versions -- which get every pixel the rest does
- * not need -- the newest compatible one preselected, and Install. Shown
- * beside the results only once something is picked; × closes it.
+ * The project picked in ContentBrowserView: a compact header, three lines of description, then its versions (the
+ * newest compatible one preselected) and Install. Shown beside the results only once something is picked.
  */
 Rectangle {
     id: root
 
-    // The ContentBrowserView: selectedProject, versions, pickedVersion, the
-    // selected project's download and install().
+    // The ContentBrowserView.
     required property var owner
     readonly property var project: owner.selectedProject
     readonly property var download: owner.selectedDownload
     signal closeRequested()
 
     readonly property int logoSize: 48
-    // Pixels of the logo image asked for: twice its size, for HiDPI.
     readonly property int logoSourceSize: logoSize * 2
-    // The least the version list shrinks to: two rows.
     readonly property int versionListMinHeight: 96
     readonly property int descriptionLines: 3
     readonly property int descriptionLinesExpanded: 12
-    // Below this height (a small window) the description gives its room to
-    // the versions; Install always stays in view.
+    // Below this height the description gives its room to the versions; Install always stays in view.
     readonly property int roomForDescription: 420
 
     radius: Theme.radius.lg
@@ -39,7 +33,6 @@ Rectangle {
     border.width: 1
     border.color: Theme.palette.border
 
-    // A new pick starts with its description folded again.
     onProjectChanged: descriptionText.expanded = false
 
     ColumnLayout {
@@ -55,7 +48,6 @@ Rectangle {
                 Layout.preferredHeight: root.logoSize
                 Layout.alignment: Qt.AlignTop
 
-                // No tile of its own behind the logo: it sits on the panel.
                 Image {
                     anchors.fill: parent
                     source: root.project ? root.project.logoUrl : ""
@@ -65,7 +57,6 @@ Rectangle {
                     mipmap: true
                     asynchronous: true
                 }
-                // Rounded like Discover's logos, in the panel's colour.
                 CornerMatte {
                     cornerRadius: Theme.radius.md
                     matte: root.color
@@ -102,8 +93,6 @@ Rectangle {
             }
         }
 
-        // Three lines, the rest on request: the version list is what this
-        // panel is for.
         Text {
             id: descriptionText
             property bool expanded: false
@@ -144,8 +133,6 @@ Rectangle {
             }
         }
 
-        // The versions lie on the panel itself, no framed well around them
-        // (VersionRow): what the list does not fill is the panel.
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true

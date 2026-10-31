@@ -26,10 +26,8 @@
 #include "GZip.h"
 #include "minecraft/World.h"
 
-/*
- * Minimal big-endian NBT writer, so the tests can build level.dat files
- * without depending on how the launcher serializes them.
- */
+// Minimal big-endian NBT writer, so the tests can build level.dat files
+// without depending on how the launcher serializes them.
 namespace
 {
 	const quint8 TAG_END = 0;
@@ -148,11 +146,8 @@ namespace
 		return root;
 	}
 
-	/*
-	 * Newer Minecraft versions store the seed in a saved data file of its
-	 * own: <world>/data/minecraft/world_gen_settings.dat, whose payload sits
-	 * in a "data" compound.
-	 */
+	// Newer versions keep the seed in
+	// <world>/data/minecraft/world_gen_settings.dat, in a "data" compound.
 	QByteArray makeWorldGenSettings(qint64 seed)
 	{
 		QByteArray dataPayload;
@@ -168,12 +163,9 @@ namespace
 		return root;
 	}
 
-	/*
-	 * Minecraft 26.1 and newer keep the daylight clock in
-	 * <world>/data/minecraft/world_clocks.dat, one compound per dimension
-	 * keyed by dimension id, each recording the ticks it has run in
-	 * total. Shape taken from a real 26.2 world.
-	 */
+	// 26.1+ keeps the daylight clock in
+	// <world>/data/minecraft/world_clocks.dat: one compound per dimension id
+	// with its total ticks. Shape from a real 26.2 world.
 	QByteArray makeWorldClocks(std::optional<qint64> overworldTicks,
 							   qint64 endTicks = 4728484)
 	{
@@ -364,12 +356,8 @@ class WorldTest : public QObject
 		QCOMPARE(world.seed(), Q_INT64_C(0));
 	}
 
-	/*
-	 * Day count. The day the game itself counts is the daylight cycle,
-	 * Data -> DayTime, at 24000 ticks per Minecraft day. Values taken from
-	 * a real 1.13.2 world, which is on day 5 even though it has only been
-	 * running for three days worth of ticks.
-	 */
+	// Day count: the daylight cycle (Data -> DayTime) at 24000 ticks per day.
+	// Values from a real 1.13.2 world, on day 5 after three days of ticks.
 	void test_ReadDayCountFromDayTime()
 	{
 		QTemporaryDir tempDir;
@@ -390,11 +378,8 @@ class WorldTest : public QObject
 		QCOMPARE(world.dayCount().value_or(-1), Q_INT64_C(5));
 	}
 
-	/*
-	 * Sleeping jumps DayTime to morning while Time only advances by the
-	 * ticks really spent, so a world that has been slept in reports far
-	 * more days than it has been running for. The player sees DayTime.
-	 */
+	// Sleeping jumps DayTime to morning while Time only counts ticks really
+	// spent; the player sees DayTime.
 	void test_DayCountPrefersDayTimeOverTime()
 	{
 		QTemporaryDir tempDir;
@@ -434,11 +419,8 @@ class WorldTest : public QObject
 		QCOMPARE(world.dayCount().value_or(-1), Q_INT64_C(0));
 	}
 
-	/*
-	 * Worlds older than 1.3 have no DayTime at all: Time drove the sun
-	 * directly, so there it is the day count. Value taken from the
-	 * McRegion level.dat of a real world (version 19132, no DataVersion).
-	 */
+	// Worlds older than 1.3 have no DayTime: Time is the day count. Value from
+	// a real McRegion level.dat (version 19132, no DataVersion).
 	void test_LegacyWorldWithoutDayTimeUsesTime()
 	{
 		QTemporaryDir tempDir;
@@ -455,11 +437,9 @@ class WorldTest : public QObject
 		QCOMPARE(world.dayCount().value_or(-1), Q_INT64_C(1));
 	}
 
-	/*
-	 * Minecraft 26.1 and newer: the day comes from the Overworld clock in
-	 * world_clocks.dat, not from level.dat. Values taken from a real 26.2
-	 * world, whose Time tag would have claimed day 251 instead of 399.
-	 */
+	// 26.1+: the day comes from the Overworld clock in world_clocks.dat, not
+	// level.dat. Values from a real 26.2 world, whose Time would claim day 251
+	// instead of 399.
 	void test_ReadDayCountFromWorldClocks()
 	{
 		QTemporaryDir tempDir;
@@ -501,13 +481,10 @@ class WorldTest : public QObject
 		QCOMPARE(world.dayCount().value_or(-1), Q_INT64_C(7));
 	}
 
-	/*
-	 * A 26.1+ world whose clock file is missing, corrupt or has no
-	 * Overworld clock has no day count to show. Time is still in level.dat
-	 * but means gametime there, so showing it would be a wrong number
-	 * rather than no number. DataVersion is what separates these worlds
-	 * from pre-1.3 ones, where Time really is the day count.
-	 */
+	// A 26.1+ world whose clock file is missing, corrupt or has no Overworld
+	// clock has no day count: Time there means gametime, so showing it would be
+	// wrong. DataVersion separates these from pre-1.3 worlds, where Time is the
+	// day count.
 	void test_ModernWorldWithoutAnyClockHasNoDayCount()
 	{
 		QTemporaryDir tempDir;

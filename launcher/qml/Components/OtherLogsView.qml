@@ -8,17 +8,11 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Log files on disk: pick one, read it, search it, copy it, upload it,
- * delete it. Used for an instance's other logs (logs/*.log*, crash reports)
- * on the Log tab and for the launcher's own logs in Settings -- both are an
- * OtherLogsModel, so both look and work the same.
- *
- * The toolbar is one row, like the live log's: file, find, then the
- * actions, with the rarer ones (wrap lines, reload, delete) behind ⋯.
- *
- * Reading goes through LogLines like the live log does, so Find and Wrap
- * work the same on both. Selecting text with the mouse does not (it is a
- * list of lines, not one text); "Copy" takes the whole file.
+ * Log files on disk: pick one, read, search, copy, upload, delete. Used for an
+ * instance's other logs (logs/*.log*, crash reports) and the launcher's own
+ * logs; both are an OtherLogsModel. Reading goes through LogLines like the
+ * live log, so Find and Wrap work the same; selecting text with the mouse
+ * does not.
  */
 Item {
     id: root
@@ -31,32 +25,26 @@ Item {
     // Picks the first (newest) file when nothing is picked yet.
     property bool selectFirst: false
 
-    // Anything added inside this view's tag goes at the start of its toolbar
-    // (the Log tab puts its log picker there, with `ownPicker` off so the
-    // file picker below is not shown twice).
+    // Items added inside this view's tag go at the start of the toolbar (the Log tab puts its log
+    // picker there with `ownPicker` off).
     default property alias leading: leadingRow.data
     property bool ownPicker: true
 
     signal openFolderRequested(string path)
 
-    // The file picker shrinks before the buttons beside it get squeezed out
-    // of a narrow column (the Settings page keeps it under 760 wide).
+    // The file picker shrinks before the buttons beside it get squeezed out of a narrow column.
     readonly property int comboWidth: 220
     readonly property int comboMinWidth: 120
-    // Below this width the Copy, Upload and Open folder buttons keep only
-    // their icons (their label becomes the tooltip), so Find keeps a field
-    // worth typing in: spelled out, they and the file picker take about
-    // 700 of the row. Settings' column is always narrower; the Log tab of
-    // a normal window is wider.
+    // Below this width Copy, Upload and Open folder keep only their icons, so Find keeps a field
+    // worth typing in.
     readonly property int compactBelow: 960
     readonly property bool compact: root.width < root.compactBelow
 
     readonly property bool hasFile: !!logs && logs.currentFile.length > 0
-    // Set by this view's own Upload button, so a second log view sharing the
-    // uploader does not also copy and announce the link.
+    // Set by this view's own Upload button, so another log view sharing the uploader does not also
+    // copy and announce the link.
     property bool uploading: false
 
-    // The file's text, one entry per line.
     readonly property var lines: {
         if (!logs || !logs.content)
             return []
@@ -108,7 +96,6 @@ Item {
     Connections {
         target: root.logs
         ignoreUnknownSignals: true
-        // The list of files was rebuilt (a file appeared or went away).
         function onModelReset() { root.pickFirst() }
     }
 
@@ -152,10 +139,8 @@ Item {
                 Layout.minimumWidth: root.comboMinWidth
                 model: root.logs
                 textRole: "name"
-                // Keeps its selection in sync with logs.currentFile rather
-                // than owning the selection itself -- a deleted file, or the
-                // model refreshing after one appears, should not silently
-                // pick something else.
+                // Follows logs.currentFile instead of owning the selection: a deleted file or a
+                // model refresh must not silently pick something else.
                 currentIndex: {
                     if (!root.logs) return -1
                     for (var i = 0; i < count; i++) {
@@ -164,8 +149,6 @@ Item {
                     return -1
                 }
                 onActivated: (index) => root.logs.selectFile(textAt(index))
-                // Says what it is for before a file is picked, rather than
-                // sitting there empty.
                 displayText: currentIndex < 0 && count > 0 ? qsTr("Choose a log file") : currentText
             }
 

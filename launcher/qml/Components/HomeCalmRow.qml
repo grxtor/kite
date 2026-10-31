@@ -6,18 +6,13 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One "Continue playing" row of the Sade look: no box, no fill -- a 64 px
- * line on the page with a hairline under it. A 38 px tile (HomeRowTile),
- * the name and what it runs, how long
- * it has been played, a quiet Play that takes the accent while the row is
- * hovered, and ⋯. The hovered row gets a soft fill that bleeds `bleed`
- * past the column on both sides, and loses its hairline. Clicking opens the
- * instance page; a right-click or ⋯ its menu.
+ * One "Continue playing" row of the Sade look: no box, a 64 px line on the page with a hairline under it. A 38 px
+ * tile (HomeRowTile), name and what it runs, play time, a quiet Play that takes the accent while hovered, and ⋯.
+ * The hovered row gets a soft fill that bleeds `bleed` past the column and loses its hairline.
  */
 HomeRowBase {
     id: root
 
-    // The last row has no hairline under it.
     property bool showDivider: true
     readonly property int bleed: Theme.space.md
     readonly property int tileSize: 38

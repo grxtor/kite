@@ -85,10 +85,8 @@ std::unique_ptr<nbt::tag_compound> readFirstServer(const QString& path)
 }
 } // namespace
 
-/* Needs neither a BaseInstance nor a LauncherContext - only a directory to
- * read/write servers.dat under, same reason OtherLogsModel_test.cpp drives
- * that model directly against a temp directory instead of a real
- * instance. */
+/* Needs neither a BaseInstance nor a LauncherContext, only a directory to
+ * read/write servers.dat under. */
 class ServersListModelTest : public QObject
 {
 	Q_OBJECT
@@ -166,8 +164,6 @@ void ServersListModelTest::persistsAcrossReload()
 		model.setAddress(0, QStringLiteral("persisted.example.com:1234"));
 		model.setAcceptTextures(0, 2);
 		model.stopWatching();
-		// stopWatching() flushes the pending save synchronously - the
-		// destructor below would too, but this checks that specifically.
 	}
 
 	QVERIFY(QFile::exists(dir.filePath(QStringLiteral("servers.dat"))));
@@ -231,10 +227,9 @@ void ServersListModelTest::watchesDirectoryOnlyWhileLocked()
 
 	QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
 
-	// Unlocked and observed: the user may be mid-edit, so a change in the
-	// directory (here a stray file, standing in for the game or another
-	// launcher touching it) must not reload the list underneath them. The
-	// widget's ServersModel watched only while locked for this reason.
+	// Unlocked and observed: a change in the directory (a stray file standing in
+	// for the game or another launcher) must not reload the list under a user who
+	// may be mid-edit.
 	{
 		QFile stray(dir.filePath(QStringLiteral("stray-1.txt")));
 		QVERIFY(stray.open(QIODevice::WriteOnly));
@@ -246,9 +241,8 @@ void ServersListModelTest::watchesDirectoryOnlyWhileLocked()
 	QCOMPARE(model.data(model.index(0), ServersListModel::NameRole).toString(),
 			QStringLiteral("Unsaved edit"));
 
-	// Locking (the game started) flushes the edit to disk and starts the
-	// watch: from here an external change is picked up, as a positive
-	// control that the watch really works in this environment.
+	// Locking (the game started) flushes the edit and starts the watch; from here
+	// an external change is picked up, as a positive control.
 	model.setLocked(true);
 	{
 		QFile stray(dir.filePath(QStringLiteral("stray-2.txt")));
@@ -262,8 +256,7 @@ void ServersListModelTest::watchesDirectoryOnlyWhileLocked()
 
 	// Unlocking (the game closed) drops the watch again.
 	model.setLocked(false);
-	// Let anything the engine had already queued from the locked phase
-	// arrive before taking the baseline.
+	// Let anything queued from the locked phase arrive before taking the baseline.
 	QTest::qWait(300);
 	const int resetsBefore = resetSpy.count();
 	{

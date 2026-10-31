@@ -6,70 +6,47 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Home's side panel: "Set up Kite" (GettingStartedCard) until both its
- * steps are done, then Friends (HomeFriends, unless the friends panel on the
- * window's right edge is out and has them), then Kite's news, then the
- * worlds played most recently across every instance (compact HomeWorldTile
- * rows). Its own column
- * beside the page, scrolling on its own and set off by a hairline; the page
- * decides whether there is room for it, and hides it when it has nothing to
- * show (`hasContent`).
- *
- * Sade pads it more generously, with the hairline kept and its headings as
- * small labels; Gece drops the hairline and makes the whole panel one glass
- * pane over the night sky, as tall as its content (`naturalHeight`) -- the
- * page places it.
+ * Home's side panel: "Set up Kite" until both steps are done, then Friends (unless the right-edge friends panel
+ * has them), Kite's news and recent worlds. The page decides whether there is room and hides it when it has
+ * nothing (`hasContent`). Gece makes it one glass pane as tall as its content (`naturalHeight`).
  */
 Item {
     id: root
 
     property bool hasInstances: false
     property bool signedIn: false
-    // QmlShell.news (NewsModel), or null.
+    // NewsModel, or null.
     property var news: null
-    // QmlShell.recentWorlds (RecentWorldsModel), or null.
+    // RecentWorldsModel, or null.
     property var recentWorldsModel: null
-    // QmlShell.friends (FriendsController), or null.
+    // FriendsController, or null.
     property var friends: null
-    // Main.qml's FriendJoinFlow.
     property var joinFlow: null
-    // The friends panel on the window's right edge is out (a strip of heads
-    // or opened out), with the same friends in it: this panel leaves them to
-    // it.
+    // The right-edge friends panel is out with the same friends: this panel leaves them to it.
     property bool friendsInPanel: false
 
     signal createRequested()
     signal signInRequested()
-    // The Friends page, on "friends" or "requests", or "add" (the add
-    // field focused).
+    // tab: "friends", "requests" or "add".
     signal friendsRequested(string tab)
-    // A path for Main.qml's navigate() ("settings/friends").
     signal navigateRequested(string target)
-    // Join a friend's server (a friend map).
     signal joinRequested(var friend)
-    // A recent world: open its instance on the Worlds tab.
     signal worldRequested(string instanceId)
 
     readonly property int maxWorlds: 4
-    // The night sky's pane; Sade and the classic look have a hairline.
     readonly property bool glass: Theme.look === "night"
     readonly property int padding: Theme.look === "calm" ? Theme.space.xl + Theme.space.xs
                                  : root.glass ? Theme.space.lg + Theme.space.xs : Theme.space.lg
     readonly property int topPadding: Theme.look === "calm" ? Theme.space.xxl + Theme.space.xs - 2
                                     : root.glass ? Theme.space.lg + Theme.space.xs : Theme.space.xl
-    // What the panel needs to show everything without scrolling.
     readonly property real naturalHeight: column.y + column.height + root.topPadding
     readonly property bool hasWorlds: worldsRepeater.count > 0
 
-    // Whether the friends show here: not while the right-edge panel has
-    // them.
     readonly property bool showsFriends: friendsSection.shown && root.hasInstances && !root.friendsInPanel
 
     // Not the children's `visible`: that follows the panel's own.
     readonly property bool hasContent: gettingStarted.shown || newsList.hasNews || root.hasWorlds
                                      || root.showsFriends
-    // The news as HomeNews reads it: every post off `news`, the newest one
-    // still worth showing (or null), and whether there is one.
     readonly property var newsEntries: newsList.allEntries
     readonly property var featuredNews: newsList.entries.length > 0 ? newsList.entries[0] : null
     readonly property bool hasNews: newsList.hasNews
@@ -107,7 +84,6 @@ Item {
             spacing: Theme.space.xl
 
             GettingStartedCard {
-                // Sade's and Gece's panels are the surface; no card in them.
                 flat: Theme.look === "calm" || root.glass
                 id: gettingStarted
                 width: parent.width
@@ -121,8 +97,6 @@ Item {
             HomeFriends {
                 id: friendsSection
                 width: parent.width
-                // Like the checklist, after the first instance: the empty
-                // library has the page's own way in in front of it.
                 visible: root.showsFriends
                 controller: root.friends
                 joinFlow: root.joinFlow
@@ -154,16 +128,12 @@ Item {
                 Repeater {
                     id: worldsRepeater
                     model: root.recentWorldsModel
-                    // A plain wrapper, so `model.index` resolves despite
-                    // HomeWorldTile's required properties.
+                    // A plain wrapper, so `model.index` resolves despite HomeWorldTile's required properties.
                     delegate: Item {
                         visible: model.index < root.maxWorlds
                         width: visible ? column.width : 0
                         height: visible ? tile.height : 0
 
-                        // The icon stands on the column's edge, with the
-                        // heading and the cards; the row's hover bleeds out
-                        // by its own padding.
                         HomeWorldTile {
                             id: tile
                             x: -Theme.space.sm

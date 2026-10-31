@@ -6,15 +6,12 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The ⋯ at the end of a person's row on the Friends page: what can be done
- * to them. It opens the page's FriendPersonMenu (`menu`) for this person; it
- * is always there, so Remove and Block can be found without hunting for a
- * row to hover.
+ * The ⋯ at the end of a person's row on the Friends page: opens the page's FriendPersonMenu (`menu`) for this person.
+ * Always there, so Remove and Block can be found without hunting for a row to hover.
  */
 IconButton {
     id: root
 
-    // The page's FriendPersonMenu.
     property var menu: null
     property string personUuid
     // Whose row it is, for a screen reader: every row has a "More".

@@ -37,20 +37,12 @@ class KiteExternalUpdater : public ExternalUpdater
 	Q_OBJECT
 
   public:
-	/*!
-	 * \a appDir   installation root (Application::root()).
-	 * \a dataDir  where the config, the log and the markers live.
-	 * \a autoCheckDefault what "check automatically" means for an
-	 *                     installation that has never answered the question.
-	 *
-	 * The default exists so that a user who had already turned automatic
-	 * checks off in the launcher's settings, before the updater kept a config
-	 * of its own, does not silently get them back on. It applies once: the
-	 * answer is written to the config the first time.
-	 *
-	 * Starts the automatic check schedule, and -- when the interval is set to
-	 * "On Launch" -- performs a silent check before returning.
-	 */
+	/*! \a appDir is the installation root (Application::root()), \a dataDir where the config, log and markers live.
+	 * \a autoCheckDefault is what "check automatically" means for an installation that has never answered; it
+	 * applies once and is then written to the config, so a user who turned checks off before the updater kept
+	 * a config of its own does not get them back on.
+	 * Starts the automatic check schedule and, for the "On Launch" interval, performs a silent check before
+	 * returning. */
 	KiteExternalUpdater(const QString& appDir, const QString& dataDir,
 						  bool autoCheckDefault = true);
 	~KiteExternalUpdater() override;
@@ -58,13 +50,9 @@ class KiteExternalUpdater : public ExternalUpdater
 	//! Interactive check: shows progress, and reports even a negative result.
 	void checkForUpdates() override;
 
-	/*!
-	 * \a triggeredByUser distinguishes the menu entry from the timer.
-	 *
-	 * An automatic check stays silent unless it has something to offer, and
-	 * it honours "Skip This Version"; an interactive one always answers, and
-	 * ignores the skip list, because the user just asked.
-	 */
+	/*! \a triggeredByUser separates the menu entry from the timer: an automatic check stays silent unless it has
+	 * something to offer and honours "Skip This Version"; an interactive one always answers and ignores the
+	 * skip list. */
 	void checkForUpdates(bool triggeredByUser);
 
 	bool getAutomaticallyChecksForUpdates() override;
@@ -75,13 +63,8 @@ class KiteExternalUpdater : public ExternalUpdater
 	void setUpdateCheckInterval(double seconds) override;
 	void setBetaAllowed(bool allowed) override;
 
-	/*!
-	 * Where the updater sits relative to the installation root.
-	 *
-	 * Windows keeps the executables at the root, everything else puts them in
-	 * bin/. Application uses this to decide whether updates are available at
-	 * all, so it lives here rather than being spelled out twice.
-	 */
+	/*! Where the updater sits relative to the installation root: at the root on Windows, in bin/ elsewhere.
+	 * Application uses it to decide whether updates are available at all. */
 	static QString updaterBinaryRelativePath();
 
   public slots:

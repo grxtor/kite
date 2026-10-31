@@ -3,30 +3,19 @@
  * SPDX-FileCopyrightText: Project Tick
  * SPDX-FileContributor: grxtor
  *
- * mangohud_detect.h — Compile-time / runtime detection helpers for MangoHud.
+ * mangohud_detect.h: availability helpers for MangoHud.
  *
- * Vendored / authored for Kite LinuxPerf plugin.
+ * MangoHud (https://github.com/flightlessmango/MangoHud) has no C API header for launchers.
+ * Integration is a wrapper command (`mangohud <executable> [args...]`, which hooks OpenGL / Vulkan
+ * through LD_PRELOAD) plus environment variables set before the child starts:
+ *   MANGOHUD=1               enable the overlay (Vulkan; implied by the wrapper)
+ *   MANGOHUD_DLSYM=1         enable dlsym hooking (needed for some OpenGL games; default since 1.3)
+ *   MANGOHUD_CONFIG=<csv>    comma-separated config key=value pairs
+ *   MANGOHUD_CONFIGFILE=<p>  path to a config file (useful for Java apps, whose process is "java")
  *
- * MangoHud (https://github.com/flightlessmango/MangoHud) does not expose a
- * public C API header for launchers. Integration is exclusively via:
- *
- *   1. Wrapper command:   mangohud <executable> [args...]
- *      MangoHud uses LD_PRELOAD internally to hook into OpenGL / Vulkan.
- *
- *   2. Environment variables (set before the child process starts):
- *        MANGOHUD=1              — enable the overlay (Vulkan; implied by
- * wrapper) MANGOHUD_DLSYM=1        — enable dlsym hooking (needed for some
- * OpenGL games; default-enabled in MangoHud ≥ 1.3) MANGOHUD_CONFIG=<csv>   —
- * comma-separated config key=value pairs MANGOHUD_CONFIGFILE=<p> — path to a
- * MangoHud config file (useful for Java apps whose process name is "java")
- *
- * For Minecraft / LWJGL (OpenGL or Vulkan backend) the recommended invocation
- * is to prepend "mangohud" as a wrapper command.  MangoHud will then inject
- * itself via LD_PRELOAD and hook into whichever graphics API LWJGL opens.
- *
- * This header provides a lightweight runtime availability check that the
- * LinuxPerf plugin uses to disable the MangoHud checkbox when the binary is
- * not found on PATH, and to detect the Flatpak sandboxed variant.
+ * For Minecraft / LWJGL, prepend "mangohud" as a wrapper command. The LinuxPerf plugin uses this
+ * header to disable the MangoHud checkbox when the binary is not on PATH and to detect the Flatpak
+ * variant.
  */
 
 #pragma once
@@ -37,26 +26,17 @@
 namespace mangohud_detect
 {
 
-	/*
-	 * Returns true when `mangohud` is findable on PATH.
-	 * Uses a fast execvp-safe PATH walk via QStandardPaths on the Qt side, or
-	 * falls back to popen("command -v mangohud") — callers should prefer the Qt
-	 * QStandardPaths overload provided in LinuxPerfPlugin.cpp.
-	 */
+	/* Whether `mangohud` is findable on PATH. Implemented in LinuxPerfPlugin.cpp via
+	 * QStandardPaths::findExecutable; this placeholder always returns false, never call it
+	 * directly. */
 	inline bool is_available_on_path()
 	{
-		/* Implemented in LinuxPerfPlugin.cpp via
-		 * QStandardPaths::findExecutable. */
 		return false; /* placeholder — never call this directly */
 	}
 
-	/*
-	 * Returns true when running inside a Flatpak sandbox (/.flatpak-info
-	 * exists). In that case the correct MangoHud layer is
-	 *   org.freedesktop.Platform.VulkanLayer.MangoHud
-	 * and it is already pre-loaded by the Flatpak runtime; no wrapper is
-	 * needed.
-	 */
+	/* Whether running inside a Flatpak sandbox (/.flatpak-info exists). The MangoHud layer is then
+	 * org.freedesktop.Platform.VulkanLayer.MangoHud, pre-loaded by the Flatpak runtime; no wrapper
+	 * is needed. */
 	inline bool is_flatpak()
 	{
 #if defined(__linux__)
@@ -67,17 +47,11 @@ namespace mangohud_detect
 #endif
 	}
 
-	/*
-	 * Key environment variables injected by the LinuxPerf plugin when MangoHud
-	 * is enabled via the wrapper command path.  Defined here so they have a
-	 * single canonical source.
-	 */
+	/* Environment variables the LinuxPerf plugin injects when MangoHud is enabled via the wrapper
+	 * path (single canonical source). */
 	static constexpr const char* ENV_MANGOHUD = "MANGOHUD";
 	static constexpr const char* ENV_MANGOHUD_DLSYM = "MANGOHUD_DLSYM";
 
-	/*
-	 * Value "1" used for the boolean env vars above.
-	 */
 	static constexpr const char* ENV_VALUE_ON = "1";
 	static constexpr const char* ENV_VALUE_OFF = "0";
 

@@ -33,7 +33,6 @@
 
 #include <memory>
 
-// RAII helpers for libarchive
 struct ArchiveReadDeleter {
 	void operator()(struct archive* a) const
 	{
@@ -53,39 +52,14 @@ using ArchiveWritePtr = std::unique_ptr<
 	struct archive,
 	ArchiveWriteDeleter>; // NOLINT(readability-identifier-naming)
 
-/*!
- * The name of \a entry, in the one spelling the rest of Kite can compare
- * against.
- *
- * Reading an archive whose names are UTF-8, libarchive decomposes them on
- * Apple platforms on purpose -- SCONV_NORMALIZATION_D in archive_string.c,
- * under `#if defined(__APPLE__)`, so that they compare equal to what HFS
- * Plus reports for the same file. The consequence for us is that one and the
- * same zip yields "Ş" as a single code point on Linux and Windows and as "S"
- * plus a combining cedilla on macOS: the same text, a different string.
- * Anything that looks an entry up by a name from somewhere else --
- * readFileFromZip(), extractSubDir(), a pack manifest, a caller's literal --
- * then misses.
- *
- * Composing to NFC gives one form on every platform. It is the form the rest
- * of Qt and every manifest we read already use, and normalising a string
- * that is already NFC is cheap: Qt quick-checks it and returns.
- *
- * The narrow accessor, deliberately, and not archive_entry_pathname_utf8().
- * Both of them convert, and which one is correct depends on how the name was
- * written -- so the only rule that holds is that the two ends of this file
- * agree. writeFileToArchive() and ZipWriter::addFile() hand libarchive UTF-8
- * bytes through archive_entry_set_pathname(), which declares them to be in
- * the process's own charset; libarchive stores them unconverted, because the
- * source and target charsets are then the same. The narrow accessor returns
- * exactly those bytes back, and QString::fromUtf8() is right. The _utf8
- * accessor would instead convert them *out of* the local charset -- on
- * Windows that is the active ANSI code page, where "Ş" (C5 9E) comes back as
- * "Åž". That is not theoretical: reaching for _utf8 here is what broke both
- * Windows builds, and the same asymmetry in the other direction is what
- * broke ReleaseArchive_test. Changing one end of this pair means changing
- * the other.
- */
+/* The name of an entry, NFC-composed. libarchive decomposes UTF-8 names on
+ * Apple platforms (to match HFS Plus), so one zip yields different strings on
+ * macOS and elsewhere and lookups by name miss; NFC gives one form everywhere.
+ * Uses the narrow archive_entry_pathname(), not the _utf8 accessor: writers
+ * hand libarchive UTF-8 bytes through archive_entry_set_pathname(), stored
+ * unconverted, and the _utf8 accessor would convert them out of the local
+ * charset (on Windows the ANSI code page), which broke both Windows builds.
+ * Change one end of this pair and the other must change. */
 static QString entryPathName(struct archive_entry* entry)
 {
 	const char* name = archive_entry_pathname(entry);
@@ -106,8 +80,8 @@ static ArchiveReadPtr openZipForReading(const QString& path)
 	return a;
 }
 
-// A zip that is already in memory: a jar bundled inside another one. `data`
-// has to outlive the returned handle, which reads straight out of it.
+// A zip already in memory (a jar bundled inside another). `data` must outlive
+// the returned handle, which reads straight out of it.
 static ArchiveReadPtr openZipFromMemory(const QByteArray& data)
 {
 	ArchiveReadPtr a(archive_read_new());
@@ -158,12 +132,10 @@ static bool writeFileToArchive(
 static bool writeDiskEntry(struct archive* ar, const QString& absFilePath,
 						   QString* error = nullptr)
 {
-	// Ensure parent directory exists
 	QFileInfo fi(absFilePath);
 	QDir().mkpath(fi.absolutePath());
 
 	if (absFilePath.endsWith('/')) {
-		// Directory entry
 		QDir().mkpath(absFilePath);
 		return true;
 	}
@@ -178,10 +150,9 @@ static bool writeDiskEntry(struct archive* ar, const QString& absFilePath,
 		return false;
 	}
 
-	// Every bail-out below leaves a truncated file behind. A zero-byte native
-	// library or mod jar is worse than none at all: the caller sees a failure,
-	// but the file stays on disk and the next launch happily loads the corpse.
-	// So clean up on every failure path.
+	// Every bail-out leaves a truncated file behind, and a zero-byte native
+	// library or mod jar would be loaded by the next launch, so clean up on
+	// every failure path.
 	const auto fail = [&outFile, &absFilePath](QString* out,
 											   const QString& why) {
 		outFile.close();
@@ -235,10 +206,9 @@ bool MMCZip::compressDir(QString zipFile, QString dir,
 	if (!directory.exists())
 		return false;
 
-	// Counting up front costs one directory walk with no file reads,
-	// which is nothing next to reading and compressing everything we
-	// just counted — and it is the difference between a percentage and
-	// a bar that only sweeps. Only pay for it if someone is listening.
+	// Counting up front costs one directory walk with no file reads, cheap
+	// next to compressing, and turns a sweeping bar into a percentage. Only
+	// paid when someone listens.
 	qint64 total = 0;
 	qint64 done = 0;
 	if (progress) {
@@ -296,17 +266,16 @@ bool MMCZip::collectFileListRecursively(const QString& rootDir,
 
 	QDir directory = subDir.isNull() ? rootDirectory : QDir(subDir);
 	if (!directory.exists())
-		return false; // shouldn't ever happen
+		return false;
 
-	// recurse into subdirectories first, so the list comes out in a
-	// stable, depth-first order rather than in readdir order
+	// Subdirectories first, so the list is depth-first and stable rather than
+	// in readdir order.
 	const QFileInfoList dirs = directory.entryInfoList(
 		QDir::AllDirs | QDir::NoDotAndDotDot | QDir::Hidden);
 	for (const auto& dir : dirs) {
-		/* A directory the user unchecked is not walked at all: the
-		 * filter already answers "no" for everything inside it, and
-		 * descending into a blocked `.minecraft/logs` only to throw
-		 * every entry away is the slow way of doing nothing. */
+		/* A directory the user unchecked is not walked: the filter already
+		 * says no to everything in it, and descending into a blocked
+		 * `.minecraft/logs` is wasted work. */
 		if (excludeFilter && excludeFilter(dir))
 			continue;
 		if (!collectFileListRecursively(rootDir, dir.filePath(), files,
@@ -351,8 +320,8 @@ bool MMCZip::ZipWriter::open()
 		return false;
 	}
 	archive_write_set_format_zip(m_archive);
-	/* Names go in as UTF-8 and are flagged as such, so that a pack with
-	 * non-Latin file names survives the round trip through other tools. */
+	/* Names go in as UTF-8 and are flagged as such, so a pack with non-Latin
+	 * file names survives other tools. */
 	if (archive_write_set_options(m_archive, "hdrcharset=UTF-8") !=
 		ARCHIVE_OK) {
 		qWarning() << "Could not set archive options for" << m_path << ":"
@@ -422,9 +391,9 @@ bool MMCZip::ZipWriter::addFile(const QString& sourcePath,
 	archive_entry_set_size(entry, size);
 	archive_entry_set_filetype(entry, AE_IFREG);
 	archive_entry_set_perm(entry, info.isExecutable() ? 0755 : 0644);
-	/* Kept so that an exported instance still shows when its files were
-	 * last touched; a zip full of entries dated "now" makes every diff
-	 * against the original look like a change. */
+	/* Kept so an exported instance shows when its files were last touched;
+	 * entries all dated "now" make every diff against the original look like a
+	 * change. */
 	const QDateTime modified = info.lastModified();
 	if (modified.isValid()) {
 		archive_entry_set_mtime(entry, modified.toSecsSinceEpoch(), 0);
@@ -437,9 +406,8 @@ bool MMCZip::ZipWriter::addFile(const QString& sourcePath,
 	}
 	archive_entry_free(entry);
 
-	/* Streamed rather than read whole: worlds and resource packs are
-	 * routinely bigger than it is reasonable to hold in memory, and an
-	 * export walks all of them. */
+	/* Streamed, not read whole: worlds and resource packs are often too big to
+	 * hold in memory. */
 	QByteArray buffer(64 * 1024, Qt::Uninitialized);
 	qint64 written = 0;
 	while (written < size) {
@@ -450,10 +418,9 @@ bool MMCZip::ZipWriter::addFile(const QString& sourcePath,
 			return false;
 		}
 		if (read == 0) {
-			/* The file shrank while we were reading it. The header
-			 * already promised `size` bytes, so the entry cannot be
-			 * completed - better to fail loudly than to write an
-			 * archive libarchive itself considers malformed. */
+			/* The file shrank while being read. The header promised `size`
+			 * bytes, so the entry cannot be completed; failing beats writing
+			 * an archive libarchive considers malformed. */
 			m_error = QStringLiteral("'%1' changed size while being read")
 						  .arg(sourcePath);
 			return false;
@@ -472,13 +439,10 @@ bool MMCZip::mergeZipFiles(const QString& intoPath, QFileInfo from,
 						   QSet<QString>& contained,
 						   const FilterFunction filter)
 {
-	// Read all entries from source zip
 	auto ar = openZipForReading(from.filePath());
 	if (!ar)
 		return false;
 
-	// Read existing entries from target if it exists, then append new ones
-	// We build a list of entries to write
 	struct EntryData {
 		QString name;
 		QByteArray data;
@@ -502,7 +466,6 @@ bool MMCZip::mergeZipFiles(const QString& intoPath, QFileInfo from,
 		}
 		contained.insert(filename);
 
-		// Read data
 		la_int64_t entrySize = archive_entry_size(entry);
 		QByteArray data;
 		if (entrySize > 0) {
@@ -519,9 +482,8 @@ bool MMCZip::mergeZipFiles(const QString& intoPath, QFileInfo from,
 		newEntries.append({filename, data});
 	}
 
-	// Now append to existing zip (or create new one)
-	// libarchive doesn't support append, so we need to read existing + write
-	// all
+	// libarchive cannot append: read the existing entries and write them all
+	// again.
 	QList<EntryData> existingEntries;
 	if (QFile::exists(intoPath)) {
 		auto existingAr = openZipForReading(intoPath);
@@ -544,7 +506,6 @@ bool MMCZip::mergeZipFiles(const QString& intoPath, QFileInfo from,
 	if (!aw)
 		return false;
 
-	// Write existing entries
 	for (const auto& e : existingEntries) {
 		if (!writeFileToArchive(aw.get(), e.name, e.data)) {
 			qCritical() << "Failed to write existing entry " << e.name;
@@ -552,7 +513,6 @@ bool MMCZip::mergeZipFiles(const QString& intoPath, QFileInfo from,
 		}
 	}
 
-	// Write new entries
 	for (const auto& e : newEntries) {
 		if (!writeFileToArchive(aw.get(), e.name, e.data)) {
 			qCritical() << "Failed to write " << e.name << " into the jar";
@@ -567,17 +527,14 @@ bool MMCZip::mergeZipFiles(const QString& intoPath, QFileInfo from,
 bool MMCZip::createModdedJar(QString sourceJarPath, QString targetJarPath,
 							 const QList<Mod>& mods)
 {
-	// Files already added to the jar. These files will be skipped.
 	QSet<QString> addedFiles;
 
-	// We collect all entries first, then write them all at once.
 	struct EntryData {
 		QString name;
 		QByteArray data;
 	};
 	QList<EntryData> allEntries;
 
-	// Modify the jar - process mods in reverse order
 	QListIterator<Mod> i(mods);
 	i.toBack();
 	while (i.hasPrevious()) {
@@ -651,7 +608,6 @@ bool MMCZip::createModdedJar(QString sourceJarPath, QString targetJarPath,
 		}
 	}
 
-	// Add source jar contents (skip META-INF and already added files)
 	auto ar = openZipForReading(sourceJarPath);
 	if (!ar) {
 		QFile::remove(targetJarPath);
@@ -678,7 +634,6 @@ bool MMCZip::createModdedJar(QString sourceJarPath, QString targetJarPath,
 		allEntries.append({filename, data});
 	}
 
-	// Write the final jar
 	auto aw = createZipForWriting(targetJarPath);
 	if (!aw) {
 		QFile::remove(targetJarPath);
@@ -749,9 +704,8 @@ MMCZip::extractSubDir(const QString& zipPath, const QString& subdir,
 	qDebug() << "Extracting subdir" << subdir << "from" << zipPath << "to"
 			 << target;
 
-	/* One extra pass over the entry list, with no file data read, is
-	 * what turns the progress bar from a sweeping animation into a
-	 * percentage. Only paid for when somebody is watching. */
+	/* One extra pass over the entry list, with no file data read, turns the
+	 * bar into a percentage. Only paid when somebody is watching. */
 	qint64 total = 0;
 	qint64 done = 0;
 	if (reporting.progress) {
@@ -778,9 +732,8 @@ MMCZip::extractSubDir(const QString& zipPath, const QString& subdir,
 	int readRet;
 	while ((readRet = archive_read_next_header(ar.get(), &entry)) ==
 		   ARCHIVE_OK) {
-		/* Between entries rather than inside one: a half-written file is
-		 * worse than one more file, and the wait is bounded by the
-		 * largest entry in the archive. */
+		/* Between entries, not inside one: a half-written file is worse than
+		 * one more file, and the wait is bounded by the largest entry. */
 		if (reporting.isCancelled && reporting.isCancelled()) {
 			qDebug() << "Extraction of" << zipPath << "cancelled";
 			for (const auto& f : extracted)
@@ -807,7 +760,6 @@ MMCZip::extractSubDir(const QString& zipPath, const QString& subdir,
 		if (!writeDiskEntry(ar.get(), absFilePath)) {
 			qWarning() << "Failed to extract file" << name << "to"
 					   << absFilePath;
-			// Clean up extracted files
 			for (const auto& f : extracted)
 				(void)QFile::remove(f);
 			return std::nullopt;
@@ -881,7 +833,6 @@ bool MMCZip::extractFile(QString fileCompressed, QString file, QString target)
 	return MMCZip::extractRelFile(fileCompressed, file, target);
 }
 
-// The body of the entry libarchive is positioned on.
 static QByteArray readEntryData(struct archive* ar, struct archive_entry* entry)
 {
 	la_int64_t sz = archive_entry_size(entry);
@@ -899,8 +850,8 @@ static QByteArray readEntryData(struct archive* ar, struct archive_entry* entry)
 	return data;
 }
 
-// One pass over the archive, stopping as soon as every wanted entry has been
-// read. The first entry of a name wins, as it always did for a single file.
+// One pass, stopping once every wanted entry has been read. The first entry of
+// a name wins.
 static QHash<QString, QByteArray> readEntries(struct archive* ar,
 											  const QStringList& entryNames)
 {
@@ -995,14 +946,12 @@ QStringList MMCZip::listEntries(const QString& zipPath, const QString& dirPath,
 	while (archive_read_next_header(ar.get(), &entry) == ARCHIVE_OK) {
 		QString name = entryPathName(entry);
 
-		// Must start with dirPath
 		if (!name.startsWith(dirPath)) {
 			archive_read_data_skip(ar.get());
 			continue;
 		}
 
 		QString relative = name.mid(dirPath.size());
-		// Remove leading slashes
 		while (relative.startsWith('/'))
 			relative = relative.mid(1);
 
@@ -1013,7 +962,6 @@ QStringList MMCZip::listEntries(const QString& zipPath, const QString& dirPath,
 
 		int slashIdx = relative.indexOf('/');
 		if (slashIdx < 0) {
-			// It's a file directly in dirPath
 			if (type & QDir::Files) {
 				if (!seen.contains(relative)) {
 					seen.insert(relative);
@@ -1021,10 +969,9 @@ QStringList MMCZip::listEntries(const QString& zipPath, const QString& dirPath,
 				}
 			}
 		} else {
-			// It's inside a subdirectory
 			if (type & QDir::Dirs) {
 				QString dirName =
-					relative.left(slashIdx + 1); // include trailing /
+					relative.left(slashIdx + 1);
 				if (!seen.contains(dirName)) {
 					seen.insert(dirName);
 					result.append(dirName);

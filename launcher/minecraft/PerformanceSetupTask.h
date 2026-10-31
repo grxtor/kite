@@ -35,23 +35,22 @@ class TaskWatcher;
 
 /*
  * Kite Performance for one instance: makes sure the Performance bundle's
- * default mods are installed. It runs before every Play of an instance
- * with the mode on (PreparePerformance), once on its own for "Speed up",
- * and as the last step of PerformanceInstanceTask.
+ * default mods are installed. It runs before every Play of an instance with
+ * the mode on (PreparePerformance), once for "Speed up", and as the last step
+ * of PerformanceInstanceTask.
  *
- * An instance without a mod loader is never changed - no loader is added
- * to it: the task ends at once, without the network, saying so.
+ * An instance without a mod loader is never changed: the task ends at once,
+ * without the network, saying so.
  *
- * What is wanted is the catalog's default performance mods for the
- * instance's loader, minus the ones the player unticked
- * (KitePerformanceExcluded), plus `extras` -- other catalog mods picked for
- * this one run, e.g. in New instance -- minus what is already there: mods the folder
- * recorded from Modrinth, and jars added by hand that Modrinth identifies
- * by hash - so a hand-added Sodium never gets a second one beside it.
+ * Wanted: the catalog's default performance mods for the instance's loader,
+ * minus those the player unticked (KitePerformanceExcluded), plus `extras`
+ * (other catalog mods picked for this run, e.g. in New instance), minus what is
+ * already there: mods the folder recorded from Modrinth and hand-added jars
+ * Modrinth identifies by hash, so a hand-added Sodium gets no second copy.
  * Nothing wanted ends the task at once, without the network.
  *
- * Playing never waits on this succeeding: every failure is logged and the
- * task still succeeds. Its status, once it is over, is summary().
+ * Playing never waits on this succeeding: every failure is logged and the task
+ * still succeeds. Its final status is summary().
  */
 class PerformanceSetupTask : public Task
 {
@@ -93,8 +92,8 @@ class PerformanceSetupTask : public Task
 	void onResolved();
 	void install();
 	void onInstalled(bool ok);
-	/// Ends the task: a warning in the log if @p problem, the summary as
-	/// the final status, success.
+	/// Ends the task: logs a warning if @p problem, sets the summary as the
+	/// final status, succeeds.
 	void finish(const QString& summary, const QString& problem = QString());
 
 	std::shared_ptr<MinecraftInstance> m_instance;

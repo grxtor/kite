@@ -49,9 +49,8 @@ class NotificationChecker : public QObject
 
 	QList<NotificationEntry> notificationEntries() const;
 
-	/* The "ShownNotifications" setting: the ids of the notifications the
-	 * user asked not to see again, as a comma-separated list. Shared by
-	 * whichever UI shows them, so both read and write it the same way. */
+	/* The "ShownNotifications" setting: ids of notifications the user asked
+	 * not to see again, comma-separated. Shared by whichever UI shows them. */
 	static QList<int> parseShownIds(const QString& setting);
 	static QString formatShownIds(const QList<int>& ids);
 

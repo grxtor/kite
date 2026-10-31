@@ -8,13 +8,11 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One node of a plugin's "mmco-ui/1" document, drawn with the launcher's
- * own components -- a plugin names what it needs (a toggle, a list), never
- * how it looks. Containers draw their children through this same file.
- *
- * Every user action goes back to the plugin as (surface, node, event,
- * value) through `sink.sendEvent`; the plugin answers by patching its
- * document, which arrives here as a new `node`.
+ * One node of a plugin's "mmco-ui/1" document, drawn with the launcher's own
+ * components. Containers draw their children through this same file. Every user
+ * action goes back to the plugin as (surface, node, event, value) through
+ * `sink.sendEvent`; the plugin answers by patching its document, which arrives
+ * here as a new `node`.
  */
 Item {
     id: root
@@ -33,7 +31,6 @@ Item {
             root.sink.sendEvent(root.surfaceId, root.node.id || "", event, value)
     }
 
-    // Children of a row keep their natural width; everything else fills.
     property bool stretch: true
 
     visible: props.visible !== false
@@ -113,7 +110,6 @@ Item {
         }
     }
 
-    // Leaves inside a section card get row padding, like setting rows.
     property bool inCard: false
     readonly property int pad: inCard ? Theme.space.lg : 0
 
@@ -226,16 +222,13 @@ Item {
                 width: parent ? parent.width : 300
                 placeholderText: root.props.placeholder || ""
                 selectByMouse: true
-                // Follows the plugin's value while the user is not editing.
-                // Not only on completion: a child node's `node` arrives
-                // after it is created (see the containers' onLoaded), and
-                // this field can complete before `props` has caught up.
+                // Follows the plugin's value while the user is not editing. Not only on completion:
+                // a child's `node` arrives after it is created.
                 readonly property string pluginValue: root.props.value !== undefined && root.props.value !== null
                                                       ? String(root.props.value) : ""
                 onPluginValueChanged: if (!activeFocus) text = pluginValue
                 Component.onCompleted: text = pluginValue
-                // Same moment the widget renderer reports it: when editing
-                // finishes, so a plugin never sees half-typed values.
+                // When editing finishes, so a plugin never sees half-typed values.
                 onEditingFinished: root.send("change", text)
             }
         }
@@ -268,7 +261,6 @@ Item {
             label: root.props.label || ""
             enabled: root.props.enabled !== false
             ComboBox {
-                id: combo
                 width: 220
                 readonly property var options: (root.props.options || []).map(o => typeof o === "string" ? { id: o, label: o } : o)
                 model: options
@@ -292,7 +284,6 @@ Item {
             bottomPadding: root.inCard ? Theme.space.sm : 0
             property string selectedId: ""
 
-            // Column titles.
             Row {
                 x: root.pad + Theme.space.sm
                 visible: (root.props.columns || []).length > 1

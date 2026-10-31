@@ -33,20 +33,13 @@
 
 class ModMetadataIndex;
 
-/*
- * ModUpdateCheckTask
+/* Walks every index entry with a remote provenance and asks the source
+ * platform for the newest compatible version. When it differs from the
+ * recorded one, a ready DownloadItem is produced (replaceExisting and
+ * replacesFileName set).
  *
- * Walks every entry of a ModMetadataIndex that has a remote provenance and
- * asks the source platform for the newest compatible version. Whenever the
- * remote version differs from the recorded one, a ready-to-download
- * DownloadItem is produced (with replaceExisting + replacesFileName already
- * populated).
- *
- * This task is read-only with respect to the index — it never mutates the
- * sidecars itself. The caller is expected to hand the resulting plan to a
- * ContentDownloadTask, which both writes the new files and updates the
- * sidecars on success.
- */
+ * Read-only on the index: the caller hands the plan to a
+ * ContentDownloadTask, which writes the files and updates the sidecars. */
 class ModUpdateCheckTask : public Task
 {
 	Q_OBJECT
@@ -58,31 +51,26 @@ class ModUpdateCheckTask : public Task
 		QString name;
 		QString platform;
 		ModPlatform::DownloadItem item;
-		/* The two versions as a person reads them ("0.6.5"), for a review
-		 * list; the ids above are each platform's own opaque handles.
-		 * Either may be empty when nothing readable was recorded or
-		 * offered. */
+		/* The versions as a person reads them ("0.6.5"), for a review list; the
+		 * ids above are opaque. Either may be empty. */
 		QString currentVersionNumber;
 		QString newVersionNumber;
 	};
 
-	/* `loader` is ignored for content that has no loaders (resource
-	 * packs, shader packs, data packs) - see the constructor. */
+	/* `loader` is ignored for content without loaders (resource, shader and
+	 * data packs). */
 	ModUpdateCheckTask(std::shared_ptr<ModMetadataIndex> index,
 					   QString mcVersion, QString loader,
 					   ModPlatform::ContentType contentType,
 					   QObject* parent = nullptr);
 
-	/* Whatever was found so far. Still meaningful after abort(): the
-	 * mods that were checked before the user gave up are checked, and
-	 * throwing that away would only make them do it again. */
+	/* What was found so far; still meaningful after abort(). */
 	QList<UpdateInfo> availableUpdates() const
 	{
 		return m_updates;
 	}
 
-	/* One lookup per tracked mod, so a large instance takes a while and
-	 * the progress dialog offers an Abort button for it. */
+	/* One lookup per tracked mod, so a large instance takes a while. */
 	bool canAbort() const override
 	{
 		return true;
@@ -106,10 +94,9 @@ class ModUpdateCheckTask : public Task
 	int m_total = 0;
 	int m_completed = 0;
 
-	/* Lookups still in flight, so abort() can call them off. Guarded
-	 * pointers because a job deletes itself once it has reported. */
+	/* Lookups in flight, for abort(). Guarded: a job deletes itself after
+	 * reporting. */
 	QList<QPointer<NetJob>> m_activeJobs;
-	/* Latched by abort(): replies still arrive but are dropped, and no
-	 * second verdict is given on top of the aborted one. */
+	/* Latched by abort(): replies are dropped and no second verdict given. */
 	bool m_aborted = false;
 };

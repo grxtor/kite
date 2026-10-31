@@ -53,19 +53,13 @@ struct MinecraftProfile {
 	Skin skin;
 	QString currentCape;
 
-	/* Capes the account owns, in the order the profile service returned
-	 * them.
-	 *
-	 * A list rather than a map keyed by id: the order is meaningful. It is
-	 * the order the cape picker shows them in, and it is the order Mojang
-	 * lists them in -- which a map would silently replace with alphabetical
-	 * order by id, i.e. by opaque UUID, i.e. arbitrary. The stored JSON has
-	 * always been an array, so nothing about the on-disk format changes;
-	 * round-tripping through a list actually preserves it where the map did
-	 * not. */
+	// Capes the account owns, in the order the profile service returned them. A
+	// list, not a map by id: the order is the cape picker's order, and a map
+	// would replace it with arbitrary (UUID) order. The stored JSON is an array
+	// either way.
 	QList<Cape> capes;
 
-	/* Look a cape up by id, or nullptr if the account does not own it. */
+	// Looks a cape up by id, or nullptr if the account does not own it.
 	const Cape* capeById(const QString& id) const
 	{
 		for (const Cape& cape : capes) {

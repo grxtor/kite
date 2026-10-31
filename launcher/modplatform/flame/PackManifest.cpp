@@ -36,9 +36,8 @@ static void loadModloaderV1(Flame::Modloader& m, QJsonObject& modLoader)
 static void loadMinecraftV1(Flame::Minecraft& m, QJsonObject& minecraft)
 {
 	m.version = Json::requireString(minecraft, "version");
-	// extra libraries... apparently only used for a custom Minecraft launcher
-	// in the 1.2.5 FTB retro pack intended use is likely hardcoded in the
-	// 'Flame' client, the manifest says nothing
+	// extra libraries: apparently only used by the 1.2.5 FTB retro pack; the
+	// manifest says nothing
 	m.libraries =
 		Json::ensureString(minecraft, QString("libraries"), QString());
 	auto arr = Json::ensureArray(minecraft, "modLoaders", QJsonArray());
@@ -88,30 +87,26 @@ bool Flame::File::parseFromBytes(const QByteArray& bytes)
 {
 	auto doc = Json::requireDocument(bytes);
 	auto obj = Json::requireObject(doc);
-	// result code signifies true failure.
+	// A result code signifies true failure.
 	if (obj.contains("code")) {
 		qCritical() << "Resolving of" << projectId << fileId
 					<< "failed because of a negative result:";
 		qCritical() << bytes;
 		return false;
 	}
-	// CurseForge API v1 wraps the file object in "data"
+	// API v1 wraps the file object in "data"
 	if (obj.contains("data")) {
 		obj = Json::requireObject(obj, "data");
 	}
-	// Support both old cursemeta (FileNameOnDisk) and CurseForge API v1
-	// (fileName) field names
+	// Both old cursemeta (FileNameOnDisk) and API v1 (fileName) field names.
 	fileName = Json::ensureString(obj, "fileName", QString());
 	if (fileName.isEmpty()) {
 		fileName = Json::requireString(obj, "FileNameOnDisk");
 	}
-	/* CurseForge reports one digest per algorithm, tagged with a numeric
-	 * "algo": 1 is SHA-1, 2 is MD5. SHA-1 is the one worth keeping,
-	 * since that is what the launcher hashes an installed file with when
-	 * it needs to decide whether an update has to fetch it again.
-	 * Anything else is ignored rather than guessed at - a digest
-	 * compared under the wrong algorithm reports every file as changed,
-	 * which would turn the check into pure cost. */
+	/* One digest per algorithm, tagged with a numeric "algo": 1 is SHA-1, 2 is
+	 * MD5. SHA-1 is kept, as the launcher hashes installed files with it;
+	 * other algorithms are ignored, since a digest compared under the wrong
+	 * algorithm reports every file as changed. */
 	fileSize = static_cast<qint64>(Json::ensureDouble(obj, "fileLength", 0.0));
 	for (const auto& hashRaw : Json::ensureArray(obj, "hashes")) {
 		const QJsonObject hashObj = hashRaw.toObject();
@@ -126,8 +121,7 @@ bool Flame::File::parseFromBytes(const QByteArray& bytes)
 		rawUrl = Json::ensureString(obj, "DownloadURL", QString());
 	}
 	if (rawUrl.isEmpty()) {
-		// Mod has disabled third-party downloads — will be handled via browser
-		// download
+		// Third-party downloads are disabled; handled via a browser download.
 		qWarning() << "Mod" << projectId << fileId << "(" << fileName
 				   << ") has no download URL (restricted)."
 				   << "Will require browser download.";
@@ -138,8 +132,8 @@ bool Flame::File::parseFromBytes(const QByteArray& bytes)
 	if (!url.isValid()) {
 		throw JSONValidationError(QString("Invalid URL: %1").arg(rawUrl));
 	}
-	// This is a piece of a Flame project JSON pulled out into the file metadata
-	// (here) for convenience It is also optional
+	// A piece of a Flame project JSON pulled into the file metadata for
+	// convenience; optional.
 	QJsonObject projObj = Json::ensureObject(obj, "_Project", {});
 	if (!projObj.isEmpty()) {
 		QString strType =

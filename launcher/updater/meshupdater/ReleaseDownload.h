@@ -37,13 +37,8 @@ class ReleaseDownload : public Task
 					const QString& path, QObject* parent = nullptr);
 	~ReleaseDownload() override;
 
-	/*!
-	 * Size the release listing promised, in bytes. 0 means "unknown".
-	 *
-	 * Checked after the transfer: HTTPS protects the bytes in flight, but not
-	 * against a proxy or a CDN handing back a truncated body with a perfectly
-	 * good status code.
-	 */
+	/*! Size the release listing promised, in bytes; 0 means unknown. Checked after the transfer,
+	 * since a proxy or CDN can return a truncated body with a good status code. */
 	void setExpectedSize(qint64 bytes)
 	{
 		m_expectedSize = bytes;

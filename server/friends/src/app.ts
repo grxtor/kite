@@ -19,7 +19,6 @@ export interface AppDeps {
 
 const bodyLimitBytes = 8 * 1024;
 
-/** Drops expired challenges, sessions and statuses, and forgets finished rate-limit windows. */
 async function purgeExpired(ctx: Context): Promise<void> {
   const now = ctx.now();
   await ctx.pool.query('delete from challenges where expires_at <= $1', [now]);

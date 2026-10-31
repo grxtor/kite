@@ -2,30 +2,24 @@
  * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * WikiRepoBundle — the one and only wiki backend: a cloned Git wiki
- * repository, in the flat layout GitLab/GitHub wikis use:
+ * WikiRepoBundle: the wiki backend, a cloned Git wiki repository in the flat layout GitLab/GitHub
+ * wikis use:
  *
- *   <root>/Page-Name.md         — one Markdown file per page; the slug
- *                                 is the file's base name (spaces are
- *                                 written as dashes in the file name).
- *   <root>/Home.md              — landing page (falls back to the first
- *                                 page alphabetically if absent).
- *   <root>/_Sidebar.md          — ignored as an article (meta page).
- *   <root>/_Footer.md           — optional, appended to every page.
- *   <root>/images/…             — media referenced with relative paths.
+ *   <root>/Page-Name.md   one Markdown file per page; the slug is the base name (dashes for spaces)
+ *   <root>/Home.md        landing page (first page alphabetically if absent)
+ *   <root>/_Sidebar.md    meta page, not an article
+ *   <root>/_Footer.md     optional, appended to every page
+ *   <root>/images/...     media referenced with relative paths
  *
- * The page list is discovered by scanning *.md. It also rewrites the
- * two wiki link styles into an internal "wiki:" URL scheme, still as
- * Markdown, so the declarative UI's markdown text node can navigate
- * between pages via ordinary link-click events:
+ * Pages are found by scanning *.md. Wiki links are rewritten (still Markdown) to an internal "wiki:"
+ * scheme so the declarative UI's markdown text node navigates through ordinary link clicks:
  *
  *   [[Page Name]]      -> [Page Name](wiki:Page-Name)
  *   [text](Page-Name)  -> [text](wiki:Page-Name)
  *
- * (links that are already absolute — http(s):, mailto:, #anchors,
- * or existing files — are left untouched.) Relative image references
- * (![alt](images/foo.png)) are rewritten to absolute file:// URLs so
- * they resolve without the renderer knowing the bundle root.
+ * Absolute links (http(s):, mailto:, #anchors) and links to existing files stay untouched. Relative
+ * images (![alt](images/foo.png)) become absolute file:// URLs so they resolve without the renderer
+ * knowing the bundle root.
  */
 
 #pragma once
@@ -64,16 +58,13 @@ class WikiRepoBundle
 	/* Navigation list: Home first (if present), then alphabetical. */
 	QList<Entry> nav() const;
 
-	/* Resolve a slug to the article's rewritten Markdown source (internal
-	 * links rewritten to the wiki: scheme, relative images resolved to
-	 * absolute file:// URLs) — fed directly into a "text" UI node with
-	 * format "markdown". Empty if not found. */
+	/* Resolves a slug to the article's Markdown source (links rewritten to wiki:, images to
+	 * absolute file:// URLs) for a "text" node with format "markdown"; empty if not found. */
 	QString renderArticleMarkdown(const QString& slug) const;
 
 	/* Pages whose title contains `query` (case-insensitive substring). */
 	QList<Entry> searchTitles(const QString& query, int limit = 200) const;
 
-	/* Slug helpers. */
 	static QString slugFromFileName(const QString& fileName);
 	static QString titleFromSlug(const QString& slug);
 

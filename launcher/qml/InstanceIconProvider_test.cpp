@@ -33,12 +33,9 @@
 
 namespace
 {
-/* The same four directories Application.cpp (and IconTheme_test.cpp) pass to
- * IconList. All four are needed for "grass" specifically: of the built-in
- * instance icons, only scalable/instances/ ships an unsuffixed "grass.svg"
- * -- the raster sizes only have "grass_legacy.png" -- so leaving scalable
- * out would make every lookup below fall through to the fallback path and
- * prove nothing. */
+/* The directories Application.cpp passes to IconList. All four are needed:
+ * only scalable/instances/ ships an unsuffixed "grass.svg", so without it
+ * every lookup below would take the fallback path and prove nothing. */
 const QStringList kBuiltinIconDirs = {
 	QStringLiteral(":/icons/multimc/32x32/instances/"),
 	QStringLiteral(":/icons/multimc/50x50/instances/"),
@@ -46,31 +43,23 @@ const QStringList kBuiltinIconDirs = {
 	QStringLiteral(":/icons/multimc/scalable/instances/"),
 };
 
-// Mirrors InstanceIconProvider's own fallback extent.
+// InstanceIconProvider's fallback extent.
 constexpr int kDefaultIconExtent = 64;
 } // namespace
 
 /*
- * Unit test for InstanceIconProvider.
+ * Unit test for InstanceIconProvider, against a real IconList: the point is
+ * the "<key>?rev=N" bridge and the unknown-key/invalid-size fallbacks, and a
+ * mock would not prove the right pixels come back. Resolving the real "grass"
+ * builtin needs two things application start-up also does:
  *
- * Runs against a real IconList rather than a mock: the point of this
- * provider is the "<key>?rev=N" bridge and the unknown-key/invalid-size
- * fallbacks, and a mock would only prove it calls a method, not that the
- * right pixels come back. Getting a real "grass" builtin icon to resolve
- * here needs the same two things application start-up does, and both are
- * easy to skip silently:
- *
- *  - Q_INIT_RESOURCE(multimc) in main(), because the compiled "multimc"
- *    resource lives inside the Kite_logic static library and nothing else
- *    in this test binary forces the linker to keep those object files.
+ *  - Q_INIT_RESOURCE(multimc) in main(), because the "multimc" resource lives
+ *    in the Kite_logic static library and nothing else forces the linker to
+ *    keep it.
  *  - QIcon::setThemeName("multimc") over a search path that includes
- *    ":/icons", because IconList's Builtin icons resolve through
- *    QIcon::fromTheme() rather than loading the file directly -- see
- *    MMCIcon::icon() -- which is exactly what ThemeManager::setIconTheme()
- *    sets up for the real application.
+ *    ":/icons", because builtin icons resolve through QIcon::fromTheme().
  *
- * Skip either one and every lookup below quietly takes the "unknown key"
- * path instead, which would pass without testing the thing it claims to.
+ * Without either, every lookup quietly takes the "unknown key" path.
  */
 class InstanceIconProviderTest : public QObject
 {
@@ -79,9 +68,9 @@ class InstanceIconProviderTest : public QObject
   private slots:
 	void initTestCase()
 	{
-		// Same as ThemeManager::setIconTheme(), restated rather than called
-		// so this measures IconList/Qt, not that wrapper. ":/icons" goes
-		// first so the bundled theme wins over a same-named one on the host.
+		// As ThemeManager::setIconTheme(), restated so this measures IconList
+		// and Qt. ":/icons" goes first so the bundled theme wins over a
+		// same-named one on the host.
 		QStringList searchPaths = QIcon::themeSearchPaths();
 		searchPaths.prepend(QStringLiteral(":/icons"));
 		QIcon::setThemeSearchPaths(searchPaths);
@@ -165,19 +154,15 @@ class InstanceIconProviderTest : public QObject
 
 int main(int argc, char* argv[])
 {
-	/* Same reasoning as QmlModule_test.cpp: a Pixmap-type QQuickImageProvider
-	 * needs a QGuiApplication, and forcing offscreen keeps this runnable on a
-	 * headless runner without depending on the harness to set
-	 * QT_QPA_PLATFORM for us. */
+	/* A Pixmap-type QQuickImageProvider needs a QGuiApplication; offscreen
+	 * keeps this runnable on a headless runner. */
 	qputenv("QT_QPA_PLATFORM", "offscreen");
 
 	QGuiApplication app(argc, argv);
 
-	/* The compiled "multimc" resource sits in Kite_logic, a static
-	 * library; without a symbol reference into it, the linker drops the
-	 * object that registers it, and every builtinPaths lookup below would
-	 * silently come back empty. main.cpp does the same for the launcher
-	 * itself. */
+	/* The "multimc" resource sits in the Kite_logic static library; without a
+	 * symbol reference the linker drops the object that registers it, and every
+	 * builtinPaths lookup would come back empty. */
 	Q_INIT_RESOURCE(multimc);
 
 	InstanceIconProviderTest test;

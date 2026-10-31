@@ -40,10 +40,7 @@ class ModFolderModel;
 class InstanceContentController;
 class ContentProviderModel;
 
-/*
- * The updates a check found, as a list to tick: the QML-facing
- * replacement for ModUpdateDialog's tree. Every row starts ticked.
- */
+/* The updates a check found, as a list to tick. Every row starts ticked. */
 class ContentUpdateList : public QAbstractListModel
 {
 	Q_OBJECT
@@ -54,15 +51,10 @@ class ContentUpdateList : public QAbstractListModel
   public:
 	enum Roles {
 		NameRole = Qt::UserRole + 1,
-		/// "Modrinth" / "CurseForge".
 		ProviderRole,
-		/// What is installed now and what it becomes, as a person reads
-		/// them; a file name when nothing better was recorded.
 		CurrentVersionRole,
 		NewVersionRole,
-		/// The file being replaced.
 		FileNameRole,
-		/// Where to read what changed, or "".
 		ChangelogRole,
 		CheckedRole
 	};
@@ -81,17 +73,13 @@ class ContentUpdateList : public QAbstractListModel
 
 	void setUpdates(const QList<ModUpdateCheckTask::UpdateInfo>& updates);
 	void clear();
-	/// The ticked rows' downloads.
 	QList<ModPlatform::DownloadItem> checkedItems() const;
 
 	Q_INVOKABLE void setChecked(int row, bool checked);
 	Q_INVOKABLE void setAllChecked(bool checked);
 
-	/// The page that says what is new in the version an update offers:
-	/// the version's own page on Modrinth, the project's page on
-	/// CurseForge (which has no stable per-file address to link).
+	/// Version page on Modrinth, project page on CurseForge (no stable per-file address).
 	static QString changelogUrl(const ModUpdateCheckTask::UpdateInfo& update);
-	/// @p number when there is one, else @p fileName.
 	static QString readableVersion(const QString& number,
 								   const QString& fileName);
 
@@ -108,40 +96,20 @@ class ContentUpdateList : public QAbstractListModel
 };
 
 /*
- * Keeping installed content current, per instance: the rest of what
- * ModFolderPage did with a file's recorded origin (ModMetadataIndex) -
- *   - "Check for updates": ModUpdateCheckTask over a folder's index, the
- *     results in `updates` to tick, applyUpdates() to download them
- *     (ContentDownloadTask replaces each file in place);
- *   - "Change version…": the project's versions from its provider,
- *     listed exactly as Add content lists them, and reviewVersion() to
- *     install one through a ContentInstallReview (dependencies first;
- *     the conflict analyzer turns it into a replacement);
- *   - "Verify dependencies": DependencyResolver over the installed mods,
- *     what is missing as a ContentInstallReview to tick and install;
- *   - "Install" in the mod health check: installMissing() looks up the
- *     mods it found missing or outdated by id, as the same kind of review;
- *   - "Reset metadata": forget where files came from.
- * Every download comes back as a TaskWatcher parented to this controller,
- * and the folder is re-read once it ends, success or not.
- *
- * Created by InstanceContentController and parented to it, which is where
- * the folders come from. Kinds as there; coremods and texturepacks have no
- * provider to ask, so supportsUpdates() is false for them.
- *
- * Core, like the rest of models/: QtCore only, no QtWidgets, no ui/.
+ * Per-instance content updates: check for updates, change a file's version,
+ * verify dependencies, install what the health check found missing, reset
+ * metadata. Every download comes back as a TaskWatcher parented to this
+ * controller; the folder is re-read once it ends. Created by and parented to
+ * InstanceContentController. supportsUpdates() is false for coremods and
+ * texturepacks (no provider).
  */
 class ContentUpdateController : public QObject
 {
 	Q_OBJECT
 
-	/// ContentUpdateList of the last check.
 	Q_PROPERTY(QObject* updates READ updates CONSTANT)
-	/// The kind the last check was for.
-	Q_PROPERTY(QString updatesKind READ updatesKind NOTIFY checkingChanged)
 	Q_PROPERTY(bool checking READ checking NOTIFY checkingChanged)
-	/// Why the last call refused to start or found nothing to do;
-	/// cleared by the next call that starts.
+	/// Why the last call refused to start or found nothing; cleared by the next call that starts.
 	Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
 
 	/// "Change version…": whose versions are listed, the list (the shape
@@ -160,10 +128,6 @@ class ContentUpdateController : public QObject
 	~ContentUpdateController() override;
 
 	QObject* updates() const;
-	QString updatesKind() const
-	{
-		return m_updatesKind;
-	}
 	bool checking() const
 	{
 		return !m_check.isNull();
@@ -193,93 +157,62 @@ class ContentUpdateController : public QObject
 		return m_versionsError;
 	}
 
-	/// Whether files of @p kind can come from a provider at all.
 	Q_INVOKABLE bool supportsUpdates(const QString& kind) const;
-	/// Checks the files of @p kind with @p keys (all of them when empty)
-	/// for newer compatible versions. A TaskWatcher, or null with
-	/// lastError set.
+	/// Checks files of @p kind with @p keys (all when empty). TaskWatcher, or null with lastError set.
 	Q_INVOKABLE QObject* checkForUpdates(const QString& kind,
 										 const QStringList& keys);
-	/// Gives up on a running check; what was found so far is kept.
 	Q_INVOKABLE void cancelCheck();
-	/// Downloads the ticked updates. A TaskWatcher, or null with
-	/// lastError set.
+	/// TaskWatcher, or null with lastError set.
 	Q_INVOKABLE QObject* applyUpdates();
 
-	/// Starts listing the versions of the file with @p key; false (with
-	/// lastError) when it has no recorded origin to ask about.
+	/// False (with lastError) when the file has no recorded origin.
 	Q_INVOKABLE bool loadVersions(const QString& kind, const QString& key);
-	/// A ContentInstallReview (parented to this controller, already
-	/// started) for version @p versionId of the project loadVersions()
-	/// listed, or null.
+	/// ContentInstallReview (started, parented here) for @p versionId, or null.
 	Q_INVOKABLE QObject* reviewVersion(const QString& versionId);
 
-	/// What the installed mods need and do not have, as a
-	/// ContentInstallReview (started), or null with lastError set.
+	/// ContentInstallReview (started) for missing dependencies, or null with lastError set.
 	Q_INVOKABLE QObject* verifyDependencies();
-	/// Installs what the mod health check found missing or outdated: the
-	/// mods with @p ids (looked up as DependencyResolver::addWantedProjects
-	/// does), for the files with @p keys that need them (named in the
-	/// review as what asked for each), replacing the file with key
-	/// @p replaceKeys[i] for ids[i] when it is not empty. A
+	/// Installs the mods with @p ids for the files with @p keys that need them,
+	/// replacing the file with key @p replaceKeys[i] for ids[i] when not empty.
 	/// ContentInstallReview (started), or null with lastError set.
 	Q_INVOKABLE QObject* installMissing(const QStringList& keys,
 										const QStringList& ids,
 										const QStringList& replaceKeys);
 
-	/// Installs the recommended mods @p projectIds (Modrinth project ids)
-	/// that the mods folder does not already have from Modrinth, with what
-	/// they need. A ContentInstallReview (started), or null with lastError
-	/// set.
+	/// Installs recommended Modrinth @p projectIds not already installed, with their
+	/// dependencies. ContentInstallReview (started), or null.
 	Q_INVOKABLE QObject* installBundle(const QStringList& projectIds);
-	/// Modrinth project ids of the mods installed from Modrinth.
 	Q_INVOKABLE QStringList installedProjects() const;
 	/// Whether a mod named OptiFine is installed; Sodium does not run with it.
 	Q_INVOKABLE bool hasOptiFine() const;
 
-	/// Forgets where the files with @p keys came from (their sidecars);
-	/// the files stay. Returns how many records went.
+	/// Forgets where the files with @p keys came from; the files stay. Returns how many records went.
 	Q_INVOKABLE int resetMetadata(const QString& kind, const QStringList& keys);
 
 	/// "mods" -> ContentType::Mod, ...; false for kinds no provider has.
 	static bool contentTypeFor(const QString& kind,
 							   ModPlatform::ContentType& type);
-	/// Only the updates for files with @p keys (all when empty).
 	static QList<ModUpdateCheckTask::UpdateInfo>
 	onlyFor(const QList<ModUpdateCheckTask::UpdateInfo>& updates,
 			const QStringList& keys);
-	/// The recorded files the dependency resolver can ask about - those
-	/// with a platform origin and a version id or hash - the selection
-	/// ModFolderPage::verifyDependencies() builds.
+	/// Recorded files with a platform origin and a version id or hash.
 	static QList<ModPlatform::SelectedMod>
 	resolvableEntries(const QList<ModMetadataIndex::Entry>& entries,
 					  const QString& mcVersion);
-	/// What installMissing() hands the review, worked out from the folder.
 	struct MissingPlan {
-		/// The files among the asked keys with a recorded origin: their
-		/// platform record names their dependencies exactly.
 		QList<ModPlatform::SelectedMod> selected;
-		/// One per distinct id, asked for by the files that need it.
 		QList<DependencyResolver::WantedProject> wanted;
-		/// Wanted id -> the on-disk file name of the copy it replaces.
 		QHash<QString, QString> replacements;
 	};
-	/// @p keys, @p ids and @p replaceKeys as installMissing() takes them,
-	/// against @p folder. Empty ids are skipped; a key no file has is
-	/// ignored; a file being replaced is not asked about its own
-	/// dependencies, since it is about to go.
+	/// A key no file has is ignored; a file being replaced is not asked about its dependencies.
 	static MissingPlan planMissing(const ModFolderModel& folder,
 								   const QString& mcVersion,
 								   const QStringList& keys,
 								   const QStringList& ids,
 								   const QStringList& replaceKeys);
-	/// Gives each update with no recorded current version the version its
-	/// installed file declares itself ("0.14.3"), so the review reads
-	/// "0.14.3 → 0.15.3" rather than starting from a file name.
+	/// Fills a missing current version from the version the installed file declares.
 	static void fillCurrentVersions(QList<ModUpdateCheckTask::UpdateInfo>& updates,
 									const ModFolderModel& folder);
-	/// Removes the sidecars of the files with @p keys from @p folder's
-	/// index. Static so it can be tested on a folder alone.
 	static int forgetOrigins(ModFolderModel& folder, const QStringList& keys);
 
   signals:
@@ -291,8 +224,7 @@ class ContentUpdateController : public QObject
 	void setLastError(const QString& error);
 	QString mcVersion() const;
 	QString loader() const;
-	/// A TaskWatcher over @p task, parented here, that re-reads @p folder
-	/// when it ends.
+	/// Re-reads @p folder when the task ends.
 	QObject* watchDownload(Task* task, const QString& title,
 						   std::shared_ptr<ModFolderModel> folder);
 	void onVersionsSearchState();
@@ -308,8 +240,7 @@ class ContentUpdateController : public QObject
 	QPointer<ModUpdateCheckTask> m_check;
 	QString m_lastError;
 
-	/// The single-project lookup behind "Change version…"; rebuilt for
-	/// each loadVersions(), owned via parentage.
+	/// Single-project lookup behind "Change version…"; rebuilt per loadVersions().
 	QPointer<ContentProviderModel> m_versionsModel;
 	QString m_versionsTitle;
 	QVariantList m_versions;

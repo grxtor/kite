@@ -2,29 +2,16 @@
  * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * MercurialVersioning - MMCO plugin written in PLAIN C.
+ * MercurialVersioning: MMCO plugin in plain C. Snapshots an instance's content into a per-instance
+ * Mercurial repository so users can roll back; the Mercurial counterpart to GitVersioning.
  *
- * Snapshots an instance's content into a per-instance Mercurial
- * repository so users can roll back to a previous state. This is the
- * Mercurial counterpart to the C++ GitVersioning plugin: Git already
- * had support, so this fills in `hg`.
- *
- * Design notes:
- *   - The plugin is pure C. It includes ONLY mmco_c_sdk.h: no Qt, no
- *     C++, no launcher headers. Everything it needs from the launcher
- *     comes through the MMCOContext function table.
- *   - It does NOT fork/exec itself. It runs `hg` through the host's
- *     S31 process_run() API, which the host backs with QProcess.
- *   - All repository state lives in <instance_root>/.hghistory so it
- *     never collides with a user's own Mercurial repo. Every hg call
- *     is scoped with `--cwd <instance_root>` and
- *     `--repository <instance_root>/.hghistory` is avoided in favour
- *     of an in-tree repo rooted at the instance: we init the repo
- *     directly at the instance root but point hg at a private
- *     .hghistory store via the `share`-free simple layout, using
- *     `hg --cwd <root>`.
- *   - On MMCO_HOOK_INSTANCE_PRE_LAUNCH it auto-commits a snapshot when
- *     the feature is enabled via the plugin setting.
+ * Design:
+ *   - Pure C: includes only mmco_c_sdk.h (no Qt, C++ or launcher headers); everything comes through
+ *     the MMCOContext function table.
+ *   - Runs `hg` through the host's S31 process_run() (QProcess-backed) rather than forking itself.
+ *   - The repository is a plain `hg init .` at the instance root (<instance_root>/.hg); every hg call
+ *     uses the instance root as its working directory.
+ *   - On MMCO_HOOK_INSTANCE_PRE_LAUNCH it auto-commits a snapshot when the plugin setting enables it.
  */
 
 #include "plugin/sdk/mmco_c_sdk.h"
@@ -47,7 +34,6 @@ static MMCOContext* g_ctx = NULL;
 /* Whether `hg` is reachable on this system (probed once at init). */
 static int g_hg_available = 0;
 
-/* Setting key controlling the auto-snapshot-before-launch behaviour. */
 static const char SETTING_AUTO[] =
 	"plugin.mercurial_versioning.SnapshotBeforeLaunch";
 
@@ -67,8 +53,8 @@ static int hg_is_enabled(void)
 			v[0] == 'Y' || v[0] == 'o' || v[0] == 'O');
 }
 
-/* Run `hg` with up to `argc` arguments inside `work_tree`. Returns the
- * hg exit code (0 == success), or a negative process_run error. */
+/* Runs `hg` with `argc` arguments in `work_tree`. Returns hg's exit code, or a negative process_run
+ * error. */
 static int run_hg(const char* work_tree, const char* const* argv, int argc,
 				  char* out_buf, int out_buf_size)
 {
@@ -90,7 +76,6 @@ static int run_hg(const char* work_tree, const char* const* argv, int argc,
 	return exit_code;
 }
 
-/* Detect whether `hg --version` runs. */
 static int probe_hg(void)
 {
 	const char* argv[1];
@@ -101,9 +86,8 @@ static int probe_hg(void)
 	return (code == 0);
 }
 
-/* Ensure <root>/.hg exists (a Mercurial repo rooted at the instance).
- * Idempotent: `hg init` on an existing repo is a harmless error we
- * tolerate by checking for .hg first. */
+/* Ensures <root>/.hg exists (a Mercurial repo rooted at the instance); checks for .hg first because
+ * `hg init` on an existing repo errors. */
 static int ensure_repo(const char* root)
 {
 	char hgdir[1024];
@@ -141,8 +125,8 @@ static int snapshot(const char* root, const char* message)
 	addremove[0] = "addremove";
 	run_hg(root, addremove, 1, NULL, 0); /* tolerate "nothing to add" */
 
-	/* Commit with a fixed in-repo identity so we never touch the user's
-	 * global ~/.hgrc username. -u sets the committer for this commit. */
+	/* Commit with a fixed in-repo identity (-u) so the user's global ~/.hgrc username is never
+	 * touched. */
 	commit[0] = "commit";
 	commit[1] = "-m";
 	commit[2] = message;
@@ -157,8 +141,7 @@ static int snapshot(const char* root, const char* message)
 			MMCO_LOG(g_ctx, "Mercurial snapshot committed.");
 			return 0;
 		}
-		/* hg returns 1 from `commit` when there is nothing to commit;
-		 * treat that as a benign no-op rather than an error. */
+		/* hg returns 1 from `commit` when there is nothing to commit; a benign no-op. */
 		if (code == 1) {
 			MMCO_DBG(g_ctx, "No changes to snapshot.");
 			return 0;

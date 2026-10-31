@@ -45,9 +45,8 @@ void NetJob::emitPartStep(int index, TaskStepState state)
 
 	QString name;
 	if (downloads.size() == 1 && !objectName().isEmpty()) {
-		// A job holding a single file is better described by what it is for
-		// than by the tail of its URL, which for an API call is usually
-		// nothing but an id.
+		// A single-file job is better named by its purpose than by the URL tail
+		// (often just an id).
 		name = objectName();
 	} else {
 		name = downloads[index]->url().fileName();
@@ -88,7 +87,6 @@ void NetJob::updateStatus()
 
 void NetJob::partSucceeded(int index)
 {
-	// do progress. all slots are 1 in size at least
 	auto& slot = parts_progress[index];
 	partProgress(index, slot.total_progress, slot.total_progress);
 
@@ -110,7 +108,6 @@ void NetJob::partFailed(int index)
 	} else {
 		slot.failures++;
 		m_todo.enqueue(index);
-		// Back in the queue for another go, so the line waits its turn again.
 		emitPartStep(index, TaskStepState::Waiting);
 	}
 	updateStatus();
@@ -134,8 +131,8 @@ void NetJob::partProgress(int index, qint64 bytesReceived, qint64 bytesTotal)
 	slot.current_progress = bytesReceived;
 	slot.total_progress = bytesTotal;
 
-	// Files that have not been picked up yet do not get a line of their own;
-	// a job with a thousand assets in it would drown everything else out.
+	// Files not yet picked up get no line; a thousand assets would drown
+	// everything else.
 	if (m_doing.contains(index)) {
 		emitPartStep(index, TaskStepState::Running);
 	}
@@ -148,7 +145,6 @@ void NetJob::partProgress(int index, qint64 bytesReceived, qint64 bytesTotal)
 	qint64 bytesTotalAll = 0;
 	for (auto& partIdx : m_doing) {
 		auto part = parts_progress[partIdx];
-		// do not count parts with unknown/nonsensical total size
 		if (part.total_progress <= 0) {
 			continue;
 		}
@@ -160,9 +156,8 @@ void NetJob::partProgress(int index, qint64 bytesReceived, qint64 bytesTotal)
 		(bytesTotalAll == 0) ? 0 : (bytesAll * 1000) / bytesTotalAll;
 	auto current = done * 1000 + doing * inprogress;
 	auto current_total = all * 1000;
-	// HACK: make sure it never jumps backwards.
-	// FAIL: This breaks if the size is not known (or is it something else?) and
-	// jumps to 1000, so if it is 1000 reset it to inprogress
+	// HACK: never jump backwards. FAIL: breaks when the size is unknown and
+	// jumps to 1000, so reset 1000 to in-progress.
 	if (m_current_progress == 1000) {
 		m_current_progress = inprogress;
 	}
@@ -175,19 +170,17 @@ void NetJob::partProgress(int index, qint64 bytesReceived, qint64 bytesTotal)
 
 void NetJob::executeTask()
 {
-	// hack that delays early failures so they can be caught easier
+	// Delays early failures so they can be caught more easily.
 	QMetaObject::invokeMethod(this, "startMoreParts", Qt::QueuedConnection);
 }
 
 void NetJob::startMoreParts()
 {
 	if (!isRunning()) {
-		// this actually makes sense. You can put running downloads into a
-		// NetJob and then not start it until much later.
+		// A job can be filled with running downloads and started much later.
 		return;
 	}
-	// OK. We are actively processing tasks, proceed.
-	// Check for final conditions if there's nothing in the queue.
+	// Check for final conditions when the queue is empty.
 	if (!m_todo.size()) {
 		if (!m_doing.size()) {
 			if (!m_failed.size()) {
@@ -202,18 +195,15 @@ void NetJob::startMoreParts()
 		}
 		return;
 	}
-	// There's work to do, try to start more parts.
 	while (m_doing.size() < 6) {
 		if (!m_todo.size())
 			return;
 		int doThis = m_todo.dequeue();
 		m_doing.insert(doThis);
-		// Give it a line right away, so it shows up as running even before the
-		// first bytes come in.
+		// A line right away, so it shows as running before the first bytes.
 		emitPartStep(doThis, TaskStepState::Running);
 		updateStatus();
 		auto part = downloads[doThis];
-		// connect signals :D
 		connect(part.get(), &NetAction::succeeded, this,
 				&NetJob::partSucceeded);
 		connect(part.get(), &NetAction::failed, this, &NetJob::partFailed);
@@ -237,12 +227,10 @@ QStringList NetJob::getFailedFiles()
 bool NetJob::canAbort() const
 {
 	bool canFullyAbort = true;
-	// can abort the waiting?
 	for (auto index : m_todo) {
 		auto part = downloads[index];
 		canFullyAbort &= part->canAbort();
 	}
-	// can abort the active?
 	for (auto index : m_doing) {
 		auto part = downloads[index];
 		canFullyAbort &= part->canAbort();
@@ -253,10 +241,8 @@ bool NetJob::canAbort() const
 bool NetJob::abort()
 {
 	bool fullyAborted = true;
-	// fail all waiting
 	m_failed.unite(QSet<int>(m_todo.begin(), m_todo.end()));
 	m_todo.clear();
-	// abort active
 	auto toKill = m_doing.values();
 	for (auto index : toKill) {
 		auto part = downloads[index];

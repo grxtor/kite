@@ -23,24 +23,20 @@ class QWindow;
 
 namespace MacWindowChrome {
 
-/* Where the window's own controls ended up: how far the traffic lights
- * reach from the window's left edge, with the same margin after them as
- * before them, and how tall a bar from the window's top edge has them in
- * its middle. Zeros when nothing was changed. */
+/* How far the traffic lights reach from the window's left edge (same margin
+ * after them as before), and how tall a bar from the top edge has them in its
+ * middle. Zeros when nothing was changed. */
 struct Geometry
 {
 	int controlsWidth = 0;
 	int barHeight = 0;
 };
 
-/* Lays the macOS title bar over the window's content instead of above it:
- * no title bar background and no title text, the content drawn up to the
- * window's top edge. An empty unified toolbar makes the title bar a
- * toolbar's height, and AppKit sets the traffic lights in it as in any
- * toolbar window -- as far in from the left edge as from the top. Moving
- * them anywhere else does not hold: AppKit puts them back on every layout
- * pass. Call before the window is first shown; the window must be on the
- * native Cocoa platform. */
+/* Lays the title bar over the window's content: no background, no title text,
+ * content drawn up to the top edge. An empty unified toolbar makes the title
+ * bar a toolbar's height and AppKit sets the traffic lights in it; moving them
+ * elsewhere does not hold, as AppKit resets them on every layout pass. Call
+ * before the window is first shown; it must be on the native Cocoa platform. */
 Geometry mergeTitleBar(QWindow* window);
 
 } // namespace MacWindowChrome

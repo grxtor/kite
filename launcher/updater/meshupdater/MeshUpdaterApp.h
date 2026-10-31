@@ -34,31 +34,15 @@
 
 class QNetworkAccessManager;
 
-/*!
- * The standalone updater.
+/*! The standalone updater. Modes: --check-only (the exit status says whether an update exists, see
+ * ExitCode; details go to stdout), --list (print the releases) and the default (install, then restart
+ * the launcher).
  *
- * Runs in one of three modes, all driven from the same release list so that
- * they can never disagree with each other:
- *
- *   --check-only        report whether an update exists, and exit. Used by
- *                       the launcher; the answer is the exit status (see
- *                       ExitCode) and the details go to stdout.
- *   --list              print the available releases and exit.
- *   (default)           install an update, then restart the launcher.
- *
- * Installing is itself two passes through this binary. The first runs from
- * the installation being replaced: it downloads a release, backs the current
- * files up, unpacks the new ones into a staging directory, and then starts
- * the *unpacked* updater and exits -- which is what releases the libraries
- * this process had mapped. The second pass finds the marker file left in the
- * staging directory, copies everything into the installation (nothing there
- * is mapped by it), and launches the launcher again.
- *
- * A single-process updater cannot do this on Windows: the files it has to
- * replace include the Qt libraries it is running from, and a mapped image
- * cannot be deleted. It would die partway through and leave an installation
- * that is neither version.
- */
+ * Installing takes two passes through this binary. The first, from the installation being replaced,
+ * downloads and backs up, unpacks into a staging directory, then starts the *unpacked* updater and
+ * exits, which releases the mapped libraries. The second finds the marker in the staging directory,
+ * copies everything into the installation and relaunches. One process cannot do this on Windows: a
+ * mapped image (the Qt libraries it runs from) cannot be deleted. */
 class MeshUpdaterApp : public QApplication
 {
 	Q_OBJECT
@@ -73,13 +57,8 @@ class MeshUpdaterApp : public QApplication
 		Aborted,	 //!< The user backed out.
 	};
 
-	/*!
-	 * Process exit codes.
-	 *
-	 * The launcher reads these, so they are part of an interface and not an
-	 * implementation detail. 100 rather than 2 for "update available", so it
-	 * cannot be confused with a crash or with Qt's own failure paths.
-	 */
+	/*! Process exit codes. The launcher reads them, so they are an interface. 100 rather than 2 for
+	 * "update available" so it cannot be confused with a crash or Qt's failure paths. */
 	enum ExitCode {
 		ExitSuccess = 0,
 		ExitFailed = 1,
@@ -90,18 +69,9 @@ class MeshUpdaterApp : public QApplication
 	MeshUpdaterApp(int& argc, char** argv);
 	~MeshUpdaterApp() override;
 
-	/*!
-	 * Answer --self-test, if that is what was asked, and say so.
-	 *
-	 * The first pass has to know whether a candidate for the second pass is
-	 * a binary that understands this protocol at all -- the updater that
-	 * ships in an older release does not, and starting it silently does
-	 * nothing. So candidates are run once with --self-test first, and are
-	 * only used if they answer with the token below.
-	 *
-	 * Handled from main(), before a QApplication exists: a probe must work
-	 * without a display, and constructing QApplication without one aborts.
-	 */
+	/*! Answers --self-test if that was asked. The first pass probes candidates for the second pass with
+	 * it, since an updater from an older release does not understand this protocol. Called from main()
+	 * before a QApplication exists: a probe must work without a display. */
 	static bool handleSelfTest(int argc, char** argv);
 
 	//! The option a probe passes, and the answer it expects on stdout.
@@ -113,7 +83,7 @@ class MeshUpdaterApp : public QApplication
 		return m_status;
 	}
 
-	//! Open log file, for the installed message handler. Public by necessity.
+	//! Open log file; public for the installed message handler.
 	std::unique_ptr<QFile> logFile;
 
 	//! Whether --debug was given: mirror the log to whatever console we have.
@@ -136,25 +106,12 @@ class MeshUpdaterApp : public QApplication
 
 	// -- the actual decision ----------------------------------------------
 
-	/*!
-	 * Everything after the release list is known.
-	 *
-	 * Named for what it is: the point where the updater stops gathering and
-	 * starts acting. Every path out of it exits the process.
-	 */
+	/*! Everything after the release list is known. Every path out of it exits the process. */
 	void run();
 
-	/*!
-	 * Ask the installed launcher what version it is, by running it with
-	 * --version.
-	 *
-	 * The updater is built from the same source as the launcher, so its own
-	 * BuildConfig is usually right -- but not after the updater has already
-	 * been replaced once, or when it is run by hand against a different
-	 * installation. Asking the binary is the only answer that is true in all
-	 * three cases. Falls back to BuildConfig when the launcher cannot be
-	 * asked.
-	 */
+	/*! Asks the installed launcher its version by running it with --version. The updater's own
+	 * BuildConfig can be stale (updater replaced once, or run by hand against another installation).
+	 * Falls back to BuildConfig when the launcher cannot be asked. */
 	bool loadInstalledVersionFromExe(const QString& exePath);
 	void useBuiltInVersion();
 
@@ -177,14 +134,8 @@ class MeshUpdaterApp : public QApplication
 
 	// -- installing -------------------------------------------------------
 
-	/*!
-	 * The assets of \a release that belong on this installation.
-	 *
-	 * See the implementation for the rules; the short version is that the
-	 * asset has to carry every token of this build's artifact name, agree
-	 * about the CPU architecture, and be the right kind of package for how
-	 * this copy was installed.
-	 */
+	/*! The assets of \a release that belong on this installation: every token of this build's artifact
+	 * name, the same CPU architecture, and the right package kind for how this copy was installed. */
 	QList<GitHubReleaseAsset>
 	matchingAssets(const GitHubRelease& release) const;
 
@@ -198,101 +149,50 @@ class MeshUpdaterApp : public QApplication
 
 	void installFrom(const QString& archivePath);
 
-	//! Run a downloaded installer and let it take over.
 	void runInstaller(const QString& installerPath);
 
 	//! Unpack, then hand the install over to a second pass.
 	void unpackAndHandOff(const QString& archivePath);
 
-	/*!
-	 * Pick -- and if need be create -- the binary that will run the second
-	 * pass from \a releaseRoot, and prove it can run before anything is
-	 * committed to it.
-	 *
-	 * Three candidates, in the order they are preferred:
-	 *
-	 *   1. the updater inside the release being installed. Its libraries are
-	 *      the ones it was built against and it leaves nothing behind, so
-	 *      when it understands this protocol it is the right answer.
-	 *   2. this updater, copied into the unpacked release. Used when the
-	 *      release predates this protocol; it runs against that release's
-	 *      libraries, which works upwards but not always backwards.
-	 *   3. this updater, copied into a directory of its own beside the data
-	 *      directory. For installations that do not carry their libraries
-	 *      (a local build against the system Qt), where a plain copy runs.
-	 *
-	 * Every candidate is probed with --self-test, so "it cannot even start"
-	 * is found here rather than after the installation has been backed up
-	 * and the release staged.
-	 *
-	 * Returns the program to start, or an empty string if none of them ran.
-	 */
+	/*! Picks, creating it if need be, the binary that runs the second pass from \a releaseRoot, and
+	 * proves it runs before anything is committed. Candidates in order: (1) the updater inside the
+	 * release being installed, (2) this updater copied into the unpacked release (the release predates
+	 * this protocol), (3) this updater copied beside the data directory (installations that carry no
+	 * libraries of their own). Each is probed with --self-test.
+	 * Returns the program to start, or an empty string if none ran. */
 	QString prepareInstallStageProgram(const QString& releaseRoot);
 
 	//! Run \a program with --self-test and report whether it answered.
 	bool probeUpdaterBinary(const QString& program);
 
-	/*!
-	 * The updater executable inside the installation (or unpacked release)
-	 * at \a root, looking behind a bundle's loader.
-	 */
+	/*! The updater executable inside the installation (or unpacked release) at \a root, behind a bundle's
+	 * loader. */
 	QString realUpdaterBinaryIn(const QString& root) const;
 
 	//! This updater's own executable, resolving a sharun bundle's loader.
 	QString ownUpdaterBinaryPath() const;
 
-	//! Copy \a from to \a to, making the result executable.
 	bool copyExecutable(const QString& from, const QString& to);
 
-	/*!
-	 * Wait for the second pass to take the lock over, and say whether it
-	 * did.
-	 *
-	 * This is the difference between an update that happened and one that
-	 * only appeared to: the second pass rewrites the lock with its own stage
-	 * and process id as its first action, so seeing that is proof it is
-	 * running our code and past its own startup.
-	 */
+	/*! Waits for the second pass to take the lock over. It rewrites the lock with its own stage and pid as
+	 * its first action, so seeing that proves it runs our code and is past its startup. */
 	bool waitForInstallStageTakeover(qint64 stagePid);
 
-	/*!
-	 * Take the lock over, as the second pass, and report the first pass's
-	 * process id so it can be waited for.
-	 *
-	 * Returns 0 when the lock says nothing about a first pass, which is what
-	 * an updater from before this handshake left behind.
-	 */
+	/*! Takes the lock over as the second pass and returns the first pass's process id to wait for; 0 when
+	 * the lock names no first pass (an updater from before this handshake). */
 	qint64 claimLockForInstallStage(const QString& targetDir);
 
-	/*!
-	 * Delete the copies of this updater that a first pass may have put into
-	 * the staged release.
-	 *
-	 * They are not part of the release, and the file list a release without
-	 * a manifest falls back to copies whole directories -- so leaving them
-	 * would install a stray updater under a name nothing ever runs.
-	 */
+	/*! Deletes the copies of this updater a first pass may have put into the staged release; the
+	 * manifest-less file list copies whole directories and would install them. */
 	void removeInstallStageAgents(const QString& root);
 
-	/*!
-	 * Copy everything the update will overwrite into a timestamped directory
-	 * inside the installation root.
-	 *
-	 * Only what is about to be replaced is copied. A portable installation
-	 * keeps instances, saves and configuration in the same tree, and none of
-	 * that is the updater's to duplicate.
-	 */
+	/*! Copies only what the update will overwrite into a timestamped directory inside the installation
+	 * root; a portable installation keeps user data in the same tree. */
 	void backupInstallation();
 
-	/*!
-	 * Second pass: copy the release staged in \a sourceDir into \a targetDir
-	 * and restart the launcher.
-	 *
-	 * Runs from outside the installation, so nothing it is about to overwrite
-	 * is mapped by this process. \a sourceDir is passed rather than derived
-	 * from this binary's own location, because the binary may be a copy that
-	 * lives beside the staged release instead of inside it.
-	 */
+	/*! Second pass: copies the release staged in \a sourceDir into \a targetDir and restarts the launcher.
+	 * Runs from outside the installation, so nothing it overwrites is mapped. \a sourceDir is passed,
+	 * not derived from this binary's location, because the binary may be a copy beside the staged release. */
 	void finishUpdate(const QString& sourceDir, const QString& targetDir);
 
 	//! Hand an AppImage install over to AppImageUpdate (which speaks zsync).
@@ -300,28 +200,16 @@ class MeshUpdaterApp : public QApplication
 
 	// -- helpers ----------------------------------------------------------
 
-	/*!
-	 * The files an update touches, from manifest.txt when the installation
-	 * has one, or a per-platform guess when it does not.
-	 *
-	 * Entries may be globs. manifest.txt is written by the packaging, so it
-	 * is the authority on what belongs to Kite and what the user put there.
-	 */
+	/*! The files an update touches: manifest.txt (written by the packaging, entries may be globs) when
+	 * present, else a per-platform guess. */
 	QStringList installedFileList(const QDir& root) const;
 
 	void fail(const QString& reason);
 	void abortWith(const QString& reason);
 
-	/*!
-	 * Record a failure of the hand-off for installFrom() to report.
-	 *
-	 * The report has to come after the lock file has been dealt with, not
-	 * before: showFatalError() puts up a modal dialog and does not return
-	 * until it is answered, and a user who closes that dialog any other way
-	 * -- or gives up and kills the updater -- would be left with a lock file
-	 * for an update that never touched their installation. That is the
-	 * "an update is already in progress" loop this exists to avoid.
-	 */
+	/*! Records a hand-off failure for installFrom() to report once the lock file is dealt with.
+	 * showFatalError() blocks on a modal dialog; a user killing the updater there would be left with a lock
+	 * for an update that never touched the installation (the "update already in progress" loop). */
 	void deferFailure(const QString& title, const QString& text);
 
 	//! Tell the user, then give up. Never returns to the caller's logic.
@@ -329,26 +217,13 @@ class MeshUpdaterApp : public QApplication
 
 	void clearUpdateLog();
 
-	/*!
-	 * Drop the update lock, for a failure that never reached the
-	 * installation.
-	 *
-	 * The lock means "this installation may be a mix of two versions", and
-	 * the launcher stops at startup to say so. Until the second pass has
-	 * begun copying, that is not true: a download that failed, or a release
-	 * that turned out to be unusable, leaves everything as it was. Making the
-	 * user dismiss an "Update In Progress" warning for that teaches them to
-	 * click through the one warning that matters.
-	 */
+	/*! Drops the update lock for a failure that never reached the installation. Until the second pass
+	 * copies, everything is as it was; a needless "Update In Progress" warning teaches users to click
+	 * through the one that matters. */
 	void releaseLockNothingChanged();
 
-	/*!
-	 * Delete all but the newest few backup directories.
-	 *
-	 * A backup is a full copy of the installation, so keeping one per update
-	 * grows the installation without limit -- and on a portable install that
-	 * directory is also the user's data directory.
-	 */
+	/*! Deletes all but the newest few backups: each is a full copy, and on a portable install that
+	 * directory is also the user's data directory. */
 	void pruneBackups();
 
 	//! Log a line to both the debug log and the user-facing update log.
@@ -388,22 +263,12 @@ class MeshUpdaterApp : public QApplication
 	QList<GitHubRelease> m_releases;
 	GitHubRelease m_installRelease;
 
-	/*!
-	 * Whether the second pass was seen to take the update over.
-	 *
-	 * Only then does the lock file stop being this process's to clean up --
-	 * and only then may this process report success.
-	 */
+	//! Whether the second pass was seen to take the update over; only then is the lock not this
+	//! process's to clean up and success reportable.
 	bool m_handedOver = false;
 
-	/*!
-	 * Whether a second pass was started that neither took the update over
-	 * nor died.
-	 *
-	 * Nothing can be said about the installation in that case, so the lock
-	 * stays where it is: the launcher's startup warning is the only thing
-	 * that will tell the user their installation needs a look.
-	 */
+	//! Whether a second pass was started that neither took over nor died. The installation's state
+	//! is unknown, so the lock stays for the launcher's startup warning.
 	bool m_installStateUnknown = false;
 
 	// Set by deferFailure(), reported by installFrom().

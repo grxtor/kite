@@ -59,13 +59,11 @@ class IniFileTest : public QObject
 					"something\\#thisIsNotAComment";
 		QString filename = "test_SaveLoad.ini";
 
-		// save
 		INIFile f;
 		f.set("a", a);
 		f.set("b", b);
 		f.saveFile(filename);
 
-		// load
 		INIFile f2;
 		f2.loadFile(filename);
 		QCOMPARE(a, f2.get("a", "NOT SET").toString());

@@ -26,70 +26,46 @@
 
 #include "ModDetails.h"
 
-/* What is wrong with an instance's mods folder, worked out from what the
- * files say about themselves - no network, no game launch.
- *
- * Asks the questions the loader asks at startup, the same way: is every
- * required mod there, at a version it accepts; is anything there that a
- * mod refuses to run with; is a mod there twice; is a file built for a
- * loader this instance does not have. Whatever the loader would refuse
- * to start over is `blocking`.
- *
- * A pure function over plain data, so it is tested on made-up folders and
- * knows nothing about Mod, ModFolderModel or the instance: the caller
- * reads those into Entry and Environment. */
+// What is wrong with an instance's mods folder, from what the files say about
+// themselves (no network, no launch). It asks what the loader asks at startup:
+// required mods present and in range, no refused combination, no duplicate, no
+// file built for another loader; what the loader would refuse is `blocking`.
+// A pure function over plain data: the caller fills Entry and Environment.
 namespace ModHealth
 {
-	/* The game and loader the mods will run on. */
 	struct Environment {
 		/// The instance's Minecraft version; empty when unknown.
 		QString minecraft;
-		/// The mod loaders the instance has, by platform id ("fabric",
-		/// "quilt", "forge", "neoforge"), its primary loader first. No
-		/// loader means nothing is checked: the mods tab already asks for
-		/// one.
+		/// The instance's loaders by platform id ("fabric", "quilt", "forge",
+		/// "neoforge"), primary first. No loader means nothing is checked.
 		QStringList loaders;
-		/// Ids the game and its loader answer to themselves, with their
-		/// versions where known ("" otherwise): "minecraft",
-		/// "fabricloader", "quilt_loader", "forge", "neoforge", ... A
-		/// dependency on one of these is checked against that version and
-		/// is never "missing".
+		/// Ids the game and loader answer to themselves ("minecraft",
+		/// "fabricloader", "forge", ...) with their versions ("" if unknown). A
+		/// dependency on one is checked against that version and is never
+		/// "missing".
 		QHash<QString, QString> builtIns;
 	};
 
-	/* One file of the folder. */
 	struct Entry {
-		/// How the caller tells files apart (ContentFilterModel's key).
+		/// How the caller tells files apart.
 		QString key;
-		/// What to call it.
 		QString name;
 		bool enabled = true;
-		/// What the file says about itself; default-constructed for one
-		/// not read yet, which then takes part in nothing.
+		/// What the file says about itself; default-constructed (not read yet)
+		/// takes part in nothing.
 		ModDetails details;
 	};
 
 	enum class Kind {
-		/// A required mod nobody provides.
 		MissingDependency,
-		/// A required mod that is installed but switched off.
 		DisabledDependency,
-		/// A required mod that is installed and on, at a version outside
-		/// the range asked for.
 		WrongDependencyVersion,
-		/// "minecraft" outside the range asked for.
 		WrongMinecraft,
-		/// The loader itself ("fabricloader", "forge", ...) outside the
-		/// range asked for.
 		WrongLoaderVersion,
-		/// A mod it declares it cannot run with is installed and on.
 		Incompatible,
-		/// A mod it declares it should not run with: a warning only.
 		Discouraged,
-		/// Another enabled file has the same mod id.
 		Duplicate,
-		/// Built only for loaders this instance does not have: the loader
-		/// will not load it at all.
+		/// Built only for loaders this instance does not have; never loaded.
 		WrongLoader
 	};
 
@@ -97,81 +73,58 @@ namespace ModHealth
 		Kind kind = Kind::MissingDependency;
 		/// Whether the loader refuses to start over it.
 		bool blocking = true;
-		/// The file the issue is about.
 		QString key;
 		QString name;
-		/// The id on the other end: the dependency, the mod it clashes
-		/// with, the duplicated id, "minecraft", the loader's id. Empty
-		/// for WrongLoader.
+		/// The id on the other end (dependency, clashing mod, duplicated id,
+		/// loader id); empty for WrongLoader.
 		QString otherId;
-		/// The installed file behind otherId - the switched-off
-		/// dependency, the one at the wrong version, the one it clashes
-		/// with, the other copy - or "" when there is none.
+		/// The installed file behind otherId, or "" if there is none.
 		QString otherKey;
 		/// otherKey's name, or otherId when there is no file.
 		QString otherName;
-		/// The declaration behind every kind but Duplicate and
-		/// WrongLoader.
+		/// The declaration behind every kind but Duplicate and WrongLoader.
 		ModDependency dependency;
 		/// For the wrong-version kinds: the version that is there.
 		QString foundVersion;
 	};
 
-	/* The loaders whose metadata this environment reads, in the order a
-	 * file built for several of them is read by: the instance's own
-	 * loaders first, then the ones they also load -
-	 *   quilt    also reads fabric
-	 *   neoforge also reads forge before Minecraft 1.20.5 (later
-	 *            versions read only neoforge.mods.toml)
-	 *   forge, neoforge also read fabric when @p hasConnector (Sinytra
-	 *            Connector, mod id "connectormod" in its builds for 1.20.1
-	 *            and "connector" in newer ones, runs Fabric mods there). */
+	// The loaders whose metadata the environment reads, in reading order: the
+	// instance's own, then the ones they also load. Quilt also reads fabric;
+	// neoforge also reads forge before Minecraft 1.20.5; forge and neoforge
+	// also read fabric when @p hasConnector (Sinytra Connector).
 	QStringList readableLoaders(const Environment& environment,
 								bool hasConnector);
 
-	/* Every issue in @p entries, blocking ones first, then by name.
-	 *
-	 * Rules, per enabled entry that has been read:
-	 *   - details.loaders non-empty and none of them readable: one
-	 *     WrongLoader issue (not blocking - the file is skipped, the game
-	 *     still starts) and nothing else about that entry.
-	 *   - Its dependencies are those whose `loader` is the first of
-	 *     readableLoaders() the file was built for.
-	 *   - An id is provided by builtIns, by the mod_id of any entry and by
-	 *     the `provides` of any entry. Ids compare case-insensitively.
-	 *     "java", "fml", "javafml", "lowcodefml" and "mixinextras" are
-	 *     treated as always present: they are the runtime's to provide.
-	 *     A file with no metadata of its own can still provide the mods it
-	 *     carries (kotlinforforge-all.jar, the Connector jar).
-	 *   - Sinytra Connector (an enabled entry that is or provides
-	 *     "connectormod" or "connector") is found the same way. A file
-	 *     whose Fabric metadata is read through it (the instance has
-	 *     neither Fabric nor Quilt among its loaders) looks ids up with "-"
-	 *     and "_" taken for the same, as Connector does ("fabric-api" is the
-	 *     Forgified Fabric API's "fabric_api"); no other file does, in the
-	 *     required and the clash checks alike.
-	 *   - Required:
-	 *       builtIn whose version is No -> WrongMinecraft ("minecraft")
-	 *         or WrongLoaderVersion (any other built-in);
-	 *       enabled providers, at least one Yes or Unknown -> fine;
-	 *       enabled providers, all No -> WrongDependencyVersion;
-	 *       only disabled providers -> DisabledDependency;
-	 *       no provider -> MissingDependency.
-	 *     All blocking.
-	 *     A built-in also answers to the versions the loader's own
-	 *     VersionSupportMatrix (FML, net.neoforged.fml.loading and
-	 *     net.minecraftforge.fml.loading) adds for the game it runs, and
-	 *     the range is met when any of them is: on NeoForge with Minecraft
-	 *     1.21.1 "minecraft" is also 1.21 and "neoforge" also 21.0.166 (so
-	 *     [1.21,1.21.1) holds, as the loader says); on Forge with 1.20.1
-	 *     "forge" is also 47.1.79. Only required dependencies use this.
-	 *   - Incompatible / Discouraged: an enabled provider other than the
-	 *     entry itself, or a built-in, whose version is Yes (an empty
-	 *     range is Yes) -> Incompatible (blocking) / Discouraged (not).
-	 *     Unknown is not reported.
-	 *   - Duplicate: two or more enabled entries with the same non-empty
-	 *     mod_id -> one issue for each of them, blocking.
-	 * The same (kind, key, otherId) is reported once. */
+	// Every issue in @p entries, blocking ones first, then by name; the same
+	// (kind, key, otherId) is reported once. Rules, per enabled entry that has
+	// been read:
+	//  - details.loaders non-empty and none readable: one non-blocking
+	//    WrongLoader (the file is skipped) and nothing else for that entry.
+	//  - Its dependencies are those for the first of readableLoaders() it was
+	//    built for.
+	//  - An id is provided by builtIns, any entry's mod_id or `provides`,
+	//    compared case-insensitively. "java", "fml", "javafml", "lowcodefml"
+	//    and "mixinextras" always count as present. A file without metadata
+	//    can still provide the mods it carries (kotlinforforge-all.jar, the
+	//    Connector jar).
+	//  - A file whose Fabric metadata is read through Sinytra Connector (an
+	//    enabled entry that is or provides "connectormod" or "connector"; the
+	//    instance has neither Fabric nor Quilt) looks ids up with "-" and "_"
+	//    as equal.
+	//  - Required (all blocking): a built-in whose version is No gives
+	//    WrongMinecraft ("minecraft") or WrongLoaderVersion; enabled providers
+	//    with one Yes/Unknown are fine, all No give WrongDependencyVersion;
+	//    only disabled providers give DisabledDependency; none gives
+	//    MissingDependency. A built-in also answers to the versions the
+	//    loader's VersionSupportMatrix adds for the game, and the range holds
+	//    if any matches (NeoForge on 1.21.1: "minecraft" is also 1.21,
+	//    "neoforge" also 21.0.166; Forge on 1.20.1: "forge" is also 47.1.79).
+	//    Only required dependencies use this.
+	//  - Incompatible (blocking) / Discouraged: an enabled provider other than
+	//    the entry itself, or a built-in, whose version is Yes (empty range =
+	//    Yes). Unknown is not reported.
+	//  - Duplicate: two or more enabled entries with the same non-empty mod_id,
+	//    one blocking issue for each.
 	QList<Issue> check(const QList<Entry>& entries,
 					   const Environment& environment);
 } // namespace ModHealth

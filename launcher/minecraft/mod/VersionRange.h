@@ -25,61 +25,52 @@
 
 #include "ModDetails.h"
 
-/* Whether a version falls inside what a mod's metadata asks for, by the
- * rules the loader itself applies: Fabric's semantic-version predicates
- * for fabric.mod.json and quilt.mod.json, Maven ranges for mods.toml.
- *
- * Everything here answers "don't know" rather than guess. Mod versions
- * are free text often enough ("1.20.1-4.2.0", "${file.jarVersion}",
- * "23w45a") that a confident wrong answer would turn the mod health
- * check into a list of false alarms, and an alarm about a mod that works
- * is worse than no alarm at all. */
+// Whether a version falls inside what a mod's metadata asks for, by the
+// loader's own rules: Fabric's semantic-version predicates for fabric.mod.json
+// and quilt.mod.json, Maven ranges for mods.toml. Anything unreadable answers
+// "don't know" rather than guess: mod versions are free text often enough
+// ("1.20.1-4.2.0", "${file.jarVersion}", "23w45a") that a wrong answer would
+// turn the health check into false alarms.
 namespace VersionRange
 {
 	enum class Match { Yes, No, Unknown };
 
-	/* <0, 0 or >0 as @p a sorts before, with or after @p b, or nothing
-	 * when either is not a version this can order: a numeric core
-	 * ("1", "0.92.2", "1.20.1"), optionally followed by "-<pre-release>"
-	 * and/or "+<build>". Missing components count as 0 (1.21 == 1.21.0);
-	 * a pre-release sorts before its release; build metadata is ignored.
-	 * Pre-release identifiers compare as SemVer does: numeric ones by
-	 * value, before alphanumeric ones, which compare as text; a shorter
-	 * list sorts first when it is a prefix of the other. An empty
-	 * pre-release ("1.20.2-") sorts before every other pre-release of
-	 * that core - Fabric's "including pre-releases" spelling. */
+	// <0, 0 or >0 as @p a sorts before, with or after @p b; nothing if either
+	// is not orderable: a numeric core ("1", "0.92.2"), optionally
+	// "-<pre-release>" and/or "+<build>". Missing components count as 0 (1.21
+	// == 1.21.0); a pre-release sorts before its release; build metadata is
+	// ignored. Pre-release identifiers compare as SemVer does (numeric by
+	// value, before alphanumeric text; a prefix sorts first). An empty
+	// pre-release ("1.20.2-") sorts before every other of that core (Fabric's
+	// "including pre-releases" spelling).
 	std::optional<int> compare(const QString& a, const QString& b);
 
-	/* fabric.mod.json / quilt.mod.json. Any of @p alternatives may match
-	 * (an empty list matches everything). Each alternative is predicates
-	 * separated by spaces, all of which must match:
-	 *   "*"                  any version
-	 *   "1.2.3", "=1.2.3"    exactly that version
-	 *   ">", ">=", "<", "<=" the comparison
-	 *   "~1.2.3"             >=1.2.3 and below the next minor (<1.3)
-	 *   "^1.2.3"             >=1.2.3 and below the next major (<2)
-	 *   "1.20.x", "1.x", "1.20.*"
-	 *                        the components before the wildcard match
-	 * Unknown when @p version or a predicate that decides the answer
-	 * cannot be read. */
+	// fabric.mod.json / quilt.mod.json. Any of @p alternatives may match (empty
+	// matches everything). An alternative is space-separated predicates that
+	// all must match:
+	//   "*"                  any version
+	//   "1.2.3", "=1.2.3"    exactly that version
+	//   ">", ">=", "<", "<=" the comparison
+	//   "~1.2.3"             >=1.2.3 and below the next minor (<1.3)
+	//   "^1.2.3"             >=1.2.3 and below the next major (<2)
+	//   "1.20.x", "1.x", "1.20.*"  the components before the wildcard match
+	// Unknown when @p version or a deciding predicate cannot be read.
 	Match matchesFabric(const QString& version,
 						const QStringList& alternatives);
 
-	/* mods.toml versionRange: "" or "*" is any version; a bare version
-	 * ("1.20.1") is Maven's soft "recommended" requirement, which also
-	 * accepts any; "[1.20.1]" is exactly that; "[a,b)", "(a,b]", "[a,)",
-	 * "(,b]" are the bounded forms, and several of them joined by ","
-	 * ("[1,2),[3,)") are alternatives. Qualifiers follow Maven: a
-	 * "-alpha"/"-beta"/"-rc"/"-pre"/"-snapshot" version sorts before its
-	 * release, a "-<number>" one after it ("1.20.1-47.2.0" > "1.20.1");
-	 * any other qualifier is Unknown. */
+	// mods.toml versionRange: "" or "*" is any version; a bare version
+	// ("1.20.1") is Maven's soft requirement and accepts any; "[1.20.1]" is
+	// exactly that; "[a,b)", "(a,b]", "[a,)", "(,b]" are bounded, several
+	// joined by "," are alternatives. Qualifiers follow Maven: "-alpha",
+	// "-beta", "-rc", "-pre" and "-snapshot" sort before the release,
+	// "-<number>" after it ("1.20.1-47.2.0" > "1.20.1"); any other qualifier
+	// is Unknown.
 	Match matchesMaven(const QString& version, const QString& range);
 
-	/* The matcher @p dependency's syntax calls for. */
 	Match matches(const QString& version, const ModDependency& dependency);
 
-	/* What @p dependency asks for, for a person to read: "0.92.0 or
-	 * newer", "older than 1.21", "1.20.x", "1.20.1"; the metadata's own
-	 * text when it is anything more involved; empty for any version. */
+	// What @p dependency asks for, for a person: "0.92.0 or newer", "older than
+	// 1.21", "1.20.x", "1.20.1"; the metadata's own text if more involved;
+	// empty for any version.
 	QString describe(const ModDependency& dependency);
 } // namespace VersionRange

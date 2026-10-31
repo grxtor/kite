@@ -5,15 +5,13 @@ import QtQuick
 import Kite.Theme
 
 /*
- * "Recent worlds" on the Sahne stage: the worlds played most recently
- * across every instance (the side panel's own HomeWorldTile rows, at most
- * four) on a dark glass pane over the screenshot. Its height is its
- * content's.
+ * "Recent worlds" on the Sahne stage: the most recently played worlds across every instance (HomeWorldTile rows, at
+ * most four) on a dark glass pane over the screenshot. Its height is its content's.
  */
 HomeGlass {
     id: root
 
-    // QmlShell.recentWorlds (RecentWorldsModel), or null.
+    // RecentWorldsModel, or null.
     property var worldsModel: null
 
     signal worldRequested(string instanceId)
@@ -48,8 +46,7 @@ HomeGlass {
             Repeater {
                 id: worldsRepeater
                 model: root.worldsModel
-                // A plain wrapper, so `model.index` resolves despite
-                // HomeWorldTile's required properties.
+                // A plain wrapper, so `model.index` resolves despite HomeWorldTile's required properties.
                 delegate: Item {
                     visible: model.index < root.maxWorlds
                     width: visible ? column.width : 0

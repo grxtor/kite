@@ -23,37 +23,17 @@
 #include <QString>
 #include <QByteArray>
 
-/**
- * Markdown-to-HTML wrapper using cmark (CommonMark)
- *
- * Drop-in replacement for the old hoedown-based HoeDown class.
- * Kept the class name for source compatibility.
- */
+/** Markdown-to-HTML wrapper using cmark (CommonMark). */
 class HoeDown
 {
   public:
 	QString process(QByteArray input)
 	{
-		/* CMARK_OPT_UNSAFE lets raw HTML through instead of dropping it.
-		 *
-		 * Everything this renders comes from a content platform, and
-		 * those do not send clean CommonMark. CurseForge sends HTML and
-		 * nothing else - its changelog and description endpoints have no
-		 * markdown at all - so without this option those come out
-		 * *completely empty*: cmark discards raw HTML blocks by default.
-		 * Modrinth does send markdown, but with <details>, <img> and
-		 * <center> in it, and dropping those silently removes half of
-		 * some descriptions.
-		 *
-		 * "Unsafe" is about injecting arbitrary HTML into the output.
-		 * The output goes into a QTextBrowser, which runs no scripts, and
-		 * every pane that shows it refuses to open a link whose scheme is
-		 * not http(s). What is left is remote images, which these panes
-		 * fetch deliberately.
-		 *
-		 * CMARK_OPT_NOBREAKS renders a single newline as a space rather
-		 * than a hard break, which is how a paragraph typed with a
-		 * narrow editor is meant to read. */
+		/* CMARK_OPT_UNSAFE lets raw HTML through: CurseForge sends HTML only
+		 * (it would render empty) and Modrinth markdown carries <details>,
+		 * <img> and <center>. The output goes to a QTextBrowser, which runs no
+		 * scripts, and the panes refuse non-http(s) links. CMARK_OPT_NOBREAKS
+		 * renders a single newline as a space. */
 		char* html = cmark_markdown_to_html(
 			input.constData(), input.size(),
 			CMARK_OPT_UNSAFE | CMARK_OPT_NOBREAKS);

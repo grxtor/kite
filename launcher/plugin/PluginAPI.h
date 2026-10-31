@@ -18,16 +18,11 @@
  * limitations under the License.
  *
  *
- * MMCOContext — the runtime context passed to mmco_init().
+ * MMCOContext, the runtime context passed to mmco_init(): the only interface plugins have
+ * into Kite. Plugins must not call Qt, Kite internals or any symbol not exposed here.
  *
- * This is the ONLY interface plugins have into Kite. All interaction
- * goes through function pointers in this struct. Plugins MUST NOT call
- * Qt, Kite internals, or any symbol not exposed here.
- *
- * The context is valid for the lifetime of the plugin (until mmco_unload()
- * returns). Pointers obtained through the API (e.g. strings from getters)
- * are valid until the next API call on the same module unless documented
- * otherwise.
+ * Valid until mmco_unload() returns. Strings returned by getters are valid until the next API
+ * call on the same module unless documented otherwise.
  */
 
 #pragma once
@@ -36,11 +31,6 @@
 #include <cstdint>
 #include <cstddef>
 
-/*
-
- */
-
-/* Forward-declare callback typedefs used by the context */
 typedef void (*MMCOHttpCallback)(void* user_data, int status_code,
 								 const void* response_body,
 								 size_t response_size);
@@ -48,74 +38,37 @@ typedef void (*MMCOMenuActionCallback)(void* user_data);
 typedef void (*MMCODirEntryCallback)(void* user_data, const char* entry_name,
 									 int is_dir);
 
-/*
- * MMCOUiEventCallback — ABI 5. Single event callback shape for every
- * declarative UI surface (ui_surface_create) and for the declarative
- * tray menu (tray_set_menu).
- *
- *   surface_id — stable string identifying which surface/menu this
- *                event came from (a plugin with several surfaces
- *                sharing one callback distinguishes them by this).
- *                For tray-menu events this is always "tray".
- *   node_id    — the plugin-assigned id of the node that fired.
- *   event      — "click" (button/link/menu item), "change" (toggle/
- *                text_field/number_field/choice — value_json is the
- *                new value), or "select"/"activate" (list row —
- *                value_json is the row id).
- *   value_json — event-specific payload, or "" if not applicable.
- */
+/* ABI 5. One event callback for every declarative UI surface and for the tray menu.
+ *   surface_id  surface/menu the event came from ("tray" for tray-menu events)
+ *   node_id     plugin-assigned id of the node that fired
+ *   event       "click" (button/link/menu item), "change" (toggle/text_field/number_field/choice;
+ *               value_json is the new value) or "select"/"activate" (list row; value_json is the row id)
+ *   value_json  event payload, "" if none */
 typedef void (*MMCOUiEventCallback)(void* user_data, const char* surface_id,
 									const char* node_id, const char* event,
 									const char* value_json);
 
-/*
- * MMCOUiAnchor — ABI 5. Where a declarative UI surface (ui_surface_create)
- * is displayed:
- *
- *   MMCO_UI_ANCHOR_GLOBAL_SETTINGS   — stacked as a titled section inside
- *     the host's single "Plugins" page in the global Settings dialog.
- *   MMCO_UI_ANCHOR_INSTANCE_PAGE     — its own page in the instance window
- *     (anchor_context = instance id).
- *   MMCO_UI_ANCHOR_INSTANCE_SETTINGS — stacked as a titled section inside
- *     a "Plugins" group on that instance's Settings page
- *     (anchor_context = instance id).
- */
+/* ABI 5. Where a declarative UI surface is displayed:
+ *   GLOBAL_SETTINGS    titled section in the host's "Plugins" page of the global Settings dialog
+ *   INSTANCE_PAGE      its own page in the instance window (anchor_context = instance id)
+ *   INSTANCE_SETTINGS  titled section in a "Plugins" group on the instance's Settings page
+ *                      (anchor_context = instance id) */
 enum MMCOUiAnchor {
 	MMCO_UI_ANCHOR_GLOBAL_SETTINGS = 0,
 	MMCO_UI_ANCHOR_INSTANCE_PAGE = 1,
 	MMCO_UI_ANCHOR_INSTANCE_SETTINGS = 2
 };
 
-/*
- * Tray-icon activation reason — passed to MMCOTrayActivationCallback.
- *
- *   0 = unknown
- *   1 = single click (left)
- *   2 = double click (left)
- *   3 = middle click
- *   4 = context menu (right click) — note that if the tray icon has a
- *       menu attached via tray_set_menu(), the menu is shown automatically
- *       and this callback fires *in addition* to the menu popup.
- *
- * Values mirror QSystemTrayIcon::ActivationReason 1..4.
- */
+/* Tray activation reason, the value of QSystemTrayIcon::ActivationReason: 0 Unknown, 1 Context
+ * (right click), 2 DoubleClick, 3 Trigger (single left click), 4 MiddleClick. Context fires in
+ * addition to the popup of a menu attached with tray_set_menu(). */
 typedef void (*MMCOTrayActivationCallback)(void* user_data, int reason);
 
-/*
- * Main-window close-event filter callback.
- *
- * Returns:
- *   0 = let the close happen normally (default Qt behaviour)
- *   1 = swallow the close event (e.g. hide-to-tray instead of quitting)
- *
- * If multiple filters are installed, the first one to return non-zero
- * wins; later filters in the chain are still invoked so they can run
- * their bookkeeping but cannot override the decision.
- */
+/* Main-window close filter. Return 0 to let the close happen, 1 to swallow it (e.g. hide to tray).
+ * The first filter returning non-zero wins; later filters still run but cannot override it. */
 typedef int (*MMCOMainWindowCloseCallback)(void* user_data);
 
 struct MMCOContext {
-	/* ABI guard */
 	uint32_t struct_size; /* sizeof(MMCOContext) for forward compat */
 	uint32_t abi_version; /* MMCO_ABI_VERSION */
 	void* module_handle;  /* Opaque handle to identify this module */
@@ -286,259 +239,130 @@ struct MMCOContext {
 
 	/* S15 — Launch Modifiers (only valid inside INSTANCE_PRE_LAUNCH hooks) */
 
-	/* Set an environment variable for the current launching instance.
-	 * The variable is injected via qputenv() before launch and removed
-	 * via qunsetenv() after the instance stops. */
+	/* Sets an environment variable for the launching instance; removed after the instance stops. */
 	int (*launch_set_env)(void* mh, const char* key, const char* value);
 
-	/* Prepend a wrapper command for the current launching instance.
-	 * If the instance already has a wrapper, this command is prepended. */
+	/* Prepends a wrapper command for the launching instance, ahead of any existing wrapper. */
 	int (*launch_prepend_wrapper)(void* mh, const char* wrapper_cmd);
 
 	/* S16 — Application Settings (read-only global settings) */
 
-	/* Read a global application setting by key. Returns the value as a
-	 * string, or nullptr if the key does not exist. The returned pointer
-	 * is valid until the next API call on the same module. */
+	/* Returns the value, or nullptr if the key does not exist. */
 	const char* (*app_setting_get)(void* mh, const char* key);
 	/* S17 — News API */
 
-	/* Returns the total number of loaded news entries across all feeds.
-	 * Returns -1 if the news system is not available. */
+	/* Total number of loaded news entries across all feeds; -1 if the news system is unavailable. */
 	int (*news_get_entry_count)(void* mh);
 
-	/* Returns the title of the news entry at the given index.
-	 * Returns nullptr if index is out of range. */
+	/* Index-taking news getters return nullptr when the index is out of range. */
 	const char* (*news_get_entry_title)(void* mh, int index);
 
-	/* Returns the URL link of the news entry at the given index.
-	 * Returns nullptr if index is out of range. */
 	const char* (*news_get_entry_link)(void* mh, int index);
 
-	/* Returns the HTML/text content of the news entry at the given index.
-	 * Returns nullptr if index is out of range. */
 	const char* (*news_get_entry_content)(void* mh, int index);
 
-	/* Returns the author of the news entry at the given index.
-	 * Returns nullptr if index is out of range. */
 	const char* (*news_get_entry_author)(void* mh, int index);
 
-	/* Returns the publication date of the news entry at the given index
-	 * as an ISO 8601 string (e.g. "2026-05-08T14:30:00").
-	 * Returns nullptr if index is out of range. */
+	/* ISO 8601, e.g. "2026-05-08T14:30:00". */
 	const char* (*news_get_entry_date)(void* mh, int index);
 
-	/* Returns the feed URL index for the news entry at the given index.
-	 * This identifies which feed the entry came from. */
+	/* Index of the feed the entry came from. */
 	int (*news_get_entry_feed_index)(void* mh, int index);
 
-	/* Registers an additional RSS feed URL to be fetched alongside the
-	 * default feed. Returns 0 on success, -1 on failure.
-	 * The URL is stored for the lifetime of the application. */
+	/* Not supported: always returns -1; feeds are fixed at build time. */
 	int (*news_add_feed_url)(void* mh, const char* url);
 
-	/* Returns the number of registered feed URLs (including the default). */
+	/* Number of feed URLs, including the default. */
 	int (*news_get_feed_count)(void* mh);
 
-	/* Returns the feed URL at the given index.
-	 * Returns nullptr if index is out of range. */
 	const char* (*news_get_feed_url)(void* mh, int index);
 
-	/* Triggers a reload of all news feeds. Non-blocking — results arrive
-	 * via the MMCO_HOOK_NEWS_UPDATED hook. Returns 0 on success. */
+	/* Non-blocking; results arrive via MMCO_HOOK_NEWS_UPDATED. */
 	int (*news_reload)(void* mh);
 
 	/* S18 — Plugin icon set (ABI 2+) */
 
-	/* Resolve a logical icon name from the calling module's bundled
-	 * icon set into a Qt resource path that can be passed to any other
-	 * icon-name parameter in this context (ui_surface_create's
-	 * icon_name, tray_create/tray_set_icon, a node's "icon" prop) —
-	 * they all forward to QIcon::fromTheme() / QIcon::QIcon(QString).
-	 *
-	 * Returns a string of the form ":/plugins/<icon_set>/<name>" or
-	 * nullptr if the module did not declare an icon_set_resource or
-	 * the icon does not exist. The pointer is valid until the next
-	 * API call on the same module.
-	 *
-	 * Example:
-	 *   const char* iconPath = ctx->ui_plugin_icon(MMCO_MH, "settings");
-	 *   ctx->ui_surface_create(MMCO_MH, MMCO_UI_ANCHOR_GLOBAL_SETTINGS,
-	 *                          nullptr, "Settings", iconPath, doc, cb, ud);
-	 */
+	/* Resolves a logical icon name from the module's bundled icon set to a
+	 * ":/plugins/<icon_set>/<name>" resource path usable in any icon-name parameter. Returns nullptr
+	 * if the module declared no icon_set_resource or the icon does not exist. */
 	const char* (*ui_plugin_icon)(void* mh, const char* name);
 
-	/* ───────────────────────────────────────────────────────────────
-	 * S19 — System Tray (ABI 2+, additive)
-	 *
-	 * Lets a plugin own one or more QSystemTrayIcon instances and attach
-	 * a declarative menu (see tray_set_menu, ABI 5) to them. Memory is
-	 * owned by PluginManager — every tray handle handed out here is
-	 * released either on tray_destroy, or automatically when the
-	 * owning module is unloaded (no leaks at shutdown).
-	 *
-	 * All handles are opaque pointers — never cast them yourself.
-	 * Returns from creation functions: nullptr on failure (e.g. system
-	 * tray not available on the host desktop).
-	 *
-	 * Notify-style usage without a real tray icon: pass nullptr for the
-	 * tray handle to tray_show_message() and the host falls back to a
-	 * transient hidden icon — useful for DesktopNotifier-style plugins
-	 * that do not want a persistent indicator.
-	 * ─────────────────────────────────────────────────────────────── */
+	/* S19 System Tray (ABI 2+). Handles are opaque and owned by the host: released by tray_destroy
+	 * or when the module unloads. Creation returns nullptr on failure (e.g. no system tray).
+	 * Passing nullptr as the tray handle to tray_show_message() uses a transient hidden icon. */
 
-	/* Create a new system-tray icon. Returns opaque handle or nullptr if
-	 * the platform has no usable system tray (call is_available() first
-	 * to discriminate from other failures). */
+	/* Returns an opaque handle, or nullptr if there is no usable tray (see tray_is_available()). */
 	void* (*tray_create)(void* mh, const char* icon_name, const char* tooltip);
 
-	/* Destroy a tray handle previously returned by tray_create(). Idempotent;
-	 * passing nullptr is a no-op. */
+	/* Idempotent; nullptr is a no-op. */
 	int (*tray_destroy)(void* mh, void* tray_handle);
 
-	/* Returns 1 if QSystemTrayIcon::isSystemTrayAvailable() is true. */
 	int (*tray_is_available)(void* mh);
 
-	/* Update icon — accepts the same names as every other icon-name
-	 * parameter in this context (theme names + ":/..." Qt resource
-	 * paths). */
+	/* icon_name: a theme name or a ":/..." resource path. */
 	int (*tray_set_icon)(void* mh, void* tray_handle, const char* icon_name);
 	int (*tray_set_tooltip)(void* mh, void* tray_handle, const char* tooltip);
 	int (*tray_set_visible)(void* mh, void* tray_handle, int visible);
 
-	/* Show a balloon / native notification through the tray.
-	 *   icon_type: 0=None, 1=Info, 2=Warning, 3=Critical
-	 *   msecs:     timeout hint in ms (10000 if 0)
-	 * If tray_handle is nullptr, a transient hidden tray is created and
-	 * torn down behind the scenes — useful for fire-and-forget notify. */
+	/* icon_type: 0 None, 1 Info, 2 Warning, 3 Critical. msecs: timeout hint (10000 if 0).
+	 * A nullptr tray_handle uses a transient hidden tray (fire-and-forget notify). */
 	int (*tray_show_message)(void* mh, void* tray_handle, const char* title,
 							 const char* message, int icon_type, int msecs);
 
-	/* Attach a declarative menu to the tray icon — the menu pops up on
-	 * right-click (ABI 5). `json_menu_doc` is a small "mmco-ui/1" tree
-	 * whose root's children are `button` (menu item), `separator`, or
-	 * `section` (submenu, itself containing more button/separator/
-	 * section children) nodes. Clicking an item fires `cb` with
-	 * event="click" and node_id = the item's id. Pass json_menu_doc =
-	 * nullptr to detach the menu. `cb`/`user_data` replace the previous
-	 * per-action MMCOMenuActionCallback plumbing — one callback serves
-	 * every item in the doc. Re-call with a freshly built document to
-	 * rebuild the menu (e.g. on MMCO_HOOK_INSTANCE_CREATED/REMOVED). */
+	/* Attaches a declarative menu shown on right-click (ABI 5). json_menu_doc is an "mmco-ui/1" tree
+	 * whose root's children are `button` (item), `separator` or `section` (submenu). Clicking an item
+	 * calls cb with event="click" and node_id = the item's id. nullptr detaches the menu; call again
+	 * with a new document to rebuild it. */
 	int (*tray_set_menu)(void* mh, void* tray_handle, const char* json_menu_doc,
 						 MMCOUiEventCallback cb, void* user_data);
 
-	/* Register an activation callback (fires on left/middle/double click).
-	 * Pass cb=nullptr to clear. Only one callback per tray. */
+	/* Fires on left/middle/double click. cb=nullptr clears it. One callback per tray. */
 	int (*tray_set_activation_cb)(void* mh, void* tray_handle,
 								  MMCOTrayActivationCallback cb, void* ud);
 
-	/* ───────────────────────────────────────────────────────────────
-	 * S20 — Main-window helpers (ABI 2+, additive)
-	 * ─────────────────────────────────────────────────────────────── */
+	/* S20 Main-window helpers (ABI 2+) */
 
-	/* Install a filter that runs whenever the main window receives a
-	 * QCloseEvent. The callback decides whether the close proceeds
-	 * (return 0) or is swallowed and the window is hidden instead
-	 * (return 1 — host calls hide() on the main window).
-	 *
-	 * Multiple filters can be installed; PluginManager removes all of
-	 * a plugin's filters automatically on mmco_unload(). Pass cb=nullptr
-	 * to clear all filters previously installed by this module.
-	 *
-	 * Returns 0 on success, -1 if the main window is not yet alive
-	 * (e.g. called too early — wait for MMCO_HOOK_UI_MAIN_READY). */
+	/* Installs a filter run on every main-window QCloseEvent: return 0 to let the close proceed, 1 to
+	 * swallow it (the host hides the window). A module's filters are removed on mmco_unload();
+	 * cb=nullptr clears them earlier. Returns 0 on success, -1 if the main window is not alive yet
+	 * (wait for MMCO_HOOK_UI_MAIN_READY). */
 	int (*main_window_install_close_filter)(void* mh,
 											MMCOMainWindowCloseCallback cb,
 											void* user_data);
 
-	/* Show / raise the main window (counterpart to the close filter for
-	 * "Show Kite" tray actions). hide() is also exposed for symmetry. */
+	/* Shows (and raises) or hides the main window. */
 	int (*main_window_show)(void* mh);
 	int (*main_window_hide)(void* mh);
 	int (*main_window_is_visible)(void* mh);
 
-	/* ───────────────────────────────────────────────────────────────
-	 * S21 — Application-scope settings (ABI 3+, additive)
-	 *
-	 * The S16 `app_setting_get` field above is read-only and limited to
-	 * settings that have already been registered.  S21 adds the write
-	 * side, a registration helper, and an existence probe so plugins
-	 * never need to reach into APPLICATION->settings() directly:
-	 *
-	 *   • app_setting_register: create the key if missing with the
-	 *     supplied UTF-8 default. Returns 0 on success, -1 on error,
-	 *     and is a no-op (returning 0) when the key already exists.
-	 *   • app_setting_set:      overwrite the value of an existing key.
-	 *     Returns 0 on success, -1 on error.  The caller is expected
-	 *     to have registered the key first (either via this API or by
-	 *     the launcher itself).
-	 *   • app_setting_contains: 1 if the key is registered, 0 otherwise.
-	 *
-	 * All three are namespaced exactly the way the launcher's own
-	 * settings are — there is no automatic plugin-private prefix on
-	 * top.  Callers that want a private namespace should keep using
-	 * setting_get / setting_set from S3.
-	 * ─────────────────────────────────────────────────────────────── */
+	/* S21 Application-scope settings, write side (ABI 3+). Keys are namespaced like the launcher's own
+	 * settings, with no plugin prefix; use setting_get/setting_set for plugin-private keys.
+	 *   app_setting_register  creates the key with a UTF-8 default; no-op returning 0 if it exists
+	 *   app_setting_set       overwrites an existing (registered) key
+	 *   app_setting_contains  1 if the key is registered, 0 otherwise
+	 * register/set return 0 on success, -1 on error. */
 	int (*app_setting_set)(void* mh, const char* key, const char* value);
 	int (*app_setting_register)(void* mh, const char* key,
 								const char* default_value);
 	int (*app_setting_contains)(void* mh, const char* key);
 
-	/* ───────────────────────────────────────────────────────────────
-	 * S22 — Themed icon resolution (ABI 3+, additive)
-	 *
-	 * Resolves a logical name to a string suitable for the existing
-	 * icon-name parameters in S12/S13/S19 (button/tray/menu APIs all
-	 * accept either an XDG theme name or a ":/..." Qt resource path).
-	 *
-	 * The returned pointer is valid until the next API call on the
-	 * same module. Returns nullptr if the name does not resolve.
-	 *
-	 * Replaces direct calls to APPLICATION->getThemedIcon(name) and
-	 * APPLICATION->icons()->getIcon(name) inside plugin code.
-	 * ─────────────────────────────────────────────────────────────── */
+	/* S22 Themed icon resolution (ABI 3+). Resolves a logical name to a string accepted by the icon-name
+	 * parameters (XDG theme name or ":/..." resource path). Returns nullptr if the name does not resolve. */
 	const char* (*ui_themed_icon)(void* mh, const char* name);
 
-	/* ───────────────────────────────────────────────────────────────
-	 * S23 — Instance running-state signal bridge (ABI 3+, additive)
-	 *
-	 * Replaces the legacy pattern of resolving an InstancePtr via
-	 * APPLICATION->instances()->getInstanceById(id) and connecting to
-	 * its `runningStatusChanged(bool)` Qt signal.
-	 *
-	 *   instance_running_register   — start delivering running-state
-	 *     transitions for the given instance id to `cb(ud, id, r)`.
-	 *     The host owns the underlying Qt connection through a
-	 *     per-module guard QObject; mmco_unload() automatically
-	 *     severs every connection for that module.
-	 *     Returns 0 on success, -1 if the id does not resolve.
-	 *
-	 *   instance_running_unregister — stop delivering transitions for
-	 *     the given id.  Returns 0 on success.  Calling with an id
-	 *     that has no registration is a no-op (returns 0).
-	 *
-	 * A single module may have at most one callback per instance id.
-	 * Re-registering replaces the previous callback for that id.
-	 * ─────────────────────────────────────────────────────────────── */
+	/* S23 Instance running-state bridge (ABI 3+).
+	 *   instance_running_register    delivers running-state transitions of the instance to cb(ud, id, running);
+	 *                                one callback per (module, instance), re-registering replaces it.
+	 *                                Returns -1 if the id does not resolve.
+	 *   instance_running_unregister  stops delivery; no-op (returns 0) if not registered.
+	 * The host severs a module's connections on mmco_unload(). */
 	int (*instance_running_register)(void* mh, const char* instance_id,
 									 MMCOInstanceRunningCallback cb, void* ud);
 	int (*instance_running_unregister)(void* mh, const char* instance_id);
 
-	/* ───────────────────────────────────────────────────────────────
-	 * S24 — Per-instance settings (ABI 3+, additive)
-	 *
-	 * Replaces inst->settings()->{get,set,registerSetting,
-	 * registerOverride,reset,contains}.  All values are exchanged as
-	 * UTF-8 strings; plugins convert to bool / int as needed.
-	 *
-	 * Each call resolves the BaseInstance via APPLICATION->instances()
-	 * inside PluginManager and routes the call to the instance's own
-	 * SettingsObject. Returns 0 on success, -1 on failure (unknown
-	 * instance id, missing key, etc.).  The "register override" call
-	 * mirrors SettingsObject::registerOverride(): expose an
-	 * application-scope setting on the instance, controlled by a
-	 * per-instance bool gate (`gate_key`).
-	 * ─────────────────────────────────────────────────────────────── */
+	/* S24 Per-instance settings (ABI 3+). Values are UTF-8 strings. Return 0 on success, -1 on failure
+	 * (unknown instance, missing key, ...). register_override mirrors SettingsObject::registerOverride():
+	 * it exposes an application-scope setting on the instance, controlled by the per-instance bool `gate_key`. */
 	const char* (*instance_setting_get)(void* mh, const char* instance_id,
 										const char* key);
 	int (*instance_setting_set)(void* mh, const char* instance_id,
@@ -554,27 +378,11 @@ struct MMCOContext {
 	int (*instance_setting_contains)(void* mh, const char* instance_id,
 									 const char* key);
 
-	/* ───────────────────────────────────────────────────────────────
-	 * S25 — MinecraftAccount / skin / cape access (ABI 3+, additive)
-	 *
-	 * Replaces SkinManager's direct AccountList / MinecraftAccountPtr
-	 * / AccountData access. PluginManager looks up the account on the
-	 * host's AccountList by id and returns the requested field.
-	 *
-	 * `account_get_id_by_index` exposes the account id matching S7's
-	 * `account_get_profile_id` — same indexing, separate getter so
-	 * plugins can scan by index and then drive everything else by id.
-	 *
-	 * Skin / cape blobs are PNG byte sequences; the pointer returned
-	 * via `out_ptr` is valid until the next API call on the same
-	 * module. The function returns the size in bytes (0 if absent,
-	 * -1 on error).
-	 *
-	 * Variant strings are "CLASSIC" / "SLIM" (case-insensitive).
-	 * Setters return 0 on success, -1 on failure.  account_skin_blob
-	 * is the in-memory cache; account_skin_upload below is what
-	 * actually pushes a new skin to Mojang's servers.
-	 * ─────────────────────────────────────────────────────────────── */
+	/* S25 Account / skin / cape access (ABI 3+), by account id. account_get_id_by_index returns the id
+	 * matching S7's account_get_profile_id at the same index. Blob getters return the PNG size in bytes
+	 * (0 if absent, -1 on error); `out_ptr` is valid until the next API call on the module. Variants are
+	 * "CLASSIC" / "SLIM" (case-insensitive). Setters return 0 on success, -1 on failure and change only
+	 * the in-memory copy; account_skin_upload pushes a skin to Mojang. */
 	const char* (*account_get_id_by_index)(void* mh, int index);
 	int (*account_is_msa_by_id)(void* mh, const char* account_id);
 	const char* (*account_get_access_token)(void* mh, const char* account_id);
@@ -597,21 +405,12 @@ struct MMCOContext {
 	int (*account_set_skin_blob)(void* mh, const char* account_id,
 								 const void* data, int64_t size);
 
-	/* S26 — Synchronous task helpers (ABI 3+, additive)
-	 *
-	 * Run launcher-side network tasks that used to be wrapped in
-	 * SequentialTask + ProgressDialog::execWithTask. The C-ABI pumps
-	 * a modal progress dialog parented to the active window so the
-	 * UX matches what the plugin used to drive manually.
-	 *
-	 *   account_skin_upload  — POST a new skin PNG (variant == "STEVE"
-	 *                          or "ALEX").
-	 *   account_skin_reset   — DELETE the active skin.
-	 *   account_cape_set     — PUT the active cape id (empty string
-	 *                          == "no cape").
-	 *
-	 * Returns 0 on success, -1 on failure (the task reported an error
-	 * or the user cancelled). */
+	/* S26 Synchronous task helpers (ABI 3+). Run launcher-side network tasks behind a modal progress
+	 * dialog parented to the active window.
+	 *   account_skin_upload  POST a skin PNG (variant "STEVE" or "ALEX")
+	 *   account_skin_reset   DELETE the active skin
+	 *   account_cape_set     PUT the active cape id ("" = no cape)
+	 * Return 0 on success, -1 on failure (task error or user cancel). */
 	int (*account_skin_upload)(void* mh, const char* account_id,
 							   const void* png_bytes, int64_t size,
 							   const char* variant);
@@ -619,28 +418,11 @@ struct MMCOContext {
 	int (*account_cape_set)(void* mh, const char* account_id,
 							const char* cape_id);
 
-	/* ───────────────────────────────────────────────────────────────
-	 * S27 — Icon list enumeration (ABI 3+, additive)
-	 *
-	 * Exposes the launcher's IconList through the C ABI for plugins
-	 * that need to render an icon picker (Filelink's "choose
-	 * shortcut icon" dialog is the canonical case). Replaces direct
-	 * APPLICATION->icons() / IconList::rowCount() / IconList::data()
-	 * access.
-	 *
-	 *   icon_list_count    — number of icons known to the host.
-	 *   icon_list_get_key  — stable key for the icon at the given
-	 *                        index (suitable for instance_set_icon_key
-	 *                        and tray/menu icon parameters).
-	 *   icon_list_get_name — human-readable display name (same
-	 *                        column the launcher's icon list shows).
-	 *   icon_list_get_file_path — absolute path on disk for the icon
-	 *                        (or "" if the icon is in-memory only).
-	 *                        Used by Filelink to embed the icon in a
-	 *                        platform-native shortcut.
-	 *   icon_list_save_png — write the icon's PNG bytes to
-	 *                        `dest_path`. Returns 0 on success.
-	 * ─────────────────────────────────────────────────────────────── */
+	/* S27 Icon list enumeration (ABI 3+), e.g. for an icon picker.
+	 *   icon_list_get_key        stable key (usable with instance_set_icon_key and icon-name parameters)
+	 *   icon_list_get_name       human-readable display name
+	 *   icon_list_get_file_path  absolute path on disk, "" if the icon is in-memory only
+	 *   icon_list_save_png       writes the icon's PNG to dest_path; 0 on success */
 	int (*icon_list_count)(void* mh);
 	const char* (*icon_list_get_key)(void* mh, int index);
 	const char* (*icon_list_get_name)(void* mh, int index);
@@ -648,159 +430,57 @@ struct MMCOContext {
 	int (*icon_list_save_png)(void* mh, const char* icon_key,
 							  const char* dest_path);
 
-	/* ───────────────────────────────────────────────────────────────
-	 * S28 — Instance update-flag write (ABI 3+, additive)
-	 *
-	 * Companion setter to `instance_has_update`. Lets plugins drive
-	 * the per-instance "update available" indicator that the
-	 * InstanceView delegate renders as the `checkupdate` badge.
-	 *
-	 * Until this API landed, `BaseInstance::m_hasUpdate` had a
-	 * setter (`setUpdateAvailable`) but no caller anywhere in the
-	 * codebase, which meant the badge slot was permanently dark.
-	 * The launcher intentionally has no built-in modpack-update
-	 * scanner — that surface belongs to a plugin (PackUpdater). This
-	 * API is the seam through which such a plugin reports its
-	 * findings back to the launcher's UI.
-	 *
-	 *   value != 0 → mark instance as having an update available
-	 *   value == 0 → clear the flag
-	 *
-	 * Returns 0 on success, -1 if the instance id is unknown.
-	 * Thread: main / GUI thread only (touches BaseInstance which
-	 * emits propertiesChanged).
-	 * ─────────────────────────────────────────────────────────────── */
+	/* S28 Instance update flag (ABI 3+). Companion setter to instance_has_update: value != 0 marks
+	 * the instance as having an update (the `checkupdate` badge), 0 clears it. Returns 0 on success,
+	 * -1 if the id is unknown. Thread: GUI thread only. */
 	int (*instance_set_update_available)(void* mh, const char* id, int value);
 
-	/* ───────────────────────────────────────────────────────────────
-	 * S29 — Component version write (ABI 3+, additive)
-	 *
-	 * Set the version of a `PackProfile` component by uid, or create
-	 * the component if the instance doesn't have one yet. Mirrors
-	 * `PackProfile::setComponentVersion(uid, version, important)`
-	 * which is the same call the in-tree pack importers (Flame,
-	 * Modrinth, FTB, ATL, Technic) use to wire loader + Minecraft
-	 * versions into a freshly imported instance.
-	 *
-	 * The complement of the read-only `instance_component_get_version`
-	 * accessor: where that one resolves by *index* (after counting
-	 * via `instance_component_count`), this one resolves by *uid*,
-	 * which is what a plugin actually knows when it wants to set a
-	 * specific loader's version (`net.fabricmc.fabric-loader`,
-	 * `net.neoforged`, `net.minecraft`, …).
-	 *
-	 * Behaviour:
-	 *   - If a component with that uid exists, its version is reverted
-	 *     to the catalogue entry and the requested version is applied
-	 *     (`important=1` flags it as user-pinned so the resolver
-	 *     doesn't try to upgrade it out from under you).
-	 *   - If the component doesn't exist, a new one is appended to
-	 *     the profile with the given version.
-	 *
-	 * Returns 0 on success, -1 on failure (unknown instance, no
-	 * PackProfile, or PackProfile::setComponentVersion refused —
-	 * typically because the component couldn't be reverted to a clean
-	 * state, see PackProfile::setComponentVersion's `revert()` path).
-	 *
-	 * Thread: main / GUI thread only. The change emits dataChanged
-	 * on the PackProfile model, which Qt expects from the GUI thread.
-	 * ─────────────────────────────────────────────────────────────── */
+	/* S29 Component version write (ABI 3+). Sets the version of the PackProfile component `uid`
+	 * (e.g. "net.fabricmc.fabric-loader", "net.minecraft"), appending the component if the instance
+	 * lacks it. An existing component is reverted to its catalogue entry first and pinned as
+	 * user-chosen (important=1), so the resolver does not upgrade it. Returns 0 on success, -1 on
+	 * failure (unknown instance, no PackProfile, or the component could not be reverted).
+	 * Thread: GUI thread only. */
 	int (*instance_component_set_version)(void* mh, const char* id,
 										  const char* uid, const char* version);
 
-	/* ───────────────────────────────────────────────────────────────
-	 * S30 — HTTP GET with custom headers (ABI 3+, additive)
-	 *
-	 * S11's `http_get` only ever sets User-Agent. Plugins that talk
-	 * to APIs gated by auth headers (CurseForge's `x-api-key` is
-	 * the canonical case) use this variant instead. Keys come from
-	 * the plugin's own `#include "BuildConfig.h"` — the launcher
-	 * does NOT pass keys through this surface; that's deliberate so
-	 * a key doesn't have to traverse a generic plugin API.
-	 *
-	 * `headers` is an array of NUL-terminated "Name: Value"
-	 * strings; `header_count` is the array length. The launcher
-	 * always sets/overrides User-Agent regardless of what you pass,
-	 * to keep outbound traffic identifiable.
-	 *
-	 * Returns 0 if the request was queued, -1 on argument errors.
-	 * Body-lifetime contract matches `http_get`.
-	 * ─────────────────────────────────────────────────────────────── */
+	/* S30 http_get with custom headers (ABI 3+). `headers` holds `header_count` NUL-terminated
+	 * "Name: Value" strings. User-Agent is always set by the launcher, whatever is passed. The launcher
+	 * passes no keys through this API; the plugin supplies its own (e.g. CurseForge's x-api-key).
+	 * Returns 0 if queued, -1 on argument errors. Body lifetime as in http_get. */
 	int (*http_get_with_headers)(void* mh, const char* url,
 								 const char* const* headers, int header_count,
 								 MMCOHttpCallback callback, void* user_data);
 
-	/* ───────────────────────────────────────────────────────────────
-	 * S31 — Subprocess execution (additive; no ABI bump)
-	 *
-	 * Run an external program synchronously and capture its output.
-	 * The host runs it through QProcess, so plugins (including plain-C
-	 * plugins that have no Qt of their own) can shell out to version
-	 * control tools, archivers, or any other CLI without forking or
-	 * exec()ing themselves — the host owns process lifetime, timeout,
-	 * working directory, and stdin/stdout handling.
-	 *
-	 * Arguments:
-	 *   program        — executable name or absolute path. Resolved
-	 *                    against PATH by the host. NOT run through a
-	 *                    shell, so there is no shell-injection surface:
-	 *                    each argv element is passed verbatim.
-	 *   args           — array of `arg_count` NUL-terminated argument
-	 *                    strings (argv[1..]). May be NULL if arg_count
-	 *                    is 0.
-	 *   arg_count      — number of entries in `args`.
-	 *   working_dir    — directory to run in, or NULL for the host's
-	 *                    current working directory.
-	 *   stdin_data     — bytes to feed to the child's stdin, or NULL.
-	 *   stdin_size     — length of stdin_data in bytes (0 if none).
-	 *   out_buf        — caller-owned buffer that receives the child's
-	 *                    captured stdout (NUL-terminated, truncated to
-	 *                    fit). May be NULL to discard stdout.
-	 *   out_buf_size   — size of out_buf in bytes (including the NUL).
-	 *   out_exit_code  — receives the child's exit code, or NULL.
-	 *   timeout_ms     — hard timeout; the child is killed if it
-	 *                    exceeds it. <= 0 means a default (30s).
-	 *
-	 * Returns:
-	 *    0  — the process ran to completion (check out_exit_code for
-	 *         the program's own success/failure).
-	 *   -1  — failed to start (program not found, etc.).
-	 *   -2  — timed out and was killed.
-	 *   -3  — invalid arguments.
-	 *
-	 * Thread: may be called from any thread; the host pumps a local
-	 * event loop internally so it is safe from the GUI thread too.
-	 * ─────────────────────────────────────────────────────────────── */
+	/* S31 Subprocess execution (no ABI bump). Runs a program synchronously through QProcess and
+	 * captures its stdout.
+	 *   program        executable name (resolved on PATH) or absolute path; not run through a shell,
+	 *                  each argv element is passed verbatim
+	 *   args           `arg_count` NUL-terminated strings (argv[1..]); may be NULL if arg_count is 0
+	 *   working_dir    directory to run in, or NULL for the host's
+	 *   stdin_data     bytes for the child's stdin, or NULL; stdin_size is their length
+	 *   out_buf        caller-owned buffer for stdout (NUL-terminated, truncated to fit), NULL discards;
+	 *                  out_buf_size includes the NUL
+	 *   out_exit_code  receives the exit code, or NULL
+	 *   timeout_ms     hard timeout, the child is killed; <= 0 means 30 s
+	 * Returns 0 if the process ran to completion (see out_exit_code), -1 if it failed to start,
+	 * -2 if it timed out and was killed, -3 for invalid arguments.
+	 * Thread: any; the host pumps a local event loop, so the GUI thread is fine too. */
 	int (*process_run)(void* mh, const char* program, const char* const* args,
 					   int arg_count, const char* working_dir,
 					   const char* stdin_data, int stdin_size, char* out_buf,
 					   int out_buf_size, int* out_exit_code, int timeout_ms);
 
-	/* ───────────────────────────────────────────────────────────────
-	 * S32 — Background hooks + progress reporting (additive; ABI
-	 * stays at 3, `struct_size` tells the host what a module was
-	 * built against)
-	 *
-	 * hook_register_ex is hook_register plus a flags word — see
-	 * MMCO_HOOK_FLAG_* in PluginHooks.h. Passing 0 behaves exactly
-	 * like hook_register, so opting in is a one-line change.
-	 *
-	 * progress_report publishes the running background callback's
-	 * progress into the launcher's progress dialog:
-	 *   handle  — the module_handle the callback was invoked with.
-	 *   status  — short line shown as the row's title, NULL to keep
-	 *             the current one.
-	 *   details — optional second line, NULL to keep the current one.
-	 *   current — work done so far.
-	 *   total   — total work; <= 0 means "indeterminate", which the
-	 *             host renders as a busy bar.
-	 *
-	 * Returns 0 if the update was queued, -1 if the arguments are
-	 * unusable or the caller is not currently inside a background hook
-	 * callback (there is no row to report into). The host marshals the
-	 * update onto the GUI thread, so calling this in a tight loop is
-	 * safe and never blocks on the UI.
-	 * ─────────────────────────────────────────────────────────────── */
+	/* S32 Background hooks + progress reporting (ABI stays at 3; struct_size tells the host what a
+	 * module was built against). hook_register_ex is hook_register plus a flags word (MMCO_HOOK_FLAG_*
+	 * in PluginHooks.h); 0 behaves like hook_register.
+	 * progress_report publishes the running background callback's progress into the progress dialog:
+	 *   handle           the module_handle the callback was invoked with
+	 *   status           row title, NULL keeps the current one
+	 *   details          optional second line, NULL keeps the current one
+	 *   current / total  work done / total; total <= 0 is indeterminate (busy bar)
+	 * Returns 0 if queued, -1 on unusable arguments or outside a background hook callback. The update is
+	 * marshalled onto the GUI thread, so calling it in a tight loop is safe. */
 	int (*hook_register_ex)(void* mh, uint32_t hook_id,
 							MMCOHookCallback callback, void* user_data,
 							uint32_t flags);
@@ -808,39 +488,18 @@ struct MMCOContext {
 						   const char* details, int64_t current,
 						   int64_t total);
 
-	/* ───────────────────────────────────────────────────────────────
-	 * S33 — Declarative UI surfaces (ABI 5)
-	 *
-	 * Replaces the S13 imperative widget builder (ui_page_create /
-	 * ui_layout_* / ui_button_* / ui_label_* / ui_tree_*, all gone as
-	 * of ABI 5) and the allWidgets()/findChild() settings-injection
-	 * pattern. A plugin describes a small widget tree as a JSON
-	 * document (the "mmco-ui/1" format — see PluginUiRenderer.h) and
-	 * the host renders and owns the real QWidget tree; no QWidget* is
-	 * ever handed back to a plugin.
-	 *
-	 *   ui_surface_create — build and display a surface at the given
-	 *     anchor. `anchor_context` is nullptr for GLOBAL_SETTINGS, or
-	 *     the instance id for INSTANCE_PAGE / INSTANCE_SETTINGS.
-	 *     `title`/`icon_name` label the surface (page title for
-	 *     INSTANCE_PAGE, section title otherwise). `cb`/`user_data`
-	 *     receive every click/change/select event from nodes in the
-	 *     doc (see MMCOUiEventCallback). Returns an opaque surface
-	 *     handle, or nullptr on failure (bad JSON, unknown anchor).
-	 *   ui_surface_update — replace the whole document.
-	 *   ui_surface_set    — patch one node's `props` (e.g. a toggle's
-	 *     value, a button's enabled state) without touching the rest
-	 *     of the tree.
-	 *   ui_surface_set_rows — replace a `list` node's `rows` only;
-	 *     the cheap refresh path, replacing the old
-	 *     ui_tree_clear + ui_tree_add_row loop.
-	 *   ui_surface_destroy — tear down a surface early. Every surface
-	 *     a module still owns is also torn down automatically when
-	 *     the module unloads.
-	 *
-	 * All four mutators return 0 on success, -1 on failure (unknown
-	 * surface handle, malformed JSON, or unknown node_id).
-	 * ─────────────────────────────────────────────────────────────── */
+	/* S33 Declarative UI surfaces (ABI 5). A plugin describes a widget tree as an "mmco-ui/1" JSON
+	 * document (see PluginUiRenderer.h); the host renders and owns the widgets, no QWidget* is handed back.
+	 *   ui_surface_create    builds and shows a surface at the anchor. anchor_context is nullptr for
+	 *                        GLOBAL_SETTINGS, else the instance id. title/icon_name label it (page title
+	 *                        for INSTANCE_PAGE, section title otherwise). cb receives every click/change/
+	 *                        select event (see MMCOUiEventCallback). Returns an opaque handle, or nullptr
+	 *                        on failure (bad JSON, unknown anchor).
+	 *   ui_surface_update    replaces the whole document
+	 *   ui_surface_set       patches one node's `props` without touching the rest of the tree
+	 *   ui_surface_set_rows  replaces a `list` node's `rows` only (cheap refresh)
+	 *   ui_surface_destroy   tears the surface down early; a module's surfaces also go on unload
+	 * The mutators return 0 on success, -1 on failure (unknown surface, malformed JSON, unknown node_id). */
 	void* (*ui_surface_create)(void* mh, int anchor, const char* anchor_context,
 							   const char* title, const char* icon_name,
 							   const char* json_doc, MMCOUiEventCallback cb,
@@ -852,14 +511,10 @@ struct MMCOContext {
 							   const char* json_rows);
 	int (*ui_surface_destroy)(void* mh, void* surface);
 
-	/* Blocking: shows a small transient doc (must contain at least one
-	 * `button`) parented to the active window, pumps a local event
-	 * loop (same pattern as S26's account_skin_upload), and returns
-	 * once a button fires. `out_result_json` receives
-	 * {"button":"<id>","fields":{"<id>":"<value>", ...}} — one entry
-	 * per interactive node's current value at the time the button was
-	 * clicked, truncated to fit `out_buf_size`. Returns 0 on a button
-	 * click, -1 on bad arguments / malformed JSON. */
+	/* Blocking: shows a small transient doc (at least one `button`) parented to the active window and
+	 * returns once a button fires. out_result_json receives {"button":"<id>","fields":{"<id>":"<value>",...}},
+	 * the current value of each interactive node, truncated to out_buf_size. Returns 0 on a button click,
+	 * -1 on bad arguments / malformed JSON. */
 	int (*ui_modal_run)(void* mh, const char* title, const char* json_doc,
 						char* out_result_json, int out_buf_size);
 };

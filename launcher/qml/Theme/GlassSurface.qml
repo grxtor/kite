@@ -3,14 +3,11 @@
 
 import QtQuick
 
-// The brief's glass treatment as one piece: the surface, the hairline
-// border, a 1 px light line along the top edge with a faint sheen fading
-// down from it and, when given a `level`, Theme's soft Shadow underneath. Only the sidebar, the bottom
-// play bar and popups/dialogs use it (see Theme.glass); everything else is
-// an ordinary opaque surface.
-//
-// Popups take the default fill (Theme.glass.popup); the sidebar and play
-// bar set `color: Theme.glass.fill` and usually no level.
+// The surface, the hairline border, a 1 px light line along the top edge with
+// a faint sheen fading down from it and, given a `level`, Theme's Shadow
+// underneath. Only the sidebar, the play bar and popups/dialogs use it
+// (Theme.glass). Popups take the default fill; the sidebar and play bar set
+// `color: Theme.glass.fill` and usually no level.
 Rectangle {
     id: glass
 

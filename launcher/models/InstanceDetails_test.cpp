@@ -29,19 +29,14 @@
 #include "launch/LogModel.h"
 #include "settings/INISettingsObject.h"
 
-/* Only InstanceLogBridge is exercised here - constructing a full
- * MinecraftInstance (needed for InstanceDetails' mods/worlds/components)
- * is impractical in a unit test. InstanceLogBridge only needs a
- * BaseInstance and a LaunchTask, both of which are usable directly:
- * NullInstance is a ready-made minimal concrete BaseInstance, and
- * LaunchTask itself (not an OS-specific subclass) is what
- * LaunchTask::create() hands back. */
+/* Only InstanceLogBridge is exercised: a full MinecraftInstance (for
+ * InstanceDetails' mods/worlds/components) is impractical in a unit test, while
+ * NullInstance and LaunchTask::create() are enough here. */
 namespace
 {
-	/* BaseInstance's constructor registers overrides/passthroughs against
-	 * these global setting ids; every one of them has to already be
-	 * registered on whatever SettingsObject is passed in as
-	 * globalSettings, or the registration calls hand it a null Setting. */
+	/* BaseInstance's constructor registers overrides/passthroughs against these
+	 * global setting ids; each must exist in the SettingsObject passed as
+	 * globalSettings, or registration hands back a null Setting. */
 	SettingsObjectPtr makeGlobalSettings(QTemporaryDir& dir)
 	{
 		auto settings = std::make_shared<INISettingsObject>(
@@ -58,12 +53,10 @@ namespace
 		return settings;
 	}
 
-	/* Every Setting a SettingsObject registers keeps a raw SettingsObject*
-	 * back-pointer to it (Setting::m_storage), including ones an instance
-	 * only holds a passthrough/override *over* (PassthroughSetting::m_other
-	 * etc.) - so the global SettingsObject has to stay alive for as long as
-	 * the instance does, not just for the call that constructs it. Bundling
-	 * them in one fixture, in this declaration order, makes that automatic. */
+	/* Every Setting keeps a raw back-pointer to its SettingsObject
+	 * (Setting::m_storage), including those an instance only passes through or
+	 * overrides, so the global SettingsObject must outlive the instance. Bundling
+	 * them in this declaration order makes that automatic. */
 	struct InstanceFixture {
 		QTemporaryDir globalDir;
 		QTemporaryDir instDir;

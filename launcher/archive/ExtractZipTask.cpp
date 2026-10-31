@@ -52,8 +52,8 @@ namespace MMCZip
 	{
 		if (m_future.isRunning()) {
 			m_cancelled.store(true);
-			/* The worker cleans up what it already wrote and returns;
-			 * finish() is what turns that into an abort. */
+			/* The worker cleans up what it wrote and returns; finish() turns that
+			 * into an abort. */
 			return true;
 		}
 		return false;
@@ -74,8 +74,8 @@ namespace MMCZip
 
 	auto ExtractZipTask::extractZip() -> ZipResult
 	{
-		/* Both reports come from the extracting thread, so neither may
-		 * touch task state directly. See the header. */
+		/* Both reports come from the extracting thread, so neither may touch
+		 * task state directly. */
 		ExtractReporting reporting;
 		reporting.progress = [this](qint64 current, qint64 total) {
 			reportProgress(current, total);
@@ -91,8 +91,8 @@ namespace MMCZip
 			extractSubDir(m_input, m_subdirectory, m_outputDir.absolutePath(),
 						  reporting);
 		if (!extracted.has_value()) {
-			/* Cancellation comes back through the same "no result" door
-			 * as a damaged archive; only we know which it was. */
+			/* Cancellation returns the same "no result" as a damaged archive; only
+			 * we know which. */
 			if (m_cancelled.load()) {
 				return ZipResult();
 			}

@@ -5,12 +5,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * A section heading in Home's side panel ("Kite news", "Recent worlds"):
- * quieter than the page's own headings, in the heading face at title size.
- * Sade and Gece set it as a small uppercase label like their page sections
- * (HomeLabel; lavender on the night sky); Sahne, which has no side panel,
- * uses it for the sections under "Continue playing" and sets it as
- * HomeSectionTitle does.
+ * A section heading in Home's side panel ("Kite news", "Recent worlds"): quieter than the page's headings, in the
+ * heading face at title size. Sade and Gece set it as a small uppercase label (HomeLabel); Sahne uses it for the
+ * sections under "Continue playing" and sets it as HomeSectionTitle does.
  */
 Text {
     readonly property string look: Theme.look

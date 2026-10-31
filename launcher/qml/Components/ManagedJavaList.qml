@@ -8,22 +8,18 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The Java runtimes Kite downloaded itself, as a card of rows: which one,
- * where it lives, and a ⋯ menu to use or remove it. Removing deletes the
- * runtime's whole folder, so it asks first. Empty when nothing has been
- * downloaded; the section above offers Download Java then.
+ * The Java runtimes Kite downloaded itself, as a card of rows with a ⋯ menu to use
+ * or remove one. Removing deletes the runtime's whole folder, so it asks first.
  */
 Rectangle {
     id: root
 
     readonly property var java: JavaStore.controller
     readonly property var runtimes: java ? java.managed : []
-    // The JavaPath in use, marked in the list.
     property string currentPath
     signal useRequested(string path)
     signal failed(string message)
 
-    // The runtime a menu or confirmation is about.
     property var target: null
 
     implicitHeight: list.height

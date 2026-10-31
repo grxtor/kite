@@ -8,15 +8,13 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Pick one of the Java installs Kite found on this computer (the same
- * list the first-run setup shows, plus the runtimes Kite downloaded
- * itself). Choosing a row emits picked() and closes; the caller decides
- * what to do with the path.
+ * Pick one of the Java installs Kite found on this computer, plus the runtimes
+ * Kite downloaded itself. Choosing a row emits picked() and closes; the caller
+ * decides what to do with the path.
  */
 Dialog {
     id: root
 
-    // The path in use now, marked in the list.
     property string currentPath
     readonly property var java: JavaStore.controller
 
@@ -27,10 +25,7 @@ Dialog {
     width: Math.min(600, parent ? parent.width - Theme.space.xxl * 2 : 600)
     height: Math.min(520, parent ? parent.height - Theme.space.xxl * 2 : 520)
     modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
     topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
     bottomPadding: Theme.space.sm
     title: qsTr("Choose Java")
 

@@ -98,7 +98,6 @@ void LibrariesTask::executeTask()
 			&LibrariesTask::progress);
 	connect(downloadJob.get(), &NetJob::status, this,
 			&LibrariesTask::setStatus);
-	// Show each library being fetched as its own line.
 	propagateStepsFrom(downloadJob.get());
 	downloadJob->start();
 }

@@ -27,14 +27,9 @@
 
 class ModMetadataIndex;
 
-/*
- * ModInstallConflictAnalyzer
- *
- * Pure-function helper that classifies a set of `DownloadItem`s against
- * the currently installed mods (as represented by `ModMetadataIndex`).
- * Used by ModFolderPage and the update flow to decide what to actually
- * write to disk.
- */
+/* Pure-function helper that classifies `DownloadItem`s against the
+ * installed mods (`ModMetadataIndex`). Used by ModFolderPage and the
+ * update flow to decide what to write to disk. */
 class ModInstallConflictAnalyzer
 {
   public:
@@ -53,22 +48,16 @@ class ModInstallConflictAnalyzer
 		QString reason; /* Human-readable detail, surfaced in the UI */
 	};
 
-	/* Classify each input item. The returned list has the same length and
-	 * ordering as `items`. `index` may be null, in which case every item
-	 * is treated as Fresh. */
+	/* Classifies each item; the result matches `items` in length and order.
+	 * A null `index` makes every item Fresh. */
 	static QList<Decision>
 	analyze(const QList<ModPlatform::DownloadItem>& items,
 			std::shared_ptr<ModMetadataIndex> index);
 
-	/* Filter a decision list down to what should actually be downloaded:
-	 *   - Fresh, NameConflict, FileNameClash: kept as-is.
-	 *   - UpdateAvailable: kept with `replaceExisting=true` and
-	 *     `replacesFileName` pointing at the old file.
-	 *   - AlreadyInstalled: dropped.
-	 * The caller is responsible for asking the user about NameConflict /
-	 * FileNameClash through whatever dialog is appropriate. */
+	/* Filters decisions down to what should be downloaded: Fresh,
+	 * NameConflict and FileNameClash are kept as-is; UpdateAvailable is kept
+	 * with `replaceExisting=true` and `replacesFileName` set; AlreadyInstalled
+	 * is dropped. The caller asks the user about NameConflict / FileNameClash. */
 	static QList<ModPlatform::DownloadItem>
 	toDownloadPlan(const QList<Decision>& decisions);
-
-	static const char* statusLabel(Status s);
 };

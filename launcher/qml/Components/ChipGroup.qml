@@ -7,16 +7,12 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * A row of filter chips, one of them on: what kind of thing a list shows
- * (Mods / Resource packs / Shader packs), the way Modrinth App filters an
- * instance's content. Each chip stands on its own -- no shared track, so it
- * never reads as a segmented switch -- and the row looks the same at every
- * window width. Filter chips are true toggles, so they are pills.
+ * A row of filter chips, one of them on: what kind of thing a list shows (Mods / Resource packs / Shader packs). Each
+ * chip stands on its own, so it never reads as a segmented switch.
  */
 Row {
     id: root
 
-    // [{ value, label }]
     property var options: []
     property var current
     signal activated(var value)
@@ -34,7 +30,6 @@ Row {
 
             anchors.verticalCenter: parent ? parent.verticalCenter : undefined
             implicitHeight: Theme.control.heightSm
-            // Whole pixels, so the chips after it stay on the pixel grid.
             implicitWidth: Math.ceil(label.implicitWidth) + Theme.space.md * 2
             hoverEnabled: true
             // Mirrors `selected` for accessibility only; clicking must not

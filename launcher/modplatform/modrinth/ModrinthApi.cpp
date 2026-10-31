@@ -25,7 +25,6 @@
 namespace
 {
 
-	/* The sort field for a UI index, clamped to the published list. */
 	QString sortValueAt(const QList<ModPlatform::SortingMethod>& sorts,
 						int sortIndex)
 	{
@@ -35,9 +34,8 @@ namespace
 		return sorts.first().apiValue;
 	}
 
-	/* Modrinth facets are a JSON array of arrays: the outer array is
-	 * ANDed, each inner array is ORed. Ticking two loaders therefore
-	 * has to produce one group with both in it, not two groups. */
+	/* Facets are an array of arrays: the outer is ANDed, each inner ORed. Two
+	 * ticked loaders make one group, not two. */
 	QString facetGroups(const QList<QStringList>& groups)
 	{
 		QStringList rendered;
@@ -59,16 +57,9 @@ namespace
 			   QStringLiteral("]");
 	}
 
-	/* Turn the environment choice into facet groups.
-	 *
-	 * Modrinth records how a project relates to each side separately, so
-	 * "client side" is not one term but two conditions: it has to do
-	 * something on the client, and it must not be required on the
-	 * server. Each choice therefore adds two ANDed groups. The reference
-	 * launcher sends exactly these terms.
-	 *
-	 * `Universal` is the strict reading - required on both - rather than
-	 * "works on either", which is what no filter at all already gives. */
+	/* Environment choice -> facet groups. "Client side" is two conditions
+	 * (does something on the client, not required on the server), so each
+	 * choice adds two ANDed groups. `Universal` means required on both. */
 	void appendSideFacets(QList<QStringList>& facets,
 						  ModPlatform::SideFilter side)
 	{
@@ -137,10 +128,8 @@ QString ModrinthApi::cdnHost()
 
 const QStringList& ModrinthApi::mrpackHosts()
 {
-	/* The format's own allowlist, in the order the specification lists
-	 * it. The CDN is where anything installed through the launcher's own
-	 * browser comes from; the other three are where a pack author points
-	 * at a mod that is not on Modrinth at all. */
+	/* The format's allowlist. The CDN serves anything installed through the
+	 * launcher; the others are where authors point at mods not on Modrinth. */
 	static const QStringList hosts = {QStringLiteral("cdn.modrinth.com"),
 									  QStringLiteral("github.com"),
 									  QStringLiteral("raw.githubusercontent.com"),
@@ -153,8 +142,8 @@ bool ModrinthApi::isMrpackHost(const QUrl& url)
 	if (!url.isValid()) {
 		return false;
 	}
-	/* Case-folded: host names are not case sensitive, and a manifest is
-	 * a text file somebody may well have hand-edited. */
+	/* Case-folded: host names are case insensitive and manifests are
+	 * hand-edited. */
 	return mrpackHosts().contains(url.host().toLower());
 }
 
@@ -175,9 +164,7 @@ int ModrinthApi::searchPageSize() const
 
 QList<ModPlatform::SortingMethod> ModrinthApi::sortingMethods() const
 {
-	/* Modrinth names its sorts instead of numbering them, and offers a
-	 * different set from CurseForge - "relevance" and "follows" have no
-	 * counterpart there, "featured" and "category" none here. */
+	/* Modrinth names its sorts and offers a different set from CurseForge. */
 	return {
 		{QStringLiteral("relevance"), QObject::tr("Sort by Relevance")},
 		{QStringLiteral("downloads"), QObject::tr("Sort by Downloads")},
@@ -200,15 +187,12 @@ QUrl ModrinthApi::searchUrl(const ModPlatform::SearchQuery& query) const
 		for (const QString& version : query.filters.mcVersions) {
 			versionFacets.append(QStringLiteral("versions:") + version);
 		}
-		/* One group, so several ticked versions mean "any of these".
-		 * ANDing them would ask for a project built for all of them at
-		 * once, which is not what ticking two versions means. */
+		/* One group: several ticked versions mean "any of these". */
 		facets.append(versionFacets);
 	}
 
-	/* Modrinth models the loader as a category rather than a dedicated
-	 * field. Sending it for a resource pack or data pack matches nothing
-	 * and silently returns an empty page, so only mods get it. */
+	/* Modrinth models the loader as a category. Sending it for a resource
+	 * or data pack matches nothing, so only mods get it. */
 	if (!query.filters.loaders.isEmpty() &&
 		ModPlatform::contentTypeUsesLoader(query.contentType)) {
 		QStringList loaderFacets;
@@ -216,7 +200,6 @@ QUrl ModrinthApi::searchUrl(const ModPlatform::SearchQuery& query) const
 		for (const QString& loader : query.filters.loaders) {
 			loaderFacets.append(QStringLiteral("categories:") + loader);
 		}
-		/* One group, so several ticked loaders mean "any of these". */
 		facets.append(loaderFacets);
 	}
 
@@ -226,9 +209,7 @@ QUrl ModrinthApi::searchUrl(const ModPlatform::SearchQuery& query) const
 		for (const QString& category : query.filters.categoryIds) {
 			categoryFacets.append(QStringLiteral("categories:") + category);
 		}
-		/* One group, so ticking two categories means "either of these".
-		 * Modrinth files the loader under categories as well, which is
-		 * why the loader group above looks the same. */
+		/* One group: two categories mean "either". */
 		facets.append(categoryFacets);
 	}
 
@@ -238,11 +219,8 @@ QUrl ModrinthApi::searchUrl(const ModPlatform::SearchQuery& query) const
 		facets.append(QStringList{QStringLiteral("open_source:true")});
 	}
 
-	/* One multi-arg call rather than a chain: the search term is
-	 * user-supplied, and a chained arg() rescans the string it has
-	 * already built, so a term containing "%4" would be mistaken for the
-	 * next placeholder. The multi-arg form substitutes in one pass and
-	 * never looks at what it inserted. */
+	/* One multi-arg call: the term is user-supplied, and a chained arg()
+	 * would read a "%4" in it as the next placeholder. */
 	QString url = QString("%1/search?"
 						  "query=%2&"
 						  "index=%3&"
@@ -265,24 +243,20 @@ QUrl ModrinthApi::projectUrl(const QString& projectId) const
 
 QUrl ModrinthApi::projectBodyUrl(const QString& projectId) const
 {
-	/* Modrinth has no separate description endpoint: the long body is a
-	 * Markdown field of the project itself. */
+	/* No description endpoint: the body is a Markdown field of the project. */
 	return projectUrl(projectId);
 }
 
 QUrl ModrinthApi::categoriesUrl(ModPlatform::ContentType contentType) const
 {
-	/* One list for the whole site; the reply says which project type
-	 * each entry belongs to, so the filtering happens while parsing. */
+	/* One list for the whole site; parsing filters by project type. */
 	Q_UNUSED(contentType)
 	return QUrl(QString("%1/tag/category").arg(apiBase()));
 }
 
 QUrl ModrinthApi::projectPageUrl(const QString& projectId) const
 {
-	/* `/mod/` works for every kind of project the site hosts - it
-	 * redirects to the right section - so one form covers resource
-	 * packs and shaders too. */
+	/* `/mod/` redirects to the right section for every project type. */
 	return QUrl(QStringLiteral("https://modrinth.com/mod/") + projectId);
 }
 
@@ -292,17 +266,14 @@ QUrl ModrinthApi::projectVersionsUrl(
 	QString url =
 		QString("%1/project/%2/version").arg(apiBase(), query.projectId);
 
-	/* Modrinth takes the whole list here and treats it as "any of
-	 * these", so a filter naming several versions needs no special
-	 * handling - unlike CurseForge, which only looks at the first. */
+	/* Modrinth treats the list as "any of these"; CurseForge only reads
+	 * the first. */
 	if (!query.mcVersions.isEmpty()) {
 		appendParam(url, QStringLiteral("game_versions=") +
 							 quotedJsonArray(query.mcVersions));
 	}
 
-	/* Unlike CurseForge, Modrinth takes the whole list here and treats it
-	 * as "any of these", so several ticked loaders need no special
-	 * handling. */
+	/* Modrinth treats the list as "any of these". */
 	if (!query.loaders.isEmpty() &&
 		ModPlatform::contentTypeUsesLoader(query.contentType)) {
 		appendParam(url, QStringLiteral("loaders=") +
@@ -319,9 +290,8 @@ QUrl ModrinthApi::versionUrl(const QString& versionId)
 
 bool ModrinthApi::isVersionId(const QString& candidate)
 {
-	/* Eight base62 characters, no separators. Checked by shape rather
-	 * than by asking the server, because the whole point is to not make
-	 * a request that cannot succeed. */
+	/* Eight base62 characters; checked by shape to avoid a request that
+	 * cannot succeed. */
 	if (candidate.size() != 8) {
 		return false;
 	}
@@ -335,9 +305,8 @@ bool ModrinthApi::isVersionId(const QString& candidate)
 
 QUrl ModrinthApi::versionByHashUrl(const QString& sha1)
 {
-	/* The algorithm is named explicitly: the endpoint happens to default
-	 * to SHA-1, but a default is not a promise, and a digest sent under
-	 * the wrong name matches nothing. */
+	/* The algorithm is named: the endpoint's SHA-1 default is not a promise
+	 * and a digest under the wrong name matches nothing. */
 	return QUrl(QString("%1/version_file/%2?algorithm=sha1")
 					.arg(apiBase(), sha1.toLower()));
 }
@@ -370,10 +339,7 @@ QUrl ModrinthApi::modpackSearchUrl(const QString& term, int sortIndex,
 	}
 
 	if (!loaders.isEmpty()) {
-		/* A modpack ships its own loader, but browsing "any Fabric
-		 * pack" is still a reasonable filter to offer - one group, so
-		 * several ticked loaders mean "any of these", same as the mod
-		 * search above. */
+		/* One group: several ticked loaders mean "any of these". */
 		QStringList loaderFacets;
 		loaderFacets.reserve(loaders.size());
 		for (const QString& loader : loaders) {
@@ -399,10 +365,8 @@ QUrl ModrinthApi::nameSearchUrl(const QString& encodedTerm, int limit)
 {
 	QString url = QString("%1/search?query=%2&limit=%3")
 					  .arg(apiBase(), encodedTerm, QString::number(limit));
-	/* The facet's quotes are percent-encoded because this string is
-	 * handed straight to QUrl with no query builder to escape them.
-	 * Kept out of any arg() call: QString::arg would read "%22" as
-	 * placeholder number 22. */
+	/* Quotes are percent-encoded because the string goes straight to QUrl;
+	 * no arg() call, which would read "%22" as placeholder 22. */
 	url += QStringLiteral("&facets=[[%22project_type:mod%22]]");
 	return QUrl(url);
 }

@@ -35,18 +35,8 @@ class SkinsController;
 class AccountTask;
 
 /*
- * QML-facing replacement for the widget AccountListPage: everything that
- * page's toolbar actions did (add Microsoft/offline, remove, refresh, set/
- * clear default), plus the Microsoft sign-in flow itself, as one object a
- * QML Accounts page can bind against and call into.
- *
- * The account list itself is not wrapped -- `accounts` hands QML the
- * AccountList model directly, the same object LAUNCHER->accounts() returns,
- * so a QML ListView binds to it exactly like any other list model here (see
- * AccountList::roleNames()). Everything else here operates on it by row,
- * the same way the widget page operated on the view's current selection.
- *
- * Core, like the rest of models/: QtCore only, no QtWidgets, no ui/.
+ * QML-facing accounts controller: account actions plus the Microsoft sign-in
+ * flow. `accounts` hands QML the AccountList model directly.
  */
 class AccountsController : public QObject
 {
@@ -54,20 +44,14 @@ class AccountsController : public QObject
 
 	Q_PROPERTY(QObject* accounts READ accounts CONSTANT)
 	Q_PROPERTY(bool hasDefault READ hasDefault NOTIFY defaultChanged)
-	/// profileName() of the default account, or empty if there is none.
 	Q_PROPERTY(QString defaultName READ defaultName NOTIFY defaultChanged)
-	/// The default account's accountId role value (its profile id, or its
-	/// internal id when it has none), or empty if there is none. What a page
-	/// should compare rows against to find the account games launch with.
+	/// accountId role of the default account (what rows compare against), or empty.
 	Q_PROPERTY(
 		QString defaultAccountId READ defaultAccountId NOTIFY defaultChanged)
-	/// Bumped whenever the game's default skins (DefaultSkins) arrive, so a
-	/// page drawing a skinless account can refetch its images.
+	/// Bumped when the game's default skins arrive, so pages refetch skinless images.
 	Q_PROPERTY(int defaultSkinsRevision READ defaultSkinsRevision NOTIFY
 				   defaultSkinsRevisionChanged)
-	/// See skinDemoRequested() below.
 	Q_PROPERTY(bool skinDemoRequested READ skinDemoRequested CONSTANT)
-	/// See skinDemoPose() below.
 	Q_PROPERTY(QString skinDemoPose READ skinDemoPose CONSTANT)
 
   public:
@@ -80,167 +64,77 @@ class AccountsController : public QObject
 	QString defaultAccountId() const;
 	int defaultSkinsRevision() const;
 
-	/// Makes row @p row the default account. No-op if @p row is out of range.
 	Q_INVOKABLE void setDefault(int row);
-	/// Clears the default account, if any.
 	Q_INVOKABLE void clearDefault();
-	/// Removes row @p row. No-op if @p row is out of range.
 	Q_INVOKABLE void remove(int row);
-	/// Requests a token refresh for row @p row, ahead of the background
-	/// refresh queue -- same as AccountList::requestRefresh(). No-op if
-	/// @p row is out of range.
+	/// Runs ahead of the background refresh queue.
 	Q_INVOKABLE void refresh(int row);
 
-	/*!
-	 * Adds an offline account named @p username, applying the same rules
-	 * the old offline dialog enforced:
-	 *  - a Microsoft account that owns Minecraft must already be in the list;
-	 *  - the trimmed username must not be empty;
-	 *  - it must not collide (case-insensitively) with an existing offline
-	 *    account's username.
-	 * Returns false, without adding anything, if any rule is violated.
-	 */
+	/// False if a Microsoft account that owns Minecraft is not in the list, the
+	/// trimmed name is empty, or it collides (case-insensitively) with an offline account.
 	Q_INVOKABLE bool addOffline(const QString& username);
 
-	/*!
-	 * Starts an interactive Microsoft sign-in and returns a controller for
-	 * it, owned by C++ (QQmlEngine::CppOwnership -- see QmlShell::expose()):
-	 * the login must outlive the page that started it if the user navigates
-	 * away mid-flow. On success the new account is added to the list, and
-	 * made the default if it was the first account -- exactly what the
-	 * widget dialog's caller did.
-	 */
+	/// The controller is owned by C++: the login must outlive the page that started it.
 	Q_INVOKABLE QObject* loginMicrosoft();
 
-	/*!
-	 * Skin and cape state for row @p row's Microsoft profile, for the QML
-	 * skin/cape editor (see AccountsPage.qml): { "valid": bool, "slim":
-	 * bool, "hasSkin": bool, "defaultSkin": bool, "currentCapeId": string,
-	 * "currentCapeUrl": string, "capes": [{ "id", "alias", "url" }] }. Each
-	 * cape is listed once, even when the stored profile repeats it.
-	 * "valid" is false -- and the cape fields are at their empty default --
-	 * for a row out of range, an offline account, or an MSA account with no
-	 * profile data yet; the caller is expected to check it before offering
-	 * skin or cape changes, the same way it already checks the row's own
-	 * isMSA role before offering skin controls at all.
-	 * "hasSkin" and "slim" describe what the player looks like for any row in
-	 * range, valid or not: its own skin, or -- with "defaultSkin" true -- the
-	 * game's default for it (Steve or Alex, see DefaultSkins), once that has
-	 * been downloaded. "hasSkin" is false only while there is nothing to draw.
-	 */
+	/// { "valid", "slim", "hasSkin", "defaultSkin", "currentCapeId",
+	/// "currentCapeUrl", "capes": [{ "id", "alias", "url" }] }. "valid" is false
+	/// for a bad row, an offline account or an MSA account with no profile data
+	/// yet. "hasSkin"/"slim" describe the player's skin, or the default one when
+	/// "defaultSkin" is true.
 	Q_INVOKABLE QVariantMap accountSkinInfo(int row) const;
 
-	/*!
-	 * Whether KITE_QML_ROUTE asks for the skin/cape editor to be
-	 * demoed (contains "accounts-demo") -- the qml-preview-tools snapshot
-	 * account file only ever has offline accounts, so no real row's isMSA
-	 * role would ever let AccountsPage.qml reach that editor otherwise.
-	 * When this is true, accountSkinInfo(-1) hands back canned demo data
-	 * instead of "invalid", for AccountsPage.qml to open the editor with.
-	 * False, and accountSkinInfo(-1) stays "invalid", the rest of the time.
-	 */
+	/// True when KITE_QML_ROUTE contains "accounts-demo"; accountSkinInfo(-1)
+	/// then returns canned demo data.
 	bool skinDemoRequested() const;
 
-	/*!
-	 * The demo editor's starting view, from the route's
-	 * "accounts-demo=<pose>" step: "cape" shows the player from behind,
-	 * "elytra" also puts the elytra on, "default" picks a default skin
-	 * (Alex) and scrolls to it; anything else is the front view.
-	 * Empty when skinDemoRequested() is false.
-	 */
+	/// Demo editor start view: "cape", "elytra", "default"; anything else is the front.
 	QString skinDemoPose() const;
 
-	/*!
-	 * Whether @p path is a PNG MinecraftServices will accept as a skin (64
-	 * wide, 64 or 32 tall -- see SkinEntry::isUsable()). Returns an empty
-	 * string if it is fine to upload, or a user-facing reason it is not.
-	 * @p path may be a local path or a "file://" url, same as QML's
-	 * FileDialog hands out.
-	 */
+	/// Empty if @p path (local path or file:// URL) is a skin MinecraftServices
+	/// accepts, otherwise a user-facing reason.
 	Q_INVOKABLE QString validateSkinFile(const QString& path) const;
 
-	/*!
-	 * Uploads @p path (already checked with validateSkinFile()) as row @p
-	 * row's skin, @p slim choosing the arm width, and refreshes the account
-	 * afterwards -- the same SkinUpload + refresh sequence SkinManageDialog::
-	 * accept() runs. Returns a TaskWatcher (see loginMicrosoft() above for
-	 * the ownership reasoning); nullptr without starting anything if @p row
-	 * is out of range, is not a Microsoft account, or @p path could not be
-	 * opened.
-	 */
+	/// @p path must pass validateSkinFile(). Returns a TaskWatcher; nullptr if
+	/// @p row is out of range or not Microsoft, or @p path cannot be opened.
 	Q_INVOKABLE QObject* changeSkin(int row, const QString& path, bool slim);
 
-	/*!
-	 * Deletes row @p row's custom skin (back to the Mojang default) and
-	 * refreshes afterwards. Returns a TaskWatcher; nullptr as changeSkin()
-	 * above if @p row is out of range or is not a Microsoft account.
-	 */
+	/// Returns a TaskWatcher; nullptr for a bad row or a non-Microsoft account.
 	Q_INVOKABLE QObject* resetSkin(int row);
 
-	/*!
-	 * Equips cape @p capeId on row @p row's account, or takes the current
-	 * cape off for an empty @p capeId, and refreshes afterwards. Does not
-	 * check that the account actually owns @p capeId first -- one it does
-	 * not own fails server-side, same as it would through the classic
-	 * dialog's combo box. Returns a TaskWatcher; nullptr as changeSkin()
-	 * above if @p row is out of range or is not a Microsoft account.
-	 */
+	/// An empty @p capeId takes the cape off. Ownership is not checked here; the
+	/// server rejects a cape the account does not own. Return as changeSkin().
 	Q_INVOKABLE QObject* changeCape(int row, const QString& capeId);
 
-	/*
-	 * The skin library (SkinsController over the launcher's SkinsDir) for
-	 * row @p row's account: its skins, imports, rename and delete. One is
-	 * kept at a time; asking for another row replaces it. Null for a row
-	 * out of range. Also starts downloading whichever of the game's default
-	 * skins are not cached yet (SkinsController::defaultSkins).
-	 */
+	/// Skin library for row @p row's account; one is kept at a time. Null for a bad row.
 	Q_INVOKABLE QObject* skins(int row);
 
   signals:
-	/// hasDefault()/defaultName()/defaultAccountId() moved.
 	void defaultChanged();
 	void defaultSkinsRevisionChanged();
 
   private:
 	shared_qobject_ptr<AccountList> m_accounts;
-	/* Parented to this, for the reason loginMicrosoft()'s comment gives:
-	 * QML gets it straight from here, with nothing to pin its ownership. */
+	// Parented to this; nothing else pins its ownership for QML.
 	QPointer<SkinsController> m_skins;
 	QString m_skinsAccountId;
 	int m_defaultSkinsRevision = 0;
 };
 
 /*
- * One Microsoft sign-in attempt, as started by AccountsController::
- * loginMicrosoft().
- *
- * Kite's Microsoft login (MSAStep, launcher/minecraft/auth/steps/
- * MSAStep.cpp) is an OAuth2 authorization-code flow, not a device code
- * flow: QOAuth2AuthorizationCodeFlow opens the system browser to a
- * microsoftonline.com login page and a local HTTP server (bound to
- * localhost, chosen by Qt) catches the redirect. There is no user code to
- * display -- only the URL the browser was (or should have been) sent to,
- * which the browser is opened for automatically as soon as it is known;
- * browserUrl and openBrowser() exist for a user who closed that tab and
- * wants it back.
- *
- * running/succeeded/failed/error mirror TaskWatcher's properties (tasks/
- * TaskWatcher.h) but this is not a TaskWatcher: TaskWatcher only watches an
- * already-meaningful task, whereas this also owns the blank account the
- * flow fills in and, on success, files it into the AccountList itself --
- * concerns TaskWatcher deliberately knows nothing about.
+ * One Microsoft sign-in attempt (OAuth2 authorization-code flow in the system
+ * browser; there is no device code). browserUrl and openBrowser() are for a
+ * user who closed the tab.
  */
 class MicrosoftLoginController : public QObject
 {
 	Q_OBJECT
 
 	Q_PROPERTY(QString status READ status NOTIFY statusChanged)
-	/// The URL the browser was sent to, once known; empty until then.
 	Q_PROPERTY(QUrl browserUrl READ browserUrl NOTIFY browserUrlChanged)
 	Q_PROPERTY(bool running READ running NOTIFY runningChanged)
 	Q_PROPERTY(bool succeeded READ succeeded NOTIFY succeededChanged)
 	Q_PROPERTY(bool failed READ failed NOTIFY failedChanged)
-	/// The failure reason, if any. Empty while running or on success.
 	Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 
   public:
@@ -273,17 +167,9 @@ class MicrosoftLoginController : public QObject
 		return m_error;
 	}
 
-	/*!
-	 * Gives up on this attempt. There is no server-side cancellation for
-	 * an in-flight OAuth2 request (AccountTask/Task never override
-	 * canAbort()/abort() to make one possible -- the widget dialog had the
-	 * same limitation, and simply let a closed dialog's task run to
-	 * completion unobserved); this instead drops this controller's only
-	 * references to the pending account and task, matching what happened
-	 * when that dialog was destroyed. No-op once already finished.
-	 */
+	/// Drops the pending account and task; an in-flight OAuth2 request cannot be
+	/// cancelled. No-op once finished.
 	Q_INVOKABLE void cancel();
-	/// Re-opens the system browser at browserUrl(). No-op before it is known.
 	Q_INVOKABLE void openBrowser();
 
   signals:

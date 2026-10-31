@@ -30,35 +30,26 @@
 #include "modplatform/modrinth/ModrinthPackIndex.h"
 #include "models/RichBody.h"
 
-/* The version list and long description of one modpack, fetched lazily
- * once the user picks a row - the QML-facing, widget-free counterpart of
- * what ModrinthPage.cpp keeps in `current` plus what its version combo box
- * shows. A plain QObject rather than a role on the list model itself,
- * because a detail pane binds to several fields at once and QML has no
- * convenient way to bind to "the currently selected row of some other
- * model".
- *
- * Owned by, and never outlives, the ModrinthModpackModel that exposes it
- * through its `detail` property. */
+/* Version list and long description of one modpack, fetched lazily when a
+ * row is picked. A QObject so a detail pane can bind to several fields at
+ * once. Owned by the ModrinthModpackModel that exposes it as `detail`. */
 class ModrinthModpackDetail : public QObject
 {
 	Q_OBJECT
 	Q_PROPERTY(QString projectId READ projectId NOTIFY projectIdChanged)
 	Q_PROPERTY(QString title READ title NOTIFY titleChanged)
-	/* The project's long description, as the provider serves it:
-	 * Markdown from Modrinth (and FTB, ATLauncher), HTML from CurseForge
-	 * and Technic - see each model's `bodyFormat`. */
+	/* The long description as the provider serves it: Markdown from
+	 * Modrinth, FTB and ATLauncher, HTML from CurseForge and Technic (see
+	 * each model's `bodyFormat`). */
 	Q_PROPERTY(QString body READ body NOTIFY bodyChanged)
-	/* The same description as one plain HTML page, whatever format it
-	 * came in (RichBody::toArticleHtml()): what the detail page shows,
-	 * with RemoteRichText's `article` look. Changes with `body`. */
+	/* The same description as one HTML page (RichBody::toArticleHtml()).
+	 * Changes with `body`. */
 	Q_PROPERTY(QString bodyHtml READ bodyHtml NOTIFY bodyChanged)
-	/* QVariantList of maps: id, name, versionNumber, gameVersions
-	 * (list), loaders (list), datePublished, downloadUrl, featured. */
+	/* QVariantList of maps: id, name, versionNumber, gameVersions (list),
+	 * loaders (list), datePublished, downloadUrl, featured. */
 	Q_PROPERTY(QVariantList versions READ versions NOTIFY versionsChanged)
-	/* QVariantList of maps: url, featured, title - the project's own
-	 * gallery, straight from the same project fetch body() comes from
-	 * (see fetchDetailBody()). Empty when the project has no gallery. */
+	/* QVariantList of maps: url, featured, title; empty when the project
+	 * has no gallery. */
 	Q_PROPERTY(QVariantList gallery READ gallery NOTIFY galleryChanged)
 	Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
 	Q_PROPERTY(QString error READ error NOTIFY errorChanged)
@@ -99,12 +90,10 @@ class ModrinthModpackDetail : public QObject
 		return m_error;
 	}
 
-	/* Clears body/versions/error, sets loading, and switches to
-	 * `projectId` - called by ModrinthModpackModel::loadDetail() before
-	 * it starts the two fetches. */
+	/* Clears body/versions/error, sets loading and switches to `projectId`. */
 	void reset(const QString& projectId);
 	void setTitle(const QString& title);
-	/* @p format: how the provider writes it (see `body`). */
+	/* @p format: how the provider writes the body (see `body`). */
 	void setBody(const QString& body,
 				 RichBody::Format format = RichBody::Format::Markdown);
 	void setVersions(const QVariantList& versions);
@@ -132,25 +121,12 @@ class ModrinthModpackDetail : public QObject
 	QString m_error;
 };
 
-/* Modrinth *modpack* search results for QML - the widget-free replacement
- * for ui/pages/modplatform/modrinth/ModrinthModel.h (Modrinth::ListModel),
- * which backs ModrinthPage today.
+/* Modrinth modpack search results for QML. Not a ContentProviderModel:
+ * modpacks are not a ModPlatform::ContentType (they create instances).
  *
- * Deliberately its own class rather than a widened ContentProviderModel:
- * modpacks are not a ModPlatform::ContentType (see ContentApi.h - "modpacks
- * create instances rather than being installed into one"), so the two
- * families of search share a shape but not a base class. See
- * ModrinthPackIndex.h for the parsed fields this exposes.
- *
- * Icons are handled the simplest possible way for v1: `logoUrl` is
- * Modrinth's own CDN URL, and QML's `Image { source: logoUrl }` fetches
- * and caches it directly. Nothing here downloads or caches a QIcon the way
- * ContentProviderModel/Modrinth::ListModel do for their QWidget delegates -
- * that machinery has no QML consumer. install() below still has to name a
- * disk-resident *icon key* for the new instance, which it resolves from
- * the launcher's existing on-disk icon cache without downloading anything;
- * see resolveIconKey().
- */
+ * `logoUrl` is Modrinth's CDN URL, loaded and cached by QML's Image.
+ * install() still needs an icon key for the new instance; see
+ * resolveIconKey(). */
 class ModrinthModpackModel : public QAbstractListModel
 {
 	Q_OBJECT
@@ -159,8 +135,7 @@ class ModrinthModpackModel : public QAbstractListModel
 	Q_PROPERTY(QVariantList sortOptions READ sortOptions CONSTANT)
 	Q_PROPERTY(QString gameVersion READ gameVersion WRITE setGameVersion
 				   NOTIFY gameVersionChanged)
-	/* "" = any loader; otherwise one of "fabric"/"forge"/"neoforge"/
-	 * "quilt". */
+	/* "" = any loader; otherwise "fabric"/"forge"/"neoforge"/"quilt". */
 	Q_PROPERTY(
 		QString loader READ loader WRITE setLoader NOTIFY loaderChanged)
 	Q_PROPERTY(bool searching READ searching NOTIFY searchingChanged)
@@ -197,14 +172,8 @@ class ModrinthModpackModel : public QAbstractListModel
 				 int role = Qt::DisplayRole) const override;
 	QHash<int, QByteArray> roleNames() const override;
 
-	/* `sort`, `canFetchMore` and `fetchMore` below are QML-facing
-	 * convenience overloads (zero args, or an id string rather than a
-	 * column) that happen to share a name with a QAbstractItemModel
-	 * virtual of a different arity. These bring the base class's own
-	 * overloads back into scope alongside them, which is what silences
-	 * -Woverloaded-virtual - nothing here actually needs column
-	 * sorting or index-based fetching, but a caller with a plain
-	 * QAbstractItemModel* still should be able to reach them. */
+	/* Brings the base overloads back into scope so the QML-facing overloads
+	 * of the same name do not trigger -Woverloaded-virtual. */
 	using QAbstractItemModel::canFetchMore;
 	using QAbstractItemModel::fetchMore;
 	using QAbstractItemModel::sort;
@@ -259,40 +228,30 @@ class ModrinthModpackModel : public QAbstractListModel
 		return m_detail;
 	}
 
-	/* Starts a fresh search from query()/sort()/gameVersion()/loader().
-	 * Cancels a search already in flight rather than queuing behind it -
-	 * matches Modrinth::ListModel::searchWithTerm() and
-	 * ContentProviderModel::search(). No debounce: the caller (QML) is
-	 * expected to only call this when the user is actually done typing/
-	 * picking, e.g. on Enter or a filter changing. */
+	/* Starts a fresh search from query()/sort()/gameVersion()/loader(),
+	 * cancelling one in flight. No debounce: call it when the user is done
+	 * typing or picking. */
 	Q_INVOKABLE void search();
-	/* Fetches the next page of the current search. A no-op while a
-	 * search is already running or canFetchMore() is false. */
+	/* Fetches the next page; no-op while searching or when canFetchMore()
+	 * is false. */
 	Q_INVOKABLE void fetchMore();
-	/* Fetches the version list and long description for one project,
-	 * filling `detail`. Safe to call again for a different project while
-	 * one is already loading - the stale reply is dropped. */
+	/* Fetches versions and long description into `detail`. A stale reply
+	 * from an earlier project is dropped. */
 	Q_INVOKABLE void loadDetail(const QString& projectId);
-	/* Builds and starts the same InstanceImportTask that
-	 * NewInstanceDialog::extractTask() + MainWindow::createInstanceFromDialog()
-	 * build for a pack picked in the widget Modrinth browser, and returns
-	 * a TaskWatcher for it (parented to this model). `versionId` must be
-	 * one of the ids in `detail.versions` for `projectId` - call
-	 * loadDetail() first. Returns nullptr (and logs a warning) if that
-	 * version cannot be found, e.g. because loadDetail() was never
-	 * called or has not finished yet. */
+	/* Builds and starts the InstanceImportTask for a pack and returns a
+	 * TaskWatcher for it (parented to this model). `versionId` must be in
+	 * `detail.versions` for `projectId`, so call loadDetail() first. Returns
+	 * nullptr and logs a warning if the version is not found. */
 	Q_INVOKABLE QObject* install(const QString& projectId,
 								 const QString& versionId,
 								 const QString& instanceName,
 								 const QString& group);
 
-	/* JSON -> rows, pulled out as a static function so it can be unit
-	 * tested with a canned response and no network. */
+	/* JSON -> rows; static so tests can feed a canned response. */
 	static QList<Modrinth::IndexedPack>
 	parseSearchResults(const QByteArray& bytes, int& totalHits);
-	/* JSON -> the `versions` role of ModrinthModpackDetail, likewise
-	 * network-free and unit testable on its own. Reuses
-	 * Modrinth::loadIndexedPackVersions() for the actual parsing. */
+	/* JSON -> the `versions` role of ModrinthModpackDetail; network-free,
+	 * reuses Modrinth::loadIndexedPackVersions(). */
 	static QVariantList parseVersionsJson(const QByteArray& bytes,
 										  const QString& projectId);
 
@@ -322,12 +281,9 @@ class ModrinthModpackModel : public QAbstractListModel
 	void fetchDetailVersions(const QString& projectId, quint64 generation);
 	void markDetailPartDone(quint64 generation, bool isBody);
 
-	/* The icon key to give the new instance: the slug's logo if it is
-	 * already sitting in the launcher's on-disk cache (the same
-	 * "ModrinthPacks" bucket the widget Modrinth page has always used,
-	 * so anything fetched by that page already helps here too), or the
-	 * built-in "modrinth" icon otherwise. Never starts a download - see
-	 * the class comment. */
+	/* Icon key for the new instance: the slug's logo if already in the
+	 * on-disk "ModrinthPacks" cache, else the built-in "modrinth" icon.
+	 * Never downloads. */
 	QString resolveIconKey(const QString& slug, const QString& iconUrl) const;
 
   private:

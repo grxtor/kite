@@ -7,19 +7,16 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The "Installed plugins" section of SettingsPage.qml: every plugin Kite
- * found, whether it loaded (or why not), its signature, and a switch to
- * turn it on or off from the next start -- the widget PluginsDialog. Not
- * the same as the "Plugins" section (SettingsPluginsSection.qml), which
- * shows the settings plugins add. Hidden in a build without the plugin
- * host, where QmlShell.pluginList() is null.
+ * The "Installed plugins" section of SettingsPage.qml: every plugin Kite found,
+ * whether it loaded (or why not), its signature, and a switch to turn it on or
+ * off from the next start. Hidden in a build without the plugin host, where
+ * QmlShell.pluginList() is null.
  */
 SettingsScroll {
     id: root
 
     // QmlShell.pluginList() (PluginListModel), or null.
     property var pluginList: null
-    // Read by SettingsPage.qml's section list.
     readonly property bool shown: !!root.pluginList
     readonly property int count: root.pluginList ? root.pluginList.count : 0
 
@@ -52,8 +49,6 @@ SettingsScroll {
                 required property var model
 
                 label: model.version.length > 0 ? qsTr("%1 %2").arg(model.name).arg(model.version) : model.name
-                // What it does, then who made it and under which licence,
-                // what it needs, and why it did not load when it did not.
                 description: [model.description,
                               model.author.length > 0 ? qsTr("By %1").arg(model.author) : "",
                               model.license.length > 0 ? qsTr("Licence: %1").arg(model.license) : "",
@@ -84,9 +79,8 @@ SettingsScroll {
                         Accessible.name: qsTr("Use %1").arg(pluginRow.model.name)
                         onToggled: {
                             root.pluginList.setEnabled(pluginRow.index, checked)
-                            // A click assigns `checked` and drops the binding; put it
-                            // back so the switch shows the plugin's state, not the
-                            // click, whatever the plugin made of it.
+                            // A click assigns `checked` and drops the binding; put it back so the
+                            // switch shows the plugin's state.
                             checked = Qt.binding(() => pluginRow.model.enabled)
                         }
                     }
