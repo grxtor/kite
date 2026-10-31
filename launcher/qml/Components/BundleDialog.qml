@@ -17,8 +17,9 @@ import Kite.Theme
  *    downloaded.
  *  - Kite Performance: a switch for the instance's mode over the
  *    Performance bundle, whose ticked mods Play keeps installed. Save
- *    stores the switch and the unticked mods (QmlShell), and hands the
- *    ticked ones that are missing to installRequested.
+ *    stores the switch, the unticked defaults and the ticked extras
+ *    (QmlShell), and hands the ticked ones that are missing to
+ *    installRequested.
  *
  * Kite Performance also has a Graphics API row (Automatic, Vulkan or
  * OpenGL) on Minecraft 26.2 and later. It is the game's own setting in
@@ -55,6 +56,8 @@ Dialog {
     property string current: ""
     // The mods unticked when the dialog opened.
     property var excluded: []
+    // The extras ticked before, which start ticked.
+    property var included: []
     // Everything ticked, over all the tabs.
     property var checkedAll: []
 
@@ -104,12 +107,24 @@ Dialog {
         }
         return out
     }
+    function keptExtras() {
+        const out = []
+        for (let i = 0; i < lists.count; ++i) {
+            const list = lists.itemAt(i)
+            for (const id of list ? list.keptExtras : []) {
+                if (out.indexOf(id) < 0)
+                    out.push(id)
+            }
+        }
+        return out
+    }
     function show() {
         root.installed = root.updater ? root.updater.installedProjects() : []
         root.optiFine = root.updater ? root.updater.hasOptiFine() : false
         if (root.performance && root.shell) {
             modeSwitch.checked = root.shell.performanceEnabled(root.instanceId)
             root.excluded = root.shell.performanceExcluded(root.instanceId)
+            root.included = root.shell.performanceIncluded(root.instanceId)
             root.graphicsBackend = root.shell.graphicsBackend(root.instanceId)
             graphicsBox.currentIndex = graphicsBox.indexOfValue(root.graphicsBackend)
         }
@@ -127,6 +142,7 @@ Dialog {
             return
         }
         root.shell.setPerformanceExcluded(root.instanceId, root.uncheckedDefaults())
+        root.shell.setPerformanceIncluded(root.instanceId, root.keptExtras())
         root.shell.setPerformanceEnabled(root.instanceId, modeSwitch.checked)
         root.close()
         if (modeSwitch.checked && root.checkedAll.length > 0)
@@ -216,6 +232,7 @@ Dialog {
                     mods: root.bundles ? root.bundles.mods([modelData], root.loader) : []
                     installed: root.installed
                     excluded: root.excluded
+                    included: root.included
                     onCheckedProjectsChanged: root.recount()
 
                     Text {

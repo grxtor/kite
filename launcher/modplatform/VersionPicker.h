@@ -37,7 +37,13 @@
  * published most recently. Deliberately not a version-string
  * comparison - mod version numbering is not semver often enough that
  * sorting by it puts "1.9" above "1.10", while the publish date is
- * stated by both providers and means the same thing on each. */
+ * stated by both providers and means the same thing on each.
+ *
+ * With `preferRelease`, an entry on the release channel wins over any
+ * alpha or beta, however much newer that is; only when none is a release
+ * does the newest of any channel win. For what is installed without
+ * anyone picking a version, where an unfinished build is a bad surprise;
+ * a dependency named by a file keeps the plain rule. */
 namespace ModPlatform
 {
 
@@ -50,11 +56,13 @@ namespace ModPlatform
 	 * one and the same array, so telling a missing match from an
 	 * unstated one is guesswork. */
 	QJsonObject newestCurseForgeFile(const QJsonArray& files,
-									 const QString& loader);
+									 const QString& loader,
+									 bool preferRelease = false);
 
 	/* The same for a Modrinth /project/{id}/version reply. */
 	QJsonObject newestModrinthVersion(const QJsonArray& versions,
-									  const QString& loader);
+									  const QString& loader,
+									  bool preferRelease = false);
 
 	/* Whether `tag` (already lower-cased or not - compared case
 	 * insensitively) names a mod loader CurseForge might mix into a

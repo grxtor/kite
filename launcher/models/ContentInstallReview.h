@@ -147,6 +147,13 @@ class ContentInstallReview : public QAbstractListModel
 	int checkedCount() const;
 	int checkedDependencyCount() const;
 	QStringList unresolved() const;
+	/// The wanted ids (setWantedProjects()) Modrinth answered with nothing for
+	/// this Minecraft version and loader; a lookup that failed is not among
+	/// them. Set once the resolution is over.
+	QStringList notAvailable() const
+	{
+		return m_notAvailable;
+	}
 	int count() const
 	{
 		return int(m_rows.size());
@@ -227,6 +234,7 @@ class ContentInstallReview : public QAbstractListModel
 
 	QList<Row> m_rows;
 	QList<ModPlatform::UnresolvedDep> m_unresolved;
+	QStringList m_notAvailable;
 	bool m_resolving = false;
 	bool m_ready = false;
 	bool m_finished = false;

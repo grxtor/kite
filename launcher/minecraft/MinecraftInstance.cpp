@@ -199,10 +199,19 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 	 * the player unticked, as a comma-joined list of Modrinth project ids:
 	 * the config file stores strings, not lists. KitePerformanceFor is the
 	 * Minecraft version and loader the installed mods were last matched to
-	 * ("1.21.5 fabric"); empty until the first setup. */
+	 * ("1.21.5 fabric"); empty until the first setup.
+	 * KitePerformanceIncluded is the same kind of list: the extra mods the
+	 * player ticked, kept like the defaults. KitePerformanceMissing records
+	 * which catalog mods Modrinth had no build of for one such version and
+	 * loader, and when, so they are not asked about on every Play
+	 * (PerformanceSetup::missingRecord()); KitePerformanceUnmatched lists the
+	 * mods the last re-match found no build of for the new version. */
 	m_settings->registerSetting("KitePerformance", false);
 	m_settings->registerSetting("KitePerformanceExcluded", "");
+	m_settings->registerSetting("KitePerformanceIncluded", "");
 	m_settings->registerSetting("KitePerformanceFor", "");
+	m_settings->registerSetting("KitePerformanceMissing", "");
+	m_settings->registerSetting("KitePerformanceUnmatched", "");
 
 	/* Kite mod: Kite's own Fabric mod (the in-game menu and HUD), loaded
 	 * for this instance through -Dfabric.addMods, so it never lands in the

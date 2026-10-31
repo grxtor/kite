@@ -357,11 +357,21 @@ void DependencyResolver::onWantedProjectResolved(const WantedProject& wanted,
 {
 	/* No such project (a 404 reaches here as an empty reply) and a project
 	 * with nothing for this version and loader (an empty list) end the
-	 * same way: the other provider is asked, under the same id. */
-	const QJsonArray versions = QJsonDocument::fromJson(data).array();
-	const QJsonObject newest =
-		ModPlatform::newestModrinthVersion(versions, m_loader);
+	 * same way: the other provider is asked, under the same id - unless the
+	 * id is a Modrinth one, which CurseForge has no use for. Only the list
+	 * is Modrinth's answer; a failed request says nothing about the project. */
+	const QJsonDocument reply = QJsonDocument::fromJson(data);
+	const QJsonObject newest = ModPlatform::newestModrinthVersion(
+		reply.array(), m_loader, /*preferRelease=*/true);
 	if (newest.isEmpty()) {
+		if (reply.isArray() && !m_wantedNotAvailable.contains(wanted.id)) {
+			m_wantedNotAvailable.append(wanted.id);
+		}
+		if (wanted.modrinthOnly) {
+			qWarning() << "No Modrinth version of wanted project" << wanted.id;
+			listWantedUnresolved(wanted.id);
+			return;
+		}
 		qWarning() << "No Modrinth version of wanted project" << wanted.id
 				   << "- attempting cross resolve to CurseForge";
 		executeCrossResolve(QStringLiteral("curseforge"), wanted.id, wanted.id,
@@ -572,8 +582,8 @@ void DependencyResolver::onDependencyProjectResolved(
 		/* Newest file that can run on this loader, rather than whatever
 		 * CurseForge happens to list first - it will gladly return a
 		 * Forge build among the matches for a Fabric instance. */
-		const auto fileObj =
-			ModPlatform::newestCurseForgeFile(filesArr, m_loader);
+		const auto fileObj = ModPlatform::newestCurseForgeFile(
+			filesArr, m_loader, /*preferRelease=*/!wantedId.isEmpty());
 		if (fileObj.isEmpty()) {
 			qWarning() << "No file for loader" << m_loader
 					   << "among CurseForge dependency" << projectId
@@ -642,7 +652,8 @@ void DependencyResolver::onDependencyProjectResolved(
 
 		/* Newest version that lists this loader; see the CurseForge
 		 * branch above for why the order is not trusted. */
-		const auto vObj = ModPlatform::newestModrinthVersion(arr, m_loader);
+		const auto vObj = ModPlatform::newestModrinthVersion(
+			arr, m_loader, /*preferRelease=*/!wantedId.isEmpty());
 		if (vObj.isEmpty()) {
 			qWarning() << "No version for loader" << m_loader
 					   << "among Modrinth dependency" << projectId
@@ -949,6 +960,11 @@ void DependencyResolver::noUsableCurseForgeFile(const QString& projectId,
 		crossResolveFromCurseForge(projectId, requiredBy);
 		return;
 	}
+	listWantedUnresolved(wantedId);
+}
+
+void DependencyResolver::listWantedUnresolved(const QString& wantedId)
+{
 	ModPlatform::UnresolvedDep unresolved;
 	unresolved.name = wantedId;
 	m_unresolvedDeps.append(unresolved);

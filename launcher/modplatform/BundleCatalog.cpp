@@ -256,7 +256,7 @@ QObject* BundleCatalog::preview(const QStringList& projectIds,
 	}
 	QList<DependencyResolver::WantedProject> wanted;
 	for (const QString& id : projectIds) {
-		wanted.append({id, {}});
+		wanted.append({id, {}, /*modrinthOnly=*/true});
 	}
 	auto* review = ContentInstallReview::missingDependencies(
 		{}, tr("Recommended mods"), mcVersion, loader, nullptr, this);

@@ -61,6 +61,8 @@ namespace
 	const QString kPerformanceOn = QStringLiteral("KitePerformance");
 	const QString kPerformanceExcluded =
 		QStringLiteral("KitePerformanceExcluded");
+	const QString kPerformanceIncluded =
+		QStringLiteral("KitePerformanceIncluded");
 
 	/* How long the mods folder and the loader have to stay quiet before
 	 * the health check runs: the files are read one by one, each reporting
@@ -79,9 +81,10 @@ namespace
 	}
 
 	/* A performance mod the player deleted is not Kite Performance's to
-	 * bring back: the defaults among @p removed are left out from now on. */
-	void excludeRemovedDefaults(MinecraftInstance& instance,
-								const QStringList& removed)
+	 * bring back: the defaults among @p removed are left out from now on, and
+	 * the extras the player ticked are no longer kept. */
+	void forgetRemovedMods(MinecraftInstance& instance,
+						   const QStringList& removed)
 	{
 		BundleCatalog catalog;
 		catalog.loadCached();
@@ -89,12 +92,17 @@ namespace
 			catalog.mods({kPerformanceBundle},
 						 instance.getPackProfile()->primaryModLoader()));
 		auto settings = instance.settings();
-		const QStringList excluded = PerformanceSetup::parseExcluded(
+		const QStringList excluded = PerformanceSetup::parseProjects(
 			settings->get(kPerformanceExcluded).toString());
 		settings->set(kPerformanceExcluded,
-					  PerformanceSetup::joinExcluded(
+					  PerformanceSetup::joinProjects(
 						  PerformanceSetup::withRemoved(excluded, removed,
 														defaults)));
+		const QStringList included = PerformanceSetup::parseProjects(
+			settings->get(kPerformanceIncluded).toString());
+		settings->set(kPerformanceIncluded,
+					  PerformanceSetup::joinProjects(
+						  PerformanceSetup::withoutRemoved(included, removed)));
 	}
 
 	/* Mirrors InstanceDetails' startWatchingFresh(): a model somebody else
@@ -425,7 +433,7 @@ int InstanceContentController::remove(const QString& kind,
 		}
 	}
 	if (keepsPerformance && removed > 0) {
-		excludeRemovedDefaults(*m_instance, removedProjects);
+		forgetRemovedMods(*m_instance, removedProjects);
 	}
 	folder->update();
 	return removed;

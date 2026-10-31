@@ -562,6 +562,16 @@ ApplicationWindow {
         function onNavigateRequested(target) {
             root.navigate(target)
         }
+        // From C++ (QmlShell::performanceUnmatchedFound()): Kite Performance
+        // found no version of these mods for the instance's new Minecraft.
+        // A toast holds one line, so it names the mods and the button leads
+        // to where they are removed or updated.
+        function onPerformanceUnmatchedFound(id, names) {
+            toast.show(qsTr("No version of %1 for this Minecraft yet. The game may not start.").arg(names.join(", ")),
+                       "danger", qsTr("Show mods"), function () {
+                root.navigate("instance/" + id + "/content")
+            })
+        }
     }
 
     Binding {

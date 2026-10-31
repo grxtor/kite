@@ -43,10 +43,16 @@ class DependencyResolver : public Task
 	/* A project to resolve as if a selected mod required it, known only by
 	 * the mod id a jar asks for - which is all the mod health check can say
 	 * about what is missing. `requiredBy` names the files that need it, for
-	 * the review's "Required by" line. */
+	 * the review's "Required by" line.
+	 *
+	 * `modrinthOnly`: the id is a Modrinth project id (the bundle catalog's),
+	 * which names nothing on CurseForge. When Modrinth has nothing for this
+	 * version and loader, CurseForge is not searched for it - the search
+	 * could only be for the id as a name - and it is listed as unresolved. */
 	struct WantedProject {
 		QString id;
 		QStringList requiredBy;
+		bool modrinthOnly = false;
 	};
 
 	explicit DependencyResolver(
@@ -70,8 +76,8 @@ class DependencyResolver : public Task
 	 * of it that runs here, CurseForge is tried the way a cross-resolved
 	 * dependency is, with the id as both name and slug - so only an exact
 	 * slug or an exact title counts. What neither finds is listed in
-	 * unresolvedDependencies() under the id. Their own required
-	 * dependencies follow as usual.
+	 * unresolvedDependencies() under the id (CurseForge is left out for a
+	 * `modrinthOnly` one). Their own required dependencies follow as usual.
 	 *
 	 * The answer is recorded under the project's own id, not the slug it
 	 * was asked for, so a project something else already pulled in is not
@@ -86,6 +92,14 @@ class DependencyResolver : public Task
 	QList<ModPlatform::UnresolvedDep> unresolvedDependencies() const
 	{
 		return m_unresolvedDeps;
+	}
+	/* The wanted ids Modrinth answered with nothing for this Minecraft
+	 * version and loader: a reply that lists no version that runs here. A
+	 * request that failed (no network, no such project) is no answer, and
+	 * its id is not listed - it may have a build the lookup did not reach. */
+	QStringList wantedNotAvailable() const
+	{
+		return m_wantedNotAvailable;
 	}
 
 	/* Resolution is a fan-out of network lookups, so it can be given up
@@ -165,6 +179,8 @@ class DependencyResolver : public Task
 	void noUsableCurseForgeFile(const QString& projectId,
 								const QStringList& requiredBy,
 								const QString& wantedId);
+	/* Lists a wanted project no provider has as unresolved, under its id. */
+	void listWantedUnresolved(const QString& wantedId);
 
 	/* Takes a fully resolved dependency, or drops it when the very
 	 * version it asks for is already on disk. Marks it as possibly
@@ -192,6 +208,7 @@ class DependencyResolver : public Task
 	QList<WantedProject> m_wanted;
 	QList<ModPlatform::DependencyInfo> m_dependencies;
 	QList<ModPlatform::UnresolvedDep> m_unresolvedDeps;
+	QStringList m_wantedNotAvailable;
 	QSet<QString> m_resolvedProjectIds; // avoid duplicates (platform:projectId)
 	QSet<QString>
 		m_resolvedNames; // avoid cross-platform duplicates (normalized name)

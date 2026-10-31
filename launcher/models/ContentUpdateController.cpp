@@ -752,7 +752,7 @@ QObject* ContentUpdateController::installBundle(const QStringList& projectIds)
 	QList<DependencyResolver::WantedProject> wanted;
 	for (const QString& id : projectIds) {
 		if (!id.isEmpty() && !have.contains(id)) {
-			wanted.append({id, {}});
+			wanted.append({id, {}, /*modrinthOnly=*/true});
 		}
 	}
 	if (wanted.isEmpty()) {

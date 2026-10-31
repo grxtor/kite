@@ -237,6 +237,7 @@ void ContentInstallReview::onResolved()
 	if (!m_resolver || m_finished) {
 		return;
 	}
+	m_notAvailable = m_resolver->wantedNotAvailable();
 	applyResolution(m_resolver->resolvedDependencies(),
 					m_resolver->unresolvedDependencies());
 }

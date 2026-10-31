@@ -19,6 +19,8 @@
 
 #include "PerformanceSetupTask.h"
 
+#include <QDateTime>
+
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 #include "minecraft/PerformanceSetupRules.h"
@@ -38,7 +40,11 @@ namespace
 	 * version, not only the performance defaults. */
 	const QStringList kCatalogBundles = {kPerformanceBundle,
 										 QStringLiteral("comfort")};
+	const QString kExcludedSetting = QStringLiteral("KitePerformanceExcluded");
+	const QString kIncludedSetting = QStringLiteral("KitePerformanceIncluded");
 	const QString kMatchedSetting = QStringLiteral("KitePerformanceFor");
+	const QString kMissingSetting = QStringLiteral("KitePerformanceMissing");
+	const QString kUnmatchedSetting = QStringLiteral("KitePerformanceUnmatched");
 	constexpr int kPercent = 100;
 
 	/* The setup going for each instance, by instance id: a second one for
@@ -115,8 +121,10 @@ void PerformanceSetupTask::check()
 	catalog.loadCached();
 	m_defaults = PerformanceSetup::defaultProjects(
 		catalog.mods({kPerformanceBundle}, m_loader));
-	m_excluded = PerformanceSetup::parseExcluded(
-		m_instance->settings()->get("KitePerformanceExcluded").toString());
+	m_excluded = PerformanceSetup::parseProjects(
+		m_instance->settings()->get(kExcludedSetting).toString());
+	m_included = PerformanceSetup::parseProjects(
+		m_instance->settings()->get(kIncludedSetting).toString());
 	m_installed = m_folder->metadataIndex()->projectIds(ModrinthApi::get().id());
 
 	/* Mods matched to another version or loader are looked up again. Never
@@ -125,11 +133,18 @@ void PerformanceSetupTask::check()
 	 * some default does not exist for, no run ends "up to date", and a
 	 * later change of version would otherwise go unnoticed. */
 	m_matchKey = PerformanceSetup::matchKey(m_mcVersion, m_loader);
+	m_missing = PerformanceSetup::recentlyMissing(
+		m_instance->settings()->get(kMissingSetting).toString(), m_matchKey,
+		QDateTime::currentDateTimeUtc());
 	const QString matched =
 		m_instance->settings()->get(kMatchedSetting).toString();
 	if (matched.isEmpty()) {
 		rememberMatch();
 	} else if (matched != m_matchKey) {
+		/* This run finds out which mods have no build of the new version; the
+		 * list of the last one is no longer true. Cleared first so that the
+		 * same mods found again are news again. */
+		m_instance->settings()->set(kUnmatchedSetting, QString());
 		QStringList catalogProjects;
 		for (const QVariant& mod : catalog.mods(kCatalogBundles, m_loader)) {
 			catalogProjects.append(mod.toMap().value("project").toString());
@@ -149,16 +164,24 @@ void PerformanceSetupTask::check()
 
 void PerformanceSetupTask::updateWanted()
 {
-	m_wanted = PerformanceSetup::wantedProjects(m_defaults + m_extras, m_excluded,
-												m_installed);
-	/* Installed, yes - for the version it used to be. */
-	QStringList rematch = m_replacements.keys();
-	rematch.sort();
-	for (const QString& project : rematch) {
+	/* A mod Modrinth had no build of lately is left out like one that is
+	 * there, so it costs a lookup a day and not one per Play. */
+	m_wanted = PerformanceSetup::wantedProjects(
+		m_defaults + m_included + m_extras, m_excluded, m_installed + m_missing);
+	/* Installed, yes - for the version it used to be. Asked about whatever
+	 * was missing: the version is not the one that was recorded. */
+	for (const QString& project : rematched()) {
 		if (!m_excluded.contains(project) && !m_wanted.contains(project)) {
 			m_wanted.append(project);
 		}
 	}
+}
+
+QStringList PerformanceSetupTask::rematched() const
+{
+	QStringList projects = m_replacements.keys();
+	projects.sort();
+	return projects;
 }
 
 void PerformanceSetupTask::identifyJars()
@@ -209,7 +232,8 @@ void PerformanceSetupTask::resolveWanted()
 	setStatus(tr("Finding performance mods"));
 	QList<DependencyResolver::WantedProject> wanted;
 	for (const QString& project : m_wanted) {
-		wanted.append({project, {}});
+		/* Catalog ids, which CurseForge does not know. */
+		wanted.append({project, {}, /*modrinthOnly=*/true});
 	}
 	m_review = ContentInstallReview::missingDependencies(
 		{}, tr("Kite Performance"), m_mcVersion, m_loader, m_folder, this);
@@ -228,6 +252,8 @@ void PerformanceSetupTask::onResolved()
 	if (m_aborted) {
 		return;
 	}
+	/* Before install() or cancel() ends the review. */
+	rememberNotAvailable();
 	if (!m_review->unresolved().isEmpty()) {
 		qWarning() << "Kite Performance: nothing found for"
 				   << m_review->unresolved();
@@ -236,9 +262,16 @@ void PerformanceSetupTask::onResolved()
 	if (m_toInstall == 0) {
 		/* Rows that are all unticked are mods that are already there;
 		 * none at all is e.g. 1.8.9, which has no Sodium: either way the
-		 * instance stays as it is. */
+		 * instance stays as it is. What is unresolved because Modrinth said
+		 * it has no build is an answer too; only what it could not be asked
+		 * about (offline) leaves the match to be tried again. */
 		const bool found = m_review->count() > 0;
-		if (found || m_review->unresolved().isEmpty()) {
+		const QStringList unresolved = m_review->unresolved();
+		const bool answered =
+			PerformanceSetup::commonProjects(unresolved,
+											 m_review->notAvailable())
+				.size() == unresolved.size();
+		if (found || answered) {
 			rememberMatch();
 		}
 		m_review->cancel();
@@ -290,6 +323,48 @@ void PerformanceSetupTask::rememberMatch()
 	m_instance->settings()->set(kMatchedSetting, m_matchKey);
 }
 
+void PerformanceSetupTask::rememberNotAvailable()
+{
+	const QStringList notAvailable = m_review->notAvailable();
+	auto settings = m_instance->settings();
+
+	/* A run that learned nothing new leaves a record still in force alone:
+	 * what it says was not asked about this time. One that did adds to it,
+	 * so the mods it left out are not asked about again at once. */
+	const QStringList found =
+		PerformanceSetup::commonProjects(m_wanted, notAvailable);
+	if (!found.isEmpty() || m_missing.isEmpty()) {
+		QStringList missing = m_missing + found;
+		missing.removeDuplicates();
+		settings->set(kMissingSetting,
+					  missing.isEmpty() ? QString()
+										: PerformanceSetup::missingRecord(
+											  m_matchKey,
+											  QDateTime::currentDateTimeUtc(),
+											  missing));
+	}
+
+	/* The mods that were to follow the version and have no build of it stay
+	 * at their old file, and the game will likely refuse them. */
+	if (m_replacements.isEmpty()) {
+		return;
+	}
+	const QStringList unmatched =
+		PerformanceSetup::commonProjects(rematched(), notAvailable);
+	settings->set(kUnmatchedSetting, PerformanceSetup::joinProjects(unmatched));
+	if (unmatched.isEmpty()) {
+		return;
+	}
+	qWarning() << "Kite Performance: no version for Minecraft" << m_mcVersion
+			   << "and" << m_loader << "of" << unmatched;
+	const QStringList names = PerformanceSetup::installedNames(
+		*m_folder->metadataIndex(), unmatched);
+	if (!names.isEmpty()) {
+		m_unmatchedNote = tr("No version for Minecraft %1: %2.")
+							  .arg(m_mcVersion, names.join(QStringLiteral(", ")));
+	}
+}
+
 void PerformanceSetupTask::release()
 {
 	auto& running = runningSetups();
@@ -307,8 +382,10 @@ void PerformanceSetupTask::finish(const QString& summary, const QString& problem
 	if (!problem.isEmpty()) {
 		qWarning() << "Kite Performance:" << problem;
 	}
-	m_summary = summary;
-	setStatus(summary);
+	m_summary = m_unmatchedNote.isEmpty()
+					? summary
+					: summary + QLatin1Char(' ') + m_unmatchedNote;
+	setStatus(m_summary);
 	release();
 	emitSucceeded();
 }

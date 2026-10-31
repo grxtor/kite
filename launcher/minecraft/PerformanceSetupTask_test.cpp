@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include <QDateTime>
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -269,15 +270,128 @@ class PerformanceSetupTest : public QObject
 				 (QStringList{"a", "x", "c"}));
 	}
 
-	void exclusionsRoundTrip()
+	void anIncludedProjectLeavesWhenRemoved()
+	{
+		QCOMPARE(PerformanceSetup::withoutRemoved({"a", "b", "c"}, {"b", "x"}),
+				 (QStringList{"a", "c"}));
+		QCOMPARE(PerformanceSetup::withoutRemoved({"a"}, {}), (QStringList{"a"}));
+		QVERIFY(PerformanceSetup::withoutRemoved({}, {"a"}).isEmpty());
+	}
+
+	void theProjectsInBothAreKeptInOrder()
+	{
+		QCOMPARE(PerformanceSetup::commonProjects({"c", "a", "b"}, {"b", "c", "z"}),
+				 (QStringList{"c", "b"}));
+		QVERIFY(PerformanceSetup::commonProjects({"a"}, {}).isEmpty());
+		QVERIFY(PerformanceSetup::commonProjects({}, {"a"}).isEmpty());
+	}
+
+	void installedNamesAreTheOnesTheFolderHas()
+	{
+		QTemporaryDir dir;
+		QVERIFY(dir.isValid());
+		const QDir mods(dir.path());
+		touch(mods, "sodium.jar");
+		touch(mods, "unnamed.jar");
+		touch(mods, "from-curseforge.jar");
+
+		ModMetadataIndex index(mods);
+		const auto record = [&index](const QString& file, const QString& platform,
+									 const QString& project, const QString& name) {
+			ModMetadataIndex::Entry entry;
+			entry.fileName = file;
+			entry.platform = platform;
+			entry.projectId = project;
+			entry.name = name;
+			QVERIFY(index.put(entry));
+		};
+		record("sodium.jar", "modrinth", "AANobbMI", "Sodium");
+		record("unnamed.jar", "modrinth", "gvQqBUqZ", "");
+		record("from-curseforge.jar", "curseforge", "394468", "Lithium");
+
+		/* The name it was installed under, else the file; a project the
+		 * folder does not have, or has from CurseForge, is left out. */
+		QCOMPARE(PerformanceSetup::installedNames(
+					 index, {"gvQqBUqZ", "gone", "394468", "AANobbMI"}),
+				 (QStringList{"unnamed.jar", "Sodium"}));
+		QVERIFY(PerformanceSetup::installedNames(index, {}).isEmpty());
+	}
+
+	void aMissingRecordIsKeptForADay()
+	{
+		const QDateTime then = QDateTime::fromSecsSinceEpoch(1'700'000'000, Qt::UTC);
+		const QString record =
+			PerformanceSetup::missingRecord("1.19 fabric", then, {"a", "b"});
+
+		const QStringList projects = {"a", "b"};
+		QCOMPARE(PerformanceSetup::recentlyMissing(record, "1.19 fabric", then),
+				 projects);
+		QCOMPARE(PerformanceSetup::recentlyMissing(record, "1.19 fabric",
+												   then.addSecs(23 * 60 * 60)),
+				 projects);
+		QVERIFY(PerformanceSetup::recentlyMissing(record, "1.19 fabric",
+												  then.addDays(1))
+					.isEmpty());
+		QVERIFY(PerformanceSetup::recentlyMissing(record, "1.19 fabric",
+												  then.addDays(30))
+					.isEmpty());
+	}
+
+	void aMissingRecordIsForOneVersionAndLoader()
+	{
+		const QDateTime then = QDateTime::fromSecsSinceEpoch(1'700'000'000, Qt::UTC);
+		const QString record =
+			PerformanceSetup::missingRecord("1.19 fabric", then, {"a"});
+
+		QVERIFY(PerformanceSetup::recentlyMissing(record, "1.19.2 fabric", then)
+					.isEmpty());
+		QVERIFY(PerformanceSetup::recentlyMissing(record, "1.19 neoforge", then)
+					.isEmpty());
+	}
+
+	void aMissingRecordFromTheFutureIsNotTrusted()
+	{
+		const QDateTime then = QDateTime::fromSecsSinceEpoch(1'700'000'000, Qt::UTC);
+		const QString record =
+			PerformanceSetup::missingRecord("1.19 fabric", then, {"a"});
+
+		/* The clock was set back since it was written. */
+		QVERIFY(PerformanceSetup::recentlyMissing(record, "1.19 fabric",
+												  then.addSecs(-1))
+					.isEmpty());
+	}
+
+	void aGarbledMissingRecordMissesNothing()
+	{
+		const QDateTime now = QDateTime::fromSecsSinceEpoch(1'700'000'000, Qt::UTC);
+		for (const QString& record :
+			 {"", "garbage", "1.19 fabric", "1.19 fabric|1700000000",
+			  "1.19 fabric|soon|a", "1.19 fabric||a", "1.19 fabric|1700000000|a|b",
+			  "|1700000000|a"}) {
+			QVERIFY2(PerformanceSetup::recentlyMissing(record, "1.19 fabric", now)
+						 .isEmpty(),
+					 qPrintable(record));
+		}
+	}
+
+	void aRecordOfNothingMissingNamesNoProject()
+	{
+		const QDateTime now = QDateTime::fromSecsSinceEpoch(1'700'000'000, Qt::UTC);
+		QVERIFY(PerformanceSetup::recentlyMissing(
+					PerformanceSetup::missingRecord("1.19 fabric", now, {}),
+					"1.19 fabric", now)
+					.isEmpty());
+	}
+
+	void projectListsRoundTrip()
 	{
 		const QStringList projects = {"AANobbMI", "gvQqBUqZ"};
-		QCOMPARE(PerformanceSetup::parseExcluded(
-					 PerformanceSetup::joinExcluded(projects)),
+		QCOMPARE(PerformanceSetup::parseProjects(
+					 PerformanceSetup::joinProjects(projects)),
 				 projects);
-		QVERIFY(PerformanceSetup::parseExcluded("").isEmpty());
-		QVERIFY(PerformanceSetup::joinExcluded({}).isEmpty());
-		QCOMPARE(PerformanceSetup::parseExcluded("a,,b,"),
+		QVERIFY(PerformanceSetup::parseProjects("").isEmpty());
+		QVERIFY(PerformanceSetup::joinProjects({}).isEmpty());
+		QCOMPARE(PerformanceSetup::parseProjects("a,,b,"),
 				 (QStringList{"a", "b"}));
 	}
 };

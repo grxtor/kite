@@ -35,12 +35,22 @@ namespace
 	/* From "26.1" on, versions are numbered by year: the first part is
 	 * no longer 1. */
 	constexpr int kFirstNumberedMajor = 2;
-	const QString kExcludedSeparator = QStringLiteral(",");
+	const QString kProjectSeparator = QStringLiteral(",");
 	/* What ModMetadataIndex records for a file installed from Modrinth
 	 * (ModrinthApi::id()). */
 	const QString kModrinthPlatform = QStringLiteral("modrinth");
 	/* Between the Minecraft version and the loader in a match key. */
 	const QString kMatchKeySeparator = QStringLiteral(" ");
+	/* Between the fields of a missing record: not in a match key (a version, a
+	 * space, a loader) and not in a project id. */
+	const QString kRecordSeparator = QStringLiteral("|");
+	constexpr int kRecordFields = 3;
+	constexpr int kRecordKeyField = 0;
+	constexpr int kRecordTimeField = 1;
+	constexpr int kRecordProjectsField = 2;
+	/* How long a mod Modrinth has no build of is left alone before it is
+	 * asked about again. */
+	constexpr qint64 kMissingForSecs = 24 * 60 * 60;
 
 	bool fromModrinth(const ModMetadataIndex::Entry& entry)
 	{
@@ -144,14 +154,14 @@ namespace PerformanceSetup
 		return projects;
 	}
 
-	QStringList parseExcluded(const QString& stored)
+	QStringList parseProjects(const QString& stored)
 	{
-		return stored.split(kExcludedSeparator, Qt::SkipEmptyParts);
+		return stored.split(kProjectSeparator, Qt::SkipEmptyParts);
 	}
 
-	QString joinExcluded(const QStringList& projects)
+	QString joinProjects(const QStringList& projects)
 	{
-		return projects.join(kExcludedSeparator);
+		return projects.join(kProjectSeparator);
 	}
 
 	QStringList defaultProjects(const QVariantList& catalogMods)
@@ -197,5 +207,70 @@ namespace PerformanceSetup
 		}
 		result.removeDuplicates();
 		return result;
+	}
+
+	QStringList withoutRemoved(const QStringList& included,
+							   const QStringList& removed)
+	{
+		QStringList kept;
+		for (const QString& project : included) {
+			if (!removed.contains(project)) {
+				kept.append(project);
+			}
+		}
+		return kept;
+	}
+
+	QStringList commonProjects(const QStringList& projects,
+							   const QStringList& among)
+	{
+		QStringList common;
+		for (const QString& project : projects) {
+			if (among.contains(project)) {
+				common.append(project);
+			}
+		}
+		return common;
+	}
+
+	QStringList installedNames(const ModMetadataIndex& index,
+							   const QStringList& projects)
+	{
+		QStringList names;
+		for (const QString& project : projects) {
+			const ModMetadataIndex::Entry entry =
+				index.findByPlatformProject(kModrinthPlatform, project);
+			if (entry.isValid()) {
+				names.append(entry.name.isEmpty() ? entry.fileName : entry.name);
+			}
+		}
+		return names;
+	}
+
+	QString missingRecord(const QString& matchKey, const QDateTime& when,
+						  const QStringList& projects)
+	{
+		return QStringList{matchKey, QString::number(when.toSecsSinceEpoch()),
+						   joinProjects(projects)}
+			.join(kRecordSeparator);
+	}
+
+	QStringList recentlyMissing(const QString& record, const QString& matchKey,
+								const QDateTime& now)
+	{
+		const QStringList fields = record.split(kRecordSeparator);
+		if (fields.size() != kRecordFields ||
+			fields.at(kRecordKeyField) != matchKey) {
+			return {};
+		}
+		bool isTime = false;
+		const qint64 when = fields.at(kRecordTimeField).toLongLong(&isTime);
+		const qint64 age = now.toSecsSinceEpoch() - when;
+		/* A negative age is a clock that was set back since: that record
+		 * cannot be trusted to be recent. */
+		if (!isTime || age < 0 || age >= kMissingForSecs) {
+			return {};
+		}
+		return parseProjects(fields.at(kRecordProjectsField));
 	}
 } // namespace PerformanceSetup

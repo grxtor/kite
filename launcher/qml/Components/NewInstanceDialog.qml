@@ -201,18 +201,21 @@ Dialog {
 
     // The instance exists: its memory and options.txt, then the mods, which
     // install in the background while the integrator shows the instance.
-    // The setup keeps the performance bundle's defaults installed on every
-    // Play, so the ones turned off are excluded for good; every other pick
-    // is installed once, with them.
+    // The setup keeps the performance bundle on every Play: its defaults that
+    // were turned off are excluded for good, and its other picks are included
+    // for good. The picks of the other bundles are installed once, with them.
     function installPerformance() {
         const id = root.watcher.instanceId
         const picked = root.pickedProjects()
-        const kept = (mod) => mod.bundle === "performance" && mod.isDefault === true
+        const inPerformance = (mod) => mod.bundle === "performance"
+        const isPicked = (mod) => picked.indexOf(mod.project) >= 0
         const mods = root.catalogMods()
         root.shell.bundles.applyPresetDefaults(id, "performance")
-        root.shell.setPerformanceExcluded(id, mods.filter((mod) => kept(mod) && picked.indexOf(mod.project) < 0)
+        root.shell.setPerformanceExcluded(id, mods.filter((mod) => inPerformance(mod) && mod.isDefault === true && !isPicked(mod))
                                                  .map((mod) => mod.project))
-        root.shell.speedUp(id, mods.filter((mod) => !kept(mod) && picked.indexOf(mod.project) >= 0)
+        root.shell.setPerformanceIncluded(id, mods.filter((mod) => inPerformance(mod) && mod.isDefault !== true && isPicked(mod))
+                                                 .map((mod) => mod.project))
+        root.shell.speedUp(id, mods.filter((mod) => !inPerformance(mod) && isPicked(mod))
                                    .map((mod) => mod.project))
         root.close()
         root.openInstanceRequested(id)
