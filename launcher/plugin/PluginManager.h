@@ -24,7 +24,6 @@
 #include "plugin/PluginMetadata.h"
 #include "plugin/PluginHooks.h"
 #include "plugin/PluginAPI.h"
-#include "plugin/PluginUiRenderer.h"
 
 #include "news/NewsEntry.h"
 
@@ -46,13 +45,10 @@
 #include <vector>
 #include <functional>
 
-class BasePage;
 class NewsChecker;
-class QAction;
 class QEvent;
 class QMenu;
 class QSystemTrayIcon;
-class QWidget;
 class QWindow;
 
 /* PluginManager owns the plugin lifecycle and bridges loaded .mmco modules to Kite: discovery via
@@ -83,22 +79,17 @@ class PluginManager : public QObject
 	{
 		return m_modules;
 	}
-	int moduleCount() const
-	{
-		return m_modules.size();
-	}
 
 	/* The disabled set is persisted in the application settings under "plugins.disabled"
 	 * (comma-separated module names, case-insensitive). Toggling loads or unloads nothing at
-	 * runtime; it takes effect on the next launcher start (PluginsDialog warns the user). */
+	 * runtime; it takes effect on the next launcher start (the Installed plugins section says so). */
 	bool isModuleDisabled(const QString& moduleName) const;
 	void setModuleDisabled(const QString& moduleName, bool disabled);
 	QSet<QString> disabledModuleNames() const;
 
 	/* ABI 5 declarative UI surfaces. Each ui_surface_create() is recorded as a SurfaceInfo (anchor,
-	 * optional instance-id context, title/icon, current "mmco-ui/1" JSON), whether or not a widget
-	 * view is on screen. A renderer reads the snapshot, watches surfacesChanged() and reports
-	 * events through deliverUiEvent(). */
+	 * optional instance-id context, title/icon, current "mmco-ui/1" JSON). A renderer reads the
+	 * snapshot, watches surfacesChanged() and reports events through deliverUiEvent(). */
 	struct SurfaceInfo {
 		void* handle = nullptr; /* opaque; same value ui_surface_create returned */
 		QString surfaceId;
@@ -115,22 +106,10 @@ class PluginManager : public QObject
 	QList<SurfaceInfo> surfaces(int anchor = -1,
 							   const QString& anchorContext = QString()) const;
 
-	/* Delivers a UI event to a surface's MMCOUiEventCallback, as a rendered widget would. No-op if
+	/* Delivers a UI event to a surface's MMCOUiEventCallback, as a rendered view would. No-op if
 	 * surfaceId names no live surface. */
 	void deliverUiEvent(const QString& surfaceId, const QString& nodeId,
 						const QString& event, const QString& valueJson);
-
-	/* Host-internal widget builders for InstancePageProvider, the global-settings page provider and
-	 * the INSTANCE_SETTINGS_PAGE_CREATED bridge. Each call renders fresh widgets from the surface's
-	 * current document; returned pages and widgets are caller-owned. */
-
-	/* One BasePage per INSTANCE_PAGE surface anchored to `instanceId`, shown as tabs in the
-	 * instance window. */
-	QList<BasePage*> createInstancePages(const QString& instanceId);
-
-	/* A single "Plugins" BasePage stacking every GLOBAL_SETTINGS surface as a titled section, or
-	 * nullptr if there are none. */
-	BasePage* createGlobalSettingsPluginsPage();
 
 	/* Per-module scratch buffer behind every `const char*` getter: the returned pointer stays valid
 	 * until the module's next API call *on the same thread*. The bytes live in thread-local storage
@@ -194,8 +173,9 @@ class PluginManager : public QObject
 		uint32_t flags;
 	};
 
-	/* Runs the background-flagged callbacks of one dispatch as a SequentialTask behind a
-	 * ProgressDialog, one row per module. Returns true if one vetoed. */
+	/* Runs the background-flagged callbacks of one dispatch as a SequentialTask behind a single
+	 * showBusy("Waiting for plugins...") indication; per-module progress is not shown. Returns true
+	 * if one vetoed. */
 	bool runBackgroundHooks(uint32_t hook_id, void* payload,
 							const QVector<HookRegistration>& regs);
 
@@ -570,9 +550,7 @@ class PluginManager : public QObject
 	QVector<TrayRecord> m_trayIcons;
 	QVector<CloseFilterRecord> m_closeFilters;
 	bool m_closeFilterInstalled = false;
-	QPointer<QWidget> m_filteredMainWindow;
-	/* The QML shell's root QWindow, cached like m_filteredMainWindow (see resolveShellWindow()).
-	 * Set only when there is no widget MainWindow. */
+	/* The QML shell's root QWindow, cached (see resolveShellWindow()). */
 	QPointer<QWindow> m_filteredShellWindow;
 
 	/* S23 (ABI 3+): per-module, per-instance running-state callbacks. Each record's `guard` QObject
@@ -589,11 +567,7 @@ class PluginManager : public QObject
 	QVector<InstanceRunningRecord> m_instanceRunning;
 
 	/* One record per ui_surface_create(). `doc` is the canonical parsed document that surfaces()
-	 * and the widget builders read. `mountedRoot`/`mountedRenderer` track the widget currently on
-	 * screen for the surface, if any: ui_surface_update/_set/_set_rows always patch `doc` and also
-	 * the live widget when mounted. mountedRoot is a QPointer that clears when Qt tears the view
-	 * down; mountedRenderer is dereferenced only while mountedRoot is non-null (same lifetime, see
-	 * RendererOwner in PluginManager.cpp). */
+	 * reads; ui_surface_update/_set/_set_rows patch it. */
 	struct SurfaceRecord {
 		void* module_handle = nullptr;
 		QString surfaceId;
@@ -604,8 +578,6 @@ class PluginManager : public QObject
 		QJsonObject doc;
 		MMCOUiEventCallback cb = nullptr;
 		void* userData = nullptr;
-		QPointer<QWidget> mountedRoot;
-		PluginUiRenderer::RenderedSurface* mountedRenderer = nullptr;
 	};
 	std::vector<std::unique_ptr<SurfaceRecord>> m_surfaces;
 	int m_nextSurfaceSeq = 0;
@@ -613,35 +585,18 @@ class PluginManager : public QObject
 	/* Finds the SurfaceRecord a `void* surface` handle refers to (its own stable heap address), or
 	 * nullptr. */
 	SurfaceRecord* findSurface(void* module_handle, void* surface);
-	/* Builds the EventSink that forwards PluginUiRenderer callbacks into a surface's
-	 * MMCOUiEventCallback. */
-	static PluginUiRenderer::EventSink makeSurfaceSink(SurfaceRecord* rec);
-	/* Renders every surface at (anchor, anchorContext) into one QWidget stacking a titled QGroupBox
-	 * per surface, or nullptr if none. Shared by createGlobalSettingsPluginsPage() and the
-	 * INSTANCE_SETTINGS_PAGE_CREATED bridge. */
-	QWidget* buildPluginsSectionWidget(int anchor, const QString& anchorContext);
 	/* Releases every SurfaceRecord owned by `module_handle`; called from
 	 * releaseTrayResourcesForModule(). */
 	void releaseSurfacesForModule(void* module_handle);
 
-	/* Resolves the main window (objectName "MainWindow"), cached in a QPointer; nullptr before it
-	 * is built or when the QML shell is active. */
-	QWidget* resolveMainWindow();
-	/* Resolves the QML shell's top-level QWindow via Application, cached; counterpart of
-	 * resolveMainWindow() for main_window_* and the close filter. nullptr before the shell is shown
-	 * or when the widget MainWindow is active. */
+	/* Resolves the QML shell's top-level QWindow via Application, cached; used by main_window_*
+	 * and the close filter. nullptr before the shell is shown. */
 	QWindow* resolveShellWindow();
-	/* Installs our eventFilter on the active top-level window (widget MainWindow or QML shell
-	 * window), at most once. */
+	/* Installs our eventFilter on the QML shell window, at most once. */
 	void ensureCloseFilterInstalled();
 	/* Releases all S19/S20/S23 resources of a module; called from shutdownAll() before
 	 * mmco_unload(). */
 	void releaseTrayResourcesForModule(void* module_handle);
-
-	/* Wires Application::globalSettingsAboutToOpen and instanceSettingsPageCreated to the matching
-	 * MMCO hooks. Called once from initializeAll() after modules are up; the connections are owned
-	 * by `this`. */
-	void connectAppSignals();
 
 	bool m_shutdownDone = false;
 

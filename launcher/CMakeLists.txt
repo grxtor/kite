@@ -128,7 +128,6 @@ set(CORE_SOURCES
     Sys.cpp
     Sys.h
     NullInstance.h
-    QtCompat.h
     ArchiveOpen.h
     MMCZip.h
     MMCZip.cpp
@@ -157,9 +156,6 @@ set(CORE_SOURCES
     InstanceShortcuts.h
     InstanceShortcuts.cpp
 
-    Filter.h
-    Filter.cpp
-
     Json.h
     Json.cpp
 
@@ -167,8 +163,6 @@ set(CORE_SOURCES
     FileSystem.cpp
 
     Exception.h
-
-    RWStorage.h
 
     DefaultVariable.h
 
@@ -186,8 +180,6 @@ set(CORE_SOURCES
     RecursiveFileSystemWatcher.h
     RecursiveFileSystemWatcher.cpp
 
-    MMCTime.h
-    MMCTime.cpp
 )
 
 add_unit_test(FileSystem
@@ -721,8 +713,6 @@ set(TOOLS_SOURCES
     tools/JProfiler.h
     tools/JVisualVM.cpp
     tools/JVisualVM.h
-    tools/MCEditTool.cpp
-    tools/MCEditTool.h
 )
 
 set(META_SOURCES
@@ -736,17 +726,6 @@ set(META_SOURCES
     meta/Version.h
     meta/Index.cpp
     meta/Index.h
-)
-
-set(FTB_SOURCES
-    modplatform/legacy_ftb/PackFetchTask.h
-    modplatform/legacy_ftb/PackFetchTask.cpp
-    modplatform/legacy_ftb/PackInstallTask.h
-    modplatform/legacy_ftb/PackInstallTask.cpp
-    modplatform/legacy_ftb/PrivatePackManager.h
-    modplatform/legacy_ftb/PrivatePackManager.cpp
-
-    modplatform/legacy_ftb/PackHelpers.h
 )
 
 set(FLAME_SOURCES
@@ -961,7 +940,6 @@ set(LOGIC_SOURCES
     ${TOOLS_SOURCES}
     ${META_SOURCES}
     ${ICONS_SOURCES}
-    ${FTB_SOURCES}
     ${FLAME_SOURCES}
     ${MODPACKSCH_SOURCES}
     ${TECHNIC_SOURCES}
@@ -971,411 +949,27 @@ set(LOGIC_SOURCES
     ${FRIENDS_SOURCES}
 )
 
-SET(KITE_SOURCES
+set(KITE_SOURCES
     Application.h
     Application.cpp
     ApplicationMessage.h
     ApplicationMessage.cpp
 
-    VersionProxyModel.h
-    VersionProxyModel.cpp
     HoeDown.h
-
-    KonamiCode.h
-    KonamiCode.cpp
 
     resources/backgrounds/backgrounds.qrc
     resources/multimc/multimc.qrc
-    resources/pe_dark/pe_dark.qrc
-    resources/pe_light/pe_light.qrc
-    resources/pe_colored/pe_colored.qrc
-    resources/pe_blue/pe_blue.qrc
-    resources/OSX/OSX.qrc
-    resources/iOS/iOS.qrc
-    resources/flat/flat.qrc
-    resources/flat_white/flat_white.qrc
     resources/documents/documents.qrc
-    resources/breeze_dark/breeze_dark.qrc
-    resources/breeze_light/breeze_light.qrc
-    resources/shaders/shaders.qrc
     ${CMAKE_BINARY_DIR}/${Kite_AppBinaryName}.qrc
-
-    ui/GuiUtil.h
-    ui/GuiUtil.cpp
-    ui/ColorCache.h
-    ui/ColorCache.cpp
-    ui/MainWindow.h
-    ui/ShortcutUtils.cpp
-    ui/ShortcutUtils.h
-    ui/FastFileIconProvider.cpp
-    ui/FastFileIconProvider.h
-    ui/WidgetUiHost.cpp
-    ui/WidgetUiHost.h
-    ui/MainWindow.cpp
-    ui/MacMenuBar.h
-    ui/MacMenuBar.cpp
-    ui/InstanceWindow.h
-    ui/InstanceWindow.cpp
-
-    # FIXME: maybe find a better home for this.
-    SkinUtils.cpp
-    SkinUtils.h
-
-    ui/setupwizard/SetupWizard.h
-    ui/setupwizard/SetupWizard.cpp
-    ui/setupwizard/BaseWizardPage.h
-    ui/setupwizard/JavaWizardPage.cpp
-    ui/setupwizard/JavaWizardPage.h
-    ui/setupwizard/LanguageWizardPage.cpp
-    ui/setupwizard/LanguageWizardPage.h
-
-    ui/themes/FusionTheme.cpp
-    ui/themes/FusionTheme.h
-    ui/themes/BrightTheme.cpp
-    ui/themes/BrightTheme.h
-    ui/themes/GreenDarkTheme.cpp
-    ui/themes/GreenDarkTheme.h
-    ui/themes/GreenLightTheme.cpp
-    ui/themes/GreenLightTheme.h
-    ui/themes/CustomTheme.cpp
-    ui/themes/CustomTheme.h
-    ui/themes/DarkTheme.cpp
-    ui/themes/DarkTheme.h
-    ui/themes/ITheme.cpp
-    ui/themes/ITheme.h
-    ui/themes/SystemTheme.cpp
-    ui/themes/SystemTheme.h
-    ui/themes/ThemeManager.cpp
-    ui/themes/ThemeManager.h
 
     ui/LaunchController.h
     ui/LaunchController.cpp
-
-    ui/InstancePageProvider.h
-
-    ui/JavaCommon.h
-    ui/JavaCommon.cpp
-
-    ui/pages/BasePage.h
-    ui/pages/BasePageContainer.h
-    ui/pages/BasePageProvider.h
-
-    ui/pages/instance/BackupPage.cpp
-    ui/pages/instance/BackupPage.h
-    ui/pages/instance/GameOptionsPage.cpp
-    ui/pages/instance/GameOptionsPage.h
-    ui/pages/instance/VersionPage.cpp
-    ui/pages/instance/VersionPage.h
-    ui/pages/instance/TexturePackPage.h
-    ui/pages/instance/ResourcePackPage.h
-    ui/pages/instance/ShaderPackPage.h
-    ui/pages/instance/DataPackPage.h
-    ui/pages/instance/DataPackPage.cpp
-    ui/pages/instance/ModFolderPage.cpp
-    ui/pages/instance/ModFolderPage.h
-    ui/pages/instance/NotesPage.cpp
-    ui/pages/instance/NotesPage.h
-    ui/pages/instance/LogPage.cpp
-    ui/pages/instance/LogPage.h
-    ui/pages/instance/InstanceSettingsPage.cpp
-    ui/pages/instance/InstanceSettingsPage.h
-    ui/pages/instance/ScreenshotsPage.cpp
-    ui/pages/instance/ScreenshotsPage.h
-    ui/pages/instance/OtherLogsPage.cpp
-    ui/pages/instance/OtherLogsPage.h
-    ui/pages/instance/ServersPage.cpp
-    ui/pages/instance/ServersPage.h
-    ui/pages/instance/LegacyUpgradePage.cpp
-    ui/pages/instance/LegacyUpgradePage.h
-    ui/pages/instance/ManagedPackPage.cpp
-    ui/pages/instance/ManagedPackPage.h
-    ui/pages/instance/WorldListPage.cpp
-    ui/pages/instance/WorldListPage.h
-
-    ui/pages/global/AccountListPage.cpp
-    ui/pages/global/AccountListPage.h
-    ui/pages/global/AppearancePage.cpp
-    ui/pages/global/AppearancePage.h
-    ui/pages/global/CustomCommandsPage.cpp
-    ui/pages/global/CustomCommandsPage.h
-    ui/pages/global/ExternalToolsPage.cpp
-    ui/pages/global/ExternalToolsPage.h
-    ui/pages/global/JavaPage.cpp
-    ui/pages/global/JavaPage.h
-    ui/pages/global/LanguagePage.cpp
-    ui/pages/global/LanguagePage.h
-    ui/pages/global/MinecraftPage.cpp
-    ui/pages/global/MinecraftPage.h
-    ui/pages/global/KitePage.cpp
-    ui/pages/global/KitePage.h
-    ui/pages/global/ProxyPage.cpp
-    ui/pages/global/ProxyPage.h
-    ui/pages/global/PasteEEPage.cpp
-    ui/pages/global/PasteEEPage.h
-
-    ui/pages/modplatform/VanillaPage.cpp
-    ui/pages/modplatform/VanillaPage.h
-
-    ui/pages/modplatform/ContentProviderPage.cpp
-    ui/pages/modplatform/ContentProviderPage.h
-
-    ui/pages/modplatform/atlauncher/AtlFilterModel.cpp
-    ui/pages/modplatform/atlauncher/AtlFilterModel.h
-    ui/pages/modplatform/atlauncher/AtlListModel.cpp
-    ui/pages/modplatform/atlauncher/AtlListModel.h
-    ui/pages/modplatform/atlauncher/AtlOptionalModDialog.cpp
-    ui/pages/modplatform/atlauncher/AtlOptionalModDialog.h
-    ui/pages/modplatform/atlauncher/AtlPage.cpp
-    ui/pages/modplatform/atlauncher/AtlPage.h
-
-    ui/pages/modplatform/ftb/FtbFilterModel.cpp
-    ui/pages/modplatform/ftb/FtbFilterModel.h
-    ui/pages/modplatform/ftb/FtbListModel.cpp
-    ui/pages/modplatform/ftb/FtbListModel.h
-    ui/pages/modplatform/ftb/FtbPage.cpp
-    ui/pages/modplatform/ftb/FtbPage.h
-
-    ui/pages/modplatform/legacy_ftb/Page.cpp
-    ui/pages/modplatform/legacy_ftb/Page.h
-    ui/pages/modplatform/legacy_ftb/ListModel.h
-    ui/pages/modplatform/legacy_ftb/ListModel.cpp
-
-    ui/pages/modplatform/flame/FlameModel.cpp
-    ui/pages/modplatform/flame/FlameModel.h
-    ui/pages/modplatform/flame/FlamePage.cpp
-    ui/pages/modplatform/flame/FlamePage.h
-
-    ui/pages/modplatform/modrinth/ModrinthModel.cpp
-    ui/pages/modplatform/modrinth/ModrinthModel.h
-    ui/pages/modplatform/modrinth/ModrinthPage.cpp
-    ui/pages/modplatform/modrinth/ModrinthPage.h
-
-    ui/pages/modplatform/technic/TechnicModel.cpp
-    ui/pages/modplatform/technic/TechnicModel.h
-    ui/pages/modplatform/technic/TechnicPage.cpp
-    ui/pages/modplatform/technic/TechnicPage.h
-
-    ui/pages/modplatform/ImportPage.cpp
-    ui/pages/modplatform/ImportPage.h
-
-    ui/dialogs/AboutDialog.cpp
-    ui/dialogs/AboutDialog.h
-    ui/dialogs/BlockedModsDialog.cpp
-    ui/dialogs/BlockedModsDialog.h
-    ui/dialogs/ProfileSelectDialog.cpp
-    ui/dialogs/ProfileSelectDialog.h
-    ui/dialogs/ProfileSetupDialog.cpp
-    ui/dialogs/ProfileSetupDialog.h
-    ui/dialogs/CopyInstanceDialog.cpp
-    ui/dialogs/CopyInstanceDialog.h
-    ui/dialogs/CreateShortcutDialog.cpp
-    ui/dialogs/CreateShortcutDialog.h
-    ui/dialogs/CustomMessageBox.cpp
-    ui/dialogs/CustomMessageBox.h
-    ui/dialogs/EditAccountDialog.cpp
-    ui/dialogs/EditAccountDialog.h
-    ui/dialogs/ExportInstanceDialog.cpp
-    ui/dialogs/ExportInstanceDialog.h
-    ui/dialogs/ExportPackDialog.cpp
-    ui/dialogs/ExportPackDialog.h
-    ui/dialogs/IconPickerDialog.cpp
-    ui/dialogs/IconPickerDialog.h
-    ui/dialogs/InstallLoaderDialog.cpp
-    ui/dialogs/InstallLoaderDialog.h
-    ui/dialogs/MSALoginDialog.cpp
-    ui/dialogs/MSALoginDialog.h
-    ui/dialogs/NewComponentDialog.cpp
-    ui/dialogs/NewComponentDialog.h
-    ui/dialogs/NewInstanceDialog.cpp
-    ui/dialogs/NewInstanceDialog.h
-    ui/dialogs/NewsViewerDialog.cpp
-    ui/dialogs/NewsViewerDialog.h
-    ui/dialogs/NotificationDialog.cpp
-    ui/dialogs/NotificationDialog.h
-    ui/pagedialog/PageDialog.cpp
-    ui/pagedialog/PageDialog.h
-    ui/dialogs/PluginsDialog.cpp
-    ui/dialogs/PluginsDialog.h
-    ui/dialogs/ProgressDialog.cpp
-    ui/dialogs/ProgressDialog.h
-    ui/dialogs/UpdateAvailableDialog.cpp
-    ui/dialogs/UpdateAvailableDialog.h
-    ui/dialogs/VersionSelectDialog.cpp
-    ui/dialogs/VersionSelectDialog.h
-    ui/dialogs/skins/SkinManageDialog.cpp
-    ui/dialogs/skins/SkinManageDialog.h
-    ui/dialogs/skins/render/CubeMesh.cpp
-    ui/dialogs/skins/render/CubeMesh.h
-    ui/dialogs/skins/render/PlayerScene.cpp
-    ui/dialogs/skins/render/PlayerScene.h
-    ui/dialogs/skins/render/SkinPreviewSurface.cpp
-    ui/dialogs/skins/render/SkinPreviewSurface.h
-    ui/dialogs/DownloadContentDialog.cpp
-    ui/dialogs/DownloadContentDialog.h
-    ui/dialogs/DownloadSummaryDialog.cpp
-    ui/dialogs/DownloadSummaryDialog.h
-    ui/dialogs/ModUpdateDialog.cpp
-    ui/dialogs/ModUpdateDialog.h
-    ui/dialogs/ExportListDialog.cpp
-    ui/dialogs/ExportListDialog.h
-    ui/dialogs/KiteLogsDialog.cpp
-    ui/dialogs/KiteLogsDialog.h
-    ui/dialogs/UntrustedModsDialog.cpp
-    ui/dialogs/UntrustedModsDialog.h
-
-
-    ui/widgets/Common.cpp
-    ui/widgets/Common.h
-    ui/widgets/CustomCommands.cpp
-    ui/widgets/CustomCommands.h
-    ui/widgets/DropLabel.cpp
-    ui/widgets/DropLabel.h
-    ui/widgets/FocusLineEdit.cpp
-    ui/widgets/FocusLineEdit.h
-    ui/widgets/IconLabel.cpp
-    ui/widgets/IconLabel.h
-    ui/widgets/JavaSettingsWidget.cpp
-    ui/widgets/JavaSettingsWidget.h
-    ui/widgets/LabeledToolButton.cpp
-    ui/widgets/LabeledToolButton.h
-    ui/widgets/LanguageSelectionWidget.cpp
-    ui/widgets/LanguageSelectionWidget.h
-    ui/widgets/LogView.cpp
-    ui/widgets/LogView.h
-    ui/widgets/MCModInfoFrame.cpp
-    ui/widgets/MCModInfoFrame.h
-    ui/widgets/ModListView.cpp
-    ui/widgets/ModListView.h
-    ui/widgets/PageContainer.cpp
-    ui/widgets/PageContainer.h
-    ui/widgets/PageContainer_p.h
-    ui/widgets/VersionListView.cpp
-    ui/widgets/VersionListView.h
-    ui/widgets/VersionSelectWidget.cpp
-    ui/widgets/VersionSelectWidget.h
-    ui/widgets/ProgressWidget.h
-    ui/widgets/ProgressWidget.cpp
-    ui/widgets/ProjectItemDelegate.h
-    ui/widgets/ProjectItemDelegate.cpp
-    ui/widgets/ProjectDescriptionPage.h
-    ui/widgets/ProjectDescriptionPage.cpp
-    ui/widgets/ContentFilterWidget.h
-    ui/widgets/ContentFilterWidget.cpp
-    ui/widgets/CheckComboBox.h
-    ui/widgets/CheckComboBox.cpp
-    ui/widgets/TaskStepProgressBar.h
-    ui/widgets/TaskStepProgressBar.cpp
-    ui/widgets/WideBar.h
-    ui/widgets/WideBar.cpp
-
-    ui/instanceview/InstanceProxyModel.cpp
-    ui/instanceview/InstanceProxyModel.h
-    ui/instanceview/AccessibleInstanceView.cpp
-    ui/instanceview/AccessibleInstanceView.h
-    ui/instanceview/AccessibleInstanceView_p.h
-    ui/instanceview/InstanceView.cpp
-    ui/instanceview/InstanceView.h
-    ui/instanceview/InstanceDelegate.cpp
-    ui/instanceview/InstanceDelegate.h
-    ui/instanceview/VisualGroup.cpp
-    ui/instanceview/VisualGroup.h
 )
-
-set(KITE_UI_FILES
-    ui/pages/global/AccountListPage.ui
-    ui/pages/global/AppearancePage.ui
-    ui/pages/global/JavaPage.ui
-    ui/pages/global/KitePage.ui
-    ui/pages/global/PasteEEPage.ui
-    ui/pages/global/ProxyPage.ui
-    ui/pages/global/MinecraftPage.ui
-    ui/pages/global/ExternalToolsPage.ui
-    ui/pages/instance/BackupPage.ui
-    ui/pages/instance/ModFolderPage.ui
-    ui/pages/instance/NotesPage.ui
-    ui/pages/instance/LogPage.ui
-    ui/pages/instance/ServersPage.ui
-    ui/pages/instance/GameOptionsPage.ui
-    ui/pages/instance/OtherLogsPage.ui
-    ui/pages/instance/InstanceSettingsPage.ui
-    ui/pages/instance/VersionPage.ui
-    ui/pages/instance/WorldListPage.ui
-    ui/pages/instance/LegacyUpgradePage.ui
-    ui/pages/instance/ManagedPackPage.ui
-    ui/pages/instance/ScreenshotsPage.ui
-    ui/pages/modplatform/atlauncher/AtlOptionalModDialog.ui
-    ui/pages/modplatform/atlauncher/AtlPage.ui
-    ui/pages/modplatform/VanillaPage.ui
-    ui/pages/modplatform/ContentProviderPage.ui
-    ui/pages/modplatform/flame/FlamePage.ui
-    ui/pages/modplatform/modrinth/ModrinthPage.ui
-    ui/pages/modplatform/legacy_ftb/Page.ui
-    ui/pages/modplatform/ImportPage.ui
-    ui/pages/modplatform/ftb/FtbPage.ui
-    ui/pages/modplatform/technic/TechnicPage.ui
-    ui/widgets/CustomCommands.ui
-    ui/widgets/MCModInfoFrame.ui
-    ui/dialogs/CopyInstanceDialog.ui
-    ui/dialogs/ProfileSetupDialog.ui
-    ui/dialogs/NewInstanceDialog.ui
-    ui/dialogs/NotificationDialog.ui
-    ui/dialogs/UpdateAvailableDialog.ui
-    ui/dialogs/KiteLogsDialog.ui
-    ui/dialogs/PluginsDialog.ui
-    ui/dialogs/NewComponentDialog.ui
-    ui/dialogs/ProfileSelectDialog.ui
-    ui/dialogs/skins/SkinManageDialog.ui
-    ui/dialogs/CreateShortcutDialog.ui
-    ui/dialogs/ExportInstanceDialog.ui
-    ui/dialogs/ExportPackDialog.ui
-    ui/dialogs/IconPickerDialog.ui
-    ui/dialogs/MSALoginDialog.ui
-    ui/dialogs/AboutDialog.ui
-    ui/dialogs/EditAccountDialog.ui
-    ui/dialogs/UntrustedModsDialog.ui
-    ui/MainWindow.ui
-)
-
-# Wrapped once: two qt_wrap_ui calls for the same form would declare two rules for the same ui_*.h.
-# Both targets list the generated sources; the rule stays single.
-set(KITE_SHARED_UI_FILES
-    ui/dialogs/ProgressDialog.ui
-    ui/widgets/TaskStepProgressBar.ui
-)
-
-# Not the versionless qt_wrap_ui: it is a no-op unless QT_DEFAULT_MAJOR_VERSION is set.
-qt6_wrap_ui(KITE_UI ${KITE_UI_FILES})
-qt6_wrap_ui(KITE_SHARED_UI ${KITE_SHARED_UI_FILES})
-
-if(NOT Kite_DISABLE_JAVA_DOWNLOADER)
-    list(APPEND KITE_SOURCES
-        ui/dialogs/JavaDownloadDialog.cpp
-        ui/dialogs/JavaDownloadDialog.h
-    )
-endif()
-
-if (APPLE)
-    set(KITE_SOURCES
-        ${KITE_SOURCES}
-        ui/themes/ThemeManager.mm
-    )
-endif()
 
 set(KITE_QRC_FILES
     resources/backgrounds/backgrounds.qrc
     resources/multimc/multimc.qrc
-    resources/pe_dark/pe_dark.qrc
-    resources/pe_light/pe_light.qrc
-    resources/pe_colored/pe_colored.qrc
-    resources/pe_blue/pe_blue.qrc
-    resources/OSX/OSX.qrc
-    resources/iOS/iOS.qrc
-    resources/flat/flat.qrc
-    resources/flat_white/flat_white.qrc
     resources/documents/documents.qrc
-    resources/breeze_dark/breeze_dark.qrc
-    resources/breeze_light/breeze_light.qrc
-    resources/shaders/shaders.qrc
     ${CMAKE_BINARY_DIR}/${Kite_AppBinaryName}.qrc
 )
 
@@ -1386,7 +980,7 @@ if(WIN32)
 endif()
 
 # Kite_core works without a user interface: it must not link QtWidgets or know about the plugin host
-# or ui/. Kite_logic is the plugin host and the widget UI on top of it.
+# or ui/. Kite_logic is the plugin host and the application on top of it.
 add_library(Kite_core STATIC ${LOGIC_SOURCES})
 
 # Embedded as :/kite/bundles.json; in the core so tests find it too.
@@ -1427,13 +1021,8 @@ if(Qt${QT_VERSION_MAJOR}LinguistTools_FOUND)
         message(STATUS "Bundled translations: ${KITE_TS_FILES}")
     endif()
 endif()
-add_library(Kite_logic STATIC ${PLUGIN_SOURCES} ${KITE_SOURCES} ${KITE_UI} ${KITE_SHARED_UI} ${KITE_RESOURCES})
+add_library(Kite_logic STATIC ${PLUGIN_SOURCES} ${KITE_SOURCES} ${KITE_RESOURCES})
 target_link_libraries(Kite_logic Kite_core)
-
-add_unit_test(CustomTheme
-    SOURCES ui/themes/CustomTheme_test.cpp
-    LIBS Kite_logic
-    )
 
 add_unit_test(PluginLoader
     SOURCES plugin/PluginLoader_test.cpp
@@ -1725,11 +1314,6 @@ add_unit_test(LibraryController
     LIBS Kite_core
     )
 
-add_unit_test(IconTheme
-    SOURCES ui/themes/IconTheme_test.cpp
-    LIBS Kite_logic
-    )
-
 add_unit_test(IconList
     SOURCES icons/IconList_test.cpp
     LIBS Kite_core Qt${QT_VERSION_MAJOR}::Gui
@@ -1744,13 +1328,6 @@ target_include_directories(AutoIcons_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 add_unit_test(GameTextureIcons
     SOURCES icons/GameTextureIcons_test.cpp
     LIBS Kite_core Qt${QT_VERSION_MAJOR}::Gui
-    )
-
-target_compile_definitions(IconTheme_test PRIVATE
-    KITE_MAINWINDOW_UI_PATH="${CMAKE_CURRENT_SOURCE_DIR}/ui/MainWindow.ui")
-
-set_tests_properties(IconTheme PROPERTIES
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_PLATFORMTHEME="
     )
 
 # Core headers are included by their path under launcher/ ("core/UiHost.h"), so that directory is
@@ -1784,20 +1361,13 @@ target_link_libraries(Kite_core PUBLIC
     Qt${QT_VERSION_MAJOR}::Gui
     LibArchive::LibArchive
     cmark::cmark
-    rainbow
     LocalPeer::LocalPeer
 )
 
 # QtWidgets is linked here and only here (enforced by Kite_core_link_check).
 target_link_libraries(Kite_logic Qt${QT_VERSION_MAJOR}::Widgets)
 
-# Application picks MainWindow or the QML shell at startup, so the shell is compiled in either way.
 target_link_libraries(Kite_logic Kite_qml)
-if(Kite_QML_UI)
-    target_compile_definitions(Kite_logic PRIVATE KITE_QML_UI_DEFAULT)
-endif()
-
-target_link_libraries(Kite_logic Qt6::OpenGL)
 
 # Plugin system needs dlopen/dlsym on Unix
 if(UNIX AND NOT APPLE)
@@ -1814,7 +1384,7 @@ else()
 endif()
 
 if(APPLE)
-    # PUBLIC: ThemeManager.mm in Kite_logic also needs Cocoa.
+    # PUBLIC: MacSparkleUpdater.mm in Kite_core needs Cocoa.
     target_link_libraries(Kite_core PUBLIC
         "-framework AppKit"
         "-framework Foundation"
@@ -1984,8 +1554,10 @@ endif()
 if(NOT APPLE)
     set(MESHUPDATER_UI_FILES
         updater/meshupdater/SelectReleaseDialog.ui
+        ui/dialogs/ProgressDialog.ui
     )
 
+    # Not the versionless qt_wrap_ui: it is a no-op unless QT_DEFAULT_MAJOR_VERSION is set.
     qt6_wrap_ui(MESHUPDATER_UI ${MESHUPDATER_UI_FILES})
 
     set(MESHUPDATER_SOURCES
@@ -2021,11 +1593,9 @@ if(NOT APPLE)
 
         ui/dialogs/ProgressDialog.h
         ui/dialogs/ProgressDialog.cpp
-        ui/widgets/TaskStepProgressBar.h
-        ui/widgets/TaskStepProgressBar.cpp
     )
 
-    add_library(kite_updater_logic STATIC ${MESHUPDATER_SOURCES} ${MESHUPDATER_UI} ${KITE_SHARED_UI})
+    add_library(kite_updater_logic STATIC ${MESHUPDATER_SOURCES} ${MESHUPDATER_UI})
     target_include_directories(kite_updater_logic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     target_compile_definitions(kite_updater_logic PUBLIC QT_MESSAGELOGCONTEXT)
     target_link_libraries(kite_updater_logic
@@ -2322,7 +1892,7 @@ if(WIN32 OR (UNIX AND APPLE))
     endif()
 
     # Collect bin/ directories from CMAKE_PREFIX_PATH (variable and environment) so
-    # RUNTIME_DEPENDENCY_SET can find third-party DLLs. nbt++/rainbow are installed by the top-level
+    # RUNTIME_DEPENDENCY_SET can find third-party DLLs. nbt++ is installed by the top-level
     # CMakeLists.txt; everything else under libraries/ links statically.
     set(_prefix_path_bins "")
     foreach(_prefix IN LISTS CMAKE_PREFIX_PATH)

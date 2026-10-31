@@ -32,8 +32,8 @@ enum MMCOHookId : uint32_t {
 	/* Instance lifecycle */
 	MMCO_HOOK_INSTANCE_PRE_LAUNCH = 0x0200,	 /* payload: MMCOInstanceInfo*; just before the game spawns */
 	MMCO_HOOK_INSTANCE_POST_LAUNCH = 0x0201, /* payload: MMCOInstanceInfo*; after the game has EXITED */
-	MMCO_HOOK_INSTANCE_CREATED = 0x0202,	 /* payload: MMCOInstanceInfo* */
-	MMCO_HOOK_INSTANCE_REMOVED = 0x0203,	 /* payload: MMCOInstanceInfo* */
+	MMCO_HOOK_INSTANCE_CREATED = 0x0202,	 /* payload: MMCOInstanceInfo*; only after UI_MAIN_READY, not for instances already present */
+	MMCO_HOOK_INSTANCE_REMOVED = 0x0203,	 /* payload: MMCOInstanceInfo*; after UI_MAIN_READY, fired once the instance has left the list */
 
 	/* Settings */
 	MMCO_HOOK_SETTINGS_CHANGED = 0x0300, /* payload: MMCOSettingChange* */
@@ -47,27 +47,29 @@ enum MMCOHookId : uint32_t {
 	MMCO_HOOK_NETWORK_POST_REQUEST = 0x0501, /* payload: MMCONetworkEvent* */
 
 	/* UI extension points */
-	MMCO_HOOK_UI_MAIN_READY = 0x0600,	  /* payload: MMCOUiMainReadyPayload* */
-	MMCO_HOOK_UI_CONTEXT_MENU = 0x0601,	  /* payload: MMCOMenuEvent* */
-	MMCO_HOOK_UI_INSTANCE_PAGES = 0x0602, /* payload: MMCOInstancePagesEvent* */
-	MMCO_HOOK_UI_GLOBAL_SETTINGS_PAGES =
-		0x0603, /* payload: MMCOGlobalSettingsPagesEvent* */
+	MMCO_HOOK_UI_MAIN_READY = 0x0600, /* payload: MMCOUiMainReadyPayload*; fires once, when the
+										 main window is first on screen */
 
-	/* ABI 3+. Fires just before the global settings dialog is built. Payload: nullptr. Widget
-	 * changes belong on the next event-loop turn (QTimer::singleShot(0)), after the dialog's
-	 * setupUi has run. */
+	/* 0x0601-0x0607 are reserved: nothing dispatches them since the widget UI was removed, so a
+	 * callback registered for one is never called. The declarations stay for ABI compatibility.
+	 * Use ui_surface_create for pages and settings sections instead. */
+	MMCO_HOOK_UI_CONTEXT_MENU = 0x0601,	  /* reserved, never fired; payload: MMCOMenuEvent* */
+	MMCO_HOOK_UI_INSTANCE_PAGES = 0x0602, /* reserved, never fired; payload: MMCOInstancePagesEvent* */
+	MMCO_HOOK_UI_GLOBAL_SETTINGS_PAGES =
+		0x0603, /* reserved, never fired; payload: MMCOGlobalSettingsPagesEvent* */
+
+	/* ABI 3+. Reserved, never fired (it was the global settings dialog about to be built). */
 	MMCO_HOOK_GLOBAL_SETTINGS_ABOUT_TO_OPEN = 0x0604,
 
-	/* ABI 3+. Fires from InstanceSettingsPage's constructor once its UI is assembled. Payload:
+	/* ABI 3+. Reserved, never fired. Was: the instance settings page assembled. Payload:
 	 * MMCOInstanceSettingsPageEvent*. */
 	MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED = 0x0605,
 
-	/* ABI 3+. The instance settings page finished loading its values. Payload:
-	 * MMCOInstanceSettingsPageEvent*. */
+	/* ABI 3+. Reserved, never fired. Was: the instance settings page loaded its values. */
 	MMCO_HOOK_INSTANCE_SETTINGS_PAGE_LOADED = 0x0606,
 
-	/* ABI 3+. The instance settings page is about to write its values back; push custom widget
-	 * values into the instance settings here. Payload: MMCOInstanceSettingsPageEvent*. */
+	/* ABI 3+. Reserved, never fired. Was: the instance settings page about to write its values
+	 * back. */
 	MMCO_HOOK_INSTANCE_SETTINGS_PAGE_APPLYING = 0x0607,
 
 	/* News */
@@ -99,8 +101,8 @@ typedef int (*MMCOHookCallback)(void* module_handle, uint32_t hook_id,
 
 /* Flags for MMCOContext::hook_register_ex. 0 behaves like hook_register: the callback runs inline.
  *
- * MMCO_HOOK_FLAG_BACKGROUND runs the callback on a worker thread, shown as its own row in the progress
- * dialog. It must not touch ui_*, tray_* or main_window_* functions or Qt widgets, and may assume only
+ * MMCO_HOOK_FLAG_BACKGROUND runs the callback on a worker thread, behind a single "Waiting for plugins"
+ * busy indication (there is no per-plugin progress row). It must not touch ui_*, tray_* or main_window_* functions or Qt widgets, and may assume only
  * that it is not on the GUI thread. It may use log_*, fs_*, zip_*, process_run and progress_report.
  * Settings and instance/account/mod/world accessors read GUI-thread state: read what you need in a
  * second, inline callback for the same hook (a dispatch runs all inline callbacks before any
@@ -139,8 +141,7 @@ struct MMCOMenuEvent {
 	void* menu_handle;	 /* Opaque handle for mmco_ui_add_menu_item() */
 };
 
-/* Payload for MMCO_HOOK_UI_INSTANCE_PAGES. Pages are added through page_list_handle
- * (QList<BasePage*>*). */
+/* Payload for MMCO_HOOK_UI_INSTANCE_PAGES (reserved, never fired). */
 struct MMCOInstancePagesEvent {
 	const char* instance_id;
 	const char* instance_name;
@@ -149,13 +150,13 @@ struct MMCOInstancePagesEvent {
 	void* instance_handle;	/* Opaque: InstancePtr raw pointer */
 };
 
-/* Payload for MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED / _LOADED / _APPLYING (ABI 3+).
+/* Payload for MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED / _LOADED / _APPLYING (ABI 3+); the hooks are
+ * reserved and never fired, the struct stays for ABI compatibility.
  *   instance_id      internal id of the instance the page belongs to
  *   page_handle      the page widget (QWidget*); qobject_cast<QWidget*> is fine, but do not cast it to
  *                    InstanceSettingsPage* (that needs a launcher header)
  *   instance_handle  the BaseInstance being edited; same casting rules
- * Handles are valid for the lifetime of the settings dialog; do not delete them. Callback return
- * values are ignored: these are notifications, not veto points. */
+ * Callback return values are ignored: these are notifications, not veto points. */
 struct MMCOInstanceSettingsPageEvent {
 	const char* instance_id;
 	void* page_handle;
@@ -171,24 +172,19 @@ typedef void (*MMCOInstanceRunningCallback)(void* user_data,
 											const char* instance_id,
 											int running);
 
-/* Payload for MMCO_HOOK_UI_GLOBAL_SETTINGS_PAGES. Pages are added through page_list_handle
- * (QList<BasePage*>*). */
+/* Payload for MMCO_HOOK_UI_GLOBAL_SETTINGS_PAGES (reserved, never fired). */
 struct MMCOGlobalSettingsPagesEvent {
 	void* page_list_handle; /* Opaque: QList<BasePage*>* */
 };
 
-/* Payload for MMCO_HOOK_UI_MAIN_READY: fires once after MainWindow has assembled its top-level
- * widgets. Handles are valid for the main window's lifetime; do not take ownership or delete them,
- * qobject_cast<>() them to the documented type.
- *
- * Under the QML shell there is no MainWindow: the hook fires once after the root window is shown but
- * every field is null. Use main_window_show/hide/is_visible and main_window_install_close_filter,
- * which work under either UI. */
+/* Payload for MMCO_HOOK_UI_MAIN_READY: fires once, the first time the root window is on screen. The
+ * fields were the widget main window's handles and are always null now; they stay for ABI
+ * compatibility. Use main_window_show/hide/is_visible and main_window_install_close_filter. */
 struct MMCOUiMainReadyPayload {
-	void* main_window;		 /* Opaque: QMainWindow* (MainWindow*); null under the QML shell */
-	void* news_toolbar;		 /* Opaque: QToolBar*; null under the QML shell */
-	void* more_news_action;	 /* Opaque: QAction*; null under the QML shell */
-	void* news_label_button; /* Opaque: QToolButton*; null under the QML shell */
+	void* main_window;		 /* always null */
+	void* news_toolbar;		 /* always null */
+	void* more_news_action;	 /* always null */
+	void* news_label_button; /* always null */
 };
 
 /* Payload for MMCO_HOOK_AUTH_REQUEST, delivered just before AuthRequest dispatches a network call.

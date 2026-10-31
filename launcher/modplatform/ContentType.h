@@ -29,42 +29,6 @@ namespace ModPlatform
 	 * the folder model decides. The legacy page runs as ResourcePack. */
 	enum class ContentType { Mod, ResourcePack, ShaderPack, DataPack };
 
-	inline QString contentTypeDisplayName(ContentType type)
-	{
-		switch (type) {
-			case ContentType::Mod:
-				return "Mods";
-			case ContentType::ResourcePack:
-				return "Resource Packs";
-			case ContentType::ShaderPack:
-				return "Shader Packs";
-			case ContentType::DataPack:
-				return "Data Packs";
-		}
-		return "Mods";
-	}
-
-	/* Lower-case singular noun for a sentence ("Select mod for download"). */
-	inline QString contentTypeNoun(ContentType type)
-	{
-		switch (type) {
-			case ContentType::Mod:
-				return "mod";
-			case ContentType::ResourcePack:
-				return "resource pack";
-			case ContentType::ShaderPack:
-				return "shader pack";
-			case ContentType::DataPack:
-				return "data pack";
-		}
-		return "mod";
-	}
-
-	inline QString contentTypeNounPlural(ContentType type)
-	{
-		return contentTypeNoun(type) + QStringLiteral("s");
-	}
-
 	inline QString contentTypeFolderName(ContentType type)
 	{
 		switch (type) {
@@ -84,14 +48,6 @@ namespace ModPlatform
 	 * data packs are not; sending a loader filter for them returns an empty
 	 * result on Modrinth. */
 	inline bool contentTypeUsesLoader(ContentType type)
-	{
-		return type == ContentType::Mod;
-	}
-
-	/* Whether the download dialog offers a filter panel: only for mods, as a
-	 * resource pack has no loader or environment to narrow. Separate from
-	 * contentTypeUsesLoader() as they answer different questions. */
-	inline bool contentTypeSupportsFiltering(ContentType type)
 	{
 		return type == ContentType::Mod;
 	}

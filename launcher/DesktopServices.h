@@ -26,11 +26,6 @@
  * QDesktopServices. */
 namespace DesktopServices
 {
-	bool openFile(const QString& path);
-
-	bool openFile(const QString& application, const QString& path,
-				  const QString& workingDirectory = QString(), qint64* pid = 0);
-
 	bool run(const QString& application, const QStringList& args,
 			 const QString& workingDirectory = QString(), qint64* pid = 0);
 

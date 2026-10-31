@@ -97,8 +97,7 @@ InstanceFilterModel::InstanceFilterModel(QObject* parent)
 	// backends that honour it, so a tie between runs orders the same way.
 	m_naturalSort.setNumericMode(true);
 	m_naturalSort.setCaseSensitivity(Qt::CaseInsensitive);
-	// FIXME: same as the widget proxy -- use loaded translation as source of
-	// locale instead, hook this up to translation changes.
+	// FIXME: use loaded translation as source of locale instead, hook this up to translation changes.
 	m_naturalSort.setLocale(QLocale::system());
 
 	connect(this, &QAbstractItemModel::rowsInserted, this,
@@ -312,8 +311,7 @@ bool InstanceFilterModel::lessThan(const QModelIndex& left,
 	if (leftGroup == rightGroup) {
 		return subSortLessThan(left, right);
 	} else {
-		// FIXME: ported as-is from the widget proxy; real group ordering happens in
-		// InstanceView::updateGeometries() there.
+		// Groups sort by locale-aware name.
 		auto result = leftGroup.localeAwareCompare(rightGroup);
 		if (result == 0) {
 			return subSortLessThan(left, right);
@@ -337,7 +335,7 @@ bool InstanceFilterModel::subSortLessThan(const QModelIndex& left,
 		return left.data(m_lastLaunchRole).toLongLong() >
 			   right.data(m_lastLaunchRole).toLongLong();
 	}
-	// "Time played" is QML-only (the widget page writes only "Name"/"LastLaunch"); it
+	// "Time played" is the Library's third sort value; it
 	// falls back to name sorting like an unresolved role.
 	if (m_totalTimePlayedRole >= 0 && sortMode == "TotalTimePlayed") {
 		return left.data(m_totalTimePlayedRole).toLongLong() >

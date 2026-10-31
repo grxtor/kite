@@ -92,7 +92,10 @@ BuildRequires:    cmake(Qt%{qt_version}Core) >= %{min_qt_version}
 BuildRequires:    cmake(Qt%{qt_version}CoreTools) >= %{min_qt_version}
 BuildRequires:    cmake(Qt%{qt_version}Network) >= %{min_qt_version}
 BuildRequires:    cmake(Qt%{qt_version}NetworkAuth) >= %{min_qt_version}
-BuildRequires:    cmake(Qt%{qt_version}OpenGL) >= %{min_qt_version}
+BuildRequires:    cmake(Qt%{qt_version}Qml) >= %{min_qt_version}
+BuildRequires:    cmake(Qt%{qt_version}Quick) >= %{min_qt_version}
+BuildRequires:    cmake(Qt%{qt_version}QuickControls2) >= %{min_qt_version}
+BuildRequires:    cmake(Qt%{qt_version}Svg) >= %{min_qt_version}
 BuildRequires:    cmake(Qt%{qt_version}Test) >= %{min_qt_version}
 BuildRequires:    cmake(Qt%{qt_version}Widgets) >= %{min_qt_version}
 BuildRequires:    cmake(Qt%{qt_version}Xml) >= %{min_qt_version}
@@ -179,10 +182,8 @@ appstream-util validate-relax --nonet \
 %{_datadir}/mime/packages/io.github.grxtor.Kite.xml
 %{_datadir}/icons/hicolor/*/apps/io.github.grxtor.Kite.*
 %{_datadir}/Kite/
-%{_libdir}/libiconfix.so
 %{_libdir}/libnbt++.so.3*
 %{_libdir}/libnbt++.so
-%{_libdir}/librainbow.so
 %{_mandir}/man6/*
 %{_datadir}/Kite/JavaCheck.jar
 %{_datadir}/Kite/NewLaunch.jar

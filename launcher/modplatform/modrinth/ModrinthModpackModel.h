@@ -124,9 +124,8 @@ class ModrinthModpackDetail : public QObject
 /* Modrinth modpack search results for QML. Not a ContentProviderModel:
  * modpacks are not a ModPlatform::ContentType (they create instances).
  *
- * `logoUrl` is Modrinth's CDN URL, loaded and cached by QML's Image.
- * install() still needs an icon key for the new instance; see
- * resolveIconKey(). */
+ * `logoUrl` is Modrinth's CDN URL, loaded and cached by QML's Image. The
+ * installed instance gets the built-in "modrinth" icon. */
 class ModrinthModpackModel : public QAbstractListModel
 {
 	Q_OBJECT
@@ -280,11 +279,6 @@ class ModrinthModpackModel : public QAbstractListModel
 	void fetchDetailBody(const QString& projectId, quint64 generation);
 	void fetchDetailVersions(const QString& projectId, quint64 generation);
 	void markDetailPartDone(quint64 generation, bool isBody);
-
-	/* Icon key for the new instance: the slug's logo if already in the
-	 * on-disk "ModrinthPacks" cache, else the built-in "modrinth" icon.
-	 * Never downloads. */
-	QString resolveIconKey(const QString& slug, const QString& iconUrl) const;
 
   private:
 	QList<Modrinth::IndexedPack> m_packs;

@@ -25,7 +25,6 @@
 #include <FileSystem.h>
 #include <QMap>
 #include <QEventLoop>
-#include <QMimeData>
 #include <QUrl>
 #include <QFileSystemWatcher>
 #include <QSet>
@@ -185,48 +184,6 @@ void IconList::stopWatching()
 	is_watching = false;
 }
 
-QStringList IconList::mimeTypes() const
-{
-	QStringList types;
-	types << "text/uri-list";
-	return types;
-}
-Qt::DropActions IconList::supportedDropActions() const
-{
-	return Qt::CopyAction;
-}
-
-bool IconList::dropMimeData(const QMimeData* data, Qt::DropAction action,
-							int row, int column, const QModelIndex& parent)
-{
-	if (action == Qt::IgnoreAction)
-		return true;
-	if (!data || !(action & supportedDropActions()))
-		return false;
-
-	if (data->hasUrls()) {
-		auto urls = data->urls();
-		QStringList iconFiles;
-		for (auto url : urls) {
-			if (!url.isLocalFile())
-				continue;
-			iconFiles += url.toLocalFile();
-		}
-		installIcons(iconFiles);
-		return true;
-	}
-	return false;
-}
-
-Qt::ItemFlags IconList::flags(const QModelIndex& index) const
-{
-	Qt::ItemFlags defaultFlags = QAbstractListModel::flags(index);
-	if (index.isValid())
-		return Qt::ItemIsDropEnabled | defaultFlags;
-	else
-		return Qt::ItemIsDropEnabled | defaultFlags;
-}
-
 QVariant IconList::data(const QModelIndex& index, int role) const
 {
 	if (!index.isValid())
@@ -281,17 +238,6 @@ void IconList::installIcons(const QStringList& iconFiles)
 		if (!QFile::copy(file, target))
 			continue;
 	}
-}
-
-void IconList::installIcon(const QString& file, const QString& name)
-{
-	QFileInfo fileinfo(file);
-	if (!fileinfo.isReadable() || !fileinfo.isFile())
-		return;
-
-	QString target = FS::PathCombine(m_dir.dirName(), name);
-
-	QFile::copy(file, target);
 }
 
 bool IconList::iconFileExists(const QString& key) const

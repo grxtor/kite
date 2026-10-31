@@ -33,8 +33,8 @@ class GameOptions : public QAbstractListModel
 {
 	Q_OBJECT
   public:
-	// Named roles, so a QML ListView (column 0 only) can reach what the widget
-	// view shows as column 1.
+	// Named roles, so a QML ListView (column 0 only) can reach what
+	// the other columns hold.
 	enum ModelRoles {
 		KeyRole = Qt::UserRole,
 		ValueRole

@@ -185,9 +185,8 @@ static bool isGamemodeEnabledForInstance(const char* instanceId)
 }
 
 /* Settings UI: ABI 5 surfaces. One GLOBAL_SETTINGS surface created once, and one INSTANCE_SETTINGS
- * surface per instance, created on the first MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED for that
- * instance and refreshed on later opens. Each toggle persists its setting immediately on its
- * "change" event. */
+ * surface per instance, created for every instance on MMCO_HOOK_UI_MAIN_READY. Each toggle
+ * persists its setting immediately on its "change" event. */
 
 static QJsonObject buildGlobalDoc()
 {
@@ -405,15 +404,31 @@ static int on_app_initialized(void* /*mh*/, uint32_t /*hook_id*/,
 	return 0;
 }
 
-/* MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED fires on every open of an instance's settings dialog:
- * create the surface the first time, refresh its values and enabled state afterwards. */
-static int on_instance_settings_page_created(void*, uint32_t, void* payload,
-											 void*)
+/* The instance list is populated by the time the main window is up, so every existing instance
+ * gets its surface here. */
+static int on_ui_main_ready(void*, uint32_t, void*, void*)
 {
-	auto* evt = static_cast<MMCOInstanceSettingsPageEvent*>(payload);
-	if (!evt || !evt->instance_id)
+	if (!g_ctx)
 		return 0;
-	ensure_instance_surface(evt->instance_id);
+	const int total = g_ctx->instance_count(g_ctx->module_handle);
+	for (int i = 0; i < total; ++i) {
+		/* Copy before the next call: the host returns strings in one per-module buffer. */
+		const char* rawId = g_ctx->instance_get_id(g_ctx->module_handle, i);
+		if (!rawId)
+			continue;
+		const QByteArray id(rawId);
+		ensure_instance_surface(id.constData());
+	}
+	return 0;
+}
+
+/* Instances created, imported or copied after the main window is up. */
+static int on_instance_created(void*, uint32_t, void* payload, void*)
+{
+	auto* info = static_cast<MMCOInstanceInfo*>(payload);
+	if (!g_ctx || !info || !info->instance_id)
+		return 0;
+	ensure_instance_surface(info->instance_id);
 	return 0;
 }
 
@@ -507,9 +522,10 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_APP_INITIALIZED,
 					   on_app_initialized, nullptr);
-	ctx->hook_register(ctx->module_handle,
-					   MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED,
-					   on_instance_settings_page_created, nullptr);
+	ctx->hook_register(ctx->module_handle, MMCO_HOOK_UI_MAIN_READY,
+					   on_ui_main_ready, nullptr);
+	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_CREATED,
+					   on_instance_created, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_REMOVED,
 					   on_instance_removed, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_PRE_LAUNCH,

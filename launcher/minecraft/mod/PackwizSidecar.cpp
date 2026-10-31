@@ -165,7 +165,7 @@ QByteArray Packwiz::serialize(const ModMetadataIndex::Entry& entry)
 	toml::table download;
 	// CurseForge asks third parties not to hand out its file URLs, so the
 	// format has a mode that resolves through the API instead. Our copy of the
-	// URL goes in under our own key: the blocked-download path (ModFolderPage)
+	// URL goes in under our own key: the blocked-download path
 	// uses it and a foreign reader in metadata mode ignores it.
 	download.insert_or_assign(
 		"mode",

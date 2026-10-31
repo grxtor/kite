@@ -114,7 +114,7 @@ class BaseInstance : public QObject,
 
 	/* Managed pack provenance: an instance is "managed" when it came from a
 	 * Modrinth or CurseForge modpack and the pack and version on disk are
-	 * known (ManagedPackPage uses this to offer other versions). Thin wrappers
+	 * known. Thin wrappers
 	 * over the pack-source keys registered in the constructor; every field may
 	 * be empty. */
 
@@ -142,12 +142,6 @@ class BaseInstance : public QObject,
 	 * id. Everything that issues an API request must check this. */
 	bool hasManagedPackId() const;
 
-	/* URL the user typed for a pack with no catalogue entry, so a hand-made or
-	 * drag-dropped instance can still be updated from a link the user vouches
-	 * for. */
-	QString managedPackUpdateUrl() const;
-	void setManagedPackUpdateUrl(const QString& url);
-
 	/* Moves the recorded version forward after an update has landed on disk,
 	 * so the page and the catalogue agree. */
 	void setManagedPackVersion(const QString& versionId,
@@ -163,7 +157,7 @@ class BaseInstance : public QObject,
 	void setShortcuts(const QList<ShortcutData>& shortcuts);
 
 	/** Key of the profiler this instance launches under, empty for none:
-	 * whatever Application::profilers() is indexed by. Kept verbatim even if
+	 * whatever the launcher's profiler list is indexed by. Kept verbatim even if
 	 * this build has no such profiler, so an instance shared between machines
 	 * does not lose the setting. */
 	QString profilerKey() const;
@@ -206,8 +200,6 @@ class BaseInstance : public QObject,
 	virtual IPathMatcher::Ptr getLogFileMatcher() = 0;
 
 	virtual QString getLogFileRoot() = 0;
-
-	virtual QString getStatusbarDescription() = 0;
 
 	/// FIXME: this really should be elsewhere...
 	virtual QString instanceConfigFolder() const = 0;
@@ -292,8 +284,6 @@ class BaseInstance : public QObject,
 	void launchTaskChanged(shared_qobject_ptr<LaunchTask>);
 
 	void runningStatusChanged(bool running);
-
-	void profilerChanged();
 
 	void statusChanged(Status from, Status to);
 

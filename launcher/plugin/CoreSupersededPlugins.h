@@ -26,7 +26,7 @@
 /* Plugins that graduated into core. Their old .mmco files may still sit in a user's mmcmodules/ (or
  * a lagging distro package), and loading one would double up on what core does: two Backups tabs,
  * two pre-launch snapshots, two news dialogs. The loader refuses to initialise them and reports why
- * in the plugins dialog. Matching is case-insensitive on the declared name and the file name, so a
+ * in Settings. Matching is case-insensitive on the declared name and the file name, so a
  * renamed .mmco cannot slip past. Add an entry in the same commit as the core implementation; keep
  * the detail string short, it is shown verbatim next to the module name. */
 

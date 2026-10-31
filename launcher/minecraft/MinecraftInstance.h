@@ -167,7 +167,6 @@ class MinecraftInstance : public BaseInstance
 
 	QString getLogFileRoot() override;
 
-	QString getStatusbarDescription() override;
 
 	// FIXME: remove
 	virtual QStringList getClassPath() const;

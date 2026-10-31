@@ -375,7 +375,7 @@ class QmlUiRequest : public QObject
  * Presenter readiness: this object exists from QmlShell::load(), before any
  * QML item is bound to `current`, and a call made then would wait forever.
  * QmlShell::uiHostInterface() therefore returns it only once `presenterReady`
- * is true, and Application uses the widget host until then. The item that shows
+ * is true, and Application uses its headless host until then. The item that shows
  * `current` calls setPresenterReady(true) when it is live.
  */
 class QmlUiHost : public QObject, public UiHost

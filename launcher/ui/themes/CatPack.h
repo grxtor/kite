@@ -104,7 +104,7 @@ class JsonCatPack : public CatPack
  * @p imageFilters (e.g. "*.png"), and sub-folders holding either a
  * catpack.json or pictures. A pack whose id is already taken is left out,
  * and a manifest that cannot be read is skipped with a warning. Shared by
- * the classic ThemeManager and the QML shell's CatPackList.
+ * the QML shell's CatPackList.
  */
 std::vector<std::unique_ptr<CatPack>>
 discoverCatPacks(const QDir& folder, const QStringList& imageFilters);

@@ -37,23 +37,6 @@ class SettingsObject : public QObject
 {
 	Q_OBJECT
   public:
-	class Lock
-	{
-	  public:
-		Lock(SettingsObjectPtr locked) : m_locked(locked)
-		{
-			m_locked->suspendSave();
-		}
-		~Lock()
-		{
-			m_locked->resumeSave();
-		}
-
-	  private:
-		SettingsObjectPtr m_locked;
-	};
-
-  public:
 	explicit SettingsObject(QObject* parent = 0);
 	virtual ~SettingsObject();
 	/* Registers an override for the given setting. @p gate decides whether the

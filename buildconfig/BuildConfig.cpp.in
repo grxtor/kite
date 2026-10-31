@@ -33,7 +33,6 @@ Config::Config()
 	KITE_CONFIGFILE = "@Kite_ConfigFile@";
 	KITE_GIT = "@Kite_Git@";
 	KITE_APPID = "@Kite_AppID@";
-	KITE_ENVNAME = "@Kite_EnvName@";
 
 	USER_AGENT = "@Kite_UserAgent@";
 	USER_AGENT_UNCACHED = USER_AGENT + " (Uncached)";

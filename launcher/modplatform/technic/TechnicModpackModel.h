@@ -194,7 +194,6 @@ class TechnicModpackModel : public QAbstractListModel
 	void startSearch();
 	Pack* packFor(const QString& slug);
 	void applyDetail(const Pack& pack);
-	QString resolveIconKey(const Pack& pack) const;
 
   private:
 	QList<Pack> m_packs;

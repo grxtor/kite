@@ -81,10 +81,6 @@ BaseInstance::BaseInstance(SettingsObjectPtr globalSettings,
 	 * before this key existed; managedPackName() falls back. */
 	m_settings->registerSetting("PackName", "");
 
-	/* An update source the user supplied by hand, for instances with no
-	 * catalogue entry (drag-dropped zips, hand-made instances). */
-	m_settings->registerSetting("PackUpdateUrl", "");
-
 	auto commandSetting = m_settings->registerSetting(
 		{"OverrideCommands", "OverrideLaunchCmd"}, false);
 	m_settings->registerOverride(globalSettings->getSetting("PreLaunchCommand"),
@@ -96,8 +92,6 @@ BaseInstance::BaseInstance(SettingsObjectPtr globalSettings,
 
 	auto consoleSetting = m_settings->registerSetting("OverrideConsole", false);
 	m_settings->registerOverride(globalSettings->getSetting("ShowConsole"),
-								 consoleSetting);
-	m_settings->registerOverride(globalSettings->getSetting("AutoCloseConsole"),
 								 consoleSetting);
 	m_settings->registerOverride(
 		globalSettings->getSetting("ShowConsoleOnError"), consoleSetting);
@@ -342,22 +336,6 @@ bool BaseInstance::hasManagedPackId() const
 	return !managedPackProvider().isEmpty() && !managedPackId().isEmpty();
 }
 
-QString BaseInstance::managedPackUpdateUrl() const
-{
-	return m_settings->get("PackUpdateUrl").toString().trimmed();
-}
-
-void BaseInstance::setManagedPackUpdateUrl(const QString& url)
-{
-	const QString trimmed = url.trimmed();
-	if (managedPackUpdateUrl() == trimmed) {
-		// Writing a setting writes a file, and this is fed by textChanged, so
-		// skip keystrokes that do not change the trimmed value.
-		return;
-	}
-	m_settings->set("PackUpdateUrl", trimmed);
-}
-
 void BaseInstance::setManagedPackVersion(const QString& versionId,
 										 const QString& versionName)
 {
@@ -454,7 +432,6 @@ void BaseInstance::setProfilerKey(const QString& key)
 		return;
 	}
 	m_settings->set("Profiler", key);
-	emit profilerChanged();
 }
 
 void BaseInstance::setIconKey(QString val)

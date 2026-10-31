@@ -27,6 +27,7 @@
 #include <QVariant>
 #include <QAbstractListModel>
 #include <QSharedPointer>
+#include <QTimer>
 
 /*!
  * List of available Mojang accounts.

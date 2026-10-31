@@ -67,10 +67,8 @@ namespace ManagedPack
 		QString downloadUrl;
 
 		/* Markdown or HTML, as sent. Modrinth includes it in the list;
-		 * CurseForge needs a request per file, so it is filled lazily and
-		 * `changelogLoaded` tells empty from not yet fetched. */
+		 * CurseForge versions carry none (it would need a request per file). */
 		QString changelog;
-		bool changelogLoaded = false;
 
 		/* Whether there is somewhere to download it from. */
 		bool isInstallable() const
@@ -96,10 +94,6 @@ namespace ManagedPack
 	/* Parses CurseForge's `/mods/{id}/files` reply, sorted newest first by
 	 * file id: CurseForge promises no order and ids grow with age. */
 	VersionList parseCurseForgeFiles(const QByteArray& bytes, bool* ok);
-
-	/* Extracts the changelog from `/mods/{id}/files/{fileId}/changelog`;
-	 * empty when the reply is unusable. */
-	QString parseCurseForgeChangelog(const QByteArray& bytes);
 
 	/* Index of the version whose id matches, or -1. Compared as trimmed
 	 * strings: instance.cfg may hold odd spacing, and Modrinth ids are not

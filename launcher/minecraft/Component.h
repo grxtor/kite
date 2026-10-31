@@ -87,7 +87,6 @@ class Component : public QObject, public ProblemProvider
 	bool isRevertible();
 	bool isRemovable();
 	bool isCustom();
-	bool isVersionChangeable();
 
 	// DEPRECATED: explicit numeric order values, used for loading old
 	// non-component config. TODO: refactor and move to migration code

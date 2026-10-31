@@ -54,11 +54,9 @@ namespace PluginSignature
 								QString& fingerprint);
 
 	/* Reads the trailer from the file, then verifies it; returns Absent without touching GpgME if
-	 * there is none. Results are memoised in a persistent disk cache keyed on (path, size, mtime);
-	 * `bypassCache=true` forces a fresh verification (the plugins dialog's "Re-verify"). */
+	 * there is none. Results are memoised in a persistent disk cache keyed on (path, size, mtime). */
 	PluginSignatureState verifyFile(const QString& filePath, QString& detail,
-									QString& fingerprint,
-									bool bypassCache = false);
+									QString& fingerprint);
 
 	/* Overrides the GnuPG home directory (where the trusted keyring lives); empty resets to the
 	 * GpgME default. Call once at startup with the value from the application settings. */
@@ -78,8 +76,5 @@ namespace PluginSignature
 	 * Classpath-exception-2.0") counts as OSS if any clause is. An empty license is non-OSS and
 	 * requires a signature. */
 	bool isOpenSourceLicense(const QString& spdxLicense);
-
-	/* Short human-readable label for the plugins dialog's state column. */
-	const char* stateLabel(PluginSignatureState state);
 
 } // namespace PluginSignature

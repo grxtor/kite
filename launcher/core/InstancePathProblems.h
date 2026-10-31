@@ -24,8 +24,8 @@
 #include <QString>
 #include <QStringList>
 
-/* Instance folders known to cause trouble, checked from the QML shell (and
- * MainWindow) and reported through UiHost: a '!' anywhere in the path, which
+/* Instance folders known to cause trouble, checked from the QML shell and
+ * reported through UiHost: a '!' anywhere in the path, which
  * Java mis-reads; a folder inside an archive viewer's unpack area ("Rar$") or
  * a temporary folder, which the system may delete. Every configured folder is
  * checked, and each problem names its folder. */

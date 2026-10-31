@@ -75,8 +75,9 @@ class PluginSurfaceModel : public QAbstractListModel
 				 int role = Qt::DisplayRole) const override;
 	QHash<int, QByteArray> roleNames() const override;
 
-	/* Serialises `value` as PluginUiRenderer does for value_json: bool becomes `true`/`false`, a number its
-	 * plain text, anything else a quoted JSON string; an invalid QVariant (a button click) becomes "". */
+	/* Serialises `value` for value_json (quoteJsonString in PluginSurfaceModel.cpp is the string
+	 * encoder): bool becomes `true`/`false`, a number its plain text, anything else a quoted JSON
+	 * string; an invalid QVariant (a button click) becomes "". */
 	static QString valueToJson(const QVariant& value);
 
 	/* Delivers a UI event to the plugin behind `surfaceId` (value goes through valueToJson()). No-op if

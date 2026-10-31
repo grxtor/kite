@@ -6,8 +6,8 @@ include(CMakeFindDependencyMacro)
 #
 # Two targets are exported:
 #
-#   Kite::SDK    — C++ SDK. Pulls in Qt and the BasePage interface.
-#                    Use this for C++ plugins (UI pages, tray, dialogs).
+#   Kite::SDK    — C++ SDK. Pulls in Qt and the frozen BasePage ABI shim.
+#                    Use this for C++ plugins (UI goes through ui_surface_create).
 #   Kite::SDK_C  — language-neutral C ABI. Qt-free, header-only.
 #                    Use this for plain-C plugins, or as the binding
 #                    surface for other languages (Rust/Zig/…).

@@ -77,7 +77,7 @@ QStringList PluginLoader::defaultSearchPaths()
 		paths << QDir(localData).filePath("mmcmodules");
 #else
 	// TODO: Edit this so that the system and user levels differentiate between
-	// them in the about dialog.
+	// them in Settings.
 	// ~/.local/lib/mmcmodules
 	QString home = QDir::homePath();
 	paths << home + "/.local/lib/mmcmodules";
@@ -166,14 +166,14 @@ PluginLoader::scanDirectory(const QString& dir,
 				<< "[PluginLoader] Not loading" << meta.name << "from"
 				<< meta.filePath << "-" << meta.disableDetail;
 		}
-		// User disable list: the library stays loaded so the plugins dialog can show its metadata,
+		// User disable list: the library stays loaded so Settings can show its metadata,
 		// but the manager must not call mmco_init().
 		else if (disabledNames.contains(meta.name.toLower()) ||
 				 disabledNames.contains(meta.moduleId().toLower())) {
 			meta.disabled = true;
 			meta.disableReason = PluginDisableReason::UserDisabled;
 			meta.disableDetail =
-				QStringLiteral("Disabled by user in the plugins dialog");
+				QStringLiteral("Turned off in Settings > Installed plugins");
 		}
 
 		result.append(std::move(meta));
@@ -236,7 +236,7 @@ PluginMetadata PluginLoader::loadModule(const QString& path) const
 
 	// Capture identity before the ABI gate: name and version sit ahead of the "ABI 2 fields" block
 	// and have never moved, so reading them trusts nothing beyond the magic check. A module refused
-	// for its ABI still deserves a name and version in the plugins dialog.
+	// for its ABI still deserves a name and version in Settings.
 	meta.name = QString::fromUtf8(info->name ? info->name : "");
 	meta.version = QString::fromUtf8(info->version ? info->version : "");
 

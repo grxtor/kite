@@ -23,10 +23,10 @@
 #include <QDebug>
 
 #include "core/LauncherContext.h"
+#include "models/WorldTools.h"
 #include "settings/Setting.h"
 #include "tools/JProfiler.h"
 #include "tools/JVisualVM.h"
-#include "tools/MCEditTool.h"
 
 SettingsAdapter::SettingsAdapter(SettingsObjectPtr settings, QObject* parent)
 	: QObject(parent), m_settings(std::move(settings))
@@ -122,7 +122,7 @@ QString SettingsAdapter::checkExternalTool(const QString& tool,
 	} else if (tool == QLatin1String("jvisualvm")) {
 		ok = JVisualVMFactory().check(path, &error);
 	} else if (tool == QLatin1String("mcedit")) {
-		ok = m_settings && MCEditTool(m_settings).check(path, error);
+		ok = WorldTools::checkMCEditFolder(path, error);
 	} else {
 		qWarning() << "SettingsAdapter::checkExternalTool: unknown tool"
 				   << tool;

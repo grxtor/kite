@@ -671,7 +671,7 @@ namespace PluginSignature
 	}
 
 	PluginSignatureState verifyFile(const QString& filePath, QString& detail,
-									QString& fingerprint, bool bypassCache)
+									QString& fingerprint)
 	{
 		// Cache lookup keyed on (path, size, mtime_ms): stat() metadata is far cheaper than reading
 		// the payload and calling gpg-agent.
@@ -681,7 +681,7 @@ namespace PluginSignature
 		key.size = fi.size();
 		key.mtimeMs = fi.lastModified().toMSecsSinceEpoch();
 
-		if (!bypassCache) {
+		{
 			QMutexLocker lock(&g_mutex);
 			auto it = g_cache.constFind(key);
 			if (it != g_cache.constEnd()) {
@@ -721,27 +721,6 @@ namespace PluginSignature
 			g_cacheDirty = true;
 		}
 		return state;
-	}
-
-	const char* stateLabel(PluginSignatureState state)
-	{
-		switch (state) {
-			case PluginSignatureState::NotChecked:
-				return "Not checked";
-			case PluginSignatureState::Absent:
-				return "Unsigned";
-			case PluginSignatureState::Valid:
-				return "Signed (trusted)";
-			case PluginSignatureState::Untrusted:
-				return "Signed (untrusted key)";
-			case PluginSignatureState::BadSignature:
-				return "Bad signature";
-			case PluginSignatureState::Malformed:
-				return "Malformed signature";
-			case PluginSignatureState::Error:
-				return "Verification error";
-		}
-		return "Unknown";
 	}
 
 } // namespace PluginSignature

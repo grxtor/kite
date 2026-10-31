@@ -4,8 +4,9 @@
  *
  * GitVersioningPlugin: MMCO entry point.
  *
- * Every widget is an "mmco-ui/1" JSON document handed to ui_surface_create (ABI 5, S33); the host
- * renders and owns the widget tree.
+ * Every node tree is an "mmco-ui/1" JSON document handed to ui_surface_create (ABI 5, S33); the host
+ * renders it (PluginNode.qml) and owns the surface. The Version History page refreshes on the
+ * Refresh click and after a snapshot, restore, tag or auto-snapshot at launch.
  *
  * Hooks:
  *   APP_INITIALIZED      log whether system git was found (the check ran in mmco_init(), so the
@@ -15,9 +16,6 @@
  *   INSTANCE_CREATED     create the two per-instance surfaces (INSTANCE_SETTINGS override group and
  *                        INSTANCE_PAGE "Version History")
  *   INSTANCE_REMOVED     destroy both, freeing the GitVersioningPageController and GitRepo
- *   UI_INSTANCE_PAGES    fires each time an instance window's page list is (re)built, before
- *                        PluginManager::createInstancePages() reads our surface's document; used to
- *                        refresh the git history so the page is current
  *   INSTANCE_PRE_LAUNCH  auto-snapshot the instance if the effective (per-instance / global)
  *                        setting is on
  *
@@ -30,6 +28,7 @@
 #include "GitRepo.h"
 #include "GitVersioningPage.h"
 #include <QHash>
+#include <QTimer>
 #include <cstring>
 #include <memory>
 
@@ -361,20 +360,6 @@ static int on_instance_removed(void*, uint32_t, void* payload, void*)
 	return 0;
 }
 
-/* No BasePage is appended: the INSTANCE_PAGE surface is what PluginManager::createInstancePages()
- * renders. This moment (once per instance window open, before createInstancePages(), see
- * InstancePageProvider::getPages()) refreshes the git history. */
-static int on_instance_pages(void*, uint32_t, void* payload, void*)
-{
-	auto* evt = static_cast<MMCOInstancePagesEvent*>(payload);
-	if (!evt || !evt->instance_id)
-		return 0;
-	auto it = g_instances.find(QString::fromUtf8(evt->instance_id));
-	if (it != g_instances.end() && it.value()->page)
-		it.value()->page->reloadHistory();
-	return 0;
-}
-
 static int on_pre_launch(void*, uint32_t, void* payload, void*)
 {
 	if (!g_ctx || !payload || !g_gitAvailable)
@@ -410,6 +395,14 @@ static int on_pre_launch(void*, uint32_t, void* payload, void*)
 	} else if (!sha.isEmpty()) {
 		QByteArray msg = "GitVersioning: snapshot " + sha.toUtf8();
 		MMCO_LOG(g_ctx, msg.constData());
+		// The page keeps its own GitRepo and cached commit list; refresh it after the launch
+		// has started, since reloading spawns a git process per commit.
+		const QString instanceId = QString::fromUtf8(info->instance_id);
+		QTimer::singleShot(0, [instanceId]() {
+			auto it = g_instances.find(instanceId);
+			if (it != g_instances.end() && it.value()->page)
+				it.value()->page->reloadHistory();
+		});
 	}
 	return 0;
 }
@@ -433,8 +426,6 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 					   on_instance_created, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_REMOVED,
 					   on_instance_removed, nullptr);
-	ctx->hook_register(ctx->module_handle, MMCO_HOOK_UI_INSTANCE_PAGES,
-					   on_instance_pages, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_PRE_LAUNCH,
 					   on_pre_launch, nullptr);
 

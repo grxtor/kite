@@ -1684,7 +1684,6 @@ void InstanceImportTask::carryOverUserSettings(BaseInstance& instance)
 		"PostExitCommand",
 		"OverrideConsole",
 		"ShowConsole",
-		"AutoCloseConsole",
 		"ShowConsoleOnError",
 		"LogPrePostOutput",
 	};

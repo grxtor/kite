@@ -336,18 +336,6 @@ int main(int argc, char* argv[])
 			Q_INIT_RESOURCE(backgrounds);
 			Q_INIT_RESOURCE(documents);
 			Q_INIT_RESOURCE(kite);
-			Q_INIT_RESOURCE(shaders);
-
-			Q_INIT_RESOURCE(pe_dark);
-			Q_INIT_RESOURCE(pe_light);
-			Q_INIT_RESOURCE(pe_blue);
-			Q_INIT_RESOURCE(pe_colored);
-			Q_INIT_RESOURCE(breeze_dark);
-			Q_INIT_RESOURCE(breeze_light);
-			Q_INIT_RESOURCE(OSX);
-			Q_INIT_RESOURCE(iOS);
-			Q_INIT_RESOURCE(flat);
-			Q_INIT_RESOURCE(flat_white);
 
 			int ret = app.exec();
 
@@ -359,7 +347,11 @@ int main(int argc, char* argv[])
 			_exit(ret);
 		}
 		case Application::Failed:
-			return 1;
+			// Plugins may be loaded by now: a normal return would run their
+			// static destructors (see above), so end like the normal path.
+			app.shutdownForExit();
+			fflush(nullptr);
+			_exit(1);
 		case Application::Succeeded:
 			return 0;
 	}

@@ -28,8 +28,8 @@
 class ModMetadataIndex;
 
 /* Pure-function helper that classifies `DownloadItem`s against the
- * installed mods (`ModMetadataIndex`). Used by ModFolderPage and the
- * update flow to decide what to write to disk. */
+ * installed mods (`ModMetadataIndex`). Used by the mod
+ * folder and the update flow to decide what to write to disk. */
 class ModInstallConflictAnalyzer
 {
   public:

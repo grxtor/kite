@@ -21,10 +21,7 @@
 #pragma once
 
 #include <QAbstractListModel>
-#include <QIcon>
 #include <QList>
-#include <QMap>
-#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <memory>
@@ -101,7 +98,7 @@ namespace ModPlatform
 
 } // namespace ModPlatform
 
-/* Extra roles data() produces for ProjectItemDelegate, past Qt::UserRole
+/* Extra roles data() produces, past Qt::UserRole
  * (the project id). DisplayRole stays the plain name. */
 namespace ProjectItemRole
 {
@@ -143,7 +140,6 @@ class ContentProviderModel : public QAbstractListModel
 
 	/* "curseforge" / "modrinth", as stored in sidecars and SelectedMod. */
 	QString platformId() const;
-	QString platformDisplayName() const;
 	QList<ModPlatform::SortingMethod> sortingMethods() const;
 	bool supportsExtendedFilters() const;
 
@@ -175,18 +171,10 @@ class ContentProviderModel : public QAbstractListModel
 
 	/* Index of what is installed; matching rows are flagged. */
 	void setInstalledIndex(std::shared_ptr<ModMetadataIndex> index);
-	/* Normalized names of queued projects; matching rows draw a ticked
-	 * checkbox. */
-	void setSelectedNames(const QSet<QString>& names);
 
 	bool isSearching() const
 	{
 		return m_searchJob != nullptr;
-	}
-	/* The running search, or null; not owned by the caller. */
-	Task* activeSearchJob() const
-	{
-		return m_searchJob.get();
 	}
 
 	/* Why the last search or page fetch failed; empty on success or before
@@ -232,9 +220,6 @@ class ContentProviderModel : public QAbstractListModel
 	virtual QList<ModPlatform::Category>
 	parseCategoriesResponse(const QByteArray& bytes) const = 0;
 
-	/* Metacache bucket for this provider's icons. */
-	virtual QString iconCacheName() const = 0;
-
 	const ModPlatform::ContentApi& api() const
 	{
 		return m_api;
@@ -257,10 +242,6 @@ class ContentProviderModel : public QAbstractListModel
 					   const QByteArray& bytes);
 	void applyBody(quint64 generation, const QString& projectId,
 				   const QByteArray& bytes);
-
-	void requestLogo(const QString& key, const QString& url);
-	void logoLoaded(const QString& key, const QIcon& icon);
-	void logoFailed(const QString& key);
 
 	void applyInstalledState(ModPlatform::IndexedProject& project) const;
 	void emitRowStateChanged();
@@ -287,14 +268,9 @@ class ContentProviderModel : public QAbstractListModel
 	bool m_hideInstalled = false;
 
 	std::shared_ptr<ModMetadataIndex> m_installedIndex;
-	QSet<QString> m_selectedNames;
 
 	/* Stops a failed request from retrying on every keystroke. */
 	bool m_categoriesRequested = false;
-
-	QMap<QString, QIcon> m_logoMap;
-	QStringList m_loadingLogos;
-	QStringList m_failedLogos;
 
 	QString m_searchTerm;
 	/* Non-empty while the rows are the answer to searchProject() rather

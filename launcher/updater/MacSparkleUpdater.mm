@@ -23,56 +23,6 @@
 #include <Cocoa/Cocoa.h>
 #include <Sparkle/Sparkle.h>
 
-/*! Reports Sparkle's KVO-observable `canCheckForUpdates` through a block (Qt wants a signal). */
-@interface KiteUpdaterObserver : NSObject
-
-@property(nonatomic, readonly) SPUUpdater* updater;
-@property(nonatomic, copy) void (^onCanCheckChanged)(bool);
-
-- (instancetype)initWithUpdater:(SPUUpdater*)updater;
-- (void)stopObserving;
-
-@end
-
-@implementation KiteUpdaterObserver {
-	BOOL _observing;
-}
-
-- (instancetype)initWithUpdater:(SPUUpdater*)updater
-{
-	self = [super init];
-	if (self) {
-		_updater = updater;
-		[self addObserver:self
-			   forKeyPath:@"updater.canCheckForUpdates"
-				  options:NSKeyValueObservingOptionNew
-				  context:nil];
-		_observing = YES;
-	}
-	return self;
-}
-
-- (void)stopObserving
-{
-	if (_observing) {
-		[self removeObserver:self forKeyPath:@"updater.canCheckForUpdates"];
-		_observing = NO;
-	}
-}
-
-- (void)observeValueForKeyPath:(NSString*)keyPath
-					  ofObject:(id)object
-						change:(NSDictionary<NSKeyValueChangeKey, id>*)change
-					   context:(void*)context
-{
-	if (![keyPath isEqualToString:@"updater.canCheckForUpdates"])
-		return;
-	if (self.onCanCheckChanged)
-		self.onCanCheckChanged([change[NSKeyValueChangeNewKey] boolValue]);
-}
-
-@end
-
 /*! Answers Sparkle's questions about which appcast channels we accept. */
 @interface KiteUpdaterDelegate : NSObject <SPUUpdaterDelegate>
 
@@ -93,7 +43,6 @@ class MacSparkleUpdater::Private
 {
   public:
 	SPUStandardUpdaterController* controller = nil;
-	KiteUpdaterObserver* observer = nil;
 	KiteUpdaterDelegate* delegate = nil;
 	NSAutoreleasePool* pool = nil;
 };
@@ -112,23 +61,11 @@ MacSparkleUpdater::MacSparkleUpdater() : priv(new MacSparkleUpdater::Private())
 		initWithStartingUpdater:true
 				updaterDelegate:priv->delegate
 			 userDriverDelegate:nil];
-
-	priv->observer = [[KiteUpdaterObserver alloc]
-		initWithUpdater:priv->controller.updater];
-
-	// Explicit capture: the block outlives this constructor.
-	MacSparkleUpdater* self_ = this;
-	priv->observer.onCanCheckChanged = ^(bool canCheck) {
-	  emit self_->canCheckForUpdatesChanged(canCheck);
-	};
 }
 
 MacSparkleUpdater::~MacSparkleUpdater()
 {
-	[priv->observer stopObserving];
-
 	[priv->controller release];
-	[priv->observer release];
 	[priv->delegate release];
 	[priv->pool release];
 

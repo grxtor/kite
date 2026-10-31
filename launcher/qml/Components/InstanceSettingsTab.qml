@@ -125,18 +125,12 @@ TabScroll {
             title: qsTr("Console")
             source: store
             gateKey: "OverrideConsole"
-            keys: ["ShowConsole", "AutoCloseConsole", "ShowConsoleOnError"]
+            keys: ["ShowConsole", "ShowConsoleOnError"]
             SettingSwitch {
                 source: store
                 key: "ShowConsole"
                 enabled: consoleGroup.overriding
                 label: qsTr("Show the console while playing")
-            }
-            SettingSwitch {
-                source: store
-                key: "AutoCloseConsole"
-                enabled: consoleGroup.overriding
-                label: qsTr("Close the console when the game quits")
             }
             SettingSwitch {
                 source: store

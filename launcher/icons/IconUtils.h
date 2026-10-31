@@ -27,6 +27,4 @@ namespace IconUtils
 	// The path of the best icon with this key in a folder.
 	QString findBestIconIn(const QString& folder, const QString& iconKey);
 
-	QString getIconFilter();
-
 } // namespace IconUtils

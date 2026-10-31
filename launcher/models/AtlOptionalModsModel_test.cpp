@@ -23,7 +23,7 @@
 
 #include "models/AtlOptionalModsModel.h"
 
-/* The optional-mod rules AtlOptionalModListModel had, on hand-built mods:
+/* The optional-mod rules, on hand-built mods:
  * defaults, groups, dependencies, hidden libraries. */
 class AtlOptionalModsModelTest : public QObject
 {

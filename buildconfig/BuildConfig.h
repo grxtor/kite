@@ -35,10 +35,6 @@ class Config
 	QString KITE_GIT;
 	QString KITE_APPID;
 
-	/// Prefix of the launcher's environment variables, e.g. "KITE" for
-	/// KITE_DISABLE_GLVULKAN.
-	QString KITE_ENVNAME;
-
 	int VERSION_MAJOR;
 	int VERSION_MINOR;
 	int VERSION_HOTFIX;
@@ -125,8 +121,6 @@ class Config
 	// Technic picks the download URL from this; "kite" got a third-party mirror
 	// whose archives failed the CRC check, so send the value other launchers do.
 	QString TECHNIC_API_BUILD = "multimc";
-
-	QString LEGACY_FTB_CDN_BASE_URL = "https://dist.creeper.host/FTB2/";
 
 	QString ATL_DOWNLOAD_SERVER_URL =
 		"https://download.nodecdn.net/containers/atl/";

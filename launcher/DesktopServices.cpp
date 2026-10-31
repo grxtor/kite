@@ -94,24 +94,6 @@ namespace DesktopServices
 #endif
 	}
 
-	bool openFile(const QString& path)
-	{
-		qDebug() << "Opening file" << path;
-#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
-		return QProcess::startDetached("xdg-open", QStringList() << path);
-#else
-		return QDesktopServices::openUrl(QUrl::fromLocalFile(path));
-#endif
-	}
-
-	bool openFile(const QString& application, const QString& path,
-				  const QString& workingDirectory, qint64* pid)
-	{
-		qDebug() << "Opening file" << path << "using" << application;
-		return QProcess::startDetached(application, QStringList() << path,
-									   workingDirectory, pid);
-	}
-
 	bool run(const QString& application, const QStringList& args,
 			 const QString& workingDirectory, qint64* pid)
 	{

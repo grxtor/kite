@@ -6,14 +6,12 @@
  * exposes a per-instance "Error Analysis" page, and after a crash (INSTANCE_POST_LAUNCH) raises a
  * system-tray notification ("ErrorOracle found %d suggestion(s) for the last crash").
  *
- * The page is an "mmco-ui/1" document handed to ui_surface_create (ABI 5); the host renders it.
+ * The page is an "mmco-ui/1" document handed to ui_surface_create (ABI 5); the host renders it
+ * (PluginNode.qml). It re-analyses on the Re-analyse click and after a crash (INSTANCE_POST_LAUNCH).
  * Hooks (same shape as GitVersioning):
  *   UI_MAIN_READY      create surfaces for instances that existed before mmco_init() ran
  *   INSTANCE_CREATED   create the surface for a new instance
  *   INSTANCE_REMOVED   destroy it, freeing the AnalysisPageController
- *   UI_INSTANCE_PAGES  fires each time an instance window's page list is (re)built, before
- *                      PluginManager::createInstancePages() reads our document; used to re-run the
- *                      analysis
  */
 
 #include "plugin/sdk/mmco_cxx_sdk.hpp"
@@ -175,19 +173,6 @@ static int on_instance_removed(void*, uint32_t, void* payload, void*)
 	return 0;
 }
 
-/* No BasePage is appended: the INSTANCE_PAGE surface is what PluginManager::createInstancePages()
- * renders. This moment refreshes the analysis. */
-static int on_instance_pages(void*, uint32_t, void* payload, void*)
-{
-	auto* evt = static_cast<MMCOInstancePagesEvent*>(payload);
-	if (!evt || !evt->instance_id)
-		return 0;
-	auto it = g_instances.find(QString::fromUtf8(evt->instance_id));
-	if (it != g_instances.end())
-		it.value()->reloadAnalysis();
-	return 0;
-}
-
 static int on_post_launch(void*, uint32_t, void* payload, void*)
 {
 	if (!payload || !g_ctx || !g_engine)
@@ -198,6 +183,11 @@ static int on_post_launch(void*, uint32_t, void* payload, void*)
 
 	if (!g_ctx->instance_has_crashed(g_ctx->module_handle, info->instance_id))
 		return 0;
+
+	// Refresh the instance's Error Analysis page, which only re-runs on demand otherwise.
+	auto pageIt = g_instances.find(QString::fromUtf8(info->instance_id));
+	if (pageIt != g_instances.end())
+		pageIt.value()->reloadAnalysis();
 
 	LogIngester ing;
 	auto bundle = ing.ingestForInstance(QString::fromUtf8(info->instance_path));
@@ -260,8 +250,6 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 					   on_instance_created, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_REMOVED,
 					   on_instance_removed, nullptr);
-	ctx->hook_register(ctx->module_handle, MMCO_HOOK_UI_INSTANCE_PAGES,
-					   on_instance_pages, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_POST_LAUNCH,
 					   on_post_launch, nullptr);
 

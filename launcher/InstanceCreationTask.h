@@ -34,7 +34,7 @@ class InstanceCreationTask : public InstanceTask
 	/* @p loaderUid/@p loaderVersion name a mod loader component to install
 	 * alongside net.minecraft, for a caller that lets someone pick a loader at
 	 * creation time (the QML "New instance" flow does, see
-	 * models/NewInstanceController.cpp; the widget dialogs do not). Leave both
+	 * models/NewInstanceController.cpp). Leave both
 	 * empty for a plain vanilla instance. */
 	explicit InstanceCreationTask(BaseVersionPtr version,
 								  const QString& loaderUid = QString(),

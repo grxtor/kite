@@ -26,11 +26,9 @@
 #include <QStringList>
 
 /*
- * QML replacement for the widget grid's proxy (ui/instanceview/InstanceProxyModel.h)
- * with the same ordering: grouped, locale-sorted groups, natural-sort names
- * within a group, the same "InstSortMode" last-launch override. The Library's
- * "Time played" sort is a QML-only third value ("TotalTimePlayed") on that
- * setting. QtCore/QtGui only: iconKey is forwarded as the plain string
+ * The Library's proxy model: grouped, locale-sorted groups, natural-sort names
+ * within a group, and the "InstSortMode" last-launch override. "Time played" is
+ * a third value ("TotalTimePlayed") on that setting. QtCore/QtGui only: iconKey is forwarded as the plain string
  * InstanceList exposes. The name, group, last-launch and total-time-played
  * roles are looked up by name from the source's roleNames(), so any model
  * exposing the same names works (see InstanceFilterModel_test.cpp).

@@ -152,19 +152,6 @@ class Task : public QObject
   protected:
 	void logWarning(const QString& line);
 
-	/* Announces whatever canAbort() currently answers; called where that
-	 * answer changes. Read through the virtual so the button and abort()
-	 * cannot disagree. */
-	void reportAbortStatus()
-	{
-		emit abortStatusChanged(canAbort());
-	}
-
-	void setAbortButtonText(const QString& text)
-	{
-		emit abortButtonTextChanged(text);
-	}
-
   private:
 	QString describe();
 
@@ -177,17 +164,6 @@ class Task : public QObject
 	void status(QString status);
 	void details(QString details);
 	void stepProgress(TaskStepProgress const& step_progress);
-
-	/* The answer to canAbort() has changed. canAbort() is computed, so a task
-	 * whose answer changes mid-run has to say so; a task that never emits this
-	 * keeps whatever abort-button state the caller gave it. */
-	void abortStatusChanged(bool abortable);
-
-	/* The button offering abort() should be relabelled: pressing it does not
-	 * always cancel (a task that has produced its result and runs an optional
-	 * extra step merely skips it), and "Abort" would promise a rollback that
-	 * will not happen. */
-	void abortButtonTextChanged(QString text);
 
   public slots:
 	virtual void start();

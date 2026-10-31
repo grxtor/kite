@@ -186,10 +186,6 @@ namespace
 		{
 			return {};
 		}
-		QIcon getThemedIcon(const QString&) override
-		{
-			return QIcon();
-		}
 		QString getJarsPath() override
 		{
 			return QString();

@@ -32,11 +32,9 @@
 #include "InstanceList.h"
 #include "Json.h"
 #include "core/LauncherContext.h"
-#include "icons/IconList.h"
 #include "modplatform/ContentApi.h"
 #include "modplatform/modrinth/ModrinthApi.h"
 #include "net/Download.h"
-#include "net/HttpMetaCache.h"
 #include "tasks/TaskWatcher.h"
 
 
@@ -630,24 +628,6 @@ ModrinthModpackModel::parseVersionsJson(const QByteArray& bytes,
 	return result;
 }
 
-QString ModrinthModpackModel::resolveIconKey(const QString& slug,
-											 const QString& iconUrl) const
-{
-	if (!slug.isEmpty() && !iconUrl.isEmpty()) {
-		/* Shares the widget page's icon bucket. resolveEntry() is disk-only,
-		 * never downloads, and non-stale only once the file is verified present. */
-		MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
-			QStringLiteral("ModrinthPacks"),
-			QStringLiteral("logos/%1").arg(slug));
-		if (entry && !entry->isStale()) {
-			const QString key = QStringLiteral("modrinth_") + slug;
-			LAUNCHER->icons()->installIcon(entry->getFullPath(), key);
-			return key;
-		}
-	}
-	return QStringLiteral("modrinth");
-}
-
 QObject* ModrinthModpackModel::install(const QString& projectId,
 									   const QString& versionId,
 									   const QString& instanceName,
@@ -693,8 +673,8 @@ QObject* ModrinthModpackModel::install(const QString& projectId,
 		return nullptr;
 	}
 
-	/* The four setters and wrapInstanceTask() are the funnel the widget
-	 * dialog also uses. Name, group, icon and target directory come from the
+	/* The four setters and wrapInstanceTask() are the funnel an install
+	 * goes through. Name, group, icon and target directory come from the
 	 * caller's arguments (and the primary instance folder: a headless install
 	 * has no picker). */
 	auto* importTask = new InstanceImportTask(QUrl(downloadUrl));
@@ -717,7 +697,7 @@ QObject* ModrinthModpackModel::install(const QString& projectId,
 		instanceName.isEmpty() ? packTitle : instanceName;
 	importTask->setName(effectiveName);
 	importTask->setGroup(group);
-	importTask->setIcon(resolveIconKey(packSlug, iconUrl));
+	importTask->setIcon(QStringLiteral("modrinth"));
 	importTask->setTargetDir(LAUNCHER->instances()->primaryDir());
 
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(importTask);

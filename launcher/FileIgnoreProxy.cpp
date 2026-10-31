@@ -211,21 +211,6 @@ bool FileIgnoreProxy::setFilterState(QModelIndex index, Qt::CheckState state)
 	return true;
 }
 
-bool FileIgnoreProxy::shouldExpand(QModelIndex index)
-{
-	QModelIndex sourceIndex = mapToSource(index);
-	QFileSystemModel* fsm = qobject_cast<QFileSystemModel*>(sourceModel());
-	if (!fsm) {
-		return false;
-	}
-	auto blockedPath = relPath(fsm->filePath(sourceIndex));
-	auto found = m_blocked.find(blockedPath);
-	if (found) {
-		return !found->leaf();
-	}
-	return false;
-}
-
 void FileIgnoreProxy::setBlockedPaths(QStringList paths)
 {
 	beginResetModel();

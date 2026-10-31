@@ -62,8 +62,6 @@ class FlameApi final : public ModPlatform::ContentApi
 
 	static QUrl fileUrl(const QString& projectId, const QString& fileId);
 
-	static QUrl allProjectFilesUrl(const QString& projectId);
-
 	/* The versions owning a set of file fingerprints. A POST (the question
 	 * is a list, see Net::JsonPost): CurseForge indexes files only by
 	 * FlameFingerprint, so exports have no other route. Answers with
@@ -74,12 +72,6 @@ class FlameApi final : public ModPlatform::ContentApi
 	 * which names a project by number only: the slug and authors a mod list
 	 * prints are not in that answer. Answers with `data` as an array. */
 	static QUrl projectsUrl();
-
-	/* Changelog for one file, as HTML wrapped in a `data` string. One
-	 * request per file (Modrinth ships changelogs with the version list), so
-	 * the managed-pack page fetches them lazily. */
-	static QUrl fileChangelogUrl(const QString& projectId,
-								 const QString& fileId);
 
 	/* Modpack browsing: a different section, with no version or loader
 	 * filter. */

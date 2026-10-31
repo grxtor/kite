@@ -26,23 +26,16 @@
 #include "plugin/PluginManager.h"
 #include "plugin/PluginHooks.h"
 
-#include "ui/MainWindow.h"
-#include "ui/InstanceWindow.h"
-#include "ui/dialogs/ProfileSelectDialog.h"
-#include "ui/dialogs/ProgressDialog.h"
-#include "ui/dialogs/EditAccountDialog.h"
-#include "ui/dialogs/ProfileSetupDialog.h"
-
 #include <QEventLoop>
 #include <QStringList>
 #include <QHostInfo>
 #include <QList>
 #include <QHostAddress>
-#include <QPushButton>
 
 #include "BuildConfig.h"
-#include "ui/JavaCommon.h"
+#include "java/JavaArgs.h"
 #include "tasks/Task.h"
+#include "launch/LaunchTask.h"
 #include "minecraft/auth/AccountTask.h"
 #include "launch/steps/CreateBackup.h"
 #include "launch/steps/TextPrint.h"
@@ -56,7 +49,7 @@ void LaunchController::executeTask()
 		return;
 	}
 
-	const QString jvmArgsWarning = JavaCommon::jvmArgsWarning(
+	const QString jvmArgsWarning = JavaArgs::memoryFlagWarning(
 		m_instance->settings()->get("JvmArgs").toString());
 	if (!jvmArgsWarning.isEmpty()) {
 		LAUNCHER->uiHost()->message(tr("JVM arguments warning"),
@@ -88,21 +81,10 @@ void LaunchController::decideAccount()
 			UiHost::Severity::Information);
 
 		if (wantsAccountManager) {
-			// Open the account manager.
-			if (APPLICATION->qmlShellChosen()) {
-				/* ShowGlobalSettings(m_parentWidget, "accounts") would open
-				 * the classic PageDialog with a null parent under QML
-				 * (m_parentWidget defaults to null and QML never sets it) --
-				 * the same defect class as the old SIGSEGV from the widget
-				 * NewInstanceDialog under QML. The QML shell's own Accounts
-				 * page instead. It is not a modal dialog the way the
-				 * classic one was, so this launch does not wait for a
-				 * sign-in: it ends below for want of an account, and Play
-				 * works once one is added. */
-				APPLICATION->navigateQmlShell(QStringLiteral("accounts"));
-			} else {
-				APPLICATION->ShowGlobalSettings(m_parentWidget, "accounts");
-			}
+			/* The shell's Accounts page is not modal, so this launch does
+			 * not wait for a sign-in: it ends below for want of an account,
+			 * and Play works once one is added. */
+			APPLICATION->navigateQmlShell(QStringLiteral("accounts"));
 		}
 	}
 
@@ -114,41 +96,23 @@ void LaunchController::decideAccount()
 
 	m_accountToUse = accounts->defaultAccount();
 	if (!m_accountToUse) {
-		// If no default account is set, ask the user which one to use.
-		if (APPLICATION->qmlShellChosen()) {
-			/* The widget dialog below, through UiHost: the account to play
-			 * with, and whether it becomes the default. Built from at(i)
-			 * rather than accounts->profileNames(), which skips accounts
-			 * with no profile name and would leave the chosen index
-			 * pointing at the wrong account. */
-			QList<MinecraftAccountPtr> list;
-			list.reserve(accounts->count());
-			for (int i = 0; i < accounts->count(); ++i) {
-				list.append(accounts->at(i));
-			}
-			const auto choice = LAUNCHER->uiHost()->pickAccount(
-				tr("Choose an account"),
-				tr("No account is set as the default. Pick the one to play "
-				   "with."),
-				list);
-			if (choice.index >= 0) {
-				m_accountToUse = list.at(choice.index);
-				if (choice.makeDefault) {
-					accounts->setDefaultAccount(m_accountToUse);
-				}
-			}
-		} else {
-			ProfileSelectDialog selectDialog(
-				tr("Which account would you like to use?"),
-				ProfileSelectDialog::GlobalDefaultCheckbox, m_parentWidget);
-
-			selectDialog.exec();
-
-			// Launch the instance with the selected account.
-			m_accountToUse = selectDialog.selectedAccount();
-
-			// If the user said to use the account as default, do that.
-			if (selectDialog.useAsGlobalDefault() && m_accountToUse) {
+		/* If no default account is set, ask which one to use, and whether it
+		 * becomes the default. Built from at(i) rather than
+		 * accounts->profileNames(), which skips accounts with no profile name
+		 * and would leave the chosen index pointing at the wrong account. */
+		QList<MinecraftAccountPtr> list;
+		list.reserve(accounts->count());
+		for (int i = 0; i < accounts->count(); ++i) {
+			list.append(accounts->at(i));
+		}
+		const auto choice = LAUNCHER->uiHost()->pickAccount(
+			tr("Choose an account"),
+			tr("No account is set as the default. Pick the one to play "
+			   "with."),
+			list);
+		if (choice.index >= 0) {
+			m_accountToUse = list.at(choice.index);
+			if (choice.makeDefault) {
 				accounts->setDefaultAccount(m_accountToUse);
 			}
 		}
@@ -274,28 +238,7 @@ void LaunchController::login()
 				if (m_accountToUse->ownsMinecraft()) {
 					if (!m_accountToUse->hasProfile()) {
 						// Now handle setting up a profile name here...
-						if (APPLICATION->qmlShellChosen()) {
-							/* ProfileSetupDialog(m_accountToUse,
-							 * m_parentWidget) below would build with a null
-							 * parent under QML (m_parentWidget is unset on
-							 * this path) -- the same defect class as the
-							 * old widget NewInstanceDialog SIGSEGV. Ask through
-							 * UiHost instead, which shows a QML dialog doing
-							 * the same live name check and profile
-							 * creation. */
-							if (LAUNCHER->uiHost()->setupProfile(
-									m_accountToUse)) {
-								tryagain = true;
-								continue;
-							} else {
-								emitFailed(tr("Received undetermined session "
-											  "status during login."));
-								return;
-							}
-						}
-						ProfileSetupDialog dialog(m_accountToUse,
-												  m_parentWidget);
-						if (dialog.exec() == QDialog::Accepted) {
+						if (LAUNCHER->uiHost()->setupProfile(m_accountToUse)) {
 							tryagain = true;
 							continue;
 						} else {
@@ -346,40 +289,31 @@ void LaunchController::login()
 				// refresh is in progress, we need to wait for it to finish to
 				// proceed.
 				auto task = m_accountToUse->currentTask();
-				if (APPLICATION->qmlShellChosen()) {
-					/* No card to reflect this on -- there is no launch task
-					 * yet, just an account refresh -- so a busy indication,
-					 * with the widget dialog's "Play offline" way out for
-					 * an online launch. The refresh itself cannot be
-					 * aborted (the widget's skip button asked it to and was
-					 * ignored); skipping stops waiting for it instead and
-					 * launches with what the account cache already has. */
-					if (!task->isFinished()) {
-						QEventLoop loop;
-						auto busy = LAUNCHER->uiHost()->showBusy(
-							tr("Refreshing account…"),
-							m_online ? tr("Play offline") : QString(),
-							[&loop, &refreshSkipped]() {
-								refreshSkipped = true;
-								loop.quit();
-							});
-						if (!task->isRunning()) {
-							QMetaObject::invokeMethod(task.get(), &Task::start,
-													  Qt::QueuedConnection);
-						}
-						connect(task.get(), &Task::finished, &loop,
-								&QEventLoop::quit);
-						loop.exec();
+				/* No card to reflect this on -- there is no launch task yet,
+				 * just an account refresh -- so a busy indication, with a
+				 * "Play offline" way out for an online launch. The refresh
+				 * itself cannot be aborted; skipping stops waiting for it
+				 * instead and launches with what the account cache already
+				 * has. */
+				if (!task->isFinished()) {
+					QEventLoop loop;
+					auto busy = LAUNCHER->uiHost()->showBusy(
+						tr("Refreshing account…"),
+						m_online ? tr("Play offline") : QString(),
+						[&loop, &refreshSkipped]() {
+							refreshSkipped = true;
+							loop.quit();
+						});
+					if (!task->isRunning()) {
+						QMetaObject::invokeMethod(task.get(), &Task::start,
+												  Qt::QueuedConnection);
 					}
-					if (refreshSkipped) {
-						m_online = false;
-					}
-				} else {
-					ProgressDialog progDialog(m_parentWidget);
-					if (m_online) {
-						progDialog.setSkipButton(true, tr("Play Offline"));
-					}
-					progDialog.execWithTask(task.get());
+					connect(task.get(), &Task::finished, &loop,
+							&QEventLoop::quit);
+					loop.exec();
+				}
+				if (refreshSkipped) {
+					m_online = false;
 				}
 				continue;
 			}
@@ -433,9 +367,7 @@ void LaunchController::launchInstance()
 		return;
 	}
 
-	auto console = qobject_cast<InstanceWindow*>(m_parentWidget);
-	auto showConsole = m_instance->settings()->get("ShowConsole").toBool();
-	if (!console && showConsole) {
+	if (m_instance->settings()->get("ShowConsole").toBool()) {
 		APPLICATION->showInstanceLog(m_instance);
 	}
 	connect(m_launcher.get(), &LaunchTask::readyForLaunch, this,
@@ -627,21 +559,14 @@ void LaunchController::onFailed(QString reason)
 	emitFailed(reason);
 }
 
-void LaunchController::onProgressRequested(Task* task)
+void LaunchController::onProgressRequested()
 {
-	if (APPLICATION->qmlShellChosen()) {
-		/* The instance's card already tracks this task's status/progress
-		 * (see InstanceList::trackLaunchProgress()) -- proceeding is all
-		 * this step is actually waiting on; no dialog needed to make it
-		 * visible, and no "Abort" affordance without a dedicated UiHost
-		 * API for it. */
-		m_launcher->proceed();
-		return;
-	}
-	ProgressDialog progDialog(m_parentWidget);
-	progDialog.setSkipButton(true, tr("Abort"));
+	/* The instance's card already tracks this task's status/progress
+	 * (see InstanceList::trackLaunchProgress()) -- proceeding is all
+	 * this step is actually waiting on; no dialog needed to make it
+	 * visible, and no "Abort" affordance without a dedicated UiHost
+	 * API for it. */
 	m_launcher->proceed();
-	progDialog.execWithTask(task);
 }
 
 bool LaunchController::abort()
@@ -670,10 +595,6 @@ bool LaunchController::abort()
 		}
 		return false;
 	}
-	/* Widget note: CustomMessageBox::selectable() used to default this
-	 * particular confirmation to Yes -- confirm() always defaults to the
-	 * declining answer instead (see WidgetUiHost::confirm()), so pressing
-	 * Enter here now cancels rather than kills the instance. */
 	const bool confirmed = LAUNCHER->uiHost()->confirm(
 		tr("Kill Minecraft?"),
 		tr("This can cause the instance to get corrupted and "

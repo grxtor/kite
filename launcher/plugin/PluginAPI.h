@@ -49,9 +49,9 @@ typedef void (*MMCOUiEventCallback)(void* user_data, const char* surface_id,
 									const char* value_json);
 
 /* ABI 5. Where a declarative UI surface is displayed:
- *   GLOBAL_SETTINGS    titled section in the host's "Plugins" page of the global Settings dialog
- *   INSTANCE_PAGE      its own page in the instance window (anchor_context = instance id)
- *   INSTANCE_SETTINGS  titled section in a "Plugins" group on the instance's Settings page
+ *   GLOBAL_SETTINGS    titled section in the "Plugins" page of the global settings
+ *   INSTANCE_PAGE      its own tab on the instance's page (anchor_context = instance id)
+ *   INSTANCE_SETTINGS  titled section in a "Plugins" group on the instance's settings tab
  *                      (anchor_context = instance id) */
 enum MMCOUiAnchor {
 	MMCO_UI_ANCHOR_GLOBAL_SETTINGS = 0,
@@ -216,6 +216,8 @@ struct MMCOContext {
 
 	void (*ui_show_message)(void* mh, int type, const char* title,
 							const char* msg);
+	/* Dead since the widget UI was removed: no hook hands out a menu_handle any more (see
+	 * MMCO_HOOK_UI_CONTEXT_MENU, reserved), so this always returns -1. Kept for ABI. */
 	int (*ui_add_menu_item)(void* mh, void* menu_handle, const char* label,
 							const char* icon_name,
 							MMCOMenuActionCallback callback, void* user_data);
@@ -405,8 +407,8 @@ struct MMCOContext {
 	int (*account_set_skin_blob)(void* mh, const char* account_id,
 								 const void* data, int64_t size);
 
-	/* S26 Synchronous task helpers (ABI 3+). Run launcher-side network tasks behind a modal progress
-	 * dialog parented to the active window.
+	/* S26 Synchronous task helpers (ABI 3+). Run launcher-side network tasks behind a busy
+	 * indication.
 	 *   account_skin_upload  POST a skin PNG (variant "STEVE" or "ALEX")
 	 *   account_skin_reset   DELETE the active skin
 	 *   account_cape_set     PUT the active cape id ("" = no cape)
@@ -474,7 +476,8 @@ struct MMCOContext {
 	/* S32 Background hooks + progress reporting (ABI stays at 3; struct_size tells the host what a
 	 * module was built against). hook_register_ex is hook_register plus a flags word (MMCO_HOOK_FLAG_*
 	 * in PluginHooks.h); 0 behaves like hook_register.
-	 * progress_report publishes the running background callback's progress into the progress dialog:
+	 * progress_report is accepted but not displayed (the host shows only a busy indication while
+	 * background callbacks run); its arguments are:
 	 *   handle           the module_handle the callback was invoked with
 	 *   status           row title, NULL keeps the current one
 	 *   details          optional second line, NULL keeps the current one
@@ -488,8 +491,20 @@ struct MMCOContext {
 						   const char* details, int64_t current,
 						   int64_t total);
 
-	/* S33 Declarative UI surfaces (ABI 5). A plugin describes a widget tree as an "mmco-ui/1" JSON
-	 * document (see PluginUiRenderer.h); the host renders and owns the widgets, no QWidget* is handed back.
+	/* S33 Declarative UI surfaces (ABI 5). A plugin describes a node tree as an "mmco-ui/1" JSON
+	 * document, {"type":"mmco-ui/1","root":<node>}; the host renders it (qml/Components/PluginNode.qml)
+	 * and owns the result, no widget handle is handed back.
+	 * Fourteen node types, each {"type":..., "id":..., "props":{...}} (containers add "children"):
+	 *   containers          column, row, section (props.title)
+	 *   content leaves      heading and text (props.text; text also props.format "markdown"),
+	 *                       separator, progress (props.value 0..100, < 0 or absent = busy)
+	 *   interactive leaves  button (label, style "primary", enabled), toggle (label, description,
+	 *                       value), text_field (label, placeholder, value), number_field (label, min,
+	 *                       max, step, value), choice (label, options, value), list (columns, rows
+	 *                       of {id, cells}), link (text, href)
+	 * Every node takes props.visible (false hides it). The optional "id" addresses the node in events
+	 * and in ui_surface_set / ui_surface_set_rows. No colour, font or geometry prop exists: the host
+	 * owns presentation.
 	 *   ui_surface_create    builds and shows a surface at the anchor. anchor_context is nullptr for
 	 *                        GLOBAL_SETTINGS, else the instance id. title/icon_name label it (page title
 	 *                        for INSTANCE_PAGE, section title otherwise). cb receives every click/change/

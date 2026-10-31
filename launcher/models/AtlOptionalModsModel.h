@@ -28,8 +28,8 @@
 #include "modplatform/atlauncher/ATLPackManifest.h"
 
 /*
- * An ATLauncher pack's optional mods, to tick before it installs (core port of
- * AtlOptionalModListModel). Starts from the pack's `selected` flags; ticking a
+ * An ATLauncher pack's optional mods, to tick before it installs (core logic).
+ * Starts from the pack's `selected` flags; ticking a
  * mod ticks what it depends on and unticks the others in its group; unticking
  * unticks what depends on it, and a hidden dependency (a library) goes once
  * nothing needs it. "Recommended" and "None" reset the list. Hidden mods are

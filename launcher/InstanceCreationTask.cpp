@@ -58,7 +58,7 @@ void InstanceCreationTask::executeTask()
 		components->setComponentVersion("net.minecraft",
 										m_version->descriptor(), true);
 		if (!m_loaderUid.isEmpty()) {
-			/* Same call as InstallLoaderDialog::applySelection(); not marked
+			/* Not marked
 			 * "important", so the component is as removable as one installed
 			 * later. */
 			components->setComponentVersion(m_loaderUid, m_loaderVersion);

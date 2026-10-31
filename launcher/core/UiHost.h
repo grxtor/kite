@@ -89,8 +89,7 @@ class UiHost
 	};
 
 	/* Which of @p accounts to play with, plus a "make this the default" option
-	 * (what the widget ProfileSelectDialog asks at launch when no account is
-	 * the default). Making it the default is the caller's job; this only
+	 * (asked at launch when no account is the default). Making it the default is the caller's job; this only
 	 * reports the wish. */
 	virtual AccountChoice pickAccount(
 		const QString& title, const QString& text,
@@ -124,7 +123,7 @@ class UiHost
 
 	/* A Microsoft account that owns Minecraft but has no profile (username)
 	 * yet: checks name availability live as the user types and creates the
-	 * profile once they accept (as the widget ProfileSetupDialog does). True
+	 * profile once they accept. True
 	 * once the profile has been created; false if the user backed out. */
 	virtual bool setupProfile(MinecraftAccountPtr account) = 0;
 

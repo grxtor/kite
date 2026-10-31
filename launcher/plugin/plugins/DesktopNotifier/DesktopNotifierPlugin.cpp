@@ -12,7 +12,7 @@
  *  Settings (booleans, plus an int):
  *    notify_launch    instance starting (PRE_LAUNCH)    (default 1)
  *    notify_exit      instance stopped (POST_LAUNCH)    (default 1)
- *    notify_created   fire on INSTANCE_CREATED          (default 1)
+ *    notify_created   fire on INSTANCE_CREATED          (default 0)
  *    notify_removed   fire on INSTANCE_REMOVED          (default 0)
  *    notify_news      fire on NEWS_UPDATED              (default 0)
  *    notify_startup   say hello on APP_INITIALIZED      (default 0)
@@ -134,7 +134,7 @@ static int on_instance_post_launch(void* /*mh*/, uint32_t /*hook_id*/,
 static int on_instance_created(void* /*mh*/, uint32_t /*hook_id*/,
 							   void* payload, void* /*ud*/)
 {
-	if (!settingBool("notify_created", true))
+	if (!settingBool("notify_created", false))
 		return 0;
 	auto* info = static_cast<MMCOInstanceInfo*>(payload);
 	QString name = (info && info->instance_name)
@@ -187,7 +187,7 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 	/* Seed defaults exactly once. */
 	settingDefault("notify_launch", "1"); /* PRE_LAUNCH: game starting   */
 	settingDefault("notify_exit", "1");	  /* POST_LAUNCH: game exited    */
-	settingDefault("notify_created", "1");
+	settingDefault("notify_created", "0");
 	settingDefault("notify_removed", "0");
 	settingDefault("notify_news", "0");
 	settingDefault("notify_startup", "0");

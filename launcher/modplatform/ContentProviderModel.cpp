@@ -21,14 +21,12 @@
 #include "ContentProviderModel.h"
 
 #include <QDebug>
-#include <QSize>
 #include <QUrl>
 #include <utility>
 
 #include "core/LauncherContext.h"
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "net/Download.h"
-#include "net/HttpMetaCache.h"
 
 ContentProviderModel::ContentProviderModel(const ModPlatform::ContentApi& api,
 										   ModPlatform::ContentType contentType,
@@ -70,7 +68,7 @@ QVariant ContentProviderModel::data(const QModelIndex& index, int role) const
 
 	switch (role) {
 		case Qt::DisplayRole:
-			/* The plain name, so a view without ProjectItemDelegate stays readable. */
+			/* The plain name. */
 			return project.name;
 
 		case Qt::ToolTipRole:
@@ -81,27 +79,6 @@ QVariant ContentProviderModel::data(const QModelIndex& index, int role) const
 			}
 			return project.description;
 
-		case Qt::DecorationRole: {
-			if (m_logoMap.contains(project.logoKey)) {
-				return m_logoMap.value(project.logoKey);
-			}
-			const_cast<ContentProviderModel*>(this)->requestLogo(
-				project.logoKey, project.logoUrl);
-			return LAUNCHER->getThemedIcon("screenshot-placeholder");
-		}
-
-		case Qt::SizeHintRole:
-			/* Fixed height: title plus two lines of description. */
-			return QSize(0, 58);
-
-		case Qt::CheckStateRole:
-			/* Every row gets a box: re-picking an installed row is how a version is
-			 * changed (the conflict analyzer makes it a replacement or drops it).
-			 * Installed only affects painting, via ProjectItemRole::Installed. */
-			return m_selectedNames.contains(project.normalizedName)
-					   ? Qt::Checked
-					   : Qt::Unchecked;
-
 		case Qt::UserRole:
 			return project.projectId;
 
@@ -109,7 +86,7 @@ QVariant ContentProviderModel::data(const QModelIndex& index, int role) const
 			return project.name;
 
 		case ProjectItemRole::Description:
-			/* Full text; the delegate wraps and elides it. */
+			/* Full text; the view wraps and elides it. */
 			return project.description;
 
 		case ProjectItemRole::Installed:
@@ -146,9 +123,7 @@ QHash<int, QByteArray> ContentProviderModel::roleNames() const
 
 Qt::ItemFlags ContentProviderModel::flags(const QModelIndex& index) const
 {
-	/* No Qt::ItemIsUserCheckable: there is no setData(), so the base
-	 * delegate would try to toggle through it. The delegate's
-	 * checkboxClicked() drives the checkbox. */
+	/* No Qt::ItemIsUserCheckable: there is no setData(). */
 	return QAbstractListModel::flags(index);
 }
 
@@ -168,11 +143,6 @@ void ContentProviderModel::fetchMore(const QModelIndex& parent)
 QString ContentProviderModel::platformId() const
 {
 	return m_api.id();
-}
-
-QString ContentProviderModel::platformDisplayName() const
-{
-	return m_api.displayName();
 }
 
 QList<ModPlatform::SortingMethod> ContentProviderModel::sortingMethods() const
@@ -608,15 +578,6 @@ void ContentProviderModel::setInstalledIndex(
 	emitRowStateChanged();
 }
 
-void ContentProviderModel::setSelectedNames(const QSet<QString>& names)
-{
-	if (m_selectedNames == names) {
-		return;
-	}
-	m_selectedNames = names;
-	emitRowStateChanged();
-}
-
 void ContentProviderModel::applyInstalledState(
 	ModPlatform::IndexedProject& project) const
 {
@@ -650,51 +611,5 @@ void ContentProviderModel::emitRowStateChanged()
 		return;
 	}
 	emit dataChanged(index(0), index(m_visibleRows.size() - 1),
-					 {Qt::CheckStateRole, ProjectItemRole::Installed});
-}
-
-void ContentProviderModel::requestLogo(const QString& key, const QString& url)
-{
-	if (key.isEmpty() || url.isEmpty() || m_loadingLogos.contains(key) ||
-		m_failedLogos.contains(key)) {
-		return;
-	}
-
-	MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
-		iconCacheName(), QString("logos/%1").arg(key.section(".", 0, 0)));
-
-	auto* job = new NetJob(QString("%1 Icon %2").arg(m_api.id(), key),
-						   LAUNCHER->network());
-	job->addNetAction(Net::Download::makeCached(QUrl(url), entry));
-
-	const QString fullPath = entry->getFullPath();
-	connect(job, &NetJob::succeeded, this, [this, job, key, fullPath] {
-		job->deleteLater();
-		logoLoaded(key, QIcon(fullPath));
-	});
-	connect(job, &NetJob::failed, this, [this, job, key](QString) {
-		job->deleteLater();
-		logoFailed(key);
-	});
-
-	job->start();
-	m_loadingLogos.append(key);
-}
-
-void ContentProviderModel::logoLoaded(const QString& key, const QIcon& icon)
-{
-	m_loadingLogos.removeAll(key);
-	m_logoMap.insert(key, icon);
-
-	for (int row = 0; row < m_visibleRows.size(); ++row) {
-		if (m_projects.at(m_visibleRows.at(row)).logoKey == key) {
-			emit dataChanged(index(row), index(row), {Qt::DecorationRole});
-		}
-	}
-}
-
-void ContentProviderModel::logoFailed(const QString& key)
-{
-	m_loadingLogos.removeAll(key);
-	m_failedLogos.append(key);
+					 {ProjectItemRole::Installed});
 }

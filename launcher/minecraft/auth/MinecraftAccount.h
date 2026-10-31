@@ -28,7 +28,6 @@
 #include <QPair>
 #include <QMap>
 #include <QNetworkInformation>
-#include <QPixmap>
 
 #include <memory>
 
@@ -153,8 +152,6 @@ class MinecraftAccount : public QObject, public Usable
 			return "offline";
 		return "msa";
 	}
-
-	QPixmap getFace() const;
 
 	//! Returns the current state of the account
 	AccountState accountState() const;

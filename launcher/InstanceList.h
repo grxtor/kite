@@ -97,14 +97,6 @@ class InstanceList : public QAbstractListModel
 		InstanceIDRole = 0x34B1CB49		  ///< Return id if the instance
 	};
 
-	/* GroupRole is pinned to Qt::UserRole: InstanceView.h (the widget instance
-	 * grid) declares its own GroupRole = Qt::UserRole, ProgressValueRole = +1
-	 * and ProgressMaximumRole = +2 and reads them numerically. QmlRoles
-	 * therefore starts at Qt::UserRole + 10. */
-	static_assert(int(GroupRole) == int(Qt::UserRole),
-				  "GroupRole is numerically pinned to InstanceViewRoles::GroupRole "
-				  "in InstanceView.h; do not renumber");
-
 	/* Roles for the QML instance list. instanceId, name, iconKey, instanceRoot
 	 * and group are named in roleNames() but reuse existing data() cases; only
 	 * the ten below are new. InstancePointerRole is left unnamed: it is a raw
@@ -258,24 +250,9 @@ class InstanceList : public QAbstractListModel
 	 * tiebreak). */
 	static QString newestScreenshotUrl(const QString& screenshotsDir);
 
-	Qt::DropActions supportedDragActions() const override;
-
-	Qt::DropActions supportedDropActions() const override;
-
-	bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row,
-						 int column, const QModelIndex& parent) const override;
-
-	bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row,
-					  int column, const QModelIndex& parent) override;
-
-	QStringList mimeTypes() const override;
-	QMimeData* mimeData(const QModelIndexList& indexes) const override;
-
   signals:
-	void dataIsInvalid();
 	void instancesChanged();
 	void instanceSelectRequest(QString instanceId);
-	void groupsChanged(QSet<QString> groups);
 
   public slots:
 	void on_InstFolderChanged(const Setting& setting, QVariant value);
@@ -289,8 +266,6 @@ class InstanceList : public QAbstractListModel
   private:
 	int getInstIndex(BaseInstance* inst) const;
 	void updateTotalPlayTime();
-	void suspendWatch();
-	void resumeWatch();
 	void add(const QList<InstancePtr>& list);
 	void loadGroupList();
 	void saveGroupList();
@@ -333,9 +308,7 @@ class InstanceList : public QAbstractListModel
 								const QString& screenshotsDir);
 
   private:
-	int m_watchLevel = 0;
 	int totalPlayTime = 0;
-	bool m_dirty = false;
 	QList<InstancePtr> m_instances;
 	QSet<QString> m_groupNameCache;
 

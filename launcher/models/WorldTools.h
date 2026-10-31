@@ -23,9 +23,7 @@
 #include <QString>
 
 /* Installing a world from a .zip (or folder) and opening one in an external
- * editor. The MCEdit lookup mirrors MCEditTool::getProgramPath() but is
- * separate: MCEditTool registers the MCEditPath setting on construction and the
- * application already owns that instance. */
+ * editor. Application registers the MCEditPath setting. */
 namespace WorldTools
 {
 	/// Whether @p source - a .zip or a folder - holds a Minecraft world (a
@@ -36,6 +34,10 @@ namespace WorldTools
 	/// WorldList::installWorld() does but reporting the result. False if @p source
 	/// is not a world or could not be unpacked. Blocking.
 	bool installWorld(const QString& source, const QString& worldsDir);
+
+	/// Whether @p toolPath looks like an MCEdit folder; if not, @p error says
+	/// why (for the settings page).
+	bool checkMCEditFolder(const QString& toolPath, QString& error);
 
 	/// The executable to start for an MCEdit installed at @p mceditPath (the
 	/// MCEditPath setting), or an empty string if there is none there.

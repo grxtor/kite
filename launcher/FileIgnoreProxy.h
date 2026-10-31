@@ -54,11 +54,6 @@ class FileIgnoreProxy : public QSortFilterProxyModel
 
 	bool setFilterState(QModelIndex index, Qt::CheckState state);
 
-	/* Whether the tree should open this node to reveal a blocked path below
-	 * it; otherwise the only sign would be a partially checked box several
-	 * levels up. */
-	bool shouldExpand(QModelIndex index);
-
 	void setBlockedPaths(QStringList paths);
 
 	const SeparatorPrefixTree<'/'>& blockedPaths() const

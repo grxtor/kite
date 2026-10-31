@@ -29,9 +29,8 @@
 
 namespace
 {
-	/* Mirrors PluginUiRenderer.cpp's jsonQuoteString() (anonymous namespace, unreachable from
-	 * here): the convention for a string value_json must match, so it is duplicated rather than
-	 * exported. */
+	/* Encodes a string as a bare JSON scalar. This defines the string convention for value_json that
+	 * plugins decode (see PluginSurfaceModel::valueToJson). */
 	QString quoteJsonString(const QString& s)
 	{
 		QJsonArray tmp;

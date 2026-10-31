@@ -134,10 +134,8 @@ runs:
         # FIXME(@YongDo-Hyun): gamemode doesn't seem to be very portable with DBus. Find a way to make it work!
         find "$INSTALL_APPIMAGE_DIR" -name '*gamemode*' -exec rm {} +
 
-        #disable OpenGL and Vulkan launcher features until https://github.com/VHSgunzo/sharun/issues/35
-        echo "LAUNCHER_DISABLE_GLVULKAN=1" > "$INSTALL_APPIMAGE_DIR"/.env
         #makes the launcher use portals for file picking
-        echo "QT_QPA_PLATFORMTHEME=xdgdesktopportal" >> "$INSTALL_APPIMAGE_DIR"/.env
+        echo "QT_QPA_PLATFORMTHEME=xdgdesktopportal" > "$INSTALL_APPIMAGE_DIR"/.env
         #points Qt at the QML modules copied in above (AppDir-relative; $APPDIR
         #is exported by the AppImage runtime before AppRun/sharun ever runs)
         echo "QML2_IMPORT_PATH=\$APPDIR/qml" >> "$INSTALL_APPIMAGE_DIR"/.env

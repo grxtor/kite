@@ -35,14 +35,12 @@
 #include "InstanceList.h"
 #include "Json.h"
 #include "core/LauncherContext.h"
-#include "icons/IconList.h"
 #include "modplatform/ContentApi.h"
 #include "modplatform/ContentType.h"
 #include "modplatform/VersionPicker.h"
 #include "modplatform/flame/FlameApi.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
 #include "net/Download.h"
-#include "net/HttpMetaCache.h"
 #include "tasks/TaskWatcher.h"
 
 namespace
@@ -466,7 +464,7 @@ QVariantList FlameModpackModel::parseVersionsJson(const QByteArray& bytes,
 		QString downloadUrl = Json::ensureString(obj, "downloadUrl", QString());
 		if (downloadUrl.isEmpty()) {
 			/* The author keeps it off third-party downloads; the browser address is
-			 * the sanctioned way (FlamePage). */
+			 * the sanctioned way. */
 			downloadUrl =
 				FlameApi::browserDownloadUrl(projectId, QString::number(file.id));
 		}
@@ -661,22 +659,6 @@ void FlameModpackModel::fetchDetailVersions(const QString& projectId,
 	job->start();
 }
 
-QString FlameModpackModel::resolveIconKey(const Flame::IndexedPack& pack) const
-{
-	/* Shares the widget page's bucket and key. Disk-only; never downloads. */
-	const QString logo = pack.logoName.section(QLatin1Char('.'), 0, 0);
-	if (!logo.isEmpty() && !pack.logoUrl.isEmpty()) {
-		MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
-			QStringLiteral("FlamePacks"), QStringLiteral("logos/%1").arg(logo));
-		if (entry && !entry->isStale()) {
-			const QString key = QStringLiteral("curseforge_") + logo;
-			LAUNCHER->icons()->installIcon(entry->getFullPath(), key);
-			return key;
-		}
-	}
-	return QStringLiteral("flame");
-}
-
 QObject* FlameModpackModel::install(const QString& projectId,
 									const QString& versionId,
 									const QString& instanceName,
@@ -728,7 +710,7 @@ QObject* FlameModpackModel::install(const QString& projectId,
 	const QString effectiveName = instanceName.isEmpty() ? base.name : instanceName;
 	importTask->setName(effectiveName);
 	importTask->setGroup(group);
-	importTask->setIcon(resolveIconKey(base));
+	importTask->setIcon(QStringLiteral("flame"));
 	importTask->setTargetDir(LAUNCHER->instances()->primaryDir());
 
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(importTask);

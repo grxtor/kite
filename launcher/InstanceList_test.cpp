@@ -64,7 +64,6 @@ SettingsObjectPtr makeGlobalSettings(QTemporaryDir& dir)
 	settings->registerSetting("WrapperCommand", "");
 	settings->registerSetting("PostExitCommand", "");
 	settings->registerSetting("ShowConsole", true);
-	settings->registerSetting("AutoCloseConsole", false);
 	settings->registerSetting("ShowConsoleOnError", true);
 	settings->registerSetting("LogPrePostOutput", true);
 	settings->registerSetting("ConsoleMaxLines", 100000);

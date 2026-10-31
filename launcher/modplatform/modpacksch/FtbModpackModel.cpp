@@ -25,7 +25,6 @@
 
 #include <QDateTime>
 #include <QDebug>
-#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -36,11 +35,9 @@
 #include "InstanceList.h"
 #include "Json.h"
 #include "core/LauncherContext.h"
-#include "icons/IconList.h"
 #include "modplatform/modpacksch/FTBPackInstallTask.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
 #include "net/Download.h"
-#include "net/HttpMetaCache.h"
 #include "tasks/TaskWatcher.h"
 
 namespace
@@ -69,7 +66,7 @@ namespace
 FtbModpackModel::FtbModpackModel(QObject* parent)
 	: QAbstractListModel(parent), m_detail(new ModrinthModpackDetail(this))
 {
-	/* The three sorts of the widget page, and the last update. */
+	/* The three sorts, and the last update. */
 	const QList<QPair<QString, QString>> sorts = {
 		{QStringLiteral("plays"), tr("Sort by Plays")},
 		{QStringLiteral("installs"), tr("Sort by Installs")},
@@ -478,23 +475,6 @@ void FtbModpackModel::loadDetail(const QString& projectId)
 	m_detail->setLoading(false);
 }
 
-QString FtbModpackModel::resolveIconKey(const ModpacksCH::Modpack& pack) const
-{
-	/* Shares the widget page's logo cache, keyed by pack name, with a squared
-	 * ".small" copy beside it. Disk-only. */
-	MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
-		QStringLiteral("ModpacksCHPacks"),
-		QStringLiteral("logos/%1").arg(pack.name.section(QLatin1Char('.'), 0, 0)));
-	if (entry && !entry->isStale()) {
-		const QString small = entry->getFullPath() + QStringLiteral(".small");
-		const QString key = QStringLiteral("ftb_%1").arg(pack.id);
-		LAUNCHER->icons()->installIcon(
-			QFileInfo::exists(small) ? small : entry->getFullPath(), key);
-		return key;
-	}
-	return QStringLiteral("ftb_logo");
-}
-
 QObject* FtbModpackModel::install(const QString& projectId,
 								  const QString& versionId,
 								  const QString& instanceName,
@@ -526,7 +506,7 @@ QObject* FtbModpackModel::install(const QString& projectId,
 									  : instanceName;
 	task->setName(effectiveName);
 	task->setGroup(group);
-	task->setIcon(resolveIconKey(*pack));
+	task->setIcon(QStringLiteral("ftb_logo"));
 	task->setTargetDir(LAUNCHER->instances()->primaryDir());
 
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(task);

@@ -27,10 +27,10 @@
 
 class PluginManager;
 
-/* Every plugin module the launcher found, for the QML Settings section "Installed plugins" (what
- * the widget PluginsDialog lists: name, version, author, description, licence, source link,
- * signature, status, dependencies, and the enabled wish). Switching a plugin is remembered for the
- * next start (PluginManager::setModuleDisabled()); nothing loads or unloads at runtime, which
+/* Every plugin module the launcher found, for the QML Settings section "Installed plugins" (name,
+ * version, author, description, licence, source link, signature, status, dependencies, and the
+ * enabled wish). Switching a plugin is remembered for the next start
+ * (PluginManager::setModuleDisabled()); nothing loads or unloads at runtime, which
  * `restartNeeded` reports. Lives in Kite_logic; QmlShell hands one out through a factory
  * (QmlShell::pluginList()). */
 class PluginListModel : public QAbstractListModel

@@ -191,9 +191,7 @@ namespace InstanceShortcuts
 		}
 
 #elif defined(Q_OS_WIN)
-		/* Writing the .ico is reported to change the launcher window's own
-		 * icon; the widget caller puts it back (ui/ShortcutUtils), since only
-		 * it knows which window that is. */
+		/* A Windows shortcut takes its icon from an .ico file. */
 		iconPath = renderIcon(request, "ICO", QStringLiteral("icon.ico"), 64,
 							  &error);
 

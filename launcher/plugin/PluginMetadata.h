@@ -45,7 +45,7 @@ enum class PluginSignatureState {
  * greyed-out modules. */
 enum class PluginDisableReason {
 	None,
-	UserDisabled,	   /* Explicitly disabled via the plugins dialog */
+	UserDisabled,	   /* Explicitly disabled in Settings */
 	SignatureRequired, /* Non-OSS license with no/invalid signature */
 	SignatureInvalid,  /* Trailer is malformed or signature bad */
 	DependencyMissing, /* A required dependency is not loaded */
@@ -55,8 +55,8 @@ enum class PluginDisableReason {
 	AbiTooNew,		   /* Built for an ABI above MMCO_ABI_VERSION, i.e. a newer Kite */
 };
 
-/* A short label for @p reason as the plugin lists show it (PluginsDialog and the QML "Installed
- * plugins" section); translated in the QObject context. */
+/* A short label for @p reason as the QML "Installed plugins" section shows it; translated in the
+ * QObject context. */
 inline QString pluginDisableReasonLabel(PluginDisableReason reason)
 {
 	switch (reason) {

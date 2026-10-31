@@ -34,8 +34,7 @@ class InstanceList;
  * The library's housekeeping for the QML pages, over the same InstanceList:
  * group rename/delete (its instances become ungrouped)/fold/move, undo of the
  * last delete when it went to the trash, duplicate (worlds, play time, icon)
- * and an instance's folders. Folded groups live in instgroups.json, as in the
- * widget library; that file has no entry for "no group", so folding the
+ * and an instance's folders. Folded groups live in instgroups.json; that file has no entry for "no group", so folding the
  * ungrouped section lasts for the session.
  */
 class LibraryController : public QObject

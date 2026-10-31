@@ -21,8 +21,8 @@
  *
  * Includes the C ABI from mmco_c_sdk.h (API table, module info, hook ids, payload structs,
  * MMCO_DEFINE_MODULE) and adds the C++-only parts: the Qt includes a plugin commonly needs and the
- * BasePage interface for pages handed to the host via MMCO_HOOK_UI_INSTANCE_PAGES /
- * MMCO_HOOK_UI_GLOBAL_SETTINGS_PAGES.
+ * BasePage interface, kept for ABI and source compatibility (the host no longer calls it; plugin UI
+ * goes through ui_surface_create).
  *
  * Usage:
  *   1. #include "mmco_cxx_sdk.hpp" (the only include needed)
@@ -61,9 +61,7 @@
 #include <QJsonDocument>
 #include <QLocale>
 
-/* BasePage is copied verbatim from launcher/ui/pages/BasePage.h so plugins can subclass it without
- * including launcher headers. The vtable layout must stay byte-identical: the host calls these virtuals
- * on the QList<BasePage*> plugins hand back. Mirror any change there. */
+/* BasePage is a frozen ABI shim: the host never calls it, and the page hooks are reserved, never fired. */
 class BasePageContainer; // forward-declared, plugin never deref's it
 
 class BasePage

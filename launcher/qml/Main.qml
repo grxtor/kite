@@ -1194,7 +1194,7 @@ ApplicationWindow {
     UiRequestDialog {
         id: uiRequests
         host: root.shell && root.shell.uiHost ? root.shell.uiHost : null
-        // Until this exists, the core asks through the classic dialogs.
+        // Until this exists, uiHost() is the headless host and declines every question (Application.cpp HeadlessUiHost).
         Component.onCompleted: if (host) host.setPresenterReady(true)
         Component.onDestruction: if (host) host.setPresenterReady(false)
     }

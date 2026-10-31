@@ -165,10 +165,7 @@ namespace ManagedPack
 				}
 			}
 
-			/* The changelog comes with the version list, so it is loaded even when
-			 * empty. */
 			version.changelog = Json::ensureString(entry, "changelog", "");
-			version.changelogLoaded = true;
 
 			/* A version may ship several files (pack, server bundle); `primary`
 			 * marks the pack, and is often omitted when there is one file. */
@@ -266,8 +263,8 @@ namespace ManagedPack
 			 * version is still listed and isInstallable() refuses the update. */
 			version.downloadUrl = Json::ensureString(entry, "downloadUrl", "");
 
-			/* Needs a request per file. */
-			version.changelogLoaded = false;
+			/* CurseForge lists no changelog; it needs a request per file, which
+			 * nothing makes, so `changelog` stays empty. */
 
 			withIds.append({ fileId, version });
 		}
@@ -288,15 +285,6 @@ namespace ManagedPack
 			*ok = true;
 		}
 		return versions;
-	}
-
-	QString parseCurseForgeChangelog(const QByteArray& bytes)
-	{
-		const QJsonDocument doc = QJsonDocument::fromJson(bytes);
-		if (!doc.isObject()) {
-			return QString();
-		}
-		return Json::ensureString(doc.object(), "data", "");
 	}
 
 	int indexOfVersionId(const VersionList& versions, const QString& versionId)

@@ -25,7 +25,6 @@
 #include <functional>
 #include <QDebug>
 #include <QFlag>
-#include <QIcon>
 #include <QDateTime>
 #include <QUrl>
 #include <QHash>
@@ -42,11 +41,6 @@ class LaunchController;
 class QmlShell;
 class QWindow;
 class LocalPeer;
-class InstanceWindow;
-class InstanceSettingsPage;
-class MainWindow;
-class SetupWizard;
-class GenericPageProvider;
 class QFile;
 class HttpMetaCache;
 class SettingsObject;
@@ -56,13 +50,8 @@ class IconList;
 class QNetworkAccessManager;
 class JavaInstallList;
 class BaseProfilerFactory;
-class BaseDetachedToolFactory;
 class TranslationsModel;
-class ITheme;
-class ThemeManager;
-class MCEditTool;
 class PluginManager;
-class BasePage;
 class ExternalUpdater;
 
 namespace Meta
@@ -105,25 +94,6 @@ class Application : public QApplication, public LauncherContext
 		return m_settings;
 	}
 
-	qint64 timeSinceStart() const
-	{
-		return startTime.msecsTo(QDateTime::currentDateTime());
-	}
-
-	QIcon getThemedIcon(const QString& name) override;
-
-	void setIconTheme(const QString& name);
-
-	std::vector<ITheme*> getValidApplicationThemes();
-
-	void setApplicationTheme(const QString& name, bool initial);
-
-	ThemeManager* themeManager() const;
-
-	ExternalUpdater* updater()
-	{
-		return m_updater.get();
-	}
 
 	bool updaterEnabled();
 
@@ -145,11 +115,6 @@ class Application : public QApplication, public LauncherContext
 		return m_icons;
 	}
 
-	MCEditTool* mcedit() const
-	{
-		return m_mcedit.get();
-	}
-
 	shared_qobject_ptr<AccountList> accounts() const override
 	{
 		return m_accounts;
@@ -160,11 +125,6 @@ class Application : public QApplication, public LauncherContext
 	Status status() const
 	{
 		return m_status;
-	}
-
-	const QMap<QString, std::shared_ptr<BaseProfilerFactory>>& profilers() const
-	{
-		return m_profilers;
 	}
 
 	void updateProxySettings(QString proxyTypeStr, QString addr, int port,
@@ -183,25 +143,15 @@ class Application : public QApplication, public LauncherContext
 	UiHost* uiHost() const override;
 
 	NewsChecker* newsChecker() const override;
-	NotificationChecker* notificationChecker() const override;
 	ModBridge* modBridge() const override;
 
 	/* Whether the QML shell is up and its presenter ready to answer, the check
-	 * uiHost() makes before routing a UiHost call to QmlUiHost. To choose
-	 * between a widget window and its QML equivalent use qmlShellChosen(),
-	 * which turns true a moment earlier. */
+	 * uiHost() makes before routing a UiHost call to QmlUiHost. */
 	bool usingQmlShell() const;
 
-	/* Whether the QML shell is the user interface: chosen at startup and not
-	 * failed to load, whether or not it exists yet or its presenter can
-	 * answer. Every "widget dialog or QML equivalent?" choice asks this. A
-	 * call that needs the presenter waits through runWhenQmlPresenterReady(). */
-	bool qmlShellChosen() const;
-
-	/* Runs @p call now, unless the QML shell is chosen but its presenter is
-	 * not ready (qmlShellChosen() && !usingQmlShell()): then it is queued with
-	 * the startup update reports and run once the presenter is up, or through
-	 * the widget host if the QML shell fails to load. */
+	/* Runs @p call now, unless the QML shell's presenter is not ready yet
+	 * (!usingQmlShell()): then it is queued with the startup update reports
+	 * and run once the presenter is up. */
 	void runWhenQmlPresenterReady(std::function<void()> call);
 
 	/* Brings the QML shell's window up on @p target, a Main.qml navigate()
@@ -215,46 +165,24 @@ class Application : public QApplication, public LauncherContext
 		return m_rootPath;
 	}
 
-	const QString javaPath();
-
-	/*!
-	 * Opens a json file using either a system default editor, or, if not empty,
-	 * the editor specified in the settings
-	 */
-	bool openJsonEditor(const QString& filename);
-
-	InstanceWindow* showInstanceWindow(InstancePtr instance,
-									   QString page = QString());
-
 	/* What a launch calls to show an instance's console: the QML shell's
-	 * instance-log signal while it is the active UI, else the widget console
-	 * window (showInstanceWindow(), Log page). */
+	 * instance-log signal. */
 	void showInstanceLog(InstancePtr instance);
-	MainWindow* showMainWindow(bool minimized = false);
-	MainWindow* mainWindow() const
-	{
-		return m_mainWindow;
-	}
 
-	/* The QML shell's top-level window when it is the active UI and has been
-	 * shown; null when the widget MainWindow is in use, or before either was
-	 * shown. PluginManager uses it to handle whichever UI is on screen. */
+	/* Brings the main window up, loading the QML shell first if needed.
+	 * False if the shell failed to load: the user has been told and the
+	 * application is on its way out. */
+	bool showMainWindow(bool minimized = false);
+
+	/* What aboutToQuit does: saves the instance list, shuts the plugins down
+	 * and closes the log. main() calls it on the failed-start path, where the
+	 * event loop never runs. */
+	void shutdownForExit();
+
+	/* The QML shell's top-level window once it has been shown; null before.
+	 * PluginManager uses it for the main_window_* API and the close filter. */
 	QWindow* qmlShellWindow() const;
 
-	void updateIsRunning(bool running);
-	bool updatesAreAllowed();
-
-	void ShowGlobalSettings(class QWidget* parent,
-							QString open_page = QString());
-
-	void registerGlobalSettingsPage(std::function<BasePage*()> creator);
-
-  signals:
-	void updateAllowedChanged(bool status);
-	void globalSettingsAboutToOpen();
-	void globalSettingsClosed();
-	void instanceSettingsPageCreated(InstanceSettingsPage* page,
-									 BaseInstance* instance);
 
   public slots:
 	/** Starts an instance. The profiler comes from the instance's own settings,
@@ -265,14 +193,11 @@ class Application : public QApplication, public LauncherContext
 	bool kill(InstancePtr instance);
 
   private slots:
-	void on_windowClose();
 	void messageReceived(const QByteArray& message);
 	void controllerSucceeded();
 	void controllerFailed(const QString& error);
-	void setupWizardFinished(int status);
 
   private:
-	bool createSetupWizard();
 	void performCLIAction();
 	void performMainStartupAction();
 
@@ -291,14 +216,17 @@ class Application : public QApplication, public LauncherContext
 	void initSubsystems();
 
   private:
-	bool reportUpdateMarkers();
+	void reportUpdateMarkers();
+
+	/* The user chose Quit on a startup prompt. quit() is a no-op before
+	 * exec(), so this marks the start as failed and skips the rest of it. */
+	void abortStartup();
 
 	void addRunningInstance();
 	void subRunningInstance();
 	bool shouldExitNow() const;
 
   private:
-	QDateTime startTime;
 
 	shared_qobject_ptr<QNetworkAccessManager> m_network;
 
@@ -313,11 +241,7 @@ class Application : public QApplication, public LauncherContext
 	std::shared_ptr<IconList> m_icons;
 	std::shared_ptr<JavaInstallList> m_javalist;
 	std::shared_ptr<TranslationsModel> m_translations;
-	std::shared_ptr<GenericPageProvider> m_globalSettingsProvider;
-	std::unique_ptr<ThemeManager> m_themeManager;
-	std::unique_ptr<MCEditTool> m_mcedit;
 	QString m_jarsPath;
-	QSet<QString> m_features;
 
 	QMap<QString, std::shared_ptr<BaseProfilerFactory>> m_profilers;
 
@@ -334,69 +258,60 @@ class Application : public QApplication, public LauncherContext
 
 	// FIXME: attach to instances instead.
 	struct InstanceXtras {
-		InstanceWindow* window = nullptr;
 		shared_qobject_ptr<LaunchController> controller;
 	};
 	std::map<QString, InstanceXtras> m_instanceExtras;
 
 	size_t m_openWindows = 0;
 	size_t m_runningInstances = 0;
-	bool m_updateRunning = false;
-
-	MainWindow* m_mainWindow = nullptr;
 
 	// peer launcher instance connector - used to implement single instance
 	// launcher and signalling
 	LocalPeer* m_peerInstance = nullptr;
 
-	SetupWizard* m_setupWizard = nullptr;
 	std::unique_ptr<PluginManager> m_pluginManager;
 
 	/* Built alongside m_pluginManager, so null in builds without the plugin
 	 * host (Kite_PLUGINS). */
 	std::unique_ptr<AuthRequestDecorator> m_authRequestDecorator;
 
-	/* Built before anything that could ask the user a question, because
-	 * uiHost() promises never to return null. */
+	/* Answers every question with the safe default (decline, cancel, empty).
+	 * Built before anything that could ask the user a question, because
+	 * uiHost() promises never to return null; used only while no QML host
+	 * is ready to answer (before the shell exists, and until its presenter is up). */
 	std::unique_ptr<UiHost> m_uiHost;
 
 	std::unique_ptr<QmlShell> m_qmlShell;
 
 	/* Work that waits for the QML presenter: update reports queued by
-	 * reportUpdateMarkers() at init(), before the UI is chosen, and calls
+	 * reportUpdateMarkers() during startup, before the shell exists, and calls
 	 * queued by runWhenQmlPresenterReady(). Run by
-	 * runPendingQmlPresenterCalls() once presenterReady(), or through the
-	 * widget host if the QML shell fails to load. */
+	 * runPendingQmlPresenterCalls() once presenterReady(). */
 	QList<std::function<void()>> m_pendingQmlPresenterCalls;
 	void runPendingQmlPresenterCalls();
 
 	/* An import from outside the window (--import, or the IPC "import"
-	 * message): the QML shell's New instance dialog when it is the UI, else
-	 * MainWindow::droppedURLs(). Shows a window first if there is none. */
+	 * message): the QML shell's New instance dialog. Shows a window first if
+	 * there is none. */
 	void importFromUrl(const QUrl& url);
 
 	/* Creates the QML shell, wires its signals to the real actions and loads
 	 * its window without showing it. True once the shell exists; false if its
-	 * QML failed to load, in which case m_qmlShell is reset and whatever
-	 * waited for the presenter has run through the widget host. */
+	 * QML failed to load, in which case the user has been told, m_qmlShell is
+	 * reset and m_status is Failed. */
 	bool ensureQmlShell();
-	/* Set when the QML window failed to load: the widget window takes over for
-	 * good and qmlShellChosen() turns false. */
-	bool m_qmlShellLoadFailed = false;
 	/* Tells the QML shell about the updater (whether "Check for updates" has
 	 * anything to do, and the Updates settings' backend). Called by whichever
 	 * of the two is made second; no-op without a shell. */
 	void connectUpdaterToQmlShell();
 	/* Loads the news and checks notifications once, after the first window is
-	 * on screen (never for a command-line launch); under the QML shell it also
-	 * checks the instance folders, which MainWindow does itself. */
+	 * on screen (never for a command-line launch), and checks the instance
+	 * folders. */
 	void startBackgroundChecks();
 	bool m_backgroundChecksStarted = false;
-	/* Shows the notifications not yet dismissed for good through UiHost; the
-	 * QML shell's equivalent of MainWindow::notificationsChanged(). */
+	/* Shows the notifications not yet dismissed for good through UiHost. */
 	void showNotificationsThroughUiHost();
-	/* The instance folder warnings MainWindow::checkInstancePathForProblems()
-	 * shows, through UiHost for the QML shell. */
+	/* Warns through UiHost about instance folders Java cannot live in. */
 	void reportInstancePathProblems();
 	unique_qobject_ptr<NewsChecker> m_newsChecker;
 	unique_qobject_ptr<NotificationChecker> m_notificationChecker;
@@ -406,11 +321,13 @@ class Application : public QApplication, public LauncherContext
 	/* Shows (first time) or raises the QML shell's window, counting it as open
 	 * while shown (m_qmlWindowShown). */
 	void showQmlShellWindow(bool minimized);
+	void bridgeInstanceHooks();
 	/* Whether the QML window is on screen and counted in m_openWindows: false
 	 * while loaded but hidden (command-line launch) and once the user closes
 	 * it. */
 	bool m_qmlWindowShown = false;
 	bool m_qmlMainReadyDispatched = false;
+	bool m_startupAborted = false;
 
   public:
 	QString m_instanceIdToLaunch;

@@ -47,7 +47,6 @@ class TranslationsModel : public QAbstractListModel
 
 	bool selectLanguage(QString key);
 	void updateLanguage(QString key);
-	QModelIndex selectedIndex();
 	QString selectedLanguage();
 
 	void downloadIndex();

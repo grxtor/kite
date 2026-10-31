@@ -28,7 +28,7 @@
 
 /** Runs one plugin hook callback that opted into MMCO_HOOK_FLAG_BACKGROUND on a worker thread, as an
  * ordinary task. PluginManager builds one per background callback and hands them to a
- * SequentialTask, so each plugin gets its own progress-dialog row. A non-zero return is a veto: the
+ * SequentialTask, behind one busy indication (per-plugin progress is not shown). A non-zero return is a veto: the
  * task fails, which stops the rest of the sequence, as an inline veto stops the hook chain. */
 class PluginHookTask : public Task
 {

@@ -35,7 +35,7 @@ class MinecraftInstance;
 
 /**
  * Brings an instance up to date: folders, metadata, libraries, FML libraries
- * and assets, in that order, each its own line in the progress dialog.
+ * and assets, in that order, each its own step.
  *
  * Its status and progress describe the step under way (its stage, e.g.
  * "Downloading assets", and how far it is) rather than "Executing task 4 out

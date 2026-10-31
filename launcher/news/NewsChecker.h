@@ -66,14 +66,12 @@ class NewsChecker : public QObject
   signals:
 	void newsLoaded();
 
-	void newsLoadingFailed(QString errorMsg);
-
   protected slots:
 	void rssDownloadFinished(int feedIndex);
 	void rssDownloadFailed(int feedIndex, QString reason);
 
   protected: /* methods */
-	/*! Called as each feed settles; emits newsLoaded()/newsLoadingFailed()
+	/*! Called as each feed settles; emits newsLoaded() or records the failure
 	* once, after the last one. */
 	void feedSettled();
 

@@ -157,11 +157,6 @@ template <char Tseparator> class SeparatorPrefixTree
 		}
 	}
 
-	bool leaf() const
-	{
-		return children.isEmpty();
-	}
-
 	/// Whether this node is actually contained in the tree, or purely
 	/// structural.
 	bool contained() const

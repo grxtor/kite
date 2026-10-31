@@ -191,7 +191,6 @@ void KiteExternalUpdater::checkForUpdates(bool triggeredByUser)
 	}
 
 	m_checking = true;
-	emit canCheckForUpdatesChanged(false);
 
 	// The check blocks, so a busy indication shows the launcher is not frozen. Automatic checks get
 	// none: a window stealing focus at startup is worse than no feedback.
@@ -341,7 +340,6 @@ void KiteExternalUpdater::noteCheckCompleted()
 
 	m_checking = false;
 	resetAutoCheckTimer();
-	emit canCheckForUpdatesChanged(true);
 }
 
 void KiteExternalUpdater::offerUpdate(const QString& versionName,

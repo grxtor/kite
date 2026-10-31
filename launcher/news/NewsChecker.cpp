@@ -253,5 +253,4 @@ void NewsChecker::fail(const QString& errorMsg)
 {
 	m_lastLoadError = errorMsg;
 	qCDebug(newsLog) << "Failed to load news:" << errorMsg;
-	emit newsLoadingFailed(errorMsg);
 }

@@ -22,7 +22,7 @@ namespace
 		return QObject::tr("%1 GiB").arg(QString::number(v, 'f', 2));
 	}
 
-	/* Inverse of PluginUiRenderer's jsonQuoteString: unwraps the bare JSON scalar in value_json of
+	/* Inverse of PluginSurfaceModel::valueToJson / quoteJsonString: unwraps the bare JSON scalar in value_json of
 	 * "select"/"activate" events into a QString. */
 	QString jsonStringValue(const QString& valueJson)
 	{

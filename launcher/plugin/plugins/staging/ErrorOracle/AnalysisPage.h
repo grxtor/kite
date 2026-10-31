@@ -4,9 +4,8 @@
  *
  * AnalysisPageController: ABI 5 declarative-UI controller for the per-instance "Error Analysis" page.
  *
- * No QWidget is involved: the host's PluginUiRenderer builds the widgets from the "mmco-ui/1" document
- * this class maintains, freshly each time the instance window's page list is rebuilt
- * (PluginManager::createInstancePages). This object owns the MMCO_UI_ANCHOR_INSTANCE_PAGE surface
+ * No QWidget is involved: the host renders the "mmco-ui/1" document this class maintains with
+ * PluginNode.qml. This object owns the MMCO_UI_ANCHOR_INSTANCE_PAGE surface
  * handle, the cached rule-engine matches and the current row selection, and pushes updates through
  * ui_surface_set / ui_surface_set_rows in response to MMCOUiEventCallback events.
  */
@@ -35,8 +34,7 @@ class AnalysisPageController
 	void destroySurface();
 
 	/* Re-runs the rule engine over the instance's latest log/crash report and pushes a fresh
-	 * summary, rows and advice text to the surface. Called from the Re-analyse click and each time
-	 * this instance's page list is about to be rebuilt (UI_INSTANCE_PAGES handler). */
+	 * summary, rows and advice text to the surface. Called from the Re-analyse click. */
 	void reloadAnalysis();
 
   private:

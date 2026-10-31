@@ -278,17 +278,6 @@ bool Component::isMoveable()
 	// anyway. For now hardcoded to 'true'.
 	return true;
 }
-bool Component::isVersionChangeable()
-{
-	auto list = getVersionList();
-	if (list) {
-		if (!list->isLoaded()) {
-			list->load(Net::Mode::Online);
-		}
-		return list->count() != 0;
-	}
-	return false;
-}
 
 void Component::setImportant(bool state)
 {

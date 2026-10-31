@@ -33,12 +33,10 @@
 #include "Version.h"
 #include "core/LauncherContext.h"
 #include "core/UiHost.h"
-#include "icons/IconList.h"
 #include "meta/Version.h"
 #include "models/AtlOptionalModsModel.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
 #include "net/Download.h"
-#include "net/HttpMetaCache.h"
 #include "tasks/TaskWatcher.h"
 
 namespace
@@ -464,20 +462,6 @@ void AtlModpackModel::loadDetail(const QString& projectId)
 	m_detail->setLoading(false);
 }
 
-QString AtlModpackModel::resolveIconKey(const ATLauncher::IndexedPack& pack) const
-{
-	/* Shares the widget page's logo cache bucket. Disk-only; never downloads. */
-	MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
-		QStringLiteral("ATLauncherPacks"),
-		QStringLiteral("logos/%1").arg(pack.safeName.section(QLatin1Char('.'), 0, 0)));
-	if (entry && !entry->isStale()) {
-		const QString key = QStringLiteral("atl_") + pack.safeName.toLower();
-		LAUNCHER->icons()->installIcon(entry->getFullPath(), key);
-		return key;
-	}
-	return QStringLiteral("grass");
-}
-
 QObject* AtlModpackModel::install(const QString& projectId,
 								  const QString& versionId,
 								  const QString& instanceName,
@@ -509,7 +493,7 @@ QObject* AtlModpackModel::install(const QString& projectId,
 												 versionId);
 	task->setName(effectiveName);
 	task->setGroup(group);
-	task->setIcon(resolveIconKey(*pack));
+	task->setIcon(QStringLiteral("grass"));
 	task->setTargetDir(LAUNCHER->instances()->primaryDir());
 
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(task);

@@ -68,7 +68,7 @@ class InstanceIconProviderTest : public QObject
   private slots:
 	void initTestCase()
 	{
-		// As ThemeManager::setIconTheme(), restated so this measures IconList
+		// As Application::initSubsystems(), restated so this measures IconList
 		// and Qt. ":/icons" goes first so the bundled theme wins over a
 		// same-named one on the host.
 		QStringList searchPaths = QIcon::themeSearchPaths();

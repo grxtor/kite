@@ -70,12 +70,6 @@ class IconList : public QAbstractListModel
 	 * `isBuiltin` for QML delegates; the numeric roles do not move. */
 	virtual QHash<int, QByteArray> roleNames() const override;
 
-	virtual QStringList mimeTypes() const override;
-	virtual Qt::DropActions supportedDropActions() const override;
-	virtual bool dropMimeData(const QMimeData* data, Qt::DropAction action,
-							  int row, int column,
-							  const QModelIndex& parent) override;
-	virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
 
 	bool addThemeIcon(const QString& key);
 	bool addIcon(const QString& key, const QString& name, const QString& path,
@@ -86,7 +80,6 @@ class IconList : public QAbstractListModel
 	bool iconFileExists(const QString& key) const;
 
 	void installIcons(const QStringList& iconFiles);
-	void installIcon(const QString& file, const QString& name);
 
 	const MMCIcon* icon(const QString& key) const;
 

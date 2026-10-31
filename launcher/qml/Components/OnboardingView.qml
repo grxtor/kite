@@ -20,6 +20,7 @@ Rectangle {
     readonly property string step: steps.length > 0 ? steps[Math.min(index, steps.length - 1)] : ""
     property bool active: false
     readonly property int contentTop: Math.max(Theme.space.xxl, root.topInset + Theme.space.sm)
+    readonly property int javaRowHeight: 52
 
     signal finished()
     signal signInRequested()
@@ -243,6 +244,8 @@ Rectangle {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
+                            Layout.minimumHeight: Theme.control.heightLg + Theme.space.xs * 2
+                            Layout.maximumHeight: Math.max(Layout.minimumHeight, languageList.contentHeight + Theme.space.xs * 2)
                             radius: Theme.radius.lg
                             color: Theme.palette.surface
                             border.width: 1
@@ -307,10 +310,10 @@ Rectangle {
                                 }
                             }
                         }
+                        Item { Layout.fillHeight: true }
                     }
 
                     ColumnLayout {
-                        readonly property int javaRowHeight: 52
                         spacing: Theme.space.md
                         SettingsGroup {
                             Layout.fillWidth: true
@@ -346,7 +349,7 @@ Rectangle {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             // As tall as its rows.
-                            Layout.minimumHeight: javaRowHeight * 2
+                            Layout.minimumHeight: root.javaRowHeight * 2
                             Layout.maximumHeight: Math.max(Layout.minimumHeight, javaList.contentHeight + Theme.space.xs * 2)
                             radius: Theme.radius.lg
                             color: Theme.palette.surface
@@ -367,7 +370,7 @@ Rectangle {
                                     required property bool recommended
                                     readonly property bool chosen: SettingsStore.string("JavaPath") === path
                                     width: javaList.width
-                                    height: javaRowHeight
+                                    height: root.javaRowHeight
                                     hoverEnabled: true
                                     onClicked: root.shell.useJava(path)
                                     background: Rectangle {

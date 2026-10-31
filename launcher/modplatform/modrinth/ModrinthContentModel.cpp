@@ -76,11 +76,6 @@ ModrinthContentModel::ModrinthContentModel(
 {
 }
 
-QString ModrinthContentModel::iconCacheName() const
-{
-	return QStringLiteral("ModrinthModIcons");
-}
-
 QList<ModPlatform::Category>
 ModrinthContentModel::parseCategoriesResponse(const QByteArray& bytes) const
 {

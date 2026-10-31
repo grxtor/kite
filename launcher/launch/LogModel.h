@@ -46,9 +46,6 @@ class LogModel : public QAbstractListModel
 	void setStopOnOverflow(bool stop);
 	void setOverflowMessage(const QString& overflowMessage);
 
-	void setLineWrap(bool state);
-	bool wrapLines() const;
-
 	// LineRole is separate from the inherited "display"/"edit" role names
 	// so QML can name the text without colliding with them.
 	enum Roles { LevelRole = Qt::UserRole, LineRole };
@@ -71,7 +68,6 @@ class LogModel : public QAbstractListModel
 	bool m_stopOnOverflow = false;
 	QString m_overflowMessage = "OVERFLOW";
 	bool m_suspended = false;
-	bool m_lineWrap = true;
 
   private:
 	Q_DISABLE_COPY(LogModel)

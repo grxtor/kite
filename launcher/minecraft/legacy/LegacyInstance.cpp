@@ -219,11 +219,6 @@ QString LegacyInstance::typeName() const
 	return tr("Legacy");
 }
 
-QString LegacyInstance::getStatusbarDescription()
-{
-	return tr("Instance from previous versions.");
-}
-
 QStringList
 LegacyInstance::verboseDescription(AuthSessionPtr session,
 								   MinecraftServerTargetPtr serverToJoin)

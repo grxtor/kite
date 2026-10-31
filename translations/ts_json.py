@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Move unfinished messages between a Qt .ts file and JSON work files.
 
-  export <ts> <out.json> <group>   group: qml | core | widgets | all
+  export <ts> <out.json> <group>   group: qml | core | all
   import <ts> <in.json>...         writes the translations back into <ts>
   check <in.json>...               reports placeholder, tag and punctuation slips
 
@@ -34,8 +34,6 @@ def messages(root):
 def group_of(path):
     if path.endswith((".qml", ".js")) or "/qml/" in path:
         return "qml"
-    if "/ui/" in path:
-        return "widgets"
     return "core"
 
 

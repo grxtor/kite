@@ -79,7 +79,7 @@ class DependencyResolver : public Task
 	}
 
 	/* Resolution is a fan-out of lookups that can be given up at any point
-	 * (the progress dialog's Skip); what was resolved is kept. */
+	 * (the cancel button); what was resolved is kept. */
 	bool canAbort() const override
 	{
 		return true;

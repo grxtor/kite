@@ -87,8 +87,6 @@ void ReleaseDownload::executeTask()
 			&ReleaseDownload::onDownloadProgress);
 	connect(m_reply, &QNetworkReply::finished, this,
 			&ReleaseDownload::onFinished);
-
-	reportAbortStatus();
 }
 
 void ReleaseDownload::onReadyRead()

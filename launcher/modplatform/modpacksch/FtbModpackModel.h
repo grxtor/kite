@@ -190,7 +190,6 @@ class FtbModpackModel : public QAbstractListModel
 	void loadNextBatch();
 	void refilter();
 	const ModpacksCH::Modpack* packFor(const QString& projectId) const;
-	QString resolveIconKey(const ModpacksCH::Modpack& pack) const;
 
   private:
 	QList<ModpacksCH::Modpack> m_packs;

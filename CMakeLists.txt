@@ -131,9 +131,6 @@ endif()
 # Qt 6 only. Subdirectories reach Qt through ${QT_VERSION_MAJOR}.
 set(QT_VERSION_MAJOR 6)
 
-# Only picks the default interface; KITE_QML_UI=1 or =0 in the environment overrides it.
-option(Kite_QML_UI "Open the QML user interface instead of the QtWidgets one by default" ON)
-
 # A cache variable so that -DKite_QT_VERSION_MAJOR=5 fails loudly.
 set(Kite_QT_VERSION_MAJOR "6" CACHE STRING "Major Qt version to build against (6 only)")
 set_property(CACHE Kite_QT_VERSION_MAJOR PROPERTY STRINGS "6")
@@ -157,9 +154,6 @@ set(Kite_QT_COMPONENTS
     NetworkAuth
     Test
     Xml
-    OpenGL
-    # Qt 6 split QOpenGLWidget out of QtWidgets into its own module.
-    OpenGLWidgets
     Qml
     Quick
     QuickControls2
@@ -382,7 +376,6 @@ set(Kite_UNLEASH_APP_NAME "" CACHE STRING "Unleash application name / environmen
 
 set(Kite_CommonName "Kite")
 set(Kite_AppBinaryName "kite")
-set(Kite_EnvName "KITE")
 set(Kite_AppID "io.github.grxtor.Kite")
 set(Kite_Copyright "grxtor")
 set(Kite_Copyright_Mac "© 2026 grxtor")
@@ -610,8 +603,7 @@ endif()
 include(ExternalProject)
 set_directory_properties(PROPERTIES EP_BASE External)
 
-# libraries/ builds statically, except rainbow (hardcodes SHARED) and nbt++
-# (NBT_BUILD_SHARED).
+# libraries/ builds statically, except nbt++ (NBT_BUILD_SHARED).
 
 ############################### internal libraries ############################
 option(NBT_BUILD_SHARED "Build NBT shared library" ON)
@@ -623,7 +615,6 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/libraries/libnbtplusplus libnbtplusplus)
 add_subdirectory(libraries/launcher) # java based launcher part for Minecraft
 add_subdirectory(libraries/javacheck) # java compatibility checker
 add_subdirectory(libraries/xz-embedded) # xz compression
-add_subdirectory(libraries/rainbow) # Qt extension for colors
 add_subdirectory(libraries/localpeer) # fork of a library from Qt solutions
 add_subdirectory(libraries/classparser) # Java class file parser
 add_subdirectory(libraries/katabasis) # OAuth2 library
@@ -631,7 +622,7 @@ add_subdirectory(libraries/katabasis) # OAuth2 library
 # The shared libraries go where the launcher loads them: beside the binary on
 # Windows, covered by the RPATH elsewhere. Installed by hand: RUNTIME_DEPENDENCY_SET
 # missed them, and their own install() puts them in bin/, away from kite.exe.
-set_target_properties(nbt++ rainbow PROPERTIES
+set_target_properties(nbt++ PROPERTIES
     VERSION   "${Kite_RELEASE_VERSION_NAME}"
     SOVERSION "${Kite_VERSION_MAJOR}")
 
@@ -639,7 +630,7 @@ if(NOT DEFINED PRIVATE_LIBRARY_DEST_DIR)
     set(PRIVATE_LIBRARY_DEST_DIR "${LIBRARY_DEST_DIR}")
 endif()
 
-install(TARGETS nbt++ rainbow
+install(TARGETS nbt++
     RUNTIME DESTINATION "${BINARY_DEST_DIR}"
     LIBRARY DESTINATION "${PRIVATE_LIBRARY_DEST_DIR}")
 

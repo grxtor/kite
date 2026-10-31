@@ -33,7 +33,6 @@
 #include "pathmatcher/MultiMatcher.h"
 #include "FileSystem.h"
 #include "java/JavaVersion.h"
-#include "MMCTime.h"
 
 #include "launch/LaunchTask.h"
 #include "launch/steps/LookupServerAddress.h"
@@ -1046,36 +1045,6 @@ IPathMatcher::Ptr MinecraftInstance::getLogFileMatcher()
 QString MinecraftInstance::getLogFileRoot()
 {
 	return gameRoot();
-}
-
-QString MinecraftInstance::getStatusbarDescription()
-{
-	QStringList traits;
-	if (hasVersionBroken()) {
-		traits.append(tr("broken"));
-	}
-
-	QString description;
-	// minecraftVersion() loads the profile if nobody has.
-	description.append(
-		tr("Minecraft %1 (%2)").arg(minecraftVersion()).arg(typeName()));
-	if (m_settings->get("ShowGameTime").toBool()) {
-		if (lastTimePlayed() > 0) {
-			description.append(
-				tr(", last played for %1")
-					.arg(Time::prettifyDuration(lastTimePlayed())));
-		}
-
-		if (totalTimePlayed() > 0) {
-			description.append(
-				tr(", total played for %1")
-					.arg(Time::prettifyDuration(totalTimePlayed())));
-		}
-	}
-	if (hasCrashed()) {
-		description.append(tr(", has crashed."));
-	}
-	return description;
 }
 
 Task::Ptr MinecraftInstance::createUpdateTask(Net::Mode mode)

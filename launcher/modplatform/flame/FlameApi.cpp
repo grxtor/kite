@@ -227,11 +227,6 @@ QUrl FlameApi::fileUrl(const QString& projectId, const QString& fileId)
 												   fileId));
 }
 
-QUrl FlameApi::allProjectFilesUrl(const QString& projectId)
-{
-	return QUrl(QString("%1/mods/%2/files").arg(apiBase(), projectId));
-}
-
 QUrl FlameApi::matchFingerprintsUrl()
 {
 	return QUrl(QString("%1/fingerprints").arg(apiBase()));
@@ -240,12 +235,6 @@ QUrl FlameApi::matchFingerprintsUrl()
 QUrl FlameApi::projectsUrl()
 {
 	return QUrl(QString("%1/mods").arg(apiBase()));
-}
-
-QUrl FlameApi::fileChangelogUrl(const QString& projectId, const QString& fileId)
-{
-	return QUrl(QString("%1/mods/%2/files/%3/changelog")
-					.arg(apiBase(), projectId, fileId));
 }
 
 QUrl FlameApi::modpackSearchUrl(const QString& term, int sortIndex, int offset)

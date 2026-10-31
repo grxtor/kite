@@ -32,7 +32,7 @@
  * mmco_init() is PluginManager's job. Also runs the trust pre-flight: extracts and verifies any GPG
  * trailer and applies the policy "OSS license = signature optional, otherwise mandatory". A module
  * failing the policy, or named in the disabled set passed to discoverModules(), is returned with
- * disabled=true so the manager skips it without unloading the library (the about dialog may still
+ * disabled=true so the manager skips it without unloading the library (Settings may still
  * need it). */
 
 class PluginLoader

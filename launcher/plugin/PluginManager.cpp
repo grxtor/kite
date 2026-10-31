@@ -42,8 +42,6 @@
 #include "minecraft/services/CapeChange.h"
 #include "plugin/PluginHookTask.h"
 #include "tasks/SequentialTask.h"
-#include "ui/dialogs/ProgressDialog.h"
-#include "ui/pages/instance/InstanceSettingsPage.h"
 #include "icons/IconList.h"
 #include "icons/MMCIcon.h"
 #include "java/JavaInstallList.h"
@@ -55,31 +53,17 @@
 #include <QDirIterator>
 #include <QEventLoop>
 #include <QFile>
-#include <QFileDialog>
 #include <QFileInfo>
 #include <QDebug>
-#include <QInputDialog>
-#include <QApplication>
-#include <QHBoxLayout>
-#include <QVBoxLayout>
-#include <QLabel>
-#include <QLineEdit>
 #include <QMenu>
-#include <QMessageBox>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QStringList>
 #include "news/NewsChecker.h"
-#include "ui/MainWindow.h"
 #include <net/NetJob.h>
 #include "net/Download.h"
-#include <QPushButton>
-#include <QSpacerItem>
 #include <QStandardPaths>
-#include <QTreeWidget>
-#include <QHeaderView>
-#include <QAction>
 #include <QCloseEvent>
 #include <QWindow>
 #include <QCursor>
@@ -87,11 +71,7 @@
 #include <QSystemTrayIcon>
 #include <QMutexLocker>
 #include <QProcess>
-#include <QDialog>
-#include <QFrame>
-#include <QGroupBox>
 #include <QJsonDocument>
-#include <QScrollArea>
 #include "plugin/PluginUiRenderer.h"
 #include <cstring>
 #include <unordered_map>
@@ -200,9 +180,6 @@ void PluginManager::initializeAll()
 		}
 	}
 
-	// Before APP_INITIALIZED, so hooks registered in mmco_init() see the first dispatch.
-	connectAppSignals();
-
 	dispatchHook(MMCO_HOOK_APP_INITIALIZED);
 }
 
@@ -277,10 +254,8 @@ void PluginManager::shutdownAll()
 		meta.initialized = false;
 	}
 
-	// Unhook the close filter if the main window outlives PluginManager.
+	// Unhook the close filter if the shell window outlives PluginManager.
 	if (m_closeFilterInstalled) {
-		if (m_filteredMainWindow)
-			m_filteredMainWindow->removeEventFilter(this);
 		if (m_filteredShellWindow)
 			m_filteredShellWindow->removeEventFilter(this);
 		m_closeFilterInstalled = false;
@@ -326,18 +301,10 @@ bool PluginManager::dispatchHook(uint32_t hook_id, void* payload)
 bool PluginManager::runBackgroundHooks(uint32_t hook_id, void* payload,
 									   const QVector<HookRegistration>& regs)
 {
-	// Off-loading needs an event loop and a window; at startup and shutdown the callbacks run
-	// synchronously. activeWindow() is null when the launcher is unfocused, so the main window
-	// tells whether a UI exists (resolveMainWindow() returns nullptr under the QML shell).
-	QWidget* owner = QApplication::activeWindow();
-	if (!owner) {
-		owner = resolveMainWindow();
-	}
-	// The QML shell has no QWidget to parent a ProgressDialog; it waits behind
-	// uiHost()->showBusy().
-	const bool qmlProgress = !m_shutdownDone && m_app && m_app->qmlShellChosen() &&
-							 m_app->usingQmlShell();
-	if (!qmlProgress && (!owner || m_shutdownDone)) {
+	// Off-loading needs an event loop and the QML presenter (uiHost()->showBusy()); at startup and
+	// shutdown the callbacks run synchronously.
+	const bool offload = !m_shutdownDone && m_app && m_app->usingQmlShell();
+	if (!offload) {
 		for (const auto& reg : regs) {
 			int rc = reg.callback(reg.module_handle, hook_id, payload,
 								  reg.user_data);
@@ -366,24 +333,13 @@ bool PluginManager::runBackgroundHooks(uint32_t hook_id, void* payload,
 		sequence.addTask(task);
 	}
 
-	if (qmlProgress) {
+	{
 		auto busy = m_app->uiHost()->showBusy(tr("Waiting for plugins…"));
 		QEventLoop loop;
 		connect(&sequence, &Task::finished, &loop, &QEventLoop::quit);
 		// Queued, so the loop is running before the sequence can finish.
 		QMetaObject::invokeMethod(&sequence, &Task::start,
 								  Qt::QueuedConnection);
-		loop.exec();
-	} else {
-		ProgressDialog prog(owner);
-		prog.execWithTask(&sequence);
-	}
-
-	// Escape closes the dialog but a C callback cannot be interrupted; keep waiting, since
-	// destroying the tasks while a worker runs would block the GUI thread.
-	if (sequence.isRunning()) {
-		QEventLoop loop;
-		connect(&sequence, &Task::finished, &loop, &QEventLoop::quit);
 		loop.exec();
 	}
 
@@ -774,7 +730,7 @@ int PluginManager::api_progress_report(void* mh, const char* status,
 {
 	auto* task = PluginHookTask::currentOnThisThread();
 	if (!task) {
-		// No row to write to: inline callback, or a thread the plugin spawned.
+		// Not inside a background hook callback (inline callback, or a thread the plugin spawned).
 		return -1;
 	}
 	if (mh && task->moduleHandle() != mh) {
@@ -1472,8 +1428,8 @@ int PluginManager::api_http_post(void* mh, const char* url, const void* body,
 
 namespace
 {
-	// Under the QML shell a plugin's question goes to QmlUiHost, never a widget dialog. It cannot
-	// wait for the presenter, so it is declined, which every caller handles like a user cancel.
+	// A plugin's question goes to QmlUiHost. It cannot wait for the presenter, so it is declined,
+	// which every caller handles like a user cancel.
 	bool qmlPresenterMissing(Application* app, const char* api)
 	{
 		if (app->usingQmlShell()) {
@@ -1487,23 +1443,18 @@ namespace
 
 namespace
 {
-	// Runs an account task to its end: busy indication under the QML shell, ProgressDialog
-	// otherwise. True when the task succeeded.
+	// Runs an account task to its end behind a busy indication. True when the task succeeded.
 	bool runAccountTask(Application* app, Task* task, const QString& busyText,
 						const char* api)
 	{
-		if (app && app->qmlShellChosen()) {
-			if (qmlPresenterMissing(app, api))
-				return false;
-			auto busy = app->uiHost()->showBusy(busyText);
-			QEventLoop loop;
-			QObject::connect(task, &Task::finished, &loop, &QEventLoop::quit);
-			QMetaObject::invokeMethod(task, &Task::start, Qt::QueuedConnection);
-			loop.exec();
-			return task->wasSuccessful();
-		}
-		ProgressDialog prog(QApplication::activeWindow());
-		return prog.execWithTask(task) == QDialog::Accepted;
+		if (!app || qmlPresenterMissing(app, api))
+			return false;
+		auto busy = app->uiHost()->showBusy(busyText);
+		QEventLoop loop;
+		QObject::connect(task, &Task::finished, &loop, &QEventLoop::quit);
+		QMetaObject::invokeMethod(task, &Task::start, Qt::QueuedConnection);
+		loop.exec();
+		return task->wasSuccessful();
 	}
 } // namespace
 
@@ -1517,55 +1468,35 @@ void PluginManager::api_ui_show_message(void* mh, int type, const char* title,
 		QString("[%1] %2").arg(meta.name, QString::fromUtf8(title));
 	QString qmsg = QString::fromUtf8(msg);
 
-	// Under the QML shell route through UiHost instead of a QMessageBox; a message sent before the
-	// presenter is up waits for it.
+	// Through UiHost; a message sent before the presenter is up waits for it.
 	auto* app = r->manager->m_app;
-	if (app && app->qmlShellChosen()) {
-		UiHost::Severity severity = UiHost::Severity::Information;
-		switch (type) {
-			case 1:
-				severity = UiHost::Severity::Warning;
-				break;
-			case 2:
-				severity = UiHost::Severity::Critical;
-				break;
-			default:
-				break;
-		}
-		app->runWhenQmlPresenterReady([app, qtitle, qmsg, severity]() {
-			app->uiHost()->message(qtitle, qmsg, severity);
-		});
+	if (!app)
 		return;
-	}
-
+	UiHost::Severity severity = UiHost::Severity::Information;
 	switch (type) {
 		case 1:
-			QMessageBox::warning(nullptr, qtitle, qmsg);
+			severity = UiHost::Severity::Warning;
 			break;
 		case 2:
-			QMessageBox::critical(nullptr, qtitle, qmsg);
+			severity = UiHost::Severity::Critical;
 			break;
 		default:
-			QMessageBox::information(nullptr, qtitle, qmsg);
 			break;
 	}
+	app->runWhenQmlPresenterReady([app, qtitle, qmsg, severity]() {
+		app->uiHost()->message(qtitle, qmsg, severity);
+	});
 }
 
-int PluginManager::api_ui_add_menu_item(void* /* mh */, void* menu_handle,
-										const char* label,
+int PluginManager::api_ui_add_menu_item(void* /* mh */, void* /* menu_handle */,
+										const char* /* label */,
 										const char* /* icon */,
-										MMCOMenuActionCallback cb, void* ud)
+										MMCOMenuActionCallback /* cb */,
+										void* /* ud */)
 {
-	if (!menu_handle || !label || !cb)
-		return -1;
-
-	auto* menu = static_cast<QMenu*>(menu_handle);
-	QString qlabel = QString::fromUtf8(label);
-
-	QAction* action = menu->addAction(qlabel);
-	QObject::connect(action, &QAction::triggered, [cb, ud]() { cb(ud); });
-
-	return 0;
+	// Dead since the widget UI was removed: the only source of a menu handle was
+	// MMCO_HOOK_UI_CONTEXT_MENU, which is never fired. The handle is not dereferenced.
+	return -1;
 }
 
 const char* PluginManager::api_get_app_version(void* mh)
@@ -1582,38 +1513,14 @@ const char* PluginManager::api_get_app_name(void* mh)
 	return r->tempString.c_str();
 }
 
-int PluginManager::api_zip_compress_dir(void* mh, const char* zip,
+int PluginManager::api_zip_compress_dir(void* /* mh */, const char* zip,
 										const char* dir)
 {
 	if (!zip || !dir)
 		return -1;
 
-	// Inside a background hook report a real percentage on the plugin's row; elsewhere skip the
-	// counting pass.
-	auto* task = PluginHookTask::currentOnThisThread();
-	if (mh && task && task->moduleHandle() != mh) {
-		task = nullptr;
-	}
-
-	MMCZip::ProgressFunction progress = nullptr;
-	if (task) {
-		// One queued UI update per file would drown the event loop on a big instance.
-		auto lastReported = std::make_shared<qint64>(-1);
-		progress = [task, lastReported](qint64 current, qint64 total) {
-			const qint64 step = qMax(qint64(1), total / 100);
-			if (current != total && current / step == *lastReported) {
-				return;
-			}
-			*lastReported = current / step;
-			task->reportProgress(
-				QString(),
-				PluginManager::tr("%1 / %2 files").arg(current).arg(total),
-				current, total);
-		};
-	}
-
 	bool ok = MMCZip::compressDir(QString::fromUtf8(zip),
-								  QString::fromUtf8(dir), nullptr, progress);
+								  QString::fromUtf8(dir), nullptr);
 	return ok ? 0 : -1;
 }
 
@@ -2115,21 +2022,12 @@ const char* PluginManager::api_ui_file_open_dialog(void* mh, const char* title,
 	const QString qtitle = title ? QString::fromUtf8(title) : QString();
 	const QString qfilter = filter ? QString::fromUtf8(filter) : QString();
 
-	std::optional<QString> result;
 	auto* app = r->manager->m_app;
-	if (app && app->qmlShellChosen()) {
-		// activeWindow() is null under the QML shell: ask through UiHost (QtQuick.Dialogs
-		// FileDialog).
-		if (qmlPresenterMissing(app, "ui_file_open_dialog"))
-			return nullptr;
-		result = app->uiHost()->pickFile(UiHost::FilePickerMode::Open, qtitle,
-										 QString(), qfilter);
-	} else {
-		const QString path = QFileDialog::getOpenFileName(
-			QApplication::activeWindow(), qtitle, QString(), qfilter);
-		if (!path.isEmpty())
-			result = path;
-	}
+	if (!app || qmlPresenterMissing(app, "ui_file_open_dialog"))
+		return nullptr;
+	// QtQuick.Dialogs FileDialog.
+	const auto result = app->uiHost()->pickFile(UiHost::FilePickerMode::Open,
+												qtitle, QString(), qfilter);
 	if (!result)
 		return nullptr;
 	r->tempString = result->toStdString();
@@ -2145,19 +2043,11 @@ const char* PluginManager::api_ui_file_save_dialog(void* mh, const char* title,
 	const QString qdef = def ? QString::fromUtf8(def) : QString();
 	const QString qfilter = filter ? QString::fromUtf8(filter) : QString();
 
-	std::optional<QString> result;
 	auto* app = r->manager->m_app;
-	if (app && app->qmlShellChosen()) {
-		if (qmlPresenterMissing(app, "ui_file_save_dialog"))
-			return nullptr;
-		result = app->uiHost()->pickFile(UiHost::FilePickerMode::Save, qtitle,
-										 qdef, qfilter);
-	} else {
-		const QString path = QFileDialog::getSaveFileName(
-			QApplication::activeWindow(), qtitle, qdef, qfilter);
-		if (!path.isEmpty())
-			result = path;
-	}
+	if (!app || qmlPresenterMissing(app, "ui_file_save_dialog"))
+		return nullptr;
+	const auto result = app->uiHost()->pickFile(UiHost::FilePickerMode::Save,
+												qtitle, qdef, qfilter);
 	if (!result)
 		return nullptr;
 	r->tempString = result->toStdString();
@@ -2174,22 +2064,12 @@ const char* PluginManager::api_ui_input_dialog(void* mh, const char* title,
 	const QString qdef = def ? QString::fromUtf8(def) : QString();
 
 	auto* app = r->manager->m_app;
-	if (app && app->qmlShellChosen()) {
-		if (qmlPresenterMissing(app, "ui_input_dialog"))
-			return nullptr;
-		const auto answer = app->uiHost()->askText(qtitle, qprompt, qdef);
-		if (!answer)
-			return nullptr;
-		r->tempString = answer->toStdString();
-		return r->tempString.c_str();
-	}
-
-	bool ok = false;
-	QString result = QInputDialog::getText(nullptr, qtitle, qprompt,
-										   QLineEdit::Normal, qdef, &ok);
-	if (!ok)
+	if (!app || qmlPresenterMissing(app, "ui_input_dialog"))
 		return nullptr;
-	r->tempString = result.toStdString();
+	const auto answer = app->uiHost()->askText(qtitle, qprompt, qdef);
+	if (!answer)
+		return nullptr;
+	r->tempString = answer->toStdString();
 	return r->tempString.c_str();
 }
 
@@ -2201,30 +2081,18 @@ int PluginManager::api_ui_confirm_dialog(void* mh, const char* title,
 	const QString qmsg = msg ? QString::fromUtf8(msg) : QString();
 
 	auto* app = r->manager->m_app;
-	if (app && app->qmlShellChosen()) {
-		if (qmlPresenterMissing(app, "ui_confirm_dialog"))
-			return 0;
-		return app->uiHost()->confirm(qtitle, qmsg, UiHost::Severity::Question)
-				  ? 1
-				  : 0;
-	}
-
-	auto ret = QMessageBox::question(nullptr, qtitle, qmsg,
-									 QMessageBox::Yes | QMessageBox::No,
-									 QMessageBox::No);
-	return ret == QMessageBox::Yes ? 1 : 0;
+	if (!app || qmlPresenterMissing(app, "ui_confirm_dialog"))
+		return 0;
+	return app->uiHost()->confirm(qtitle, qmsg, UiHost::Severity::Question)
+			   ? 1
+			   : 0;
 }
 
 /*
- * ABI 5 declarative UI surfaces. A plugin describes a widget tree as an "mmco-ui/1" JSON
- * document (see PluginUiRenderer.h); the host renders and owns the widgets. SurfaceRecord::doc
- * stays the canonical document whether or not a view is mounted. Anchors are realised in:
- *   INSTANCE_PAGE      -> createInstancePages()
- *   GLOBAL_SETTINGS    -> createGlobalSettingsPluginsPage()
- *   INSTANCE_SETTINGS  -> buildPluginsSectionWidget()
+ * ABI 5 declarative UI surfaces. A plugin describes a node tree as an "mmco-ui/1" JSON
+ * document; SurfaceRecord::doc is the canonical document, and PluginSurfaceModel hands it to
+ * PluginNode.qml.
  */
-
-#include "ui/pages/BasePage.h"
 
 namespace
 {
@@ -2271,94 +2139,6 @@ namespace
 		return true;
 	}
 
-	// Ties a RenderedSurface's lifetime to the QWidget it is parented under (stacked sections).
-	class RendererOwner : public QObject
-	{
-	  public:
-		RendererOwner(std::unique_ptr<PluginUiRenderer::RenderedSurface> renderer,
-					 QObject* parent)
-			: QObject(parent), m_renderer(std::move(renderer))
-		{
-		}
-
-	  private:
-		std::unique_ptr<PluginUiRenderer::RenderedSurface> m_renderer;
-	};
-
-	// An INSTANCE_PAGE surface wrapped as its own instance-window page; owns its RenderedSurface.
-	class PluginSurfacePage : public QWidget, public BasePage
-	{
-	  public:
-		PluginSurfacePage(QString id, QString displayName, QString iconName,
-						  QWidget* content,
-						  std::unique_ptr<PluginUiRenderer::RenderedSurface> renderer)
-			: m_id(std::move(id)), m_displayName(std::move(displayName)),
-			  m_iconName(std::move(iconName)), m_renderer(std::move(renderer))
-		{
-			auto* layout = new QVBoxLayout(this);
-			layout->setContentsMargins(0, 0, 0, 0);
-			layout->addWidget(content);
-		}
-
-		QString id() const override
-		{
-			return m_id;
-		}
-		QString displayName() const override
-		{
-			return m_displayName;
-		}
-		QIcon icon() const override
-		{
-			if (m_iconName.startsWith(QLatin1Char(':')))
-				return QIcon(m_iconName);
-			return QIcon::fromTheme(m_iconName.isEmpty() ? QStringLiteral("plugin")
-														 : m_iconName);
-		}
-		bool shouldDisplay() const override
-		{
-			return true;
-		}
-
-	  private:
-		QString m_id;
-		QString m_displayName;
-		QString m_iconName;
-		std::unique_ptr<PluginUiRenderer::RenderedSurface> m_renderer;
-	};
-
-	// The one page every GLOBAL_SETTINGS surface is stacked into.
-	class PluginsGroupPage : public QWidget, public BasePage
-	{
-	  public:
-		explicit PluginsGroupPage(QWidget* content)
-		{
-			auto* scroll = new QScrollArea(this);
-			scroll->setWidgetResizable(true);
-			scroll->setFrameShape(QFrame::NoFrame);
-			scroll->setWidget(content);
-			auto* layout = new QVBoxLayout(this);
-			layout->setContentsMargins(0, 0, 0, 0);
-			layout->addWidget(scroll);
-		}
-		QString id() const override
-		{
-			return QStringLiteral("plugins");
-		}
-		QString displayName() const override
-		{
-			return PluginManager::tr("Plugins");
-		}
-		QIcon icon() const override
-		{
-			return QIcon::fromTheme(QStringLiteral("plugin"));
-		}
-		bool shouldDisplay() const override
-		{
-			return true;
-		}
-	};
-
 } // anonymous namespace
 
 PluginManager::SurfaceRecord* PluginManager::findSurface(void* module_handle,
@@ -2369,24 +2149,6 @@ PluginManager::SurfaceRecord* PluginManager::findSurface(void* module_handle,
 			return rec.get();
 	}
 	return nullptr;
-}
-
-PluginUiRenderer::EventSink PluginManager::makeSurfaceSink(SurfaceRecord* rec)
-{
-	MMCOUiEventCallback cb = rec->cb;
-	void* userData = rec->userData;
-	QString surfaceId = rec->surfaceId;
-	return [cb, userData, surfaceId](const QString& nodeId, const QString& event,
-									 const QString& valueJson) {
-		if (!cb)
-			return;
-		const QByteArray sid = surfaceId.toUtf8();
-		const QByteArray nid = nodeId.toUtf8();
-		const QByteArray ev = event.toUtf8();
-		const QByteArray val = valueJson.toUtf8();
-		cb(userData, sid.constData(), nid.constData(), ev.constData(),
-		  val.constData());
-	};
 }
 
 void* PluginManager::api_ui_surface_create(void* mh, int anchor,
@@ -2453,8 +2215,6 @@ int PluginManager::api_ui_surface_update(void* mh, void* surface,
 		return -1;
 
 	rec->doc = jd.object();
-	if (rec->mountedRoot && rec->mountedRenderer)
-		rec->mountedRenderer->setDocument(rec->doc);
 	emit r->manager->surfacesChanged();
 	return 0;
 }
@@ -2478,10 +2238,7 @@ int PluginManager::api_ui_surface_set(void* mh, void* surface, const char* node_
 	const QString nodeId = QString::fromUtf8(node_id);
 	const QJsonObject props = jd.object();
 	const bool foundInDoc = patchDocumentNodeProps(rec->doc, nodeId, props);
-	if (rec->mountedRoot && rec->mountedRenderer)
-		rec->mountedRenderer->setNodeProps(nodeId, props);
-	// The mounted renderer is patched above; surfacesChanged() tells readers of `doc`
-	// (PluginSurfaceModel).
+	// surfacesChanged() tells readers of `doc` (PluginSurfaceModel).
 	if (foundInDoc)
 		emit r->manager->surfacesChanged();
 	return foundInDoc ? 0 : -1;
@@ -2509,8 +2266,6 @@ int PluginManager::api_ui_surface_set_rows(void* mh, void* surface,
 	QJsonObject rowsPatch;
 	rowsPatch[QStringLiteral("rows")] = rows;
 	const bool foundInDoc = patchDocumentNodeProps(rec->doc, nodeId, rowsPatch);
-	if (rec->mountedRoot && rec->mountedRenderer)
-		rec->mountedRenderer->setRows(nodeId, rows);
 	if (foundInDoc)
 		emit r->manager->surfacesChanged();
 	return foundInDoc ? 0 : -1;
@@ -2525,8 +2280,6 @@ int PluginManager::api_ui_surface_destroy(void* mh, void* surface)
 	for (size_t i = 0; i < vec.size(); ++i) {
 		if (vec[i].get() != surface || vec[i]->module_handle != mh)
 			continue;
-		if (vec[i]->mountedRoot && !r->manager->m_shutdownDone)
-			vec[i]->mountedRoot->deleteLater();
 		vec.erase(vec.begin() + static_cast<std::ptrdiff_t>(i));
 		emit r->manager->surfacesChanged();
 		return 0;
@@ -2551,9 +2304,8 @@ int PluginManager::api_ui_modal_run(void* mh, const char* title,
 	if (err.error != QJsonParseError::NoError || !jd.isObject())
 		return -1;
 
-	// Drawn through UiHost: PluginNode.qml under the QML shell, PluginUiRenderer in a QDialog
-	// otherwise.
-	if (app->qmlShellChosen() && qmlPresenterMissing(app, "ui_modal_run"))
+	// Drawn through UiHost with PluginNode.qml.
+	if (qmlPresenterMissing(app, "ui_modal_run"))
 		return -1;
 	const auto result = app->uiHost()->runPluginModal(
 		title ? QString::fromUtf8(title) : QString(), jd.object());
@@ -2573,74 +2325,12 @@ int PluginManager::api_ui_modal_run(void* mh, const char* title,
 	return 0;
 }
 
-QList<BasePage*> PluginManager::createInstancePages(const QString& instanceId)
-{
-	QList<BasePage*> pages;
-	for (auto& rec : m_surfaces) {
-		if (rec->anchor != MMCO_UI_ANCHOR_INSTANCE_PAGE ||
-			rec->anchorContext != instanceId)
-			continue;
-		SurfaceRecord* recPtr = rec.get();
-		auto renderer = PluginUiRenderer::build(surfaceDocToText(recPtr->doc),
-												makeSurfaceSink(recPtr));
-		QWidget* root = renderer->rootWidget();
-		recPtr->mountedRoot = root;
-		recPtr->mountedRenderer = renderer.get();
-		pages.append(new PluginSurfacePage(recPtr->surfaceId, recPtr->title,
-										   recPtr->iconName, root,
-										   std::move(renderer)));
-	}
-	return pages;
-}
-
-QWidget* PluginManager::buildPluginsSectionWidget(int anchor,
-												  const QString& anchorContext)
-{
-	QWidget* container = nullptr;
-	QVBoxLayout* layout = nullptr;
-	for (auto& rec : m_surfaces) {
-		if (rec->anchor != anchor || rec->anchorContext != anchorContext)
-			continue;
-		if (!container) {
-			container = new QWidget();
-			layout = new QVBoxLayout(container);
-			layout->setContentsMargins(0, 0, 0, 0);
-		}
-		SurfaceRecord* recPtr = rec.get();
-		auto renderer = PluginUiRenderer::build(surfaceDocToText(recPtr->doc),
-												makeSurfaceSink(recPtr));
-		auto* group = new QGroupBox(recPtr->title);
-		auto* groupLayout = new QVBoxLayout(group);
-		groupLayout->addWidget(renderer->rootWidget());
-		recPtr->mountedRoot = renderer->rootWidget();
-		recPtr->mountedRenderer = renderer.get();
-		// Released with `group` (see RendererOwner).
-		new RendererOwner(std::move(renderer), group);
-		layout->addWidget(group);
-	}
-	if (layout)
-		layout->addStretch(1);
-	return container;
-}
-
-BasePage* PluginManager::createGlobalSettingsPluginsPage()
-{
-	// One shared "Plugins" page stacks every GLOBAL_SETTINGS surface as a titled section.
-	QWidget* content =
-		buildPluginsSectionWidget(MMCO_UI_ANCHOR_GLOBAL_SETTINGS, QString());
-	if (!content)
-		return nullptr;
-	return new PluginsGroupPage(content);
-}
-
 void PluginManager::releaseSurfacesForModule(void* module_handle)
 {
 	for (int i = static_cast<int>(m_surfaces.size()) - 1; i >= 0; --i) {
 		auto& rec = m_surfaces[static_cast<size_t>(i)];
 		if (rec->module_handle != module_handle)
 			continue;
-		if (rec->mountedRoot && !m_shutdownDone)
-			rec->mountedRoot->deleteLater();
 		m_surfaces.erase(m_surfaces.begin() + i);
 	}
 }
@@ -2965,20 +2655,6 @@ namespace
 	}
 } // namespace
 
-QWidget* PluginManager::resolveMainWindow()
-{
-	if (m_filteredMainWindow)
-		return m_filteredMainWindow.data();
-
-	for (auto* w : qApp->topLevelWidgets()) {
-		if (w->objectName() == QStringLiteral("MainWindow")) {
-			m_filteredMainWindow = w;
-			return w;
-		}
-	}
-	return nullptr;
-}
-
 QWindow* PluginManager::resolveShellWindow()
 {
 	if (m_filteredShellWindow)
@@ -2986,7 +2662,6 @@ QWindow* PluginManager::resolveShellWindow()
 	if (!m_app)
 		return nullptr;
 
-	// The QML shell window exists only when the widget MainWindow does not (see useQmlShell()).
 	QWindow* window = m_app->qmlShellWindow();
 	if (window)
 		m_filteredShellWindow = window;
@@ -2997,11 +2672,6 @@ void PluginManager::ensureCloseFilterInstalled()
 {
 	if (m_closeFilterInstalled)
 		return;
-	if (QWidget* mw = resolveMainWindow()) {
-		mw->installEventFilter(this);
-		m_closeFilterInstalled = true;
-		return;
-	}
 	if (QWindow* window = resolveShellWindow()) {
 		window->installEventFilter(this);
 		m_closeFilterInstalled = true;
@@ -3010,13 +2680,11 @@ void PluginManager::ensureCloseFilterInstalled()
 
 bool PluginManager::eventFilter(QObject* watched, QEvent* event)
 {
-	// Filters close events on the main window (widget MainWindow, or the QML shell's QQuickWindow).
-	// QmlShell installs its own filter first, so this later one runs first and can stop a vetoed
-	// close.
-	const bool isMainWindow = watched && watched == m_filteredMainWindow.data();
+	// Filters close events on the QML shell's QQuickWindow. QmlShell installs its own filter
+	// first, so this later one runs first and can stop a vetoed close.
 	const bool isShellWindow = watched && watched == m_filteredShellWindow.data();
-	if (event && event->type() == QEvent::Close &&
-		(isMainWindow || isShellWindow) && !m_closeFilters.isEmpty()) {
+	if (event && event->type() == QEvent::Close && isShellWindow &&
+		!m_closeFilters.isEmpty()) {
 		bool swallow = false;
 		/* Iterate over a copy: callbacks may install/remove filters. */
 		const auto filters = m_closeFilters;
@@ -3031,12 +2699,8 @@ bool PluginManager::eventFilter(QObject* watched, QEvent* event)
 			auto* ce = static_cast<QCloseEvent*>(event);
 			ce->ignore();
 			// Hide rather than close, as tray-aware apps do.
-			if (isMainWindow) {
-				if (auto* mw = qobject_cast<QWidget*>(watched))
-					mw->hide();
-			} else if (auto* window = qobject_cast<QWindow*>(watched)) {
+			if (auto* window = qobject_cast<QWindow*>(watched))
 				window->hide();
-			}
 			return true;
 		}
 	}
@@ -3057,8 +2721,6 @@ void PluginManager::releaseTrayResourcesForModule(void* module_handle)
 			m_closeFilters.removeAt(i);
 	}
 	if (m_closeFilters.isEmpty() && m_closeFilterInstalled && !shuttingDown) {
-		if (m_filteredMainWindow)
-			m_filteredMainWindow->removeEventFilter(this);
 		if (m_filteredShellWindow)
 			m_filteredShellWindow->removeEventFilter(this);
 		m_closeFilterInstalled = false;
@@ -3098,90 +2760,6 @@ void PluginManager::releaseTrayResourcesForModule(void* module_handle)
 			g->deleteLater();
 		m_instanceRunning.removeAt(i);
 	}
-}
-
-/* ── ABI 3 — Application signal bridges ──────────────────────────── */
-
-void PluginManager::connectAppSignals()
-{
-	if (!m_app)
-		return;
-
-	/* globalSettingsAboutToOpen -> MMCO_HOOK_GLOBAL_SETTINGS_ABOUT_TO_OPEN, so plugins reach it
-	 * through the C ABI without linking Application's metaobject. Parented on `this`: severed with
-	 * PluginManager. */
-	QObject::connect(m_app, &Application::globalSettingsAboutToOpen, this,
-					 [this]() {
-						 this->dispatchHook(
-							 MMCO_HOOK_GLOBAL_SETTINGS_ABOUT_TO_OPEN, nullptr);
-					 });
-
-	/* instanceSettingsPageCreated -> MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED. Page and instance go
-	 * out as void* (no launcher types in the payload); plugins qobject_cast page_handle. The page's
-	 * settingsLoaded / settingsAboutToApply are bridged to the ABI 3 hooks; the connection is
-	 * anchored on the page. */
-	QObject::connect(
-		m_app, &Application::instanceSettingsPageCreated, this,
-		[this](InstanceSettingsPage* page, BaseInstance* inst) {
-			MMCOInstanceSettingsPageEvent ev{};
-			QByteArray idBytes;
-			if (inst) {
-				idBytes = inst->id().toUtf8();
-				ev.instance_id = idBytes.constData();
-				ev.instance_handle = inst;
-			}
-			ev.page_handle = page;
-			this->dispatchHook(MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED, &ev);
-
-			// INSTANCE_SETTINGS surfaces of this instance are stacked as titled sections in one
-			// host "Plugins" group in the Workarounds tab.
-			if (page && inst) {
-				if (QWidget* section = this->buildPluginsSectionWidget(
-						MMCO_UI_ANCHOR_INSTANCE_SETTINGS, inst->id())) {
-					if (auto* workaroundsLayout = page->findChild<QVBoxLayout*>(
-							QStringLiteral("verticalLayout_8"))) {
-						auto* group = new QGroupBox(tr("Plugins"));
-						auto* groupLayout = new QVBoxLayout(group);
-						groupLayout->addWidget(section);
-						const int insertAt = qMax(0, workaroundsLayout->count() - 1);
-						workaroundsLayout->insertWidget(insertAt, group);
-					} else {
-						delete section;
-					}
-				}
-			}
-
-			if (!page)
-				return;
-			// Capture the raw BaseInstance (owned by InstanceList) and a copy of its id; the
-			// connection anchored on `page` stops with the dialog.
-			BaseInstance* capturedRaw = inst;
-			QByteArray capturedId = idBytes;
-			QObject::connect(page, &InstanceSettingsPage::settingsLoaded, page,
-							 [this, page, capturedRaw, capturedId]() {
-								 MMCOInstanceSettingsPageEvent ev2{};
-								 if (capturedRaw) {
-									 ev2.instance_id = capturedId.constData();
-									 ev2.instance_handle = capturedRaw;
-								 }
-								 ev2.page_handle = page;
-								 this->dispatchHook(
-									 MMCO_HOOK_INSTANCE_SETTINGS_PAGE_LOADED,
-									 &ev2);
-							 });
-			QObject::connect(page, &InstanceSettingsPage::settingsAboutToApply,
-							 page, [this, page, capturedRaw, capturedId]() {
-								 MMCOInstanceSettingsPageEvent ev2{};
-								 if (capturedRaw) {
-									 ev2.instance_id = capturedId.constData();
-									 ev2.instance_handle = capturedRaw;
-								 }
-								 ev2.page_handle = page;
-								 this->dispatchHook(
-									 MMCO_HOOK_INSTANCE_SETTINGS_PAGE_APPLYING,
-									 &ev2);
-							 });
-		});
 }
 
 /* ── S21 — Application Settings (write side, ABI 3+) ─────────────── */
@@ -3553,8 +3131,6 @@ int PluginManager::api_main_window_install_close_filter(
 				self->m_closeFilters.removeAt(i);
 		}
 		if (self->m_closeFilters.isEmpty() && self->m_closeFilterInstalled) {
-			if (self->m_filteredMainWindow)
-				self->m_filteredMainWindow->removeEventFilter(self);
 			if (self->m_filteredShellWindow)
 				self->m_filteredShellWindow->removeEventFilter(self);
 			self->m_closeFilterInstalled = false;
@@ -3562,7 +3138,7 @@ int PluginManager::api_main_window_install_close_filter(
 		return 0;
 	}
 
-	if (!self->resolveMainWindow() && !self->resolveShellWindow())
+	if (!self->resolveShellWindow())
 		return -1;
 
 	self->m_closeFilters.append({mh, cb, user_data});
@@ -3576,12 +3152,6 @@ int PluginManager::api_main_window_show(void* mh)
 	if (!r)
 		return -1;
 	auto* self = r->manager;
-	if (QWidget* mw = self->resolveMainWindow()) {
-		mw->show();
-		mw->raise();
-		mw->activateWindow();
-		return 0;
-	}
 	if (QWindow* window = self->resolveShellWindow()) {
 		window->show();
 		window->raise();
@@ -3597,10 +3167,6 @@ int PluginManager::api_main_window_hide(void* mh)
 	if (!r)
 		return -1;
 	auto* self = r->manager;
-	if (QWidget* mw = self->resolveMainWindow()) {
-		mw->hide();
-		return 0;
-	}
 	if (QWindow* window = self->resolveShellWindow()) {
 		window->hide();
 		return 0;
@@ -3614,8 +3180,6 @@ int PluginManager::api_main_window_is_visible(void* mh)
 	if (!r)
 		return 0;
 	auto* self = r->manager;
-	if (QWidget* mw = self->resolveMainWindow())
-		return mw->isVisible() ? 1 : 0;
 	if (QWindow* window = self->resolveShellWindow())
 		return window->isVisible() ? 1 : 0;
 	return 0;
@@ -4192,6 +3756,3 @@ int PluginManager::api_process_run(void* mh, const char* program,
 							 : -1;
 	return 0;
 }
-
-/* PluginPage MOC — required because PluginPage has Q_OBJECT */
-#include "PluginManager.moc"

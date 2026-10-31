@@ -43,7 +43,7 @@ class ContentDownloadTask : public Task
 	 * and removed for any file superseded (`DownloadItem::replacesFileName`). */
 	void setMetadataIndex(std::shared_ptr<ModMetadataIndex> index);
 
-	/* The progress dialog has a Skip button. What is already on disk stays;
+	/* Aborting is allowed at any point. What is already on disk stays;
 	 * the folder model rescans anyway. */
 	bool canAbort() const override
 	{

@@ -86,8 +86,8 @@ namespace
 		return QStandardPaths::findExecutable(QStringLiteral("git"));
 	}
 
-	/* MMCOUiEventCallback's value_json is a JSON-encoded scalar (see PluginUiRenderer's
-	 * jsonQuoteString): change/select/activate payloads arrive as a quoted, escaped string literal
+	/* MMCOUiEventCallback's value_json is a JSON-encoded scalar (encoded by
+	 * PluginSurfaceModel::valueToJson / quoteJsonString): change/select/activate payloads arrive as a quoted, escaped string literal
 	 * such as `"wiki:Page-Name"`. Wrapping it in an array lets QJsonDocument decode it (it refuses
 	 * a bare top-level string). */
 	QString jsonUnquote(const char* valueJson)

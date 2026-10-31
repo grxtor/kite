@@ -62,17 +62,10 @@ void InstanceTask::downloadFiles(MinecraftInstance* instance)
 	 * canAbort() reads it. */
 	m_gameFilesTask = task;
 
-	/* Now that there is something to abort, say what pressing it does: "Skip",
-	 * not "Abort", since the instance is complete and the button only gives up
-	 * the head start on the game's files. */
-	reportAbortStatus();
-	setAbortButtonText(tr("Skip"));
-
 	connect(task.get(), &Task::finished, this, [this]() {
 		if (!isRunning()) {
 			/* Already over: something else finished this task while the
-			 * download was in flight, and a second ending would make the
-			 * dialog react twice. */
+			 * download was in flight. */
 			return;
 		}
 
@@ -80,9 +73,6 @@ void InstanceTask::downloadFiles(MinecraftInstance* instance)
 		/* Cleared before finishing, so canAbort() stops claiming there is
 		 * something to abort. */
 		m_gameFilesTask.reset();
-		/* And the button stops offering it; left enabled it would do nothing
-		 * during the commit that follows. */
-		reportAbortStatus();
 
 		if (finished && !finished->wasSuccessful()) {
 			/* A warning, not a failure: the pack is installed either way and

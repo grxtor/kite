@@ -29,12 +29,10 @@
 #include "BuildConfig.h"
 #include "InstanceList.h"
 #include "core/LauncherContext.h"
-#include "icons/IconList.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
 #include "modplatform/technic/SingleZipPackInstallTask.h"
 #include "modplatform/technic/SolderPackInstallTask.h"
 #include "net/Download.h"
-#include "net/HttpMetaCache.h"
 #include "tasks/TaskWatcher.h"
 
 namespace
@@ -451,22 +449,6 @@ void TechnicModpackModel::loadDetail(const QString& projectId)
 	job->start();
 }
 
-QString TechnicModpackModel::resolveIconKey(const Pack& pack) const
-{
-	/* Shares the widget page's logo cache. Disk-only; never downloads. */
-	if (!pack.logoName.isEmpty()) {
-		MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
-			QStringLiteral("TechnicPacks"),
-			QStringLiteral("logos/%1").arg(pack.logoName));
-		if (entry && !entry->isStale()) {
-			const QString key = QStringLiteral("technic_") + pack.logoName;
-			LAUNCHER->icons()->installIcon(entry->getFullPath(), key);
-			return key;
-		}
-	}
-	return QStringLiteral("grass");
-}
-
 QObject* TechnicModpackModel::install(const QString& projectId,
 									  const QString& versionId,
 									  const QString& instanceName,
@@ -491,7 +473,7 @@ QObject* TechnicModpackModel::install(const QString& projectId,
 	const QString effectiveName = instanceName.isEmpty() ? pack->name : instanceName;
 	task->setName(effectiveName);
 	task->setGroup(group);
-	task->setIcon(resolveIconKey(*pack));
+	task->setIcon(QStringLiteral("grass"));
 	task->setTargetDir(LAUNCHER->instances()->primaryDir());
 
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(task);

@@ -216,7 +216,6 @@ class FlameModpackModel : public QAbstractListModel
 							 quint64 generation);
 	void markDetailPartDone(quint64 generation, bool isBody);
 	const Pack* packFor(const QString& projectId) const;
-	QString resolveIconKey(const Flame::IndexedPack& pack) const;
 
   private:
 	QList<Pack> m_packs;

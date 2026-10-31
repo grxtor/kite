@@ -27,7 +27,6 @@
 #include <QImage>
 #include <QJsonArray>
 #include <QJsonObject>
-#include <QMimeData>
 #include <QUrl>
 
 #include <algorithm>
@@ -422,17 +421,6 @@ QString SkinLibrary::importFile(const QString& sourcePath,
 	return QString();
 }
 
-void SkinLibrary::importFiles(const QStringList& sourcePaths)
-{
-	for (const QString& path : sourcePaths) {
-		const QString problem = importFile(path);
-		if (!problem.isEmpty()) {
-			qWarning() << "Skipped" << path << "while importing skins:"
-					   << problem;
-		}
-	}
-}
-
 bool SkinLibrary::remove(const QString& name, bool toTrash)
 {
 	const int row = indexOfName(name);
@@ -523,55 +511,9 @@ QHash<int, QByteArray> SkinLibrary::roleNames() const
 
 Qt::ItemFlags SkinLibrary::flags(const QModelIndex& index) const
 {
-	// Drops are accepted on the empty area too, so the flag is unconditional.
-	Qt::ItemFlags result =
-		Qt::ItemIsDropEnabled | QAbstractListModel::flags(index);
+	Qt::ItemFlags result = QAbstractListModel::flags(index);
 	if (index.isValid()) {
 		result |= Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
 	}
 	return result;
-}
-
-QStringList SkinLibrary::mimeTypes() const
-{
-	return {QStringLiteral("text/uri-list")};
-}
-
-Qt::DropActions SkinLibrary::supportedDropActions() const
-{
-	// Copy only: a dropped skin is imported, the original stays where it was.
-	return Qt::CopyAction;
-}
-
-bool SkinLibrary::dropMimeData(const QMimeData* data, Qt::DropAction action,
-							   int row, int column, const QModelIndex& parent)
-{
-	Q_UNUSED(row)
-	Q_UNUSED(column)
-	Q_UNUSED(parent)
-
-	if (action == Qt::IgnoreAction) {
-		return true;
-	}
-	if (!data || !(action & supportedDropActions())) {
-		return false;
-	}
-	if (!data->hasUrls()) {
-		return false;
-	}
-
-	QStringList files;
-	for (const QUrl& url : data->urls()) {
-		// Remote URLs are the "Import URL" button's job; a drop must be a local
-		// file.
-		if (url.isLocalFile()) {
-			files.append(url.toLocalFile());
-		}
-	}
-	if (files.isEmpty()) {
-		return false;
-	}
-
-	importFiles(files);
-	return true;
 }

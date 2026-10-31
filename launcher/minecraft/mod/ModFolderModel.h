@@ -52,8 +52,8 @@ class ModFolderModel : public QAbstractListModel
 		DateColumn,
 		NUM_COLUMNS
 	};
-	// Named roles, so a QML ListView (column 0 only) can reach what the widget
-	// views show as columns 1..3.
+	// Named roles, so a QML ListView (column 0 only) can reach what
+	// columns 1..3 hold.
 	enum ModelRoles {
 		NameRole = Qt::UserRole,
 		VersionRole,
@@ -71,13 +71,8 @@ class ModFolderModel : public QAbstractListModel
 	virtual bool setData(const QModelIndex& index, const QVariant& value,
 						 int role = Qt::EditRole) override;
 	QHash<int, QByteArray> roleNames() const override;
-	Qt::DropActions supportedDropActions() const override;
 
-	/// flags, mostly to support drag&drop
 	virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
-	QStringList mimeTypes() const override;
-	bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row,
-					  int column, const QModelIndex& parent) override;
 
 	virtual int rowCount(const QModelIndex&) const override
 	{

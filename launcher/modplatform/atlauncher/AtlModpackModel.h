@@ -209,7 +209,6 @@ class AtlModpackModel : public QAbstractListModel
 	void setError(const QString& error);
 	void refilter();
 	const ATLauncher::IndexedPack* packFor(const QString& projectId) const;
-	QString resolveIconKey(const ATLauncher::IndexedPack& pack) const;
 
   private:
 	QList<ATLauncher::IndexedPack> m_packs;

@@ -42,7 +42,4 @@ class ExternalUpdater : public QObject
 	virtual void setUpdateCheckInterval(double seconds) = 0;
 
 	virtual void setBetaAllowed(bool allowed) = 0;
-
-  signals:
-	void canCheckForUpdatesChanged(bool canCheck);
 };

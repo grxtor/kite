@@ -21,7 +21,6 @@
 
 #include "WorldList.h"
 #include <FileSystem.h>
-#include <QMimeData>
 #include <QUrl>
 #include <QUuid>
 #include <QString>
@@ -282,92 +281,12 @@ QVariant WorldList::headerData(int section, Qt::Orientation orientation,
 	return QVariant();
 }
 
-QStringList WorldList::mimeTypes() const
-{
-	QStringList types;
-	types << "text/uri-list";
-	return types;
-}
-
-class WorldMimeData : public QMimeData
-{
-	Q_OBJECT
-
-  public:
-	WorldMimeData(QList<World> worlds)
-	{
-		m_worlds = worlds;
-	}
-	QStringList formats() const override
-	{
-		return QMimeData::formats() << "text/uri-list";
-	}
-
-  protected:
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-	QVariant retrieveData(const QString& mimetype,
-						  QMetaType type) const override
-#else
-	QVariant retrieveData(const QString& mimetype,
-						  QVariant::Type type) const override
-#endif
-	{
-		QList<QUrl> urls;
-		for (auto& world : m_worlds) {
-			if (!world.isValid() || !world.isOnFS())
-				continue;
-			QString worldPath = world.container().absoluteFilePath();
-			qDebug() << worldPath;
-			urls.append(QUrl::fromLocalFile(worldPath));
-		}
-		const_cast<WorldMimeData*>(this)->setUrls(urls);
-		return QMimeData::retrieveData(mimetype, type);
-	}
-
-  private:
-	QList<World> m_worlds;
-};
-
-QMimeData* WorldList::mimeData(const QModelIndexList& indexes) const
-{
-	if (indexes.size() == 0)
-		return new QMimeData();
-
-	QList<World> worlds;
-	for (auto idx : indexes) {
-		if (idx.column() != 0)
-			continue;
-		int row = idx.row();
-		if (row < 0 || row >= this->worlds.size())
-			continue;
-		worlds.append(this->worlds[row]);
-	}
-	if (!worlds.size()) {
-		return new QMimeData();
-	}
-	return new WorldMimeData(worlds);
-}
-
 Qt::ItemFlags WorldList::flags(const QModelIndex& index) const
 {
 	Qt::ItemFlags defaultFlags = QAbstractListModel::flags(index);
 	if (index.isValid())
-		return Qt::ItemIsUserCheckable | Qt::ItemIsDragEnabled |
-			   Qt::ItemIsDropEnabled | defaultFlags;
-	else
-		return Qt::ItemIsDropEnabled | defaultFlags;
-}
-
-Qt::DropActions WorldList::supportedDragActions() const
-{
-	// move to other mod lists or VOID
-	return Qt::MoveAction;
-}
-
-Qt::DropActions WorldList::supportedDropActions() const
-{
-	// copy from outside, move from within and other mod lists
-	return Qt::CopyAction | Qt::MoveAction;
+		return Qt::ItemIsUserCheckable | defaultFlags;
+	return defaultFlags;
 }
 
 void WorldList::installWorld(QFileInfo filename)
@@ -379,38 +298,3 @@ void WorldList::installWorld(QFileInfo filename)
 	}
 	w.install(m_dir.absolutePath());
 }
-
-bool WorldList::dropMimeData(const QMimeData* data, Qt::DropAction action,
-							 int row, int column, const QModelIndex& parent)
-{
-	if (action == Qt::IgnoreAction)
-		return true;
-	// check if the action is supported
-	if (!data || !(action & supportedDropActions()))
-		return false;
-	// files dropped from outside?
-	if (data->hasUrls()) {
-		bool was_watching = is_watching;
-		if (was_watching)
-			stopWatching();
-		auto urls = data->urls();
-		for (auto url : urls) {
-			// only local files may be dropped...
-			if (!url.isLocalFile())
-				continue;
-			QString filename = url.toLocalFile();
-
-			QFileInfo worldInfo(filename);
-
-			if (!m_dir.entryInfoList().contains(worldInfo)) {
-				installWorld(worldInfo);
-			}
-		}
-		if (was_watching)
-			startWatching();
-		return true;
-	}
-	return false;
-}
-
-#include "WorldList.moc"

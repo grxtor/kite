@@ -49,7 +49,6 @@ class BaseVersionList : public QAbstractListModel
 		ArchitectureRole,
 		SortRole
 	};
-	typedef QList<int> RoleList;
 
 	explicit BaseVersionList(QObject* parent = 0);
 
@@ -67,8 +66,6 @@ class BaseVersionList : public QAbstractListModel
 	int rowCount(const QModelIndex& parent) const override;
 	int columnCount(const QModelIndex& parent) const override;
 	QHash<int, QByteArray> roleNames() const override;
-
-	virtual RoleList providesRoles() const;
 
 	virtual BaseVersionPtr findVersion(const QString& descriptor);
 

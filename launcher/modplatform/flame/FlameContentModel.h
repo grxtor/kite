@@ -49,5 +49,4 @@ class FlameContentModel final : public ContentProviderModel
 	QList<ModPlatform::Category>
 	parseCategoriesResponse(const QByteArray& bytes) const override;
 
-	QString iconCacheName() const override;
 };

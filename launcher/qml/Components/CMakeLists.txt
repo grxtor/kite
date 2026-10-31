@@ -65,8 +65,6 @@ qt_add_qml_module(Kite_qml_components
         FontFamilyRow.qml
         CatPicture.qml
         CatPackPicker.qml
-        ConsoleFontRow.qml
-        ConsolePreview.qml
         TotalPlayTime.qml
         NewComponentDialog.qml
         InstancePage.qml

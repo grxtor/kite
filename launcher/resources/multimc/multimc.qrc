@@ -3,13 +3,9 @@
     <qresource prefix="/icons/multimc">
         <file>index.theme</file>
 
-        <file>scalable/backup.svg</file>
         <file>scalable/plugins.svg</file>
 
         <file>scalable/git-scm.svg</file>
-
-        <!-- REDDIT logo icon, needs reddit license! -->
-        <file>scalable/reddit-alien.svg</file>
 
         <!-- Patron logo. (C) 2014 Patreon, Inc., http://www.patreon.com/toolbox?ftyp=media -->
         <file>16x16/patreon.png</file>
@@ -19,7 +15,7 @@
         <file>48x48/patreon.png</file>
         <file>64x64/patreon.png</file>
 
-        <!-- launcher settings page -->
+        <!-- launcher icon -->
         <file>scalable/launcher.svg</file>
 
         <!-- technic logo icon -->
@@ -27,7 +23,6 @@
 
         <!-- ATLauncher logo icon (and related bits) -->
         <file>scalable/atlauncher.svg</file>
-        <file>scalable/atlauncher-placeholder.png</file>
 
         <!-- Modrinth logo icon -->
         <file>scalable/instances/modrinth.svg</file>
@@ -79,24 +74,7 @@
         <file>64x64/screenshots.png</file>
         <file>scalable/screenshots.svg</file>
 
-        <file>scalable/custom-commands.svg</file>
         <file>scalable/datapacks.svg</file>
-
-        <!-- The cat button. Freeware, http://findicons.com/icon/73096/black_cat -->
-        <file>16x16/cat.png</file>
-        <file>22x22/cat.png</file>
-        <file>24x24/cat.png</file>
-        <file>32x32/cat.png</file>
-        <file>48x48/cat.png</file>
-        <file>64x64/cat.png</file>
-
-        <!-- Show mods folder. LGPL3 http://openiconlibrary.sourceforge.net/gallery2/?./Icons/places/oxygen-style/folder-favorites.png -->
-        <file>scalable/centralmods.svg</file>
-        <file>16x16/centralmods.png</file>
-        <file>22x22/centralmods.png</file>
-        <file>32x32/centralmods.png</file>
-        <file>48x48/centralmods.png</file>
-        <file>64x64/centralmods.png</file>
 
         <!-- copy instance. CC-BY-SA 3.0, http://openiconlibrary.sourceforge.net/gallery2/?./Icons/actions/edit-copy-6.png -->
         <file>16x16/copy.png</file>
@@ -112,14 +90,6 @@
         <file>48x48/help.png</file>
         <file>64x64/help.png</file>
 
-        <!-- Open news. Our own. -->
-        <file>scalable/news.svg</file>
-        <file>16x16/news.png</file>
-        <file>22x22/news.png</file>
-        <file>32x32/news.png</file>
-        <file>48x48/news.png</file>
-        <file>64x64/news.png</file>
-
         <!-- Bad status. Our own. -->
         <file>16x16/status-bad.png</file>
         <file>24x24/status-bad.png</file>
@@ -127,37 +97,6 @@
         <file>32x32/status-bad.png</file>
         <file>48x48/status-bad.png</file>
         <file>64x64/status-bad.png</file>
-
-        <!-- Good status. Our own. -->
-        <file>16x16/status-good.png</file>
-        <file>24x24/status-good.png</file>
-        <file>22x22/status-good.png</file>
-        <file>32x32/status-good.png</file>
-        <file>48x48/status-good.png</file>
-        <file>64x64/status-good.png</file>
-
-        <!-- Yellow status. Whatever that means... Our own. -->
-        <file>16x16/status-yellow.png</file>
-        <file>24x24/status-yellow.png</file>
-        <file>22x22/status-yellow.png</file>
-        <file>32x32/status-yellow.png</file>
-        <file>48x48/status-yellow.png</file>
-        <file>64x64/status-yellow.png</file>
-
-        <!-- A status icon for things that are in progress/running... Our own. -->
-        <file>16x16/status-running.png</file>
-        <file>24x24/status-running.png</file>
-        <file>22x22/status-running.png</file>
-        <file>32x32/status-running.png</file>
-        <file>48x48/status-running.png</file>
-        <file>64x64/status-running.png</file>
-        <file>scalable/status-running.svg</file>
-
-        <!-- Plugin (blue recolor), LGPL3, Oxygen icons. -->
-        <file>16x16/loadermods.png</file>
-        <file>24x24/loadermods.png</file>
-        <file>32x32/loadermods.png</file>
-        <file>64x64/loadermods.png</file>
 
         <!-- Plugin (red recolor), LGPL3, Oxygen icons. -->
         <file>16x16/jarmods.png</file>
@@ -194,47 +133,12 @@
         <file>48x48/settings.png</file>
         <file>64x64/settings.png</file>
 
-        <!-- Same, used for instance settings -->
-        <file>16x16/instance-settings.png</file>
-        <file>22x22/instance-settings.png</file>
-        <file>32x32/instance-settings.png</file>
-        <file>48x48/instance-settings.png</file>
-        <file>64x64/instance-settings.png</file>
-
-        <!-- View folder. CC-BY-SA 3.0, http://openiconlibrary.sourceforge.net/gallery2/?./Icons/actions/document-open-folder.png -->
-        <file>scalable/viewfolder.svg</file>
-        <file>16x16/viewfolder.png</file>
-        <file>22x22/viewfolder.png</file>
-        <file>32x32/viewfolder.png</file>
-        <file>48x48/viewfolder.png</file>
-        <file>64x64/viewfolder.png</file>
-
-        <!-- Default minecraft skin, desaturated, cutout of head, Mojang -->
-        <file>8x8/noaccount.png</file>
-        <file>16x16/noaccount.png</file>
-        <file>24x24/noaccount.png</file>
-        <file>32x32/noaccount.png</file>
-        <file>48x48/noaccount.png</file>
-
-        <!-- and the same again. TODO: make a nice accounts icon -->
-        <file alias="8x8/accounts.png">8x8/noaccount.png</file>
-        <file alias="16x16/accounts.png">16x16/noaccount.png</file>
-        <file alias="24x24/accounts.png">24x24/noaccount.png</file>
-        <file alias="32x32/accounts.png">32x32/noaccount.png</file>
-        <file alias="48x48/accounts.png">48x48/noaccount.png</file>
-
         <!-- Log file, LGPL, http://www.iconarchive.com/show/crystal-clear-icons-by-everaldo/Mimetype-text-icon.html -->
         <file>16x16/log.png</file>
         <file>24x24/log.png</file>
         <file>32x32/log.png</file>
         <file>48x48/log.png</file>
         <file>64x64/log.png</file>
-
-        <!-- placeholder for minecraft servers -->
-        <file>128x128/unknown_server.png</file>
-
-        <!-- placeholder when loading screenshot images -->
-        <file>scalable/screenshot-placeholder.svg</file>
 
         <!-- matrix logo -->
         <file>scalable/matrix.svg</file>
@@ -330,10 +234,9 @@
         <!-- The Kite logo for the app's own UI (BrandMark.qml): branding/Kite.icon's master, cropped to (206,8)-(1018,820), a square centred on the kite's body, and rounded like the app icon (radius 22.5 %). Not a theme icon. -->
         <file>brand/kite-mark.png</file>
 
-        <!-- delete, tag, rename, shortcut, about, new, checkupdate and server LGPL3, Oxygen icons.-->
+        <!-- delete, tag, shortcut, about, new and server LGPL3, Oxygen icons.-->
         <file>scalable/delete.svg</file>
         <file>scalable/tag.svg</file>
-        <file>scalable/rename.svg</file>
         <file>scalable/shortcut.svg</file>
         <file>scalable/export.svg</file>
         <file>scalable/launch.svg</file>
@@ -341,7 +244,6 @@
         <file>scalable/appearance.svg</file>
         <file>scalable/about.svg</file>
         <file>scalable/new.svg</file>
-        <file>scalable/checkupdate.svg</file>  
 
         <file>scalable/instances/quiltmc.svg</file>  <!-- CC0 QuiltMC -->
         <file>scalable/instances/quilt_mark.svg</file>  <!-- CC0 QuiltMC art repo, transparent -->

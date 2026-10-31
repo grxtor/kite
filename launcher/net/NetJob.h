@@ -99,7 +99,7 @@ class NetJob : public Task
 		qint64 current_progress = 0;
 		qint64 total_progress = 1;
 		int failures = 0;
-		/// The line this file gets in the progress dialog; shared so the list from
+		/// The step this file gets; shared so the list from
 		/// getStepProgress() stays current.
 		std::shared_ptr<TaskStepProgress> step;
 	};

@@ -107,8 +107,7 @@ class InstanceImportTask : public InstanceTask
 
 	explicit InstanceImportTask(const QUrl sourceUrl);
 
-	/* Optional; set by the browser page before NewInstanceDialog adopts the
-	 * task. Recorded into the new instance.cfg so PackUpdater can read it
+	/* Optional; set by the pack browser before the task is started. Recorded into the new instance.cfg so PackUpdater can read it
 	 * back. */
 	void setPackSourceHint(const PackSourceHint& hint)
 	{

@@ -86,10 +86,6 @@ class SkinLibrary : public QAbstractListModel
 	QString importFile(const QString& sourcePath,
 					   const QString& preferredName = QString());
 
-	// Bulk importFile() for drag-and-drop. Failures are logged, not reported: a
-	// drop of twelve files should not raise twelve dialogs.
-	void importFiles(const QStringList& sourcePaths);
-
 	// Deletes a skin's file and its entry. `toTrash` asks for the system trash;
 	// retry with false where that is unavailable.
 	bool remove(const QString& name, bool toTrash);
@@ -105,10 +101,6 @@ class SkinLibrary : public QAbstractListModel
 	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 	QHash<int, QByteArray> roleNames() const override;
 	Qt::ItemFlags flags(const QModelIndex& index) const override;
-	QStringList mimeTypes() const override;
-	Qt::DropActions supportedDropActions() const override;
-	bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row,
-					  int column, const QModelIndex& parent) override;
 
   protected slots:
 	void onDirectoryChanged(const QString& path);

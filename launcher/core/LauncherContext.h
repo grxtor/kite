@@ -20,7 +20,6 @@
 
 #pragma once
 
-#include <QIcon>
 #include <QString>
 #include <memory>
 
@@ -49,8 +48,7 @@ namespace Meta
  * implements this and registers itself, so the core uses LAUNCHER-> instead of
  * APPLICATION-> and does not drag in QtWidgets. Nothing here may mention
  * QtWidgets or return a widget, window or dialog; questions to the user go
- * through UiHost. getThemedIcon() is transitional (QIcon is QtGui, but QML
- * cannot use it). */
+ * through UiHost. */
 class LauncherContext
 {
   public:
@@ -75,13 +73,11 @@ class LauncherContext
 	virtual shared_qobject_ptr<HttpMetaCache> metacache() = 0;
 	virtual shared_qobject_ptr<Meta::Index> metadataIndex() = 0;
 
-	virtual QIcon getThemedIcon(const QString& name) = 0;
 	virtual QString getJarsPath() = 0;
 	virtual QString msaClientId() const = 0;
 
 	/* Applies a proxy configuration to the whole application at once
-	 * (QNetworkProxy::setApplicationProxy() and friends), like the widget
-	 * ProxyPage's apply button. @p proxyTypeStr is one of "None", "Default",
+	 * (QNetworkProxy::setApplicationProxy() and friends). @p proxyTypeStr is one of "None", "Default",
 	 * "SOCKS5", "HTTP". Needed by QmlShell, which cannot see Application. */
 	virtual void updateProxySettings(QString proxyTypeStr, QString addr,
 									 int port, QString user,
@@ -97,14 +93,10 @@ class LauncherContext
 	 * runs. */
 	virtual UiHost* uiHost() const = 0;
 
-	/* The launcher's news feeds and notification check, owned by the
-	 * application and shared by whichever UI is up and by the plugin news API.
-	 * Null in a test or tool context, which is why these are not pure. */
+	/* The launcher's news feeds, owned by the application and shared by the QML
+	 * shell and the plugin news API. Null in a test or tool context, which is
+	 * why this is not pure. */
 	virtual NewsChecker* newsChecker() const
-	{
-		return nullptr;
-	}
-	virtual NotificationChecker* notificationChecker() const
 	{
 		return nullptr;
 	}

@@ -101,11 +101,6 @@ FlameContentModel::FlameContentModel(ModPlatform::ContentType contentType,
 {
 }
 
-QString FlameContentModel::iconCacheName() const
-{
-	return QStringLiteral("FlameModIcons");
-}
-
 QList<ModPlatform::Category>
 FlameContentModel::parseCategoriesResponse(const QByteArray& bytes) const
 {

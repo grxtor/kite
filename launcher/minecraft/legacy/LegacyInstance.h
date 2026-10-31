@@ -133,7 +133,6 @@ class LegacyInstance : public BaseInstance
 		return gameRoot();
 	}
 
-	QString getStatusbarDescription() override;
 	QStringList
 	verboseDescription(AuthSessionPtr session,
 					   MinecraftServerTargetPtr serverToJoin) override;

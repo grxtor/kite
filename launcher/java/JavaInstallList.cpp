@@ -94,12 +94,6 @@ QVariant JavaInstallList::data(const QModelIndex& index, int role) const
 	}
 }
 
-BaseVersionList::RoleList JavaInstallList::providesRoles() const
-{
-	return {VersionPointerRole, VersionIdRole, VersionRole,
-			RecommendedRole,	PathRole,	   ArchitectureRole};
-}
-
 static bool sortJavas(BaseVersionPtr left, BaseVersionPtr right)
 {
 	auto rleft = std::dynamic_pointer_cast<JavaInstall>(left);

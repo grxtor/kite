@@ -31,7 +31,6 @@
 
 #include <QDebug>
 
-#include <QPainter>
 
 #include "flows/MSA.h"
 
@@ -96,19 +95,6 @@ QJsonObject MinecraftAccount::saveToJson() const
 AccountState MinecraftAccount::accountState() const
 {
 	return data.accountState;
-}
-
-QPixmap MinecraftAccount::getFace() const
-{
-	QPixmap skinTexture;
-	if (!skinTexture.loadFromData(data.minecraftProfile.skin.data, "PNG")) {
-		return QPixmap();
-	}
-	QPixmap skin = QPixmap(8, 8);
-	QPainter painter(&skin);
-	painter.drawPixmap(0, 0, skinTexture.copy(8, 8, 8, 8));
-	painter.drawPixmap(0, 0, skinTexture.copy(40, 8, 8, 8));
-	return skin.scaled(64, 64, Qt::KeepAspectRatio);
 }
 
 shared_qobject_ptr<AccountTask> MinecraftAccount::loginMSA()

@@ -34,10 +34,6 @@ class NullInstance : public BaseInstance
 	}
 	virtual ~NullInstance() {};
 	void saveNow() override {}
-	QString getStatusbarDescription() override
-	{
-		return tr("Unknown instance type");
-	};
 	QSet<QString> traits() const override
 	{
 		return {};

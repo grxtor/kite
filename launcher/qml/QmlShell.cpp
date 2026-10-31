@@ -857,9 +857,6 @@ bool QmlShell::deleteInstance(const QString& id)
 		return false;
 	}
 
-	// The selection persists under this key; clear it so it never points at
-	// a deleted instance.
-	LAUNCHER->settings()->set("SelectedInstance", QString());
 	return true;
 }
 
@@ -1056,8 +1053,8 @@ QObject* QmlShell::uiHost() const
 UiHost* QmlShell::uiHostInterface() const
 {
 	// Null until a QML item has called setPresenterReady(true). Application
-	// then uses the widget host, so an early call gets a real dialog instead
-	// of hanging on a request nothing shows.
+	// then uses the headless host, so an early call is declined instead of
+	// hanging on a request nothing shows.
 	if (m_uiHost && m_uiHost->presenterReady()) {
 		return m_uiHost.get();
 	}

@@ -560,15 +560,6 @@ bool TranslationsModel::selectLanguage(QString key)
 	return successful;
 }
 
-QModelIndex TranslationsModel::selectedIndex()
-{
-	auto found = findLanguage(d->m_selectedLanguage);
-	if (found) {
-		return index(found - d->m_languages.data(), 0, QModelIndex());
-	}
-	return QModelIndex();
-}
-
 QString TranslationsModel::selectedLanguage()
 {
 	return d->m_selectedLanguage;

@@ -47,6 +47,26 @@ namespace WorldTools
 		return world.install(worldsDir);
 	}
 
+	bool checkMCEditFolder(const QString& toolPath, QString& error)
+	{
+		if (toolPath.isEmpty()) {
+			error = QObject::tr("Path is empty");
+			return false;
+		}
+		const QDir dir(toolPath);
+		if (!dir.exists()) {
+			error = QObject::tr("Path does not exist");
+			return false;
+		}
+		if (!dir.exists("mcedit.sh") && !dir.exists("mcedit.py") &&
+			!dir.exists("mcedit.exe") && !dir.exists("Contents") &&
+			!dir.exists("mcedit2.exe")) {
+			error = QObject::tr("Path does not seem to be a MCEdit path");
+			return false;
+		}
+		return true;
+	}
+
 	QString mceditProgram(const QString& mceditPath)
 	{
 		if (mceditPath.trimmed().isEmpty()) {

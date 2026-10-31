@@ -57,8 +57,7 @@ QString faviconUrl(const nbt::tag_compound& compound)
 	return kPngDataUrl + QString::fromLatin1(png.toBase64());
 }
 
-/* Same shape as ServersPage.cpp's file-local parseServersDat()/
- * serializeServerDat(), duplicated because those are private to ui/. */
+/* Reads and writes servers.dat. */
 std::unique_ptr<nbt::tag_compound> parseServersDat(const QString& filename)
 {
 	// A fresh instance has no servers.dat yet: a normal empty state, not an error.
