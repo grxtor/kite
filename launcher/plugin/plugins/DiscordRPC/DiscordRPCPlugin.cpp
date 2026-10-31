@@ -39,9 +39,9 @@ MMCO_DEFINE_MODULE("DiscordRPC", "1.0.0", "Project Tick",
 				   "Kite instance in your Discord status",
 				   "MS-PL");
 
-/* TODO(fork): our own application from the Discord Developer Portal.
- * Empty keeps the plugin idle. */
-static constexpr const char* DISCORD_APP_ID = "";
+/* Kite's application in the Discord Developer Portal. Its name is the
+ * "Playing …" line; the "kite" art asset is uploaded there. */
+static constexpr const char* DISCORD_APP_ID = "1566189846161260634";
 static constexpr const char* LARGE_IMAGE_KEY = "kite";
 
 /* ── module state ─────────────────────────────────────────────────── */
