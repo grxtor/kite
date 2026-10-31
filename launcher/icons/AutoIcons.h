@@ -29,10 +29,10 @@ namespace AutoIcons
 		QString iconKey;
 	};
 
-	/* The block and mob icons of the built-in set: no platform or loader
-	 * logos, not the grass block itself, nothing that reads as a copy of
-	 * another (squarecreeper next to creeper, dirt next to grass), and not
-	 * magitech, a glossy badge among pixel blocks. */
+	/* Kite's own blocks (kite_*, drawn by branding/instance_cubes.py), each
+	 * wearing the KITE band. None of them is made from a game texture, so
+	 * the game-texture icons (GameTextureIcons) never stand in for them and
+	 * every machine shows the same set. */
 	QStringList pool();
 
 	/* Whether @p key is an icon nobody picked: the generic one, or the

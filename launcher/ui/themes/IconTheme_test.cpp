@@ -35,6 +35,8 @@
 #include <QStringList>
 #include <QXmlStreamReader>
 
+#include "icons/AutoIcons.h"
+
 /*
  * Can Qt's own icon engine serve the icon themes Kite ships inside qrc?
  *
@@ -674,6 +676,21 @@ class IconThemeTest : public QObject
 										   "icon: %2")
 								.arg(substituted.size())
 								.arg(substituted.join(QStringLiteral(", ")))));
+	}
+
+	/// Every icon AutoIcons hands out is a built-in instance icon -- one
+	/// left out of multimc.qrc would quietly draw as the grass block -- and
+	/// the theme has it at 256 px, since rows ask for twice their size and
+	/// a 2x screen doubles that again.
+	void autoIconsAreBuiltIn()
+	{
+		QIcon::setThemeName(QStringLiteral("multimc"));
+		for (const QString& key : AutoIcons::pool()) {
+			QVERIFY2(m_instanceIconNames.contains(key), qPrintable(key));
+			const QPixmap big =
+				QIcon::fromTheme(key).pixmap(QSize(256, 256), 1.0);
+			QVERIFY2(big.size() == QSize(256, 256), qPrintable(key));
+		}
 	}
 
 	// -----------------------------------------------------------------

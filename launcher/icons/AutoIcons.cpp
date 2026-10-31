@@ -29,12 +29,15 @@ namespace
 
 QStringList AutoIcons::pool()
 {
-	return {QStringLiteral("bee"), QStringLiteral("brick"), QStringLiteral("chicken"),
-			QStringLiteral("creeper"), QStringLiteral("diamond"), QStringLiteral("enderman"),
-			QStringLiteral("enderpearl"), QStringLiteral("fox"), QStringLiteral("gold"),
-			QStringLiteral("herobrine"), QStringLiteral("iron"), QStringLiteral("meat"),
-			QStringLiteral("netherstar"), QStringLiteral("planks"), QStringLiteral("skeleton"),
-			QStringLiteral("steve"), QStringLiteral("stone"), QStringLiteral("tnt")};
+	return {QStringLiteral("kite_amethyst"), QStringLiteral("kite_brick"),
+			QStringLiteral("kite_cobblestone"), QStringLiteral("kite_copper"),
+			QStringLiteral("kite_cyan_ore"), QStringLiteral("kite_emerald_ore"),
+			QStringLiteral("kite_glass"), QStringLiteral("kite_gold_ore"),
+			QStringLiteral("kite_ice"), QStringLiteral("kite_lantern"),
+			QStringLiteral("kite_log"), QStringLiteral("kite_magma"),
+			QStringLiteral("kite_moss"), QStringLiteral("kite_obsidian"),
+			QStringLiteral("kite_planks"), QStringLiteral("kite_ruby_ore"),
+			QStringLiteral("kite_sand"), QStringLiteral("kite_snow")};
 }
 
 bool AutoIcons::isGeneric(const QString& key)
