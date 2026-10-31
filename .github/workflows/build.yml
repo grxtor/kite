@@ -152,8 +152,12 @@ jobs:
       ##
 
       - name: Configure project
+        env:
+          # Empty when the secret isn't there; the build then has no
+          # CurseForge search, as before.
+          KITE_CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
         run: |
-          cmake --preset "$CMAKE_PRESET" -D VCPKG_HOST_TRIPLET="$VCPKG_TRIPLET" -D VCPKG_TARGET_TRIPLET="$VCPKG_TRIPLET" -DKite_QT_VERSION_MAJOR="$QT_MAJOR" -DKite_BUNDLE_OPENSSL_LIBS="${KITE_BUNDLE_OPENSSL_LIBS:-}"
+          cmake --preset "$CMAKE_PRESET" -D VCPKG_HOST_TRIPLET="$VCPKG_TRIPLET" -D VCPKG_TARGET_TRIPLET="$VCPKG_TRIPLET" -DKite_QT_VERSION_MAJOR="$QT_MAJOR" -DKite_BUNDLE_OPENSSL_LIBS="${KITE_BUNDLE_OPENSSL_LIBS:-}" -DKite_CURSEFORGE_API_KEY="${KITE_CURSEFORGE_API_KEY:-}"
 
       # Configure is where vcpkg builds the dependencies; keep them even if
       # the build or the tests fail later. An exact hit has nothing new.
