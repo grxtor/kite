@@ -119,7 +119,7 @@ class PerformanceSetupTest : public QObject
 		QVERIFY(defaults.contains("AANobbMI"));
 	}
 
-	void jarsWithoutARecordAreLoose()
+	void jarsNotFromModrinthAreTheOnesToIdentify()
 	{
 		QTemporaryDir dir;
 		QVERIFY(dir.isValid());
@@ -128,19 +128,32 @@ class PerformanceSetupTest : public QObject
 		touch(mods, "recorded-off.jar.disabled");
 		touch(mods, "by-hand.jar");
 		touch(mods, "by-hand-off.jar.disabled");
+		touch(mods, "from-curseforge.jar");
+		touch(mods, "recorded-local.jar");
+		touch(mods, "no-project.jar");
 		touch(mods, "notes.txt");
 
 		ModMetadataIndex index(mods);
-		for (const QString& name : {"recorded.jar", "recorded-off.jar"}) {
+		const auto record = [&index](const QString& name, const QString& platform,
+									 const QString& projectId) {
 			ModMetadataIndex::Entry entry;
 			entry.fileName = name;
-			entry.platform = "modrinth";
-			entry.projectId = "AANobbMI";
+			entry.platform = platform;
+			entry.projectId = projectId;
 			QVERIFY(index.put(entry));
-		}
+		};
+		record("recorded.jar", "modrinth", "AANobbMI");
+		record("recorded-off.jar", "modrinth", "AANobbMI");
+		record("from-curseforge.jar", "curseforge", "394468");
+		record("recorded-local.jar", "local", "");
+		record("no-project.jar", "modrinth", "");
 
-		QCOMPARE(PerformanceSetup::looseJars(mods, index),
-				 (QStringList{"by-hand-off.jar.disabled", "by-hand.jar"}));
+		/* A copy from CurseForge, or recorded as local, is no Modrinth
+		 * project the setup knows of: only the hash can tell. */
+		QCOMPARE(PerformanceSetup::jarsNotFromModrinth(mods, index),
+				 (QStringList{"by-hand-off.jar.disabled", "by-hand.jar",
+							  "from-curseforge.jar", "no-project.jar",
+							  "recorded-local.jar"}));
 	}
 
 	void hashesAreSha1()
@@ -181,6 +194,79 @@ class PerformanceSetupTest : public QObject
 		QVERIFY(PerformanceSetup::projectsInHashReply("not json").isEmpty());
 		QVERIFY(PerformanceSetup::projectsInHashReply("[1,2]").isEmpty());
 		QVERIFY(PerformanceSetup::projectsInHashReply("{}").isEmpty());
+	}
+
+	void defaultsAreTheCatalogModsMarkedDefault()
+	{
+		const QVariantList mods = {
+			QVariantMap{{"project", "a"}, {"isDefault", true}},
+			QVariantMap{{"project", "b"}, {"isDefault", false}},
+			QVariantMap{{"project", "c"}},
+			QVariantMap{{"project", "d"}, {"isDefault", true}},
+		};
+		QCOMPARE(PerformanceSetup::defaultProjects(mods), (QStringList{"a", "d"}));
+		QVERIFY(PerformanceSetup::defaultProjects({}).isEmpty());
+	}
+
+	void theMatchKeyNamesTheVersionAndTheLoader()
+	{
+		QCOMPARE(PerformanceSetup::matchKey("1.21.5", "fabric"),
+				 QString("1.21.5 fabric"));
+		QVERIFY(PerformanceSetup::matchKey("1.21.5", "fabric") !=
+				PerformanceSetup::matchKey("1.21.4", "fabric"));
+		QVERIFY(PerformanceSetup::matchKey("1.21.5", "fabric") !=
+				PerformanceSetup::matchKey("1.21.5", "neoforge"));
+	}
+
+	void rematchesTheCatalogModsAndTheirDependencies()
+	{
+		const auto entry = [](const QString& file, const QString& platform,
+							  const QString& project, bool dependency = false) {
+			ModMetadataIndex::Entry e;
+			e.fileName = file;
+			e.platform = platform;
+			e.projectId = project;
+			e.isDependency = dependency;
+			return e;
+		};
+		const QList<ModMetadataIndex::Entry> entries = {
+			entry("sodium.jar", "modrinth", "AANobbMI"),
+			entry("fabric-api.jar", "modrinth", "P7dR8mSH", true),
+			entry("hers.jar", "modrinth", "other"),
+			entry("sodium-cf.jar", "curseforge", "AANobbMI"),
+			entry("lib-cf.jar", "curseforge", "123", true),
+			entry("by-hand.jar", "", ""),
+			entry("by-hand-dep.jar", "modrinth", "", true),
+		};
+
+		QHash<QString, QString> expected;
+		expected.insert("AANobbMI", "sodium.jar");
+		expected.insert("P7dR8mSH", "fabric-api.jar");
+		QCOMPARE(PerformanceSetup::filesToRematch(entries, {"AANobbMI", "gvQqBUqZ"}),
+				 expected);
+		QVERIFY(PerformanceSetup::filesToRematch({}, {"AANobbMI"}).isEmpty());
+		/* Without a catalog mod, only the dependency of one remains. */
+		QCOMPARE(PerformanceSetup::filesToRematch(entries, {}).size(), 1);
+	}
+
+	void aRemovedDefaultIsExcluded()
+	{
+		QCOMPARE(PerformanceSetup::withRemoved({"x"}, {"a", "b"}, {"a", "c"}),
+				 (QStringList{"x", "a"}));
+	}
+
+	void aRemovedModOutsideTheDefaultsIsNot()
+	{
+		QCOMPARE(PerformanceSetup::withRemoved({"x"}, {"mine", ""}, {"a", "c"}),
+				 (QStringList{"x"}));
+		QVERIFY(PerformanceSetup::withRemoved({}, {}, {"a"}).isEmpty());
+	}
+
+	void anExcludedProjectIsListedOnce()
+	{
+		QCOMPARE(PerformanceSetup::withRemoved({"a", "x"}, {"a", "c", "c"},
+											   {"a", "c"}),
+				 (QStringList{"a", "x", "c"}));
 	}
 
 	void exclusionsRoundTrip()

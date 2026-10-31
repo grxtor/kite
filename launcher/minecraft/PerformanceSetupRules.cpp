@@ -36,6 +36,16 @@ namespace
 	 * no longer 1. */
 	constexpr int kFirstNumberedMajor = 2;
 	const QString kExcludedSeparator = QStringLiteral(",");
+	/* What ModMetadataIndex records for a file installed from Modrinth
+	 * (ModrinthApi::id()). */
+	const QString kModrinthPlatform = QStringLiteral("modrinth");
+	/* Between the Minecraft version and the loader in a match key. */
+	const QString kMatchKeySeparator = QStringLiteral(" ");
+
+	bool fromModrinth(const ModMetadataIndex::Entry& entry)
+	{
+		return entry.platform == kModrinthPlatform && !entry.projectId.isEmpty();
+	}
 
 	QString sha1Of(const QString& path)
 	{
@@ -85,18 +95,19 @@ namespace PerformanceSetup
 		return major == 1 && match.captured(2).toInt() >= kFirstSupportedMinor;
 	}
 
-	QStringList looseJars(const QDir& folder, const ModMetadataIndex& index)
+	QStringList jarsNotFromModrinth(const QDir& folder,
+									const ModMetadataIndex& index)
 	{
-		QStringList loose;
+		QStringList unknown;
 		const QStringList jars = folder.entryList(
 			{QStringLiteral("*.jar"), QStringLiteral("*.jar.disabled")},
 			QDir::Files | QDir::Readable, QDir::Name);
 		for (const QString& jar : jars) {
-			if (!index.contains(jar)) {
-				loose.append(jar);
+			if (!fromModrinth(index.get(jar))) {
+				unknown.append(jar);
 			}
 		}
-		return loose;
+		return unknown;
 	}
 
 	QStringList sha1sOf(const QDir& folder, const QStringList& files)
@@ -141,5 +152,50 @@ namespace PerformanceSetup
 	QString joinExcluded(const QStringList& projects)
 	{
 		return projects.join(kExcludedSeparator);
+	}
+
+	QStringList defaultProjects(const QVariantList& catalogMods)
+	{
+		QStringList defaults;
+		for (const QVariant& mod : catalogMods) {
+			const QVariantMap fields = mod.toMap();
+			if (fields.value("isDefault").toBool()) {
+				defaults.append(fields.value("project").toString());
+			}
+		}
+		return defaults;
+	}
+
+	QString matchKey(const QString& mcVersion, const QString& loader)
+	{
+		return mcVersion + kMatchKeySeparator + loader;
+	}
+
+	QHash<QString, QString>
+	filesToRematch(const QList<ModMetadataIndex::Entry>& entries,
+				   const QStringList& catalogProjects)
+	{
+		QHash<QString, QString> files;
+		for (const ModMetadataIndex::Entry& entry : entries) {
+			const bool fromCatalog = catalogProjects.contains(entry.projectId);
+			if (fromModrinth(entry) && (fromCatalog || entry.isDependency)) {
+				files.insert(entry.projectId, entry.fileName);
+			}
+		}
+		return files;
+	}
+
+	QStringList withRemoved(const QStringList& excluded,
+							const QStringList& removed,
+							const QStringList& defaults)
+	{
+		QStringList result = excluded;
+		for (const QString& project : removed) {
+			if (defaults.contains(project)) {
+				result.append(project);
+			}
+		}
+		result.removeDuplicates();
+		return result;
 	}
 } // namespace PerformanceSetup

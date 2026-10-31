@@ -21,10 +21,13 @@
 
 #include <QByteArray>
 #include <QDir>
+#include <QHash>
+#include <QList>
 #include <QString>
 #include <QStringList>
+#include <QVariantList>
 
-class ModMetadataIndex;
+#include "minecraft/mod/ModMetadataIndex.h"
 
 /*
  * The decisions behind PerformanceSetupTask that need no instance and no
@@ -44,9 +47,12 @@ namespace PerformanceSetup
 	/// release from 1.16 on, or a numbered release such as 26.1.2. False
 	/// for older releases, snapshots and betas.
 	bool supportsVersion(const QString& mcVersion);
-	/// File names in @p folder (.jar, enabled or not) that @p index has no
-	/// record of.
-	QStringList looseJars(const QDir& folder, const ModMetadataIndex& index);
+	/// File names in @p folder (.jar, enabled or not) that @p index does not
+	/// record as installed from Modrinth: added by hand, or installed from
+	/// CurseForge or recorded as local. Modrinth can identify these by hash,
+	/// and only these need it.
+	QStringList jarsNotFromModrinth(const QDir& folder,
+									const ModMetadataIndex& index);
 	/// The SHA-1 of each of @p files in @p folder, skipping unreadable ones.
 	QStringList sha1sOf(const QDir& folder, const QStringList& files);
 	/// The body of Modrinth's bulk hash lookup.
@@ -58,4 +64,23 @@ namespace PerformanceSetup
 	/// keeps strings, not lists.
 	QStringList parseExcluded(const QString& stored);
 	QString joinExcluded(const QStringList& projects);
+	/// The project ids of the default mods among @p catalogMods
+	/// (BundleCatalog::mods()), in order.
+	QStringList defaultProjects(const QVariantList& catalogMods);
+	/// What the installed mods are matched to: the Minecraft version and the
+	/// loader, as stored in KitePerformanceFor.
+	QString matchKey(const QString& mcVersion, const QString& loader);
+	/// The files to fetch again after the Minecraft version or the loader
+	/// changed, by project id: every file of @p entries recorded from
+	/// Modrinth whose project is one of @p catalogProjects, or that was
+	/// pulled in as a dependency (Fabric API and the like).
+	QHash<QString, QString>
+	filesToRematch(const QList<ModMetadataIndex::Entry>& entries,
+				   const QStringList& catalogProjects);
+	/// @p excluded plus the projects of @p removed that are among
+	/// @p defaults, in order and each once: a default the player deleted is
+	/// not brought back.
+	QStringList withRemoved(const QStringList& excluded,
+							const QStringList& removed,
+							const QStringList& defaults);
 } // namespace PerformanceSetup

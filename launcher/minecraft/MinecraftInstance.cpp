@@ -197,9 +197,12 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 	/* Kite Performance: while on, Play makes sure the performance mods are
 	 * installed (PerformanceSetupTask). The excluded projects are the ones
 	 * the player unticked, as a comma-joined list of Modrinth project ids:
-	 * the config file stores strings, not lists. */
+	 * the config file stores strings, not lists. KitePerformanceFor is the
+	 * Minecraft version and loader the installed mods were last matched to
+	 * ("1.21.5 fabric"); empty until the first setup. */
 	m_settings->registerSetting("KitePerformance", false);
 	m_settings->registerSetting("KitePerformanceExcluded", "");
+	m_settings->registerSetting("KitePerformanceFor", "");
 
 	/* Kite mod: Kite's own Fabric mod (the in-game menu and HUD), loaded
 	 * for this instance through -Dfabric.addMods, so it never lands in the

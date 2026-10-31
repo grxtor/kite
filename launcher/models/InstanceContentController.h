@@ -131,7 +131,8 @@ class InstanceContentController : public QObject
 	/// Returns how many files actually changed state.
 	Q_INVOKABLE int setEnabled(const QString& kind, const QStringList& keys,
 							   bool enabled);
-	/// Deletes the files; returns how many were removed.
+	/// Deletes the files; returns how many were removed. With Kite Performance
+	/// on, removed performance defaults go to KitePerformanceExcluded.
 	Q_INVOKABLE int remove(const QString& kind, const QStringList& keys);
 	/// @p fileUrlOrPath: a file:// URL (as a QML FileDialog hands out) or
 	/// a plain local path.

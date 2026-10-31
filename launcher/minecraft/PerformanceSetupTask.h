@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <QHash>
 #include <QPointer>
 #include <QString>
 #include <QStringList>
@@ -46,9 +47,22 @@ class TaskWatcher;
  * instance's loader, minus the ones the player unticked
  * (KitePerformanceExcluded), plus `extras` -- other catalog mods picked for
  * this one run, e.g. in New instance -- minus what is already there: mods the folder
- * recorded from Modrinth, and jars added by hand that Modrinth identifies
- * by hash - so a hand-added Sodium never gets a second one beside it.
- * Nothing wanted ends the task at once, without the network.
+ * recorded from Modrinth, and jars Modrinth identifies by hash - added by
+ * hand, or installed from CurseForge - so a Sodium that is already in the
+ * folder never gets a second one beside it. Nothing wanted ends the task at
+ * once, without the network.
+ *
+ * The mods are matched to one Minecraft version and loader
+ * (KitePerformanceFor). When the instance has moved to another since, the
+ * mods of the catalog and the dependencies they pulled in are looked up
+ * again and replace their old files, so the game is not started with mods
+ * for the version it used to be; a file that still fits costs nothing. The
+ * new version is only remembered once Modrinth has answered, so an offline
+ * Play tries again. The first setup takes what is there as matched.
+ *
+ * One setup runs per instance at a time: one that starts while another is
+ * still going waits for it, then checks again from the start - and finds
+ * what the other installed.
  *
  * Playing never waits on this succeeding: every failure is logged and the
  * task still succeeds. Its status, once it is over, is summary().
@@ -87,12 +101,23 @@ class PerformanceSetupTask : public Task
 	void executeTask() override;
 
   private:
-	void identifyLooseJars();
+	/// Runs the check unless a setup of the same instance is going: then
+	/// waits for it and tries again.
+	void startWhenFree();
+	void check();
+	/// What to install: the defaults and extras not excluded or installed,
+	/// and the mods to match to a new version.
+	void updateWanted();
+	void identifyJars();
 	void onJarsIdentified(const QByteArray& reply);
 	void resolveWanted();
 	void onResolved();
 	void install();
 	void onInstalled(bool ok);
+	/// Stores the version and loader the mods are matched to now.
+	void rememberMatch();
+	/// Lets a setup that waits for this instance go on.
+	void release();
 	/// Ends the task: a warning in the log if @p problem, the summary as
 	/// the final status, success.
 	void finish(const QString& summary, const QString& problem = QString());
@@ -106,10 +131,15 @@ class PerformanceSetupTask : public Task
 	QStringList m_excluded;
 	QStringList m_installed;
 	QStringList m_wanted;
+	/// Files to replace by their project id: what an earlier version or
+	/// loader left; empty when the mods are matched to the current one.
+	QHash<QString, QString> m_replacements;
+	QString m_matchKey;
 	int m_toInstall = 0;
 	int m_added = 0;
 	QString m_summary;
 	bool m_aborted = false;
+	bool m_started = false;
 
 	shared_qobject_ptr<Net::JsonPost> m_lookup;
 	QPointer<ContentInstallReview> m_review;

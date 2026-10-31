@@ -407,6 +407,13 @@ void DependencyResolver::nameAfterProject(const QString& projectId)
 					if (dep.platform == QLatin1String("modrinth") &&
 						dep.projectId == projectId) {
 						dep.name = title;
+						/* The version's name never matched a copy
+						 * installed from the other site, so acceptDependency()
+						 * could not see it; the project's title does. */
+						dep.maybeInstalled =
+							dep.maybeInstalled ||
+							isProjectInstalled(dep.platform, dep.projectId,
+											   title);
 						return;
 					}
 				}

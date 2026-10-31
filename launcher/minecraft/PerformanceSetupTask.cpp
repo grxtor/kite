@@ -34,7 +34,21 @@
 namespace
 {
 	const QString kPerformanceBundle = QStringLiteral("performance");
+	/* Every bundle of the catalog: its mods are the ones to match to a new
+	 * version, not only the performance defaults. */
+	const QStringList kCatalogBundles = {kPerformanceBundle,
+										 QStringLiteral("comfort")};
+	const QString kMatchedSetting = QStringLiteral("KitePerformanceFor");
 	constexpr int kPercent = 100;
+
+	/* The setup going for each instance, by instance id: a second one for
+	 * the same instance waits for it instead of downloading the same files
+	 * beside it. */
+	QHash<QString, QPointer<PerformanceSetupTask>>& runningSetups()
+	{
+		static QHash<QString, QPointer<PerformanceSetupTask>> running;
+		return running;
+	}
 } // namespace
 
 PerformanceSetupTask::PerformanceSetupTask(
@@ -46,8 +60,38 @@ PerformanceSetupTask::PerformanceSetupTask(
 
 void PerformanceSetupTask::executeTask()
 {
-	setStatus(tr("Checking Kite Performance"));
 	setProgress(0, 0);
+	startWhenFree();
+}
+
+void PerformanceSetupTask::startWhenFree()
+{
+	/* Also what the end of a wait calls: a wake-up that comes after this
+	 * task has begun, or been stopped, has nothing left to do. */
+	if (m_aborted || m_started || isFinished()) {
+		return;
+	}
+	const QString id = m_instance->id();
+	const QPointer<PerformanceSetupTask> other = runningSetups().value(id);
+	if (other && other != this) {
+		setStatus(tr("Waiting for Kite Performance"));
+		/* The other task ends by finishing or by being deleted. Either
+		 * way this one asks again, since a third task waiting for the
+		 * same instance may have taken it first. */
+		connect(other.data(), &Task::finished, this,
+				&PerformanceSetupTask::startWhenFree, Qt::SingleShotConnection);
+		connect(other.data(), &QObject::destroyed, this,
+				&PerformanceSetupTask::startWhenFree, Qt::SingleShotConnection);
+		return;
+	}
+	m_started = true;
+	runningSetups().insert(id, this);
+	check();
+}
+
+void PerformanceSetupTask::check()
+{
+	setStatus(tr("Checking Kite Performance"));
 
 	auto profile = m_instance->getPackProfile();
 	m_mcVersion = profile->getComponentVersion(QStringLiteral("net.minecraft"));
@@ -69,29 +113,58 @@ void PerformanceSetupTask::executeTask()
 	 * built-in one. No network. */
 	BundleCatalog catalog;
 	catalog.loadCached();
-	for (const QVariant& mod : catalog.mods({kPerformanceBundle}, m_loader)) {
-		const QVariantMap fields = mod.toMap();
-		if (fields.value("isDefault").toBool()) {
-			m_defaults.append(fields.value("project").toString());
-		}
-	}
+	m_defaults = PerformanceSetup::defaultProjects(
+		catalog.mods({kPerformanceBundle}, m_loader));
 	m_excluded = PerformanceSetup::parseExcluded(
 		m_instance->settings()->get("KitePerformanceExcluded").toString());
 	m_installed = m_folder->metadataIndex()->projectIds(ModrinthApi::get().id());
-	m_wanted = PerformanceSetup::wantedProjects(m_defaults + m_extras, m_excluded,
-												m_installed);
+
+	/* Mods matched to another version or loader are looked up again. Never
+	 * matched before (a setting that is empty) is taken as matched to what
+	 * is there - and stored at once, whatever this run finds: on a version
+	 * some default does not exist for, no run ends "up to date", and a
+	 * later change of version would otherwise go unnoticed. */
+	m_matchKey = PerformanceSetup::matchKey(m_mcVersion, m_loader);
+	const QString matched =
+		m_instance->settings()->get(kMatchedSetting).toString();
+	if (matched.isEmpty()) {
+		rememberMatch();
+	} else if (matched != m_matchKey) {
+		QStringList catalogProjects;
+		for (const QVariant& mod : catalog.mods(kCatalogBundles, m_loader)) {
+			catalogProjects.append(mod.toMap().value("project").toString());
+		}
+		m_replacements = PerformanceSetup::filesToRematch(
+			m_folder->metadataIndex()->all(), catalogProjects);
+	}
+	updateWanted();
 
 	if (m_wanted.isEmpty()) {
+		rememberMatch();
 		finish(tr("Kite Performance: up to date"));
 		return;
 	}
-	identifyLooseJars();
+	identifyJars();
 }
 
-void PerformanceSetupTask::identifyLooseJars()
+void PerformanceSetupTask::updateWanted()
 {
-	const QStringList jars =
-		PerformanceSetup::looseJars(m_folder->dir(), *m_folder->metadataIndex());
+	m_wanted = PerformanceSetup::wantedProjects(m_defaults + m_extras, m_excluded,
+												m_installed);
+	/* Installed, yes - for the version it used to be. */
+	QStringList rematch = m_replacements.keys();
+	rematch.sort();
+	for (const QString& project : rematch) {
+		if (!m_excluded.contains(project) && !m_wanted.contains(project)) {
+			m_wanted.append(project);
+		}
+	}
+}
+
+void PerformanceSetupTask::identifyJars()
+{
+	const QStringList jars = PerformanceSetup::jarsNotFromModrinth(
+		m_folder->dir(), *m_folder->metadataIndex());
 	const QStringList hashes = PerformanceSetup::sha1sOf(m_folder->dir(), jars);
 	if (hashes.isEmpty()) {
 		resolveWanted();
@@ -122,9 +195,9 @@ void PerformanceSetupTask::onJarsIdentified(const QByteArray& reply)
 	}
 	/* A failed lookup leaves the metadata-only set as it was. */
 	m_installed.append(PerformanceSetup::projectsInHashReply(reply));
-	m_wanted = PerformanceSetup::wantedProjects(m_defaults + m_extras, m_excluded,
-												m_installed);
+	updateWanted();
 	if (m_wanted.isEmpty()) {
+		rememberMatch();
 		finish(tr("Kite Performance: up to date"));
 		return;
 	}
@@ -141,6 +214,7 @@ void PerformanceSetupTask::resolveWanted()
 	m_review = ContentInstallReview::missingDependencies(
 		{}, tr("Kite Performance"), m_mcVersion, m_loader, m_folder, this);
 	m_review->setWantedProjects(wanted);
+	m_review->setReplacements(m_replacements);
 	connect(m_review, &ContentInstallReview::stateChanged, this, [this] {
 		if (m_review && m_review->ready()) {
 			onResolved();
@@ -160,9 +234,17 @@ void PerformanceSetupTask::onResolved()
 	}
 	m_toInstall = m_review->checkedCount();
 	if (m_toInstall == 0) {
-		/* E.g. 1.8.9 has no Sodium: the instance stays as it is. */
+		/* Rows that are all unticked are mods that are already there;
+		 * none at all is e.g. 1.8.9, which has no Sodium: either way the
+		 * instance stays as it is. */
+		const bool found = m_review->count() > 0;
+		if (found || m_review->unresolved().isEmpty()) {
+			rememberMatch();
+		}
 		m_review->cancel();
-		finish(tr("Kite Performance: no matching mods for this version"));
+		finish(found
+				   ? tr("Kite Performance: up to date")
+				   : tr("Kite Performance: no matching mods for this version"));
 		return;
 	}
 	install();
@@ -199,7 +281,22 @@ void PerformanceSetupTask::onInstalled(bool ok)
 		return;
 	}
 	m_added = m_toInstall;
+	rememberMatch();
 	finish(tr("Kite Performance: added %n mod(s)", "", m_toInstall));
+}
+
+void PerformanceSetupTask::rememberMatch()
+{
+	m_instance->settings()->set(kMatchedSetting, m_matchKey);
+}
+
+void PerformanceSetupTask::release()
+{
+	auto& running = runningSetups();
+	const QString id = m_instance->id();
+	if (running.value(id) == this) {
+		running.remove(id);
+	}
 }
 
 void PerformanceSetupTask::finish(const QString& summary, const QString& problem)
@@ -212,6 +309,7 @@ void PerformanceSetupTask::finish(const QString& summary, const QString& problem
 	}
 	m_summary = summary;
 	setStatus(summary);
+	release();
 	emitSucceeded();
 }
 
@@ -221,6 +319,7 @@ bool PerformanceSetupTask::abort()
 		return false;
 	}
 	m_aborted = true;
+	release();
 	if (m_lookup) {
 		m_lookup->abort();
 	}
