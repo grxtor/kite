@@ -310,6 +310,10 @@ void FriendsController::fetchSettings(std::function<void(bool)> done)
 
 void FriendsController::sendStatus(std::function<void(bool)> done, bool force)
 {
+	if (m_quitting) {
+		done(true);
+		return;
+	}
 	if (!force && m_lastStatusSent.isValid() &&
 		m_lastStatusSent.elapsed() < kMinStatusGapMs) {
 		done(true);
@@ -355,16 +359,24 @@ void FriendsController::applySnapshot(
 	const FriendsApi::FriendsSnapshot& snapshot)
 {
 	/* Status lines carry "5 min ago", so they are worded afresh each time and the view hears of it. */
+	const bool wasLoaded = m_loaded;
 	m_loaded = true;
 	m_updatedAt = QDateTime::currentDateTimeUtc();
-	m_friends = FriendsDisplay::friendList(snapshot.friends,
-										   QDateTime::currentDateTimeUtc());
-	m_incoming = FriendsDisplay::personList(snapshot.incoming);
-	m_outgoing = FriendsDisplay::personList(snapshot.outgoing);
-	attachFaces(m_friends);
-	attachFaces(m_incoming);
-	attachFaces(m_outgoing);
-	emit changed();
+	QVariantList friends = FriendsDisplay::friendList(
+		snapshot.friends, QDateTime::currentDateTimeUtc());
+	QVariantList incoming = FriendsDisplay::personList(snapshot.incoming);
+	QVariantList outgoing = FriendsDisplay::personList(snapshot.outgoing);
+	attachFaces(friends);
+	attachFaces(incoming);
+	attachFaces(outgoing);
+	const bool same = wasLoaded && friends == m_friends &&
+					  incoming == m_incoming && outgoing == m_outgoing;
+	m_friends = std::move(friends);
+	m_incoming = std::move(incoming);
+	m_outgoing = std::move(outgoing);
+	if (!same) {
+		emit changed();
+	}
 	fetchFaces();
 }
 

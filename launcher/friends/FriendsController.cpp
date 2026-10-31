@@ -41,6 +41,7 @@
 namespace
 {
 	constexpr int kPollIntervalMs = 60 * 1000;
+	constexpr int kFacesCoalesceMs = 150;
 	/* While the account plays, every ten seconds: a friend joining a server is told
 	 * by the game's mod, and a minute late is too late. Six polls a minute stay
 	 * inside the server's limit (120 per account). */
@@ -62,7 +63,15 @@ FriendsController::FriendsController(const QString& dataDir, QObject* parent)
 	  m_http(new FriendsHttp(this)),
 	  m_faces(new FriendsFaces(QDir(dataDir).filePath(kFacesDir), this))
 {
-	connect(m_faces, &FriendsFaces::changed, this,
+	/* Faces arrive one by one; the lists are rebuilt once for a burst. */
+	m_facesTimer.setSingleShot(true);
+	m_facesTimer.setInterval(kFacesCoalesceMs);
+	connect(m_faces, &FriendsFaces::changed, this, [this]() {
+		if (!m_facesTimer.isActive()) {
+			m_facesTimer.start();
+		}
+	});
+	connect(&m_facesTimer, &QTimer::timeout, this,
 			&FriendsController::onFacesChanged);
 	m_settings = FriendsDisplay::settingsMap({});
 	m_pollTimer.setInterval(kPollIntervalMs);
@@ -480,6 +489,11 @@ void FriendsController::onAboutToQuit()
 	if (!m_enabled || m_session.token.isEmpty()) {
 		return;
 	}
+	/* The waits below spin the event loop: a timer firing there must not put a
+	 * new status on the wire behind the go-offline DELETE. */
+	m_quitting = true;
+	m_pollTimer.stop();
+	m_pushTimer.stop();
 	/* A status report on its way is answered first; both within one budget. */
 	QElapsedTimer budget;
 	budget.start();

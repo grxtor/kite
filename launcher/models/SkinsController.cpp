@@ -36,6 +36,7 @@
 #include "minecraft/skins/SkinLibrary.h"
 #include "net/Download.h"
 #include "net/NetJob.h"
+#include "net/Validator.h"
 #include "tasks/TaskWatcher.h"
 
 namespace
@@ -63,6 +64,36 @@ namespace
 		return candidate;
 	}
 
+	/* A skin is a 64x64 PNG, a few KB; anything past this is not one. */
+	constexpr qint64 kMaxSkinDownloadBytes = 1024 * 1024;
+
+	/* Fails the download as soon as more than kMaxSkinDownloadBytes arrive. */
+	class SkinSizeCap final : public Net::Validator
+	{
+	  public:
+		bool init(QNetworkRequest&) override
+		{
+			m_received = 0;
+			return true;
+		}
+		bool write(QByteArray& data) override
+		{
+			m_received += data.size();
+			return m_received <= kMaxSkinDownloadBytes;
+		}
+		bool abort() override
+		{
+			return true;
+		}
+		bool validate(QNetworkReply&) override
+		{
+			return true;
+		}
+
+	  private:
+		qint64 m_received = 0;
+	};
+
 	/* A skin from a link: fetched to a temporary file, checked to be a skin (a
 	 * server can answer 200 with an error page), then copied into the library. */
 	class SkinUrlImportTask final : public Task
@@ -79,7 +110,9 @@ namespace
 			m_temp = temporarySkinPath();
 			m_job.reset(new NetJob(SkinsController::tr("Download skin"),
 								   LAUNCHER->network()));
-			m_job->addNetAction(Net::Download::makeFile(m_url, m_temp));
+			auto download = Net::Download::makeFile(m_url, m_temp);
+			download->addValidator(new SkinSizeCap());
+			m_job->addNetAction(download);
 			connect(m_job.get(), &Task::finished, this, [this]() { finish(); });
 			setStatus(SkinsController::tr("Downloading the skin…"));
 			m_job->start();

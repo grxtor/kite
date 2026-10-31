@@ -22,6 +22,9 @@
 
 #include <QAbstractListModel>
 #include <QFutureWatcher>
+#include <QHash>
+#include <QMutex>
+#include <QMutexLocker>
 #include <QThreadPool>
 #include <QUrl>
 #include <QtConcurrentRun>
@@ -116,6 +119,61 @@ class BackupListModel : public QAbstractListModel
 	QList<BackupEntry> m_entries;
 };
 
+namespace
+{
+	/* Jobs outlive the BackupController (and InstanceDetails) that started them:
+	 * leaving the instance's page must not hide a running one, so they are
+	 * counted here by instance id until the worker itself is done. */
+	struct JobRegistry {
+		QMutex mutex;
+		QHash<QString, int> jobs;
+		QHash<QString, int> restores;
+	};
+
+	JobRegistry& registry()
+	{
+		static JobRegistry instance;
+		return instance;
+	}
+
+	void addJob(const QString& instanceId, bool restore)
+	{
+		QMutexLocker lock(&registry().mutex);
+		registry().jobs[instanceId]++;
+		if (restore) {
+			registry().restores[instanceId]++;
+		}
+	}
+
+	void removeJob(QHash<QString, int>& counts, const QString& instanceId)
+	{
+		if (--counts[instanceId] <= 0) {
+			counts.remove(instanceId);
+		}
+	}
+
+	void finishJob(const QString& instanceId, bool restore)
+	{
+		QMutexLocker lock(&registry().mutex);
+		removeJob(registry().jobs, instanceId);
+		if (restore) {
+			removeJob(registry().restores, instanceId);
+		}
+	}
+} // namespace
+
+bool BackupController::hasRunningJob(const QString& instanceId)
+{
+	QMutexLocker lock(&registry().mutex);
+	return registry().jobs.value(instanceId) > 0;
+}
+
+bool BackupController::isRestoring(const QString& instanceId)
+{
+	QMutexLocker lock(&registry().mutex);
+	return registry().restores.value(instanceId) > 0;
+}
+
 /* Runs one BackupManager operation (restore/export/import/delete) off the GUI
  * thread, like BackupTask.cpp does for createBackup(); only a plain
  * succeeded/failed at the end. */
@@ -125,19 +183,31 @@ class BackupJobTask : public Task
   public:
 	using Fn = std::function<bool()>;
 
-	BackupJobTask(QString status, Fn fn, QObject* parent = nullptr)
-		: Task(parent), m_fn(std::move(fn))
+	BackupJobTask(QString instanceId, bool restore, QString status, Fn fn,
+				  QObject* parent = nullptr)
+		: Task(parent), m_instanceId(std::move(instanceId)),
+		  m_restore(restore), m_fn(std::move(fn))
 	{
 		setObjectName(QStringLiteral("BackupJobTask"));
+		// Counted from creation, not from the first event-loop turn, so a second
+		// click right behind this one is already refused.
+		addJob(m_instanceId, m_restore);
 		setStatus(status);
 		setProgress(0, 0);
 	}
 
 	~BackupJobTask() override
 	{
+		if (!m_started) {
+			finishJob(m_instanceId, m_restore);
+		}
 		disconnect(&m_watcher, nullptr, this, nullptr);
 		if (m_future.isRunning()) {
-			m_future.waitForFinished();
+			// The worker only owns copies of what it needs; let it finish unwatched.
+			auto* holder = new QFutureWatcher<bool>();
+			connect(holder, &QFutureWatcher<bool>::finished, holder,
+					&QObject::deleteLater);
+			holder->setFuture(m_future);
 		}
 	}
 
@@ -153,11 +223,21 @@ class BackupJobTask : public Task
 							  "for details."));
 			}
 		});
-		m_future = QtConcurrent::run(QThreadPool::globalInstance(), m_fn);
+		m_started = true;
+		m_future = QtConcurrent::run(
+			QThreadPool::globalInstance(),
+			[fn = m_fn, id = m_instanceId, restore = m_restore]() {
+				const bool ok = fn();
+				finishJob(id, restore);
+				return ok;
+			});
 		m_watcher.setFuture(m_future);
 	}
 
   private:
+	QString m_instanceId;
+	bool m_restore;
+	bool m_started = false;
 	Fn m_fn;
 	QFuture<bool> m_future;
 	QFutureWatcher<bool> m_watcher;
@@ -194,14 +274,22 @@ void BackupController::refresh()
 	static_cast<BackupListModel*>(m_model.get())->setEntries(m_entries);
 }
 
+bool BackupController::jobRunning() const
+{
+	return hasRunningJob(m_instance->id());
+}
+
 QObject* BackupController::createBackup(const QString& label)
 {
+	if (jobRunning()) {
+		return nullptr;
+	}
 	// Cheap to copy (three QStrings); captured by value so the worker never touches `this`.
 	BackupManager manager = m_manager;
 	const QString labelCopy = label;
 
 	auto* task = new BackupJobTask(
-		tr("Creating backup…"),
+		m_instance->id(), false, tr("Creating backup…"),
 		[manager, labelCopy]() mutable {
 			return manager.createBackup(labelCopy).isValid();
 		});
@@ -219,13 +307,14 @@ QObject* BackupController::createBackup(const QString& label)
 
 QObject* BackupController::restoreBackup(int row)
 {
-	if (m_instance->isRunning() || row < 0 || row >= m_entries.size()) {
+	if (jobRunning() || m_instance->isRunning() || row < 0 ||
+		row >= m_entries.size()) {
 		return nullptr;
 	}
 	const BackupEntry entry = m_entries.at(row);
 	BackupManager manager = m_manager;
 
-	auto* task = new BackupJobTask(tr("Restoring backup…"), [manager, entry]() mutable {
+	auto* task = new BackupJobTask(m_instance->id(), true, tr("Restoring backup…"), [manager, entry]() mutable {
 		return manager.restoreBackup(entry);
 	});
 
@@ -242,13 +331,13 @@ QObject* BackupController::restoreBackup(int row)
 
 QObject* BackupController::deleteBackup(int row)
 {
-	if (row < 0 || row >= m_entries.size()) {
+	if (jobRunning() || row < 0 || row >= m_entries.size()) {
 		return nullptr;
 	}
 	const BackupEntry entry = m_entries.at(row);
 	BackupManager manager = m_manager;
 
-	auto* task = new BackupJobTask(tr("Deleting backup…"), [manager, entry]() mutable {
+	auto* task = new BackupJobTask(m_instance->id(), false, tr("Deleting backup…"), [manager, entry]() mutable {
 		return manager.deleteBackup(entry);
 	});
 
@@ -273,7 +362,7 @@ QObject* BackupController::exportBackup(int row, const QString& destUrlOrPath)
 	const QString dest = url.isLocalFile() ? url.toLocalFile() : destUrlOrPath;
 	BackupManager manager = m_manager;
 
-	auto* task = new BackupJobTask(tr("Exporting backup…"), [manager, entry, dest]() mutable {
+	auto* task = new BackupJobTask(m_instance->id(), false, tr("Exporting backup…"), [manager, entry, dest]() mutable {
 		return manager.exportBackup(entry, dest);
 	});
 
@@ -286,12 +375,15 @@ QObject* BackupController::exportBackup(int row, const QString& destUrlOrPath)
 QObject* BackupController::importBackup(const QString& fileUrlOrPath,
 										const QString& label)
 {
+	if (jobRunning()) {
+		return nullptr;
+	}
 	const QUrl url(fileUrlOrPath);
 	const QString src = url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
 	BackupManager manager = m_manager;
 	const QString labelCopy = label;
 
-	auto* task = new BackupJobTask(tr("Importing backup…"), [manager, src, labelCopy]() mutable {
+	auto* task = new BackupJobTask(m_instance->id(), false, tr("Importing backup…"), [manager, src, labelCopy]() mutable {
 		return manager.importBackup(src, labelCopy).isValid();
 	});
 

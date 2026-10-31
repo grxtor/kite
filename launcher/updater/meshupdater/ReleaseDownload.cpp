@@ -63,6 +63,8 @@ void ReleaseDownload::executeTask()
 	// produce a corrupt archive.
 	QFile::remove(m_partPath);
 
+	m_hash.reset();
+
 	m_file = new QFile(m_partPath, this);
 	if (!m_file->open(QIODevice::WriteOnly | QIODevice::Truncate)) {
 		failWith(tr("Could not write %1: %2")
@@ -105,7 +107,10 @@ void ReleaseDownload::onReadyRead()
 		m_reply->abort();
 		failWith(tr("Could not write %1: %2")
 					 .arg(QDir::toNativeSeparators(m_partPath), reason));
+		return;
 	}
+
+	m_hash.addData(chunk);
 }
 
 void ReleaseDownload::onDownloadProgress(qint64 received, qint64 total)
@@ -157,6 +162,18 @@ void ReleaseDownload::onFinished()
 					 .arg(QLocale().formattedDataSize(downloadedSize),
 						  QLocale().formattedDataSize(m_expectedSize)));
 		return;
+	}
+
+	if (!m_expectedSha256.isEmpty()) {
+		const QString actual = QString::fromLatin1(m_hash.result().toHex());
+		if (actual != m_expectedSha256) {
+			qWarning() << "SHA-256 mismatch for" << m_url.fileName()
+					   << "expected" << m_expectedSha256 << "got" << actual;
+			failWith(tr("The download does not match its published SHA-256 "
+						"checksum."));
+			return;
+		}
+		qDebug() << "SHA-256 verified for" << m_url.fileName();
 	}
 
 	// The real name only now, so a half-finished download is never mistaken for a complete

@@ -31,6 +31,7 @@
 #include "minecraft/auth/MinecraftAccount.h"
 
 class SkinsController;
+class MicrosoftLoginController;
 
 class AccountTask;
 
@@ -117,6 +118,8 @@ class AccountsController : public QObject
 	shared_qobject_ptr<AccountList> m_accounts;
 	// Parented to this; nothing else pins its ownership for QML.
 	QPointer<SkinsController> m_skins;
+	// The latest sign-in; a new attempt retires the one before it.
+	QPointer<MicrosoftLoginController> m_login;
 	QString m_skinsAccountId;
 	int m_defaultSkinsRevision = 0;
 };

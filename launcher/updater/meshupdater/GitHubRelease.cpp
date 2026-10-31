@@ -23,6 +23,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include <QRegularExpression>
 
 namespace
 {
@@ -32,6 +33,15 @@ namespace
 		// GitHub timestamps are ISO 8601 with a Z suffix. An unparsable one stays invalid rather
 		// than defaulting to the epoch, which would be displayed as fact.
 		return QDateTime::fromString(value.toString(), Qt::ISODate);
+	}
+
+	//! "sha256:<64 hex digits>" to lowercase hex; empty for any other algorithm or a malformed value.
+	QString sha256FromDigest(const QString& digest)
+	{
+		static const QRegularExpression pattern(
+			QStringLiteral("^sha256:([0-9a-fA-F]{64})$"));
+		const QRegularExpressionMatch match = pattern.match(digest.trimmed());
+		return match.hasMatch() ? match.captured(1).toLower() : QString();
 	}
 
 	GitHubReleaseAsset parseAsset(const QJsonObject& object)
@@ -46,6 +56,7 @@ namespace
 		asset.updatedAt = parseTimestamp(object.value("updated_at"));
 		asset.downloadUrl =
 			QUrl(object.value("browser_download_url").toString());
+		asset.sha256 = sha256FromDigest(object.value("digest").toString());
 		return asset;
 	}
 

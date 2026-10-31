@@ -80,6 +80,17 @@ void TaskWatcher::setRunning(bool running)
 	emit runningChanged();
 }
 
+void TaskWatcher::releaseTask()
+{
+	/* Deferred: the task is still emitting the signal that got us here. */
+	QTimer::singleShot(0, this, [this] {
+		if (m_task) {
+			m_task->disconnect(this);
+			m_task.reset();
+		}
+	});
+}
+
 void TaskWatcher::onStatus(const QString& status)
 {
 	if (m_status == status) {
@@ -139,6 +150,7 @@ void TaskWatcher::onSucceeded()
 	m_succeeded = true;
 	emit succeededChanged();
 	emit finished(true);
+	releaseTask();
 }
 
 void TaskWatcher::onFailed(const QString& reason)
@@ -153,4 +165,5 @@ void TaskWatcher::onFailed(const QString& reason)
 	m_failed = true;
 	emit failedChanged();
 	emit finished(false);
+	releaseTask();
 }

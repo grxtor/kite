@@ -99,6 +99,10 @@ class RecentWorldsModel : public QAbstractListModel
 	/// Re-scans right away, bypassing the debounce timer.
 	Q_INVOKABLE void refresh();
 
+  signals:
+	/// A scan ended; the model only resets when its result differs from what it shows.
+	void scanFinished();
+
   private:
 	void scheduleRescan();
 	void startScan();

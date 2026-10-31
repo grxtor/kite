@@ -199,9 +199,10 @@ namespace FriendsDisplay
 							!presence.world.host.isEmpty();
 		/* A raw IP address stays hidden unless "Show servers I join by IP
 		 * address" is on (the server applies the same rule). */
+		static const QRegularExpression rawAddressRule(
+			QStringLiteral("^[0-9.]+$|:"));
 		const bool rawAddress =
-			server && presence.world.host.contains(QRegularExpression(
-						  QStringLiteral("^[0-9.]+$|:")));
+			server && presence.world.host.contains(rawAddressRule);
 		const bool hidden = settings.value("hideServer").toBool() ||
 							(rawAddress &&
 							 !settings.value("shareIpServers").toBool());

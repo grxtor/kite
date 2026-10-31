@@ -52,10 +52,17 @@ class BackupController : public QObject
 	QObject* model() const;
 	bool running() const;
 
+	/// Whether a create, restore, delete, export or import of this instance is
+	/// still running, even one started from a page that has since been left.
+	Q_INVOKABLE bool jobRunning() const;
+	static bool hasRunningJob(const QString& instanceId);
+	/// Restoring wipes the instance: nothing may start it meanwhile.
+	static bool isRestoring(const QString& instanceId);
+
 	Q_INVOKABLE void refresh();
 	Q_INVOKABLE QObject* createBackup(const QString& label);
-	/// Null if @p row is out of range or the instance is running (restoring would
-	/// fight a live process for the files).
+	/// Null if @p row is out of range, the instance is running (restoring would
+	/// fight a live process for the files) or another job is running.
 	Q_INVOKABLE QObject* restoreBackup(int row);
 	Q_INVOKABLE QObject* deleteBackup(int row);
 	/// @p destUrlOrPath: a file:// URL or a local path.

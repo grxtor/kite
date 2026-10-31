@@ -27,6 +27,18 @@ Item {
     // null, so this is how the tab says why nothing happened.
     property string actionError: ""
 
+    readonly property string jobRunningText: qsTr("Another backup action on this instance is still running.")
+    // Keeps the watcher of a job that started; a refused one (still another job running) says why.
+    function startJob(watcher) {
+        if (watcher) {
+            root.watcher = watcher
+            return true
+        }
+        if (root.controller && root.controller.jobRunning())
+            root.actionError = root.jobRunningText
+        return false
+    }
+
     // timestampText is "yyyy-MM-dd HH:mm:ss" local time; read back into a date.
     function backupAge(timestampText) {
         var ms = new Date(String(timestampText).replace(" ", "T")).getTime()
@@ -207,7 +219,7 @@ Item {
         onSubmitted: (text) => {
             if (root.controller) {
                 root.actionError = ""
-                root.watcher = root.controller.createBackup(text)
+                root.startJob(root.controller.createBackup(text))
             }
             close()
         }
@@ -222,10 +234,9 @@ Item {
             if (!root.controller)
                 return
             root.actionError = ""
-            var watcher = root.controller.restoreBackup(row)
-            if (watcher)
-                root.watcher = watcher
-            else
+            if (root.controller.jobRunning())
+                root.actionError = root.jobRunningText
+            else if (!root.startJob(root.controller.restoreBackup(row)))
                 root.actionError = qsTr("Close the game before restoring a backup.")
         }
     }
@@ -237,7 +248,7 @@ Item {
         confirmText: qsTr("Delete")
         onConfirmed: if (root.controller) {
             root.actionError = ""
-            root.watcher = root.controller.deleteBackup(row)
+            root.startJob(root.controller.deleteBackup(row))
         }
     }
 
@@ -247,7 +258,7 @@ Item {
         nameFilters: [qsTr("Zip files (*.zip)"), qsTr("All files (*)")]
         onAccepted: if (root.controller) {
             root.actionError = ""
-            root.watcher = root.controller.importBackup(selectedFile.toString(), "")
+            root.startJob(root.controller.importBackup(selectedFile.toString(), ""))
         }
     }
 

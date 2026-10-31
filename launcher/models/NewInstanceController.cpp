@@ -21,6 +21,7 @@
 #include "NewInstanceController.h"
 
 #include <QFileInfo>
+#include <QPointer>
 #include <QUrl>
 
 #include "BaseVersion.h"
@@ -143,10 +144,18 @@ void VersionListLoadingProxy::startLoadIfNeeded()
 	}
 
 	setLoading(true);
-	connect(task.get(), &Task::succeeded, this,
-			[this]() { setLoading(false); });
+	/* A result for a list we have since switched away from must not touch the
+	 * state of the current one. */
+	connect(task.get(), &Task::succeeded, this, [this, list]() {
+		if (sourceModel() == list) {
+			setLoading(false);
+		}
+	});
 	connect(task.get(), &Task::failed, this,
-			[this](const QString& reason) {
+			[this, list](const QString& reason) {
+				if (sourceModel() != list) {
+					return;
+				}
 				setLoading(false);
 				setError(reason);
 			});
@@ -487,10 +496,17 @@ QObject* NewInstanceController::create(const QString& name,
 	/* The final id is settled when InstanceList commits the staged instance, just
 	 * before the wrapped task reports success, so the watcher has it by
 	 * finished(true). */
+	QPointer<InstanceCreationTask> guard(creationTask);
 	const auto selected = connect(
 		LAUNCHER->instances().get(), &InstanceList::instanceSelectRequest,
-		watcher, [watcher](const QString& id) { watcher->setInstanceId(id); },
-		Qt::SingleShotConnection);
+		watcher, [watcher, guard](const QString& id) {
+			/* Any commit announces itself here (imports, pack updates); only
+			 * the instance we are creating counts. */
+			auto instance = LAUNCHER->instances()->getInstanceById(id);
+			if (guard && instance && instance->name() == guard->name()) {
+				watcher->setInstanceId(id);
+			}
+		});
 	connect(watcher, &TaskWatcher::finished, watcher,
 			[selected](bool) { QObject::disconnect(selected); });
 	wrapped->start();

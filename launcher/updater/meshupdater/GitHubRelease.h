@@ -39,6 +39,9 @@ struct GitHubReleaseAsset {
 	QDateTime updatedAt;
 	QUrl downloadUrl;
 
+	//! Lowercase hex SHA-256 from the API's "digest" field; empty when the release does not carry one.
+	QString sha256;
+
 	/*! Usable when the API gave an identity and a download URL; checked here so an incomplete asset
 	 * is rejected while alternatives remain. */
 	bool isValid() const

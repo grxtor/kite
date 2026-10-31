@@ -22,6 +22,7 @@
 #include "BuildConfig.h"
 #include "plugin/PluginAuthRequestDecorator.h"
 #include "ui/LaunchController.h"
+#include "models/BackupController.h"
 #include "qml/QmlShell.h"
 #include "qml/QmlUiHost.h"
 #include "models/UpdateSettingsController.h"
@@ -1543,6 +1544,14 @@ bool Application::launch(InstancePtr instance, LaunchMode mode,
 				launch(instance, mode, serverToJoin, accountToUse);
 			});
 		return true;
+	}
+	if (BackupController::isRestoring(instance->id())) {
+		uiHost()->message(
+			tr("Backup Restoring"),
+			tr("A backup is being restored into this instance. Launch it "
+			   "once the restore is done."),
+			UiHost::Severity::Information);
+		return false;
 	}
 	if (instance->canLaunch()) {
 		auto& extras = m_instanceExtras[instance->id()];

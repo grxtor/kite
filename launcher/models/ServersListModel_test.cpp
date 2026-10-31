@@ -101,6 +101,7 @@ class ServersListModelTest : public QObject
 	void acceptsPrefixedFavicon();
 	void ignoresFaviconThatIsNotPng();
 	void editsKeepTagsItDoesNotEdit();
+	void cleanModelNeverRewritesFile();
 };
 
 void ServersListModelTest::addEditMoveRemove()
@@ -363,6 +364,37 @@ void ServersListModelTest::editsKeepTagsItDoesNotEdit()
 	QVERIFY(saved->has_key("hidden", nbt::tag_type::Byte));
 	// "Ask" is the absence of the tag, as the game writes it.
 	QVERIFY(!saved->has_key("acceptTextures"));
+}
+
+void ServersListModelTest::cleanModelNeverRewritesFile()
+{
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+	const QString path = dir.filePath(QStringLiteral("servers.dat"));
+	writeServersDat(path, "first");
+
+	ServersListModel model(dir.path());
+	model.startWatching();
+	QCOMPARE(model.rowCount(), 1);
+
+	// The game rewrites the file while this model holds no edit: closing the
+	// page must not put the stale list back.
+	writeServersDat(path, "second");
+	model.stopWatching();
+	auto server = readFirstServer(path);
+	QVERIFY(server);
+	QCOMPARE(std::string((*server)["icon"]), std::string("second"));
+
+	// Unlocking after a game session picks up what the game wrote.
+	model.startWatching();
+	model.setLocked(true);
+	writeServersDat(path, "third");
+	model.setLocked(false);
+	QCOMPARE(model.rowCount(), 1);
+	model.stopWatching();
+	server = readFirstServer(path);
+	QVERIFY(server);
+	QCOMPARE(std::string((*server)["icon"]), std::string("third"));
 }
 
 QTEST_GUILESS_MAIN(ServersListModelTest)

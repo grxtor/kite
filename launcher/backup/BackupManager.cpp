@@ -118,11 +118,14 @@ BackupEntry BackupManager::createBackup(const QString& label,
 		};
 	}
 
-	if (!MMCZip::compressDir(zipPath, m_instanceRoot, &isExcludedFromBackup,
-							 zipProgress)) {
+	// Written under another name and renamed at the end, so a backup still
+	// being written, or left half-written, is never listed as restorable.
+	const QString partPath = zipPath + QStringLiteral(".part");
+	if (!MMCZip::compressDir(partPath, m_instanceRoot, &isExcludedFromBackup,
+							 zipProgress) ||
+		!QFile::rename(partPath, zipPath)) {
 		qCWarning(backupLog) << "Failed to create backup:" << zipPath;
-		// A half-written zip would list as a restorable snapshot.
-		QFile::remove(zipPath);
+		QFile::remove(partPath);
 		return {};
 	}
 
@@ -188,9 +191,12 @@ BackupEntry BackupManager::importBackup(const QString& srcZipPath,
 	const QString destPath =
 		QDir(m_backupDir).filePath(generateFileName(label));
 
-	if (!QFile::copy(srcZipPath, destPath)) {
+	const QString partPath = destPath + QStringLiteral(".part");
+	if (!QFile::copy(srcZipPath, partPath) ||
+		!QFile::rename(partPath, destPath)) {
 		qCWarning(backupLog) << "Could not copy" << srcZipPath << "to"
 				   << destPath;
+		QFile::remove(partPath);
 		return {};
 	}
 

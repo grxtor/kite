@@ -56,30 +56,32 @@ namespace FriendsApi
 		constexpr int kMaxPort = 65535;
 		/* The access token is renewed when less than this is left. */
 		constexpr qint64 kTokenMarginSeconds = 5 * 60;
-		const QString kUuidPattern = QStringLiteral(
+		const QRegularExpression kUuidPattern(QStringLiteral(
 			"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
-			"[0-9a-fA-F]{12}$");
-		const QString kNamePattern = QStringLiteral("^[A-Za-z0-9_]{1,16}$");
-		const QString kLabelPattern =
-			QStringLiteral("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$");
-		const QString kIpv4Pattern = QStringLiteral(
+			"[0-9a-fA-F]{12}$"));
+		const QRegularExpression kNamePattern(
+			QStringLiteral("^[A-Za-z0-9_]{1,16}$"));
+		const QRegularExpression kLabelPattern(
+			QStringLiteral("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"));
+		const QRegularExpression kIpv4Pattern(QStringLiteral(
 			"^(?:(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]\\d|\\d)\\.){3}"
-			"(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]\\d|\\d)$");
-		const QString kNumericLabelPattern =
-			QStringLiteral("^(?:\\d+|0x[0-9a-f]*)$");
+			"(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]\\d|\\d)$"));
+		const QRegularExpression kNumericLabelPattern(
+			QStringLiteral("^(?:\\d+|0x[0-9a-f]*)$"));
 		/* IPv6 characters once lower-cased; a zone id (fe80::1%en0) is excluded:
 		 * QHostAddress takes anything after the % for one. */
-		const QString kIpv6CharsPattern = QStringLiteral("^[0-9a-f:.]+$");
+		const QRegularExpression kIpv6CharsPattern(
+			QStringLiteral("^[0-9a-f:.]+$"));
 		/* Waits after a failed sign-in, by how often it has failed. */
 		constexpr int kSignInBackoffMs[] = {60 * 1000, 2 * 60 * 1000,
 											5 * 60 * 1000, 15 * 60 * 1000};
 		const QString kLocalhostName = QStringLiteral("localhost");
-		const QString kBadVersionChars =
-			QStringLiteral("[^A-Za-z0-9._+ -]");
+		const QRegularExpression kBadVersionChars(
+			QStringLiteral("[^A-Za-z0-9._+ -]"));
 
-		bool matches(const QString& pattern, const QString& text)
+		bool matches(const QRegularExpression& pattern, const QString& text)
 		{
-			return QRegularExpression(pattern).match(text).hasMatch();
+			return pattern.match(text).hasMatch();
 		}
 
 		QJsonObject objectOf(const QByteArray& body, bool* ok = nullptr)
@@ -412,7 +414,7 @@ namespace FriendsApi
 			body.insert("instance", instance.left(kMaxInstanceLength));
 		}
 		QString version = presence.version;
-		version.remove(QRegularExpression(kBadVersionChars));
+		version.remove(kBadVersionChars);
 		version = version.trimmed().left(kMaxVersionLength);
 		if (!version.isEmpty()) {
 			body.insert("version", version);

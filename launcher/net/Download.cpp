@@ -170,7 +170,10 @@ namespace Net
 	{
 		if (error == QNetworkReply::OperationCanceledError) {
 			qCCritical(netLog) << "Aborted" << m_url.toString();
-			m_status = Job_Aborted;
+			// Keep a failure the sink already reported (downloadReadyRead aborts the reply).
+			if (m_status != Job_Failed) {
+				m_status = Job_Aborted;
+			}
 		} else {
 			if (m_options & Option::AcceptLocalFiles) {
 				if (m_sink->hasLocalData()) {
@@ -302,6 +305,16 @@ namespace Net
 			if (m_status == Job_Failed) {
 				qCCritical(netLog) << "Failed to process response chunk for"
 								   << m_target_path;
+				// Stop the transfer so the rest of the body is not buffered for nothing. Queued:
+				// abort() finishes the reply, which is still emitting this signal.
+				QMetaObject::invokeMethod(
+					this,
+					[this] {
+						if (m_reply && m_status == Job_Failed) {
+							m_reply->abort();
+						}
+					},
+					Qt::QueuedConnection);
 			}
 		} else {
 			qCCritical(netLog) << "Cannot write to" << m_target_path

@@ -749,6 +749,19 @@ MMCZip::extractSubDir(const QString& zipPath, const QString& subdir,
 		}
 		QString relName = name.mid(subdir.size());
 		QString absFilePath = directory.absoluteFilePath(relName);
+		// Refuse "../" and absolute entry names: they would write outside the
+		// destination (zip-slip).
+		if (!relName.isEmpty()) {
+			const QString base = QDir::cleanPath(directory.absolutePath());
+			const QString candidate = QDir::cleanPath(absFilePath);
+			if (candidate != base &&
+				!candidate.startsWith(base + QLatin1Char('/'))) {
+				qWarning() << "Archive entry escapes the destination:" << name;
+				for (const auto& f : extracted)
+					(void)QFile::remove(f);
+				return std::nullopt;
+			}
+		}
 		if (relName.isEmpty()) {
 			absFilePath += "/";
 		}

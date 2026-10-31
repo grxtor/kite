@@ -24,10 +24,12 @@
 #include <QImage>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QPointer>
 #include <QQuickTextureFactory>
 #include <QRunnable>
 #include <QUrl>
 
+#include <atomic>
 #include <utility>
 
 namespace
@@ -93,11 +95,35 @@ class ScreenshotThumbnailRunnable : public QObject, public QRunnable
 		: m_path(std::move(path)), m_requestedSize(requestedSize),
 		  m_cache(std::move(cache))
 	{
+		setAutoDelete(false);
+	}
+
+	// Checked between the steps of run(); a cancelled run still reports back.
+	void cancel()
+	{
+		m_cancelled = true;
 	}
 
 	void run() override
 	{
+		process();
+		// After the last emit, on the thread that owns this object.
+		deleteLater();
+	}
+
+  signals:
+	// Queued across to the response's thread.
+	void done(QImage image, QString error);
+
+  private:
+	void process()
+	{
 		const QSize box = normalizedBox(m_requestedSize);
+
+		if (m_cancelled) {
+			emit done(QImage(), QStringLiteral("cancelled"));
+			return;
+		}
 
 		const QFileInfo info(m_path);
 		if (!info.exists() || !info.isFile()) {
@@ -116,6 +142,10 @@ class ScreenshotThumbnailRunnable : public QObject, public QRunnable
 		}
 
 		QImage image(m_path);
+		if (m_cancelled) {
+			emit done(QImage(), QStringLiteral("cancelled"));
+			return;
+		}
 		if (image.isNull()) {
 			emit done(QImage(), QStringLiteral("could not decode image: %1")
 									.arg(m_path));
@@ -128,14 +158,10 @@ class ScreenshotThumbnailRunnable : public QObject, public QRunnable
 		emit done(scaled, QString());
 	}
 
-  signals:
-	// Queued across to the response's thread.
-	void done(QImage image, QString error);
-
-  private:
 	QString m_path;
 	QSize m_requestedSize;
 	std::shared_ptr<ScreenshotThumbnailCache> m_cache;
+	std::atomic_bool m_cancelled{ false };
 };
 
 class ScreenshotImageResponse : public QQuickImageResponse
@@ -148,11 +174,33 @@ class ScreenshotImageResponse : public QQuickImageResponse
 	{
 		auto* runnable = new ScreenshotThumbnailRunnable(
 			path, requestedSize, std::move(cache));
-		// autoDelete is fine: the queued connection copies its arguments
-		// before run() returns.
+		m_runnable = runnable;
+		m_pool = pool;
 		connect(runnable, &ScreenshotThumbnailRunnable::done, this,
 				&ScreenshotImageResponse::handleDone, Qt::QueuedConnection);
 		pool->start(runnable);
+	}
+
+	~ScreenshotImageResponse() override
+	{
+		dropIfQueued();
+	}
+
+	void cancel() override
+	{
+		if (!m_runnable) {
+			return;
+		}
+		m_runnable->cancel();
+		// Still queued: it will never run, so finish here.
+		if (dropIfQueued()) {
+			QMetaObject::invokeMethod(
+				this,
+				[this]() {
+					handleDone(QImage(), QStringLiteral("cancelled"));
+				},
+				Qt::QueuedConnection);
+		}
 	}
 
 	QQuickTextureFactory* textureFactory() const override
@@ -176,6 +224,18 @@ class ScreenshotImageResponse : public QQuickImageResponse
 	}
 
   private:
+	// True if the runnable had not started and is now deleted.
+	bool dropIfQueued()
+	{
+		if (m_runnable && m_pool && m_pool->tryTake(m_runnable.data())) {
+			delete m_runnable.data();
+			return true;
+		}
+		return false;
+	}
+
+	QPointer<ScreenshotThumbnailRunnable> m_runnable;
+	QPointer<QThreadPool> m_pool;
 	QImage m_image;
 	QString m_error;
 };

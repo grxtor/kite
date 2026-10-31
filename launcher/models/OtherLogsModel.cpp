@@ -133,8 +133,16 @@ void OtherLogsModel::reload()
 	QString content;
 	if (file.fileName().endsWith(QStringLiteral(".gz"))) {
 		QByteArray uncompressed;
-		if (!GZip::unzip(file.readAll(), uncompressed)) {
-			setContent(tr("The file (%1) is not readable.").arg(file.fileName()));
+		bool exceededCap = false;
+		if (!GZip::unzip(file.readAll(), uncompressed, kTooBigToShow,
+						 &exceededCap)) {
+			setContent(exceededCap
+						   ? tr("The file (%1) is too big. You may want to "
+								"open it in a viewer optimized for large "
+								"files.")
+								 .arg(file.fileName())
+						   : tr("The file (%1) is not readable.")
+								 .arg(file.fileName()));
 			return;
 		}
 		content = QString::fromUtf8(uncompressed);

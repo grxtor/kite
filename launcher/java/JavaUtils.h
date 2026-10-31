@@ -39,6 +39,11 @@ class JavaUtils : public QObject
 
 	static QString managedJavaRoot();
 
+	/// The java binary of a runtime folder: the known layouts first
+	/// (<dir>/bin, <dir>/Contents/Home/bin, one folder down), the whole tree
+	/// only as a last resort. Empty if there is none.
+	static QString findJavaBinary(const QString& dir);
+
 	JavaInstallPtr MakeJavaPtr(QString path, QString id = "unknown",
 							   QString arch = "unknown");
 	QList<QString> FindJavaPaths();

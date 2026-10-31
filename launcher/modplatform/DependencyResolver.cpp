@@ -1059,8 +1059,9 @@ void DependencyResolver::executeCrossResolve(const QString& targetPlatform,
 
 void DependencyResolver::checkCompletion()
 {
-	if (m_aborted) {
-		/* Already reported aborted; succeeding too would be a second verdict. */
+	if (m_aborted || !isRunning()) {
+		/* Already reported (aborted, or succeeded from a re-entrant call);
+		 * a second verdict is wrong. */
 		return;
 	}
 

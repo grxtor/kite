@@ -147,6 +147,10 @@ KiteExternalUpdater::KiteExternalUpdater(const QString& appDir,
 	connect(&m_updateTimer, &QTimer::timeout, this,
 			&KiteExternalUpdater::autoCheckTimerFired);
 
+	m_checkTimeout.setSingleShot(true);
+	connect(&m_checkTimeout, &QTimer::timeout, this,
+			&KiteExternalUpdater::onCheckTimedOut);
+
 	resetAutoCheckTimer();
 
 	if (m_autoCheck && qFuzzyIsNull(m_updateInterval)) {
@@ -160,6 +164,7 @@ KiteExternalUpdater::~KiteExternalUpdater()
 	m_updateTimer.stop();
 	disconnect(&m_updateTimer, &QTimer::timeout, this,
 			   &KiteExternalUpdater::autoCheckTimerFired);
+	releaseCheckProcess();
 	m_settings->sync();
 }
 
@@ -186,76 +191,130 @@ void KiteExternalUpdater::checkForUpdates()
 void KiteExternalUpdater::checkForUpdates(bool triggeredByUser)
 {
 	if (m_checking) {
-		qDebug() << "Updater: a check is already running; ignoring.";
+		// An automatic check is running and the user asked: let the running
+		// one report its result to them.
+		if (triggeredByUser && !m_checkByUser) {
+			m_checkByUser = true;
+			if (!m_busy)
+				m_busy = LAUNCHER->uiHost()->showBusy(
+					tr("Checking for updates..."));
+		}
+		qDebug() << "Updater: a check is already running; not starting another.";
 		return;
 	}
 
 	m_checking = true;
+	m_checkByUser = triggeredByUser;
 
-	// The check blocks, so a busy indication shows the launcher is not frozen. Automatic checks get
-	// none: a window stealing focus at startup is worse than no feedback.
-	std::unique_ptr<UiHost::BusyIndicator> busy;
+	// A busy indication shows the launcher is not frozen. Automatic checks get none: a window
+	// stealing focus at startup is worse than no feedback.
 	if (triggeredByUser)
-		busy = LAUNCHER->uiHost()->showBusy(tr("Checking for updates..."));
-	QCoreApplication::processEvents();
+		m_busy = LAUNCHER->uiHost()->showBusy(tr("Checking for updates..."));
 
-	QProcess proc;
+	auto* proc = new QProcess(this);
+	m_checkProcess = proc;
 #if defined(Q_OS_WIN32)
 	// Keep Windows from deciding an executable called "*updater*" needs to be
 	// elevated; the check only reads.
 	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
 	env.insert(QStringLiteral("__COMPAT_LAYER"),
 			   QStringLiteral("RUNASINVOKER"));
-	proc.setProcessEnvironment(env);
+	proc->setProcessEnvironment(env);
 #endif
 
 	QStringList args = {QStringLiteral("--check-only")};
 	args.append(commonArguments());
 	args.append(QStringLiteral("--debug"));
 
+	connect(proc, &QProcess::started, this,
+			[this] { m_checkTimeout.start(kFinishTimeoutMs); });
+	connect(proc, &QProcess::errorOccurred, this,
+			[this, proc](QProcess::ProcessError error) {
+				if (error != QProcess::FailedToStart)
+					return;
+				const QString reason = proc->errorString();
+				qWarning() << "Updater: the check did not start:" << error
+						   << reason;
+				onCheckStartFailed(reason);
+			});
+	connect(proc, &QProcess::finished, this,
+			[this](int exitCode, QProcess::ExitStatus) {
+				onCheckFinished(exitCode);
+			});
+
 	const QString program = updaterExecutablePath();
 	qDebug() << "Updater: running check:" << program << args;
-	proc.start(program, args);
+	m_checkTimeout.start(kStartTimeoutMs);
+	proc->start(program, args);
+}
 
-	if (!proc.waitForStarted(kStartTimeoutMs)) {
-		qWarning() << "Updater: the check did not start within"
-				   << kStartTimeoutMs / 1000 << "seconds:" << proc.error()
-				   << proc.errorString();
-		busy.reset();
-		LAUNCHER->uiHost()->message(
-			tr("Update Check Failed"),
-			tr("Failed to start after 5 seconds\nReason: %1.")
-				.arg(proc.errorString()),
-			UiHost::Severity::Information);
-		noteCheckCompleted();
-		return;
+void KiteExternalUpdater::releaseCheckProcess()
+{
+	m_checkTimeout.stop();
+	m_busy.reset();
+	if (QProcess* proc = m_checkProcess.data()) {
+		proc->disconnect(this);
+		if (proc->state() != QProcess::NotRunning)
+			proc->kill();
+		proc->deleteLater();
 	}
-	QCoreApplication::processEvents();
+	m_checkProcess.clear();
+}
 
-	if (!proc.waitForFinished(kFinishTimeoutMs)) {
-		const QByteArray output = proc.readAll();
-		proc.kill();
-		proc.waitForFinished(1000);
-		qWarning() << "Updater: the check did not finish within"
-				   << kFinishTimeoutMs / 1000 << "seconds:" << proc.error()
-				   << proc.errorString();
-		busy.reset();
+void KiteExternalUpdater::onCheckStartFailed(const QString& reason)
+{
+	releaseCheckProcess();
+	LAUNCHER->uiHost()->message(
+		tr("Update Check Failed"),
+		tr("Failed to start the updater.\nReason: %1.").arg(reason),
+		UiHost::Severity::Information);
+	noteCheckCompleted();
+}
+
+void KiteExternalUpdater::onCheckTimedOut()
+{
+	QProcess* proc = m_checkProcess.data();
+	if (!proc)
+		return;
+	const bool started = proc->state() == QProcess::Running;
+	const QByteArray output = proc->readAll();
+	qWarning() << "Updater: the check did not"
+			   << (started ? "finish" : "start") << "within"
+			   << (started ? kFinishTimeoutMs : kStartTimeoutMs) / 1000
+			   << "seconds.";
+	releaseCheckProcess();
+	if (started) {
 		LAUNCHER->uiHost()->message(
 			tr("Update Check Failed"),
-			withDetails(tr("Updater failed to close 60 seconds\nReason: %1.")
-							.arg(proc.errorString()),
+			withDetails(tr("The updater did not finish within 60 seconds."),
 						QString::fromUtf8(output)),
 			UiHost::Severity::Information);
-		noteCheckCompleted();
-		return;
+	} else {
+		LAUNCHER->uiHost()->message(
+			tr("Update Check Failed"),
+			tr("The updater did not start within 5 seconds."),
+			UiHost::Severity::Information);
 	}
+	noteCheckCompleted();
+}
 
-	const int exitCode = proc.exitCode();
-	const QByteArray stdOutput = proc.readAllStandardOutput();
-	const QByteArray stdError = proc.readAllStandardError();
+void KiteExternalUpdater::onCheckFinished(int exitCode)
+{
+	QProcess* proc = m_checkProcess.data();
+	if (!proc)
+		return;
+	const QByteArray stdOutput = proc->readAllStandardOutput();
+	const QByteArray stdError = proc->readAllStandardError();
+	releaseCheckProcess();
+	handleCheckResult(exitCode, stdOutput, stdError);
+	noteCheckCompleted();
+}
 
-	busy.reset();
-	QCoreApplication::processEvents();
+void KiteExternalUpdater::handleCheckResult(int exitCode,
+											const QByteArray& stdOutput,
+											const QByteArray& stdError)
+{
+	const bool triggeredByUser = m_checkByUser;
 
 	switch (exitCode) {
 		case CheckExitCode::NoUpdate:
@@ -328,8 +387,6 @@ void KiteExternalUpdater::checkForUpdates(bool triggeredByUser)
 							 QString::fromUtf8(stdError))),
 				UiHost::Severity::Information);
 	}
-
-	noteCheckCompleted();
 }
 
 void KiteExternalUpdater::noteCheckCompleted()

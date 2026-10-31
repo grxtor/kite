@@ -596,6 +596,11 @@ add_unit_test(VersionRange
     LIBS Kite_core
     )
 
+add_unit_test(Version
+    SOURCES Version_test.cpp
+    LIBS Kite_core
+    )
+
 add_unit_test(ModHealth
     SOURCES minecraft/mod/ModHealth_test.cpp
     LIBS Kite_core
@@ -690,6 +695,11 @@ endif()
 add_unit_test(JavaVersion
     SOURCES java/JavaVersion_test.cpp
     LIBS Kite_logic
+    )
+
+add_unit_test(JavaRuntime
+    SOURCES java/download/JavaRuntime_test.cpp
+    LIBS Kite_core
     )
 
 set(TRANSLATIONS_SOURCES
@@ -1637,6 +1647,11 @@ if(NOT APPLE)
     add_unit_test(ReleaseArchive
         SOURCES updater/meshupdater/ReleaseArchive_test.cpp
         LIBS kite_updater_logic LibArchive::LibArchive
+        )
+
+    add_unit_test(GitHubRelease
+        SOURCES updater/meshupdater/GitHubRelease_test.cpp
+        LIBS kite_updater_logic
         )
 
     add_unit_test(UpdateLockFile

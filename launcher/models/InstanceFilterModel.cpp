@@ -117,8 +117,16 @@ InstanceFilterModel::InstanceFilterModel(QObject* parent)
 			&InstanceFilterModel::refreshDerived);
 	connect(this, &QAbstractItemModel::layoutChanged, this,
 			&InstanceFilterModel::refreshDerived);
+	/* Only the group and the id feed refreshDerived(); launch progress and the
+	 * like arrive here often. An empty role list means "everything". */
 	connect(this, &QAbstractItemModel::dataChanged, this,
-			&InstanceFilterModel::refreshDerived);
+			[this](const QModelIndex&, const QModelIndex&,
+				   const QList<int>& roles) {
+				if (roles.isEmpty() || roles.contains(m_groupRole) ||
+					roles.contains(m_idRole)) {
+					refreshDerived();
+				}
+			});
 }
 
 QString InstanceFilterModel::filterText() const

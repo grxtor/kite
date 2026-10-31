@@ -103,7 +103,8 @@ bool JavaDownloadController::alreadyInstalled() const
 	if (m_build < 0 || m_build >= m_runtimes.size()) {
 		return false;
 	}
-	return QDir(targetDirFor(m_runtimes[m_build])).exists();
+	const QString dir = targetDirFor(m_runtimes[m_build]);
+	return !dir.isEmpty() && QDir(dir).exists();
 }
 
 QString JavaDownloadController::defaultVersion(const QVariantList& versions)
@@ -178,8 +179,14 @@ QString JavaDownloadController::targetDirFor(
 {
 	const QString dirName =
 		QStringLiteral("%1-%2").arg(runtime.name, runtime.version.toString());
-	return FS::PathCombine(JavaUtils::managedJavaRoot(), runtime.vendor,
-						   dirName);
+	// Vendor and name come from remote JSON: they must stay one folder each.
+	if (!JavaDownload::isSafeSegment(runtime.vendor) ||
+		!JavaDownload::isSafeSegment(dirName)) {
+		return QString();
+	}
+	const QString root = JavaUtils::managedJavaRoot();
+	const QString dir = FS::PathCombine(root, runtime.vendor, dirName);
+	return JavaDownload::isInside(root, dir) ? dir : QString();
 }
 
 void JavaDownloadController::setLoading(bool loading)
@@ -365,8 +372,9 @@ void JavaDownloadController::download()
 	}
 	const auto runtime = m_runtimes[m_build];
 	const QString targetDir = targetDirFor(runtime);
-	if (QDir(targetDir).exists()) {
-		QDir(targetDir).removeRecursively();
+	if (targetDir.isEmpty()) {
+		setError(tr("This Java build cannot be installed."));
+		return;
 	}
 
 	setError(QString());
@@ -396,8 +404,10 @@ void JavaDownloadController::download()
 		emit progressChanged();
 		emit installed();
 	});
-	connect(task, &Task::failed, this, [this](const QString& reason) {
-		setError(tr("Download failed: %1").arg(reason));
+	connect(task, &Task::failed, this, [this, task](const QString& reason) {
+		if (!task->wasAborted()) {
+			setError(tr("Download failed: %1").arg(reason));
+		}
 	});
 	connect(task, &Task::finished, this, [this]() {
 		m_downloading = false;

@@ -248,9 +248,11 @@ class FriendsController : public QObject
 	std::unique_ptr<FriendsGameWatcher> m_watcher;
 	QTimer m_pollTimer;
 	QTimer m_pushTimer;
+	QTimer m_facesTimer;
 	QTimer m_renewalTimer;
 
 	bool m_enabled = false;
+	bool m_quitting = false;
 	State m_state = State::Off;
 	QString m_error;
 	bool m_needsSignIn = false;

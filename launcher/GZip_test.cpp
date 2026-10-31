@@ -63,6 +63,26 @@ class GZipTest : public QObject
 			fib(prev, cur);
 		} while (cur < size);
 	}
+
+	void test_UnzipStopsPastTheCap()
+	{
+		const QByteArray plain(100000, 'a');
+		QByteArray compressed;
+		QByteArray out;
+		QVERIFY(GZip::zip(plain, compressed));
+		QVERIFY(GZip::unzip(compressed, out, plain.size()));
+		QCOMPARE(out, plain);
+		bool exceeded = true;
+		QVERIFY(GZip::unzip(compressed, out, plain.size(), &exceeded));
+		QVERIFY(!exceeded);
+		QVERIFY(!GZip::unzip(compressed, out, plain.size() - 1, &exceeded));
+		QVERIFY(exceeded);
+		QVERIFY(!GZip::unzip(compressed, out, 0));
+		QVERIFY(!GZip::unzip(QByteArray("not gzip data"), out, 10, &exceeded));
+		QVERIFY(!exceeded);
+		QVERIFY(GZip::unzip(compressed, out));
+		QCOMPARE(out, plain);
+	}
 };
 
 QTEST_GUILESS_MAIN(GZipTest)

@@ -107,7 +107,11 @@ class WorldCopyTask : public Task
 	{
 		disconnect(&m_watcher, nullptr, this, nullptr);
 		if (m_future.isRunning()) {
-			m_future.waitForFinished();
+			// The worker only owns copies of what it needs; let it finish unwatched.
+			auto* holder = new QFutureWatcher<bool>();
+			connect(holder, &QFutureWatcher<bool>::finished, holder,
+					&QObject::deleteLater);
+			holder->setFuture(m_future);
 		}
 	}
 

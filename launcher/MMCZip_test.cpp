@@ -347,6 +347,22 @@ class MMCZipTest : public QObject
 				 QByteArray(4000, 'c'));
 	}
 
+	void test_ExtractSubDir_RefusesEntriesOutsideTheTarget()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		QDir root(tempDir.path());
+
+		auto zip = root.absoluteFilePath("evil.zip");
+		QVERIFY(writeStoredZip(zip, {{"ok.txt", QByteArray("ok")},
+									 {"../escaped.txt", QByteArray("bad")}}));
+
+		auto target = root.absoluteFilePath("out");
+		auto extracted = MMCZip::extractSubDir(zip, QString(""), target);
+		QVERIFY(!extracted.has_value());
+		QVERIFY(!QFile::exists(root.absoluteFilePath("escaped.txt")));
+	}
+
 	void test_ReadFilesFromZip_OnePassFromFileAndMemory()
 	{
 		QTemporaryDir tempDir;

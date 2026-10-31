@@ -114,6 +114,25 @@ class ScreenshotThumbnailProviderTest : public QObject
 		QCOMPARE(secondFactory->textureSize(), QSize(128, 128));
 	}
 
+	void cancelledRequestStillFinishes()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		const QString path =
+			makePng(tempDir.path(), "cancel.png", QSize(400, 400));
+		QVERIFY(!path.isEmpty());
+
+		ScreenshotThumbnailProvider provider;
+		std::unique_ptr<QQuickImageResponse> response(
+			provider.requestImageResponse(encodeAsId(path), QSize(64, 64)));
+		QSignalSpy finished(response.get(), &QQuickImageResponse::finished);
+
+		response->cancel();
+
+		// Cancelled or already done: either way QML is told, and nothing crashes.
+		QVERIFY(finished.count() > 0 || finished.wait(5000));
+	}
+
 	void missingFileReportsErrorWithoutCrashing()
 	{
 		ScreenshotThumbnailProvider provider;

@@ -220,9 +220,22 @@ void RecentWorldsModel::startScan()
 
 void RecentWorldsModel::onScanFinished()
 {
-	beginResetModel();
-	m_entries = m_watcher.result();
-	endResetModel();
+	const QList<Entry> entries = m_watcher.result();
+	const auto same = [](const Entry& a, const Entry& b) {
+		return a.worldName == b.worldName && a.folderName == b.folderName &&
+			   a.iconUrl == b.iconUrl && a.lastPlayed == b.lastPlayed &&
+			   a.instanceId == b.instanceId &&
+			   a.instanceName == b.instanceName &&
+			   a.instanceIconKey == b.instanceIconKey;
+	};
+	if (entries.size() != m_entries.size() ||
+		!std::equal(entries.begin(), entries.end(), m_entries.begin(), same)) {
+		beginResetModel();
+		m_entries = entries;
+		endResetModel();
+	}
+
+	emit scanFinished();
 
 	if (m_scanPending) {
 		startScan();

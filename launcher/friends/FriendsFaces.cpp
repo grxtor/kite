@@ -67,14 +67,6 @@ QUrl FriendsFaces::profileUrl(const QString& sessionBase, const QString& uuid)
 							   FriendsApi::undashed(uuid));
 }
 
-bool FriendsFaces::isLoopbackHost(const QString& host)
-{
-	const QString lower = host.toLower();
-	return lower == QLatin1String("localhost") ||
-		   lower == QLatin1String("127.0.0.1") ||
-		   lower == QLatin1String("::1");
-}
-
 std::optional<QUrl> FriendsFaces::skinUrlFromProfile(const QByteArray& profile,
 													 const QString& uuid,
 													 bool allowLoopback)
@@ -107,7 +99,7 @@ std::optional<QUrl> FriendsFaces::skinUrlFromProfile(const QByteArray& profile,
 			url.setScheme("https");
 			return url;
 		}
-		if (allowLoopback && isLoopbackHost(host)) {
+		if (allowLoopback && FriendsApi::isLoopbackHost(host)) {
 			return url;
 		}
 		return std::nullopt;
@@ -161,7 +153,8 @@ QString FriendsFaces::cachedFacePath(const QString& uuid) const
 void FriendsFaces::ensure(const QStringList& uuids, const QString& sessionBase)
 {
 	m_sessionBase = sessionBase;
-	m_allowLoopback = isLoopbackHost(QUrl(sessionBase).host());
+	m_allowLoopback =
+		FriendsApi::isLoopbackHost(QUrl(sessionBase).host().toLower());
 	const QDateTime now = QDateTime::currentDateTimeUtc();
 	for (const QString& uuid : uuids) {
 		if (!FriendsApi::isUuid(uuid) || m_queue.contains(uuid) ||

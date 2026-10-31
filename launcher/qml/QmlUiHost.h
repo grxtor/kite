@@ -304,7 +304,7 @@ class QmlUiRequest : public QObject
 	/// network; updates profileNameStatus either way.
 	Q_INVOKABLE void checkProfileName(const QString& name);
 	/// kind == "profileSetup": creates the profile. No-op unless
-	/// profileNameStatus is "available". Accepts the request on success; on
+	/// profileNameStatus is "available" and @p name is the one last checked. Accepts the request on success; on
 	/// failure sets the status to "error" and leaves it open for another name.
 	Q_INVOKABLE void submitProfileName(const QString& name);
 
@@ -337,6 +337,7 @@ class QmlUiRequest : public QObject
 	QVariantMap m_updateInfo;
 	QString m_profileNameStatus = QStringLiteral("unset");
 	QString m_profileNameError;
+	QString m_lastCheckedName;
 	bool m_profileSubmitting = false;
 	QString m_filePickerMode;
 	QString m_filePickerFilter;

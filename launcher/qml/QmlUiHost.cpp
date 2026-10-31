@@ -22,6 +22,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QEventLoop>
+#include <QFileInfo>
 #include <QFileSystemWatcher>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -330,12 +331,20 @@ void QmlUiRequest::rescanDownloads()
 	emit rescanRequested();
 }
 
+namespace
+{
+	bool isPermittedProfileName(const QString& name)
+	{
+		static const QRegularExpression permittedName(
+			QStringLiteral("\\A[a-zA-Z0-9_]{3,16}\\z"));
+		return permittedName.match(name).hasMatch();
+	}
+} // namespace
+
 void QmlUiRequest::checkProfileName(const QString& name)
 {
 	// Checked locally so a name that can never be valid costs no round trip.
-	static const QRegularExpression permittedName(
-		QStringLiteral("^[a-zA-Z0-9_]{3,16}$"));
-	if (!permittedName.match(name).hasMatch()) {
+	if (!isPermittedProfileName(name)) {
 		setProfileNameStatus(
 			QStringLiteral("unset"),
 			tr("Name must be 3-16 characters long: letters, numbers and "
@@ -343,6 +352,7 @@ void QmlUiRequest::checkProfileName(const QString& name)
 		return;
 	}
 	setProfileNameStatus(QStringLiteral("pending"), QString());
+	m_lastCheckedName = name;
 	++m_checkSequence;
 	emit checkNameRequested(name);
 }
@@ -350,7 +360,8 @@ void QmlUiRequest::checkProfileName(const QString& name)
 void QmlUiRequest::submitProfileName(const QString& name)
 {
 	if (m_profileNameStatus != QStringLiteral("available") ||
-		m_profileSubmitting) {
+		m_profileSubmitting || name != m_lastCheckedName ||
+		!isPermittedProfileName(name)) {
 		return;
 	}
 	setProfileSubmitting(true);
@@ -628,10 +639,12 @@ bool QmlUiHost::resolveBlockedMods(const QString& title, const QString& text,
 		if (downloadDir.isEmpty()) {
 			return;
 		}
-		const QStringList files = QDir(downloadDir).entryList(QDir::Files);
+		const QDir dir(downloadDir);
 		bool changed = false;
 		for (auto& mod : mods) {
-			if (!mod.found && files.contains(mod.fileName)) {
+			// A bare file name only: "../x" must not count as found.
+			if (!mod.found && QFileInfo(mod.fileName).fileName() == mod.fileName &&
+				QFileInfo(dir.filePath(mod.fileName)).isFile()) {
 				mod.found = true;
 				changed = true;
 			}
@@ -807,7 +820,8 @@ bool QmlUiHost::setupProfile(MinecraftAccountPtr account)
 			netReq.setRawHeader("Authorization",
 								minecraftServicesBearer(account).toUtf8());
 			const QByteArray body =
-				QStringLiteral("{\"profileName\":\"%1\"}").arg(name).toUtf8();
+				QJsonDocument(QJsonObject{ { "profileName", name } })
+					.toJson(QJsonDocument::Compact);
 			submitReq->post(netReq, body);
 		});
 

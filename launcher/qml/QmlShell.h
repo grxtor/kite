@@ -373,11 +373,6 @@ class QmlShell : public QObject
 									  const QString& group);
 	Q_INVOKABLE void setInstanceIcon(const QString& id,
 									 const QString& iconKey);
-	/* Installs a local image as a new icon. Returns whether the file looked
-	 * installable (readable, a regular file); a same-key collision or a
-	 * rejected extension is not detected. iconImported() follows once the
-	 * icon list picks the file up. */
-	Q_INVOKABLE bool importIcon(const QString& fileUrlOrPath);
 	/* Copies saves and keeps playtime, with the source's icon. Returns a
 	 * C++-owned TaskWatcher, or null if @p id names no instance or @p newName
 	 * trims to nothing. */
@@ -415,7 +410,7 @@ class QmlShell : public QObject
 	Q_INVOKABLE void selectLanguage(const QString& key);
 	QObject* javaInstalls() const;
 	bool javaDetecting() const;
-	/// Always a fresh detection run.
+	/// Starts a detection run unless one is already in progress.
 	Q_INVOKABLE void detectJava();
 	/* Writes JavaPath. @p path should be one of javaInstalls()'s rows; it is
 	 * not re-checked. JavaVersion/JavaArchitecture are left to CheckJava. */
@@ -447,8 +442,6 @@ class QmlShell : public QObject
 	void openInstanceLog(const QString& id);
 
 	void groupsChanged();
-	/// importIcon() succeeded and the icon list now has @p key.
-	void iconImported(const QString& key);
 	void iconRevisionChanged();
 	void autoIconsChanged();
 
@@ -502,6 +495,11 @@ class QmlShell : public QObject
 	 * so they are destroyed before the engine. */
 	std::map<std::pair<int, QString>, std::unique_ptr<QObject>>
 		m_pluginSurfaceModels;
+	ProfilersProvider m_profilersProvider;
+	PluginListFactory m_pluginListFactory;
+	std::unique_ptr<QObject> m_pluginList;
+	std::unique_ptr<AboutInfo> m_about;
+	std::unique_ptr<NewsModel> m_news;
 
 	std::unique_ptr<QQmlApplicationEngine> m_engine;
 	QQuickWindow* m_window = nullptr;
@@ -511,6 +509,9 @@ class QmlShell : public QObject
 	QHash<QString, QPointer<TaskWatcher>> m_performanceSetups;
 
 	QStringList m_setupSteps;
+	/* Set when the hostname differs from the recorded one; keeps the "java"
+	 * step until finishSetupStep("java"). */
+	bool m_hostnameChanged = false;
 
 	/* Bumped once per event-loop turn however many iconUpdated signals
 	 * arrived, so every bound Image reloads once. */
@@ -527,11 +528,6 @@ class QmlShell : public QObject
 	 * once it has loaded the root window. */
 	QStringList m_pendingImports;
 
-	ProfilersProvider m_profilersProvider;
-	PluginListFactory m_pluginListFactory;
-	std::unique_ptr<QObject> m_pluginList;
-	std::unique_ptr<AboutInfo> m_about;
-	std::unique_ptr<NewsModel> m_news;
 	bool m_updaterAvailable = false;
 	bool m_shown = false;
 };

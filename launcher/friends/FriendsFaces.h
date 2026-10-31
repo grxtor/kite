@@ -79,7 +79,6 @@ class FriendsFaces : public QObject
 	static QImage faceFromSkinPng(const QByteArray& png);
 	/// Whether a face last written at @p modified needs fetching again.
 	static bool isStale(const QDateTime& modified, const QDateTime& now);
-	static bool isLoopbackHost(const QString& host);
 
   signals:
 	void changed();

@@ -21,9 +21,12 @@
 #pragma once
 
 #include "ExternalUpdater.h"
+#include "core/UiHost.h"
 
 #include <QDateTime>
 #include <QDir>
+#include <QPointer>
+#include <QProcess>
 #include <QString>
 #include <QStringList>
 #include <QTimer>
@@ -85,6 +88,22 @@ class KiteExternalUpdater : public ExternalUpdater
 	//! Stamp this moment as the last check and re-arm.
 	void noteCheckCompleted();
 
+	//! The check process ended on its own; reports the result.
+	void onCheckFinished(int exitCode);
+
+	//! The check process never started or never ended in time; kills it and reports.
+	void onCheckTimedOut();
+
+	//! Reports a check that did not start.
+	void onCheckStartFailed(const QString& reason);
+
+	//! Interprets the exit code and output of a finished check.
+	void handleCheckResult(int exitCode, const QByteArray& stdOutput,
+						   const QByteArray& stdError);
+
+	//! Drops the check process and its busy indication.
+	void releaseCheckProcess();
+
 	QString updaterExecutablePath() const;
 	QStringList commonArguments() const;
 
@@ -99,6 +118,11 @@ class KiteExternalUpdater : public ExternalUpdater
 	bool m_autoCheck = true;
 	double m_updateInterval = 0.0;
 
-	//! Guards against a second check while one is already blocking.
+	//! Guards against a second check while one is already running.
 	bool m_checking = false;
+
+	bool m_checkByUser = false;
+	QPointer<QProcess> m_checkProcess;
+	QTimer m_checkTimeout;
+	std::unique_ptr<UiHost::BusyIndicator> m_busy;
 };

@@ -375,24 +375,30 @@ QVariantList ContentBrowser::versionEntries(
 	const QList<ModPlatform::ContentVersion>& versions,
 	const QString& mcVersion, const QString& loader)
 {
-	auto sorted = versions;
+	/* Dates parsed once, not inside the comparator. */
+	struct Dated {
+		QDateTime date;
+		const ModPlatform::ContentVersion* version;
+	};
+	QList<Dated> sorted;
+	sorted.reserve(versions.size());
+	for (const auto& version : versions) {
+		sorted.append({QDateTime::fromString(version.datePublished, Qt::ISODate),
+					   &version});
+	}
 	/* Newest first: CurseForge's reply promises no order, so sort explicitly. */
 	std::stable_sort(sorted.begin(), sorted.end(),
-					 [](const ModPlatform::ContentVersion& a,
-						const ModPlatform::ContentVersion& b) {
-						 const QDateTime dateA =
-							 QDateTime::fromString(a.datePublished, Qt::ISODate);
-						 const QDateTime dateB =
-							 QDateTime::fromString(b.datePublished, Qt::ISODate);
-						 if (dateA.isValid() && dateB.isValid()) {
-							 return dateA > dateB;
+					 [](const Dated& a, const Dated& b) {
+						 if (a.date.isValid() && b.date.isValid()) {
+							 return a.date > b.date;
 						 }
 						 /* An unknown date sorts after a known one; two unknown keep arrival order. */
-						 return dateA.isValid();
+						 return a.date.isValid();
 					 });
 
 	QVariantList entries;
-	for (const auto& version : sorted) {
+	for (const auto& item : sorted) {
+		const auto& version = *item.version;
 		QVariantMap entry;
 		entry[QStringLiteral("id")] = version.versionId;
 		entry[QStringLiteral("name")] = version.name;

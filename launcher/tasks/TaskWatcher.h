@@ -94,8 +94,8 @@ class TaskWatcher : public QObject
 	}
 	void setInstanceId(const QString& instanceId);
 
-	/* The task being watched, e.g. to abort it. May be null if the watcher was
-	 * never given one. */
+	/* The task being watched, e.g. to abort it. Null if the watcher was never
+	 * given one, and once the task has finished. */
 	Task* task() const
 	{
 		return m_task.get();
@@ -125,6 +125,8 @@ class TaskWatcher : public QObject
 	void setRunning(bool running);
 	void setProgressValue(double value);
 	void flushProgress();
+	/* Finished tasks are not kept alive by the watcher; the mirrored values stay. */
+	void releaseTask();
 
   private:
 	Task::Ptr m_task;

@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+#include <QPointer>
 #include <QSignalSpy>
 #include <QTest>
 
@@ -147,6 +148,20 @@ class TaskWatcherTest : public QObject
 		QCOMPARE(watcher.error(), QString("network is on fire"));
 		QCOMPARE(finishedSpy.count(), 1);
 		QCOMPARE(finishedSpy.at(0).at(0).toBool(), false);
+	}
+
+	void test_FinishedTaskIsReleased()
+	{
+		auto* task = new ScriptedTask();
+		QPointer<ScriptedTask> guard(task);
+		TaskWatcher watcher{Task::Ptr(task)};
+		task->start();
+		task->driveFailure("gone");
+
+		QTRY_VERIFY_WITH_TIMEOUT(watcher.task() == nullptr, 1000);
+		QVERIFY(guard.isNull());
+		QCOMPARE(watcher.failed(), true);
+		QCOMPARE(watcher.error(), QString("gone"));
 	}
 
 	void test_TitleAndInstanceIdAreSettableByCreator()

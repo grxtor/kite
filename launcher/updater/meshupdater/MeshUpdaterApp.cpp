@@ -1118,6 +1118,11 @@ QString MeshUpdaterApp::downloadAsset(const GitHubReleaseAsset& asset)
 	auto* download =
 		new ReleaseDownload(m_network.get(), asset.downloadUrl, target);
 	download->setExpectedSize(asset.size);
+	if (asset.sha256.isEmpty())
+		qWarning() << "The release lists no SHA-256 for" << asset.name
+				   << "- only its size is checked.";
+	else
+		download->setExpectedSha256(asset.sha256);
 
 	qDebug().noquote() << "Downloading" << asset.name << "-"
 					   << formatBytes(asset.size);

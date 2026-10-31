@@ -332,7 +332,7 @@ class RecentWorldsModelTest : public QObject
 		RecentWorldsModel model(nullptr);
 		QCOMPARE(model.rowCount(), 0);
 
-		QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
+		QSignalSpy resetSpy(&model, &RecentWorldsModel::scanFinished);
 		model.refresh();
 		QVERIFY(resetSpy.wait());
 		QCOMPARE(model.rowCount(), 0);
@@ -374,7 +374,7 @@ class RecentWorldsModelTest : public QObject
 		QCOMPARE(list.loadList(), InstanceList::NoError);
 
 		RecentWorldsModel model(&list);
-		QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
+		QSignalSpy resetSpy(&model, &RecentWorldsModel::scanFinished);
 		QVERIFY(resetSpy.wait());
 		resetSpy.clear();
 
@@ -403,7 +403,7 @@ class RecentWorldsModelTest : public QObject
 		QVERIFY(inst);
 
 		RecentWorldsModel model(&list);
-		QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
+		QSignalSpy resetSpy(&model, &RecentWorldsModel::scanFinished);
 		QVERIFY(resetSpy.wait());
 		resetSpy.clear();
 
@@ -432,7 +432,7 @@ class RecentWorldsModelTest : public QObject
 		QVERIFY(inst);
 
 		RecentWorldsModel model(&list);
-		QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
+		QSignalSpy resetSpy(&model, &RecentWorldsModel::scanFinished);
 		QVERIFY(resetSpy.wait());
 		resetSpy.clear();
 

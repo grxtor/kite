@@ -24,6 +24,17 @@
 #include "java/download/JavaRuntime.h"
 
 #include <QUrl>
+#include <atomic>
+#include <functional>
+#include <memory>
+
+/* What a background step of JavaDownloadTask hands back to the GUI thread. */
+struct JavaInstallOutcome {
+	enum class Failure { None, Extract, UnsupportedArchive, NoJava, UnsafeLink };
+
+	Failure failure = Failure::None;
+	QString javaPath;
+};
 
 class JavaDownloadTask : public Task
 {
@@ -40,6 +51,12 @@ class JavaDownloadTask : public Task
 		return m_installedJavaPath;
 	}
 
+	bool canAbort() const override
+	{
+		return true;
+	}
+	bool abort() override;
+
   protected:
 	void executeTask() override;
 
@@ -47,13 +64,17 @@ class JavaDownloadTask : public Task
 	void downloadFinished();
 	void downloadFailed(QString reason);
 	void extractArchive();
+	void archiveExtracted(const JavaInstallOutcome& outcome);
 	void manifestDownloaded();
 	void manifestFilesDownloaded();
 
   private:
 	void downloadArchive();
 	void downloadManifest();
-	QString findJavaBinary(const QString& dir) const;
+	void abortAndClean();
+	void runInBackground(
+		std::function<JavaInstallOutcome()> work,
+		std::function<void(const JavaInstallOutcome&)> onDone);
 
 	JavaDownload::RuntimeEntry m_runtime;
 	QString m_targetDir;
@@ -63,4 +84,7 @@ class JavaDownloadTask : public Task
 	QByteArray m_manifestData;
 	QStringList m_executableFiles;
 	QList<QPair<QString, QString>> m_linkEntries;
+	// Read by the background steps, so it outlives this task.
+	std::shared_ptr<std::atomic_bool> m_cancelled =
+		std::make_shared<std::atomic_bool>(false);
 };

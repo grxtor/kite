@@ -26,7 +26,6 @@
 #include <QElapsedTimer>
 #include <QDebug>
 #include <QEvent>
-#include <QFileInfo>
 #include <QHostInfo>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -794,26 +793,6 @@ void QmlShell::debugShowRequest(const QString& kind)
 	}
 }
 
-bool QmlShell::importIcon(const QString& fileUrlOrPath)
-{
-	const QUrl url(fileUrlOrPath);
-	const QString path = url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
-
-	const QFileInfo info(path);
-	if (!info.isReadable() || !info.isFile()) {
-		return false;
-	}
-
-	auto icons = LAUNCHER->icons();
-	icons->installIcons({ path });
-
-	/* The key is the file's base name, as IconList derives it. installIcons()
-	 * silently ignores a rejected extension or a same-key collision, so this
-	 * is optimistic. */
-	emit iconImported(info.baseName());
-	return true;
-}
-
 QObject* QmlShell::duplicateInstance(const QString& id, const QString& newName,
 									 const QString& group)
 {
@@ -918,9 +897,9 @@ void QmlShell::recomputeSetupSteps()
 	// the new hostname so this fires once.
 	const QString currentHostName = QHostInfo::localHostName();
 	const QString oldHostName = settings->get("LastHostname").toString();
-	const bool hostnameChanged = currentHostName != oldHostName;
-	if (hostnameChanged) {
+	if (currentHostName != oldHostName) {
 		settings->set("LastHostname", currentHostName);
+		m_hostnameChanged = true;
 	}
 	const QString javaPath = settings->get("JavaPath").toString();
 	const bool javaPathResolves = !FS::ResolveExecutable(javaPath).isNull();
@@ -929,7 +908,7 @@ void QmlShell::recomputeSetupSteps()
 	if (languageSetupStepNeeded(settings->get("Language").toString())) {
 		steps << QStringLiteral("language");
 	}
-	if (javaSetupStepNeeded(hostnameChanged, javaPathResolves,
+	if (javaSetupStepNeeded(m_hostnameChanged, javaPathResolves,
 							settings->get("JavaAutoDownload").toBool())) {
 		steps << QStringLiteral("java");
 	}
@@ -944,7 +923,9 @@ void QmlShell::recomputeSetupSteps()
 
 void QmlShell::finishSetupStep(const QString& id)
 {
-	Q_UNUSED(id);
+	if (id == QLatin1String("java")) {
+		m_hostnameChanged = false;
+	}
 	recomputeSetupSteps();
 }
 
@@ -982,17 +963,19 @@ void QmlShell::detectJava()
 	if (!task) {
 		return;
 	}
-	if (!m_javaDetecting) {
-		m_javaDetecting = true;
-		emit javaDetectingChanged();
+	// A scan is already running and its finished() is already connected.
+	if (m_javaDetecting) {
+		return;
 	}
-	connect(task.get(), &Task::finished, this, [this]() {
-		m_javaDetecting = false;
-		emit javaDetectingChanged();
-	});
-	if (!task->isRunning()) {
-		task->start();
-	}
+	m_javaDetecting = true;
+	emit javaDetectingChanged();
+	connect(
+		task.get(), &Task::finished, this,
+		[this]() {
+			m_javaDetecting = false;
+			emit javaDetectingChanged();
+		},
+		Qt::SingleShotConnection);
 }
 
 void QmlShell::useJava(const QString& path)
@@ -1380,6 +1363,20 @@ bool QmlShell::load()
 	m_instances->setSourceModel(LAUNCHER->instances().get());
 	connect(m_instances.get(), &InstanceFilterModel::groupsChanged, this,
 			&QmlShell::groupsChanged);
+	// Deferred a turn so the delegates of a vanished group are gone first.
+	connect(m_instances.get(), &InstanceFilterModel::groupsChanged, this, [this]() {
+		QTimer::singleShot(0, this, [this]() {
+			const QStringList live = m_instances->groups();
+			for (auto it = m_sections.begin(); it != m_sections.end();) {
+				if (live.contains(it->first)) {
+					++it;
+					continue;
+				}
+				it->second.release()->deleteLater();
+				it = m_sections.erase(it);
+			}
+		});
+	});
 	connect(LAUNCHER->icons().get(), &IconList::iconUpdated, this, [this]() {
 		if (m_iconRevisionPending) {
 			return;

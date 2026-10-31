@@ -235,6 +235,7 @@ class QmlUiHostTest : public QObject
 	{
 		QmlUiRequest request(QmlUiRequest::Kind::ProfileSetup,
 							 QStringLiteral("Title"), QStringLiteral("Text"));
+		request.checkProfileName(QStringLiteral("Steve"));
 		request.setProfileNameStatus(QStringLiteral("available"), QString());
 		QSignalSpy submitSpy(&request, &QmlUiRequest::submitNameRequested);
 
@@ -246,6 +247,32 @@ class QmlUiHostTest : public QObject
 		// Clicks while a submission is in flight are ignored.
 		request.submitProfileName(QStringLiteral("Steve"));
 		QCOMPARE(submitSpy.count(), 1);
+	}
+
+	void submitProfileNameRefusesAnotherNameThanTheCheckedOne()
+	{
+		QmlUiRequest request(QmlUiRequest::Kind::ProfileSetup,
+							 QStringLiteral("Title"), QStringLiteral("Text"));
+		request.checkProfileName(QStringLiteral("Steve"));
+		request.setProfileNameStatus(QStringLiteral("available"), QString());
+		QSignalSpy submitSpy(&request, &QmlUiRequest::submitNameRequested);
+
+		request.submitProfileName(QStringLiteral("Alex"));
+		request.submitProfileName(QStringLiteral("Steve\n"));
+
+		QCOMPARE(submitSpy.count(), 0);
+		QVERIFY(!request.profileSubmitting());
+	}
+
+	void checkProfileNameRejectsATrailingNewline()
+	{
+		QmlUiRequest request(QmlUiRequest::Kind::ProfileSetup,
+							 QStringLiteral("Title"), QStringLiteral("Text"));
+		QSignalSpy checkSpy(&request, &QmlUiRequest::checkNameRequested);
+
+		request.checkProfileName(QStringLiteral("Steve\n"));
+
+		QCOMPARE(checkSpy.count(), 0);
 	}
 
 	void setupProfileReturnsFalseWhenQmlRejects()

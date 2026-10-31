@@ -156,10 +156,18 @@ QStringList ContentFilterModel::visibleKeys() const
 
 void ContentFilterModel::refreshRows(const QStringList& keys)
 {
-	for (int row = 0; row < rowCount(); ++row) {
-		const QModelIndex at = index(row, 0);
-		if (keys.contains(data(at, KeyRole).toString())) {
-			emit dataChanged(at, at);
+	const QSet<QString> wanted(keys.begin(), keys.end());
+	const int rows = rowCount();
+	int first = -1;
+	for (int row = 0; row <= rows; ++row) {
+		const bool hit =
+			row < rows &&
+			wanted.contains(data(index(row, 0), KeyRole).toString());
+		if (hit && first < 0) {
+			first = row;
+		} else if (!hit && first >= 0) {
+			emit dataChanged(index(first, 0), index(row - 1, 0));
+			first = -1;
 		}
 	}
 }

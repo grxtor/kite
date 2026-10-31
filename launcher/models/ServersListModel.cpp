@@ -155,9 +155,11 @@ void ServersListModel::load()
 
 void ServersListModel::saveNow()
 {
+	const bool dirty = m_dirty;
 	cancelSave();
-	if (!m_loaded) {
-		// Never overwrite a file this model has not actually read yet.
+	if (!m_loaded || !dirty) {
+		// Never overwrite a file this model has not read yet, or without an edit
+		// of ours (the game may have written it since).
 		return;
 	}
 	nbt::tag_compound root;
@@ -247,6 +249,9 @@ void ServersListModel::setLocked(bool locked)
 	m_locked = locked;
 	if (m_locked) {
 		saveNow();
+	} else if (m_loaded) {
+		// The game ran meanwhile and may have rewritten the file.
+		load();
 	}
 	updateFsWatch();
 	emit lockedChanged();

@@ -183,7 +183,12 @@ bool AccountsController::addOffline(const QString& username)
 QObject* AccountsController::loginMicrosoft()
 {
 	// Parented to this: QML calls this directly, with no expose() to pin a parentless return value.
-	return new MicrosoftLoginController(m_accounts, this);
+	if (m_login) {
+		m_login->cancel();
+		m_login->deleteLater();
+	}
+	m_login = new MicrosoftLoginController(m_accounts, this);
+	return m_login;
 }
 
 bool AccountsController::skinDemoRequested() const

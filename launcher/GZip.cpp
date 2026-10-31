@@ -20,23 +20,37 @@
 #include "GZip.h"
 #include <zlib.h>
 #include <QByteArray>
+#include <limits>
 
 bool GZip::unzip(const QByteArray& compressedBytes,
-				 QByteArray& uncompressedBytes)
+				 QByteArray& uncompressedBytes, qsizetype maxOutput,
+				 bool* exceededCap)
 {
+	if (exceededCap) {
+		*exceededCap = false;
+	}
 	if (compressedBytes.size() == 0) {
 		uncompressedBytes = compressedBytes;
 		return true;
 	}
+	if (static_cast<qint64>(compressedBytes.size()) >
+		static_cast<qint64>(std::numeric_limits<uInt>::max())) {
+		return false;
+	}
 
-	unsigned uncompLength = compressedBytes.size();
+	const bool limited = maxOutput >= 0;
+	// One byte past the cap, so that exceeding it is detectable.
+	const qsizetype hardCap =
+		limited ? maxOutput + 1 : std::numeric_limits<qsizetype>::max();
+	qsizetype capacity = qMin(compressedBytes.size(), hardCap);
+	qsizetype produced = 0;
 	uncompressedBytes.clear();
-	uncompressedBytes.resize(uncompLength);
+	uncompressedBytes.resize(capacity);
 
 	z_stream strm;
 	memset(&strm, 0, sizeof(strm));
 	strm.next_in = (uint8_t*)compressedBytes.data();
-	strm.avail_in = compressedBytes.size();
+	strm.avail_in = static_cast<uInt>(compressedBytes.size());
 
 	bool done = false;
 
@@ -44,18 +58,35 @@ bool GZip::unzip(const QByteArray& compressedBytes,
 		return false;
 	}
 
-	int err = Z_OK;
-
+	bool ok = true;
 	while (!done) {
-		if (strm.total_out >= uncompLength) {
-			uncompressedBytes.resize(uncompLength * 2);
-			uncompLength *= 2;
+		if (produced == capacity) {
+			if (capacity >= hardCap) {
+				ok = false;
+				if (exceededCap) {
+					*exceededCap = true;
+				}
+				break;
+			}
+			capacity = capacity > hardCap / 2 ? hardCap : capacity * 2;
+			uncompressedBytes.resize(capacity);
 		}
 
-		strm.next_out = (uint8_t*)(uncompressedBytes.data() + strm.total_out);
-		strm.avail_out = uncompLength - strm.total_out;
+		const uInt room = static_cast<uInt>(
+			qMin<qsizetype>(capacity - produced,
+							std::numeric_limits<uInt>::max()));
+		strm.next_out = (uint8_t*)(uncompressedBytes.data() + produced);
+		strm.avail_out = room;
 
-		err = inflate(&strm, Z_SYNC_FLUSH);
+		const int err = inflate(&strm, Z_SYNC_FLUSH);
+		produced += room - strm.avail_out;
+		if (limited && produced > maxOutput) {
+			ok = false;
+			if (exceededCap) {
+				*exceededCap = true;
+			}
+			break;
+		}
 		if (err == Z_STREAM_END)
 			done = true;
 		else if (err != Z_OK) {
@@ -63,11 +94,11 @@ bool GZip::unzip(const QByteArray& compressedBytes,
 		}
 	}
 
-	if (inflateEnd(&strm) != Z_OK || !done) {
+	if (inflateEnd(&strm) != Z_OK || !done || !ok) {
 		return false;
 	}
 
-	uncompressedBytes.resize(strm.total_out);
+	uncompressedBytes.resize(produced);
 	return true;
 }
 
