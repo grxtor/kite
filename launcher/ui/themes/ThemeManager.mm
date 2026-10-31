@@ -40,9 +40,12 @@ ThemeManager::~ThemeManager()
 
 namespace {
 
-bool isStatusBarWindow(NSWindow* window)
+// Only a window with a title bar takes its colour. Borderless ones keep
+// their own background: the menu bar's, and the one AppKit opens a menu
+// in, whose see-through shadow would otherwise turn into a dark box.
+bool hasTitleBar(NSWindow* window)
 {
-    return window && window.level == NSStatusWindowLevel;
+    return window && (window.styleMask & NSWindowStyleMaskTitled);
 }
 
 } // namespace
@@ -56,7 +59,7 @@ void ThemeManager::setTitlebarColorOnMac(WId windowId, QColor color)
     auto* nativeView = reinterpret_cast<NSView*>(windowId);
     NSWindow* nativeWindow = nativeView.window;
 
-    if (!nativeWindow || isStatusBarWindow(nativeWindow)) {
+    if (!hasTitleBar(nativeWindow)) {
         return;
     }
 
@@ -70,7 +73,7 @@ void ThemeManager::setTitlebarColorOnMac(WId windowId, QColor color)
 void ThemeManager::setTitlebarColorOfAllWindowsOnMac(QColor color)
 {
     for (NSWindow* nativeWindow in NSApp.windows) {
-        if (isStatusBarWindow(nativeWindow)) {
+        if (!hasTitleBar(nativeWindow)) {
             continue;
         }
 
@@ -93,7 +96,7 @@ void ThemeManager::setTitlebarColorOfAllWindowsOnMac(QColor color)
                                         NSWindow* nativeWindow =
                                             notification.object;
 
-                                        if (isStatusBarWindow(nativeWindow)) {
+                                        if (!hasTitleBar(nativeWindow)) {
                                             return;
                                         }
 
