@@ -1343,6 +1343,12 @@ add_unit_test(AutoIcons
     )
 target_include_directories(AutoIcons_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+# Needs the compiled icon themes (multimc.qrc), hence Kite_logic.
+add_unit_test(AutoIconsBuiltIn
+    SOURCES icons/AutoIconsBuiltIn_test.cpp
+    LIBS Kite_logic Qt${QT_VERSION_MAJOR}::Gui
+    )
+
 add_unit_test(GameTextureIcons
     SOURCES icons/GameTextureIcons_test.cpp
     LIBS Kite_core Qt${QT_VERSION_MAJOR}::Gui

@@ -173,6 +173,62 @@
         <file>scalable/instances/fox.svg</file>
         <file>scalable/instances/bee.svg</file>
 
+        <!-- Kite's own blocks, drawn by branding/instance_cubes.py -->
+        <file>32x32/instances/kite_amethyst.png</file>
+        <file>128x128/instances/kite_amethyst.png</file>
+        <file>256x256/instances/kite_amethyst.png</file>
+        <file>32x32/instances/kite_brick.png</file>
+        <file>128x128/instances/kite_brick.png</file>
+        <file>256x256/instances/kite_brick.png</file>
+        <file>32x32/instances/kite_cobblestone.png</file>
+        <file>128x128/instances/kite_cobblestone.png</file>
+        <file>256x256/instances/kite_cobblestone.png</file>
+        <file>32x32/instances/kite_copper.png</file>
+        <file>128x128/instances/kite_copper.png</file>
+        <file>256x256/instances/kite_copper.png</file>
+        <file>32x32/instances/kite_cyan_ore.png</file>
+        <file>128x128/instances/kite_cyan_ore.png</file>
+        <file>256x256/instances/kite_cyan_ore.png</file>
+        <file>32x32/instances/kite_emerald_ore.png</file>
+        <file>128x128/instances/kite_emerald_ore.png</file>
+        <file>256x256/instances/kite_emerald_ore.png</file>
+        <file>32x32/instances/kite_glass.png</file>
+        <file>128x128/instances/kite_glass.png</file>
+        <file>256x256/instances/kite_glass.png</file>
+        <file>32x32/instances/kite_gold_ore.png</file>
+        <file>128x128/instances/kite_gold_ore.png</file>
+        <file>256x256/instances/kite_gold_ore.png</file>
+        <file>32x32/instances/kite_ice.png</file>
+        <file>128x128/instances/kite_ice.png</file>
+        <file>256x256/instances/kite_ice.png</file>
+        <file>32x32/instances/kite_lantern.png</file>
+        <file>128x128/instances/kite_lantern.png</file>
+        <file>256x256/instances/kite_lantern.png</file>
+        <file>32x32/instances/kite_log.png</file>
+        <file>128x128/instances/kite_log.png</file>
+        <file>256x256/instances/kite_log.png</file>
+        <file>32x32/instances/kite_magma.png</file>
+        <file>128x128/instances/kite_magma.png</file>
+        <file>256x256/instances/kite_magma.png</file>
+        <file>32x32/instances/kite_moss.png</file>
+        <file>128x128/instances/kite_moss.png</file>
+        <file>256x256/instances/kite_moss.png</file>
+        <file>32x32/instances/kite_obsidian.png</file>
+        <file>128x128/instances/kite_obsidian.png</file>
+        <file>256x256/instances/kite_obsidian.png</file>
+        <file>32x32/instances/kite_planks.png</file>
+        <file>128x128/instances/kite_planks.png</file>
+        <file>256x256/instances/kite_planks.png</file>
+        <file>32x32/instances/kite_ruby_ore.png</file>
+        <file>128x128/instances/kite_ruby_ore.png</file>
+        <file>256x256/instances/kite_ruby_ore.png</file>
+        <file>32x32/instances/kite_sand.png</file>
+        <file>128x128/instances/kite_sand.png</file>
+        <file>256x256/instances/kite_sand.png</file>
+        <file>32x32/instances/kite_snow.png</file>
+        <file>128x128/instances/kite_snow.png</file>
+        <file>256x256/instances/kite_snow.png</file>
+
         <!-- instance icons -->
         <file>32x32/instances/chicken_legacy.png</file>
         <file>128x128/instances/chicken_legacy.png</file>
