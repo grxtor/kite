@@ -27,12 +27,14 @@
 #include <QList>
 #include <QHash>
 #include <QStringList>
+#include <QColor>
 
 #include "BaseInstance.h"
 
 #include "QObjectPtr.h"
 
 class QFileSystemWatcher;
+class QImage;
 class InstanceTask;
 class LaunchProgressTracker;
 using InstanceId = QString;
@@ -119,11 +121,12 @@ class InstanceList : public QAbstractListModel
 		 * indeterminate, and also when nothing is happening (LaunchStatusRole
 		 * is then empty too). */
 		LaunchProgressRole,
-		/* file:// URL of the newest image in the instance's screenshots
-		 * folder, or empty when there is none or it is not looked up yet. The
-		 * scan runs on a worker (scheduleCoverImageScan()), so data() returns
-		 * the cached value or empty at once; the entry is dropped when the
-		 * instance stops running. */
+		/* file:// URL of the instance's cover, or empty: the screenshot the
+		 * user picked ("CoverImage" setting) while that file exists, else one
+		 * of the Minecraft version's title-screen panoramas (which one is
+		 * fixed by the instance id). Resolved on a worker
+		 * (scheduleCoverScan()), so data() answers from the cache or empty at
+		 * once. See CoverKindRole for which of the two it is. */
 		CoverImageRole,
 		/* Whether the instance's last launch crashed
 		 * (BaseInstance::hasCrashed()). setCrashed() already emits
@@ -133,7 +136,11 @@ class InstanceList : public QAbstractListModel
 		/* Cover picture of an instance installed from a platform (when there
 		 * is no screenshot): "image://instanceicon/<key>" if its icon is an
 		 * icon file, else the logo's upstream URL (PackIconUrl), else empty. */
-		PackArtRole
+		PackArtRole,
+		/* "custom" (picked screenshot), "panorama" or "" (no cover: the UI
+		 * draws a gradient from iconColor()). Always agrees with
+		 * CoverImageRole. */
+		CoverKindRole
 	};
 	enum InstListError { NoError = 0, UnknownError };
 
@@ -242,15 +249,59 @@ class InstanceList : public QAbstractListModel
 	bool destroyStagingPath(const QString& keyPath);
 
 
-	/* Newest-modified png/jpg/jpeg directly inside @p screenshotsDir as a
-	 * file:// URL, or empty. Pure (no InstanceList or QObject access), so it
-	 * can run on a worker thread and be tested directly. Same order as
-	 * ScreenshotListModel::listEntries() (mtime descending, file name
-	 * tiebreak). */
-	static QString newestScreenshotUrl(const QString& screenshotsDir);
+	/* Where the cover lookups read: Minecraft version metadata, asset indexes
+	 * and asset objects. Empty strings find nothing. */
+	struct CoverDirs {
+		QString meta;
+		QString assetIndexes;
+		QString assetObjects;
+	};
+	struct CoverInfo {
+		QString url;  ///< file:// URL, empty for none
+		QString kind; ///< "custom", "panorama" or empty
+	};
+
+	/* Panorama faces an instance may get (panorama_0..3: the horizon ones;
+	 * 4 and 5 are sky and ground). */
+	static constexpr int kPanoramaFaces = 4;
+	/* The face an instance shows: stable across runs, so each keeps its look,
+	 * and spread, so instances of one version differ. */
+	static int panoramaFaceFor(const InstanceId& id);
+	/* Local path of the title-screen panorama face @p face of Minecraft
+	 * @p mcVersion (panorama_0 when that face is not in the index), or empty
+	 * when the metadata, the asset index or the object is not on disk. Pure
+	 * (no InstanceList access), so it runs on a worker and is tested
+	 * directly. */
+	static QString panoramaPath(const CoverDirs& dirs, const QString& mcVersion,
+								int face = 0);
+	/* The cover order: @p customPath if that file exists, else
+	 * @p panoramaPath if given, else nothing. */
+	static CoverInfo pickCover(const QString& customPath,
+							   const QString& panoramaPath);
+	/* Average of the visible pixels, weighted by opacity and
+	 * saturation as IconList::tint() does; invalid when nothing is visible. */
+	static QColor averageIconColor(const QImage& image);
+
+	/* Makes @p pathOrFileUrl (a path or a file URL naming an existing image in
+	 * the instance's screenshots folder) the cover of instance @p id; only the
+	 * file name is kept, so a copy of the instance finds its own. False for an
+	 * unknown instance or any other file. */
+	bool setCover(const QString& id, const QString& pathOrFileUrl);
+	/* Back to the panorama. */
+	void clearCover(const QString& id);
+	/* Overrides where covers are looked up; without it the launcher's
+	 * metacache bases are used. For tests. */
+	void setCoverDirs(const CoverDirs& dirs);
+
+	/* The average colour of icon @p key (invalid while unknown or when the
+	 * icon has no visible pixels). Averaged on a worker and cached per key;
+	 * iconColorsChanged() says when an answer arrived or changed. The old
+	 * colour stays until the new one is ready. */
+	QColor iconColor(const QString& key) const;
 
   signals:
 	void instancesChanged();
+	void iconColorsChanged();
 	void instanceSelectRequest(QString instanceId);
 
   public slots:
@@ -293,17 +344,31 @@ class InstanceList : public QAbstractListModel
 	 * or isRunning() does. Called once, from add(). */
 	void trackLaunchProgress(BaseInstance* inst);
 	void emitLaunchProgressChanged(BaseInstance* inst);
-	/* Emits IsRunningRole's dataChanged and, when @p inst just stopped, drops
-	 * its m_coverImageCache entry and emits CoverImageRole's, since a new
-	 * screenshot is likely. */
+	/* Emits IsRunningRole's dataChanged and, when @p inst just stopped, looks
+	 * its cover up again, and the "no cover" ones of all other instances: the
+	 * game has by then downloaded the version metadata and assets. The old
+	 * answers stay until the new ones arrive. */
 	void emitIsRunningChanged(BaseInstance* inst);
-	/* Starts a background scan of @p screenshotsDir for CoverImageRole unless
-	 * one for @p id is running. The result goes to m_coverImageCache and
-	 * dataChanged is emitted, unless m_coverImageGeneration moved on meanwhile
-	 * (the instance stopped running): then it is discarded and a fresh scan
-	 * started. */
-	void scheduleCoverImageScan(const InstanceId& id,
-								const QString& screenshotsDir);
+
+	struct CoverEntry {
+		// What the lookup was made for; a mismatch with the instance's
+		// current values means the entry is stale.
+		QString customPath;
+		QString version;
+		CoverInfo info;
+	};
+	CoverDirs activeCoverDirs() const;
+	/* Starts a background lookup of the cover of @p id for the given custom
+	 * path and version unless one for @p id is running. The result goes to
+	 * m_coverCache and dataChanged is emitted, unless m_coverGeneration moved
+	 * on meanwhile (the instance stopped running): then it is discarded and a
+	 * fresh lookup started. */
+	void scheduleCoverScan(const InstanceId& id, const QString& customPath,
+						   const QString& version);
+	/* Averages the icon @p key off the GUI thread (the pixmap is taken on it,
+	 * from the event loop) for iconColor(). */
+	void scheduleIconColor(const QString& key);
+	void onIconUpdated(const QString& key);
 
   private:
 	QList<InstancePtr> m_instances;
@@ -328,14 +393,23 @@ class InstanceList : public QAbstractListModel
 	 * instance owns the tracker (QObject parenting); this is a lookup table
 	 * for data(), kept in sync with the instance's destroyed() signal. */
 	QHash<BaseInstance*, LaunchProgressTracker*> m_launchTrackers;
-	/* Newest-screenshot URL per instance id for CoverImageRole, filled lazily
-	 * by data() and dropped when the instance stops running. Mutable because
-	 * data() is const; an absent id has not been looked up, a present empty
-	 * string means "looked up, none found". */
-	mutable QHash<InstanceId, QString> m_coverImageCache;
-	/* Ids with a cover scan running on a worker thread; stops data() queuing a
-	 * second QtConcurrent::run() for the same id. Mutable like
-	 * m_coverImageCache. */
-	mutable QSet<InstanceId> m_coverImageScansPending;
-	QHash<InstanceId, int> m_coverImageGeneration;
+	/* Cover per instance id for CoverImageRole/CoverKindRole, filled lazily by
+	 * data(). Mutable because data() is const; an absent id has not been
+	 * looked up, an entry with an empty url means "looked up, none found". */
+	mutable QHash<InstanceId, CoverEntry> m_coverCache;
+	/* Ids with a cover lookup running on a worker thread; stops data() queuing
+	 * a second one for the same id. Mutable like m_coverCache. */
+	mutable QSet<InstanceId> m_coverScansPending;
+	QHash<InstanceId, int> m_coverGeneration;
+	/* Panorama path per Minecraft version, found ones only: a missing one may
+	 * show up after the version is first launched. */
+	QHash<QString, QString> m_panoramaCache;
+	CoverDirs m_coverDirs;
+	bool m_coverDirsSet = false;
+
+	/* iconColor()'s colour per icon key, same lazy fill as m_coverCache. */
+	mutable QHash<QString, QColor> m_iconColorCache;
+	mutable QSet<QString> m_iconColorPending;
+	QHash<QString, int> m_iconColorGeneration;
+	bool m_iconUpdatesWatched = false;
 };

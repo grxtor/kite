@@ -216,8 +216,8 @@ QtObject {
         readonly property color glassStrong: Qt.rgba(1, 1, 1, 0.12)
         readonly property color glassEdge: Qt.rgba(1, 1, 1, 0.09)
         // The dark counterpart over a photo (the Sahne stage's world panel).
-        readonly property color shade: Qt.rgba(0.04, 0.04, 0.05, 0.42)
-        readonly property color shadeLit: Qt.rgba(0.04, 0.04, 0.05, 0.55)
+        readonly property color shade: Qt.rgba(0.04, 0.04, 0.05, 0.58)
+        readonly property color shadeLit: Qt.rgba(0.04, 0.04, 0.05, 0.68)
         // Small print over glass or a photo; a bar track on media.
         readonly property color textFaint: Qt.rgba(1, 1, 1, 0.55)
         readonly property color track: Qt.rgba(1, 1, 1, 0.18)

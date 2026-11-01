@@ -4677,7 +4677,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeCalmRow</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeCalmRow.qml" line="+115"/>
+        <location filename="../launcher/qml/Components/HomeCalmRow.qml" line="+116"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
@@ -4685,7 +4685,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeContinuePlaying</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeContinuePlaying.qml" line="+124"/>
+        <location filename="../launcher/qml/Components/HomeContinuePlaying.qml" line="+151"/>
         <source>Continue playing</source>
         <translation>Oynamaya devam et</translation>
     </message>
@@ -4848,6 +4848,11 @@ Lütfen tekrar dene.</translation>
         <source>Last played</source>
         <translation>Son oynanan</translation>
     </message>
+    <message>
+        <location line="+0"/>
+        <source>Selected</source>
+        <translation>Seçili</translation>
+    </message>
 </context>
 <context>
     <name>HomeHeroTitle</name>
@@ -4876,7 +4881,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeJumpCard</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeJumpCard.qml" line="+156"/>
+        <location filename="../launcher/qml/Components/HomeJumpCard.qml" line="+164"/>
         <source>New</source>
         <translation>Yeni</translation>
     </message>
@@ -4925,7 +4930,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeNightRow</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeNightRow.qml" line="+57"/>
+        <location filename="../launcher/qml/Components/HomeNightRow.qml" line="+58"/>
         <source>Crashed</source>
         <translation>Çöktü</translation>
     </message>
@@ -4933,7 +4938,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomePage</name>
     <message>
-        <location filename="../launcher/qml/Components/HomePage.qml" line="+202"/>
+        <location filename="../launcher/qml/Components/HomePage.qml" line="+211"/>
         <source>Library</source>
         <translation>Kütüphane</translation>
     </message>
@@ -4995,7 +5000,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeStageCard</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeStageCard.qml" line="+104"/>
+        <location filename="../launcher/qml/Components/HomeStageCard.qml" line="+109"/>
         <source>Crashed last time</source>
         <translation>Geçen sefer çöktü</translation>
     </message>
@@ -5126,8 +5131,8 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceCard</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceCard.qml" line="+68"/>
-        <location line="+80"/>
+        <location filename="../launcher/qml/Components/InstanceCard.qml" line="+71"/>
+        <location line="+81"/>
         <source>Running</source>
         <translation>Çalışıyor</translation>
     </message>
@@ -5619,12 +5624,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstanceList</name>
     <message>
-        <location filename="../launcher/InstanceList.cpp" line="+229"/>
+        <location filename="../launcher/InstanceList.cpp" line="+245"/>
         <source>%1 Instance</source>
         <translation>%1 kurulumu</translation>
     </message>
     <message>
-        <location line="+1329"/>
+        <location line="+1533"/>
         <source>Could not remove a file the updated pack no longer includes: %1</source>
         <translation>Güncellenen paketin artık içermediği bir dosya kaldırılamadı: %1</translation>
     </message>
@@ -5632,12 +5637,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstanceListRow</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceListRow.qml" line="+63"/>
+        <location filename="../launcher/qml/Components/InstanceListRow.qml" line="+66"/>
         <source>Running</source>
         <translation>Çalışıyor</translation>
     </message>
     <message>
-        <location line="+84"/>
+        <location line="+85"/>
         <source>%1%</source>
         <translation>%1%</translation>
     </message>
@@ -5731,7 +5736,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstancePage</name>
     <message>
-        <location filename="../launcher/qml/Components/InstancePage.qml" line="+133"/>
+        <location filename="../launcher/qml/Components/InstancePage.qml" line="+136"/>
         <source>Content</source>
         <translation>İçerik</translation>
     </message>
@@ -5792,12 +5797,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
     </message>
     <message>
         <location line="+4"/>
-        <location line="+311"/>
+        <location line="+316"/>
         <source>Plugins</source>
         <translation>Eklentiler</translation>
     </message>
     <message>
-        <location line="-190"/>
+        <location line="-193"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
@@ -5817,7 +5822,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+170"/>
+        <location line="+173"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
@@ -5870,7 +5875,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstanceSection</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceSection.qml" line="+154"/>
+        <location filename="../launcher/qml/Components/InstanceSection.qml" line="+155"/>
         <source>Collapsed</source>
         <translation>Daraltıldı</translation>
     </message>
@@ -7042,7 +7047,7 @@ Neden:
         <translation>“%1” grubu silinsin mi? Kurulumları kütüphanende, grupsuz olarak kalır.</translation>
     </message>
     <message>
-        <location line="+75"/>
+        <location line="+77"/>
         <source>Rename group</source>
         <translation>Grubu yeniden adlandır</translation>
     </message>
@@ -7398,21 +7403,21 @@ Neden:
     </message>
     <message>
         <location line="+75"/>
-        <location line="+70"/>
+        <location line="+72"/>
         <location line="+7"/>
         <location line="+0"/>
         <source>Home</source>
         <translation>Ana sayfa</translation>
     </message>
     <message>
-        <location line="-76"/>
-        <location line="+65"/>
+        <location line="-78"/>
+        <location line="+67"/>
         <source>Discover</source>
         <translation>Keşfet</translation>
     </message>
     <message>
-        <location line="-42"/>
-        <location line="+41"/>
+        <location line="-44"/>
+        <location line="+43"/>
         <source>Settings</source>
         <translation>Ayarlar</translation>
     </message>
@@ -11427,7 +11432,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
         <translation>%1 · Kite Performans</translation>
     </message>
     <message>
-        <location line="+294"/>
+        <location line="+310"/>
         <source>Choose an account</source>
         <translation>Bir hesap seç</translation>
     </message>
@@ -11672,27 +11677,27 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
 <context>
     <name>ScreenshotsTab</name>
     <message>
-        <location filename="../launcher/qml/Components/ScreenshotsTab.qml" line="+40"/>
+        <location filename="../launcher/qml/Components/ScreenshotsTab.qml" line="+47"/>
         <source>%1, %2</source>
         <translation>%1, %2</translation>
     </message>
     <message>
-        <location line="+90"/>
+        <location line="+93"/>
         <source>Some screenshots could not be deleted.</source>
         <translation>Bazı ekran görüntüleri silinemedi.</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+24"/>
         <source>Album link copied to your clipboard.</source>
         <translation>Albüm bağlantısı panoya kopyalandı.</translation>
     </message>
     <message>
-        <location line="+193"/>
+        <location line="+194"/>
         <source>Open</source>
         <translation>Aç</translation>
     </message>
     <message>
-        <location line="-175"/>
+        <location line="-176"/>
         <source>%1 selected</source>
         <translation>%1 seçili</translation>
     </message>
@@ -11718,34 +11723,34 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
     </message>
     <message>
         <location line="+6"/>
-        <location line="+178"/>
+        <location line="+186"/>
         <source>Delete</source>
         <translation>Sil</translation>
     </message>
     <message>
-        <location line="-173"/>
+        <location line="-181"/>
         <source>Move this screenshot to the trash?</source>
         <translation>Bu ekran görüntüsü çöp kutusuna taşınsın mı?</translation>
     </message>
     <message>
         <location line="+1"/>
-        <location line="+178"/>
+        <location line="+186"/>
         <source>Move %1 screenshots to the trash?</source>
         <translation>%1 ekran görüntüsü çöp kutusuna taşınsın mı?</translation>
     </message>
     <message>
-        <location line="-173"/>
+        <location line="-181"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
     <message>
-        <location line="+81"/>
+        <location line="+82"/>
         <location line="+62"/>
         <source>Copy image</source>
         <translation>Görüntüyü kopyala</translation>
     </message>
     <message>
-        <location line="-213"/>
+        <location line="-218"/>
         <source>Image copied.</source>
         <translation>Görüntü kopyalandı.</translation>
     </message>
@@ -11755,7 +11760,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>Görüntü kopyalanamadı.</translation>
     </message>
     <message>
-        <location line="+157"/>
+        <location line="+162"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
@@ -11770,7 +11775,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>Yeniden adlandır…</translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="+19"/>
         <source>Upload selected to Imgur</source>
         <translation>Seçilenleri Imgur&apos;a yükle</translation>
     </message>
@@ -11785,7 +11790,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>Seçilenleri sil…</translation>
     </message>
     <message>
-        <location line="+40"/>
+        <location line="+63"/>
         <source>Delete screenshots</source>
         <translation>Ekran görüntülerini sil</translation>
     </message>
@@ -11805,7 +11810,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>Yeniden adlandır</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+10"/>
         <source>That name cannot be used, or another screenshot already has it.</source>
         <translation>Bu ad kullanılamaz ya da başka bir ekran görüntüsü zaten bu adı taşıyor.</translation>
     </message>
@@ -11818,6 +11823,21 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <location line="+1"/>
         <source>Press F2 in game; they will show up here.</source>
         <translation>Oyunda F2&apos;ye bas; burada görünürler.</translation>
+    </message>
+    <message>
+        <location line="-110"/>
+        <source>Set as cover</source>
+        <translation>Kapak yap</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Remove cover</source>
+        <translation>Kapağı kaldır</translation>
+    </message>
+    <message>
+        <location line="+57"/>
+        <source>Cover</source>
+        <translation>Kapak</translation>
     </message>
 </context>
 <context>
@@ -13347,7 +13367,7 @@ Currently installed version: %1</source>
         <translation>Kenar çubuğunu daralt</translation>
     </message>
     <message>
-        <location line="+290"/>
+        <location line="+301"/>
         <source>New instance</source>
         <translation>Yeni kurulum</translation>
     </message>

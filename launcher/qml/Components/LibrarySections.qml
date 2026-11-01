@@ -160,6 +160,7 @@ Item {
                 onDragActiveChanged: (active) => root.dragging = active
                 onDragMoved: (sceneY) => root.dragSceneY = sceneY
                 onSelectRequested: (id) => root.selectRequested(id)
+                onOpenRequested: (id) => root.editRequested(id)
                 onLaunchRequested: (id) => root.launchRequested(id)
                 onStopRequested: (id) => root.stopRequested(id)
                 onMenuRequested: (id, running, name, iconKey, group, anchor) => instanceMenu.openFor(id, running, name, iconKey, group, anchor)
@@ -177,6 +178,7 @@ Item {
             selectedId: root.selectedId
             viewMode: root.viewMode
             onSelectRequested: (id) => root.selectRequested(id)
+            onOpenRequested: (id) => root.editRequested(id)
             onLaunchRequested: (id) => root.launchRequested(id)
             onStopRequested: (id) => root.stopRequested(id)
             onMenuRequested: (id, running, name, iconKey, group, anchor) => instanceMenu.openFor(id, running, name, iconKey, group, anchor)

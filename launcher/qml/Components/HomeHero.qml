@@ -38,25 +38,40 @@ Item {
     property string gameVersion: ""
     property string loader: ""
     property string coverImage: ""
+    property string coverKind: ""
     property string packArt: ""
     property bool hasCrashed: false
     property string launchStatus: ""
     property real launchProgress: -1
 
+    // The instance picked on Home and the one Home shows without a pick (the last played); they differ while a pick
+    // is on.
+    property string selectedId: ""
+    property string lastPlayedId: ""
+
     property real columnX: 0
     property real columnWidth: width
 
+    // The icon as drawn, averaged: the gradient behind a hero without a cover.
+    readonly property color iconColor: Icons.tint(root.iconKey, root.instanceId)
     readonly property bool hasInstance: root.instanceId.length > 0
     readonly property bool launching: root.launchStatus.length > 0
     readonly property bool hasBackdrop: root.coverImage.length > 0
+    readonly property bool hasTint: root.iconColor.valid && root.iconColor.a > 0
+    readonly property bool isSelection: root.selectedId.length > 0 && root.instanceId !== root.lastPlayedId
     readonly property string playTimeText: SettingsStore.bool("ShowGameTime") && Number(root.totalTimePlayed) > 0
                                            ? Format.playTime(root.totalTimePlayed) : ""
-    // Decoded this small and stretched back up (CoverArt photoSoftness): the colours stay, text on the screenshot
-    // blurs away.
-    readonly property real backdropSoftness: 0.02
-
     readonly property real gapBelow: view.item ? view.item.gapBelow : 0
     readonly property real playCenterY: view.item ? view.item.playCenterY : 0
+
+    // The views feed their taps here. The hero already shows this instance, so one tap does nothing: two open its page,
+    // three launch it.
+    function tap() { taps.tap() }
+    TapSequence {
+        id: taps
+        onTwice: root.openRequested(root.instanceId)
+        onThrice: if (root.canLaunch && !root.isRunning) root.launchRequested(root.instanceId)
+    }
 
     visible: root.hasInstance
     implicitHeight: view.item ? view.item.implicitHeight : 0
@@ -76,6 +91,7 @@ Item {
             required property string gameVersion
             required property string loader
             required property string coverImage
+            required property string coverKind
             required property var packArt
             required property bool hasCrashed
             required property string launchStatus
@@ -95,6 +111,7 @@ Item {
                 root.gameVersion = probe.gameVersion
                 root.loader = probe.loader
                 root.coverImage = probe.coverImage
+                root.coverKind = probe.coverKind
                 root.packArt = probe.packArt || ""
                 root.hasCrashed = probe.hasCrashed
                 root.launchStatus = probe.launchStatus
@@ -102,7 +119,8 @@ Item {
             }
             readonly property string signature: [index, instanceId, name, iconKey, isRunning, canLaunch,
                                                  lastLaunch, totalTimePlayed, gameVersion, loader, coverImage,
-                                                 packArt, hasCrashed, launchStatus, launchProgress].join("\n")
+                                                 coverKind, packArt, hasCrashed, launchStatus,
+                                                 launchProgress].join("\n")
             onSignatureChanged: sync()
             Component.onCompleted: sync()
             Component.onDestruction: if (probe.index === 0 && root.instanceId === probe.instanceId) root.instanceId = ""

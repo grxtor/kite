@@ -91,6 +91,8 @@ class ScreenshotListModel : public QAbstractListModel
 	 * otherwise the current extension is added back. */
 	static QString renamedFileName(const QString& currentName,
 								   const QString& input);
+	/* Whether @p fileName has a png/jpg/jpeg extension (any case). */
+	static bool isImageFile(const QString& fileName);
 
   signals:
 	void directoryChanged();
@@ -115,7 +117,6 @@ class ScreenshotListModel : public QAbstractListModel
 	};
 
 	static QList<Entry> listEntries(const QString& directory);
-	static bool isImageFile(const QString& fileName);
 
 	// Coalesces a burst of directoryChanged() signals into one refresh.
 	static constexpr int kRefreshDebounceMs = 150;

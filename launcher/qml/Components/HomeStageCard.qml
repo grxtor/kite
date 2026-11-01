@@ -6,7 +6,7 @@ import Kite.Theme
 
 /*
  * One "Continue playing" card of the Sahne look: 156 px tall, on the raised surface or over the instance's
- * screenshot under a dark fade. "Crashed last time" (only then) and play time at the top, as plain text with no
+ * cover under a dark fade (a wash of its icon's colour without one). "Crashed last time" (only then) and play time at the top, as plain text with no
  * chip; name and "Fabric 26.3 • 4 days ago" at the bottom; a 40 px Play appears under the pointer.
  */
 HomeRowBase {
@@ -17,6 +17,8 @@ HomeRowBase {
     readonly property int sidePadding: Theme.space.lg
     readonly property int playSize: Theme.control.height
     readonly property bool hasPhoto: root.row.coverImage.length > 0
+    readonly property color tint: Icons.tint(root.row.iconKey, root.row.instanceId)
+    readonly property bool hasTint: root.tint.valid && root.tint.a > 0
     readonly property color ink: root.hasPhoto ? Theme.media.text : Theme.palette.textPrimary
     readonly property color inkSecondary: root.hasPhoto ? Theme.media.textSecondary : Theme.palette.textSecondary
     readonly property string playTimeText: SettingsStore.bool("ShowGameTime") && Number(root.row.totalTimePlayed) > 0
@@ -63,15 +65,18 @@ HomeRowBase {
         anchors.fill: parent
         card: true
         hovered: root.hovered
+        active: root.selected
         radius: Theme.radius.lg
     }
 
     CoverArt {
         anchors.fill: parent
-        visible: root.hasPhoto
+        visible: root.hasPhoto || root.hasTint
         source: root.row.coverImage
+        kind: root.row.coverKind
+        tint: root.tint
         radius: Theme.radius.lg
-        scrim: "bottom"
+        scrim: root.hasPhoto ? "bottom" : "none"
         showLogo: false
         hovered: root.hovered
         matte: Theme.palette.canvas
@@ -81,8 +86,8 @@ HomeRowBase {
         anchors.fill: parent
         radius: Theme.radius.lg
         color: "transparent"
-        border.width: root.hovered ? 1 : 0
-        border.color: Theme.media.glassEdge
+        border.width: root.hovered || root.selected ? 1 : 0
+        border.color: root.selected ? Theme.palette.accent : Theme.media.glassEdge
     }
 
     Item {

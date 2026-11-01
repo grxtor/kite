@@ -8,7 +8,8 @@ import Kite.Theme
 /*
  * One "Continue playing" row of the Gece look: a 76 px glass pane on the night sky (HomeGlass), a 44 px tile
  * (HomeRowTile), the name, one line of what it runs, when and how long, and a bare Play glyph that fills with the
- * accent while hovered. Clicking opens the instance page; a right-click or the menu key opens the instance menu.
+ * accent while hovered. Clicks work as on every Home row (HomeRowBase); a right-click or the menu key opens the
+ * instance menu.
  */
 HomeRowBase {
     id: root
@@ -23,7 +24,7 @@ HomeRowBase {
     HomeGlass {
         id: pane
         anchors.fill: parent
-        lit: root.hovered
+        lit: root.hovered || root.selected
     }
 
     RowLayout {

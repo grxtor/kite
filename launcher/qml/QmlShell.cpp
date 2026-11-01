@@ -635,6 +635,22 @@ void QmlShell::setInstanceIcon(const QString& id, const QString& iconKey)
 	instance->setIconKey(iconKey);
 }
 
+bool QmlShell::setInstanceCover(const QString& instanceId,
+								const QString& pathOrFileUrl)
+{
+	return LAUNCHER->instances()->setCover(instanceId, pathOrFileUrl);
+}
+
+void QmlShell::clearInstanceCover(const QString& instanceId)
+{
+	LAUNCHER->instances()->clearCover(instanceId);
+}
+
+QColor QmlShell::iconColor(const QString& key) const
+{
+	return LAUNCHER->instances()->iconColor(key);
+}
+
 void QmlShell::debugMarkInstanceCrashed(const QString& id)
 {
 	auto instance = LAUNCHER->instances()->getInstanceById(id);
@@ -1366,6 +1382,11 @@ bool QmlShell::load()
 			emit iconRevisionChanged();
 		});
 	});
+	connect(LAUNCHER->instances().get(), &InstanceList::iconColorsChanged, this,
+			[this]() {
+				++m_iconColorRevision;
+				emit iconColorRevisionChanged();
+			});
 	// The auto icons follow the library: rows in or out, or an icon key
 	// change (reported as Qt::DecorationRole).
 	auto* instanceList = LAUNCHER->instances().get();

@@ -109,6 +109,12 @@ class BaseInstance : public QObject,
 	QString iconKey() const;
 	void setIconKey(QString val);
 
+	/* File name of the screenshot, in the instance's screenshots folder, that
+	 * the user picked as its cover, or empty. Whether the file still exists is
+	 * the reader's check. */
+	QString coverImage() const;
+	void setCoverImage(const QString& path);
+
 	QString notes() const;
 	void setNotes(QString val);
 

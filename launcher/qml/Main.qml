@@ -647,7 +647,9 @@ ApplicationWindow {
                    : root.page === "friends" ? "" : "home"
         currentInstanceId: root.page === "instance" ? root.openedInstanceId : ""
         recentModel: root.recentModel
+        pickOnTap: root.page === "home"
         onItemActivated: (id) => root.page = id
+        onRecentSelectRequested: (id) => root.selectedId = id
         onRecentActivated: (id) => root.openInstance(id)
         onRecentPlayRequested: (id) => root.launch(id)
         onNewInstanceRequested: root.openNewInstance()

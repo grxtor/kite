@@ -126,6 +126,7 @@ qt_add_qml_module(Kite_qml_components
         HomeWorldList.qml
         InstanceArt.qml
         InstanceSurface.qml
+        TapSequence.qml
         JavaInstallList.qml
         JavaInstallRow.qml
         LogMatches.qml

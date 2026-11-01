@@ -5,20 +5,22 @@ import QtQuick
 import Kite.Theme
 
 /*
- * What every "Continue playing" row of the Sahne, Sade and Gece looks does the same: hover, click opens the
- * instance page, right-click the menu, keyboard (Return opens, Space plays or stops, menu key opens the menu),
- * focus ring. `host` is HomeContinuePlaying. Children go in over the tap handlers, so a Play inside one gets first
- * refusal on a press.
+ * What every "Continue playing" row of the Sahne, Sade and Gece looks does the same: hover, clicks (the host tells one,
+ * two and three apart: select, open, launch), right-click the menu, keyboard (Space selects, Return opens, menu key
+ * opens the menu), focus ring. `host` is HomeContinuePlaying. Children go in over the tap handlers, so a Play inside
+ * one gets first refusal on a press.
  */
 Item {
     id: root
 
     required property var row
-    // HomeContinuePlaying: openRequested, launchRequested, stopRequested and menuRequested are its signals.
+    // HomeContinuePlaying: tap(), selectRequested, openRequested, launchRequested, stopRequested and menuRequested
+    // are its; selectedId is the pick.
     required property Item host
     property int cornerRadius: Theme.radius.lg
     readonly property bool hovered: hoverHandler.hovered
     readonly property bool running: root.row.isRunning
+    readonly property bool selected: root.host.selectedId === root.row.instanceId
     readonly property bool playable: root.row.isRunning || root.row.canLaunch
 
     function open() { root.host.openRequested(root.row.instanceId) }
@@ -34,23 +36,25 @@ Item {
 
     activeFocusOnTab: true
     Keys.onReturnPressed: root.open()
-    Keys.onSpacePressed: root.togglePlay()
+    Keys.onSpacePressed: root.host.selectRequested(root.row.instanceId)
     Keys.onMenuPressed: root.openMenu(null)
 
     Accessible.role: Accessible.ListItem
     Accessible.name: root.row.name
     Accessible.description: Format.versionLine(root.row.loader, root.row.gameVersion)
+    Accessible.selectable: true
+    Accessible.selected: root.selected
 
     HoverHandler { id: hoverHandler }
     TapHandler {
         acceptedButtons: Qt.LeftButton
         gesturePolicy: TapHandler.ReleaseWithinBounds
-        onTapped: { root.forceActiveFocus(); root.open() }
+        onTapped: root.host.tap(root.row.instanceId)
     }
     TapHandler {
         acceptedButtons: Qt.RightButton
         gesturePolicy: TapHandler.ReleaseWithinBounds
-        onTapped: { root.forceActiveFocus(); root.openMenu(null) }
+        onTapped: root.openMenu(null)
     }
 
     FocusFrame { cornerRadius: root.cornerRadius; z: 1; visible: root.activeFocus }

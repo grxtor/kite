@@ -48,6 +48,8 @@ BaseInstance::BaseInstance(SettingsObjectPtr globalSettings,
 
 	m_settings->registerSetting("name", "Unnamed Instance");
 	m_settings->registerSetting("iconKey", "default");
+	// File name of the screenshot (in screenshots/) picked as home-page cover; empty = none.
+	m_settings->registerSetting("CoverImage", "");
 	m_settings->registerSetting("notes", "");
 	m_settings->registerSetting("lastLaunchTime", 0);
 	m_settings->registerSetting("totalTimePlayed", 0);
@@ -446,6 +448,20 @@ void BaseInstance::setIconKey(QString val)
 QString BaseInstance::iconKey() const
 {
 	return m_settings->get("iconKey").toString();
+}
+
+QString BaseInstance::coverImage() const
+{
+	return m_settings->get("CoverImage").toString();
+}
+
+void BaseInstance::setCoverImage(const QString& path)
+{
+	if (coverImage() == path) {
+		return;
+	}
+	m_settings->set("CoverImage", path);
+	emit propertiesChanged(this);
 }
 
 void BaseInstance::setName(QString val)

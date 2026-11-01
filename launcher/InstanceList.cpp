@@ -37,6 +37,7 @@
 #include <QUuid>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QJsonObject>
 #include <QJsonParseError>
 #include <QtConcurrentRun>
 #include <algorithm>
@@ -53,6 +54,8 @@
 #include "WatchLock.h"
 #include "core/LauncherContext.h"
 #include "icons/IconList.h"
+#include "net/HttpMetaCache.h"
+#include "screenshots/ScreenshotListModel.h"
 #include "launch/LaunchProgressTracker.h"
 #include "launch/LaunchTask.h"
 
@@ -207,6 +210,19 @@ QModelIndex InstanceList::index(int row, int column,
 	return createIndex(row, column, (void*)m_instances.at(row).get());
 }
 
+namespace
+{
+// The picked cover as a full path; only the file name is stored, so a copy
+// of the instance resolves it inside its own screenshots folder.
+QString coverFilePath(const BaseInstance* inst)
+{
+	const QString name = QFileInfo(inst->coverImage()).fileName();
+	return name.isEmpty()
+			   ? QString()
+			   : FS::PathCombine(inst->gameRoot(), "screenshots", name);
+}
+} // namespace
+
 QVariant InstanceList::data(const QModelIndex& index, int role) const
 {
 	if (!index.isValid()) {
@@ -272,20 +288,27 @@ QVariant InstanceList::data(const QModelIndex& index, int role) const
 			auto* tracker = m_launchTrackers.value(pdata, nullptr);
 			return tracker ? tracker->progress() : -1.0;
 		}
-		case CoverImageRole: {
+		case CoverImageRole:
+		case CoverKindRole: {
 			const InstanceId id = pdata->id();
-			auto it = m_coverImageCache.constFind(id);
-			if (it != m_coverImageCache.constEnd()) {
-				return it.value();
+			const QString customPath = coverFilePath(pdata);
+			const QString version = pdata->gameVersion();
+			CoverEntry entry;
+			auto it = m_coverCache.constFind(id);
+			if (it != m_coverCache.constEnd()) {
+				entry = it.value();
 			}
-			/* Not cached yet: start a background scan and answer with nothing;
-			 * the row picks up the value when the scan's dataChanged arrives.
-			 * data() is const, hence the const_cast: scheduling mutates
-			 * m_coverImageScansPending and connects a QFutureWatcher, which a
-			 * `mutable` member alone does not fit. */
-			const_cast<InstanceList*>(this)->scheduleCoverImageScan(
-				id, FS::PathCombine(pdata->gameRoot(), "screenshots"));
-			return QString();
+			if (it == m_coverCache.constEnd() ||
+				entry.customPath != customPath || entry.version != version) {
+				/* Missing or made for other values: look up in the background
+				 * and answer with the old entry (or nothing) meanwhile; the
+				 * row picks up the result with its dataChanged. data() is
+				 * const, hence the const_cast: scheduling mutates
+				 * m_coverScansPending and connects a QFutureWatcher. */
+				const_cast<InstanceList*>(this)->scheduleCoverScan(
+					id, customPath, version);
+			}
+			return role == CoverImageRole ? entry.info.url : entry.info.kind;
 		}
 		case HasCrashedRole: {
 			return pdata->hasCrashed();
@@ -325,6 +348,7 @@ QHash<int, QByteArray> InstanceList::roleNames() const
 	roles.insert(LaunchStatusRole, "launchStatus");
 	roles.insert(LaunchProgressRole, "launchProgress");
 	roles.insert(CoverImageRole, "coverImage");
+	roles.insert(CoverKindRole, "coverKind");
 	roles.insert(HasCrashedRole, "hasCrashed");
 	roles.insert(PackArtRole, "packArt");
 	return roles;
@@ -767,9 +791,9 @@ InstanceList::InstListError InstanceList::loadList()
 			// Otherwise these per-id caches would grow for as long as the
 			// launcher runs, bounded only by every instance ever seen.
 			const InstanceId removedId = instPtr->id();
-			m_coverImageCache.remove(removedId);
-			m_coverImageScansPending.remove(removedId);
-			m_coverImageGeneration.remove(removedId);
+			m_coverCache.remove(removedId);
+			m_coverScansPending.remove(removedId);
+			m_coverGeneration.remove(removedId);
 			currentItem = removedItem.second;
 			if (back_bookmark == -1) {
 				back_bookmark = currentItem;
@@ -848,119 +872,325 @@ void InstanceList::emitIsRunningChanged(BaseInstance* inst)
 		return;
 	}
 	QList<int> roles{IsRunningRole};
-	// The instance just stopped: a play session is when new screenshots
-	// appear, so a cached cover may be stale. Dropped, not refreshed, since
-	// CoverImageRole's data() refills it lazily.
+	// The instance just stopped: the game has by now fetched the version
+	// metadata and assets that a "no cover" answer was missing, and may have
+	// changed the screenshots. Looked up again with the old answers kept until
+	// the new ones arrive.
 	if (!inst->isRunning()) {
 		const InstanceId id = inst->id();
-		/* Bumped even if nothing was cached: a scan in flight for this id
-		 * started before the session ended and is just as stale;
-		 * scheduleCoverImageScan()'s completion handler uses this to discard
-		 * it. */
-		++m_coverImageGeneration[id];
-		if (m_coverImageCache.remove(id) > 0) {
-			roles.append(CoverImageRole);
+		/* Bumped even if nothing was cached: a lookup in flight for this id
+		 * started before the session ended and may have missed them;
+		 * scheduleCoverScan()'s completion handler uses this to discard it. */
+		++m_coverGeneration[id];
+		QList<InstanceId> again;
+		for (auto it = m_coverCache.constBegin();
+			 it != m_coverCache.constEnd(); ++it) {
+			if (it.key() == id || it->info.url.isEmpty()) {
+				again.append(it.key());
+			}
+		}
+		for (const InstanceId& other : again) {
+			if (InstancePtr found = getInstanceById(other)) {
+				scheduleCoverScan(other, coverFilePath(found.get()),
+								  found->gameVersion());
+			}
 		}
 	}
 	emit dataChanged(index(i), index(i), roles);
 }
 
-void InstanceList::scheduleCoverImageScan(const InstanceId& id,
-										  const QString& screenshotsDir)
+InstanceList::CoverDirs InstanceList::activeCoverDirs() const
 {
-	if (m_coverImageScansPending.contains(id)) {
+	if (m_coverDirsSet) {
+		return m_coverDirs;
+	}
+	auto* context = LauncherContext::instance();
+	if (!context) {
+		return {};
+	}
+	auto metacache = context->metacache();
+	if (!metacache) {
+		return {};
+	}
+	return {metacache->getBasePath(QStringLiteral("meta")),
+			metacache->getBasePath(QStringLiteral("asset_indexes")),
+			metacache->getBasePath(QStringLiteral("asset_objects"))};
+}
+
+void InstanceList::setCoverDirs(const CoverDirs& dirs)
+{
+	m_coverDirs = dirs;
+	m_coverDirsSet = true;
+	m_coverCache.clear();
+	m_panoramaCache.clear();
+}
+
+namespace
+{
+struct CoverScanResult {
+	InstanceList::CoverInfo info;
+	QString panorama;
+};
+} // namespace
+
+void InstanceList::scheduleCoverScan(const InstanceId& id,
+									 const QString& customPath,
+									 const QString& version)
+{
+	if (m_coverScansPending.contains(id)) {
 		return;
 	}
-	m_coverImageScansPending.insert(id);
-	const int generation = m_coverImageGeneration.value(id, 0);
+	m_coverScansPending.insert(id);
+	const int generation = m_coverGeneration.value(id, 0);
+	const CoverDirs dirs = activeCoverDirs();
+	const int face = panoramaFaceFor(id);
+	const QString panoramaKey = QStringLiteral("%1#%2").arg(version).arg(face);
+	const QString knownPanorama = m_panoramaCache.value(panoramaKey);
 
-	auto* watcher = new QFutureWatcher<QString>(this);
-	connect(watcher, &QFutureWatcher<QString>::finished, this,
-			[this, id, generation, watcher]() {
-				const QString url = watcher->result();
+	auto* watcher = new QFutureWatcher<CoverScanResult>(this);
+	connect(watcher, &QFutureWatcher<CoverScanResult>::finished, this,
+			[this, id, generation, customPath, version, panoramaKey, watcher]() {
+				const CoverScanResult result = watcher->result();
 				watcher->deleteLater();
-				m_coverImageScansPending.remove(id);
+				m_coverScansPending.remove(id);
 
-				if (m_coverImageGeneration.value(id, 0) != generation) {
-					/* The instance stopped while this scan was in flight, so
-					 * it saw a screenshots folder from before; not cached as
-					 * current, a fresh scan replaces it. */
-					if (InstancePtr inst = getInstanceById(id)) {
-						scheduleCoverImageScan(
-							id,
-							FS::PathCombine(inst->gameRoot(), "screenshots"));
-					}
-					return;
-				}
-
-				m_coverImageCache.insert(id, url);
 				InstancePtr inst = getInstanceById(id);
 				if (!inst) {
 					// The instance is gone by now; nothing left to update.
 					return;
 				}
+				if (!result.panorama.isEmpty()) {
+					m_panoramaCache.insert(panoramaKey, result.panorama);
+				}
+				if (m_coverGeneration.value(id, 0) != generation) {
+					/* The instance stopped while this lookup was in flight, so
+					 * it saw the disk from before; a fresh one replaces it. */
+					scheduleCoverScan(id, coverFilePath(inst.get()),
+									  inst->gameVersion());
+					return;
+				}
+
+				m_coverCache.insert(id, {customPath, version, result.info});
 				const int row = getInstIndex(inst.get());
 				if (row != -1) {
 					emit dataChanged(index(row), index(row),
-									 {CoverImageRole});
+									 {CoverImageRole, CoverKindRole});
 				}
 			});
-	watcher->setFuture(QtConcurrent::run(QThreadPool::globalInstance(),
-										 &InstanceList::newestScreenshotUrl,
-										 screenshotsDir));
+	watcher->setFuture(QtConcurrent::run(
+		QThreadPool::globalInstance(),
+		[dirs, customPath, version, face, knownPanorama]() {
+			CoverScanResult result;
+			result.panorama = knownPanorama;
+			if (result.panorama.isEmpty() ||
+				!QFileInfo::exists(result.panorama)) {
+				result.panorama = panoramaPath(dirs, version, face);
+			}
+			result.info = pickCover(customPath, result.panorama);
+			return result;
+		}));
 }
 
-QString InstanceList::newestScreenshotUrl(const QString& screenshotsDir)
+int InstanceList::panoramaFaceFor(const InstanceId& id)
 {
-	if (screenshotsDir.isEmpty()) {
+	// qHash(QString) is seeded per run; a checksum is the same every time.
+	return qChecksum(id.toUtf8()) % kPanoramaFaces;
+}
+
+QString InstanceList::panoramaPath(const CoverDirs& dirs,
+								   const QString& mcVersion, int face)
+{
+	// The version names a file below meta/; keep it from leaving that folder.
+	if (mcVersion.isEmpty() || mcVersion.contains(QLatin1Char('/')) ||
+		mcVersion.contains(QLatin1Char('\\')) ||
+		mcVersion.contains(QLatin1String(".."))) {
 		return QString();
 	}
-	QDir dir(screenshotsDir);
-	if (!dir.exists()) {
+	if (dirs.meta.isEmpty() || dirs.assetIndexes.isEmpty() ||
+		dirs.assetObjects.isEmpty()) {
 		return QString();
 	}
 
-	// Same three extensions as ScreenshotListModel::isImageFile(), checked
-	// case-insensitively: QDir name filters are case-sensitive on some
-	// platforms only, so this list would otherwise disagree with the
-	// Screenshots tab on some machines.
-	static const QStringList kExtensions = {
-		QStringLiteral("png"),
-		QStringLiteral("jpg"),
-		QStringLiteral("jpeg"),
+	auto readObject = [](const QString& path) {
+		QFile file(path);
+		if (!file.open(QIODevice::ReadOnly)) {
+			return QJsonObject();
+		}
+		return QJsonDocument::fromJson(file.readAll()).object();
 	};
 
-	QString newestPath;
-	QString newestName;
-	QDateTime newestModified;
-	const QFileInfoList files =
-		dir.entryInfoList(QDir::Files | QDir::Readable, QDir::NoSort);
-	for (const QFileInfo& info : files) {
-		bool isImage = false;
-		for (const QString& ext : kExtensions) {
-			if (info.suffix().compare(ext, Qt::CaseInsensitive) == 0) {
-				isImage = true;
-				break;
-			}
-		}
-		if (!isImage) {
-			continue;
-		}
-
-		const QDateTime modified = info.lastModified();
-		// Newest-modified first, file name as tiebreak, as in
-		// ScreenshotListModel::listEntries(), so it agrees with the
-		// Screenshots tab's top entry.
-		if (newestPath.isEmpty() || modified > newestModified ||
-			(modified == newestModified && info.fileName() > newestName)) {
-			newestPath = info.absoluteFilePath();
-			newestName = info.fileName();
-			newestModified = modified;
-		}
+	const QJsonObject meta = readObject(FS::PathCombine(
+		dirs.meta, QStringLiteral("net.minecraft"), mcVersion + ".json"));
+	const QString indexId =
+		meta.value(QStringLiteral("assetIndex")).toObject().value("id").toString();
+	if (indexId.isEmpty() || indexId.contains(QLatin1Char('/')) ||
+		indexId.contains(QLatin1Char('\\')) ||
+		indexId.contains(QLatin1String(".."))) {
+		return QString();
 	}
 
-	return newestPath.isEmpty() ? QString()
-								 : QUrl::fromLocalFile(newestPath).toString();
+	// The client jar carries a 1x1 placeholder under these names; only the
+	// asset objects are the real pictures.
+	const QJsonObject index =
+		readObject(FS::PathCombine(dirs.assetIndexes, indexId + ".json"));
+	const QJsonObject objects = index.value(QStringLiteral("objects")).toObject();
+	QString hash;
+	for (const int candidate : {face, 0}) {
+		hash = objects
+				   .value(QStringLiteral(
+							  "minecraft/textures/gui/title/background/"
+							  "panorama_%1.png")
+							  .arg(candidate))
+				   .toObject()
+				   .value(QStringLiteral("hash"))
+				   .toString();
+		if (hash.size() >= 2) {
+			break;
+		}
+	}
+	if (hash.size() < 2) {
+		return QString();
+	}
+
+	const QString object =
+		FS::PathCombine(dirs.assetObjects, hash.left(2), hash);
+	return QFileInfo(object).isFile() ? object : QString();
+}
+
+InstanceList::CoverInfo InstanceList::pickCover(const QString& customPath,
+												const QString& panoramaPath)
+{
+	if (!customPath.isEmpty() && QFileInfo(customPath).isFile()) {
+		return {QUrl::fromLocalFile(customPath).toString(),
+				QStringLiteral("custom")};
+	}
+	if (!panoramaPath.isEmpty()) {
+		return {QUrl::fromLocalFile(panoramaPath).toString(),
+				QStringLiteral("panorama")};
+	}
+	return {};
+}
+
+bool InstanceList::setCover(const QString& id, const QString& pathOrFileUrl)
+{
+	InstancePtr inst = getInstanceById(id);
+	if (!inst) {
+		return false;
+	}
+	const QUrl url(pathOrFileUrl);
+	const QString path =
+		url.isLocalFile() ? url.toLocalFile() : pathOrFileUrl;
+	const QFileInfo info(path);
+	if (!info.isFile() ||
+		!ScreenshotListModel::isImageFile(info.fileName())) {
+		return false;
+	}
+	const QString shots = QFileInfo(FS::PathCombine(inst->gameRoot(),
+													"screenshots"))
+							  .canonicalFilePath();
+	if (shots.isEmpty() ||
+		QFileInfo(info.absolutePath()).canonicalFilePath() != shots) {
+		return false;
+	}
+	inst->setCoverImage(info.fileName());
+	return true;
+}
+
+void InstanceList::clearCover(const QString& id)
+{
+	if (InstancePtr inst = getInstanceById(id)) {
+		inst->setCoverImage(QString());
+	}
+}
+
+QColor InstanceList::averageIconColor(const QImage& source)
+{
+	const QImage image = source.convertToFormat(QImage::Format_ARGB32);
+	double red = 0, green = 0, blue = 0, total = 0;
+	for (int y = 0; y < image.height(); ++y) {
+		const auto* line =
+			reinterpret_cast<const QRgb*>(image.constScanLine(y));
+		for (int x = 0; x < image.width(); ++x) {
+			const QColor pixel = QColor::fromRgba(line[x]);
+			const double weight =
+				pixel.alphaF() * (0.25 + qMax(0.0f, pixel.hsvSaturationF()));
+			red += pixel.redF() * weight;
+			green += pixel.greenF() * weight;
+			blue += pixel.blueF() * weight;
+			total += weight;
+		}
+	}
+	return total > 0 ? QColor::fromRgbF(red / total, green / total, blue / total)
+					 : QColor();
+}
+
+QColor InstanceList::iconColor(const QString& key) const
+{
+	auto it = m_iconColorCache.constFind(key);
+	if (it != m_iconColorCache.constEnd()) {
+		return it.value();
+	}
+	const_cast<InstanceList*>(this)->scheduleIconColor(key);
+	return QColor();
+}
+
+void InstanceList::scheduleIconColor(const QString& key)
+{
+	if (m_iconColorPending.contains(key)) {
+		return;
+	}
+	m_iconColorPending.insert(key);
+
+	auto* context = LauncherContext::instance();
+	std::shared_ptr<IconList> icons = context ? context->icons() : nullptr;
+	if (icons && !m_iconUpdatesWatched) {
+		m_iconUpdatesWatched = true;
+		connect(icons.get(), &IconList::iconUpdated, this,
+				&InstanceList::onIconUpdated);
+	}
+
+	// Queued, not run inside data(): rasterising the QIcon needs the GUI
+	// thread, only the averaging moves to the worker.
+	QMetaObject::invokeMethod(
+		this,
+		[this, key, icons]() {
+			const int generation = m_iconColorGeneration.value(key, 0);
+			QImage image;
+			if (icons) {
+				image = icons->getIcon(key)
+							.pixmap(QSize(32, 32))
+							.toImage();
+			}
+			auto* watcher = new QFutureWatcher<QColor>(this);
+			connect(watcher, &QFutureWatcher<QColor>::finished, this,
+					[this, key, generation, watcher]() {
+						const QColor color = watcher->result();
+						watcher->deleteLater();
+						m_iconColorPending.remove(key);
+						if (m_iconColorGeneration.value(key, 0) != generation) {
+							// The icon changed meanwhile; averaged again,
+							// the colour shown until then stays.
+							scheduleIconColor(key);
+							return;
+						}
+						m_iconColorCache.insert(key, color);
+						emit iconColorsChanged();
+					});
+			watcher->setFuture(QtConcurrent::run(
+				QThreadPool::globalInstance(),
+				[image]() { return averageIconColor(image); }));
+		},
+		Qt::QueuedConnection);
+}
+
+void InstanceList::onIconUpdated(const QString& key)
+{
+	++m_iconColorGeneration[key];
+	// Only a colour somebody asked for is kept fresh; the old one stays until
+	// the new one arrives.
+	if (m_iconColorCache.contains(key)) {
+		scheduleIconColor(key);
+	}
 }
 
 void InstanceList::providerUpdated()

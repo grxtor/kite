@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <QColor>
 #include <QHash>
 #include <QObject>
 #include <QPointer>
@@ -145,6 +146,8 @@ class QmlShell : public QObject
 	 * image://instanceicon/<key> by URL, so Icons.instanceIcon() appends this
 	 * as `?rev=`. */
 	Q_PROPERTY(int iconRevision READ iconRevision NOTIFY iconRevisionChanged)
+	/// Bumps when an icon colour asked for with iconColor() arrived or changed.
+	Q_PROPERTY(int iconColorRevision READ iconColorRevision NOTIFY iconColorRevisionChanged)
 	/// Instance id -> built-in icon given while its own is the generic one
 	/// (the UiAutoIcons setting).
 	Q_PROPERTY(QVariantMap autoIcons READ autoIcons NOTIFY autoIconsChanged)
@@ -370,6 +373,15 @@ class QmlShell : public QObject
 									  const QString& group);
 	Q_INVOKABLE void setInstanceIcon(const QString& id,
 									 const QString& iconKey);
+	/* Makes a screenshot (path or file URL) the instance's cover on Home.
+	 * False for an unknown instance or a file that is no existing image. */
+	Q_INVOKABLE bool setInstanceCover(const QString& instanceId,
+									  const QString& pathOrFileUrl);
+	/* Back to the version's panorama. */
+	Q_INVOKABLE void clearInstanceCover(const QString& instanceId);
+	/* The average colour of instance icon @p key for the cover-less gradient;
+	 * invalid until it is averaged (iconColorRevision then bumps). */
+	Q_INVOKABLE QColor iconColor(const QString& key) const;
 	/* Copies saves and keeps playtime, with the source's icon. Returns a
 	 * C++-owned TaskWatcher, or null if @p id names no instance or @p newName
 	 * trims to nothing. */
@@ -399,6 +411,7 @@ class QmlShell : public QObject
 
 	QStringList setupSteps() const;
 	int iconRevision() const { return m_iconRevision; }
+	int iconColorRevision() const { return m_iconColorRevision; }
 	QVariantMap autoIcons() const { return m_autoIcons; }
 	/// Recomputes setupSteps() from live settings once QML finishes a step.
 	Q_INVOKABLE void finishSetupStep(const QString& id);
@@ -440,6 +453,7 @@ class QmlShell : public QObject
 
 	void groupsChanged();
 	void iconRevisionChanged();
+	void iconColorRevisionChanged();
 	void autoIconsChanged();
 
 	void setupStepsChanged();
@@ -513,6 +527,7 @@ class QmlShell : public QObject
 	 * arrived, so every bound Image reloads once. */
 	int m_iconRevision = 0;
 	bool m_iconRevisionPending = false;
+	int m_iconColorRevision = 0;
 	/* Recomputed once per event-loop turn after the instance list gains or
 	 * loses rows or an icon key changes. */
 	void refreshAutoIcons();

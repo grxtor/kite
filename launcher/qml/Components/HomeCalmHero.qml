@@ -7,8 +7,8 @@ import Kite.Theme
 
 /*
  * The hero of the Sade look: no card. A 96 px tile in the kite's cut, the name at 36 px with the line of icons under
- * it, and Play with ▾ at the far edge, all on the page, over a faint glow of the instance's newest screenshot (none
- * without one). A view of the HomeHero it belongs to.
+ * it, and Play with ▾ at the far edge, all on the page, over a faint glow of the instance's cover (the colour of its
+ * icon without one). A view of the HomeHero it belongs to.
  */
 Item {
     id: root
@@ -20,6 +20,8 @@ Item {
     readonly property int glowHeight: 330
     readonly property real glowOpacity: 0.32
     readonly property real glowFadeFrom: 0.3
+    // Decoded this small and stretched back up: a glow of the cover's colours, not a picture.
+    readonly property real glowSoftness: 0.04
     readonly property int gap: Theme.space.xl
     readonly property int actionsHeight: 52
     readonly property int playWidth: 128
@@ -36,14 +38,16 @@ Item {
         anchors.right: parent.right
         anchors.top: parent.top
         height: root.glowHeight
-        visible: root.hero.hasBackdrop
+        visible: root.hero.hasBackdrop || root.hero.hasTint
         clip: true
 
         CoverArt {
             anchors.fill: parent
             opacity: root.glowOpacity
             source: root.hero.coverImage
-            photoSoftness: root.hero.backdropSoftness
+            kind: root.hero.coverKind
+            tint: root.hero.iconColor
+            photoSoftness: root.glowSoftness
             glyph: ""
             showLogo: false
             radius: 0
@@ -59,7 +63,7 @@ Item {
 
     TapHandler {
         gesturePolicy: TapHandler.ReleaseWithinBounds
-        onTapped: root.hero.openRequested(root.hero.instanceId)
+        onTapped: root.hero.tap()
     }
 
     RowLayout {

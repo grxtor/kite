@@ -69,6 +69,10 @@ Item {
     function duplicateInstance(id) { sections.duplicateInstance(id) }
     function focusSearch() { toolbar.focusSearch() }
 
+    // What the hero shows with nothing picked: the last played instance, else the first.
+    readonly property string defaultHeroId: root.recentModel && root.recentModel.firstId ? root.recentModel.firstId
+        : root.instanceModel && root.instanceModel.firstId ? root.instanceModel.firstId : ""
+
     readonly property var newsEntries: side.newsEntries
     readonly property var featuredNews: side.featuredNews
     readonly property bool hasNews: side.hasNews
@@ -146,6 +150,8 @@ Item {
             rowModel: root.heroModel ? root.heroModel : root.recentModel
             launchOptionsFor: root.launchOptionsFor
             worldsModel: root.recentWorldsModel
+            selectedId: root.selectedId
+            lastPlayedId: root.defaultHeroId
             onWorldsRequested: (id) => root.openInstanceWorldsRequested(id)
             onOpenRequested: (id) => root.openInstanceRequested(id)
             onLaunchRequested: (id) => root.launchRequested(id)
@@ -168,8 +174,11 @@ Item {
                 width: parent.width
                 recentModel: root.recentModel
                 instanceModel: root.instanceModel
-                excludeId: hero.instanceId
+                // Not the hero's own: picking a row must not move the rows under the pointer.
+                excludeId: root.defaultHeroId
+                selectedId: root.selectedId
                 frozen: root.searching
+                onSelectRequested: (id) => root.selectRequested(id)
                 onOpenRequested: (id) => root.openInstanceRequested(id)
                 onLaunchRequested: (id) => root.launchRequested(id)
                 onStopRequested: (id) => root.stopRequested(id)

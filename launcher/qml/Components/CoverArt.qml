@@ -6,15 +6,20 @@ import QtQuick
 import Kite.Theme
 
 /*
- * Art behind one instance: its newest screenshot, else a platform pack's logo (`packArt`) as a soft wash, else a
- * plain PlaceholderSurface. Never a stand-in scene. Rectangle's `clip` only clips to the bounding box and Qt < 6.5
- * cannot mask an Image, so the photo fills the item square and a ring in `matte` (the colour behind this item)
- * paints over the four corners.
+ * Art behind one instance: its cover (`source`), else a platform pack's logo (`packArt`) as a soft wash, else a soft
+ * gradient from the icon's colour (`tint`), else a plain PlaceholderSurface. Never a stand-in scene. Each place sets
+ * how sharp a photo is (`photoSoftness`), whether it is a chosen screenshot or the version's title screen (`kind`).
+ * Rectangle's `clip` only clips to the bounding box and Qt < 6.5 cannot mask an Image, so the photo fills the item
+ * square and a ring in `matte` (the colour behind this item) paints over the four corners.
  */
 Item {
     id: root
 
     property url source: ""
+    // InstanceList's coverKind: "custom", "panorama" or "".
+    property string kind: "custom"
+    // The icon's colour (Icons.tint); the gradient shows when there is no photo and no pack art.
+    property color tint: "transparent"
     property url packArt: ""
     // A host that already shows the logo beside the name turns it off.
     property bool showLogo: true
@@ -30,6 +35,9 @@ Item {
     property color matte: Theme.palette.canvas
 
     readonly property bool hasPhoto: root.source.toString().length > 0
+    readonly property bool panorama: root.kind === "panorama"
+    readonly property bool hasTint: root.tint.valid && root.tint.a > 0
+    readonly property bool showsTint: !root.hasPhoto && !root.hasPackArt && root.hasTint
     readonly property bool hasPackArt: !root.hasPhoto && root.packArt.toString().length > 0
                                        && packLogo.status !== Image.Error
     readonly property int washDecode: 6
@@ -37,11 +45,16 @@ Item {
     readonly property real aspect: root.height > 0 ? root.width / root.height : 1
     readonly property bool cardShaped: root.aspect <= 3
     readonly property int glyphMinHeight: 72
+    // The panorama is 1024 px square: no point decoding past it.
+    readonly property int panoramaPixels: 1024
+    readonly property real tintStrongAlpha: Theme.dark ? 0.42 : 0.30
+    readonly property real tintSoftAlpha: Theme.dark ? 0.12 : 0.08
     clip: true
 
     PlaceholderSurface {
         id: backdrop
         anchors.fill: parent
+        visible: !root.showsTint
         border.width: 0
 
         MeshIcon {
@@ -51,6 +64,24 @@ Item {
             iconName: root.glyph
             size: Theme.icon.xl
             color: Theme.palette.textTertiary
+        }
+    }
+
+    // Blended onto the surface, so a dark look gets a deep colour and a light one a pastel.
+    Rectangle {
+        id: tintWash
+        anchors.fill: parent
+        visible: root.showsTint
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: Qt.tint(Theme.palette.surface, Qt.rgba(root.tint.r, root.tint.g, root.tint.b, root.tintStrongAlpha)) }
+            GradientStop { position: 1.0; color: Qt.tint(Theme.palette.surface, Qt.rgba(root.tint.r, root.tint.g, root.tint.b, root.tintSoftAlpha)) }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            visible: root.hovered
+            color: Theme.palette.hoverOverlay
         }
     }
 
@@ -65,8 +96,12 @@ Item {
         mipmap: true
         asynchronous: true
         cache: true
-        // Capped at 2x: sharp on a retina display without decoding a screenshot at full resolution.
-        sourceSize: Qt.size(Math.max(8, width * 2 * root.photoSoftness), Math.max(8, height * 2 * root.photoSoftness))
+        // Capped at 2x: sharp on a retina display without decoding a screenshot at full resolution. A panorama is
+        // square and cropped to the item, so it decodes square at the longer side.
+        sourceSize: root.panorama
+                    ? Qt.size(Math.min(root.panoramaPixels, Math.max(8, Math.max(width, height) * 2 * root.photoSoftness)),
+                              Math.min(root.panoramaPixels, Math.max(8, Math.max(width, height) * 2 * root.photoSoftness)))
+                    : Qt.size(Math.max(8, width * 2 * root.photoSoftness), Math.max(8, height * 2 * root.photoSoftness))
         scale: root.hovered ? 1.04 : 1.0
         transformOrigin: Item.Center
 

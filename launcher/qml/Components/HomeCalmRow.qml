@@ -31,6 +31,7 @@ HomeRowBase {
         anchors.rightMargin: -root.bleed
         radius: Theme.radius.md
         hovered: root.hovered
+        active: root.selected
     }
     Rectangle {
         anchors.left: parent.left
@@ -40,7 +41,7 @@ HomeRowBase {
         anchors.rightMargin: -root.bleed
         height: 1
         color: Theme.palette.divider
-        visible: root.showDivider && !root.hovered
+        visible: root.showDivider && !root.hovered && !root.selected
     }
 
     RowLayout {

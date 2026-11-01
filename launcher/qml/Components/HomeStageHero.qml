@@ -5,9 +5,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The hero of the Sahne look: a full-bleed stage across the top of the page. The newest screenshot, softened, sits
- * under a scrim dark on the words' side and a fade into the page; the next section starts `overlap` px up inside
- * that fade. A view of the HomeHero.
+ * The hero of the Sahne look: a full-bleed stage across the top of the page. The cover (a chosen screenshot or the
+ * version's title screen; else a wash of the icon's colour) sits under a scrim dark on the words' side and a fade into
+ * the page; the next section starts `overlap` px up inside that fade. A view of the HomeHero.
  */
 Item {
     id: root
@@ -23,7 +23,6 @@ Item {
     // Below this width the worlds panel would crowd the name.
     readonly property int worldsMinWidth: 900
     readonly property bool showsWorlds: root.width >= root.worldsMinWidth && worlds.hasWorlds
-    readonly property real softness: 0.012
     readonly property color canvas: Theme.palette.canvas
     readonly property color canvasClear: Qt.rgba(canvas.r, canvas.g, canvas.b, 0)
 
@@ -34,7 +33,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        visible: !root.hero.hasBackdrop
+        visible: !root.hero.hasBackdrop && !root.hero.hasTint
         gradient: Gradient {
             GradientStop { position: 0.0; color: Theme.palette.surface }
             GradientStop { position: 1.0; color: root.canvas }
@@ -43,13 +42,14 @@ Item {
 
     CoverArt {
         anchors.fill: parent
-        visible: root.hero.hasBackdrop
+        visible: root.hero.hasBackdrop || root.hero.hasTint
         source: root.hero.coverImage
-        photoSoftness: root.softness
+        kind: root.hero.coverKind
+        tint: root.hero.iconColor
         glyph: ""
         showLogo: false
         radius: 0
-        scrim: "horizontal"
+        scrim: root.hero.hasBackdrop ? "horizontal" : "none"
         matte: root.canvas
     }
 
@@ -66,7 +66,7 @@ Item {
 
     TapHandler {
         gesturePolicy: TapHandler.ReleaseWithinBounds
-        onTapped: root.hero.openRequested(root.hero.instanceId)
+        onTapped: root.hero.tap()
     }
 
     HomeHeroLead {

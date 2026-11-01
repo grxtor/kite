@@ -10,7 +10,8 @@ import Kite.Theme
 /*
  * One "Continue playing" row on Home: icon square, name with a plain "New" tag until first played, what it runs and
  * when it was last played, play time, Play and ⋯. Used through a wrapper against recentModel, with the roles
- * InstanceCard reads. After a crash the sub-line says "Crashed last time" in place of when.
+ * InstanceCard reads. A click is `tapped` (the host tells one, two and three apart: select, open, launch); Space selects
+ * and Return opens. After a crash the sub-line says "Crashed last time" in place of when.
  */
 Item {
     id: root
@@ -25,12 +26,16 @@ Item {
     required property string gameVersion
     required property string loader
     required property color iconTint
-    // Newest screenshot url, or "". Not shown in the row; kept so the row takes the same roles as the library card.
+    // The cover's url, or "". Not shown in the row; kept so the row takes the same roles as the library card.
     required property string coverImage
     property string packArt: ""
     required property bool hasCrashed
 
-    signal clicked()
+    property bool selected: false
+
+    signal tapped()
+    signal selectRequested()
+    signal openRequested()
     signal playRequested()
     signal stopRequested()
     // @p anchor: the ⋯ button, or null for a right-click (the menu then opens at the pointer).
@@ -54,13 +59,15 @@ Item {
     implicitHeight: root.rowHeight
 
     activeFocusOnTab: true
-    Keys.onReturnPressed: root.clicked()
-    Keys.onSpacePressed: root.isRunning ? root.stopRequested() : root.playRequested()
+    Keys.onReturnPressed: root.openRequested()
+    Keys.onSpacePressed: root.selectRequested()
     Keys.onMenuPressed: root.menuRequested(null)
 
     Accessible.role: Accessible.ListItem
     Accessible.name: root.name
     Accessible.description: root.versionText
+    Accessible.selectable: true
+    Accessible.selected: root.selected
 
     HoverHandler { id: hoverHandler }
 
@@ -69,9 +76,10 @@ Item {
         anchors.fill: parent
         card: true
         hovered: root.hovered
+        active: root.selected
         radius: Theme.radius.lg
         border.width: 1
-        border.color: root.hovered ? Theme.neutral.borderHover : Theme.palette.border
+        border.color: root.hovered || root.selected ? Theme.neutral.borderHover : Theme.palette.border
         Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
         Shadow {
@@ -85,12 +93,12 @@ Item {
         TapHandler {
             acceptedButtons: Qt.LeftButton
             gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: { root.forceActiveFocus(); root.clicked() }
+            onTapped: root.tapped()
         }
         TapHandler {
             acceptedButtons: Qt.RightButton
             gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: { root.forceActiveFocus(); root.menuRequested(null) }
+            onTapped: root.menuRequested(null)
         }
 
         RowLayout {

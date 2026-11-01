@@ -15,8 +15,11 @@ Column {
     property var recentModel: null
     property var instanceModel: null
     property string excludeId: ""
+    // The instance picked on Home; its row is marked.
+    property string selectedId: ""
     property bool frozen: false
 
+    signal selectRequested(string id)
     signal openRequested(string id)
     signal launchRequested(string id)
     signal stopRequested(string id)
@@ -59,7 +62,8 @@ Column {
             isRunning: source.isRunning, canLaunch: source.canLaunch, lastLaunch: source.lastLaunch,
             totalTimePlayed: source.totalTimePlayed, gameVersion: source.gameVersion,
             loader: source.loader, iconTint: source.iconTint, packArt: source.packArt || "",
-            coverImage: source.coverImage || "", hasCrashed: source.hasCrashed
+            coverImage: source.coverImage || "", coverKind: source.coverKind || "",
+            hasCrashed: source.hasCrashed
         }
     }
     // One more than shown, so the hero's own row can drop out.
@@ -92,10 +96,11 @@ Column {
         required property var iconTint
         required property var packArt
         required property string coverImage
+        required property string coverKind
         required property bool hasCrashed
         readonly property string signature: [instanceId, name, iconKey, isRunning, canLaunch, lastLaunch,
                                              totalTimePlayed, gameVersion, loader, packArt, coverImage,
-                                             hasCrashed].join("\n")
+                                             coverKind, hasCrashed].join("\n")
     }
     Instantiator {
         id: playedReader
@@ -114,6 +119,28 @@ Column {
         }
         onObjectAdded: Qt.callLater(root.readFresh)
         onObjectRemoved: Qt.callLater(root.readFresh)
+    }
+
+    // One tap sequence for every row, not one per delegate: the rows are rebuilt whenever the data of any of them
+    // changes, which would reset a sequence under way. The first tap picks, two open, three launch.
+    property string tappedId: ""
+    function tap(id) {
+        if (id !== root.tappedId)
+            taps.finish()
+        root.tappedId = id
+        taps.tap()
+    }
+    TapSequence {
+        id: taps
+        onSingle: root.selectRequested(root.tappedId)
+        onTwice: root.openRequested(root.tappedId)
+        onThrice: {
+            for (var i = 0; i < root.rows.length; ++i) {
+                var row = root.rows[i]
+                if (row.instanceId === root.tappedId && row.canLaunch && !row.isRunning)
+                    root.launchRequested(row.instanceId)
+            }
+        }
     }
 
     visible: root.rows.length > 0
@@ -156,7 +183,10 @@ Column {
             coverImage: ""
             packArt: modelData.packArt
             hasCrashed: modelData.hasCrashed
-            onClicked: root.openRequested(row.instanceId)
+            selected: root.selectedId === row.instanceId
+            onTapped: root.tap(row.instanceId)
+            onSelectRequested: root.selectRequested(row.instanceId)
+            onOpenRequested: root.openRequested(row.instanceId)
             onPlayRequested: root.launchRequested(row.instanceId)
             onStopRequested: root.stopRequested(row.instanceId)
             onMenuRequested: (anchor) => root.menuRequested(row.instanceId, row.isRunning, row.name, row.iconKey, anchor)

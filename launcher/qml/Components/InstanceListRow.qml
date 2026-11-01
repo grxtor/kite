@@ -33,6 +33,7 @@ Item {
     property bool selected: false
 
     signal clicked()
+    signal openRequested()
     signal playRequested()
     signal stopRequested()
     // @p anchor: the ⋯ button when that asked, so the menu opens under it;
@@ -54,11 +55,13 @@ Item {
     implicitHeight: squareSize + Theme.space.md * 2
 
     activeFocusOnTab: true
-    Keys.onReturnPressed: root.playRequested()
+    Keys.onReturnPressed: root.openRequested()
     Keys.onSpacePressed: root.clicked()
     Keys.onMenuPressed: root.menuRequested(null)
 
     Accessible.role: Accessible.ListItem
+    Accessible.selectable: true
+    Accessible.selected: root.selected
     Accessible.name: root.name
     Accessible.description: [root.launching ? root.launchStatus : root.isRunning ? qsTr("Running") : "",
                              Format.versionLine(root.loader, root.gameVersion)]
@@ -73,7 +76,8 @@ Item {
         selected: root.selected
         focused: root.activeFocus
         onClicked: { root.forceActiveFocus(); root.clicked() }
-        onDoubleClicked: root.playRequested()
+        onDoubleClicked: root.openRequested()
+        onTripleClicked: if (root.canLaunch && !root.isRunning) root.playRequested()
         onContextRequested: { root.forceActiveFocus(); root.clicked(); root.menuRequested(null) }
 
         RowLayout {

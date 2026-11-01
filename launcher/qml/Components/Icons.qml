@@ -45,4 +45,15 @@ QtObject {
         var given = LauncherStore.icons.autoIcons
         return given && given[instanceId] ? given[instanceId] : key
     }
+
+    // The average colour of the icon drawn for an instance (displayKey), for the gradient behind a cover-less card;
+    // invalid until averaged.
+    function tint(key, instanceId) {
+        var shell = LauncherStore.icons
+        if (!shell)
+            return Qt.rgba(0, 0, 0, 0)
+        shell.iconColorRevision // an averaged colour asks again
+        var drawn = displayKey(key, instanceId)
+        return shell.iconColor(drawn && drawn.length > 0 ? drawn : "default")
+    }
 }

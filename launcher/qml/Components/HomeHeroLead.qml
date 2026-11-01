@@ -6,9 +6,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * What the Sahne and Gece heroes say and do, stacked: a "Last played" eyebrow, the name (stepping down to fit),
- * the line of icons, then Play and ▾ as glass. The looks differ only in where they put this column, what they lay
- * it over, its ink and the glow under Play.
+ * What the Sahne and Gece heroes say and do, stacked: a "Last played" (or "Selected") eyebrow, the name (stepping
+ * down to fit), the line of icons, then Play and ▾ as glass. The looks differ only in where they put this column,
+ * what they lay it over, its ink and the glow under Play.
  */
 ColumnLayout {
     id: root
@@ -36,7 +36,7 @@ ColumnLayout {
     HomeLabel {
         Layout.fillWidth: true
         Layout.preferredHeight: implicitHeight - root.eyebrowTrim
-        text: qsTr("Last played")
+        text: root.hero.isSelection ? qsTr("Selected") : qsTr("Last played")
         tracking: root.eyebrowTracking
         color: root.eyebrowInk
     }

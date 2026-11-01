@@ -20,7 +20,9 @@
 
 #include <QDateTime>
 #include <QDir>
+#include <QImage>
 #include <QFile>
+#include <QSet>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
@@ -52,70 +54,156 @@ bool writeFile(const QString& path, const QByteArray& contents,
 	file.close();
 	return timeSet;
 }
+
+InstanceList::CoverDirs coverDirsIn(const QString& root)
+{
+	return {QDir(root).filePath("meta"),
+			QDir(root).filePath("assets/indexes"),
+			QDir(root).filePath("assets/objects")};
+}
+
+/* A version metadata file naming asset index @p indexId, the index naming a
+ * hash for each panorama face in @p faces (face 0: @p hash itself, face n:
+ * @p hash followed by n), and the objects. Returns the face 0 object path. */
+QString writePanorama(const InstanceList::CoverDirs& dirs,
+					  const QString& version, const QString& indexId,
+					  const QString& hash, const QList<int>& faces = {0})
+{
+	const QDateTime now = QDateTime::currentDateTime();
+	QDir().mkpath(QDir(dirs.meta).filePath("net.minecraft"));
+	QDir().mkpath(dirs.assetIndexes);
+	const QString objectDir = QDir(dirs.assetObjects).filePath(hash.left(2));
+	QDir().mkpath(objectDir);
+
+	QByteArray objects;
+	for (const int face : faces) {
+		const QString faceHash =
+			face == 0 ? hash : hash + QString::number(face);
+		if (!objects.isEmpty()) {
+			objects += ", ";
+		}
+		objects += "\"minecraft/textures/gui/title/background/panorama_" +
+				   QByteArray::number(face) + ".png\": {\"hash\": \"" +
+				   faceHash.toUtf8() + "\"}";
+		writeFile(QDir(objectDir).filePath(faceHash), "png", now);
+	}
+	writeFile(QDir(dirs.meta).filePath("net.minecraft/" + version + ".json"),
+			  "{\"assetIndex\": {\"id\": \"" + indexId.toUtf8() + "\"}}", now);
+	writeFile(QDir(dirs.assetIndexes).filePath(indexId + ".json"),
+			  "{\"objects\": {" + objects + "}}", now);
+	return QDir(objectDir).filePath(hash);
+}
 } // namespace
 
-/* The first tests call InstanceList::newestScreenshotUrl() directly, without a
- * full InstanceList. HasCrashedRole and CoverImageRole's async scan/cache need
- * a real row, so those tests build a minimal InstanceList + NullInstance
- * fixture and wait out the scan with QTRY_COMPARE. */
+/* The cover tests build a data directory with a fake version metadata file,
+ * asset index and asset object; the role tests use a minimal InstanceList +
+ * NullInstance fixture and wait out the background lookup with QTRY_COMPARE.
+ * A NullInstance has no Minecraft version, so the panorama step is checked on
+ * panoramaPath()/pickCover() directly. */
 class InstanceListTest : public QObject
 {
 	Q_OBJECT
   private slots:
 
-	void picksNewestModifiedImage()
+	void panoramaPathFollowsMetaIndexAndObject()
 	{
-		QTemporaryDir tempDir;
-		QVERIFY(tempDir.isValid());
-		const QString dir = tempDir.path();
+		QTemporaryDir data;
+		QVERIFY(data.isValid());
+		const InstanceList::CoverDirs dirs = coverDirsIn(data.path());
+		const QString object = writePanorama(dirs, "1.21.1", "17", "ab12cd");
 
-		const QDateTime base = QDateTime::currentDateTime();
-		QVERIFY(writeFile(QDir(dir).filePath("older.png"), "a",
-						   base.addSecs(-60)));
-		const QString newerPath = QDir(dir).filePath("newer.jpg");
-		QVERIFY(writeFile(newerPath, "bb", base));
-
-		QCOMPARE(InstanceList::newestScreenshotUrl(dir),
-				 QUrl::fromLocalFile(QFileInfo(newerPath).absoluteFilePath())
-					 .toString());
+		QCOMPARE(InstanceList::panoramaPath(dirs, "1.21.1"), object);
+		// Another version has no metadata file.
+		QCOMPARE(InstanceList::panoramaPath(dirs, "1.20.1"), QString());
+		QCOMPARE(InstanceList::panoramaPath(dirs, QString()), QString());
+		QCOMPARE(InstanceList::panoramaPath({}, "1.21.1"), QString());
 	}
 
-	void ignoresNonImageFiles()
+	void panoramaPathPicksTheFaceAndFallsBackToTheFirst()
 	{
-		QTemporaryDir tempDir;
-		QVERIFY(tempDir.isValid());
-		const QString dir = tempDir.path();
+		QTemporaryDir data;
+		QVERIFY(data.isValid());
+		const InstanceList::CoverDirs dirs = coverDirsIn(data.path());
+		const QString first =
+			writePanorama(dirs, "1.21.1", "17", "ab12cd", {0, 2});
 
-		QVERIFY(writeFile(QDir(dir).filePath("notes.txt"), "c",
-						   QDateTime::currentDateTime()));
-
-		QCOMPARE(InstanceList::newestScreenshotUrl(dir), QString());
+		QCOMPARE(InstanceList::panoramaPath(dirs, "1.21.1", 0), first);
+		QCOMPARE(InstanceList::panoramaPath(dirs, "1.21.1", 2),
+				 first + QStringLiteral("2"));
+		// Face 3 is not in the index: the first one stands in.
+		QCOMPARE(InstanceList::panoramaPath(dirs, "1.21.1", 3), first);
 	}
 
-	void matchesExtensionsCaseInsensitively()
+	void panoramaFaceIsStablePerInstanceAndSpread()
 	{
-		QTemporaryDir tempDir;
-		QVERIFY(tempDir.isValid());
-		const QString dir = tempDir.path();
-
-		const QString path = QDir(dir).filePath("shot.JPEG");
-		QVERIFY(writeFile(path, "x", QDateTime::currentDateTime()));
-
-		QCOMPARE(
-			InstanceList::newestScreenshotUrl(dir),
-			QUrl::fromLocalFile(QFileInfo(path).absoluteFilePath()).toString());
+		QSet<int> seen;
+		for (const QString id : {"survival", "creative", "skyblock", "pvp",
+								 "modded", "test", "new", "old"}) {
+			const int face = InstanceList::panoramaFaceFor(id);
+			QVERIFY(face >= 0 && face < InstanceList::kPanoramaFaces);
+			QCOMPARE(InstanceList::panoramaFaceFor(id), face);
+			seen.insert(face);
+		}
+		QVERIFY(seen.size() > 1);
 	}
 
-	void emptyForMissingOrEmptyDirectory()
+	void panoramaPathNeedsTheObjectOnDisk()
 	{
-		QCOMPARE(InstanceList::newestScreenshotUrl(QString()), QString());
+		QTemporaryDir data;
+		QVERIFY(data.isValid());
+		const InstanceList::CoverDirs dirs = coverDirsIn(data.path());
+		const QString object = writePanorama(dirs, "1.21.1", "17", "ab12cd");
+		QVERIFY(QFile::remove(object));
 
-		QTemporaryDir tempDir;
-		QVERIFY(tempDir.isValid());
-		QCOMPARE(InstanceList::newestScreenshotUrl(
-					 QDir(tempDir.path()).filePath("does-not-exist")),
+		QCOMPARE(InstanceList::panoramaPath(dirs, "1.21.1"), QString());
+	}
+
+	void panoramaPathRefusesAVersionThatLeavesTheMetaFolder()
+	{
+		QTemporaryDir data;
+		QVERIFY(data.isValid());
+		const InstanceList::CoverDirs dirs = coverDirsIn(data.path());
+		writePanorama(dirs, "1.21.1", "17", "ab12cd");
+
+		QCOMPARE(InstanceList::panoramaPath(dirs, "../net.minecraft/1.21.1"),
 				 QString());
-		QCOMPARE(InstanceList::newestScreenshotUrl(tempDir.path()), QString());
+	}
+
+	void pickCoverPrefersCustomThenPanoramaThenNothing()
+	{
+		QTemporaryDir dir;
+		QVERIFY(dir.isValid());
+		const QString custom = QDir(dir.path()).filePath("shot.png");
+		const QString panorama = QDir(dir.path()).filePath("pano");
+		QVERIFY(writeFile(custom, "x", QDateTime::currentDateTime()));
+		QVERIFY(writeFile(panorama, "y", QDateTime::currentDateTime()));
+
+		auto both = InstanceList::pickCover(custom, panorama);
+		QCOMPARE(both.kind, QStringLiteral("custom"));
+		QCOMPARE(both.url, QUrl::fromLocalFile(custom).toString());
+
+		auto onlyPanorama = InstanceList::pickCover(QString(), panorama);
+		QCOMPARE(onlyPanorama.kind, QStringLiteral("panorama"));
+		QCOMPARE(onlyPanorama.url, QUrl::fromLocalFile(panorama).toString());
+
+		// A picked screenshot that was deleted falls through.
+		const QString gone = QDir(dir.path()).filePath("gone.png");
+		QCOMPARE(InstanceList::pickCover(gone, panorama).kind,
+				 QStringLiteral("panorama"));
+		auto none = InstanceList::pickCover(gone, QString());
+		QCOMPARE(none.kind, QString());
+		QCOMPARE(none.url, QString());
+	}
+
+	void averageIconColorWeighsVisiblePixels()
+	{
+		QImage image(4, 4, QImage::Format_ARGB32);
+		image.fill(QColor(0, 0, 255));
+		QCOMPARE(InstanceList::averageIconColor(image), QColor(0, 0, 255));
+
+		image.fill(Qt::transparent);
+		QVERIFY(!InstanceList::averageIconColor(image).isValid());
+		QVERIFY(!InstanceList::averageIconColor(QImage()).isValid());
 	}
 
 	void hasCrashedRoleReflectsInstanceState()
@@ -193,7 +281,7 @@ class InstanceListTest : public QObject
 				 QStringLiteral("https://cdn.example.org/icon.png"));
 	}
 
-	void coverImageRoleScansAsynchronouslyAndCachesResult()
+	void coverRolesFollowThePickedScreenshot()
 	{
 		QTemporaryDir globalDir;
 		QVERIFY(globalDir.isValid());
@@ -202,8 +290,7 @@ class InstanceListTest : public QObject
 		SettingsObjectPtr globalSettings = makeGlobalSettings(globalDir);
 
 		/* Canonicalized: InstanceList canonicalizes every instance root
-		 * (resolving e.g. macOS's /var -> /private/var), so expectedUrl built
-		 * from the raw QTemporaryDir path would never match. */
+		 * (resolving e.g. macOS's /var -> /private/var). */
 		const QString instsRoot =
 			QFileInfo(instsDir.path()).canonicalFilePath();
 		const QString instRoot = QDir(instsRoot).filePath("testinst");
@@ -211,32 +298,75 @@ class InstanceListTest : public QObject
 		QVERIFY(writeFile(QDir(instRoot).filePath("instance.cfg"),
 						   "InstanceType=NullTest\n",
 						   QDateTime::currentDateTime()));
-		const QString screenshotsDir =
-			QDir(instRoot).filePath("screenshots");
-		QVERIFY(QDir().mkpath(screenshotsDir));
-		const QString shotPath = QDir(screenshotsDir).filePath("shot.png");
+		QVERIFY(QDir().mkpath(QDir(instRoot).filePath("screenshots")));
+		const QString shotPath =
+			QDir(instRoot).filePath("screenshots/shot.png");
 		QVERIFY(writeFile(shotPath, "x", QDateTime::currentDateTime()));
-		const QString expectedUrl =
-			QUrl::fromLocalFile(QFileInfo(shotPath).absoluteFilePath())
-				.toString();
+		const QString elsewhere = QDir(instRoot).filePath("elsewhere.png");
+		QVERIFY(writeFile(elsewhere, "x", QDateTime::currentDateTime()));
+		const QString notImage =
+			QDir(instRoot).filePath("screenshots/notes.txt");
+		QVERIFY(writeFile(notImage, "x", QDateTime::currentDateTime()));
+		const QString expectedUrl = QUrl::fromLocalFile(shotPath).toString();
 
 		InstanceList list(globalSettings, {instsDir.path()});
 		QCOMPARE(list.loadList(), InstanceList::NoError);
+		list.setCoverDirs({});
 		const QModelIndex idx = list.getInstanceIndexById("testinst");
 		QVERIFY(idx.isValid());
+		QCOMPARE(list.roleNames().value(InstanceList::CoverImageRole),
+				 QByteArray("coverImage"));
+		QCOMPARE(list.roleNames().value(InstanceList::CoverKindRole),
+				 QByteArray("coverKind"));
 
-		// Nothing cached yet: data() must answer immediately (empty) rather
-		// than block on the scan.
+		// No screenshot is picked: no automatic cover, however many
+		// screenshots the folder holds.
+		QVERIFY(writeFile(QDir(instRoot).filePath("screenshots/newest.png"),
+						   "x", QDateTime::currentDateTime()));
 		QCOMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
 				 QString());
+		QTest::qWait(100);
 		QCOMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
 				 QString());
+		QCOMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
+				 QString());
+
+		// Only an existing image can be picked, by path or by file URL.
+		QVERIFY(!list.setCover("testinst", notImage));
+		QVERIFY(!list.setCover("testinst",
+							   QDir(instRoot).filePath("screenshots/no.png")));
+		// Outside the screenshots folder a copy of the instance could not
+		// find it again.
+		QVERIFY(!list.setCover("testinst", elsewhere));
+		QVERIFY(!list.setCover("nobody", shotPath));
+		QSignalSpy changed(&list, &InstanceList::dataChanged);
+		QVERIFY(list.setCover("testinst", QUrl::fromLocalFile(shotPath).toString()));
+		QVERIFY(!changed.isEmpty());
+		// Only the name is stored, not the home directory.
+		QCOMPARE(list.getInstanceById("testinst")->coverImage(),
+				 QStringLiteral("shot.png"));
 
 		QTRY_COMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
 					 expectedUrl);
+		QCOMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
+				 QStringLiteral("custom"));
+
+		// Picking another screenshot replaces the cover.
+		const QString otherPath =
+			QDir(instRoot).filePath("screenshots/newest.png");
+		QVERIFY(list.setCover("testinst", otherPath));
+		QTRY_COMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
+					 QUrl::fromLocalFile(otherPath).toString());
+
+		list.clearCover("testinst");
+		QVERIFY(list.getInstanceById("testinst")->coverImage().isEmpty());
+		QTRY_COMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
+					 QString());
+		QCOMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
+				 QString());
 	}
 
-	void coverImageRoleRescansAfterInstanceStops()
+	void coverFallsThroughWhenThePickedFileIsGone()
 	{
 		QTemporaryDir globalDir;
 		QVERIFY(globalDir.isValid());
@@ -248,40 +378,26 @@ class InstanceListTest : public QObject
 			QFileInfo(instsDir.path()).canonicalFilePath();
 		const QString instRoot = QDir(instsRoot).filePath("testinst");
 		QVERIFY(QDir().mkpath(instRoot));
+		const QString gone = QStringLiteral("deleted.png");
 		QVERIFY(writeFile(QDir(instRoot).filePath("instance.cfg"),
-						   "InstanceType=NullTest\n",
+						   ("InstanceType=NullTest\nCoverImage=" + gone +
+							"\n").toUtf8(),
 						   QDateTime::currentDateTime()));
-		const QString screenshotsDir =
-			QDir(instRoot).filePath("screenshots");
-		QVERIFY(QDir().mkpath(screenshotsDir));
-		const QString shotPath = QDir(screenshotsDir).filePath("shot.png");
-		QVERIFY(writeFile(shotPath, "x", QDateTime::currentDateTime()));
-		const QString expectedUrl =
-			QUrl::fromLocalFile(QFileInfo(shotPath).absoluteFilePath())
-				.toString();
 
 		InstanceList list(globalSettings, {instsDir.path()});
 		QCOMPARE(list.loadList(), InstanceList::NoError);
-		InstancePtr inst = list.getInstanceById("testinst");
-		QVERIFY(inst);
+		list.setCoverDirs({});
 		const QModelIndex idx = list.getInstanceIndexById("testinst");
 		QVERIFY(idx.isValid());
+		QCOMPARE(list.getInstanceById("testinst")->coverImage(), gone);
 
 		QCOMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
 				 QString());
-		QTRY_COMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
-					 expectedUrl);
-
-		// A play session ending is when a new screenshot tends to appear, so
-		// the cached cover is dropped immediately, not only when a fresh scan
-		// finishes.
-		inst->setRunning(true);
-		inst->setRunning(false);
+		QTest::qWait(100);
 		QCOMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
 				 QString());
-
-		QTRY_COMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
-					 expectedUrl);
+		QCOMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
+				 QString());
 	}
 };
 

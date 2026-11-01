@@ -26,7 +26,7 @@ Item {
 
     TapHandler {
         gesturePolicy: TapHandler.ReleaseWithinBounds
-        onTapped: root.hero.openRequested(root.hero.instanceId)
+        onTapped: root.hero.tap()
     }
 
     HomeHeroLead {

@@ -31,6 +31,7 @@ Column {
         : Math.min(width, Math.round(columns * cardWidth + (columns - 1) * gutter))
 
     signal selectRequested(string id)
+    signal openRequested(string id)
     signal launchRequested(string id)
     signal stopRequested(string id)
     signal menuRequested(string id, bool running, string name, string iconKey, string group, Item anchor)
@@ -314,6 +315,7 @@ Column {
                         iconKey: card.iconKey
                     }
                     onClicked: root.selectRequested(instanceId)
+                    onOpenRequested: root.openRequested(instanceId)
                     onPlayRequested: root.launchRequested(instanceId)
                     onStopRequested: root.stopRequested(instanceId)
                     onMenuRequested: (anchor) => {
@@ -347,6 +349,7 @@ Column {
                         iconKey: row.iconKey
                     }
                     onClicked: root.selectRequested(instanceId)
+                    onOpenRequested: root.openRequested(instanceId)
                     onPlayRequested: root.launchRequested(instanceId)
                     onStopRequested: root.stopRequested(instanceId)
                     onMenuRequested: (anchor) => {

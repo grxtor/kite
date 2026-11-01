@@ -23,7 +23,14 @@ Item {
     property var details: null
     readonly property var uploader: details ? details.screenshotUploader : null
     readonly property bool canUpload: !!uploader && uploader.available
+    // The chosen cover as a file url, "" when there is none.
+    property string coverUrl: ""
+    // The cover is always a file of this folder, so its name tells which one it is.
+    readonly property string coverName: root.coverUrl.length > 0
+                                        ? decodeURIComponent(root.coverUrl.slice(root.coverUrl.lastIndexOf("/") + 1)) : ""
     signal openFolderRequested(string path)
+    signal coverRequested(string path)
+    signal coverCleared()
 
     readonly property int minTileWidth: 240
     readonly property int gap: Theme.space.md
@@ -122,8 +129,11 @@ Item {
         rows.sort(function (a, b) { return b - a })
         var failed = 0
         for (var j = 0; j < rows.length; ++j) {
+            var wasCover = root.isCover(root.model.pathAt(rows[j]))
             if (!root.model.remove(rows[j]))
                 failed++
+            else if (wasCover)
+                root.coverCleared()
         }
         root.clearSelection()
         if (failed > 0)
@@ -135,6 +145,10 @@ Item {
             toast.show(qsTr("Image copied."), "success")
         else
             toast.show(qsTr("The image could not be copied."), "danger")
+    }
+
+    function isCover(path) {
+        return root.coverName.length > 0 && path.slice(path.lastIndexOf("/") + 1) === root.coverName
     }
 
     function baseName(name) {
@@ -237,6 +251,7 @@ Item {
                 height: grid.cellHeight
 
                 readonly property bool picked: root.isSelected(cell.path)
+                readonly property bool isCover: root.isCover(cell.path)
 
                 HoverHandler { id: hover }
                 TapHandler {
@@ -359,6 +374,13 @@ Item {
                             renamePrompt.open()
                         }
                     }
+                    MenuItem {
+                        // The Gece look shows no covers.
+                        visible: Theme.look !== "night"
+                        text: cell.isCover ? qsTr("Remove cover") : qsTr("Set as cover")
+                        icon.source: Icons.url("image")
+                        onTriggered: cell.isCover ? root.coverCleared() : root.coverRequested(cell.path)
+                    }
                     MenuEntry {
                         visible: root.canUpload
                         enabled: !!root.uploader && !root.uploader.busy
@@ -388,12 +410,35 @@ Item {
                     anchors.top: frame.bottom
                     anchors.topMargin: Theme.space.xs
                     x: frame.x
-                    width: frame.width
+                    width: frame.width - (coverMark.visible ? coverMark.width + Theme.space.sm : 0)
                     text: root.captionOf(cell.name)
                     elide: Text.ElideMiddle
                     role: "caption"
                     tone: "secondary"
                     font.weight: Font.Medium
+                }
+
+                Row {
+                    id: coverMark
+                    visible: cell.isCover
+                    anchors.top: frame.bottom
+                    anchors.topMargin: Theme.space.xs
+                    anchors.right: frame.right
+                    spacing: Theme.space.xxs
+
+                    MeshIcon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        iconName: "check"
+                        size: Theme.icon.xxs
+                        color: Theme.palette.accentText
+                    }
+                    Copy {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Cover")
+                        role: "caption"
+                        tone: "accent"
+                        font.weight: Font.Medium
+                    }
                 }
             }
         }
@@ -421,7 +466,10 @@ Item {
         confirmText: qsTr("Rename")
         onSubmitted: (text) => {
             var row = root.rowOf(path)
+            var wasCover = root.isCover(path)
             if (row >= 0 && root.model.rename(row, text)) {
+                if (wasCover)
+                    root.coverRequested(root.model.pathAt(row))
                 root.clearSelection()
                 close()
             } else {

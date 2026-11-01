@@ -36,6 +36,9 @@ Rectangle {
     // a short window.
     property var recentModel: null
     property int recentLimit: 5
+    // On Home a recent tile picks the instance for the hero (one click), opens its page (two) or launches it
+    // (three); elsewhere one click opens the page.
+    property bool pickOnTap: false
 
     property string accountName: ""
     property string accountKind: ""
@@ -74,6 +77,7 @@ Rectangle {
     readonly property int brandGap: Theme.space.md
 
     signal itemActivated(string id)
+    signal recentSelectRequested(string id)
     signal recentActivated(string id)
     signal recentPlayRequested(string id)
     signal newInstanceRequested()
@@ -291,7 +295,14 @@ Rectangle {
                 selected: root.selectedNavItem === recentDelegate
                 // The selection's fill under this tile, only in the labelled sidebar.
                 surround: selected && !root.railed ? Theme.palette.surfaceRaised : root.surround
-                onClicked: root.recentActivated(instanceId)
+                onClicked: root.pickOnTap ? taps.tap() : root.recentActivated(instanceId)
+                Keys.onReturnPressed: root.recentActivated(instanceId)
+                TapSequence {
+                    id: taps
+                    onSingle: root.recentSelectRequested(recentDelegate.instanceId)
+                    onTwice: root.recentActivated(recentDelegate.instanceId)
+                    onThrice: if (!recentDelegate.isRunning) root.recentPlayRequested(recentDelegate.instanceId)
+                }
                 onPlayRequested: root.recentPlayRequested(instanceId)
             }
         }

@@ -52,19 +52,23 @@ Item {
 
         TapHandler {
             gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: root.hero.openRequested(root.hero.instanceId)
+            onTapped: root.hero.tap()
         }
 
+        // Inside the hairline when there is no photo, so the card keeps its edge.
         CoverArt {
+            readonly property int edge: root.hero.hasBackdrop ? 0 : card.border.width
             anchors.fill: parent
-            visible: root.hero.hasBackdrop
+            anchors.margins: edge
+            visible: root.hero.hasBackdrop || root.hero.hasTint
             source: root.hero.coverImage
-            photoSoftness: root.hero.backdropSoftness
+            kind: root.hero.coverKind
+            tint: root.hero.iconColor
             glyph: ""
             showLogo: false
-            radius: card.radius
-            scrim: "horizontal"
-            matte: Theme.palette.canvas
+            radius: card.radius - edge
+            scrim: root.hero.hasBackdrop ? "horizontal" : "none"
+            matte: root.hero.hasBackdrop ? Theme.palette.canvas : card.color
         }
 
         RowLayout {
