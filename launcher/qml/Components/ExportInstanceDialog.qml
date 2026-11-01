@@ -9,25 +9,17 @@ import QtQuick.Dialogs
 import Kite.Theme
 
 /*
- * "Export…": one instance out as a file -- the instance folder as a plain
- * zip, or a Modrinth or CurseForge pack. The QML replacement for
- * ExportInstanceDialog and ExportPackDialog; the work is
- * InstanceExportController's (core), so both UIs write the same archive
- * and share the instance's `.packignore`.
- *
- * Open it with a controller set. It stays up while the archive is written,
- * showing how far along it is with a way to stop, and closes once the file
- * is there; `exported(message)` is the page's cue for a toast. A failure
- * keeps it open with the reason, so nothing has to be chosen again.
+ * "Export…": one instance out as a file, the instance folder as a plain zip or a Modrinth or CurseForge pack. The
+ * work is InstanceExportController's. Stays up with progress and a way to stop while the archive is written, and
+ * closes once the file is there (`exported(message)` cues a toast); a failure keeps it open with the reason.
  */
-Dialog {
+AppDialog {
     id: root
 
-    // InstanceExportController (QmlShell's exportController()).
+    // InstanceExportController.
     property var controller: null
     signal exported(string message)
 
-    // The running export's TaskWatcher, while there is one.
     property var watcher: null
     property bool stopping: false
     property string failure: ""
@@ -35,12 +27,9 @@ Dialog {
     readonly property string format: root.controller ? root.controller.format : "zip"
     readonly property bool pack: root.format !== "zip"
 
-    readonly property int dialogWidth: 640
     readonly property int dialogHeight: 700
     readonly property int treeMinHeight: 140
     readonly property int treeIndent: Theme.icon.md
-    // The style's checkbox is a full icon tall; a little air around it
-    // keeps a column of them from reading as one bar.
     readonly property int treeRowHeight: Theme.control.heightSm + Theme.space.xs
     readonly property int memoryFieldWidth: 168
     readonly property int memoryStepMiB: 512
@@ -64,31 +53,17 @@ Dialog {
         root.watcher = watcher
     }
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.dialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.dialogWidth)
+    size: "lg"
     height: Math.min(root.dialogHeight, parent ? parent.height - Theme.space.xxl * 2 : root.dialogHeight)
-    modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
-    topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
-    bottomPadding: Theme.space.sm
-    // Typing in a form is not something a stray click outside should
-    // throw away, and an export in progress only stops through its button.
+    // A stray click outside should not throw away typing, and an export in progress only stops through its button.
     closePolicy: root.exporting ? Popup.NoAutoClose : Popup.CloseOnEscape
     title: root.controller ? qsTr("Export “%1”").arg(root.controller.instanceName) : qsTr("Export")
-
-    header: DialogHeader {
-        title: root.title
-    }
 
     onOpened: {
         root.failure = ""
         root.stopping = false
         root.watcher = null
     }
-    // What was unchecked and typed is kept for next time, exported or not.
     onClosed: if (root.controller) root.controller.saveChoices()
 
     Connections {
@@ -129,20 +104,18 @@ Dialog {
                 onActivated: (id) => root.controller.format = id
             }
 
-            Text {
+            Copy {
                 Layout.fillWidth: true
+                role: "label"
+                tone: "secondary"
+                wrapMode: Text.Wrap
                 text: root.format === "modrinth"
                       ? qsTr("A Modrinth pack (.mrpack). Mods from Modrinth are linked for download, and everything else is packed in.")
                       : root.format === "curseforge"
                         ? qsTr("A CurseForge pack (.zip). Mods from CurseForge are linked for download, and everything else is packed in.")
                         : qsTr("The whole instance in one .zip file, ready to import into Kite or another launcher.")
-                wrapMode: Text.Wrap
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
 
-            // What the pack says about itself.
             GridLayout {
                 Layout.fillWidth: true
                 visible: root.pack
@@ -209,7 +182,6 @@ Dialog {
                 spacing: 0
 
                 CheckBox {
-                    // Box edge on the content edge, under the fields.
                     leftPadding: 0
                     text: qsTr("Mark disabled mods as optional")
                     checked: !!root.controller && root.controller.includeOptional
@@ -242,30 +214,24 @@ Dialog {
 
             RowLayout {
                 Layout.fillWidth: true
-                Text {
+                Copy {
                     Layout.fillWidth: true
                     text: qsTr("Files")
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.bodyStrong.pixelSize
-                    font.weight: Theme.type.bodyStrong.weight
+                    role: "bodyStrong"
                 }
-                Text {
+                Copy {
                     text: qsTr("Unchecked files are left out")
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
+                    role: "caption"
+                    tone: "tertiary"
                 }
             }
 
-            Rectangle {
+            BoxSurface {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.minimumHeight: root.treeMinHeight
                 radius: Theme.radius.sm
                 color: "transparent"
-                border.width: 1
-                border.color: Theme.palette.border
 
                 TreeView {
                     id: tree
@@ -293,16 +259,13 @@ Dialog {
 
                         HoverHandler { id: hover }
 
-                        Rectangle {
+                        StateFill {
                             anchors.fill: parent
                             radius: Theme.radius.sm
-                            color: hover.hovered ? Theme.palette.hoverOverlay : "transparent"
-                            Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
+                            hovered: hover.hovered
                         }
 
-                        // Under the row's content, so a click on the
-                        // checkbox stays the checkbox's; anywhere else on a
-                        // folder's row opens or closes it.
+                        // Under the row's content, so a click on the checkbox stays the checkbox's.
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: node.isDir ? Qt.PointingHandCursor : Qt.ArrowCursor
@@ -315,8 +278,6 @@ Dialog {
                             anchors.rightMargin: Theme.space.sm
                             spacing: Theme.space.xs
 
-                            // Folders only; a file keeps the space so names
-                            // line up.
                             MeshIcon {
                                 iconName: "chevron-right"
                                 size: Theme.icon.sm
@@ -328,15 +289,11 @@ Dialog {
                                 id: box
                                 padding: 0
                                 checkState: node.checkState
-                                // A partly checked folder becomes checked
-                                // as a whole, as in the widget tree.
                                 nextCheckState: function () {
                                     return node.checkState === Qt.Checked ? Qt.Unchecked : Qt.Checked
                                 }
-                                // The click set the box itself; the model
-                                // has the final say, and the binding comes
-                                // back so later changes (a parent folder
-                                // unchecked) still reach it.
+                                // The click set the box itself; the model has the final say, and the binding comes
+                                // back so later changes still reach it.
                                 onToggled: {
                                     node.model.checkState = box.checkState
                                     box.checkState = Qt.binding(() => node.checkState)
@@ -347,20 +304,16 @@ Dialog {
                                 size: Theme.icon.sm
                                 color: Theme.palette.textTertiary
                             }
-                            Text {
+                            Copy {
                                 Layout.fillWidth: true
                                 text: node.display
+                                tone: node.checkState === Qt.Unchecked ? "tertiary" : "primary"
                                 elide: Text.ElideRight
-                                color: node.checkState === Qt.Unchecked ? Theme.palette.textTertiary : Theme.palette.textPrimary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.body.pixelSize
                             }
                         }
                     }
                 }
 
-                // The last row fades out at the box's edge instead of being
-                // cut.
                 ScrollFade {
                     anchors.left: parent.left
                     anchors.right: parent.right
@@ -370,9 +323,8 @@ Dialog {
                     fadeTo: Theme.glass.popup
                 }
 
-                // The tree starts inside the instance (or its game folder),
-                // never at the top of the disk: only applied once there is
-                // a controller to ask.
+                // The tree starts inside the instance (or its game folder), not at the top of the disk; applied once
+                // there is a controller.
                 Binding {
                     target: tree
                     property: "rootIndex"
@@ -382,19 +334,17 @@ Dialog {
             }
         }
 
-        // How far the archive has got.
         ColumnLayout {
             Layout.fillWidth: true
             visible: root.exporting
             spacing: Theme.space.xs
 
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: root.watcher && root.watcher.status.length > 0 ? root.watcher.status : qsTr("Exporting…")
+                role: "label"
+                tone: "secondary"
                 elide: Text.ElideMiddle
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
             ProgressBar {
                 Layout.fillWidth: true
@@ -403,14 +353,13 @@ Dialog {
             }
         }
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             visible: root.failure.length > 0 || (root.format === "modrinth" && !!root.controller && !root.controller.ready)
             text: root.failure.length > 0 ? root.failure : qsTr("A Modrinth pack needs a version.")
+            role: "caption"
+            tone: "danger"
             wrapMode: Text.Wrap
-            color: Theme.palette.danger
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
         }
     }
 

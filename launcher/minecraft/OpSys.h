@@ -22,7 +22,6 @@
 #include <QString>
 enum OpSys { Os_Windows, Os_FreeBSD, Os_Linux, Os_OSX, Os_Other };
 
-OpSys OpSys_fromString(QString);
 QString OpSys_toString(OpSys);
 
 #ifdef Q_OS_WIN32

@@ -31,8 +31,7 @@
 
 namespace
 {
-	/* No answer after this long is a failure; a poll that fails is tried
-	 * again a minute later. */
+	/* No answer after this long is a failure. */
 	constexpr int kRequestTimeoutMs = 15000;
 } // namespace
 

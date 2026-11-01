@@ -33,9 +33,7 @@ class ModBridgeSource
   public:
 	virtual ~ModBridgeSource() = default;
 
-	/// The cache as it is now; never asks the friends server anything.
 	virtual ModBridgeJson::FriendsView friendsView() = 0;
-	/// Polls the friends server soon (the source coalesces).
 	virtual void requestRefresh() = 0;
 	/// The file of the cached face of friend @p uuid (with dashes); empty
 	/// when there is none, or when @p uuid is not a friend.

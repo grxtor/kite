@@ -7,11 +7,9 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * A section header's trailing action ("See all", "View all", "Manage"): text
- * with a small chevron and no padding of its own, so its last glyph lines up
- * with the content edge below it. A flat Button carries a hover background
- * and therefore horizontal padding, which left these actions visibly inset
- * from the cards' right edge. Hover changes only the colour.
+ * A section header's trailing action ("See all", "Manage"): text with a small
+ * chevron and no padding of its own, so its last glyph lines up with the content
+ * edge below it. Hover changes only the colour.
  */
 AbstractButton {
     id: control
@@ -29,9 +27,8 @@ AbstractButton {
 
     contentItem: Item {}
 
-    // chevron-right's glyph sits in the middle of its square; this much of
-    // the square to its right is empty, so the row is pulled out by it to put
-    // the glyph's own edge on the content edge.
+    // The chevron glyph sits in the middle of its square; the row is pulled out by the empty part
+    // so the glyph's edge is on the content edge.
     readonly property real chevronBearing: Theme.icon.sm * 0.34
 
     Row {
@@ -41,12 +38,11 @@ AbstractButton {
         anchors.rightMargin: -control.chevronBearing
         spacing: Theme.space.xxs
 
-        Text {
+        Copy {
             anchors.verticalCenter: parent.verticalCenter
             text: control.text
+            role: "label"
             color: control.ink
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
             font.weight: Theme.type.label.weight
             Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         }
@@ -58,7 +54,6 @@ AbstractButton {
         }
     }
 
-    // Keyboard focus: an underline rather than a ring, the way links show it.
     Rectangle {
         anchors.left: row.left
         anchors.right: row.right

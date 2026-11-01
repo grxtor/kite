@@ -49,9 +49,7 @@ bool IdSelectionModel::setCurrentIdInternal(const QString& id)
 
 void IdSelectionModel::select(const QString& id)
 {
-	// Empty is the "nothing selected" sentinel currentId() uses; selecting
-	// it would make an empty selection indistinguishable from one that
-	// contains it.
+	// Empty is the "nothing selected" sentinel of currentId().
 	if (id.isEmpty() || m_selected.contains(id)) {
 		return;
 	}

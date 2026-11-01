@@ -8,12 +8,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * This instance's servers.dat -- the widget-free replacement for
- * ServersPage. Laid out like the game's own server list: one read-only row
- * per server (the favicon the game last saw, name, address), "Join" to
- * launch the instance straight into
- * it, and the rest -- edit, reorder, remove -- behind the row's ⋯ menu (also
- * on right-click). Adding or editing a server opens one small dialog.
+ * This instance's servers.dat as the game's own server list: one read-only row
+ * per server with "Join" to launch straight into it; edit, reorder and remove
+ * are behind the row's ⋯ menu.
  */
 Item {
     id: root
@@ -27,20 +24,11 @@ Item {
     signal openFolderRequested(string path)
     signal joinRequested(string address)
 
-    // servers.dat's per-server resource pack choice, in its own order.
     readonly property var packChoices: [
         { value: 0, label: qsTr("Ask") },
         { value: 1, label: qsTr("Always") },
         { value: 2, label: qsTr("Never") }
     ]
-
-    // A caption over one of the server dialog's fields.
-    component FieldLabel: Text {
-        width: parent ? parent.width : implicitWidth
-        color: Theme.palette.textSecondary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.label.pixelSize
-    }
 
     function addServer() {
         serverDialog.row = -1
@@ -66,7 +54,6 @@ Item {
                 icon.source: Icons.url("folder")
                 onClicked: root.openFolderRequested(root.serversDir)
             }
-            // Secondary: the play bar's Play is this page's primary action.
             HoverReason {
                 reason: root.lockedReason
                 Button {
@@ -92,7 +79,6 @@ Item {
             spacing: Theme.space.sm
             boundsBehavior: Flickable.StopAtBounds
             model: root.model
-            // Overlays the rows' right edge rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
             delegate: TabListRow {
@@ -101,8 +87,8 @@ Item {
                 required property string name
                 required property string address
                 required property int acceptTextures
-                // The favicon the game saved when it last pinged the
-                // server, as a data: URL; "" if it never has.
+                // The favicon the game saved when it last pinged the server, as a data: URL; "" if
+                // never.
                 required property string iconUrl
 
                 width: list.width
@@ -162,7 +148,6 @@ Item {
         }
     }
 
-    // Rows fade out at the fold instead of being sliced by the play bar.
     ScrollFade {
         anchors.left: parent.left
         anchors.right: parent.right
@@ -170,30 +155,21 @@ Item {
         flickable: list
     }
 
-    // Add (row -1) or edit one server: the three things servers.dat keeps.
-    Dialog {
+    AppDialog {
         id: serverDialog
         property int row: -1
         property string name
         property string address
         property int acceptTextures: 0
-        // The resource pack choice being edited (one of root.packChoices).
         property int packChoice: 0
 
+        size: "sm"
         title: row < 0 ? qsTr("Add server") : qsTr("Edit server")
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        width: Math.min(440, parent ? parent.width - Theme.space.xxl * 2 : 440)
-        modal: true
-        // The title row sets the inset; the gap under it is the dialog's own spacing.
-        topPadding: 0
-        // The actions row sets the bottom inset; this and the spacing over it
-        // leave one inset (xl) between the body and the actions.
-        bottomPadding: Theme.space.sm
-
-        header: DialogHeader {
-            title: serverDialog.title
-        }
+        primaryText: row < 0 ? qsTr("Add server") : qsTr("Save")
+        primaryEnabled: addressField.text.trim().length > 0
+        // save() closes the dialog itself, and stays open when there is nothing to save.
+        closeOnPrimary: false
+        onPrimaryClicked: save()
 
         onOpened: {
             if (row < 0) {
@@ -255,9 +231,7 @@ Item {
                     delegate: RadioButton {
                         required property var modelData
                         text: modelData.label
-                        // The dialog owns the choice, so the group is not
-                        // exclusive by itself; a click sets it and puts the
-                        // binding back.
+                        // The dialog owns the choice, so a click sets it and puts the binding back.
                         autoExclusive: false
                         checked: serverDialog.packChoice === modelData.value
                         onClicked: {
@@ -269,22 +243,6 @@ Item {
             }
         }
 
-        footer: Row {
-            layoutDirection: Qt.RightToLeft
-            spacing: Theme.space.sm
-            padding: Theme.space.xl
-            topPadding: 0
-            Button {
-                text: serverDialog.row < 0 ? qsTr("Add server") : qsTr("Save")
-                highlighted: true
-                enabled: addressField.text.trim().length > 0
-                onClicked: serverDialog.save()
-            }
-            Button {
-                text: qsTr("Cancel")
-                onClicked: serverDialog.close()
-            }
-        }
     }
 
     ConfirmDialog {
@@ -301,6 +259,6 @@ Item {
         visible: list.count === 0
         title: qsTr("No servers yet")
         body: qsTr("Servers you add in game show up here. You can also add one yourself.")
-        MeshIcon { iconName: "server"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "server"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 }

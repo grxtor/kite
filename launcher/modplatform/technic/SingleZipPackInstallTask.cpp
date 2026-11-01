@@ -62,7 +62,6 @@ void Technic::SingleZipPackInstallTask::executeTask()
 			&Technic::SingleZipPackInstallTask::downloadProgressChanged);
 	connect(job, &NetJob::failed, this,
 			&Technic::SingleZipPackInstallTask::downloadFailed);
-	// Show the file being fetched as its own line in the dialog.
 	propagateStepsFrom(job);
 	m_filesNetJob->start();
 }
@@ -73,14 +72,8 @@ void Technic::SingleZipPackInstallTask::downloadSucceeded()
 
 	setStatus(tr("Extracting modpack"));
 
-	/* Create the destination before extracting into it.
-	 *
-	 * QDir(path) only wraps a path - it does not make the directory
-	 * exist - so this used to hand extractSubDir a target that was not
-	 * there. The Solder path next door has always called
-	 * ensureFolderPathExists() here, and the drag-and-drop importer does
-	 * its own mkpath, which is why those two work and this one was the
-	 * odd one out. */
+	/* Create the destination first: QDir(path) only wraps a path, it does not
+	 * make the directory exist. */
 	const QString extractPath = FS::PathCombine(m_stagingPath, ".minecraft");
 	if (!FS::ensureFolderPathExists(extractPath)) {
 		emitFailed(tr("Could not create the instance's minecraft folder:\n%1")
@@ -120,23 +113,15 @@ void Technic::SingleZipPackInstallTask::downloadProgressChanged(qint64 current,
 void Technic::SingleZipPackInstallTask::extractFinished()
 {
 	if (!m_extractFuture.result()) {
-		/* Drop the cached archive.
-		 *
-		 * An archive we cannot unpack is of no use to anyone, and while
-		 * it sits in the cache marked fresh every retry reads it back
-		 * and fails in exactly the same place - which is what turned one
-		 * bad download into a pack that could never be installed again.
-		 * Evicting it means "try again" actually re-downloads. */
+		/* Drop the cached archive: one we cannot unpack would otherwise be read
+		 * back, marked fresh, and fail the same way on every retry. */
 		if (m_archiveEntry) {
 			qWarning() << "Discarding unusable cached archive"
 					   << m_archivePath;
-			/* The file has to go, not just the entry's freshness.
-			 * Evicting only marks the entry stale, and a stale entry
-			 * whose file is still on disk makes the next request a
-			 * conditional one - so the server answers 304 and we go
-			 * right back to the same damaged bytes. With the file gone
-			 * MetaCacheSink sends no If-None-Match and we get a real
-			 * download. */
+			/* The file has to go, not just the entry's freshness: a stale entry whose
+			 * file remains makes the next request conditional, so the server answers
+			 * 304 and the damaged bytes return. With the file gone MetaCacheSink
+			 * sends no If-None-Match. */
 			if (!QFile::remove(m_archivePath)) {
 				qWarning() << "Could not remove" << m_archivePath;
 			}
@@ -148,34 +133,10 @@ void Technic::SingleZipPackInstallTask::extractFinished()
 					  "download it afresh."));
 		return;
 	}
-	QDir extractDir(m_stagingPath);
-
-	qDebug() << "Fixing permissions for extracted pack files...";
-	QDirIterator it(extractDir, QDirIterator::Subdirectories);
-	while (it.hasNext()) {
-		auto filepath = it.next();
-		QFileInfo file(filepath);
-		auto permissions = QFile::permissions(filepath);
-		auto origPermissions = permissions;
-		if (file.isDir()) {
-			// Folder +rwx for current user
-			permissions |= QFileDevice::Permission::ReadUser |
-						   QFileDevice::Permission::WriteUser |
-						   QFileDevice::Permission::ExeUser;
-		} else {
-			// File +rw for current user
-			permissions |= QFileDevice::Permission::ReadUser |
-						   QFileDevice::Permission::WriteUser;
-		}
-		if (origPermissions != permissions) {
-			if (!QFile::setPermissions(filepath, permissions)) {
-				logWarning(
-					tr("Could not fix permissions for %1").arg(filepath));
-			} else {
-				qDebug() << "Fixed" << filepath;
-			}
-		}
-	}
+	Technic::TechnicPackProcessor::fixPermissions(
+		m_stagingPath, [this](const QString& path) {
+			logWarning(tr("Could not fix permissions for %1").arg(path));
+		});
 
 	shared_qobject_ptr<Technic::TechnicPackProcessor> packProcessor =
 		new Technic::TechnicPackProcessor();

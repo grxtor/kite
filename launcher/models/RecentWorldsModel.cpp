@@ -50,15 +50,9 @@ RecentWorldsModel::RecentWorldsModel(InstanceList* instances, QObject* parent)
 			m_instances, &QAbstractItemModel::dataChanged, this,
 			[this](const QModelIndex& topLeft, const QModelIndex& bottomRight,
 				   const QList<int>& roles) {
-				// InstanceList::emitIsRunningChanged() is the only place
-				// that emits IsRunningRole, and it always names it
-				// explicitly (never with an empty role list) for a
-				// genuine running-state transition. Every other edit -
-				// rename, icon change, setLastLaunch, a managed-pack
-				// update, the hasCrashed flag, ... - goes through
-				// propertiesChanged() instead, which emits dataChanged
-				// with an empty role list; that is not a stop, so it must
-				// not trigger a rescan.
+				// Only InstanceList::emitIsRunningChanged() emits IsRunningRole, always named
+				// explicitly; every other edit emits dataChanged with an empty role list and
+				// must not trigger a rescan.
 				if (!roles.contains(InstanceList::IsRunningRole)) {
 					return;
 				}
@@ -69,10 +63,7 @@ RecentWorldsModel::RecentWorldsModel(InstanceList* instances, QObject* parent)
 							->data(m_instances->index(row),
 								   InstanceList::IsRunningRole)
 							.toBool();
-					// Only a stop is interesting here: that is when a play
-					// session could have left a world behind, and rescanning
-					// on every start as well would just double the work for
-					// no gain.
+					// Only a stop matters: that is when a session could have left a world behind.
 					if (!running) {
 						scheduleRescan();
 						return;
@@ -147,9 +138,7 @@ RecentWorldsModel::scan(const QList<InstanceWorldSource>& sources,
 		const QFileInfoList entries =
 			dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
 		for (const QFileInfo& entry : entries) {
-			// Cheap rejection before the (relatively expensive) NBT parse
-			// World's constructor would otherwise do for every candidate on
-			// every rescan of every instance.
+			// Cheap rejection before the NBT parse World's constructor would do for every candidate.
 			if (!QFileInfo(entry.absoluteFilePath() + "/level.dat")
 					 .exists()) {
 				continue;
@@ -175,9 +164,7 @@ RecentWorldsModel::scan(const QList<InstanceWorldSource>& sources,
 		}
 	}
 
-	// Stable: several worlds tied on lastPlayed (most commonly several all
-	// at 0, i.e. no LastPlayed tag) would otherwise reorder nondeterminis-
-	// tically between rescans and flicker in the UI.
+	// Stable: worlds tied on lastPlayed (often all 0) must not reorder between rescans.
 	std::stable_sort(all.begin(), all.end(), [](const Entry& a, const Entry& b) {
 		return a.lastPlayed > b.lastPlayed;
 	});
@@ -201,9 +188,7 @@ void RecentWorldsModel::scheduleRescan()
 void RecentWorldsModel::startScan()
 {
 	if (m_watcher.isRunning()) {
-		// Coalesced the same way the debounce timer coalesces a burst of
-		// triggers: one more scan once the current one is done, not a
-		// second one queued alongside it.
+		// Coalesced like the debounce timer: one more scan once this one is done.
 		m_scanPending = true;
 		return;
 	}
@@ -235,9 +220,22 @@ void RecentWorldsModel::startScan()
 
 void RecentWorldsModel::onScanFinished()
 {
-	beginResetModel();
-	m_entries = m_watcher.result();
-	endResetModel();
+	const QList<Entry> entries = m_watcher.result();
+	const auto same = [](const Entry& a, const Entry& b) {
+		return a.worldName == b.worldName && a.folderName == b.folderName &&
+			   a.iconUrl == b.iconUrl && a.lastPlayed == b.lastPlayed &&
+			   a.instanceId == b.instanceId &&
+			   a.instanceName == b.instanceName &&
+			   a.instanceIconKey == b.instanceIconKey;
+	};
+	if (entries.size() != m_entries.size() ||
+		!std::equal(entries.begin(), entries.end(), m_entries.begin(), same)) {
+		beginResetModel();
+		m_entries = entries;
+		endResetModel();
+	}
+
+	emit scanFinished();
 
 	if (m_scanPending) {
 		startScan();

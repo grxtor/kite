@@ -7,11 +7,9 @@ import QtQuick.Controls.impl
 import QtQuick.Templates as T
 import Kite.Theme
 
-// Unlike Basic's TextArea, this one draws its own background rather than
-// leaving it to whatever Frame/ScrollView happens to wrap it -- most call
-// sites here use a bare TextArea, and an unstyled one would show raw text
-// floating on the surface behind it, breaking the field look TextField
-// establishes.
+// Unlike Basic's TextArea, this draws its own background: most call sites use
+// a bare TextArea, which would otherwise show raw text floating on the surface
+// behind it.
 T.TextArea {
     id: control
 
@@ -64,8 +62,8 @@ T.TextArea {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
         }
 
-        // Same rule as TextField.qml: any focus, unless read-only (a log
-        // or a licence text is selected, not typed into).
+        // As TextField.qml: any focus, unless read-only (a log is selected,
+        // not typed into).
         FocusRing {
             halo: true
             visible: control.activeFocus && !control.readOnly

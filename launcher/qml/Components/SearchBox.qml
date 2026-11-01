@@ -7,12 +7,10 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Not "SearchField": Qt 6.10 added a QtQuick.Controls.SearchField, which
- * would win the name over this file wherever QtQuick.Controls is imported.
+ * Not "SearchField": Qt 6.10 added QtQuick.Controls.SearchField, which would win
+ * the name over this file wherever QtQuick.Controls is imported.
  *
- * TextField with a leading magnifier and a trailing clear button. Escape
- * clears too, so a keyboard user can back out of a search without reaching
- * for the mouse.
+ * A TextField with a leading magnifier and a trailing clear button; Escape clears too.
  */
 TextField {
     id: control

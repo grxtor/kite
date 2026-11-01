@@ -5,13 +5,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * One "Continue playing" card of the Sahne look: 156 px tall, rounded, on
- * the raised surface -- or, when the instance has a screenshot of its own,
- * over that screenshot under a dark fade at the foot. Top: what it runs as
- * a chip (or "Crashed last time" as a warning one) and how long it has been
- * played; bottom: the name and "Fabric 26.3 • 4 days ago". Under the
- * pointer a 40 px Play in the kite's cut appears at the bottom right (Stop
- * while it runs). Clicking opens the instance page; a right-click its menu.
+ * One "Continue playing" card of the Sahne look: 156 px tall, on the raised surface or over the instance's
+ * cover under a dark fade (a wash of its icon's colour without one). "Crashed last time" (only then) and play time at the top, as plain text with no
+ * chip; name and "Fabric 26.3 • 4 days ago" at the bottom; a 40 px Play appears under the pointer.
  */
 HomeRowBase {
     id: root
@@ -20,12 +16,11 @@ HomeRowBase {
     readonly property int padding: Theme.space.lg - 2
     readonly property int sidePadding: Theme.space.lg
     readonly property int playSize: Theme.control.height
-    readonly property int nameSize: 16
     readonly property bool hasPhoto: root.row.coverImage.length > 0
-    // Text over a screenshot takes the media colours.
+    readonly property color tint: Icons.tint(root.row.iconKey, root.row.instanceId)
+    readonly property bool hasTint: root.tint.valid && root.tint.a > 0
     readonly property color ink: root.hasPhoto ? Theme.media.text : Theme.palette.textPrimary
     readonly property color inkSecondary: root.hasPhoto ? Theme.media.textSecondary : Theme.palette.textSecondary
-    readonly property string loaderText: root.row.loader.length > 0 ? root.row.loader : qsTr("Vanilla")
     readonly property string playTimeText: SettingsStore.bool("ShowGameTime") && Number(root.row.totalTimePlayed) > 0
                                            ? Format.playTime(root.row.totalTimePlayed) : ""
     readonly property string subText: [Format.versionLine(root.row.loader, root.row.gameVersion),
@@ -34,18 +29,16 @@ HomeRowBase {
 
     implicitHeight: root.cardHeight
 
-    // A chip: a small rounded label, with a warning icon when it is one.
-    component Chip: Rectangle {
+    component Note: Item {
         property string text
         property color ink: Theme.media.textSecondary
         property string iconName
 
-        implicitWidth: chipRow.implicitWidth + Theme.space.sm * 2
-        implicitHeight: chipRow.implicitHeight + Theme.space.xs * 2 - 1
-        radius: Theme.radius.sm - 1
+        implicitWidth: noteRow.implicitWidth
+        implicitHeight: noteRow.implicitHeight + Theme.space.xs * 2 - 1
 
         Row {
-            id: chipRow
+            id: noteRow
             anchors.centerIn: parent
             spacing: Theme.space.xs + 1
 
@@ -53,7 +46,7 @@ HomeRowBase {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: parent.parent.iconName.length > 0
                 iconName: parent.parent.iconName
-                size: Theme.icon.sm - 2
+                size: Theme.icon.xs
                 color: parent.parent.ink
             }
             Text {
@@ -67,33 +60,34 @@ HomeRowBase {
         }
     }
 
-    Rectangle {
+    StateFill {
         id: plate
         anchors.fill: parent
+        card: true
+        hovered: root.hovered
+        active: root.selected
         radius: Theme.radius.lg
-        color: root.hovered ? Theme.palette.surfaceHover : Theme.palette.surface
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
-    // Its newest screenshot, with the fade the words sit on.
     CoverArt {
         anchors.fill: parent
-        visible: root.hasPhoto
+        visible: root.hasPhoto || root.hasTint
         source: root.row.coverImage
+        kind: root.row.coverKind
+        tint: root.tint
         radius: Theme.radius.lg
-        scrim: "bottom"
+        scrim: root.hasPhoto ? "bottom" : "none"
         showLogo: false
         hovered: root.hovered
         matte: Theme.palette.canvas
     }
 
-    // The hairline a hovered card gets, over the picture.
     Rectangle {
         anchors.fill: parent
         radius: Theme.radius.lg
         color: "transparent"
-        border.width: root.hovered ? 1 : 0
-        border.color: Qt.rgba(1, 1, 1, 0.08)
+        border.width: root.hovered || root.selected ? 1 : 0
+        border.color: root.selected ? Theme.palette.accent : Theme.media.glassEdge
     }
 
     Item {
@@ -109,17 +103,16 @@ HomeRowBase {
             anchors.right: parent.right
             spacing: Theme.space.sm
 
-            Chip {
-                id: chip
-                text: root.row.hasCrashed ? qsTr("Crashed last time") : root.loaderText
-                iconName: root.row.hasCrashed ? "alert-triangle" : ""
-                ink: root.row.hasCrashed ? Theme.palette.warning : Theme.media.textSecondary
-                color: root.row.hasCrashed ? Theme.palette.warningSubtle
-                     : root.hasPhoto ? Theme.media.chip : Qt.rgba(1, 1, 1, 0.08)
+            Note {
+                id: note
+                visible: root.row.hasCrashed
+                text: qsTr("Crashed last time")
+                iconName: "alert-triangle"
+                ink: Theme.palette.warning
             }
             Item {
-                width: parent.width - chip.width - parent.spacing
-                height: chip.height
+                width: parent.width - (note.visible ? note.width + parent.spacing : 0)
+                height: note.height
                 visible: root.playTimeText.length > 0
 
                 Row {
@@ -130,7 +123,7 @@ HomeRowBase {
                     MeshIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: "hourglass"
-                        size: Theme.icon.sm - 2
+                        size: Theme.icon.xs
                         color: root.inkSecondary
                     }
                     Text {
@@ -152,22 +145,19 @@ HomeRowBase {
             anchors.bottom: parent.bottom
             spacing: Theme.space.xxs + 1
 
-            Text {
+            Copy {
                 width: parent.width
                 text: root.row.name
+                role: "cardName"
                 elide: Text.ElideRight
                 color: root.ink
-                font.family: Theme.font.family
-                font.pixelSize: root.nameSize
-                font.weight: Font.DemiBold
             }
-            Text {
+            Copy {
                 width: parent.width
                 text: root.subText
+                role: "caption"
                 elide: Text.ElideRight
                 color: root.inkSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
             }
         }
 

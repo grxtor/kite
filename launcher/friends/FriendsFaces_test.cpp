@@ -26,6 +26,7 @@
 #include <QJsonObject>
 #include <QTest>
 
+#include "FriendsApi.h"
 #include "FriendsFaces.h"
 
 namespace
@@ -195,11 +196,11 @@ class FriendsFacesTest : public QObject
 
 	void loopbackIsThisMachineOnly()
 	{
-		QVERIFY(FriendsFaces::isLoopbackHost("localhost"));
-		QVERIFY(FriendsFaces::isLoopbackHost("127.0.0.1"));
-		QVERIFY(FriendsFaces::isLoopbackHost("::1"));
-		QVERIFY(!FriendsFaces::isLoopbackHost("sessionserver.mojang.com"));
-		QVERIFY(!FriendsFaces::isLoopbackHost("localhost.evil.com"));
+		QVERIFY(FriendsApi::isLoopbackHost("localhost"));
+		QVERIFY(FriendsApi::isLoopbackHost("127.0.0.1"));
+		QVERIFY(FriendsApi::isLoopbackHost("::1"));
+		QVERIFY(!FriendsApi::isLoopbackHost("sessionserver.mojang.com"));
+		QVERIFY(!FriendsApi::isLoopbackHost("localhost.evil.com"));
 	}
 };
 

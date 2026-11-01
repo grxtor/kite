@@ -7,23 +7,9 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One choice in the skin/cape editor's cape picker: either a real cape, the
- * "No cape" choice (which has no texture, by definition -- an "x"), or a
- * cape the account owns whose texture has not resolved yet (a neutral cape
- * silhouette, never the same "x" as "No cape": the account still owns that
- * cape, it just cannot be drawn yet).
- *
- * A cape texture is 64x32, with its front-facing strip -- the part worth
- * showing in a small tile -- an 10x16 region at (1, 1) (the same region
- * SkinManageDialog's own thumbnail crops, see kCapeFrontRegion in
- * ui/dialogs/skins/SkinManageDialog.cpp). QML's Image has no source
- * rectangle of its own, so the crop is done by overscaling the whole
- * texture inside a clipped Item instead: the image is drawn at a size and
- * offset that puts just that region inside the clip, and clip: true throws
- * the rest away.
- *
- * `compact` is the small tile of the Accounts page's hero: the cape alone,
- * its name shown on hover instead of under it.
+ * One choice in the cape picker: a real cape, "No cape" (an "x"), or an owned cape whose texture has not resolved
+ * (a neutral silhouette). The front strip is a 10x16 region at (1, 1) of the 64x32 texture; Image has no source
+ * rectangle, so the crop overscales the texture inside a clipped Item.
  */
 Item {
     id: root
@@ -31,20 +17,15 @@ Item {
     property string label
     property string capeUrl: ""
     property bool selected: false
-    // Set only by the picker's dedicated "No cape" tile -- see
-    // SkinCapeEditor.qml. Every other tile is a cape the account owns,
-    // whether or not its texture has resolved yet.
+    // Set only by the picker's "No cape" tile; every other tile is a cape the account owns.
     property bool isNoCapeOption: false
     property bool compact: false
     signal clicked()
 
     readonly property bool hasCape: root.capeUrl.length > 0
-    // The cape's front strip is 10x16 texture pixels; the thumbnail shows
-    // it at thumbScale screen pixels per texture pixel.
     readonly property int stripWidth: 10
     readonly property int stripHeight: 16
     readonly property int thumbScale: root.compact ? 3 : 4
-    // The cloak shape for a cape not drawn yet, as a share of the thumbnail.
     readonly property real silhouetteWidth: 0.85
     readonly property real silhouetteHeight: 0.72
     readonly property int compactPadding: Theme.space.sm
@@ -56,17 +37,12 @@ Item {
     ToolTip.delay: 400
     ToolTip.text: root.label
 
-    Rectangle {
-        id: card
+    // The one surface: selection tints it, the pointer lifts it; no border.
+    StateFill {
         anchors.fill: parent
         radius: Theme.radius.md
-        color: root.selected ? Theme.palette.accentSubtle : Theme.palette.surface
-        border.width: root.selected ? 2 : 1
-        border.color: root.selected ? Theme.palette.accent
-                    : hover.hovered && root.enabled ? Theme.palette.borderStrong : Theme.palette.border
-
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        hovered: hover.hovered && root.enabled
+        active: root.selected
     }
 
     Item {
@@ -79,8 +55,7 @@ Item {
         clip: true
         visible: root.hasCape
 
-        // Scale the whole 64x32 texture up so its 10x16 front strip at
-        // (1, 1) fills this item, then let clip: true crop away the rest.
+        // Overscale the texture so its front strip fills this item; clip: true crops the rest.
         readonly property real cropScale: width / root.stripWidth
 
         Image {
@@ -102,9 +77,8 @@ Item {
         color: Theme.palette.textTertiary
     }
 
-    // A generic cloak shape for a cape the account owns but whose texture is
-    // not known yet -- there is no such icon in icons/, and unlike "No
-    // cape" this is not an absence, so it must not read as one.
+    // A cloak shape for an owned cape whose texture is not known yet; not an absence, so it must not read as "No
+    // cape".
     Canvas {
         id: capeSilhouette
         anchors.centerIn: thumb
@@ -125,16 +99,15 @@ Item {
         }
         onVisibleChanged: if (visible) requestPaint()
         Component.onCompleted: requestPaint()
-        // Theme.dark isn't a per-instance signal, but Theme itself is a
-        // singleton every instance shares, so this Connections is enough
-        // to repaint every tile on a scheme/mode switch.
+        // Theme is a singleton every instance shares, so this Connections repaints every tile on a scheme/mode
+        // switch.
         Connections {
             target: Theme
             function onPaletteChanged() { capeSilhouette.requestPaint() }
         }
     }
 
-    Text {
+    Copy {
         visible: !root.compact
         anchors.top: thumb.bottom
         anchors.topMargin: Theme.space.xs
@@ -143,10 +116,9 @@ Item {
         anchors.margins: Theme.space.xxs
         horizontalAlignment: Text.AlignHCenter
         text: root.label
+        role: "caption"
+        tone: "secondary"
         elide: Text.ElideRight
-        color: Theme.palette.textSecondary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.caption.pixelSize
     }
 
     HoverHandler {

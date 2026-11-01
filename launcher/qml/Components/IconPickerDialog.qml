@@ -8,15 +8,11 @@ import QtQml.Models
 import Kite.Theme
 
 /*
- * Pick an instance icon from every icon Kite knows -- the built-in set
- * and whatever is in the icons folder. New icons are added by dropping
- * images into that folder; the grid picks them up as they arrive.
- *
- * A plain grid of pictures, as in Prism: the icons' names are file keys
- * ("ftb_logo", "enderpearl"), not words, so they are not shown -- only read
- * out to a screen reader.
+ * Pick an instance icon from every icon Kite knows (the built-in set and the
+ * icons folder). A plain grid of pictures; the names are file keys, not words,
+ * so they are only read out to a screen reader.
  */
-Dialog {
+AppDialog {
     id: root
 
     // IconList (roles include `key` and `name`).
@@ -25,29 +21,24 @@ Dialog {
     signal picked(string key)
     signal openFolderRequested()
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(640, parent ? parent.width - Theme.space.xxl * 2 : 640)
+    size: "lg"
     height: Math.min(520, parent ? parent.height - Theme.space.xxl * 2 : 520)
-    modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
-    topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
-    bottomPadding: Theme.space.sm
+    closeOnOutsidePress: true
+    closeOnPrimary: false
     title: qsTr("Choose an icon")
+    primaryText: qsTr("Use icon")
+    onPrimaryClicked: { root.picked(root.current); root.close() }
+    footerLeading: [
+        Button {
+            flat: true
+            text: qsTr("Open icons folder")
+            icon.source: Icons.url("folder")
+            onClicked: root.openFolderRequested()
+        }
+    ]
 
-    header: DialogHeader {
-        title: root.title
-        icon: "image"
-    }
-
-    // The built-in *_legacy icons are the old pixel-art set, kept on disk
-    // for instances that still name them; offered here next to the flat set
-    // they would only list every icon twice. The *_mark icons are
-    // the loader marks the New instance dialog's loader row uses, duplicates
-    // of the forge/quilt icons already listed. Both stay out of the picker;
-    // an instance already using one keeps it.
+    // The *_legacy and *_mark icons would list every icon twice, so they stay out of the picker; an
+    // instance already using one keeps it.
     DelegateModel {
         id: shownIcons
         model: root.iconsModel
@@ -66,7 +57,6 @@ Dialog {
         Component.onCompleted: refilter()
     }
 
-    // Each icon's picture, and the square cell around it.
     readonly property int iconSize: 48
     readonly property int cellSize: 72
     readonly property int cellInset: Theme.space.xs
@@ -76,8 +66,7 @@ Dialog {
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         model: shownIcons
-        // As many square cells as fit, then stretched to fill the row, so
-        // the grid has no empty strip on its right.
+        // As many square cells as fit, stretched to fill the row.
         readonly property int columns: Math.max(1, Math.floor(width / root.cellSize))
         cellWidth: Math.floor(width / columns)
         cellHeight: root.cellSize
@@ -100,12 +89,13 @@ Dialog {
             onClicked: root.current = key
             onDoubleClicked: { root.picked(key); root.close() }
 
-            background: Rectangle {
+            background: StateFill {
                 anchors.fill: parent
                 anchors.margins: root.cellInset
                 radius: Theme.radius.sm
-                color: cell.selected ? Theme.palette.surfaceHover
-                     : cell.hovered ? Theme.palette.hoverOverlay : "transparent"
+                hovered: cell.hovered
+                active: cell.selected
+                activeFill: Theme.palette.surfaceHover
                 border.width: cell.selected ? 2 : 0
                 border.color: Theme.palette.accent
             }
@@ -122,29 +112,6 @@ Dialog {
                     mipmap: true
                 }
             }
-        }
-    }
-
-    footer: Row {
-        spacing: Theme.space.sm
-        padding: Theme.space.xl
-        topPadding: 0
-        layoutDirection: Qt.RightToLeft
-
-        Button {
-            text: qsTr("Use icon")
-            highlighted: true
-            onClicked: { root.picked(root.current); root.close() }
-        }
-        Button {
-            text: qsTr("Cancel")
-            onClicked: root.close()
-        }
-        Button {
-            flat: true
-            text: qsTr("Open icons folder")
-            icon.source: Icons.url("folder")
-            onClicked: root.openFolderRequested()
         }
     }
 }

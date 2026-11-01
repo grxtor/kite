@@ -7,25 +7,19 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * A setting with a handful of named values: a drop-down by default, the
- * way every launcher shows "sort by" or "theme", or a column of radio
- * buttons (`radio: true`) when the choices change what the rows below show
- * (the proxy type) and are worth seeing all at once.
+ * A setting with a handful of named values: a drop-down, or a column of radio
+ * buttons (`radio: true`) when the choices change what the rows below show.
  */
 SettingRow {
     id: root
 
     property string key
-    // Where the value lives; the launcher-wide settings unless told otherwise.
     property var source: SettingsStore
-    // [{ value, label }]
     property var options: []
-    // Radio buttons instead of the drop-down.
     property bool radio: false
     signal changed(var value)
 
     readonly property int comboWidth: 200
-    // Radio buttons sit under the label, left-aligned, not off at the right.
     wide: root.radio
     readonly property var stored: root.source.string(root.key)
 
@@ -45,9 +39,7 @@ SettingRow {
             model: root.options
             textRole: "label"
             valueRole: "value"
-            // Through `count`, so it is worked out again once the model
-            // has arrived rather than once, before it (a page built after
-            // the settings were loaded never changes `stored` again).
+            // Through `count`, so it is worked out again once the model has arrived.
             currentIndex: count > 0 ? indexOfValue(root.stored) : -1
             onActivated: root.choose(currentValue)
             Accessible.name: root.label

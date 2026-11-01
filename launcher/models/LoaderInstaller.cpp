@@ -33,15 +33,9 @@
 
 LoaderInstaller::LoaderInstaller(PackProfile* profile, QObject* parent)
 	: QObject(parent), m_profile(profile),
-	  // Parented to `this`, not left parentless like a bare local proxy
-	  // would be: QmlShell::newInstance() spells out why in its own
-	  // comment on NewInstanceController::minecraftVersions()/
-	  // loaderVersions() - a parentless QObject handed to QML through a
-	  // property is fair game for the engine to garbage-collect out from
-	  // under this class's own std::unique_ptr the first time QML touches
-	  // it. The unique_ptr still runs first on destruction (member before
-	  // base class), so this is not a double free - see
-	  // InstanceDetails::m_contentBrowser for the same shape.
+	  // Parented to `this`: a parentless QObject handed to QML through a property can
+	  // be garbage-collected from under the unique_ptr. The unique_ptr still runs
+	  // first on destruction (member before base), so there is no double free.
 	  m_versions(std::make_unique<LoaderVersionListProxy>(this))
 {
 }
@@ -82,9 +76,7 @@ QString LoaderInstaller::conflictName() const
 	}
 	for (const QString& conflictUid : loader->conflictsWith) {
 		Component* conflict = m_profile->getComponent(conflictUid);
-		// A disabled or already-customized component is either harmless
-		// or not this class's business to touch - see install()'s own
-		// comment on why customized components are left alone.
+		// A disabled or customized component is harmless or not ours to touch (see install()).
 		if (conflict && conflict->isEnabled() && !conflict->isCustom()) {
 			return conflict->getName();
 		}
@@ -108,9 +100,8 @@ void LoaderInstaller::selectLoader(const QString& uid)
 	const QString mcVersion =
 		m_profile->getComponentVersion(QStringLiteral("net.minecraft"));
 
-	/* A stated floor means the metadata cannot rule this loader out by
-	 * itself - see ModLoaderInfo's own class comment - so there is
-	 * nothing to load at all. Mirrors LoaderVersionPage's constructor. */
+	/* A stated floor means the metadata cannot rule this loader out itself, so
+	 * there is nothing to load at all. */
 	if (!loader->earliestMinecraft.isEmpty() &&
 		Version(mcVersion) < Version(loader->earliestMinecraft)) {
 		m_supported = false;
@@ -123,12 +114,9 @@ void LoaderInstaller::selectLoader(const QString& uid)
 		return;
 	}
 
-	/* setMinecraftVersion() before setSourceModel(), same order
-	 * NewInstanceController::refreshLoaderSource() uses: the filter is
-	 * already correct by the time the new source model's rows are first
-	 * evaluated. setSourceModel() itself starts the download if needed
-	 * (VersionListLoadingProxy::startLoadIfNeeded()) and settles
-	 * `versions.loading`/`versions.error`. */
+	/* setMinecraftVersion() before setSourceModel(): the filter is correct when the
+	 * new source's rows are first evaluated. setSourceModel() starts the download
+	 * if needed and settles `versions.loading`/`versions.error`. */
 	auto list = LAUNCHER->metadataIndex()->get(uid);
 	m_versions->setMinecraftVersion(mcVersion);
 	m_versions->setSourceModel(list.get());
@@ -158,11 +146,8 @@ bool LoaderInstaller::install(const QString& versionId)
 		return false;
 	}
 
-	/* Collect conflicts up front rather than disabling them as they are
-	 * found, so installSequence() below can turn "how many" into the
-	 * fixed step order without touching the profile itself - see the
-	 * class comment for why a conflict is turned off rather than asked
-	 * about, or removed. */
+	/* Collect conflicts first, so installSequence() can turn their count into the
+	 * fixed step order without touching the profile. */
 	QStringList conflictsToDisable;
 	for (const QString& conflictUid : loader->conflictsWith) {
 		Component* conflict = m_profile->getComponent(conflictUid);
@@ -171,14 +156,8 @@ bool LoaderInstaller::install(const QString& versionId)
 		}
 	}
 
-	/* installSequence()'s own comment explains why the selected loader
-	 * must be enabled (step EnableSelected) before its version is changed
-	 * (step ChangeVersion, which triggers PackProfile::resolve()) -
-	 * mirrors InstallLoaderDialog::applySelection(). EnableSelected is a
-	 * no-op when the component doesn't exist yet (brand new loader):
-	 * setComponentEnabled() fails quietly since there is nothing to
-	 * enable yet, and ChangeVersion creates it enabled (new components
-	 * start enabled). */
+	/* EnableSelected must come before ChangeVersion (see installSequence()). It is
+	 * a no-op for a brand new loader, whose component ChangeVersion creates enabled. */
 	for (InstallStep step : installSequence(conflictsToDisable.size())) {
 		switch (step) {
 			case InstallStep::DisableConflict:

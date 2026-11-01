@@ -52,7 +52,6 @@ class LegacyInstance : public BaseInstance
 	QString texturePacksDir() const;
 	QString jarModsDir() const;
 	QString coreModsDir() const;
-	QString resourceDir() const;
 
 	QString instanceConfigFolder() const override;
 
@@ -75,24 +74,12 @@ class LegacyInstance : public BaseInstance
 	QString mainJarToPreserve() const;
 
 	/*!
-	 * Whether or not custom base jar is used
-	 */
-	bool shouldUseCustomBaseJar() const;
-
-	/*!
 	 * The value of the custom base jar
 	 */
 	QString customBaseJar() const;
 
 	std::shared_ptr<LegacyModList> jarModList() const;
 	std::shared_ptr<WorldList> worldList() const;
-
-	/*!
-	 * Whether or not the instance's minecraft.jar needs to be rebuilt.
-	 * If this is true, when the instance launches, its jar mods will be
-	 * re-added to a fresh minecraft.jar file.
-	 */
-	bool shouldRebuild() const;
 
 	QString currentVersionId() const;
 	QString intendedVersionId() const;
@@ -102,7 +89,6 @@ class LegacyInstance : public BaseInstance
 		return {"legacy-instance", "texturepacks"};
 	};
 
-	virtual bool shouldUpdate() const;
 	virtual Task::Ptr createUpdateTask(Net::Mode mode) override;
 
 	virtual QString typeName() const override;
@@ -133,7 +119,6 @@ class LegacyInstance : public BaseInstance
 		return gameRoot();
 	}
 
-	QString getStatusbarDescription() override;
 	QStringList
 	verboseDescription(AuthSessionPtr session,
 					   MinecraftServerTargetPtr serverToJoin) override;

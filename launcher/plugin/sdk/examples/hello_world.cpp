@@ -7,10 +7,9 @@
  *
  */
 
-#include "mmco_sdk.h"
+#include "mmco_cxx_sdk.hpp"
+#include <cstdio>
 #include <cstring>
-
-/* Module declaration */
 
 MMCO_DEFINE_MODULE(
 	"Hello World",										  /* name */
@@ -20,11 +19,7 @@ MMCO_DEFINE_MODULE(
 	"Apache-2.0"									  /* license */
 );
 
-/* State */
-
 static MMCOContext* g_ctx = nullptr;
-
-/* Hook callback */
 
 static int on_app_initialized(void* /*mh*/, uint32_t /*hook_id*/,
 							  void* /*payload*/, void* /*user_data*/)
@@ -77,15 +72,12 @@ static int on_instance_pre_launch(void* /*mh*/, uint32_t /*hook_id*/,
 	return 0;
 }
 
-/* Entry points */
-
 extern "C" int mmco_init(MMCOContext* ctx)
 {
 	g_ctx = ctx;
 
 	MMCO_LOG(ctx, "Hello World plugin initializing...");
 
-	// Register hooks
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_APP_INITIALIZED,
 					   on_app_initialized, nullptr);
 

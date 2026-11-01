@@ -102,12 +102,10 @@ static QJsonObject componentToJsonV1(ComponentPtr component)
 }
 
 static ComponentPtr componentFromJsonV1(PackProfile* parent,
-										const QString& componentJsonPattern,
 										const QJsonObject& obj)
 {
 	// critical
 	auto uid = Json::requireString(obj.value("uid"));
-	auto filePath = componentJsonPattern.arg(uid);
 	auto component = new Component(parent, uid);
 	component->m_version = Json::ensureString(obj.value("version"));
 	component->m_dependencyOnly =
@@ -159,7 +157,6 @@ static bool savePackProfile(const QString& filename,
 
 // Read the given file into component containers
 static bool loadPackProfile(PackProfile* parent, const QString& filename,
-							const QString& componentJsonPattern,
 							ComponentContainer& container)
 {
 	QFile componentsFile(filename);
@@ -200,8 +197,7 @@ static bool loadPackProfile(PackProfile* parent, const QString& filename,
 		for (auto item : orderArray) {
 			auto obj =
 				Json::requireObject(item, "Component must be an object.");
-			container.append(
-				componentFromJsonV1(parent, componentJsonPattern, obj));
+			container.append(componentFromJsonV1(parent, obj));
 		}
 	} catch (const JSONValidationError& err) {
 		qCritical() << "Couldn't parse" << componentsFile.fileName()
@@ -293,7 +289,7 @@ bool PackProfile::load()
 
 	// load the new component list and swap it with the current one...
 	ComponentContainer newComponents;
-	if (!loadPackProfile(this, filename, patchesPattern(), newComponents)) {
+	if (!loadPackProfile(this, filename, newComponents)) {
 		qCritical() << "Failed to load the component config for instance"
 					<< d->m_instance->name();
 		return false;
@@ -358,9 +354,7 @@ void PackProfile::resolve(Net::Mode netmode)
 	connect(updateTask, &ComponentUpdateTask::failed, this,
 			&PackProfile::updateFailed);
 
-	/* QML-facing progress for whichever action just called resolve() -
-	 * change/install a loader, remove a conflicting one, reload. Not
-	 * deleted: see the `task` Q_PROPERTY comment in the header. */
+	// QML-facing progress; not deleted (see the `task` property).
 	m_taskWatcher = new TaskWatcher(d->m_updateTask, this);
 	m_taskWatcher->setTitle(tr("Updating %1").arg(d->m_instance->name()));
 	emit taskChanged();
@@ -860,9 +854,7 @@ QVariant PackProfile::data(const QModelIndex& index, int role) const
 				}
 			}
 		}
-		// Column-independent roles for QML consumers - same data as the
-		// column-based cases above, valid regardless of which column
-		// `index` happens to point at.
+		// Column-independent roles for QML consumers.
 		case NameRole:
 			return patch->getName();
 		case VersionRole:
@@ -882,10 +874,7 @@ QVariant PackProfile::data(const QModelIndex& index, int role) const
 					return QVariant();
 			}
 		}
-		// Everything below is for VersionTab.qml - one role per question
-		// VersionPage's updateButtons()/on_action..._triggered() handlers
-		// ask about the selected row, so the QML tab can enable/disable
-		// its own per-row actions without a round trip to C++.
+		// One role per per-row question the QML version tab asks.
 		case UidRole:
 			return patch->getID();
 		case IsCustomRole:
@@ -1319,8 +1308,7 @@ bool PackProfile::changeComponentVersion(const QString& uid,
 		setLastError(tr("Already updating - wait for that to finish first."));
 		return false;
 	}
-	// Mirrors VersionPage::on_actionChange_version_triggered(): only the
-	// Minecraft component's version is ever `important`.
+	// Only the Minecraft component's version is ever `important`.
 	const bool important = uid == QStringLiteral("net.minecraft");
 	if (!setComponentVersion(uid, version, important)) {
 		setLastError(tr("Couldn't set %1 to that version.").arg(uid));
@@ -1353,7 +1341,7 @@ bool PackProfile::setComponentEnabled(const QString& uid, bool enabled)
 bool PackProfile::reloadProfile()
 {
 	if (d->m_updateTask) {
-		// Mirrors reload()'s own guard: an update is already in control.
+		// Same guard as reload(): an update is already in control.
 		return false;
 	}
 	try {

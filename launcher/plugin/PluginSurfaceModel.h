@@ -30,34 +30,15 @@
 #include <QVariantMap>
 #include <QVector>
 
-/*
- * PluginSurfaceModel — a QAbstractListModel over
- * PluginManager::surfaces(anchor, anchorContext), the seam ABI 5's
- * declarative UI surfaces already expose for a renderer that isn't
- * PluginUiRenderer's QWidget tree. One row per live surface at the
- * (anchor, anchorContext) this model was created for; QmlShell hands one
- * out per pair via QmlShell::pluginSurfaces() (see that class for why the
- * factory indirection exists — this class lives in Kite_logic, next to
- * PluginManager, and Kite_qml cannot see either).
+/* QAbstractListModel over PluginManager::surfaces(anchor, anchorContext): one row per live surface at that
+ * (anchor, anchorContext). QmlShell hands one out per pair via QmlShell::pluginSurfaces().
  *
- * Refresh strategy: every PluginManager::surfacesChanged() re-reads the
- * whole (anchor, anchorContext) slice and does a full beginResetModel() /
- * endResetModel(), rather than diffing old/new rows into targeted
- * inserts/removes/dataChanged(). surfacesChanged() carries no information
- * about *what* changed — not even which surface — so anything smarter
- * would mean tracking our own shadow copy of every surface's document just
- * to diff against it, for an event that fires at most once per user click
- * or plugin-initiated patch. A full reset is O(surfaces at this anchor),
- * which is a handful of rows in the worst case (see GLOBAL_SETTINGS
- * stacking every plugin's section into one page today) — simpler, and
- * cheap enough not to matter.
+ * Every PluginManager::surfacesChanged() does a full reset: the signal says nothing about what changed, so
+ * diffing would need a shadow copy of every surface's document, for a handful of rows at most.
  *
- * `revision` exists so a QML delegate bound to `document` can tell *this*
- * surface's document changed (as opposed to some other row in the same
- * reset) without comparing the JSON itself: it is bumped once per surface
- * whenever that surface's raw document text differs from what the model
- * last saw, and carried forward across resets by surface id.
- */
+ * `revision` lets a QML delegate bound to `document` tell that this surface changed: it is bumped per
+ * surface whenever the raw document text differs from what the model last saw, and carried across resets
+ * by surface id. */
 class PluginSurfaceModel : public QAbstractListModel
 {
 	Q_OBJECT
@@ -77,16 +58,9 @@ class PluginSurfaceModel : public QAbstractListModel
 		RevisionRole,
 	};
 
-	/*
-	 * `manager` is not owned and must outlive this model — true for every
-	 * instance QmlShell::pluginSurfaces() hands out, since Application
-	 * destroys its QmlShell (and everything it cached) before its
-	 * PluginManager (see Application.h's member order). `anchor` of -1
-	 * means "every anchor"; a null (default-constructed) `anchorContext`
-	 * means "every context" — both match PluginManager::surfaces()'s own
-	 * filter semantics exactly (a real-but-empty QString("") matches only
-	 * GLOBAL_SETTINGS surfaces, which always have an empty context).
-	 */
+	/* `manager` is not owned and must outlive the model (Application destroys its QmlShell before its
+	 * PluginManager). `anchor` -1 means every anchor and a null `anchorContext` every context, as in
+	 * PluginManager::surfaces() (an empty non-null QString matches only GLOBAL_SETTINGS surfaces). */
 	explicit PluginSurfaceModel(PluginManager* manager, int anchor = -1,
 								const QString& anchorContext = QString(),
 								QObject* parent = nullptr);
@@ -101,25 +75,13 @@ class PluginSurfaceModel : public QAbstractListModel
 				 int role = Qt::DisplayRole) const override;
 	QHash<int, QByteArray> roleNames() const override;
 
-	/*
-	 * Serialises `value` the same way PluginUiRenderer.cpp's widget
-	 * renderer serialises a node's live value into value_json for
-	 * MMCOUiEventCallback: a bool becomes the bare `true`/`false` literal,
-	 * a number becomes its plain text, anything else (string, a list row's
-	 * id, …) becomes a quoted JSON string literal. An invalid/null QVariant
-	 * — a button click, which carries no value — becomes the empty string,
-	 * exactly like PluginUiRenderer's own button handler passes to sink().
-	 */
+	/* Serialises `value` for value_json (quoteJsonString in PluginSurfaceModel.cpp is the string
+	 * encoder): bool becomes `true`/`false`, a number its plain text, anything else a quoted JSON
+	 * string; an invalid QVariant (a button click) becomes "". */
 	static QString valueToJson(const QVariant& value);
 
-	/*
-	 * Delivers a UI event to the plugin behind `surfaceId`, the QML
-	 * equivalent of PluginUiRenderer's Qt signal handlers calling `sink()`
-	 * — value is serialised with valueToJson() first. No-op (via
-	 * PluginManager::deliverUiEvent()) if surfaceId names no live surface,
-	 * or if this model was built without a manager (see the test seam
-	 * below).
-	 */
+	/* Delivers a UI event to the plugin behind `surfaceId` (value goes through valueToJson()). No-op if
+	 * surfaceId names no live surface or the model has no manager. */
 	Q_INVOKABLE void sendEvent(const QString& surfaceId, const QString& nodeId,
 							   const QString& event, const QVariant& value);
 
@@ -128,19 +90,12 @@ class PluginSurfaceModel : public QAbstractListModel
 	void anchorContextChanged();
 
   protected:
-	/*
-	 * Seam for tests: by default forwards to
-	 * `m_manager->surfaces(m_anchor, m_anchorContext)`. A test subclass
-	 * overrides this to feed a canned SurfaceInfo list without a real
-	 * PluginManager backed by loaded plugins (see
-	 * PluginSurfaceModel_test.cpp), then calls the also-protected
-	 * refresh() to re-read it.
-	 */
+	/* Test seam: forwards to m_manager->surfaces(m_anchor, m_anchorContext) by default; tests override it
+	 * to feed a canned list (PluginSurfaceModel_test.cpp), then call refresh(). */
 	virtual QList<PluginManager::SurfaceInfo> fetchSurfaces() const;
 
-	/* Re-reads fetchSurfaces() and resets the model; see the refresh
-	 * strategy note above. Connected to PluginManager::surfacesChanged()
-	 * in the constructor when `manager` is non-null. */
+	/* Re-reads fetchSurfaces() and resets the model. Connected to PluginManager::surfacesChanged() when
+	 * `manager` is non-null. */
 	void refresh();
 
   private:
@@ -159,11 +114,7 @@ class PluginSurfaceModel : public QAbstractListModel
 	QString m_anchorContext;
 	QVector<Row> m_rows;
 
-	/* Per-surface-id bookkeeping carried across refresh()es so `revision`
-	 * keeps counting even though m_rows itself is rebuilt from scratch
-	 * every time (see the refresh-strategy note above). Pruned to the
-	 * surface ids seen in the most recent refresh() so a destroyed
-	 * surface's id doesn't linger forever. */
+	/* Per-surface-id revision counters carried across refresh()es; pruned to the ids seen in the latest one. */
 	QHash<QString, int> m_revisions;
 	QHash<QString, QString> m_lastDocuments;
 };

@@ -6,27 +6,24 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * What the Sahne and Gece heroes say and do, stacked: a small "Last played"
- * eyebrow, the instance's name at 46-48 px (stepping down to fit), the line
- * of icons under it (what it runs, when, how long), then Play and ▾ as
- * glass. The two looks differ only in where they put this column, what they
- * lay it over, its ink and the glow under Play -- all inputs here. The
- * instance and the signals belong to the HomeHero it belongs to.
+ * What the Sahne and Gece heroes say and do, stacked: a "Last played" (or "Selected") eyebrow, the name (stepping
+ * down to fit), the line of icons, then Play and ▾ as glass. The looks differ only in where they put this column,
+ * what they lay it over, its ink and the glow under Play.
  */
 ColumnLayout {
     id: root
 
     required property Item hero
-    property int nameSize: 48
+    property int nameSize: Theme.type.hero.pixelSize
     property color ink: Theme.palette.textPrimary
     property color inkSecondary: Theme.palette.textSecondary
     property color eyebrowInk: Theme.palette.textTertiary
 
-    // Where Play's middle is, in this column's own coordinates.
     readonly property real playCenterY: actions.y + actions.height / 2
 
-    readonly property int eyebrowSize: 11
     readonly property real eyebrowTracking: 0.14
+    // The eyebrow is 12 px (it was 11); the block below stays where it was.
+    readonly property int eyebrowTrim: 1
     readonly property int nameGapAbove: 10
     readonly property int metaGapAbove: 14
     readonly property int actionsGapAbove: 26
@@ -38,8 +35,8 @@ ColumnLayout {
 
     HomeLabel {
         Layout.fillWidth: true
-        text: qsTr("Last played")
-        size: root.eyebrowSize
+        Layout.preferredHeight: implicitHeight - root.eyebrowTrim
+        text: root.hero.isSelection ? qsTr("Selected") : qsTr("Last played")
         tracking: root.eyebrowTracking
         color: root.eyebrowInk
     }

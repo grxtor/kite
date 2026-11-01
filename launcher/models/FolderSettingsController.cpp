@@ -85,11 +85,8 @@ QString FolderSettingsController::instanceDirWarning(const QString& rawDir,
 				  "not start.");
 	}
 
-	/* A folder handed to us through a Flatpak portal is borrowed, not
-	 * granted: the sandbox exposes a one-off pick under /run/user for the
-	 * lifetime of the session. It works until the next restart, when the
-	 * launcher can no longer see it and the instances in it read as
-	 * deleted. */
+	/* A folder from a Flatpak portal is borrowed, not granted: it lives under
+	 * /run/user until the next restart, when its instances would read as deleted. */
 	if (flatpak && rawDir.startsWith(QLatin1String("/run/user"))) {
 		return tr("This folder was shared with %1 only for this session. "
 				  "After a restart %1 will no longer be able to open it. "
@@ -153,9 +150,7 @@ bool FolderSettingsController::addAdditionalDir(const QUrl& url)
 	}
 	const QString cooked = FS::NormalizePath(raw);
 
-	// Before the path warnings: a folder that is already known is the whole
-	// answer, and there is no point warning about a "!" in a path we are
-	// about to refuse for another reason.
+	// Before the path warnings: a known folder is the whole answer.
 	const QString duplicate = duplicateDirMessage(
 		cooked, LAUNCHER->settings()->get("InstanceDir").toString(),
 		additionalDirs());
@@ -178,9 +173,8 @@ bool FolderSettingsController::addAdditionalDir(const QUrl& url)
 
 	QStringList dirs = additionalDirs();
 	dirs << cooked;
-	/* Encoded, not handed over as a list: the INI backend stringifies every
-	 * value it writes, and a multi-element QStringList stringifies to
-	 * nothing at all. InstanceList owns that detail. */
+	/* Encoded, not a list: the INI backend stringifies a multi-element
+	 * QStringList to nothing. InstanceList owns that detail. */
 	LAUNCHER->settings()->set("AdditionalInstanceDirs",
 							  InstanceList::encodeInstanceDirList(dirs));
 	return true;

@@ -7,28 +7,16 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The Library section's toolbar on Home, as in Modrinth App: a wide search,
- * the sort, grid or list, and New instance, in one row under the "Library"
- * heading. The search field gives up its width first under pressure -- the
- * sort button and the labelled button keep theirs, since a shrunken button
- * reads as broken where a narrower search field still reads as one.
- *
- * The sort button names the current order and opens a menu of them, then
- * "Group instances": a check, as every on/off choice is, for the library as
- * group sections or as one list (the InstGrouped launcher setting, which
- * QmlShell hands to the library proxy).
- *
- * New instance stays secondary: on Home the play bar's Play is the one
- * primary button.
+ * The Library section's toolbar on Home: a wide search, sort, grid or list, and New instance. The search field
+ * gives up its width first. The sort button names the current order and opens a menu with "Group instances" (the
+ * InstGrouped setting, handed by QmlShell to the library proxy).
  */
 RowLayout {
     id: root
 
     property alias searchText: searchField.text
-    // "grid" or "list", the page's; the toggle only asks.
     property string viewMode: "grid"
-    // The library proxy (QmlShell's instance model): whether it shows
-    // groups is its `grouped`.
+    // The library proxy (QmlShell's instance model); whether it shows groups is its `grouped`.
     property var libraryModel: null
 
     signal viewModeActivated(string value)
@@ -40,11 +28,8 @@ RowLayout {
 
     readonly property int searchMinWidth: 160
 
-    // InstSortMode is the launcher-wide setting Settings > General's "Sort
-    // instances by" writes too; QmlShell re-sorts every instance proxy when
-    // it changes. Followed rather than read once: it is still empty when
-    // this completes, before Main.qml points SettingsStore at the live
-    // adapter.
+    // InstSortMode is the launcher-wide setting Settings > General also writes; QmlShell re-sorts every instance
+    // proxy when it changes. Followed rather than read once: it is still empty when this completes.
     readonly property var sortModes: SettingsStore.instanceSortModes
     readonly property string sortMode: SettingsStore.string("InstSortMode") || "Name"
     readonly property string sortLabel: {
@@ -106,7 +91,6 @@ RowLayout {
         }
     }
 
-    // Grid or list: two icon buttons, the current view lit.
     ViewModeToggle {
         current: root.viewMode
         onActivated: (value) => root.viewModeActivated(value)

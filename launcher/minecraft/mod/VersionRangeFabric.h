@@ -183,10 +183,9 @@ namespace VersionRangeDetail
 		return prefix;
 	}
 
-	/* Fabric ignores the pre-release once a wildcard is reached, so
-	 * "1.20.x" takes 1.20.4-beta too. Wildcards under any other operator
-	 * are left alone: nobody writes them and the loader's reading of them
-	 * is not worth guessing. */
+	// Fabric ignores the pre-release once a wildcard is reached, so "1.20.x"
+	// takes 1.20.4-beta too. Wildcards under other operators are left alone:
+	// nobody writes them and the loader's reading is not worth guessing.
 	inline Match matchWildcard(const std::optional<SemVer>& version,
 							   const Predicate& predicate)
 	{
@@ -207,9 +206,9 @@ namespace VersionRangeDetail
 		return Match::Yes;
 	}
 
-	/* The first version "~" or "^" no longer covers: the next minor (major)
-	 * with an empty pre-release, which sorts below everything of that
-	 * number - so its own betas are out as well. */
+	// The first version "~" or "^" no longer covers: the next minor (major)
+	// with an empty pre-release, which sorts below everything of that number,
+	// so its own betas are out too.
 	inline SemVer upperBound(const SemVer& base, Op op)
 	{
 		const qsizetype position = op == Op::Tilde ? 1 : 0;

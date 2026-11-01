@@ -2,28 +2,21 @@
  * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: BSD-3-Clause
  *
- *  DesktopNotifier  —  Kite MMCO plugin
+ *  DesktopNotifier: Kite MMCO plugin
  *
- *  Turns selected Kite lifecycle events into native desktop
- *  notifications via the MMCO S19 tray API. The plugin owns a single
- *  long-lived hidden tray icon so that notifications survive the
- *  short-lived "transient" path on Linux desktops that throttle
- *  freshly-shown tray icons.
+ *  Turns selected Kite lifecycle events into native desktop notifications via the MMCO S19 tray API.
+ *  It owns one long-lived hidden tray icon so notifications survive Linux desktops that throttle
+ *  freshly shown tray icons. Kite has no settings page for plugin-namespaced keys, so the toggles are
+ *  edited in the config file; the defaults are sensible out of the box.
  *
- *  All event categories can be toggled at runtime through plugin
- *  settings. The Kite GUI does not currently expose a settings page
- *  for plugin-namespaced keys, so toggling is done by editing the
- *  config file (or another plugin) — but the defaults are chosen so
- *  that the out-of-the-box behaviour is sensible.
- *
- *  Settings (all booleans / int):
- *    notify_launch       — instance starting (PRE_LAUNCH)   (default 1)
- *    notify_exit         — instance stopped  (POST_LAUNCH)  (default 1)
- *    notify_created      — fire on INSTANCE_CREATED         (default 1)
- *    notify_removed      — fire on INSTANCE_REMOVED         (default 0)
- *    notify_news         — fire on NEWS_UPDATED             (default 0)
- *    notify_startup      — say hello on APP_INITIALIZED     (default 0)
- *    timeout_ms          — notification timeout             (default 5000)
+ *  Settings (booleans, plus an int):
+ *    notify_launch    instance starting (PRE_LAUNCH)    (default 1)
+ *    notify_exit      instance stopped (POST_LAUNCH)    (default 1)
+ *    notify_created   fire on INSTANCE_CREATED          (default 0)
+ *    notify_removed   fire on INSTANCE_REMOVED          (default 0)
+ *    notify_news      fire on NEWS_UPDATED              (default 0)
+ *    notify_startup   say hello on APP_INITIALIZED      (default 0)
+ *    timeout_ms       notification timeout              (default 5000)
  */
 
 #include "plugin/sdk/mmco_cxx_sdk.hpp"
@@ -99,16 +92,8 @@ static int on_app_initialized(void* /*mh*/, uint32_t /*hook_id*/,
 	return 0;
 }
 
-/*
- * NOTE: MMCO ABI 2 names its launch hooks confusingly:
- *
- *   MMCO_HOOK_INSTANCE_PRE_LAUNCH   — game is about to start
- *   MMCO_HOOK_INSTANCE_POST_LAUNCH  — game has *exited* (LaunchTask
- *                                     succeeded, m_instance->setRunning(false)
- *                                     has already been called)
- *
- * So PRE_LAUNCH is the right edge for "instance started" notifications.
- */
+/* MMCO ABI 2 names its launch hooks confusingly: PRE_LAUNCH fires when the game is about to start,
+ * POST_LAUNCH after it has exited. */
 static int on_instance_pre_launch(void* /*mh*/, uint32_t /*hook_id*/,
 								  void* payload, void* /*ud*/)
 {
@@ -130,7 +115,7 @@ static int on_instance_pre_launch(void* /*mh*/, uint32_t /*hook_id*/,
 	return 0;
 }
 
-/* POST_LAUNCH = game exited. Optionally tell the user. */
+/* POST_LAUNCH: the game exited. */
 static int on_instance_post_launch(void* /*mh*/, uint32_t /*hook_id*/,
 								   void* payload, void* /*ud*/)
 {
@@ -149,7 +134,7 @@ static int on_instance_post_launch(void* /*mh*/, uint32_t /*hook_id*/,
 static int on_instance_created(void* /*mh*/, uint32_t /*hook_id*/,
 							   void* payload, void* /*ud*/)
 {
-	if (!settingBool("notify_created", true))
+	if (!settingBool("notify_created", false))
 		return 0;
 	auto* info = static_cast<MMCOInstanceInfo*>(payload);
 	QString name = (info && info->instance_name)
@@ -202,7 +187,7 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 	/* Seed defaults exactly once. */
 	settingDefault("notify_launch", "1"); /* PRE_LAUNCH: game starting   */
 	settingDefault("notify_exit", "1");	  /* POST_LAUNCH: game exited    */
-	settingDefault("notify_created", "1");
+	settingDefault("notify_created", "0");
 	settingDefault("notify_removed", "0");
 	settingDefault("notify_news", "0");
 	settingDefault("notify_startup", "0");
@@ -213,9 +198,8 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 				  "DesktopNotifier: no system tray available; notifications "
 				  "will silently no-op.");
 	} else {
-		/* Long-lived hidden tray icon — gives notifications a stable
-		 * source identity on KDE / GNOME / Windows. We never show()
-		 * it. The host owns this icon and tears it down at unload. */
+		/* Long-lived hidden tray icon: a stable source identity for notifications on KDE / GNOME /
+		 * Windows. Never shown; the host tears it down at unload. */
 		g_tray = ctx->tray_create(ctx->module_handle, "dialog-information",
 								  "Kite");
 	}

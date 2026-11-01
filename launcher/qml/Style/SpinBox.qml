@@ -7,11 +7,8 @@ import QtQuick.Templates as T
 import Kite.Theme
 
 // One field (the look TextField.qml sets) with minus/plus buttons inset at
-// either end, rather than Basic's two separately-coloured indicator boxes
-// bolted onto a third box -- that reads as three widgets; this reads as one
-// control with two active edges. Each button is a small rounded hover
-// target inside the field's own corners, so its hover never squares off
-// the field's rounding.
+// either end. Each button is a small rounded hover target inside the field's
+// corners, so its hover never squares off the field's rounding.
 T.SpinBox {
     id: control
 
@@ -89,9 +86,8 @@ T.SpinBox {
         }
     }
 
-    // One end's button: an inset rounded hover target with a minus or plus.
-    // T.SpinBox itself switches an indicator's `enabled` off at the end of
-    // the range, which is what greys the glyph out there.
+    // One end's button. T.SpinBox switches an indicator's `enabled` off at the
+    // end of the range, which greys the glyph out.
     component SpinStep: Item {
         id: step
 

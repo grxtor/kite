@@ -25,7 +25,6 @@
 #include <FileSystem.h>
 #include <QMap>
 #include <QEventLoop>
-#include <QMimeData>
 #include <QUrl>
 #include <QFileSystemWatcher>
 #include <QSet>
@@ -39,8 +38,7 @@ IconList::IconList(const QStringList& builtinPaths, QString path,
 				   QObject* parent)
 	: QAbstractListModel(parent)
 {
-	// Connected first, so the stale colour is gone before anyone else
-	// hears about the change and asks for it again.
+	// Connected first, so the stale colour is gone before anyone else asks.
 	connect(this, &IconList::iconUpdated, this, [this](const QString& key) {
 		m_tintCache.remove(key);
 		m_fillsTileCache.remove(key);
@@ -48,7 +46,6 @@ IconList::IconList(const QStringList& builtinPaths, QString path,
 
 	QSet<QString> builtinNames;
 
-	// add builtin icons
 	for (auto& builtinPath : builtinPaths) {
 		QDir instance_icons(builtinPath);
 		auto file_info_list =
@@ -187,51 +184,6 @@ void IconList::stopWatching()
 	is_watching = false;
 }
 
-QStringList IconList::mimeTypes() const
-{
-	QStringList types;
-	types << "text/uri-list";
-	return types;
-}
-Qt::DropActions IconList::supportedDropActions() const
-{
-	return Qt::CopyAction;
-}
-
-bool IconList::dropMimeData(const QMimeData* data, Qt::DropAction action,
-							int row, int column, const QModelIndex& parent)
-{
-	if (action == Qt::IgnoreAction)
-		return true;
-	// check if the action is supported
-	if (!data || !(action & supportedDropActions()))
-		return false;
-
-	// files dropped from outside?
-	if (data->hasUrls()) {
-		auto urls = data->urls();
-		QStringList iconFiles;
-		for (auto url : urls) {
-			// only local files may be dropped...
-			if (!url.isLocalFile())
-				continue;
-			iconFiles += url.toLocalFile();
-		}
-		installIcons(iconFiles);
-		return true;
-	}
-	return false;
-}
-
-Qt::ItemFlags IconList::flags(const QModelIndex& index) const
-{
-	Qt::ItemFlags defaultFlags = QAbstractListModel::flags(index);
-	if (index.isValid())
-		return Qt::ItemIsDropEnabled | defaultFlags;
-	else
-		return Qt::ItemIsDropEnabled | defaultFlags;
-}
-
 QVariant IconList::data(const QModelIndex& index, int role) const
 {
 	if (!index.isValid())
@@ -288,17 +240,6 @@ void IconList::installIcons(const QStringList& iconFiles)
 	}
 }
 
-void IconList::installIcon(const QString& file, const QString& name)
-{
-	QFileInfo fileinfo(file);
-	if (!fileinfo.isReadable() || !fileinfo.isFile())
-		return;
-
-	QString target = FS::PathCombine(m_dir.dirName(), name);
-
-	QFile::copy(file, target);
-}
-
 bool IconList::iconFileExists(const QString& key) const
 {
 	auto iconEntry = icon(key);
@@ -337,7 +278,6 @@ bool IconList::addThemeIcon(const QString& key)
 		dataChanged(index(*iter), index(*iter));
 		return true;
 	} else {
-		// add a new icon
 		beginInsertRows(QModelIndex(), icons.size(), icons.size());
 		{
 			MMCIcon mmc_icon;
@@ -355,7 +295,6 @@ bool IconList::addThemeIcon(const QString& key)
 bool IconList::addIcon(const QString& key, const QString& name,
 					   const QString& path, const IconType type)
 {
-	// replace the icon even? is the input valid?
 	QIcon icon(path);
 	if (icon.isNull())
 		return false;
@@ -366,7 +305,6 @@ bool IconList::addIcon(const QString& key, const QString& name,
 		dataChanged(index(*iter), index(*iter));
 		return true;
 	} else {
-		// add a new icon
 		beginInsertRows(QModelIndex(), icons.size(), icons.size());
 		{
 			MMCIcon mmc_icon;
@@ -417,8 +355,7 @@ QIcon IconList::getIcon(const QString& key) const
 QIcon IconList::iconAt(int index) const
 {
 	const MMCIcon& entry = icons[index];
-	// Only ever over the icon Kite ships: a file in the icons folder saved
-	// under the same key is the user's choice and still wins.
+	// Only over the icon Kite ships: a user's file under the same key wins.
 	if (entry.isBuiltIn()) {
 		const auto texture = m_gameTextures.constFind(entry.m_key);
 		if (texture != m_gameTextures.constEnd())
@@ -436,8 +373,8 @@ void IconList::loadGameTextures(const QString& librariesDir,
 	if (jar == m_gameTextureJar)
 		return;
 	const auto images = GameTextureIcons::load(jar, version, cacheDir);
-	// A jar that cannot be read yet keeps what is shown, and is tried again
-	// next time; one that is gone takes its textures with it.
+	// An unreadable jar keeps what is shown and is retried; a gone one takes
+	// its textures with it.
 	if (!jar.isEmpty() && images.isEmpty())
 		return;
 	m_gameTextureJar = jar;
@@ -474,8 +411,8 @@ bool IconList::fillsTile(const QString& key) const
 		return *cached;
 	}
 
-	// Every pixel of the outermost ring opaque; an icon that does not come
-	// out square at this size has a transparent margin somewhere.
+	// Every pixel of the outermost ring opaque; otherwise the icon has a
+	// transparent margin.
 	constexpr int kProbe = 32;
 	const QImage image = getIcon(key)
 							 .pixmap(QSize(kProbe, kProbe), 1.0)
@@ -539,4 +476,3 @@ QString IconList::getDirectory() const
 	return m_dir.absolutePath();
 }
 
-// #include "IconList.moc"

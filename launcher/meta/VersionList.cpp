@@ -116,14 +116,6 @@ namespace Meta
 		}
 	}
 
-	BaseVersionList::RoleList VersionList::providesRoles() const
-	{
-		return {VersionPointerRole, VersionRole,  VersionIdRole,
-				ParentVersionRole,	TypeRole,	  UidRole,
-				TimeRole,			RequiresRole, SortRole,
-				RecommendedRole,	LatestRole,	  VersionPtrRole};
-	}
-
 	QHash<int, QByteArray> VersionList::roleNames() const
 	{
 		QHash<int, QByteArray> roles = BaseVersionList::roleNames();

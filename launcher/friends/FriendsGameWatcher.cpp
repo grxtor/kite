@@ -94,8 +94,6 @@ void FriendsGameWatcher::watch(const std::shared_ptr<BaseInstance>& instance)
 				onLaunchTask(raw, task.get());
 			});
 	connect(raw, &QObject::destroyed, this, [this, raw]() { forget(raw); });
-	/* A game already running when the watcher is made; its launch is known as
-	 * far as the instance still holds it. */
 	if (raw->isRunning()) {
 		auto task = raw->getLaunchTask();
 		if (task) {
@@ -126,12 +124,11 @@ void FriendsGameWatcher::onRunningChanged(BaseInstance* instance, bool running)
 	if (!running) {
 		m_profiles.remove(instance);
 	} else if (m_profiles.contains(instance)) {
-		/* The launch was announced first. */
 		m_running.push_back(instance);
 	}
-	/* Otherwise it counts once its launch is announced (create() of a
-	 * LaunchTask sets the instance running before createLaunchTask() says
-	 * who plays it; reporting in between would say "online" for a moment). */
+	/* Otherwise it counts once its launch is announced: creating a LaunchTask sets
+	 * the instance running before createLaunchTask() says who plays it, and
+	 * reporting in between would say "online" for a moment. */
 	emitIfChanged();
 }
 

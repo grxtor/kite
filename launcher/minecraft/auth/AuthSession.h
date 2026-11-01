@@ -63,26 +63,22 @@ struct AuthSession {
 	// Did the user request online mode?
 	bool wants_online = true;
 
-	/* Whether the game's own files (version data, libraries, assets) may be
-	 * downloaded for this launch. An offline account has nothing to sign in
-	 * to, so it is never "online" in the sense above, but it still needs the
-	 * game; MinecraftAccount::fillSession() sets this for it from the user's
-	 * request and the network. Accounts that sign in decide through
-	 * `status` instead (PlayableOnline updates, PlayableOffline does not). */
+	// Whether the game's own files (version data, libraries, assets) may be
+	// downloaded for this launch. An offline account is never "online" above
+	// but still needs the game; MinecraftAccount::fillSession() sets this from
+	// the user's request and the network. Signing-in accounts decide through
+	// `status` (PlayableOnline updates, PlayableOffline does not).
 	bool fetch_game_files = false;
 
 	// Is this a demo session?
 	bool demo = false;
 
 	/*
-	 * Optional user properties payload, populated by plugins through
-	 * MMCO_HOOK_SESSION_FILL. Expected to be either:
-	 *   - a JSON object literal (e.g. `{"textures":["..."]}`); or
-	 *   - empty (the default).
-	 *
-	 * Consumed by serializeUserProperties() when building the JVM
-	 * command line. authlib-injector and Yggdrasil-compatible servers
-	 * use this slot to ship things like signed cape/skin texture URLs.
+	 * Optional user properties payload, filled by plugins through
+	 * MMCO_HOOK_SESSION_FILL: a JSON object literal (e.g.
+	 * `{"textures":["..."]}`) or empty. Consumed by serializeUserProperties()
+	 * for the JVM command line; authlib-injector and Yggdrasil-compatible
+	 * servers use it for signed cape/skin texture URLs.
 	 */
 	QString user_properties;
 };

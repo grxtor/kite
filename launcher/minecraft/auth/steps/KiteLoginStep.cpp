@@ -25,6 +25,7 @@
 #include "Logging.h"
 
 #include "minecraft/auth/AuthRequest.h"
+#include "minecraft/auth/MinecraftServices.h"
 #include "minecraft/auth/Parsers.h"
 #include "minecraft/auth/AccountTask.h"
 
@@ -39,7 +40,7 @@ QString KiteLoginStep::describe()
 
 void KiteLoginStep::perform()
 {
-	auto requestURL = "https://api.minecraftservices.com/launcher/login";
+	auto requestURL = MinecraftServices::url("launcher/login");
 	auto uhs = m_data->mojangservicesToken.extra["uhs"].toString();
 	auto xToken = m_data->mojangservicesToken.token;
 

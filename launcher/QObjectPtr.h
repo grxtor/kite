@@ -32,19 +32,13 @@ namespace details
 		}
 	};
 } // namespace details
-/**
- * A unique pointer class with unique pointer semantics intended for derivates
- * of QObject Calls deleteLater() instead of destroying the contained object
- * immediately
- */
+/** A unique pointer for QObject derivatives that calls deleteLater() instead of
+ * destroying the object immediately. */
 template <typename T>
 using unique_qobject_ptr = std::unique_ptr<T, details::DeleteQObjectLater>;
 
-/**
- * A shared pointer class with shared pointer semantics intended for derivates
- * of QObject Calls deleteLater() instead of destroying the contained object
- * immediately
- */
+/** A shared pointer for QObject derivatives that calls deleteLater() instead of
+ * destroying the object immediately. */
 template <typename T> class shared_qobject_ptr
 {
   public:

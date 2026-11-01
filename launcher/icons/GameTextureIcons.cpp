@@ -45,8 +45,8 @@ namespace
 const QString kTextureRoot = QStringLiteral("assets/minecraft/textures/");
 
 /* Written into a version's cache folder once every image is in it. The
- * number is the revision of GameTextureRecipes: bump it when they change,
- * and caches made from the old ones are redone instead of trusted. */
+ * number is the GameTextureRecipes revision: bump it when they change so
+ * old caches are redone. */
 const QString kCacheMarker = QStringLiteral(".complete-2");
 
 struct ArchiveReadDeleter {
@@ -67,9 +67,9 @@ QByteArray readEntry(struct archive* archive)
 	return read < 0 ? QByteArray() : data;
 }
 
-/* Every key's image from the jar at @p jarPath into @p images, in one
- * pass over it. False when the jar could not be read to its end -- one
- * still being written, or a damaged one -- which leaves @p images empty. */
+/* Every key's image from the jar into @p images in one pass. False when
+ * the jar could not be read to its end (still being written, or damaged),
+ * leaving @p images empty. */
 bool readJar(const QString& jarPath, QHash<QString, QImage>* images)
 {
 	QSet<QString> wanted;
@@ -113,9 +113,8 @@ bool readJar(const QString& jarPath, QHash<QString, QImage>* images)
 	return true;
 }
 
-/* Scales its image to whatever size is asked for, nearest-neighbour, so
- * every texture pixel lands on a block of whole device pixels instead of
- * being smoothed into its neighbours the way QIcon's own engine would. */
+/* Scales its image nearest-neighbour to any requested size, so every
+ * texture pixel lands on whole device pixels, unlike QIcon's own engine. */
 class PixelArtIconEngine : public QIconEngine
 {
   public:
@@ -185,8 +184,8 @@ class PixelArtIconEngine : public QIconEngine
 QString GameTextureIcons::findClientJar(const QString& librariesDir,
 										QString* version)
 {
-	// A release is plain numbers ("1.21.4", "26.3"); anything else --
-	// "24w14a", "1.21-pre1", "26.4-snapshot-4" -- is a snapshot.
+	// A release is plain numbers ("1.21.4", "26.3"); anything else is a
+	// snapshot ("24w14a", "1.21-pre1").
 	static const QRegularExpression release(QStringLiteral("^\\d+(\\.\\d+)+$"));
 	const QDir versions(
 		FS::PathCombine(librariesDir, QStringLiteral("com/mojang/minecraft")));
@@ -245,9 +244,8 @@ QHash<QString, QImage> GameTextureIcons::load(const QString& jarPath,
 		return images;
 	}
 
-	// A jar that gave nothing -- unreadable, or cut short mid-download in a
-	// way the reader cannot tell -- is not cached as having nothing, so the
-	// next look tries it again.
+	// A jar that gave nothing (unreadable or cut short) is not cached as
+	// empty, so the next look retries.
 	QElapsedTimer timer;
 	timer.start();
 	if (!readJar(jarPath, &images) || images.isEmpty()) {

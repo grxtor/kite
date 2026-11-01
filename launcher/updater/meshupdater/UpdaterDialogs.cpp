@@ -47,10 +47,6 @@ namespace
 
 } // namespace
 
-// ---------------------------------------------------------------------------
-// SelectReleaseDialog
-// ---------------------------------------------------------------------------
-
 SelectReleaseDialog::SelectReleaseDialog(const Version& currentVersion,
 										 const QList<GitHubRelease>& releases,
 										 QWidget* parent)
@@ -76,8 +72,8 @@ SelectReleaseDialog::SelectReleaseDialog(const Version& currentVersion,
 	connect(ui->versionsTree, &QTreeWidget::currentItemChanged, this,
 			&SelectReleaseDialog::selectionChanged);
 
-	// The button box is wired to accept/reject in the .ui file; the labels are
-	// set here so they go through our translations rather than Qt's.
+	// The button box is wired to accept/reject in the .ui file; the labels are set here so they go
+	// through our translations.
 	ui->buttonBox->button(QDialogButtonBox::Ok)->setText(tr("OK"));
 	ui->buttonBox->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
 }
@@ -129,10 +125,6 @@ void SelectReleaseDialog::selectionChanged(QTreeWidgetItem* current,
 	ui->changelogTextBrowser->setHtml(Strings::htmlListPatch(
 		markdown.process(m_selectedRelease.body.toUtf8())));
 }
-
-// ---------------------------------------------------------------------------
-// SelectReleaseAssetDialog
-// ---------------------------------------------------------------------------
 
 SelectReleaseAssetDialog::SelectReleaseAssetDialog(
 	const QList<GitHubReleaseAsset>& assets, QWidget* parent)

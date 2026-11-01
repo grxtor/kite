@@ -66,22 +66,3 @@ LogIngester::ingestForInstance(const QString& instancePath) const
 
 	return b;
 }
-
-LogIngester::Bundle LogIngester::ingestFromPath(const QString& path) const
-{
-	Bundle b;
-	QFileInfo fi(path);
-	if (fi.isFile()) {
-		b.combinedText = readFileTail(path);
-		b.sources.append(path);
-	} else if (fi.isDir()) {
-		QDirIterator it(path, QDir::Files);
-		while (it.hasNext()) {
-			it.next();
-			b.combinedText += "==== " + it.filePath() + " ====\n";
-			b.combinedText += readFileTail(it.filePath());
-			b.sources.append(it.filePath());
-		}
-	}
-	return b;
-}

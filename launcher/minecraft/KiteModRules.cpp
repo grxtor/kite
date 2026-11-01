@@ -30,6 +30,7 @@
 #include <QUrl>
 #include <algorithm>
 
+#include "Json.h"
 #include "Version.h"
 
 namespace
@@ -85,12 +86,11 @@ namespace KiteMod
 {
 	std::optional<QList<KiteModBuild>> parseManifest(const QByteArray& json)
 	{
-		QJsonParseError error;
-		const QJsonDocument document = QJsonDocument::fromJson(json, &error);
-		if (error.error != QJsonParseError::NoError || !document.isObject()) {
+		const auto document = Json::tryParse(json);
+		if (!document || !document->isObject()) {
 			return std::nullopt;
 		}
-		const QJsonObject root = document.object();
+		const QJsonObject root = document->object();
 		if (root.value("formatVersion").toInt(-1) != kKnownFormatVersion) {
 			return std::nullopt;
 		}

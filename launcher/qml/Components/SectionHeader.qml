@@ -6,11 +6,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * A group's title row: name, an optional item count, and -- when the group
- * can fold -- a chevron after them that turns to show the collapsed state.
- * A page-level section title: Theme's heading, like Home's ("Continue
- * playing", "Library"). The library's own group headers (InstanceSection)
- * sit a level under a page's sections and stay at title size.
+ * A group's title row: name, an optional item count and, when the group can fold,
+ * a chevron that turns to show the collapsed state. A page-level section title
+ * in Theme's heading size; InstanceSection's group headers stay at title size.
  */
 Item {
     id: root
@@ -29,19 +27,19 @@ Item {
         anchors.left: parent.left
         spacing: Theme.space.sm
 
-        Text {
+        Copy {
             anchors.verticalCenter: parent.verticalCenter
             text: root.title
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.heading
-            font.pixelSize: Theme.type.heading.pixelSize
-            font.weight: Theme.type.heading.weight
+            role: "heading"
         }
 
-        Tag {
+        Copy {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.count >= 0
             text: root.count
+            role: "caption"
+            tone: "tertiary"
+            font.weight: Font.Medium
         }
 
         MeshIcon {

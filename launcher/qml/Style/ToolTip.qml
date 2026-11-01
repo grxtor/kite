@@ -6,9 +6,8 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
-// A small raised card rather than a dark chip: tooltipBackground (the
-// raised surface in Amethyst), the hairline border and the md shadow, like
-// a menu without the glass edge.
+// A small raised card: tooltipBackground, the hairline border and the md
+// shadow, like a menu without the glass edge.
 T.ToolTip {
     id: control
 
@@ -45,8 +44,7 @@ T.ToolTip {
     }
 
     background: Rectangle {
-        // md rather than the menus' lg: on a one-line tooltip lg already
-        // reads as a pill.
+        // md, not the menus' lg: on a one-line tooltip lg reads as a pill.
         radius: Theme.radius.md
         color: Theme.palette.tooltipBackground
         border.width: 1

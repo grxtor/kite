@@ -37,7 +37,6 @@ class GZipTest : public QObject
 
 	void test_Through()
 	{
-		// test up to 10 MB
 		static const int size = 10 * 1024 * 1024;
 		QByteArray random;
 		QByteArray compressed;
@@ -46,16 +45,13 @@ class GZipTest : public QObject
 		std::uniform_int_distribution<unsigned short> idis(
 			0, std::numeric_limits<uint8_t>::max());
 
-		// initialize random buffer
 		for (int i = 0; i < size; i++) {
 			random.append((char)idis(eng));
 		}
 
-		// initialize fibonacci
 		int prev = 1;
 		int cur = 1;
 
-		// test if fibonacci long random buffers pass through GZip
 		do {
 			QByteArray copy = random;
 			copy.resize(cur);
@@ -66,6 +62,26 @@ class GZipTest : public QObject
 			QCOMPARE(decompressed, copy);
 			fib(prev, cur);
 		} while (cur < size);
+	}
+
+	void test_UnzipStopsPastTheCap()
+	{
+		const QByteArray plain(100000, 'a');
+		QByteArray compressed;
+		QByteArray out;
+		QVERIFY(GZip::zip(plain, compressed));
+		QVERIFY(GZip::unzip(compressed, out, plain.size()));
+		QCOMPARE(out, plain);
+		bool exceeded = true;
+		QVERIFY(GZip::unzip(compressed, out, plain.size(), &exceeded));
+		QVERIFY(!exceeded);
+		QVERIFY(!GZip::unzip(compressed, out, plain.size() - 1, &exceeded));
+		QVERIFY(exceeded);
+		QVERIFY(!GZip::unzip(compressed, out, 0));
+		QVERIFY(!GZip::unzip(QByteArray("not gzip data"), out, 10, &exceeded));
+		QVERIFY(!exceeded);
+		QVERIFY(GZip::unzip(compressed, out));
+		QCOMPARE(out, plain);
 	}
 };
 

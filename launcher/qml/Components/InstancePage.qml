@@ -7,41 +7,20 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Kite.Theme
 
-/*
- * One instance, opened from the library: a header -- its icon, its name in
- * Montserrat, what it runs and when it was played -- with Play (primary),
- * Settings and a ⋯ menu for its other actions, over tabs for what is inside
- * it. The persistent play bar still plays and stops whatever instance this
- * page has open too. On a wide window the header, tabs and tab content stop
- * at Theme.layout.maxContentWidth and centre.
- *
- * Laid out the way Modrinth App and CurseForge lay out an instance: it opens
- * on its Content, and the tabs used every day (Content, Worlds, Screenshots,
- * Log, Settings) are always in view, with the rest under "More". Adding
- * content is an action of the Content tab ("Add content" in its toolbar),
- * not a tab of its own: like Modrinth App going to its browse page, it
- * opens the browser as a page of its own -- banner and tabs make way for
- * the results, which matters most in a small window -- and the instance's
- * name in the top bar's breadcrumb returns to the list.
- */
+/* One instance: a header (icon, name, Play, ⋯ menu) over tabs; opens on Content. */
 Item {
     id: root
 
     // Single-row model of this instance (the same roles as the library).
     property var headerModel: null
-    // InstanceDetails for it.
     property var details: null
     property int systemMemoryMiB: 8192
-    // The open tab, or "browse" for Content's "Add content" view. Empty, or
-    // a tab this instance does not have, shows the first tab (Content, or
-    // Worlds on an old-format instance).
+    // The open tab, or "browse" for Content's "Add content" view; empty or unknown shows the first tab.
     property string tab: ""
-    // The QML shell, handed on to the Content tab.
     property var shell: null
     // (anchor, instanceId) -> PluginSurfaceModel.
     property var pluginSurfacesFor: null
-    // The account, for the top-right ProfileButton -- this page has no
-    // TopBar of its own (see Main.qml), so it carries the same spot here.
+    // The account for the top-right ProfileButton; this page has no TopBar.
     property string accountName: ""
     property string accountKind: ""
     property string accountAvatarSource: ""
@@ -51,21 +30,17 @@ Item {
     readonly property var pagePlugins: pluginSurfacesFor && instanceId.length > 0 ? pluginSurfacesFor(1, instanceId) : null
     readonly property var settingsPlugins: pluginSurfacesFor && instanceId.length > 0 ? pluginSurfacesFor(2, instanceId) : null
 
-    // The header carries its own Play/Stop next to the persistent play bar's.
     signal backRequested()
     // Open another instance (the Mods tab's new Kite Performance one).
     signal openInstanceRequested(string id)
-    // The header's Play and Stop, for the instance this page has open.
     signal playRequested(string id)
     signal stopRequested(string id)
     signal openPathRequested(string path)
-    // Bubbles up from the Servers tab's "Join" button - see Main.qml.
+    // From the Servers tab's "Join" button.
     signal joinServerRequested(string id, string address)
 
-    // The same instance actions the library's ⋯ menu offers, with the same
-    // arguments as LibraryPage's signals of these names, so Main.qml can
-    // answer them with the same dialogs. Set `manageable` once it does:
-    // until then the header menu offers only what this page can do itself.
+    // The library's instance actions; set `manageable` once Main.qml answers them, until then the
+    // header menu offers only what this page can do.
     property bool manageable: false
     signal renameRequested(string id, string name)
     signal iconRequested(string id, string iconKey)
@@ -73,8 +48,6 @@ Item {
     signal duplicateRequested(string id, string name, string group)
     signal deleteRequested(string id, string name)
 
-    // The header menu's Play options, with the same arguments as
-    // LibraryPage's signals of these names (LaunchOptionsMenu.qml).
     property var launchOptionsFor: null
     signal launchModeRequested(string id, string mode)
     signal launchAsRequested(string id, string accountId)
@@ -82,22 +55,15 @@ Item {
     signal performanceChosen(string id, bool enabled)
     signal navigateRequested(string target)
 
-    // id -> export / shortcut controller, as on LibraryPage: the header
-    // menu offers "Export…" and "Create shortcut…" once these are set.
+    // id -> export / shortcut controller; the header menu offers "Export…" and "Create shortcut…"
+    // once set.
     property var exportControllerFor: null
     property var shortcutControllerFor: null
-    // LibraryController, as on LibraryPage: Duplicate with options. Until
-    // it is set, Duplicate goes to Main.qml's own dialog.
+    // LibraryController: Duplicate with options; without it, Duplicate goes to Main.qml's own dialog.
     property var library: null
 
-    // The header ⋯ menu, open under the banner's top-right corner where
-    // its button sits: for review snapshots (Main.qml's "instancemenu" dev
-    // route). Deferred a beat, because the route opens the page in the same
-    // breath and the banner has no width until it has been laid out.
-    // The Content tab's "Export list" dialog and Add content's Filters
-    // popup, open: for review snapshots (Main.qml's "exportlist" and
-    // "browsefilters" dev routes, after instance=<id>). Deferred like the
-    // header menu below, for the tab to be shown and laid out first.
+    // Dev-route review snapshots ("instancemenu", "exportlist", "browsefilters"): open after a
+    // beat, once the page is laid out.
     function openContentExportList() {
         root.tab = "content"
         reviewDelay.run(function () { contentTab.exportList([]) })
@@ -106,19 +72,16 @@ Item {
         root.tab = "browse"
         reviewDelay.run(browseView.openFilters)
     }
-    // Content's "Add content": the browser, on the kind Content showed.
     function browseContent(kind) {
         browseView.showKind(kind)
         root.tab = "browse"
     }
-    // Back from the browser to Content, on the kind just browsed.
     function leaveBrowse() {
         contentTab.showKind(browseView.browser ? browseView.browser.contentType : "")
         root.tab = "content"
     }
 
-    // A tab's own state for review snapshots (Main.qml's "review=<name>"
-    // dev route, after instance=<id>): the tab is shown first, then asked.
+    // A tab's own state for review snapshots (dev route "review=<name>").
     function review(name) {
         const owners = {
             versionmore: ["version", versionTab], newcomponent: ["version", versionTab],
@@ -150,13 +113,11 @@ Item {
         onTriggered: if (action) action()
     }
 
-    // The header delegate below, for the menu's name/icon/group.
     property var headerCard: null
-    // Home's scale: a 64 px tile (HomeHeroTile, smaller), and Play at Home's
-    // hero height.
+    // File name of the screenshot the instance's own cover was made from; "" when it has none.
+    readonly property string coverSource: root.headerCard ? root.headerCard.coverSource : ""
     readonly property int headerIconSize: 64
     readonly property int headerActionSize: Theme.control.heightLg
-    // Whether the opened instance's game is running (from the header model).
     property bool running: false
 
     readonly property var modsModel: details ? details.mods : null
@@ -166,9 +127,8 @@ Item {
     readonly property bool isLegacy: !!details && details.isLegacy
     readonly property bool isMinecraft: !!details && details.isMinecraft
 
-    // Everyday tabs first, in view at every width; `more` ones always sit in
-    // the strip's More menu (see TabStrip). An old-format instance can only
-    // be upgraded, so it has no Content, Version or Settings.
+    // Everyday tabs first; `more` ones sit in the strip's More menu. An old-format instance can
+    // only be upgraded.
     readonly property var tabList: {
         const tabs = []
         if (!root.isLegacy)
@@ -196,7 +156,6 @@ Item {
                                ? pluginPages.firstTitle : qsTr("Plugins") })
         return tabs
     }
-    // What is on screen: `tab` when this instance has it, else the first tab.
     readonly property string shownTab: {
         if (root.tab === "browse" && !root.isLegacy)
             return "browse"
@@ -204,12 +163,9 @@ Item {
         return ids.indexOf(root.tab) >= 0 ? root.tab : (ids.length > 0 ? ids[0] : "")
     }
     readonly property bool browsing: root.shownTab === "browse"
-    // Set from WorldsTab's per-row "Data packs" action, and read by
-    // DataPacksTab's own selectedWorldRow - see both. Reset whenever a
-    // different instance opens, so a row picked in a previous instance
-    // never carries over onto one that may not even have that many worlds.
+    // Set by WorldsTab's "Data packs" action and read by DataPacksTab; reset when another instance
+    // opens.
     property int pendingDataPackWorld: -1
-    // A different instance also opens on its first tab, as in any launcher.
     onDetailsChanged: {
         root.pendingDataPackWorld = -1
         root.tab = ""
@@ -219,8 +175,7 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: Theme.space.xl + Theme.space.xs
         anchors.rightMargin: Theme.space.xl + Theme.space.xs
-        // The shell's inset panel adds no padding; every page gives itself
-        // this much under its top edge.
+        // The shell's inset panel adds no padding.
         anchors.topMargin: Theme.space.xl
         anchors.bottomMargin: Theme.space.lg
         spacing: Theme.space.md
@@ -233,6 +188,7 @@ Item {
                 readonly property string name: model.name || ""
                 readonly property string iconKey: model.iconKey || ""
                 readonly property string group: model.group || ""
+                readonly property string coverSource: model.coverSource || ""
                 readonly property bool isRunning: !!model.isRunning
                 readonly property string launchStatus: model.launchStatus || ""
                 readonly property real launchProgress: model.launchProgress === undefined ? -1 : model.launchProgress
@@ -246,14 +202,11 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: Theme.space.xs
                 implicitHeight: headerRow.implicitHeight
-                // Add content is a page of its own (see the file comment).
                 visible: !root.browsing
                 Component.onDestruction: if (root.headerCard === headerCard) root.headerCard = null
 
-                // Right-aligned under the ⋯ button, like any ⋯ menu, and held
-                // there: entries that show or hide as the menu opens change
-                // its width after it is placed, which used to push its right
-                // edge past the button.
+                // Right-aligned under the ⋯ button and held there: entries that show or hide as the
+                // menu opens change its width.
                 function openMenu() {
                     if (!moreButton)
                         return
@@ -262,16 +215,13 @@ Item {
                     instanceMenu.x = Qt.binding(() => moreButton.width - instanceMenu.width)
                 }
 
-                // The settings tab needs to know whether the game runs, and
-                // this delegate is the only place the header model's roles
-                // are at hand.
+                // The only place the header model's roles are at hand.
                 Component.onCompleted: {
                     root.headerCard = headerCard
                     root.running = isRunning
                 }
                 onIsRunningChanged: root.running = isRunning
 
-                // One loader / version / time fact of the meta row.
                 component MetaItem: Row {
                     property string iconName
                     property string text
@@ -282,12 +232,11 @@ Item {
                         size: Theme.icon.sm
                         color: Theme.palette.textTertiary
                     }
-                    Text {
+                    Copy {
                         anchors.verticalCenter: parent.verticalCenter
                         text: parent.text
-                        color: Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
+                        role: "label"
+                        tone: "secondary"
                         font.weight: Font.Medium
                     }
                 }
@@ -298,10 +247,6 @@ Item {
                     anchors.right: parent.right
                     spacing: Theme.space.lg
 
-                    // The instance's identity, as Home's hero shows it: its
-                    // icon all but filling the neutral tile, or the pack's
-                    // own logo across it -- never a tint taken from the
-                    // icon's colour.
                     HomeHeroTile {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.preferredWidth: root.headerIconSize
@@ -310,7 +255,6 @@ Item {
                         instanceId: root.instanceId
                         packArt: headerCard.model.packArt || ""
                         matte: Theme.palette.canvas
-                        // The hero's corner is too round at 64 px.
                         radius: Theme.radius.lg
                     }
 
@@ -320,21 +264,16 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         spacing: Theme.space.xs
 
-                        Text {
+                        Copy {
                             Layout.fillWidth: true
                             text: headerCard.name
                             elide: Text.ElideRight
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.heading
-                            font.pixelSize: Theme.type.display.pixelSize
-                            font.weight: Theme.type.display.weight
+                            role: "display"
                         }
 
                         Flow {
                             Layout.fillWidth: true
                             spacing: Theme.space.xs
-                            // Items wrap onto a second line in a narrow window
-                            // rather than being cut off.
                             MetaItem {
                                 text: headerCard.model.loader.length > 0 ? headerCard.model.loader : qsTr("Vanilla")
                                 iconName: "layers"
@@ -346,8 +285,8 @@ Item {
                                 iconName: "cube"
                                 rightPadding: Theme.space.md
                             }
-                            // Clock = when it was last played, hourglass = for
-                            // how long in all; the ▶ triangle only ever means Play.
+                            // Clock = last played, hourglass = total play time; the ▶ triangle only
+                            // means Play.
                             MetaItem {
                                 text: Format.lastPlayed(headerCard.model.lastLaunch)
                                 iconName: "clock"
@@ -364,15 +303,14 @@ Item {
                             visible: headerCard.launching
                             Layout.preferredWidth: 320
                             spacing: Theme.space.xs
-                            Text {
+                            Copy {
                                 Layout.fillWidth: true
                                 text: headerCard.launchProgress >= 0
                                       ? qsTr("%1, %2%").arg(headerCard.launchStatus).arg(Math.round(headerCard.launchProgress * 100))
                                       : headerCard.launchStatus
                                 elide: Text.ElideRight
-                                color: Theme.palette.textSecondary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
+                                role: "label"
+                                tone: "secondary"
                             }
                             LaunchProgressBar {
                                 Layout.fillWidth: true
@@ -381,7 +319,6 @@ Item {
                         }
                     }
 
-                    // Play first and biggest; Settings and ⋯ quieter beside it.
                     Row {
                         Layout.alignment: Qt.AlignVCenter
                         spacing: Theme.space.sm
@@ -396,14 +333,6 @@ Item {
                                                              : root.playRequested(root.instanceId)
                         }
                         IconButton {
-                            visible: !root.isLegacy
-                            size: root.headerActionSize
-                            flat: false
-                            iconName: "settings"
-                            tip: qsTr("Instance settings")
-                            onClicked: root.tab = "settings"
-                        }
-                        IconButton {
                             id: moreButton
                             size: root.headerActionSize
                             iconName: "more"
@@ -416,8 +345,6 @@ Item {
             }
         }
 
-        // An old-format instance: the one thing to do with it, above
-        // whichever tab is open.
         LegacyUpgradeNotice {
             Layout.fillWidth: true
             Layout.maximumWidth: Theme.layout.maxContentWidth
@@ -502,7 +429,11 @@ Item {
                 model: root.shotsModel
                 details: root.details
                 directory: root.details ? root.details.screenshotsDir : ""
+                coverSource: root.coverSource
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
+                onCoverRequested: (path) => { if (root.shell) root.shell.setInstanceCover(root.instanceId, path) }
+                onCoverCleared: { if (root.shell) root.shell.clearInstanceCover(root.instanceId) }
+                onCoverRenamed: (path) => { if (root.shell) root.shell.renameInstanceCoverSource(root.instanceId, path) }
             }
 
             LogTab {
@@ -519,8 +450,8 @@ Item {
                 systemMemoryMiB: root.systemMemoryMiB
                 running: root.running
                 loader: root.details && root.details.contentBrowser ? root.details.contentBrowser.instanceLoader : ""
-                // The manifest is fetched when the game starts, so the answer is read again when it stops
-                // running, and when the tab is shown again (the loader may have been updated in Version).
+                // Read again when the game stops (the manifest is fetched at launch) and when the
+                // tab is shown (the loader may have changed in Version).
                 kiteModSupport: {
                     root.running
                     visible
@@ -543,46 +474,29 @@ Item {
                     id: pluginPages
                     width: parent.width
                     model: root.pagePlugins
-                    // A single plugin page is already named by its tab.
                     showTitles: count > 1
                 }
             }
         }
     }
 
-    // The header's ⋯ menu: Play options and the folders first, then --
-    // once Main.qml answers them (see `manageable` and the controller
-    // functions above) -- the library's own instance actions.
     Menu {
         id: instanceMenu
         readonly property bool isMinecraft: !!root.details && root.details.isMinecraft
         readonly property string name: root.headerCard ? root.headerCard.name : ""
         readonly property string iconKey: root.headerCard ? root.headerCard.iconKey : ""
         readonly property string group: root.headerCard ? root.headerCard.group : ""
-        // Play options make no sense while the game runs.
         readonly property bool offerOptions: !root.running && !!root.launchOptionsFor
         readonly property bool offerManage: root.manageable || exportFlows.canExport || exportFlows.canCreateShortcut
 
-        // A submenu has no `visible` of its own: its entry is a MenuItem Qt
-        // makes, found here by its subMenu. Kept in step ahead of opening:
-        // the ⋯ button places the menu by its width before aboutToShow, so
-        // an entry that appeared only then pushed the menu past the button.
-        function syncOptionsEntry() {
-            for (var i = 0; i < instanceMenu.count; ++i) {
-                var item = instanceMenu.itemAt(i)
-                if (item && item.subMenu === playOptionsMenu) {
-                    item.visible = instanceMenu.offerOptions
-                    item.height = instanceMenu.offerOptions ? item.implicitHeight : 0
-                }
-            }
+        SubmenuEntry {
+            menu: instanceMenu
+            submenu: playOptionsMenu
+            shown: instanceMenu.offerOptions
         }
-        onOfferOptionsChanged: syncOptionsEntry()
-        Component.onCompleted: syncOptionsEntry()
-
         LaunchOptionsMenu {
             id: playOptionsMenu
-            // An icon like its neighbours', or its label would start where
-            // theirs' icons do.
+            // An icon like its neighbours', so the label lines up.
             icon.source: Icons.url("sliders")
             instanceId: root.instanceId
             optionsFor: root.launchOptionsFor
@@ -592,96 +506,80 @@ Item {
             onPerformanceChosen: (id, enabled) => root.performanceChosen(id, enabled)
             onNavigateRequested: (target) => root.navigateRequested(target)
         }
-        MenuSeparator {
+        MenuDivider {
             visible: instanceMenu.offerOptions
-            height: visible ? implicitHeight : 0
         }
         MenuItem {
             text: qsTr("Open folder")
             icon.source: Icons.url("folder")
             onTriggered: root.openPathRequested(root.details ? root.details.instanceRoot : "")
         }
-        MenuItem {
-            // A hidden item still takes its row in a Menu; zero it as well.
+        MenuEntry {
             visible: instanceMenu.isMinecraft && root.details.gameRoot !== root.details.instanceRoot
-            height: visible ? implicitHeight : 0
             text: qsTr("Open .minecraft folder")
             icon.source: Icons.url("folder")
             onTriggered: root.openPathRequested(root.details ? root.details.gameRoot : "")
         }
-        MenuItem {
-            // A hidden item still takes its row in a Menu; zero it as well.
+        MenuEntry {
             visible: instanceMenu.isMinecraft
-            height: visible ? implicitHeight : 0
             text: qsTr("Open mods folder")
             icon.source: Icons.url("folder")
             onTriggered: root.openPathRequested(root.details ? root.details.modsDir : "")
         }
-        MenuSeparator {
+        MenuDivider {
             visible: instanceMenu.offerManage
-            height: visible ? implicitHeight : 0
         }
-        MenuItem {
+        MenuEntry {
             visible: root.manageable
-            height: visible ? implicitHeight : 0
             text: qsTr("Rename…")
             icon.source: Icons.url("edit")
             onTriggered: root.renameRequested(root.instanceId, instanceMenu.name)
         }
-        MenuItem {
+        MenuEntry {
             visible: root.manageable
-            height: visible ? implicitHeight : 0
             text: qsTr("Change icon…")
             icon.source: Icons.url("image")
             onTriggered: root.iconRequested(root.instanceId, instanceMenu.iconKey)
         }
-        MenuItem {
+        MenuEntry {
             visible: root.manageable
-            height: visible ? implicitHeight : 0
             text: qsTr("Change group…")
             icon.source: Icons.url("folder-input")
             onTriggered: root.groupRequested(root.instanceId, instanceMenu.group)
         }
-        MenuItem {
+        MenuEntry {
             visible: root.manageable
-            height: visible ? implicitHeight : 0
             text: qsTr("Duplicate…")
             icon.source: Icons.url("copy")
             onTriggered: exportFlows.canDuplicate
                          ? exportFlows.duplicateInstance(root.instanceId, instanceMenu.name, instanceMenu.group, instanceMenu.iconKey)
                          : root.duplicateRequested(root.instanceId, instanceMenu.name, instanceMenu.group)
         }
-        MenuItem {
+        MenuEntry {
             visible: exportFlows.canExport
-            height: visible ? implicitHeight : 0
             text: qsTr("Export…")
             icon.source: Icons.url("archive")
             onTriggered: exportFlows.exportInstance(root.instanceId)
         }
-        MenuItem {
+        MenuEntry {
             visible: exportFlows.canCreateShortcut
-            height: visible ? implicitHeight : 0
             text: qsTr("Create shortcut…")
             icon.source: Icons.url("external-link")
             onTriggered: exportFlows.createShortcut(root.instanceId)
         }
-        MenuSeparator {
+        MenuDivider {
             visible: root.manageable
-            height: visible ? implicitHeight : 0
         }
-        MenuItem {
+        MenuEntry {
             visible: root.manageable
-            height: visible ? implicitHeight : 0
             text: qsTr("Delete…")
             icon.source: Icons.url("trash")
-            // As InstanceMenu: a running game's folder is in use.
+            // A running game's folder is in use.
             enabled: !root.running
             onTriggered: root.deleteRequested(root.instanceId, instanceMenu.name)
         }
     }
 
-    // "Export…" and "Create shortcut…": the dialogs and their toast, shared
-    // with LibraryPage.
     InstanceExportFlows {
         id: exportFlows
         exportControllerFor: root.exportControllerFor

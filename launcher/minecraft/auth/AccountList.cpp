@@ -67,6 +67,25 @@ int AccountList::findAccountByProfileId(const QString& profileId) const
 	return -1;
 }
 
+MinecraftAccountPtr
+AccountList::findAccountByProfileOrInternalId(const QString& key) const
+{
+	if (key.isEmpty()) {
+		return MinecraftAccountPtr();
+	}
+	const int byProfileId = findAccountByProfileId(key);
+	if (byProfileId != -1) {
+		return at(byProfileId);
+	}
+	for (int i = 0; i < count(); ++i) {
+		MinecraftAccountPtr account = at(i);
+		if (account && account->internalId() == key) {
+			return account;
+		}
+	}
+	return MinecraftAccountPtr();
+}
+
 int AccountList::findOfflineAccountByUsername(const QString& username) const
 {
 	if (username.isEmpty())
@@ -79,8 +98,8 @@ int AccountList::findOfflineAccountByUsername(const QString& username) const
 		MinecraftAccountPtr account = at(i);
 		if (!account || !account->isOffline())
 			continue;
-		/* profileName() returns the offlineUsername for offline accounts —
-		 * see AccountData::profileName(). Compare case-insensitively. */
+		// profileName() is the offline username for offline accounts; compare
+		// case-insensitively.
 		if (account->profileName().trimmed().toLower() == needle)
 			return i;
 	}
@@ -124,30 +143,10 @@ void AccountList::addAccount(const MinecraftAccountPtr account)
 		return;
 	}
 
-	/*
-	 * Offline-account duplicate guard.
-	 *
-	 * Offline accounts have an empty profileId (no Mojang profile is
-	 * ever fetched for them), so the existing profileId-based
-	 * deduplication a few lines below silently lets a second offline
-	 * account with the same username slip through. That used to
-	 * surface as two identically-named "User" rows in the accounts
-	 * list, both of which would refresh into AccountState::Offline and
-	 * neither of which could be told apart in the picker.
-	 *
-	 * The right fix is to reject the addition at the source: if an
-	 * offline account with this username already exists (case-
-	 * insensitive — Minecraft is case-sensitive but the launcher
-	 * profile picker is not, and users routinely conflate the two),
-	 * silently drop the new one rather than replace the existing
-	 * record. Replacing would change the account's internal id, which
-	 * would orphan every instance setting that references it by id.
-	 *
-	 * UI code is expected to validate before calling addAccount(),
-	 * but this guard makes the AccountList itself safe even when
-	 * called from places that forgot to (config-file load, plugin
-	 * APIs, future import paths, …).
-	 */
+	// Offline accounts have an empty profileId, so the profileId dedupe below
+	// misses them. Drop a second offline account with the same username
+	// (case-insensitive) rather than replace the first: replacing would change
+	// its id and orphan the instance settings that reference it.
 	if (account && account->isOffline()) {
 		const int existing =
 			findOfflineAccountByUsername(account->profileName());
@@ -246,8 +245,8 @@ void AccountList::setDefaultAccount(MinecraftAccountPtr newAccount)
 			idx++;
 		}
 		if (currentDefaultAccount != newDefaultAccount) {
-			/* Set before the notifications: a view that re-reads the rows in
-			 * its dataChanged handler must already see the new default. */
+			// Set before the notifications: a view re-reading rows in
+			// dataChanged must see the new default.
 			m_defaultAccount = newDefaultAccount;
 			emit dataChanged(index(currentDefaultAccountIdx),
 							 index(currentDefaultAccountIdx,
@@ -310,8 +309,7 @@ int AccountList::count() const
 	return m_accounts.count();
 }
 
-/* Shared by the StatusColumn case in data() below and the QML StatusRole,
- * so a future AccountState only needs its translatable string added once. */
+// Shared by the StatusColumn case in data() and the QML StatusRole.
 static QString accountStateDisplayString(AccountState state)
 {
 	switch (state) {
@@ -325,8 +323,7 @@ static QString accountStateDisplayString(AccountState state)
 			return AccountList::tr("Online", "Account status");
 		}
 		case AccountState::Working: {
-			/* A token refresh or sign-in is running; say so in the user's
-			 * words rather than the enum's. */
+			// A token refresh or sign-in is running.
 			return AccountList::tr("Signing in\u2026", "Account status");
 		}
 		case AccountState::Errored: {
@@ -342,9 +339,8 @@ static QString accountStateDisplayString(AccountState state)
 	return QString();
 }
 
-/* Stable, non-localized counterpart to accountStateDisplayString() above,
- * for QML's StateKeyRole -- code that wants to branch on the state (to pick
- * a color, say) should not have to match translated text. */
+// Stable, non-localized counterpart of accountStateDisplayString(), for QML's
+// StateKeyRole.
 static QString accountStateKey(AccountState state)
 {
 	switch (state) {
@@ -413,15 +409,12 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
 													   : Qt::Unchecked;
 			}
 
-			/* No case above matches outside NameColumn (there is no
-			 * default:), so this falls out of the inner switch on any other
-			 * column - make that explicit rather than let it fall through
-			 * into the named QML roles below. */
+			// Any other column has no data; do not fall through into the QML
+			// roles.
 			return QVariant();
 
-		// Named roles for QML: a ListView only ever binds to column 0, so
-		// these return the same data as the columns above regardless of
-		// index.column(), making it all reachable from a single delegate.
+		// Named roles for QML: a ListView binds to column 0 only, so these
+		// return the same data whatever index.column() is.
 		case NameRole:
 			return account->accountDisplayString();
 		case ProfileNameRole:
@@ -440,8 +433,7 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
 		case StateKeyRole:
 			return accountStateKey(account->accountState());
 		case AccountIdRole:
-			return account->profileId().isEmpty() ? account->internalId()
-												   : account->profileId();
+			return account->accountId();
 
 		default:
 			return QVariant();
@@ -614,12 +606,9 @@ bool AccountList::loadV3(QJsonObject& root)
 					continue;
 				}
 			} else if (account->isOffline()) {
-				/* Offline accounts have no profileId, so the profileId
-				 * dedupe above does nothing for them. Match by
-				 * username instead — this rescues users whose
-				 * accounts.json picked up duplicate offline entries
-				 * before the addAccount() guard was added. The first
-				 * one wins; later duplicates are silently dropped. */
+				// Offline accounts have no profileId; dedupe by username
+				// instead. This also cleans up accounts.json files that gained
+				// duplicates before the addAccount() guard. The first wins.
 				if (findOfflineAccountByUsername(account->profileName()) !=
 					-1) {
 					qWarning().noquote()

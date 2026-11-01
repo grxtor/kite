@@ -27,13 +27,8 @@
 
 #include "Version.h"
 
-/*!
- * One downloadable file attached to a release.
- *
- * Mirrors the fields of the GitHub releases API that the updater actually
- * uses; the rest of the (large) asset object is dropped at parse time so that
- * nothing downstream can start depending on it by accident.
- */
+/*! One downloadable file attached to a release: only the GitHub releases API fields the updater
+ * uses; the rest is dropped at parse time so nothing downstream can depend on it. */
 struct GitHubReleaseAsset {
 	qint64 id = -1;
 	QString name;
@@ -44,25 +39,20 @@ struct GitHubReleaseAsset {
 	QDateTime updatedAt;
 	QUrl downloadUrl;
 
-	/*!
-	 * An asset is usable when the API gave it an identity *and* somewhere to
-	 * download it from. The URL is checked here rather than at the download,
-	 * so an incomplete asset is rejected while there are still alternatives
-	 * to fall back to.
-	 */
+	//! Lowercase hex SHA-256 from the API's "digest" field; empty when the release does not carry one.
+	QString sha256;
+
+	/*! Usable when the API gave an identity and a download URL; checked here so an incomplete asset
+	 * is rejected while alternatives remain. */
 	bool isValid() const
 	{
 		return id > 0 && downloadUrl.isValid() && !downloadUrl.isEmpty();
 	}
 };
 
-/*!
- * A single GitHub release, plus the parsed form of its tag.
- *
- * \a version is derived from \a tagName once, at parse time: every comparison
- * the updater makes goes through it, and re-parsing a tag at each comparison
- * is how two code paths end up disagreeing about which release is newer.
- */
+/*! A GitHub release plus the parsed form of its tag. \a version is derived from \a tagName once, so
+ * every comparison goes through one parse and two code paths cannot disagree about which release is
+ * newer. */
 struct GitHubRelease {
 	qint64 id = -1;
 	QString name;
@@ -90,42 +80,22 @@ struct GitHubRelease {
 namespace GitHub
 {
 
-	/*!
-	 * Strip the leading "v" from a release tag.
-	 *
-	 * Tags are published as "v7.19.0" while the launcher reports its own
-	 * version as "7.19.0". Version splits on '.' and compares each part
-	 * numerically where it can, but "v7" has no leading digits, so it
-	 * degrades to a string comparison and "v7.19.0" stops being reliably
-	 * newer than "7.18.0". Normalising once, where a tag becomes a Version,
-	 * keeps every later comparison honest.
-	 */
+	/*! Strips the leading "v" from a release tag: tags are "v7.19.0" while the launcher reports
+	 * "7.19.0", and "v7" has no leading digits, so Version would fall back to string comparison.
+	 * Normalise once, where a tag becomes a Version. */
 	QString normalizeVersionTag(const QString& tag);
 
-	/*!
-	 * Parse one page of `GET /repos/{owner}/{repo}/releases`.
-	 *
-	 * Appends to \a releases and returns the number of entries the page held,
-	 * which is how the caller detects the last page (a short page is the end).
-	 * Returns -1 and fills \a error when the response is not a release array
-	 * at all -- a rate-limit message, an HTML error page, a truncated body.
-	 *
-	 * A single malformed entry inside an otherwise valid array is skipped with
-	 * a warning rather than failing the page: one bad release must not make
-	 * the launcher un-updatable.
-	 */
+	/*! Parses one page of `GET /repos/{owner}/{repo}/releases`, appending to \a releases and
+	 * returning the entry count (a short page is the last). Returns -1 and fills \a error when the
+	 * response is not a release array (rate-limit message, HTML error page, truncated body). One
+	 * malformed entry is skipped with a warning so one bad release cannot make the launcher
+	 * un-updatable. */
 	int parseReleasePage(const QByteArray& response,
 						 QList<GitHubRelease>* releases, QString* error);
 
-	/*!
-	 * Turn a repository URL into the releases endpoint.
-	 *
-	 * Accepts the shapes a human or a build script might supply --
-	 * "https://github.com/owner/repo", with or without ".git", with or
-	 * without a trailing slash. Returns an empty string for anything that is
-	 * not a GitHub repository URL, which the caller reports rather than
-	 * quietly requesting a nonsense address.
-	 */
+	/*! Turns a repository URL ("https://github.com/owner/repo", with or without ".git" or a trailing
+	 * slash) into the releases endpoint. Returns an empty string, reported by the caller, for
+	 * anything that is not a GitHub repository URL. */
 	QString releasesApiUrl(const QUrl& repositoryUrl, QString* error);
 
 } // namespace GitHub

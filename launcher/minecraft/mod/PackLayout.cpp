@@ -30,10 +30,9 @@
 namespace
 {
 
-	/* Zip entry names are not normalised by the spec: writers emit
-	 * backslashes, leading "./" and leading "/" more or less at random.
-	 * Fold all of that away once so the layout checks below can work with
-	 * plain "a/b/c" strings. */
+	// Zip entry names are not normalised by the spec: writers emit backslashes
+	// and leading "./" or "/" at random. Fold that away so the checks below can
+	// use plain "a/b/c" strings.
 	QStringList normalizedEntries(const QString& zipPath)
 	{
 		QStringList out;
@@ -55,9 +54,9 @@ namespace
 		return out;
 	}
 
-	/* The first path segment of an entry, or an empty string when the
-	 * entry sits at the archive root. Directory entries keep their
-	 * trailing slash, so "foo/" yields "foo" just like "foo/bar" does. */
+	// The first path segment of an entry, or empty at the archive root.
+	// Directory entries keep their trailing slash, so "foo/" yields "foo" like
+	// "foo/bar".
 	QString topLevelFolder(const QString& entry)
 	{
 		const int slash = entry.indexOf(QLatin1Char('/'));
@@ -88,8 +87,8 @@ namespace
 		return QFileInfo(FS::PathCombine(root.filePath(), name)).isFile();
 	}
 
-	/* Distinct top-level folders present in the archive, used for the
-	 * "wrapped in one folder" case. */
+	// Distinct top-level folders in the archive, for the "wrapped in one
+	// folder" case.
 	QSet<QString> topLevelFolders(const QStringList& entries)
 	{
 		QSet<QString> folders;

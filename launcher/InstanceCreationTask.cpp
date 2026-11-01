@@ -39,11 +39,10 @@ void InstanceCreationTask::executeTask()
 {
 	setStatus(tr("Creating instance from version %1").arg(m_version->name()));
 
-	/* Outlives the scope below on purpose: this function ends by handing
-	 * the instance to downloadFiles(), which runs asynchronously against
-	 * it. The scope is still what it was - everything that writes to
-	 * instance.cfg is released before we finish - the instance is simply
-	 * no longer part of what the scope owns. */
+	/* Outlives the scope below on purpose: this function ends by handing the
+	 * instance to downloadFiles(), which runs asynchronously against it.
+	 * Everything that writes to instance.cfg is still released before we
+	 * finish. */
 	std::shared_ptr<MinecraftInstance> instance;
 	{
 		auto instanceSettings = std::make_shared<INISettingsObject>(
@@ -59,10 +58,9 @@ void InstanceCreationTask::executeTask()
 		components->setComponentVersion("net.minecraft",
 										m_version->descriptor(), true);
 		if (!m_loaderUid.isEmpty()) {
-			/* Same call InstallLoaderDialog::applySelection() makes
-			 * (ui/dialogs/InstallLoaderDialog.cpp) - not marked
-			 * "important", so the component is exactly as removable and
-			 * disableable as one installed after the fact would be. */
+			/* Not marked
+			 * "important", so the component is as removable as one installed
+			 * later. */
 			components->setComponentVersion(m_loaderUid, m_loaderVersion);
 			components->resolve(Net::Mode::Online);
 		}
@@ -71,11 +69,10 @@ void InstanceCreationTask::executeTask()
 		instanceSettings->resumeSave();
 	}
 
-	/* A loader's components resolve in the background, and the staged
-	 * folder is committed (moved) as soon as this task succeeds: with the
-	 * game files not downloaded here, that used to happen before the pack
-	 * was written, leaving an instance with an empty mmc-pack.json. So
-	 * the resolve is waited for and the pack saved first. */
+	/* A loader's components resolve in the background, and the staged folder
+	 * is committed as soon as this task succeeds, which could happen before
+	 * the pack was written (an empty mmc-pack.json). So wait for the resolve
+	 * and save the pack first. */
 	auto components = instance->getPackProfile();
 	auto resolving = components->getCurrentTask();
 	if (resolving && !resolving->isFinished()) {
@@ -87,6 +84,5 @@ void InstanceCreationTask::executeTask()
 	}
 	components->saveNow();
 
-	/* Finishes the task, whether or not it downloads anything. */
 	downloadFiles(instance);
 }

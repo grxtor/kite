@@ -26,20 +26,11 @@
 #include <QStringList>
 
 /*
- * Selection for the QML instance grid, keyed by instance id string rather
- * than by QModelIndex/QPersistentModelIndex.
- *
- * QML has no QItemSelectionModel to begin with, but even a hand-rolled
- * index-based equivalent would be the wrong tool here: the grid's model is
- * InstanceFilterModel, a QSortFilterProxyModel, and its row numbers move
- * every time the filter text, the group filter or the sort mode changes. A
- * plain QModelIndex would silently point at a different instance after a
- * reorder; a QPersistentModelIndex survives a reorder but is invalidated
- * outright whenever the row it names drops out of the filter -- which is
- * exactly what happens while the user is typing into the search box that
- * owns filterText. An instance id has neither problem: it names the
- * instance itself, not a position in some particular view of it, so it
- * keeps meaning the same thing across every reorder and refilter.
+ * Selection for the QML instance grid, keyed by instance id rather than by
+ * QModelIndex: the grid's model is a QSortFilterProxyModel whose rows move on
+ * every filter or sort change, and a QPersistentModelIndex is invalidated when
+ * its row drops out of the filter (as while typing in the search box). An id
+ * names the instance itself, so it survives every reorder and refilter.
  */
 class IdSelectionModel : public QObject
 {
@@ -56,30 +47,24 @@ class IdSelectionModel : public QObject
 	int count() const;
 	/// Unordered -- backed by a QSet, not insertion order.
 	QStringList selectedIds() const;
-	/// The most recently selected id, or empty when nothing is selected.
 	QString currentId() const;
 
 	Q_INVOKABLE void select(const QString& id);
 	Q_INVOKABLE void deselect(const QString& id);
 	Q_INVOKABLE void toggle(const QString& id);
 	Q_INVOKABLE void clear();
-	/// Replaces the whole selection with just @p id. An empty id clears the
-	/// selection instead, matching clear() rather than selecting "nothing".
+	/// An empty id clears the selection (as clear()) instead of selecting "nothing".
 	Q_INVOKABLE void selectOnly(const QString& id);
 	Q_INVOKABLE bool isSelected(const QString& id) const;
 
   signals:
-	/// Fires alongside whichever of the signals below also fire, so a
-	/// binding that only cares "did anything change" does not need to listen
-	/// to all three.
+	/// Fires alongside any of the signals below.
 	void changed();
 	void countChanged();
 	void selectedIdsChanged();
 	void currentIdChanged();
 
   private:
-	/// Returns whether @p id actually replaced the previous current id, and
-	/// emits currentIdChanged() when it did.
 	bool setCurrentIdInternal(const QString& id);
 
 	QSet<QString> m_selected;

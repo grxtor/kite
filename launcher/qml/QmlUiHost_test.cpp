@@ -30,11 +30,9 @@
 #include "models/AtlOptionalModsModel.h"
 
 /*
- * Drives QmlUiHost the way QML would, without any QML: confirm()/etc. block
- * in their own QEventLoop, so every test here schedules the "QML" side of
- * the conversation on a zero-delay QTimer before making the blocking call --
- * the timer fires once that call's internal loop starts pumping events, the
- * same trick used to test QDialog::exec().
+ * Drives QmlUiHost the way QML would, without QML: confirm() and friends block
+ * in their own QEventLoop, so each test schedules the "QML" side on a
+ * zero-delay QTimer that fires once that loop pumps events.
  */
 class QmlUiHostTest : public QObject
 {
@@ -145,12 +143,9 @@ class QmlUiHostTest : public QObject
 		bool accepted = true;
 
 		/* qApp->quit() only unwinds a QEventLoop while a top-level
-		 * QCoreApplication::exec() is actually running somewhere on the
-		 * stack -- true of the real launcher (see main.cpp) but not of a
-		 * QTest slot, which never calls exec() itself. This test supplies
-		 * that outer loop so it exercises the same shape runRequest()
-		 * relies on in production, rather than the call it makes to
-		 * qApp->quit() silently doing nothing. */
+		 * QCoreApplication::exec() runs somewhere on the stack, as in the
+		 * launcher but not in a QTest slot. This test supplies that outer
+		 * loop. */
 		QTimer::singleShot(0, [&]() {
 			QTimer::singleShot(0, [&host]() {
 				QVERIFY(host.current());
@@ -240,6 +235,7 @@ class QmlUiHostTest : public QObject
 	{
 		QmlUiRequest request(QmlUiRequest::Kind::ProfileSetup,
 							 QStringLiteral("Title"), QStringLiteral("Text"));
+		request.checkProfileName(QStringLiteral("Steve"));
 		request.setProfileNameStatus(QStringLiteral("available"), QString());
 		QSignalSpy submitSpy(&request, &QmlUiRequest::submitNameRequested);
 
@@ -248,10 +244,47 @@ class QmlUiHostTest : public QObject
 		QCOMPARE(submitSpy.count(), 1);
 		QVERIFY(request.profileSubmitting());
 
-		// Re-entrant clicks while a submission is already in flight are
-		// ignored rather than starting a second one.
+		// Clicks while a submission is in flight are ignored.
 		request.submitProfileName(QStringLiteral("Steve"));
 		QCOMPARE(submitSpy.count(), 1);
+	}
+
+	void submitProfileNameRefusesAnotherNameThanTheCheckedOne()
+	{
+		QmlUiRequest request(QmlUiRequest::Kind::ProfileSetup,
+							 QStringLiteral("Title"), QStringLiteral("Text"));
+		request.checkProfileName(QStringLiteral("Steve"));
+		request.setProfileNameStatus(QStringLiteral("available"), QString());
+		QSignalSpy submitSpy(&request, &QmlUiRequest::submitNameRequested);
+
+		request.submitProfileName(QStringLiteral("Alex"));
+		request.submitProfileName(QStringLiteral("Steve\n"));
+
+		QCOMPARE(submitSpy.count(), 0);
+		QVERIFY(!request.profileSubmitting());
+	}
+
+	void checkProfileNameRejectsATrailingNewline()
+	{
+		QmlUiRequest request(QmlUiRequest::Kind::ProfileSetup,
+							 QStringLiteral("Title"), QStringLiteral("Text"));
+		QSignalSpy checkSpy(&request, &QmlUiRequest::checkNameRequested);
+
+		request.checkProfileName(QStringLiteral("Steve\n"));
+
+		QCOMPARE(checkSpy.count(), 0);
+	}
+
+	void checkProfileNameInvalidatesTheCheckInFlightEvenForAnInvalidName()
+	{
+		QmlUiRequest request(QmlUiRequest::Kind::ProfileSetup,
+							 QStringLiteral("Title"), QStringLiteral("Text"));
+		request.checkProfileName(QStringLiteral("Steve"));
+		const int inFlight = request.checkSequence();
+
+		request.checkProfileName(QStringLiteral("ab"));
+
+		QVERIFY(request.checkSequence() != inFlight);
 	}
 
 	void setupProfileReturnsFalseWhenQmlRejects()

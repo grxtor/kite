@@ -99,17 +99,13 @@ namespace ModpacksCH
 			return jobPtr->abort();
 		}
 
-		/* Past the pack's own downloads there is still one abortable
-		 * phase: the optional game-file download the base class runs
-		 * after the instance is built. It knows whether that is
-		 * happening, and returns false when it is not - which is the
-		 * answer this used to give unconditionally. */
+		/* One abortable phase remains after the pack downloads: the optional
+		 * game-file download the base class runs. It returns false if idle. */
 		return InstanceTask::abort();
 	}
 
 	void PackInstallTask::executeTask()
 	{
-		// Find pack version
 		bool found = false;
 		VersionInfo version;
 
@@ -146,26 +142,22 @@ namespace ModpacksCH
 
 	void PackInstallTask::onDownloadSucceeded()
 	{
-		QJsonParseError parse_error;
-		QJsonDocument doc = QJsonDocument::fromJson(response, &parse_error);
-		if (parse_error.error != QJsonParseError::NoError) {
-			qWarning() << "Error while parsing JSON response from FTB at "
-					   << parse_error.offset
-					   << " reason: " << parse_error.errorString();
+		const auto doc = Json::tryParseWithOffset(
+			response, "Error while parsing JSON response from FTB at");
+		if (!doc) {
 			qWarning() << response;
 			jobPtr.reset();
 			emitFailed(tr("FTB sent back a pack version that could not be read."));
 			return;
 		}
 
-		auto obj = doc.object();
+		auto obj = doc->object();
 
 		ModpacksCH::Version version;
 		try {
 			ModpacksCH::loadVersion(version, obj);
 		} catch (const JSONValidationError& e) {
-			/* Reset first: once a task has reported, whoever owns it may
-			 * delete it, so nothing of it may be touched afterwards. */
+			/* Reset first: once a task has reported, its owner may delete it. */
 			jobPtr.reset();
 			emitFailed(tr("Could not understand pack manifest:\n") + e.cause());
 			return;
@@ -226,10 +218,9 @@ namespace ModpacksCH
 			jobPtr->addNetAction(dl);
 		}
 
-		/* `this` as the context of every connection, and the job let go of
-		 * before the task reports: once it has, whoever owns the task may
-		 * delete it, and a handler touching it afterwards crashed the
-		 * launcher when a file failed to download. */
+		/* `this` as the connection context, and the job released before the
+		 * task reports: its owner may delete the task afterwards, and a handler
+		 * touching it crashed the launcher on a failed file. */
 		connect(jobPtr.get(), &NetJob::succeeded, this, [this]() {
 			abortable = false;
 			jobPtr.reset();
@@ -244,7 +235,6 @@ namespace ModpacksCH
 					abortable = true;
 					setProgress(current, total);
 				});
-		// One line per file being downloaded.
 		propagateStepsFrom(jobPtr.get());
 
 		jobPtr->start();
@@ -252,8 +242,8 @@ namespace ModpacksCH
 
 	void PackInstallTask::onModsDownloadFailed(const QString& reason)
 	{
-		/* An abort marks every file it stopped as failed: that is the user
-		 * calling the install off, not files to go and fetch by hand. */
+		/* An abort marks stopped files as failed; that is the user calling the
+		 * install off, not files to fetch by hand. */
 		const bool aborted = jobPtr && jobPtr->wasAborted();
 		const QStringList failed =
 			jobPtr && !aborted ? jobPtr->getFailedFiles() : QStringList();
@@ -268,7 +258,6 @@ namespace ModpacksCH
 		classifyFailedDownloads(failed, m_filesByUrl, m_targetByUrl, blocked,
 								unrecoverable);
 		if (failed.isEmpty()) {
-			/* Failed before any file did. */
 			emitFailed(reason);
 			return;
 		}
@@ -277,9 +266,8 @@ namespace ModpacksCH
 			return;
 		}
 
-		/* All of them are CurseForge files their authors keep off
-		 * third-party downloads: the same question, and the same
-		 * handling, as a CurseForge pack's (InstanceImportTask). */
+		/* CurseForge files their authors keep off third-party downloads; handled
+		 * as for a CurseForge pack (InstanceImportTask). */
 		for (const auto& mod : blocked) {
 			filesToCopy.remove(mod.targetPath);
 		}
@@ -340,11 +328,8 @@ namespace ModpacksCH
 		instanceSettings->registerSetting("InstanceType", "Legacy");
 		instanceSettings->set("InstanceType", "OneSix");
 
-		/* Held behind a shared_ptr, and by reference below so that the
-		 * rest of this function reads as it did. The pointer is what
-		 * matters: this function ends by handing the instance to
-		 * downloadFiles(), which runs against it after we return, and a
-		 * local object would be gone by then. */
+		/* Behind a shared_ptr: downloadFiles() runs against the instance after
+		 * this function returns. */
 		auto instancePtr = std::make_shared<MinecraftInstance>(
 			m_globalSettings, instanceSettings, m_stagingPath);
 		MinecraftInstance& instance = *instancePtr;
@@ -378,7 +363,6 @@ namespace ModpacksCH
 			}
 		}
 
-		// install any jar mods
 		QDir jarModsDir(FS::PathCombine(m_stagingPath, "minecraft", "jarmods"));
 		if (jarModsDir.exists()) {
 			QStringList jarMods;
@@ -396,17 +380,8 @@ namespace ModpacksCH
 		instance.setName(m_instName);
 		instance.setIconKey(m_instIcon);
 
-		/* Record where this instance came from.
-		 *
-		 * These are the same keys the Modrinth and CurseForge importers
-		 * write. FTB has no page for changing versions - there is no
-		 * Kite UI that reads these back for an FTB pack today - but
-		 * recording them costs one INI write and is the difference
-		 * between an instance that knows it is version 1.4.0 of a
-		 * specific pack and one that only knows its own name. Anything
-		 * that later wants to notice "you already have this pack" or
-		 * offer an update needs it to have been written at install
-		 * time, because it cannot be recovered afterwards. */
+		/* Record the origin with the keys the Modrinth and CurseForge importers
+		 * use, since it cannot be recovered after install. */
 		instanceSettings->set("PackProvider", QStringLiteral("modpacksch"));
 		instanceSettings->set("PackId", QString::number(m_pack.id));
 		instanceSettings->set("PackName", m_pack.name);
@@ -418,7 +393,6 @@ namespace ModpacksCH
 
 		instanceSettings->resumeSave();
 
-		/* Finishes the task, whether or not it downloads anything. */
 		downloadFiles(instancePtr);
 	}
 

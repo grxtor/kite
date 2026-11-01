@@ -37,12 +37,11 @@ class InstanceCopyTask : public InstanceTask
 							  bool keepPlaytime);
 
   protected:
-	//! Entry point for tasks.
 	virtual void executeTask() override;
 	void copyFinished();
 	void copyAborted();
 
-  private: /* data */
+  private:
 	InstancePtr m_origInstance;
 	QFuture<bool> m_copyFuture;
 	QFutureWatcher<bool> m_copyFutureWatcher;

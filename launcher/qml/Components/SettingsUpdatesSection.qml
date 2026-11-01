@@ -6,19 +6,14 @@ import QtQuick
 import QtQuick.Controls
 
 /*
- * The "Updates" section of SettingsPage.qml: automatic update checks and a
- * manual "Check now". It stays out of the section list while this build has
- * no updater (UpdateSettingsController.available is false, or the
- * controller is not set up yet), the way SettingsPage's `shown` rule lets a
- * section hide itself.
+ * The "Updates" section of SettingsPage.qml: automatic update checks and a manual
+ * "Check now". It hides itself while this build has no updater.
  */
 SettingsScroll {
     id: root
 
     readonly property var updates: LauncherStore.updates
-    // Read by SettingsPage.qml's section list.
     readonly property bool shown: !!updates && updates.available
-    // The same width SettingNumber gives its field.
     readonly property int intervalFieldWidth: 168
 
     title: qsTr("Updates")
@@ -44,7 +39,6 @@ SettingsScroll {
             description: qsTr("0 means only when Kite starts.")
             enabled: !!root.updates && root.updates.autoCheck
             SpinBox {
-                id: interval
                 width: root.intervalFieldWidth
                 from: 0
                 to: 24 * 30

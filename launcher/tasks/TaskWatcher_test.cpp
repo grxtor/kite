@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+#include <QPointer>
 #include <QSignalSpy>
 #include <QTest>
 
@@ -25,9 +26,8 @@
 
 namespace
 {
-	/* A Task that does nothing on its own - executeTask() is a no-op -
-	 * so the test can drive status/progress/success/failure by hand and
-	 * check that TaskWatcher mirrors exactly what was driven. */
+	/* A Task that does nothing on its own, so the test drives status,
+	 * progress, success and failure by hand. */
 	class ScriptedTask : public Task
 	{
 		Q_OBJECT
@@ -101,21 +101,17 @@ class TaskWatcherTest : public QObject
 
 		QSignalSpy progressSpy(&watcher, &TaskWatcher::progressChanged);
 
-		/* The first update always goes straight through - there is
-		 * nothing to coalesce with yet. */
 		task->driveProgress(1, 100);
 		QCOMPARE(progressSpy.count(), 1);
 
-		/* A burst right behind it must not turn into a burst of NOTIFY
-		 * firings; the throttle should coalesce them into (at most) one
-		 * more. */
+		/* A burst right behind it must coalesce into at most one more NOTIFY. */
 		for (int i = 2; i <= 20; ++i) {
 			task->driveProgress(i, 100);
 		}
 		QVERIFY(progressSpy.count() <= 2);
 
-		/* But the last value reported is never lost - it shows up once
-		 * the throttle window has had time to flush. */
+		/* The last value is never lost; it shows up once the throttle window
+		 * has flushed. */
 		QTRY_COMPARE_WITH_TIMEOUT(watcher.progress(), 0.20, 1000);
 	}
 
@@ -152,6 +148,20 @@ class TaskWatcherTest : public QObject
 		QCOMPARE(watcher.error(), QString("network is on fire"));
 		QCOMPARE(finishedSpy.count(), 1);
 		QCOMPARE(finishedSpy.at(0).at(0).toBool(), false);
+	}
+
+	void test_FinishedTaskIsReleased()
+	{
+		auto* task = new ScriptedTask();
+		QPointer<ScriptedTask> guard(task);
+		TaskWatcher watcher{Task::Ptr(task)};
+		task->start();
+		task->driveFailure("gone");
+
+		QTRY_VERIFY_WITH_TIMEOUT(watcher.task() == nullptr, 1000);
+		QVERIFY(guard.isNull());
+		QCOMPARE(watcher.failed(), true);
+		QCOMPARE(watcher.error(), QString("gone"));
 	}
 
 	void test_TitleAndInstanceIdAreSettableByCreator()

@@ -7,15 +7,11 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * "Export…", "Create shortcut…" and "Duplicate…" for any instance, behind
- * the library's and the instance page's ⋯ menus: the dialogs and the
- * toasts that follow them, in one place so the two pages offer exactly the
- * same thing.
- *
- * The controllers come from the shell, through the two functions and the
- * LibraryController below, which Main.qml sets on each page. Until it does,
- * `canExport`, `canCreateShortcut` and `canDuplicate` stay false and the
- * pages fall back to what they did before (or leave the entry out).
+ * "Export…", "Create shortcut…" and "Duplicate…" for any instance, behind the
+ * library's and the instance page's ⋯ menus: the dialogs and the toasts that
+ * follow them, in one place so both pages offer the same thing. Until Main.qml
+ * sets the controllers, `canExport`, `canCreateShortcut` and `canDuplicate` stay
+ * false.
  */
 Item {
     id: root
@@ -26,7 +22,6 @@ Item {
     property var shortcutControllerFor: null
     readonly property bool canExport: typeof root.exportControllerFor === "function"
     readonly property bool canCreateShortcut: typeof root.shortcutControllerFor === "function"
-    // LibraryController (QmlShell's `library`), for Duplicate.
     property var library: null
     readonly property bool canDuplicate: !!root.library
 
@@ -63,7 +58,6 @@ Item {
     DuplicateInstanceDialog {
         id: duplicateDialog
         library: root.library
-        // The copy can take a while; say it started, then how it went.
         property var watcher: null
         onStarted: (name, watcher) => {
             duplicateDialog.watcher = watcher

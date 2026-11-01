@@ -29,23 +29,22 @@
 #include <QSet>
 
 #include "FileSystem.h"
+#include "Json.h"
 
 namespace PackContents
 {
 	namespace
 	{
-		/* Bumped only when the meaning of what is already on disk
-		 * changes. Readers refuse anything they do not know, because the
-		 * list drives deletions and a misread list deletes the wrong
-		 * files. */
+		/* Bumped only when the meaning of what is on disk changes. Readers
+		 * refuse unknown versions: the list drives deletions. */
 		const int currentFormatVersion = 1;
 
 		const char* const listFileName = "pack-contents.json";
 		const char* const keyFormatVersion = "formatVersion";
 		const char* const keyPaths = "paths";
 
-		/* Length of ".disabled", the suffix the launcher and the pack
-		 * formats both use to keep a mod on disk without loading it. */
+		/* Length of ".disabled", the suffix both the launcher and pack formats use
+		 * for a mod kept on disk but not loaded. */
 		const int disabledSuffixLength = 9;
 
 		QString disabledSuffix()
@@ -53,8 +52,7 @@ namespace PackContents
 			return QStringLiteral(".disabled");
 		}
 
-		/* The other name the same file could be sitting under, or an
-		 * empty string when there is no such name. */
+		/* The other name the same file could have, or empty. */
 		QString counterpartOf(const QString& path)
 		{
 			if (!path.endsWith(disabledSuffix(), Qt::CaseInsensitive)) {
@@ -63,11 +61,8 @@ namespace PackContents
 
 			const QString stripped =
 				path.left(path.size() - disabledSuffixLength);
-			/* A bare ".disabled" is not a file the launcher renamed, and
-			 * stripping the suffix off one would name the *folder* that
-			 * contains it. This list is handed to a delete loop, so that
-			 * is not a mistake worth risking for a file name nobody
-			 * writes on purpose. */
+			/* A bare ".disabled" is not a renamed file, and stripping it would name
+			 * the containing *folder*; this list feeds a delete loop. */
 			if (stripped.isEmpty() || stripped.endsWith(QLatin1Char('/'))) {
 				return {};
 			}
@@ -102,9 +97,8 @@ namespace PackContents
 			return {};
 		}
 
-		/* Written on one platform and read on another in the general
-		 * case - an instance directory travels between machines - so the
-		 * stored form is always forward slashes. */
+		/* An instance directory travels between machines, so the stored form is
+		 * always forward slashes. */
 		QString clean =
 			QString(path).replace(QLatin1Char('\\'), QLatin1Char('/'));
 		clean = QDir::cleanPath(clean);
@@ -113,14 +107,13 @@ namespace PackContents
 			return {};
 		}
 		if (QDir::isAbsolutePath(clean) || clean.startsWith(QLatin1Char('/'))) {
-			/* A game-relative list is the whole contract here; an
-			 * absolute path in it would point at a file outside the
-			 * instance and still be handed to a delete loop. */
+			/* An absolute path would point outside the instance and still reach a
+			 * delete loop. */
 			return {};
 		}
 
-		/* cleanPath resolves "a/../b" on its own, so a ".." left in the
-		 * result is one that climbs above the game directory. */
+		/* cleanPath resolves "a/../b", so a ".." left over climbs above the game
+		 * directory. */
 		const QStringList segments =
 			clean.split(QLatin1Char('/'), Qt::SkipEmptyParts);
 		if (segments.contains(QLatin1String(".."))) {
@@ -147,9 +140,8 @@ namespace PackContents
 		const QByteArray payload =
 			QJsonDocument(root).toJson(QJsonDocument::Indented);
 
-		/* QSaveFile because a half-written list is worse than none: the
-		 * next update would read a truncated set of paths and conclude
-		 * that everything missing from it is the user's own file. */
+		/* QSaveFile: a truncated list would make the next update treat
+		 * everything missing from it as the user's own file. */
 		QSaveFile file(path);
 		if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
 			qWarning() << "PackContents: cannot open" << path << "for writing";
@@ -173,8 +165,8 @@ namespace PackContents
 
 		QFile file(path);
 		if (!file.exists()) {
-			/* Installed before the launcher recorded this, or by
-			 * something else entirely. Not an error, just unknown. */
+			/* Installed before this was recorded, or by something else: unknown, not
+			 * an error. */
 			return false;
 		}
 		if (!file.open(QIODevice::ReadOnly)) {
@@ -184,14 +176,13 @@ namespace PackContents
 		const QByteArray bytes = file.readAll();
 		file.close();
 
-		QJsonParseError error{};
-		const QJsonDocument doc = QJsonDocument::fromJson(bytes, &error);
-		if (error.error != QJsonParseError::NoError || !doc.isObject()) {
+		const auto doc = Json::tryParse(bytes);
+		if (!doc || !doc->isObject()) {
 			qWarning() << "PackContents: malformed list at" << path;
 			return false;
 		}
 
-		const QJsonObject root = doc.object();
+		const QJsonObject root = doc->object();
 		const int version =
 			root.value(QLatin1String(keyFormatVersion)).toInt(0);
 		if (version != currentFormatVersion) {

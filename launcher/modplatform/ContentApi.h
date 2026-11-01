@@ -26,32 +26,13 @@
 
 #include "modplatform/ContentType.h"
 
-/* One place that knows how to address CurseForge and Modrinth.
- *
- * Before this existed the two base URLs were spelled out at roughly
- * thirty call sites across the dependency resolver, the update checker,
- * the search models and the download dialog, each with its own slightly
- * different idea of when to attach a loader filter. Anything that talks
- * to either platform should now go through the matching ContentApi so
- * that a change to an endpoint - or to the rule for a query parameter -
- * happens exactly once.
- *
- * These are pure URL builders: no networking, no state, cheap to call.
- * Issuing the request and parsing the reply stays with the caller,
- * because the two platforms return quite different JSON shapes and
- * pretending otherwise would only push the difference somewhere less
- * obvious. */
+/* One place that knows how to address CurseForge and Modrinth. Pure URL
+ * builders: no networking, no state. The caller issues the request and
+ * parses the reply, whose JSON differs per platform. */
 namespace ModPlatform
 {
 
-	/* One entry of a provider's sort menu.
-	 *
-	 * The two providers do not offer the same sorts, in the same order,
-	 * or even the same number of them: CurseForge has eight numbered
-	 * fields, Modrinth five named ones. A single hard-coded list in the
-	 * dialog therefore cannot work - it silently asked CurseForge to
-	 * sort by author when the user picked "follows". Each provider now
-	 * publishes its own list and the UI rebuilds the combo box from it. */
+	/* One entry of a provider's sort menu; each provider has its own list. */
 	struct SortingMethod {
 		/* Value the provider's own API expects. */
 		QString apiValue;
@@ -59,46 +40,37 @@ namespace ModPlatform
 		QString readableName;
 	};
 
-	/* Which side of the game a project has to work on.
-	 *
-	 * Only Modrinth indexes this. CurseForge's search has no equivalent
-	 * field and ignores the setting, which is why the filter panel only
-	 * offers it on the Modrinth page. */
+	/* The API value of the sort at @p sortIndex; the first when out of range. */
+	inline QString sortValueAt(const QList<SortingMethod>& sorts, int sortIndex)
+	{
+		if (sortIndex >= 0 && sortIndex < sorts.size()) {
+			return sorts.at(sortIndex).apiValue;
+		}
+		return sorts.first().apiValue;
+	}
+
+	/* Which side of the game a project has to work on. Only Modrinth
+	 * indexes this; CurseForge ignores it. */
 	enum class SideFilter { Any, Client, Server, Universal };
 
-	/* One entry of a provider's category list.
-	 *
-	 * `id` is whatever that provider wants back in a search: a number on
-	 * CurseForge, the name itself on Modrinth. It is never shown, so the
-	 * difference stays inside the two API classes. */
+	/* One entry of a provider's category list. `id` is what the provider
+	 * wants back in a search (a number on CurseForge, the name on Modrinth). */
 	struct Category {
 		QString name;
 		QString id;
 	};
 
-	/* The half of the filter panel that changes what the provider is
-	 * asked for, as opposed to what is done with the answer.
-	 *
-	 * Kept together in one struct because it travels from the panel
-	 * through the page into the model, and adding a filter should not
-	 * mean widening three signatures on the way. */
 	struct SearchFilters {
-		/* Empty means every Minecraft version, which is what the panel
-		 * sends when nothing is ticked in its version box.
-		 *
-		 * A list because a search over several versions at once is a
-		 * reasonable thing to want - a mod that stopped at 1.20.1 is
-		 * still worth seeing next to one built for 1.20.4. Only
-		 * Modrinth can express it; see each searchUrl(). */
+		/* Empty means every Minecraft version. Several can be ticked, but
+		 * only Modrinth can express that; see each searchUrl(). */
 		QStringList mcVersions;
-		/* Empty means "any loader" rather than "no loader". Ignored for
-		 * content types that are not loader-specific - see
-		 * contentTypeUsesLoader(). */
+		/* Empty means "any loader". Ignored for content types that are not
+		 * loader-specific, see contentTypeUsesLoader(). */
 		QStringList loaders;
 		SideFilter side = SideFilter::Any;
 		bool openSourceOnly = false;
-		/* Provider-specific category ids, as handed out by
-		 * ContentApi::categoriesUrl(). Empty means every category. */
+		/* Provider-specific category ids from categoriesUrl(). Empty means
+		 * every category. */
 		QStringList categoryIds;
 
 		bool operator==(const SearchFilters& other) const
@@ -119,20 +91,15 @@ namespace ModPlatform
 		ContentType contentType = ContentType::Mod;
 		QString term;
 		SearchFilters filters;
-		/* Index into this provider's sortingMethods(). Out-of-range
-		 * values fall back to the first entry. */
+		/* Index into this provider's sortingMethods(); out of range falls back
+		 * to the first entry. */
 		int sortIndex = 0;
 		int offset = 0;
 	};
 
-	/* Which versions of a project to list. Empty filters are omitted
-	 * from the query string rather than sent empty.
-	 *
-	 * `mcVersions` and `loaders` are lists for the same reason
-	 * SearchQuery's are: the filter panel lets several be ticked at
-	 * once. The two providers disagree on what to do with more than one
-	 * of either - see each projectVersionsUrl() - so this hands them the
-	 * whole list and lets them decide. */
+	/* Which versions of a project to list. Empty filters are omitted from
+	 * the query string. The providers differ on more than one version or
+	 * loader (see each projectVersionsUrl()), so they get the whole list. */
 	struct VersionQuery {
 		QString projectId;
 		ContentType contentType = ContentType::Mod;
@@ -140,31 +107,21 @@ namespace ModPlatform
 		QStringList loaders;
 	};
 
-	/* One loader name as a query list. An empty name yields an empty
-	 * list, which means "no loader filter" rather than "a project with
-	 * no loader" - the callers that only ever know about a single
-	 * loader, such as the dependency resolver and the update checker,
-	 * go through this rather than each spelling the check out. */
+	/* One loader as a query list; empty yields an empty list, meaning "no
+	 * loader filter". */
 	inline QStringList singleLoaderList(const QString& loader)
 	{
 		return loader.isEmpty() ? QStringList() : QStringList{loader};
 	}
 
-	/* The same for a single Minecraft version. Kept separate from
-	 * singleLoaderList() so the call reads as what it is at the call
-	 * site, where the two sit next to each other. */
+	/* Same for a single Minecraft version. */
 	inline QStringList singleVersionList(const QString& version)
 	{
 		return version.isEmpty() ? QStringList() : QStringList{version};
 	}
 
-	/* A user-typed search term, safe to drop into a query string.
-	 *
-	 * Both providers take the term as a query parameter, so an
-	 * unescaped "&" ends that parameter early and everything after it is
-	 * read as another one: searching for "carry on & tweaks" quietly
-	 * asked for something else entirely. Spaces, "+" and "#" have the
-	 * same problem. */
+	/* A user-typed search term, percent-encoded: an unescaped "&", "+" or
+	 * "#" would end or change the query parameter. */
 	inline QString encodeSearchTerm(const QString& term)
 	{
 		return QString::fromLatin1(QUrl::toPercentEncoding(term));
@@ -175,8 +132,7 @@ namespace ModPlatform
 	  public:
 		virtual ~ContentApi() = default;
 
-		/* Stable identifier, matching the `platform` field stored in
-		 * ModMetadataIndex sidecars and SelectedMod/DownloadItem:
+		/* Stable identifier stored in sidecars and SelectedMod/DownloadItem:
 		 * "curseforge" or "modrinth". */
 		virtual QString id() const = 0;
 		/* Name shown to the user. */
@@ -184,37 +140,28 @@ namespace ModPlatform
 		/* How many results the provider returns per search page. */
 		virtual int searchPageSize() const = 0;
 
-		/* Whether this provider's search indexes what SearchFilters
-		 * calls `side` and `openSourceOnly`. Only Modrinth does. The
-		 * filter panel asks so that it can leave those groups out
-		 * rather than offer boxes that quietly change nothing, which is
-		 * what the reference launcher does too. */
+		/* Whether the search indexes SearchFilters' `side` and `openSourceOnly`
+		 * (only Modrinth does); the filter panel leaves those groups out
+		 * otherwise. */
 		virtual bool supportsExtendedFilters() const = 0;
 
-		/* The sorts this provider understands, in the order the UI
-		 * should offer them. Never empty. */
+		/* The sorts offered, in UI order. Never empty. */
 		virtual QList<SortingMethod> sortingMethods() const = 0;
 
 		virtual QUrl searchUrl(const SearchQuery& query) const = 0;
 		virtual QUrl projectUrl(const QString& projectId) const = 0;
 		virtual QUrl projectVersionsUrl(const VersionQuery& query) const = 0;
 
-		/* Long-form project description, as HTML. The two providers
-		 * disagree on the format they hand out - one returns HTML, the
-		 * other Markdown - so converting is part of parsing the reply,
-		 * not the caller's problem. */
+		/* Long-form project description as HTML; converting from Markdown is
+		 * part of parsing the reply. */
 		virtual QUrl projectBodyUrl(const QString& projectId) const = 0;
 
-		/* The categories this provider offers for a kind of content.
-		 * Fetched once when the filter panel is built; the reply is
-		 * turned into Category entries by the model, since the two
-		 * providers answer with quite different JSON. */
+		/* The categories offered for a kind of content. Fetched once when the
+		 * filter panel is built. */
 		virtual QUrl categoriesUrl(ContentType contentType) const = 0;
 
-		/* The project's page on the provider's website, for opening in a
-		 * browser. Not an API endpoint: this is the address a person is
-		 * meant to read, which is why it is asked of the provider rather
-		 * than assembled by the caller from a template. */
+		/* The project's page on the provider's website, for a browser; not an
+		 * API endpoint. */
 		virtual QUrl projectPageUrl(const QString& projectId) const = 0;
 	};
 

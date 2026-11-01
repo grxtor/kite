@@ -23,6 +23,11 @@
 
 #include <launch/LaunchTask.h>
 
+namespace
+{
+	constexpr quint16 kDefaultPort = 25565;
+} // namespace
+
 LookupServerAddress::LookupServerAddress(LaunchTask* parent)
 	: LaunchStep(parent), m_dnsLookup(new QDnsLookup(this))
 {
@@ -67,10 +72,7 @@ void LookupServerAddress::on_dnsLookupFinished()
 							 "error!) %1: %2\n")
 						 .arg(m_dnsLookup->name(), m_dnsLookup->errorString()),
 					 MessageLevel::Kite);
-		resolve(m_lookupAddress,
-				25565); // Technically the task failed, however, we don't abort
-						// the launch and leave it up to minecraft to fail (or
-						// maybe not) when connecting
+		resolveUnchanged();
 		return;
 	}
 
@@ -81,10 +83,7 @@ void LookupServerAddress::on_dnsLookupFinished()
 					"succeeded, but no records were returned.\n")
 				.arg(m_dnsLookup->name()),
 			MessageLevel::Warning);
-		resolve(m_lookupAddress,
-				25565); // Technically the task failed, however, we don't abort
-						// the launch and leave it up to minecraft to fail (or
-						// maybe not) when connecting
+		resolveUnchanged();
 		return;
 	}
 
@@ -96,6 +95,13 @@ void LookupServerAddress::on_dnsLookupFinished()
 						  QString::number(port)),
 				 MessageLevel::Kite);
 	resolve(firstRecord.target(), port);
+}
+
+void LookupServerAddress::resolveUnchanged()
+{
+	// Technically the task failed, however, we don't abort the launch and
+	// leave it up to minecraft to fail (or maybe not) when connecting
+	resolve(m_lookupAddress, kDefaultPort);
 }
 
 void LookupServerAddress::resolve(const QString& address, quint16 port)

@@ -21,9 +21,7 @@ Rectangle {
     implicitHeight: 4
     radius: height / 2
     clip: true
-    // The hairline colour as the track: translucent, so it reads on any
-    // surface, in both themes.
-    color: onMedia ? Qt.rgba(1, 1, 1, 0.18) : Theme.palette.border
+    color: onMedia ? Theme.media.track : Theme.palette.border
 
     Accessible.role: Accessible.ProgressBar
 

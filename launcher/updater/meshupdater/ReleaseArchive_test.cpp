@@ -28,53 +28,18 @@
 #include "ArchiveOpen.h"
 #include "updater/meshupdater/ReleaseArchive.h"
 
-/*!
- * Unpacking a release archive.
- *
- * The archives are built here with libarchive rather than checked in, so that
- * a case can be written for entry kinds that are awkward to store in git and
- * impossible to store portably -- hardlinks, symlinks, and the malicious
- * paths that must be refused.
- *
- * The kinds are not academic. A Linux portable release is a sharun bundle:
- *
- *   bin/kite-crashreporter   the multi-call loader, a real file
- *   bin/kite                 hardlink to it
- *   bin/kite-updater         hardlink to it
- *   sharun                     hardlink to it
- *   shared/bin/kite          the real launcher, execed by the loader
- *   lib/libX11.so.6            symlink to libX11.so.6.4.0
- *
- * An extractor that keeps only regular files produces a tree with the right
- * number of bytes in it, no launcher, no updater, and no library the dynamic
- * linker can find by soname. That is what this file exists to prevent.
- *
- * Two of those properties do not exist on Windows, and the cases that cover
- * them are split rather than skipped wholesale, so that each platform is
- * still held to the contract it actually has:
- *
- *   - Links. ReleaseArchive refuses them on Windows instead of emulating
- *     them, because QFile::link() would write a .lnk shortcut that nothing
- *     opening the file would follow. The Windows artifacts are zips built
- *     from a directory tree and contain none, so a link-bearing archive
- *     there means something is wrong -- and refusing the archive is the
- *     documented answer. tst_LinkBearingArchiveIsRefusedOnWindows holds it
- *     to that; the POSIX cases hold the other platforms to keeping links.
- *
- *   - The executable bit. Windows has none: QFileInfo::isExecutable()
- *     answers from the file's suffix, so asserting it there tests Qt's
- *     name lookup and nothing of ours.
- *
- * What is left is the same on every platform -- a release with no links at
- * all, which is exactly what the Windows and macOS artifacts are -- and
- * tst_PlainTreeExtractsEverywhere covers it unconditionally.
- */
+/*! Unpacking a release archive. Archives are built here with libarchive so cases can cover entry
+ * kinds that cannot be stored portably in git: hardlinks, symlinks and hostile paths. A Linux
+ * portable release is a sharun bundle of hardlinks and symlinks, and an extractor that keeps only
+ * regular files yields the right byte count but no launcher, no updater and no library by soname.
+ * Link cases are split from the rest because links are refused on Windows (QFile::link() would
+ * write a .lnk) and the executable bit does not exist there (isExecutable() looks at the suffix);
+ * tst_PlainTreeExtractsEverywhere covers the link-free tree everywhere. */
 class ReleaseArchiveTest : public QObject
 {
 	Q_OBJECT
 
   private:
-	//! One entry to write into a test archive.
 	struct Entry {
 		QString path;
 		QByteArray contents;  //!< For a regular file.
@@ -109,12 +74,7 @@ class ReleaseArchiveTest : public QObject
 		return entry;
 	}
 
-	/*!
-	 * Write \a entries into a .tar.gz at \a archivePath.
-	 *
-	 * Mirrors what the release workflow produces: a gzipped tar in the
-	 * restricted-pax format libarchive defaults to.
-	 */
+	/*! Writes \a entries into a .tar.gz, as the release workflow does (restricted pax). */
 	static bool writeArchive(const QString& archivePath,
 							 const QList<Entry>& entries)
 	{
@@ -125,9 +85,8 @@ class ReleaseArchiveTest : public QObject
 		archive_write_add_filter_gzip(writer);
 		archive_write_set_format_pax_restricted(writer);
 
-		// Through the same wrapper the extractor uses: a case that puts the
-		// archive under a non-ASCII path has to be able to create it there
-		// before it can assert anything about reading it back.
+		// Through the same wrapper as the extractor, so non-ASCII archive paths can be created
+		// here.
 		if (MMCArchive::openForWriting(writer, archivePath) != ARCHIVE_OK) {
 			qWarning().noquote()
 				<< "could not open" << archivePath << "for writing:"
@@ -140,22 +99,9 @@ class ReleaseArchiveTest : public QObject
 		for (const Entry& entry : entries) {
 			archive_entry* header = archive_entry_new();
 
-			/* The _utf8 spellings, not the plain ones. The plain setters
-			 * declare their argument to be a multi-byte string in the
-			 * process's own locale, and libarchive converts from that when
-			 * it writes a pax header, which stores names in UTF-8. Handing
-			 * them UTF-8 bytes is therefore only correct where the locale
-			 * says UTF-8 -- true on Linux and macOS, false on Windows,
-			 * where the conversion runs through the active ANSI code page
-			 * and turns "Ş" (C5 9E) into "Åž" without failing. The
-			 * extractor then reads the name back with
-			 * archive_entry_pathname_utf8() and gets the mangled form, so
-			 * an archive written here did not contain what this file said
-			 * it did -- on Windows only.
-			 *
-			 * Saying _utf8 states the encoding instead of leaving it to the
-			 * host, which is also what the reader in ReleaseArchive.cpp
-			 * asks for, so the two ends now agree by construction. */
+			/* Use the _utf8 setters: the plain ones convert from the process locale, which on
+			 * Windows is the ANSI code page and mangles "Ş" without failing, so the archive would
+			 * not hold the names this file claims. */
 			archive_entry_set_pathname_utf8(header,
 											entry.path.toUtf8().constData());
 			archive_entry_set_perm(header, entry.executable ? 0755 : 0644);
@@ -176,9 +122,7 @@ class ReleaseArchiveTest : public QObject
 			}
 
 			if (archive_write_header(writer, header) != ARCHIVE_OK) {
-				// Reported rather than swallowed: a bare "could not create
-				// the archive" is what made the first Windows failure here
-				// unreadable.
+				// Reported, not swallowed, so a failure says why.
 				qWarning().noquote()
 					<< "could not write a header for" << entry.path << ":"
 					<< archive_error_string(writer);
@@ -208,16 +152,8 @@ class ReleaseArchiveTest : public QObject
 		return ok;
 	}
 
-	/*!
-	 * A path component made of letters no single-byte code page holds:
-	 * Turkish, Cyrillic, CJK.
-	 *
-	 * Spelled as UTF-8 bytes rather than as the characters themselves
-	 * because MSVC decodes a plain string literal in the build machine's
-	 * ANSI code page unless it is given /utf-8, which this build does not
-	 * pass. A case about mis-encoded paths must not itself depend on how
-	 * the compiler guessed at its own source file.
-	 */
+	/*! A path component of letters no single-byte code page holds (Turkish, Cyrillic, CJK), spelled
+	 * as UTF-8 bytes because MSVC decodes plain literals in the ANSI code page without /utf-8. */
 	static QString awkwardName()
 	{
 		return QString::fromUtf8(
@@ -252,14 +188,9 @@ class ReleaseArchiveTest : public QObject
 
   private slots:
 
-	/*!
-	 * A sharun bundle survives the round trip intact.
-	 *
-	 * The launcher and the updater exist only as hardlinks, and the library
-	 * only resolves through a symlink, so this one case covers the whole
-	 * failure that shipped: 763 files extracted, and an installation that
-	 * could not start.
-	 */
+	/*! A sharun bundle survives the round trip intact. The launcher and updater exist only as
+	 * hardlinks and the library only resolves through a symlink, so one case covers the shipped
+	 * failure: files extracted, installation unable to start. */
 	void tst_SharunBundleKeepsItsLinks()
 	{
 #if defined(Q_OS_WIN32)
@@ -279,49 +210,37 @@ class ReleaseArchiveTest : public QObject
 
 		QVERIFY2(result.ok, qPrintable(result.error));
 
-		// The bundle above: 7 regular files (the launch script, the loader,
-		// two real binaries, one library, and the two marker files), then 3
-		// hardlinks and 1 symlink.
+		// 7 regular files (launch script, loader, two real binaries, one library, two markers),
+		// then 3 hardlinks and 1 symlink.
 		QCOMPARE(result.fileCount, 7);
 		QCOMPARE(result.linkCount, 4);
 
 		const QDir out(dest);
 
-		// The entry points the launch script and the updater hand-off use.
 		for (const QString& path :
 			 {QStringLiteral("bin/kite"), QStringLiteral("bin/kite-updater"),
 			  QStringLiteral("sharun")}) {
 			const QFileInfo info(out.absoluteFilePath(path));
 			QVERIFY2(info.exists(), qPrintable(path));
 			QVERIFY2(info.isFile(), qPrintable(path));
-			// A hardlink is indistinguishable from the file it links to, so
-			// the content is the check: dropping the link and creating an
-			// empty placeholder is the other way this went wrong.
+			// A hardlink looks like the file it links to, so check the content: an empty
+			// placeholder is the other failure.
 			QCOMPARE(info.size(), qint64(6)); // "LOADER"
 			QVERIFY2(info.isExecutable(), qPrintable(path));
 		}
 
-		// The soname link the dynamic linker actually looks for.
 		const QFileInfo soname(out.absoluteFilePath("lib/libX11.so.6"));
 		QVERIFY(soname.isSymLink());
 		QCOMPARE(soname.symLinkTarget(),
 				 out.absoluteFilePath("lib/libX11.so.6.4.0"));
 
-		// And the real binaries behind the loader.
 		QCOMPARE(QFileInfo(out.absoluteFilePath("shared/bin/kite")).size(),
 				 qint64(8)); // "LAUNCHER"
 #endif
 	}
 
-	/*!
-	 * On Windows, an archive that contains links is refused outright.
-	 *
-	 * The alternative -- extracting what can be extracted and leaving the
-	 * links out -- is the failure this whole file exists to prevent, just
-	 * arrived at politely: a tree with the right byte count, no launcher and
-	 * no updater. Since no Windows artifact contains a link, an archive that
-	 * does is not one to install part of.
-	 */
+	/*! On Windows an archive containing links is refused outright: no Windows artifact has any, and
+	 * installing part of one is the failure this file exists to prevent. */
 	void tst_LinkBearingArchiveIsRefusedOnWindows()
 	{
 #if !defined(Q_OS_WIN32)
@@ -340,13 +259,12 @@ class ReleaseArchiveTest : public QObject
 			ReleaseArchive::extract(archivePath, dest);
 
 		QVERIFY2(!result.ok, "a link-bearing archive was accepted on Windows");
-		// The wording comes from createLink() in ReleaseArchive.cpp.
 		QVERIFY2(result.error.contains(QStringLiteral("not supported")),
 				 qPrintable(result.error));
 		QCOMPARE(result.linkCount, 0);
 
-		// Nothing may be left standing in for a link. An empty placeholder
-		// where bin/kite belongs is an installation that does not start.
+		// Nothing may stand in for a link: an empty placeholder for bin/kite is an installation
+		// that does not start.
 		const QDir out(dest);
 		QVERIFY(!QFileInfo::exists(
 			out.absoluteFilePath(QStringLiteral("bin/kite"))));
@@ -378,12 +296,8 @@ class ReleaseArchiveTest : public QObject
 
 	// -- Hostile archives --------------------------------------------------
 
-	/*!
-	 * The archive is downloaded, so it is not trusted. Each of these must
-	 * abort the whole extraction rather than be sanitised and let through:
-	 * an archive that tries to escape its directory is not one to install
-	 * "most of".
-	 */
+	/*! The archive is downloaded, so untrusted: each case must abort the whole extraction, not be
+	 * sanitised and let through. */
 	void tst_HostileEntries_data()
 	{
 		QTest::addColumn<QString>("path");
@@ -430,17 +344,11 @@ class ReleaseArchiveTest : public QObject
 		QVERIFY2(!result.ok, "a hostile archive was accepted");
 		QVERIFY(!result.error.isEmpty());
 
-		// Nothing may have landed outside the destination.
 		QVERIFY(!QFileInfo::exists(work.filePath(QStringLiteral("escaped.txt"))));
 	}
 
-	/*!
-	 * A hardlink to something the archive has not stored yet is refused.
-	 *
-	 * tar always writes the target first, so this only happens in a damaged
-	 * or hand-made archive -- and a launcher that is a dangling link is not a
-	 * launcher.
-	 */
+	/*! A hardlink to something the archive has not stored yet is refused (tar writes targets first,
+	 * so this means a damaged or hand-made archive). */
 	void tst_HardlinkToAMissingTargetIsRefused()
 	{
 		QTemporaryDir work;
@@ -463,8 +371,7 @@ class ReleaseArchiveTest : public QObject
 
 	// -- Ordinary behaviour ------------------------------------------------
 
-	//! The executable bit survives; a launcher that is not executable is not
-	//! an installation.
+	//! The executable bit survives.
 	void tst_ExecutableBitIsKept()
 	{
 #if defined(Q_OS_WIN32)
@@ -494,16 +401,9 @@ class ReleaseArchiveTest : public QObject
 #endif
 	}
 
-	/*!
-	 * A release with no links in it, which is what the Windows and macOS
-	 * artifacts are, extracts on every platform.
-	 *
-	 * Shaped like a Windows package -- executables and libraries at the top
-	 * level, plugins and jars in subdirectories -- because that is the tree
-	 * an update actually installs there, and because everything else in this
-	 * file that touches the normal path stops at the first link and so never
-	 * runs on Windows at all.
-	 */
+	/*! A release with no links, like the Windows and macOS artifacts, extracts on every platform.
+	 * Shaped like a Windows package (executables and libraries at the top, plugins and jars in
+	 * subdirectories); the other normal-path cases stop at the first link and never run on Windows. */
 	void tst_PlainTreeExtractsEverywhere()
 	{
 		QTemporaryDir work;
@@ -537,43 +437,24 @@ class ReleaseArchiveTest : public QObject
 			const QFileInfo info(out.absoluteFilePath(entry.path));
 			QVERIFY2(info.isFile(), qPrintable(entry.path));
 			QCOMPARE(info.size(), qint64(entry.contents.size()));
-			// Paths are reported relative to the destination, with '/'
-			// separators on every platform, and are what the update log
-			// shows when a release turns out to be missing something.
+			// Paths are reported relative to the destination, with '/' on every platform.
 			QVERIFY2(result.paths.contains(entry.path),
 					 qPrintable(entry.path));
 			expectedBytes += entry.contents.size();
 		}
 		QCOMPARE(result.byteCount, expectedBytes);
 
-		// The two the update itself goes looking for by name afterwards.
 		QVERIFY(QFileInfo::exists(
 			out.absoluteFilePath(QStringLiteral("kite.exe"))));
 		QVERIFY(QFileInfo::exists(
 			out.absoluteFilePath(QStringLiteral("kite-updater.exe"))));
 	}
 
-	/*!
-	 * A release is unpacked from, and into, a path that is not ASCII.
-	 *
-	 * This is the one case in the file that is about the file name rather
-	 * than the contents. archive_read_open_filename() and its write
-	 * counterpart take a `char*`, and on Windows libarchive hands that to
-	 * the narrow CRT entry points, which decode it in the active ANSI code
-	 * page -- so passing UTF-8 bytes, as this code used to, is the one
-	 * encoding guaranteed to be wrong there. Every archive Kite opens
-	 * lives under the user's data directory, which lives under the user
-	 * profile, so for a user named Şafak the answer was "No such file or
-	 * directory" for every zip they ever touched, update included.
-	 *
-	 * Running on Linux this passes either way, since the byte path is
-	 * already UTF-8 -- but it is still the case that fails if someone
-	 * reaches for the narrow call again, and it is the case a Windows run
-	 * has to go through. The nesting is deliberate: the awkward name is in
-	 * the directory holding the archive, in the archive's own file name, in
-	 * an entry inside it, and in the destination, because those are four
-	 * different code paths and only the first two are libarchive's.
-	 */
+	/*! A release is unpacked from, and into, a non-ASCII path. archive_read_open_filename() takes a
+	 * `char*` that Windows libarchive decodes in the ANSI code page, so UTF-8 bytes break for a
+	 * user named Şafak. Passes on Linux either way, but fails if the narrow call comes back. The
+	 * awkward name sits in the directory holding the archive, the archive's file name, an entry
+	 * inside it and the destination: four different code paths. */
 	void tst_NonAsciiPathsAreOpened()
 	{
 		QTemporaryDir work;
@@ -593,7 +474,6 @@ class ReleaseArchiveTest : public QObject
 			file(awkward + QStringLiteral("/inside.txt"), "ENTRY"),
 		};
 
-		// Failing here is already the bug, from the writing end.
 		QVERIFY2(writeArchive(archivePath, entries),
 				 "could not create an archive at a non-ASCII path");
 		QVERIFY(QFileInfo::exists(archivePath));
@@ -648,21 +528,10 @@ class ReleaseArchiveTest : public QObject
 		QVERIFY(!result.error.isEmpty());
 	}
 
-	/*!
-	 * Extract a real published release and account for every entry in it.
-	 *
-	 * Opt-in, because it needs a 100-plus-megabyte archive that has no
-	 * business in the repository:
-	 *
-	 *     KITE_TEST_RELEASE_ARCHIVE=/path/to/Kite-Linux-Qt6-Portable-v10.0.0.tar.gz \
-	 *         ./ReleaseArchive_test
-	 *
-	 * The archive is read a second time to build the expectation, rather than
-	 * hardcoding counts, so this stays true for any release: every entry the
-	 * archive declares must exist on disk afterwards, as the same kind of
-	 * thing. That is exactly the property that failed in the field -- 763
-	 * files arrived and 97 links did not.
-	 */
+	/*! Extracts a real published release and accounts for every entry. Opt-in, it needs a 100+ MB
+	 * archive: KITE_TEST_RELEASE_ARCHIVE=/path/to/Kite-Linux-Qt6-Portable-v10.0.0.tar.gz
+	 * ./ReleaseArchive_test. The archive is read a second time to build the expectation, so it
+	 * holds for any release: every declared entry must exist afterwards as the same kind of thing. */
 	void tst_RealReleaseArchiveIsFullyAccountedFor()
 	{
 		const QString archivePath =
@@ -679,7 +548,6 @@ class ReleaseArchiveTest : public QObject
 			ReleaseArchive::extract(archivePath, dest);
 		QVERIFY2(result.ok, qPrintable(result.error));
 
-		// Walk the archive again for the expectation.
 		archive* reader = archive_read_new();
 		QVERIFY(reader);
 		archive_read_support_filter_all(reader);
@@ -712,8 +580,7 @@ class ReleaseArchiveTest : public QObject
 				continue;
 			}
 
-			// symlinkTarget-aware: a QFileInfo on a symlink answers about its
-			// target, so ask about the link itself first.
+			// A QFileInfo on a symlink describes its target, so ask about the link itself first.
 			QVERIFY2(info.isSymLink() || info.exists(), qPrintable(path));
 
 			if (isSymlink) {
@@ -722,8 +589,7 @@ class ReleaseArchiveTest : public QObject
 			} else if (isHardlink) {
 				++links;
 				QVERIFY2(info.isFile(), qPrintable(path));
-				// The link must carry the target's content, not be an empty
-				// placeholder -- which is what a naive extractor produces.
+				// The link must carry the target's content, not be an empty placeholder.
 				const QFileInfo target(
 					out.absoluteFilePath(QString::fromUtf8(hardlink)));
 				QVERIFY2(target.isFile(), qPrintable(path));
@@ -742,9 +608,8 @@ class ReleaseArchiveTest : public QObject
 		QCOMPARE(result.fileCount, files);
 		QCOMPARE(result.linkCount, links);
 
-		// The two entry points the update depends on: the launch script runs
-		// bin/kite, and the hand-off runs bin/kite-updater. Both are
-		// hardlinks to the sharun loader in a real bundle.
+		// The two entry points the update depends on (hardlinks to the sharun loader in a real
+		// bundle): bin/kite for the launch script, bin/kite-updater for the hand-off.
 		QVERIFY(QFileInfo(out.absoluteFilePath("bin/kite")).isExecutable());
 		QVERIFY(QFileInfo(out.absoluteFilePath("bin/kite-updater"))
 					.isExecutable());
@@ -764,8 +629,7 @@ class ReleaseArchiveTest : public QObject
 				 QDir(dest).absoluteFilePath(QStringLiteral("Kite-1.2.3")));
 	}
 
-	//! A release whose files sit at the top level is returned unchanged --
-	//! which is what our own tarballs look like.
+	//! A release whose files sit at the top level is returned unchanged, as our own tarballs are.
 	void tst_FlatTreeIsReturnedUnchanged()
 	{
 		QTemporaryDir work;

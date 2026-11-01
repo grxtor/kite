@@ -16,9 +16,8 @@ T.MenuItem {
                              implicitContentHeight + topPadding + bottomPadding,
                              implicitIndicatorHeight + topPadding + bottomPadding)
 
-    // 32 px rows (Theme.control.menuItemHeight) with 16 px icons on one
-    // column, the text after them on another, whether or not a row has an
-    // icon of its own.
+    // Icons on one column and text after them on another, whether or not a
+    // row has an icon of its own.
     verticalPadding: Theme.space.xs
     horizontalPadding: Theme.space.md - Theme.space.xxs
     spacing: Theme.space.sm + Theme.space.xxs
@@ -38,10 +37,9 @@ T.MenuItem {
         display: control.display
         alignment: Qt.AlignLeft
 
-        // Field by field rather than `icon: control.icon`: a submenu's entry
-        // gets its Menu's icon wholesale, with no size or colour, and drew
-        // it at the SVG's own size in black-or-whatever -- "Play as" stood
-        // bigger than "Play offline" and its label started further right.
+        // Field by field, not `icon: control.icon`: a submenu's entry gets its
+        // Menu's icon wholesale, with no size or colour, and drew it at the
+        // SVG's own size.
         icon.source: control.icon.source
         icon.name: control.icon.name
         icon.width: Theme.icon.sm
@@ -75,8 +73,7 @@ T.MenuItem {
         visible: control.subMenu
     }
 
-    // No width of its own: an entry is as wide as what it says, and the
-    // Menu sets the floor (see Menu.qml's minimumWidth).
+    // No width of its own; Menu.qml sets the floor.
     background: Rectangle {
         implicitHeight: Theme.control.menuItemHeight
         radius: Theme.radius.sm

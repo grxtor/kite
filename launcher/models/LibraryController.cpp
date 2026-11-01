@@ -33,9 +33,8 @@ LibraryController::LibraryController(std::shared_ptr<InstanceList> instances,
 	: QObject(parent), m_instances(std::move(instances)),
 	  m_icons(std::move(icons))
 {
-	/* Deleting goes through the shell, not through here, and the list only
-	 * learns the folder has gone when it rescans. Whatever changes the
-	 * rows may have changed what there is to undo. */
+	/* Deleting goes through the shell; the list learns the folder is gone only on
+	 * a rescan, and any row change may change what can be undone. */
 	auto* list = m_instances.get();
 	connect(list, &QAbstractItemModel::rowsRemoved, this,
 			&LibraryController::trashChanged);
@@ -43,7 +42,6 @@ LibraryController::LibraryController(std::shared_ptr<InstanceList> instances,
 			&LibraryController::trashChanged);
 	connect(list, &QAbstractItemModel::modelReset, this,
 			&LibraryController::trashChanged);
-	/* A rescan re-reads the group file, folds included. */
 	connect(list, &QAbstractItemModel::modelReset, this,
 			&LibraryController::collapsedGroupsChanged);
 }
@@ -171,8 +169,7 @@ QObject* LibraryController::duplicate(const QString& id, const QString& name,
 									  bool keepPlaytime, const QString& iconKey)
 {
 	auto original = m_instances->getInstanceById(id);
-	/* One line, as the name field is: the same rule QmlShell's
-	 * sanitizedInstanceName() applies to a typed name. */
+	// One line, as the name field is (QmlShell's sanitizedInstanceName() rule).
 	QString copyName = name;
 	copyName.replace(QLatin1Char('\n'), QLatin1Char(' '));
 	copyName = copyName.trimmed();

@@ -30,32 +30,22 @@ class WorldList;
 class DataPackFolderModel;
 
 /*
- * QML-facing data pack manager for one world's saves/&lt;world&gt;/datapacks
- * folder - the widget-free replacement for the modal dialog
- * WorldListPage::on_actionDatapacks_triggered() used to open.
- *
- * Holds at most one world's folder model at a time, rebuilt whenever
- * openForWorld() names a different world - same "ask again for the same one,
- * get the same object back; ask for a different one and the old one goes
- * away" shape as InstanceDetails::instanceDetails() and QmlShell::
- * sectionModel(). Created lazily by InstanceDetails::worldDataPacks() and
- * parented to it, so opening the instance page never watches a world's
- * folder until the Data packs tab actually picks one.
+ * QML-facing data pack manager for one world's saves/<world>/datapacks folder.
+ * Holds at most one world's folder model, rebuilt when openForWorld() names a
+ * different world (the same world gives the same object back). Created lazily
+ * by InstanceDetails::worldDataPacks() and parented to it, so no world's folder
+ * is watched until the Data packs tab picks one.
  */
 class WorldDataPacksController : public QObject
 {
 	Q_OBJECT
 
-	/// Sorted-by-name proxy over the current world's DataPackFolderModel
-	/// (ModFolderModel's usual name/version/enabled roles) - null until
-	/// openForWorld() has been called with a valid row.
+	/// Sorted-by-name proxy over the current world's DataPackFolderModel; null until openForWorld() has a valid row.
 	Q_PROPERTY(QObject* model READ model NOTIFY modelChanged)
 	Q_PROPERTY(QString worldName READ worldName NOTIFY modelChanged)
 	Q_PROPERTY(QString directory READ directory NOTIFY modelChanged)
 	Q_PROPERTY(bool ready READ ready NOTIFY modelChanged)
-	/// False while the instance is running - same rule InstanceDetails::
-	/// contentChangesAllowed() applies to every other folder-backed
-	/// content type.
+	/// False while the instance is running.
 	Q_PROPERTY(bool unlocked READ unlocked NOTIFY unlockedChanged)
 
   public:
@@ -76,14 +66,11 @@ class WorldDataPacksController : public QObject
 	}
 	bool unlocked() const;
 
-	/// Points this controller at world @p row's datapacks folder,
-	/// rebuilding the model if that is not already what it shows. A no-op
-	/// for an out-of-range row (model() then stays whatever it was).
+	/// Rebuilds the model unless it already shows world @p row; a no-op for an out-of-range row.
 	Q_INVOKABLE void openForWorld(int row);
 	Q_INVOKABLE void setEnabled(int row, bool enabled);
 	Q_INVOKABLE void remove(int row);
-	/// @p fileUrlOrPath: a file:// URL (as a QML FileDialog hands out) or
-	/// a plain local path.
+	/// @p fileUrlOrPath: a file:// URL or a local path.
 	Q_INVOKABLE bool install(const QString& fileUrlOrPath);
 
   signals:
@@ -94,8 +81,7 @@ class WorldDataPacksController : public QObject
 	void onRunningStatusChanged();
 
   private:
-	/// Borrowed, like InstanceDetails::m_mc - valid for this controller's
-	/// whole lifetime (parented to the InstanceDetails that owns both).
+	/// Borrowed; valid for this controller's lifetime (parented to the InstanceDetails that owns both).
 	MinecraftInstance* m_instance;
 	WorldList* m_worlds;
 

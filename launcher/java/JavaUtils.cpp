@@ -43,9 +43,9 @@ JavaUtils::JavaUtils() {}
 
 QString JavaUtils::managedJavaRoot()
 {
-	/* The JavaDir setting: relative to the data folder (the working
-	 * directory) unless it is absolute. Without a launcher context, or
-	 * with the setting empty, the default "java" applies. */
+	// The JavaDir setting: relative to the data folder (the working directory)
+	// unless absolute. Without a launcher context or with it empty, "java"
+	// applies.
 	QString dir = QStringLiteral("java");
 	if (LAUNCHER && LAUNCHER->settings()) {
 		const QString configured =
@@ -57,6 +57,46 @@ QString JavaUtils::managedJavaRoot()
 	return QDir::isAbsolutePath(dir)
 			   ? QDir::cleanPath(dir)
 			   : FS::PathCombine(QDir::currentPath(), dir);
+}
+
+QString JavaUtils::findJavaBinary(const QString& dir)
+{
+#if defined(Q_OS_WIN)
+	const QString binaryName = QStringLiteral("javaw.exe");
+#else
+	const QString binaryName = QStringLiteral("java");
+#endif
+	const auto probe = [&binaryName](const QString& base) {
+		for (const char* layout : {"bin", "Contents/Home/bin"}) {
+			const QFileInfo info(FS::PathCombine(base, layout, binaryName));
+			if (info.isFile()) {
+				return info.filePath();
+			}
+		}
+		return QString();
+	};
+
+	QString found = probe(dir);
+	if (!found.isEmpty()) {
+		return found;
+	}
+	const auto subdirs = QDir(dir).entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+	for (const auto& subdir : subdirs) {
+		found = probe(FS::PathCombine(dir, subdir));
+		if (!found.isEmpty()) {
+			return found;
+		}
+	}
+
+	QDirIterator it(dir, QStringList() << binaryName, QDir::Files,
+					QDirIterator::Subdirectories);
+	while (it.hasNext()) {
+		it.next();
+		if (it.filePath().contains(QStringLiteral("/bin/"))) {
+			return it.filePath();
+		}
+	}
+	return QString();
 }
 
 namespace
@@ -136,18 +176,16 @@ namespace
 	[[maybe_unused]] void appendManagedJavaCandidates(QList<QString>& paths,
 													  const QString& rootPath)
 	{
-		QDir managedDir(rootPath);
-		if (!managedDir.exists()) {
-			return;
-		}
-
-		QDirIterator it(rootPath, QStringList() << javaBinaryName(),
-						QDir::Files, QDirIterator::Subdirectories);
-		while (it.hasNext()) {
-			it.next();
-			const auto candidate = QDir::fromNativeSeparators(it.filePath());
-			if (candidate.contains("/bin/")) {
-				appendUniquePath(paths, candidate);
+		// {root}/{vendor}/{name}/...
+		const QDir::Filters dirs = QDir::Dirs | QDir::NoDotAndDotDot;
+		const auto vendors = QDir(rootPath).entryList(dirs);
+		for (const auto& vendor : vendors) {
+			const QString vendorPath = FS::PathCombine(rootPath, vendor);
+			const auto names = QDir(vendorPath).entryList(dirs);
+			for (const auto& name : names) {
+				appendUniquePath(
+					paths, QDir::fromNativeSeparators(JavaUtils::findJavaBinary(
+							   FS::PathCombine(vendorPath, name))));
 			}
 		}
 	}
@@ -215,7 +253,6 @@ QProcessEnvironment CleanEnviroment()
 			continue;
 		}
 #endif
-		// qDebug() << "Env: " << key << value;
 		env.insert(key, value);
 	}
 #ifdef Q_OS_LINUX
@@ -255,6 +292,29 @@ JavaInstallPtr JavaUtils::GetDefaultJava()
 }
 
 #if defined(Q_OS_WIN32)
+namespace
+{
+	// A string value; empty if it is missing. The data is not guaranteed to
+	// end in a NUL, so only what the registry reported is read.
+	QString readRegistryString(HKEY key, const char* name)
+	{
+		DWORD size = 0;
+		if (RegQueryValueExA(key, name, nullptr, nullptr, nullptr, &size) !=
+				ERROR_SUCCESS ||
+			size == 0) {
+			return QString();
+		}
+		QByteArray data(int(size), '\0');
+		if (RegQueryValueExA(key, name, nullptr, nullptr,
+							 reinterpret_cast<BYTE*>(data.data()),
+							 &size) != ERROR_SUCCESS) {
+			return QString();
+		}
+		data.truncate(int(size));
+		return QString::fromLocal8Bit(data.constData());
+	}
+} // namespace
+
 QList<JavaInstallPtr> JavaUtils::FindJavaFromRegistryKey(DWORD keyType,
 														 QString keyName,
 														 QString keyJavaDir,
@@ -272,17 +332,6 @@ QList<JavaInstallPtr> JavaUtils::FindJavaFromRegistryKey(DWORD keyType,
 	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, keyName.toStdString().c_str(), 0,
 					  KEY_READ | keyType | KEY_ENUMERATE_SUB_KEYS,
 					  &jreKey) == ERROR_SUCCESS) {
-		// Read the current type version from the registry.
-		// This will be used to find any key that contains the JavaHome value.
-		char* value = new char[0];
-		DWORD valueSz = 0;
-		if (RegQueryValueExA(jreKey, "CurrentVersion", nullptr, nullptr,
-							 (BYTE*)value, &valueSz) == ERROR_MORE_DATA) {
-			value = new char[valueSz];
-			RegQueryValueExA(jreKey, "CurrentVersion", nullptr, nullptr,
-							 (BYTE*)value, &valueSz);
-		}
-
 		char subKeyName[255];
 		DWORD subKeyNameSize, numSubKeys, retCode;
 
@@ -309,21 +358,15 @@ QList<JavaInstallPtr> JavaUtils::FindJavaFromRegistryKey(DWORD keyType,
 				continue;
 
 			// Read the JavaHome value to find where Java is installed.
-			value = new char[0];
-			valueSz = 0;
-			if (RegQueryValueExA(newKey, keyJavaDir.toStdString().c_str(),
-								 nullptr, nullptr, (BYTE*)value,
-								 &valueSz) == ERROR_MORE_DATA) {
-				value = new char[valueSz];
-				RegQueryValueExA(newKey, keyJavaDir.toStdString().c_str(),
-								 nullptr, nullptr, (BYTE*)value, &valueSz);
-
+			const QString javaHome =
+				readRegistryString(newKey, keyJavaDir.toStdString().c_str());
+			if (!javaHome.isEmpty()) {
 				// Now, we construct the version object and add it to the list.
 				JavaInstallPtr javaVersion(new JavaInstall());
 
 				javaVersion->id = subKeyName;
 				javaVersion->arch = archType;
-				javaVersion->path = QDir(FS::PathCombine(value, "bin"))
+				javaVersion->path = QDir(FS::PathCombine(javaHome, "bin"))
 										.absoluteFilePath("javaw.exe");
 				javas.append(javaVersion);
 			}
@@ -457,28 +500,10 @@ QList<QString> JavaUtils::FindJavaPaths()
 
 	// Scan Kite's managed java directory
 	// ({workdir}/java/{vendor}/{version}/bin/javaw.exe)
-	QString managedJavaDir = JavaUtils::managedJavaRoot();
-	QDir managedDir(managedJavaDir);
-	if (managedDir.exists()) {
-		QDirIterator vendorIt(managedJavaDir,
-							  QDir::Dirs | QDir::NoDotAndDotDot);
-		while (vendorIt.hasNext()) {
-			vendorIt.next();
-			QDirIterator versionIt(vendorIt.filePath(),
-								   QDir::Dirs | QDir::NoDotAndDotDot);
-			while (versionIt.hasNext()) {
-				versionIt.next();
-				QDirIterator binIt(versionIt.filePath(),
-								   QStringList() << "javaw.exe", QDir::Files,
-								   QDirIterator::Subdirectories);
-				while (binIt.hasNext()) {
-					binIt.next();
-					if (binIt.filePath().contains("/bin/")) {
-						java_candidates.append(MakeJavaPtr(binIt.filePath()));
-					}
-				}
-			}
-		}
+	QList<QString> managedJavas;
+	appendManagedJavaCandidates(managedJavas, JavaUtils::managedJavaRoot());
+	for (const auto& managedJava : managedJavas) {
+		java_candidates.append(MakeJavaPtr(managedJava));
 	}
 
 	java_candidates.append(MakeJavaPtr(this->GetDefaultJava()->path));
@@ -556,22 +581,8 @@ QList<QString> JavaUtils::FindJavaPaths()
 	scanJavaDir("/usr/lib/jvm");
 	scanJavaDir("/usr/lib64/jvm");
 	scanJavaDir("/usr/lib32/jvm");
-	// javas stored in Kite's folder (recursive scan for managed
-	// java/{vendor}/{name}/... structure)
-	{
-		QDir javaBaseDir(JavaUtils::managedJavaRoot());
-		if (javaBaseDir.exists()) {
-			QDirIterator it(JavaUtils::managedJavaRoot(),
-							QStringList() << "java", QDir::Files,
-							QDirIterator::Subdirectories);
-			while (it.hasNext()) {
-				it.next();
-				if (it.filePath().contains("/bin/")) {
-					javas.append(it.filePath());
-				}
-			}
-		}
-	}
+	// javas stored in Kite's folder (java/{vendor}/{name}/...)
+	appendManagedJavaCandidates(javas, JavaUtils::managedJavaRoot());
 	// manually installed JDKs in /opt
 	scanJavaDir("/opt/jdk");
 	scanJavaDir("/opt/jdks");

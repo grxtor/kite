@@ -5,16 +5,10 @@ import QtQuick
 import Kite.Theme
 
 /*
- * What a picture slot shows when there is no real picture to put in it: a
- * calm, neutral tile one step off the surface it sits on, with a hairline,
- * and -- when the host gives one -- the instance's icon or a single glyph
- * centred on it. No accent tint and no gradient: the accent is kept for
- * actions, selection and links. Built only from Theme.palette tokens, so it
- * follows whichever scheme and theme are active; nothing here is an image.
- *
- * Whatever goes in the middle is a child of this item (the default property),
- * and is centred by the host. An instance's icon sits on InstanceTile
- * instead: this tile, in the kite's cut.
+ * What a picture slot shows when there is no real picture: a neutral tile one
+ * step off the surface it sits on, with a hairline and, when the host gives one,
+ * the instance's icon or a glyph centred on it (children of this item). No
+ * accent tint: the accent is kept for actions, selection and links.
  */
 Rectangle {
     // A raised step in the dark theme; in the light one the cards are

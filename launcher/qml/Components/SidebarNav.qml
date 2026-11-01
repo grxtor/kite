@@ -7,40 +7,10 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Kite.Theme
 
-/*
- * The left rail, Modrinth's: the Kite mark on the top bar's line, the main
- * destinations, a rule, the last few instances played (their own icons),
- * + for a new instance, then Settings and the account at the foot. No
- * headings: every item is its own icon, its name a tooltip. Pages that open
- * elsewhere are still listed here -- where they open is the shell's
- * business, not the rail's.
- *
- * Part of the shell surface (Main.qml paints it, with the top bar and the
- * play bar), so the rail draws no background or edge of its own: the page
- * panel's hairline beside it is the edge.
- *
- * The icon rail is the default; `collapsed: false` widens it into the
- * labelled sidebar (names beside the icons, the Kite wordmark in the band
- * at the top), the same items on the same lines, so nothing jumps while it
- * folds. The caller drives that, since only it knows what the window is
- * competing for space with.
- *
- * Its right edge can be dragged to any width the labelled sidebar may have
- * (SidebarEdgeHandle), as the friends panel's left edge can: let go near the
- * rail's width and it folds to the rail, past that it stays labelled at the
- * width reached, and a double click on the edge switches. The width is
- * remembered (Main.qml keeps it as a setting; this only asks, with
- * `widthCommitted`). Dragging follows the pointer without any animation;
- * every other change of width slides.
- */
+/* The left rail; `collapsed: false` widens it into the labelled sidebar. */
 Rectangle {
     id: root
 
-    // The fold toggle -- persisted, so a manual choice survives a restart;
-    // the caller ORs it with its own narrow-window check (see Main.qml), so
-    // a small window keeps the rail regardless of what was last chosen. At
-    // the end of the brand band in the labelled sidebar, just above
-    // Settings on the icon rail, where the band has room for the mark only.
     component CollapseToggle: IconButton {
         size: Theme.control.heightSm
         iconName: "chevron-left"
@@ -55,93 +25,68 @@ Rectangle {
     // Each entry: { id, icon, label }; icon is a MeshIcon name.
     property var items: []
     property var footerItems: []
-    // Counts on the destinations, by id: { friends: { count, tone } } (see
-    // NavItem.badge). A map of its own, so a count changing never rebuilds
-    // `items` and the delegates with it.
+    // Counts by id: { friends: { count, tone } }; a map of its own so a count changing does not
+    // rebuild `items`.
     property var badges: ({})
     property string currentId: ""
-    // The open instance, if any: its recent tile takes the selection while
-    // it is listed, over currentId.
+    // The open instance: its recent tile takes the selection while listed, over currentId.
     property string currentInstanceId: ""
 
-    // Any model with instanceId/name/iconKey/isRunning roles; at most the
-    // first `recentLimit` rows are shown, fewer when the window is too short
-    // for them (see recentShown).
+    // Any model with instanceId/name/iconKey/isRunning roles; at most `recentLimit` rows, fewer on
+    // a short window.
     property var recentModel: null
     property int recentLimit: 5
+    // On Home a recent tile picks the instance for the hero (one click), opens its page (two) or launches it
+    // (three); elsewhere one click opens the page.
+    property bool pickOnTap: false
 
-    // The account at the foot (ProfileButton).
     property string accountName: ""
     property string accountKind: ""
     property string accountAvatarSource: ""
     property var accountsController: null
 
-    // The rail at rest. What is on show differs only while the edge is being
-    // dragged (see railed).
+    // The rail at rest; `railed` differs only while the edge is dragged.
     property bool collapsed: true
-    // The width the user gave the labelled sidebar, as saved; it is brought
-    // into range (see fullWidth) rather than trusted.
+    // The saved sidebar width; brought into range (see fullWidth), not trusted.
     property int expandedWidth: 240
-    // What the sidebar may take of the window: its width less what the pages
-    // and the friends panel need, which the caller knows. The sidebar never
-    // leaves less than this makes it, down to its narrowest.
+    // What the window can give the sidebar: its width less what pages and the friends panel need.
     property int roomWidth: 0
-    // False while the host keeps the rail whatever the toggle says (a narrow
-    // window): the expand toggle hides rather than do nothing.
+    // False while the host keeps the rail (narrow window): the expand toggle hides.
     property bool canExpand: true
-    // Whether the play bar is showing beside the foot band. The band keeps
-    // its height either way, so the account never moves between pages; kept
-    // for callers that still pass it.
-    property bool barBeside: true
-    // The colour the rail is drawn on (Main.qml's shell), for the corners of
-    // an instance icon that fills its tile (RecentItem.surround).
+    // Colour behind the rail, for the corners of a full-tile instance icon.
     property color surround: "transparent"
-    // The band at the top, on the top bar's line (Main.qml's shellBarHeight).
     property int bandHeight: Theme.control.heightLg
-    // What the window's own buttons take at the band's left end: macOS's
-    // traffic lights, once the title bar lies over the band (Main.qml's
-    // windowControlsInset). The mark and the wordmark move past them, each
-    // shown only while it fits before the fold toggle -- so the rail, too
-    // narrow for anything past the lights, shows just the lights.
+    // Width taken by the window's own buttons (macOS traffic lights) at the band's left end; the
+    // mark and wordmark move past them.
     property int controlsWidth: 0
 
-    // The rail's geometry. Every item is one square (Modrinth's 48), inset
-    // the same on both sides of the rail; the square's middle is the rail's
-    // one vertical axis -- every icon, recent tile, the mark, the account
-    // head and the selection sit on it, folded or not.
+    // Every item is one square, inset the same on both sides; the square's middle is the rail's
+    // vertical axis.
     readonly property int itemSize: Theme.control.heightLg
     readonly property int inset: Theme.space.sm
     readonly property int railWidth: root.itemSize + root.inset * 2
-    // The labelled sidebar's range: wide enough for "Settings" and a short
-    // instance name beside the icon, and not so wide that the names it has
-    // are all there is to see.
+    // Wide enough for "Settings" and a short instance name beside the icon.
     readonly property int minExpandedWidth: 200
     readonly property int maxExpandedWidth: 380
-    // From the inner column's left edge; from the rail's own edge it is
-    // inset + this, the rail's middle.
+    // From the inner column's left edge; inset + this from the rail's edge.
     readonly property int railAxis: root.itemSize / 2
-    // Labels start here (from a row's left edge), after the recent tiles
-    // (RecentItem.tileSize), the widest thing on the axis.
+    // Labels start here, after the recent tiles (RecentItem.tileSize).
     readonly property int labelX: root.railAxis + Theme.control.heightSm / 2 + Theme.space.md
     readonly property int itemRadius: Theme.radius.lg
-    // The Kite mark: as big as the recent tiles (RecentItem.tileSize), and
-    // the rail's items start a gap below its band, so the mark floats on the
-    // top bar's line instead of stacking on the first destination.
     readonly property int brandExtent: Theme.control.heightSm
     readonly property int brandGap: Theme.space.md
 
     signal itemActivated(string id)
+    signal recentSelectRequested(string id)
     signal recentActivated(string id)
     signal recentPlayRequested(string id)
     signal newInstanceRequested()
     signal openAccountsRequested()
-    // A drag of the edge ended with the sidebar labelled, at this width.
     signal widthCommitted(int width)
 
     function openProfileMenu() { accountButton.openMenu() }
 
-    // How many recent instances fit between + and Settings without the
-    // column overflowing -- on a short window the list gives way first.
+    // Recent instances that fit between + and Settings; on a short window the list gives way first.
     readonly property int recentShown: {
         var pitch = root.itemSize + column.spacing
         var fixed = root.bandHeight + root.brandGap + Theme.layout.barHeight
@@ -152,10 +97,8 @@ Rectangle {
         return Math.max(0, Math.min(root.recentLimit, Math.floor((root.height - fixed) / pitch)))
     }
 
-    // The item whose id matches currentId -- or the open instance's recent
-    // tile, or the account on Accounts -- or null on a page nothing here
-    // lists, where the selection just hides rather than parking on the last
-    // real destination.
+    // The item matching currentId, the open instance's recent tile or the account; null hides the
+    // selection.
     readonly property Item selectedNavItem: findNavItem(currentId, currentInstanceId)
     readonly property bool selectedIsInstance: !!root.selectedNavItem && root.selectedNavItem.instanceId !== undefined
 
@@ -184,36 +127,30 @@ Rectangle {
         return null
     }
 
-    // The widest the labelled sidebar may be: not past maxExpandedWidth, nor
-    // leaving less than roomWidth makes it -- except that it is never
-    // narrower than its names can be laid out in.
+    // Not past maxExpandedWidth, nor less than roomWidth leaves, but never narrower than its names
+    // need.
     readonly property int maxWidth: Math.max(root.minExpandedWidth,
                                              Math.min(root.maxExpandedWidth,
                                                       root.roomWidth > 0 ? root.roomWidth : root.maxExpandedWidth))
-    // The saved width, brought into range: the window may have shrunk since.
+    // The saved width brought into range: the window may have shrunk.
     readonly property int fullWidth: Math.min(Math.max(root.expandedWidth, root.minExpandedWidth), root.maxWidth)
-    // What is on show: the rail or the labelled sidebar at rest, or -- while
-    // dragging -- the one that letting go now would leave.
+    // What is on show: rail or sidebar at rest; while dragging, the one letting go now would leave.
     readonly property bool railed: edge.showsRail
 
-    // Fold or unfold, remembered (the same setting as the toggle's).
     function setCollapsed(collapsed) {
         SettingsStore.setValue("UiSidebarCollapsed", collapsed)
     }
 
-    // True from the first turn of the event loop: the width is set at
-    // start-up from the saved settings, and should appear in place.
+    // True from the first turn of the event loop: the start-up width should appear in place.
     property bool settled: false
     Component.onCompleted: Qt.callLater(() => root.settled = true)
 
-    // Which of the three widths the sidebar has. The slide belongs to a
-    // change of this, not to a change of the width, which the window
-    // changing size moves and which must be followed at once.
+    // The slide belongs to a change of this, not of the width, which window resizes move and must
+    // follow at once.
     readonly property string mode: edge.dragging ? "drag" : root.collapsed ? "rail" : "full"
 
     color: "transparent"
-    // Only the move from one state to another slides, into a drag not at all
-    // (the width follows the pointer) and out of one to where it was left.
+    // Only a change of state slides; a drag follows the pointer.
     states: [
         State {
             name: "rail"
@@ -236,33 +173,24 @@ Rectangle {
         enabled: root.settled
         NumberAnimation {
             property: "implicitWidth"
-            duration: SettingsStore.bool("UiReduceMotion") ? 0 : Theme.motion.normal
+            duration: Theme.motion.normal
             easing.type: Theme.motion.easing
         }
     }
 
-    // The selected destination's fill, as one shape that slides from the
-    // previous item to the new one instead of each item owning its own
-    // static highlight -- NavItem itself only ever paints hover/press.
     NavSelectionIndicator {
-        // On the folded rail an instance's own tile shows it is selected
-        // (RecentItem.selected, the nose in its cut): the square around it
-        // would only frame a picture that already fills its tile.
+        // An instance's own tile shows the selection on the folded rail; a square around it would
+        // frame a picture that already fills its tile.
         target: root.railed && root.selectedIsInstance ? null : root.selectedNavItem
         collapsed: root.railed
         railSquare: root.itemSize
         railAxis: root.railAxis
         cornerRadius: root.itemRadius
         live: edge.dragging
-        // Rows live in two containers (the main column and the foot band),
-        // so positions are summed up to this rail rather than read off one
-        // layout.
+        // Rows live in two containers, so positions are summed up to this rail.
         space: root
     }
 
-    // The band at the top, on the top bar's line: the mark on the rail's
-    // axis in both modes, so it stays put while the rail folds; the wordmark
-    // and the fold toggle beside it in the labelled sidebar.
     Item {
         id: brandBand
         anchors.left: parent.left
@@ -278,21 +206,15 @@ Rectangle {
             size: root.brandExtent
         }
 
-        // On the labels' line, as the names below it are, its letters (not
-        // its line box, which hangs low) centred on the mark: "Kite" has no
-        // descender, so its ink is what rises above the baseline (the tight
-        // rect's own height runs a pixel below it).
-        Text {
+        // Centred on the mark by its letters, not its line box, which hangs low.
+        Copy {
             id: wordmark
             x: root.controlsWidth > 0 ? mark.x + mark.width + Theme.space.md : root.inset + root.labelX
             anchors.baseline: mark.verticalCenter
             anchors.baselineOffset: -wordmarkInk.tightBoundingRect.y / 2
             visible: !root.railed && (root.controlsWidth === 0 || x + width + Theme.space.md <= bandToggle.x)
             text: "Kite"
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.heading
-            font.pixelSize: Theme.type.subheading.pixelSize
-            font.weight: Font.Bold
+            role: "subheading"
             font.letterSpacing: -0.2
         }
         TextMetrics {
@@ -344,8 +266,6 @@ Rectangle {
             }
         }
 
-        // A short rule where the destinations end and the instances begin:
-        // no "Recent" heading, the icons say what they are.
         Rectangle {
             id: rule
             Layout.preferredWidth: root.railed ? root.itemSize - Theme.space.lg : -1
@@ -364,7 +284,6 @@ Rectangle {
                 id: recentDelegate
                 required property int index
 
-                // Rows past what fits stay out of the layout entirely.
                 visible: index < root.recentShown
                 Layout.fillWidth: true
                 implicitHeight: root.itemSize
@@ -374,10 +293,16 @@ Rectangle {
                 cornerRadius: root.itemRadius
                 compact: root.railed
                 selected: root.selectedNavItem === recentDelegate
-                // The selection's fill when it sits under this one: only in
-                // the labelled sidebar, the folded rail shows no square.
+                // The selection's fill under this tile, only in the labelled sidebar.
                 surround: selected && !root.railed ? Theme.palette.surfaceRaised : root.surround
-                onClicked: root.recentActivated(instanceId)
+                onClicked: root.pickOnTap ? taps.tap() : root.recentActivated(instanceId)
+                Keys.onReturnPressed: root.recentActivated(instanceId)
+                TapSequence {
+                    id: taps
+                    onSingle: root.recentSelectRequested(recentDelegate.instanceId)
+                    onTwice: root.recentActivated(recentDelegate.instanceId)
+                    onThrice: if (!recentDelegate.isRunning) root.recentPlayRequested(recentDelegate.instanceId)
+                }
                 onPlayRequested: root.recentPlayRequested(instanceId)
             }
         }
@@ -423,9 +348,6 @@ Rectangle {
         }
     }
 
-    // The foot band: exactly the play bar's height (Theme.layout.barHeight),
-    // so the account sits on the same line as the bar's own content and the
-    // rail's foot and the bar read as one strip across the window.
     Item {
         id: footBand
         anchors.left: parent.left
@@ -453,8 +375,7 @@ Rectangle {
         }
     }
 
-    // The right edge, to be dragged; there is none where the window is too
-    // narrow for the labelled sidebar at all.
+    // Absent where the window is too narrow for the labelled sidebar.
     SidebarEdgeHandle {
         id: edge
         anchors.right: parent.right

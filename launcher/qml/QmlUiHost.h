@@ -33,41 +33,30 @@
 
 /*
  * One question QmlUiHost is asking, published to QML as `current` while it
- * is unanswered.
- *
- * `kind` decides which of the other properties apply and which of the
- * Q_INVOKABLEs is the right way to answer:
- *   message       -- accept() only (a plain acknowledgement)
+ * is unanswered. `kind` decides which properties apply and how to answer:
+ *   message       -- accept()
  *   confirm       -- accept() / reject()
  *   choose        -- choose(index); actions holds the button labels
- *   text          -- value holds the pre-filled default; accept(QString) /
- *                    reject()
+ *   text          -- value is the pre-filled default; accept(QString) / reject()
  *   blockedMods   -- blockedMods (live), openDownload(index),
  *                    rescanDownloads(), then accept() / reject()
- *   untrustedMods -- untrustedModsFiles, confirmDelayMs, then
- *                    accept() / reject()
+ *   untrustedMods -- untrustedModsFiles, confirmDelayMs, then accept() / reject()
  *   update        -- updateInfo, then answerUpdate("install"|"later"|"skip")
  *   profileSetup  -- profileNameStatus (live), checkProfileName(name),
- *                    submitProfileName(name); accept() fires itself once
- *                    the profile is actually created, reject() cancels
- *   filePicker    -- filePickerMode/filePickerFilter/filePickerDefaultPath,
- *                    then accept(path) / reject() (QML shows a native
- *                    QtQuick.Dialogs file dialog rather than this
- *                    request's own UI for this kind)
- *   pickAccount   -- accountOptions, then chooseAccount(index, makeDefault)
- *                    / reject()
- *   optionalMods  -- optionalMods (an AtlOptionalModsModel, ticked in place
- *                    through its own invokables), then accept() to install
- *                    what is ticked / reject() to keep the pack's defaults
+ *                    submitProfileName(name); accept() fires itself once the
+ *                    profile is created, reject() cancels
+ *   filePicker    -- filePickerMode/Filter/DefaultPath, then accept(path) /
+ *                    reject(); QML shows a native file dialog for this kind
+ *   pickAccount   -- accountOptions, then chooseAccount(index, makeDefault) /
+ *                    reject()
+ *   optionalMods  -- optionalMods (an AtlOptionalModsModel ticked in place),
+ *                    then accept() to install what is ticked / reject() to
+ *                    keep the pack's defaults
  *   modal         -- modalDocument, drawn with PluginNode.qml, which reports
- *                    every user action through sendEvent() (this request
- *                    is the PluginNode `sink`); a "click" answers it,
- *                    reject() backs out
+ *                    user actions through sendEvent() (this request is its
+ *                    `sink`); a "click" answers it, reject() backs out
  *
- * Ownership is C++'s throughout: QmlUiHost hands this to QML with
- * QQmlEngine::CppOwnership (see exposeToQml() in the .cpp) and deletes it
- * itself once answered, the same guard QmlShell::expose() applies to
- * everything else it publishes.
+ * C++ owns it (QQmlEngine::CppOwnership) and deletes it once answered.
  */
 class QmlUiRequest : public QObject
 {
@@ -77,64 +66,52 @@ class QmlUiRequest : public QObject
 	Q_PROPERTY(QString title READ title CONSTANT)
 	Q_PROPERTY(QString text READ text CONSTANT)
 	/// "info" | "question" | "warning" | "error"; "info" where UiHost's call
-	/// carries no severity of its own (blockedMods, update).
+	/// carries none (blockedMods, update).
 	Q_PROPERTY(QString severity READ severity CONSTANT)
 	Q_PROPERTY(QString acceptLabel READ acceptLabel CONSTANT)
 	Q_PROPERTY(QString rejectLabel READ rejectLabel CONSTANT)
-	/// Button labels for kind == "choose"; empty otherwise.
+	/// kind == "choose": the button labels.
 	Q_PROPERTY(QStringList actions READ actions CONSTANT)
-	/// kind == "text": the value to pre-fill the field with; empty otherwise.
+	/// kind == "text": the value to pre-fill the field with.
 	Q_PROPERTY(QString value READ value CONSTANT)
-	/* kind == "blockedMods": one entry per mod, in the order
-	 * resolveBlockedMods() received them -- {fileName, targetPath,
-	 * downloadUrl, found}. NOTIFY rather than CONSTANT: QmlUiHost watches
-	 * the Downloads folder for as long as this request is pending and
-	 * updates `found` live (see QmlUiHost::resolveBlockedMods()). */
+	/* kind == "blockedMods": {fileName, targetPath, downloadUrl, found} per
+	 * mod. NOTIFY because QmlUiHost watches the Downloads folder while the
+	 * request is pending and updates `found` live. */
 	Q_PROPERTY(QVariantList blockedMods READ blockedMods NOTIFY blockedModsChanged)
 	/// kind == "untrustedMods": the files in question, instance-relative.
 	Q_PROPERTY(QStringList untrustedModsFiles READ untrustedModsFiles CONSTANT)
-	/* kind == "untrustedMods": how long, in milliseconds, QML should keep
-	 * its accept action out of reach after showing this -- the same
-	 * deliberate friction UntrustedModsDialog applies with its checkbox
-	 * (see kConfirmDelayMs in UntrustedModsDialog.cpp). Zero for every
-	 * other kind. This is a hint for QML to apply; nothing here enforces
-	 * it. */
+	/* kind == "untrustedMods": milliseconds QML should keep its accept action
+	 * out of reach; nothing here enforces it. Zero for every other kind. */
 	Q_PROPERTY(int confirmDelayMs READ confirmDelayMs CONSTANT)
 	/// kind == "update": currentVersion, availableVersion, releaseNotes
-	/// (Markdown, exactly as published -- rendering it is QML's job, the
-	/// way HoeDown was the widget dialog's).
+	/// (Markdown as published; QML renders it).
 	Q_PROPERTY(QVariantMap updateInfo READ updateInfo CONSTANT)
-	/* kind == "profileSetup": "unset" | "pending" | "available" | "exists" |
-	 * "notAllowed" | "error" -- see checkProfileName()/submitProfileName().
-	 * NOTIFY rather than CONSTANT: this is the one other property (besides
-	 * blockedMods) that changes live while the request is pending. */
+	/// kind == "profileSetup": "unset" | "pending" | "available" | "exists" |
+	/// "notAllowed" | "error". Changes live, like blockedMods.
 	Q_PROPERTY(QString profileNameStatus READ profileNameStatus NOTIFY
 			   profileNameStatusChanged)
-	/// kind == "profileSetup": human-readable detail for the status above
-	/// ("name too short", "already exists", a server error); empty when
-	/// there is nothing to show.
+	/// kind == "profileSetup": detail for the status above; empty when there is
+	/// nothing to show.
 	Q_PROPERTY(QString profileNameError READ profileNameError NOTIFY
 			   profileNameStatusChanged)
-	/// kind == "profileSetup": true while submitProfileName()'s network
-	/// call is in flight -- QML disables its form while this is true.
+	/// kind == "profileSetup": true while the network call is in flight; QML
+	/// disables its form.
 	Q_PROPERTY(bool profileSubmitting READ profileSubmitting NOTIFY
 			   profileSubmittingChanged)
 	/// kind == "filePicker": "open" | "save".
 	Q_PROPERTY(QString filePickerMode READ filePickerMode CONSTANT)
 	/// kind == "filePicker": a Qt filter string, as the plugin gave it.
 	Q_PROPERTY(QString filePickerFilter READ filePickerFilter CONSTANT)
-	/// kind == "filePicker": FilePickerMode::Save's suggested filename;
-	/// empty otherwise.
+	/// kind == "filePicker": the suggested filename for Save; empty otherwise.
 	Q_PROPERTY(QString filePickerDefaultPath READ filePickerDefaultPath
 			   CONSTANT)
-	/* kind == "pickAccount": one entry per account, in the order
-	 * UiHost::pickAccount() received them -- {name, kind ("Microsoft" or
-	 * "Offline"), faceId (for image://accountface/<faceId>)}. */
+	/// kind == "pickAccount": {name, kind ("Microsoft" or "Offline"), faceId
+	/// (for image://accountface/<faceId>)} per account.
 	Q_PROPERTY(QVariantList accountOptions READ accountOptions CONSTANT)
 	/// kind == "modal": the plugin's "mmco-ui/1" document, as a map.
 	Q_PROPERTY(QVariantMap modalDocument READ modalDocument CONSTANT)
-	/* kind == "optionalMods": the AtlOptionalModsModel to tick, owned by
-	 * the blocked caller for as long as the request is pending. */
+	/// kind == "optionalMods": owned by the blocked caller while the request
+	/// is pending.
 	Q_PROPERTY(QObject* optionalMods READ optionalMods CONSTANT)
 
   public:
@@ -235,9 +212,8 @@ class QmlUiRequest : public QObject
 		return m_optionalMods;
 	}
 
-	/* Filled in by QmlUiHost before the request is published (from
-	 * runRequest()'s caller, never after) -- not reachable from QML, which
-	 * only ever sees the getters above. */
+	/* Filled in by QmlUiHost before the request is published, never after.
+	 * Not reachable from QML. */
 	void setSeverity(UiHost::Severity severity);
 	void setLabels(QString acceptLabel, QString rejectLabel);
 	void setActions(QStringList actions);
@@ -248,33 +224,23 @@ class QmlUiRequest : public QObject
 						QString releaseNotes);
 	void setFilePicker(QString mode, QString defaultPath, QString filter);
 	void setAccountOptions(QVariantList options);
-	/* kind == "modal": the document, and the starting value of every
-	 * input node in it (see QmlUiHost::runPluginModal()). */
+	/// The document and the starting value of every input node in it.
 	void setModal(QVariantMap document, QVariantMap fields);
 	void setOptionalMods(QObject* mods);
-	/* Read by QmlUiHost's checkNameRequested/submitNameRequested handlers
-	 * (which do the actual network work -- see QmlUiHost::setupProfile())
-	 * to update what QML sees; not reachable from QML itself, which only
-	 * ever sees the getters above. */
+	/// Called from QmlUiHost's checkNameRequested/submitNameRequested handlers.
 	void setProfileNameStatus(QString status, QString error);
 	void setProfileSubmitting(bool submitting);
-	/* Bumped by checkProfileName() every time it actually starts a network
-	 * check (not on the local-validation-only path), before it emits
-	 * checkNameRequested(). QmlUiHost::setupProfile()'s connected slot reads
-	 * this synchronously -- the connection is direct, so the read happens
-	 * inside the same call stack as the increment -- and captures it as the
-	 * check's identity; a result that comes back once a newer check has
-	 * started is discarded by comparing against this again. Mirrors
-	 * ProfileSetupDialog's isChecking/currentCheck guard (see
-	 * QmlUiHost::setupProfile()'s comment) without serializing the checks
-	 * themselves. */
+	/* Bumped by checkProfileName() on every call, before it emits
+	 * checkNameRequested() for a valid name. The connection is direct, so
+	 * QmlUiHost::setupProfile()'s slot reads it inside the same call stack and
+	 * keeps it as that check's identity; a result that returns after a newer
+	 * check has started is discarded by comparing against it again. */
 	int checkSequence() const
 	{
 		return m_checkSequence;
 	}
 
-	/* Read by QmlUiHost once answered() has fired; meaningless before
-	 * then. */
+	/* Read by QmlUiHost once answered() has fired; meaningless before. */
 	bool accepted() const
 	{
 		return m_accepted;
@@ -287,8 +253,7 @@ class QmlUiRequest : public QObject
 	{
 		return m_updateChoice;
 	}
-	/// kind == "pickAccount": the "make it the default" choice that came
-	/// with chooseAccount(); false otherwise.
+	/// kind == "pickAccount": the "make it the default" choice.
 	bool makeDefault() const
 	{
 		return m_makeDefault;
@@ -303,76 +268,57 @@ class QmlUiRequest : public QObject
 	{
 		return m_modalFields;
 	}
-	/// kind == "text": the text accept(QString) was called with; meaningless
-	/// unless accepted() is true.
+	/// kind == "text": the text accept(QString) was called with.
 	QString answeredText() const
 	{
 		return m_answeredText;
 	}
 
-	/// kind == "message": the acknowledgement. kind == "confirm" /
-	/// "blockedMods" / "untrustedMods": the positive answer.
+	/// message: the acknowledgement. confirm / blockedMods / untrustedMods:
+	/// the positive answer.
 	Q_INVOKABLE void accept();
-	/// kind == "text": commits @p text as the answer -- the counterpart to
-	/// accept() above for the one kind that hands back a value rather than
-	/// a plain yes.
+	/// kind == "text": commits @p text as the answer.
 	Q_INVOKABLE void accept(const QString& text);
-	/// The negative answer, or "back out" -- same as closing the widget
-	/// dialogs did. Valid for every kind except "choose" and "update",
-	/// which have their own invokables below.
+	/// The negative answer, or "back out". Not for "choose" and "update",
+	/// which have their own invokables.
 	Q_INVOKABLE void reject();
-	/// kind == "choose": answers with the index into `actions`, or a
-	/// negative index for "backed out" (see UiHost::choose()'s doc
-	/// comment).
+	/// kind == "choose": the index into `actions`, or negative for backed out.
 	Q_INVOKABLE void choose(int index);
-	/// kind == "pickAccount": answers with the index into
-	/// `accountOptions` (negative for "backed out", like choose()) and
-	/// whether that account should become the default.
+	/// kind == "pickAccount": the index into `accountOptions` (negative for
+	/// backed out) and whether that account becomes the default.
 	Q_INVOKABLE void chooseAccount(int index, bool makeDefault);
-	/* kind == "modal": PluginNode.qml's sink. A "change" records @p value
-	 * as node @p nodeId's field; a "click" answers the request with that
-	 * node. Other events are ignored. @p surfaceId is PluginNode's and
-	 * plays no part here. */
+	/* kind == "modal": PluginNode.qml's sink. A "change" records @p value as
+	 * node @p nodeId's field; a "click" answers the request with that node.
+	 * Other events are ignored; @p surfaceId is unused. */
 	Q_INVOKABLE void sendEvent(const QString& surfaceId, const QString& nodeId,
 							   const QString& event, const QVariant& value);
-	/// kind == "update": one of "install", "later", "skip". Anything else
-	/// is treated as "later".
+	/// kind == "update": "install", "later" or "skip"; anything else is "later".
 	Q_INVOKABLE void answerUpdate(const QString& choice);
-	/// kind == "blockedMods": opens mod @p index's download page in the
-	/// system browser, the way BlockedModsDialog's per-row button did.
-	/// No-op for an out-of-range index.
+	/// kind == "blockedMods": opens mod @p index's download page in the system
+	/// browser. No-op for an out-of-range index.
 	Q_INVOKABLE void openDownload(int index);
-	/// kind == "blockedMods": forces an immediate re-check of the
-	/// Downloads folder instead of waiting for the next filesystem event.
+	/// kind == "blockedMods": re-checks the Downloads folder now.
 	Q_INVOKABLE void rescanDownloads();
-	/// kind == "profileSetup": checks whether @p name is a valid, available
-	/// Minecraft profile name -- validates the shape locally (3-16
-	/// letters/digits/underscores, the same rule the widget dialog's field
-	/// validator enforces) before asking QmlUiHost to check availability
-	/// over the network; updates profileNameStatus either way.
+	/// kind == "profileSetup": validates @p name locally (3-16 letters, digits
+	/// or underscores) before asking QmlUiHost to check availability over the
+	/// network; updates profileNameStatus either way.
 	Q_INVOKABLE void checkProfileName(const QString& name);
-	/// kind == "profileSetup": creates the profile with @p name, the way
-	/// the widget dialog's OK button does. No-op unless profileNameStatus
-	/// is currently "available". Answers the request with accept() on
-	/// success; on failure, sets profileNameStatus to "error" and leaves
-	/// the request open so the user can try another name.
+	/// kind == "profileSetup": creates the profile. No-op unless
+	/// profileNameStatus is "available" and @p name is the one last checked. Accepts the request on success; on
+	/// failure sets the status to "error" and leaves it open for another name.
 	Q_INVOKABLE void submitProfileName(const QString& name);
 
   signals:
-	/// One of the answer invokables above ran; QmlUiHost::runRequest() is
-	/// waiting on this to leave its event loop.
+	/// One of the answer invokables ran; QmlUiHost::runRequest() waits on this.
 	void answered();
 	void blockedModsChanged();
-	/// rescanDownloads() was called; QmlUiHost::resolveBlockedMods()
-	/// connects this to the scan it already has running.
+	/// rescanDownloads() was called.
 	void rescanRequested();
 	void profileNameStatusChanged();
 	void profileSubmittingChanged();
-	/// checkProfileName() passed local validation; QmlUiHost::setupProfile()
-	/// connects this to the actual network check.
+	/// checkProfileName() passed local validation.
 	void checkNameRequested(const QString& name);
-	/// submitProfileName() was called while available; QmlUiHost::setupProfile()
-	/// connects this to the actual profile-creation call.
+	/// submitProfileName() was called while available.
 	void submitNameRequested(const QString& name);
 
   private:
@@ -391,6 +337,7 @@ class QmlUiRequest : public QObject
 	QVariantMap m_updateInfo;
 	QString m_profileNameStatus = QStringLiteral("unset");
 	QString m_profileNameError;
+	QString m_lastCheckedName;
 	bool m_profileSubmitting = false;
 	QString m_filePickerMode;
 	QString m_filePickerFilter;
@@ -410,76 +357,41 @@ class QmlUiRequest : public QObject
 };
 
 /*
- * QML implementation of UiHost: a QEventLoop stands in for QDialog::exec(),
- * and QmlUiRequest stands in for the widget dialogs (BlockedModsDialog,
- * UntrustedModsDialog, UpdateAvailableDialog, CustomMessageBox) that
- * previously answered these questions.
+ * QML implementation of UiHost: a QEventLoop stands in for QDialog::exec().
+ * Each override builds a QmlUiRequest, publishes it as `current` and blocks in
+ * runRequest() until QML answers it or it is cancelled.
  *
- * Each override below builds a QmlUiRequest describing the question,
- * publishes it as `current`, and blocks in runRequest()'s local QEventLoop
- * until QML answers it (a Q_INVOKABLE on the request, which emits
- * answered()) or the request is cancelled -- explicitly, by the application
- * quitting, or by this object itself being destroyed while the request is
- * still outstanding (see runRequest() and the destructor). The request
- * lives on the call's own stack, exactly as long as it is `current`;
- * nothing here ever hands it to QML with any ownership but CppOwnership, so
- * the QML engine never tries to delete it out from under us.
+ * Re-entrancy: a call made while another is pending stacks. `current` is
+ * always the innermost request; answering it pops it and returns to the call
+ * it interrupted.
  *
- * RE-ENTRANCY: a call reached while another is already pending -- a
- * background task asking a question while the user is still looking at an
- * earlier one, say -- stacks rather than replacing what is already showing.
- * `current` always names the innermost (most recently asked) request, and
- * QML can only ever answer that one: answering it pops it and its call
- * returns to whichever call it interrupted, which is what makes `current`
- * point back at that older request again. This falls out of every request
- * being an ordinary nested C++ call with its own QEventLoop -- there is no
- * separate queue for requests to get out of order in.
+ * Busy nests the same way: `busy` is true, with `busyText` and
+ * `busySkipLabel` of the most recently started one, while any BusyIndicator
+ * handed out is alive.
  *
- * BUSY nests the same way: `busy` is true and `busyText` names the most
- * recently started text for as long as any BusyIndicator this object handed
- * out is still alive, in whatever order they end up being destroyed.
- * `busySkipLabel` belongs to that same most recent one: non-empty when it
- * offers a way out, which QML takes with skipBusy().
+ * Quit/destruction: aboutToQuit and the destructor reject() every request
+ * still on the stack, so a blocked call unwinds with a "no" answer.
+ * runRequest() touches `this` afterwards only through a QPointer.
  *
- * QUIT / DESTRUCTION: aboutToQuit and the destructor both reject() every
- * request still on the stack, so that a call blocked in runRequest() never
- * outlives the application or this object -- it unwinds and returns the
- * same answer a real "no" would. A request answered this way is read back
- * from its own stack frame regardless of whether this object still exists;
- * runRequest() itself only touches `this` again through a QPointer guard,
- * so resuming after this object is gone updates nothing and crashes
- * nothing.
- *
- * PRESENTER READINESS: this object exists (and is reachable through
- * QmlShell::uiHost()) from the moment QmlShell::load() creates it, which is
- * before the QML engine has even loaded Main.qml, let alone before whatever
- * item there binds to `current` and can actually show a request. A UiHost
- * call reached in that window -- an automatic startup update check finding
- * no updater binary is the one that actually happened -- would otherwise
- * wait forever for an answer nobody could give. So Application::uiHost()
- * (via QmlShell::uiHostInterface()) only routes to this object once
- * `presenterReady` is true, falling back to the widget host until then; the
- * QML item that shows `current` calls setPresenterReady(true) once it is
- * live (e.g. Component.onCompleted), the same way it will one day call
- * setPresenterReady(false) if it is ever torn down first.
+ * Presenter readiness: this object exists from QmlShell::load(), before any
+ * QML item is bound to `current`, and a call made then would wait forever.
+ * QmlShell::uiHostInterface() therefore returns it only once `presenterReady`
+ * is true, and Application uses its headless host until then. The item that shows
+ * `current` calls setPresenterReady(true) when it is live.
  */
 class QmlUiHost : public QObject, public UiHost
 {
 	Q_OBJECT
 
-	/// The innermost pending request, or null. CppOwnership; see the class
-	/// comment.
+	/// The innermost pending request, or null. CppOwnership.
 	Q_PROPERTY(QObject* current READ current NOTIFY currentChanged)
 	Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
-	/// Text of the most recently started still-active showBusy() call, or
-	/// empty when busy is false.
+	/// Empty when busy is false.
 	Q_PROPERTY(QString busyText READ busyText NOTIFY busyChanged)
-	/// The skip button's label for that same showBusy() call, or empty
-	/// when it offers none -- see UiHost::showBusy().
+	/// Empty when that showBusy() call offers no skip.
 	Q_PROPERTY(QString busySkipLabel READ busySkipLabel NOTIFY busyChanged)
-	/* Whether some QML item is actually watching `current` and able to
-	 * answer a request -- see the class comment's PRESENTER READINESS
-	 * section. False until that item calls setPresenterReady(true). */
+	/// Whether a QML item can answer a request; false until it calls
+	/// setPresenterReady(true).
 	Q_PROPERTY(bool presenterReady READ presenterReady WRITE setPresenterReady
 			   NOTIFY presenterReadyChanged)
 
@@ -534,19 +446,13 @@ class QmlUiHost : public QObject, public UiHost
 	bool busy() const;
 	QString busyText() const;
 	QString busySkipLabel() const;
-	/// The skip button of the most recent showBusy() call was pressed:
-	/// runs its onSkip. No-op when it offers no skip.
+	/// Runs the onSkip of the most recent showBusy(); no-op when it has none.
 	Q_INVOKABLE void skipBusy();
 	bool presenterReady() const;
-	/// Called by the QML item that shows `current` -- see PRESENTER
-	/// READINESS in the class comment. Application/QmlShell read this
-	/// through uiHostInterface() to decide whether this object is safe to
-	/// route UiHost calls to yet.
+	/// Called by the QML item that shows `current`.
 	Q_INVOKABLE void setPresenterReady(bool ready);
 
-	/* Called by the BusyIndicator showBusy() hands out, from its
-	 * destructor (a QPointer guards against this object already being
-	 * gone). Not meant for any other caller. */
+	/* Called from the destructor of the BusyIndicator showBusy() hands out. */
 	void endBusy(int id);
 
   signals:
@@ -556,8 +462,7 @@ class QmlUiHost : public QObject, public UiHost
 
   private:
 	/* Publishes @p request as `current`, blocks until it is answered or
-	 * cancelled, then un-publishes it. See the class comment for the
-	 * re-entrancy and quit/destruction rules this implements. */
+	 * cancelled, then un-publishes it. */
 	void runRequest(QmlUiRequest& request);
 
 	QList<QmlUiRequest*> m_stack;

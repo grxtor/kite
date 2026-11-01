@@ -31,57 +31,45 @@
 
 namespace
 {
-// Only a fallback for an unrecognised or zero requestedSize; mirrors
-// InstanceIconProvider's own default extent.
+// Fallback for an unrecognised or zero requestedSize.
 constexpr int kDefaultFaceExtent = 64;
 
-// Standard Minecraft skin texture layout: the face is the front of the
-// head, the hat is its second-layer overlay -- same coordinates
-// MinecraftAccount::getFace() and SkinUtils::getFaceFromCache() draw.
+// Standard skin layout: the face is the front of the head, the hat its
+// second-layer overlay.
 constexpr int kFaceX = 8;
 constexpr int kFaceY = 8;
 constexpr int kHatX = 40;
 constexpr int kHatY = 8;
 
-// Prefix an id is checked for (after the "?rev=N" cache-buster is already
-// stripped) to ask for the full body instead of the face.
 const QString kBodyPrefix = QStringLiteral("body/");
 
-// Raw skin textures, normalised to 64x64 (SkinEntry::normalisedTexture()),
-// for a 3D preview to wrap a model in: an account's own skin by account
-// key, or a PNG in the skin library by its percent-encoded path. And a
-// library PNG's flat front-and-back sprite (SkinEntry::thumbnail()), for
-// the library's list. Never scaled: these are textures, not pictures.
+// Raw textures normalised to 64x64: an account's own skin by account key, or
+// a library PNG by its percent-encoded path; "skinthumb" is a library PNG's
+// flat sprite. Never scaled.
 const QString kSkinTexturePrefix = QStringLiteral("skin/");
 const QString kSkinFilePrefix = QStringLiteral("skinfile/");
 const QString kSkinThumbPrefix = QStringLiteral("skinthumb/");
-// The same sprite drawn with slim arms: a bare PNG does not say which arm
-// width it was drawn for, so the library's choice travels in the id.
+// A bare PNG does not say its arm width, so the id carries it.
 const QString kSkinThumbSlimPrefix = QStringLiteral("skinthumbslim/");
-// A library PNG's front view, like "body/" does for an account; the arm
-// width comes with the prefix, since the file does not say.
+// A library PNG's front view, like "body/" for an account.
 const QString kSkinBodyPrefix = QStringLiteral("skinbody/");
 const QString kSkinBodySlimPrefix = QStringLiteral("skinbodyslim/");
 
-// Front-view body layout, all still the standard Minecraft skin UV: torso
-// and legs are always this wide, only the arms narrow for the slim variant.
+// Front-view layout in standard skin UV: only the arms narrow for slim.
 constexpr int kLimbHeight = 12;
 constexpr int kTorsoWidth = 8;
 constexpr int kLegWidth = 4;
 constexpr int kClassicArmWidth = 4;
 constexpr int kSlimArmWidth = 3;
 constexpr int kHeadSize = 8;
-// A body render's default box, at the classic (non-slim) aspect ratio;
-// only hit for a caller that asks for a body without a requestedSize.
+// Default box for a body request without a requestedSize.
 constexpr int kDefaultBodyWidth = kClassicArmWidth * 2 + kTorsoWidth;
 constexpr int kDefaultBodyHeight = kHeadSize + kLimbHeight * 2;
 
-// Every real Minecraft skin texture is this wide, legacy or modern alike.
+// Every real skin texture is this wide.
 constexpr int kSkinWidth = 64;
-// Skin texture height that carries the modern jacket/sleeves/pants overlay
-// layer and a distinct left arm/leg. Anything shorter (down to
-// kLegacySkinHeight) is the legacy format, which has neither -- the left
-// side is mirrored from the right instead.
+// The modern format has jacket/sleeves/pants overlays and a distinct left
+// arm/leg; anything shorter is legacy, whose left side mirrors the right.
 constexpr int kModernSkinHeight = 64;
 constexpr int kLegacySkinHeight = 32;
 
@@ -92,36 +80,14 @@ QPixmap transparentPixmap(const QSize& size)
 	return QPixmap::fromImage(image);
 }
 
-// AccountList exposes a profile-id finder but not an internal-id one, and
-// offline accounts have no profile id at all -- so a key that misses as a
-// profile id is tried again as an internalId(), by linear scan over the
-// same public count()/at() API AccountList::findAccountByProfileId() itself
-// uses.
 MinecraftAccountPtr findAccount(AccountList* accounts, const QString& key)
 {
-	if (!accounts || key.isEmpty()) {
-		return MinecraftAccountPtr();
-	}
-
-	const int byProfileId = accounts->findAccountByProfileId(key);
-	if (byProfileId != -1) {
-		return accounts->at(byProfileId);
-	}
-
-	for (int i = 0; i < accounts->count(); ++i) {
-		MinecraftAccountPtr account = accounts->at(i);
-		if (account && account->internalId() == key) {
-			return account;
-		}
-	}
-	return MinecraftAccountPtr();
+	return accounts ? accounts->findAccountByProfileOrInternalId(key)
+					: MinecraftAccountPtr();
 }
 
-// The skin @p account is drawn in: its own, or -- for an account without
-// one (offline accounts, a profile not fetched yet) -- the game's default
-// Steve or Alex (DefaultSkins::isSlim() says which).
-// Null only while that default is still being downloaded. @p slim gets the
-// arm width either way.
+// The account's own skin, else the default Steve or Alex. Null only while
+// that is downloading. @p slim gets the arm width either way.
 QImage skinFor(const MinecraftAccountPtr& account, bool* slim)
 {
 	*slim = DefaultSkins::isSlim(account);
@@ -153,9 +119,8 @@ QImage AccountFaceProvider::bodyFromSkin(const QImage& skin, bool slim)
 		return QImage();
 	}
 
-	// The legacy 64x32 format has no overlay layer (jacket/sleeves/pants)
-	// and no distinct left arm/left leg region -- both are synthesised
-	// below by mirroring the right side.
+	// The legacy 64x32 format has no overlay layer and no left arm/leg; those
+	// are mirrored from the right.
 	const bool legacy = skin.height() < kModernSkinHeight;
 
 	const int armWidth = slim ? kSlimArmWidth : kClassicArmWidth;
@@ -163,8 +128,6 @@ QImage AccountFaceProvider::bodyFromSkin(const QImage& skin, bool slim)
 	const int bodyHeight = kHeadSize + kLimbHeight * 2;
 	const int limbY = kHeadSize;
 	const int legY = limbY + kLimbHeight;
-	// The torso sits between the two arms; both leg columns sit directly
-	// under it, together spanning the same width.
 	const int torsoX = armWidth;
 	const int rightLegX = armWidth;
 	const int leftLegX = rightLegX + kLegWidth;
@@ -175,31 +138,24 @@ QImage AccountFaceProvider::bodyFromSkin(const QImage& skin, bool slim)
 
 	QPainter painter(&body);
 
-	// Head, centred above the torso, hat overlay included -- present in
-	// both skin formats.
 	painter.drawImage(torsoX, 0, skin.copy(kFaceX, kFaceY, kHeadSize, kHeadSize));
 	painter.drawImage(torsoX, 0, skin.copy(kHatX, kHatY, kHeadSize, kHeadSize));
 
-	// Torso, with its jacket overlay (modern format only).
 	painter.drawImage(torsoX, limbY, skin.copy(20, 20, kTorsoWidth, kLimbHeight));
 	if (!legacy) {
 		painter.drawImage(
 			torsoX, limbY, skin.copy(20, 36, kTorsoWidth, kLimbHeight));
 	}
 
-	// The character faces the viewer, so -- as in a mirror -- its right
-	// arm/leg render on the left of the image and its left arm/leg on the
-	// right. Only armWidth columns of each region are sampled: for the slim
-	// variant that is 3 of the texture's 4, leaving the same blank 4th
-	// column the game itself never draws.
+	// The character faces the viewer, so its right arm/leg render on the
+	// left. Only armWidth columns are sampled; a slim arm leaves the 4th
+	// column blank, as the game does.
 	const QImage rightArm = skin.copy(44, 20, armWidth, kLimbHeight);
 	painter.drawImage(0, limbY, rightArm);
 	if (!legacy) {
 		painter.drawImage(0, limbY, skin.copy(44, 36, armWidth, kLimbHeight));
 	}
 	if (legacy) {
-		// No separate left arm texture to draw -- the right one already
-		// includes its (only) layer, so just mirror the composited result.
 		painter.drawImage(leftArmX, limbY, rightArm.mirrored(true, false));
 	} else {
 		painter.drawImage(
@@ -270,8 +226,7 @@ QImage AccountFaceProvider::skinTexture(const QString& id)
 QPixmap AccountFaceProvider::requestPixmap(const QString& id, QSize* size,
 										   const QSize& requestedSize)
 {
-	// Cache-busting query ("<key>?rev=N") plays no part in the lookup -- see
-	// the header for why it exists at all.
+	// The cache-busting "?rev=N" plays no part in the lookup.
 	const int queryStart = id.indexOf(QLatin1Char('?'));
 	const QString withoutQuery = queryStart < 0 ? id : id.left(queryStart);
 
@@ -319,8 +274,7 @@ QPixmap AccountFaceProvider::requestPixmap(const QString& id, QSize* size,
 	const QString key =
 		wantsBody ? withoutQuery.mid(kBodyPrefix.length()) : withoutQuery;
 
-	// requestedSize is already in device pixels -- QML applied the device
-	// pixel ratio before calling here -- so it is used as-is.
+	// requestedSize is already in device pixels.
 	const QSize defaultSize = wantsBody
 								  ? QSize(kDefaultBodyWidth, kDefaultBodyHeight)
 								  : QSize(kDefaultFaceExtent, kDefaultFaceExtent);
@@ -345,8 +299,8 @@ QPixmap AccountFaceProvider::requestPixmap(const QString& id, QSize* size,
 	}
 
 	if (pixmap.isNull()) {
-		// No account, no skin, or the context is not up yet -- QML's own
-		// fallback avatar is what should show, not a broken-image icon.
+		// No account, no skin or no context yet: transparent, so QML's own
+		// fallback shows.
 		pixmap = transparentPixmap(wanted);
 	}
 

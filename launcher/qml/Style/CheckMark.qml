@@ -4,19 +4,14 @@
 
 import QtQuick
 
-// CheckBox's checked state and MenuItem's checkable-and-checked state need
-// the identical glyph. Basic's own check mark is a PNG baked into the Basic
-// style plugin's resources, which this style does not link against, so the
-// mark is drawn instead: a couple of Canvas strokes scale losslessly and pick
-// up Theme colours directly, where a bitmap would need a re-export per size
-// and per theme.
+// The glyph for CheckBox's and MenuItem's checked state. Basic's is a PNG in
+// its plugin's resources, which this style does not link, so the mark is
+// drawn: Canvas strokes scale losslessly and take Theme colours directly.
 Canvas {
     id: mark
 
     property color color: "black"
-    // Drives a short dash instead of the full tick, so CheckBox can reuse
-    // this one canvas for Qt.PartiallyChecked as well as Qt.Checked instead
-    // of keeping a second glyph around for one extra state.
+    // A short dash instead of the tick, for Qt.PartiallyChecked.
     property bool partial: false
 
     onColorChanged: requestPaint()

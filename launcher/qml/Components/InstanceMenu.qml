@@ -6,12 +6,9 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * An instance's ⋯ menu in the library (LibrarySections): Play or Stop and
- * its options, Open, the folders, Rename, Change icon, Change group,
- * Duplicate, Export, Create shortcut and Delete. What each means is the
- * host's: the menu only says what was asked for, except the Export,
- * Create shortcut and Duplicate dialogs, which `exportFlows`
- * (InstanceExportFlows) opens itself.
+ * An instance's ⋯ menu in the library (LibrarySections). It only reports what
+ * was asked for, except Export, Create shortcut and Duplicate, whose dialogs
+ * `exportFlows` (InstanceExportFlows) opens itself.
  */
 Menu {
     id: root
@@ -47,6 +44,8 @@ Menu {
     // no such folder to open (see LibraryController.folders()).
     property string gameFolder
     property string modsFolder
+    // Play options make no sense for a running instance.
+    readonly property bool offerOptions: !root.targetRunning && !!root.launchOptionsFor
 
     function openFor(id, running, name, iconKey, group, anchor) {
         var folders = root.library ? root.library.folders(id) : ({})
@@ -57,26 +56,11 @@ Menu {
         targetName = name || ""
         targetIcon = iconKey || ""
         targetGroup = group || ""
-        // Play options make no sense for a running instance. A submenu
-        // has no `visible` of its own: its entry is a MenuItem Qt makes,
-        // found here by its subMenu.
-        var offerOptions = !running && !!root.launchOptionsFor
-        for (var i = 0; i < root.count; ++i) {
-            var item = root.itemAt(i)
-            if (item && item.subMenu === playOptionsMenu) {
-                item.visible = offerOptions
-                item.height = offerOptions ? item.implicitHeight : 0
-                // An icon like its neighbours', or its label would
-                // start where theirs' icons do.
-                item.icon.source = Icons.url("sliders")
-            }
-        }
         if (!anchor) {
             popup()
             return
         }
-        // Under the ⋯ button and right-aligned to it, like the instance
-        // page's own ⋯, and held there while the menu settles its width.
+        // Under the ⋯ button, right-aligned, held there while the menu settles its width.
         popup(anchor, anchor.width - root.width, anchor.height + Theme.space.xs)
         root.x = Qt.binding(() => anchor.width - root.width)
     }
@@ -87,8 +71,15 @@ Menu {
         onTriggered: root.targetRunning ? root.stopRequested(root.targetId)
                                         : root.launchRequested(root.targetId)
     }
+    SubmenuEntry {
+        menu: root
+        submenu: playOptionsMenu
+        shown: root.offerOptions
+    }
     LaunchOptionsMenu {
         id: playOptionsMenu
+        // An icon like its neighbours', so the label lines up.
+        icon.source: Icons.url("sliders")
         instanceId: root.targetId
         optionsFor: root.launchOptionsFor
         onLaunchModeRequested: (id, mode) => root.launchModeRequested(id, mode)
@@ -97,7 +88,6 @@ Menu {
         onPerformanceChosen: (id, enabled) => root.performanceChosen(id, enabled)
         onNavigateRequested: (target) => root.navigateRequested(target)
     }
-    // An arrow, "go to its page": the gear it had read as "settings".
     MenuItem {
         text: qsTr("Open")
         icon.source: Icons.url("arrow-right")
@@ -108,17 +98,14 @@ Menu {
         icon.source: Icons.url("folder")
         onTriggered: root.folderRequested(root.targetId)
     }
-    MenuItem {
-        // A hidden item still takes its row in a Menu; zero it as well.
+    MenuEntry {
         visible: root.gameFolder.length > 0
-        height: visible ? implicitHeight : 0
         text: qsTr("Open .minecraft folder")
         icon.source: Icons.url("folder")
         onTriggered: root.library.openFolder(root.gameFolder)
     }
-    MenuItem {
+    MenuEntry {
         visible: root.modsFolder.length > 0
-        height: visible ? implicitHeight : 0
         text: qsTr("Open mods folder")
         icon.source: Icons.url("folder")
         onTriggered: root.library.openFolder(root.modsFolder)
@@ -134,7 +121,6 @@ Menu {
         icon.source: Icons.url("image")
         onTriggered: root.iconRequested(root.targetId, root.targetIcon)
     }
-    // The instance page's ⋯ menu words it the same way.
     MenuItem {
         text: qsTr("Change group…")
         icon.source: Icons.url("folder-input")
@@ -148,17 +134,14 @@ Menu {
                                                           root.targetGroup, root.targetIcon)
                      : root.duplicateRequested(root.targetId, root.targetName, root.targetGroup)
     }
-    MenuItem {
-        // A hidden item still takes its row in a Menu; zero it as well.
+    MenuEntry {
         visible: !!root.exportFlows && root.exportFlows.canExport
-        height: visible ? implicitHeight : 0
         text: qsTr("Export…")
         icon.source: Icons.url("archive")
         onTriggered: root.exportFlows.exportInstance(root.targetId)
     }
-    MenuItem {
+    MenuEntry {
         visible: !!root.exportFlows && root.exportFlows.canCreateShortcut
-        height: visible ? implicitHeight : 0
         text: qsTr("Create shortcut…")
         icon.source: Icons.url("external-link")
         onTriggered: root.exportFlows.createShortcut(root.targetId)

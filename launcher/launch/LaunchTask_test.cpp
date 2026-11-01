@@ -27,30 +27,13 @@
 #include "launch/LaunchTask.h"
 #include "settings/INISettingsObject.h"
 
-/* What a launch says it is doing, step by step (LaunchTask::startStep()):
- * the stage a step names for itself, "Preparing to launch" for one that
- * names none, and no progress left over from the step before. That is
- * what the play bar shows while a game starts. */
+#include "TestSettings.h"
+
+// What a launch says it is doing, step by step (LaunchTask::startStep()): the
+// stage a step names, "Preparing to launch" for one that names none, and no
+// progress left over from the previous step. The play bar shows it.
 namespace
 {
-	// The global settings BaseInstance's constructor binds to, as in
-	// models/InstanceDetails_test.cpp.
-	SettingsObjectPtr makeGlobalSettings(QTemporaryDir& dir)
-	{
-		auto settings = std::make_shared<INISettingsObject>(
-			dir.filePath("global.ini"));
-		settings->registerSetting("PreLaunchCommand", "");
-		settings->registerSetting("WrapperCommand", "");
-		settings->registerSetting("PostExitCommand", "");
-		settings->registerSetting("ShowConsole", true);
-		settings->registerSetting("AutoCloseConsole", false);
-		settings->registerSetting("ShowConsoleOnError", true);
-		settings->registerSetting("LogPrePostOutput", true);
-		settings->registerSetting("ConsoleMaxLines", 100000);
-		settings->registerSetting("ConsoleOverflowStop", true);
-		return settings;
-	}
-
 	struct InstanceFixture {
 		QTemporaryDir globalDir;
 		QTemporaryDir instDir;

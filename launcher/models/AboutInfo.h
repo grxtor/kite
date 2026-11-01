@@ -24,23 +24,16 @@
 #include <QString>
 #include <QVariantList>
 
-/*
- * What the QML About section shows -- the facts the widget AboutDialog
- * puts on screen (version, platform, build date, commit, channels, source
- * link, copyright, credits, licences) plus the Help links the main
- * window's Help menu offers (report a bug, Discord, Reddit, Patreon).
- * Everything comes from BuildConfig and the bundled documents
- * (:/documents/credits.html, :/documents/COPYING.md), so nothing here
- * changes while the launcher runs.
- */
+/* What the QML About section shows: version, platform, build date, commit,
+ * channels, source link, copyright, credits, licences and the Help links (bug,
+ * Discord, Reddit, Patreon). All from BuildConfig and the bundled documents, so
+ * nothing changes while the launcher runs. */
 class AboutInfo : public QObject
 {
 	Q_OBJECT
 
 	Q_PROPERTY(QString name READ name CONSTANT)
-	/// BuildConfig::printableVersionString().
 	Q_PROPERTY(QString version READ version CONSTANT)
-	/// Empty when the build does not say.
 	Q_PROPERTY(QString platform READ platform CONSTANT)
 	Q_PROPERTY(QString buildDate READ buildDate CONSTANT)
 	/// Empty when the build had no git checkout to read it from.
@@ -49,11 +42,8 @@ class AboutInfo : public QObject
 	Q_PROPERTY(QString updateChannel READ updateChannel CONSTANT)
 	Q_PROPERTY(QString sourceUrl READ sourceUrl CONSTANT)
 	Q_PROPERTY(QString copyright READ copyright CONSTANT)
-	/// [{id, label, url}] -- see helpLinksFor().
 	Q_PROPERTY(QVariantList helpLinks READ helpLinks CONSTANT)
-	/// The credits, as HTML; empty if the document is missing.
 	Q_PROPERTY(QString creditsHtml READ creditsHtml CONSTANT)
-	/// The licences (COPYING.md), as Markdown; empty if missing.
 	Q_PROPERTY(QString licenseText READ licenseText CONSTANT)
 
   public:
@@ -72,15 +62,12 @@ class AboutInfo : public QObject
 	QString creditsHtml() const;
 	QString licenseText() const;
 
-	/* The Help links with a URL, in the main window's Help menu order:
-	 * report a bug, Discord, Reddit, then Patreon. A build that leaves one
-	 * of the URLs empty simply has no such link. Static, from plain
-	 * strings, so it can be tested without a particular BuildConfig. */
+	/* The Help links with a URL, in the Help menu order; a build with an empty URL
+	 * has no such link. Static and from plain strings, so testable. */
 	static QVariantList helpLinksFor(const QString& bugTrackerUrl,
 									 const QString& discordUrl,
 									 const QString& subredditUrl,
 									 const QString& patreonUrl);
-	/* @p gitCommit, or empty for the placeholder CMake writes when the
-	 * build had no git checkout -- the same rule AboutDialog applies. */
+	/* @p gitCommit, or empty for CMake's placeholder when there was no git checkout. */
 	static QString commitFor(const QString& gitCommit);
 };

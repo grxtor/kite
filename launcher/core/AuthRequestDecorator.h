@@ -24,30 +24,20 @@
 
 class QNetworkRequest;
 
-/*
- * Lets something outside the core add headers to an outgoing authentication
- * request.
- *
- * In practice the implementation is the plugin host, which forwards to the
- * MMCO auth-request hook. AuthRequest needs that hook, but PluginManager
- * renders plugin-supplied user interface and so drags in QtWidgets; having the
- * authentication code call it directly would tie the core to the widget
- * toolkit through a single line. Hence this interface: the core declares what
- * it needs, the plugin layer supplies it, and neither knows about the other.
- */
+/* Lets something outside the core add headers to an outgoing authentication
+ * request. The implementation is the plugin host, forwarding to the MMCO
+ * auth-request hook; PluginManager renders plugin UI and drags in QtWidgets,
+ * so the core declares what it needs and the plugin layer supplies it. */
 class AuthRequestDecorator
 {
   public:
 	virtual ~AuthRequestDecorator() = default;
 
-	/* Header and redirect changes are applied to `request` in place.
-	 *
-	 * Returns true when the request was CANCELLED -- the caller must then
-	 * abort it and report a network error. It does NOT return true merely
-	 * because the request was modified.
-	 *
-	 * `method` is the HTTP verb as an ASCII literal ("GET", "POST"); `body`
-	 * is empty for verbs that carry none. */
+	/* Header and redirect changes are applied to `request` in place. Returns
+	 * true when the request was CANCELLED (the caller must abort it and report
+	 * a network error), not merely modified. `method` is the HTTP verb as an
+	 * ASCII literal ("GET", "POST"); `body` is empty for verbs that carry
+	 * none. */
 	virtual bool dispatchAuthRequest(QNetworkRequest& request,
 									 const QByteArray& body,
 									 const char* method) = 0;

@@ -25,6 +25,7 @@
 #include <QJsonArray>
 #include <QDebug>
 
+#include "Version.h"
 #include "net/Download.h"
 
 #include "core/LauncherContext.h"
@@ -116,20 +117,6 @@ void NotificationChecker::downloadSucceeded(int)
 	emit notificationCheckFinished();
 }
 
-bool versionLessThan(const QString& v1, const QString& v2)
-{
-	QStringList l1 = v1.split('.');
-	QStringList l2 = v2.split('.');
-	while (!l1.isEmpty() && !l2.isEmpty()) {
-		int one = l1.isEmpty() ? 0 : l1.takeFirst().toInt();
-		int two = l2.isEmpty() ? 0 : l2.takeFirst().toInt();
-		if (one != two) {
-			return one < two;
-		}
-	}
-	return false;
-}
-
 bool NotificationChecker::entryApplies(
 	const NotificationChecker::NotificationEntry& entry) const
 {
@@ -138,9 +125,9 @@ bool NotificationChecker::entryApplies(
 	bool platformApplies =
 		entry.platform.isEmpty() || entry.platform == m_appPlatform;
 	bool fromApplies = entry.from.isEmpty() || entry.from == m_appFullVersion ||
-					   !versionLessThan(m_appFullVersion, entry.from);
+					   Version(m_appFullVersion) >= Version(entry.from);
 	bool toApplies = entry.to.isEmpty() || entry.to == m_appFullVersion ||
-					 !versionLessThan(entry.to, m_appFullVersion);
+					 Version(entry.to) >= Version(m_appFullVersion);
 	return channelApplies && platformApplies && fromApplies && toApplies;
 }
 

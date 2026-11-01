@@ -9,24 +9,17 @@ import QtQuick.Dialogs as NativeDialogs
 import Kite.Theme
 
 /*
- * Answers the questions the core asks while it works -- "overwrite this?",
- * "which of these?", "which account?", "these mods must be downloaded by
- * hand" -- in the shell's own style instead of widget message boxes.
- * `host` is the shell's QmlUiHost; whenever it has a pending request, this
- * opens on it, and closing it any way other than a button counts as "no".
- *
- * The root is a plain Item, not the Dialog itself: kind == "filePicker"
- * answers through a native QtQuick.Dialogs file dialog instead of this
- * component's own chrome (there is no sensible way to draw an OS file
- * picker inside a themed Dialog body), so the two live as siblings here,
- * both reacting to the same `host`.
+ * Answers the core's questions ("overwrite this?", "which account?", ...) in
+ * the shell's style. The root is a plain Item: kind == "filePicker" answers
+ * through a native file dialog, a sibling of the themed Dialog. Closing any
+ * way other than a button counts as "no".
  */
 Item {
     id: wrapper
 
     property var host: null
 
-    Dialog {
+    AppDialog {
     id: root
 
     readonly property var request: wrapper.host ? wrapper.host.current : null
@@ -61,29 +54,32 @@ Item {
     // Set before a button answers, so onClosed does not answer twice.
     property bool answered: false
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(kind === "blockedMods" || kind === "untrustedMods" || kind === "update" || kind === "modal"
-                    || kind === "optionalMods" ? 620 : 460,
-                    parent ? parent.width - Theme.space.xxl * 2 : 460)
-    modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
-    topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
-    bottomPadding: Theme.space.sm
-    closePolicy: Popup.CloseOnEscape
+    size: kind === "blockedMods" || kind === "untrustedMods" || kind === "update" || kind === "modal"
+          || kind === "optionalMods" ? "md" : "sm"
     title: request ? request.title : ""
+    icon: root.request ? root.severityIcon(root.request.severity) : ""
+    iconColor: root.request ? root.severityColor(root.request.severity) : Theme.palette.accent
 
-    header: DialogHeader {
-        title: root.title
-        icon: root.request ? root.severityIcon(root.request.severity) : ""
-        iconColor: root.request ? root.severityColor(root.request.severity) : Theme.palette.accent
+    // Why the accepting button is off, for the kinds where that is not obvious.
+    readonly property string primaryReason: {
+        if (!request)
+            return ""
+        if (kind === "blockedMods")
+            return allFound ? "" : qsTr("Continue turns on once every file has been downloaded.")
+        if (kind === "untrustedMods")
+            return trustBox.checked ? "" : trustDelay.running ? qsTr("Take a moment to read the list.")
+                                                              : qsTr("Tick “I trust these files” to continue.")
+        if (kind === "profileSetup") {
+            if (request.profileSubmitting || request.profileNameStatus === "available")
+                return ""
+            if (profileNameField.text.trim().length === 0)
+                return qsTr("Type the username you want to use.")
+            return request.profileNameError.length === 0 ? qsTr("Checking that the username is free…") : ""
+        }
+        return ""
     }
 
     onRequestChanged: {
-        // filePicker answers through the native FileDialog below instead
-        // of this Dialog's own body -- see the file-level comment.
         if (kind === "filePicker") {
             return
         }
@@ -109,8 +105,6 @@ Item {
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
-        // The severity icon now leads the header badge instead of sitting
-        // beside the body text, so this is just the text at full width.
         Text {
             Layout.fillWidth: true
             // A plugin modal brings its own text in its document.
@@ -126,7 +120,6 @@ Item {
             onLinkActivated: (link) => Qt.openUrlExternally(link)
         }
 
-        // text: one line to type, prefilled with the suggested answer.
         TextField {
             id: textAnswer
             Layout.fillWidth: true
@@ -145,49 +138,55 @@ Item {
             }
         }
 
-        // Blocked mods: each file, whether it is already downloaded, and
-        // a way to its download page. The folder is watched in C++.
+        // Blocked mods: each file, whether downloaded, and a way to its download page; the folder
+        // is watched in C++. Rows are hairline-separated on the dialog's own surface.
         Column {
             Layout.fillWidth: true
             visible: root.kind === "blockedMods"
             spacing: Theme.space.xs
-            Repeater {
-                model: root.kind === "blockedMods" && root.request ? root.request.blockedMods : []
-                delegate: Rectangle {
-                    required property var modelData
-                    required property int index
-                    width: parent.width
-                    height: Theme.control.heightLg
-                    radius: Theme.radius.md
-                    color: Theme.palette.surfaceRaised
-                    Row {
-                        anchors.left: parent.left
-                        anchors.leftMargin: Theme.space.md
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: Theme.space.sm
-                        MeshIcon {
-                            anchors.verticalCenter: parent.verticalCenter
-                            iconName: modelData.found ? "check" : "download"
-                            size: Theme.icon.sm
-                            color: modelData.found ? Theme.palette.success : Theme.palette.textTertiary
+            Column {
+                width: parent.width
+                Repeater {
+                    model: root.kind === "blockedMods" && root.request ? root.request.blockedMods : []
+                    delegate: Item {
+                        id: blockedRow
+                        required property var modelData
+                        required property int index
+                        width: parent.width
+                        height: Theme.control.heightLg
+                        Rectangle {
+                            visible: blockedRow.index > 0
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 1
+                            color: Theme.palette.divider
                         }
-                        Text {
+                        Row {
+                            anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.fileName
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.label.pixelSize
+                            spacing: Theme.space.sm
+                            MeshIcon {
+                                anchors.verticalCenter: parent.verticalCenter
+                                iconName: blockedRow.modelData.found ? "check" : "download"
+                                size: Theme.icon.sm
+                                color: blockedRow.modelData.found ? Theme.palette.success : Theme.palette.textTertiary
+                            }
+                            Copy {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: blockedRow.modelData.fileName
+                                role: "label"
+                            }
                         }
-                    }
-                    Button {
-                        anchors.right: parent.right
-                        anchors.rightMargin: Theme.space.xs
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: !modelData.found
-                        flat: true
-                        text: qsTr("Download")
-                        icon.source: Icons.url("external-link")
-                        onClicked: root.request.openDownload(index)
+                        Button {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: !blockedRow.modelData.found
+                            flat: true
+                            text: qsTr("Download")
+                            icon.source: Icons.url("external-link")
+                            onClicked: root.request.openDownload(blockedRow.index)
+                        }
                     }
                 }
             }
@@ -199,29 +198,37 @@ Item {
             }
         }
 
-        // Untrusted files: what would be written, and a deliberate pause
-        // before it can be accepted.
         Column {
             Layout.fillWidth: true
             visible: root.kind === "untrustedMods"
             spacing: Theme.space.sm
-            Rectangle {
+            ListView {
+                id: fileList
                 width: parent.width
-                height: Math.min(180, fileList.contentHeight + Theme.space.md)
-                radius: Theme.radius.md
-                color: "transparent"
-                border.width: 1
-                border.color: Theme.palette.border
-                ListView {
-                    id: fileList
-                    anchors.fill: parent
-                    anchors.margins: Theme.space.sm
-                    clip: true
-                    model: root.kind === "untrustedMods" && root.request ? root.request.untrustedModsFiles : []
-                    delegate: Text {
-                        required property string modelData
-                        width: fileList.width
-                        text: modelData
+                height: Math.min(180, contentHeight)
+                clip: true
+                model: root.kind === "untrustedMods" && root.request ? root.request.untrustedModsFiles : []
+                ScrollBar.vertical: ScrollBar {}
+                delegate: Item {
+                    id: fileRow
+                    required property int index
+                    required property string modelData
+                    width: fileList.width
+                    height: Math.ceil(Theme.type.caption.lineHeightPx) + Theme.space.sm * 2
+                    Rectangle {
+                        visible: fileRow.index > 0
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        height: 1
+                        color: Theme.palette.divider
+                    }
+                    Text {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.space.sm
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: fileRow.modelData
                         elide: Text.ElideMiddle
                         color: Theme.palette.textSecondary
                         font.family: Theme.font.mono
@@ -248,9 +255,8 @@ Item {
             }
         }
 
-        // Profile setup: a Microsoft account that owns Minecraft but has
-        // never picked a username -- checked live against Mojang's API,
-        // the way the widget ProfileSetupDialog does.
+        // Profile setup: a Microsoft account that owns Minecraft but has no username yet, checked
+        // live against Mojang's API.
         Column {
             Layout.fillWidth: true
             visible: root.kind === "profileSetup"
@@ -290,21 +296,18 @@ Item {
                     size: Theme.icon.sm
                     color: root.request && root.request.profileNameStatus === "available" ? Theme.palette.success : Theme.palette.danger
                 }
-                Text {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.request ? (root.request.profileNameStatus === "available"
                                           ? qsTr("Available") : root.request.profileNameError) : ""
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
+                    role: "caption"
+                    tone: "secondary"
                 }
             }
         }
 
-        // pickAccount: which account to play with, and whether it becomes
-        // the default -- the widget ProfileSelectDialog's list and
-        // checkbox. The first account starts selected; double-clicking a
-        // row plays with it straight away.
+        // pickAccount: which account to play with and whether it becomes the default;
+        // double-clicking a row plays with it.
         Column {
             id: accountPicker
             Layout.fillWidth: true
@@ -349,39 +352,34 @@ Item {
                         accountPicker.play()
                     }
 
-                    background: Rectangle {
+                    // The selected row is the tinted surface and a bare check, so it is never read as hover.
+                    background: StateFill {
                         radius: Theme.radius.md
-                        color: accountRow.selected ? Theme.palette.surfaceHover
-                             : accountRow.hovered ? Theme.palette.hoverOverlay : "transparent"
-                        border.width: 1
-                        border.color: accountRow.selected ? Theme.neutral.borderHover : Theme.palette.border
-                        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                        hovered: accountRow.hovered
+                        active: accountRow.selected
                     }
 
                     contentItem: RowLayout {
                         spacing: Theme.space.sm
 
-                        // The player's head, as everywhere an account is
-                        // shown (PlayerHead): never a letter.
                         PlayerHead {
                             Layout.leftMargin: Theme.space.sm
                             size: accountPicker.faceSize
                             source: modelData.faceId ? "image://accountface/" + modelData.faceId : ""
                         }
-                        Text {
+                        Copy {
                             Layout.fillWidth: true
                             text: modelData.name
                             elide: Text.ElideRight
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.body.pixelSize
                             font.weight: Font.Medium
                         }
-                        Tag {
+                        Copy {
                             text: modelData.kind === "Microsoft" ? qsTr("Microsoft") : qsTr("Offline")
+                            role: "label"
+                            tone: "tertiary"
                         }
                         MeshIcon {
-                            Layout.rightMargin: Theme.space.sm
+                            Layout.rightMargin: Theme.space.md
                             iconName: "check"
                             size: Theme.icon.sm
                             color: Theme.palette.accentText
@@ -393,19 +391,14 @@ Item {
 
             CheckBox {
                 id: makeDefaultBox
-                // Its box on the account rows' left edge.
                 leftPadding: 0
                 text: qsTr("Make this the default account")
             }
         }
 
-        // modal: a plugin's one-off prompt (UiHost::runPluginModal()),
-        // drawn by the same PluginNode the plugin settings surfaces use.
-        // This request is the node's sink: a click on any node answers it,
-        // changes are remembered as the prompt's field values.
-        // Built afresh for every modal request (the request goes null
-        // between two of them), since PluginNode's inputs read their
-        // starting values once, when they are created.
+        // modal: a plugin's one-off prompt (UiHost::runPluginModal()); this request is the
+        // PluginNode sink. Built afresh per request, since PluginNode inputs read their starting
+        // values once.
         Loader {
             Layout.fillWidth: true
             active: root.kind === "modal" && !!root.request
@@ -417,9 +410,8 @@ Item {
             }
         }
 
-        // optionalMods: an ATLauncher pack's extra mods, ticked in place on
-        // the request's AtlOptionalModsModel, which applies the pack's own
-        // rules (dependencies, one per group). Hidden rows are libraries.
+        // optionalMods: an ATLauncher pack's extra mods, ticked on the request's
+        // AtlOptionalModsModel, which applies the pack's rules. Hidden rows are libraries.
         Column {
             id: optionalModsBox
             Layout.fillWidth: true
@@ -428,59 +420,56 @@ Item {
 
             readonly property var mods: root.kind === "optionalMods" && root.request ? root.request.optionalMods : null
 
-            Rectangle {
+            ListView {
+                id: modsList
                 width: parent.width
-                height: Math.min(320, modsList.contentHeight + Theme.space.sm * 2)
-                radius: Theme.radius.md
-                color: "transparent"
-                border.width: 1
-                border.color: Theme.palette.border
-                ListView {
-                    id: modsList
-                    anchors.fill: parent
-                    anchors.margins: Theme.space.sm
-                    clip: true
-                    model: optionalModsBox.mods
-                    ScrollBar.vertical: ScrollBar {}
-                    delegate: Item {
-                        id: modRow
-                        required property int index
-                        required property string name
-                        required property string description
-                        required property bool selected
-                        required property bool hidden
-                        width: ListView.view ? ListView.view.width : 0
-                        visible: !modRow.hidden
-                        height: visible ? modColumn.implicitHeight + Theme.space.xs * 2 : 0
-                        Column {
-                            id: modColumn
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            CheckBox {
-                                text: modRow.name
-                                checked: modRow.selected
-                                onToggled: modsList.model.toggle(modRow.index)
-                            }
-                            Text {
-                                width: parent.width
-                                visible: modRow.description.length > 0
-                                leftPadding: Theme.space.xl + Theme.space.xs
-                                text: modRow.description
-                                wrapMode: Text.Wrap
-                                maximumLineCount: 2
-                                elide: Text.ElideRight
-                                color: Theme.palette.textTertiary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.caption.pixelSize
-                            }
+                height: Math.min(320, contentHeight)
+                clip: true
+                model: optionalModsBox.mods
+                ScrollBar.vertical: ScrollBar {}
+                delegate: Item {
+                    id: modRow
+                    required property int index
+                    required property string name
+                    required property string description
+                    required property bool selected
+                    required property bool hidden
+                    width: ListView.view ? ListView.view.width : 0
+                    visible: !modRow.hidden
+                    height: visible ? modColumn.implicitHeight + Theme.space.xs * 2 : 0
+                    Column {
+                        id: modColumn
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        CheckBox {
+                            text: modRow.name
+                            checked: modRow.selected
+                            onToggled: modsList.model.toggle(modRow.index)
                         }
+                        Copy {
+                            width: parent.width
+                            visible: modRow.description.length > 0
+                            leftPadding: Theme.space.xl + Theme.space.xs
+                            text: modRow.description
+                            role: "caption"
+                            tone: "tertiary"
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
+                            elide: Text.ElideRight
+                        }
+                    }
+                    Rectangle {
+                        visible: modRow.index < modsList.count - 1
+                        anchors.bottom: parent.bottom
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        height: 1
+                        color: Theme.palette.divider
                     }
                 }
             }
             Row {
-                // Pulled out by the flat button's own padding, so the first
-                // label starts on the list box's edge.
                 x: -recommendedButton.leftPadding
                 spacing: Theme.space.sm
                 Button {
@@ -497,31 +486,33 @@ Item {
             }
         }
 
-        // Update: what changes, in the author's words.
         Column {
             Layout.fillWidth: true
             visible: root.kind === "update"
             spacing: Theme.space.sm
             Row {
                 spacing: Theme.space.sm
-                Tag {
+                Copy {
+                    anchors.verticalCenter: parent.verticalCenter
                     text: root.request && root.request.updateInfo ? root.request.updateInfo.currentVersion || "" : ""
+                    tone: "secondary"
                 }
                 MeshIcon {
                     anchors.verticalCenter: parent.verticalCenter
                     iconName: "chevron-right"
                     size: Theme.icon.sm
+                    color: Theme.palette.textTertiary
                 }
-                Tag {
+                Copy {
+                    anchors.verticalCenter: parent.verticalCenter
                     text: root.request && root.request.updateInfo ? root.request.updateInfo.availableVersion || "" : ""
-                    iconName: "download"
+                    role: "bodyStrong"
                 }
             }
             ScrollView {
                 width: parent.width
                 height: Math.min(260, notes.implicitHeight + Theme.space.md)
                 visible: notes.source.length > 0
-                // Release notes may link images; see RemoteRichText.
                 RemoteRichText {
                     id: notes
                     width: parent.width
@@ -531,6 +522,15 @@ Item {
                 }
             }
         }
+
+        Copy {
+            Layout.fillWidth: true
+            visible: text.length > 0
+            text: root.primaryReason
+            role: "caption"
+            tone: "tertiary"
+            wrapMode: Text.Wrap
+        }
     }
 
     footer: Row {
@@ -539,7 +539,6 @@ Item {
         padding: Theme.space.xl
         topPadding: 0
 
-        // choose: one button per action, the first as the primary.
         Repeater {
             model: root.kind === "choose" && root.request ? root.request.actions : []
             delegate: Button {
@@ -551,8 +550,6 @@ Item {
             }
         }
 
-        // pickAccount: play with the selected account.
-        // A launch, so it wears the kite cut like every other Play.
         PlayButton {
             visible: root.kind === "pickAccount"
             round: false
@@ -560,7 +557,6 @@ Item {
             onClicked: accountPicker.play()
         }
 
-        // update: install / later / skip this version.
         Button {
             visible: root.kind === "update"
             highlighted: true
@@ -580,11 +576,8 @@ Item {
             onClicked: root.answer(() => root.request.answerUpdate("later"))
         }
 
-        // profileSetup: Create submits and, unlike every other kind, may
-        // fail without answering the request at all (a taken name, a
-        // server error) -- so this does not go through root.answer(), which
-        // would mark it answered before the request is actually done; only
-        // Cancel (below) ends the request from this footer for this kind.
+        // profileSetup: Create may fail without answering the request (taken name, server error),
+        // so it bypasses root.answer(), which would mark it answered; only Cancel ends the request.
         Button {
             visible: root.kind === "profileSetup"
             highlighted: true
@@ -619,10 +612,8 @@ Item {
     }
     }
 
-    // filePicker: a plugin's open/save dialog, shown natively rather than
-    // inside root's own themed body (see the file-level comment). Plain
-    // accept()/reject() -- the same generic answer mechanism "text" uses --
-    // so QmlUiHost needs no filePicker-specific invokables of its own.
+    // filePicker: a plugin's open/save dialog, shown natively. Plain accept()/reject(), as "text"
+    // does, so QmlUiHost needs no filePicker invokables.
     NativeDialogs.FileDialog {
         id: nativeFileDialog
         readonly property var request: wrapper.host ? wrapper.host.current : null
@@ -641,10 +632,8 @@ Item {
                 var req = wrapper.host ? wrapper.host.current : null
                 if (!req || req.kind !== "filePicker")
                     return
-                // Set fresh before every open(), imperatively rather than as
-                // a binding: FileDialog owns selectedFile once shown (the
-                // user's pick lives there too), so a binding here would only
-                // ever apply once.
+                // Set before every open(), imperatively: FileDialog owns selectedFile once shown,
+                // so a binding would apply only once.
                 nativeFileDialog.selectedFile =
                     req.filePickerMode === "save"
                         ? Format.fileUrl(req.filePickerDefaultPath) : ""

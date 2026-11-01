@@ -22,13 +22,9 @@
 #include "qml/QmlShell.h"
 
 /*
- * Covers sanitizedInstanceName() and the setup-step-needed rules
- * (languageSetupStepNeeded()/javaSetupStepNeeded()), the free-standing
- * helpers QmlShell::renameInstance()/duplicateInstance() and
- * recomputeSetupSteps() build on. They are free-standing rather than QmlShell
- * methods precisely so this can run without a LauncherContext, the way
- * NewInstanceController_test.cpp exercises composeSuggestedInstanceName()
- * without a NewInstanceController.
+ * Covers the free-standing helpers of QmlShell: joinMatches(), joinOthers(),
+ * sanitizedInstanceName() and the setup-step rules. They run without a
+ * LauncherContext.
  */
 class QmlShellTest : public QObject
 {
@@ -79,8 +75,6 @@ class QmlShellTest : public QObject
 
 	void collapsesEmbeddedNewlinesToSpaces()
 	{
-		// Same as NoReturnTextEdit's commit path (InstanceDelegate.cpp):
-		// a pasted multi-line name becomes one line, not several.
 		QCOMPARE(sanitizedInstanceName(QStringLiteral("Line one\nLine two")),
 				 QStringLiteral("Line one Line two"));
 	}
@@ -117,9 +111,8 @@ class QmlShellTest : public QObject
 									/* autoDownload */ false));
 	}
 
-	// "Let Kite download the right version for each game" is an answer the
-	// step offers: once it is given, a missing path must not bring the step
-	// back on every start.
+	// Once Kite is set to download Java, a missing path must not bring the
+	// step back on every start.
 	void javaStepNotNeededWithoutJavaPathWhenKiteDownloadsJava()
 	{
 		QVERIFY(!javaSetupStepNeeded(/* hostnameChanged */ false,

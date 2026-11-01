@@ -8,9 +8,8 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The JVM arguments field. Memory has its own settings, so arguments that
- * set it by hand (-Xmx, -Xms, PermSize) are called out right under the
- * field while you type, the way the old page warned on save.
+ * The JVM arguments field. Arguments that set memory by hand (-Xmx, -Xms,
+ * PermSize) are called out under the field while you type.
  */
 SettingRow {
     id: root
@@ -53,14 +52,13 @@ SettingRow {
                 size: Theme.icon.sm
                 color: Theme.palette.warning
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: root.warning
                 wrapMode: Text.Wrap
-                color: Theme.palette.warning
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-                lineHeight: Theme.type.label.lineHeight
+                role: "label"
+                tone: "warning"
+                lineHeight: spec.lineHeight
             }
         }
     }

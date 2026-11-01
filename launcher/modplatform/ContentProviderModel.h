@@ -21,10 +21,7 @@
 #pragma once
 
 #include <QAbstractListModel>
-#include <QIcon>
 #include <QList>
-#include <QMap>
-#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <memory>
@@ -45,35 +42,23 @@ namespace ModPlatform
 		QString versionId;
 		/* Human-readable version, without decorations. */
 		QString name;
-		/* The version as a person reads it - "1.2.3" - kept apart from
-		 * `name` above, which some providers (Modrinth) decorate with it
-		 * in parentheses. Empty when the provider does not give a bare
-		 * number of its own (CurseForge only has `name`). */
+		/* The bare version number, e.g. "1.2.3"; empty when the provider has
+		 * none (CurseForge). `name` may carry it in parentheses (Modrinth). */
 		QString versionNumber;
-		/* "release" / "beta" / "alpha", empty when the provider does not
-		 * say. Shown in brackets after the name, like the reference
-		 * launcher does. */
+		/* "release" / "beta" / "alpha"; empty when the provider does not say. */
 		QString versionType;
 		QString fileName;
 		QString downloadUrl;
 		QString sha1;
 		int fileSize = 0;
-		/* The address above is the provider's website rather than its
-		 * API, because the author forbade third-party downloads. Carried
-		 * so the review dialog can say so, and so the caller can offer
-		 * to fetch the file by hand if the download is refused. */
+		/* The URL is the provider's website, not its API: the author forbids
+		 * third-party downloads. */
 		bool browserDownloadOnly = false;
 
-		/* Minecraft versions and mod loaders this version declares
-		 * support for. Populated from whatever the provider's version
-		 * reply states - CurseForge mixes both kinds of tag into one
-		 * "gameVersions" array (see ModPlatform::isKnownLoaderName()),
-		 * Modrinth states them as two separate fields. Used to flag a
-		 * version as compatible or not for a QML version picker; the
-		 * provider's own search/version query is already asked to filter
-		 * by these, but that filtering is not fully trusted elsewhere in
-		 * this codebase either (see VersionPicker.cpp), so it is checked
-		 * again on the client side. */
+		/* Minecraft versions and loaders this version declares. CurseForge
+		 * mixes both in gameVersions (see ModPlatform::isKnownLoaderName());
+		 * Modrinth has separate fields. Provider filtering is not fully trusted,
+		 * so the picker checks again client-side. */
 		QStringList gameVersions;
 		QStringList loaders;
 		/* RFC 3339 publish date, exactly as the provider states it; empty
@@ -81,9 +66,7 @@ namespace ModPlatform
 		QString datePublished;
 	};
 
-	/* One search result. Everything the list, the description pane and
-	 * the version box need lives here; the two providers fill it in from
-	 * their own JSON. */
+	/* One search result, filled in from either provider's JSON. */
 	struct IndexedProject {
 		QString projectId;
 		QString slug;
@@ -96,9 +79,8 @@ namespace ModPlatform
 		QString logoKey;
 		QString logoUrl;
 
-		/* Comparison key derived from `name`, computed once when the
-		 * result is parsed: the delegate asks a row for its state on
-		 * every repaint, so this must not be recomputed on demand. */
+		/* Derived from `name` once at parse time: data() reads it on every
+		 * repaint. */
 		QString normalizedName;
 		/* Already present in the folder this search targets. */
 		bool installed = false;
@@ -116,51 +98,29 @@ namespace ModPlatform
 
 } // namespace ModPlatform
 
-/* Extra data roles this model exposes for ProjectItemDelegate
- * (ui/widgets/ProjectItemDelegate.h) to paint a row. Declared here rather
- * than on the delegate because these are roles the model's data()
- * produces - a data model has no business depending on a view header.
- *
- * Qt::UserRole itself is already taken: both search models return the
- * platform's project id there, and existing code reads it. These start
- * one past it.
- *
- * Qt::DisplayRole is deliberately not reused for the title. The default
- * delegate paints DisplayRole, so leaving it as the plain name keeps the
- * list readable if a view is ever shown without this delegate attached. */
+/* Extra roles data() produces, past Qt::UserRole
+ * (the project id). DisplayRole stays the plain name. */
 namespace ProjectItemRole
 {
 	enum Role {
-		/* QString - project name, drawn large on the first line. */
+		/* QString: project name. */
 		Title = Qt::UserRole + 1,
-		/* QString - short summary, wrapped over at most two lines. */
+		/* QString: short summary. */
 		Description,
-		/* bool - already present in the target folder. Such rows are
-		 * dimmed and tagged, because installing them again is a no-op. */
+		/* bool: already in the target folder; the row is dimmed and tagged. */
 		Installed,
 	};
 }
 
-/* Search results for one content provider.
- *
- * There used to be two of these, one per provider, ninety percent
- * identical - same roles, same pagination, same icon cache, same
- * installed/selected bookkeeping - and they drifted apart every time
- * one of them was touched. What genuinely differs between CurseForge
- * and Modrinth is the shape of the JSON they return, so that is all a
- * subclass has to supply: three parse functions and a cache name.
- *
- * Fetching versions and the long description belongs here rather than
- * in the dialog, because they are per-row state that has to survive the
- * user clicking around the list. */
+/* Search results for one content provider. A subclass supplies the
+ * parse functions and a cache name. Versions and the long description
+ * live here, as per-row state that survives clicking around the list. */
 class ContentProviderModel : public QAbstractListModel
 {
 	Q_OBJECT
 
   public:
-	/* Continues past ProjectItemRole (Qt::UserRole+1..+3, declared
-	 * above), which ProjectItemDelegate already reads from this
-	 * model's data(). */
+	/* Continues past ProjectItemRole. */
 	enum ModelRoles {
 		LogoKeyRole = Qt::UserRole + 4,
 		// For QML delegates, which load the logo themselves.
@@ -178,86 +138,54 @@ class ContentProviderModel : public QAbstractListModel
 	bool canFetchMore(const QModelIndex& parent) const override;
 	void fetchMore(const QModelIndex& parent) override;
 
-	/* "curseforge" / "modrinth" - matches the platform field stored in
-	 * sidecars and in SelectedMod. */
+	/* "curseforge" / "modrinth", as stored in sidecars and SelectedMod. */
 	QString platformId() const;
-	QString platformDisplayName() const;
 	QList<ModPlatform::SortingMethod> sortingMethods() const;
-	/* See ContentApi::supportsExtendedFilters(). */
 	bool supportsExtendedFilters() const;
 
-	/* Null when the row does not exist. `row` is a row as the view sees
-	 * it, which is not the same as a position in the result list once
-	 * installed projects are being hidden. The pointer is invalidated
-	 * by the next search, so do not hold on to it. */
+	/* Null when the row does not exist. `row` is a view row, not a position
+	 * in the result list (installed projects may be hidden). Invalidated by
+	 * the next search. */
 	const ModPlatform::IndexedProject* projectAt(int row) const;
 
-	/* Starts a fresh search. Repeating the current query is ignored, so
-	 * this is cheap to call when a page is re-opened. */
+	/* Starts a fresh search; repeating the current query is ignored. */
 	void search(const QString& term, int sortIndex);
 
-	/* Replaces the results with the single project of this id, fetched
-	 * from the provider's project endpoint instead of its search.
-	 *
-	 * This is how the version of something already installed is changed:
-	 * a search for the mod's name is not good enough, because two mods
-	 * can share a name and the wrong one would be offered. Everything
-	 * else - the generation counter, aborting a request that is still in
-	 * flight, the inline progress bar - works exactly as it does for a
-	 * search, which is why this goes through the same state machine
-	 * rather than fetching on the side. */
+	/* Replaces the results with the one project of this id, from the
+	 * project endpoint: a name search could offer a same-named mod. Runs
+	 * through the same state machine as search(). */
 	void searchProject(const QString& projectId);
-	/* Fetches the version list and the long description for one row, if
-	 * they are not already in flight. Reports back with entryUpdated(). */
+	/* Fetches versions and long description of a row; reports with
+	 * entryUpdated(). */
 	void loadEntry(int row);
 
-	/* Fetches this provider's category list, once. Answers with
-	 * categoriesLoaded(); a failure is logged and nothing is emitted, so
-	 * the panel simply has no category group. */
+	/* Fetches the category list once; answers with categoriesLoaded(). A
+	 * failure is only logged. */
 	void loadCategories();
 
-	/* What the provider is asked to narrow the search to. Changing any
-	 * of it runs the current query again: the answer comes from the
-	 * provider, not from what is already loaded. */
+	/* Provider-side filters; changing them reruns the current query. */
 	void setSearchFilters(const ModPlatform::SearchFilters& filters);
 
-	/* Leave installed projects out of the rows. Needs no round trip -
-	 * the results are already here, they are just not shown. */
+	/* Leaves installed projects out of the rows; no round trip. */
 	void setHideInstalled(bool hide);
 
-	/* Index of what is already installed in the target folder. Rows
-	 * matching it are flagged so the view can dim them. */
+	/* Index of what is installed; matching rows are flagged. */
 	void setInstalledIndex(std::shared_ptr<ModMetadataIndex> index);
-	/* Normalized names of the projects the user has queued for
-	 * download. Matching rows draw a ticked checkbox. */
-	void setSelectedNames(const QSet<QString>& names);
 
 	bool isSearching() const
 	{
 		return m_searchJob != nullptr;
 	}
-	/* The running search, or null. Lets a page hang a progress widget
-	 * off the job without taking ownership of it. */
-	Task* activeSearchJob() const
-	{
-		return m_searchJob.get();
-	}
 
-	/* Why the most recent search (or page fetch) failed, or empty on
-	 * success or while nothing has run yet. Cleared at the start of every
-	 * new search and by a page fetch that succeeds. Not consumed by
-	 * ProjectItemDelegate or ContentProviderPage today - both simply show
-	 * an empty list - but a QML caller with no progress widget of its own
-	 * to hang activeSearchJob() off needs something to show for a search
-	 * that came back with nothing. */
+	/* Why the last search or page fetch failed; empty on success or before
+	 * any search. */
 	QString lastError() const
 	{
 		return m_lastError;
 	}
 
   signals:
-	/* A search started, finished or failed - drives the inline progress
-	 * bar on the page. */
+	/* A search started, finished or failed. */
 	void searchStateChanged();
 	/* Versions and/or the description of `row` arrived. */
 	void entryUpdated(int row);
@@ -274,14 +202,9 @@ class ContentProviderModel : public QAbstractListModel
 	virtual QList<ModPlatform::IndexedProject>
 	parseSearchResponse(const QByteArray& bytes, int& totalHits) const = 0;
 
-	/* Turns a single-project reply into one result, as used by
-	 * searchProject(). An empty projectId in the returned value means
-	 * the reply held nothing usable.
-	 *
-	 * Both providers answer this endpoint with the same field names they
-	 * use for a search hit - wrapped in "data" on CurseForge, bare on
-	 * Modrinth - so each subclass parses it with the very code that
-	 * handles one hit of a search. */
+	/* Turns a single-project reply into one result for searchProject(); an
+	 * empty projectId means nothing usable. Parsed like one search hit:
+	 * wrapped in "data" on CurseForge, bare on Modrinth. */
 	virtual ModPlatform::IndexedProject
 	parseProjectResponse(const QByteArray& bytes) const = 0;
 
@@ -290,17 +213,12 @@ class ContentProviderModel : public QAbstractListModel
 	parseVersionsResponse(const QByteArray& bytes,
 						  const ModPlatform::IndexedProject& project) const = 0;
 
-	/* Turns one description reply into HTML, converting from Markdown
-	 * where the provider serves Markdown. */
+	/* Turns one description reply into HTML, converting Markdown if needed. */
 	virtual QString parseBodyResponse(const QByteArray& bytes) const = 0;
 
-	/* Turns the category reply into entries for the filter panel, in the
-	 * order they should be offered. */
+	/* Turns the category reply into filter entries, in display order. */
 	virtual QList<ModPlatform::Category>
 	parseCategoriesResponse(const QByteArray& bytes) const = 0;
-
-	/* Metacache bucket for this provider's icons. */
-	virtual QString iconCacheName() const = 0;
 
 	const ModPlatform::ContentApi& api() const
 	{
@@ -312,32 +230,24 @@ class ContentProviderModel : public QAbstractListModel
 	}
 
   private:
-	/* Throws the current results away and asks again from offset zero.
-	 * Every caller that changes what is being asked for ends here, so
-	 * that the generation counter and the paging state cannot be reset
-	 * in three slightly different ways. */
+	/* Throws the results away and asks again from offset zero; the one
+	 * reset path for the generation counter and paging state. */
 	void restartSearch();
 	void performPaginatedSearch();
 	void searchRequestFinished();
 	void searchRequestFailed();
 
-	/* Land a late version / description reply on the right row, if that
-	 * row still exists and still belongs to the same search. */
+	/* Lands a late reply on its row, if it still exists in the same search. */
 	void applyVersions(quint64 generation, const QString& projectId,
 					   const QByteArray& bytes);
 	void applyBody(quint64 generation, const QString& projectId,
 				   const QByteArray& bytes);
 
-	void requestLogo(const QString& key, const QString& url);
-	void logoLoaded(const QString& key, const QIcon& icon);
-	void logoFailed(const QString& key);
-
 	void applyInstalledState(ModPlatform::IndexedProject& project) const;
 	void emitRowStateChanged();
 
-	/* Position in m_projects of the project with this id, or -1. Used to
-	 * place a late reply, since results may have been appended - or
-	 * hidden - in the meantime. */
+	/* Position in m_projects of this id, or -1; results may have been
+	 * appended or hidden since the request. */
 	int storageIndexOf(const QString& projectId) const;
 	/* Row the view shows this result at, or -1 when it is filtered out. */
 	int viewRowOfStorage(int storageIndex) const;
@@ -358,15 +268,9 @@ class ContentProviderModel : public QAbstractListModel
 	bool m_hideInstalled = false;
 
 	std::shared_ptr<ModMetadataIndex> m_installedIndex;
-	QSet<QString> m_selectedNames;
 
-	/* Guards against a second fetch: the panel is built once, but a
-	 * failed request must not turn into a retry on every keystroke. */
+	/* Stops a failed request from retrying on every keystroke. */
 	bool m_categoriesRequested = false;
-
-	QMap<QString, QIcon> m_logoMap;
-	QStringList m_loadingLogos;
-	QStringList m_failedLogos;
 
 	QString m_searchTerm;
 	/* Non-empty while the rows are the answer to searchProject() rather

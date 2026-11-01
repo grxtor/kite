@@ -9,16 +9,12 @@ import Kite.Theme
 
 /*
  * Which catalog mods a Kite Performance instance gets, picked before it is
- * created: a grid of cards in the manner of Lunar Client's mod menu, each
- * switched on or off by a click and saying so in the bar along its foot,
- * with the catalog's categories as filter chips and a search over names and
- * summaries. Turning a mod on turns on what it requires (the catalog's
- * `requires`); turning one off turns off what needs it.
- * Nothing is installed here: Done hands the picked projects back
- * (`picked`), in catalog order, and the caller installs them once the
- * instance exists.
+ * created: a card grid with category chips and a search. Turning a mod on turns
+ * on what it requires; turning one off turns off what needs it. Nothing is
+ * installed here: Done hands the picked projects back (`picked`), in catalog
+ * order.
  */
-Dialog {
+AppDialog {
     id: root
 
     // BundleCatalog::mods() rows to pick from.
@@ -30,21 +26,16 @@ Dialog {
 
     signal picked(var projects)
 
-    readonly property int preferredWidth: 900
     readonly property int preferredHeight: 680
     readonly property int gap: Theme.space.sm
-    // Cards are never narrower than this; the grid takes as many columns
-    // as fit.
     readonly property int minCardWidth: 190
-    readonly property int cardHeight: 156
-    readonly property int barHeight: Theme.control.heightSm - Theme.space.xs
+    readonly property int cardHeight: 132
     readonly property int columns: Math.max(1, Math.floor((cards.width + root.gap) / (root.minCardWidth + root.gap)))
     readonly property real cardWidth: (cards.width - root.gap * (root.columns - 1)) / root.columns
 
     readonly property var defaults: root.mods.filter((mod) => mod.isDefault === true).map((mod) => mod.project)
     readonly property bool atDefaults: root.picks.length === root.defaults.length
                                        && root.defaults.every((project) => root.picks.indexOf(project) >= 0)
-    // "All", then each category the rows name, in catalog order.
     readonly property var categoryChips: {
         const chips = [{ value: "", label: qsTr("All") }]
         for (const mod of root.mods) {
@@ -55,7 +46,6 @@ Dialog {
     }
     readonly property int shownCount: root.mods.filter((mod) => root.matches(mod, search.text)).length
 
-    // Starts on @p projects, every category and an empty search.
     function openWith(projects) {
         root.picks = projects.slice()
         root.category = ""
@@ -97,19 +87,29 @@ Dialog {
         }).join(", ")
     }
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
+    size: "xl"
     height: Math.min(root.preferredHeight, parent ? parent.height - Theme.space.xxl * 2 : root.preferredHeight)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
-    closePolicy: Popup.CloseOnEscape
     title: qsTr("Kite Performance mods")
+    primaryText: qsTr("Done")
+    onPrimaryClicked: root.picked(root.mods.filter((mod) => root.picks.indexOf(mod.project) >= 0)
+                                           .map((mod) => mod.project))
 
-    header: DialogHeader {
-        title: root.title
-    }
+    footerLeading: [
+        Copy {
+            anchors.verticalCenter: parent.verticalCenter
+            text: qsTr("%1 of %2 on").arg(root.picks.length).arg(root.mods.length)
+            role: "label"
+            tone: "secondary"
+        },
+        Button {
+            anchors.verticalCenter: parent.verticalCenter
+            flat: true
+            visible: !root.atDefaults
+            text: qsTr("Reset to defaults")
+            icon.source: Icons.url("refresh")
+            onClicked: root.picks = root.defaults.slice()
+        }
+    ]
 
     contentItem: ColumnLayout {
         spacing: Theme.space.md
@@ -152,66 +152,26 @@ Dialog {
                 }
             }
 
-            Text {
+            Copy {
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: Theme.space.xxl
                 visible: root.shownCount === 0
                 text: qsTr("No mods match.")
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
+                role: "label"
+                tone: "tertiary"
             }
         }
     }
 
-    footer: RowLayout {
-        spacing: Theme.space.sm
-
-        Text {
-            Layout.leftMargin: Theme.space.xl
-            Layout.bottomMargin: Theme.space.xl
-            text: qsTr("%1 of %2 on").arg(root.picks.length).arg(root.mods.length)
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
-        }
-        Button {
-            Layout.bottomMargin: Theme.space.xl
-            flat: true
-            visible: !root.atDefaults
-            text: qsTr("Reset to defaults")
-            icon.source: Icons.url("refresh")
-            onClicked: root.picks = root.defaults.slice()
-        }
-        Item { Layout.fillWidth: true }
-        Button {
-            Layout.bottomMargin: Theme.space.xl
-            text: qsTr("Cancel")
-            onClicked: root.close()
-        }
-        Button {
-            Layout.rightMargin: Theme.space.xl
-            Layout.bottomMargin: Theme.space.xl
-            highlighted: true
-            text: qsTr("Done")
-            icon.source: Icons.url("check")
-            onClicked: {
-                root.picked(root.mods.filter((mod) => root.picks.indexOf(mod.project) >= 0)
-                                     .map((mod) => mod.project))
-                root.close()
-            }
-        }
-    }
-
-    // One mod: its icon and a Default tag, the name, what it does and what
-    // it needs; the bar along the foot says On or Off. A click anywhere
-    // switches it.
     component ModCard: AbstractButton {
         id: card
 
         required property var modelData
         readonly property bool on: root.picks.indexOf(card.modelData.project) >= 0
         readonly property var needs: card.modelData.requires || []
+        readonly property string subLine: [card.modelData.isDefault === true ? qsTr("Default") : "",
+                                           card.needs.length > 0 ? qsTr("Needs %1").arg(root.namesOf(card.needs)) : ""]
+                                          .filter((part) => part.length > 0).join("  •  ")
 
         width: root.cardWidth
         height: root.cardHeight
@@ -219,7 +179,6 @@ Dialog {
         hoverEnabled: true
         focusPolicy: Qt.TabFocus
         padding: Theme.space.md
-        bottomPadding: root.barHeight + Theme.space.sm
 
         Accessible.role: Accessible.CheckBox
         Accessible.name: card.modelData.name
@@ -228,51 +187,14 @@ Dialog {
 
         onClicked: root.toggle(card.modelData.project)
 
-        background: Rectangle {
+        // The raised fill is the card's one surface; On is a bare check on it, the accent ring is the focus.
+        background: StateFill {
+            card: true
+            rest: Theme.palette.surfaceRaised
+            hovered: card.hovered
             radius: Theme.radius.md
-            color: card.hovered ? Theme.palette.surfaceHover : Theme.palette.surfaceRaised
-            border.width: 1
-            border.color: card.visualFocus ? Theme.palette.focusRing
-                        : card.hovered ? Theme.palette.borderStrong : Theme.palette.border
-            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
-            // The On/Off bar: one rounded strip inside the border, its top
-            // corners clipped off (two strips would double a see-through
-            // fill where they overlap).
-            Item {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.margins: parent.border.width
-                height: root.barHeight
-                clip: true
-
-                Rectangle {
-                    y: -radius
-                    width: parent.width
-                    height: parent.height + radius
-                    radius: Theme.radius.md - 1
-                    color: card.on ? Theme.palette.successSubtle : Theme.palette.surfaceSunken
-                }
-                Row {
-                    anchors.centerIn: parent
-                    spacing: Theme.space.xs
-                    MeshIcon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: card.on ? "check" : "x"
-                        size: Theme.icon.sm - 4
-                        color: card.on ? Theme.palette.success : Theme.palette.textTertiary
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: card.on ? qsTr("On") : qsTr("Off")
-                        color: card.on ? Theme.palette.success : Theme.palette.textTertiary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.caption.pixelSize
-                        font.weight: Font.DemiBold
-                    }
-                }
-            }
+            FocusFrame { around: Theme.space.xxs; visible: card.visualFocus }
         }
 
         contentItem: ColumnLayout {
@@ -288,39 +210,36 @@ Dialog {
                     matte: Theme.palette.surfaceRaised
                 }
                 Item { Layout.fillWidth: true }
-                Tag {
+                MeshIcon {
                     Layout.alignment: Qt.AlignTop
-                    visible: card.modelData.isDefault === true
-                    text: qsTr("Default")
+                    visible: card.on
+                    iconName: "check"
+                    size: Theme.icon.sm
+                    color: Theme.palette.accentText
                 }
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: card.modelData.name
                 elide: Text.ElideRight
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
-                font.weight: Font.DemiBold
+                role: "bodyStrong"
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: card.modelData.summary || ""
                 wrapMode: Text.Wrap
-                maximumLineCount: card.needs.length > 0 ? 1 : 2
+                maximumLineCount: card.subLine.length > 0 ? 1 : 2
                 elide: Text.ElideRight
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                role: "caption"
+                tone: "secondary"
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
-                visible: card.needs.length > 0
-                text: qsTr("Needs %1").arg(root.namesOf(card.needs))
+                visible: card.subLine.length > 0
+                text: card.subLine
                 elide: Text.ElideRight
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                role: "caption"
+                tone: "tertiary"
             }
             Item { Layout.fillHeight: true }
         }

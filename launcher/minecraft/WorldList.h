@@ -25,7 +25,6 @@
 #include <QString>
 #include <QDir>
 #include <QAbstractListModel>
-#include <QMimeData>
 #include "minecraft/World.h"
 
 class QFileSystemWatcher;
@@ -92,23 +91,7 @@ class WorldList : public QAbstractListModel
 	/// Removes the world icon, if any
 	virtual bool resetIcon(int index);
 
-	/// Deletes all the selected mods
-	virtual bool deleteWorlds(int first, int last);
-
-	/// flags, mostly to support drag&drop
 	virtual Qt::ItemFlags flags(const QModelIndex& index) const;
-	/// get data for drag action
-	virtual QMimeData* mimeData(const QModelIndexList& indexes) const;
-	/// get the supported mime types
-	virtual QStringList mimeTypes() const;
-	/// process data from drop action
-	virtual bool dropMimeData(const QMimeData* data, Qt::DropAction action,
-							  int row, int column, const QModelIndex& parent);
-	/// what drag actions do we support?
-	virtual Qt::DropActions supportedDragActions() const;
-
-	/// what drop actions do we support?
-	virtual Qt::DropActions supportedDropActions() const;
 
 	void startWatching();
 	void stopWatching();

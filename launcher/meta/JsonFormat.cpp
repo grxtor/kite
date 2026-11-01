@@ -38,7 +38,6 @@ namespace Meta
 		return MetadataVersion::InitialRelease;
 	}
 
-	// Index
 	static std::shared_ptr<Index> parseIndexInternal(const QJsonObject& obj)
 	{
 		const QVector<QJsonObject> objects =
@@ -55,7 +54,6 @@ namespace Meta
 		return std::make_shared<Index>(lists);
 	}
 
-	// Version
 	static VersionPtr parseCommonVersion(const QString& uid,
 										 const QJsonObject& obj)
 	{
@@ -87,7 +85,6 @@ namespace Meta
 		return version;
 	}
 
-	// Version list / package
 	static std::shared_ptr<VersionList>
 	parseVersionListInternal(const QJsonObject& obj)
 	{

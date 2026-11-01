@@ -61,20 +61,4 @@ namespace IconUtils
 		return FS::PathCombine(folder, best_filename);
 	}
 
-	QString getIconFilter()
-	{
-		QString out;
-		QTextStream stream(&out);
-		stream << '(';
-		for (size_t i = 0; i < validIconExtensions.size() - 1; i++) {
-			if (i > 0) {
-				stream << " ";
-			}
-			stream << "*." << validIconExtensions[i];
-		}
-		stream << " *." << validIconExtensions[validIconExtensions.size() - 1];
-		stream << ')';
-		return out;
-	}
-
 } // namespace IconUtils

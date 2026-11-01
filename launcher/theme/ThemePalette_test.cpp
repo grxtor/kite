@@ -23,24 +23,14 @@
 #include "theme/Contrast.h"
 #include "theme/ThemePalette.h"
 
-/*
- * Behavioural contract for ThemePalette.
- *
- * Every ratio a token has to clear is computed here from Contrast::ratio()
- * and Contrast::compositeOver(), the same way design notes should read
- * them -- never typed by hand, because a hand-typed ratio is exactly what
- * has gone stale on this project before (see Contrast_test.cpp). Every
- * checked pair is also printed with qInfo() so the numbers going into
- * design notes come from running this test, not from eyeballing hex codes.
- */
+/* Contract for ThemePalette. Ratios are computed from Contrast::ratio() and
+ * Contrast::compositeOver(), never typed by hand, and printed with qInfo()
+ * so numbers quoted elsewhere come from running this test. */
 
 namespace
 {
 
-/// One row of the printed ratio table plus the assertion it backs. Kept as
-/// a free function rather than repeating QVERIFY2 at each call site, since
-/// the same "measure, print, assert" shape recurs for every token pair
-/// below.
+/// Prints one row of the ratio table and asserts it.
 void expectRatio(const QColor& foreground, const QColor& background,
 				  qreal minimum, const QString& label)
 {
@@ -53,18 +43,13 @@ void expectRatio(const QColor& foreground, const QColor& background,
 							.arg(minimum)));
 }
 
-/// Runs every contrast requirement from the ThemePalette task against one
-/// theme. Shared between test_meshDark() and test_meshLight() so the two
-/// themes are held to identical requirements rather than two hand-copied
-/// lists that could drift apart.
+/// Every contrast requirement for one theme; shared so both themes are held
+/// to the same list.
 void checkTheme(const ThemePalette& p, const QString& themeName)
 {
 	qInfo().noquote() << "----" << themeName << "----";
 
-	// surfaceOverlay included alongside canvas/surface/surfaceRaised: the
-	// widened Wave 0 ramp (design-plan.md §3) moves every layer, and the
-	// overlay -- popovers and modals, the layer furthest off canvas -- is the
-	// one a popup's own text most often sits directly on.
+	// surfaceOverlay too: popup text most often sits directly on it.
 	const QList<QPair<QString, QColor>> textSurfaces = {
 		{ "canvas", p.canvas },
 		{ "surface", p.surface },
@@ -77,18 +62,15 @@ void checkTheme(const ThemePalette& p, const QString& themeName)
 					themeName + " textPrimary on " + s.first);
 		expectRatio(p.textSecondary, s.second, 4.5,
 					themeName + " textSecondary on " + s.first);
-		// Large/secondary text only -- see the comment on textTertiary in
-		// ThemePalette.h -- so 3.0 rather than the 4.5 used just above.
+		// Large/secondary text only (see textTertiary), so 3.0 instead of 4.5.
 		expectRatio(p.textTertiary, s.second, 3.0,
 					themeName + " textTertiary on " + s.first);
 	}
 
-	// The surface ladder has to actually read as a ladder, not just clear
-	// text-contrast minimums: surfaceRaised must be a perceptibly different
-	// luminance from canvas, not a copy the eye rounds off. 0.012 is chosen
-	// to fail the pre-Wave-0 ramp (~0.0083-0.0088 across all three schemes'
-	// dark variants) and pass the widened one (~0.013-0.0142 dark, ~0.10
-	// light -- see design-plan.md §3's ramp table).
+	// The surface ladder must read as a ladder: surfaceRaised needs a
+	// perceptibly different luminance from canvas. 0.012 fails the old ramp
+	// (~0.0083-0.0088 dark) and passes the current one (~0.013-0.0142 dark,
+	// ~0.10 light).
 	{
 		const qreal step =
 			Contrast::relativeLuminance(p.surfaceRaised) -
@@ -108,18 +90,14 @@ void checkTheme(const ThemePalette& p, const QString& themeName)
 	expectRatio(p.accentText, p.surface, 4.5,
 				themeName + " accentText on surface");
 
-	// selection and tooltipBackground are opaque solid fills by design
-	// (see ThemePalette.h), so they carry their own contrast without
-	// needing to be composited onto anything first.
+	// selection and tooltipBackground are opaque, so no compositing is needed.
 	expectRatio(p.selectionText, p.selection, 4.5,
 				themeName + " selectionText on selection");
 	expectRatio(p.tooltipText, p.tooltipBackground, 4.5,
 				themeName + " tooltipText on tooltipBackground");
 
-	// Every "Subtle" token is a translucent tint (see ThemePalette.h), so
-	// it has no contrast of its own until it is flattened onto the surface
-	// it is drawn over -- Contrast::compositeOver() does that flattening
-	// before the status colour is measured against it as text.
+	// Every "Subtle" token is translucent: flatten it onto its surface with
+	// Contrast::compositeOver() before measuring the status colour on it.
 	const QList<QPair<QColor, QColor>> statusOnSubtle = {
 		{ p.success, p.successSubtle },
 		{ p.warning, p.warningSubtle },
@@ -136,8 +114,8 @@ void checkTheme(const ThemePalette& p, const QString& themeName)
 						statusNames[i] + "Subtle over surface");
 	}
 
-	// WCAG 1.4.11 non-text contrast: focusRing and borderStrong must stay
-	// perceivable against both backgrounds a control might sit on.
+	// WCAG 1.4.11 non-text contrast: focusRing and borderStrong against both
+	// backgrounds a control might sit on.
 	const QList<QPair<QString, QColor>> nonTextSurfaces = {
 		{ "canvas", p.canvas },
 		{ "surface", p.surface },
@@ -148,12 +126,9 @@ void checkTheme(const ThemePalette& p, const QString& themeName)
 		expectRatio(p.focusRing, s.second, 3.0,
 					themeName + " focusRing on " + s.first);
 
-		// border is decorative and explicitly allowed to fall under the 3:1
-		// WCAG non-text minimum (see ThemePalette.h) -- borderStrong above is
-		// what carries that bar. But Wave 0's own fix was raising border's
-		// alpha because the old 20/255 (~1.19-1.24:1 composited) was too
-		// faint to read as an edge at all; 1.28 is a much lower bar than 3:1,
-		// chosen only to hold that fix in place and fail the old alpha.
+		// border is decorative and may fall under 3:1 (borderStrong carries that
+		// bar). 1.28 holds its alpha above the old 20/255 (~1.19-1.24:1), which
+		// was too faint to read as an edge.
 		const QColor borderOverSurface =
 			Contrast::compositeOver(p.border, s.second);
 		const qreal borderRatio =
@@ -182,7 +157,6 @@ class ThemePaletteTest : public QObject
 		checkTheme(ThemePalette::meshLight(), "meshLight");
 	}
 
-	/// Every scheme, in both modes, clears the same bars as the default.
 	void test_everyScheme()
 	{
 		using S = ThemePalette::Scheme;
@@ -198,7 +172,6 @@ class ThemePaletteTest : public QObject
 				 S::Amethyst);
 	}
 
-	/// The looks' palettes are dark only and clear the same bars.
 	void test_everyLook()
 	{
 		using S = ThemePalette::Scheme;
@@ -211,9 +184,7 @@ class ThemePaletteTest : public QObject
 		}
 	}
 
-	/// The two themes have to disagree somewhere, and a palette has to
-	/// agree with an identical copy of itself -- the two ends of what
-	/// operator==/operator!= are for.
+	/// Different themes differ; a palette equals an identical copy.
 	void test_equality()
 	{
 		const ThemePalette dark = ThemePalette::meshDark();

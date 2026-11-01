@@ -8,30 +8,15 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One row per installed file, reused by ContentTab for whichever kind is
- * selected (mods, core mods, resource/shader/texture packs, data packs) --
- * all a ContentFilterModel over a ModFolderModel underneath, with the same
- * roles, so a single delegate does for every kind. Each row shows the logo
- * the file declares for itself (iconUrl: a mod's fabric.mod.json/mods.toml
- * logo, a pack's pack.png); `kind` only picks the glyph shown when it has
- * none, and the noun used when confirming a delete.
- *
- * Laid out like Modrinth App's content table: one rounded card with a sticky
- * header (select all, Name, Version, Actions) over roomy rows split by
- * hairlines, as tall as they are up to the room there is -- a tick box, the
- * logo, what it is, its version (when there is room), its on/off switch and
- * a ⋯ menu (also on right-click). Clicking
- * a row opens its details (description, authors, version, where it came
- * from). Selecting works the way file lists do: every row has its tick box;
- * Cmd/Ctrl-click toggles a row, Shift-click ticks a range. Rows are kept
- * by `key` (the file name, ".disabled" or not), so a selection survives
- * searching, sorting and switching files on and off.
+ * One row per installed file, reused by ContentTab for every kind (mods, packs,
+ * ...). `kind` only picks the fallback glyph and the noun for delete
+ * confirmations. Rows are kept by `key` (file name, ".disabled" or not), so a
+ * selection survives searching, sorting and toggling.
  */
 Item {
     id: root
 
-    // InstanceContentController and the ContentFilterModel it gave for
-    // `kind`.
+    // InstanceContentController and its ContentFilterModel for `kind`.
     property var controller: null
     property var model: null
     property string kind: "mods"
@@ -42,40 +27,30 @@ Item {
     // Lower-case plural for confirmations: "mods", "resource packs".
     property string noun: qsTr("files")
 
-    // Keys of the ticked rows. Always replaced, never changed in place, so
-    // bindings on it update.
+    // Keys of the ticked rows; always replaced, never changed in place, so bindings update.
     property var selectedKeys: []
     readonly property bool selecting: selectedKeys.length > 0
-    // Where a Shift-click range starts.
     property string anchorKey: ""
-    // The one row whose details are open.
     property string expandedKey: ""
 
     readonly property int count: list.count
-    // A row's square (RowThumb), at the size of every instance tab's rows.
     readonly property int thumbSize: Theme.control.heightLg
-    // The tick box column, and the table's columns: the header and every
-    // row are laid out from these, so they line up. Version only when the
-    // card is wide enough to spare it, as in Modrinth App's table.
+    // The table's columns: the header and every row are laid out from these. Version only when the
+    // card can spare it.
     readonly property int checkSize: 20
     readonly property bool showVersionColumn: width >= 760
     readonly property int versionColumnWidth: Math.round(width * 0.24)
-    // Switch and ⋯ menu on the right.
     readonly property int actionsWidth: 40 + Theme.space.md + Theme.control.height
-    // While the mods' health check has something to report, every row keeps
-    // room before its switch for the "Problem"/"Warning" badge (PackRow), so
-    // the Version column stays lined up whether a row has one or not. A
-    // folder with nothing wrong looks as it always did.
+    // While the mods' health check has something to report, every row keeps room for the
+    // "Problem"/"Warning" badge so the Version column lines up.
     readonly property bool showsHealth: kind === "mods" && !!controller && !!controller.health
                                         && controller.health.count > 0
     readonly property int healthBadgeWidth: showsHealth ? Math.max(problemMeasure.implicitWidth,
                                                                    warningMeasure.implicitWidth) : 0
     readonly property int healthSlotWidth: showsHealth ? healthBadgeWidth + Theme.space.md : 0
     readonly property int rowPadding: Theme.space.lg
-    // Details line up under the name, past the tick box and the logo.
     readonly property int detailsIndent: rowPadding + checkSize + Theme.space.md + thumbSize + Theme.space.md
 
-    // Whether files of `kind` can come from a provider (ContentTab).
     property bool updatable: false
 
     signal openFolderRequested(string path)
@@ -95,7 +70,6 @@ Item {
         root.selectedKeys = keys
         root.anchorKey = key
     }
-    // Ticks every row from the last one clicked to @p key, as shown.
     function selectRange(key) {
         if (!root.model)
             return
@@ -133,7 +107,7 @@ Item {
         root.expandedKey = ""
     }
 
-    Rectangle {
+    BoxSurface {
         id: card
         anchors.left: parent.left
         anchors.right: parent.right
@@ -141,13 +115,8 @@ Item {
         height: Math.min(parent.height, tableHeader.height + list.contentHeight + list.topMargin
                                         + list.bottomMargin + border.width * 2)
         visible: list.count > 0
-        radius: Theme.radius.lg
-        color: Theme.palette.surface
-        border.width: 1
-        border.color: Theme.palette.border
         clip: true
 
-        // The sticky header: select-all, then a label for each column.
         Rectangle {
             id: tableHeader
             anchors.left: parent.left
@@ -155,8 +124,7 @@ Item {
             anchors.top: parent.top
             anchors.margins: card.border.width
             height: Theme.control.heightLg
-            // Rounded to sit in the card's corners (the card's clip is
-            // square); the strip below squares its foot again.
+            // Rounded to sit in the card's corners (the card's clip is square).
             radius: card.radius - card.border.width
             color: Theme.palette.surfaceRaised
             z: 1
@@ -197,30 +165,27 @@ Item {
                             root.selectAll()
                     }
                 }
-                Text {
+                Copy {
                     Layout.fillWidth: true
                     text: qsTr("Name")
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "secondary"
                     font.weight: Font.DemiBold
                 }
-                Text {
+                Copy {
                     visible: root.showVersionColumn
                     Layout.preferredWidth: root.versionColumnWidth
                     text: qsTr("Version")
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "secondary"
                     font.weight: Font.DemiBold
                 }
-                Text {
+                Copy {
                     Layout.preferredWidth: root.actionsWidth + root.healthSlotWidth
                     horizontalAlignment: Text.AlignRight
                     text: qsTr("Actions")
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "secondary"
                     font.weight: Font.DemiBold
                 }
             }
@@ -238,8 +203,7 @@ Item {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             model: root.model
-            // Overlays the rows' right edge rather than reserving a gutter, so
-            // the rows end where the toolbar above them does.
+            // Overlays the rows' right edge instead of reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
             delegate: PackRow {
@@ -249,7 +213,6 @@ Item {
             }
         }
 
-        // Rows fade out at the fold instead of being sliced by the play bar.
         ScrollFade {
             anchors.left: parent.left
             anchors.right: parent.right
@@ -257,28 +220,22 @@ Item {
             anchors.margins: card.border.width
             flickable: list
             fadeTo: Theme.palette.surface
-            // Rounded like the card, or its square foot would cover the
-            // card's bottom corners.
             radius: Theme.radius.lg
         }
     }
 
-    // Only measured, for healthBadgeWidth.
     StatusBadge { id: problemMeasure; visible: false; text: qsTr("Problem") }
     StatusBadge { id: warningMeasure; visible: false; text: qsTr("Warning") }
 
-    // A search that matches nothing; the folder itself is not empty
-    // (ContentTab shows its own empty state for that).
+    // A search that matches nothing (ContentTab shows its own empty state for an empty folder).
     EmptyState {
         anchors.centerIn: parent
-        // Up where the list would start, as on every other tab.
         upperThird: true
-        // Its own width, or it takes its title's.
         width: parent.width
         visible: !!root.model && root.model.totalCount > 0 && root.model.count === 0
         title: qsTr("No matches")
         body: root.model ? qsTr("Nothing here matches “%1”.").arg(root.model.filterText) : ""
-        MeshIcon { iconName: "search"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "search"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 
     ConfirmDialog {

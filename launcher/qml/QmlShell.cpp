@@ -26,7 +26,6 @@
 #include <QElapsedTimer>
 #include <QDebug>
 #include <QEvent>
-#include <QFileInfo>
 #include <QHostInfo>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -66,7 +65,6 @@
 #include "models/JavaDownloadController.h"
 #include "models/FolderSettingsController.h"
 #include "models/UpdateSettingsController.h"
-#include "models/PlayTimeSummary.h"
 #include "models/LibraryController.h"
 #include "models/LauncherLogs.h"
 #include "models/CatPackList.h"
@@ -76,6 +74,7 @@
 #include "minecraft/PerformanceInstanceTask.h"
 #include "minecraft/PerformanceSetupRules.h"
 #include "minecraft/PerformanceSetupTask.h"
+#include "minecraft/mod/ModFolderModel.h"
 #include "modplatform/BundleCatalog.h"
 #include "friends/FriendsController.h"
 #include "modbridge/ModBridge.h"
@@ -109,14 +108,13 @@
 
 namespace
 {
-	/* Spelled out rather than loadFromModule(), which is Qt 6.5+; the floor is
-	 * 6.4. The module sets RESOURCE_PREFIX "/qt/qml" so this path is stable. */
+	// loadFromModule() needs Qt 6.5. The module sets RESOURCE_PREFIX "/qt/qml".
 	const QUrl kRootUrl(QStringLiteral("qrc:/qt/qml/Kite/Main.qml"));
 
-	/* Function-local static rather than a plain namespace-scope QmlShell
-	 * member: this is a process-wide seam Application installs once, not
-	 * per-instance state, and a Meyer's singleton sidesteps static
-	 * initialisation order between translation units. */
+	// Where PerformanceSetupTask lists the mods it found no build of for the new version.
+	const QString kUnmatchedSetting = QStringLiteral("KitePerformanceUnmatched");
+
+	// Function-local static: sidesteps static initialisation order.
 	QmlShell::PluginSurfaceFactory& pluginSurfaceFactory()
 	{
 		static QmlShell::PluginSurfaceFactory factory;
@@ -127,8 +125,6 @@ namespace
 QString sanitizedInstanceName(const QString& name)
 {
 	QString sanitized = name;
-	// Same as NoReturnTextEdit's commit path (InstanceDelegate.cpp): a
-	// pasted multi-line name becomes one line rather than being rejected.
 	sanitized.replace(QLatin1Char('\n'), QLatin1Char(' '));
 	return sanitized.trimmed();
 }
@@ -146,25 +142,17 @@ bool javaSetupStepNeeded(bool hostnameChanged, bool javaPathResolves,
 
 QmlShell::QmlShell(QObject* parent) : QObject(parent)
 {
-	/* Sidebar account summary. Both signals exist on AccountList already;
-	 * either one moving the default account or the list itself is reason
-	 * enough to re-read all three properties, so both are wired to the
-	 * same accountChanged() rather than tracked separately. */
 	auto accounts = LAUNCHER->accounts();
-	/* Any change may be a new skin under the same account id, and QML
-	 * caches images by url: the revision in the face url makes it refetch. */
+	// QML caches images by url; the revision in the face url forces a refetch.
 	const auto bump = [this] {
 		++m_accountRevision;
 		emit accountChanged();
 	};
 	connect(accounts.get(), &AccountList::listChanged, this, bump);
 	connect(accounts.get(), &AccountList::defaultAccountChanged, this, bump);
-	/* An account without a skin of its own is drawn in the game's default
-	 * skin once DefaultSkins has downloaded it. */
+	// An account without a skin shows the default skin once it has downloaded.
 	connect(DefaultSkins::instance(), &DefaultSkins::loaded, this, bump);
 
-	// Once per run, like Application::createSetupWizard() used to compute
-	// this once before deciding whether to show the widget wizard.
 	recomputeSetupSteps();
 }
 
@@ -215,11 +203,8 @@ QString QmlShell::accountFace() const
 	if (!account) {
 		return QString();
 	}
-	// Offline accounts have no profile id; the provider accepts either.
-	const QString id = account->profileId().isEmpty() ? account->internalId()
-													   : account->profileId();
 	return QStringLiteral("image://accountface/%1?rev=%2")
-		.arg(id)
+		.arg(account->accountId())
 		.arg(m_accountRevision);
 }
 
@@ -229,8 +214,7 @@ QString QmlShell::accountKind() const
 	if (!account) {
 		return QString();
 	}
-	return account->isMSA() ? QStringLiteral("Microsoft")
-							: QStringLiteral("Offline");
+	return account->kindLabel();
 }
 
 int QmlShell::accountCount() const
@@ -240,16 +224,19 @@ int QmlShell::accountCount() const
 
 void QmlShell::launchInstance(const QString& id)
 {
+	watchPerformance(id);
 	emit launchRequested(id);
 }
 
 void QmlShell::launchInstanceMode(const QString& id, const QString& mode)
 {
+	watchPerformance(id);
 	emit launchModeRequested(id, mode);
 }
 
 void QmlShell::launchInstanceAs(const QString& id, const QString& accountId)
 {
+	watchPerformance(id);
 	emit launchAsRequested(id, accountId);
 }
 
@@ -271,8 +258,7 @@ QObject* QmlShell::pluginList()
 	return expose(m_pluginList.get());
 }
 
-/// Kite Performance installs mods, so it needs a loader to put them in and
-/// a game version they exist for.
+// Needs a mod loader and a game version the performance mods exist for.
 static bool
 performanceAvailable(const std::shared_ptr<MinecraftInstance>& instance)
 {
@@ -289,7 +275,6 @@ QVariantMap QmlShell::launchOptions(const QString& id) const
 		return {};
 	}
 
-	// Same check as the widget launch menu's Launch Demo entry.
 	auto minecraft = std::dynamic_pointer_cast<MinecraftInstance>(instance);
 	const bool supportsDemo = minecraft && minecraft->supportsDemo();
 
@@ -302,15 +287,9 @@ QVariantMap QmlShell::launchOptions(const QString& id) const
 			continue;
 		}
 		accounts.append(QVariantMap{
-			// Same id accountFace() uses: offline accounts have no
-			// profile id.
-			{ QStringLiteral("id"), account->profileId().isEmpty()
-										? account->internalId()
-										: account->profileId() },
+			{ QStringLiteral("id"), account->accountId() },
 			{ QStringLiteral("name"), account->profileName() },
-			{ QStringLiteral("kind"), account->isMSA()
-										  ? QStringLiteral("Microsoft")
-										  : QStringLiteral("Offline") },
+			{ QStringLiteral("kind"), account->kindLabel() },
 			{ QStringLiteral("isDefault"), account == defaultAccount },
 		});
 	}
@@ -360,7 +339,7 @@ void QmlShell::setPerformanceEnabled(const QString& id, bool on)
 QStringList QmlShell::performanceExcluded(const QString& id) const
 {
 	auto instance = minecraftInstanceById(id);
-	return instance ? PerformanceSetup::parseExcluded(
+	return instance ? PerformanceSetup::parseProjects(
 						  instance->settings()
 							  ->get("KitePerformanceExcluded")
 							  .toString())
@@ -372,9 +351,70 @@ void QmlShell::setPerformanceExcluded(const QString& id,
 {
 	if (auto instance = minecraftInstanceById(id)) {
 		instance->settings()->set("KitePerformanceExcluded",
-								  PerformanceSetup::joinExcluded(projects));
+								  PerformanceSetup::joinProjects(projects));
 		emit performanceChanged(id);
 	}
+}
+
+QStringList QmlShell::performanceIncluded(const QString& id) const
+{
+	auto instance = minecraftInstanceById(id);
+	return instance ? PerformanceSetup::parseProjects(
+						  instance->settings()
+							  ->get("KitePerformanceIncluded")
+							  .toString())
+					: QStringList();
+}
+
+void QmlShell::setPerformanceIncluded(const QString& id,
+									  const QStringList& projects)
+{
+	if (auto instance = minecraftInstanceById(id)) {
+		instance->settings()->set("KitePerformanceIncluded",
+								  PerformanceSetup::joinProjects(projects));
+		emit performanceChanged(id);
+	}
+}
+
+QStringList QmlShell::performanceUnmatched(const QString& id) const
+{
+	auto instance = minecraftInstanceById(id);
+	auto folder = instance ? instance->loaderModList() : nullptr;
+	if (!folder) {
+		return {};
+	}
+	return PerformanceSetup::installedNames(
+		*folder->metadataIndex(),
+		PerformanceSetup::parseProjects(
+			instance->settings()->get(kUnmatchedSetting).toString()));
+}
+
+void QmlShell::watchPerformance(const QString& id)
+{
+	auto instance = minecraftInstanceById(id);
+	if (!instance || m_watchedPerformance.contains(id)) {
+		return;
+	}
+	m_watchedPerformance.insert(id);
+	/* The setup runs inside a launch, which this shell does not own, so the
+	 * setting is how it tells. Every launch re-reads the instance's settings
+	 * and that announces each of them again, unchanged: only a value that
+	 * differs from the last one seen is news. */
+	connect(instance->settings().get(), &SettingsObject::SettingChanged, this,
+			[this, id, seen = instance->settings()
+								  ->get(kUnmatchedSetting)
+								  .toString()](const Setting& setting,
+											   const QVariant& value) mutable {
+				if (setting.id() != kUnmatchedSetting ||
+					value.toString() == seen) {
+					return;
+				}
+				seen = value.toString();
+				const QStringList names = performanceUnmatched(id);
+				if (!names.isEmpty()) {
+					emit performanceUnmatchedFound(id, names);
+				}
+			});
 }
 
 bool QmlShell::performanceSupported(const QString& mcVersion) const
@@ -382,7 +422,6 @@ bool QmlShell::performanceSupported(const QString& mcVersion) const
 	return PerformanceSetup::supportsVersion(mcVersion);
 }
 
-/// Whether the instance's Minecraft version has the Graphics API setting.
 static bool
 hasGraphicsBackend(const std::shared_ptr<MinecraftInstance>& instance)
 {
@@ -425,6 +464,7 @@ QObject* QmlShell::speedUp(const QString& id, const QStringList& extras)
 		!PerformanceSetup::hasLoader(instance->getPackProfile()->primaryModLoader())) {
 		return nullptr;
 	}
+	watchPerformance(id);
 	instance->settings()->set("KitePerformance", true);
 	emit performanceChanged(id);
 
@@ -454,8 +494,8 @@ QObject* QmlShell::createPerformanceInstance(const QString& sourceId)
 		mcVersion, name, LAUNCHER->instances()->getInstanceGroup(sourceId));
 	auto* watcher = new TaskWatcher(Task::Ptr(task), this);
 	watcher->setTitle(name);
-	/* The id is known as soon as the instance exists, which is before the
-	 * task reports success: finished(true) reaches QML with it set. */
+	// The id is known once the instance exists, before the task reports
+	// success, so finished(true) reaches QML with it set.
 	connect(task, &PerformanceInstanceTask::instanceCreated, watcher,
 			&TaskWatcher::setInstanceId);
 	task->start();
@@ -476,6 +516,7 @@ bool QmlShell::joinServer(const QString& id, const QString& address)
 {
 	auto instance = LAUNCHER->instances()->getInstanceById(id);
 	const bool starts = instance && instance->canLaunch();
+	watchPerformance(id);
 	emit joinServerRequested(id, address);
 	return starts;
 }
@@ -484,9 +525,8 @@ namespace
 {
 	using MinecraftInstances = QList<std::shared_ptr<MinecraftInstance>>;
 
-	/* minecraftVersion(), not the component's version: an instance whose
-	 * profile nothing has read yet would have none, and no friend's version
-	 * would match it. */
+	// minecraftVersion(), not the component's version, which is empty until
+	// the profile has been read.
 	QString gameVersionOf(const std::shared_ptr<MinecraftInstance>& instance)
 	{
 		return instance->minecraftVersion();
@@ -543,8 +583,7 @@ namespace
 		return chosen;
 	}
 
-	/* "1.21" of "1.21.4": the release line patches of one game version
-	 * share. */
+	// "1.21" of "1.21.4".
 	QString releaseLineOf(const QString& version)
 	{
 		return version.split(QLatin1Char('.')).mid(0, 2).join(QLatin1Char('.'));
@@ -645,9 +684,7 @@ bool QmlShell::renameInstance(const QString& id, const QString& name)
 		return false;
 	}
 
-	// FIXME: if no change, do not set. setting involves saving a file.
-	// (Same shortcut InstanceList::setData() takes; BaseInstance::setName()
-	// does not bother checking on its own.)
+	// Setting the name saves a file, so skip it when unchanged.
 	if (instance->name() != sanitized) {
 		instance->setName(sanitized);
 	}
@@ -666,6 +703,28 @@ void QmlShell::setInstanceIcon(const QString& id, const QString& iconKey)
 		return;
 	}
 	instance->setIconKey(iconKey);
+}
+
+bool QmlShell::setInstanceCover(const QString& instanceId,
+								const QString& pathOrFileUrl)
+{
+	return LAUNCHER->instances()->setCover(instanceId, pathOrFileUrl);
+}
+
+void QmlShell::clearInstanceCover(const QString& instanceId)
+{
+	LAUNCHER->instances()->clearCover(instanceId);
+}
+
+void QmlShell::renameInstanceCoverSource(const QString& instanceId,
+										 const QString& fileName)
+{
+	LAUNCHER->instances()->renameCoverSource(instanceId, fileName);
+}
+
+QColor QmlShell::iconColor(const QString& key) const
+{
+	return LAUNCHER->instances()->iconColor(key);
 }
 
 void QmlShell::debugMarkInstanceCrashed(const QString& id)
@@ -688,7 +747,6 @@ void QmlShell::debugClick(const QString& spec)
 									   ? Qt::RightButton
 									   : Qt::LeftButton;
 	const int delay = parts.size() > 3 ? parts.at(3).toInt() : 1000;
-	// "x,y,left,delay,dx,dy" drags by (dx, dy) in steps before letting go.
 	const QPointF offset = parts.size() > 5
 							   ? QPointF(parts.at(4).toDouble(), parts.at(5).toDouble())
 							   : QPointF();
@@ -704,8 +762,8 @@ void QmlShell::debugClick(const QString& spec)
 				return;
 			}
 			QMouseEvent event(type, pos, window->mapToGlobal(pos), which, held, Qt::NoModifier);
-			// Pointer handlers time taps and drags from these; a zero
-			// stamp on every event is not a click any handler recognises.
+			// Pointer handlers time taps and drags from the timestamp; zero
+			// is not a click.
 			static QElapsedTimer clock;
 			if (!clock.isValid()) {
 				clock.start();
@@ -736,8 +794,8 @@ void QmlShell::debugShowRequest(const QString& kind)
 		return;
 	}
 	if (kind == QLatin1String("pickAccount")) {
-		// Queued: pickAccount() blocks until answered, and the QML call
-		// that got here should return first.
+		// Queued: pickAccount() blocks, and the QML call that got here
+		// should return first.
 		QTimer::singleShot(0, this, [this]() {
 			if (!m_uiHost) {
 				return;
@@ -754,7 +812,6 @@ void QmlShell::debugShowRequest(const QString& kind)
 				list);
 		});
 	} else if (kind == QLatin1String("modal")) {
-		// A plugin's one-off prompt, as a typical plugin builds it.
 		QTimer::singleShot(0, this, [this]() {
 			if (!m_uiHost) {
 				return;
@@ -784,7 +841,6 @@ void QmlShell::debugShowRequest(const QString& kind)
 			m_uiHost->runPluginModal(QStringLiteral("World Share"), document);
 		});
 	} else if (kind == QLatin1String("optionalMods")) {
-		// An ATLauncher pack's optional mods, as AtlModpackModel asks.
 		QTimer::singleShot(0, this, [this]() {
 			if (!m_uiHost) {
 				return;
@@ -810,39 +866,13 @@ void QmlShell::debugShowRequest(const QString& kind)
 			m_uiHost->chooseOptionalMods(QStringLiteral("Sky Factory"), mods);
 		});
 	} else if (kind == QLatin1String("busySkip")) {
-		/* Kept alive by its own skip callback, which ends it; QmlUiHost
-		 * drops the callback (and so the indicator) at the latest when it
-		 * is destroyed itself. */
+		// Kept alive by its own skip callback, which ends it.
 		auto holder =
 			std::make_shared<std::unique_ptr<UiHost::BusyIndicator>>();
 		*holder = m_uiHost->showBusy(tr("Refreshing account…"),
 									 tr("Play offline"),
 									 [holder]() { holder->reset(); });
 	}
-}
-
-bool QmlShell::importIcon(const QString& fileUrlOrPath)
-{
-	const QUrl url(fileUrlOrPath);
-	const QString path = url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
-
-	const QFileInfo info(path);
-	if (!info.isReadable() || !info.isFile()) {
-		return false;
-	}
-
-	auto icons = LAUNCHER->icons();
-	icons->installIcons({ path });
-
-	/* Same key IconList itself derives for a dropped/installed file (see
-	 * IconList::directoryChanged()) - deterministic from the file name, so
-	 * this does not need to wait for the watcher to actually pick the copy
-	 * up before telling the caller what to expect. installIcons() silently
-	 * no-ops on a rejected extension or a same-key collision, same as
-	 * IconPickerDialog's own "Add Icon" button, so this is optimistic
-	 * rather than a confirmation the icon list now has it. */
-	emit iconImported(info.baseName());
-	return true;
 }
 
 QObject* QmlShell::duplicateInstance(const QString& id, const QString& newName,
@@ -858,8 +888,6 @@ QObject* QmlShell::duplicateInstance(const QString& id, const QString& newName,
 		return nullptr;
 	}
 
-	// Same defaults CopyInstanceDialog's checkboxes start with, and the
-	// same icon it starts the icon button showing (the original's).
 	auto* copyTask = new InstanceCopyTask(original, /* copySaves */ true,
 										  /* keepPlaytime */ true);
 	copyTask->setName(name);
@@ -879,10 +907,8 @@ bool QmlShell::deleteInstance(const QString& id)
 	if (!instance) {
 		return false;
 	}
-	// Trashing a folder Java still has open fails on Windows, and the
-	// fallback below would then start deleting a running game's files one
-	// by one -- same guard MainWindow::on_actionDeleteInstance_triggered()
-	// has before it ever gets to the confirmation dialog.
+	// Trashing a folder Java has open fails on Windows, and the fallback
+	// below would delete a running game's files one by one.
 	if (instance->isRunning()) {
 		return false;
 	}
@@ -892,17 +918,7 @@ bool QmlShell::deleteInstance(const QString& id)
 		return false;
 	}
 
-	/* The widget grid persists its selection across restarts under this
-	 * key; clearing it here too means it never restarts pointed at an
-	 * instance that no longer exists, whichever UI is in use next time. */
-	LAUNCHER->settings()->set("SelectedInstance", QString());
 	return true;
-}
-
-bool QmlShell::isInstanceRunning(const QString& id) const
-{
-	auto instance = LAUNCHER->instances()->getInstanceById(id);
-	return instance && instance->isRunning();
 }
 
 QStringList QmlShell::groups() const
@@ -959,14 +975,13 @@ void QmlShell::recomputeSetupSteps()
 {
 	auto settings = LAUNCHER->settings();
 
-	// Same hostname check as Application::createSetupWizard(): a machine
-	// change may mean the recorded JavaPath no longer applies, so this is
-	// re-armed by recording the new hostname once it is seen.
+	// A new machine may mean the recorded JavaPath no longer applies; record
+	// the new hostname so this fires once.
 	const QString currentHostName = QHostInfo::localHostName();
 	const QString oldHostName = settings->get("LastHostname").toString();
-	const bool hostnameChanged = currentHostName != oldHostName;
-	if (hostnameChanged) {
+	if (currentHostName != oldHostName) {
 		settings->set("LastHostname", currentHostName);
+		m_hostnameChanged = true;
 	}
 	const QString javaPath = settings->get("JavaPath").toString();
 	const bool javaPathResolves = !FS::ResolveExecutable(javaPath).isNull();
@@ -975,7 +990,7 @@ void QmlShell::recomputeSetupSteps()
 	if (languageSetupStepNeeded(settings->get("Language").toString())) {
 		steps << QStringLiteral("language");
 	}
-	if (javaSetupStepNeeded(hostnameChanged, javaPathResolves,
+	if (javaSetupStepNeeded(m_hostnameChanged, javaPathResolves,
 							settings->get("JavaAutoDownload").toBool())) {
 		steps << QStringLiteral("java");
 	}
@@ -990,7 +1005,9 @@ void QmlShell::recomputeSetupSteps()
 
 void QmlShell::finishSetupStep(const QString& id)
 {
-	Q_UNUSED(id);
+	if (id == QLatin1String("java")) {
+		m_hostnameChanged = false;
+	}
 	recomputeSetupSteps();
 }
 
@@ -1004,11 +1021,8 @@ void QmlShell::selectLanguage(const QString& key)
 	auto translations = LAUNCHER->translations();
 	translations->selectLanguage(key);
 	translations->updateLanguage(key);
-	// selectedLanguage() rather than echoing back @p key: selectLanguage()
-	// falls back to the default language for an unrecognised key, and this
-	// should persist whatever it actually settled on, the way
-	// LanguageWizardPage::validatePage() persists the tree view's current
-	// selection rather than trusting an arbitrary string.
+	// selectedLanguage(), not @p key: selectLanguage() falls back to the
+	// default for an unrecognised key.
 	LAUNCHER->settings()->set("Language", translations->selectedLanguage());
 	if (m_engine) {
 		m_engine->retranslate();
@@ -1031,17 +1045,19 @@ void QmlShell::detectJava()
 	if (!task) {
 		return;
 	}
-	if (!m_javaDetecting) {
-		m_javaDetecting = true;
-		emit javaDetectingChanged();
+	// A scan is already running and its finished() is already connected.
+	if (m_javaDetecting) {
+		return;
 	}
-	connect(task.get(), &Task::finished, this, [this]() {
-		m_javaDetecting = false;
-		emit javaDetectingChanged();
-	});
-	if (!task->isRunning()) {
-		task->start();
-	}
+	m_javaDetecting = true;
+	emit javaDetectingChanged();
+	connect(
+		task.get(), &Task::finished, this,
+		[this]() {
+			m_javaDetecting = false;
+			emit javaDetectingChanged();
+		},
+		Qt::SingleShotConnection);
 }
 
 void QmlShell::useJava(const QString& path)
@@ -1085,11 +1101,6 @@ QObject* QmlShell::settings() const
 
 void QmlShell::applyProxySettings()
 {
-	// Same five settings, read the same way, as
-	// Application::initSubsystems()'s own proxy setup and the widget
-	// ProxyPage::applySettings() -- only the destination differs
-	// (LauncherContext rather than calling updateProxySettings() directly,
-	// since QmlShell cannot see Application from Kite_qml).
 	auto settings = LAUNCHER->settings();
 	const QString proxyTypeStr = settings->get("ProxyType").toString();
 	const QString addr = settings->get("ProxyAddr").toString();
@@ -1106,11 +1117,9 @@ QObject* QmlShell::uiHost() const
 
 UiHost* QmlShell::uiHostInterface() const
 {
-	// Not ready until some QML item has called setPresenterReady(true) --
-	// see QmlUiHost's class comment. Application::uiHost() falls back to
-	// the widget host while this is null, so a call reached before then
-	// (an automatic startup update check finding no updater binary, say)
-	// gets a real dialog instead of hanging on a request nothing shows.
+	// Null until a QML item has called setPresenterReady(true). Application
+	// then uses the headless host, so an early call is declined instead of
+	// hanging on a request nothing shows.
 	if (m_uiHost && m_uiHost->presenterReady()) {
 		return m_uiHost.get();
 	}
@@ -1186,15 +1195,12 @@ QObject* QmlShell::accountsController() const
 
 QObject* QmlShell::newInstance() const
 {
-	/* Made on first use, not in load(): the controller starts loading the
-	 * Minecraft version list, and opening the launcher should not fetch
-	 * metadata nobody asked for. */
+	// Made on first use: it loads the Minecraft version list, which opening
+	// the launcher should not fetch.
 	if (!m_newInstance && m_engine) {
 		m_newInstance = std::make_unique<NewInstanceController>();
 	}
-	// The version list proxies it hands out need the same CppOwnership
-	// pinning as the controller itself, or the engine will try to delete
-	// them out from under it the first time QML touches one.
+	// The version list proxies it hands out need pinning too.
 	if (m_newInstance) {
 		expose(m_newInstance->minecraftVersions());
 		expose(m_newInstance->loaderVersions());
@@ -1239,16 +1245,6 @@ QObject* QmlShell::updateSettings() const
 	return expose(updateSettingsController());
 }
 
-QObject* QmlShell::playTime() const
-{
-	/* First read once the root window loads, by which time the instance
-	 * list exists; PlayTimeSummary recounts whenever it changes. */
-	if (!m_playTime) {
-		m_playTime = std::make_unique<PlayTimeSummary>();
-	}
-	return expose(m_playTime.get());
-}
-
 QObject* QmlShell::library() const
 {
 	if (!m_library && m_engine) {
@@ -1256,8 +1252,6 @@ QObject* QmlShell::library() const
 														LAUNCHER->icons());
 	}
 	if (m_library) {
-		// The icons model the duplicate dialog's picker reads: CppOwnership,
-		// like iconsModel().
 		expose(m_library->iconsModel());
 	}
 	return expose(m_library.get());
@@ -1265,9 +1259,8 @@ QObject* QmlShell::library() const
 
 QObject* QmlShell::launcherLogs() const
 {
-	/* The working directory is the data folder, where the launcher writes
-	 * <KITE_NAME>-<n>.log -- the same folder the widget logs dialog
-	 * lists. */
+	// The working directory is the data folder, where <KITE_NAME>-<n>.log
+	// is written.
 	if (!m_launcherLogs) {
 		m_launcherLogs = std::make_unique<LauncherLogs>(
 			QDir::currentPath(), BuildConfig.KITE_NAME);
@@ -1287,8 +1280,7 @@ QObject* QmlShell::bundles() const
 {
 	if (!m_bundles) {
 		m_bundles = std::make_unique<BundleCatalog>();
-		/* The texts follow the language; the catalog resolves them on
-		 * each read, so only the bindings need telling. */
+		// Texts resolve on each read; only the bindings need telling.
 		connect(LAUNCHER->settings()->getSetting("Language").get(),
 				&Setting::SettingChanged, m_bundles.get(),
 				&BundleCatalog::changed);
@@ -1303,9 +1295,9 @@ QObject* QmlShell::friends() const
 		return nullptr;
 	}
 	if (!m_friends) {
-		/* The working directory is the data folder, where accounts.json is. */
+		// The working directory is the data folder, where accounts.json is.
 		m_friends = std::make_unique<FriendsController>(QDir::currentPath());
-		/* The Kite mod of a running game reads it through the bridge. */
+		// The Kite mod of a running game reads it through the bridge.
 		if (auto* bridge = LAUNCHER ? LAUNCHER->modBridge() : nullptr) {
 			bridge->setFriends(m_friends.get());
 		}
@@ -1320,8 +1312,8 @@ QObject* QmlShell::exportController(const QString& id)
 		if (!instance) {
 			return nullptr;
 		}
-		// Replacing one whose export still runs is safe: its destructor
-		// aborts the task and keeps it alive until it has wound down.
+		// Replacing a running export is safe: its destructor aborts the
+		// task and keeps it alive until it has wound down.
 		m_exportController = std::make_unique<InstanceExportController>(instance);
 		expose(m_exportController->files());
 	}
@@ -1367,32 +1359,21 @@ QObject* QmlShell::instanceDetails(const QString& id)
 		return nullptr;
 	}
 
-	// Replaces (and destroys, via unique_ptr assignment) whichever detail
-	// page was open before - only one is kept at a time.
 	m_instanceDetails = std::make_unique<InstanceDetails>(instance);
 
-	// Every QObject* the bridge hands to QML needs the same CppOwnership
-	// pinning as everything else exposed here, or the engine will try to
-	// delete a model the instance still owns.
+	// Every QObject* the bridge hands to QML needs pinning.
 	expose(m_instanceDetails->settings());
 	expose(m_instanceDetails->mods());
-	expose(m_instanceDetails->resourcePacks());
-	expose(m_instanceDetails->shaderPacks());
-	expose(m_instanceDetails->texturePacks());
 	expose(m_instanceDetails->worlds());
 	expose(m_instanceDetails->log());
 	expose(m_instanceDetails->otherLogs());
 	expose(m_instanceDetails->components());
 	expose(m_instanceDetails->screenshots());
 	expose(m_instanceDetails->gameOptions());
-	// contentBrowser()'s own `results` is reachable straight off the
-	// pinned browser below without a separate expose() here: every
-	// ContentProviderModel it hands out is parented to it (see
-	// ContentBrowser::ensureModel()), and a parented QObject already keeps
-	// its C++ ownership once QML touches it, pin or no pin.
+	// contentBrowser()'s `results` needs no pin of its own: its models are
+	// parented to the browser.
 	expose(m_instanceDetails->contentBrowser());
-	// Same reasoning for loaderInstaller()'s own `versions` proxy - see
-	// LoaderInstaller's constructor comment.
+	// Likewise loaderInstaller()'s `versions` proxy.
 	expose(m_instanceDetails->loaderInstaller());
 
 	return expose(m_instanceDetails.get());
@@ -1406,18 +1387,12 @@ QVariantMap QmlShell::rootProperties()
 	props.insert(QStringLiteral("selection"),
 				 QVariant::fromValue(expose(m_selection.get())));
 	props.insert(QStringLiteral("shell"), QVariant::fromValue(expose(this)));
-	/* KITE_QML_ROUTE opens a given screen at startup -- see
-	 * Main.qml's applyDevRoute(). With KITE_QML_SNAPSHOT it lets a
-	 * review script picture any page without editing the QML. */
+	// KITE_QML_ROUTE opens a screen at startup (Main.qml's applyDevRoute()),
+	// so a snapshot can picture any page.
 	props.insert(QStringLiteral("devRoute"),
 				 qEnvironmentVariable("KITE_QML_ROUTE"));
-	/* Whether launcher/qml/Skin3D (the 3D skin preview) was built at
-	 * all -- a compile-time fact, not a setting, so it is a plain bool
-	 * handed over once here rather than a Q_PROPERTY. SkinPreview.qml
-	 * gates its 3D view on this: KITE_HAS_SKIN3D is only ever defined
-	 * when launcher/qml/CMakeLists.txt actually linked Kite_qml_skin3d
-	 * in (see its Kite_ENABLE_SKIN3D guard), which itself only happens
-	 * when Qt Quick3D was found. */
+	// Compile-time: KITE_HAS_SKIN3D is defined only when Kite_qml_skin3d was
+	// linked, which needs Qt Quick3D.
 #ifdef KITE_HAS_SKIN3D
 	props.insert(QStringLiteral("skin3DAvailable"), true);
 #else
@@ -1454,15 +1429,24 @@ bool QmlShell::load()
 		return true;
 	}
 
-	/* The grid shows the core's instance list through a filtering, naturally
-	 * sorted proxy -- the same ordering the widget grid used -- and keeps its
-	 * selection by instance id, since rows move under the proxy. */
 	m_instances = std::make_unique<InstanceFilterModel>();
 	m_instances->setSourceModel(LAUNCHER->instances().get());
-	// groups() forwards to m_instances->groups(); its own signal already
-	// fires exactly when that list actually moves (see refreshDerived()).
 	connect(m_instances.get(), &InstanceFilterModel::groupsChanged, this,
 			&QmlShell::groupsChanged);
+	// Deferred a turn so the delegates of a vanished group are gone first.
+	connect(m_instances.get(), &InstanceFilterModel::groupsChanged, this, [this]() {
+		QTimer::singleShot(0, this, [this]() {
+			const QStringList live = m_instances->groups();
+			for (auto it = m_sections.begin(); it != m_sections.end();) {
+				if (live.contains(it->first)) {
+					++it;
+					continue;
+				}
+				it->second.release()->deleteLater();
+				it = m_sections.erase(it);
+			}
+		});
+	});
 	connect(LAUNCHER->icons().get(), &IconList::iconUpdated, this, [this]() {
 		if (m_iconRevisionPending) {
 			return;
@@ -1474,8 +1458,13 @@ bool QmlShell::load()
 			emit iconRevisionChanged();
 		});
 	});
+	connect(LAUNCHER->instances().get(), &InstanceList::iconColorsChanged, this,
+			[this]() {
+				++m_iconColorRevision;
+				emit iconColorRevisionChanged();
+			});
 	// The auto icons follow the library: rows in or out, or an icon key
-	// changing (InstanceList reports iconKey as Qt::DecorationRole).
+	// change (reported as Qt::DecorationRole).
 	auto* instanceList = LAUNCHER->instances().get();
 	const auto scheduleAutoIcons = [this]() {
 		if (m_autoIconsPending)
@@ -1500,8 +1489,8 @@ bool QmlShell::load()
 	m_recent->setRecentFirst(true);
 	m_recent->setSourceModel(LAUNCHER->instances().get());
 	m_hero = std::make_unique<InstanceFilterModel>();
-	/* Nothing matches until QML names an instance, so there is no flash of
-	 * every instance as a hero. Ids are folder names; none contains '/'. */
+	// Nothing matches until QML names an instance. Ids are folder names; none
+	// contains '/'.
 	m_hero->setInstanceId(QStringLiteral("/"));
 	m_hero->setSourceModel(LAUNCHER->instances().get());
 	m_instancePage = std::make_unique<InstanceFilterModel>();
@@ -1517,9 +1506,8 @@ bool QmlShell::load()
 	m_ftbModpacks = std::make_unique<FtbModpackModel>();
 	m_atlModpacks = std::make_unique<AtlModpackModel>();
 	m_technicModpacks = std::make_unique<TechnicModpackModel>();
-	/* An ATLauncher pack's optional mods are asked through UiHost (the QML
-	 * "optionalMods" question); without an answer the pack's defaults
-	 * install. */
+	// Optional mods are asked through UiHost; without an answer the pack's
+	// defaults install.
 	m_atlModpacks->setOptionalModsHandler(
 		[](const QString& name,
 		   AtlOptionalModsModel& mods) -> std::optional<QVector<QString>> {
@@ -1536,13 +1524,12 @@ bool QmlShell::load()
 		m_news = std::make_unique<NewsModel>(checker);
 	}
 
-	/* InstGrouped: whether the library shows group by group, or as one
-	 * list. Only the library proxy follows it; the per-group section models
-	 * are what grouping shows. */
+	// Only the library proxy follows InstGrouped; the section models are what
+	// grouping shows.
 	m_instances->setGrouped(LAUNCHER->settings()->get("InstGrouped").toBool());
 
-	/* The sort order reads InstSortMode on every comparison, but a proxy
-	 * only compares when told to: re-sort when the setting moves. */
+	// The sort order is read on every comparison, but a proxy only compares
+	// when told to.
 	connect(LAUNCHER->settings().get(), &SettingsObject::SettingChanged, this,
 			[this](const Setting& setting, const QVariant& value) {
 				if (setting.id() == QLatin1String("InstGrouped")) {
@@ -1558,24 +1545,22 @@ bool QmlShell::load()
 				}
 			});
 
-	/* Must be chosen before the first engine exists: Qt Quick Controls binds
-	 * its style when QtQuick.Controls is first imported, and cannot switch
-	 * afterwards. The style falls back to Basic for anything it does not
-	 * define itself. */
+	// Must precede the first engine: Qt Quick Controls binds its style on first
+	// import. It falls back to Basic for what the style does not define.
 	QQuickStyle::setStyle(QStringLiteral("Kite.Style"));
 
 	m_engine = std::make_unique<QQmlApplicationEngine>();
 	m_engine->addImportPath(QStringLiteral("qrc:/qt/qml"));
 
-	/* The engine takes ownership of image providers. Registered before load()
-	 * so the first frame already has icons rather than broken images. */
+	// The engine owns image providers. Registered before load() so the first
+	// frame has icons.
 	m_engine->addImageProvider(QStringLiteral("instanceicon"),
 							   new InstanceIconProvider(LAUNCHER->icons()));
 	m_engine->addImageProvider(QStringLiteral("accountface"),
 							   new AccountFaceProvider());
 	m_engine->addImageProvider(QStringLiteral("screenshot"),
 							   new ScreenshotThumbnailProvider());
-	// The same directory every ModFolderModel's parse tasks write to.
+	// Where every ModFolderModel's parse tasks write.
 	m_engine->addImageProvider(
 		QStringLiteral("modicon"),
 		new ModIconProvider(ModIconCache::directory()));
@@ -1591,21 +1576,17 @@ bool QmlShell::load()
 		return false;
 	}
 
-	/* Tells whether the window is really closing, not merely hidden --
-	 * see eventFilter() and closed()'s doc comment. */
+	// Tells a real close from a hide.
 	m_window->installEventFilter(this);
 
 #ifdef Q_OS_MACOS
-	/* The title bar lies over the shell's top bar rather than above it.
-	 * Main.qml makes the bar as tall as the one the traffic lights sit in
-	 * the middle of, and moves what the sidebar's band holds past them.
-	 * Cocoa only: an offscreen snapshot window has no NSView behind it. */
+	// The title bar lies over the shell's top bar (Main.qml sizes it). Cocoa
+	// only: an offscreen snapshot window has no NSView.
 	if (QGuiApplication::platformName() == QLatin1String("cocoa")) {
 		const MacWindowChrome::Geometry chrome = MacWindowChrome::mergeTitleBar(m_window);
 		if (chrome.controlsWidth > 0) {
-			/* ApplicationWindow keeps its content out of the safe area,
-			 * which now takes in the title bar. A write through QQmlProperty
-			 * drops the binding that keeps the two in step. */
+			// ApplicationWindow keeps content out of the safe area, which now
+			// takes in the title bar. QQmlProperty::write drops the binding.
 			QQmlProperty::write(m_window, QStringLiteral("topPadding"), 0);
 			m_window->setProperty("windowControlsWidth", chrome.controlsWidth);
 			m_window->setProperty("titleBarHeight", chrome.barHeight);
@@ -1613,9 +1594,8 @@ bool QmlShell::load()
 	}
 #endif
 
-	/* Imports asked for before there was a window to ask in -- see
-	 * requestImport(). Main.qml's handler exists now: the engine's load()
-	 * above created it along with the rest of the root window. */
+	// Imports requested before there was a window; Main.qml's handler exists
+	// now.
 	const QStringList pendingImports = std::exchange(m_pendingImports, {});
 	for (const QString& source : pendingImports) {
 		emit importRequested(source);
@@ -1625,19 +1605,15 @@ bool QmlShell::load()
 
 void QmlShell::scheduleSnapshotIfRequested()
 {
-	/* KITE_QML_SNAPSHOT=<file.png> renders the real window, with the real
-	 * models, into an image and exits. Combined with QT_QPA_PLATFORM=offscreen
-	 * it never touches a display, so it can run on a CI runner and be diffed:
-	 * this is what visual regression checks of the QML UI are built on.
-	 *
-	 * The delay lets layouts settle and asynchronously loaded images arrive;
-	 * grabWindow() then forces a render of whatever is current. */
+	/* KITE_QML_SNAPSHOT=<file.png> renders the real window into an image and
+	 * exits; with QT_QPA_PLATFORM=offscreen it needs no display. The delay
+	 * lets layouts settle and async images arrive. */
 	const QString path = qEnvironmentVariable("KITE_QML_SNAPSHOT");
 	if (path.isEmpty())
 		return;
 
-	/* Long enough for the first frame; KITE_QML_SNAPSHOT_DELAY (ms) waits
-	 * longer, for pages that show network results. */
+	// Long enough for the first frame; KITE_QML_SNAPSHOT_DELAY (ms) waits
+	// longer for pages that show network results.
 	bool delayOk = false;
 	const int delay =
 		qEnvironmentVariableIntValue("KITE_QML_SNAPSHOT_DELAY", &delayOk);
@@ -1659,20 +1635,9 @@ QWindow* QmlShell::window() const
 
 bool QmlShell::eventFilter(QObject* watched, QEvent* event)
 {
-	/* PluginManager installs its own close filter on this same window
-	 * once a plugin registers one (main_window_install_close_filter(),
-	 * see PluginManager::ensureCloseFilterInstalled()) -- always after
-	 * this one, since that only happens once a plugin's
-	 * MMCO_HOOK_UI_MAIN_READY handler runs, which is dispatched only
-	 * after load() (and this installEventFilter() call) has already
-	 * returned. Qt calls the most-recently-installed filter first, so a
-	 * plugin veto (ce->ignore(), then stopping the event by returning
-	 * true) never reaches here -- the same way a vetoed close never
-	 * reaches MainWindow::closeEvent() on the widget path. Seeing the
-	 * event here therefore means nothing vetoed it: the window is
-	 * really closing, not merely being hidden (main_window_hide(), or a
-	 * veto's own hide(), both go straight to QWindow::hide() and raise
-	 * no QEvent::Close at all). */
+	/* PluginManager's close filter is installed after this one, so Qt calls it
+	 * first and a plugin veto never reaches here. A Close seen here means the
+	 * window is really closing; hide() raises no Close. */
 	if (watched == m_window && event->type() == QEvent::Close)
 		emit closed();
 	return QObject::eventFilter(watched, event);

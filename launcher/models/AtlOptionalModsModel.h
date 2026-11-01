@@ -28,18 +28,13 @@
 #include "modplatform/atlauncher/ATLPackManifest.h"
 
 /*
- * An ATLauncher pack's optional mods, to tick before it installs: the
- * core, widget-free port of AtlOptionalModListModel (ui/pages/modplatform/
- * atlauncher/AtlOptionalModDialog.cpp), for a QML dialog to bind to.
- *
- * The same rules as there: the pack's own `selected` flags are where it
- * starts; ticking a mod ticks what it depends on and unticks the others in
- * its group; unticking it unticks what depends on it, and a hidden
- * dependency (a library) goes once nothing needs it any more. "Recommended"
- * and "None" reset the whole list. Hidden mods are rows too - they carry
- * the dependency rules - with a `hidden` role a dialog leaves them out by.
- *
- * Core, like the rest of models/: QtCore only, no QtWidgets, no ui/.
+ * An ATLauncher pack's optional mods, to tick before it installs (core logic).
+ * Starts from the pack's `selected` flags; ticking a
+ * mod ticks what it depends on and unticks the others in its group; unticking
+ * unticks what depends on it, and a hidden dependency (a library) goes once
+ * nothing needs it. "Recommended" and "None" reset the list. Hidden mods are
+ * rows too (they carry the dependency rules); a dialog leaves them out by the
+ * `hidden` role.
  */
 class AtlOptionalModsModel : public QAbstractListModel
 {
@@ -75,7 +70,6 @@ class AtlOptionalModsModel : public QAbstractListModel
 	Q_INVOKABLE void selectRecommended();
 	Q_INVOKABLE void clearAll();
 
-	/// What ATLauncher::PackInstallTask is told to install.
 	QVector<QString> selectedNames() const;
 
   signals:

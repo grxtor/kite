@@ -7,16 +7,11 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Maximum memory: one slider whose track runs from the least the game can
- * live with to the RAM this machine has, and a typed value beside it
- * (MemoryField). A single hint line under the label says how much is
- * installed and what suits most modpacks, and turns into a warning once
- * the amount eats into what the system needs itself.
- * The slider saves when let go, the field when edited.
- *
- * The minimum can never end up above the maximum: lowering the maximum
- * below it pulls the minimum down too -- the widget page swapped the two
- * instead, which silently turned the user's "max" into the min.
+ * Maximum memory: one slider from the least the game can live with to the RAM
+ * this machine has, plus a typed value (MemoryField). The hint line turns into
+ * a warning once the amount eats into what the system needs. The slider saves
+ * when let go, the field when edited. Lowering the maximum below the minimum
+ * pulls the minimum down too.
  */
 SettingRow {
     id: root
@@ -32,20 +27,15 @@ SettingRow {
     readonly property int floor: 512
     readonly property int ceiling: Math.max(floor + step, Math.floor(systemMiB / step) * step)
     readonly property int stored: root.source.number(root.key)
-    // What the row shows right now: the knob's position while it is being
-    // dragged, what is saved otherwise.
     readonly property int shown: slider.pressed ? Math.round(slider.value) : stored
-    // Past three quarters of the machine's RAM the game starts competing
-    // with the OS and everything else that's open.
+    // Past three quarters of the machine's RAM the game competes with the OS.
     readonly property real comfortableShare: 0.75
     readonly property bool tooMuch: shown > systemMiB * comfortableShare
-    // The band that suits most modpacks: up to 8 GB, never past the
-    // comfortable share, and from half of that (4 GB on a 16 GB machine).
+    // The band that suits most modpacks: up to 8 GB, never past the comfortable share, from half of
+    // that.
     readonly property int suitsHigh: Math.max(floor, Math.min(8192, Math.floor(ceiling * comfortableShare / step) * step))
     readonly property int suitsLow: Math.max(floor, Math.min(4096, Math.floor(suitsHigh / 2 / step) * step))
 
-    // The slider's track and the typed amount sit side by side in a fixed
-    // width, so the label column and the field line up with the other rows.
     readonly property int sliderWidth: 240
 
     function gib(mib) {
@@ -66,15 +56,11 @@ SettingRow {
     Row {
         spacing: Theme.space.md
 
-        // A plain track, like Modrinth App's and CurseForge's memory
-        // sliders: the suggested range is said in the hint line. A tinted
-        // band behind the knob read as a rendering glitch, not a range.
+        // A plain track: a tinted band behind the knob read as a rendering glitch, not a range.
         Slider {
             id: slider
             anchors.verticalCenter: parent.verticalCenter
             width: root.sliderWidth
-            // No side padding: the knob's edge lines up with the label
-            // above when the row stacks, and the field to its right.
             leftPadding: 0
             rightPadding: 0
             from: root.floor

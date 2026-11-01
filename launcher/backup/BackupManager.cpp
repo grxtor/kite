@@ -33,18 +33,15 @@
 
 namespace
 {
-	/* Timestamp prefix every generated backup file name carries. */
 	QString timestampFormat()
 	{
 		return QStringLiteral("yyyy-MM-dd_HH-mm-ss");
 	}
 
-	/* Name of the archive directory inside the instance root. */
 	const QLatin1String kBackupDirName(".backups");
 
-	/* True for paths that must never end up inside a backup. Paths
-	 * arrive relative to the instance root with '/' separators, as
-	 * handed out by MMCZip::compressDir(). */
+	/* True for paths that must never end up in a backup; relative to the
+	 * instance root with '/' separators (as MMCZip::compressDir() gives). */
 	bool isExcludedFromBackup(const QString& relPath)
 	{
 		return relPath == kBackupDirName ||
@@ -107,9 +104,8 @@ BackupEntry BackupManager::createBackup(const QString& label,
 	if (progress) {
 		progress(QObject::tr("Compressing backup..."), QString(), 0, 0);
 
-		/* compressDir() calls back once per file. Forwarding every one
-		 * of them would be a queued call per file for no visible gain,
-		 * so only speak up when the percentage actually moves. */
+		/* compressDir() calls back per file; only speak up when the percentage
+		 * moves. */
 		auto lastReported = std::make_shared<qint64>(-1);
 		zipProgress = [progress, lastReported](qint64 current, qint64 total) {
 			const qint64 step = qMax(qint64(1), total / 100);
@@ -122,12 +118,14 @@ BackupEntry BackupManager::createBackup(const QString& label,
 		};
 	}
 
-	if (!MMCZip::compressDir(zipPath, m_instanceRoot, &isExcludedFromBackup,
-							 zipProgress)) {
+	// Written under another name and renamed at the end, so a backup still
+	// being written, or left half-written, is never listed as restorable.
+	const QString partPath = zipPath + QStringLiteral(".part");
+	if (!MMCZip::compressDir(partPath, m_instanceRoot, &isExcludedFromBackup,
+							 zipProgress) ||
+		!QFile::rename(partPath, zipPath)) {
 		qCWarning(backupLog) << "Failed to create backup:" << zipPath;
-		// A half-written zip is worse than no zip: it would show up in
-		// the list as a restorable snapshot.
-		QFile::remove(zipPath);
+		QFile::remove(partPath);
 		return {};
 	}
 
@@ -145,9 +143,8 @@ bool BackupManager::restoreBackup(const BackupEntry& entry)
 	qCDebug(backupLog) << "Restoring" << entry.fullPath << "into"
 			 << m_instanceRoot;
 
-	// Clear the instance root, keeping the archive directory itself —
-	// otherwise restoring would delete every other snapshot, including
-	// the one being restored.
+	// Clear the instance root but keep the archive directory, or restoring
+	// would delete every snapshot, including the one being restored.
 	QDir instDir(m_instanceRoot);
 	const auto entries = instDir.entryInfoList(
 		QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden);
@@ -194,9 +191,12 @@ BackupEntry BackupManager::importBackup(const QString& srcZipPath,
 	const QString destPath =
 		QDir(m_backupDir).filePath(generateFileName(label));
 
-	if (!QFile::copy(srcZipPath, destPath)) {
+	const QString partPath = destPath + QStringLiteral(".part");
+	if (!QFile::copy(srcZipPath, partPath) ||
+		!QFile::rename(partPath, destPath)) {
 		qCWarning(backupLog) << "Could not copy" << srcZipPath << "to"
 				   << destPath;
+		QFile::remove(partPath);
 		return {};
 	}
 
@@ -216,8 +216,8 @@ QString BackupManager::generateFileName(const QString& label) const
 	if (label.isEmpty())
 		return ts + QStringLiteral(".zip");
 
-	// Labels end up in a file name, so keep them boring. The same
-	// substitution runs when the label is read back in entryFromFile().
+	// Labels end up in a file name; the same substitution runs in
+	// entryFromFile().
 	static const QRegularExpression unsafeChars(
 		QStringLiteral("[^a-zA-Z0-9_-]"));
 	QString safe = label;
@@ -235,10 +235,9 @@ BackupEntry BackupManager::entryFromFile(const QString& filePath) const
 	entry.fullPath = fi.absoluteFilePath();
 	entry.sizeBytes = fi.size();
 
-	// The generated name is the authoritative record of when a backup was
-	// taken: birth time is not available on every filesystem, and both
-	// birth and modification time are rewritten by ordinary file copies
-	// (which is exactly what export/import does).
+	// The generated name is authoritative for when a backup was taken: birth
+	// time is not on every filesystem, and file copies (export/import)
+	// rewrite birth and modification time.
 	const QString base = fi.completeBaseName();
 	static const QRegularExpression nameRe(QStringLiteral(
 		"^(\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2})(?:_(.+))?$"));
@@ -255,7 +254,6 @@ BackupEntry BackupManager::entryFromFile(const QString& filePath) const
 			fi.birthTime().isValid() ? fi.birthTime() : fi.lastModified();
 	}
 	if (entry.name.isEmpty() && !match.hasMatch()) {
-		// Hand-dropped zip that does not follow our naming scheme.
 		entry.name = base;
 	}
 

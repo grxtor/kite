@@ -70,8 +70,8 @@ void LaunchProgressTracker::stopWatching()
 
 void LaunchProgressTracker::onStatus(const QString& status)
 {
-	/* Shown as a label ("Downloading assets"), not a log line: some steps
-	 * still word theirs "Doing something...". */
+	// Shown as a label ("Downloading assets"), not a log line: some steps still
+	// word theirs "Doing something...".
 	static const QRegularExpression trailingEllipsis(
 		QStringLiteral("\\s*(\\.\\.\\.|\u2026)\\s*$"));
 	m_status = status.trimmed().remove(trailingEllipsis);
@@ -86,11 +86,9 @@ void LaunchProgressTracker::onProgress(qint64 current, qint64 total)
 
 void LaunchProgressTracker::onFinished()
 {
-	/* The task we were watching succeeded, failed, was aborted, or was
-	 * simply destroyed - either way there is nothing left to report.
-	 * Reported immediately rather than coalesced: sitting on a stale
-	 * "Downloading..." line after the game has already started would be
-	 * worse than one extra redraw. */
+	// The watched task succeeded, failed, was aborted or destroyed: nothing
+	// left to report. Reported at once, not coalesced: a stale "Downloading..."
+	// after the game started is worse than one extra redraw.
 	stopWatching();
 	m_status.clear();
 	m_progress = -1;

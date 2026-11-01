@@ -34,9 +34,8 @@ namespace ModPlatform
 		QString name;
 		QString projectId; // platform-specific project ID
 		QString versionId; // platform-specific version/file ID
-		/* Platform slug. Recorded because it is the one name the two
-		 * providers usually agree on, and because a packwiz sidecar is
-		 * named after it. */
+		/* Platform slug: the one name both providers usually agree on, and the
+		 * packwiz sidecar's file name. */
 		QString slug;
 		QString fileName;
 		QString downloadUrl;
@@ -45,14 +44,10 @@ namespace ModPlatform
 		QString platform; // "curseforge" or "modrinth"
 		QString mcVersion;
 		QString loaders;
-		/* "release" / "beta" / "alpha", or empty when the provider does
-		 * not say. Carried through so the review dialog can show what
-		 * kind of build is about to be installed. */
+		/* "release" / "beta" / "alpha"; empty when the provider does not say. */
 		QString versionType;
-		/* The author forbade third-party downloads, so the API handed
-		 * out no URL and the address being used points at the website
-		 * instead. Worth knowing: it is the one kind of download that
-		 * may need the user to fetch the file by hand. */
+		/* No API URL (the author forbade third-party downloads), so the URL is
+		 * the website's; may need a manual download. */
 		bool browserDownloadOnly = false;
 	};
 
@@ -68,20 +63,14 @@ namespace ModPlatform
 		QString platform;
 		QString versionType;
 		bool isRequired = true;
-		/* See SelectedMod::browserDownloadOnly. */
 		bool browserDownloadOnly = false;
 
-		/* Names of the things that asked for this, for the review
-		 * dialog's "Required by" line. A list because two selected mods
-		 * can need the same library, and the dependency is only
-		 * downloaded once. */
+		/* Names of what asked for this, for the review dialog's "Required by"
+		 * line. A list: the dependency is downloaded once. */
 		QStringList requiredBy;
 
-		/* The same project is already on disk, at some other version.
-		 * Not a reason to drop it - the file on disk may be for another
-		 * Minecraft version, or damaged - but a reason to offer it
-		 * unticked and let the user decide, which is what the reference
-		 * launcher does with its `maybe_installed`. */
+		/* The project is on disk at another version (maybe the wrong Minecraft
+		 * version, or damaged): offered unticked, not dropped. */
 		bool maybeInstalled = false;
 	};
 
@@ -93,30 +82,23 @@ namespace ModPlatform
 		int fileSize = 0;
 		bool isDependency = false;
 
-		/* Provenance — required to write the sidecar after install and to
-		 * power conflict / update detection. Fill these in when the item
-		 * originates from a known platform; leave them empty for purely
-		 * local installs. */
+		/* Provenance, needed to write the sidecar after install and for
+		 * conflict/update detection. Empty for purely local installs. */
 		QString platform; /* "modrinth" | "curseforge" | ""               */
 		QString projectId;
 		QString versionId;
 		QString slug;
 
-		/* The download address is the website's rather than the API's,
-		 * because the author opted out of third-party downloads. Such a
-		 * download can be refused, and the caller then has the option of
-		 * asking the user to fetch the file by hand. */
+		/* The URL is the website's, not the API's (author opted out of
+		 * third-party downloads); the download can be refused. */
 		bool browserDownloadOnly = false;
 
-		/* When set, the downloader will replace any existing file with the
-		 * same target name (typical for an "update" flow). When false, an
-		 * existing file with matching SHA-1 is silently kept; mismatched
-		 * but already-named files are an error. */
+		/* Replace an existing file of the same target name (update flow).
+		 * Otherwise a matching SHA-1 is kept silently and a mismatch is an error. */
 		bool replaceExisting = false;
 
-		/* Used by the conflict analyzer to communicate which file on disk
-		 * is being replaced. Optional; if non-empty the downloader will
-		 * remove this file (and its sidecar) before writing the new one. */
+		/* Set by the conflict analyzer: this file (and its sidecar) is removed
+		 * before the new one is written. */
 		QString replacesFileName;
 	};
 

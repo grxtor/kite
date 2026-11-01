@@ -24,8 +24,8 @@
 #include "modplatform/flame/FlameModpackModel.h"
 
 /* The static, network-free halves of FlameModpackModel against canned
- * CurseForge replies - the same approach as ModrinthModpackModel_test.cpp,
- * and plain concatenated literals for the same moc reason given there. */
+ * CurseForge replies; plain concatenated literals for the moc reason in
+ * ModrinthModpackModel_test.cpp. */
 class FlameModpackModelTest : public QObject
 {
 	Q_OBJECT
@@ -53,8 +53,6 @@ class FlameModpackModelTest : public QObject
 
 		int total = 0;
 		const auto packs = FlameModpackModel::parseSearchResults(json, total);
-		/* The pack with no usable file is dropped, as the widget list
-		 * dropped it. */
 		QCOMPARE(packs.size(), 1);
 		QCOMPARE(total, 77);
 
@@ -107,13 +105,11 @@ class FlameModpackModelTest : public QObject
 			FlameModpackModel::parseVersionsJson(json, "285109", 100);
 		QCOMPARE(versions.size(), 2);
 
-		/* Newest first. */
 		const QVariantMap newest = versions.at(0).toMap();
 		QCOMPARE(newest.value("id").toString(), QString("200"));
 		QCOMPARE(newest.value("versionNumber").toString(), QString("ATM9 0.3"));
 		QCOMPARE(newest.value("loaders").toStringList(), QStringList{"neoforge"});
 		QCOMPARE(newest.value("gameVersions").toStringList(), QStringList{"1.20.1"});
-		/* No API download: the browser address stands in. */
 		QVERIFY(newest.value("downloadUrl").toString().contains("285109"));
 		QVERIFY(newest.value("downloadUrl").toString().contains("200"));
 		QVERIFY(!newest.value("featured").toBool());
@@ -128,8 +124,7 @@ class FlameModpackModelTest : public QObject
 	{
 		QCOMPARE(FlameModpackModel::parseBody("{\"data\": \"<p>Hello</p>\"}"),
 				 QString("<p>Hello</p>"));
-		/* Players, frames and scripts go; text, links and pictures stay
-		 * (RichBody lays the pictures out and loads only http(s) ones). */
+		/* Players, frames and scripts go; text, links and pictures stay. */
 		const QString html =
 			"<p>Intro <a href=\"https://x\">site</a></p>"
 			"<a href=\"https://img\"><img src=\"https://cdn/a.png\" width=\"900\"></a>"

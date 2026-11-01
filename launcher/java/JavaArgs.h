@@ -27,8 +27,8 @@ namespace JavaArgs
 	/* Returns the warning text if @p jvmargs sets a memory option through
 	 * flags meant to be set via the Memory group in Settings instead
 	 * ("-Xmx", "-XX:PermSize=", ...), or an empty string if the args are
-	 * fine. Pure logic, no user interface: the widget JavaCommon, the
-	 * launch step and the QML Java settings all ask the same question. */
+	 * fine. Pure logic, no user interface: the launch step and the QML
+	 * Java settings ask the same question. */
 	QString memoryFlagWarning(const QString& jvmargs);
 
 	/* The test behind memoryFlagWarning(): whether @p jvmargs sets heap or

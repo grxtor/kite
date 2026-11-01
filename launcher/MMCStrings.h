@@ -29,9 +29,8 @@ namespace Strings
 	QString htmlListPatch(const QString& html);
 	const char* logColor(QtMsgType type);
 	const char* logColorReset();
-	/// Dimmed, for the parts of a log line that are scaffolding rather than
-	/// content: the timestamp and the source location.
+	/// Dimmed: for the scaffolding of a log line (timestamp, source location).
 	const char* logColorFaint();
-	/// Emphasised, for the level letter and the category tag.
+	/// Emphasised: for the level letter and the category tag.
 	const char* logColorBold();
 } // namespace Strings

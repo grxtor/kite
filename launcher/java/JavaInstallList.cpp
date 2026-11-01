@@ -18,17 +18,14 @@
  * limitations under the License.
  */
 
-#include <QtNetwork>
-#include <QtXml>
-
 #include <QDebug>
+
+#include <algorithm>
 
 #include "Logging.h"
 #include "java/JavaInstallList.h"
 #include "java/JavaCheckerJob.h"
 #include "java/JavaUtils.h"
-#include "MMCStrings.h"
-#include "minecraft/VersionFilterData.h"
 
 JavaInstallList::JavaInstallList(QObject* parent) : BaseVersionList(parent) {}
 
@@ -75,7 +72,7 @@ QVariant JavaInstallList::data(const QModelIndex& index, int role) const
 	if (!index.isValid())
 		return QVariant();
 
-	if (index.row() > count())
+	if (index.row() >= count())
 		return QVariant();
 
 	auto version = std::dynamic_pointer_cast<JavaInstall>(m_vlist[index.row()]);
@@ -97,17 +94,18 @@ QVariant JavaInstallList::data(const QModelIndex& index, int role) const
 	}
 }
 
-BaseVersionList::RoleList JavaInstallList::providesRoles() const
+static bool sortJavas(BaseVersionPtr left, BaseVersionPtr right)
 {
-	return {VersionPointerRole, VersionIdRole, VersionRole,
-			RecommendedRole,	PathRole,	   ArchitectureRole};
+	auto rleft = std::dynamic_pointer_cast<JavaInstall>(left);
+	auto rright = std::dynamic_pointer_cast<JavaInstall>(right);
+	return (*rleft) > (*rright);
 }
 
 void JavaInstallList::updateListData(QList<BaseVersionPtr> versions)
 {
 	beginResetModel();
 	m_vlist = versions;
-	sortVersions();
+	std::sort(m_vlist.begin(), m_vlist.end(), sortJavas);
 	if (m_vlist.size()) {
 		auto best = std::dynamic_pointer_cast<JavaInstall>(m_vlist[0]);
 		best->recommended = true;
@@ -115,13 +113,6 @@ void JavaInstallList::updateListData(QList<BaseVersionPtr> versions)
 	endResetModel();
 	m_status = Status::Done;
 	m_loadTask.reset();
-}
-
-bool sortJavas(BaseVersionPtr left, BaseVersionPtr right)
-{
-	auto rleft = std::dynamic_pointer_cast<JavaInstall>(left);
-	auto rright = std::dynamic_pointer_cast<JavaInstall>(right);
-	return (*rleft) > (*rright);
 }
 
 void JavaInstallList::sortVersions()
@@ -187,16 +178,20 @@ void JavaListLoadTask::javaCheckerFinished()
 		}
 	}
 
-	QList<BaseVersionPtr> javas_bvp;
-	for (auto java : candidates) {
-		// qDebug() << java->id << java->arch << " at " << java->path;
-		BaseVersionPtr bp_java = std::dynamic_pointer_cast<BaseVersion>(java);
+	// The java on PATH is usually one of the installs also found by path.
+	const QString defaultPath = JavaUtils().GetDefaultJava()->path;
+	auto isFoundByPath = [&](const JavaInstallPtr& java) {
+		return std::any_of(candidates.begin(), candidates.end(), [&](const JavaInstallPtr& other) {
+			return other->path != defaultPath && other->id == java->id && other->arch == java->arch;
+		});
+	};
 
-		if (bp_java) {
-			javas_bvp.append(java);
-		}
+	QList<BaseVersionPtr> javas;
+	for (const auto& java : candidates) {
+		if (java->path != defaultPath || !isFoundByPath(java))
+			javas.append(java);
 	}
 
-	m_list->updateListData(javas_bvp);
+	m_list->updateListData(javas);
 	emitSucceeded();
 }

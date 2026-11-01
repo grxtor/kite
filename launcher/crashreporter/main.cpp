@@ -85,7 +85,6 @@ static QString uploadToPasteEE(QNetworkAccessManager* nam, const QString& text,
 
 	QByteArray jsonContent = docOut.toJson(QJsonDocument::Compact);
 
-	// Validate size (2MB for public, 12MB for keyed)
 	int maxSize = (apiKey == "public") ? (1024 * 1024 * 2) : (1024 * 1024 * 12);
 	if (jsonContent.size() > maxSize) {
 		qWarning() << "Log file too large for paste.ee upload";
@@ -103,10 +102,8 @@ static QString uploadToPasteEE(QNetworkAccessManager* nam, const QString& text,
 
 	QNetworkReply* reply = nam->post(request, jsonContent);
 
-	// Synchronous wait
 	QEventLoop loop;
 	QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-	// Timeout after 30 seconds
 	QTimer timer;
 	timer.setSingleShot(true);
 	QObject::connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
@@ -174,7 +171,6 @@ int main(int argc, char* argv[])
 	QString baseName = parser.value(baseNameOption);
 	QString apiKey = parser.value(apiKeyOption);
 
-	// Read the crash log
 	QString logContent = readLogFile(logDir, baseName);
 	if (logContent.isEmpty()) {
 		QMessageBox::warning(nullptr, "Kite Crash Reporter",
@@ -316,7 +312,6 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	// Upload to paste.ee
 	QNetworkAccessManager nam;
 	QString pasteLink = uploadToPasteEE(&nam, logContent, apiKey);
 	if (pasteLink.isEmpty()) {
@@ -327,7 +322,6 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	// Show the crash dialog
 	CrashReportDialog dialog(pasteLink, logContent);
 	dialog.exec();
 

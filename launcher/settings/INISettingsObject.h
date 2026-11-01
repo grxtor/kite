@@ -26,28 +26,17 @@
 
 #include "settings/SettingsObject.h"
 
-/*!
- * \brief A settings object that stores its settings in an INIFile.
- */
 class INISettingsObject : public SettingsObject
 {
 	Q_OBJECT
   public:
 	explicit INISettingsObject(const QString& path, QObject* parent = 0);
 
-	/*!
-	 * \brief Gets the path to the INI file.
-	 * \return The path to the INI file.
-	 */
 	virtual QString filePath() const
 	{
 		return m_filePath;
 	}
 
-	/*!
-	 * \brief Sets the path to the INI file and reloads it.
-	 * \param filePath The INI file's new path.
-	 */
 	virtual void setFilePath(const QString& filePath);
 
 	bool reload() override;

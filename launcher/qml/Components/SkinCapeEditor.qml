@@ -9,69 +9,37 @@ import QtQuick.Dialogs
 import Kite.Theme
 
 /*
- * Skins and capes for one Microsoft account, opened from AccountsPage --
- * the QML counterpart of the widget SkinManageDialog:
- *  - a preview of the player (SkinPreview: 3D where Qt Quick3D draws, with
- *    the cape or the elytra on its back; the flat view elsewhere);
- *  - the skin library (AccountsController.skins(row), a SkinsController
- *    over the launcher's skins folder): add a skin from a file, a link or
- *    another player's name, rename, delete, open the folder, set the arm
- *    width, and wear the selected one;
- *  - the game's nine default skins under the user's own, as the official
- *    launcher offers them (SkinsController.defaultSkins, downloaded on
- *    first use): picked, previewed and worn the same way, the arm width
- *    choosing which of its two textures;
- *  - the account's capes.
- * Uploads go through AccountsController (changeSkin/resetSkin/changeCape),
- * the same services the widget dialog used.
- *
- * One instance is shared by the whole page (see AccountsPage.qml); `row` is
- * set right before open() for whichever account was clicked. In a short
- * window the body scrolls, and the × in the title row stays on screen
- * however many capes the account owns. No footer: a Close row of its own
- * cost the height that left the capes under the body's scroll fade.
+ * Skins and capes for one account, opened from AccountsPage. One instance is
+ * shared by the page; `row` is set right before open().
  */
-Dialog {
+AppDialog {
     id: root
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
-    // The tallest the dialog may be: the window, less a margin.
+    size: "xl"
     readonly property real maxHeight: parent ? parent.height - Theme.space.xxl * 2 : implicitHeight
     height: Math.min(implicitHeight, root.maxHeight)
-    modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
-    topPadding: 0
-    // Worded like the buttons that open it ("Skin and cape"), with the
-    // player's name as part of the sentence rather than after a dash.
+    closeOnOutsidePress: true
+    bottomPadding: Theme.space.xl
+    // Everything is applied as it is picked; the title row has the close button.
+    footer: null
     title: root.accountName.length > 0 ? qsTr("Skin and cape for %1").arg(root.accountName)
                                         : qsTr("Skin and cape")
 
-    // AccountsController: accountSkinInfo, skins, changeSkin, resetSkin,
-    // changeCape.
+    // AccountsController (accountSkinInfo, skins, changeSkin, resetSkin, changeCape).
     property var controller: null
     property int row: -1
     property string accountId: ""
     property string accountName: ""
-    // Bumped by AccountsPage whenever an account's data may have changed,
-    // so image urls change and QML actually refetches them -- see
-    // AccountsPage.qml's imageRevision.
+    // Bumped by AccountsPage when account data may have changed, so image urls change and QML
+    // refetches.
     property int rev: 0
-    // Whether launcher/qml/Skin3D (Qt Quick3D) exists -- see SkinPreview.
+    // Whether the Qt Quick3D preview (launcher/qml/Skin3D) exists.
     property bool skin3DAvailable: false
 
-    // Sizes: the dialog, the preview column (a 1:2 player plus room to
-    // turn), the library box (a row of the user's tiles and a row of the
-    // default ones), and one skin tile.
-    readonly property int preferredWidth: 840
     readonly property int previewWidth: 220
     readonly property int previewHeight: 260
     readonly property int libraryHeight: 320
-    // The library box's height: libraryHeight at least, and on a taller
-    // window as tall as every tile needs, so the box scrolls (and cuts a
-    // row) only where the window is short. Worked out a step later, never
-    // inside a layout pass: the room depends on the dialog's own height,
-    // which depends on the box.
+    // At least libraryHeight, taller where the window allows; worked out a step later, since the
+    // room depends on the dialog's height, which depends on the box.
     property real libraryRoom: libraryHeight
     function fitLibrary() {
         const needed = skinGrid.contentHeight + skinGrid.anchors.margins * 2
@@ -84,26 +52,22 @@ Dialog {
     readonly property int tileHeight: 120
     readonly property int spriteSize: 72
 
-    // Snapshot from controller.accountSkinInfo(row) -- re-read on open and
-    // whenever the account list reports a change (a refresh landing).
+    // Snapshot of controller.accountSkinInfo(row); re-read on open and on account list changes.
     property var info: emptyInfo()
     function emptyInfo() {
         return { valid: false, slim: false, hasSkin: false, currentCapeId: "", currentCapeUrl: "", capes: [] }
     }
     function reload() {
-        // Not gated on row >= 0: row -1 is the qml-preview-tools demo
-        // sentinel (see AccountsController::skinDemoRequested()).
+        // Not gated on row >= 0: row -1 is the qml-preview-tools demo sentinel.
         root.info = root.controller
                     ? root.controller.accountSkinInfo(root.row) : root.emptyInfo()
     }
 
-    // The account's skin library; null until opened on a real row.
     property var skins: null
     readonly property var skinList: root.skins ? root.skins.skins : []
     readonly property var defaultList: root.skins ? root.skins.defaultSkins : []
-    // The skin picked for the preview and "Wear": a library skin by name,
-    // or a default one by name with the arm width it is shown with. Both
-    // empty shows what the account wears now.
+    // The skin picked for the preview and "Wear": a library skin by name, or a default one by name
+    // plus arm width. Empty shows what the account wears.
     property string selectedName: ""
     property string selectedDefault: ""
     property bool defaultSlim: false
@@ -133,7 +97,6 @@ Dialog {
         root.defaultSlim = character.slim
         root.selectedDefault = character.name
     }
-    // Whether any default skin is here, and whether more are on the way.
     readonly property bool defaultsLoading: !!root.skins && root.skins.defaultSkinsLoading
     readonly property bool anyDefaultReady: {
         for (var i = 0; i < root.defaultList.length; ++i)
@@ -142,13 +105,10 @@ Dialog {
         return false
     }
 
-    // The cape on the preview: the account's current one.
     readonly property string capeUrl: root.info.currentCapeUrl || ""
     property bool showElytra: false
 
-    // Whichever change is running, if any -- shared by upload/reset/cape
-    // and the imports, so only one runs at a time and its status/error
-    // show the same way.
+    // The running change, shared by upload/reset/cape and imports so only one runs at a time.
     property var watcher: null
     readonly property bool busy: !!root.watcher && root.watcher.running
     property string message: ""
@@ -162,15 +122,13 @@ Dialog {
     onOpened: {
         reload()
         root.skins = root.controller ? root.controller.skins(root.row) : null
-        // The review demo (row -1) shows its first skin straight away.
         root.selectedName = root.row === -1 && root.skinList.length > 0 ? root.skinList[0].name : ""
         root.selectedDefault = ""
         root.watcher = null
         root.say("", false)
         root.showElytra = false
         preview.showFront()
-        // Review renders: "accounts-demo=cape" or "=elytra" open on the
-        // player's back (see AccountsController::skinDemoPose()).
+        // Review renders: "accounts-demo=cape" or "=elytra" open on the player's back.
         var pose = root.row === -1 && root.controller ? root.controller.skinDemoPose : ""
         if (pose === "cape" || pose === "elytra") {
             root.showElytra = pose === "elytra"
@@ -187,14 +145,12 @@ Dialog {
         target: root.controller ? root.controller.accounts : null
         function onDataChanged() { root.reload() }
     }
-    // An account without a skin of its own shows the game's default once
-    // that has downloaded (see AccountsController::accountSkinInfo()).
+    // An account without its own skin shows the default once downloaded.
     Connections {
         target: root.controller
         function onDefaultSkinsRevisionChanged() { root.reload() }
     }
 
-    // Starts @p w; @p done(ok) runs once it ends.
     function run(w, failText, done) {
         if (!w) {
             root.say(failText, true)
@@ -211,8 +167,6 @@ Dialog {
         })
     }
 
-    // Puts cape @p capeId on (empty takes it off), and turns the player
-    // round to show it once it is on.
     function changeCape(capeId) {
         root.run(root.controller.changeCape(root.row, capeId), qsTr("The cape could not be changed."),
                  function(ok) {
@@ -225,8 +179,7 @@ Dialog {
         var skin = root.selected
         if (!root.selectedReady)
             return
-        // A default skin is not in the library, so there is nothing to
-        // mark: the account's own refresh says it is worn.
+        // A default skin is not in the library; the account's own refresh says it is worn.
         var fromLibrary = root.selectedDefault.length === 0
         root.run(root.controller.changeSkin(root.row, skin.path, skin.slim),
                  qsTr("The skin could not be uploaded."),
@@ -234,14 +187,6 @@ Dialog {
                      if (ok && fromLibrary && root.skins)
                          root.skins.markWorn(skin.name)
                  })
-    }
-
-    // A section's name inside the skin library box.
-    component LibrarySectionLabel: Text {
-        color: Theme.palette.textSecondary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.label.pixelSize
-        font.weight: Theme.type.label.weight
     }
 
     contentItem: Item {
@@ -268,11 +213,10 @@ Dialog {
                     Layout.fillWidth: true
                     spacing: Theme.space.xl
 
-                    // -- The preview -------------------------------------------
                     ColumnLayout {
                         Layout.alignment: Qt.AlignTop
-                        // Its fill-width children would otherwise make the
-                        // column share the row's spare width with the library.
+                        // Its fill-width children would otherwise share the row's spare width with
+                        // the library.
                         Layout.fillWidth: false
                         Layout.preferredWidth: root.previewWidth
                         spacing: Theme.space.sm
@@ -282,12 +226,9 @@ Dialog {
                             Layout.fillWidth: true
                             Layout.preferredHeight: root.previewHeight
                             radius: Theme.radius.lg
-                            // A lit stage, not a sunken well, so a dark skin
-                            // stands off it, lighter at the top than at its
-                            // floor. In the dark theme its top is lighter than
-                            // the dialog around it, `lift` of the way to the
-                            // text colour; in the light one it is the sunken
-                            // grey, the floor `floorShade` darker.
+                            // A lit stage so a dark skin stands off it: `lift` lightens the top in
+                            // the dark theme; the light one is sunken grey, `floorShade` darker at
+                            // the floor.
                             readonly property real lift: 0.08
                             readonly property real floorShade: 0.05
                             border.width: 1
@@ -323,14 +264,13 @@ Dialog {
                                 elytra: root.showElytra
                             }
                         }
-                        Text {
+                        Copy {
                             Layout.fillWidth: true
                             visible: preview.threeD
                             text: qsTr("Drag to turn it around.")
+                            role: "caption"
+                            tone: "tertiary"
                             horizontalAlignment: Text.AlignHCenter
-                            color: Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
                         }
                         CheckBox {
                             visible: preview.threeD
@@ -341,20 +281,14 @@ Dialog {
                                 preview.showBack()
                             }
                         }
-                        // Under the player, so the library box gets the height
-                        // a row of its own took.
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: Theme.space.sm
-                            Text {
+                            Copy {
                                 text: qsTr("Arms")
-                                color: Theme.palette.textSecondary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
+                                role: "label"
+                                tone: "secondary"
                             }
-                            // Two radio buttons, as in the official
-                            // launcher's skin editor -- exactly one of two,
-                            // not a pill switch.
                             Repeater {
                                 model: [
                                     { slim: false, label: qsTr("Classic") },
@@ -366,15 +300,11 @@ Dialog {
                                     readonly property bool current: (root.selected ? root.selected.slim : root.info.slim) === modelData.slim
                                     enabled: !!root.selected && !root.busy
                                     text: modelData.label
-                                    // Checked follows the skin, not the
-                                    // click: a click only asks for the change,
-                                    // and the binding (which a click breaks)
-                                    // is put back each time.
+                                    // Checked follows the skin, not the click: a click breaks the
+                                    // binding, so it is put back each time.
                                     autoExclusive: false
                                     checked: armsRadio.current
                                     onClicked: {
-                                        // A default skin swaps to its other
-                                        // texture; a library one records it.
                                         if (!armsRadio.current) {
                                             if (root.selectedDefault.length > 0)
                                                 root.defaultSlim = modelData.slim
@@ -403,7 +333,6 @@ Dialog {
                         }
                     }
 
-                    // -- The library -------------------------------------------
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignTop
@@ -412,13 +341,10 @@ Dialog {
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: Theme.space.sm
-                            Text {
+                            Copy {
                                 Layout.fillWidth: true
                                 text: qsTr("Skins")
-                                color: Theme.palette.textPrimary
-                                font.family: Theme.font.heading
-                                font.pixelSize: Theme.type.title.pixelSize
-                                font.weight: Theme.type.title.weight
+                                role: "title"
                             }
                             Button {
                                 id: addButton
@@ -437,26 +363,17 @@ Dialog {
                             }
                         }
 
-                        Rectangle {
+                        BoxSurface {
                             id: libraryBox
                             Layout.fillWidth: true
                             Layout.preferredHeight: root.libraryRoom
-                            radius: Theme.radius.lg
-                            // The dialog's own surface inside the hairline,
-                            // as every list box in a dialog: a dark well
-                            // reads as a hole.
                             color: "transparent"
-                            border.width: 1
-                            border.color: Theme.palette.border
 
-                            // The user's skins, then the game's default ones
-                            // in the same scrolling box, as two sections.
                             GridView {
                                 id: skinGrid
                                 onContentHeightChanged: Qt.callLater(root.fitLibrary)
                                 anchors.fill: parent
-                                // The box's own inset, not a tile gap: its
-                                // section labels stand clear of its border.
+                                // The box's inset keeps section labels clear of its border.
                                 anchors.margins: Theme.space.md
                                 clip: true
                                 cellWidth: root.tileWidth + Theme.space.sm
@@ -467,15 +384,14 @@ Dialog {
                                     width: skinGrid.width
                                     bottomPadding: Theme.space.sm
                                     spacing: Theme.space.sm
-                                    LibrarySectionLabel { text: qsTr("Your skins") }
-                                    Text {
+                                    FieldLabel { text: qsTr("Your skins") }
+                                    Copy {
                                         width: parent.width
                                         visible: root.skinList.length === 0
                                         text: qsTr("No skins here yet. Add one from a file, a link or a player's name.")
+                                        role: "label"
+                                        tone: "tertiary"
                                         wrapMode: Text.Wrap
-                                        color: Theme.palette.textTertiary
-                                        font.family: Theme.font.family
-                                        font.pixelSize: Theme.type.label.pixelSize
                                     }
                                 }
                                 delegate: SkinTile {
@@ -497,18 +413,17 @@ Dialog {
                                     spacing: Theme.space.sm
                                     Row {
                                         spacing: Theme.space.sm
-                                        LibrarySectionLabel {
+                                        FieldLabel {
                                             id: defaultsLabel
                                             text: qsTr("Default skins")
                                         }
-                                        Text {
+                                        Copy {
                                             anchors.baseline: defaultsLabel.baseline
                                             visible: root.defaultsLoading || !root.anyDefaultReady
                                             text: root.defaultsLoading ? qsTr("Downloading…")
                                                                        : qsTr("They download when you are online.")
-                                            color: Theme.palette.textTertiary
-                                            font.family: Theme.font.family
-                                            font.pixelSize: Theme.type.caption.pixelSize
+                                            role: "caption"
+                                            tone: "tertiary"
                                         }
                                     }
                                     Flow {
@@ -520,8 +435,6 @@ Dialog {
                                                 id: defaultTile
                                                 required property var modelData
                                                 readonly property bool isSelected: root.selectedDefault === modelData.name
-                                                // Drawn with its own arm width, or the one
-                                                // picked for it while selected.
                                                 readonly property var shown: modelData.variants[(defaultTile.isSelected ? root.defaultSlim : modelData.slim) ? 1 : 0]
                                                 width: root.tileWidth
                                                 height: root.tileHeight
@@ -557,14 +470,13 @@ Dialog {
                                 Layout.preferredWidth: Theme.icon.md
                                 Layout.preferredHeight: Theme.icon.md
                             }
-                            Text {
+                            Copy {
                                 Layout.fillWidth: true
                                 wrapMode: Text.Wrap
-                                color: root.messageIsError && !root.busy ? Theme.palette.danger : Theme.palette.textTertiary
+                                role: "label"
+                                tone: root.messageIsError && !root.busy ? "danger" : "tertiary"
                                 text: root.busy ? (root.watcher.status.length > 0 ? root.watcher.status : qsTr("Working…"))
                                                 : root.message
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
                             }
                         }
                     }
@@ -572,12 +484,9 @@ Dialog {
 
                 Rectangle { Layout.fillWidth: true; height: 1; color: Theme.palette.divider }
 
-                Text {
+                Copy {
                     text: qsTr("Capes")
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Theme.type.title.weight
+                    role: "title"
                 }
 
                 Flow {
@@ -626,8 +535,7 @@ Dialog {
             id: closeButton
             anchors.right: parent.right
             anchors.rightMargin: Theme.space.md
-            // On the title's line: DialogHeader's label sits below its
-            // own top inset (xl), so its middle is half that below the row's.
+            // DialogHeader's label sits below its top inset (xl); half of that centres it on the row.
             anchors.verticalCenter: parent.verticalCenter
             anchors.verticalCenterOffset: Theme.space.xl / 2
             iconName: "x"
@@ -636,7 +544,6 @@ Dialog {
         }
     }
 
-    // -- Adding, renaming and deleting skins -------------------------------
     Menu {
         id: addMenu
         MenuItem {
@@ -681,7 +588,8 @@ Dialog {
             }
         }
         MenuItem {
-            text: qsTr("Delete…")
+            // A disabled item shows no tooltip, so the reason is in its label.
+            text: skinMenu.targetWorn ? qsTr("Delete… (in use)") : qsTr("Delete…")
             icon.source: Icons.url("trash")
             enabled: !skinMenu.targetWorn
             onTriggered: {
@@ -691,8 +599,6 @@ Dialog {
         }
     }
 
-    // As the widget dialog did: asked first, then to the trash where there
-    // is one.
     ConfirmDialog {
         id: deleteDialog
         property string targetName

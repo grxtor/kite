@@ -38,18 +38,16 @@ namespace
 {
 	const char* const kTextureBase = "https://textures.minecraft.net/texture/";
 
-	/* The skins of the MHF_Steve and MHF_Alex accounts -- the addresses
-	 * Parsers.cpp substitutes for a player without a skin (fallbackUrl()). */
+	// The MHF_Steve and MHF_Alex skins: the addresses Parsers.cpp substitutes
+	// for a player without a skin (fallbackUrl()).
 	const char* const kClassicHash =
 		"1a4af718455d4aab528e7a61f86fa25e6a369d1768dcb13f7df319a713eb810b";
 	const char* const kSlimHash =
 		"83cee5ca6afcdb171285aa00e8049c297b2dbeba0efb8ff970a5677a1b644032";
 
-	/* The gallery: the game's nine default skins (1.19.3 and later), each
-	 * as Mojang serves it for classic (wide) and slim arms. Steve and Alex
-	 * here are the 1.19.3 textures, not the older MHF ones above. Checked
-	 * pixel for pixel against the client jar's
-	 * textures/entity/player/{wide,slim}/<name>.png. */
+	// The gallery: the game's nine default skins (1.19.3+), as Mojang serves
+	// them for classic (wide) and slim arms. Steve and Alex here are the 1.19.3
+	// textures, not the older MHF ones.
 	struct GalleryEntry {
 		const char* name;
 		bool slim;
@@ -100,9 +98,8 @@ namespace
 
 DefaultSkins* DefaultSkins::instance()
 {
-	/* Parented to the application, so it goes away with it rather than at
-	 * static destruction, after the network stack it may still hold a reply
-	 * from. */
+	// Parented to the application so it goes away before static destruction,
+	// after the network stack it may still hold a reply from.
 	static QPointer<DefaultSkins> s_instance;
 	if (!s_instance) {
 		s_instance = new DefaultSkins(QCoreApplication::instance());
@@ -126,7 +123,7 @@ bool DefaultSkins::isSlimFor(const QString& uuid)
 	if (!okHigh || !okLow) {
 		return false;
 	}
-	/* Java's UUID.hashCode(): xor the two halves, then the halves of that. */
+	// Java's UUID.hashCode(): xor the two halves, then the halves of that.
 	const quint64 folded = high ^ low;
 	const quint32 hashCode = static_cast<quint32>(folded >> kHalfBits) ^
 							 static_cast<quint32>(folded);
@@ -158,8 +155,8 @@ void DefaultSkins::setTexture(bool slim, const QImage& image)
 
 void DefaultSkins::ensureLoaded()
 {
-	/* The cache and the network both belong to a running launcher: the
-	 * data folder is its working directory. */
+	// The cache and the network belong to a running launcher (its working dir
+	// is the data folder).
 	if (!LauncherContext::instance()) {
 		return;
 	}
@@ -189,9 +186,8 @@ bool DefaultSkins::loadCached(bool slim)
 	if (texture.width() != kTextureSize || texture.height() != kTextureSize) {
 		return false;
 	}
-	/* Set without loaded(): this runs inside a caller that is about to read
-	 * texture() anyway (an image request, accountSkinInfo()), and nothing
-	 * else can have drawn without it yet. */
+	// Set without loaded(): the caller is about to read texture() anyway and
+	// nothing else can have drawn without it yet.
 	(slim ? m_slim : m_classic) = texture;
 	return true;
 }
@@ -212,8 +208,7 @@ void DefaultSkins::fetch(bool slim)
 void DefaultSkins::onFinished(QNetworkReply* reply, bool slim)
 {
 	reply->deleteLater();
-	/* Cleared either way: a failed fetch is tried again the next time
-	 * someone asks (ensureLoaded()), e.g. once the network is back. */
+	// Cleared either way: a failed fetch is retried on the next ensureLoaded().
 	(slim ? m_fetchingSlim : m_fetchingClassic) = false;
 	if (reply->error() != QNetworkReply::NoError) {
 		qWarning() << "Could not fetch the default skin:"
@@ -229,9 +224,8 @@ void DefaultSkins::onFinished(QNetworkReply* reply, bool slim)
 	if (texture.width() != kTextureSize || texture.height() != kTextureSize) {
 		return;
 	}
-	/* Kept for the next run, offline or not; failing to save only means
-	 * fetching again next time. The addresses are content hashes, so the
-	 * copy never goes stale. */
+	// Kept for the next run; failing to save only means fetching again. The
+	// addresses are content hashes, so the copy never goes stale.
 	const QString path = cachePath(slim);
 	if (!QDir().mkpath(QFileInfo(path).absolutePath()) ||
 		!texture.save(path, "PNG")) {
@@ -266,8 +260,8 @@ QString DefaultSkins::galleryUrl(const QString& name, bool slim)
 
 QString DefaultSkins::galleryPath(const QString& name, bool slim)
 {
-	/* Named by the texture's hash, as on textures.minecraft.net: a file
-	 * here is that exact texture, whatever the table above maps to it. */
+	// Named by the texture's hash, as on textures.minecraft.net: a file here is
+	// that exact texture.
 	const QString hash = QUrl(galleryUrl(name, slim)).fileName();
 	return hash.isEmpty() ? QString()
 						  : QDir(QStringLiteral("cache/skins/default"))
@@ -308,8 +302,8 @@ void DefaultSkins::fetchGallery()
 void DefaultSkins::onGalleryFinished(QNetworkReply* reply, const QString& path)
 {
 	reply->deleteLater();
-	/* Cleared either way: a failed download is tried again the next time
-	 * the gallery is asked for (the skin editor opening again). */
+	// Cleared either way: a failed download is retried the next time the
+	// gallery is asked for.
 	m_galleryFetching.remove(path);
 	const QByteArray bytes = reply->error() == QNetworkReply::NoError
 								 ? reply->readAll()
@@ -322,9 +316,8 @@ void DefaultSkins::onGalleryFinished(QNetworkReply* reply, const QString& path)
 		emit galleryChanged();
 		return;
 	}
-	/* The file as Mojang serves it, since it is also what gets uploaded
-	 * when the player wears it; written whole or not at all, so a file that
-	 * exists is always a finished one. */
+	// The file as Mojang serves it (it is also what gets uploaded when worn);
+	// written whole or not at all, so an existing file is always finished.
 	QSaveFile file(path);
 	if (!QDir().mkpath(QFileInfo(path).absolutePath()) ||
 		!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() ||

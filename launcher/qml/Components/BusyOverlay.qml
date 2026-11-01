@@ -7,13 +7,9 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Shown while the core runs something the user has to wait for and cannot
- * interact around (UiHost::showBusy): a dimmed window, a spinner and what
- * is happening. It swallows input, as the modal progress dialog did.
- *
- * Some waits offer one way out ("Play offline" while an account refreshes
- * before a launch): `skipLabel` names it, and the button below emits
- * skipRequested() for Main.qml to pass on (QmlUiHost::skipBusy()).
+ * Shown while the core runs something the user has to wait for (UiHost::showBusy): a dimmed window, a spinner and
+ * what is happening; it swallows input. Some waits offer one way out ("Play offline" while an account refreshes
+ * before a launch): `skipLabel` names it and the button emits skipRequested() (QmlUiHost::skipBusy()).
  */
 Rectangle {
     id: root
@@ -31,7 +27,6 @@ Rectangle {
     visible: opacity > 0
     Behavior on opacity { NumberAnimation { duration: Theme.motion.normal } }
 
-    // Eat clicks and wheel so nothing underneath reacts.
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
@@ -39,7 +34,8 @@ Rectangle {
         onWheel: (wheel) => wheel.accepted = true
     }
 
-    // Dialog-shaped, so it wears the dialogs' glass and shadow.
+    WindowDragZone {}
+
     GlassSurface {
         anchors.centerIn: parent
         width: Math.min(360, parent.width - Theme.space.xxl * 2)

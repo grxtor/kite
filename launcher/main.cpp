@@ -43,60 +43,30 @@
 #else
 #include <spawn.h>
 #include <unistd.h>
-/* Not declared by every platform's <unistd.h> (notably not by macOS's -
- * see environ(7): "the following line placed in the source file should be
- * sufficient to obtain the definition"). Declared here rather than inside a
- * function or an unnamed namespace, both of which would give this specific
- * declaration internal linkage and quietly fail to bind to the real,
- * externally-linked libc symbol. */
+/* Not declared by every platform's <unistd.h> (not by macOS's; see
+ * environ(7)). Declared at namespace scope here: inside a function or an
+ * unnamed namespace it would get internal linkage and not bind to libc's
+ * symbol. */
 extern char** environ;
-#endif
-
-// #define BREAK_INFINITE_LOOP
-// #define BREAK_EXCEPTION
-// #define BREAK_RETURN
-
-#ifdef BREAK_INFINITE_LOOP
-#include <thread>
-#include <chrono>
 #endif
 
 namespace
 {
-	/*
-	 * Async-signal-safe crash reporter launch.
-	 *
-	 * launchCrashReporter() used to build its argument list and spawn the
-	 * reporter process from inside crashSignalHandler() itself, using
-	 * QFile::exists(), APPLICATION->settings(), QDir::currentPath(),
-	 * logFile->flush() and QProcess::startDetached() - none of which are
-	 * async-signal-safe, and a crash can land the handler on any thread, at
-	 * any point in the middle of Qt's or the allocator's own state.
-	 * Everything the reporter needs is instead computed once, up front
-	 * (rebuildCrashReporterInvocation(), called after Application exists and
-	 * again whenever PasteEEAPIKey changes); the handler only reads the
-	 * already-built, plain-old-data invocation and calls the OS
-	 * process-creation primitive directly - CreateProcessW on Windows,
-	 * posix_spawn elsewhere - neither of which touches Qt, the heap, or the
-	 * log file.
-	 *
-	 * DOUBLE BUFFERING. Two CrashReporterInvocation slots
-	 * (g_invocationStorage) and an atomic index (g_activeInvocation) into
-	 * them: a rebuild always fills the slot that is *not* currently active,
-	 * then publishes it with a single atomic store. A signal landing
-	 * mid-rebuild therefore always reads either the old, complete invocation
-	 * or the new, complete one - never a half-written one. -1 means nothing
-	 * has been built yet (matches the original's silent no-op when the
-	 * reporter binary was not found).
-	 */
+	/* Async-signal-safe crash reporter launch: the handler may run on any
+	 * thread in the middle of Qt's or the allocator's state, so it must not
+	 * touch Qt, the heap or the log file. Everything is computed up front by
+	 * rebuildCrashReporterInvocation(); the handler only reads the
+	 * plain-old-data invocation and calls CreateProcessW or posix_spawn. Two
+	 * slots (g_invocationStorage) and an atomic index (g_activeInvocation): a
+	 * rebuild fills the inactive slot and publishes it with one atomic store;
+	 * -1 means nothing built yet (a silent no-op). */
 	constexpr int kMaxPathChars = 1024;
 	constexpr int kMaxArgChars = 512;
 #ifdef Q_OS_WIN
-	// The full command line (quoted path + three quoted "--flag value"
-	// pairs). quoteWindowsArg() below can at most double an argument's
-	// length (a run of backslashes right before a quote, or at the end of
-	// the argument, doubles) plus one extra character per embedded quote,
-	// so this doubles the previous, unescaped budget for headroom.
+	// The full command line (quoted path + three quoted "--flag value" pairs).
+	// quoteWindowsArg() can at most double an argument (backslash runs before
+	// a quote or at the end) plus one character per embedded quote, hence
+	// double the unescaped budget.
 	constexpr int kMaxCommandLineChars =
 		2 * (kMaxPathChars + 3 * kMaxArgChars) + 64;
 #endif
@@ -115,8 +85,7 @@ namespace
 		char nameArg[kMaxArgChars] = {};
 		char apiKeyArg[kMaxArgChars] = {};
 		// Pointers into the members above (plus two string-literal flags),
-		// rebuilt in lock-step with them so they always describe this same
-		// slot's strings.
+		// rebuilt together with them.
 		char* argv[8] = {};
 #endif
 	};
@@ -134,18 +103,11 @@ namespace
 		return true;
 	}
 
-	/* Quotes and escapes a single argument for CreateProcessW's
-	 * lpCommandLine, following the same backslash/quote rules
-	 * CommandLineToArgvW uses to parse it back apart: a backslash is only
-	 * special when it immediately precedes a double quote (an embedded one,
-	 * or the closing quote this function appends) - a run of N backslashes
-	 * there must become 2N to stay literal, plus one more to escape the
-	 * quote itself; everywhere else a backslash is an ordinary character.
-	 * This matters because apiKey comes straight from the user-editable
-	 * PasteEEAPIKey setting - arbitrary text that may contain a '"' - and
-	 * unlike the POSIX branch's explicit argv[], CreateProcessW re-parses a
-	 * single command-line string, so an unescaped quote would let it inject
-	 * an extra argument into kite-crashreporter's parsed argv. */
+	/* Quotes one argument for CreateProcessW's lpCommandLine by
+	 * CommandLineToArgvW's rules: backslashes matter only before a double
+	 * quote (a run of N becomes 2N, plus one to escape the quote). apiKey is
+	 * user-editable text, and an unescaped '"' would inject an argument into
+	 * kite-crashreporter. */
 	QString quoteWindowsArg(const QString& arg)
 	{
 		QString result = QStringLiteral("\"");
@@ -165,8 +127,8 @@ namespace
 			backslashes = 0;
 			result += ch;
 		}
-		// Trailing backslashes must be doubled so they escape themselves
-		// rather than the closing quote appended below.
+		// Trailing backslashes are doubled so they do not escape the closing
+		// quote appended below.
 		result += QString(backslashes * 2, QLatin1Char('\\'));
 		result += QLatin1Char('"');
 		return result;
@@ -183,10 +145,9 @@ namespace
 	}
 #endif
 
-	/* Rebuilds the currently-inactive slot from scratch and publishes it -
-	 * see the class comment above. GUI thread only: called once at startup
-	 * (after Application, and therefore its settings, exist) and again
-	 * whenever the PasteEEAPIKey setting changes. */
+	/* Rebuilds the inactive slot from scratch and publishes it. GUI thread
+	 * only: called once at startup (after Application and its settings exist)
+	 * and whenever PasteEEAPIKey changes. */
 	void rebuildCrashReporterInvocation()
 	{
 		QString crashReporterName = QStringLiteral("kite-crashreporter");
@@ -196,11 +157,8 @@ namespace
 		const QString path = FS::PathCombine(
 			QApplication::applicationDirPath(), crashReporterName);
 		if (!QFile::exists(path)) {
-			// Nothing to launch - same early return the original had. Any
-			// previously-published invocation (e.g. from before the binary
-			// was removed, which should not normally happen) is left alone
-			// rather than invalidated, since a stale-but-valid invocation is
-			// safer to fall back on than none at all.
+			// Nothing to launch. A previously published invocation is left
+			// alone: a stale-but-valid one beats none.
 			return;
 		}
 
@@ -224,11 +182,9 @@ namespace
 		if (!copyToBuffer(slot.path, kMaxPathChars, path.toStdWString())) {
 			return;
 		}
-		// Conventionally, the command line's own first token is the module
-		// path too (a child reads that back via GetCommandLine()). apiKey
-		// in particular is arbitrary, user-editable text (the PasteEEAPIKey
-		// setting), so every argument is escaped with quoteWindowsArg()
-		// rather than just wrapped in literal quotes - see its comment.
+		// The command line's own first token is the module path too (a child
+		// reads it via GetCommandLine()). apiKey is arbitrary user-editable
+		// text, so every argument goes through quoteWindowsArg().
 		const QString commandLine =
 			QStringLiteral("%1 --logdir %2 --name %3 --apikey %4")
 				.arg(quoteWindowsArg(path), quoteWindowsArg(logDir),
@@ -304,44 +260,26 @@ static void crashSignalHandler(int sig)
 
 int main(int argc, char* argv[])
 {
-#ifdef BREAK_INFINITE_LOOP
-	while (true) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(250));
-	}
-#endif
-#ifdef BREAK_EXCEPTION
-	throw 42;
-#endif
-#ifdef BREAK_RETURN
-	return 42;
-#endif
-
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 8, 0))
 	QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 	QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 #endif
 
-	// initialize Qt
 #ifdef Q_OS_LINUX
 	{
 		QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
 
-		// Prefer Wayland backend only when a Wayland socket is actually
-		// accessible. WAYLAND_DISPLAY is set by the compositor/Flatpak
-		// only when the socket is forwarded; XDG_SESSION_TYPE alone is
-		// not sufficient because Flatpak sandboxes may report "wayland"
-		// there even when --socket=wayland is not granted.
+		// Prefer Wayland only when a Wayland socket is actually accessible:
+		// WAYLAND_DISPLAY is set only when the socket is forwarded, while
+		// XDG_SESSION_TYPE can say "wayland" in a Flatpak sandbox without
+		// --socket=wayland.
 		if (!env.contains("QT_QPA_PLATFORM") &&
 			env.contains("WAYLAND_DISPLAY")) {
 			qputenv("QT_QPA_PLATFORM", "wayland");
 		}
 
-		// Use xdgdesktopportal for file dialogs and theming on all
-		// Linux DEs.  The old "gtk3" theme forced Qt to use GTK3's
-		// native file-dialog integration, which deadlocks/freezes
-		// on GNOME/Mutter (and other GTK-based compositors) with
-		// Qt 6.  xdgdesktopportal delegates to the DE's own portal
-		// implementation and works everywhere.
+		// Use xdgdesktopportal for file dialogs and theming on all Linux DEs:
+		// the old "gtk3" theme deadlocks on GNOME/Mutter with Qt 6.
 		if (!env.contains("QT_QPA_PLATFORMTHEME")) {
 			qputenv("QT_QPA_PLATFORMTHEME", "xdgdesktopportal");
 		}
@@ -350,11 +288,9 @@ int main(int argc, char* argv[])
 
 	Application app(argc, argv);
 
-	// Build the crash reporter invocation the signal handler below will use,
-	// and keep it current: a crash right after the user edits the PasteEE
-	// key in Settings should still upload with the new one. See
-	// rebuildCrashReporterInvocation()'s comment for why this cannot simply
-	// be recomputed inside the handler itself.
+	// Builds the invocation the signal handler uses and keeps it current, so a
+	// crash after the user edits the PasteEE key still uploads with the new
+	// one. The handler cannot recompute it itself.
 	rebuildCrashReporterInvocation();
 	if (app.settings()) {
 		QObject::connect(app.settings().get(), &SettingsObject::SettingChanged,
@@ -366,7 +302,6 @@ int main(int argc, char* argv[])
 						  });
 	}
 
-	// Install crash signal handlers to launch kite-crashreporter
 	signal(SIGSEGV, crashSignalHandler);
 	signal(SIGABRT, crashSignalHandler);
 #ifndef Q_OS_WIN
@@ -380,41 +315,22 @@ int main(int argc, char* argv[])
 			Q_INIT_RESOURCE(backgrounds);
 			Q_INIT_RESOURCE(documents);
 			Q_INIT_RESOURCE(kite);
-			Q_INIT_RESOURCE(shaders);
-
-			Q_INIT_RESOURCE(pe_dark);
-			Q_INIT_RESOURCE(pe_light);
-			Q_INIT_RESOURCE(pe_blue);
-			Q_INIT_RESOURCE(pe_colored);
-			Q_INIT_RESOURCE(breeze_dark);
-			Q_INIT_RESOURCE(breeze_light);
-			Q_INIT_RESOURCE(OSX);
-			Q_INIT_RESOURCE(iOS);
-			Q_INIT_RESOURCE(flat);
-			Q_INIT_RESOURCE(flat_white);
 
 			int ret = app.exec();
 
-			// Use _exit() to terminate immediately after the Qt event
-			// loop ends.  All meaningful cleanup (instance save, plugin
-			// shutdown, log flush/close) has already happened in the
-			// Application::aboutToQuit handler while Qt was still alive.
-			//
-			// A normal return would run C++ static destructors via
-			// exit()/__cxa_finalize.  Plugin .mmco modules statically
-			// link Kite_logic, which embeds a duplicate global
-			// `const Config BuildConfig` (non-trivial dtor with ~20
-			// QString members).  Those duplicate destructors corrupt
-			// the heap when they run after Qt is torn down, causing
-			// glibc's "corrupted double-linked list" abort.
-			//
-			// _exit() bypasses all atexit handlers and static dtors,
-			// avoiding the double-destruction entirely.  The OS
-			// reclaims all process memory.
+			// _exit() once the event loop ends: cleanup already ran in
+			// aboutToQuit. A normal return would run static destructors, and
+			// plugin .mmco modules statically link Kite_logic with a duplicate
+			// global `const Config BuildConfig` whose destructors corrupt the
+			// heap after Qt is torn down ("corrupted double-linked list").
 			_exit(ret);
 		}
 		case Application::Failed:
-			return 1;
+			// Plugins may be loaded by now: a normal return would run their
+			// static destructors (see above), so end like the normal path.
+			app.shutdownForExit();
+			fflush(nullptr);
+			_exit(1);
 		case Application::Succeeded:
 			return 0;
 	}

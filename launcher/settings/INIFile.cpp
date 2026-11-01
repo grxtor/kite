@@ -109,21 +109,22 @@ bool INIFile::loadFile(QString fileName)
 bool INIFile::loadFile(QByteArray file)
 {
 	QTextStream in(file);
-	// Qt6 uses UTF-8 by default
 
 	QStringList lines = in.readAll().split('\n');
 	for (int i = 0; i < lines.count(); i++) {
 		QString& lineRaw = lines[i];
-		// Ignore comments.
-		int commentIndex = 0;
-		QString line = lineRaw;
-		// Search for comments until no more escaped # are available
-		while ((commentIndex = line.indexOf('#', commentIndex + 1)) != -1) {
-			if (commentIndex > 0 && line.at(commentIndex - 1) == '\\') {
-				continue;
+		int commentIndex = -1;
+		// A backslash escapes the next character, so only a bare # starts a comment.
+		for (int c = 0; c < lineRaw.size(); c++) {
+			if (lineRaw.at(c) == '\\') {
+				c++;
+			} else if (lineRaw.at(c) == '#') {
+				commentIndex = c;
+				break;
 			}
-			line = line.left(lineRaw.indexOf('#')).trimmed();
 		}
+		QString line =
+			(commentIndex == -1 ? lineRaw : lineRaw.left(commentIndex)).trimmed();
 
 		int eqPos = line.indexOf('=');
 		if (eqPos == -1)

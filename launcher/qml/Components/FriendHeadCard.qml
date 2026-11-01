@@ -7,50 +7,27 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * What a click on a head in the friends strip (FriendsStripHead) opens: a
- * small card at its left with the bigger head, the name and where they are,
- * Join when they let you, and the ⋯ that removes or blocks them (the
- * panel's FriendPersonMenu, `menu`). It is the narrow strip's version of a
- * row of the full panel, so it says no more than a row does.
- *
- * One card for the strip, not one per head: the lists are rebuilt whenever
- * they are read again, and a card in a head would close under the pointer.
- * It holds on to who it is for by uuid and reads that friend off the
- * controller each time, so a poll that moves them (online, then in game)
- * updates the card; it closes when they are no longer on the list.
- *
- * Esc, a click outside it, and choosing from ⋯ (whose question is the
- * panel's FriendConfirmDialog) all close it. A click on the strip itself does
- * not: the strip decides what that means (another head moves the card, the
- * same head closes it), as a press that closed the card first would have the
- * click on that head open it again.
+ * The card a click on a head in the friends strip opens: bigger head, name, where they are, Join and ⋯. One card
+ * for the strip, since a card in a head would close under the pointer when the lists are rebuilt. A click on the
+ * strip does not close it (the strip decides): a press that closed it first would reopen it on that head.
  */
 Popup {
     id: root
 
-    // QmlShell.friends (FriendsController), or null.
+    // FriendsController, or null.
     property var controller: null
     // The panel's FriendPersonMenu.
     property var menu: null
-    // Main.qml's FriendJoinFlow, which says what Join would start.
     property var joinFlow: null
-    // The list is the last one read, not a live one.
     property bool stale: false
-    // The server answers: Join and ⋯ need it.
     property bool actionsEnabled: true
     property string friendUuid
 
-    // The friend's map, off the controller's current list; empty once they
-    // are gone.
     readonly property var friend: root.find(root.controller ? root.controller.friends : [], root.friendUuid)
     readonly property bool known: root.friend.uuid !== undefined
     readonly property var status: Format.friendStatus(root.friend)
-    readonly property bool joinable: root.known && Format.friendJoinable(root.friend)
 
-    // In proportion with the strip's own heads: a click there should not open
-    // something three times their size.
     readonly property int cardWidth: 232
-    // A multiple of 8, like every head.
     readonly property int headSize: 24
 
     signal joinRequested(var friend)
@@ -63,13 +40,10 @@ Popup {
         return ({})
     }
 
-    // Where the head's centre is, in the strip's coordinates; the card stays
-    // centred on it as it grows (a friend who becomes joinable gets a Join).
+    // The head's centre in the strip's coordinates; the card stays centred on it as it grows.
     property real centreY: 0
 
-    // Opens beside @p head (a FriendsStripHead), at the strip's left. The
-    // popup keeps itself inside the window (`margins`), so the first and
-    // last heads' cards slide to fit rather than run off it.
+    // Opens beside @p head (a FriendsStripHead); the popup keeps itself inside the window (`margins`).
     function openFor(head, uuid) {
         root.friendUuid = uuid
         root.centreY = head.mapToItem(root.parent, 0, head.height / 2).y
@@ -116,13 +90,11 @@ Popup {
                 Layout.alignment: Qt.AlignVCenter
                 spacing: Theme.space.xxs
 
-                Text {
+                Copy {
                     width: parent.width
                     text: root.known ? root.friend.name : ""
                     elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
                     font.weight: Font.DemiBold
                 }
                 Text {
@@ -144,35 +116,24 @@ Popup {
             }
         }
 
-        Button {
-            id: join
+        FriendJoinButton {
             Layout.fillWidth: true
-            visible: root.joinable
             enabled: root.actionsEnabled
-            buttonSize: "sm"
-            text: qsTr("Join")
-            Accessible.name: root.known ? qsTr("Join %1 on %2").arg(root.friend.name).arg(root.friend.host) : ""
-            // What it does: it starts the game, with the instance named.
-            // Worked out as the pointer arrives, so it is never an old answer.
-            ToolTip.visible: join.hovered
-            ToolTip.delay: 500
-            ToolTip.text: join.hovered && root.joinFlow && root.joinable ? root.joinFlow.tip(root.friend) : ""
+            friend: root.friend
+            joinFlow: root.joinFlow
             onClicked: {
                 root.close()
                 root.joinRequested(root.friend)
             }
         }
 
-        // A visible server whose player turned joining off: said here, where
-        // a Join would be, instead of looking like a bug.
-        Text {
+        Copy {
             Layout.fillWidth: true
             visible: root.known && Format.friendJoinOff(root.friend)
             text: root.known ? qsTr("%1 doesn't let friends join").arg(root.friend.name) : ""
             wrapMode: Text.Wrap
-            color: Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            role: "label"
+            tone: "tertiary"
         }
     }
 }

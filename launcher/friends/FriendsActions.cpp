@@ -268,8 +268,7 @@ void FriendsController::refreshBlocked()
 		return;
 	}
 	loadBlocked([this](const FriendsApi::Reply& reply, bool ok) {
-		/* A server that cannot be reached fails the poll sent with this read
-		 * too, and the page says so; a second word about it is noise. */
+		/* An unreachable server fails the poll sent with this read too, and the page says so. */
 		const bool unreachable =
 			reply.networkFailed() && reply.failureText.isEmpty();
 		finishAction("refreshBlocked", ok,
@@ -334,7 +333,6 @@ void FriendsController::setSettings(const QVariantMap& partial)
 			}
 			m_settings = FriendsDisplay::settingsMap(*settings);
 			emit changed();
-			/* What friends see depends on these. */
 			sendStatus([](bool) {}, true);
 			/* An older server drops a setting it does not know: say so
 			 * instead of "Saved". */
@@ -349,15 +347,13 @@ void FriendsController::setSettings(const QVariantMap& partial)
 
 void FriendsController::deleteAccount()
 {
-	/* With Friends off it still works: someone who turned it off has to be
-	 * able to delete what the server holds without turning it on and being
-	 * seen. It signs in for this request alone (the session is dropped after
-	 * it, and nothing is reported or read), and Friends stays off. */
+	/* Works with Friends off, so someone who turned it off can delete what the
+	 * server holds without being seen: signs in for this request alone (session
+	 * dropped after, nothing reported or read); Friends stays off. */
 	const bool wasOff = !m_enabled;
 	if (wasOff) {
 		if (m_deletingOff) {
-			/* Said, not dropped: nothing else would tell that the first one
-			 * is still under way. */
+			/* Said, not dropped: nothing else would tell that the first is still under way. */
 			finishAction("deleteAccount", false,
 						 tr("A delete is already under way; wait for it to "
 							"finish"));
@@ -367,15 +363,13 @@ void FriendsController::deleteAccount()
 	} else if (!canAct("deleteAccount", nullptr)) {
 		return;
 	}
-	/* The account this deletes is the default one now, which the dialog
-	 * named: request() does not send it for another that becomes the default
-	 * while it signs in (it fails instead), and passes on the answer of one
-	 * that has gone out (keepAnswer). */
+	/* The default account now is the one the dialog named: request() does not send
+	 * it for another that becomes default while signing in (it fails), and passes
+	 * on the answer of one already gone out (keepAnswer). */
 	request(kDelete, FriendsApi::Path::me(), QByteArray(),
 			[this, wasOff](const FriendsApi::Reply& reply) {
 				if (!reply.ok()) {
 					if (wasOff) {
-						/* Out again, as it never was. */
 						m_deletingOff = false;
 						if (!m_session.token.isEmpty()) {
 							signOutQuietly(m_session.token);
@@ -386,7 +380,6 @@ void FriendsController::deleteAccount()
 					finishAction("deleteAccount", false, failureText(reply));
 					return;
 				}
-				/* Gone on the server: nothing left to tell it. */
 				LAUNCHER->settings()->set(kEnabledSetting, false);
 				stop(false);
 				m_deletingOff = false;

@@ -4,39 +4,30 @@
 
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The Java runtimes Kite downloaded itself, as a card of rows: which one,
- * where it lives, and a ⋯ menu to use or remove it. Removing deletes the
- * runtime's whole folder, so it asks first. Empty when nothing has been
- * downloaded; the section above offers Download Java then.
+ * The Java runtimes Kite downloaded itself, as a card of rows with a ⋯ menu to use
+ * or remove one. Removing deletes the runtime's whole folder, so it asks first.
  */
-Rectangle {
+BoxSurface {
     id: root
 
     readonly property var java: JavaStore.controller
     readonly property var runtimes: java ? java.managed : []
-    // The JavaPath in use, marked in the list.
     property string currentPath
     signal useRequested(string path)
     signal failed(string message)
 
-    // The runtime a menu or confirmation is about.
     property var target: null
 
     implicitHeight: list.height
-    radius: Theme.radius.lg
-    color: Theme.palette.surface
-    border.width: 1
-    border.color: Theme.palette.border
 
     Column {
         id: list
         width: parent.width
 
-        Text {
+        Copy {
             visible: root.runtimes.length === 0
             width: parent.width
             height: Theme.control.heightLg + Theme.space.xl
@@ -44,73 +35,32 @@ Rectangle {
             leftPadding: Theme.space.lg
             rightPadding: Theme.space.lg
             text: qsTr("Nothing downloaded yet.")
-            color: Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
+            tone: "tertiary"
         }
 
         Repeater {
             model: root.runtimes
 
-            delegate: Item {
+            delegate: JavaInstallRow {
                 id: row
                 required property var modelData
                 required property int index
-                readonly property bool inUse: root.currentPath === modelData.javaPath
 
                 width: list.width
-                height: Theme.control.heightLg + Theme.space.xl
+                interactive: false
+                showDivider: row.index > 0
+                title: row.modelData.name
+                location: row.modelData.javaPath
+                vendor: row.modelData.vendor
+                inUse: root.currentPath === row.modelData.javaPath
 
-                Rectangle {
-                    visible: row.index > 0
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: Theme.space.lg
-                    anchors.rightMargin: Theme.space.lg
-                    height: 1
-                    color: Theme.palette.divider
-                }
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: Theme.space.lg
-                    anchors.rightMargin: Theme.space.sm
-                    spacing: Theme.space.md
-
-                    Column {
-                        Layout.fillWidth: true
-                        spacing: 2
-                        Text {
-                            text: row.modelData.name
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.body.pixelSize
-                            font.weight: Font.Medium
-                        }
-                        Text {
-                            width: parent.width
-                            text: row.modelData.javaPath
-                            elide: Text.ElideMiddle
-                            color: Theme.palette.textTertiary
-                            font.family: Theme.font.mono
-                            font.pixelSize: Theme.type.caption.pixelSize
-                        }
-                    }
-                    Tag { text: row.modelData.vendor }
-                    StatusBadge {
-                        visible: row.inUse
-                        tone: "success"
-                        text: qsTr("In use")
-                    }
-                    IconButton {
-                        id: more
-                        iconName: "more"
-                        tip: qsTr("More")
-                        onClicked: {
-                            root.target = row.modelData
-                            menu.popup(more, more.width - menu.width, more.height)
-                        }
+                IconButton {
+                    id: more
+                    iconName: "more"
+                    tip: qsTr("More")
+                    onClicked: {
+                        root.target = row.modelData
+                        menu.popup(more, more.width - menu.width, more.height)
                     }
                 }
             }

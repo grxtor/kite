@@ -26,19 +26,12 @@
 #include "tasks/Task.h"
 
 /*
- * QML-facing log upload - the widget-free replacement for
- * GuiUtil::uploadPaste(), which runs a modal ProgressDialog and message
- * boxes around the same PasteUpload task.
- *
- * One upload at a time: uploadText()/uploadFile() while `busy` is a no-op.
- * The outcome arrives as exactly one of uploaded(url) or failed(message);
- * what to do with it (copy the link, show a toast) is the caller's, since
- * QML owns the clipboard and the toast.
- *
- * The paste.ee key comes from the PasteEEAPIKey setting the same way the
- * widget path reads it: the literal "kite" means "use the launcher's own
- * key" (BuildConfig.PASTE_EE_KEY). PasteUpload censors tokens and the home
- * directory out of the text itself.
+ * QML-facing log upload (paste.ee via PasteUpload). One upload at a time;
+ * uploadText()/uploadFile() while `busy` is a no-op. The outcome arrives as
+ * exactly one of uploaded(url) or failed(message); copying the link or showing
+ * a toast is the caller's. The PasteEEAPIKey setting "kite" means the
+ * launcher's own key (BuildConfig.PASTE_EE_KEY). PasteUpload censors tokens and
+ * the home directory out of the text.
  */
 class LogUploader : public QObject
 {
@@ -70,14 +63,11 @@ class LogUploader : public QObject
 
 	/// Uploads @p text. Reports through uploaded()/failed(), never inline.
 	Q_INVOKABLE void uploadText(const QString& text);
-	/// Uploads the log file at @p path (".gz" is decompressed first).
 	Q_INVOKABLE void uploadFile(const QString& path);
 
   signals:
 	void busyChanged();
-	/// @p url is the paste's link.
 	void uploaded(const QString& url);
-	/// @p message is a sentence fit to show the user.
 	void failed(const QString& message);
 
   private:

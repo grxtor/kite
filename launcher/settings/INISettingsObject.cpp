@@ -54,14 +54,12 @@ void INISettingsObject::resumeSave()
 void INISettingsObject::changeSetting(const Setting& setting, QVariant value)
 {
 	if (contains(setting.id())) {
-		// valid value -> set the main config, remove all the sysnonyms
 		if (value.isValid()) {
 			auto list = setting.configKeys();
 			m_ini.set(list.takeFirst(), value);
 			for (auto iter : list)
 				m_ini.remove(iter);
 		}
-		// invalid -> remove all (just like resetSetting)
 		else {
 			for (auto iter : setting.configKeys())
 				m_ini.remove(iter);
@@ -81,7 +79,6 @@ void INISettingsObject::doSave()
 
 void INISettingsObject::resetSetting(const Setting& setting)
 {
-	// if we have the setting, remove all the synonyms. ALL OF THEM
 	if (contains(setting.id())) {
 		for (auto iter : setting.configKeys())
 			m_ini.remove(iter);
@@ -91,7 +88,6 @@ void INISettingsObject::resetSetting(const Setting& setting)
 
 QVariant INISettingsObject::retrieveValue(const Setting& setting)
 {
-	// if we have the setting, return value of the first matching synonym
 	if (contains(setting.id())) {
 		for (auto iter : setting.configKeys()) {
 			if (m_ini.contains(iter))

@@ -29,6 +29,7 @@
 #include <QVariantMap>
 
 #include "DesktopServices.h"
+#include "FileSystem.h"
 #include "core/LauncherContext.h"
 #include "minecraft/skins/DefaultSkins.h"
 #include "minecraft/skins/ProfileSkinImport.h"
@@ -36,6 +37,7 @@
 #include "minecraft/skins/SkinLibrary.h"
 #include "net/Download.h"
 #include "net/NetJob.h"
+#include "net/Validator.h"
 #include "tasks/TaskWatcher.h"
 
 namespace
@@ -63,9 +65,38 @@ namespace
 		return candidate;
 	}
 
-	/* A skin downloaded from a link: fetched to a temporary file, checked
-	 * to be a skin (a server can answer 200 with an error page), then
-	 * copied into the library under the link's file name. */
+	/* A skin is a 64x64 PNG, a few KB; anything past this is not one. */
+	constexpr qint64 kMaxSkinDownloadBytes = 1024 * 1024;
+
+	/* Fails the download as soon as more than kMaxSkinDownloadBytes arrive. */
+	class SkinSizeCap final : public Net::Validator
+	{
+	  public:
+		bool init(QNetworkRequest&) override
+		{
+			m_received = 0;
+			return true;
+		}
+		bool write(QByteArray& data) override
+		{
+			m_received += data.size();
+			return m_received <= kMaxSkinDownloadBytes;
+		}
+		bool abort() override
+		{
+			return true;
+		}
+		bool validate(QNetworkReply&) override
+		{
+			return true;
+		}
+
+	  private:
+		qint64 m_received = 0;
+	};
+
+	/* A skin from a link: fetched to a temporary file, checked to be a skin (a
+	 * server can answer 200 with an error page), then copied into the library. */
 	class SkinUrlImportTask final : public Task
 	{
 	  public:
@@ -80,7 +111,9 @@ namespace
 			m_temp = temporarySkinPath();
 			m_job.reset(new NetJob(SkinsController::tr("Download skin"),
 								   LAUNCHER->network()));
-			m_job->addNetAction(Net::Download::makeFile(m_url, m_temp));
+			auto download = Net::Download::makeFile(m_url, m_temp);
+			download->addValidator(new SkinSizeCap());
+			m_job->addNetAction(download);
 			connect(m_job.get(), &Task::finished, this, [this]() { finish(); });
 			setStatus(SkinsController::tr("Downloading the skin…"));
 			m_job->start();
@@ -121,9 +154,8 @@ namespace
 		shared_qobject_ptr<NetJob> m_job;
 	};
 
-	/* Another player's skin, by name (ProfileSkinImport), written into the
-	 * library with what the profile knows and the PNG does not: the arm
-	 * width and the texture's own url. */
+	/* Another player's skin, by name (ProfileSkinImport), written with the arm
+	 * width and texture url the profile knows and the PNG does not. */
 	class SkinUsernameImportTask final : public Task
 	{
 	  public:
@@ -176,9 +208,8 @@ namespace
 		shared_qobject_ptr<ProfileSkinImport> m_import;
 	};
 
-	/* The image urls of the skin PNG at @p path drawn with @p slim arms:
-	 * its normalised texture (for a 3D preview), its flat sprite and its
-	 * front view (for a flat one), through AccountFaceProvider. */
+	/* Image urls of the skin PNG at @p path with @p slim arms: normalised texture
+	 * (3D), flat sprite and front view, via AccountFaceProvider. */
 	QVariantMap imageUrls(const QString& path, bool slim)
 	{
 		// Percent-encoded whole, slashes included, so a path with spaces or
@@ -225,8 +256,6 @@ SkinsController::SkinsController(MinecraftAccountPtr account,
 
 	connect(DefaultSkins::instance(), &DefaultSkins::galleryChanged, this,
 			&SkinsController::defaultSkinsChanged);
-	/* Which default skin is worn follows the profile (a refresh after
-	 * wearing one). */
 	if (m_account) {
 		connect(m_account.get(), &MinecraftAccount::changed, this,
 				&SkinsController::defaultSkinsChanged);
@@ -309,15 +338,9 @@ QString SkinsController::directory() const
 	return m_library->directory();
 }
 
-QString SkinsController::localPath(const QString& fileUrlOrPath)
-{
-	const QUrl url(fileUrlOrPath);
-	return url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
-}
-
 QString SkinsController::importFile(const QString& fileUrlOrPath)
 {
-	const QString path = localPath(fileUrlOrPath);
+	const QString path = FS::pathFromUrlOrPath(fileUrlOrPath);
 	// importFile() trusts a ".png" name; a skin is checked here either way,
 	// so a wrong-sized PNG is refused now instead of listed and never used.
 	if (!SkinEntry(path).isUsable()) {

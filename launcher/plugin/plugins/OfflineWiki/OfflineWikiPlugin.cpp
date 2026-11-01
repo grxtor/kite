@@ -2,26 +2,20 @@
  * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * OfflineWikiPlugin — MMCO entry point. Clones the official Kite wiki
- * into <plugin_data>/ in the background and exposes it as a read-only
- * global settings page. The wiki is the plugin's only content source:
- * there is no bundle management and no ZIM support.
+ * OfflineWikiPlugin: MMCO entry point. Clones the official Kite wiki into <plugin_data>/ in the
+ * background and exposes it as a read-only global settings page; the wiki is the only content source.
  *
- * ABI 5: the page is one declarative "mmco-ui/1" surface (anchor
- * GLOBAL_SETTINGS) instead of a QWidget+BasePage. Layout:
+ * The page is one declarative "mmco-ui/1" surface (anchor GLOBAL_SETTINGS):
  *
  *   row
  *     column
- *       text_field "search"   — filter box
- *       list       "nav"      — page titles (nav list, or search hits
- *                                while the search box has text)
- *     text         "article"  — format:"markdown", the current page
+ *       text_field "search"   filter box
+ *       list       "nav"      page titles (nav list, or search hits while the box has text)
+ *     text         "article"  format:"markdown", the current page
  *
- * Internal wiki links are ordinary Markdown links whose href uses the
- * "wiki:" scheme (WikiRepoBundle::rewriteLinks already produces this);
- * clicking one fires the "article" node's click event with that href,
- * which we resolve back into a showArticle() call — no 15th node type
- * needed. Cf. plugin-abi5-spec.md §2's OfflineWiki row.
+ * Internal wiki links are Markdown links with a "wiki:" href (WikiRepoBundle::rewriteLinks produces
+ * them); clicking one fires the "article" node's click event with that href, which resolves to a
+ * showArticle() call.
  */
 
 #include "plugin/sdk/mmco_cxx_sdk.hpp"
@@ -41,29 +35,22 @@ namespace
 {
 	MMCOContext* g_ctx = nullptr;
 
-	/* The single wiki bundle. Null until the clone has produced a usable
-	 * checkout. */
+	/* The single wiki bundle; null until the clone has produced a usable checkout. */
 	WikiRepoBundle* g_wiki = nullptr;
 
-	/* The one GLOBAL_SETTINGS surface, created once in mmco_init() and
-	 * patched in place afterwards (ui_surface_set / ui_surface_set_rows)
-	 * — the host re-renders it every time the Settings dialog opens, so
-	 * unlike the old BasePage pattern there is nothing to re-create per
-	 * open. */
+	/* The GLOBAL_SETTINGS surface: created once in mmco_init() and patched in place; the host
+	 * re-renders it each time Settings opens. */
 	void* g_surface = nullptr;
 
-	/* UI state mirrored locally so we can recompute the "nav" list and
-	 * the "article" text after a background clone/pull completes. */
+	/* UI state mirrored locally to recompute the nav list and article text after a background
+	 * clone/pull. */
 	QString g_searchQuery;
 	QString g_currentSlug;
 
-	/* Guards against launching a second background sync while one is
-	 * already running (e.g. the settings dialog reopened mid-clone). */
+	/* Prevents a second background sync while one runs (e.g. Settings reopened mid-clone). */
 	bool g_wikiSyncRunning = false;
 
-	/* The official Kite wiki, served offline. Cloned on first run and
-	 * fast-forwarded on every later start so the local copy tracks
-	 * upstream. */
+	/* The official Kite wiki: cloned on first run, fast-forwarded on later starts. */
 	constexpr const char kKiteWikiUrl[] =
 		"https://github.com/grxtor/kite.wiki.git";
 	constexpr const char kKiteWikiDirName[] = "kite-wiki";
@@ -99,13 +86,10 @@ namespace
 		return QStandardPaths::findExecutable(QStringLiteral("git"));
 	}
 
-	/* --- JSON helpers ------------------------------------------------ *
-	 *
-	 * MMCOUiEventCallback's value_json is a JSON-encoded scalar (see
-	 * PluginUiRenderer's jsonQuoteString): a "change"/"select"/"activate"
-	 * payload arrives as a quoted, escaped JSON string literal, e.g.
-	 * `"wiki:Page-Name"`. Wrap it back into an array to decode with
-	 * QJsonDocument (which refuses a bare top-level string). */
+	/* MMCOUiEventCallback's value_json is a JSON-encoded scalar (encoded by
+	 * PluginSurfaceModel::valueToJson / quoteJsonString): change/select/activate payloads arrive as a quoted, escaped string literal
+	 * such as `"wiki:Page-Name"`. Wrapping it in an array lets QJsonDocument decode it (it refuses
+	 * a bare top-level string). */
 	QString jsonUnquote(const char* valueJson)
 	{
 		if (!valueJson || !*valueJson)
@@ -119,7 +103,7 @@ namespace
 		return jd.array().at(0).toString();
 	}
 
-	/* --- Surface content ---------------------------------------------- */
+	/* Surface content */
 
 	QJsonArray navRowsJson()
 	{
@@ -138,10 +122,8 @@ namespace
 		return rows;
 	}
 
-	/* Markdown shown in the "article" node for the current state: the
-	 * selected article, an empty-state explanation while the wiki isn't
-	 * available yet, or blank when the wiki is open but nothing has been
-	 * picked from the list. */
+	/* Markdown for the "article" node: the selected article, an empty-state explanation while no
+	 * wiki is available, or blank when nothing is picked. */
 	QString articleTextFor(const QString& slug)
 	{
 		if (g_wiki && g_wiki->isOpen()) {
@@ -180,9 +162,8 @@ namespace
 								   json.constData());
 	}
 
-	/* Called after a background clone/pull changes what's on disk: the
-	 * nav list and the currently-shown article (or the empty state) both
-	 * need to catch up. */
+	/* Called after a background clone/pull changes what is on disk; the nav list and shown article
+	 * (or empty state) catch up. */
 	void refreshSurfaceFromWiki()
 	{
 		refreshNavRows();
@@ -218,8 +199,8 @@ namespace
 		return QJsonObject{{"type", "mmco-ui/1"}, {"root", root}};
 	}
 
-	/* Try to (re)open the on-disk wiki checkout into g_wiki. Returns true
-	 * when a usable wiki is open afterwards. */
+	/* Tries to (re)open the on-disk checkout into g_wiki; true when a usable wiki is open
+	 * afterwards. */
 	bool openWiki()
 	{
 		const QString path = wikiPath();
@@ -236,18 +217,11 @@ namespace
 		return true;
 	}
 
-	/* Kick off the Kite wiki clone/update *in the background* so boot
-	 * is never blocked on git or the network. The launcher event loop is
-	 * already running when mmco_init is called, so the asynchronous
-	 * QProcess completes on the GUI thread without any blocking wait.
-	 *
-	 * Offline behaviour:
-	 *   • A previously cloned copy is opened synchronously at init, so the
-	 *     wiki is fully usable offline. The background pull is best-effort
-	 *     and silently leaves the cached copy in place when it fails.
-	 *   • With no cached copy and no network, the clone simply fails; the
-	 *     plugin stays healthy and retries on the next launch / when the
-	 *     settings page is reopened. */
+	/* Kicks off the Kite wiki clone/update in the background so boot never blocks on git or the
+	 * network (the event loop already runs when mmco_init is called). A previously cloned copy is
+	 * opened synchronously at init, so the wiki works offline; the background pull is best-effort
+	 * and keeps the cached copy on failure. With no cached copy and no network the clone fails, and
+	 * the plugin retries on the next launch or when Settings is reopened. */
 	void startKiteWikiSync()
 	{
 		if (g_wikiSyncRunning)
@@ -316,7 +290,6 @@ namespace
 					MMCO_LOG(g_ctx, haveCheckout
 										? "OfflineWiki: Kite wiki updated."
 										: "OfflineWiki: Kite wiki cloned.");
-					// Open / re-open the checkout and refresh the surface.
 					openWiki();
 					refreshSurfaceFromWiki();
 				}
@@ -326,7 +299,7 @@ namespace
 		proc->start();
 	}
 
-	/* --- Surface event handling ---------------------------------------- */
+	/* Surface event handling */
 
 	void onSearchChanged(const QString& text)
 	{
@@ -347,8 +320,7 @@ namespace
 		if (href.isEmpty())
 			return;
 
-		// Internal wiki link (wiki:Page-Name[#fragment]) → render the
-		// target article.
+		// Internal wiki link (wiki:Page-Name[#fragment]): render the target article.
 		if (href.startsWith(QStringLiteral("wiki:"))) {
 			QString slug = href.mid(5);
 			const int hash = slug.indexOf(QLatin1Char('#'));
@@ -359,17 +331,13 @@ namespace
 			return;
 		}
 
-		// A pure in-page anchor (#section): the host's markdown "text"
-		// node is a plain QLabel, which has no scrollToAnchor() — there
-		// is currently no way for a plugin to scroll to a fragment
-		// within a rendered markdown node, so this is a no-op. (Reported
-		// as a host-API gap; see migration report.)
+		// A pure in-page anchor (#section) is a no-op: the markdown "text" node is a plain QLabel
+		// with no scrollToAnchor(), so a plugin cannot scroll to a fragment.
 		if (!href.contains(QLatin1Char(':')))
 			return;
 
-		// Everything else (http/https/mailto/…) opens in the system
-		// browser; we never load remote content inside the offline
-		// viewer.
+		// Everything else (http/https/mailto/...) opens in the system browser; remote content is
+		// never loaded in the offline viewer.
 		QDesktopServices::openUrl(QUrl(href));
 	}
 
@@ -401,9 +369,8 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 	g_ctx = ctx;
 	MMCO_LOG(ctx, "OfflineWiki initialising…");
 
-	// Open a previously cloned wiki synchronously (local I/O) so it is
-	// usable offline immediately. The network clone/update runs in the
-	// background so boot is never blocked on git/network.
+	// Open a previously cloned wiki synchronously (local I/O) so it works offline at once; the
+	// network sync runs in the background.
 	openWiki();
 	MMCO_LOG(ctx, g_wiki ? "OfflineWiki: Kite wiki ready (cached copy)."
 						 : "OfflineWiki: no cached wiki yet.");
@@ -426,9 +393,8 @@ MMCO_EXPORT void mmco_unload()
 {
 	if (g_ctx)
 		MMCO_LOG(g_ctx, "OfflineWiki unloading.");
-	// Clear g_ctx first so any in-flight background git callback becomes a
-	// no-op (it checks g_ctx and only self-deletes its QProcess). The host
-	// tears down g_surface itself once the module unloads.
+	// Clear g_ctx first so an in-flight background git callback becomes a no-op (it checks g_ctx
+	// and only deletes its QProcess). The host tears down g_surface on unload.
 	g_ctx = nullptr;
 	g_surface = nullptr;
 	delete g_wiki;

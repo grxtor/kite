@@ -62,10 +62,9 @@ namespace Technic
 		QUrl m_sourceUrl;
 		QString m_minecraftVersion;
 		QString m_archivePath;
-		/* The cache slot the archive was downloaded into. Kept so that a
-		 * failed extraction can throw the file away: an archive that
-		 * cannot be unpacked is worthless, and leaving it cached and
-		 * fresh means every retry unpacks the same broken bytes. */
+		/* The cache slot of the downloaded archive, kept so a failed extraction
+		 * can discard it: cached and fresh, every retry would unpack the same
+		 * broken bytes. */
 		MetaEntryPtr m_archiveEntry;
 		NetJob::Ptr m_filesNetJob;
 		QFuture<std::optional<QStringList>> m_extractFuture;

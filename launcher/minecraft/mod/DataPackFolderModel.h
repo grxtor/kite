@@ -21,12 +21,9 @@
 
 #include "ModFolderModel.h"
 
-/* Backs a `datapacks` folder.
- *
- * Two things use this: the instance-wide global data pack folder (picked
- * up by loaders such as Paxi or OpenLoader) and, in the future, the
- * per-world folder under saves/<world>/datapacks. Both have identical
- * semantics, so the model only needs the folder path. */
+// Backs a `datapacks` folder: the instance-wide global folder (picked up by
+// loaders such as Paxi or OpenLoader) or a per-world saves/<world>/datapacks
+// one. Both behave the same, so the model only needs the folder path.
 class DataPackFolderModel : public ModFolderModel
 {
 	Q_OBJECT

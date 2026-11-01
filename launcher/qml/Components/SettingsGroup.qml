@@ -7,8 +7,7 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * A titled card of setting rows, separated by hairlines -- the layout every
- * settings screen of a desktop app has converged on.
+ * A titled card of setting rows, separated by hairlines.
  */
 Column {
     id: root
@@ -19,34 +18,15 @@ Column {
 
     spacing: Theme.space.sm
 
-    // Title and description start on the cards' own left edge -- the same
-    // x as the section heading above them -- not indented past it.
-    Text {
-        visible: root.title.length > 0
-        text: root.title
-        color: Theme.palette.textPrimary
-        font.family: Theme.font.heading
-        font.pixelSize: Theme.type.title.pixelSize
-        font.weight: Font.Bold
-    }
-
-    Text {
-        visible: root.description.length > 0
+    GroupHeading {
         width: parent.width
-        text: root.description
-        wrapMode: Text.Wrap
-        color: Theme.palette.textTertiary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.label.pixelSize
+        title: root.title
+        description: root.description
     }
 
-    Rectangle {
+    BoxSurface {
         width: parent.width
         height: rowsColumn.height
-        radius: Theme.radius.lg
-        color: Theme.palette.surface
-        border.width: 1
-        border.color: Theme.palette.border
 
         Column {
             id: rowsColumn
@@ -58,11 +38,8 @@ Column {
         }
     }
 
-    // A row's `visible` is its effective visibility, so it reads false for
-    // every row while the whole group is hidden (e.g. on a tab not shown
-    // yet). Re-mark whenever the group itself or any row changes visibility,
-    // instead of only when rows are added -- otherwise a group built while
-    // hidden never gets its hairlines.
+    // A row's `visible` is effective visibility: false for every row while the group is hidden.
+    // Re-mark on any visibility change, or a group built while hidden never gets its hairlines.
     onVisibleChanged: root.markRows()
     property var _watchedRows: []
 

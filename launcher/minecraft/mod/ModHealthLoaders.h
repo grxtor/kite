@@ -22,10 +22,9 @@
 #include <QString>
 #include <QStringList>
 
-/* What ModHealth knows about the loaders themselves: the ids the runtime
- * provides, and the versions a built-in answers to besides its own. Private
- * to ModHealth.cpp and ModHealthLoaders.cpp, which holds the definitions and
- * the reasons for each. */
+// What ModHealth knows about the loaders themselves: the ids the runtime
+// provides, and the versions a built-in answers to besides its own. Private to
+// ModHealth.cpp and ModHealthLoaders.cpp.
 namespace ModHealth
 {
 	namespace detail

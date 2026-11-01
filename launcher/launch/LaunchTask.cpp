@@ -103,19 +103,18 @@ void LaunchTask::onStepFinished()
 
 void LaunchTask::startStep(const shared_qobject_ptr<LaunchStep>& step)
 {
-	// Only ever forwarding one step at a time - drop the previous one
-	// before wiring the new one, rather than leaving it to fire into a
-	// step that has already moved on.
+	// Forward one step at a time: drop the previous one before wiring the new
+	// one, or it fires into a step that has moved on.
 	QObject::disconnect(m_stepStatusConnection);
 	QObject::disconnect(m_stepProgressConnection);
 	m_stepStatusConnection =
 		connect(step.get(), &Task::status, this, &Task::setStatus);
 	m_stepProgressConnection =
 		connect(step.get(), &Task::progress, this, &Task::setProgress);
-	/* What the launch is doing, for a step that does not say: most steps
-	 * are quick and silent, and the last step's stage ("Downloading
-	 * assets", 100%) would otherwise stay up through them. A step with a
-	 * stage of its own sets it as it starts, right over this. */
+	// What the launch is doing, for a step that does not say: most steps are
+	// quick and silent, and the last stage ("Downloading assets", 100%) would
+	// stay up through them. A step with its own stage overrides it as it
+	// starts.
 	setStatus(tr("Preparing to launch"));
 	setProgress(0, 0);
 	step->start();

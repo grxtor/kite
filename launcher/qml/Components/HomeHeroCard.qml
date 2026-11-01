@@ -6,39 +6,23 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The hero in the classic look, the way Lunar Client opens: one instance on
- * a card -- its picture on the calm tile (HomeHeroTile); its name and what
- * it runs (HomeHeroTitle); label over value, when it was last played, for
- * how long and the world it was last in (HomeHeroFacts); at the card's far
- * edge Play and ▾ (HomeHeroActions). The facts sit between the name and Play
- * on a card wide enough to leave room on both sides, so a wide card has no
- * empty middle; else under the name; on a narrow card they become words on
- * the line under it.
- *
- * A real screenshot of the instance, softened to its colours, is the card's
- * backdrop when it has one (the facts then stay under the name, on its
- * darker side); otherwise the card is the neutral surface -- never a
- * stand-in picture. Clicking the card anywhere else opens the instance
- * page. The instance and every signal belong to the HomeHero it is a view
- * of.
+ * The hero in the classic look: one instance on a card with its picture, name, facts and Play with ▾. The facts
+ * sit between the name and Play on a wide card, under the name on a narrower one, in the line under the name on a
+ * narrow one. A view of the HomeHero it belongs to.
  */
 Item {
     id: root
 
     required property Item hero
 
-    // Lunar's scale: a big tile, a wide Play.
     readonly property int tileSize: Theme.control.heightLg * 2 + Theme.space.xxl
     readonly property int playWidth: 176
     readonly property int padding: Theme.space.xxl
-    // On a photo the words take the media colours.
     readonly property color ink: root.hero.hasBackdrop ? Theme.media.text : Theme.palette.textPrimary
     readonly property color inkSecondary: root.hero.hasBackdrop ? Theme.media.textSecondary : Theme.palette.textSecondary
     readonly property color inkLabel: root.hero.hasBackdrop ? Theme.media.textSecondary : Theme.palette.textTertiary
 
-    // Where the facts go: beside the name with at least factsGap on either
-    // side, else under it, else nowhere (the line under the name says when
-    // and how long instead). Measured off natural widths only, never off
+    // Where the facts go: beside the name, else under it, else nowhere. Measured off natural widths only, never off
     // the layout they change.
     readonly property int gap: Theme.space.xl
     readonly property int factsGap: Theme.space.xxl
@@ -49,8 +33,6 @@ Item {
     readonly property bool factsUnder: !root.factsBeside && root.besideName >= factsBelow.naturalWidth
     readonly property bool showsFacts: root.factsBeside || root.factsUnder
 
-    // The page's top padding is part of the hero, so the page can lay the
-    // rows under it without knowing the look.
     readonly property int topInset: Theme.space.xl
     readonly property int gapBelow: Theme.space.xxl
     readonly property real playCenterY: root.topInset + card.height / 2
@@ -68,24 +50,25 @@ Item {
         border.width: root.hero.hasBackdrop ? 0 : 1
         border.color: Theme.palette.border
 
-        // Anywhere but its buttons: the instance page.
         TapHandler {
             gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: root.hero.openRequested(root.hero.instanceId)
+            onTapped: root.hero.tap()
         }
 
-        // The instance's own newest screenshot, softened to its colours and
-        // darker on the words' side.
+        // Inside the hairline when there is no photo, so the card keeps its edge.
         CoverArt {
+            readonly property int edge: root.hero.hasBackdrop ? 0 : card.border.width
             anchors.fill: parent
-            visible: root.hero.hasBackdrop
+            anchors.margins: edge
+            visible: root.hero.hasBackdrop || root.hero.hasTint
             source: root.hero.coverImage
-            photoSoftness: root.hero.backdropSoftness
+            kind: root.hero.coverKind
+            tint: root.hero.iconColor
             glyph: ""
             showLogo: false
-            radius: card.radius
-            scrim: "horizontal"
-            matte: Theme.palette.canvas
+            radius: card.radius - edge
+            scrim: root.hero.hasBackdrop ? "horizontal" : "none"
+            matte: root.hero.hasBackdrop ? Theme.palette.canvas : card.color
         }
 
         RowLayout {
@@ -103,7 +86,6 @@ Item {
             }
 
             ColumnLayout {
-                // Beside the facts it is only as wide as the name.
                 Layout.fillWidth: !root.factsBeside
                 Layout.preferredWidth: root.factsBeside ? title.naturalWidth : -1
                 Layout.minimumWidth: 0
@@ -141,8 +123,6 @@ Item {
                 }
             }
 
-            // The facts beside the name, in the middle of the room between
-            // it and Play.
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -160,7 +140,6 @@ Item {
                 }
             }
 
-            // The page's one primary button, at the card's far edge.
             HomeHeroActions {
                 id: actions
                 hero: root.hero

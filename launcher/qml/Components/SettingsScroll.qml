@@ -6,24 +6,15 @@ import QtQuick
 import QtQuick.Controls
 import Kite.Theme
 
-// One settings section: a page heading (what this section is, and why you'd
-// come here) over a scrolling column of groups, kept to a readable width on
-// wide windows.
-//
-// The column runs to the same right edge as the header above it: the
-// scroll bar overlays the cards instead of keeping an empty gutter beside
-// them, and the bottom rows fade out (ScrollFade) rather than being sliced
-// off by the window edge while there is more below.
+// One settings section: a page heading over a scrolling column of groups, centred up to the page's
+// maximum content width like the other pages. The scroll bar overlays the cards, and the bottom rows
+// fade out (ScrollFade).
 Item {
     id: root
 
     property string title
     property string description
     default property alias groups: column.data
-
-    // Past this the rows' label-left/control-right layout stops reading as
-    // one line; the column stops growing here on wide windows.
-    readonly property int readableWidth: 760
 
     Accessible.name: title
 
@@ -39,7 +30,8 @@ Item {
 
         Column {
             id: column
-            width: Math.min(flick.width, root.readableWidth)
+            width: Math.min(flick.width, Theme.layout.maxContentWidth)
+            x: Math.round((flick.width - width) / 2)
             y: Theme.space.xs
             spacing: Theme.space.xl
 
@@ -47,22 +39,17 @@ Item {
                 width: parent.width
                 spacing: Theme.space.xxs
 
-                Text {
+                Copy {
                     text: root.title
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.heading.pixelSize
-                    font.weight: Theme.type.heading.weight
+                    role: "heading"
                 }
 
-                Text {
+                Copy {
                     visible: root.description.length > 0
                     width: parent.width
                     text: root.description
+                    tone: "secondary"
                     wrapMode: Text.Wrap
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
                     lineHeight: Theme.type.label.lineHeight
                 }
             }

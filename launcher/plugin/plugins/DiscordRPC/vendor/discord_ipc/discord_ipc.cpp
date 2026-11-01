@@ -55,15 +55,9 @@ QString DiscordIpc::candidatePipePath(int index) const
 	/* Windows named pipes — QLocalSocket strips the \\.\pipe\ prefix. */
 	return QStringLiteral("discord-ipc-%1").arg(index);
 #else
-	/* On Linux/macOS Discord places the socket under one of several
-	 * runtime dirs, with priority:
-	 *   $XDG_RUNTIME_DIR
-	 *   $TMPDIR
-	 *   /tmp
-	 *   $TMP / $TEMP (rare)
-	 *
-	 * Discord also nests inside .flatpak-info, app/com.discordapp.Discord,
-	 * snap.discord — we walk those, too. */
+	/* On Linux/macOS Discord places the socket under one of several runtime dirs, in priority:
+	 * $XDG_RUNTIME_DIR, $TMPDIR, /tmp, $TMP / $TEMP (rare), and also nested under .flatpak-info,
+	 * app/com.discordapp.Discord and snap.discord; walk those too. */
 	QStringList bases;
 	auto envBase = [&bases](const char* var) {
 		QByteArray v = qgetenv(var);
@@ -90,8 +84,8 @@ QString DiscordIpc::candidatePipePath(int index) const
 				return path;
 		}
 	}
-	/* Fallback: return the canonical /run-style path even if it doesn't
-	 * exist yet — Discord may create it later. */
+	/* Fallback: the canonical /run-style path even if it does not exist yet; Discord may create it
+	 * later. */
 	const QString base =
 		bases.isEmpty() ? QStringLiteral("/tmp") : bases.first();
 	return QStringLiteral("%1/discord-ipc-%2").arg(base).arg(index);
@@ -121,10 +115,8 @@ void DiscordIpc::tryNextPipe()
 	}
 
 	if (m_pipeIndex > 9) {
-		/* Walked the whole pipe range without finding a server.
-		 * Discord is either offline or not installed. Stay quiet
-		 * after the first announcement — the reconnect timer will
-		 * try again later. */
+		/* Walked the whole pipe range without a server: Discord is offline or not installed. Quiet
+		 * after the first announcement; the reconnect timer retries. */
 		if (!m_errorEmitted) {
 			emit errorOccurred(QStringLiteral("Discord IPC: no socket in 0..9 "
 											  "(is Discord running?)"));
@@ -135,11 +127,8 @@ void DiscordIpc::tryNextPipe()
 		return;
 	}
 
-	/* Skip pipe indices whose socket file does not exist on disk.
-	 * Qt's QLocalSocket happily fails async with a confusing
-	 * "Invalid name" warning when it cannot reach the abstract / file
-	 * socket — pre-filtering removes the log spam AND speeds up the
-	 * walk. */
+	/* Skip pipe indices whose socket file does not exist: QLocalSocket otherwise fails async with a
+	 * confusing "Invalid name" warning, and skipping also speeds up the walk. */
 #ifndef Q_OS_WIN
 	{
 		const QString path = candidatePipePath(m_pipeIndex);
@@ -161,12 +150,9 @@ void DiscordIpc::tryNextPipe()
 	connect(m_socket, &QLocalSocket::readyRead, this, &DiscordIpc::onReadyRead);
 	connect(m_socket, &QLocalSocket::errorOccurred, this, &DiscordIpc::onError);
 
-	/* Use setServerName() + connectToServer(OpenMode) rather than the
-	 * combined connectToServer(name, OpenMode) overload — the latter
-	 * runs Qt's name-mangling code path which rejects absolute UNIX
-	 * paths containing "/" with a generic "Invalid name" qWarning on
-	 * some Qt 6 builds. The two-step form bypasses that and forwards
-	 * the path straight to the underlying socket(2) call. */
+	/* setServerName() + connectToServer(OpenMode), not the combined overload: that one runs Qt's
+	 * name mangling, which rejects absolute UNIX paths containing "/" with an "Invalid name"
+	 * warning on some Qt 6 builds. */
 	const QString path = candidatePipePath(m_pipeIndex);
 	m_socket->setServerName(path);
 	m_socket->connectToServer(QIODevice::ReadWrite);
@@ -187,8 +173,7 @@ void DiscordIpc::disconnectFromDiscord()
 
 void DiscordIpc::onConnected()
 {
-	/* Fresh connection — reset the outage-suppression flag so the next
-	 * disconnect cycle emits one error message and then goes quiet. */
+	/* Fresh connection: reset the outage-suppression flag so the next outage emits one error. */
 	m_errorEmitted = false;
 	setState(State::Handshaking);
 	sendHandshake();
@@ -198,8 +183,7 @@ void DiscordIpc::onDisconnected()
 {
 	m_readBuffer.clear();
 	setState(State::Disconnected);
-	/* Auto-reconnect after a delay — Discord may have just been started
-	 * or restarted by the user. */
+	/* Auto-reconnect after a delay; Discord may just have been (re)started. */
 	m_reconnectTimer.start();
 }
 
@@ -265,8 +249,7 @@ void DiscordIpc::onReadyRead()
 	while (readFrame(op, payload)) {
 		switch (op) {
 			case OpFrame: {
-				/* Look for the READY event so we know the handshake
-				 * completed and we are clear to send commands. */
+				/* Look for the READY event: the handshake completed and commands may be sent. */
 				QJsonDocument doc = QJsonDocument::fromJson(payload);
 				QJsonObject obj = doc.object();
 				QString evt = obj.value("evt").toString();

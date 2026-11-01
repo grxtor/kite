@@ -30,7 +30,6 @@ namespace FriendsSessionStore
 {
 	namespace
 	{
-		/* A token that expires within this is not worth starting with. */
 		constexpr int kExpiryMarginSeconds = 60 * 60;
 	} // namespace
 

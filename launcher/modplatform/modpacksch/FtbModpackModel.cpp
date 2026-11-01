@@ -25,7 +25,6 @@
 
 #include <QDateTime>
 #include <QDebug>
-#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -36,17 +35,15 @@
 #include "InstanceList.h"
 #include "Json.h"
 #include "core/LauncherContext.h"
-#include "icons/IconList.h"
 #include "modplatform/modpacksch/FTBPackInstallTask.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
 #include "net/Download.h"
-#include "net/HttpMetaCache.h"
 #include "tasks/TaskWatcher.h"
 
 namespace
 {
-	/* Packs asked for per request round: enough that the list fills in
-	 * quickly, few enough that one round never ties up the network. */
+	/* Packs per request round: fills the list quickly without tying up the
+	 * network. */
 	constexpr int kBatchSize = 16;
 
 	QString isoDate(qint64 secondsSinceEpoch)
@@ -69,8 +66,7 @@ namespace
 FtbModpackModel::FtbModpackModel(QObject* parent)
 	: QAbstractListModel(parent), m_detail(new ModrinthModpackDetail(this))
 {
-	/* The widget page's three sorts, and the last update, which the
-	 * other providers offer too. */
+	/* The three sorts, and the last update. */
 	const QList<QPair<QString, QString>> sorts = {
 		{QStringLiteral("plays"), tr("Sort by Plays")},
 		{QStringLiteral("installs"), tr("Sort by Installs")},
@@ -252,19 +248,17 @@ QList<int> FtbModpackModel::parseIndex(const QByteArray& bytes)
 bool FtbModpackModel::parsePack(const QByteArray& bytes,
 								ModpacksCH::Modpack& out)
 {
-	QJsonParseError parseError;
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
+	const auto doc = Json::tryParse(bytes);
+	if (!doc || !doc->isObject()) {
 		return false;
 	}
-	QJsonObject obj = doc.object();
+	QJsonObject obj = doc->object();
 	try {
 		ModpacksCH::loadModpack(out, obj);
 	} catch (const JSONValidationError& e) {
 		qWarning() << "Error while reading a pack from FTB:" << e.cause();
 		return false;
 	}
-	/* No guarantee a pack has a version; one without is a dud. */
 	return !out.versions.isEmpty();
 }
 
@@ -288,8 +282,7 @@ QList<int> FtbModpackModel::filterAndSort(const QList<ModpacksCH::Modpack>& pack
 			}
 		}
 		if (!loader.isEmpty()) {
-			/* Only a pack that names a loader in its tags can be ruled
-			 * out by one; plenty name none at all. */
+			/* Only a pack naming a loader in its tags can be ruled out by one. */
 			QSet<QString> tagged;
 			for (const auto& tag : pack.tags) {
 				if (loaderNames().contains(tag.name.toLower())) {
@@ -323,7 +316,6 @@ QList<int> FtbModpackModel::filterAndSort(const QList<ModpacksCH::Modpack>& pack
 QVariantList FtbModpackModel::versionEntries(const ModpacksCH::Modpack& pack)
 {
 	auto versions = pack.versions;
-	/* Newest first; a version id only ever grows, so it settles a tie. */
 	std::stable_sort(versions.begin(), versions.end(),
 					 [](const ModpacksCH::VersionInfo& a,
 						const ModpacksCH::VersionInfo& b) {
@@ -343,7 +335,6 @@ QVariantList FtbModpackModel::versionEntries(const ModpacksCH::Modpack& pack)
 		entry[QStringLiteral("loaders")] = QVariant::fromValue(QStringList());
 		entry[QStringLiteral("datePublished")] = isoDate(version.updated);
 		entry[QStringLiteral("downloadUrl")] = QString();
-		/* The newest release is the one to start on, ahead of betas. */
 		const bool release =
 			version.type.compare(QStringLiteral("release"), Qt::CaseInsensitive) == 0;
 		entry[QStringLiteral("featured")] = release && !featuredSet;
@@ -417,8 +408,8 @@ void FtbModpackModel::loadNextBatch()
 	}
 	m_job = job;
 
-	/* A pack that failed to arrive is simply missing from the list, as
-	 * it was from the widget page; the rest of the round still counts. */
+	/* A pack that failed to arrive is missing from the list; the round still
+	 * counts. */
 	auto finish = [this, responses] {
 		m_job.reset();
 		const bool firstRound = m_packs.isEmpty();
@@ -429,9 +420,8 @@ void FtbModpackModel::loadNextBatch()
 			}
 		}
 		const bool done = m_pending.isEmpty();
-		/* Shown after the first round, so the page is not empty for long,
-		 * and once everything is in; re-sorting on every round would
-		 * shuffle the grid under the user's pointer. */
+		/* Shown after the first round and when done; re-sorting every round would
+		 * shuffle the grid under the pointer. */
 		if (firstRound || done) {
 			refilter();
 		}
@@ -484,24 +474,6 @@ void FtbModpackModel::loadDetail(const QString& projectId)
 	m_detail->setLoading(false);
 }
 
-QString FtbModpackModel::resolveIconKey(const ModpacksCH::Modpack& pack) const
-{
-	/* Where FtbPage's list keeps logos (FtbListModel::requestLogo()),
-	 * keyed by pack name, with a squared ".small" copy beside it. A
-	 * disk-only lookup; never downloads. */
-	MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
-		QStringLiteral("ModpacksCHPacks"),
-		QStringLiteral("logos/%1").arg(pack.name.section(QLatin1Char('.'), 0, 0)));
-	if (entry && !entry->isStale()) {
-		const QString small = entry->getFullPath() + QStringLiteral(".small");
-		const QString key = QStringLiteral("ftb_%1").arg(pack.id);
-		LAUNCHER->icons()->installIcon(
-			QFileInfo::exists(small) ? small : entry->getFullPath(), key);
-		return key;
-	}
-	return QStringLiteral("ftb_logo");
-}
-
 QObject* FtbModpackModel::install(const QString& projectId,
 								  const QString& versionId,
 								  const QString& instanceName,
@@ -526,16 +498,14 @@ QObject* FtbModpackModel::install(const QString& projectId,
 		return nullptr;
 	}
 
-	/* What FtbPage::suggestCurrent() hands the New instance dialog, named
-	 * and placed the way NewInstanceDialog/MainWindow do. The task
-	 * fetches the version's manifest and files itself. */
+	/* The task fetches the version's manifest and files itself. */
 	auto* task = new ModpacksCH::PackInstallTask(*pack, versionName);
 	const QString effectiveName = instanceName.isEmpty()
 									  ? pack->name + QLatin1Char(' ') + versionName
 									  : instanceName;
 	task->setName(effectiveName);
 	task->setGroup(group);
-	task->setIcon(resolveIconKey(*pack));
+	task->setIcon(QStringLiteral("ftb_logo"));
 	task->setTargetDir(LAUNCHER->instances()->primaryDir());
 
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(task);

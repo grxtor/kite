@@ -91,7 +91,6 @@ bool Meta::BaseEntity::loadLocalFile()
 	} catch (const Exception& e) {
 		qCDebug(metaLog)
 			<< QString("Unable to parse file %1: %2").arg(fname, e.cause());
-		// just make sure it's gone and we never consider it again.
 		QFile::remove(fname);
 		return false;
 	}
@@ -99,13 +98,11 @@ bool Meta::BaseEntity::loadLocalFile()
 
 void Meta::BaseEntity::load(Net::Mode loadType)
 {
-	// load local file if nothing is loaded yet
 	if (!isLoaded()) {
 		if (loadLocalFile()) {
 			m_loadStatus = LoadStatus::Local;
 		}
 	}
-	// if we need remote update, run the update task
 	if (loadType == Net::Mode::Offline || !shouldStartRemoteUpdate()) {
 		return;
 	}

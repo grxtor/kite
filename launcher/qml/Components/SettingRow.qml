@@ -7,13 +7,11 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One setting: what it is and what it does on the left, its control on the
- * right. `wide` puts the control under the text instead, for text fields
- * that need the room; a row too narrow to give its text `labelMinWidth`
- * beside the control (a narrow window) does the same by itself. `topAligned` lines the text up with the control's
- * first line instead of centring both, for a control with more under that
- * line (a slider with a hint below it); the label
- * centres on the first `controlLineHeight` pixels of the control.
+ * One setting: what it is on the left, its control on the right. `wide` puts the
+ * control under the text, as does a row too narrow to give its text
+ * `labelMinWidth`. `topAligned` lines the text up with the control's first line
+ * (for a control with more under it); the label centres on the first
+ * `controlLineHeight` pixels of the control.
  */
 Item {
     id: root
@@ -63,28 +61,24 @@ Item {
             Layout.topMargin: root.topAligned && !root.stacked
                               ? Math.max(0, Math.round((root.controlLineHeight - labelText.implicitHeight / Math.max(1, labelText.lineCount)) / 2))
                               : 0
-            spacing: 2
+            spacing: Theme.space.xxs
 
-            Text {
+            Copy {
                 id: labelText
                 width: parent.width
                 text: root.label
+                role: "bodyStrong"
                 wrapMode: Text.Wrap
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
-                font.weight: Font.DemiBold
             }
 
-            Text {
+            Copy {
                 width: parent.width
                 visible: root.description.length > 0
                 text: root.description
+                role: "label"
+                tone: "tertiary"
                 wrapMode: Text.Wrap
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-                lineHeight: Theme.type.label.lineHeight
+                lineHeight: spec.lineHeight
             }
         }
 

@@ -1,0 +1,71 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+import Button from '../components/Button.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { LOCALES, getDictionary, localePath } from '../i18n';
+
+const en = getDictionary('en');
+---
+
+<BaseLayout
+  locale="en"
+  route="/"
+  title={`${en.meta.notFound.title} · ${en.siteName}`}
+  description={en.meta.notFound.description}
+  noindex
+>
+  <div class="container page">
+   <div class="stack">
+    {
+      LOCALES.map((locale) => {
+        const t = getDictionary(locale);
+        return (
+          <section class="block" lang={locale} aria-labelledby={`title-${locale}`}>
+            {locale === 'en' ? (
+              <h1 id={`title-${locale}`}>{t.notFound.title}</h1>
+            ) : (
+              <h2 id={`title-${locale}`}>{t.notFound.title}</h2>
+            )}
+            <p class="lead">{t.notFound.text}</p>
+            <div class="actions">
+              <Button href={localePath(locale, '/')} variant="secondary">
+                {t.notFound.home}
+              </Button>
+              <Button href={localePath(locale, '/download')} variant="ghost">
+                {t.notFound.download}
+              </Button>
+            </div>
+          </section>
+        );
+      })
+    }
+   </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    padding-block: var(--space-9);
+  }
+  .stack {
+    display: grid;
+    gap: var(--space-8);
+    max-width: 44rem;
+  }
+  .block {
+    display: grid;
+    gap: var(--space-4);
+    justify-items: start;
+  }
+  h1,
+  h2 {
+    font-size: var(--text-h2);
+    letter-spacing: var(--tracking-h2);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+</style>

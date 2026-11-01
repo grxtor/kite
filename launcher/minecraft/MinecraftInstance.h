@@ -59,39 +59,21 @@ class MinecraftInstance : public BaseInstance
 		return true;
 	}
 
-	/**
-	 * @brief the Minecraft version this instance is set to, or empty
-	 *
-	 * Reads it from the pack profile, loading that profile first if nothing
-	 * has needed it yet. That load is the point of this accessor: the profile
-	 * is only read on demand, so anything that asks the components directly
-	 * before a launch or an update gets an empty string back and silently
-	 * concludes whatever an empty version implies.
-	 *
-	 * Never touches the network.
-	 */
+	/// The Minecraft version this instance is set to, or empty. Loads the pack
+	/// profile if nothing has yet; never touches the network.
 	QString minecraftVersion() const;
 
-	/// BaseInstance::gameVersion() override - same value as minecraftVersion().
 	QString gameVersion() const override
 	{
 		return minecraftVersion();
 	}
 
-	/**
-	 * Human name of this instance's mod loader ("Fabric", "Forge", ...),
-	 * or empty if none of the loaders this launcher knows about is
-	 * installed and enabled. See BaseInstance::modLoaderName().
-	 */
+	/// Human name of the mod loader ("Fabric", "Forge", ...), or empty if no
+	/// known loader is installed and enabled.
 	QString modLoaderName() const override;
 
-	/**
-	 * Whether this instance's Minecraft version understands --demo.
-	 *
-	 * Demo mode was added in 1.3.1; older clients ignore the argument and
-	 * start a normal (unauthenticated, and therefore broken) session, so
-	 * offering it there would be a trap.
-	 */
+	/// Whether the Minecraft version understands --demo (added in 1.3.1; older
+	/// clients ignore it and start a broken session).
 	bool supportsDemo() const;
 
 	////// Directories and files //////
@@ -99,21 +81,16 @@ class MinecraftInstance : public BaseInstance
 	QString resourcePacksDir() const;
 	QString texturePacksDir() const;
 	QString shaderPacksDir() const;
-	/* Instance-wide data pack folder. Vanilla only loads data packs from
-	 * saves/<world>/datapacks, so this folder is only meaningful with a
-	 * global data pack loader (Paxi, OpenLoader, ...); its location is
-	 * therefore configurable through the GlobalDataPacksPath setting and
-	 * defaults to <gameRoot>/datapacks. */
+	// Instance-wide data pack folder, for global data pack loaders (Paxi,
+	// OpenLoader, ...). Set by GlobalDataPacksPath; defaults to
+	// <gameRoot>/datapacks.
 	QString dataPacksDir() const;
 	QString modsRoot() const override;
 	QString coreModsDir() const;
-	QString modsCacheLocation() const;
 	QString libDir() const;
 	QString worldDir() const;
 	QString resourcesDir() const;
 	QDir jarmodsPath() const;
-	QDir librariesPath() const;
-	QDir versionsPath() const;
 	QString instanceConfigFolder() const override;
 
 	// Path to the instance's minecraft directory.
@@ -155,20 +132,18 @@ class MinecraftInstance : public BaseInstance
 							   MinecraftServerTargetPtr serverToJoin);
 	/// get arguments passed to java
 	QStringList javaArguments() const;
-	/// The -Dfabric.addMods argument that loads Kite's own mod, or nothing
-	/// when the mod is off, the loader is not Fabric or no jar is at hand.
-	/// Kept out of javaArguments(): only the game's JVM wants it.
+	/// The -Dfabric.addMods argument that loads Kite's mod, or nothing if the
+	/// mod is off, the loader is not Fabric or no jar is at hand. Not part of
+	/// javaArguments(): only the game's JVM wants it.
 	QStringList kiteModArguments() const;
-	/// Whether Kite's mod is on for this instance and the instance is on
-	/// Fabric.
+	/// Whether Kite's mod is on and the instance is on Fabric.
 	bool kiteModApplies() const;
-	/// Whether the cached manifest has a build for this instance's Minecraft
-	/// and Fabric Loader versions; Unknown until a manifest has been fetched.
+	/// Whether the cached manifest has a build for this Minecraft and Fabric
+	/// Loader version; Unknown until a manifest has been fetched.
 	KiteMod::Support kiteModSupport() const;
-	/// The bridge session of the launch under way (StartModBridge): its port
-	/// goes to the game as -Dkite.bridge.port by kiteModArguments(), its token
-	/// as KITE_BRIDGE_TOKEN by createEnvironment(). Empty between games: it is
-	/// cleared when the instance stops.
+	/// The bridge session of the launch under way: its port goes to the game as
+	/// -Dkite.bridge.port (kiteModArguments()), its token as KITE_BRIDGE_TOKEN
+	/// (createEnvironment()). Cleared when the instance stops.
 	void setBridgeGrant(const ModBridgeProtocol::Grant& grant);
 	/// The jar kiteModArguments() would load; empty when there is none.
 	QString kiteModJar() const;
@@ -189,7 +164,6 @@ class MinecraftInstance : public BaseInstance
 
 	QString getLogFileRoot() override;
 
-	QString getStatusbarDescription() override;
 
 	// FIXME: remove
 	virtual QStringList getClassPath() const;
@@ -205,15 +179,14 @@ class MinecraftInstance : public BaseInstance
 
 	virtual JavaVersion getJavaVersion() const;
 
-	/// The OS and the architecture of this instance's Java, which decide
-	/// what libraries and natives it gets. Until a Java is checked, the
-	/// architecture Kite was built for.
+	/// The OS and architecture of this instance's Java, which decide its
+	/// libraries and natives; the architecture Kite was built for until a Java
+	/// is checked.
 	RuntimeContext runtimeContext() const;
 
   protected:
 	QMap<QString, QString>
 	createCensorFilterFromSession(AuthSessionPtr session);
-	QStringList validLaunchMethods();
 	QString launchMethod();
 
   protected: // data

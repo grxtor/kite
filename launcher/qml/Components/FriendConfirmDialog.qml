@@ -4,17 +4,14 @@
 import QtQuick
 
 /*
- * Removing a friend and blocking someone, both after a question: what a
- * person's ⋯ menu (FriendPersonMenu) asks for ends here. The Friends page and
- * the friends panel on the window's right edge each hold one, so neither has
- * to load the other to ask. `ask()` words the question; on yes, the
- * controller acts, and what the server answered comes back as a toast from
- * Main.qml, off FriendsController.actionFinished.
+ * Removing a friend and blocking someone, both after a question: what a person's ⋯ menu (FriendPersonMenu) asks for
+ * ends here. The Friends page and the friends panel each hold one. `ask()` words the question; on yes the controller
+ * acts and the answer comes back as a toast from Main.qml (FriendsController.actionFinished).
  */
 ConfirmDialog {
     id: root
 
-    // QmlShell.friends (FriendsController), or null.
+    // FriendsController, or null.
     property var controller: null
 
     property string mode: "remove"
@@ -22,8 +19,8 @@ ConfirmDialog {
     property string targetName
     readonly property bool removing: root.mode === "remove"
 
-    // @p mode: "remove" a friend, "block" a friend, or "blockRequest" (the
-    // person is not a friend: their request is what goes).
+    // @p mode: "remove" a friend, "block" a friend, or "blockRequest" (the person is not a friend: their request
+    // goes).
     function ask(mode, uuid, name) {
         root.mode = mode
         root.targetUuid = uuid

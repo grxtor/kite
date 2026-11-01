@@ -24,8 +24,8 @@
 
 #include "news/NewsEntry.h"
 
-/* NewsEntry::fromXmlElement()'s RSS date: Home's news banner hides posts by
- * age, which only works once the feed's RFC 2822 dates parse. */
+/* NewsEntry::fromXmlElement()'s RSS date: Home's news banner hides posts
+ * by age, which needs the feed's RFC 2822 dates to parse. */
 class NewsEntryTest : public QObject
 {
 	Q_OBJECT

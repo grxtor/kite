@@ -25,11 +25,8 @@
 
 #include "Setting.h"
 
-/*!
- * \brief A setting that 'overrides another.' based on the value of a 'gate'
- * setting If 'gate' evaluates to true, the override stores and returns data If
- * 'gate' evaluates to false, the original does,
- */
+/* A setting that overrides another based on a 'gate' setting: if the gate is
+ * true the override stores and returns data, otherwise the original does. */
 class PassthroughSetting : public Setting
 {
 	Q_OBJECT

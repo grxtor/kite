@@ -9,19 +9,14 @@ import QtQuick.Dialogs
 import Kite.Theme
 
 /*
- * Data packs for one of this instance's worlds (saves/<world>/datapacks) --
- * the widget-free replacement for the modal dialog WorldListPage's "Data
- * packs" action used to open. The world picker defaults to the first world;
- * WorldsTab's own "Data packs" row action points this at a specific one via
- * `selectedWorldRow`.
+ * Data packs for one of this instance's worlds (saves/<world>/datapacks). The picker defaults to the first world;
+ * WorldsTab's row action points it at one via `selectedWorldRow`.
  */
 Item {
     id: root
 
-    // InstanceDetails: worlds, worldDataPacks (WorldDataPacksController).
     property var details: null
-    // Set from outside (WorldsTab's per-row action) to jump straight to a
-    // world; -1 means "whatever the picker currently shows" (defaults to 0).
+    // Set by WorldsTab's row action to jump to a world; -1 means whatever the picker shows (0 by default).
     property int selectedWorldRow: -1
     signal openFolderRequested(string path)
 
@@ -40,9 +35,7 @@ Item {
     }
 
     onSelectedWorldRowChanged: if (selectedWorldRow >= 0) openWorld(selectedWorldRow)
-    // Fires at creation too (see ManagedPackTab.qml's onControllerChanged
-    // for why that still counts) and again whenever a different instance's
-    // controller replaces this one.
+    // Fires at creation too, and whenever a different instance's controller replaces this one.
     onControllerChanged: openDefault()
     function openDefault() {
         if (root.selectedWorldRow >= 0)
@@ -60,11 +53,10 @@ Item {
             Layout.fillWidth: true
 
             leading: [
-                Text {
+                Copy {
                     text: qsTr("World")
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "secondary"
                 },
                 ComboBox {
                     id: picker
@@ -72,13 +64,10 @@ Item {
                     model: root.worldsModel
                     textRole: "name"
                     onActivated: (index) => root.openWorld(index)
-                    // The world list may still be loading when the controller
-                    // arrives; open the default world as soon as there is one,
-                    // or the toolbar would stay disabled with nothing to act on.
+                    // The world list may still be loading when the controller arrives; open the default world once
+                    // there is one.
                     onCountChanged: if (root.controller && !root.controller.ready) root.openDefault()
                 },
-                // Takes the free width, or the row would share it out
-                // between the label and the picker and pull them apart.
                 Item { Layout.fillWidth: true }
             ]
 
@@ -88,7 +77,6 @@ Item {
                 enabled: root.controller && root.controller.ready
                 onClicked: root.openFolderRequested(root.controller ? root.controller.directory : "")
             }
-            // Secondary: the play bar's Play is this page's primary action.
             HoverReason {
                 reason: root.lockedReason
                 Button {
@@ -111,15 +99,11 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            // The same row rhythm as every list tab (see PackList).
             spacing: Theme.space.sm
             boundsBehavior: Flickable.StopAtBounds
             model: root.controller ? root.controller.model : null
-            // Overlays the rows' right edge rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
-            // Same row as Content's (PackList): what it is on the left, its
-            // switch and ⋯ menu on the right.
             delegate: TabListRow {
                 id: row
                 required property int index
@@ -175,7 +159,6 @@ Item {
         }
     }
 
-    // Rows fade out at the fold instead of being sliced by the play bar.
     ScrollFade {
         anchors.left: parent.left
         anchors.right: parent.right
@@ -197,7 +180,7 @@ Item {
         visible: picker.count === 0
         title: qsTr("No worlds yet")
         body: qsTr("Data packs live inside a world's own folder, so create a world first.")
-        MeshIcon { iconName: "package"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "package"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 
     EmptyState {
@@ -206,7 +189,7 @@ Item {
         visible: picker.count > 0 && list.count === 0
         title: qsTr("No data packs")
         body: qsTr("Data packs change this world's recipes, loot and more. Add a .zip to get started.")
-        MeshIcon { iconName: "package"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "package"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 
     FileDialog {

@@ -40,13 +40,16 @@ class DependencyResolver : public Task
 	Q_OBJECT
 
   public:
-	/* A project to resolve as if a selected mod required it, known only by
-	 * the mod id a jar asks for - which is all the mod health check can say
-	 * about what is missing. `requiredBy` names the files that need it, for
-	 * the review's "Required by" line. */
+	/* A project to resolve as if a selected mod required it, known only by the
+	 * mod id a jar asks for; `requiredBy` names the files that need it.
+	 * `modrinthOnly`: the id is a Modrinth project id (the bundle catalog's),
+	 * which names nothing on CurseForge, so CurseForge is not searched when
+	 * Modrinth has nothing for this version and loader; it is listed as
+	 * unresolved. */
 	struct WantedProject {
 		QString id;
 		QStringList requiredBy;
+		bool modrinthOnly = false;
 	};
 
 	explicit DependencyResolver(
@@ -54,29 +57,21 @@ class DependencyResolver : public Task
 		const QString& mcVersion, const QString& loader,
 		QObject* parent = nullptr);
 
-	/* Optional: hand the resolver the persistent install index for the
-	 * destination mods folder. When set, any project/version already
-	 * present on disk is treated as already-resolved, so transitive
-	 * dependencies that are already installed are no longer re-fetched. */
+	/* Optional: the install index of the destination mods folder. A
+	 * dependency at the very version on disk is dropped; one present at
+	 * another version is offered unticked. */
 	void setInstalledIndex(std::shared_ptr<ModMetadataIndex> index);
 
 	/* Projects to resolve as if a selected mod required them. Call before
-	 * start(); there may be no selected mods at all.
+	 * start(); there may be no selected mods.
 	 *
-	 * Each is looked up on Modrinth with the id as the project slug (its
-	 * project endpoints take a slug as well as an id): the newest version
-	 * for this Minecraft version and loader, the way a required dependency
-	 * with no version id is. When Modrinth has no such project, or nothing
-	 * of it that runs here, CurseForge is tried the way a cross-resolved
-	 * dependency is, with the id as both name and slug - so only an exact
-	 * slug or an exact title counts. What neither finds is listed in
-	 * unresolvedDependencies() under the id. Their own required
-	 * dependencies follow as usual.
-	 *
-	 * The answer is recorded under the project's own id, not the slug it
-	 * was asked for, so a project something else already pulled in is not
-	 * fetched twice. Its `slug` is set to the wanted id (when the provider
-	 * did not name one) - how a caller tells which wanted id a row answers. */
+	 * Each is looked up on Modrinth with the id as slug (newest version for
+	 * this Minecraft version and loader), else on CurseForge with the id as
+	 * name and slug (exact matches only; skipped for a `modrinthOnly` one).
+	 * What neither finds is listed in unresolvedDependencies() under the id.
+	 * The answer is recorded under the project's own id so it is not fetched
+	 * twice, with `slug` set to the wanted id when the provider names none, so
+	 * a caller can tell which wanted id a row answers. */
 	void addWantedProjects(const QList<WantedProject>& wanted);
 
 	QList<ModPlatform::DependencyInfo> resolvedDependencies() const
@@ -87,10 +82,17 @@ class DependencyResolver : public Task
 	{
 		return m_unresolvedDeps;
 	}
+	/* The wanted ids Modrinth answered with nothing for this Minecraft
+	 * version and loader: a reply that lists no version that runs here. A
+	 * request that failed (no network, no such project) is no answer, and
+	 * its id is not listed - it may have a build the lookup did not reach. */
+	QStringList wantedNotAvailable() const
+	{
+		return m_wantedNotAvailable;
+	}
 
-	/* Resolution is a fan-out of network lookups, so it can be given up
-	 * on at any point - which the progress dialog's Skip button does.
-	 * Whatever was resolved before that is kept and returned. */
+	/* Resolution is a fan-out of lookups that can be given up at any point
+	 * (the cancel button); what was resolved is kept. */
 	bool canAbort() const override
 	{
 		return true;
@@ -103,20 +105,10 @@ class DependencyResolver : public Task
 	void executeTask() override;
 
   private:
-	/* Fires one lookup and routes the answer.
-	 *
-	 * Every lookup in here used to spell the same thing out: allocate a
-	 * buffer, new up a job, bump the pending counter, then remember to
-	 * free the buffer and decrement in both handlers. Thirteen copies of
-	 * that meant thirteen chances to leak a buffer, lose count, or - now
-	 * that the task can be aborted - write into a resolver that is no
-	 * longer running.
-	 *
-	 * `onDone` gets the reply, or an empty array if the request failed,
-	 * and runs only while the task is still going. The pending counter is
-	 * decremented after it returns, so a handler that starts further
-	 * lookups of its own cannot let the count touch zero in between and
-	 * report the whole job finished early. */
+	/* Fires one lookup and routes the answer. `onDone` gets the reply, or an
+	 * empty array if the request failed, and runs only while the task is
+	 * going. The pending counter drops after it returns, so a handler that
+	 * starts further lookups cannot let the count touch zero early. */
 	void request(const QString& name, const QUrl& url,
 				 std::function<void(const QByteArray&)> onDone);
 
@@ -124,8 +116,6 @@ class DependencyResolver : public Task
 	void resolveWantedProjects();
 	void onWantedProjectResolved(const WantedProject& wanted,
 								 const QByteArray& data);
-	/// Renames the accepted dependency of Modrinth project @p projectId
-	/// after the project's title.
 	void nameAfterProject(const QString& projectId);
 	void resolveCurseForgeDependencies(const ModPlatform::SelectedMod& mod);
 	void resolveModrinthDependencies(const ModPlatform::SelectedMod& mod);
@@ -143,9 +133,8 @@ class DependencyResolver : public Task
 	void checkCompletion();
 
   private:
-	/* `requiredBy` travels down the whole chain so that a library
-	 * pulled in three levels deep can still say what asked for it,
-	 * which is what the review dialog shows on its "Required by" line. */
+	/* `requiredBy` travels down the chain so a deep library can still say
+	 * what asked for it. */
 	void processCFFileDeps(const QJsonObject& fileObj,
 						   const QStringList& requiredBy);
 	void processMRVersionDeps(const QJsonObject& versionObj,
@@ -160,22 +149,21 @@ class DependencyResolver : public Task
 							 const QStringList& requiredBy,
 							 const QString& wantedId = QString());
 	/* A CurseForge dependency with no file that runs here: asked for on
-	 * Modrinth by name. A wanted project started on Modrinth, so for it
-	 * there is nowhere left to ask and it is listed as unresolved. */
+	 * Modrinth by name. A wanted project started on Modrinth, so it is listed
+	 * as unresolved instead. */
 	void noUsableCurseForgeFile(const QString& projectId,
 								const QStringList& requiredBy,
 								const QString& wantedId);
+	/* Lists a wanted project no provider has as unresolved, under its id. */
+	void listWantedUnresolved(const QString& wantedId);
 
-	/* Takes a fully resolved dependency, or drops it when the very
-	 * version it asks for is already on disk. Marks it as possibly
-	 * installed when some other version of it is. */
+	/* Takes a resolved dependency, or drops it when that very version is on
+	 * disk. Marks it maybe-installed when another version is. */
 	void acceptDependency(ModPlatform::DependencyInfo dep);
-	/* A dependency two things need is downloaded once, so the second
-	 * thing to ask for it only adds its name to the existing entry - and
-	 * @p slug, when it is the wanted id that asked. The entry may not exist
-	 * yet: a project is claimed when its lookup is made and recorded when
-	 * the answer comes back, so what is said in between is kept in
-	 * m_lateNotes and joins the entry as acceptDependency() records it. */
+	/* A dependency two things need is downloaded once: later requesters only
+	 * add their name (and @p slug, if the wanted id asked). The entry may not
+	 * exist yet, so notes in between wait in m_lateNotes for
+	 * acceptDependency(). */
 	void noteAlsoRequiredBy(const QString& platform, const QString& projectId,
 							const QStringList& requiredBy,
 							const QString& slug = QString());
@@ -185,18 +173,17 @@ class DependencyResolver : public Task
 	bool isProjectInstalled(const QString& platform, const QString& projectId,
 							const QString& name) const;
 
-	static QString normalizeName(const QString& name);
-
   private:
 	QList<ModPlatform::SelectedMod> m_selectedMods;
 	QList<WantedProject> m_wanted;
 	QList<ModPlatform::DependencyInfo> m_dependencies;
 	QList<ModPlatform::UnresolvedDep> m_unresolvedDeps;
+	QStringList m_wantedNotAvailable;
 	QSet<QString> m_resolvedProjectIds; // avoid duplicates (platform:projectId)
 	QSet<QString>
 		m_resolvedNames; // avoid cross-platform duplicates (normalized name)
-	/* platform:projectId -> what noteAlsoRequiredBy() was told about a
-	 * dependency not recorded yet. Only `requiredBy` and `slug` are used. */
+	/* platform:projectId -> notes for a dependency not recorded yet. Only
+	 * `requiredBy` and `slug` are used. */
 	QHash<QString, ModPlatform::DependencyInfo> m_lateNotes;
 	std::shared_ptr<ModMetadataIndex> m_installed;
 	QString m_mcVersion;
@@ -204,11 +191,11 @@ class DependencyResolver : public Task
 	int m_currentModIndex = 0;
 	int m_pendingRequests = 0;
 
-	/* Lookups still in flight, so abort() can call them off. Guarded
-	 * pointers because a job deletes itself once it has reported. */
+	/* Lookups in flight, for abort(). Guarded: a job deletes itself after
+	 * reporting. */
 	QList<QPointer<NetJob>> m_activeJobs;
-	/* Latched by abort(): no further lookups are started and no reply is
-	 * acted on, but replies already queued are allowed to arrive and be
-	 * discarded rather than racing the destructor. */
+	/* Latched by abort(): no lookups start and no reply is acted on; queued
+	 * replies still arrive and are discarded instead of racing the
+	 * destructor. */
 	bool m_aborted = false;
 };

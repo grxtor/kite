@@ -29,12 +29,8 @@
 #include <QVector>
 #include <string>
 
-/*
- * Result of running the signature verification step against a .mmco file.
- *
- * Used by PluginLoader to decide whether the module is allowed to load
- * based on the license/signature policy.
- */
+/* Result of the signature verification step for a .mmco; PluginLoader combines it with the license
+ * policy. */
 enum class PluginSignatureState {
 	NotChecked,	  /* Verification has not run yet */
 	Absent,		  /* No trailer present in the .mmco file */
@@ -45,31 +41,22 @@ enum class PluginSignatureState {
 	Error,		  /* GPG backend error (gpgme failure, no keyring, etc.) */
 };
 
-/*
- * Why the loader refused to initialise a discovered module. `None` is the
- * "no problem" state. Disabled modules also use this enum so the UI can
- * show why a module is greyed out without scattering string keys around.
- */
+/* Why the loader refused to initialise a discovered module (None = no problem); the UI shows it for
+ * greyed-out modules. */
 enum class PluginDisableReason {
 	None,
-	UserDisabled,	   /* Explicitly disabled via the plugins dialog */
+	UserDisabled,	   /* Explicitly disabled in Settings */
 	SignatureRequired, /* Non-OSS license with no/invalid signature */
 	SignatureInvalid,  /* Trailer is malformed or signature bad */
 	DependencyMissing, /* A required dependency is not loaded */
 	DependencyCycle,   /* This module is part of a dependency cycle */
-	SupersededByCore,  /* Functionality moved into the launcher itself —
-						  see plugin/CoreSupersededPlugins.h */
-	AbiTooOld,		   /* Built against an ABI older than
-						  MMCO_ABI_VERSION_MIN -- the module predates a
-						  floor raise and needs the author to update it */
-	AbiTooNew,		   /* Built against an ABI newer than
-						  MMCO_ABI_VERSION -- built for a Kite newer
-						  than this one */
+	SupersededByCore,  /* Functionality moved into the launcher itself */
+	AbiTooOld,		   /* Built for an ABI below MMCO_ABI_VERSION_MIN; its author must update it */
+	AbiTooNew,		   /* Built for an ABI above MMCO_ABI_VERSION, i.e. a newer Kite */
 };
 
-/* A short label for @p reason, as the plugin lists show it (the widget
- * PluginsDialog and the QML "Installed plugins" section). Translated in
- * the QObject context, where these strings have always lived. */
+/* A short label for @p reason as the QML "Installed plugins" section shows it; translated in the
+ * QObject context. */
 inline QString pluginDisableReasonLabel(PluginDisableReason reason)
 {
 	switch (reason) {
@@ -101,11 +88,8 @@ struct PluginDependencyRecord {
 	bool optional = false;
 };
 
-/*
- * PluginMetadata holds the parsed information about a loaded .mmco module,
- * including its file path, the loaded library handle, and the module info
- * extracted from the mmco_module_info symbol.
- */
+/* The parsed information about a loaded .mmco module: file path, library handle and the
+ * mmco_module_info contents. */
 
 struct PluginMetadata {
 	/* File system */
@@ -140,14 +124,13 @@ struct PluginMetadata {
 	bool loaded = false;
 	bool initialized = false;
 
-	/* Signature verification result and any human-readable diagnostic
-	 * from the GPG backend (empty when state == NotChecked / Absent). */
+	/* Signature verification result and the GPG backend's diagnostic (empty when NotChecked /
+	 * Absent). */
 	PluginSignatureState signatureState = PluginSignatureState::NotChecked;
 	QString signatureDetail;
 	QString signatureFingerprint; /* Fingerprint of the signing key, if any */
 
-	/* Set when the loader (or the user, via settings) decides the module
-	 * should not be initialised. PluginManager honours this flag and
+	/* Set when the loader or the user decides the module must not be initialised; PluginManager
 	 * skips mmco_init() for it. */
 	bool disabled = false;
 	PluginDisableReason disableReason = PluginDisableReason::None;

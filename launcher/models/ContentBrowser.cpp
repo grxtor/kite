@@ -64,14 +64,11 @@ namespace
 ContentBrowser::ContentBrowser(MinecraftInstance* instance, QObject* parent)
 	: QObject(parent), m_instance(instance)
 {
-	/* Same detection DownloadContentDialog::detectInstanceProfile() does. */
 	if (auto profile = m_instance ? m_instance->getPackProfile() : nullptr) {
 		m_mcVersion = profile->getComponentVersion("net.minecraft");
 		m_loaderType = profile->primaryModLoader();
 
-		/* Unlike the widget dialog, this page stays open while a loader is
-		 * installed from it (ContentBrowserView's "Install a loader"), so
-		 * follow the component list rather than reading it only once. */
+		/* This page stays open while a loader is installed from it, so follow the component list. */
 		auto* p = profile.get();
 		connect(p, &QAbstractItemModel::rowsInserted, this,
 				&ContentBrowser::refreshInstanceProfile);
@@ -99,8 +96,6 @@ ContentBrowser::ContentBrowser(MinecraftInstance* instance, QObject* parent)
 		}
 	}
 
-	/* The search this browser has always made: this instance's own
-	 * version and loader. */
 	m_filter.gameVersion = m_mcVersion;
 	m_filter.loaders = ModPlatform::singleLoaderList(m_loaderType);
 }
@@ -265,9 +260,6 @@ ContentProviderModel* ContentBrowser::ensureModel(const QString& provider,
 		return it.value();
 	}
 
-	/* Same filters DownloadContentDialog::buildPages() builds: this
-	 * instance's own Minecraft version, and its loader for content that is
-	 * loader-specific. */
 	ModPlatform::SearchFilters filters;
 	filters.mcVersions = ModPlatform::singleVersionList(m_mcVersion);
 	if (!m_loaderType.isEmpty() && ModPlatform::contentTypeUsesLoader(type)) {
@@ -285,9 +277,7 @@ ContentProviderModel* ContentBrowser::ensureModel(const QString& provider,
 		model->setInstalledIndex(folder->metadataIndex());
 	}
 
-	/* Then whatever the filter panel says now, which starts out as exactly
-	 * the above but may have moved since. Nothing has searched yet, so
-	 * this only records them. */
+	/* Then the filter panel's current state; nothing has searched yet, so this only records them. */
 	model->setSearchFilters(
 		searchFiltersFor(m_filter, type, model->supportsExtendedFilters()));
 	model->setHideInstalled(m_hideInstalled);
@@ -329,9 +319,7 @@ void ContentBrowser::onModelSearchStateChanged()
 {
 	auto* model = qobject_cast<ContentProviderModel*>(sender());
 	if (!model || model != currentModel()) {
-		/* Some other (provider, contentType) pair, visited earlier and
-		 * still finishing up in the background - nothing currently shown
-		 * needs to move for it. */
+		/* Some other pair, finishing in the background. */
 		return;
 	}
 
@@ -355,9 +343,7 @@ void ContentBrowser::search()
 	if (!model) {
 		return;
 	}
-	/* Cleared here rather than left for onModelSearchStateChanged() to
-	 * pick up once this concludes - a stale error from a previous search
-	 * should not still be on screen while a new one is in flight. */
+	/* A stale error should not stay on screen while a new search is in flight. */
 	setError(QString());
 	model->search(m_query, m_sortIndex);
 }
@@ -375,12 +361,8 @@ bool ContentBrowser::isVersionCompatible(
 	const ModPlatform::ContentVersion& version, const QString& mcVersion,
 	const QString& loader)
 {
-	/* A version that does not state a game version/loader of its own is
-	 * accepted for that half of the check rather than flagged incompatible
-	 * - plenty of provider replies simply do not say (see the field
-	 * comments on ContentVersion), and this is already only a client-side
-	 * second opinion on filtering the provider's own query already asked
-	 * for. */
+	/* A version that states no game version/loader passes that half of the check:
+	 * plenty of provider replies do not say. */
 	const bool mcOk = mcVersion.isEmpty() || version.gameVersions.isEmpty() ||
 					  version.gameVersions.contains(mcVersion);
 	const bool loaderOk = loader.isEmpty() || version.loaders.isEmpty() ||
@@ -393,30 +375,30 @@ QVariantList ContentBrowser::versionEntries(
 	const QList<ModPlatform::ContentVersion>& versions,
 	const QString& mcVersion, const QString& loader)
 {
-	auto sorted = versions;
-	/* Newest first. Modrinth's own reply already comes this way, but
-	 * CurseForge's does not promise any order at all - the same reason
-	 * ModPlatform::newestCurseForgeFile() cannot just take the first
-	 * entry either - so this is sorted explicitly rather than trusted
-	 * from either provider. */
+	/* Dates parsed once, not inside the comparator. */
+	struct Dated {
+		QDateTime date;
+		const ModPlatform::ContentVersion* version;
+	};
+	QList<Dated> sorted;
+	sorted.reserve(versions.size());
+	for (const auto& version : versions) {
+		sorted.append({QDateTime::fromString(version.datePublished, Qt::ISODate),
+					   &version});
+	}
+	/* Newest first: CurseForge's reply promises no order, so sort explicitly. */
 	std::stable_sort(sorted.begin(), sorted.end(),
-					 [](const ModPlatform::ContentVersion& a,
-						const ModPlatform::ContentVersion& b) {
-						 const QDateTime dateA =
-							 QDateTime::fromString(a.datePublished, Qt::ISODate);
-						 const QDateTime dateB =
-							 QDateTime::fromString(b.datePublished, Qt::ISODate);
-						 if (dateA.isValid() && dateB.isValid()) {
-							 return dateA > dateB;
+					 [](const Dated& a, const Dated& b) {
+						 if (a.date.isValid() && b.date.isValid()) {
+							 return a.date > b.date;
 						 }
-						 /* An unknown date sorts after a known one; two
-						  * unknown dates keep whatever order they arrived
-						  * in. */
-						 return dateA.isValid();
+						 /* An unknown date sorts after a known one; two unknown keep arrival order. */
+						 return a.date.isValid();
 					 });
 
 	QVariantList entries;
-	for (const auto& version : sorted) {
+	for (const auto& item : sorted) {
+		const auto& version = *item.version;
 		QVariantMap entry;
 		entry[QStringLiteral("id")] = version.versionId;
 		entry[QStringLiteral("name")] = version.name;
@@ -469,9 +451,7 @@ void ContentBrowser::onEntryUpdated(int row)
 {
 	auto* model = qobject_cast<ContentProviderModel*>(sender());
 	if (!model || model != m_versionsModel || row != m_versionsRow) {
-		/* An answer for a row (or a model) the caller has since moved on
-		 * from - see ContentProviderModel::applyVersions() for the same
-		 * idea on the model's own side. */
+		/* An answer for a row or model the caller has since moved on from. */
 		return;
 	}
 	applyVersionsFromProject(model->projectAt(row));
@@ -545,8 +525,7 @@ QObject* ContentBrowser::review(int row, const QString& versionId)
 	if (!selectionFor(row, versionId, mod)) {
 		return nullptr;
 	}
-	/* Dependencies are a mod-only idea - see ModFolderPage::
-	 * installSelection()'s own ContentType::Mod check. */
+	/* Dependencies are a mod-only idea. */
 	const bool resolveDependencies =
 		m_contentType == ModPlatform::ContentType::Mod;
 	const QString loaderForResolver =
@@ -560,7 +539,6 @@ QObject* ContentBrowser::review(int row, const QString& versionId)
 	return review;
 }
 
-// ---------------------------------------------------------------------------
 // Filters
 
 ModPlatform::SearchFilters
@@ -568,16 +546,14 @@ ContentBrowser::searchFiltersFor(const FilterState& state,
 								 ModPlatform::ContentType type, bool extended)
 {
 	ModPlatform::SearchFilters filters;
-	/* An empty list means "any version", which the query expresses by
-	 * leaving the version out. */
+	/* An empty list means "any version": the query leaves the version out. */
 	filters.mcVersions = ModPlatform::singleVersionList(state.gameVersion);
 	filters.categoryIds = state.categories;
 	if (ModPlatform::contentTypeUsesLoader(type)) {
 		filters.loaders = state.loaders;
 	}
-	/* Only Modrinth indexes these; on CurseForge they would quietly
-	 * change nothing, so they are not sent at all. Environment, like the
-	 * loader, only means something for mods. */
+	/* Only Modrinth indexes these (on CurseForge they would change nothing);
+	 * environment, like the loader, only means something for mods. */
 	if (extended) {
 		filters.openSourceOnly = state.openSourceOnly;
 		if (ModPlatform::contentTypeUsesLoader(type)) {
@@ -586,8 +562,7 @@ ContentBrowser::searchFiltersFor(const FilterState& state,
 			} else if (state.environment == QStringLiteral("server")) {
 				filters.side = ModPlatform::SideFilter::Server;
 			} else if (state.environment == QStringLiteral("both")) {
-				/* Has to work on each side - the strict reading, as the
-				 * widget panel has it with both boxes ticked. */
+				/* Has to work on each side (the strict reading). */
 				filters.side = ModPlatform::SideFilter::Universal;
 			}
 		}
@@ -662,8 +637,7 @@ void ContentBrowser::setLoaderFilter(const QStringList& loaders)
 
 QVariantList ContentBrowser::loaderOptions() const
 {
-	/* The ones the widget panel shows before "Show More". CurseForge has
-	 * an id for each of these. */
+	/* The ones shown before "Show More"; CurseForge has an id for each. */
 	const QList<QPair<QString, QString>> common = {
 		{QStringLiteral("neoforge"), QStringLiteral("NeoForge")},
 		{QStringLiteral("forge"), QStringLiteral("Forge")},
@@ -715,7 +689,6 @@ void ContentBrowser::setHideInstalled(bool hide)
 	}
 	m_hideInstalled = hide;
 	emit filtersChanged();
-	/* Re-filters what is loaded; no new search. */
 	if (auto* model = currentModel()) {
 		model->setHideInstalled(hide);
 	}
@@ -795,9 +768,7 @@ void ContentBrowser::loadFilterOptions()
 		rebuildGameVersionOptions();
 		return;
 	}
-	/* Fills in when the list arrives rather than waiting for it - the
-	 * same choice ContentFilterWidget::loadMcVersions() makes. A list
-	 * already on disk is usable straight away. */
+	/* Fills in when the list arrives; a list already on disk is usable at once. */
 	if (auto task = m_mcVersionList->getLoadTask()) {
 		connect(task.get(), &Task::succeeded, this,
 				&ContentBrowser::rebuildGameVersionOptions);
@@ -822,7 +793,6 @@ void ContentBrowser::rebuildGameVersionOptions()
 			}
 		}
 	}
-	/* Offered whatever happens, snapshot or not. */
 	if (!m_mcVersion.isEmpty() && !versions.contains(m_mcVersion)) {
 		versions.prepend(m_mcVersion);
 	}
@@ -845,8 +815,7 @@ void ContentBrowser::refreshInstanceProfile()
 		return;
 	}
 
-	/* Filters still on the old defaults follow the instance; ones the
-	 * user picked stay put. */
+	/* Filters still on the old defaults follow the instance; picked ones stay. */
 	bool moved = false;
 	if (m_filter.gameVersion == m_mcVersion && mcVersion != m_mcVersion) {
 		m_filter.gameVersion = mcVersion;

@@ -37,8 +37,8 @@
 #include <QUuid>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QJsonObject>
 #include <QJsonParseError>
-#include <QMimeData>
 #include <QtConcurrentRun>
 #include <algorithm>
 
@@ -54,6 +54,9 @@
 #include "WatchLock.h"
 #include "core/LauncherContext.h"
 #include "icons/IconList.h"
+#include "net/HttpMetaCache.h"
+#include "screenshots/ScreenshotListModel.h"
+#include "modplatform/PlatformCoverFetcher.h"
 #include "launch/LaunchProgressTracker.h"
 #include "launch/LaunchTask.h"
 
@@ -63,8 +66,6 @@ InstanceList::InstanceList(SettingsObjectPtr settings,
 						   const QStringList& instDirs, QObject* parent)
 	: QAbstractListModel(parent), m_globalSettings(settings)
 {
-	resumeWatch();
-
 	connect(this, &InstanceList::instancesChanged, this,
 			&InstanceList::providerUpdated);
 
@@ -73,6 +74,22 @@ InstanceList::InstanceList(SettingsObjectPtr settings,
 			&InstanceList::instanceDirContentsChanged);
 
 	applyInstanceDirs(resolveInstanceDirs(instDirs));
+
+	m_platformCovers = new PlatformCoverFetcher(this);
+	connect(m_platformCovers, &PlatformCoverFetcher::finished, this,
+			[this](const QString& id, PlatformCoverFetcher::Outcome outcome,
+				   const QString& fileName) {
+				InstancePtr inst = getInstanceById(id);
+				if (!inst || outcome == PlatformCoverFetcher::Outcome::Failed) {
+					return;
+				}
+				if (outcome == PlatformCoverFetcher::Outcome::Found) {
+					inst->setPlatformCover(fileName, 0);
+				} else {
+					inst->setPlatformCover(
+						QString(), QDateTime::currentSecsSinceEpoch());
+				}
+			});
 }
 
 QStringList InstanceList::resolveInstanceDirs(const QStringList& dirs) const
@@ -82,9 +99,8 @@ QStringList InstanceList::resolveInstanceDirs(const QStringList& dirs) const
 		if (dir.isEmpty()) {
 			continue;
 		}
-		/* Create before canonicalising: canonicalPath() answers about the
-		 * filesystem and returns nothing for a path that is not there, so
-		 * the order here is load-bearing rather than stylistic. */
+		/* Created before canonicalising: canonicalPath() returns nothing for a
+		 * path that does not exist, so the order matters. */
 		if (!QDir::current().exists(dir) && !QDir::current().mkpath(dir)) {
 			qWarning() << "Ignoring instance folder" << dir
 					   << "- it does not exist and could not be created";
@@ -96,9 +112,8 @@ QStringList InstanceList::resolveInstanceDirs(const QStringList& dirs) const
 					   << "- could not be resolved";
 			continue;
 		}
-		/* Two settings pointing at one folder, or a path spelled two ways,
-		 * would otherwise make every instance in it a duplicate of itself
-		 * and get skipped by discovery. */
+		/* Two settings naming one folder, or a path spelled two ways, would
+		 * make every instance in it a duplicate of itself and get skipped. */
 		if (resolved.contains(canonical)) {
 			qDebug() << "Ignoring duplicate instance folder" << dir;
 			continue;
@@ -127,15 +142,9 @@ QString InstanceList::rootDirOf(const InstanceId& id) const
 
 QStringList InstanceList::decodeInstanceDirList(const QVariant& value)
 {
-	/* A genuine QStringList is accepted as well as the encoded form.
-	 *
-	 * Nothing writes the setting that way, but a value set and read back
-	 * within one session never passes through the INI file at all, and a
-	 * config edited by hand can be either. Dropping the user's folders
-	 * over that distinction would be a poor trade for strictness.
-	 */
-	/* userType() rather than Qt 6's metaType()/typeId(): it exists in both
-	 * Qt 5 and Qt 6 (where it simply forwards to typeId()). */
+	/* A genuine QStringList is accepted as well as the encoded form: a value
+	 * set and read back within one session never passes through the INI file,
+	 * and a hand-edited config can be either. */
 	if (value.userType() == QMetaType::QStringList) {
 		return value.toStringList();
 	}
@@ -184,8 +193,8 @@ QString InstanceList::rootForStaging(const QString& stagingPath) const
 	}
 	const QString absolute = QFileInfo(stagingPath).absoluteFilePath();
 	for (const QString& dir : m_instDirs) {
-		/* The separator is not decoration: without it "/data/instances"
-		 * would claim a staging path under "/data/instances-backup". */
+		/* The separator matters: without it "/data/instances" would claim a
+		 * staging path under "/data/instances-backup". */
 		if (absolute.startsWith(dir + QLatin1Char('/'))) {
 			return dir;
 		}
@@ -195,70 +204,12 @@ QString InstanceList::rootForStaging(const QString& stagingPath) const
 
 InstanceList::~InstanceList()
 {
-	/* Drops the last InstancePtr reference to each instance (ordinarily
-	 * held only here) while every member below is still fully alive.
-	 *
-	 * Without this, member destruction order does it instead: m_instances
-	 * is declared near the top of the class, so - being torn down in
-	 * reverse declaration order - it is one of the LAST members destroyed,
-	 * well after m_launchTrackers. Destroying an instance emits
-	 * QObject::destroyed(), which trackLaunchProgress() connects to a
-	 * lambda that touches m_launchTrackers; with the instances outliving
-	 * it, that lambda runs against a QHash that has already been torn
-	 * down, and Qt's own QHash asserts (or worse, silently corrupts
-	 * memory in a release build). Clearing explicitly here, before any
-	 * member destructor has run, sidesteps the ordering question
-	 * entirely. Never hit in the shipped app - InstanceList is a
-	 * LauncherContext-owned singleton that outlives every Application
-	 * shutdown path, which calls _exit() before C++ destructors run (see
-	 * main.cpp) - but very much hit by a unit test that constructs one on
-	 * the stack. */
+	/* Drops the last InstancePtr reference to each instance while every member
+	 * is alive: otherwise m_instances outlives m_launchTrackers, and
+	 * destroying an instance fires trackLaunchProgress()'s lambda against a
+	 * torn-down QHash. Shutdown calls _exit() before destructors (main.cpp),
+	 * but a unit test with the list on the stack hits it. */
 	m_instances.clear();
-}
-
-Qt::DropActions InstanceList::supportedDragActions() const
-{
-	return Qt::MoveAction;
-}
-
-Qt::DropActions InstanceList::supportedDropActions() const
-{
-	return Qt::MoveAction;
-}
-
-bool InstanceList::canDropMimeData(const QMimeData* data, Qt::DropAction, int,
-								   int, const QModelIndex&) const
-{
-	if (data && data->hasFormat("application/x-instanceid")) {
-		return true;
-	}
-	return false;
-}
-
-bool InstanceList::dropMimeData(const QMimeData* data, Qt::DropAction, int, int,
-								const QModelIndex&)
-{
-	if (data && data->hasFormat("application/x-instanceid")) {
-		return true;
-	}
-	return false;
-}
-
-QStringList InstanceList::mimeTypes() const
-{
-	auto types = QAbstractListModel::mimeTypes();
-	types.push_back("application/x-instanceid");
-	return types;
-}
-
-QMimeData* InstanceList::mimeData(const QModelIndexList& indexes) const
-{
-	auto mimeData = QAbstractListModel::mimeData(indexes);
-	if (indexes.size() == 1) {
-		auto instanceId = data(indexes[0], InstanceIDRole).toString();
-		mimeData->setData("application/x-instanceid", instanceId.toUtf8());
-	}
-	return mimeData;
 }
 
 int InstanceList::rowCount(const QModelIndex& parent) const
@@ -275,6 +226,32 @@ QModelIndex InstanceList::index(int row, int column,
 		return QModelIndex();
 	return createIndex(row, column, (void*)m_instances.at(row).get());
 }
+
+namespace
+{
+// Copies of picked screenshots; a cover set before copies existed names the screenshot itself.
+const QString kCustomCoverPrefix = QStringLiteral("kite-cover-custom");
+
+// The picked cover as a full path.
+QString coverFilePath(const BaseInstance* inst)
+{
+	const QString name = QFileInfo(inst->coverImage()).fileName();
+	if (name.isEmpty()) {
+		return QString();
+	}
+	return name.startsWith(kCustomCoverPrefix)
+			   ? FS::PathCombine(inst->instanceRoot(), name)
+			   : FS::PathCombine(inst->gameRoot(), "screenshots", name);
+}
+
+// The fetched modpack art as a full path.
+QString platformCoverPath(const BaseInstance* inst)
+{
+	const QString name = QFileInfo(inst->platformCover()).fileName();
+	return name.isEmpty() ? QString()
+						  : FS::PathCombine(inst->instanceRoot(), name);
+}
+} // namespace
 
 QVariant InstanceList::data(const QModelIndex& index, int role) const
 {
@@ -303,11 +280,10 @@ QVariant InstanceList::data(const QModelIndex& index, int role) const
 		case Qt::DecorationRole: {
 			return pdata->iconKey();
 		}
-		// HACK: see InstanceView.h in gui!
 		case GroupRole: {
 			return getInstanceGroup(pdata->id());
 		}
-		// QML-only roles; the QtWidgets grid never asks for these.
+		// QML-only roles.
 		case IsRunningRole: {
 			return pdata->isRunning();
 		}
@@ -342,23 +318,37 @@ QVariant InstanceList::data(const QModelIndex& index, int role) const
 			auto* tracker = m_launchTrackers.value(pdata, nullptr);
 			return tracker ? tracker->progress() : -1.0;
 		}
-		case CoverImageRole: {
+		case CoverImageRole:
+		case CoverKindRole: {
 			const InstanceId id = pdata->id();
-			auto it = m_coverImageCache.constFind(id);
-			if (it != m_coverImageCache.constEnd()) {
-				return it.value();
+			const QString customPath = coverFilePath(pdata);
+			const QString platformPath = platformCoverPath(pdata);
+			const QString version = pdata->gameVersion();
+			CoverEntry entry;
+			auto it = m_coverCache.constFind(id);
+			if (it != m_coverCache.constEnd()) {
+				entry = it.value();
 			}
-			/* Not cached yet: kick off a background scan (scheduleCover-
-			 * ImageScan() no-ops if one for this id is already running) and
-			 * answer with nothing for now - the row picks up the real value
-			 * once the scan's dataChanged arrives. data() is const, hence
-			 * the const_cast; scheduling the scan mutates m_coverImage-
-			 * ScansPending and connects a QFutureWatcher, neither of which
-			 * fits a `mutable` member alone the way m_coverImageCache's own
-			 * plain insert does. */
-			const_cast<InstanceList*>(this)->scheduleCoverImageScan(
-				id, FS::PathCombine(pdata->gameRoot(), "screenshots"));
-			return QString();
+			if (it == m_coverCache.constEnd() ||
+				entry.customPath != customPath ||
+				entry.platformPath != platformPath ||
+				entry.version != version) {
+				/* Missing or made for other values: look up in the background
+				 * and answer with the old entry (or nothing) meanwhile; the
+				 * row picks up the result with its dataChanged. data() is
+				 * const, hence the const_cast: scheduling mutates
+				 * m_coverScansPending and connects a QFutureWatcher. */
+				const_cast<InstanceList*>(this)->scheduleCoverScan(
+					id, customPath, platformPath, version);
+			}
+			return role == CoverImageRole ? entry.info.url : entry.info.kind;
+		}
+		case CoverSourceRole: {
+			const QString source = pdata->coverSource();
+			const QString image = pdata->coverImage();
+			return source.isEmpty() && !image.startsWith(kCustomCoverPrefix)
+					   ? image
+					   : source;
 		}
 		case HasCrashedRole: {
 			return pdata->hasCrashed();
@@ -398,6 +388,8 @@ QHash<int, QByteArray> InstanceList::roleNames() const
 	roles.insert(LaunchStatusRole, "launchStatus");
 	roles.insert(LaunchProgressRole, "launchProgress");
 	roles.insert(CoverImageRole, "coverImage");
+	roles.insert(CoverKindRole, "coverKind");
+	roles.insert(CoverSourceRole, "coverSource");
 	roles.insert(HasCrashedRole, "hasCrashed");
 	roles.insert(PackArtRole, "packArt");
 	return roles;
@@ -493,8 +485,8 @@ void InstanceList::deleteGroup(const QString& name)
 			}
 		}
 	}
-	/* Gone from the name list and the collapsed set as well, or it would
-	 * still be offered as a group to move instances into. */
+	/* Also removed from the name list and the collapsed set, or it would still
+	 * be offered as a group to move instances into. */
 	m_groupNameCache.remove(name);
 	m_collapsedGroups.remove(name);
 	if (removed) {
@@ -550,9 +542,8 @@ bool InstanceList::deleteInstance(const InstanceId& id)
 		saveGroupList();
 	}
 
-	/* Read before the folder goes: the list lives in the instance's own
-	 * config file, and shortcuts() drops entries whose file has since
-	 * been moved away, which is a check that needs the disk. */
+	/* Read before the folder goes: the list lives in the instance's config
+	 * file, and shortcuts() checks the disk for moved files. */
 	const QList<ShortcutData> shortcuts = inst->shortcuts();
 
 	qDebug() << "Will delete instance" << id;
@@ -564,9 +555,8 @@ bool InstanceList::deleteInstance(const InstanceId& id)
 
 	qDebug() << "Instance" << id << "has been deleted by Kite.";
 
-	/* The shortcuts are dead now whatever happens -- they point at a
-	 * folder that is gone -- so a failure here is worth a line in the
-	 * log and nothing more. */
+	/* The shortcuts are dead whatever happens (their folder is gone), so a
+	 * failure is only logged. */
 	for (const ShortcutData& shortcut : shortcuts) {
 		if (FS::deletePath(shortcut.filePath)) {
 			qDebug() << "Deleted shortcut" << shortcut.name << "at"
@@ -590,8 +580,7 @@ bool InstanceList::trashInstance(const InstanceId& id)
 
 	const QString root = inst->instanceRoot();
 	const GroupId group = m_instanceGroupIndex.value(id);
-	/* Read while the folder is still there: the list lives in the
-	 * instance's own config file, and shortcuts() checks the disk. */
+	/* Read while the folder is still there: shortcuts() checks the disk. */
 	const QList<ShortcutData> shortcuts = inst->shortcuts();
 
 	qDebug() << "Will trash instance" << id;
@@ -602,8 +591,8 @@ bool InstanceList::trashInstance(const InstanceId& id)
 	}
 	qDebug() << "Instance" << id << "is in the trash at" << trashedRoot;
 
-	/* Only now: had the move failed, the instance would still be here
-	 * and would have lost its group for nothing. */
+	/* Only now: had the move failed, the instance would still be here and
+	 * would have lost its group for nothing. */
 	if (m_instanceGroupIndex.remove(id)) {
 		saveGroupList();
 	}
@@ -622,9 +611,9 @@ bool InstanceList::trashInstance(const InstanceId& id)
 			continue;
 		}
 
-		/* A shortcut whose instance is in the trash launches nothing, so
-		 * one that refuses to be trashed is deleted instead. Losing the
-		 * ability to undo that one beats leaving it on the desktop. */
+		/* A shortcut whose instance is in the trash launches nothing, so one
+		 * that refuses to be trashed is deleted instead; losing its undo beats
+		 * leaving it on the desktop. */
 		qWarning() << "Could not trash shortcut" << shortcut.name << "at"
 				   << shortcut.filePath << "-- deleting it instead.";
 		if (!FS::deletePath(shortcut.filePath)) {
@@ -653,17 +642,16 @@ QString InstanceList::lastTrashedName() const
 bool InstanceList::undoTrashInstance()
 {
 	if (m_trashHistory.isEmpty()) {
-		/* Nothing to do is not a failed restore -- saying otherwise makes
-		 * the caller apologise for something that did not happen. */
+		/* Nothing to restore is not a failed restore. */
 		qWarning() << "Nothing to restore from the trash.";
 		return true;
 	}
 
 	const TrashedInstance record = m_trashHistory.takeLast();
 
-	/* An instance's id is its folder name, so if something has appeared
-	 * at that path in the meantime it now owns the name. Stepping aside
-	 * keeps both instead of refusing to restore. */
+	/* An instance's id is its folder name, so if something appeared at that
+	 * path meanwhile it owns the name; step aside to keep both instead of
+	 * refusing. */
 	InstanceId id = record.id;
 	QString path = record.path;
 	while (QFileInfo::exists(path)) {
@@ -674,9 +662,8 @@ bool InstanceList::undoTrashInstance()
 	if (!QFile::rename(record.trashPath, path)) {
 		qWarning() << "Could not move" << record.trashPath << "back to" << path;
 		/* The folder is still in the trash, so put the record back: the
-		 * obstacle may be temporary (a file open, the volume busy) and a
-		 * second attempt is worth allowing. Only dropped once the move has
-		 * actually happened. */
+		 * obstacle may be temporary (a file open, the volume busy) and a retry
+		 * is worth allowing. */
 		m_trashHistory.append(record);
 		return false;
 	}
@@ -684,9 +671,9 @@ bool InstanceList::undoTrashInstance()
 
 	bool complete = true;
 	for (const TrashedShortcut& item : record.shortcuts) {
-		/* Not stepped aside the way the folder above is: a shortcut path
-		 * ends in a suffix the shell reads (.lnk, .desktop, .app), and
-		 * appending past it would produce something inert. */
+		/* Not stepped aside like the folder: a shortcut path ends in a suffix
+		 * the shell reads (.lnk, .desktop, .app), and appending past it would
+		 * produce something inert. */
 		if (QFileInfo::exists(item.shortcut.filePath)) {
 			qWarning() << "Not restoring shortcut" << item.shortcut.name
 					   << "-- something else is at" << item.shortcut.filePath;
@@ -703,8 +690,8 @@ bool InstanceList::undoTrashInstance()
 				 << item.shortcut.filePath;
 	}
 
-	/* Set the group before the rescan, so the instance comes back in the
-	 * group it left rather than at the top level. */
+	/* Set the group before the rescan, so the instance comes back in the group
+	 * it left. */
 	if (!record.group.isEmpty()) {
 		m_instanceGroupIndex[id] = record.group;
 		m_groupNameCache.insert(record.group);
@@ -714,7 +701,7 @@ bool InstanceList::undoTrashInstance()
 	emit instancesChanged();
 
 	/* Only worth writing once the rescan has put the id in instanceSet;
-	 * saveGroupList() skips instances it does not know about. */
+	 * saveGroupList() skips unknown instances. */
 	if (!record.group.isEmpty()) {
 		saveGroupList();
 	}
@@ -755,11 +742,10 @@ QList<InstanceId> InstanceList::discoverInstances()
 			QFileInfo dirInfo(subDir);
 			if (!QFileInfo(FS::PathCombine(subDir, "instance.cfg")).exists())
 				continue;
-			/* A symlink pointing into any configured root is the same
-			 * instance reached a second way, not a second instance.
-			 * Checking only the root being walked would let a link in one
-			 * folder resurrect an instance from another as a phantom
-			 * duplicate. */
+			/* A symlink into any configured root is the same instance reached
+			 * a second way; checking only the root being walked would let a
+			 * link in one folder resurrect an instance from another as a
+			 * phantom duplicate. */
 			if (dirInfo.isSymLink()) {
 				const QString targetCanonical =
 					QFileInfo(dirInfo.symLinkTarget()).canonicalFilePath();
@@ -776,12 +762,11 @@ QList<InstanceId> InstanceList::discoverInstances()
 				}
 			}
 			auto id = dirInfo.fileName();
-			/* Ids are directory names, so two roots can each hold one
-			 * called "1.20.1". Only one can win, because everything else
-			 * - the group index, shortcuts, play time - keys off the id
-			 * alone. First root wins, which makes the outcome depend on
-			 * the configured order rather than on directory iteration,
-			 * and the loser is reported rather than silently missing. */
+			/* Ids are directory names, so two roots can each hold "1.20.1",
+			 * but everything else (group index, shortcuts, play time) keys off
+			 * the id alone. The first root wins, so the outcome follows the
+			 * configured order rather than directory iteration, and the loser
+			 * is reported. */
 			if (m_instanceRootDirMap.contains(id)) {
 				qWarning() << "Duplicate instance ID" << id << "found in"
 						   << rootDir << "- already claimed by"
@@ -845,20 +830,17 @@ InstanceList::InstListError InstanceList::loadList()
 			auto instPtr = removedItem.first;
 			instPtr->invalidate();
 			// Otherwise these per-id caches would grow for as long as the
-			// launcher runs, bounded only by every instance ever seen
-			// rather than the ones currently in m_instances.
+			// launcher runs, bounded only by every instance ever seen.
 			const InstanceId removedId = instPtr->id();
-			m_coverImageCache.remove(removedId);
-			m_coverImageScansPending.remove(removedId);
-			m_coverImageGeneration.remove(removedId);
+			m_coverCache.remove(removedId);
+			m_coverScansPending.remove(removedId);
+			m_coverGeneration.remove(removedId);
+			m_coverPicks.remove(removedId);
 			currentItem = removedItem.second;
 			if (back_bookmark == -1) {
-				// no bookmark yet
 				back_bookmark = currentItem;
 			} else if (currentItem == front_bookmark - 1) {
-				// part of contiguous sequence, continue
 			} else {
-				// seam between previous and current item
 				removeNow();
 			}
 			front_bookmark = currentItem;
@@ -870,17 +852,7 @@ InstanceList::InstListError InstanceList::loadList()
 	if (newList.size()) {
 		add(newList);
 	}
-	m_dirty = false;
-	updateTotalPlayTime();
 	return NoError;
-}
-
-void InstanceList::updateTotalPlayTime()
-{
-	totalPlayTime = 0;
-	for (auto const& itr : m_instances) {
-		totalPlayTime += itr.get()->totalTimePlayed();
-	}
 }
 
 void InstanceList::saveNow()
@@ -905,20 +877,15 @@ void InstanceList::add(const QList<InstancePtr>& t)
 
 void InstanceList::trackLaunchProgress(BaseInstance* inst)
 {
-	/* Parented to the instance, so it is destroyed along with it rather
-	 * than needing its own removal logic here. */
+	/* Parented to the instance, so it is destroyed with it. */
 	auto* tracker = new LaunchProgressTracker(inst);
 	m_launchTrackers.insert(inst, tracker);
 	connect(inst, &QObject::destroyed, this,
 			[this, inst]() { m_launchTrackers.remove(inst); });
 
-	// A launch task appearing or changing is the tracker's whole job.
 	connect(inst, &BaseInstance::launchTaskChanged, this,
 			[tracker](shared_qobject_ptr<LaunchTask> task) {
 				tracker->watch(task.get());
-				/* The task keeps running for as long as the game does, but
-				 * once the game process is up there is nothing left to
-				 * report: from here on the instance is simply running. */
 				if (task) {
 					connect(task.get(), &LaunchTask::readyForLaunch, tracker,
 							&LaunchProgressTracker::clear);
@@ -927,9 +894,6 @@ void InstanceList::trackLaunchProgress(BaseInstance* inst)
 	connect(tracker, &LaunchProgressTracker::changed, this,
 			[this, inst]() { emitLaunchProgressChanged(inst); });
 
-	/* isRunning() does not come from the tracker - it is a property of
-	 * the instance itself - but its transitions are exactly the moments
-	 * a launch card needs to redraw, same as the two roles above. */
 	connect(inst, &BaseInstance::runningStatusChanged, this,
 			[this, inst](bool) { emitIsRunningChanged(inst); });
 }
@@ -950,151 +914,423 @@ void InstanceList::emitIsRunningChanged(BaseInstance* inst)
 		return;
 	}
 	QList<int> roles{IsRunningRole};
-	// The instance just stopped, not started: a play session is exactly
-	// when new screenshots tend to appear, so the cached cover - if any -
-	// may now be stale. Dropped rather than refreshed eagerly, since
-	// CoverImageRole's data() case fills it back in lazily on next ask.
+	// The instance just stopped: the game has by now fetched the version
+	// metadata and assets that a "no cover" answer was missing, and may have
+	// changed the screenshots. Looked up again with the old answers kept until
+	// the new ones arrive.
 	if (!inst->isRunning()) {
 		const InstanceId id = inst->id();
-		/* Bumped whether or not anything was cached yet: a scan already in
-		 * flight for this id (started before the session ended, so looking
-		 * at a screenshots folder from before it) is just as stale as a
-		 * cached value would be, and scheduleCoverImageScan()'s completion
-		 * handler uses this to discard that result instead of caching it. */
-		++m_coverImageGeneration[id];
-		if (m_coverImageCache.remove(id) > 0) {
-			roles.append(CoverImageRole);
+		/* Bumped even if nothing was cached: a lookup in flight for this id
+		 * started before the session ended and may have missed them;
+		 * scheduleCoverScan()'s completion handler uses this to discard it. */
+		++m_coverGeneration[id];
+		QList<InstanceId> again;
+		for (auto it = m_coverCache.constBegin();
+			 it != m_coverCache.constEnd(); ++it) {
+			if (it.key() == id || it->info.url.isEmpty()) {
+				again.append(it.key());
+			}
+		}
+		for (const InstanceId& other : again) {
+			if (InstancePtr found = getInstanceById(other)) {
+				scheduleCoverScan(other, coverFilePath(found.get()),
+								  platformCoverPath(found.get()),
+								  found->gameVersion());
+			}
 		}
 	}
 	emit dataChanged(index(i), index(i), roles);
 }
 
-void InstanceList::scheduleCoverImageScan(const InstanceId& id,
-										  const QString& screenshotsDir)
+InstanceList::CoverDirs InstanceList::activeCoverDirs() const
 {
-	if (m_coverImageScansPending.contains(id)) {
-		// Already scanning; the caller (data()) will get the answer once
-		// that scan's dataChanged arrives, same as if it had asked again a
-		// moment later.
+	if (m_coverDirsSet) {
+		return m_coverDirs;
+	}
+	auto* context = LauncherContext::instance();
+	if (!context) {
+		return {};
+	}
+	auto metacache = context->metacache();
+	if (!metacache) {
+		return {};
+	}
+	return {metacache->getBasePath(QStringLiteral("meta")),
+			metacache->getBasePath(QStringLiteral("asset_indexes")),
+			metacache->getBasePath(QStringLiteral("asset_objects"))};
+}
+
+void InstanceList::setCoverDirs(const CoverDirs& dirs)
+{
+	m_coverDirs = dirs;
+	m_coverDirsSet = true;
+	m_coverCache.clear();
+	m_panoramaCache.clear();
+}
+
+namespace
+{
+struct CoverScanResult {
+	InstanceList::CoverInfo info;
+	QString panorama;
+};
+} // namespace
+
+void InstanceList::scheduleCoverScan(const InstanceId& id,
+									 const QString& customPath,
+									 const QString& platformPath,
+									 const QString& version)
+{
+	if (m_coverScansPending.contains(id)) {
 		return;
 	}
-	m_coverImageScansPending.insert(id);
-	const int generation = m_coverImageGeneration.value(id, 0);
+	m_coverScansPending.insert(id);
+	const int generation = m_coverGeneration.value(id, 0);
+	const CoverDirs dirs = activeCoverDirs();
+	const int face = panoramaFaceFor(id);
+	const QString panoramaKey = QStringLiteral("%1#%2").arg(version).arg(face);
+	const QString knownPanorama = m_panoramaCache.value(panoramaKey);
 
-	auto* watcher = new QFutureWatcher<QString>(this);
-	connect(watcher, &QFutureWatcher<QString>::finished, this,
-			[this, id, generation, watcher]() {
-				const QString url = watcher->result();
+	auto* watcher = new QFutureWatcher<CoverScanResult>(this);
+	connect(watcher, &QFutureWatcher<CoverScanResult>::finished, this,
+			[this, id, generation, customPath, platformPath, version, panoramaKey,
+			 watcher]() {
+				const CoverScanResult result = watcher->result();
 				watcher->deleteLater();
-				m_coverImageScansPending.remove(id);
+				m_coverScansPending.remove(id);
 
-				if (m_coverImageGeneration.value(id, 0) != generation) {
-					/* The instance stopped running while this scan was in
-					 * flight, so it was looking at a screenshots folder
-					 * from before that - not cached as if it were current;
-					 * a fresh scan replaces it instead. */
-					if (InstancePtr inst = getInstanceById(id)) {
-						scheduleCoverImageScan(
-							id,
-							FS::PathCombine(inst->gameRoot(), "screenshots"));
-					}
-					return;
-				}
-
-				m_coverImageCache.insert(id, url);
 				InstancePtr inst = getInstanceById(id);
 				if (!inst) {
 					// The instance is gone by now; nothing left to update.
 					return;
 				}
+				if (!result.panorama.isEmpty()) {
+					m_panoramaCache.insert(panoramaKey, result.panorama);
+				}
+				if (m_coverGeneration.value(id, 0) != generation) {
+					/* The instance stopped while this lookup was in flight, so
+					 * it saw the disk from before; a fresh one replaces it. */
+					scheduleCoverScan(id, coverFilePath(inst.get()),
+									  platformCoverPath(inst.get()),
+									  inst->gameVersion());
+					return;
+				}
+
+				m_coverCache.insert(
+					id, {customPath, platformPath, version, result.info});
 				const int row = getInstIndex(inst.get());
 				if (row != -1) {
 					emit dataChanged(index(row), index(row),
-									 {CoverImageRole});
+									 {CoverImageRole, CoverKindRole});
+				}
+				// Shown without a picked cover or fetched art: ask the
+				// platform for the pack's own picture (once; see the fetcher).
+				if (result.info.kind != QLatin1String("custom") &&
+					result.info.kind != QLatin1String("platform")) {
+					m_platformCovers->request(inst);
 				}
 			});
-	watcher->setFuture(QtConcurrent::run(QThreadPool::globalInstance(),
-										 &InstanceList::newestScreenshotUrl,
-										 screenshotsDir));
+	watcher->setFuture(QtConcurrent::run(
+		QThreadPool::globalInstance(),
+		[dirs, customPath, platformPath, version, face, knownPanorama]() {
+			CoverScanResult result;
+			result.panorama = knownPanorama;
+			if (result.panorama.isEmpty() ||
+				!QFileInfo::exists(result.panorama)) {
+				result.panorama = panoramaPath(dirs, version, face);
+			}
+			result.info = pickCover(customPath, platformPath, result.panorama);
+			return result;
+		}));
 }
 
-QString InstanceList::newestScreenshotUrl(const QString& screenshotsDir)
+int InstanceList::panoramaFaceFor(const InstanceId& id)
 {
-	if (screenshotsDir.isEmpty()) {
+	// qHash(QString) is seeded per run; a checksum is the same every time.
+	return qChecksum(id.toUtf8()) % kPanoramaFaces;
+}
+
+QString InstanceList::panoramaPath(const CoverDirs& dirs,
+								   const QString& mcVersion, int face)
+{
+	// The version names a file below meta/; keep it from leaving that folder.
+	if (mcVersion.isEmpty() || mcVersion.contains(QLatin1Char('/')) ||
+		mcVersion.contains(QLatin1Char('\\')) ||
+		mcVersion.contains(QLatin1String(".."))) {
 		return QString();
 	}
-	QDir dir(screenshotsDir);
-	if (!dir.exists()) {
+	if (dirs.meta.isEmpty() || dirs.assetIndexes.isEmpty() ||
+		dirs.assetObjects.isEmpty()) {
 		return QString();
 	}
 
-	// Same three extensions ScreenshotListModel::isImageFile() accepts,
-	// checked the same case-insensitive way - QDir name filters are
-	// case-sensitive on some platforms and not others, which would make
-	// this list agree with the Screenshots tab on some machines and not
-	// others.
-	static const QStringList kExtensions = {
-		QStringLiteral("png"),
-		QStringLiteral("jpg"),
-		QStringLiteral("jpeg"),
+	auto readObject = [](const QString& path) {
+		QFile file(path);
+		if (!file.open(QIODevice::ReadOnly)) {
+			return QJsonObject();
+		}
+		return QJsonDocument::fromJson(file.readAll()).object();
 	};
 
-	QString newestPath;
-	QString newestName;
-	QDateTime newestModified;
-	const QFileInfoList files =
-		dir.entryInfoList(QDir::Files | QDir::Readable, QDir::NoSort);
-	for (const QFileInfo& info : files) {
-		bool isImage = false;
-		for (const QString& ext : kExtensions) {
-			if (info.suffix().compare(ext, Qt::CaseInsensitive) == 0) {
-				isImage = true;
-				break;
-			}
-		}
-		if (!isImage) {
-			continue;
-		}
-
-		const QDateTime modified = info.lastModified();
-		// Newest-modified first, file name as a tiebreak - mirrors
-		// ScreenshotListModel::listEntries()'s sort so this always agrees
-		// with what the Screenshots tab shows as its top entry.
-		if (newestPath.isEmpty() || modified > newestModified ||
-			(modified == newestModified && info.fileName() > newestName)) {
-			newestPath = info.absoluteFilePath();
-			newestName = info.fileName();
-			newestModified = modified;
-		}
+	const QJsonObject meta = readObject(FS::PathCombine(
+		dirs.meta, QStringLiteral("net.minecraft"), mcVersion + ".json"));
+	const QString indexId =
+		meta.value(QStringLiteral("assetIndex")).toObject().value("id").toString();
+	if (indexId.isEmpty() || indexId.contains(QLatin1Char('/')) ||
+		indexId.contains(QLatin1Char('\\')) ||
+		indexId.contains(QLatin1String(".."))) {
+		return QString();
 	}
 
-	return newestPath.isEmpty() ? QString()
-								 : QUrl::fromLocalFile(newestPath).toString();
+	// The client jar carries a 1x1 placeholder under these names; only the
+	// asset objects are the real pictures.
+	const QJsonObject index =
+		readObject(FS::PathCombine(dirs.assetIndexes, indexId + ".json"));
+	const QJsonObject objects = index.value(QStringLiteral("objects")).toObject();
+	QString hash;
+	for (const int candidate : {face, 0}) {
+		hash = objects
+				   .value(QStringLiteral(
+							  "minecraft/textures/gui/title/background/"
+							  "panorama_%1.png")
+							  .arg(candidate))
+				   .toObject()
+				   .value(QStringLiteral("hash"))
+				   .toString();
+		if (hash.size() >= 2) {
+			break;
+		}
+	}
+	if (hash.size() < 2) {
+		return QString();
+	}
+
+	const QString object =
+		FS::PathCombine(dirs.assetObjects, hash.left(2), hash);
+	return QFileInfo(object).isFile() ? object : QString();
 }
 
-void InstanceList::resumeWatch()
+InstanceList::CoverInfo InstanceList::pickCover(const QString& customPath,
+												const QString& platformPath,
+												const QString& panoramaPath)
 {
-	if (m_watchLevel > 0) {
-		qWarning() << "Bad suspend level resume in instance list";
+	if (!customPath.isEmpty() && QFileInfo(customPath).isFile()) {
+		return {QUrl::fromLocalFile(customPath).toString(),
+				QStringLiteral("custom")};
+	}
+	if (!platformPath.isEmpty() && QFileInfo(platformPath).isFile()) {
+		return {QUrl::fromLocalFile(platformPath).toString(),
+				QStringLiteral("platform")};
+	}
+	if (!panoramaPath.isEmpty()) {
+		return {QUrl::fromLocalFile(panoramaPath).toString(),
+				QStringLiteral("panorama")};
+	}
+	return {};
+}
+
+namespace
+{
+// The copy's name carries a random part: a reused name would keep showing the old picture from the image cache.
+QString copyCoverFile(const QString& source, const QString& root)
+{
+	const QString name =
+		QStringLiteral("%1-%2.%3")
+			.arg(kCustomCoverPrefix,
+				 QUuid::createUuid().toString(QUuid::Id128).left(8),
+				 QFileInfo(source).suffix().toLower());
+	const QString target = FS::PathCombine(root, name);
+	const QString part = target + QStringLiteral(".part");
+	QFile::remove(part);
+	if (!QFile::copy(source, part) || !QFile::rename(part, target)) {
+		QFile::remove(part);
+		return QString();
+	}
+	return name;
+}
+
+// Only our own copies: an older cover named a screenshot, which is not ours to delete.
+void removeCoverCopy(const QString& root, const QString& name)
+{
+	const QString file = QFileInfo(name).fileName();
+	if (file != name || !file.startsWith(kCustomCoverPrefix)) {
 		return;
 	}
-	m_watchLevel++;
-	if (m_watchLevel > 0 && m_dirty) {
-		loadList();
+	const QString path = FS::PathCombine(root, file);
+	QtConcurrent::run(QThreadPool::globalInstance(),
+					  [path]() { QFile::remove(path); });
+}
+
+// Checks the file is an image of the screenshots folder, then copies it; the copy's name, or empty. Worker only.
+QString copyScreenshotAsCover(const QString& gameRoot, const QString& root,
+							  const QString& pathOrFileUrl)
+{
+	const QUrl url(pathOrFileUrl);
+	const QFileInfo info(url.isLocalFile() ? url.toLocalFile() : pathOrFileUrl);
+	if (!info.isFile() ||
+		!ScreenshotListModel::isImageFile(info.fileName())) {
+		return QString();
+	}
+	const QString shots =
+		QFileInfo(FS::PathCombine(gameRoot, "screenshots")).canonicalFilePath();
+	if (shots.isEmpty() ||
+		QFileInfo(info.absolutePath()).canonicalFilePath() != shots) {
+		return QString();
+	}
+	return copyCoverFile(info.absoluteFilePath(), root);
+}
+} // namespace
+
+bool InstanceList::setCover(const QString& id, const QString& pathOrFileUrl)
+{
+	InstancePtr inst = getInstanceById(id);
+	if (!inst) {
+		return false;
+	}
+	// A later pick or removal makes this one stale, whatever order they finish in.
+	const int pick = ++m_coverPicks[id];
+	const QString root = inst->instanceRoot();
+	const QString gameRoot = inst->gameRoot();
+	const QUrl url(pathOrFileUrl);
+	const QString sourceName =
+		QFileInfo(url.isLocalFile() ? url.toLocalFile() : pathOrFileUrl)
+			.fileName();
+	auto* watcher = new QFutureWatcher<QString>(this);
+	connect(watcher, &QFutureWatcher<QString>::finished, this,
+			[this, id, pick, sourceName, root, watcher]() {
+				const QString copy = watcher->result();
+				watcher->deleteLater();
+				if (copy.isEmpty()) {
+					return;
+				}
+				InstancePtr found = getInstanceById(id);
+				if (!found || m_coverPicks.value(id) != pick) {
+					removeCoverCopy(root, copy);
+					return;
+				}
+				const QString previous = found->coverImage();
+				found->setCustomCover(copy, sourceName);
+				removeCoverCopy(root, previous);
+			});
+	watcher->setFuture(QtConcurrent::run(
+		QThreadPool::globalInstance(), [gameRoot, root, pathOrFileUrl]() {
+			return copyScreenshotAsCover(gameRoot, root, pathOrFileUrl);
+		}));
+	return true;
+}
+
+void InstanceList::clearCover(const QString& id)
+{
+	if (InstancePtr inst = getInstanceById(id)) {
+		++m_coverPicks[id];
+		const QString previous = inst->coverImage();
+		inst->setCustomCover(QString(), QString());
+		removeCoverCopy(inst->instanceRoot(), previous);
 	}
 }
 
-void InstanceList::suspendWatch()
+void InstanceList::renameCoverSource(const QString& id, const QString& fileName)
 {
-	m_watchLevel--;
+	InstancePtr inst = getInstanceById(id);
+	if (inst && !inst->coverImage().isEmpty()) {
+		inst->setCustomCover(inst->coverImage(),
+							 QFileInfo(fileName).fileName());
+	}
+}
+
+QColor InstanceList::averageIconColor(const QImage& source)
+{
+	const QImage image = source.convertToFormat(QImage::Format_ARGB32);
+	double red = 0, green = 0, blue = 0, total = 0;
+	for (int y = 0; y < image.height(); ++y) {
+		const auto* line =
+			reinterpret_cast<const QRgb*>(image.constScanLine(y));
+		for (int x = 0; x < image.width(); ++x) {
+			const QColor pixel = QColor::fromRgba(line[x]);
+			const double weight =
+				pixel.alphaF() * (0.25 + qMax(0.0f, pixel.hsvSaturationF()));
+			red += pixel.redF() * weight;
+			green += pixel.greenF() * weight;
+			blue += pixel.blueF() * weight;
+			total += weight;
+		}
+	}
+	return total > 0 ? QColor::fromRgbF(red / total, green / total, blue / total)
+					 : QColor();
+}
+
+QColor InstanceList::iconColor(const QString& key) const
+{
+	auto it = m_iconColorCache.constFind(key);
+	if (it != m_iconColorCache.constEnd()) {
+		return it.value();
+	}
+	const_cast<InstanceList*>(this)->scheduleIconColor(key);
+	return QColor();
+}
+
+void InstanceList::scheduleIconColor(const QString& key)
+{
+	if (m_iconColorPending.contains(key)) {
+		return;
+	}
+	m_iconColorPending.insert(key);
+
+	auto* context = LauncherContext::instance();
+	std::shared_ptr<IconList> icons = context ? context->icons() : nullptr;
+	if (icons && !m_iconUpdatesWatched) {
+		m_iconUpdatesWatched = true;
+		connect(icons.get(), &IconList::iconUpdated, this,
+				&InstanceList::onIconUpdated);
+	}
+
+	// Queued, not run inside data(): rasterising the QIcon needs the GUI
+	// thread, only the averaging moves to the worker.
+	QMetaObject::invokeMethod(
+		this,
+		[this, key, icons]() {
+			const int generation = m_iconColorGeneration.value(key, 0);
+			QImage image;
+			if (icons) {
+				image = icons->getIcon(key)
+							.pixmap(QSize(32, 32))
+							.toImage();
+			}
+			auto* watcher = new QFutureWatcher<QColor>(this);
+			connect(watcher, &QFutureWatcher<QColor>::finished, this,
+					[this, key, generation, watcher]() {
+						const QColor color = watcher->result();
+						watcher->deleteLater();
+						m_iconColorPending.remove(key);
+						if (m_iconColorGeneration.value(key, 0) != generation) {
+							// The icon changed meanwhile; averaged again,
+							// the colour shown until then stays.
+							scheduleIconColor(key);
+							return;
+						}
+						m_iconColorCache.insert(key, color);
+						emit iconColorsChanged();
+					});
+			watcher->setFuture(QtConcurrent::run(
+				QThreadPool::globalInstance(),
+				[image]() { return averageIconColor(image); }));
+		},
+		Qt::QueuedConnection);
+}
+
+void InstanceList::onIconUpdated(const QString& key)
+{
+	++m_iconColorGeneration[key];
+	// Only a colour somebody asked for is kept fresh; the old one stays until
+	// the new one arrives.
+	if (m_iconColorCache.contains(key)) {
+		scheduleIconColor(key);
+	}
 }
 
 void InstanceList::providerUpdated()
 {
-	m_dirty = true;
-	if (m_watchLevel == 1) {
-		loadList();
-	}
+	loadList();
 }
 
 InstancePtr InstanceList::getInstanceById(QString instId) const
@@ -1109,12 +1345,9 @@ InstancePtr InstanceList::getInstanceById(QString instId) const
 	return InstancePtr();
 }
 
-/* Whether two provider names mean the same catalogue.
- *
- * The launcher records CurseForge as "curseforge", but "flame" is the
- * name the same platform goes by in pack formats and in other launchers,
- * so an instance imported with that spelling has to still be recognised
- * as the same pack. */
+/* Whether two provider names mean the same catalogue: the launcher records
+ * CurseForge as "curseforge", but pack formats and other launchers call it
+ * "flame". */
 static bool sameProvider(const QString& left, const QString& right)
 {
 	auto canonical = [](const QString& provider) {
@@ -1130,9 +1363,9 @@ static bool sameProvider(const QString& left, const QString& right)
 InstancePtr InstanceList::getInstanceByManagedPack(const QString& provider,
 												   const QString& packId) const
 {
-	/* Both halves are required. A pack id on its own is a number that
-	 * means different things on each catalogue, and a provider on its own
-	 * would match every pack the user ever installed from it. */
+	/* Both are required: a pack id alone means different things on each
+	 * catalogue, and a provider alone would match every pack installed from
+	 * it. */
 	if (provider.isEmpty() || packId.isEmpty()) {
 		return InstancePtr();
 	}
@@ -1169,7 +1402,6 @@ void InstanceList::propertiesChanged(BaseInstance* inst)
 	int i = getInstIndex(inst);
 	if (i != -1) {
 		emit dataChanged(index(i), index(i));
-		updateTotalPlayTime();
 	}
 }
 
@@ -1211,19 +1443,11 @@ void InstanceList::saveGroupList()
 					"list of instances yet.";
 		return;
 	}
-	/* The group file lives in the data folder, not inside an instance
-	 * folder.
-	 *
-	 * Grouping is not per-folder data - an instance in a secondary folder
-	 * can share a group with one from the primary, so a file per root
-	 * could not express it. Keeping the single file in the primary folder
-	 * instead, which is what this used to do, ties it to a folder the user
-	 * is free to repoint, and repointing it then loses every group.
-	 *
-	 * No WatchLock any more: the path is no longer inside a watched
-	 * instance folder, so writing it cannot trip the directory watcher
-	 * into a rescan and there is nothing to suspend.
-	 */
+	/* The group file lives in the data folder, not in an instance folder:
+	 * grouping is not per-folder (a secondary-folder instance can share a
+	 * group with a primary one), and a file in the primary folder would be
+	 * lost when the user repoints it. No WatchLock: the path is outside the
+	 * watched instance folders, so writing it cannot trigger a rescan. */
 	QString groupFileName = QDir::current().filePath("instgroups.json");
 	QMap<QString, QSet<QString>> reverseGroupMap;
 	for (auto iter = m_instanceGroupIndex.begin();
@@ -1279,39 +1503,28 @@ void InstanceList::loadGroupList()
 
 	QString groupFileName = QDir::current().filePath("instgroups.json");
 
-	/* Start from nothing.
-	 *
-	 * This runs again whenever the folder settings change, and without
-	 * clearing first, the indices would accumulate: groups for instances
-	 * that no longer exist, and collapsed-state for groups that are gone.
-	 * The file is the whole truth about grouping, so re-reading it should
-	 * replace what we hold rather than add to it.
-	 */
+	/* Start from nothing: this runs again when the folder settings change, and
+	 * without clearing, groups of instances that no longer exist would
+	 * accumulate. The file is the whole truth about grouping. */
 	m_instanceGroupIndex.clear();
 	m_groupNameCache.clear();
 	m_collapsedGroups.clear();
 
 	bool migratingLegacyGroups = false;
 
-	/* No file in the data folder? Look where it used to live.
-	 *
-	 * The group file was kept inside the primary instance folder until the
-	 * launcher learned about more than one of them. Reading the old path
-	 * once, and writing the result back to the new one at the end of this
-	 * function, is what stops an upgrade from looking like every group the
-	 * user ever made was deleted. The old file is left alone rather than
-	 * removed: it costs nothing and it is the only copy if anything about
-	 * this goes wrong.
-	 */
+	/* No file in the data folder? Look where it used to live, the primary
+	 * instance folder. Reading it once and writing the result to the new place
+	 * at the end of this function keeps an upgrade from looking like every
+	 * group was deleted. The old file is left alone as the only copy if
+	 * anything goes wrong. */
 	if (!QFileInfo::exists(groupFileName)) {
 		QString legacyGroupFileName =
 			FS::PathCombine(primaryDir(), "instgroups.json");
 		if (!QFileInfo::exists(legacyGroupFileName)) {
-			/* No file at all is a loaded, empty list - not a list still
-			 * to load. Left unmarked, every instance loaded after this
-			 * would run this function again and its clear() above would
-			 * throw away any group set since, such as the one a copy was
-			 * just committed into. */
+			/* No file at all is a loaded, empty list. Left unmarked, every
+			 * instance loaded later would run this function again, and its
+			 * clear() above would throw away any group set since (such as the
+			 * one a copy was just committed into). */
 			m_groupsLoaded = true;
 			return;
 		}
@@ -1332,7 +1545,6 @@ void InstanceList::loadGroupList()
 	QJsonParseError error;
 	QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData, &error);
 
-	// if the json was bad, fail
 	if (error.error != QJsonParseError::NoError) {
 		qCritical()
 			<< QString("Failed to parse instance group file: %1 at offset %2")
@@ -1341,7 +1553,6 @@ void InstanceList::loadGroupList()
 		return;
 	}
 
-	// if the root of the json wasn't an object, fail
 	if (!jsonDoc.isObject()) {
 		qWarning() << "Invalid group file. Root entry should be an object.";
 		return;
@@ -1349,12 +1560,10 @@ void InstanceList::loadGroupList()
 
 	QJsonObject rootObj = jsonDoc.object();
 
-	// Make sure the format version matches, otherwise fail.
 	if (rootObj.value("formatVersion").toVariant().toInt() !=
 		GROUP_FILE_FORMAT_VERSION)
 		return;
 
-	// Get the groups. if it's not an object, fail
 	if (!rootObj.value("groups").isObject()) {
 		qWarning() << "Invalid group list JSON: 'groups' should be an object.";
 		return;
@@ -1363,13 +1572,11 @@ void InstanceList::loadGroupList()
 	QSet<QString> groupSet;
 	m_instanceGroupIndex.clear();
 
-	// Iterate through all the groups.
 	QJsonObject groupMapping = rootObj.value("groups").toObject();
 	for (QJsonObject::iterator iter = groupMapping.begin();
 		 iter != groupMapping.end(); iter++) {
 		QString groupName = iter.key();
 
-		// If not an object, complain and skip to the next one.
 		if (!iter.value().isObject()) {
 			qWarning()
 				<< QString("Group '%1' in the group list should be an object.")
@@ -1387,7 +1594,6 @@ void InstanceList::loadGroupList()
 			continue;
 		}
 
-		// keep a list/set of groups for choosing
 		groupSet.insert(groupName);
 
 		auto hidden = groupObj.value("hidden").toBool(false);
@@ -1395,7 +1601,6 @@ void InstanceList::loadGroupList()
 			m_collapsedGroups.insert(groupName);
 		}
 
-		// Iterate through the list of instances in the group.
 		QJsonArray instancesArray = groupObj.value("instances").toArray();
 
 		for (QJsonArray::iterator iter2 = instancesArray.begin();
@@ -1407,15 +1612,10 @@ void InstanceList::loadGroupList()
 	m_groupNameCache.unite(groupSet);
 	qDebug() << "Group list loaded.";
 
-	/* Having read the old file, write the new one.
-	 *
-	 * Done here rather than left to the next thing that happens to save,
-	 * so that the migration completes on the launch that noticed it - if
-	 * it waited for the user to rename a group, a crash in between would
-	 * leave the groups only in a location nothing reads any more.
-	 *
-	 * m_groupsLoaded is already true, so this cannot recurse.
-	 */
+	/* Having read the old file, write the new one now so the migration
+	 * completes on the launch that noticed it; waiting for the next save could
+	 * leave the groups only where nothing reads them after a crash.
+	 * m_groupsLoaded is already true, so this cannot recurse. */
 	if (migratingLegacyGroups) {
 		saveGroupList();
 	}
@@ -1431,17 +1631,10 @@ void InstanceList::on_InstFolderChanged(const Setting& setting, QVariant value)
 {
 	(void)setting;
 	(void)value;
-	/* Both folder settings are re-read rather than the changed one being
-	 * applied on its own.
-	 *
-	 * This slot is connected to "InstanceDir" and to
-	 * "AdditionalInstanceDirs", and the roots are an ordered set built
-	 * from the pair - the primary decides where new instances and the
-	 * group file go, so a change to either has to be resolved against the
-	 * other. Taking the value argument alone cannot do that, and there is
-	 * nothing to gain by trying: reading a setting is cheap next to the
-	 * rescan this triggers.
-	 */
+	/* Both folder settings are re-read instead of applying the changed one:
+	 * this slot is connected to "InstanceDir" and "AdditionalInstanceDirs",
+	 * and the roots are an ordered set built from the pair (the primary
+	 * decides where new instances and the group file go). */
 	QStringList dirs;
 	dirs << m_globalSettings->get("InstanceDir").toString();
 	dirs << decodeInstanceDirList(
@@ -1452,14 +1645,8 @@ void InstanceList::on_InstFolderChanged(const Setting& setting, QVariant value)
 		return;
 	}
 
-	/* Flush the groups before the switch, not after.
-	 *
-	 * saveGroupList() writes to primaryDir(), so once the new list is in
-	 * place it would write the current groups into the *new* primary
-	 * folder - inventing a group file there and leaving the folder the
-	 * user is moving away from with a stale one. Saving first puts them
-	 * back where they came from.
-	 */
+	/* Flush the groups before the switch; they are reloaded from the file
+	 * afterwards. */
 	if (m_groupsLoaded) {
 		saveGroupList();
 	}
@@ -1499,18 +1686,6 @@ class InstanceStaging : public Task
 		connect(child, &Task::status, this, &InstanceStaging::setStatus);
 		connect(child, &Task::details, this, &InstanceStaging::setDetails);
 		connect(child, &Task::progress, this, &InstanceStaging::setProgress);
-		/* The dialog is watching us, not the task we wrap, so anything the
-		 * task says about its abort button has to be passed through -
-		 * including the point where it turns into a "Skip" button for the
-		 * optional game-file download. Forwarded rather than recomputed:
-		 * our own canAbort() already asks the child, so re-deriving it here
-		 * would be two answers to one question. */
-		connect(child, &Task::abortStatusChanged, this,
-				&InstanceStaging::abortStatusChanged);
-		connect(child, &Task::abortButtonTextChanged, this,
-				&InstanceStaging::abortButtonTextChanged);
-		// We are only a wrapper around the real work. Without this the step
-		// list of whatever we are staging never reaches the dialog.
 		propagateStepsFrom(child);
 		m_groupName = groupName;
 		m_stagingPath = stagingPath;
@@ -1544,10 +1719,9 @@ class InstanceStaging : public Task
 	}
 	QStringList warnings() const override
 	{
-		/* Both halves of the job: what the task ran into while building
-		 * the instance, and what went wrong while putting it in place.
-		 * The second only exists here, because committing happens after
-		 * the task has already finished. */
+		/* What the task ran into while building the instance plus what went
+		 * wrong putting it in place; the second only exists here, since
+		 * committing happens after the task has finished. */
 		return m_child->warnings() + m_commitWarnings;
 	}
 	bool isMultiStep() const override
@@ -1567,22 +1741,16 @@ class InstanceStaging : public Task
 	{
 		unsigned sleepTime = backoff();
 
-		/* Asked now rather than remembered from construction time.
-		 *
-		 * A task does not necessarily know at the moment it is wrapped
-		 * whether it is replacing an instance or creating one - that can
-		 * depend on what it finds once it starts looking - and the name
-		 * it settles on can change while it runs, too. Reading both here
-		 * means the staging step always acts on what the task actually
-		 * decided, instead of on a snapshot taken before it ran. */
+		/* Asked now, not remembered from construction: a task may not know
+		 * when wrapped whether it replaces an instance (that can depend on
+		 * what it finds once running), and its name can change while it runs. */
 		const QString instanceName = m_instanceTask->name();
 		const QString overrideInstanceId = m_instanceTask->overrideInstanceId();
 		const QStringList filesToRemove =
 			m_instanceTask->filesToRemoveAfterCommit();
 
-		/* Cleared first: this slot runs again on every backoff retry,
-		 * and a warning from an attempt that was then retried should not
-		 * be reported twice - or at all, if the retry got further. */
+		/* Cleared first: this slot runs again on every backoff retry, and a
+		 * warning from a retried attempt should not be reported twice. */
 		m_commitWarnings.clear();
 
 		if (m_parent->commitStagedInstance(m_stagingPath, instanceName,
@@ -1591,7 +1759,6 @@ class InstanceStaging : public Task
 			emitSucceeded();
 			return;
 		}
-		// we actually failed, retry?
 		if (sleepTime == maxBackoff) {
 			emitFailed(tr("Failed to commit instance, even after multiple "
 						  "retries. It is being blocked by something."));
@@ -1608,26 +1775,18 @@ class InstanceStaging : public Task
 	}
 
   private:
-	/*
-	 * WHY: the whole reason why this uses an exponential backoff retry scheme
-	 * is antivirus on Windows. Basically, it starts messing things up while
-	 * Kite is extracting/creating instances and causes that horrible failure
-	 * that is NTFS to lock files in place because they are open.
-	 */
+	/* Exponential backoff because of Windows antivirus: it interferes while
+	 * instances are extracted or created, and NTFS locks files that are open. */
 	ExponentialSeries backoff;
 	QString m_stagingPath;
 	InstanceList* m_parent;
 	unique_qobject_ptr<Task> m_child;
 	QString m_groupName;
-	/* Same object as m_child, kept at its real type so that the commit
-	 * step can ask it the instance-level questions - its name, and
-	 * whether it is replacing an existing instance - that Task does not
-	 * answer. Ownership stays with m_child. */
+	/* Same object as m_child at its real type, for the instance-level
+	 * questions Task does not answer (name, whether it replaces an instance).
+	 * Ownership stays with m_child. */
 	InstanceTask* m_instanceTask = nullptr;
 	QTimer m_backoffTimer;
-	/* Problems the commit itself ran into that are worth telling the
-	 * user about without failing the whole thing. Merged into
-	 * warnings(), which is where the caller looks after we succeed. */
 	QStringList m_commitWarnings;
 };
 
@@ -1635,24 +1794,19 @@ Task* InstanceList::wrapInstanceTask(InstanceTask* task)
 {
 	QString targetDir = task->targetDir();
 	if (targetDir.isEmpty() && task->shouldOverride()) {
-		/* An update is staged in the folder its instance already lives in,
-		 * not in the primary one.
-		 *
-		 * Committing an override merges the staged tree over the existing
-		 * instance, so staging elsewhere would make every pack update of
-		 * an instance in a secondary folder a cross-filesystem copy of the
-		 * whole pack. The caller is updating a specific instance and has
-		 * no reason to know which disk it sits on, so this is worked out
-		 * here rather than pushed onto them.
-		 */
+		/* An update is staged in the folder its instance lives in, not the
+		 * primary one: committing an override merges the staged tree over the
+		 * instance, and staging elsewhere would make each pack update in a
+		 * secondary folder a cross-filesystem copy. Worked out here so the
+		 * caller need not know which disk it is on. */
 		targetDir = rootDirOf(task->overrideInstanceId());
 	}
 	auto stagingPath = getStagedInstancePath(targetDir);
 	task->setStagingPath(stagingPath);
 	task->setParentSettings(m_globalSettings);
-	/* The group is settled before wrapping and does not change; the name
-	 * and the override target are read at commit time instead, because
-	 * the task may still decide them while it runs. */
+	/* The group is settled before wrapping; the name and the override target
+	 * are read at commit time, because the task may still decide them while
+	 * running. */
 	return new InstanceStaging(this, task, stagingPath, task->group());
 }
 
@@ -1660,11 +1814,10 @@ QString InstanceList::getStagedInstancePath(const QString& targetDir)
 {
 	QString root = primaryDir();
 	if (!targetDir.isEmpty()) {
-		/* Refuse rather than fall back to the primary folder. A target
-		 * that is not configured means either a caller bug or a folder the
-		 * user removed from the settings while this task sat in the queue;
-		 * quietly installing somewhere else is the one outcome nobody
-		 * asked for, and it would be discovered much later. */
+		/* Refuse rather than fall back to the primary folder: an unconfigured
+		 * target means a caller bug or a folder removed from the settings
+		 * while this task was queued, and installing elsewhere silently would
+		 * surface much later. */
 		if (!m_instDirs.contains(targetDir)) {
 			qCritical() << "Requested instance folder" << targetDir
 						<< "is not one of the configured folders";
@@ -1701,16 +1854,10 @@ bool InstanceList::commitStagedInstance(const QString& path,
 {
 	const bool isOverride = !overrideInstanceId.isEmpty();
 
-	/* Which folder this instance is landing in.
-	 *
-	 * For an override it is wherever the instance already is - moving it
-	 * between folders is not what updating a pack means. For a new
-	 * instance it is the folder the staging directory is already inside,
-	 * read back off the path rather than taken from the task a second
-	 * time: committing is a rename, and a rename only stays a rename
-	 * while both ends are on one filesystem. Deriving the destination
-	 * from the source is what guarantees that.
-	 */
+	/* Which folder this instance lands in: for an override, wherever it
+	 * already is; for a new instance, the folder the staging directory is
+	 * inside, read off the path. A commit is a rename, which stays one only
+	 * while both ends are on one filesystem. */
 	const QString root = isOverride ? rootDirOf(overrideInstanceId)
 									: rootForStaging(path);
 	if (root.isEmpty()) {
@@ -1727,37 +1874,23 @@ bool InstanceList::commitStagedInstance(const QString& path,
 		QString destination = FS::PathCombine(root, instID);
 
 		if (isOverride) {
-			/* Merge over the instance that is already there, so that
-			 * anything the pack does not ship - worlds, screenshots,
-			 * the user's own config edits - is left where it is. */
+			/* Merge over the existing instance, so anything the pack does not
+			 * ship (worlds, screenshots, the user's config edits) stays. */
 			if (!FS::overrideFolder(destination, path)) {
 				qWarning() << "Failed to merge" << path << "over"
 						   << destination;
 				return false;
 			}
 
-			/* No group or id bookkeeping to do: the instance already has
-			 * both, and the whole point of overriding is that they do
-			 * not change. Its name, however, lives inside the staged
-			 * instance.cfg we just moved into place, so it has already
-			 * been updated. */
+			/* No group or id bookkeeping: the instance has both and an
+			 * override does not change them. Its name lives in the staged
+			 * instance.cfg we just moved into place. */
 
-			/* Re-read that file into the instance we still have in
-			 * memory.
-			 *
-			 * loadList() deliberately keeps the existing object for an
-			 * id it already knows, so nothing else is going to notice
-			 * that instance.cfg changed under it. Two things then go
-			 * wrong, and the second is the dangerous one:
-			 *
-			 *  - everything still shows the pre-update values, so the
-			 *    pack page reports the version we just replaced;
-			 *  - INISettingsObject rewrites the whole file on any set(),
-			 *    so the first unrelated write - launching the instance
-			 *    is enough, it touches lastLaunchTime - flushes the
-			 *    stale in-memory copy back to disk and silently undoes
-			 *    part of the update.
-			 */
+			/* Re-read instance.cfg into the instance we hold: loadList() keeps
+			 * the existing object for a known id, so the pack page would show
+			 * the replaced version, and INISettingsObject's whole-file rewrite
+			 * on the first unrelated set() (even a launch) would silently undo
+			 * part of the update. */
 			if (auto existing = getInstanceById(instID)) {
 				if (!existing->settings()->reload()) {
 					qWarning() << "Could not re-read settings for" << instID
@@ -1765,26 +1898,10 @@ bool InstanceList::commitStagedInstance(const QString& path,
 				}
 			}
 
-			/* Now that the new version is actually in place, remove what
-			 * it no longer ships.
-			 *
-			 * After the merge, not before: a file the update makes
-			 * obsolete is still a file the *current* version needs, so
-			 * deleting it earlier would leave a failed or aborted update
-			 * with an instance missing its mods. By this point the merge
-			 * has succeeded and the old files are genuinely orphans.
-			 *
-			 * A failure to delete is reported but not fatal - the
-			 * instance is already updated and consistent; a leftover jar
-			 * is a problem to tell the user about, not a reason to
-			 * declare the whole update failed and leave them with no
-			 * idea what state they are in.
-			 *
-			 * Told to the user, though, and not only to the log: a mod
-			 * the new version does not include is still going to be
-			 * loaded by the game, so an update that could not remove one
-			 * has not entirely happened. Only the user can free the file
-			 * and only if they know about it. */
+			/* Now that the new version is in place, remove what it no longer
+			 * ships (not earlier: a failed update would be left missing mods).
+			 * A failed delete is not fatal but is told to the user, since the
+			 * game would still load that mod. */
 			for (const QString& path : filesToRemove) {
 				if (!QFileInfo::exists(path)) {
 					continue;
@@ -1811,11 +1928,9 @@ bool InstanceList::commitStagedInstance(const QString& path,
 		}
 
 		instanceSet.insert(instID);
-		/* Record the folder now, rather than waiting for the next
-		 * discovery pass. Everything between here and that pass - loading
-		 * the instance so it can be selected, most immediately - asks
-		 * rootDirOf() for its path, and without this it would be answered
-		 * with the primary folder and look in the wrong place. */
+		/* Record the folder now, not at the next discovery pass: loading the
+		 * instance for selection asks rootDirOf() for its path and would get
+		 * the primary folder. */
 		m_instanceRootDirMap[instID] = root;
 		emit instancesChanged();
 		emit instanceSelectRequest(instID);
@@ -1827,12 +1942,6 @@ bool InstanceList::commitStagedInstance(const QString& path,
 bool InstanceList::destroyStagingPath(const QString& keyPath)
 {
 	return FS::deletePath(keyPath);
-}
-
-int InstanceList::getTotalPlayTime()
-{
-	updateTotalPlayTime();
-	return totalPlayTime;
 }
 
 #include "InstanceList.moc"

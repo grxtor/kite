@@ -23,8 +23,7 @@
 
 namespace
 {
-// Only a fallback for an unrecognised or zero requestedSize; the exact value
-// is not load-bearing anywhere else.
+// Fallback for an unrecognised or zero requestedSize.
 constexpr int kDefaultIconExtent = 64;
 }
 
@@ -36,34 +35,27 @@ InstanceIconProvider::InstanceIconProvider(std::shared_ptr<IconList> icons)
 QPixmap InstanceIconProvider::requestPixmap(const QString& id, QSize* size,
 											const QSize& requestedSize)
 {
-	// Cache-busting query ("<key>?rev=N") plays no part in the lookup -- see
-	// the header for why it exists at all.
+	// The cache-busting "?rev=N" plays no part in the lookup.
 	const int queryStart = id.indexOf(QLatin1Char('?'));
 	const QString key = queryStart < 0 ? id : id.left(queryStart);
 
-	// requestedSize is already in device pixels -- QML applied the device
-	// pixel ratio before calling here -- so it is used as-is, never an
-	// invalid or empty one.
+	// requestedSize is already in device pixels.
 	const QSize wanted = requestedSize.isEmpty()
 							 ? QSize(kDefaultIconExtent, kDefaultIconExtent)
 							 : requestedSize;
 
 	QPixmap pixmap;
 	if (m_icons) {
-		// getIcon() already falls back to the "grass" builtin for an unknown
-		// key (and for "default"); nothing extra to do for that here. The
-		// explicit ratio of 1 matters: QIcon::pixmap(QSize) alone multiplies
-		// by the application's device pixel ratio again, which on a 2x
-		// screen handed QML a pixmap twice the item's device size for the
-		// scene graph to shrink.
+		// getIcon() falls back to "grass" for an unknown key. The explicit
+		// ratio of 1 matters: QIcon::pixmap(QSize) alone multiplies by the
+		// device pixel ratio again, handing QML a pixmap twice the item's
+		// device size on a 2x screen.
 		pixmap = m_icons->getIcon(key).pixmap(wanted, 1.0);
 	}
 
 	if (pixmap.isNull()) {
-		// Reached only if no IconList was given, or even "grass" could not
-		// be found (e.g. the icon theme resource was never registered). A
-		// null QPixmap here would reach QML as a broken image, so this
-		// draws something instead of ever returning one.
+		// No IconList, or even "grass" is missing; a null QPixmap would reach
+		// QML as a broken image.
 		pixmap = QPixmap(wanted);
 		pixmap.fill(Qt::gray);
 	}

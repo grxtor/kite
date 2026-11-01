@@ -26,12 +26,8 @@
 #include "modplatform/ContentProviderModel.h"
 #include "modplatform/ModDownloadTypes.h"
 
-/* Both functions under test are public and static, and touch neither the
- * network nor a MinecraftInstance - see the class comment on
- * ContentBrowser::isVersionCompatible()/sortOptionsFor(). Constructing a
- * full ContentBrowser (which needs a MinecraftInstance) is impractical
- * here, the same reason models/InstanceDetails_test.cpp only exercises
- * InstanceLogBridge. */
+/* Both functions under test are public and static and need neither the network
+ * nor a MinecraftInstance (a full ContentBrowser needs one). */
 class ContentBrowserTest : public QObject
 {
 	Q_OBJECT
@@ -78,9 +74,7 @@ class ContentBrowserTest : public QObject
 													 "fabric"));
 	}
 
-	/* A version that states neither is accepted for whichever half it is
-	 * silent about, rather than flagged incompatible - see the field
-	 * comments on ModPlatform::ContentVersion. */
+	/* A version that states neither is accepted for whichever half it is silent about. */
 	void test_UnstatedFieldsAreAccepted()
 	{
 		ModPlatform::ContentVersion version;
@@ -96,10 +90,8 @@ class ContentBrowserTest : public QObject
 
 	void test_EmptyCallerArgumentsAreAccepted()
 	{
-		/* An instance with no detected loader (detectInstanceProfile()
-		 * came up empty) searches without a loader filter - the same
-		 * version should not then be flagged incompatible for a loader
-		 * nobody named. */
+		/* An instance with no detected loader searches without a loader filter; the
+		 * same version must not be flagged incompatible for a loader nobody named. */
 		ModPlatform::ContentVersion version;
 		version.gameVersions = {"1.20.1"};
 		version.loaders = {"forge"};
@@ -109,10 +101,9 @@ class ContentBrowserTest : public QObject
 
 	void test_SortOptionsForModrinth()
 	{
-		/* Mirrors ModrinthApi::sortingMethods() (five string-valued
-		 * sorts) - the point being that `id` is the position in the list,
-		 * not the provider's own apiValue, since that is what
-		 * ContentProviderModel::search()'s sortIndex parameter expects. */
+		/* Mirrors ModrinthApi::sortingMethods(): `id` is the position in the list, not
+		 * the provider's apiValue, since that is what ContentProviderModel::search()'s
+		 * sortIndex expects. */
 		const QList<ModPlatform::SortingMethod> methods = {
 			{"relevance", "Sort by Relevance"},
 			{"downloads", "Sort by Downloads"},
@@ -140,8 +131,6 @@ class ContentBrowserTest : public QObject
 		QVERIFY(ContentBrowser::sortOptionsFor({}).isEmpty());
 	}
 
-	/* The filter panel's state turned into a provider query
-	 * (searchFiltersFor(), static for this reason). */
 	void test_FiltersForModsOnModrinth()
 	{
 		ContentBrowser::FilterState state;

@@ -30,46 +30,38 @@
 
 class QFileSystemWatcher;
 
-/* The local skin library: every skin the user has saved, as a list model.
- *
- * Backed by a directory of PNG files plus an "index.json" holding the
- * metadata that a PNG cannot carry (arm width, cape, profile URL). The
- * directory is the source of truth for *which* skins exist -- files dropped
- * in by hand show up on the next rescan, and files deleted by hand disappear
- * -- while the index only decorates the files it recognises. That way the
- * library can never end up insisting on skins that are not there.
- *
- * The account is needed for more than display: whatever skin the account is
- * currently wearing is adopted into the library on rescan, so a fresh install
- * opens with the user's own skin already in the list and already selected.
- *
- * Entries are keyed by name (the file name without ".png"), which is also
- * what the model reports for Qt::UserRole. Callers hold names, not pointers
- * or row numbers, because a rescan can reorder or replace the whole list.
- */
+// The local skin library: every skin the user saved, as a list model.
+//
+// Backed by a directory of PNGs plus an "index.json" with the metadata a PNG
+// cannot carry (arm width, cape, profile URL). The directory is the source of
+// truth for which skins exist (files added or deleted by hand show up on the
+// next rescan); the index only decorates files it recognises.
+//
+// The skin the account currently wears is adopted on rescan, so a fresh
+// install opens with it in the list and selected. Entries are keyed by name
+// (the file name without ".png", also the Qt::UserRole); callers hold names,
+// not pointers or rows, because a rescan can reorder or replace the list.
 class SkinLibrary : public QAbstractListModel
 {
 	Q_OBJECT
 
   public:
-	/* Named roles, so a QML ListView can get at the name and image without
-	 * relying on the generic "display"/"decoration" role names. */
+	// Named roles, so a QML ListView need not rely on "display"/"decoration".
 	enum ModelRoles {
 		NameRole = Qt::UserRole + 1,
 		ImageRole
 	};
 
-	/* `path` is the library directory; it is created if missing. */
+	// `path` is the library directory; it is created if missing.
 	SkinLibrary(QObject* parent, const QString& path,
 				MinecraftAccountPtr account);
 	~SkinLibrary() override;
 
-	/* Row of the entry with this name, or -1. */
+	// Row of the entry with this name, or -1.
 	int indexOfName(const QString& name) const;
 
-	/* Row of the entry whose texture URL matches what the account is
-	 * currently wearing, or -1 if the account's skin is not in the library.
-	 * This is what the dialog preselects on open. */
+	// Row of the entry whose texture URL matches what the account wears, or -1.
+	// The dialog preselects it.
 	int indexOfAccountSkin() const;
 
 	const SkinEntry* entry(const QString& name) const;
@@ -80,31 +72,22 @@ class SkinLibrary : public QAbstractListModel
 		return m_dir.absolutePath();
 	}
 
-	/* Write index.json. Called on every mutation and on destruction. */
+	// Writes index.json; called on every mutation and on destruction.
 	void save();
 
-	/* Fold an entry built elsewhere (an import, say) into the library:
-	 * updates the metadata of the matching file if there is one, otherwise
-	 * appends it as a new row. */
+	// Folds an entry built elsewhere (an import) into the library: updates the
+	// matching file's metadata, otherwise appends a new row.
 	void mergeEntry(const SkinEntry& incoming);
 
-	/* Copy a PNG into the library.
-	 *
-	 * Returns an empty string on success, or a human-readable reason why
-	 * not -- the caller shows it verbatim. `preferredName` overrides the
-	 * source file name; either way a numeric suffix is appended if the name
-	 * is taken, so importing never overwrites. */
+	// Copies a PNG into the library. Returns an empty string on success, else a
+	// reason the caller shows verbatim. `preferredName` overrides the file
+	// name; a numeric suffix is appended if the name is taken, so nothing is
+	// overwritten.
 	QString importFile(const QString& sourcePath,
 					   const QString& preferredName = QString());
 
-	/* Bulk form of importFile(), used by drag-and-drop. Failures are logged
-	 * rather than reported: a drop of twelve files should not produce twelve
-	 * modal dialogs. */
-	void importFiles(const QStringList& sourcePaths);
-
-	/* Delete a skin's file, and with it the entry. `toTrash` asks for the
-	 * system trash; the caller is expected to retry with false if that is
-	 * not available on this platform. */
+	// Deletes a skin's file and its entry. `toTrash` asks for the system trash;
+	// retry with false where that is unavailable.
 	bool remove(const QString& name, bool toTrash);
 
 	void startWatching();
@@ -118,24 +101,20 @@ class SkinLibrary : public QAbstractListModel
 	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 	QHash<int, QByteArray> roleNames() const override;
 	Qt::ItemFlags flags(const QModelIndex& index) const override;
-	QStringList mimeTypes() const override;
-	Qt::DropActions supportedDropActions() const override;
-	bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row,
-					  int column, const QModelIndex& parent) override;
 
   protected slots:
 	void onDirectoryChanged(const QString& path);
 	void onFileChanged(const QString& path);
 
-	/* Rebuild the whole list from the directory and the index. */
+	// Rebuilds the whole list from the directory and the index.
 	void rescan();
 
   private:
 	SkinLibrary(const SkinLibrary&) = delete;
 	SkinLibrary& operator=(const SkinLibrary&) = delete;
 
-	/* Pull the account's currently worn skin into `entries`, saving it to
-	 * disk if it is not there yet. Returns true if the index needs writing. */
+	// Pulls the account's worn skin into `entries`, saving it to disk if new.
+	// Returns true if the index needs writing.
 	bool adoptAccountSkin(QList<SkinEntry>& entries) const;
 
 	QFileSystemWatcher* m_watcher = nullptr;

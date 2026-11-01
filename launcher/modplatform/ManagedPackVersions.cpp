@@ -42,8 +42,7 @@ namespace ManagedPack
 			case ReleaseType::Unknown:
 				break;
 		}
-		/* Deliberately empty rather than "Unknown": label() tests for an
-		 * empty string to decide whether to print the bracket at all. */
+		/* Empty, not "Unknown": label() tests for empty to skip the bracket. */
 		return QString();
 	}
 
@@ -78,31 +77,21 @@ namespace ManagedPack
 
 	QString Version::label() const
 	{
-		/* Bracketed suffix, or nothing when we do not know the type. */
 		const QString typeName = releaseTypeToString(releaseType);
 		const QString releaseSuffix =
 			typeName.isEmpty() ? QString()
 							   : QStringLiteral(" [%1]").arg(typeName);
 
-		/* The bare number is only worth repeating when the display name
-		 * does not already contain it, which for most packs it does.
-		 *
-		 * The isEmpty() test is not redundant: contains("") is true for
-		 * every string, and CurseForge never sends a version number at
-		 * all, so without it this would take the "already contains it"
-		 * branch by accident rather than on purpose. Same answer, but
-		 * only the explicit test keeps saying so if the format below
-		 * changes. */
+		/* Repeat the bare number only when the display name lacks it. The
+		 * isEmpty() test is needed: contains("") is always true. */
 		const QString numberPart =
 			(versionNumber.isEmpty() || displayName.contains(versionNumber))
 				? QString()
 				: versionNumber;
 
-		/* Append a game version only if none of the declared ones is
-		 * already visible in the display name. Scanning the whole list
-		 * (rather than stopping at the first) matters: a pack declaring
-		 * ["1.20.1", "1.20.4"] whose name mentions 1.20.4 should not
-		 * gain a contradictory " for 1.20.1". */
+		/* Append a game version only if none of the declared ones appears in the
+		 * display name; scan all of them, so ["1.20.1", "1.20.4"] with a name
+		 * mentioning 1.20.4 gains no contradictory " for 1.20.1". */
 		QString gameVersionPart;
 		for (const QString& mcVersion : mcVersions) {
 			if (mcVersion.isEmpty()) {
@@ -119,19 +108,12 @@ namespace ManagedPack
 			}
 		}
 
-		/* The separator earns its place only when something follows it.
-		 *
-		 * CurseForge publishes no version number and not every file
-		 * carries a usable release type, which left entries reading
-		 * "Some Pack — " with the dash dangling, or "Some Pack —
-		 * [Release]" with a doubled space where the number would have
-		 * gone. Assembling the tail first and attaching the separator to
-		 * it means neither can happen. */
+		/* The separator is attached to the assembled tail, so an empty tail never
+		 * leaves "Some Pack — " or a doubled space. */
 		QString tail = numberPart;
 		if (!releaseSuffix.isEmpty()) {
-			/* releaseSuffix already starts with a space, which is the
-			 * gap between the number and the bracket when both are
-			 * present - and must not survive when the number is not. */
+			/* releaseSuffix starts with a space: the gap before the bracket, which
+			 * must not survive without a number. */
 			tail += tail.isEmpty() ? releaseSuffix.trimmed() : releaseSuffix;
 		}
 
@@ -165,10 +147,8 @@ namespace ManagedPack
 			version.versionNumber =
 				Json::ensureString(entry, "version_number", "");
 
-			/* Modrinth lets `name` be absent or blank, in which case the
-			 * version number is the only human-readable handle there
-			 * is. Falling back keeps the combo box from showing a row
-			 * that begins with " — ". */
+			/* Modrinth's `name` can be blank; fall back to the version number so
+			 * the row does not start with " — ". */
 			version.displayName = Json::ensureString(entry, "name", "");
 			if (version.displayName.isEmpty()) {
 				version.displayName = version.versionNumber;
@@ -185,16 +165,10 @@ namespace ManagedPack
 				}
 			}
 
-			/* Modrinth hands the changelog over with the version list,
-			 * so there is never a second request to make. Marking it
-			 * loaded even when empty is the point of the flag: an empty
-			 * changelog here is a fact, not a gap. */
 			version.changelog = Json::ensureString(entry, "changelog", "");
-			version.changelogLoaded = true;
 
-			/* A version may ship several files (the pack plus, say, a
-			 * server bundle). `primary` says which one is the pack; when
-			 * there is exactly one file the flag is often omitted. */
+			/* A version may ship several files (pack, server bundle); `primary`
+			 * marks the pack, and is often omitted when there is one file. */
 			const QJsonArray files = Json::ensureArray(entry, "files");
 			for (const auto& fileRaw : files) {
 				const QJsonObject file = fileRaw.toObject();
@@ -207,8 +181,7 @@ namespace ManagedPack
 				break;
 			}
 
-			/* An entry with no id is unusable: it cannot be matched
-			 * against what is installed, nor passed to the importer. */
+			/* No id: cannot be matched against what is installed or imported. */
 			if (version.versionId.isEmpty()) {
 				continue;
 			}
@@ -221,13 +194,9 @@ namespace ManagedPack
 		return versions;
 	}
 
-	/* CurseForge's `gameVersions` mixes Minecraft versions with loader
-	 * names and, on older projects, Java versions: ["1.20.1", "Forge",
-	 * "Java 17"]. There is no type tag to separate them, so go by the
-	 * only thing that reliably differs - a Minecraft version starts with
-	 * a digit, a loader name does not. Being wrong here costs a slightly
-	 * odd " for ..." in one combo box entry, which is why a heuristic is
-	 * acceptable where it would not be for, say, launching the game. */
+	/* CurseForge's `gameVersions` mixes Minecraft versions, loader names and
+	 * Java versions with no type tag. A Minecraft version starts with a
+	 * digit, a loader name does not; a miss only costs an odd " for ...". */
 	static bool looksLikeMinecraftVersion(const QString& value)
 	{
 		if (value.isEmpty()) {
@@ -236,8 +205,8 @@ namespace ManagedPack
 		if (!value.at(0).isDigit()) {
 			return false;
 		}
-		/* "Java 17" fails the first-character test already; this rules
-		 * out anything else that merely begins with a number. */
+		/* "Java 17" already fails the first-character test; this rules out other
+		 * entries that merely start with a number. */
 		return !value.contains(QLatin1Char(' '));
 	}
 
@@ -256,8 +225,7 @@ namespace ManagedPack
 		const QJsonArray array = Json::ensureArray(doc.object(), "data");
 		versions.reserve(array.size());
 
-		/* Sorted at the end, so remember the numeric id alongside each
-		 * entry rather than re-parsing it in the comparator. */
+		/* Sorted at the end, so keep the numeric id beside each entry. */
 		QVector<QPair<int, Version>> withIds;
 		withIds.reserve(array.size());
 
@@ -272,17 +240,13 @@ namespace ManagedPack
 			Version version;
 			version.versionId = QString::number(fileId);
 
-			/* `displayName` is what the CurseForge site shows; the raw
-			 * `fileName` is the fallback because it is always present
-			 * and at least identifies the archive. */
+			/* `displayName` is what the site shows; `fileName` is always present. */
 			version.displayName = Json::ensureString(entry, "displayName", "");
 			if (version.displayName.isEmpty()) {
 				version.displayName = Json::ensureString(entry, "fileName", "");
 			}
 
-			/* CurseForge has no field for a bare version number - the
-			 * version is embedded in displayName - so this stays empty
-			 * and label() omits that part. */
+			/* CurseForge has no bare version number field; label() omits that part. */
 
 			version.releaseType = releaseTypeFromCurseForge(
 				Json::ensureInteger(entry, "releaseType", 0));
@@ -295,21 +259,18 @@ namespace ManagedPack
 				}
 			}
 
-			/* Absent for packs whose author opted out of third-party
-			 * distribution. Left empty on purpose: the version is still
-			 * listed, and isInstallable() is what refuses the update. */
+			/* Absent when the author opted out of third-party distribution; the
+			 * version is still listed and isInstallable() refuses the update. */
 			version.downloadUrl = Json::ensureString(entry, "downloadUrl", "");
 
-			/* Needs a separate request per file, so nothing is loaded
-			 * yet. */
-			version.changelogLoaded = false;
+			/* CurseForge lists no changelog; it needs a request per file, which
+			 * nothing makes, so `changelog` stays empty. */
 
 			withIds.append({ fileId, version });
 		}
 
-		/* Newest first. CurseForge does not promise an order, and file
-		 * ids are handed out in ascending order per project, so they
-		 * sort by age without having to parse `fileDate`. */
+		/* Newest first: CurseForge promises no order, and file ids grow with age
+		 * per project. */
 		std::sort(withIds.begin(), withIds.end(),
 				  [](const QPair<int, Version>& a,
 					 const QPair<int, Version>& b) -> bool {
@@ -324,15 +285,6 @@ namespace ManagedPack
 			*ok = true;
 		}
 		return versions;
-	}
-
-	QString parseCurseForgeChangelog(const QByteArray& bytes)
-	{
-		const QJsonDocument doc = QJsonDocument::fromJson(bytes);
-		if (!doc.isObject()) {
-			return QString();
-		}
-		return Json::ensureString(doc.object(), "data", "");
 	}
 
 	int indexOfVersionId(const VersionList& versions, const QString& versionId)

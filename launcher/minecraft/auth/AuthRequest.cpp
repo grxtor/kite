@@ -33,16 +33,12 @@
 namespace
 {
 	/*
-	 * dispatchAuthRequestHook — hand the in-flight request to whatever the
-	 * plugin host hooked into outgoing authentication requests, if anything.
-	 *
-	 * Returns true if the request was *cancelled* — the caller must abort and
-	 * emit a network error in that case. Header and redirect mutations are
-	 * applied to `request` in place.
-	 *
-	 * The hook body itself lives in the plugin layer: running it means
-	 * touching PluginManager, which builds plugin-supplied user interface and
-	 * so drags QtWidgets in behind it.
+	 * Hands the in-flight request to whatever the plugin host hooked into
+	 * outgoing authentication requests. Returns true if the request was
+	 * cancelled; the caller must abort and emit a network error. Header and
+	 * redirect changes are applied to `request` in place. The hook body lives
+	 * in the plugin layer because it needs PluginManager, which drags QtWidgets
+	 * in.
 	 */
 	bool dispatchAuthRequestHook(QNetworkRequest& request,
 								 const QByteArray& body, const char* method)
@@ -63,7 +59,7 @@ void AuthRequest::get(const QNetworkRequest& req, int timeout /* = 60*1000*/)
 {
 	setup(req, QNetworkAccessManager::GetOperation);
 
-	/* Let MMCO plugins observe / rewrite / cancel the request. */
+	// Let plugins observe, rewrite or cancel the request.
 	if (dispatchAuthRequestHook(request_, QByteArray(), "GET")) {
 		error_ = QNetworkReply::ProtocolUnknownError;
 		errorString_ = QStringLiteral("AuthRequest cancelled by plugin");
@@ -90,8 +86,7 @@ void AuthRequest::post(const QNetworkRequest& req, const QByteArray& data,
 	setup(req, QNetworkAccessManager::PostOperation);
 	data_ = data;
 
-	/* Hook dispatch — plugins see the body and may rewrite the URL or
-	 * append headers before the request is sent. */
+	// Plugins see the body and may rewrite the URL or append headers.
 	if (dispatchAuthRequestHook(request_, data_, "POST")) {
 		error_ = QNetworkReply::ProtocolUnknownError;
 		errorString_ = QStringLiteral("AuthRequest cancelled by plugin");
@@ -144,8 +139,6 @@ void AuthRequest::onRequestError(QNetworkReply::NetworkError error)
 	qWarning() << "AuthRequest::onRequestError: HTTP status" << httpStatus_
 			   << reply_->attribute(QNetworkRequest::HttpReasonPhraseAttribute)
 					  .toString();
-
-	// QTimer::singleShot(10, this, &AuthRequest::finish);
 }
 
 void AuthRequest::onSslErrors(QList<QSslError> errors)

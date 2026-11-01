@@ -21,9 +21,12 @@
 #pragma once
 
 #include "ExternalUpdater.h"
+#include "core/UiHost.h"
 
 #include <QDateTime>
 #include <QDir>
+#include <QPointer>
+#include <QProcess>
 #include <QString>
 #include <QStringList>
 #include <QTimer>
@@ -37,20 +40,12 @@ class KiteExternalUpdater : public ExternalUpdater
 	Q_OBJECT
 
   public:
-	/*!
-	 * \a appDir   installation root (Application::root()).
-	 * \a dataDir  where the config, the log and the markers live.
-	 * \a autoCheckDefault what "check automatically" means for an
-	 *                     installation that has never answered the question.
-	 *
-	 * The default exists so that a user who had already turned automatic
-	 * checks off in the launcher's settings, before the updater kept a config
-	 * of its own, does not silently get them back on. It applies once: the
-	 * answer is written to the config the first time.
-	 *
-	 * Starts the automatic check schedule, and -- when the interval is set to
-	 * "On Launch" -- performs a silent check before returning.
-	 */
+	/*! \a appDir is the installation root (Application::root()), \a dataDir where the config, log and markers live.
+	 * \a autoCheckDefault is what "check automatically" means for an installation that has never answered; it
+	 * applies once and is then written to the config, so a user who turned checks off before the updater kept
+	 * a config of its own does not get them back on.
+	 * Starts the automatic check schedule and, for the "On Launch" interval, performs a silent check before
+	 * returning. */
 	KiteExternalUpdater(const QString& appDir, const QString& dataDir,
 						  bool autoCheckDefault = true);
 	~KiteExternalUpdater() override;
@@ -58,13 +53,9 @@ class KiteExternalUpdater : public ExternalUpdater
 	//! Interactive check: shows progress, and reports even a negative result.
 	void checkForUpdates() override;
 
-	/*!
-	 * \a triggeredByUser distinguishes the menu entry from the timer.
-	 *
-	 * An automatic check stays silent unless it has something to offer, and
-	 * it honours "Skip This Version"; an interactive one always answers, and
-	 * ignores the skip list, because the user just asked.
-	 */
+	/*! \a triggeredByUser separates the menu entry from the timer: an automatic check stays silent unless it has
+	 * something to offer and honours "Skip This Version"; an interactive one always answers and ignores the
+	 * skip list. */
 	void checkForUpdates(bool triggeredByUser);
 
 	bool getAutomaticallyChecksForUpdates() override;
@@ -75,13 +66,8 @@ class KiteExternalUpdater : public ExternalUpdater
 	void setUpdateCheckInterval(double seconds) override;
 	void setBetaAllowed(bool allowed) override;
 
-	/*!
-	 * Where the updater sits relative to the installation root.
-	 *
-	 * Windows keeps the executables at the root, everything else puts them in
-	 * bin/. Application uses this to decide whether updates are available at
-	 * all, so it lives here rather than being spelled out twice.
-	 */
+	/*! Where the updater sits relative to the installation root: at the root on Windows, in bin/ elsewhere.
+	 * Application uses it to decide whether updates are available at all. */
 	static QString updaterBinaryRelativePath();
 
   public slots:
@@ -102,6 +88,22 @@ class KiteExternalUpdater : public ExternalUpdater
 	//! Stamp this moment as the last check and re-arm.
 	void noteCheckCompleted();
 
+	//! The check process ended on its own; reports the result.
+	void onCheckFinished(int exitCode);
+
+	//! The check process never started or never ended in time; kills it and reports.
+	void onCheckTimedOut();
+
+	//! Reports a check that did not start.
+	void onCheckStartFailed(const QString& reason);
+
+	//! Interprets the exit code and output of a finished check.
+	void handleCheckResult(int exitCode, const QByteArray& stdOutput,
+						   const QByteArray& stdError);
+
+	//! Drops the check process and its busy indication.
+	void releaseCheckProcess();
+
 	QString updaterExecutablePath() const;
 	QStringList commonArguments() const;
 
@@ -116,6 +118,11 @@ class KiteExternalUpdater : public ExternalUpdater
 	bool m_autoCheck = true;
 	double m_updateInterval = 0.0;
 
-	//! Guards against a second check while one is already blocking.
+	//! Guards against a second check while one is already running.
 	bool m_checking = false;
+
+	bool m_checkByUser = false;
+	QPointer<QProcess> m_checkProcess;
+	QTimer m_checkTimeout;
+	std::unique_ptr<UiHost::BusyIndicator> m_busy;
 };

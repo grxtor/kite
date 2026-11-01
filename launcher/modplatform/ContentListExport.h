@@ -24,21 +24,14 @@
 #include <QString>
 #include <QStringList>
 
-/*
- * Rendering a folder's contents as a list a person can paste somewhere.
- *
- * Deliberately knows nothing about Mod, the folder models or the sidecar
- * index: the page collects what it knows about each file into an Item and
- * this decides what the text looks like. That keeps the formats testable
- * on their own and means the same code serves mods, resource packs,
- * shader packs and data packs without a single branch on content type.
- */
+/* Renders a folder's contents as a pasteable list. Knows nothing about
+ * Mod, the folder models or the sidecar index: the page collects what it
+ * knows per file into an Item, so one code path serves every content type. */
 namespace ContentListExport
 {
 	enum class Format { Html, Markdown, PlainText, Json, Csv, Custom };
 
-	/* Which of the optional columns to include. The name is always
-	 * there, everything else is asked for. */
+	/* Which optional columns to include; the name is always there. */
 	enum Field {
 		NoFields = 0,
 		Authors = 1 << 0,
@@ -53,26 +46,23 @@ namespace ContentListExport
 		QString version;
 		QString url;
 		QString fileName;
-		/* The mod's own id as declared inside the archive, not the
-		 * platform's project id. Only reachable through the custom
-		 * template, which is also the only place it is any use. */
+		/* The mod id declared inside the archive, not the platform project id.
+		 * Only reachable through the custom template. */
 		QString modId;
 		QStringList authors;
 	};
 
-	/* One of the built-in formats. `fields` is ignored by Custom, which
-	 * has no way to express it - use the template overload instead. */
+	/* One of the built-in formats. `fields` is ignored by Custom; use the
+	 * template overload. */
 	QString render(const QList<Item>& items, Format format, Fields fields);
 
-	/* One line per item, with `{name}`, `{mod_id}`, `{url}`,
-	 * `{version}`, `{authors}` and `{filename}` substituted. */
+	/* One line per item with `{name}`, `{mod_id}`, `{url}`, `{version}`,
+	 * `{authors}` and `{filename}` substituted. */
 	QString render(const QList<Item>& items, const QString& lineTemplate);
 
-	/* The line a format's own output looks like, offered as the starting
-	 * point when the user switches to a custom template. */
+	/* A format's own line, offered as the start of a custom template. */
 	QString exampleLine(Format format);
 
-	/* Suffix to propose in the save dialog. */
 	QString fileExtension(Format format);
 }
 

@@ -59,11 +59,8 @@ namespace ATLauncher
 			return jobPtr->abort();
 		}
 
-		/* Past the pack's own downloads there is still one abortable
-		 * phase: the optional game-file download the base class runs
-		 * after the instance is built. It knows whether that is
-		 * happening, and returns false when it is not - which is the
-		 * answer this used to give unconditionally. */
+		/* One abortable phase remains after the pack downloads: the optional
+		 * game-file download the base class runs. It returns false if idle. */
 		return InstanceTask::abort();
 	}
 
@@ -94,17 +91,14 @@ namespace ATLauncher
 				 << QThread::currentThreadId();
 		jobPtr.reset();
 
-		QJsonParseError parse_error;
-		QJsonDocument doc = QJsonDocument::fromJson(response, &parse_error);
-		if (parse_error.error != QJsonParseError::NoError) {
-			qWarning() << "Error while parsing JSON response from FTB at "
-					   << parse_error.offset
-					   << " reason: " << parse_error.errorString();
+		const auto doc = Json::tryParseWithOffset(
+			response, "Error while parsing JSON response from ATLauncher at");
+		if (!doc) {
 			qWarning() << response;
 			return;
 		}
 
-		auto obj = doc.object();
+		auto obj = doc->object();
 
 		ATLauncher::PackVersion version;
 		try {
@@ -150,8 +144,7 @@ namespace ATLauncher
 	QString PackInstallTask::getDirForModType(ModType type, QString raw)
 	{
 		switch (type) {
-			// Mod types that can either be ignored at this stage, or ignored
-			// completely.
+			// Mod types ignored at this stage.
 			case ModType::Root:
 			case ModType::Extract:
 			case ModType::Decomp:
@@ -160,8 +153,7 @@ namespace ATLauncher
 			case ModType::MCPC:
 				return Q_NULLPTR;
 			case ModType::Forge:
-				// Forge detection happens later on, if it cannot be detected it
-				// will install a jarmod component.
+				// Forge is detected later; otherwise a jarmod component is installed.
 			case ModType::Jar:
 				return "jarmods";
 			case ModType::Mods:
@@ -215,10 +207,8 @@ namespace ATLauncher
 					auto version = vlist->versions().at(i);
 					auto reqs = version->requirements();
 
-					// filter by minecraft version, if the loader depends on a
-					// certain version. not all mod loaders depend on a given
-					// Minecraft version, so we won't do this filtering for
-					// those loaders.
+					// Filter by Minecraft version, except for loaders that do not depend on
+					// one.
 					if (m_version.loader.type != "fabric") {
 						auto iter =
 							std::find_if(reqs.begin(), reqs.end(),
@@ -232,7 +222,6 @@ namespace ATLauncher
 					}
 
 					if (m_version.loader.recommended) {
-						// first recommended build we find, we use.
 						if (!version->isRecommended())
 							continue;
 					}
@@ -244,7 +233,6 @@ namespace ATLauncher
 							   .arg(m_version.loader.type));
 				return Q_NULLPTR;
 			} else if (m_version.loader.choose) {
-				// Fabric Loader doesn't depend on a given Minecraft version.
 				if (m_version.loader.type == "fabric") {
 					return m_support->chooseVersion(vlist, Q_NULLPTR);
 				}
@@ -264,7 +252,6 @@ namespace ATLauncher
 
 	QString PackInstallTask::detectLibrary(VersionLibrary library)
 	{
-		// Try to detect what the library is
 		if (!library.server.isEmpty() &&
 			library.server.split("/").length() >= 3) {
 			auto lastSlash = library.server.lastIndexOf("/");
@@ -341,8 +328,6 @@ namespace ATLauncher
 			bool libExempt = false;
 			for (const auto& existingLib : exempt) {
 				if (libSpecifier.matchName(existingLib)) {
-					// If the pack specifies a newer version of the lib, use
-					// that!
 					libExempt = Version(libSpecifier.version()) >=
 								Version(existingLib.version());
 				}
@@ -425,7 +410,6 @@ namespace ATLauncher
 			f->mainClass = m_version.mainClass;
 		}
 
-		// Parse out tweakers
 		auto args = m_version.extraArguments.split(" ");
 		QString previous;
 		for (auto arg : args) {
@@ -498,7 +482,6 @@ namespace ATLauncher
 					abortable = true;
 					setProgress(current, total);
 				});
-		// One line per file being downloaded.
 		propagateStepsFrom(jobPtr.get());
 
 		jobPtr->start();
@@ -537,7 +520,6 @@ namespace ATLauncher
 			}
 		}
 
-		// Select optional mods, if pack contains any
 		QVector<QString> selectedMods;
 		if (!optionalMods.isEmpty()) {
 			setStatus(tr("Selecting optional mods..."));
@@ -549,11 +531,9 @@ namespace ATLauncher
 		jarmods.clear();
 		jobPtr = new NetJob(tr("Mod download"), LAUNCHER->network());
 		for (const auto& mod : m_version.mods) {
-			// skip non-client mods
 			if (!mod.client)
 				continue;
 
-			// skip optional mods that were not selected
 			if (mod.optional && !selectedMods.contains(mod.name))
 				continue;
 
@@ -665,7 +645,6 @@ namespace ATLauncher
 					abortable = true;
 					setProgress(current, total);
 				});
-		// One line per mod being downloaded.
 		propagateStepsFrom(jobPtr.get());
 
 		jobPtr->start();
@@ -747,7 +726,6 @@ namespace ATLauncher
 
 			qDebug() << "Extracting " + mod.file + " to " + extractToDir;
 			if (!MMCZip::extractDir(modPath, folderToExtract, extractToPath)) {
-				// assume error
 				return false;
 			}
 		}
@@ -795,28 +773,23 @@ namespace ATLauncher
 		instanceSettings->registerSetting("InstanceType", "Legacy");
 		instanceSettings->set("InstanceType", "OneSix");
 
-		/* Held behind a shared_ptr, and by reference below so that the
-		 * rest of this function reads as it did. The pointer is what
-		 * matters: this function ends by handing the instance to
-		 * downloadFiles(), which runs against it after we return, and a
-		 * local object would be gone by then. */
+		/* Behind a shared_ptr: downloadFiles() runs against the instance after
+		 * this function returns. */
 		auto instancePtr = std::make_shared<MinecraftInstance>(
 			m_globalSettings, instanceSettings, m_stagingPath);
 		MinecraftInstance& instance = *instancePtr;
 		auto components = instance.getPackProfile();
 		components->buildingFromScratch();
 
-		// Use a component to add libraries BEFORE Minecraft
+		// A component adds libraries before Minecraft
 		if (!createLibrariesComponent(instance.instanceRoot(), components)) {
 			emitFailed(tr("Failed to create libraries component"));
 			return;
 		}
 
-		// Minecraft
 		components->setComponentVersion("net.minecraft", m_version.minecraft,
 										true);
 
-		// Loader
 		if (m_version.loader.type == QString("forge")) {
 			auto version = getVersionForLoader("net.minecraftforge");
 			if (version == Q_NULLPTR)
@@ -856,8 +829,8 @@ namespace ATLauncher
 
 		components->installJarMods(jarmods);
 
-		// Use a component to fill in the rest of the data
-		// todo: use more detection
+		// TODO: use more detection
+		// A component fills in the rest of the data
 		if (!createPackComponent(instance.instanceRoot(), components)) {
 			emitFailed(tr("Failed to create pack component"));
 			return;
@@ -868,16 +841,9 @@ namespace ATLauncher
 		instance.setName(m_instName);
 		instance.setIconKey(m_instIcon);
 
-		/* Record where this instance came from, using the same keys the
-		 * Modrinth and CurseForge importers write.
-		 *
-		 * ATLauncher identifies a pack by its safe name rather than a
-		 * numeric id, and a version by its name, so those go in the id
-		 * fields - they are what this platform would need to look the
-		 * pack up again. There is no Kite UI that reads these back for
-		 * an ATLauncher pack today, but they cannot be recovered after
-		 * the fact, so install time is the only chance to record
-		 * them. */
+		/* Record the origin with the keys the Modrinth and CurseForge importers
+		 * use. ATLauncher identifies a pack by safe name and a version by name,
+		 * so those go in the id fields; they cannot be recovered after install. */
 		instanceSettings->set("PackProvider", QStringLiteral("atlauncher"));
 		instanceSettings->set("PackId", m_pack);
 		instanceSettings->set("PackName", m_pack);
@@ -891,7 +857,6 @@ namespace ATLauncher
 
 		jarmods.clear();
 
-		/* Finishes the task, whether or not it downloads anything. */
 		downloadFiles(instancePtr);
 	}
 

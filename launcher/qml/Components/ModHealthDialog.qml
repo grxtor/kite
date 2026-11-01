@@ -8,48 +8,28 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * What is wrong with the mods in this instance: the mods tab's health
- * check (ModHealthModel) as a list a person can read and act on. Each row
- * says what the problem is, what follows from it, and offers the one thing
- * the tab can do about it -- turn a switched-off dependency on, turn a
- * clashing, doubled or foreign file off, or download a dependency that is
- * missing or outdated and install it. A problem the tab cannot fix (the
- * loader's own version) has no button, only the explanation. With two or
- * more installs on offer, "Install all" asks for them in one review.
- *
- * Problems the loader would refuse to start over wear the danger colour;
- * warnings the warning one. The rows follow the check as it is redone, so
- * a row goes when its problem does.
- *
- * Presses leave to ContentTab (actionRequested, installAll), which owns the
- * mods list and the install flow. Both switching files and installing write
- * into the mods folder, so both are locked while the game runs, like the
- * list itself.
- *
- * As tall as its rows, up to a limit; past that the list scrolls.
+ * What is wrong with the mods in this instance: the health check (ModHealthModel)
+ * as a list, each row offering the one fix the tab can do (enable a dependency,
+ * disable a clashing file, download a missing or outdated dependency). Presses
+ * leave to ContentTab (actionRequested, installAll), which owns the mods list
+ * and the install flow; both are locked while the game runs.
  */
-Dialog {
+AppDialog {
     id: root
 
     // InstanceContentController's `health`, a ModHealthModel.
     property var health: null
-    // Whether the mods folder may be changed now, and why not.
     property bool unlocked: true
     property string lockedReason: ""
-    // @p action is "enable", "disable" or "install"; @p key the file to
-    // switch, or for "install" the file that needs the mod; @p dependencyId
-    // the mod to install and @p replacesKey the file it replaces, or "".
+    // @p action is "enable", "disable" or "install"; @p key the file to switch (for "install", the
+    // file that needs the mod); @p dependencyId the mod to install; @p replacesKey the file it
+    // replaces, or "".
     signal actionRequested(string action, string key, string dependencyId, string replacesKey)
-    // Every install on offer, in one review.
     signal installAll()
 
-    readonly property int preferredWidth: 560
     readonly property int maxHeight: 560
-    // The widest an action's label gets before it is shortened in the
-    // middle (a file name with its version can be long).
     readonly property int actionLabelMaxWidth: 220
     readonly property bool blocking: !!root.health && root.health.blockingCount > 0
-    // How many rows offer an install; re-asked when the check is redone.
     readonly property int installCount: {
         if (!root.health)
             return 0
@@ -57,38 +37,19 @@ Dialog {
         return root.health.installRows().length
     }
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
     height: Math.min(root.maxHeight, implicitHeight, parent ? parent.height - Theme.space.xxl * 2 : root.maxHeight)
-    modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
-    topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
-    bottomPadding: Theme.space.sm
-    closePolicy: Popup.CloseOnEscape
     title: qsTr("Mod problems")
-
-    header: DialogHeader {
-        title: root.title
-        icon: "alert-triangle"
-        iconColor: root.blocking ? Theme.palette.danger : Theme.palette.warning
-    }
+    icon: "alert-triangle"
+    iconColor: root.blocking ? Theme.palette.danger : Theme.palette.warning
 
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
-        Text {
+        PanelNote {
             Layout.fillWidth: true
             text: !root.health || root.health.count === 0 ? qsTr("Nothing is wrong with these mods.")
                   : root.blocking ? qsTr("The game may not start until these are sorted out.")
                   : qsTr("The game should still start. These are worth a look.")
-            wrapMode: Text.Wrap
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
-            lineHeight: Theme.type.label.lineHeight
         }
 
         ListView {
@@ -102,7 +63,7 @@ Dialog {
             model: root.health
             ScrollBar.vertical: ScrollBar {}
 
-            delegate: Rectangle {
+            delegate: BoxSurface {
                 id: item
                 required property string key
                 required property string title
@@ -114,17 +75,13 @@ Dialog {
                 required property string dependencyId
                 required property string replacesKey
 
-                // Switching a file and installing one both change the mods
-                // folder, which waits for the game to close.
                 readonly property bool locked: !root.unlocked
 
                 width: list.width
                 implicitHeight: Math.max(body.implicitHeight, actionHolder.visible ? actionHolder.implicitHeight : 0)
                                 + Theme.space.md * 2
+                sunken: true
                 radius: Theme.radius.sm
-                color: Theme.palette.surfaceSunken
-                border.width: 1
-                border.color: Theme.palette.border
 
                 RowLayout {
                     anchors.fill: parent
@@ -146,23 +103,19 @@ Dialog {
                         Layout.minimumWidth: 0
                         spacing: Theme.space.xxs
 
-                        Text {
+                        Copy {
                             Layout.fillWidth: true
                             text: item.title
                             wrapMode: Text.Wrap
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.body.pixelSize
                             font.weight: Font.Medium
                         }
-                        Text {
+                        Copy {
                             Layout.fillWidth: true
                             visible: text.length > 0
                             text: item.detail
+                            role: "caption"
+                            tone: "tertiary"
                             wrapMode: Text.Wrap
-                            color: Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
                         }
                     }
 

@@ -2,58 +2,33 @@
  * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- * GitVersioningPlugin — MMCO entry point.
+ * GitVersioningPlugin: MMCO entry point.
  *
- * ABI 5 — declarative UI surfaces (S33). Every widget this plugin shows
- * is now described as an "mmco-ui/1" JSON document handed to
- * ui_surface_create; the host renders and owns the actual widget tree.
- * There is no QWidget/BasePage/allWidgets()/findChild anywhere in this
- * plugin any more.
+ * Every node tree is an "mmco-ui/1" JSON document handed to ui_surface_create (ABI 5, S33); the host
+ * renders it (PluginNode.qml) and owns the surface. The Version History page refreshes on the
+ * Refresh click and after a snapshot, restore, tag or auto-snapshot at launch.
  *
  * Hooks:
- *   APP_INITIALIZED       — log whether system git was found (the
- *                           availability check itself already ran, in
- *                           mmco_init(), so the global-settings surface
- *                           reflects it from the very first paint).
- *   UI_MAIN_READY         — instances loaded by the host before this
- *                           plugin's mmco_init() ran (i.e. every
- *                           instance that already existed at launch)
- *                           get their per-instance surfaces created
- *                           here, once the instance list is known to be
- *                           populated (see SystemTray's identical
- *                           reasoning for using this hook instead of
- *                           mmco_init()).
- *   INSTANCE_CREATED      — create the two per-instance surfaces
- *                           (INSTANCE_SETTINGS override group +
- *                           INSTANCE_PAGE "Version History") for a
- *                           newly added instance.
- *   INSTANCE_REMOVED      — destroy both, freeing the plugin-side
- *                           GitVersioningPageController + GitRepo.
- *   UI_INSTANCE_PAGES     — fires every time an instance window's page
- *                           list is (re)built, *before*
- *                           PluginManager::createInstancePages() reads
- *                           our surface's document. We don't append
- *                           anything to page_list_handle any more (that
- *                           was the pre-ABI-5 mechanism) — we just reuse
- *                           this moment to refresh the git history, so
- *                           the page is as current as the old
- *                           reconstruct-a-fresh-BasePage-per-open model
- *                           used to be.
- *   INSTANCE_PRE_LAUNCH   — auto-snapshot the instance if the effective
- *                           (per-instance / global) setting is on.
- *                           Unchanged.
+ *   APP_INITIALIZED      log whether system git was found (the check ran in mmco_init(), so the
+ *                        global-settings surface shows it from the first paint)
+ *   UI_MAIN_READY        create the per-instance surfaces for instances that existed before
+ *                        mmco_init() ran, once the instance list is populated (as SystemTray does)
+ *   INSTANCE_CREATED     create the two per-instance surfaces (INSTANCE_SETTINGS override group and
+ *                        INSTANCE_PAGE "Version History")
+ *   INSTANCE_REMOVED     destroy both, freeing the GitVersioningPageController and GitRepo
+ *   INSTANCE_PRE_LAUNCH  auto-snapshot the instance if the effective (per-instance / global)
+ *                        setting is on
  *
- * Settings model (ABI 3 / S24, unchanged by ABI 5):
- *   - SETTING_AUTO_SNAPSHOT is a normal app setting AND an
- *     instance-overridable setting, gated by SETTING_INSTANCE_OVERRIDE.
- *   - At launch we read the *effective* per-instance value, which the
- *     host resolves from the override gate + global fallback.
+ * Settings (ABI 3 / S24): SETTING_AUTO_SNAPSHOT is an app setting and an instance-overridable one,
+ * gated by SETTING_INSTANCE_OVERRIDE. At launch the effective per-instance value is read; the host
+ * resolves it from the override gate and the global fallback.
  */
 
 #include "plugin/sdk/mmco_cxx_sdk.hpp"
 #include "GitRepo.h"
 #include "GitVersioningPage.h"
 #include <QHash>
+#include <QTimer>
 #include <cstring>
 #include <memory>
 
@@ -70,20 +45,17 @@ static constexpr const char SETTING_INSTANCE_OVERRIDE[] =
 static bool g_gitAvailable = false;
 static void* g_globalSettingsSurface = nullptr;
 
-/* Everything this plugin shows for one instance: the INSTANCE_SETTINGS
- * override-group surface (owned directly, it's just two toggles) and the
- * INSTANCE_PAGE "Version History" surface (owned via the controller,
- * which also carries the GitRepo + cached commit list). */
+/* Everything shown for one instance: the INSTANCE_SETTINGS override-group surface (two toggles,
+ * owned directly) and the INSTANCE_PAGE "Version History" surface (owned via the controller, which
+ * carries the GitRepo and the cached commit list). */
 struct InstanceUi {
 	QString instanceId;
 	QString instanceRoot;
 	void* settingsSurface = nullptr;
 	std::unique_ptr<GitVersioningPageController> page;
 };
-/* QHash is implicitly shared (copy-on-write), so its value type must stay
- * copyable even with a single owner — a unique_ptr value breaks that.
- * Store raw owning pointers instead, same as the pre-ABI-5 code's
- * QHash<QWidget*, InstancePageWidgets*> did. */
+/* QHash is implicitly shared, so its value type must stay copyable: raw owning pointers, not
+ * unique_ptr. */
 static QHash<QString, InstanceUi*> g_instances;
 
 static bool parseBool(const char* v)
@@ -95,8 +67,7 @@ static bool parseBool(const char* v)
 		   s == QLatin1String("yes") || s == QLatin1String("on");
 }
 
-/* Global auto-snapshot setting (used as the fallback when an instance
- * has no override). */
+/* Global auto-snapshot setting (the fallback when an instance has no override). */
 static bool autoSnapshotEnabled()
 {
 	if (!g_ctx)
@@ -118,8 +89,7 @@ static void ensureSettingRegistered()
 									"0");
 }
 
-/* Register the per-instance override gate and bind the auto-snapshot
- * setting to it. Idempotent; safe to call repeatedly. */
+/* Registers the per-instance override gate and binds the auto-snapshot setting to it. Idempotent. */
 static void ensureInstanceSettingsRegistered(const char* instanceId)
 {
 	if (!g_ctx || !instanceId)
@@ -161,7 +131,7 @@ static bool autoSnapshotEnabledForInstance(const char* instanceId)
 												 SETTING_AUTO_SNAPSHOT));
 }
 
-/* ---- Global settings surface (replaces injectCheckboxIntoKitePage) -- */
+/* Global settings surface */
 
 static QByteArray buildGlobalSettingsDoc()
 {
@@ -214,8 +184,7 @@ static void createGlobalSettingsSurface()
 		nullptr);
 }
 
-/* ---- Per-instance settings override surface (replaces
- * injectGroupIntoInstanceSettingsPage) -------------------------------- */
+/* Per-instance settings override surface */
 
 static QByteArray buildInstanceSettingsDoc(const char* instanceId)
 {
@@ -274,9 +243,8 @@ static void on_instance_settings_event(void* user_data, const char*,
 			g_ctx->instance_setting_reset(g_ctx->module_handle, idUtf8.constData(),
 										  SETTING_AUTO_SNAPSHOT);
 		}
-		/* Keep the dependent toggle's enabled/value props in sync so the
-		 * canonical document (what the next page-open renders from) never
-		 * drifts from what's on screen right now. */
+		/* Keep the dependent toggle's props in sync so the canonical document (what the next page
+		 * open renders) never drifts from the screen. */
 		const QJsonObject patch{
 			{"enabled", g_gitAvailable && checked},
 			{"value", autoSnapshotEnabledForInstance(idUtf8.constData())}};
@@ -292,7 +260,7 @@ static void on_instance_settings_event(void* user_data, const char*,
 	}
 }
 
-/* ---- Per-instance lifecycle ----------------------------------------- */
+/* Per-instance lifecycle */
 
 static void createInstanceUi(const QString& instanceId, const QString& instanceRoot)
 {
@@ -333,7 +301,7 @@ static void destroyInstanceUi(const QString& instanceId)
 	delete rec;
 }
 
-/* ---- Hooks ------------------------------------------------------------ */
+/* Hooks */
 
 static int on_app_initialized(void*, uint32_t, void*, void*)
 {
@@ -350,10 +318,8 @@ static int on_app_initialized(void*, uint32_t, void*, void*)
 	return 0;
 }
 
-/* Instances that already existed when this module loaded aren't known
- * until the instance list has actually been populated — mirrors
- * SystemTray's identical reasoning for building its tray menu here
- * instead of in mmco_init(). */
+/* Instances that existed when this module loaded are not known until the instance list is
+ * populated, hence UI_MAIN_READY rather than mmco_init(). */
 static int on_ui_main_ready(void*, uint32_t, void*, void*)
 {
 	if (!g_ctx)
@@ -394,25 +360,6 @@ static int on_instance_removed(void*, uint32_t, void* payload, void*)
 	return 0;
 }
 
-/* ABI 5: no BasePage is appended here any more — the INSTANCE_PAGE
- * surface itself is what PluginManager::createInstancePages() renders,
- * reading whatever document our controller last pushed. We reuse this
- * "page list about to be (re)built" moment (fired once per instance
- * window open, *before* createInstancePages() runs — see
- * InstancePageProvider::getPages()) to refresh the git history one more
- * time, so the page is as current as the old per-open BasePage
- * reconstruction used to be. */
-static int on_instance_pages(void*, uint32_t, void* payload, void*)
-{
-	auto* evt = static_cast<MMCOInstancePagesEvent*>(payload);
-	if (!evt || !evt->instance_id)
-		return 0;
-	auto it = g_instances.find(QString::fromUtf8(evt->instance_id));
-	if (it != g_instances.end() && it.value()->page)
-		it.value()->page->reloadHistory();
-	return 0;
-}
-
 static int on_pre_launch(void*, uint32_t, void* payload, void*)
 {
 	if (!g_ctx || !payload || !g_gitAvailable)
@@ -422,7 +369,6 @@ static int on_pre_launch(void*, uint32_t, void* payload, void*)
 	if (!info->instance_id || !info->instance_path)
 		return 0;
 
-	/* Honour the per-instance override (with global fallback). */
 	if (!autoSnapshotEnabledForInstance(info->instance_id))
 		return 0;
 
@@ -449,6 +395,14 @@ static int on_pre_launch(void*, uint32_t, void* payload, void*)
 	} else if (!sha.isEmpty()) {
 		QByteArray msg = "GitVersioning: snapshot " + sha.toUtf8();
 		MMCO_LOG(g_ctx, msg.constData());
+		// The page keeps its own GitRepo and cached commit list; refresh it after the launch
+		// has started, since reloading spawns a git process per commit.
+		const QString instanceId = QString::fromUtf8(info->instance_id);
+		QTimer::singleShot(0, [instanceId]() {
+			auto it = g_instances.find(instanceId);
+			if (it != g_instances.end() && it.value()->page)
+				it.value()->page->reloadHistory();
+		});
 	}
 	return 0;
 }
@@ -472,8 +426,6 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 					   on_instance_created, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_REMOVED,
 					   on_instance_removed, nullptr);
-	ctx->hook_register(ctx->module_handle, MMCO_HOOK_UI_INSTANCE_PAGES,
-					   on_instance_pages, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_PRE_LAUNCH,
 					   on_pre_launch, nullptr);
 
@@ -485,12 +437,9 @@ MMCO_EXPORT void mmco_unload()
 {
 	if (g_ctx)
 		MMCO_LOG(g_ctx, "GitVersioning unloading.");
-	/* Every surface this module still owns (global settings + every
-	 * per-instance settings/page surface) was already torn down by
-	 * PluginManager::releaseSurfacesForModule() before this call — see
-	 * GitVersioningPageController::destroySurface()'s comment. We only
-	 * need to free our own heap state here, never touch a surface
-	 * handle again. */
+	/* Every surface this module owns was already torn down by
+	 * PluginManager::releaseSurfacesForModule(); only free our own heap state and never touch a
+	 * surface handle. */
 	qDeleteAll(g_instances);
 	g_instances.clear();
 	g_ctx = nullptr;

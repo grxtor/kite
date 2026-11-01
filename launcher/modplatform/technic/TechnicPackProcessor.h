@@ -21,12 +21,13 @@
 #pragma once
 
 #include <QString>
+#include <functional>
 #include "settings/SettingsObject.h"
 
 namespace Technic
 {
-	// not exporting it, only used in SingleZipPackInstallTask,
-	// InstanceImportTask and SolderPackInstallTask
+	// Not exported; used by SingleZipPackInstallTask, InstanceImportTask and
+	// SolderPackInstallTask.
 	class TechnicPackProcessor : public QObject
 	{
 		Q_OBJECT
@@ -40,5 +41,11 @@ namespace Technic
 				 const QString& instIcon, const QString& stagingPath,
 				 const QString& minecraftVersion = QString(),
 				 const bool isSolder = false);
+
+		/* Gives the owner read/write (and execute on folders) over everything
+		 * under @p dir; @p onFailed gets each path it could not change. */
+		static void
+		fixPermissions(const QString& dir,
+					   const std::function<void(const QString&)>& onFailed);
 	};
 } // namespace Technic

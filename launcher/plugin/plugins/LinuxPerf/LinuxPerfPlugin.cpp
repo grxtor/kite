@@ -184,18 +184,9 @@ static bool isGamemodeEnabledForInstance(const char* instanceId)
 	return ctxBoolInstance(instanceId, SETTING_GAMEMODE);
 }
 
-/* ── Settings UI: declarative ABI 5 surfaces ──────────────────────── *
- *
- * Replaces injectCheckboxesIntoMinecraftPage()/
- * injectCheckboxesIntoInstanceSettingsPage()'s allWidgets()/findChild
- * walks with two kinds of `ui_surface_create` calls: one GLOBAL_SETTINGS
- * surface (created once, like NVIDIAPrime/SystemTray) and one
- * INSTANCE_SETTINGS surface per instance, created lazily the first time
- * the host signals that instance's settings context
- * (MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED) and refreshed on every
- * subsequent open. There is no separate "apply" step any more — each
- * toggle persists its own setting immediately on its "change" event,
- * the same way SystemTray's/NVIDIAPrime's settings toggles do. */
+/* Settings UI: ABI 5 surfaces. One GLOBAL_SETTINGS surface created once, and one INSTANCE_SETTINGS
+ * surface per instance, created for every instance on MMCO_HOOK_UI_MAIN_READY. Each toggle
+ * persists its setting immediately on its "change" event. */
 
 static QJsonObject buildGlobalDoc()
 {
@@ -265,11 +256,9 @@ static void create_global_settings_surface()
 		on_global_surface_event, nullptr);
 }
 
-/* Per-instance surface bag, keyed by instance id so
- * MMCO_HOOK_INSTANCE_REMOVED can tear the surface down and so the
- * surface's own event callback (which only gets the opaque `surface_id`
- * the host assigned, not the instance id) can recover which instance it
- * belongs to via `user_data`. */
+/* Per-instance surface bag keyed by instance id, so INSTANCE_REMOVED can tear it down and the
+ * surface event callback (which gets only the host's opaque surface_id) can recover its instance
+ * through user_data. */
 struct InstanceSurfaceCtx {
 	QByteArray instanceId;
 	void* surface = nullptr;
@@ -364,9 +353,8 @@ static void on_instance_surface_event(void* user_data,
 			g_ctx->instance_setting_reset(g_ctx->module_handle, iid,
 										  SETTING_GAMEMODE);
 		}
-		/* The mangohud/gamemode toggles' enabled state (and, when the
-		 * override was just turned off, their displayed value) depend
-		 * on the override flag — refresh the whole document. */
+		/* The mangohud/gamemode toggles' enabled state (and displayed value once the override is
+		 * turned off) depend on the override flag: refresh the whole document. */
 		refreshInstanceSurface(ctx);
 	} else if (id == QLatin1String("mangohud")) {
 		g_ctx->instance_setting_set(g_ctx->module_handle, iid,
@@ -416,19 +404,31 @@ static int on_app_initialized(void* /*mh*/, uint32_t /*hook_id*/,
 	return 0;
 }
 
-/* MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED — replaces direct
- * Application::instanceSettingsPageCreated + findChild("verticalLayout_8").
- * Fires every time an instance's settings dialog is (re)opened; we
- * create the surface for that instance the first time and just refresh
- * its values/enabled-state on subsequent opens (mirrors what the
- * PAGE_LOADED hook used to do). */
-static int on_instance_settings_page_created(void*, uint32_t, void* payload,
-											 void*)
+/* The instance list is populated by the time the main window is up, so every existing instance
+ * gets its surface here. */
+static int on_ui_main_ready(void*, uint32_t, void*, void*)
 {
-	auto* evt = static_cast<MMCOInstanceSettingsPageEvent*>(payload);
-	if (!evt || !evt->instance_id)
+	if (!g_ctx)
 		return 0;
-	ensure_instance_surface(evt->instance_id);
+	const int total = g_ctx->instance_count(g_ctx->module_handle);
+	for (int i = 0; i < total; ++i) {
+		/* Copy before the next call: the host returns strings in one per-module buffer. */
+		const char* rawId = g_ctx->instance_get_id(g_ctx->module_handle, i);
+		if (!rawId)
+			continue;
+		const QByteArray id(rawId);
+		ensure_instance_surface(id.constData());
+	}
+	return 0;
+}
+
+/* Instances created, imported or copied after the main window is up. */
+static int on_instance_created(void*, uint32_t, void* payload, void*)
+{
+	auto* info = static_cast<MMCOInstanceInfo*>(payload);
+	if (!g_ctx || !info || !info->instance_id)
+		return 0;
+	ensure_instance_surface(info->instance_id);
 	return 0;
 }
 
@@ -453,17 +453,9 @@ static int on_instance_pre_launch(void* mh, uint32_t /*hook_id*/, void* payload,
 	const char* iname = info->instance_name ? info->instance_name : "?";
 	const char* iid = info ? info->instance_id : nullptr;
 
-	/*
-	 * Wrapper command build order (each call *prepends* to the chain):
-	 *
-	 *   Step 1 - mangohud:   pending = "mangohud"
-	 *   Step 2 - gamemoderun: pending = "gamemoderun mangohud"
-	 *
-	 * Final command: gamemoderun mangohud java [args]
-	 *
-	 * gamemoderun wraps the entire chain and requests GameMode for the child;
-	 * mangohud hooks into the JVM's graphics APIs via LD_PRELOAD.
-	 */
+	/* Wrapper build order (each call prepends): mangohud first, then gamemoderun, giving
+	 * "gamemoderun mangohud java [args]". gamemoderun wraps the chain and requests GameMode for the
+	 * child; mangohud hooks the JVM's graphics APIs via LD_PRELOAD. */
 	bool mangoEnabled =
 		isMangohudEnabledForInstance(iid) && mangohud_available();
 	bool gamemodeEnabled =
@@ -472,22 +464,20 @@ static int on_instance_pre_launch(void* mh, uint32_t /*hook_id*/, void* payload,
 	if (mangoEnabled) {
 		QByteArray mangohudWrapper = mangohud_executable().toUtf8();
 
-		/* Use the wrapper in both native and Flatpak environments. In the
-		 * Flatpak build, prefer the mounted extension path directly instead of
-		 * relying on PATH propagation. */
+		/* Native and Flatpak alike; in the Flatpak build prefer the mounted extension path instead
+		 * of relying on PATH propagation. */
 		g_ctx->launch_prepend_wrapper(mh, mangohudWrapper.constData());
 
 		/* MANGOHUD=1  — enables the Vulkan implicit layer (all MC ≥ 1.17) */
 		g_ctx->launch_set_env(mh, "MANGOHUD", "1");
 
-		/* MANGOHUD_DLSYM=1 — hook dlsym so MangoHud intercepts OpenGL
-		 * functions loaded dynamically by LWJGL (critical for Java/OpenGL) */
+		/* MANGOHUD_DLSYM=1: MangoHud intercepts OpenGL functions LWJGL loads dynamically (critical
+		 * for Java/OpenGL). */
 		g_ctx->launch_set_env(mh, "MANGOHUD_DLSYM", "1");
 
-		/* MANGOHUD_CONFIGFILE — MangoHud auto-detects config by process name.
-		 * Since Minecraft runs as "java", it can't find "java.conf" and
-		 * may silently use no HUD.  Point it at the standard MangoHud.conf
-		 * so the overlay always appears with sensible defaults. */
+		/* MANGOHUD_CONFIGFILE: MangoHud finds its config by process name, and Minecraft runs as
+		 * "java", so it would not find "java.conf" and may show no HUD. Point it at the standard
+		 * MangoHud.conf. */
 		QByteArray mangoCfg =
 			(QDir::homePath() +
 			 QStringLiteral("/.config/MangoHud/MangoHud.conf"))
@@ -506,9 +496,8 @@ static int on_instance_pre_launch(void* mh, uint32_t /*hook_id*/, void* payload,
 	if (gamemodeEnabled) {
 		QByteArray gamemodeWrapper = gamemoderun_executable().toUtf8();
 
-		/* Prepend gamemoderun so it wraps the entire command (including
-		 * mangohud if both are enabled), ensuring GameMode activates for the
-		 * child PID. */
+		/* Prepend gamemoderun last so it wraps the whole command (mangohud included) and GameMode
+		 * activates for the child PID. */
 		g_ctx->launch_prepend_wrapper(mh, gamemodeWrapper.constData());
 
 		char buf[512];
@@ -533,9 +522,10 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_APP_INITIALIZED,
 					   on_app_initialized, nullptr);
-	ctx->hook_register(ctx->module_handle,
-					   MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED,
-					   on_instance_settings_page_created, nullptr);
+	ctx->hook_register(ctx->module_handle, MMCO_HOOK_UI_MAIN_READY,
+					   on_ui_main_ready, nullptr);
+	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_CREATED,
+					   on_instance_created, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_REMOVED,
 					   on_instance_removed, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_PRE_LAUNCH,
@@ -551,8 +541,8 @@ MMCO_EXPORT void mmco_unload()
 		MMCO_LOG(g_ctx, "LinuxPerf plugin unloading.");
 	g_ctx = nullptr;
 	g_globalSurface = nullptr;
-	/* PluginManager tears down every surface this module still owns
-	 * when it unloads — we just free our own bookkeeping. */
+	/* PluginManager tears down the surfaces this module owns on unload; only free our own
+	 * bookkeeping. */
 	for (auto* ctx : g_instanceSurfaces)
 		delete ctx;
 	g_instanceSurfaces.clear();

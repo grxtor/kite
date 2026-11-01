@@ -62,18 +62,18 @@ void PrepareKiteMod::executeTask()
 	setStatus(tr("Checking the Kite mod"));
 	auto entry =
 		context->metacache()->resolveEntry(kGeneralCache, KiteMod::kManifestPath);
-	/* Asked again every launch, so a new build is found without waiting. */
+	// Asked again every launch, so a new build is found without waiting.
 	entry->setStale(true);
 	m_job.reset(new NetJob(tr("Kite mod"), context->network()));
 	m_job->addNetAction(Net::Download::makeCached(
 		QUrl(BuildConfig.META_URL + KiteMod::kManifestPath), entry));
-	/* Failed or not, the cached manifest is what decides next: the server
-	 * may be down or have no manifest yet. */
+	// Failed or not, the cached manifest decides next: the server may be down
+	// or have no manifest yet.
 	connect(m_job.get(), &Task::finished, this,
 			&PrepareKiteMod::manifestFetched);
-	/* NetJob tries a part four times and Qt sets no transfer timeout, so
-	 * a host that does not answer would hold the launch for minutes. Past
-	 * the timeout the job is aborted, which ends it like a failure. */
+	// NetJob tries a part four times and Qt sets no transfer timeout, so a
+	// silent host would hold the launch for minutes. Past the timeout the job
+	// is aborted, which ends it like a failure.
 	m_manifestTimer.setSingleShot(true);
 	connect(&m_manifestTimer, &QTimer::timeout, this, [this] {
 		if (m_job && m_job->isRunning()) {
@@ -144,16 +144,16 @@ void PrepareKiteMod::download(const KiteModBuild& build)
 
 void PrepareKiteMod::downloaded(const KiteModBuild& build)
 {
-	/* Whatever the download left has to be the right file before the game is
-	 * pointed at it. */
+	// Whatever the download left must be the right file before the game is
+	// pointed at it.
 	if (!KiteMod::isDownloaded(m_cacheRoot, build)) {
 		QFile::remove(KiteMod::jarPath(m_cacheRoot, build));
 		downloadFailed(tr("the file is not the expected size"));
 		return;
 	}
-	/* Only what the manifest has dropped goes: a jar it still lists may
-	 * be another Minecraft version's, or one a launch in progress is about
-	 * to hand to its game. Without a readable manifest nothing is known. */
+	// Only what the manifest has dropped goes: a listed jar may belong to
+	// another Minecraft version or a launch in progress. Without a readable
+	// manifest nothing is known.
 	if (const auto listed = KiteMod::cachedBuilds(m_cacheRoot)) {
 		const QDir folder(KiteMod::cacheFolder(m_cacheRoot));
 		for (const QString& old : KiteMod::outdatedJars(
@@ -172,8 +172,8 @@ void PrepareKiteMod::downloadFailed(const QString& reason)
 void PrepareKiteMod::finish(const QString& line)
 {
 	emit logLine(line + QStringLiteral("\n"), MessageLevel::Kite);
-	/* Deliberately not resetting m_job here: we may be inside its own
-	 * finished() emission. It dies with this step. */
+	// Not resetting m_job here: we may be inside its own finished() emission.
+	// It dies with this step.
 	emitSucceeded();
 }
 

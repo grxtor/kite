@@ -27,11 +27,10 @@
 
 /*
  * The transport of the Kite mod <-> launcher bridge (protocol v1, see
- * kite-mod/docs/BRIDGE.md), as plain functions over plain structs: reading
- * a request, the checks that keep a browser or another program out, the
- * token, and the answer's bytes. No socket and no Qt object lives here, so
- * every rule of the document is tested without a network. The messages
- * themselves are in ModBridgeJson; ModBridge carries them over a socket.
+ * kite-mod/docs/BRIDGE.md) as plain functions over plain structs: reading a
+ * request, the checks that keep a browser or another program out, the token and
+ * the answer's bytes. No socket or Qt object, so every rule is tested without a
+ * network. The messages are in ModBridgeJson; ModBridge carries them over a socket.
  */
 namespace ModBridgeProtocol
 {
@@ -53,7 +52,6 @@ namespace ModBridgeProtocol
 	inline constexpr char kPortProperty[] = "kite.bridge.port";
 	inline constexpr char kTokenEnvVar[] = "KITE_BRIDGE_TOKEN";
 
-	/// The statuses the bridge answers with.
 	namespace Http
 	{
 		constexpr int kOk = 200;
@@ -71,7 +69,6 @@ namespace ModBridgeProtocol
 		constexpr int kTooManyRequests = 429;
 	} // namespace Http
 
-	/// What one game is given when its session is registered.
 	struct Grant {
 		quint16 port = 0;
 		QString token;
@@ -82,10 +79,8 @@ namespace ModBridgeProtocol
 		}
 	};
 
-	/// A request read off the wire. Header names are lower case.
 	struct Request {
 		QByteArray method;
-		/// The path of the target, without a query.
 		QByteArray path;
 		QHash<QByteArray, QByteArray> headers;
 		QByteArray body;
@@ -122,14 +117,12 @@ namespace ModBridgeProtocol
 	/// otherwise.
 	int checkContentType(const Request& request);
 
-	/// The token of "Authorization: Bearer <token>".
 	std::optional<QByteArray> bearerToken(const Request& request);
 
 	/// Whether the two are equal, taking as long for a wrong guess as for a
 	/// right one.
 	bool tokenMatches(const QByteArray& expected, const QByteArray& presented);
 
-	/// 32 random bytes, base64url without padding.
 	QString newToken();
 
 	/// Counts wrong tokens and locks everything for a while after too many.
@@ -153,6 +146,5 @@ namespace ModBridgeProtocol
 	/// Connection: close, and @p body (none for 204).
 	QByteArray response(int status, const QByteArray& body = QByteArray(),
 						const QByteArray& contentType = "application/json");
-	/// response() with {"error": @p code}.
 	QByteArray errorResponse(int status, const QByteArray& code);
 } // namespace ModBridgeProtocol

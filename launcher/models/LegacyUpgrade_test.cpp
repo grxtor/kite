@@ -22,6 +22,7 @@
 #include <QTest>
 
 #include "NullInstance.h"
+#include "TestSettings.h"
 #include "minecraft/legacy/LegacyInstance.h"
 #include "minecraft/legacy/LegacyUpgradeTask.h"
 #include "models/LegacyUpgrade.h"
@@ -29,25 +30,6 @@
 
 namespace
 {
-	/* BaseInstance's constructor registers overrides against these global
-	 * setting ids; they must exist on the global SettingsObject, which must
-	 * outlive the instance (same fixture shape as InstanceDetails_test). */
-	SettingsObjectPtr makeGlobalSettings(QTemporaryDir& dir)
-	{
-		auto settings =
-			std::make_shared<INISettingsObject>(dir.filePath("global.ini"));
-		settings->registerSetting("PreLaunchCommand", "");
-		settings->registerSetting("WrapperCommand", "");
-		settings->registerSetting("PostExitCommand", "");
-		settings->registerSetting("ShowConsole", true);
-		settings->registerSetting("AutoCloseConsole", false);
-		settings->registerSetting("ShowConsoleOnError", true);
-		settings->registerSetting("LogPrePostOutput", true);
-		settings->registerSetting("ConsoleMaxLines", 100000);
-		settings->registerSetting("ConsoleOverflowStop", true);
-		return settings;
-	}
-
 	struct Fixture {
 		QTemporaryDir globalDir;
 		QTemporaryDir legacyDir;

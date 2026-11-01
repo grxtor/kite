@@ -5,54 +5,34 @@ import QtQuick
 import Kite.Theme
 
 /*
- * Home's "Continue playing", under the hero: the other instances to get
- * back to, as compact rows (HomeJumpCard) -- the most recently played first
- * (recentModel), then, while there is room, the ones never played yet, each
- * with a "New" chip. The hero's own instance (`excludeId`) is never listed
- * again. Two columns on a window wide enough for both to stay readable;
- * hidden with nothing to list.
- *
- * How the rows look is the page's look (Theme.look): the classic rows
- * (HomeJumpCard), a row of cards with the instance's screenshot for Sahne
- * (HomeStageCard), hairline lines on the page for Sade (HomeCalmRow) and a
- * grid of glass panes for Gece (HomeNightRow). What they list and when it is
- * read again is the same in all of them.
- *
- * Both lists are read into plain rows (and read again whenever anything a
- * row shows changes). The never-played ones come off the library's model,
- * which follows the Library's search, so while one is on (`frozen`) they
- * hold still: typing in the search under this never moves the rows above
- * it, or the search field itself.
+ * Home's "Continue playing" rows under the hero: recently played instances first, then never-played ones while
+ * there is room, minus the hero's (`excludeId`). The never-played ones come off the library model, which follows
+ * the Library's search, so they hold still while a search is on (`frozen`).
  */
 Column {
     id: root
 
-    // Most recently played instances first; never-played ones left out
-    // (QmlShell.recentModel).
     property var recentModel: null
-    // The library (QmlShell's instance proxy), for the never-played rows.
     property var instanceModel: null
-    // The hero's instance: not listed here.
     property string excludeId: ""
+    // The instance picked on Home; its row is marked.
+    property string selectedId: ""
     property bool frozen: false
 
+    signal selectRequested(string id)
     signal openRequested(string id)
     signal launchRequested(string id)
     signal stopRequested(string id)
-    // A row's ⋯ (@p anchor) or right-click (no anchor), with what the row
-    // shows, for the instance menu.
     signal menuRequested(string id, bool running, string name, string iconKey, Item anchor)
 
     readonly property string look: Theme.look
     readonly property int maxRows: 4
-    // Between rows, and from the title to the first: Sahne's cards stand
-    // further apart, Sade's rows touch (their hairlines are the gap).
     readonly property int gap: root.look === "stage" ? Theme.space.lg
                               : root.look === "calm" ? 0 : Theme.space.md
-    // Below this a row's name and meta crowd its Play; a Sahne card or a
-    // Gece pane is narrower than a classic row.
-    readonly property int rowMinWidth: root.look === "stage" ? 190
-                                     : root.look === "night" ? 300 : 480
+    readonly property int stageCardMinWidth: 190
+    readonly property int nightRowMinWidth: 300
+    readonly property int rowMinWidth: root.look === "stage" ? root.stageCardMinWidth
+                                     : root.look === "night" ? root.nightRowMinWidth : 480
     readonly property int columns: root.look === "stage"
         ? (root.width >= root.rowMinWidth * root.maxRows + root.gap * (root.maxRows - 1) ? root.maxRows : 2)
         : root.look === "calm" ? 1
@@ -82,7 +62,8 @@ Column {
             isRunning: source.isRunning, canLaunch: source.canLaunch, lastLaunch: source.lastLaunch,
             totalTimePlayed: source.totalTimePlayed, gameVersion: source.gameVersion,
             loader: source.loader, iconTint: source.iconTint, packArt: source.packArt || "",
-            coverImage: source.coverImage || "", hasCrashed: source.hasCrashed
+            coverImage: source.coverImage || "", coverKind: source.coverKind || "",
+            hasCrashed: source.hasCrashed
         }
     }
     // One more than shown, so the hero's own row can drop out.
@@ -102,8 +83,6 @@ Column {
     }
     onFrozenChanged: if (!root.frozen) Qt.callLater(root.readFresh)
 
-    // What a row shows, off one model row. Any of it moving reads the rows
-    // again.
     component RowReader: QtObject {
         required property string instanceId
         required property string name
@@ -117,10 +96,11 @@ Column {
         required property var iconTint
         required property var packArt
         required property string coverImage
+        required property string coverKind
         required property bool hasCrashed
         readonly property string signature: [instanceId, name, iconKey, isRunning, canLaunch, lastLaunch,
                                              totalTimePlayed, gameVersion, loader, packArt, coverImage,
-                                             hasCrashed].join("\n")
+                                             coverKind, hasCrashed].join("\n")
     }
     Instantiator {
         id: playedReader
@@ -139,6 +119,28 @@ Column {
         }
         onObjectAdded: Qt.callLater(root.readFresh)
         onObjectRemoved: Qt.callLater(root.readFresh)
+    }
+
+    // One tap sequence for every row, not one per delegate: the rows are rebuilt whenever the data of any of them
+    // changes, which would reset a sequence under way. The first tap picks, two open, three launch.
+    property string tappedId: ""
+    function tap(id) {
+        if (id !== root.tappedId)
+            taps.finish()
+        root.tappedId = id
+        taps.tap()
+    }
+    TapSequence {
+        id: taps
+        onSingle: root.selectRequested(root.tappedId)
+        onTwice: root.openRequested(root.tappedId)
+        onThrice: {
+            for (var i = 0; i < root.rows.length; ++i) {
+                var row = root.rows[i]
+                if (row.instanceId === root.tappedId && row.canLaunch && !row.isRunning)
+                    root.launchRequested(row.instanceId)
+            }
+        }
     }
 
     visible: root.rows.length > 0
@@ -181,7 +183,10 @@ Column {
             coverImage: ""
             packArt: modelData.packArt
             hasCrashed: modelData.hasCrashed
-            onClicked: root.openRequested(row.instanceId)
+            selected: root.selectedId === row.instanceId
+            onTapped: root.tap(row.instanceId)
+            onSelectRequested: root.selectRequested(row.instanceId)
+            onOpenRequested: root.openRequested(row.instanceId)
             onPlayRequested: root.launchRequested(row.instanceId)
             onStopRequested: root.stopRequested(row.instanceId)
             onMenuRequested: (anchor) => root.menuRequested(row.instanceId, row.isRunning, row.name, row.iconKey, anchor)

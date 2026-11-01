@@ -26,14 +26,13 @@
 
 #include "ModHealth.h"
 
-/* What is in the folder, found by id, and which loader reads each file.
- * Private to the health check (ModHealth.cpp and ModHealthLoaders.cpp);
- * header-only, as it is small and has no other users. */
+// What is in the folder, found by id, and which loader reads each file. Private
+// to the health check (ModHealth.cpp, ModHealthLoaders.cpp); header-only.
 namespace ModHealth
 {
 	namespace detail
 	{
-		/* One file that answers to an id, and the version it answers with. */
+		// One file that answers to an id, and the version it answers with.
 		struct Provider {
 			int entry = 0;
 			QString version;
@@ -48,17 +47,16 @@ namespace ModHealth
 			return result;
 		}
 
-		/* Sinytra Connector's mod id: "connectormod" in the builds for 1.20.1,
-		 * "connector" in newer ones. */
+		// Sinytra Connector's mod id: "connectormod" in builds for 1.20.1,
+		// "connector" in newer ones.
 		inline bool isConnectorId(const QString& id)
 		{
 			return id == QLatin1String("connector") ||
 				   id == QLatin1String("connectormod");
 		}
 
-		/* An id the way Connector compares them: it gives a Fabric mod's id
-		 * to Forge's mod list with "-" written as "_" ("fabric-api" is the
-		 * Forgified Fabric API's "fabric_api"). */
+		// An id as Connector compares them: it writes "-" as "_" in a Fabric
+		// mod's id ("fabric-api" is the Forgified Fabric API's "fabric_api").
 		inline QString foldedId(const QString& id)
 		{
 			return id.toLower().replace(QLatin1Char('-'), QLatin1Char('_'));
@@ -73,15 +71,13 @@ namespace ModHealth
 					 it != environment.builtIns.constEnd(); ++it) {
 					builtIns.insert(it.key().toLower(), it.value());
 				}
-				// Minecraft is always there, whether or not the caller said
-				// so.
+				// Minecraft is always there, whether or not the caller said so.
 				const QString minecraft = QStringLiteral("minecraft");
 				if (!builtIns.contains(minecraft))
 					builtIns.insert(minecraft, environment.minecraft);
 
-				// A file's own id goes first, so that when it is the one
-				// named in a report it is the file, not whatever else
-				// bundles its id.
+				// A file's own id goes first, so a report names that file,
+				// not whatever else bundles its id.
 				for (int i = 0; i < files.size(); ++i) {
 					provide(files.at(i), files.at(i).details.mod_id, i,
 							files.at(i).details.version);
@@ -93,8 +89,8 @@ namespace ModHealth
 					}
 				}
 
-				// Connector is a mod like any other, found by an id it
-				// answers to - its jar only carries it, as a nested mod.
+				// Connector is a mod like any other, found by an id it answers
+				// to; its jar only carries it as a nested mod.
 				bool hasConnector = false;
 				for (const QString& id : enabled.keys()) {
 					hasConnector |= isConnectorId(id);
@@ -113,9 +109,9 @@ namespace ModHealth
 				return QString();
 			}
 
-			/* Whether @p loader, the one reading a file, is Fabric's
-			 * metadata read by something that is not Fabric or Quilt:
-			 * that is Connector, whose ids are folded. */
+			// Whether @p loader, the one reading a file, is Fabric metadata
+			// read by something other than Fabric or Quilt: Connector, whose
+			// ids are folded.
 			bool readsThroughConnector(const QString& loader) const
 			{
 				return loader == QLatin1String("fabric") &&
@@ -123,8 +119,8 @@ namespace ModHealth
 					   !ownLoaders.contains(QLatin1String("quilt"));
 			}
 
-			/* The providers of @p id, found the way Connector finds them
-			 * when @p folded. */
+			// The providers of @p id, found as Connector finds them when
+			// @p folded.
 			const QList<Provider> enabledFor(const QString& id,
 											 bool folded) const
 			{

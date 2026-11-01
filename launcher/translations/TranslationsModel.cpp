@@ -41,8 +41,8 @@
 
 const static QLatin1String defaultLangCode("en_US");
 
-// Translations compiled into the launcher (launcher/CMakeLists.txt): one
-// kite_<lang>.qm per language plus stats.txt, "<lang> <translated> <total>".
+// Compiled-in translations: a kite_<lang>.qm per language plus stats.txt,
+// "<lang> <translated> <total>".
 const static QLatin1String bundledDir(":/i18n");
 const static QLatin1String qmPrefix("kite_");
 
@@ -134,14 +134,12 @@ struct Language {
 	unsigned total = 0;
 
 	FileType localFileType = FileType::NONE;
-	// A kite_<key>.qm is compiled into the launcher.
 	bool bundled = false;
 };
 
 struct TranslationsModel::Private {
 	QDir m_dir;
 
-	// initial state is just english
 	QVector<Language> m_languages = {Language(defaultLangCode)};
 
 	QString m_selectedLanguage = defaultLangCode;
@@ -192,7 +190,6 @@ void TranslationsModel::indexReceived()
 
 namespace
 {
-	// Downloads are off unless the build names a server for them.
 	bool downloadsEnabled()
 	{
 		return !BuildConfig.TRANSLATIONS_BASE_URL.isEmpty();
@@ -207,8 +204,7 @@ namespace
 		return QUrl(base + file);
 	}
 
-	// The languages compiled into the launcher, with how much of each is
-	// translated (stats.txt is counted from the .ts at build time).
+	// The compiled-in languages and how much of each is translated.
 	void readBundled(QMap<QString, Language>& languages)
 	{
 		QDir dir(bundledDir);
@@ -294,8 +290,8 @@ void TranslationsModel::reloadLocalFiles()
 		{defaultLangCode, Language(defaultLangCode)}};
 
 	readBundled(languages);
-	// An index left over from an earlier download is only trusted while
-	// downloads are on; otherwise it would list languages with no file.
+	// A leftover index is trusted only while downloads are on, or it would
+	// list languages with no file.
 	if (downloadsEnabled()) {
 		readIndex(d->m_dir.absoluteFilePath("index_v2.json"), languages);
 	}
@@ -322,14 +318,12 @@ void TranslationsModel::reloadLocalFiles()
 				language.localFileType = fileType;
 			}
 		} else {
-			// A file dropped in by a translator, unknown to the bundle.
 			Language localFound(langCode);
 			localFound.localFileType = fileType;
 			languages.insert(langCode, localFound);
 		}
 	}
 
-	// changed and removed languages
 	for (auto iter = d->m_languages.begin(); iter != d->m_languages.end();) {
 		auto& language = *iter;
 		auto row = iter - d->m_languages.begin();
@@ -350,7 +344,6 @@ void TranslationsModel::reloadLocalFiles()
 			endRemoveRows();
 		}
 	}
-	// added languages
 	if (languages.isEmpty()) {
 		return;
 	}
@@ -403,9 +396,7 @@ QVariant TranslationsModel::data(const QModelIndex& index, int role) const
 		}
 		case Qt::UserRole:
 			return lang.key;
-		// Column-independent roles for QML consumers - same data as the
-		// column-based Qt::DisplayRole cases above, valid regardless of
-		// which column `index` happens to point at.
+		// Column-independent roles for QML consumers.
 		case NameRole:
 			return lang.languageName();
 		case CompletenessRole:
@@ -502,7 +493,6 @@ bool TranslationsModel::selectLanguage(QString key)
 		langCode = langPtr->key;
 	}
 
-	// uninstall existing translators if there are any
 	if (d->m_app_translator) {
 		QCoreApplication::removeTranslator(d->m_app_translator.get());
 		d->m_app_translator.reset();
@@ -512,22 +502,17 @@ bool TranslationsModel::selectLanguage(QString key)
 		d->m_qt_translator.reset();
 	}
 
-	/*
-	 * FIXME: potential source of crashes:
-	 * In a multithreaded application, the default locale should be set at
-	 * application startup, before any non-GUI threads are created. This
-	 * function is not reentrant.
-	 */
+	// FIXME: potential source of crashes: the default locale should be set at
+	// startup before any non-GUI threads exist; this function is not
+	// reentrant.
 	QLocale locale = QLocale(langCode);
 	QLocale::setDefault(locale);
 
-	// if it's the default UI language, finish
 	if (langCode == defaultLangCode) {
 		d->m_selectedLanguage = langCode;
 		return true;
 	}
 
-	// otherwise install new translations
 	bool successful = false;
 	// FIXME: this is likely never present. FIX IT.
 	d->m_qt_translator.reset(new QTranslator());
@@ -546,7 +531,6 @@ bool TranslationsModel::selectLanguage(QString key)
 		d->m_qt_translator.reset();
 	}
 
-	// Order: a .po / kite_<lang>.qm in the data dir overrides the bundled one.
 	if (langPtr->localFileType == FileType::PO) {
 		qDebug() << "Loading Application Language File for"
 				 << langCode.toLocal8Bit().constData() << "...";
@@ -574,16 +558,6 @@ bool TranslationsModel::selectLanguage(QString key)
 	}
 	d->m_selectedLanguage = langCode;
 	return successful;
-}
-
-QModelIndex TranslationsModel::selectedIndex()
-{
-	auto found = findLanguage(d->m_selectedLanguage);
-	if (found) {
-		// QVector iterator freely converts to pointer to contained type
-		return index(found - d->m_languages.data(), 0, QModelIndex());
-	}
-	return QModelIndex();
 }
 
 QString TranslationsModel::selectedLanguage()

@@ -59,17 +59,31 @@ class IniFileTest : public QObject
 					"something\\#thisIsNotAComment";
 		QString filename = "test_SaveLoad.ini";
 
-		// save
 		INIFile f;
 		f.set("a", a);
 		f.set("b", b);
 		f.saveFile(filename);
 
-		// load
 		INIFile f2;
 		f2.loadFile(filename);
 		QCOMPARE(a, f2.get("a", "NOT SET").toString());
 		QCOMPARE(b, f2.get("b", "NOT SET").toString());
+	}
+
+	void test_LoadComments()
+	{
+		INIFile f;
+		QVERIFY(f.loadFile(QByteArray("a=1 # comment\n"
+									  "b=x\\#y\n"
+									  "#c=3\n"
+									  "d=p\\\\#tail\n"
+									  "e=u\\#v # w\n")));
+		QCOMPARE(f.get("a", "NOT SET").toString(), QString("1"));
+		QCOMPARE(f.get("b", "NOT SET").toString(), QString("x#y"));
+		QVERIFY(!f.contains("c"));
+		QVERIFY(!f.contains("#c"));
+		QCOMPARE(f.get("d", "NOT SET").toString(), QString("p\\"));
+		QCOMPARE(f.get("e", "NOT SET").toString(), QString("u#v"));
 	}
 };
 

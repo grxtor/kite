@@ -7,21 +7,17 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * A font family setting: a box listing the fonts installed on this
- * computer. Stored by family name. A family that is no longer installed
- * still shows, so a setting from another computer is not lost, and
- * `defaultFamily` (when set) is listed first and named as the default.
+ * A font family setting: a box listing the fonts installed here, stored by family name. A family no longer installed
+ * still shows, so a setting from another computer is not lost; `defaultFamily` (when set) is listed first.
  */
 SettingRow {
     id: root
 
     property string key
     property var source: SettingsStore
-    // Listed first and marked "(default)", e.g. "Inter" for the interface.
     property string defaultFamily: ""
     readonly property string stored: root.source.string(root.key).length > 0
                                      ? root.source.string(root.key) : root.defaultFamily
-    // Installed families, the default and the stored one first.
     readonly property var families: {
         var list = Qt.fontFamilies()
         if (root.defaultFamily.length > 0) {
@@ -49,8 +45,7 @@ SettingRow {
             font.family: modelData
         }
 
-        // See JavaVendorRow.qml for why the selection is set by a function
-        // and not a binding.
+        // The selection is set by a function, not a binding (see JavaVendorRow.qml).
         function sync() { currentIndex = count > 0 ? find(root.stored) : -1 }
         Connections {
             target: root

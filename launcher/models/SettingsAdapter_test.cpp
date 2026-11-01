@@ -27,9 +27,7 @@
 
 namespace
 {
-	/// A fresh INISettingsObject backed by a file in a scratch temp
-	/// directory, with a handful of settings of different types
-	/// registered -- enough to exercise conversion on setValue().
+	/// A fresh INISettingsObject in a scratch directory with a few settings of different types.
 	SettingsObjectPtr makeSettings(QTemporaryDir& dir)
 	{
 		auto settings = std::make_shared<INISettingsObject>(
@@ -87,8 +85,7 @@ class SettingsAdapterTest : public QObject
 		QVariant stored = adapter.value("IntSetting");
 		QCOMPARE(stored.typeId(), int(QMetaType::Int));
 		QCOMPARE(stored.toInt(), 4096);
-		// Not just the adapter's own read path -- the underlying setting
-		// really holds an int, not a double.
+		// The underlying setting really holds an int, not a double.
 		QCOMPARE(settings->get("IntSetting").typeId(), int(QMetaType::Int));
 	}
 
@@ -154,10 +151,7 @@ class SettingsAdapterTest : public QObject
 		QCOMPARE(spy.first().at(1).toInt(), 512);
 	}
 
-	// No LauncherContext exists in this guiless test (see
-	// AccountsController_test.cpp's own comment on the same limitation) --
-	// applyProxySettings() must not crash without one, it just has nothing
-	// to apply to.
+	// No LauncherContext exists in this guiless test; applyProxySettings() must not crash without one.
 	void test_applyProxySettings_withoutLauncherContext_doesNotCrash()
 	{
 		QTemporaryDir dir;

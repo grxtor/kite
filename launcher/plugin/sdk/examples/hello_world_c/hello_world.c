@@ -3,21 +3,15 @@
  * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: CC0-1.0
  *
- * Example Kite plugin (.mmco module) written in PLAIN C.
- *
- * This demonstrates that a .mmco module can be authored in C with no
- * Qt and no C++ at all: it includes only the language-neutral C ABI
- * header (mmco_c_sdk.h) and links against the Qt-free Kite::SDK_C
- * target. A C plugin gets the full data-plane API (logging, hooks,
- * instances, settings, …) but not the Qt UI page builder, which is
- * only meaningful from C++.
+ * Example Kite plugin (.mmco module) written in plain C: includes only the Qt-free C ABI header
+ * (mmco_c_sdk.h) and links Kite::SDK_C. A C plugin gets the full data-plane API (logging, hooks,
+ * instances, settings, ...) and the declarative UI, without Qt or C++.
  */
 
 #include "plugin/sdk/mmco_c_sdk.h"
 #include <stdio.h>
 
-/* Module declaration. Note the trailing ';' — MMCO_DEFINE_MODULE
- * expands to a single declaration, so it is terminated like any other. */
+/* MMCO_DEFINE_MODULE expands to a single declaration, so it is terminated with ';' like any other. */
 MMCO_DEFINE_MODULE(
 	"Hello World (C)",                            /* name */
 	"1.0.0",                                      /* version */
@@ -26,10 +20,8 @@ MMCO_DEFINE_MODULE(
 	"CC0-1.0"                                     /* license */
 );
 
-/* State */
 static MMCOContext* g_ctx = NULL;
 
-/* Hook callback: app finished initializing. */
 static int on_app_initialized(void* mh, uint32_t hook_id, void* payload,
 							  void* user_data)
 {
@@ -65,7 +57,6 @@ static int on_app_initialized(void* mh, uint32_t hook_id, void* payload,
 	return 0; /* continue hook chain */
 }
 
-/* Hook callback: an instance is about to launch. */
 static int on_instance_pre_launch(void* mh, uint32_t hook_id, void* payload,
 								  void* user_data)
 {
@@ -83,8 +74,6 @@ static int on_instance_pre_launch(void* mh, uint32_t hook_id, void* payload,
 	}
 	return 0;
 }
-
-/* Entry points — exported with C linkage and default visibility. */
 
 MMCO_EXTERN_C MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 {

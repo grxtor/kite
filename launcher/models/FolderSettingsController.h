@@ -26,29 +26,21 @@
 #include <QUrl>
 
 /*
- * Where Kite keeps its folders: the widget-free half of KitePage's
- * "Folders" box. The five single folders (instances, mods, icons, skins,
- * Java) are moved with setFolder(); extra instance folders are added and
- * removed with addAdditionalDir() / removeAdditionalDir().
- *
- * Both run the checks the widget page ran, and ask through
- * LauncherContext::uiHost(), so they work under either interface:
- *  - an instance folder with a '!' in its path (Java mis-reads it) or one
- *    granted through a Flatpak portal (gone after a restart) is only used
- *    if the user insists;
- *  - an extra instance folder that is already in use is refused, because
- *    two entries for one folder make every instance in it read as a
- *    duplicate.
- *
- * InstanceList already re-reads its folders when InstanceDir or
- * AdditionalInstanceDirs changes, so nothing here reloads the library.
- * Existing instances are not moved: only where Kite looks changes.
+ * Where Kite keeps its folders. setFolder() moves the five single folders
+ * (instances, mods, icons, skins, Java); addAdditionalDir()/removeAdditionalDir()
+ * manage extra instance folders. Checks ask through LauncherContext::uiHost():
+ *  - an instance folder with a '!' in its path (Java mis-reads it) or granted
+ *    through a Flatpak portal (gone after a restart) is only used if the user
+ *    insists;
+ *  - an extra instance folder already in use is refused: two entries for one
+ *    folder make every instance in it read as a duplicate.
+ * InstanceList re-reads its folders when InstanceDir or AdditionalInstanceDirs
+ * changes. Existing instances are not moved.
  */
 class FolderSettingsController : public QObject
 {
 	Q_OBJECT
 
-	/// The extra instance folders, in order.
 	Q_PROPERTY(QStringList additionalDirs READ additionalDirs NOTIFY
 				   additionalDirsChanged)
 
@@ -58,37 +50,25 @@ class FolderSettingsController : public QObject
 
 	QStringList additionalDirs() const;
 
-	/*!
-	 * Points the setting @p key (InstanceDir, CentralModsDir, IconsDir,
-	 * SkinsDir or JavaDir) at the folder @p url, after the checks above.
-	 * Returns whether the setting changed: false for an unknown key, a
-	 * folder that does not exist, or a user who said no.
-	 */
+	/// Points the setting @p key (InstanceDir, CentralModsDir, IconsDir, SkinsDir or
+	/// JavaDir) at @p url after the checks. False for an unknown key, a missing
+	/// folder or a user who said no.
 	Q_INVOKABLE bool setFolder(const QString& key, const QUrl& url);
 
-	/// Adds @p url to the extra instance folders. Returns whether it was
-	/// added.
 	Q_INVOKABLE bool addAdditionalDir(const QUrl& url);
 
-	/// Takes @p dir out of the extra instance folders.
 	Q_INVOKABLE void removeAdditionalDir(const QString& dir);
 
-	/// The folder settings setFolder() accepts.
 	static bool isFolderKey(const QString& key);
 
-	/*!
-	 * Why @p cookedDir is a poor instance folder, or an empty string if it
-	 * is fine. @p rawDir is what the file dialog returned, before
-	 * normalising: the Flatpak check needs it, because the cooked path no
-	 * longer says where it came from.
-	 */
+	/// Why @p cookedDir is a poor instance folder, or empty. @p rawDir is what the
+	/// file dialog returned: the Flatpak check needs it, the cooked path no longer
+	/// says where it came from.
 	static QString instanceDirWarning(const QString& rawDir,
 									  const QString& cookedDir, bool flatpak);
 
-	/// Why @p cookedDir cannot be added as an extra instance folder because
-	/// it is already in use, or an empty string if it can. Compared without
-	/// regard to case, since on a case-insensitive filesystem two spellings
-	/// are one folder.
+	/// Why @p cookedDir is already in use as an instance folder, or empty. Compared
+	/// case-insensitively: on such a filesystem two spellings are one folder.
 	static QString duplicateDirMessage(const QString& cookedDir,
 									   const QString& primaryDir,
 									   const QStringList& additionalDirs);

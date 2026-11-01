@@ -21,11 +21,9 @@
 
 #include "ModFolderModel.h"
 #include <FileSystem.h>
-#include <QCryptographicHash>
 #include <QDateTime>
 #include <QFile>
 #include <QFileSystemWatcher>
-#include <QMimeData>
 #include <QString>
 #include <QThreadPool>
 #include <QUrl>
@@ -35,22 +33,6 @@
 #include <algorithm>
 #include "LocalModParseTask.h"
 #include "ModIconCache.h"
-
-namespace
-{
-	QString sha1OfFile(const QString& path)
-	{
-		QFile f(path);
-		if (!f.open(QIODevice::ReadOnly)) {
-			return {};
-		}
-		QCryptographicHash hash(QCryptographicHash::Sha1);
-		if (!hash.addData(&f)) {
-			return {};
-		}
-		return QString::fromLatin1(hash.result().toHex());
-	}
-} // namespace
 
 ModFolderModel::ModFolderModel(const QString& dir)
 	: QAbstractListModel(), m_dir(dir),
@@ -64,9 +46,8 @@ ModFolderModel::ModFolderModel(const QString& dir)
 	connect(m_watcher, &QFileSystemWatcher::directoryChanged, this,
 			&ModFolderModel::directoryChanged);
 
-	// Persistent metadata index — sibling `.index/` directory. Loaded
-	// eagerly so install/dep tasks see the previous install state right
-	// away.
+	// Persistent metadata index in the sibling `.index/` directory, loaded
+	// eagerly so install and dependency tasks see the previous install state.
 	m_metadata = std::make_shared<ModMetadataIndex>(m_dir);
 	m_metadata->load();
 }
@@ -175,12 +156,8 @@ void ModFolderModel::finishUpdate()
 	{
 		QSet<QString> added = newSet;
 		added.subtract(currentSet);
-		// Qt's QAbstractItemModel::beginInsertRows() asserts "last >= first".
-		// When `added` is empty, `mods.size() + added.size() - 1` is
-		// `mods.size() - 1`, i.e. one less than `first` (`mods.size()`),
-		// which trips that assert. This happened on every directory-watcher
-		// tick that removed mods (or changed none), since this block ran
-		// unconditionally regardless of whether there was anything to add.
+		// beginInsertRows() asserts "last >= first", which an empty `added`
+		// would violate.
 		if (!added.isEmpty()) {
 			beginInsertRows(QModelIndex(), mods.size(),
 							mods.size() + added.size() - 1);
@@ -331,7 +308,6 @@ bool ModFolderModel::installMod(const QString& filename)
 				return false;
 			}
 			if (m_metadata) {
-				// Drop the old sidecar; we are replacing the file.
 				m_metadata->remove(QFileInfo(existing).fileName());
 			}
 			qDebug() << existing << "has been deleted (replacing).";
@@ -344,14 +320,14 @@ bool ModFolderModel::installMod(const QString& filename)
 		}
 		FS::updateTimestamp(newpath);
 
-		// Record a "local" provenance sidecar so duplicate detection and
-		// the conflict analyzer can reason about manually-added files.
+		// Record a "local" sidecar so duplicate detection and the conflict
+		// analyzer can reason about manually added files.
 		if (m_metadata) {
 			ModMetadataIndex::Entry e;
 			e.fileName = QFileInfo(newpath).fileName();
 			e.platform = QStringLiteral("local");
 			e.name = installedMod.name();
-			e.sha1 = sha1OfFile(newpath);
+			e.sha1 = FS::sha1Hex(newpath);
 			e.fileSize = QFileInfo(newpath).size();
 			e.isDependency = false;
 			e.installedAt = QDateTime::currentDateTimeUtc();
@@ -485,9 +461,8 @@ QVariant ModFolderModel::data(const QModelIndex& index, int role) const
 					return QVariant();
 			}
 
-		// Named roles for QML: a ListView only ever binds to column 0, so
-		// these return the same data as the columns above regardless of
-		// `column`, making it all reachable from a single delegate.
+		// Named roles for QML: a ListView binds to column 0 only, so these
+		// return the same data as the columns above whatever `column` is.
 		case NameRole:
 			return mods[row].name();
 		case VersionRole:
@@ -559,9 +534,8 @@ bool ModFolderModel::setModStatus(int row,
 	}
 	modsIndex.remove(oldId);
 	modsIndex[newId] = row;
-	// The on-disk file name changed (toggled `.disabled` suffix); migrate
-	// the sidecar so it tracks the new name. canonicalFileName() collapses
-	// both forms so this is a no-op on the metadata payload itself.
+	// The on-disk name changed (`.disabled` toggled): migrate the sidecar so it
+	// follows. canonicalFileName() collapses both forms.
 	if (m_metadata) {
 		m_metadata->rename(oldId, newId);
 	}
@@ -609,57 +583,9 @@ QVariant ModFolderModel::headerData(int section, Qt::Orientation orientation,
 
 Qt::ItemFlags ModFolderModel::flags(const QModelIndex& index) const
 {
-	Qt::ItemFlags defaultFlags = QAbstractListModel::flags(index);
-	auto flags = defaultFlags;
-	if (interaction_disabled) {
-		flags &= ~Qt::ItemIsDropEnabled;
-	} else {
-		flags |= Qt::ItemIsDropEnabled;
-		if (index.isValid()) {
-			flags |= Qt::ItemIsUserCheckable;
-		}
+	Qt::ItemFlags flags = QAbstractListModel::flags(index);
+	if (!interaction_disabled && index.isValid()) {
+		flags |= Qt::ItemIsUserCheckable;
 	}
 	return flags;
-}
-
-Qt::DropActions ModFolderModel::supportedDropActions() const
-{
-	// copy from outside, move from within and other mod lists
-	return Qt::CopyAction | Qt::MoveAction;
-}
-
-QStringList ModFolderModel::mimeTypes() const
-{
-	QStringList types;
-	types << "text/uri-list";
-	return types;
-}
-
-bool ModFolderModel::dropMimeData(const QMimeData* data, Qt::DropAction action,
-								  int, int, const QModelIndex&)
-{
-	if (action == Qt::IgnoreAction) {
-		return true;
-	}
-
-	// check if the action is supported
-	if (!data || !(action & supportedDropActions())) {
-		return false;
-	}
-
-	// files dropped from outside?
-	if (data->hasUrls()) {
-		auto urls = data->urls();
-		for (auto url : urls) {
-			// only local files may be dropped...
-			if (!url.isLocalFile()) {
-				continue;
-			}
-			// TODO: implement not only copy, but also move
-			// FIXME: handle errors here
-			installMod(url.toLocalFile());
-		}
-		return true;
-	}
-	return false;
 }

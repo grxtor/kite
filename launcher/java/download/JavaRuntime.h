@@ -19,7 +19,10 @@
 
 #pragma once
 
+#include <QDir>
+#include <QFileInfo>
 #include <QString>
+#include <QStringList>
 #include <QList>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -83,6 +86,80 @@ namespace JavaDownload
 			};
 		}
 	};
+
+	/* Names and paths in the meta server's and Mojang's JSON are untrusted: they
+	 * end up joined into paths that are written to and deleted. */
+
+	// One file or folder name: no separators, not empty, not "." or "..".
+	inline bool isSafeSegment(const QString& segment)
+	{
+		return !segment.isEmpty() && segment != QLatin1String(".") &&
+			   segment != QLatin1String("..") &&
+			   !segment.contains(QLatin1Char('/')) &&
+			   !segment.contains(QLatin1Char('\\')) &&
+			   !segment.contains(QLatin1Char(':')) &&
+			   !segment.contains(QChar::Null);
+	}
+
+	// A '/' separated path made only of safe segments.
+	inline bool isSafeRelativePath(const QString& path)
+	{
+		const auto parts = path.split(QLatin1Char('/'));
+		for (const auto& part : parts) {
+			if (!isSafeSegment(part)) {
+				return false;
+			}
+		}
+		return !parts.isEmpty();
+	}
+
+	// Whether @p path lies strictly below @p root, ".." resolved.
+	inline bool isInside(const QString& root, const QString& path)
+	{
+		QString base = QDir::cleanPath(QDir(root).absolutePath());
+		if (!base.endsWith(QLatin1Char('/'))) {
+			base += QLatin1Char('/');
+		}
+		return QDir::cleanPath(QDir(path).absolutePath()).startsWith(base);
+	}
+
+	// <root>/<relative>, or empty if @p relative is unsafe or escapes @p root.
+	inline QString joinInside(const QString& root, const QString& relative)
+	{
+		if (!isSafeRelativePath(relative)) {
+			return QString();
+		}
+		const QString joined = QDir::cleanPath(
+			QDir(root).absolutePath() + QLatin1Char('/') + relative);
+		return isInside(root, joined) ? joined : QString();
+	}
+
+	/* Whether a link at @p linkPath may point at @p target (relative to the
+	 * link's own folder): ".." only as a leading run, so the target cannot
+	 * reach outside @p root through another link, and landing inside it. */
+	inline bool isSafeLinkTarget(const QString& root, const QString& linkPath,
+								 const QString& target)
+	{
+		if (target.isEmpty() || target.startsWith(QLatin1Char('/')) ||
+			target.contains(QLatin1Char('\\')) ||
+			target.contains(QLatin1Char(':'))) {
+			return false;
+		}
+		const auto parts = target.split(QLatin1Char('/'));
+		int i = 0;
+		while (i < parts.size() && parts[i] == QLatin1String("..")) {
+			++i;
+		}
+		for (; i < parts.size(); ++i) {
+			if (!isSafeSegment(parts[i])) {
+				return false;
+			}
+		}
+		// Made absolute the way isInside does it (QFileInfo::absolutePath would
+		// differ on Windows for a rooted path without a drive letter).
+		return isInside(root, QDir(QFileInfo(linkPath).path()).absolutePath() +
+								  QLatin1Char('/') + target);
+	}
 
 	inline QString currentRuntimeOS()
 	{

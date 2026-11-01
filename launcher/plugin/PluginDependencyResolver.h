@@ -25,37 +25,22 @@
 #include <QStringList>
 #include <QVector>
 
-/*
- * PluginDependencyResolver — produces a load order for a set of discovered
- * .mmco modules that respects their declared dependencies.
- *
- * Algorithm: Kahn's topological sort over the dependency DAG built from
- * MMCOModuleInfo::dependencies. Modules that participate in a cycle are
- * marked disabled with reason DependencyCycle. Modules whose required
- * (non-optional) dependencies are missing are marked disabled with
- * reason DependencyMissing.
- *
- * The resolver does NOT mutate modules that the loader has already
- * disabled (e.g. for signature reasons) — it just refuses to include
- * them in the load order and propagates DependencyMissing to anything
- * that depended on them.
- */
+/* Produces a load order for discovered .mmco modules that respects their declared dependencies:
+ * Kahn's topological sort over the DAG from MMCOModuleInfo::dependencies. Modules in a cycle are
+ * disabled with DependencyCycle, modules missing a required dependency with DependencyMissing.
+ * Modules the loader already disabled (e.g. for signature reasons) are not mutated: they stay out
+ * of the load order and count as missing for anything that depends on them. */
 class PluginDependencyResolver
 {
   public:
 	struct Result {
-		/* Indices into the input vector, in load order. Disabled modules
-		 * are NOT included here. */
+		/* Indices into the input vector, in load order; disabled modules are not included. */
 		QVector<int> loadOrder;
 	};
 
-	/*
-	 * Resolve dependencies for `modules` (mutated in place to set
-	 * disable reasons / details for modules that cannot load).
-	 *
-	 * The pre-existing `disabled` flag is respected — already-disabled
-	 * modules count as missing dependencies for anything that needs them.
-	 */
+	/* Resolves dependencies for `modules`, mutated in place to set disable reasons/details for
+	 * modules that cannot load. Already-disabled modules count as missing dependencies for anything
+	 * that needs them. */
 	static Result resolve(QVector<PluginMetadata>& modules);
 
   private:

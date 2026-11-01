@@ -31,16 +31,14 @@ BackupTask::BackupTask(QString instanceId, QString instanceRoot, QString label,
 {
 	setObjectName(QStringLiteral("BackupTask"));
 	setStatus(tr("Preparing backup..."));
-	// The file count is only known once compressDir() has walked the
-	// instance, so sweep until BackupManager says otherwise.
+	// The file count is unknown until compressDir() has walked the instance.
 	setProgress(0, 0);
 }
 
 BackupTask::~BackupTask()
 {
-	// The worker holds a bare pointer to us, so it must not outlive us.
-	// This only ever blocks if someone tears the task down while the
-	// backup is still running, which the normal flow never does.
+	// The worker holds a bare pointer to us. This only blocks if the task is
+	// torn down mid-backup, which the normal flow never does.
 	disconnect(&m_watcher, nullptr, this, nullptr);
 	if (m_future.isRunning()) {
 		qWarning() << "BackupTask destroyed while the backup was still "
@@ -73,8 +71,6 @@ void BackupTask::executeTask()
 void BackupTask::reportProgress(const QString& status, const QString& details,
 								qint64 current, qint64 total)
 {
-	// Called from the worker thread: hop back to the thread we live on
-	// before touching anything the UI is connected to.
 	QMetaObject::invokeMethod(
 		this,
 		[this, status, details, current, total] {

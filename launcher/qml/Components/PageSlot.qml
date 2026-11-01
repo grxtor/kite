@@ -5,14 +5,11 @@
 import QtQuick
 
 /*
- * One page of the shell's StackLayout, built the first time it is the page
- * showing and kept after that, so its scroll position and tab survive. A
- * page nobody opens costs nothing: a hidden page still builds every item,
- * binding and delegate it has, and the shell used to build all six at start.
- *
- * `current` is the shell's page; `page` is the one this slot holds. Ask for
- * a page before touching it by setting `current` first (root.page = ...),
- * which builds it synchronously: `item` is the page right after.
+ * One page of the shell's StackLayout, built the first time it is shown and kept
+ * after that, so its scroll position and tab survive. A hidden page still builds
+ * everything it has, so a page nobody opens must cost nothing. Set `current`
+ * first (root.page = ...) to build a page synchronously: `item` is the page
+ * right after.
  */
 Loader {
     id: root

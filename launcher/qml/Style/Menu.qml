@@ -9,10 +9,9 @@ import Kite.Theme
 T.Menu {
     id: control
 
-    // As wide as its widest shown entry: never narrower than a menu always
-    // was, so a short one does not shrink to a tooltip, and never wider than
-    // the ceiling, past which an entry elides rather than the menu running
-    // across the window. A `width` set on a menu still wins.
+    // As wide as its widest shown entry, but not so narrow that a short menu
+    // shrinks to a tooltip, nor wider than the ceiling, past which an entry
+    // elides. A `width` set on a menu still wins.
     readonly property real minimumWidth: Theme.control.heightLg * 4
     readonly property real maximumWidth: Theme.control.heightLg * 8
     // Hidden entries (an item zeroed out with visible: false) do not count.
@@ -33,8 +32,7 @@ T.Menu {
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
                              implicitContentHeight + topPadding + bottomPadding)
 
-    // Never flush against the window's edge: a menu opened near it is
-    // pushed in by this much.
+    // A menu opened near the window's edge is pushed in by this much.
     margins: Theme.space.sm
     overlap: 1
     padding: Theme.space.xs
@@ -53,9 +51,8 @@ T.Menu {
         T.ScrollIndicator.vertical: ScrollIndicator { }
     }
 
-    // The popup glass treatment (Theme.glass): a barely see-through
-    // surfaceOverlay, the hairline border, a light top edge and the md
-    // shadow.
+    // The popup glass treatment (Theme.glass): surfaceOverlay, the hairline
+    // border, a light top edge and the md shadow.
     background: GlassSurface {
         radius: Theme.radius.lg
         level: Theme.elevation.md

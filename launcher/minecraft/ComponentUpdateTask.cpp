@@ -136,34 +136,6 @@ namespace
 		return result;
 	}
 
-	// FIXME: dead code. determine if this can still be useful?
-	/*
-	static LoadResult loadPackProfile(ComponentPtr component, Task::Ptr&
-	loadTask, Net::Mode netmode)
-	{
-		if(component->m_loaded)
-		{
-			qDebug() << component->getName() << "is already loaded";
-			return LoadResult::LoadedLocal;
-		}
-
-		LoadResult result = LoadResult::Failed;
-		auto metaList = APPLICATION->metadataIndex()->get(component->m_uid);
-		if(metaList->isLoaded())
-		{
-			component->m_loaded = true;
-			result = LoadResult::LoadedLocal;
-		}
-		else
-		{
-			metaList->load(netmode);
-			loadTask = metaList->getCurrentTask();
-			result = LoadResult::RequiresRemote;
-		}
-		return result;
-	}
-	*/
-
 	static LoadResult loadIndex(Task::Ptr& loadTask, Net::Mode netmode)
 	{
 		// FIXME: DECIDE. do we want to run the update task anyway?
@@ -204,7 +176,6 @@ void ComponentUpdateTask::loadComponents()
 					[this, taskIndex](const QString& error) {
 						remoteLoadFailed(taskIndex, error);
 					});
-			// Show the metadata fetch as its own line in the dialog.
 			propagateStepsFrom(indexLoadTask.get());
 			taskIndex++;
 		}
@@ -250,7 +221,6 @@ void ComponentUpdateTask::loadComponents()
 					[this, taskIndex](const QString& error) {
 						remoteLoadFailed(taskIndex, error);
 					});
-			// One line per component's metadata being fetched.
 			propagateStepsFrom(loadTask.get());
 			RemoteLoadStatus status;
 			status.type = loadType;
@@ -263,7 +233,6 @@ void ComponentUpdateTask::loadComponents()
 	d->remoteTasksInProgress = taskIndex;
 	switch (result) {
 		case LoadResult::LoadedLocal: {
-			// Everything got loaded. Advance to dependency resolution.
 			resolveDependencies(d->mode == Mode::Launch ||
 								d->netmode == Net::Mode::Offline);
 			break;
@@ -555,7 +524,6 @@ void ComponentUpdateTask::resolveDependencies(bool checkOnly)
 				// version needs to be decided
 				qDebug() << "Adding" << add.uid << "at position"
 						 << add.indexOfFirstDependee;
-				// ############################################################################################################
 				// HACK HACK HACK HACK FIXME: this is a placeholder for deciding
 				// what version to use. For now, it is hardcoded.
 				if (!add.suggests.isEmpty()) {
@@ -578,7 +546,6 @@ void ComponentUpdateTask::resolveDependencies(bool checkOnly)
 				}
 				// HACK HACK HACK HACK FIXME: this is a placeholder for deciding
 				// what version to use. For now, it is hardcoded.
-				// ############################################################################################################
 			}
 			component->m_dependencyOnly = true;
 			// FIXME: this should not work directly with the component list

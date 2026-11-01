@@ -26,7 +26,6 @@
 #include "minecraft/launch/MinecraftServerTarget.h"
 #include "minecraft/auth/MinecraftAccount.h"
 
-class InstanceWindow;
 class LaunchController : public Task
 {
 	Q_OBJECT
@@ -62,11 +61,6 @@ class LaunchController : public Task
 		m_demoMode = demoMode;
 	}
 
-	void setParentWidget(QWidget* widget)
-	{
-		m_parentWidget = widget;
-	}
-
 	void setServerToJoin(MinecraftServerTargetPtr serverToJoin)
 	{
 		m_serverToJoin = std::move(serverToJoin);
@@ -94,15 +88,13 @@ class LaunchController : public Task
 
 	void onSucceeded();
 	void onFailed(QString reason);
-	void onProgressRequested(Task* task);
+	void onProgressRequested();
 
   private:
 	BaseProfilerFactory* m_profiler = nullptr;
 	bool m_online = true;
 	bool m_demoMode = false;
 	InstancePtr m_instance;
-	QWidget* m_parentWidget = nullptr;
-	InstanceWindow* m_console = nullptr;
 	MinecraftAccountPtr m_accountToUse = nullptr;
 	AuthSessionPtr m_session;
 	shared_qobject_ptr<LaunchTask> m_launcher;

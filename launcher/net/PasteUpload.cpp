@@ -20,6 +20,7 @@
 
 #include "PasteUpload.h"
 #include "BuildConfig.h"
+#include "Json.h"
 #include "core/LauncherContext.h"
 #include "Logging.h"
 
@@ -146,7 +147,6 @@ void PasteUpload::executeTask()
 
 void PasteUpload::downloadError(QNetworkReply::NetworkError error)
 {
-	// error happened during download.
 	qCritical() << "Network error: " << error;
 	emitFailed(m_reply->errorString());
 }
@@ -154,22 +154,20 @@ void PasteUpload::downloadError(QNetworkReply::NetworkError error)
 void PasteUpload::downloadFinished()
 {
 	QByteArray data = m_reply->readAll();
-	// if the download succeeded
 	if (m_reply->error() == QNetworkReply::NetworkError::NoError) {
 		m_reply.reset();
-		QJsonParseError jsonError;
-		QJsonDocument doc = QJsonDocument::fromJson(data, &jsonError);
-		if (jsonError.error != QJsonParseError::NoError) {
-			emitFailed(jsonError.errorString());
+		QString jsonError;
+		const auto doc = Json::tryParse(data, nullptr, &jsonError);
+		if (!doc) {
+			emitFailed(jsonError);
 			return;
 		}
-		if (!parseResult(doc)) {
+		if (!parseResult(*doc)) {
 			emitFailed(tr("paste.ee returned an error. Please consult the logs "
 						  "for more information"));
 			return;
 		}
 	}
-	// else the download failed
 	else {
 		emitFailed(QString("Network error: %1").arg(m_reply->errorString()));
 		m_reply.reset();
@@ -188,7 +186,6 @@ bool PasteUpload::parseResult(QJsonDocument doc)
 		return false;
 	}
 	m_pasteLink = object.value("link").toString();
-	m_pasteID = object.value("id").toString();
 	qCDebug(netLog) << m_pasteLink;
 	return true;
 }

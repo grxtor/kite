@@ -5,23 +5,18 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The Gece look's window background: kiteclient.com's night sky
- * (Theme.sky, deepening from the zenith towards the horizon's violet) with
- * square stars along the top bar, the website's own pixel stars. Main.qml lays it under the whole shell while Theme.look is
- * "night"; the shell and the page panel are then transparent over it.
- *
- * The stars come from a fixed seed, so they sit in the same places on every
- * start and every window size scales them along, never reshuffles them.
+ * The Gece look's window background: kiteclient.com's night sky (Theme.sky) with
+ * square stars along the top bar. Main.qml lays it under the whole shell while
+ * Theme.look is "night". The stars come from a fixed seed, so they sit in the
+ * same places on every start and scale with the window.
  */
 Item {
     id: root
 
     // A miniature (LookMiniature) draws its own few instead.
     property int starCount: 18
-    // The top bar's height (Main.qml's shellBarHeight): the stars stay in
-    // that band, past where a page title or an instance's trail reaches,
-    // where nothing is written. Lower down they sat between words and cards
-    // and read as specks of dust.
+    // The top bar's height: the stars stay in that band, where nothing is written; lower down they
+    // read as specks of dust.
     property int barHeight: 48
     readonly property real starsFrom: 0.55
     // Short of the friends toggle at the bar's right end.
@@ -29,7 +24,6 @@ Item {
     readonly property real starMinOpacity: 0.35
     readonly property real starOpacityRange: 0.35
     readonly property int starSize: 2
-    // One star in five is a pixel bigger.
     readonly property real bigStarShare: 0.2
 
     // Position (x a share of the width, y of the band), opacity and size per

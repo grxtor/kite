@@ -35,10 +35,6 @@ class PasteUpload : public Task
 	{
 		return m_pasteLink;
 	}
-	QString pasteID()
-	{
-		return m_pasteID;
-	}
 	int maxSize()
 	{
 		// 2MB for paste.ee - public
@@ -54,8 +50,6 @@ class PasteUpload : public Task
 
   private:
 	bool parseResult(QJsonDocument doc);
-	QString m_error;
-	QString m_pasteID;
 	QString m_pasteLink;
 	QString m_key;
 	QByteArray m_jsonContent;

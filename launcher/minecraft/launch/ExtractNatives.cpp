@@ -56,7 +56,6 @@ static bool unzipNatives(QString source, QString targetFolder,
 		return false;
 	}
 	for (const auto& name : entries) {
-		auto lowercase = name.toLower();
 		if (nativeGLFW && name.contains("glfw")) {
 			continue;
 		}
@@ -104,10 +103,9 @@ void ExtractNatives::executeTask()
 				"Couldn't extract native jar '%1' to destination '%2': %3");
 			emit logLine(QString(reason).arg(source, outputPath, error),
 						 MessageLevel::Fatal);
-			// Must not fall through: continuing the loop and reaching
-			// emitSucceeded() below made this task report both failed and
-			// succeeded, so a launch with zero usable natives looked fine to
-			// everything downstream.
+			// Must not fall through: reaching emitSucceeded() below made the
+			// task report both failed and succeeded, so a launch with no usable
+			// natives looked fine.
 			emitFailed(tr(reason).arg(source, outputPath, error));
 			return;
 		}

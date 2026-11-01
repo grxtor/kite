@@ -8,16 +8,13 @@ import QtQuick.Dialogs
 import Kite.Theme
 
 /*
- * One of Kite's folders (Settings > General > Folders): what it is, where
- * it is now, and buttons to pick another place or open it. The pick goes
- * through FolderSettingsController, which asks about risky locations
- * (a "!" in the path, a folder borrowed through Flatpak) before saving.
- * Existing contents are not moved.
+ * One of Kite's folders (Settings > General > Folders): what it is, where it is now, and buttons to pick another
+ * place or open it. The pick goes through FolderSettingsController, which asks about risky locations (a "!" in
+ * the path, a folder borrowed through Flatpak) before saving. Existing contents are not moved.
  */
 SettingRow {
     id: root
 
-    // The folder setting: InstanceDir, CentralModsDir, IconsDir, ...
     property string key
     readonly property string path: SettingsStore.string(key)
     readonly property bool movable: !!LauncherStore.folders

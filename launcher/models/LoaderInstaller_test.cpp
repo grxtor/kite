@@ -22,14 +22,9 @@
 
 #include "models/LoaderInstaller.h"
 
-/* installSequence() is public and static, and touches neither a
- * PackProfile nor a MinecraftInstance - see its own comment and
- * install()'s. Constructing a real PackProfile (which needs a
- * MinecraftInstance) to exercise install() itself is impractical here,
- * the same reason ContentBrowser_test.cpp only exercises
- * ContentBrowser's static helpers - installSequence() exists so the one
- * thing actually worth testing (the order install() performs its side
- * effects in) can be, without that fixture. */
+/* installSequence() is public and static and touches neither a PackProfile nor
+ * a MinecraftInstance; it exists so the order install() performs its side
+ * effects in can be tested without that fixture. */
 class LoaderInstallerTest : public QObject
 {
 	Q_OBJECT
@@ -58,9 +53,7 @@ class LoaderInstallerTest : public QObject
 		QVERIFY(steps.at(3) == Step::ChangeVersion);
 	}
 
-	/* The bug this review caught: EnableSelected has to happen before
-	 * ChangeVersion (which triggers PackProfile::resolve()), whatever
-	 * else is going on - see the class comment. */
+	/* EnableSelected must happen before ChangeVersion (which triggers PackProfile::resolve()). */
 	void test_EnableAlwaysPrecedesChangeVersion()
 	{
 		using Step = LoaderInstaller::InstallStep;

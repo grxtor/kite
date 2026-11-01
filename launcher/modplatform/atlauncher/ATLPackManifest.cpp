@@ -93,12 +93,10 @@ static void loadVersionLoader(ATLauncher::VersionLoader& p, QJsonObject& obj)
 	p.recommended =
 		Json::ensureBoolean(metadata, QString("recommended"), false);
 
-	// Minecraft Forge
 	if (p.type == "forge") {
 		p.version = Json::ensureString(metadata, "version", "");
 	}
 
-	// Fabric Loader
 	if (p.type == "fabric") {
 		p.version = Json::ensureString(metadata, "loader", "");
 	}
@@ -136,10 +134,8 @@ static void loadVersionMod(ATLauncher::VersionMod& p, QJsonObject& obj)
 	p.type_raw = Json::requireString(obj, "type");
 	p.type = parseModType(p.type_raw);
 
-	// This contributes to the Minecraft Forge detection, where we rely on
-	// mod.type being "Forge" when the mod represents Forge. As there is little
-	// difference between "Jar" and "Forge, some packs regretfully use "Jar".
-	// This will correct the type to "Forge" in these cases (as best it can).
+	// Packs sometimes use "Jar" for Forge, but Forge detection relies on
+	// mod.type being "Forge"; correct the type in those cases.
 	if (p.name == QString("Minecraft Forge") &&
 		p.type == ATLauncher::ModType::Jar) {
 		p.type_raw = "forge";
@@ -175,7 +171,6 @@ static void loadVersionMod(ATLauncher::VersionMod& p, QJsonObject& obj)
 
 	p.client = Json::ensureBoolean(obj, QString("client"), false);
 
-	// computed
 	p.effectively_hidden = p.hidden || p.library;
 }
 

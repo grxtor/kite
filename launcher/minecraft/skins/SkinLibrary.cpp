@@ -27,7 +27,6 @@
 #include <QImage>
 #include <QJsonArray>
 #include <QJsonObject>
-#include <QMimeData>
 #include <QUrl>
 
 #include <algorithm>
@@ -37,16 +36,13 @@
 
 namespace
 {
-	/* The index lives inside the library directory, so it travels with it. */
+	// The index lives inside the library directory, so it travels with it.
 	const char* const kIndexFileName = "index.json";
 	const char* const kIndexSkinsKey = "skins";
 
-	/* Find a file name in `directory` that is not taken yet, by appending a
-	 * counter before the extension.
-	 *
-	 * Bounded on purpose: if 256 variations are all taken, something is wrong
-	 * with the directory rather than with this name, and looping forever
-	 * would only hide it. */
+	// Finds a file name in `directory` that is not taken, appending a counter
+	// before the extension. Bounded: 256 taken names mean something is wrong
+	// with the directory, and looping forever would hide it.
 	QString availableName(const QDir& directory, const QString& fileName)
 	{
 		if (!directory.exists(fileName)) {
@@ -82,10 +78,9 @@ SkinLibrary::SkinLibrary(QObject* parent, const QString& path,
 	m_dir.setPath(path);
 	FS::ensureFolderPathExists(m_dir.absolutePath());
 
-	/* Files and directories both, so that a stray subdirectory does not make
-	 * the listing look empty; non-PNG entries are filtered out per entry
-	 * during the rescan. Locale-aware name sorting is what makes the list
-	 * order match what the user sees in their file manager. */
+	// Files and directories both, so a stray subdirectory does not make the
+	// listing look empty; non-PNG entries are filtered during the rescan.
+	// Locale-aware sorting matches the user's file manager.
 	m_dir.setFilter(QDir::Readable | QDir::NoDotAndDotDot | QDir::Files |
 					QDir::Dirs);
 	m_dir.setSorting(QDir::Name | QDir::IgnoreCase | QDir::LocaleAware);
@@ -96,10 +91,8 @@ SkinLibrary::SkinLibrary(QObject* parent, const QString& path,
 	connect(m_watcher, &QFileSystemWatcher::fileChanged, this,
 			&SkinLibrary::onFileChanged);
 
-	/* Arms the watcher and does the first rescan. Watching from the start is
-	 * what makes "Open Folder", drop a PNG in, and see it appear work without
-	 * reopening the dialog -- and the import buttons rely on it too, since
-	 * they only copy a file into place and let the watcher notice. */
+	// Arms the watcher and does the first rescan. Import buttons only copy a
+	// file into place and rely on the watcher to notice it.
 	startWatching();
 }
 
@@ -142,9 +135,9 @@ bool SkinLibrary::adoptAccountSkin(QList<SkinEntry>& entries) const
 
 	const Skin& worn = m_account->accountData()->minecraftProfile.skin;
 
-	/* Both halves are required: the URL is the identity we match on, and
-	 * without the bytes there is nothing to write to disk. An account that
-	 * has a URL but no cached data will be adopted on a later refresh. */
+	// Both halves are required: the URL is the identity we match on and the
+	// bytes are what gets written. An account with a URL but no data is adopted
+	// on a later refresh.
 	if (worn.url.isEmpty() || worn.data.isEmpty()) {
 		return false;
 	}
@@ -154,12 +147,11 @@ bool SkinLibrary::adoptAccountSkin(QList<SkinEntry>& entries) const
 		if (existing.textureUrl() != worn.url) {
 			continue;
 		}
-		/* Already in the library. The file is right, but the cape may have
-		 * been changed elsewhere (in game, or on another machine), so it
-		 * comes from the profile every time. The arm width only when the
-		 * profile's has changed since the library last saw it: every save
-		 * of the index rescans, so taking it each time would undo a width
-		 * the user has just picked here and not worn yet. */
+		// Already in the library. The cape comes from the profile every time
+		// (it may have changed elsewhere). The arm width only when the
+		// profile's changed since the library last saw it: every index save
+		// rescans, and taking it each time would undo a width picked here and
+		// not worn yet.
 		existing.setCapeId(
 			m_account->accountData()->minecraftProfile.currentCape);
 		if (existing.wornArms() == wornArms) {
@@ -170,9 +162,8 @@ bool SkinLibrary::adoptAccountSkin(QList<SkinEntry>& entries) const
 		return true;
 	}
 
-	/* Not in the library yet -- save it under the profile name, which is
-	 * what a user would recognise. If that name is taken by an unrelated
-	 * skin, fall back to the file name from the texture URL. */
+	// Not in the library yet: save it under the profile name; if an unrelated
+	// skin has that name, use the file name from the texture URL.
 	QString fileName = m_account->profileName() + QStringLiteral(".png");
 	if (m_dir.exists(fileName)) {
 		fileName = QUrl(worn.url).fileName() + QStringLiteral(".png");
@@ -204,8 +195,8 @@ void SkinLibrary::rescan()
 	QList<SkinEntry> found;
 	m_dir.refresh();
 
-	/* Pass 1: the index. It carries the metadata, so it goes first and
-	 * everything found later is treated as new. */
+	// Pass 1: the index. It carries the metadata, so everything found later is
+	// new.
 	const QFileInfo indexInfo(
 		m_dir.absoluteFilePath(QLatin1String(kIndexFileName)));
 	if (indexInfo.exists()) {
@@ -216,9 +207,8 @@ void SkinLibrary::rescan()
 				doc.object().value(QLatin1String(kIndexSkinsKey)).toArray();
 			for (const QJsonValue& record : records) {
 				SkinEntry entry(m_dir, record.toObject());
-				/* An unusable entry means the file behind it is gone or is
-				 * no longer a skin. Dropping it here is what lets the
-				 * directory stay the source of truth. */
+				// An unusable entry's file is gone or no longer a skin;
+				// dropping it keeps the directory the source of truth.
 				if (entry.isUsable()) {
 					found.append(entry);
 				}
@@ -230,8 +220,8 @@ void SkinLibrary::rescan()
 
 	bool needsSave = adoptAccountSkin(found);
 
-	/* Pass 2: PNGs in the directory that the index did not account for --
-	 * files the user dropped in with a file manager. */
+	// Pass 2: PNGs the index did not account for (dropped in with a file
+	// manager).
 	const QFileInfoList contents = m_dir.entryInfoList();
 	for (const QFileInfo& candidate : contents) {
 		if (!candidate.isFile() ||
@@ -280,8 +270,8 @@ void SkinLibrary::onDirectoryChanged(const QString& path)
 	}
 
 	if (m_dir.absolutePath() != changed.absolutePath()) {
-		/* The library was pointed somewhere else (the setting changed).
-		 * Move the watch along with it before rescanning. */
+		// The library was pointed elsewhere (setting changed): move the watch
+		// first.
 		m_dir.setPath(path);
 		m_dir.refresh();
 		if (m_isWatching) {
@@ -297,7 +287,7 @@ void SkinLibrary::onFileChanged(const QString& path)
 {
 	const QFileInfo changed(path);
 	if (!changed.exists()) {
-		/* Deletions arrive as a directory change too, which rescans. */
+		// Deletions arrive as a directory change too, which rescans.
 		return;
 	}
 
@@ -376,7 +366,7 @@ void SkinLibrary::mergeEntry(const SkinEntry& incoming)
 		if (m_entries[row].path() != incoming.path()) {
 			continue;
 		}
-		/* Same file: keep the row, take the metadata. */
+		// Same file: keep the row, take the metadata.
 		m_entries[row].setCapeId(incoming.capeId());
 		m_entries[row].setArms(incoming.arms());
 		m_entries[row].setTextureUrl(incoming.textureUrl());
@@ -411,9 +401,8 @@ QString SkinLibrary::importFile(const QString& sourcePath,
 		return tr("File is not readable.");
 	}
 
-	/* A ".png" suffix is taken at face value; anything else has to prove it
-	 * is a skin by decoding to the right dimensions. Decoding is the
-	 * expensive check, so it only runs when the name gives no hint. */
+	// A ".png" suffix is taken at face value; anything else must decode to the
+	// right dimensions, which is expensive, so it runs only without that hint.
 	if (source.suffix().compare(QLatin1String("png"), Qt::CaseInsensitive) !=
 			0 &&
 		!SkinEntry(source.absoluteFilePath()).isUsable()) {
@@ -432,17 +421,6 @@ QString SkinLibrary::importFile(const QString& sourcePath,
 	return QString();
 }
 
-void SkinLibrary::importFiles(const QStringList& sourcePaths)
-{
-	for (const QString& path : sourcePaths) {
-		const QString problem = importFile(path);
-		if (!problem.isEmpty()) {
-			qWarning() << "Skipped" << path << "while importing skins:"
-					   << problem;
-		}
-	}
-}
-
 bool SkinLibrary::remove(const QString& name, bool toTrash)
 {
 	const int row = indexOfName(name);
@@ -457,8 +435,6 @@ bool SkinLibrary::remove(const QString& name, bool toTrash)
 	}
 
 	beginRemoveRows(QModelIndex(), row, row);
-	/* removeAt() rather than remove(): QList only grew an index-taking
-	 * remove() in Qt 6, and this builds against Qt 5.15 as well. */
 	m_entries.removeAt(row);
 	endRemoveRows();
 	save();
@@ -479,10 +455,8 @@ QVariant SkinLibrary::data(const QModelIndex& index, int role) const
 	switch (role) {
 		case Qt::DecorationRole:
 		case ImageRole: {
-			/* The flat sprite is what the list is meant to show; the raw
-			 * texture is only a fallback for the case where the sprite could
-			 * not be produced, so the row still shows *something*. QImage is
-			 * consumable by QML as-is, so ImageRole needs no conversion. */
+			// The flat sprite is what the list shows; the raw texture is the
+			// fallback. QImage is consumable by QML as-is.
 			const QImage thumbnail = entry.thumbnail();
 			return thumbnail.isNull() ? entry.texture() : thumbnail;
 		}
@@ -510,7 +484,7 @@ bool SkinLibrary::setData(const QModelIndex& index, const QVariant& value,
 	SkinEntry& entry = m_entries[row];
 	const QString newName = value.toString();
 	if (entry.name() == newName) {
-		/* Committing an unchanged name is not a failure. */
+		// Committing an unchanged name is not a failure.
 		return true;
 	}
 	if (!entry.renameTo(newName)) {
@@ -537,57 +511,9 @@ QHash<int, QByteArray> SkinLibrary::roleNames() const
 
 Qt::ItemFlags SkinLibrary::flags(const QModelIndex& index) const
 {
-	/* Drops are accepted on the empty area as well as on rows, so the flag
-	 * is unconditional. */
-	Qt::ItemFlags result =
-		Qt::ItemIsDropEnabled | QAbstractListModel::flags(index);
+	Qt::ItemFlags result = QAbstractListModel::flags(index);
 	if (index.isValid()) {
 		result |= Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
 	}
 	return result;
-}
-
-QStringList SkinLibrary::mimeTypes() const
-{
-	return {QStringLiteral("text/uri-list")};
-}
-
-Qt::DropActions SkinLibrary::supportedDropActions() const
-{
-	/* Copy only: a dropped skin is imported into the library, the original
-	 * is left where the user had it. */
-	return Qt::CopyAction;
-}
-
-bool SkinLibrary::dropMimeData(const QMimeData* data, Qt::DropAction action,
-							   int row, int column, const QModelIndex& parent)
-{
-	Q_UNUSED(row)
-	Q_UNUSED(column)
-	Q_UNUSED(parent)
-
-	if (action == Qt::IgnoreAction) {
-		return true;
-	}
-	if (!data || !(action & supportedDropActions())) {
-		return false;
-	}
-	if (!data->hasUrls()) {
-		return false;
-	}
-
-	QStringList files;
-	for (const QUrl& url : data->urls()) {
-		/* Remote URLs are the "Import URL" button's job; a drop has to be
-		 * something already on this machine. */
-		if (url.isLocalFile()) {
-			files.append(url.toLocalFile());
-		}
-	}
-	if (files.isEmpty()) {
-		return false;
-	}
-
-	importFiles(files);
-	return true;
 }

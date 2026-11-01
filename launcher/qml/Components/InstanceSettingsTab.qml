@@ -7,28 +7,22 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One instance's own settings: each group follows the launcher-wide value
- * until switched to "custom for this instance". Locked while the instance
- * runs -- the game already read these, a change now would silently do
- * nothing until the next launch. A TabScroll: the tab strip names the tab,
- * so there is no heading, and the groups run the page's full width.
+ * One instance's own settings: each group follows the launcher-wide value until
+ * switched to "custom for this instance". Locked while the instance runs: the
+ * game already read these. A TabScroll: the tab strip names the tab.
  */
 TabScroll {
     id: root
 
-    // SettingsAdapter over the instance's settings.
     property var adapter: null
     property int systemMemoryMiB: 8192
     property bool running: false
-    // The instance's mod loader id ("fabric", "quilt", ... or "" for none):
-    // the Kite mod is a Fabric mod.
+    // The instance's mod loader id ("fabric", "quilt", ... or ""): the Kite mod is a Fabric mod.
     property string loader: ""
     readonly property bool kiteModAvailable: root.loader === "fabric"
-    // What the last fetched manifest says about a Kite mod build for this
-    // instance: "available", "noBuild", "loaderTooOld" or "unknown" (no
-    // manifest yet: nothing is claimed).
+    // What the last fetched manifest says about a Kite mod build for this instance: "available",
+    // "noBuild", "loaderTooOld" or "unknown" (no manifest yet).
     property string kiteModSupport: "unknown"
-    // PluginSurfaceModel for this instance's settings anchor, or null.
     property var pluginSurfaces: null
 
     description: qsTr("Each group follows the launcher's settings until you switch it to custom for this instance.")
@@ -49,8 +43,8 @@ TabScroll {
         spacing: Theme.space.xl
         enabled: !root.running
 
-        // Kite's own mod: this instance's alone, with no launcher-wide value
-        // to follow, so it is a plain group and not an OverrideGroup.
+        // Kite's own mod is this instance's alone, with no launcher-wide value to follow: a plain
+        // group, not an OverrideGroup.
         Column {
             width: parent.width
             spacing: Theme.space.sm
@@ -85,8 +79,6 @@ TabScroll {
             }
         }
 
-        // Memory, Java and JVM arguments: their own file, so Java
-        // management can grow there without touching the rest of this tab.
         InstanceJavaSettings {
             width: parent.width
             source: store
@@ -133,18 +125,12 @@ TabScroll {
             title: qsTr("Console")
             source: store
             gateKey: "OverrideConsole"
-            keys: ["ShowConsole", "AutoCloseConsole", "ShowConsoleOnError"]
+            keys: ["ShowConsole", "ShowConsoleOnError"]
             SettingSwitch {
                 source: store
                 key: "ShowConsole"
                 enabled: consoleGroup.overriding
                 label: qsTr("Show the console while playing")
-            }
-            SettingSwitch {
-                source: store
-                key: "AutoCloseConsole"
-                enabled: consoleGroup.overriding
-                label: qsTr("Close the console when the game quits")
             }
             SettingSwitch {
                 source: store

@@ -48,7 +48,6 @@ class JavaInstallList : public BaseVersionList
 	void sortVersions() override;
 
 	QVariant data(const QModelIndex& index, int role) const override;
-	RoleList providesRoles() const override;
 
   public slots:
 	void updateListData(QList<BaseVersionPtr> versions) override;

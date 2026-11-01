@@ -36,8 +36,7 @@ void Modrinth::loadIndexedPack(Modrinth::IndexedPack& pack, QJsonObject& obj)
 
 	pack.iconUrl = Json::ensureString(obj, "icon_url", "");
 
-	/* Only present on a search hit, which is the only reply this
-	 * function is fed today - see the header comment on IndexedPack. */
+	/* Only present on a search hit, the only reply fed here today. */
 	pack.follows = Json::ensureInteger(obj, "follows", 0);
 	pack.dateModified = Json::ensureString(obj, "date_modified", "");
 	pack.latestVersion = Json::ensureString(obj, "latest_version", "");

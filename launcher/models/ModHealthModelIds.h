@@ -29,7 +29,6 @@ namespace ModHealthModelIds
 	inline const QString kActionDisable = QStringLiteral("disable");
 	inline const QString kActionInstall = QStringLiteral("install");
 
-	/* The ids a mod's metadata uses for the game and its loaders. */
 	inline const QString kMinecraftId = QStringLiteral("minecraft");
 	inline const QString kFabricLoaderId = QStringLiteral("fabricloader");
 	inline const QString kQuiltLoaderId = QStringLiteral("quilt_loader");

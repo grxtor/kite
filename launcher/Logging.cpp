@@ -58,22 +58,20 @@ bool Logging::consoleColourEnabled()
 
 bool Logging::prepareConsoleColour()
 {
-	// Fail *towards* colour. Colour output used to be unconditional, so
-	// anything this function cannot actually determine has to keep the old
-	// behaviour instead of silently swallowing every colour in the log.
+	// Fail towards colour: anything this function cannot determine keeps
+	// it on.
 	g_consoleColour = true;
 
-	// An explicit opt-out beats any detection. https://no-color.org
+	// An explicit opt-out beats any detection (https://no-color.org).
 	if (qEnvironmentVariableIsSet("NO_COLOR")) {
 		g_consoleColour = false;
 		return false;
 	}
 
 #ifdef Q_OS_WIN
-	// Question one: is stderr still pointing at a console, or did the user
-	// redirect it? Escapes written into a file or a pipe are just noise.
-	// GetFileType answers this on stderr's own handle - GetConsoleMode does
-	// not, see below.
+	// Is stderr still pointing at a console, or was it redirected? Escapes in
+	// a file or pipe are noise. GetFileType answers this on stderr's own
+	// handle; GetConsoleMode does not.
 	const intptr_t osfHandle = _get_osfhandle(_fileno(stderr));
 	if (osfHandle != -1 && osfHandle != -2) {
 		const DWORD type = GetFileType(reinterpret_cast<HANDLE>(osfHandle));
@@ -83,22 +81,16 @@ bool Logging::prepareConsoleColour()
 		}
 	}
 
-	// Question two: does the console understand escape sequences? That is a
-	// question about the console screen buffer and it must NOT be asked of
-	// stderr's handle. The launcher gets stderr from
-	// freopen("CON", "w", stderr), i.e. a write-only console handle, and
-	// GetConsoleMode on one of those fails with ERROR_ACCESS_DENIED - which
-	// is exactly how an earlier version of this function managed to turn all
-	// colour off on a console that was perfectly capable of it.
-	// CONOUT$ opened for read+write is the handle that can be asked, and it
-	// keeps working even when stdout and stderr are redirected elsewhere.
-	// Measured, probe10.
+	// Does the console understand escape sequences? Ask the console screen
+	// buffer, not stderr's handle: stderr comes from freopen("CON", "w",
+	// stderr), a write-only console handle, and GetConsoleMode on it fails
+	// with ERROR_ACCESS_DENIED. CONOUT$ opened for read+write can be asked and
+	// keeps working when stdout and stderr are redirected elsewhere.
 	const HANDLE console =
 		CreateFileW(L"CONOUT$", FILE_GENERIC_READ | FILE_GENERIC_WRITE,
 					FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
 	if (console == INVALID_HANDLE_VALUE) {
-		// No console attached at all, so nothing is being displayed and the
-		// answer cannot be observed either way. Keep the old behaviour.
+		// No console attached: nothing is displayed, so leave the default.
 		return g_consoleColour;
 	}
 
@@ -108,20 +100,20 @@ bool Logging::prepareConsoleColour()
 		return g_consoleColour;
 	}
 	if ((mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) == 0) {
-		// The classic console host starts with this bit clear, and until it
-		// is set the escapes get printed literally as "<ESC>[32m". Windows
-		// Terminal already has it on, where this is a no-op.
+		// The classic console host starts with this bit clear, and until it is
+		// set the escapes print literally as "<ESC>[32m". Windows Terminal
+		// already has it on, making this a no-op.
 		if (!SetConsoleMode(console,
 							mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
-			// A console host that cannot do it at all. Colourless is the
-			// readable outcome here.
+			// A console host that cannot do it at all: colourless is the
+			// readable outcome.
 			g_consoleColour = false;
 		}
 	}
 	CloseHandle(console);
 #else
-	// A stderr that is not a terminal is a redirect, and TERM=dumb is the
-	// user saying the terminal cannot be trusted with escapes.
+	// A stderr that is not a terminal is a redirect, and TERM=dumb says the
+	// terminal cannot be trusted with escapes.
 	g_consoleColour = isatty(fileno(stderr)) != 0 &&
 					  qgetenv("TERM") != QByteArrayLiteral("dumb");
 #endif
@@ -131,9 +123,9 @@ bool Logging::prepareConsoleColour()
 
 QString Logging::messagePattern(bool coloured, bool withSourceLocation)
 {
-	// One letter per Qt message type. The letters, their order and the colon
-	// after them are what the launcher has always printed, so old and new
-	// logs stay comparable line for line.
+	// One letter per Qt message type; letters, order and the colon are what
+	// the launcher has always printed, so old and new logs compare line for
+	// line.
 	struct Level {
 		const char* condition;
 		QtMsgType type;
@@ -148,21 +140,14 @@ QString Logging::messagePattern(bool coloured, bool withSourceLocation)
 	};
 
 	// Emits an escape sequence only for the coloured variant, so the two
-	// layouts cannot drift apart. All codes come from Strings, which stays
-	// the single place that decides what a warning looks like.
+	// layouts cannot drift apart. All codes come from Strings.
 	const auto ansi = [coloured](const char* code) {
 		return coloured ? QLatin1String(code) : QLatin1String("");
 	};
 
-	// Visual hierarchy, and the reason a coloured line reads at a glance: the
-	// timestamp and the source location are scaffolding and get dimmed, while
-	// the level letter and the category tag are what the eye should land on.
-	// Colouring only the level letter, as this used to, leaves the line
-	// looking flat.
-	//
-	// %{time process} is Qt's seconds-since-process-start, right aligned in
-	// six columns. That is one column wider than the launcher's old
-	// hand-rolled "%5lld.%03lld", so lines shift by a single space.
+	// The timestamp and source location are scaffolding and get dimmed; the
+	// level letter and category tag are what the eye should land on. %{time
+	// process} is seconds since process start, right aligned in six columns.
 	QString pattern = ansi(Strings::logColorFaint()) +
 					  QStringLiteral("%{time process}") +
 					  ansi(Strings::logColorReset()) + QLatin1Char(' ');
@@ -180,8 +165,8 @@ QString Logging::messagePattern(bool coloured, bool withSourceLocation)
 	}
 
 	// Qt reports uncategorised messages as the "default" category and makes
-	// %{if-category} false for them, so a plain qDebug() line comes out
-	// unchanged and only opted-in subsystems gain a [tag]. Measured, probe9.
+	// %{if-category} false for them, so a plain qDebug() line is unchanged and
+	// only opted-in subsystems gain a [tag].
 	pattern += QLatin1Char(' ');
 	pattern += QStringLiteral("%{if-category}");
 	pattern += ansi(Strings::logColorBold());
@@ -190,18 +175,12 @@ QString Logging::messagePattern(bool coloured, bool withSourceLocation)
 	pattern += QStringLiteral(" %{endif}");
 	pattern += QStringLiteral("%{message}");
 
-	// Where the line came from. Qt reduces the compiler's full signature to a
-	// bare function name, which is what makes this worth printing on MSVC at
-	// all - the raw context.function there reads
-	// "void __cdecl Net::Download::startImpl(void)".
-	//
-	// A message only has a source location if the translation unit that
-	// raised it was compiled with QT_MESSAGELOGCONTEXT. launcher/CMakeLists.txt
-	// defines it for every configuration, because Qt itself only defines it
-	// while QT_NO_DEBUG is absent, i.e. in Debug builds - so official builds
-	// would otherwise log no locations at all. Qt's own prebuilt libraries are
-	// a different matter: we cannot recompile them, so their messages have no
-	// location and are rendered without this suffix. Measured, probe9.
+	// Where the line came from. Qt reduces the compiler's signature to a bare
+	// function name (the raw MSVC one reads "void __cdecl
+	// Net::Download::startImpl(void)"). A location exists only if the
+	// translation unit was compiled with QT_MESSAGELOGCONTEXT (see
+	// launcher/CMakeLists.txt); Qt's prebuilt libraries have none and get no
+	// suffix.
 	if (withSourceLocation) {
 		pattern += QLatin1Char(' ');
 		pattern += ansi(Strings::logColorFaint());

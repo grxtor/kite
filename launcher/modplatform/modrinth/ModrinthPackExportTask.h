@@ -33,36 +33,18 @@
 
 #include "MMCZip.h"
 #include "QObjectPtr.h"
-/* Included rather than forward declared: QPointer<NetJob> below wants the
- * complete type, and DependencyResolver - which holds the same list of
- * in-flight jobs - settled the same way. */
 #include "net/NetJob.h"
 #include "tasks/Task.h"
 
 class MinecraftInstance;
 
-/*
- * Writing an instance out as a Modrinth pack (`.mrpack`).
- *
- * An mrpack is a manifest plus an `overrides/` folder: every file the
- * manifest can name by URL is *not* in the archive, and gets downloaded
- * on install; everything else is carried along. So the interesting part
- * of this task is deciding which files can be named.
- *
- * That question is answered from the instance's own sidecar index
- * (`mods/.index/*.pw.toml`, see ModMetadataIndex) rather than by asking
- * the platform about every file: the launcher recorded where each
- * managed file came from when it installed it, which is both faster and
- * honest about files it never installed. Files with no usable record are
- * looked up once by hash - that is the only way back for a mod the user
- * dropped in by hand - and whatever is still unresolved after that ships
- * in `overrides/`, which is always correct if larger.
- *
- * Only URLs on the hosts the mrpack format allows are named in the
- * manifest - see ModrinthApi::mrpackHosts() - since those are exactly
- * the ones our own importer will fetch an mrpack's files from; exporting
- * a URL we would refuse to install is worse than shipping the file.
- */
+/* Writes an instance out as a Modrinth pack (`.mrpack`): a manifest plus
+ * `overrides/`. Files the manifest can name by URL are downloaded on
+ * install; the rest are carried. Naming comes from the instance's sidecar
+ * index (ModMetadataIndex); files without a record are looked up once by
+ * hash, and what stays unresolved ships in `overrides/`. Only URLs on the
+ * hosts the format allows (ModrinthApi::mrpackHosts()) are named, as
+ * those are what our importer fetches from. */
 class ModrinthPackExportTask : public Task
 {
 	Q_OBJECT
@@ -85,19 +67,18 @@ class ModrinthPackExportTask : public Task
 	void executeTask() override;
 
   private:
-	/* A file the manifest can name: it exists on a host we trust, and we
-	 * know enough about it to let an installer verify what it got. */
+	/* A file the manifest can name: on a trusted host, with enough known for
+	 * an installer to verify it. */
 	struct ResolvedFile {
 		QString url;
 		QString sha1;
 		QString sha512;
 		qint64 size = 0;
-		/* "client" / "server" / "both" / empty, as the sidecar recorded
-		 * it. Decides the manifest's `env` block. */
+		/* "client" / "server" / "both" / empty, as the sidecar recorded it.
+		 * Decides the manifest's `env` block. */
 		QString side;
 	};
 
-	/* A file we have hashed but cannot name yet. */
 	struct PendingFile {
 		QString path; /* relative to the game directory */
 		QString sha1;
@@ -112,21 +93,18 @@ class ModrinthPackExportTask : public Task
 		QList<PendingFile> pending;
 	};
 
-	/* Runs on a worker thread: walks the game directory, hashes the
-	 * candidate archives and reads their sidecars. Hashing an instance's
-	 * mods is seconds of pure I/O, which is not something to do on the
-	 * thread that draws the progress bar. */
+	/* Runs on a worker thread: walks the game directory, hashes candidate
+	 * archives and reads their sidecars (seconds of I/O). */
 	ScanResult scanFiles() const;
 	void onScanFinished();
 
-	/* One lookup per file we could not resolve locally. Failures are not
-	 * errors: a mod that is not on Modrinth simply travels inside the
-	 * pack. */
+	/* One lookup per file not resolved locally. A failure is not an error:
+	 * the mod travels inside the pack. */
 	void lookUpPendingFiles();
 
-	/* Fold one lookup's answer into m_resolved, when it really named the
-	 * file we asked about. Kept apart from the bookkeeping below because
-	 * an answer that turns out to be useless still counts as answered. */
+	/* Folds one lookup's answer into m_resolved if it named the file asked
+	 * about. Separate from the bookkeeping: a useless answer still counts as
+	 * answered. */
 	void recordLookupResult(const PendingFile& pending,
 							const QByteArray& bytes);
 	void onOneLookupDone();
@@ -157,8 +135,7 @@ class ModrinthPackExportTask : public Task
 	QFuture<ScanResult> m_scanFuture;
 	QFutureWatcher<ScanResult> m_scanWatcher;
 
-	/* Latched by abort(). Read by the scan between files, and by every
-	 * handler that might otherwise report a second verdict after the
-	 * aborted one. */
+	/* Latched by abort(); read by the scan between files and by handlers
+	 * that could report a second verdict. */
 	std::atomic<bool> m_aborted{false};
 };

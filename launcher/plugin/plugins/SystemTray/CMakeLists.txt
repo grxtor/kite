@@ -1,8 +1,5 @@
-# Kite standalone plugin build bootstrap.
-# When this plugin is built from Kite's main tree, the parent project
-# already provides Qt, Kite::SDK, output directories, and signing helpers.
-# When this directory is configured as its own repository, provide those
-# pieces here so the plugin can be built with only an installed Kite SDK.
+# Standalone build bootstrap: when this directory is its own project, provide what the Kite tree
+# normally gives a plugin (Qt, Kite::SDK, output directories, signing helpers).
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     cmake_minimum_required(VERSION 3.21)
     project(SystemTray LANGUAGES CXX)
@@ -25,14 +22,9 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
         "Install directory for plugin data files")
 endif()
 
-# SystemTray — Kite plugin (.mmco)
-#
-# Adds a QSystemTrayIcon for Kite with a right-click menu (Show / Hide /
-# Quit / quick-launch instances) and an optional "minimize to tray" close
-# filter on the main window.
-#
-# All behaviour goes through the MMCO S19/S20 API; this plugin does NOT
-# touch core widgets directly.
+# SystemTray: Kite plugin (.mmco). Adds a QSystemTrayIcon with a right-click menu (Show / Hide /
+# Quit / quick-launch instances) and an optional "minimize to tray" close filter, entirely through
+# the MMCO S19/S20 API.
 
 set(SYSTEMTRAY_SOURCES
     SystemTrayPlugin.cpp

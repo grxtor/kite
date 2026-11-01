@@ -6,19 +6,15 @@ import QtQuick
 
 /*
  * A group of instance settings that follow the launcher-wide ones until the
- * instance asks for its own. The first row is that choice; the rows the
- * caller adds below show the value in effect either way and should be
- * `enabled: group.overriding`, so they only become editable once the
- * instance overrides them. Turning the override off drops the instance's
- * values, so it follows the launcher again -- the classic page did the same
- * on save.
+ * instance asks for its own. The first row is that choice; rows added below
+ * should be `enabled: group.overriding`. Turning the override off drops the
+ * instance's values.
  */
 SettingsGroup {
     id: root
 
     property var source
     property string gateKey
-    // The keys this group overrides, reset when the override is turned off.
     property var keys: []
     property string gateLabel: qsTr("Use custom settings for this instance")
     readonly property bool overriding: gate.checked

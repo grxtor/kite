@@ -8,30 +8,12 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One instance in the library's list view: InstanceCard laid out as a row,
- * for a library that would rather scan names than browse icons. Same roles
- * and signals as InstanceCard (it is bound to the same per-group model), so
- * the two delegates are interchangeable from InstanceSection's point of
- * view -- and the same grammar: the icon on the calm neutral square
- * (or the pack's own logo across it), the same surface, hover lift,
- * selected state (the hover look kept on), and Play fading in on hover.
- *
- * The trailing columns drop out at narrow widths rather than truncating into
- * nonsense; the name always keeps the room it needs to stay readable.
- *
- * While a launch runs it takes Play's place, as on the card and the play
- * bar: a bar where Play sits, the stage ("Downloading assets") in the
- * version column and how far it is in the last-played one, and the
- * running dot in the warning colour until the game is actually up.
+ * One instance in the library's list view: InstanceCard as a row, with the same
+ * roles and signals so InstanceSection can use either delegate. Trailing
+ * columns drop out at narrow widths; the name keeps the room it needs.
  */
 Item {
     id: root
-
-    // The pulse stops with the window, an off-screen page and "Reduce
-    // motion" (see RecentItem for why this is repeated per file).
-    readonly property bool motionEnabled: root.visible
-                                          && Qt.application.state === Qt.ApplicationActive
-                                          && !SettingsStore.bool("UiReduceMotion")
 
     required property string instanceId
     required property string name
@@ -45,34 +27,23 @@ Item {
     required property color iconTint
     required property string launchStatus
     required property real launchProgress
-    // A platform pack's own logo (InstanceList's packArt role), shown across
-    // the icon square as on the grid card; "" for every other instance.
+    // A platform pack's logo (InstanceList's packArt role) across the icon square; "" otherwise.
     property string packArt: ""
 
     property bool selected: false
-    property bool forceHovered: false
 
     signal clicked()
-    signal doubleClicked()
+    signal openRequested()
     signal playRequested()
     signal stopRequested()
     // @p anchor: the ⋯ button when that asked, so the menu opens under it;
     // null for a right-click or the Menu key, which open at the pointer.
     signal menuRequested(Item anchor)
 
-    readonly property bool hovered: forceHovered || hoverHandler.hovered
+    readonly property bool hovered: hoverHandler.hovered
     readonly property bool launching: launchStatus.length > 0
-    readonly property bool showsPackArt: root.packArt.length > 0 && packLogo.status === Image.Ready
-    // The icon square, and the share of it the icon fills -- the grid
-    // card's own proportions, smaller: a 48px square.
     readonly property int squareSize: Theme.control.heightLg
-    readonly property real iconShare: 0.84
-    readonly property int iconSize: Math.round(squareSize * iconShare)
-    // Its own icon, or the built-in one it was given (Icons.displayKey).
-    readonly property string drawnKey: Icons.displayKey(root.iconKey, root.instanceId)
-    readonly property bool iconFills: Icons.fillsTile(root.drawnKey)
     readonly property int runningDotSize: 9
-    readonly property string iconSource: Icons.instanceIcon(root.drawnKey)
     readonly property int versionColumnWidth: 168
     readonly property int lastPlayedColumnWidth: 104
     readonly property int playTimeColumnWidth: 84
@@ -80,48 +51,34 @@ Item {
     readonly property bool showStatsColumns: width > 660
 
     implicitWidth: 400
-    // About 72px, between Home's compact rows and its cards. The square's
-    // inset is also what keeps the logo's corner matte inside the row.
+    // The square's inset keeps the logo's corner matte inside the row.
     implicitHeight: squareSize + Theme.space.md * 2
 
     activeFocusOnTab: true
-    Keys.onReturnPressed: root.playRequested()
+    Keys.onReturnPressed: root.openRequested()
     Keys.onSpacePressed: root.clicked()
     Keys.onMenuPressed: root.menuRequested(null)
 
     Accessible.role: Accessible.ListItem
+    Accessible.selectable: true
+    Accessible.selected: root.selected
     Accessible.name: root.name
-    Accessible.description: Format.versionLine(root.loader, root.gameVersion)
+    Accessible.description: [root.launching ? root.launchStatus : root.isRunning ? qsTr("Running") : "",
+                             Format.versionLine(root.loader, root.gameVersion)]
+                            .filter((part) => part.length > 0).join(", ")
 
     HoverHandler { id: hoverHandler }
 
-    Rectangle {
+    InstanceSurface {
         id: surface
         anchors.fill: parent
-        radius: Theme.radius.lg
-        // The grid card's hover: one step lighter and a small shadow.
-        color: root.hovered || root.selected ? Theme.palette.surfaceHover : Theme.palette.surface
-
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-
-        Shadow {
-            radius: surface.radius
-            level: Theme.elevation.sm
-            opacity: root.hovered ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-        }
-
-        TapHandler {
-            acceptedButtons: Qt.LeftButton
-            gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: { root.forceActiveFocus(); root.clicked() }
-            onDoubleTapped: root.playRequested()
-        }
-        TapHandler {
-            acceptedButtons: Qt.RightButton
-            gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: { root.forceActiveFocus(); root.clicked(); root.menuRequested(null) }
-        }
+        hovered: root.hovered
+        selected: root.selected
+        focused: root.activeFocus
+        onClicked: { root.forceActiveFocus(); root.clicked() }
+        onDoubleClicked: root.openRequested()
+        onTripleClicked: if (root.canLaunch && !root.isRunning) root.playRequested()
+        onContextRequested: { root.forceActiveFocus(); root.clicked(); root.menuRequested(null) }
 
         RowLayout {
             anchors.fill: parent
@@ -129,117 +86,83 @@ Item {
             anchors.rightMargin: Theme.space.md
             spacing: Theme.space.lg
 
-            // The instance's tile, raised while the row is hovered, as the
-            // grid card's is.
             InstanceTile {
                 Layout.preferredWidth: root.squareSize
                 Layout.preferredHeight: root.squareSize
                 radius: Theme.radius.md
-                matte: root.showsPackArt || root.iconFills ? surface.color : "transparent"
+                matte: art.showsPackArt || art.iconFills ? surface.color : "transparent"
                 lifted: root.hovered
 
-                Image {
-                    anchors.centerIn: parent
-                    visible: !root.showsPackArt
-                    width: root.iconFills ? parent.width : root.iconSize
-                    height: width
-                    source: root.iconSource
-                    sourceSize: Qt.size(width, height)
-                    fillMode: Image.PreserveAspectFit
-                    // Rendered artwork: filtered and mipmapped, so any
-                    // scaling the scene graph does stays clean.
-                    smooth: true
-                    mipmap: true
-                }
-                Image {
-                    id: packLogo
-                    anchors.fill: parent
-                    visible: root.showsPackArt
-                    source: root.packArt
-                    sourceSize: Qt.size(width * 2, height * 2)
-                    fillMode: Image.PreserveAspectCrop
-                    smooth: true
-                    mipmap: true
-                    asynchronous: true
-                }
-
-                // Pulsing while running, same treatment as the sidebar's
-                // Recent list -- one running-instance language everywhere.
-                // Amber while the launch is still starting the game. Over
-                // the logo's corner matte, which it overlaps.
-                Rectangle {
-                    z: 2
-                    visible: root.isRunning || root.launching
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    anchors.margins: -Theme.space.xxs
-                    width: root.runningDotSize
-                    height: width
-                    radius: width / 2
-                    color: root.launching ? Theme.palette.warning : Theme.palette.success
-                    border.width: 2
-                    border.color: surface.color
-
-                    SequentialAnimation on opacity {
-                        running: (root.isRunning || root.launching) && root.motionEnabled
-                        loops: Animation.Infinite
-                        NumberAnimation { from: 1.0; to: 0.45; duration: 900; easing.type: Easing.InOutSine }
-                        NumberAnimation { from: 0.45; to: 1.0; duration: 900; easing.type: Easing.InOutSine }
-                    }
+                InstanceArt {
+                    id: art
+                    instanceId: root.instanceId
+                    iconKey: root.iconKey
+                    packArt: root.packArt
                 }
             }
 
-            Text {
-                id: nameText
+            RowLayout {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
-                text: root.name
-                elide: Text.ElideRight
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.title.pixelSize
-                font.weight: Theme.type.title.weight
+                spacing: Theme.space.sm
 
-                HoverHandler { id: nameHover; enabled: nameText.truncated }
-                ToolTip.visible: nameText.truncated && nameHover.hovered
-                ToolTip.delay: 500
-                ToolTip.text: root.name
+                // Pulses while running, amber while the launch is still starting the game.
+                RunningDot {
+                    visible: root.isRunning || root.launching
+                    Layout.preferredWidth: size
+                    Layout.preferredHeight: size
+                    Layout.alignment: Qt.AlignVCenter
+                    size: root.runningDotSize
+                    launching: root.launching
+                    pulsing: true
+                }
+
+                Copy {
+                    id: nameText
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    text: root.name
+                    elide: Text.ElideRight
+                    role: "title"
+                    font.family: Theme.font.family
+
+                    HoverHandler { id: nameHover; enabled: nameText.truncated }
+                    ToolTip.visible: nameText.truncated && nameHover.hovered
+                    ToolTip.delay: 500
+                    ToolTip.text: root.name
+                }
             }
 
-            Text {
+            Copy {
                 visible: root.showVersionColumn
                 Layout.preferredWidth: root.versionColumnWidth
                 Layout.minimumWidth: 0
                 text: root.launching ? root.launchStatus : Format.versionLine(root.loader, root.gameVersion)
                 elide: Text.ElideRight
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
+                role: "label"
+                tone: "secondary"
             }
 
-            Text {
+            Copy {
                 visible: root.showStatsColumns
                 Layout.preferredWidth: root.lastPlayedColumnWidth
                 horizontalAlignment: Text.AlignRight
                 text: !root.launching ? Format.lastPlayed(root.lastLaunch)
                     : root.launchProgress >= 0 ? qsTr("%1%").arg(Math.round(root.launchProgress * 100)) : ""
                 elide: Text.ElideRight
-                color: root.launching ? Theme.palette.textSecondary : Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-                // Digits of one width, so the number does not jitter.
+                role: "label"
+                tone: root.launching ? "secondary" : "tertiary"
                 font.features: ({ "tnum": 1 })
             }
 
-            Text {
+            Copy {
                 // "Show play time per instance" (Settings > Minecraft).
                 visible: root.showStatsColumns && SettingsStore.bool("ShowGameTime")
                 Layout.preferredWidth: root.playTimeColumnWidth
                 horizontalAlignment: Text.AlignRight
                 text: Format.playTime(root.totalTimePlayed)
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
+                role: "label"
+                tone: "tertiary"
                 font.features: ({ "tnum": 1 })
             }
 
@@ -262,7 +185,6 @@ Item {
                     onClicked: root.menuRequested(moreButton)
                 }
 
-                // Where Play sits, across the whole slot.
                 LaunchProgressBar {
                     visible: root.launching
                     anchors.left: parent.left
@@ -278,7 +200,6 @@ Item {
                     size: Theme.control.height
                     running: root.isRunning
                     enabled: root.isRunning || root.canLaunch
-                    // A plain fade, no overshoot scale-in (design-plan.md §4/§2.4).
                     opacity: !root.launching && (root.hovered || root.isRunning) ? 1 : 0
                     visible: opacity > 0
                     focusPolicy: Qt.NoFocus
@@ -287,28 +208,5 @@ Item {
                 }
             }
         }
-    }
-
-    // The hairline, over everything so the logo's corner matte never
-    // paints across it. Selected keeps the hover look (fill and border),
-    // with no accent ring.
-    Rectangle {
-        anchors.fill: surface
-        radius: surface.radius
-        color: "transparent"
-        border.width: 1
-        border.color: root.selected || root.hovered ? Theme.neutral.borderHover : Theme.palette.border
-        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-    }
-
-    Rectangle {
-        // Keyboard focus ring, outset like InstanceCard's.
-        anchors.fill: surface
-        anchors.margins: -Theme.space.xs
-        radius: surface.radius + Theme.space.xs
-        color: "transparent"
-        border.width: Theme.focus.width
-        border.color: Theme.palette.focusRing
-        visible: root.activeFocus && !root.selected
     }
 }

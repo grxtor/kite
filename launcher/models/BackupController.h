@@ -30,31 +30,19 @@
 class QAbstractListModel;
 
 /*
- * QML-facing instance backups - the widget-free replacement for BackupPage.
- *
- * Every operation that can take a while (create, restore, export, import,
- * delete - BackupManager itself blocks the calling thread for all five, see
- * its class comment) runs on a worker thread behind a TaskWatcher, the same
- * pattern QmlShell::duplicateInstance()/NewInstanceController::importFrom()
- * use for InstanceCopyTask/InstanceImportTask: this page must not freeze the
- * GUI thread zipping or unzipping a multi-gigabyte instance.
- *
- * Created once per InstanceDetails (InstanceDetails::backups()), for every
- * instance type - a backup is just a zip of the instance folder, nothing
- * about it needs the instance to be Minecraft-backed.
+ * QML-facing instance backups. Create, restore, export, import and delete
+ * (BackupManager blocks the calling thread for all five) run on a worker thread
+ * behind a TaskWatcher, so the GUI never freezes zipping a multi-gigabyte
+ * instance. Created once per InstanceDetails, for every instance type.
  */
 class BackupController : public QObject
 {
 	Q_OBJECT
 
-	/// QAbstractListModel of the instance's backups, newest first - roles
-	/// "name" (label, falling back to the file name), "fileName",
-	/// "timestampText" (yyyy-MM-dd HH:mm:ss) and "sizeText" (human size).
+	/// The instance's backups, newest first: roles "name" (label, else file name),
+	/// "fileName", "timestampText", "sizeText".
 	Q_PROPERTY(QObject* model READ model CONSTANT)
-	/// Whether the instance is currently running - the same condition
-	/// restoreBackup() itself refuses on, exposed so the tab can warn
-	/// before the click rather than only after it, mirroring
-	/// WorldDataPacksController::unlocked().
+	/// The condition restoreBackup() refuses on, exposed so the tab can warn before the click.
 	Q_PROPERTY(bool running READ running NOTIFY runningChanged)
 
   public:
@@ -64,19 +52,22 @@ class BackupController : public QObject
 	QObject* model() const;
 	bool running() const;
 
+	/// Whether a create, restore, delete, export or import of this instance is
+	/// still running, even one started from a page that has since been left.
+	Q_INVOKABLE bool jobRunning() const;
+	static bool hasRunningJob(const QString& instanceId);
+	/// Restoring wipes the instance: nothing may start it meanwhile.
+	static bool isRestoring(const QString& instanceId);
+
 	Q_INVOKABLE void refresh();
-	/// Starts a new backup; returns a TaskWatcher.
 	Q_INVOKABLE QObject* createBackup(const QString& label);
-	/// Null if @p row is out of range or the instance is currently
-	/// running - restoring would fight a live process for the same files
-	/// (same guard BackupPage's own restore button applies). See
-	/// `running` above for surfacing that to the user before the click.
+	/// Null if @p row is out of range, the instance is running (restoring would
+	/// fight a live process for the files) or another job is running.
 	Q_INVOKABLE QObject* restoreBackup(int row);
 	Q_INVOKABLE QObject* deleteBackup(int row);
-	/// @p destUrlOrPath: a file:// URL (as a QML FileDialog save-mode
-	/// picker hands out) or a plain local path.
+	/// @p destUrlOrPath: a file:// URL or a local path.
 	Q_INVOKABLE QObject* exportBackup(int row, const QString& destUrlOrPath);
-	/// @p fileUrlOrPath: likewise, from an open-mode FileDialog.
+	/// @p fileUrlOrPath: likewise.
 	Q_INVOKABLE QObject* importBackup(const QString& fileUrlOrPath,
 									 const QString& label);
 

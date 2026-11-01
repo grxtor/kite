@@ -30,9 +30,7 @@ NewsModel::NewsModel(NewsChecker* checker, QObject* parent)
 	}
 	connect(m_checker, &NewsChecker::newsLoaded, this,
 			[this]() { setEntries(m_checker->getNewsEntries()); });
-	// Whatever has already arrived, if the checker finished before this
-	// model existed. (Not isNewsLoaded(): NewsChecker declares it but has
-	// never defined it.)
+	// Whatever arrived before this model existed. (Not isNewsLoaded(): declared but never defined.)
 	const auto entries = m_checker->getNewsEntries();
 	if (!entries.isEmpty()) {
 		setEntries(entries);
@@ -93,7 +91,6 @@ void NewsModel::setEntries(const QList<NewsEntryPtr>& entries)
 	beginResetModel();
 	m_entries.clear();
 	for (const auto& entry : entries) {
-		// An entry without a title has nothing to show in a headline.
 		if (entry && !entry->title.trimmed().isEmpty()) {
 			m_entries.append(entry);
 		}

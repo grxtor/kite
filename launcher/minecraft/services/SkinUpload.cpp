@@ -24,6 +24,7 @@
 #include <QHttpMultiPart>
 
 #include "core/LauncherContext.h"
+#include "minecraft/auth/MinecraftServices.h"
 
 QByteArray getVariant(SkinUpload::Model model)
 {
@@ -46,7 +47,7 @@ SkinUpload::SkinUpload(QObject* parent, QString token, QByteArray skin,
 void SkinUpload::executeTask()
 {
 	QNetworkRequest request(
-		QUrl("https://api.minecraftservices.com/minecraft/profile/skins"));
+		QUrl(MinecraftServices::url("minecraft/profile/skins")));
 	request.setRawHeader("Authorization",
 						 QString("Bearer %1").arg(m_token).toLocal8Bit());
 	QHttpMultiPart* multiPart =

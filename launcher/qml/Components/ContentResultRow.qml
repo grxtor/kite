@@ -8,17 +8,13 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One search result of ContentBrowserView, a row of its results table:
- * logo, "Title by author", one line of description (or the install's
- * progress), and "Installed" once it is. Rows share one card and are split
- * by hairlines; hover and the picked row share one look -- a lifted inset
- * strip, no hairline and no accent: a frame inside the card would be a box
- * in a box. The logo sits on the strip with no tile of its own.
+ * One search result of ContentBrowserView: logo, "Title by author", one line of description (or the install's
+ * progress), and "Installed" once it is. Rows share one card, split by hairlines; hover and the picked row share one
+ * look, a lifted inset strip with no hairline and no accent.
  */
 AbstractButton {
     id: row
 
-    // The ContentBrowserView: selection, downloads, select().
     required property var owner
     required property int index
     required property string title
@@ -34,18 +30,13 @@ AbstractButton {
     readonly property bool checking: owner.isChecking(key)
     readonly property bool justInstalled: !!download && download.succeeded
     readonly property bool failed: !!download && download.failed
-    // The last row draws no hairline under itself: the card's border ends it.
     property bool lastRow: false
 
     readonly property int logoSize: 40
-    // Pixels of the logo image asked for: twice its size, for HiDPI.
     readonly property int logoSourceSize: logoSize * 2
-    // Tall enough that the logo's rounded corners (CornerMatte) stay
-    // inside the row's hover strip.
     readonly property int rowHeight: 64
 
     implicitHeight: rowHeight
-    // Far enough in that the logo's corner matte stays inside the strip.
     leftPadding: Theme.space.lg
     rightPadding: Theme.space.md
     hoverEnabled: true
@@ -53,9 +44,8 @@ AbstractButton {
                                      logoUrl: logoUrl, installed: installed })
 
     background: Item {
-        // Opaque at rest too (the results card's own surface), so the
-        // logo's corner matte can always paint in exactly this colour.
-        Rectangle {
+        // Opaque at rest too, so the logo's corner matte can always paint in exactly this colour.
+        StateFill {
             id: strip
             anchors.fill: parent
             anchors.leftMargin: Theme.space.xs
@@ -63,12 +53,10 @@ AbstractButton {
             anchors.topMargin: Theme.space.xxs
             anchors.bottomMargin: Theme.space.xxs
             radius: Theme.radius.sm
-            // Picked keeps the hover look (InstanceCard's): the lifted fill
-            // and its hairline, no accent. The edge fades in from its own
-            // colour at zero alpha, so it never greys on the way.
-            readonly property bool lifted: row.selected || row.hovered
-            color: lifted ? Theme.palette.surfaceHover : Theme.palette.surface
-            Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
+            // Picked keeps the hover look.
+            card: true
+            hovered: row.hovered
+            active: row.selected
         }
         Rectangle {
             anchors.left: parent.left
@@ -80,7 +68,6 @@ AbstractButton {
             color: Theme.palette.divider
             visible: !row.lastRow
         }
-        // The download's progress along the row's foot.
         LaunchProgressBar {
             anchors.left: parent.left
             anchors.right: parent.right
@@ -110,7 +97,6 @@ AbstractButton {
                 mipmap: true
                 asynchronous: true
             }
-            // Rounded like Discover's logos, in the strip's own colour.
             CornerMatte {
                 cornerRadius: Theme.radius.sm
                 matte: strip.color
@@ -122,43 +108,36 @@ AbstractButton {
             Layout.minimumWidth: 0
             spacing: Theme.space.xxs
 
-            // "Sodium by jellysquid3", the way Modrinth names a result: the
-            // title keeps its room, the author gives way first.
-            // Placed by hand: a layout sizing the title from its own width
-            // looped.
+            // "Sodium by jellysquid3": the title keeps its room, the author gives way first.
+            // Placed by hand: a layout sizing the title from its own width looped.
             Item {
                 Layout.fillWidth: true
                 implicitHeight: titleText.implicitHeight
-                Text {
+                Copy {
                     id: titleText
                     width: Math.min(implicitWidth, parent.width)
                     text: row.title
                     elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
-                    font.weight: Font.DemiBold
+                    role: "bodyStrong"
                 }
-                Text {
+                Copy {
                     x: titleText.width + Theme.space.xs
                     width: Math.max(0, parent.width - x)
                     anchors.baseline: titleText.baseline
                     visible: row.author.length > 0 && width > 0
                     text: qsTr("by %1").arg(row.author)
                     elide: Text.ElideRight
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "tertiary"
                 }
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: row.downloading ? (row.download.status || qsTr("Installing…"))
                     : row.checking ? qsTr("Checking what it needs…") : row.description
                 elide: Text.ElideRight
-                color: row.downloading || row.checking ? Theme.palette.textSecondary : Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                role: "caption"
+                tone: row.downloading || row.checking ? "secondary" : "tertiary"
             }
         }
 

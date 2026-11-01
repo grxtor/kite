@@ -126,9 +126,8 @@ namespace
 
 int AssetMatcher::qtMajorFromName(const QString& lowerName)
 {
-	// The token is written "-qt6", never "qt6" on its own, so the leading
-	// separator is part of the pattern: without it, a hypothetical
-	// "Kite-LGBTQ6..." would report a Qt version.
+	// The token is "-qt6", never a bare "qt6": the leading separator keeps e.g. "Kite-LGBTQ6" from
+	// reporting a Qt version.
 	static const QRegularExpression qtToken(QStringLiteral("-qt(\\d+)"));
 
 	const QRegularExpressionMatch match = qtToken.match(lowerName);
@@ -142,8 +141,8 @@ AssetMatcher::consider(const GitHubReleaseAsset& asset,
 	Decision decision;
 
 	if (installation.buildArtifact.trimmed().isEmpty()) {
-		// A local build. It has no published counterpart, and guessing one
-		// would mean overwriting a developer's tree with a release.
+		// A local build has no published counterpart; guessing one would overwrite a developer's
+		// tree.
 		decision.reason =
 			QStringLiteral("this build has no artifact name, so no release "
 						   "file can belong to it");
@@ -159,10 +158,8 @@ AssetMatcher::consider(const GitHubReleaseAsset& asset,
 		return decision;
 	}
 
-	// AppImage-ness has to match exactly, in both directions. An AppImage
-	// install cannot be updated by unpacking a tarball over it (there is
-	// nothing to unpack over -- it is one mounted file), and a normal install
-	// has no use for an AppImage.
+	// AppImage-ness must match in both directions: an AppImage install is one mounted file with
+	// nothing to unpack a tarball over, and a normal install has no use for an AppImage.
 	const bool assetIsAppImage = name.endsWith(QLatin1String(".appimage"));
 	if (assetIsAppImage != installation.appImage) {
 		decision.reason = assetIsAppImage
@@ -207,9 +204,8 @@ AssetMatcher::consider(const GitHubReleaseAsset& asset,
 		return decision;
 	}
 
-	// "Legacy" is a separate product line for older Windows and macOS. It
-	// shares every other word with the ordinary build, so without this an
-	// ordinary install would quietly migrate onto it.
+	// "Legacy" is a separate product line sharing every other word with the ordinary build; without
+	// this an ordinary install would migrate onto it.
 	if (!identity.legacy && name.contains(QLatin1String("legacy"))) {
 		decision.reason = QStringLiteral("a legacy build, this is not");
 		return decision;

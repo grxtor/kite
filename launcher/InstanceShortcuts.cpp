@@ -43,24 +43,20 @@ namespace InstanceShortcuts
 			return result;
 		}
 
-		/* Renders the instance's icon into its own folder in the one
-		 * format this platform's shell will display, and hands back the
-		 * path, or an empty string with @p error set. The launcher itself
-		 * only ever holds the icon as a theme key, so without this step a
-		 * shortcut has nothing to point at.
-		 *
-		 * The file name is fixed per instance rather than per shortcut:
-		 * several shortcuts to the same instance should share one image,
-		 * and deleting the instance takes the folder with it. */
+		/* Renders the instance's icon into its own folder in the one format
+		 * this platform's shell displays, and returns the path, or an empty
+		 * string with @p error set. The file name is fixed per instance so
+		 * several shortcuts share one image, and deleting the instance takes
+		 * it along. */
 		QString renderIcon(const Request& request, const char* format,
 						   const QString& fileName, int size, QString* error)
 		{
 			const QString key = request.iconKey.isEmpty()
 									? request.instance->iconKey()
 									: request.iconKey;
-			/* getIcon() already falls back to the default instance icon
-			 * for a key that no longer resolves, so this is only null
-			 * without a running launcher or with an empty icon list. */
+			/* getIcon() falls back to the default icon for an unresolved key,
+			 * so this is only null without a running launcher or with an empty
+			 * icon list. */
 			const QIcon icon =
 				LAUNCHER ? LAUNCHER->icons()->getIcon(key) : QIcon();
 
@@ -69,8 +65,8 @@ namespace InstanceShortcuts
 			const QString message =
 				QObject::tr("Could not write the shortcut's icon to %1.")
 					.arg(QDir::toNativeSeparators(path));
-			/* A null icon leaves the file alone: it may be the image an
-			 * earlier shortcut to this instance still points at. */
+			/* A null icon leaves the file alone: an earlier shortcut to this
+			 * instance may still point at it. */
 			if (icon.isNull()) {
 				*error = message;
 				return QString();
@@ -95,11 +91,10 @@ namespace InstanceShortcuts
 					return QString();
 				}
 #if defined(Q_OS_MACOS) || defined(Q_OS_WIN)
-				/* Applications is a flat, shared list on these two, so
-				 * keep our instances together instead of scattering them
-				 * through it. On the free desktops the folder is a menu
-				 * built from .desktop files and a subfolder would simply
-				 * not be read. */
+				/* Applications is a flat, shared list on these two, so keep
+				 * our instances together. On the free desktops it is a menu
+				 * built from .desktop files, and a subfolder would not be
+				 * read. */
 				return FS::PathCombine(applications,
 									   BuildConfig.KITE_DISPLAYNAME +
 										   " Instances");
@@ -150,10 +145,9 @@ namespace InstanceShortcuts
 		QStringList args;
 
 #if defined(Q_OS_MACOS)
-		/* A launcher still sitting in the read-only image it was opened
-		 * from is unpacked somewhere under /private/var, and that path
-		 * stops existing the moment the image is ejected. A shortcut to
-		 * it would be dead on arrival. */
+		/* A launcher still in the read-only image it was opened from is
+		 * unpacked under /private/var, which vanishes when the image is
+		 * ejected; a shortcut to it would be dead. */
 		if (appPath.startsWith(QLatin1String("/private/var/"))) {
 			return failure(
 				QObject::tr("Kite is running from the folder it was "
@@ -167,8 +161,7 @@ namespace InstanceShortcuts
 
 #elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD) || defined(Q_OS_OPENBSD)
 		/* An AppImage is mounted at a path that changes every run, so the
-		 * shortcut has to name the image itself. The runtime tells us
-		 * where that is. */
+		 * shortcut names the image itself, which the runtime tells us. */
 		if (appPath.startsWith(QLatin1String("/tmp/.mount_"))) {
 			appPath = qEnvironmentVariable("APPIMAGE");
 			if (appPath.isEmpty()) {
@@ -187,8 +180,8 @@ namespace InstanceShortcuts
 
 		if (DesktopServices::isFlatpak()) {
 			/* Inside the sandbox our own path means nothing to the host
-			 * session that will run the shortcut; it has to go through
-			 * flatpak run instead. */
+			 * session that runs the shortcut; it has to go through flatpak
+			 * run. */
 			QString appId = qEnvironmentVariable("FLATPAK_ID");
 			if (appId.isEmpty()) {
 				appId = QStringLiteral("io.github.grxtor.Kite");
@@ -198,9 +191,7 @@ namespace InstanceShortcuts
 		}
 
 #elif defined(Q_OS_WIN)
-		/* Writing the .ico is reported to change the launcher window's
-		 * own icon; the widget caller puts it back (see ui/ShortcutUtils),
-		 * since only it knows which window that is. */
+		/* A Windows shortcut takes its icon from an .ico file. */
 		iconPath = renderIcon(request, "ICO", QStringLiteral("icon.ico"), 64,
 							  &error);
 
@@ -210,12 +201,11 @@ namespace InstanceShortcuts
 #endif
 
 		if (iconPath.isEmpty()) {
-			// renderIcon() has already said what went wrong.
 			return failure(error);
 		}
 
-		/* --launch takes the instance id, which is the folder name and
-		 * survives renaming the instance; the display name does not. */
+		/* --launch takes the instance id, the folder name, which survives
+		 * renaming the instance. */
 		args << QStringLiteral("--launch") << request.instance->id();
 		args << request.extraArgs;
 
@@ -227,9 +217,8 @@ namespace InstanceShortcuts
 							   .arg(request.targetString));
 		}
 
-		/* Hand the path to the instance so that deleting the instance
-		 * takes the shortcut with it instead of leaving a file that
-		 * launches nothing. */
+		/* Hand the path to the instance so deleting the instance takes the
+		 * shortcut with it. */
 		request.instance->registerShortcut(
 			{request.name, written, request.target});
 

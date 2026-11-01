@@ -85,10 +85,8 @@ std::unique_ptr<nbt::tag_compound> readFirstServer(const QString& path)
 }
 } // namespace
 
-/* Needs neither a BaseInstance nor a LauncherContext - only a directory to
- * read/write servers.dat under, same reason OtherLogsModel_test.cpp drives
- * that model directly against a temp directory instead of a real
- * instance. */
+/* Needs neither a BaseInstance nor a LauncherContext, only a directory to
+ * read/write servers.dat under. */
 class ServersListModelTest : public QObject
 {
 	Q_OBJECT
@@ -103,6 +101,8 @@ class ServersListModelTest : public QObject
 	void acceptsPrefixedFavicon();
 	void ignoresFaviconThatIsNotPng();
 	void editsKeepTagsItDoesNotEdit();
+	void cleanModelNeverRewritesFile();
+	void unlockingReloadsWhatTheGameWrote();
 };
 
 void ServersListModelTest::addEditMoveRemove()
@@ -166,8 +166,6 @@ void ServersListModelTest::persistsAcrossReload()
 		model.setAddress(0, QStringLiteral("persisted.example.com:1234"));
 		model.setAcceptTextures(0, 2);
 		model.stopWatching();
-		// stopWatching() flushes the pending save synchronously - the
-		// destructor below would too, but this checks that specifically.
 	}
 
 	QVERIFY(QFile::exists(dir.filePath(QStringLiteral("servers.dat"))));
@@ -231,10 +229,9 @@ void ServersListModelTest::watchesDirectoryOnlyWhileLocked()
 
 	QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
 
-	// Unlocked and observed: the user may be mid-edit, so a change in the
-	// directory (here a stray file, standing in for the game or another
-	// launcher touching it) must not reload the list underneath them. The
-	// widget's ServersModel watched only while locked for this reason.
+	// Unlocked and observed: a change in the directory (a stray file standing in
+	// for the game or another launcher) must not reload the list under a user who
+	// may be mid-edit.
 	{
 		QFile stray(dir.filePath(QStringLiteral("stray-1.txt")));
 		QVERIFY(stray.open(QIODevice::WriteOnly));
@@ -246,9 +243,8 @@ void ServersListModelTest::watchesDirectoryOnlyWhileLocked()
 	QCOMPARE(model.data(model.index(0), ServersListModel::NameRole).toString(),
 			QStringLiteral("Unsaved edit"));
 
-	// Locking (the game started) flushes the edit to disk and starts the
-	// watch: from here an external change is picked up, as a positive
-	// control that the watch really works in this environment.
+	// Locking (the game started) flushes the edit and starts the watch; from here
+	// an external change is picked up, as a positive control.
 	model.setLocked(true);
 	{
 		QFile stray(dir.filePath(QStringLiteral("stray-2.txt")));
@@ -262,8 +258,7 @@ void ServersListModelTest::watchesDirectoryOnlyWhileLocked()
 
 	// Unlocking (the game closed) drops the watch again.
 	model.setLocked(false);
-	// Let anything the engine had already queued from the locked phase
-	// arrive before taking the baseline.
+	// Let anything queued from the locked phase arrive before taking the baseline.
 	QTest::qWait(300);
 	const int resetsBefore = resetSpy.count();
 	{
@@ -370,6 +365,61 @@ void ServersListModelTest::editsKeepTagsItDoesNotEdit()
 	QVERIFY(saved->has_key("hidden", nbt::tag_type::Byte));
 	// "Ask" is the absence of the tag, as the game writes it.
 	QVERIFY(!saved->has_key("acceptTextures"));
+}
+
+void ServersListModelTest::cleanModelNeverRewritesFile()
+{
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+	const QString path = dir.filePath(QStringLiteral("servers.dat"));
+	writeServersDat(path, "first");
+
+	ServersListModel model(dir.path());
+	model.startWatching();
+	QCOMPARE(model.rowCount(), 1);
+
+	// The game rewrites the file while this model holds no edit: closing the
+	// page must not put the stale list back.
+	writeServersDat(path, "second");
+	model.stopWatching();
+	auto server = readFirstServer(path);
+	QVERIFY(server);
+	QCOMPARE(std::string((*server)["icon"]), std::string("second"));
+
+	// Unlocking after a game session picks up what the game wrote.
+	model.startWatching();
+	model.setLocked(true);
+	writeServersDat(path, "third");
+	model.setLocked(false);
+	QCOMPARE(model.rowCount(), 1);
+	model.stopWatching();
+	server = readFirstServer(path);
+	QVERIFY(server);
+	QCOMPARE(std::string((*server)["icon"]), std::string("third"));
+}
+
+void ServersListModelTest::unlockingReloadsWhatTheGameWrote()
+{
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+	const QString path = dir.filePath("servers.dat");
+	writeServersDat(path, "");
+
+	ServersListModel model(dir.path());
+	model.startWatching();
+	QVERIFY(model.data(model.index(0), ServersListModel::IconUrlRole)
+				.toString()
+				.isEmpty());
+
+	model.setLocked(true);
+	writeServersDat(path, pngBytes().toBase64().toStdString());
+	QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
+	model.setLocked(false);
+
+	QCOMPARE(resetSpy.count(), 1);
+	QVERIFY(model.data(model.index(0), ServersListModel::IconUrlRole)
+				.toString()
+				.startsWith(QStringLiteral("data:image/png;base64,")));
 }
 
 QTEST_GUILESS_MAIN(ServersListModelTest)

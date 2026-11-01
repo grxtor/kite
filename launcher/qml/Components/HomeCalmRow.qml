@@ -6,18 +6,13 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One "Continue playing" row of the Sade look: no box, no fill -- a 64 px
- * line on the page with a hairline under it. A 38 px tile (HomeRowTile),
- * the name and what it runs, how long
- * it has been played, a quiet Play that takes the accent while the row is
- * hovered, and ⋯. The hovered row gets a soft fill that bleeds `bleed`
- * past the column on both sides, and loses its hairline. Clicking opens the
- * instance page; a right-click or ⋯ its menu.
+ * One "Continue playing" row of the Sade look: no box, a 64 px line on the page with a hairline under it. A 38 px
+ * tile (HomeRowTile), name and what it runs, play time, a quiet Play that takes the accent while hovered, and ⋯.
+ * The hovered row gets a soft fill that bleeds `bleed` past the column and loses its hairline.
  */
 HomeRowBase {
     id: root
 
-    // The last row has no hairline under it.
     property bool showDivider: true
     readonly property int bleed: Theme.space.md
     readonly property int tileSize: 38
@@ -30,13 +25,13 @@ HomeRowBase {
     implicitHeight: Theme.control.heightLg + Theme.space.lg
     cornerRadius: Theme.radius.md
 
-    Rectangle {
+    StateFill {
         anchors.fill: parent
         anchors.leftMargin: -root.bleed
         anchors.rightMargin: -root.bleed
         radius: Theme.radius.md
-        color: root.hovered ? Theme.palette.hoverOverlay : "transparent"
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        hovered: root.hovered
+        active: root.selected
     }
     Rectangle {
         anchors.left: parent.left
@@ -46,7 +41,7 @@ HomeRowBase {
         anchors.rightMargin: -root.bleed
         height: 1
         color: Theme.palette.divider
-        visible: root.showDivider && !root.hovered
+        visible: root.showDivider && !root.hovered && !root.selected
     }
 
     RowLayout {
@@ -66,14 +61,11 @@ HomeRowBase {
             Layout.minimumWidth: 0
             spacing: Theme.space.xxs
 
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: root.row.name
+                role: "bodyStrong"
                 elide: Text.ElideRight
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.bodyStrong.pixelSize
-                font.weight: Theme.type.bodyStrong.weight
             }
             HomeRowMeta {
                 Layout.fillWidth: true
@@ -94,15 +86,14 @@ HomeRowBase {
                 MeshIcon {
                     anchors.verticalCenter: parent.verticalCenter
                     iconName: "hourglass"
-                    size: Theme.icon.sm - 2
+                    size: Theme.icon.xs
                     color: Theme.palette.textTertiary
                 }
-                Text {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.playTimeText
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
+                    role: "caption"
+                    tone: "tertiary"
                     font.features: ({ "tnum": 1 })
                 }
             }

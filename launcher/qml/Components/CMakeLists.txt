@@ -2,21 +2,13 @@
 # SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 
-######## Launcher-specific QML building blocks (Kite.Components) ########
-
-# Mirrors launcher/qml/CMakeLists.txt: RESOURCE_PREFIX is spelled out by hand
-# rather than left to qt_policy(QTP0001) (Qt 6.5+), since the floor here is
-# 6.4, and this file lives beside the .qml it lists so the URI (Kite.Components)
-# and the on-disk path agree.
-#
-# Not added to the parent CMakeLists here -- the integrator wires this
-# library into the Kite_qml target once Kite.Theme exists to link against.
+# Kite.Components, the launcher-specific QML building blocks. RESOURCE_PREFIX
+# is spelled out because qt_policy(QTP0001) needs Qt 6.5.
 qt_add_library(Kite_qml_components STATIC)
 
-# Same reasoning as Theme/CMakeLists.txt's Theme.qml: has to run before
-# qt_add_qml_module, or Icons.qml registers as an ordinary re-instantiable
-# type and every "import Kite.Components" gets its own private instance
-# instead of the one Icons.url() is meant to be called on.
+# Must run before qt_add_qml_module, or these register as ordinary types and
+# every "import Kite.Components" gets its own private instance (see
+# Theme/CMakeLists.txt).
 set_source_files_properties(Icons.qml Format.qml SettingsStore.qml JavaStore.qml LauncherStore.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt_add_qml_module(Kite_qml_components
@@ -35,9 +27,7 @@ qt_add_qml_module(Kite_qml_components
         InstanceCard.qml
         InstanceListRow.qml
         InstanceSection.qml
-        LibraryPage.qml
         LinkButton.qml
-        ContinueCard.qml
         CornerMatte.qml
         PlayButton.qml
         LaunchOptionsMenu.qml
@@ -73,9 +63,6 @@ qt_add_qml_module(Kite_qml_components
         FontFamilyRow.qml
         CatPicture.qml
         CatPackPicker.qml
-        ConsoleFontRow.qml
-        ConsolePreview.qml
-        TotalPlayTime.qml
         NewComponentDialog.qml
         InstancePage.qml
         ContentTab.qml
@@ -124,6 +111,31 @@ qt_add_qml_module(Kite_qml_components
         TabListRow.qml
         RowThumb.qml
         ConfirmDialog.qml
+        AppDialog.qml
+        Copy.qml
+        FocusFrame.qml
+        StateFill.qml
+        BoxSurface.qml
+        AccountStateBadge.qml
+        CompactButton.qml
+        FiltersButton.qml
+        FriendJoinButton.qml
+        FriendsRetry.qml
+        FriendsState.qml
+        GroupHeading.qml
+        HomeWorldList.qml
+        InstanceArt.qml
+        InstanceSurface.qml
+        TapSequence.qml
+        JavaInstallList.qml
+        JavaInstallRow.qml
+        LogMatches.qml
+        MenuDivider.qml
+        MenuEntry.qml
+        PickerGrid.qml
+        RunningDot.qml
+        SubmenuEntry.qml
+        UploadLinkToast.qml
         DialogHeader.qml
         AccountsPage.qml
         AccountRow.qml
@@ -165,22 +177,18 @@ qt_add_qml_module(Kite_qml_components
         MemorySetting.qml
         MemoryField.qml
         MemoryStartSetting.qml
-        SegmentedControl.qml
         EmptyState.qml
         SidebarNav.qml
         SidebarEdgeHandle.qml
         NavItem.qml
         NavSelectionIndicator.qml
-        AccountChip.qml
         ProfileButton.qml
         ProfileMenu.qml
         PlayDock.qml
         TopBar.qml
-        PageToolbar.qml
         PageSlot.qml
         SectionHeader.qml
         StatusBadge.qml
-        Gallery.qml
         MeshIcon.qml
         Icons.qml
         HomePage.qml
@@ -225,7 +233,6 @@ qt_add_qml_module(Kite_qml_components
         FriendsListScroll.qml
         FriendsRequestsTab.qml
         FriendsBlockedTab.qml
-        SoftIconCircle.qml
         PanelNote.qml
         CopyName.qml
         HomeEmptyState.qml
@@ -266,6 +273,7 @@ qt_add_qml_module(Kite_qml_components
         RemoteRichText.qml
         PlayerHead.qml
         ViewModeToggle.qml
+        WindowDragBand.qml
         ChipGroup.qml
         InstanceNotesTab.qml
         LegacyUpgradeNotice.qml
@@ -328,10 +336,8 @@ qt_add_qml_module(Kite_qml_components
         Kite.Theme
 )
 
-# MeshIcon.qml reaches into QtQuick.Controls.impl (IconImage) directly, same
-# as the Style module's use of the same import (see Style/CMakeLists.txt) --
-# Quick + QuickControls2 already resolve it at runtime, so no separate
-# Qt::QuickControls2Impl link is needed.
+# MeshIcon.qml imports QtQuick.Controls.impl (IconImage) directly; Quick and
+# QuickControls2 resolve it at runtime, so no Qt::QuickControls2Impl link.
 target_link_libraries(Kite_qml_components PUBLIC
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::QuickControls2

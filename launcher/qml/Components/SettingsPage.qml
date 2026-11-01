@@ -3,26 +3,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Launcher settings. Every change is saved the moment it is made -- there
- * is no OK/Cancel, as in any current desktop app's preferences.
- *
- * This file is only the frame: the section list on the left, and a stack
- * with one Settings*Section.qml file per entry of `sections` below, in the
- * same order. Each section's rows live in its own file. A section file can
- * keep itself out of the list by declaring `shown: false` -- the plugin
- * section while no plugin has added a setting, and the sections that are
- * still empty (About, Updates, Launcher logs, Installed plugins) until they
- * are filled in. Main.qml's navigate("settings/<id>") opens one by id.
+ * Launcher settings; every change is saved at once. The section list is on
+ * the left, with one Settings*Section.qml per entry of `sections`, in the same
+ * order. A section file hides itself from the list with `shown: false`.
+ * Main.qml's navigate("settings/<id>") opens one by id.
  */
 Item {
     id: root
 
     property int systemMemoryMiB: 8192
-    // PluginSurfaceModel for the global settings anchor, or null.
     property var pluginSurfaces: null
     // TranslationsModel (languageKey, name, completeness) and the function
     // that switches to one of its keys, live.
@@ -43,18 +37,9 @@ Item {
     // account whose Friends data Delete in "Friends" removes.
     property string friendsAccountName: ""
 
-    // Show a folder in the file manager (the General section's Folders).
     signal openPathRequested(string path)
 
-    // Each icon says what its section is about ("layers" is a mod loader
-    // elsewhere in the app, so Java does not wear it): the gear for the
-    // general preferences, a server rack for the runtime and its memory, a
-    // list of lines for the log window, a sun for the launcher's look, the
-    // ">_" prompt for the shell commands, a grid of installed things for the
-    // plugin list, an arrow out of a box for programs outside the launcher,
-    // an up arrow for sending a log away, a filing box for the launcher's
-    // own kept logs, the circling arrows of "check again" for updates, and
-    // "i" for about, and two people for friends.
+    // "layers" is a mod loader elsewhere in the app, so Java does not wear it.
     readonly property var sections: [
         { id: "general", icon: "settings", label: qsTr("General") },
         { id: "java", icon: "server", label: qsTr("Java & memory") },
@@ -73,18 +58,14 @@ Item {
         { id: "about", icon: "info", label: qsTr("About") }
     ]
     readonly property int sectionIndex: {
-        // A section that keeps itself out of the list (no updater in this
-        // build, nothing to show yet) is not opened either: the list and the
-        // page must agree, so this falls back to the first section instead
-        // of showing a page the list does not highlight.
+        // A section that keeps itself out of the list is not opened either: fall back to the first,
+        // so list and page agree.
         for (var i = 0; i < sections.length; ++i)
             if (sections[i].id === section)
                 return sectionShown(i) ? i : 0
         return 0
     }
 
-    // Whether section @p i is offered in the list: its file decides, with
-    // `shown` (see this file's header comment); without one it always is.
     function sectionShown(i) {
         var item = sectionStack.children[i]
         return !item || item.shown === undefined || item.shown
@@ -92,62 +73,80 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        // The page area adds no padding of its own (the shell's inset panel).
         anchors.topMargin: Theme.space.xl
         anchors.leftMargin: Theme.space.xl + Theme.space.xs
         anchors.rightMargin: Theme.space.xl + Theme.space.xs
         spacing: Theme.space.xl
 
-        // Same rail selection grammar as the main sidebar (design-plan.md
-        // Principle 6/§4): a sliding neutral kite-cut pill with its nose lit
-        // in the accent behind the row, not just NavItem's own bare
-        // accent-icon/bold-text fallback. Shares
-        // SidebarNav's own mechanism via NavSelectionIndicator rather than
-        // re-deriving the geometry here.
+        // The same selection grammar as the main sidebar, via NavSelectionIndicator. It scrolls, so
+        // every section stays reachable in a short window.
         Item {
-            id: sectionNavHost
             Layout.alignment: Qt.AlignTop
+            Layout.fillHeight: true
             Layout.preferredWidth: 208
             Layout.topMargin: Theme.space.xs
-            implicitHeight: sectionColumn.implicitHeight
 
-            readonly property Item selectedItem: {
-                for (var i = 0; i < sectionRepeater.count; ++i) {
-                    var item = sectionRepeater.itemAt(i)
-                    if (item && item.modelData.id === root.section)
-                        return item
+            Flickable {
+                id: sectionNavHost
+                anchors.fill: parent
+                contentWidth: width
+                contentHeight: sectionColumn.height + Theme.space.xl
+                boundsBehavior: Flickable.StopAtBounds
+                clip: true
+
+                ScrollBar.vertical: ScrollBar {}
+
+                readonly property Item selectedItem: {
+                    for (var i = 0; i < sectionRepeater.count; ++i) {
+                        var item = sectionRepeater.itemAt(i)
+                        if (item && item.modelData.id === root.section)
+                            return item
+                    }
+                    return null
                 }
-                return null
-            }
 
-            NavSelectionIndicator {
-                target: sectionNavHost.selectedItem
-            }
+                // A section opened by a route can lie below the fold.
+                onSelectedItemChanged: {
+                    var item = sectionNavHost.selectedItem
+                    if (!item)
+                        return
+                    if (item.y < contentY)
+                        contentY = item.y
+                    else if (item.y + item.height > contentY + height)
+                        contentY = item.y + item.height - height
+                }
 
-            Column {
-                id: sectionColumn
-                width: parent.width
-                spacing: Theme.space.xxs
+                NavSelectionIndicator {
+                    target: sectionNavHost.selectedItem
+                }
 
-                Repeater {
-                    id: sectionRepeater
-                    model: root.sections
-                    delegate: NavItem {
-                        required property var modelData
-                        required property int index
-                        width: parent.width
-                        visible: root.sectionShown(index)
-                        iconName: modelData.icon
-                        label: modelData.label
-                        selected: root.section === modelData.id
-                        onClicked: root.section = modelData.id
+                Column {
+                    id: sectionColumn
+                    width: sectionNavHost.width
+                    spacing: Theme.space.xxs
+
+                    Repeater {
+                        id: sectionRepeater
+                        model: root.sections
+                        delegate: NavItem {
+                            required property var modelData
+                            required property int index
+                            width: parent.width
+                            visible: root.sectionShown(index)
+                            iconName: modelData.icon
+                            label: modelData.label
+                            selected: root.section === modelData.id
+                            onClicked: root.section = modelData.id
+                        }
                     }
                 }
             }
+
+            ScrollFade {
+                flickable: sectionNavHost
+            }
         }
 
-        // A hairline between the section list and the section, as in
-        // Modrinth's settings.
         Rectangle {
             Layout.fillHeight: true
             Layout.preferredWidth: 1
@@ -160,7 +159,6 @@ Item {
             Layout.fillHeight: true
             currentIndex: root.sectionIndex
 
-            // One per entry of root.sections, in the same order.
             SettingsGeneralSection {
                 onOpenPathRequested: (path) => root.openPathRequested(path)
             }
@@ -176,6 +174,7 @@ Item {
             SettingsAppearanceSection {
                 languages: root.languages
                 selectLanguage: root.selectLanguage
+                onOpenPathRequested: (path) => root.openPathRequested(path)
             }
             SettingsCommandsSection {}
             SettingsPluginsListSection {

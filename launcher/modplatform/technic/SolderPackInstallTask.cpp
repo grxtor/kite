@@ -89,10 +89,8 @@ void Technic::SolderPackInstallTask::fileListSucceeded()
 {
 	setStatus(tr("Downloading modpack:"));
 
-	/* Solder publishes an md5 alongside every mod URL. Carry the two together
-	 * so the download can actually be checked against it - reading only the
-	 * URL threw away the one piece of information that tells us whether the
-	 * bytes we received are the bytes the pack author published. */
+	/* Solder publishes an md5 beside every mod URL; carried so the download
+	 * can be checked against it. */
 	struct SolderMod {
 		QString url;
 		QString md5;
@@ -108,10 +106,8 @@ void Technic::SolderPackInstallTask::fileListSucceeded()
 		QJsonArray mods = Json::requireArray(obj, "mods", "'mods'");
 		for (auto mod : mods) {
 			QJsonObject modObject = Json::requireObject(mod);
-			/* The hash is optional on purpose. Some third-party Solder
-			 * instances omit it, and refusing their packs outright would
-			 * trade one broken install for many. A missing hash just leaves
-			 * that file unverified, exactly as it was before. */
+			/* The hash is optional: some third-party Solder instances omit it, and a
+			 * missing one just leaves that file unverified. */
 			modsToDownload.append(
 				{ Json::requireString(modObject, "url", "'url'"),
 				  Json::ensureString(modObject, "md5", QString()) });
@@ -126,17 +122,9 @@ void Technic::SolderPackInstallTask::fileListSucceeded()
 	for (const auto& mod : modsToDownload) {
 		auto path = FS::PathCombine(m_outputDir.path(), QString("%1").arg(i));
 		auto dl = Net::Download::makeFile(mod.url, path);
-		/* Catch a bad transfer here, while it can still be retried.
-		 *
-		 * Unverified, a jar that arrived corrupted gets written out and fed
-		 * to the extractor, and the first hint of trouble is a CRC error
-		 * from the zip reader - or no hint at all, and an instance that
-		 * misbehaves in ways nobody traces back to this download. Failing on
-		 * the hash mismatch keeps the problem where it can be reported.
-		 *
-		 * Note the hex decode: this validator compares against the raw
-		 * digest, so handing it the hex string from the manifest verbatim
-		 * would fail every single file. */
+		/* Catch a bad transfer here, while it can be retried, instead of as a CRC
+		 * error from the zip reader. The validator compares the raw digest, so
+		 * the manifest's hex string is decoded first. */
 		if (!mod.md5.isEmpty()) {
 			auto rawMd5 = QByteArray::fromHex(mod.md5.toLatin1());
 			dl->addValidator(
@@ -154,7 +142,6 @@ void Technic::SolderPackInstallTask::fileListSucceeded()
 			&Technic::SolderPackInstallTask::downloadProgressChanged);
 	connect(m_filesNetJob.get(), &NetJob::failed, this,
 			&Technic::SolderPackInstallTask::downloadFailed);
-	// One line per file being downloaded.
 	propagateStepsFrom(m_filesNetJob.get());
 	m_filesNetJob->start();
 }
@@ -207,34 +194,10 @@ void Technic::SolderPackInstallTask::extractFinished()
 		emitFailed(tr("Failed to extract modpack"));
 		return;
 	}
-	QDir extractDir(m_stagingPath);
-
-	qDebug() << "Fixing permissions for extracted pack files...";
-	QDirIterator it(extractDir, QDirIterator::Subdirectories);
-	while (it.hasNext()) {
-		auto filepath = it.next();
-		QFileInfo file(filepath);
-		auto permissions = QFile::permissions(filepath);
-		auto origPermissions = permissions;
-		if (file.isDir()) {
-			// Folder +rwx for current user
-			permissions |= QFileDevice::Permission::ReadUser |
-						   QFileDevice::Permission::WriteUser |
-						   QFileDevice::Permission::ExeUser;
-		} else {
-			// File +rw for current user
-			permissions |= QFileDevice::Permission::ReadUser |
-						   QFileDevice::Permission::WriteUser;
-		}
-		if (origPermissions != permissions) {
-			if (!QFile::setPermissions(filepath, permissions)) {
-				logWarning(
-					tr("Could not fix permissions for %1").arg(filepath));
-			} else {
-				qDebug() << "Fixed" << filepath;
-			}
-		}
-	}
+	Technic::TechnicPackProcessor::fixPermissions(
+		m_stagingPath, [this](const QString& path) {
+			logWarning(tr("Could not fix permissions for %1").arg(path));
+		});
 
 	shared_qobject_ptr<Technic::TechnicPackProcessor> packProcessor =
 		new Technic::TechnicPackProcessor();

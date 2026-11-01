@@ -6,11 +6,9 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
-// No `footer:` is set here: Basic's Dialog wires one up as a DialogButtonBox,
-// but DialogButtonBox is not in this style's control list, so giving Dialog
-// a footer would mean silently reaching for an unstyled control. A dialog
-// that uses control.standardButtons will fall back to the platform default
-// until DialogButtonBox is styled -- flagged in this style's report.
+// No `footer:` is set: Basic wires one up as a DialogButtonBox, which this
+// style does not style. A dialog that uses control.standardButtons falls back
+// to the platform default.
 T.Dialog {
     id: control
 
@@ -34,8 +32,7 @@ T.Dialog {
         NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
     }
 
-    // The popup glass treatment at the largest corner and the deepest
-    // shadow (Theme.elevation.lg).
+    // The popup glass treatment at the largest corner and the deepest shadow.
     background: GlassSurface {
         radius: Theme.radius.xl
         level: Theme.elevation.lg
@@ -52,9 +49,7 @@ T.Dialog {
         bottomPadding: 0
     }
 
-    T.Overlay.modal: Rectangle {
-        color: Theme.palette.scrim
-    }
+    T.Overlay.modal: ModalScrim {}
 
     T.Overlay.modeless: Rectangle {
         color: "transparent"

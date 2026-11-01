@@ -26,19 +26,10 @@
 #include "plugin/PluginHooks.h"
 #include "tasks/Task.h"
 
-/**
- * Runs a single plugin hook callback that opted into
- * MMCO_HOOK_FLAG_BACKGROUND on a worker thread, as an ordinary launcher
- * task.
- *
- * PluginManager builds one of these per background callback of a
- * dispatch and hands them to a SequentialTask, so each plugin gets its
- * own line in the progress dialog while the GUI thread keeps running.
- *
- * The callback's return value keeps its ABI meaning: non-zero is a veto.
- * A vetoing task fails, which stops the rest of the sequence — the same
- * thing that happens when an inline callback returns non-zero.
- */
+/** Runs one plugin hook callback that opted into MMCO_HOOK_FLAG_BACKGROUND on a worker thread, as an
+ * ordinary task. PluginManager builds one per background callback and hands them to a
+ * SequentialTask, behind one busy indication (per-plugin progress is not shown). A non-zero return is a veto: the
+ * task fails, which stops the rest of the sequence, as an inline veto stops the hook chain. */
 class PluginHookTask : public Task
 {
 	Q_OBJECT
@@ -48,20 +39,14 @@ class PluginHookTask : public Task
 				   QObject* parent = nullptr);
 	~PluginHookTask() override;
 
-	/*!
-	 * A C callback cannot be interrupted from the outside, so there is
-	 * nothing meaningful to abort.
-	 */
+	/*! A C callback cannot be interrupted, so there is nothing to abort. */
 	bool canAbort() const override
 	{
 		return false;
 	}
 
-	/*!
-	 * True when the callback returned non-zero, i.e. the plugin asked
-	 * for whatever the hook was about to do to be called off. Only
-	 * meaningful once the task has finished.
-	 */
+	/*! True when the callback returned non-zero (the plugin asked for the hook's action to be called
+	 * off); meaningful only once the task has finished. */
 	bool cancelRequested() const
 	{
 		return m_cancelRequested;
@@ -72,19 +57,13 @@ class PluginHookTask : public Task
 		return m_moduleHandle;
 	}
 
-	/*!
-	 * The task whose callback is running on the calling thread, or
-	 * nullptr when the caller is not inside a background hook callback.
-	 * This is how MMCOContext::progress_report finds the row to write
-	 * to without the ABI having to carry a progress handle around.
-	 */
+	/*! The task whose callback runs on the calling thread, or nullptr outside a background hook
+	 * callback. This is how MMCOContext::progress_report finds its row without a progress handle in
+	 * the ABI. */
 	static PluginHookTask* currentOnThisThread();
 
-	/*!
-	 * Publishes a progress update coming from the plugin. Called on the
-	 * worker thread; the update is marshalled onto the thread the task
-	 * lives on. Empty status/details leave the current text alone.
-	 */
+	/*! Publishes a progress update from the plugin. Called on the worker thread; marshalled onto the
+	 * task's thread. Empty status/details keep the current text. */
 	void reportProgress(const QString& status, const QString& details,
 						qint64 current, qint64 total);
 

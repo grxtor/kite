@@ -29,37 +29,24 @@
 class RecursiveFileSystemWatcher;
 
 /*
- * QML-facing bridge to an instance's "other" log files - logs/*.log* and
- * crash-reports/*.txt under its game root - the widget-free replacement for
- * OtherLogsPage. A plain list model of file names (role `name`); picking one
- * loads its text into `content`, gzip-decompressed the same way
- * OtherLogsPage::on_btnReload_clicked() does.
- *
- * Watches @p path for as long as this bridge lives (RecursiveFileSystemWatcher
- * itself, not the open/close toggling OtherLogsPage does per its BasePage
- * lifecycle) - InstanceDetails, which owns this, already only lives for as
- * long as the instance page is open, so there is no separate "page is
- * visible" state to toggle it against here.
+ * QML-facing list of an instance's "other" log files (logs and crash reports
+ * under its game root), role `name`. Picking one loads its text into `content`,
+ * gzip-decompressed. Watches @p path for the bridge's lifetime.
  */
 class OtherLogsModel : public QAbstractListModel
 {
 	Q_OBJECT
 
 	Q_PROPERTY(QString path READ path CONSTANT)
-	/// The file selectFile() was last called with, or empty.
 	Q_PROPERTY(QString currentFile READ currentFile NOTIFY currentFileChanged)
-	/// `currentFile`'s text, or a placeholder for "too big to show" / "not
-	/// readable" - see reload(), which mirrors OtherLogsPage's own
-	/// handling of both.
+	/// `currentFile`'s text, or a placeholder for "too big to show" / "not readable".
 	Q_PROPERTY(QString content READ content NOTIFY contentChanged)
 
   public:
 	enum Roles { NameRole = Qt::UserRole };
 
-	/// @p path / @p fileFilter: same as BaseInstance::getLogFileRoot() /
-	/// getLogFileMatcher(). @p recursive false lists only @p path itself, not
-	/// its subfolders - for the launcher's own logs, which sit in a data
-	/// folder next to every instance.
+	/// @p path / @p fileFilter: as BaseInstance::getLogFileRoot()/getLogFileMatcher().
+	/// @p recursive false lists only @p path itself (the launcher's own logs).
 	explicit OtherLogsModel(const QString& path, IPathMatcher::Ptr fileFilter,
 							QObject* parent = nullptr, bool recursive = true);
 	~OtherLogsModel() override;
@@ -82,17 +69,12 @@ class OtherLogsModel : public QAbstractListModel
 		return m_content;
 	}
 
-	/// Selects @p name (as listed by this model) and loads its content;
-	/// clears both if @p name is empty or no longer exists.
+	/// Clears both if @p name is empty or no longer exists.
 	Q_INVOKABLE void selectFile(const QString& name);
-	/// Re-reads `currentFile` from disk - for a "Reload" action, or after
-	/// deleteCurrent() elsewhere changes what is on disk.
 	Q_INVOKABLE void reload();
-	/// Deletes `currentFile`. Returns false (and leaves it selected) if
-	/// the delete failed; clears the selection on success.
+	/// False (and stays selected) if the delete failed.
 	Q_INVOKABLE bool deleteCurrent();
-	/// Deletes every file this model lists. Returns the names that could
-	/// not be removed (empty means every file was deleted).
+	/// Returns the names that could not be removed.
 	Q_INVOKABLE QStringList deleteAll();
 
   signals:

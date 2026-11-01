@@ -26,66 +26,31 @@
 #include <QString>
 
 /*
- * Bridges an account's Minecraft skin -- the face, or (since Kite wants the
- * signature "standing on a stage" look for the Accounts hero) the full front-
- * facing body -- into QML, the same way InstanceIconProvider (see
- * InstanceIconProvider.h) bridges IconList. A delegate writes
+ * Bridges an account's Minecraft skin into QML:
  *
- *     Image { source: "image://accountface/" + accountId }              // face
- *     Image { source: "image://accountface/body/" + accountId }         // body
+ *     Image { source: "image://accountface/" + accountId }         // face
+ *     Image { source: "image://accountface/body/" + accountId }    // body
  *
- * where accountId is a profile id or an account's internalId() -- whichever
- * QmlShell ends up exposing as the default account's identifier. The
- * "body/" prefix is stripped before lookup, exactly like the "?rev=N" cache-
- * buster below, so both forms find the same account.
+ * accountId is a profile id or an account's internalId() (offline accounts
+ * have no profile id). A "?rev=N" query is stripped before lookup; it only
+ * forces QML to refetch a URL it has cached.
  *
- * TEXTURES. Three more prefixes hand out raw skins instead of renders, for
- * the 3D skin preview and the skin library: "skin/<accountId>" is the
- * account's own skin and "skinfile/<percent-encoded path>" a PNG from the
- * skin library, both normalised to 64x64 (SkinEntry::normalisedTexture());
- * "skinthumb/<percent-encoded path>" is a library PNG's flat sprite
- * (SkinEntry::thumbnail()), "skinthumbslim/<path>" the same with slim arms.
- * These come back at their own size, unscaled.
- * "skinbody/<path>" and "skinbodyslim/<path>" are a library PNG's front
- * view, like "body/", with the arm width the prefix names.
+ * More prefixes hand out raw skins for the 3D preview and the skin library:
+ * "skin/<accountId>" is the account's own skin and "skinfile/<percent-encoded
+ * path>" a library PNG, both normalised to 64x64. "skinthumb/<path>" is a
+ * library PNG's flat sprite, "skinthumbslim/<path>" the same with slim arms;
+ * "skinbody/<path>" and "skinbodyslim/<path>" are its front view, like
+ * "body/". These come back unscaled.
  *
- * THREADING. Pixmap type, not Image or an async provider, for exactly the
- * reason InstanceIconProvider.h gives: QPixmap/QImage compositing is
- * GUI-thread-only, and Pixmap is the only one of the three
- * QQuickImageProvider types Qt Quick guarantees calls requestPixmap() on the
- * GUI thread.
+ * Pixmap provider: compositing is GUI-thread-only, and Pixmap is the only type
+ * Qt Quick guarantees calls requestPixmap() on the GUI thread. requestedSize
+ * arrives in device pixels; an empty one falls back to a fixed extent. Face and
+ * body scale with Qt::FastTransformation so the pixel edges stay sharp.
  *
- * SIZE. requestedSize arrives already in device pixels -- QML has folded in
- * the device pixel ratio before calling here. An invalid or empty
- * requestedSize falls back to a fixed extent (per kind -- see
- * requestPixmap()). Both the face and the body are scaled with
- * Qt::FastTransformation (nearest-neighbour), not the smooth default: this
- * is pixel art, and smooth-scaling it up would blur the very pixel edges
- * that make a skin recognisable.
- *
- * CACHE-BUSTING. Same "<id>?rev=N" convention as InstanceIconProvider: the
- * query string is stripped before lookup and changes nothing about which
- * account is found. It exists purely so a caller can force QML to refetch a
- * URL it has already resolved, once the account's skin might have changed
- * (AccountList::listChanged/defaultAccountChanged move which account is
- * default; the account's own changed() fires when its data, including the
- * skin, is refreshed). Bumping the revision when either fires is left to
- * whoever wires this provider into the engine.
- *
- * LOOKUP. Looks the account up in LAUNCHER->accounts() (core/LauncherContext.h)
- * by profile id first, falling back to a linear scan by internalId():
- * AccountList exposes findAccountByProfileId() but no internal-id finder,
- * and offline accounts have no profile id at all.
- *
- * DEFAULT SKINS. An account without skin bytes of its own -- every offline
- * account, and a Microsoft account before its profile texture is fetched --
- * is drawn in the game's default skin for that player (Steve or Alex, see
- * DefaultSkins), for the face, the body and "skin/" alike, as the game
- * would show it. Those textures are downloaded on first use; until they
- * land (or without a network), and for no matching account or a
- * LauncherContext that is not up yet (see LauncherContext::instance()), the
- * result is a transparent pixmap rather than a null one -- QML's own
- * fallback (an initial, the neutral figure) is what should show then, not a
+ * An account without skin bytes (offline, or before its texture is fetched) is
+ * drawn in the default Steve or Alex skin (DefaultSkins). Until that has
+ * downloaded, and for no matching account or no LauncherContext yet, the
+ * result is a transparent pixmap so QML's own fallback shows instead of a
  * broken-image icon. DefaultSkins::loaded() says when to fetch again.
  */
 class AccountFaceProvider : public QQuickImageProvider
@@ -96,43 +61,22 @@ class AccountFaceProvider : public QQuickImageProvider
 	QPixmap requestPixmap(const QString& id, QSize* size,
 						  const QSize& requestedSize) override;
 
-	/* Composites the face (the 8x8 region at (8,8)) with the hat overlay
-	 * (the 8x8 region at (40,8)) of a full skin texture, at native 8x8
-	 * resolution -- the same two regions MinecraftAccount::getFace() and
-	 * SkinUtils::getFaceFromCache() already draw. Kept as a pure function
-	 * of the skin image, separate from any account lookup, so it can be
-	 * unit tested without a QGuiApplication, a real account or a network --
-	 * see AccountFaceProvider_test.cpp. Returns a null QImage if skin is too
-	 * small to contain both regions.
-	 *
-	 * Hat pixels with alpha 0 leave the face beneath them untouched: the
-	 * face layer is drawn first, filling the whole canvas, and the hat is
-	 * composited over it with ordinary SourceOver painting, which is a
-	 * no-op wherever the source alpha is 0. */
+	/* The face (8x8 at (8,8)) with the hat overlay (8x8 at (40,8)) at native
+	 * resolution. Null if @p skin is too small to contain both. Pure, so it
+	 * can be tested without an account or a network. */
 	static QImage faceFromSkin(const QImage& skin);
 
-	/* The raw image behind a "skin/", "skinfile/" or "skinthumb[slim]/" id (see
-	 * TEXTURES above, query already stripped): a 64x64 texture or a
-	 * library PNG's sprite. Null for any other id, and for an account or
-	 * file without a usable skin. "skin/" needs LauncherContext; the file
-	 * kinds do not, which is what lets them be unit tested. */
+	/* The raw image behind a "skin/", "skinfile/" or "skinthumb[slim]/" id
+	 * (query stripped): a 64x64 texture or a library sprite. Null for any
+	 * other id or an unusable skin. "skin/" needs LauncherContext; the file
+	 * kinds do not. */
 	static QImage skinTexture(const QString& id);
 
-	/* Composites a front-facing full body from a skin texture: head (with
-	 * hat), torso (with jacket), both arms (with sleeves) and both legs
-	 * (with pants), laid out the way the game itself poses a standing
-	 * player -- arms at the sides, so the character's right arm/leg render
-	 * on the left of the image and the left arm/leg on the right (as they do
-	 * when facing the viewer). @p slim narrows both arms from 4px to 3px,
-	 * matching the account's skin variant ("SLIM" == Alex-style thin arms).
-	 *
-	 * Accepts both skin formats: the modern 64x64 texture (with the jacket/
-	 * sleeve/pants overlay layer and a distinct left arm/leg) and the legacy
-	 * 64x32 one, which has neither -- the left arm and leg are mirrored from
-	 * the right for it instead. Returns a null QImage if skin is too small
-	 * for even the legacy layout.
-	 *
-	 * A pure function of the skin image, same rationale as faceFromSkin():
-	 * unit-testable without any account, engine or network. */
+	/* A front-facing full body: head, torso, arms and legs with their overlay
+	 * layers, posed like the game's standing player (the character's right
+	 * arm/leg on the image's left). @p slim narrows the arms from 4px to 3px.
+	 * Takes the modern 64x64 texture or the legacy 64x32 one, whose left
+	 * arm/leg are mirrored from the right. Null if @p skin is too small even
+	 * for the legacy layout. Pure, like faceFromSkin(). */
 	static QImage bodyFromSkin(const QImage& skin, bool slim);
 };

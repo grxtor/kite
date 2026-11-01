@@ -63,10 +63,6 @@ class MetaEntry
 	{
 		etag = eTag;
 	}
-	QString getMD5Sum()
-	{
-		return md5sum;
-	}
 	void setMD5Sum(QString md5Sum)
 	{
 		md5sum = md5Sum;

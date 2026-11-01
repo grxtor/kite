@@ -7,9 +7,8 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * A row of cat pictures to choose from (Settings > Appearance): every pack
- * CatPackList finds, shown as a small picture with its name under it, the
- * chosen one outlined. The choice is the BackgroundCat setting.
+ * A row of cat pictures to choose from (Settings > Appearance): every pack CatPackList finds, with its name under it,
+ * the chosen one outlined. The choice is the BackgroundCat setting.
  */
 Flow {
     id: root
@@ -17,8 +16,7 @@ Flow {
     property var source: SettingsStore
     property string key: "BackgroundCat"
     readonly property var packs: LauncherStore.catPacks ? LauncherStore.catPacks.packs : []
-    // The pack in use; with none chosen yet (or a pack that is gone) the
-    // first one, which is what the cat shows too.
+    // The pack in use; with none chosen yet, or a pack that is gone, the first one (what the cat shows too).
     readonly property string current: {
         var chosen = root.source.string(root.key)
         for (var i = 0; i < root.packs.length; ++i)
@@ -40,12 +38,13 @@ Flow {
             width: 96
             height: swatch.height + caption.height + Theme.space.xs
 
-            Rectangle {
+            StateFill {
                 id: swatch
                 width: parent.width
                 height: 80
                 radius: Theme.radius.md
-                color: tile.selected ? Theme.palette.surfaceHover : Theme.palette.surface
+                card: true
+                active: tile.selected
                 border.width: tile.selected ? 2 : 1
                 border.color: tile.selected ? Theme.palette.accent : Theme.palette.border
 
@@ -61,7 +60,7 @@ Flow {
                 }
             }
 
-            Text {
+            Copy {
                 id: caption
                 anchors.top: swatch.bottom
                 anchors.topMargin: Theme.space.xs
@@ -71,9 +70,8 @@ Flow {
                 maximumLineCount: 2
                 elide: Text.ElideRight
                 horizontalAlignment: Text.AlignHCenter
-                color: tile.selected ? Theme.palette.textPrimary : Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                role: "caption"
+                tone: tile.selected ? "primary" : "secondary"
             }
 
             TapHandler {

@@ -43,15 +43,14 @@ class MinecraftLoadAndCheck : public Task
 	virtual ~MinecraftLoadAndCheck() {};
 	void executeTask() override;
 
-	/// Whether @p profile (PackProfile::getProfile(), which is null when the
-	/// patches could not be applied) is complete enough to launch from: it
-	/// exists and none of its components is missing or broken. A launch that
-	/// carries on without this starts java with no libraries and no game,
-	/// and only says "Game crashed".
+	/// Whether @p profile (PackProfile::getProfile(), null if the patches could
+	/// not be applied) is complete enough to launch from: it exists and no
+	/// component is missing or broken. Otherwise java would start with no
+	/// libraries and no game and only say "Game crashed".
 	static bool profileUsable(const std::shared_ptr<LaunchProfile>& profile);
-	/// What the user is told when the game's data is not there yet: that it
-	/// still has to be downloaded, and how. @p detail (the technical reason,
-	/// may be empty) follows on its own line.
+	/// What the user is told when the game's data is not there yet: it has to
+	/// be downloaded, and how. @p detail (the technical reason, may be empty)
+	/// follows on its own line.
 	static QString notDownloadedMessage(const QString& detail = QString());
 
   private slots:

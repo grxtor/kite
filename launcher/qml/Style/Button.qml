@@ -7,34 +7,28 @@ import QtQuick.Controls.impl
 import QtQuick.Templates as T
 import Kite.Theme
 
-// Four variants, Modrinth-style:
-//   primary   -> accent fill and a barely visible top-to-bottom tint; hover
-//                is the lighter accent fill (no glow anywhere in the app)
+// Four variants:
+//   primary   -> accent fill and a faint top-to-bottom tint; hover is the
+//                lighter accent fill
 //   secondary -> surfaceRaised plus the hairline border (the default)
 //   ghost     -> transparent, only a hover/press overlay
 //   danger    -> the danger red, filled, for a destructive confirmation
-// `variant` names one outright. Left empty, the stock Qt Quick Controls
-// `highlighted`/`flat` pair picks it, so existing call sites keep their look:
+// `variant` names one outright. Left empty, `highlighted`/`flat` pick it:
 // highlighted -> primary (danger with `danger` also set), flat -> ghost,
-// neither -> secondary. `highlighted` wins over `flat`, since "primary" and
-// "quiet" is a contradiction a design system should resolve rather than
-// render.
+// neither -> secondary. `highlighted` wins over `flat`.
 //
-// Contract: at most one primary button per screen (design-plan.md
-// Principle 1) -- it is the one full accent fill a page is allowed. Every
-// other actionable control on that screen is secondary or ghost. This is a
-// call-site discipline, not something this file can enforce by itself.
+// At most one primary button per screen: the one full accent fill a page is
+// allowed. This is a call-site discipline this file cannot enforce.
 T.Button {
     id: control
 
     // "primary", "secondary", "ghost" or "danger"; see above.
     property string variant: ""
-    // "sm", "md" or "lg": Theme.control.heightSm / height / heightLg, with
-    // the padding, label and icon sizes that go with each.
+    // "sm", "md" or "lg": Theme.control.heightSm / height / heightLg, with the
+    // padding, label and icon sizes that go with each.
     property string buttonSize: "md"
-    // A highlighted button whose action is destructive (delete, remove)
-    // reads as danger-red instead of accent; it has no effect unless
-    // `highlighted` is also set (or use variant: "danger").
+    // With `highlighted`, a destructive action reads danger-red instead of
+    // accent. No effect alone; use variant: "danger" otherwise.
     property bool danger: false
 
     readonly property string resolvedVariant: control.variant.length > 0 ? control.variant
@@ -61,8 +55,7 @@ T.Button {
                              implicitContentHeight + topPadding + bottomPadding)
 
     horizontalPadding: control.sizePadding
-    // An icon-only button is square: the icon sits in a box as wide as the
-    // control is tall, not in a wide text-button slot.
+    // An icon-only button is square.
     leftPadding: display === T.AbstractButton.IconOnly ? Theme.space.sm : horizontalPadding
     rightPadding: display === T.AbstractButton.IconOnly ? Theme.space.sm : horizontalPadding
     spacing: Theme.space.sm
@@ -71,18 +64,14 @@ T.Button {
     icon.height: control.sizeIcon
     icon.color: contentColor
 
-    // A filled (primary/danger) button that is not available yet drops to
-    // the secondary button's look -- raised surface, border, disabled label
-    // -- rather than fading: a faded accent over a dialog surface reads as a
-    // broken colour, not as "not yet". Secondary and ghost buttons keep
-    // their shape and fade as one piece.
+    // A filled button that is not available drops to the secondary look
+    // rather than fading: a faded accent over a dialog surface reads as a
+    // broken colour. Secondary and ghost buttons keep their shape and fade.
     readonly property bool primaryLook: control.filled && control.enabled
     opacity: enabled || control.filled ? 1.0 : Theme.opacity.disabled
 
-    // The same colour drives the icon and the label so a filled button never
-    // ends up with mismatched icon/text tones. The dark theme's danger red is
-    // a light coral that white cannot read on, so it takes the canvas'
-    // near-black instead, the way Modrinth's own red buttons do.
+    // One colour for icon and label. The dark theme's danger red is a light
+    // coral that white cannot read on, so it takes the canvas' near-black.
     readonly property color contentColor: control.primaryLook
         ? (control.resolvedVariant === "danger" && Theme.dark ? Theme.palette.canvas : Theme.palette.textOnAccent)
         : control.filled ? Theme.palette.textDisabled
@@ -90,12 +79,8 @@ T.Button {
             ? Theme.palette.textSecondary
             : Theme.palette.textPrimary
 
-    // Filled variants get their own hover/press colours (accentHover/
-    // accentPressed, a lighter/darker danger) instead of the generic overlay
-    // tokens: laying a translucent hoverOverlay on top of an already
-    // saturated fill would shift its hue and muddy it. Neutral surfaces
-    // (secondary/ghost) have no such dedicated variant, so they use the
-    // overlay tokens instead.
+    // Filled variants have their own hover/press colours: a translucent
+    // hoverOverlay on a saturated fill would shift its hue.
     readonly property color restColor: control.primaryLook
         ? (control.resolvedVariant === "danger"
             ? (control.down ? Qt.darker(Theme.palette.danger, 1.12) : control.hovered ? Qt.lighter(Theme.palette.danger, 1.08) : Theme.palette.danger)
@@ -125,9 +110,8 @@ T.Button {
         implicitHeight: control.sizeHeight
         radius: Theme.radius.md
         color: control.restColor
-        // Ghost buttons only ever show the hover/press overlay, so the border
-        // stays off for them -- a border would make "ghost" look like a
-        // fifth, unrequested variant. Filled ones need no edge of their own.
+        // Ghost shows only the hover/press overlay; a border would make it
+        // look like a fifth variant. Filled ones need no edge.
         border.width: !control.primaryLook && control.resolvedVariant !== "ghost" ? 1 : 0
         border.color: control.hovered && control.enabled ? Theme.neutral.borderHover : Theme.palette.border
 
@@ -135,7 +119,7 @@ T.Button {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
         }
 
-        // The barely visible top-to-bottom tint on a filled button.
+        // The faint tint on a filled button.
         Rectangle {
             anchors.fill: parent
             radius: parent.radius

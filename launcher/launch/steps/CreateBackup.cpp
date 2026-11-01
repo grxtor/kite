@@ -63,10 +63,8 @@ void CreateBackup::backupFinished()
 						 QStringLiteral("\n"),
 					 MessageLevel::Kite);
 	} else {
-		// Refusing to start the game because a convenience snapshot
-		// could not be written would be the worse failure of the two,
-		// and it is what the plugin this replaces did as well: warn and
-		// carry on.
+		// Refusing to start the game over a failed convenience snapshot would
+		// be the worse failure; warn and carry on.
 		emit logLine(tr("Pre-launch backup failed: %1")
 						 .arg(m_backupTask->failReason()) +
 						 QStringLiteral("\n"),

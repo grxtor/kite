@@ -8,22 +8,11 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The game's output, live, plus (when the instance has any) its other log
- * files -- logs/*.log*, crash-reports/*.txt -- the widget-free replacement
- * for LogPage and OtherLogsPage, folded into one tab: both are "read a log",
- * just live vs. on disk. Which one is a single drop-down (LogSourcePicker,
- * "Live game log" first). The on-disk side is OtherLogsView, which the
- * launcher's own logs in Settings use too.
- *
- * "Live" follows the newest line only while "Follow" is on -- scrolling up
- * to read something turns it off, instead of the view yanking the reader
- * back down on every new line.
- *
- * Find marks every line that contains the text and steps through them; as
- * the log grows, the matches follow it. Upload sends the log to paste.ee
- * (the key set in Settings, Log upload), copies the link and says so. The
- * whole toolbar is one row: log, find, then the actions; the rarer ones
- * (wrap lines, clear) sit behind ⋯.
+ * The game's output, live, plus the instance's other log files (logs/*.log*,
+ * crash-reports/*.txt) behind one drop-down (LogSourcePicker). "Live" follows
+ * the newest line only while "Follow" is on; scrolling up turns it off. Upload
+ * sends the log to paste.ee (key set in Settings, Log upload) and copies the
+ * link.
  */
 Item {
     id: root
@@ -31,36 +20,28 @@ Item {
     // InstanceLogBridge: model (LogModel: line, level), hasLog, clear(),
     // text(), findLines().
     property var log: null
-    // OtherLogsModel (roles: name), or null - see InstanceDetails.otherLogs.
+    // OtherLogsModel (roles: name), or null.
     property var otherLogs: null
-    // InstanceDetails, for the log uploader.
     property var details: null
     readonly property var uploader: details ? details.logUploader : null
     readonly property var model: log ? log.model : null
 
     signal openFolderRequested(string path)
 
-    // "live" or "other".
     property string view: "live"
 
-    // Live Find: row numbers of the lines that contain the text.
-    property var matches: []
-    property int current: -1
     // Set by the live Upload button, so the Other logs view (which shares the
     // uploader) does not also announce the link.
-    property bool uploading: false
+    property alias uploading: linkToast.pending
 
-    // The log picker shrinks, down to this, before the row pushes past its
-    // column; the Copy and Upload buttons keep only their icons on a narrow
-    // tab (their label becomes the tooltip).
+    // The log picker shrinks down to this before the row pushes past its column; Copy and Upload
+    // keep only their icons on a narrow tab.
     readonly property int pickerWidth: 200
     readonly property int pickerMinWidth: 120
     readonly property int compactBelow: 700
     readonly property bool compact: root.width < root.compactBelow
-    // Whether there are log files on disk to pick instead of the live log.
     readonly property bool hasFiles: !!root.otherLogs && livePicker.files.length > 0
 
-    // Shows the log file @p name.
     function showFile(name) {
         if (!root.otherLogs)
             return
@@ -68,12 +49,9 @@ Item {
         root.view = "other"
     }
 
-    readonly property int findDelayMs: 150
-    // While the log grows, matches are refreshed this often at most.
     readonly property int growDelayMs: 500
 
-    // For review snapshots (Main.qml's "review=<name>" dev route, through
-    // InstancePage): the Other logs view, or the find bar with a query.
+    // For the "review=<name>" dev route: the Other logs view, or the find bar with a query.
     function review(name) {
         if (name === "otherlogs")
             root.view = "other"
@@ -81,40 +59,25 @@ Item {
             findBar.text = "Loading"
     }
 
-    function recomputeMatches() {
-        var found = []
-        if (root.log && findBar.text.length > 0 && typeof root.log.findLines === "function")
-            found = root.log.findLines(findBar.text)
-        root.matches = found
-        root.current = found.length > 0 ? 0 : -1
+    onModelChanged: finder.schedule()
+
+    LogMatches {
+        id: finder
+        onSearch: setMatches(root.log && findBar.text.length > 0 && typeof root.log.findLines === "function"
+                             ? root.log.findLines(findBar.text) : [])
+        onStepped: follow.checked = false
     }
 
-    function step(delta) {
-        if (root.matches.length === 0)
-            return
-        follow.checked = false
-        root.current = (root.current + delta + root.matches.length) % root.matches.length
-    }
-
-    onModelChanged: findDelay.restart()
-
-    Timer {
-        id: findDelay
-        interval: root.findDelayMs
-        onTriggered: root.recomputeMatches()
-    }
-
-    // New lines can add matches; refresh them without searching per line.
     Timer {
         id: growDelay
         interval: root.growDelayMs
         onTriggered: {
             if (findBar.text.length === 0 || !root.log)
                 return
-            var keep = root.current
+            var keep = finder.current
             var found = root.log.findLines(findBar.text)
-            root.matches = found
-            root.current = found.length === 0 ? -1 : Math.min(Math.max(keep, 0), found.length - 1)
+            finder.matches = found
+            finder.current = found.length === 0 ? -1 : Math.min(Math.max(keep, 0), found.length - 1)
         }
     }
 
@@ -124,23 +87,11 @@ Item {
         onActivated: findBar.focusField()
     }
 
-    Connections {
-        target: root.uploader
-        ignoreUnknownSignals: true
-        function onUploaded(url) {
-            if (!root.uploading)
-                return
-            root.uploading = false
-            clipboard.copyText(url)
-            toast.show(qsTr("Link copied to your clipboard."), "success", qsTr("Open"),
-                       () => Qt.openUrlExternally(url))
-        }
-        function onFailed(message) {
-            if (!root.uploading)
-                return
-            root.uploading = false
-            toast.show(message, "danger")
-        }
+    UploadLinkToast {
+        id: linkToast
+        uploader: root.uploader
+        clipboardItem: clipboard
+        toastItem: toast
     }
 
     ColumnLayout {
@@ -166,11 +117,11 @@ Item {
                 id: findBar
                 Layout.fillWidth: true
                 searchEnabled: !!root.model
-                matchCount: root.matches.length
-                current: root.current
-                onTextChanged: findDelay.restart()
-                onNext: root.step(1)
-                onPrevious: root.step(-1)
+                matchCount: finder.matches.length
+                current: finder.current
+                onTextChanged: finder.schedule()
+                onNext: finder.step(1)
+                onPrevious: finder.step(-1)
             }
 
             Switch {
@@ -178,26 +129,22 @@ Item {
                 checked: true
                 text: qsTr("Follow")
             }
-            Button {
+            CompactButton {
+                compact: root.compact
                 enabled: !!root.model
                 text: qsTr("Copy all")
                 icon.source: Icons.url("copy")
-                display: root.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-                ToolTip.visible: root.compact && hovered
-                ToolTip.text: text
                 onClicked: {
                     clipboard.copyText(root.log.text())
                     toast.show(qsTr("Log copied."), "success")
                 }
             }
-            Button {
+            CompactButton {
+                compact: root.compact
                 visible: !!root.uploader
                 enabled: !!root.model && !!root.uploader && !root.uploader.busy
                 text: root.uploading ? qsTr("Uploading…") : qsTr("Upload")
                 icon.source: Icons.url("arrow-up")
-                display: root.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-                ToolTip.visible: root.compact && hovered
-                ToolTip.text: text
                 onClicked: {
                     root.uploading = true
                     root.uploader.uploadText(root.log.text())
@@ -225,21 +172,17 @@ Item {
                         icon.source: Icons.url("x")
                         onTriggered: {
                             root.log.clear()
-                            root.matches = []
-                            root.current = -1
+                            finder.clear()
                         }
                     }
                 }
             }
         }
 
-        Rectangle {
+        BoxSurface {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            radius: Theme.radius.lg
-            color: Theme.palette.surfaceSunken
-            border.width: 1
-            border.color: Theme.palette.border
+            sunken: true
 
             LogLines {
                 id: lines
@@ -248,8 +191,8 @@ Item {
                 model: root.model
                 wrap: findBar.wrap
                 follow: follow.checked
-                matches: root.matches
-                current: root.current
+                matches: finder.matches
+                current: finder.current
                 onScrolledAway: follow.checked = false
                 onReachedEnd: follow.checked = true
                 onCountChanged: if (findBar.text.length > 0) growDelay.restart()
@@ -261,13 +204,12 @@ Item {
                 visible: !root.model || lines.count === 0
                 title: qsTr("No log yet")
                 body: qsTr("Play this instance to see the game's output here as it runs.")
-                MeshIcon { iconName: "terminal"; size: 40; color: Theme.palette.textTertiary }
+                MeshIcon { iconName: "terminal"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
             }
         }
     }
 
     OtherLogsView {
-        id: otherView
         anchors.fill: parent
         visible: root.view === "other"
         logs: root.otherLogs

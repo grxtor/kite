@@ -6,29 +6,21 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * "Set up Kite" on Home's side panel: the first two things a new player
- * does, as a checklist. A step already done is
- * struck through and quiet; a step still to do is a button that does it,
- * lighting up under the pointer. The page hides the card once both are
- * done.
+ * "Set up Kite" on Home's side panel: a checklist of what a new player still has to do. A done step is struck
+ * through and quiet; a step still to do is a button. The page hides the card once every step is done.
  */
 Rectangle {
     id: root
 
-    // The library has an instance.
     property bool hasInstances: false
-    // A Microsoft account is signed in.
     property bool signedIn: false
-    // No fill or hairline of its own, for a host that is already a panel
-    // (Sade's and Gece's side panels): a card in it would be a box in a box.
+    // No fill or hairline, for a host that is already a panel.
     property bool flat: false
 
-    signal createRequested()
     signal signInRequested()
 
-    readonly property bool allDone: root.hasInstances && root.signedIn
-    // An empty library has the page's own "Create instance" in front of it;
-    // the checklist comes once there is something to check off.
+    readonly property bool allDone: root.signedIn
+    // An empty library has the page's own "Create instance"; the checklist waits for a first instance.
     readonly property bool shown: root.hasInstances && !root.allDone
 
     implicitHeight: column.implicitHeight + Theme.space.md * 2
@@ -37,11 +29,6 @@ Rectangle {
     border.width: root.flat ? 0 : 1
     border.color: Theme.palette.border
 
-    /*
-     * One step: a hollow ring and the words, or -- done -- a filled ring
-     * with a check and the words struck through. Only a step still to do
-     * can be pressed.
-     */
     component Step: AbstractButton {
         id: step
         property bool done: false
@@ -55,13 +42,12 @@ Rectangle {
         Accessible.name: step.text
         Accessible.description: step.done ? qsTr("Done") : ""
 
-        background: Rectangle {
+        background: StateFill {
+            hovered: step.hovered
+            down: step.down
             radius: Theme.radius.md
-            color: step.down ? Theme.palette.pressedOverlay
-                 : step.hovered ? Theme.palette.hoverOverlay : "transparent"
             border.width: step.visualFocus ? Theme.focus.width : 0
             border.color: Theme.palette.focusRing
-            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         }
 
         contentItem: Item {
@@ -80,22 +66,20 @@ Rectangle {
                     anchors.centerIn: parent
                     visible: step.done
                     iconName: "check"
-                    size: Theme.icon.sm - 4
+                    size: Theme.icon.xxs
                     color: Theme.palette.surface
                 }
             }
 
-            Text {
+            Copy {
                 anchors.left: ring.right
                 anchors.leftMargin: Theme.space.sm
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 text: step.text
+                tone: step.done ? "tertiary" : "primary"
                 elide: Text.ElideRight
                 font.strikeout: step.done
-                color: step.done ? Theme.palette.textTertiary : Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
                 font.weight: Font.Medium
             }
         }
@@ -109,24 +93,15 @@ Rectangle {
         anchors.margins: Theme.space.md
         spacing: Theme.space.sm
 
-        Text {
+        Copy {
             width: parent.width
             height: Theme.control.heightSm
             verticalAlignment: Text.AlignVCenter
             text: qsTr("Set up Kite")
+            role: "title"
             elide: Text.ElideRight
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.heading
-            font.pixelSize: Theme.type.title.pixelSize
-            font.weight: Theme.type.title.weight
         }
 
-        Step {
-            width: parent.width
-            text: qsTr("Create your first instance")
-            done: root.hasInstances
-            onClicked: root.createRequested()
-        }
         Step {
             width: parent.width
             text: qsTr("Sign in with Microsoft")

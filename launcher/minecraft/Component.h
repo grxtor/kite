@@ -38,43 +38,15 @@ namespace Meta
 } // namespace Meta
 class VersionFile;
 
-/* Everything the launcher hardcodes about one mod loader.
- *
- * These facts used to be scattered, and the copies had drifted apart.
- * VersionPage decided which loaders exist by having one toolbar action
- * each, and gated them on Minecraft version numbers written into the
- * source. ModFolderPage and DownloadContentDialog each carried their own
- * if-chain mapping component uids to platform names, in two different
- * orders, and neither asked whether the component was enabled - so a
- * loader the user had switched off still counted as installed in one
- * place while blocking an install in another.
- *
- * Collecting them means adding a loader is appending one row, and it
- * means the answers can no longer disagree with each other.
- *
- * Field notes:
- *
- * - platformId is what CurseForge and Modrinth call the loader. Empty
- *   for LiteLoader on purpose: Modrinth has no facet for it and
- *   ModPlatform::loaderToCurseForgeModLoaderType() returns 0 for it, so
- *   passing it to a search removes every result. Empty therefore means
- *   "installed, but there is nothing to search with", which is how the
- *   download paths already behaved - this table is not the place to
- *   quietly change that.
- *
- * - brandName is not run through tr(). These are product names, spelled
- *   the same in every language; translating them would only invite a
- *   mistranslation that no longer matches the metadata.
- *
- * - earliestMinecraft is empty whenever the metadata can speak for
- *   itself. Forge, NeoForge and LiteLoader publish one build per
- *   Minecraft version, so filtering on the parent version already yields
- *   an empty list for a game version they never supported. Fabric and
- *   Quilt publish loader builds that name no Minecraft version at all,
- *   so there is nothing to filter on and the floor has to be stated.
- *
- * - conflictsWith is symmetric, and is kept so by hand; nothing derives
- *   one direction from the other. */
+// Everything the launcher hardcodes about one mod loader.
+//  - platformId is what CurseForge and Modrinth call the loader. Empty for
+//    LiteLoader: neither platform can search by it, so a search with it would
+//    drop every result. Empty means "installed, nothing to search with".
+//  - brandName is a product name and is not run through tr().
+//  - earliestMinecraft is empty when the metadata speaks for itself (Forge,
+//    NeoForge and LiteLoader publish one build per Minecraft version). Fabric
+//    and Quilt builds name no Minecraft version, so the floor is stated here.
+//  - conflictsWith is symmetric and kept so by hand.
 struct ModLoaderInfo
 {
 	QString uid;
@@ -85,14 +57,11 @@ struct ModLoaderInfo
 	QStringList conflictsWith;
 };
 
-/* Every loader the launcher can install, in the order a user should be
- * offered them: current mainstream choices first, historical last. The
- * install dialog builds its pages by walking this list, so the order
- * here is the order on screen. */
+// Every loader the launcher can install, in the order the install dialog shows
+// them: mainstream first, historical last.
 const QList<ModLoaderInfo>& knownModLoaders();
 
-/* The row for a component uid, or nullptr when that uid is not a loader
- * this launcher knows how to install. */
+// The row for a component uid, or nullptr if that uid is not a known loader.
 const ModLoaderInfo* modLoaderForUid(const QString& uid);
 
 class Component : public QObject, public ProblemProvider
@@ -118,7 +87,6 @@ class Component : public QObject, public ProblemProvider
 	bool isRevertible();
 	bool isRemovable();
 	bool isCustom();
-	bool isVersionChangeable();
 
 	// DEPRECATED: explicit numeric order values, used for loading old
 	// non-component config. TODO: refactor and move to migration code
@@ -128,7 +96,6 @@ class Component : public QObject, public ProblemProvider
 	QString getID();
 	QString getName();
 	QString getVersion();
-	std::shared_ptr<Meta::Version> getMeta();
 	QDateTime getReleaseDateTime();
 
 	QString getFilename();

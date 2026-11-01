@@ -24,6 +24,8 @@
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QMetaObject>
+#include <QThreadPool>
+#include <QUuid>
 #include <algorithm>
 
 #include "FileSystem.h"
@@ -36,29 +38,12 @@
 
 namespace
 {
-	QString javaBinaryName()
+	/* Where @p root is moved to before it is deleted in the background: next to
+	 * the managed root, so the list never shows it. */
+	QString trashPathFor(const QString& rootDir)
 	{
-#if defined(Q_OS_WIN)
-		return QStringLiteral("javaw.exe");
-#else
-		return QStringLiteral("java");
-#endif
-	}
-
-	/* The first <anything>/bin/java under @p versionDir, or an empty string.
-	 * Archives differ in depth (macOS puts it in Contents/Home/bin), so look
-	 * through the whole folder, as JavaPage::refreshInstalledJavas() did. */
-	QString findJavaBinary(const QString& versionDir)
-	{
-		QDirIterator it(versionDir, QStringList() << javaBinaryName(),
-						QDir::Files, QDirIterator::Subdirectories);
-		while (it.hasNext()) {
-			it.next();
-			if (it.filePath().contains(QStringLiteral("/bin/"))) {
-				return it.filePath();
-			}
-		}
-		return QString();
+		return QDir::cleanPath(rootDir) + QStringLiteral(".removing-") +
+			   QUuid::createUuid().toString(QUuid::WithoutBraces);
 	}
 } // namespace
 
@@ -125,24 +110,22 @@ QString JavaController::managedRoot() const
 
 void JavaController::detect()
 {
-	if (!LAUNCHER) {
+	if (!LAUNCHER || m_detecting) {
 		return;
 	}
 	auto task = LAUNCHER->javalist()->getLoadTask();
 	if (!task) {
 		return;
 	}
-	if (!m_detecting) {
-		m_detecting = true;
-		emit detectingChanged();
-	}
-	connect(task.get(), &Task::finished, this, [this]() {
-		m_detecting = false;
-		emit detectingChanged();
-	});
-	if (!task->isRunning()) {
-		task->start();
-	}
+	m_detecting = true;
+	emit detectingChanged();
+	connect(
+		task.get(), &Task::finished, this,
+		[this]() {
+			m_detecting = false;
+			emit detectingChanged();
+		},
+		Qt::SingleShotConnection);
 }
 
 QString JavaController::argsWarning(const QString& args) const
@@ -293,7 +276,8 @@ QVariantList JavaController::scanManaged(const QString& rootDir)
 							  QDir::Dirs | QDir::NoDotAndDotDot);
 		while (versions.hasNext()) {
 			versions.next();
-			const QString javaPath = findJavaBinary(versions.filePath());
+			const QString javaPath =
+				JavaUtils::findJavaBinary(versions.filePath());
 			if (javaPath.isEmpty()) {
 				continue;
 			}
@@ -324,36 +308,69 @@ void JavaController::refreshManaged()
 	emit managedChanged();
 }
 
+namespace
+{
+	/* Exactly <rootDir>/<vendor>/<name>: nothing above or below, and nothing
+	 * reached through a link. Fills @p dir with the folder's real path. */
+	QString checkManaged(const QString& rootDir, const QString& root,
+						 QString* dir)
+	{
+		const QFileInfo target(root);
+		if (root.isEmpty() || !target.exists() || !target.isDir() ||
+			target.isSymLink()) {
+			return JavaController::tr("That Java is already gone.");
+		}
+		QDir vendorDir(target.canonicalFilePath());
+		if (!vendorDir.cdUp()) {
+			return JavaController::tr(
+				"Kite can only remove Java it downloaded itself.");
+		}
+		QDir baseDir(vendorDir.absolutePath());
+		if (!baseDir.cdUp() ||
+			baseDir.absolutePath() !=
+				QFileInfo(rootDir).canonicalFilePath()) {
+			return JavaController::tr(
+				"Kite can only remove Java it downloaded itself.");
+		}
+		*dir = target.canonicalFilePath();
+		return QString();
+	}
+
+	QString removeFailed()
+	{
+		return JavaController::tr(
+			"Some files could not be removed. Close anything using "
+			"this Java and try again.");
+	}
+} // namespace
+
 QString JavaController::removeManagedUnder(const QString& rootDir,
 										   const QString& root)
 {
-	const QFileInfo target(root);
-	if (root.isEmpty() || !target.exists() || !target.isDir() ||
-		target.isSymLink()) {
-		return tr("That Java is already gone.");
+	QString dir;
+	const QString error = checkManaged(rootDir, root, &dir);
+	if (!error.isEmpty()) {
+		return error;
 	}
-	// Exactly <rootDir>/<vendor>/<name>: nothing above or below, and
-	// nothing reached through a link.
-	QDir vendorDir(target.canonicalFilePath());
-	if (!vendorDir.cdUp()) {
-		return tr("Kite can only remove Java it downloaded itself.");
-	}
-	QDir baseDir(vendorDir.absolutePath());
-	if (!baseDir.cdUp() ||
-		baseDir.absolutePath() !=
-			QFileInfo(rootDir).canonicalFilePath()) {
-		return tr("Kite can only remove Java it downloaded itself.");
-	}
-	if (!QDir(target.canonicalFilePath()).removeRecursively()) {
-		return tr("Some files could not be removed. Close anything using "
-				  "this Java and try again.");
-	}
-	return QString();
+	return QDir(dir).removeRecursively() ? QString() : removeFailed();
 }
 
 QString JavaController::removeManaged(const QString& root)
 {
-	const QString error = removeManagedUnder(managedRoot(), root);
+	QString dir;
+	QString error = checkManaged(managedRoot(), root, &dir);
+	if (error.isEmpty()) {
+		// The rename is instant and fails the way a delete would (files in
+		// use); the slow delete then runs on a worker. If the folder cannot
+		// be moved aside, delete it here.
+		const QString trash = trashPathFor(managedRoot());
+		if (QDir().rename(dir, trash)) {
+			QThreadPool::globalInstance()->start(
+				[trash]() { QDir(trash).removeRecursively(); });
+		} else if (!QDir(dir).removeRecursively()) {
+			error = removeFailed();
+		}
+	}
 	refreshManaged();
 	return error;
 }

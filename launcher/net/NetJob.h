@@ -68,7 +68,6 @@ class NetJob : public Task
 
 	bool canAbort() const override;
 
-	/// A job with several files in it shows one line per file being fetched.
 	bool isMultiStep() const override
 	{
 		return downloads.size() > 1;
@@ -90,9 +89,7 @@ class NetJob : public Task
 	void partAborted(int index);
 
   private:
-	/// Reports the state of a single file to whoever is showing our progress.
 	void emitPartStep(int index, TaskStepState state);
-	/// Keeps our own one line summary in sync with the file counts.
 	void updateStatus();
 
   private:
@@ -102,8 +99,8 @@ class NetJob : public Task
 		qint64 current_progress = 0;
 		qint64 total_progress = 1;
 		int failures = 0;
-		/// The line this file gets in the progress dialog. Shared so that the
-		/// list handed out by getStepProgress() stays up to date.
+		/// The step this file gets; shared so the list from
+		/// getStepProgress() stays current.
 		std::shared_ptr<TaskStepProgress> step;
 	};
 	QList<NetAction::Ptr> downloads;

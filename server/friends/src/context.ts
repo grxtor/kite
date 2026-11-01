@@ -16,7 +16,6 @@ declare module 'fastify' {
   }
 }
 
-/** What every route needs: settings, the database, the clock and the limiter. */
 export interface Context {
   config: Config;
   pool: pg.Pool;

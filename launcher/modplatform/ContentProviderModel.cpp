@@ -21,14 +21,12 @@
 #include "ContentProviderModel.h"
 
 #include <QDebug>
-#include <QSize>
 #include <QUrl>
 #include <utility>
 
 #include "core/LauncherContext.h"
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "net/Download.h"
-#include "net/HttpMetaCache.h"
 
 ContentProviderModel::ContentProviderModel(const ModPlatform::ContentApi& api,
 										   ModPlatform::ContentType contentType,
@@ -41,8 +39,7 @@ ContentProviderModel::ContentProviderModel(const ModPlatform::ContentApi& api,
 
 ContentProviderModel::~ContentProviderModel()
 {
-	/* The search job writes straight into a member buffer, so it must
-	 * not outlive us. */
+	/* The search job writes into a member buffer, so it must not outlive us. */
 	if (m_searchJob) {
 		m_searchJob->abort();
 	}
@@ -71,9 +68,7 @@ QVariant ContentProviderModel::data(const QModelIndex& index, int role) const
 
 	switch (role) {
 		case Qt::DisplayRole:
-			/* Left as the plain name: if a view is ever shown without
-			 * ProjectItemDelegate attached, the default delegate paints
-			 * this and the list stays readable. */
+			/* The plain name. */
 			return project.name;
 
 		case Qt::ToolTipRole:
@@ -84,31 +79,6 @@ QVariant ContentProviderModel::data(const QModelIndex& index, int role) const
 			}
 			return project.description;
 
-		case Qt::DecorationRole: {
-			if (m_logoMap.contains(project.logoKey)) {
-				return m_logoMap.value(project.logoKey);
-			}
-			const_cast<ContentProviderModel*>(this)->requestLogo(
-				project.logoKey, project.logoUrl);
-			return LAUNCHER->getThemedIcon("screenshot-placeholder");
-		}
-
-		case Qt::SizeHintRole:
-			/* Fixed row height: enough for the title plus two lines of
-			 * description, independent of the view's icon size. */
-			return QSize(0, 58);
-
-		case Qt::CheckStateRole:
-			/* Every row gets a box, installed or not. Re-picking a row
-			 * that is already on disk is how a version is changed: the
-			 * conflict analyzer turns it into a replacement, or drops it
-			 * when the same version was chosen. Whether it is installed
-			 * only affects how the row is painted, which the delegate
-			 * asks for separately through ProjectItemRole::Installed. */
-			return m_selectedNames.contains(project.normalizedName)
-					   ? Qt::Checked
-					   : Qt::Unchecked;
-
 		case Qt::UserRole:
 			return project.projectId;
 
@@ -116,8 +86,7 @@ QVariant ContentProviderModel::data(const QModelIndex& index, int role) const
 			return project.name;
 
 		case ProjectItemRole::Description:
-			/* Full text, unlike the pre-truncated tooltip above: the
-			 * delegate does its own wrapping and eliding to fit. */
+			/* Full text; the view wraps and elides it. */
 			return project.description;
 
 		case ProjectItemRole::Installed:
@@ -154,10 +123,7 @@ QHash<int, QByteArray> ContentProviderModel::roleNames() const
 
 Qt::ItemFlags ContentProviderModel::flags(const QModelIndex& index) const
 {
-	/* Deliberately no Qt::ItemIsUserCheckable: this model has no
-	 * setData(), and the flag would make the base delegate try to toggle
-	 * through it. The checkbox is driven by the delegate's
-	 * checkboxClicked() signal instead. */
+	/* No Qt::ItemIsUserCheckable: there is no setData(). */
 	return QAbstractListModel::flags(index);
 }
 
@@ -177,11 +143,6 @@ void ContentProviderModel::fetchMore(const QModelIndex& parent)
 QString ContentProviderModel::platformId() const
 {
 	return m_api.id();
-}
-
-QString ContentProviderModel::platformDisplayName() const
-{
-	return m_api.displayName();
 }
 
 QList<ModPlatform::SortingMethod> ContentProviderModel::sortingMethods() const
@@ -217,8 +178,7 @@ void ContentProviderModel::loadCategories()
 	});
 	connect(job, &NetJob::failed, this, [job, response](QString reason) {
 		job->deleteLater();
-		/* Not worth bothering the user with: the panel just goes
-		 * without its category group. */
+		/* The panel just goes without its category group. */
 		qWarning() << "Could not load categories:" << reason;
 	});
 
@@ -275,8 +235,7 @@ void ContentProviderModel::setSearchFilters(
 
 	m_filters = filters;
 
-	/* Nothing has been asked for yet, so there is nothing to redo - the
-	 * first search will pick the new filters up by itself. */
+	/* Nothing asked yet; the first search picks the filters up. */
 	if (!m_searched) {
 		return;
 	}
@@ -292,10 +251,8 @@ void ContentProviderModel::setSearchFilters(
 
 void ContentProviderModel::search(const QString& term, int sortIndex)
 {
-	/* A repeat of the query that is already on screen is ignored, but
-	 * only when the rows really are the answer to a search: coming back
-	 * from a single-project lookup has to run the search even though the
-	 * term did not change. */
+	/* A repeat of the query on screen is ignored, but not when coming back
+	 * from a single-project lookup. */
 	if (m_searched && m_projectLookupId.isEmpty() && m_searchTerm == term &&
 		m_sortIndex == sortIndex) {
 		return;
@@ -307,9 +264,8 @@ void ContentProviderModel::search(const QString& term, int sortIndex)
 	m_projectLookupId.clear();
 
 	if (m_searchJob) {
-		/* A reply for the previous query is still on its way. Mark the
-		 * intent first, then abort: aborting can complete synchronously,
-		 * and the handler needs to see the new state. */
+		/* A reply for the previous query is in flight. Set the state before
+		 * aborting: abort can complete synchronously and the handler reads it. */
 		m_searchState = ResetRequested;
 		m_searchJob->abort();
 		return;
@@ -325,8 +281,8 @@ void ContentProviderModel::searchProject(const QString& projectId)
 	}
 
 	m_searched = true;
-	/* No term to speak of, and clearing it means a later search() for
-	 * whatever is in the search box is never mistaken for a repeat. */
+	/* Clearing the term keeps a later search() for the box's contents from
+	 * being taken as a repeat. */
 	m_searchTerm.clear();
 	m_projectLookupId = projectId;
 
@@ -396,8 +352,7 @@ void ContentProviderModel::searchRequestFinished()
 	m_searchJob.reset();
 
 	if (m_searchState == ResetRequested) {
-		/* These results answer a query the user has already moved on
-		 * from. Throw them away and ask again with the current one. */
+		/* These answer a query the user has moved on from: ask again. */
 		searchRequestFailed();
 		return;
 	}
@@ -409,9 +364,8 @@ void ContentProviderModel::searchRequestFinished()
 	if (m_projectLookupId.isEmpty()) {
 		newList = parseSearchResponse(m_searchResponse, totalHits);
 	} else {
-		/* One project, or none if the reply held nothing usable. Either
-		 * way this is the whole answer, so the size below - being under
-		 * a page - settles the paging state as Finished. */
+		/* One project, or none; either way the whole answer, so the size (under
+		 * a page) settles the paging state as Finished. */
 		auto project = parseProjectResponse(m_searchResponse);
 		if (!project.projectId.isEmpty()) {
 			newList.append(project);
@@ -425,8 +379,8 @@ void ContentProviderModel::searchRequestFinished()
 	}
 
 	if (!newList.isEmpty()) {
-		/* Work out which of the new results the filter lets through
-		 * before touching the model, so the inserted range is right. */
+		/* Work out which new results pass the filter before touching the model,
+		 * so the inserted range is right. */
 		QList<int> added;
 		const int firstStorage = m_projects.size();
 		for (int i = 0; i < newList.size(); ++i) {
@@ -471,12 +425,8 @@ void ContentProviderModel::searchRequestFailed()
 		return;
 	}
 
-	/* Deliberately not the reference launcher's behaviour for a
-	 * single-project lookup that 404s: it flips the model back into a
-	 * plain search and asks the provider for the literal string "#<id>",
-	 * which returns whatever that happens to match. There is nothing to
-	 * show for a project that is gone, so the list stays empty and the
-	 * page says so. */
+	/* A single-project lookup that 404s leaves the list empty and the page
+	 * says so; no fallback search for the literal string "#<id>". */
 	m_searchState = Finished;
 	emit searchStateChanged();
 }
@@ -511,9 +461,7 @@ void ContentProviderModel::loadEntry(int viewRow)
 		query.mcVersions = m_filters.mcVersions;
 		query.loaders = m_filters.loaders;
 
-		/* Held by both handlers rather than deleted by hand in each: only
-		 * one of them runs, and if the job is destroyed without either
-		 * firing the buffer still goes with it. */
+		/* Held by both handlers; freed with the job if neither fires. */
 		auto response = std::make_shared<QByteArray>();
 		auto* job = new NetJob(QString("%1::Versions(%2)")
 								   .arg(m_api.id(), projectId),
@@ -526,14 +474,11 @@ void ContentProviderModel::loadEntry(int viewRow)
 					job->deleteLater();
 					applyVersions(generation, projectId, *response);
 				});
-		/* `response` is captured here too, unused, so that the buffer is
-		 * plainly owned by the job's handlers whichever one runs. */
 		connect(job, &NetJob::failed, this,
 				[this, job, response, generation, projectId](QString) {
 					job->deleteLater();
-					/* Empty payload: the row is marked as loaded with no
-					 * versions, which the page shows as "no valid
-					 * version found" rather than spinning forever. */
+					/* Empty payload: the row is marked loaded with no versions, shown as
+					 * "no valid version found" instead of spinning. */
 					applyVersions(generation, projectId, QByteArray());
 				});
 		job->start();
@@ -567,8 +512,7 @@ void ContentProviderModel::applyVersions(quint64 generation,
 										 const QString& projectId,
 										 const QByteArray& bytes)
 {
-	/* The list may have been replaced, or the row may have moved, while
-	 * this was in flight. */
+	/* The list may have been replaced, or the row moved, in flight. */
 	if (generation != m_generation) {
 		return;
 	}
@@ -586,8 +530,7 @@ void ContentProviderModel::applyVersions(quint64 generation,
 
 	const int row = viewRowOfStorage(storage);
 	if (row < 0) {
-		/* Filtered out of the list while we were waiting; the data is
-		 * kept, but nobody is looking at it. */
+		/* Filtered out while waiting; the data is kept. */
 		return;
 	}
 
@@ -629,19 +572,9 @@ void ContentProviderModel::setInstalledIndex(
 	}
 
 	if (m_hideInstalled) {
-		/* Which rows are visible just changed under us. */
 		rebuildVisibleRows();
 		return;
 	}
-	emitRowStateChanged();
-}
-
-void ContentProviderModel::setSelectedNames(const QSet<QString>& names)
-{
-	if (m_selectedNames == names) {
-		return;
-	}
-	m_selectedNames = names;
 	emitRowStateChanged();
 }
 
@@ -653,8 +586,8 @@ void ContentProviderModel::applyInstalledState(
 		return;
 	}
 
-	/* Two-step lookup: the exact project first, then the name key -
-	 * which also catches the same mod installed from the other site. */
+	/* The exact project first, then the name key, which also catches the
+	 * same mod installed from the other site. */
 	if (!project.projectId.isEmpty()) {
 		const auto byProject =
 			m_installedIndex->findByPlatformProject(m_api.id(),
@@ -678,51 +611,5 @@ void ContentProviderModel::emitRowStateChanged()
 		return;
 	}
 	emit dataChanged(index(0), index(m_visibleRows.size() - 1),
-					 {Qt::CheckStateRole, ProjectItemRole::Installed});
-}
-
-void ContentProviderModel::requestLogo(const QString& key, const QString& url)
-{
-	if (key.isEmpty() || url.isEmpty() || m_loadingLogos.contains(key) ||
-		m_failedLogos.contains(key)) {
-		return;
-	}
-
-	MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
-		iconCacheName(), QString("logos/%1").arg(key.section(".", 0, 0)));
-
-	auto* job = new NetJob(QString("%1 Icon %2").arg(m_api.id(), key),
-						   LAUNCHER->network());
-	job->addNetAction(Net::Download::makeCached(QUrl(url), entry));
-
-	const QString fullPath = entry->getFullPath();
-	connect(job, &NetJob::succeeded, this, [this, job, key, fullPath] {
-		job->deleteLater();
-		logoLoaded(key, QIcon(fullPath));
-	});
-	connect(job, &NetJob::failed, this, [this, job, key](QString) {
-		job->deleteLater();
-		logoFailed(key);
-	});
-
-	job->start();
-	m_loadingLogos.append(key);
-}
-
-void ContentProviderModel::logoLoaded(const QString& key, const QIcon& icon)
-{
-	m_loadingLogos.removeAll(key);
-	m_logoMap.insert(key, icon);
-
-	for (int row = 0; row < m_visibleRows.size(); ++row) {
-		if (m_projects.at(m_visibleRows.at(row)).logoKey == key) {
-			emit dataChanged(index(row), index(row), {Qt::DecorationRole});
-		}
-	}
-}
-
-void ContentProviderModel::logoFailed(const QString& key)
-{
-	m_loadingLogos.removeAll(key);
-	m_failedLogos.append(key);
+					 {ProjectItemRole::Installed});
 }

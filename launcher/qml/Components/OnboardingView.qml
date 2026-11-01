@@ -7,28 +7,29 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Kite.Theme
 
-/*
- * First run: the few choices Kite cannot make on its own -- language,
- * which Java and how much memory, an account -- as one calm, full-window
- * flow instead of a wizard dialog. Only the steps still needed are shown
- * (the shell decides which, with the same rules the classic wizard had);
- * the account step appears when there is no account yet and can be left
- * for later.
- */
+// First run. Shows only the steps the shell still needs.
 Rectangle {
     id: root
 
     property var shell: null
-    // Shown steps, fixed when the flow opens so it does not reshuffle as
-    // each choice is saved.
+    // macOS: the title bar's height when it lies over the window, else 0.
+    property int topInset: 0
+    // Fixed when the flow opens, so saving a choice does not reshuffle it.
     property var steps: []
     property int index: 0
     readonly property string step: steps.length > 0 ? steps[Math.min(index, steps.length - 1)] : ""
     property bool active: false
+    readonly property int contentTop: Math.max(Theme.space.xxl, root.topInset + Theme.space.sm)
+    readonly property int skyMaxWidth: 380
+    readonly property real skyShare: 0.34
+    readonly property int brandSize: 64
+    readonly property int stepMarkSize: 28
+    // The intro line under a step's title wraps sooner than the step's content.
+    readonly property int introMaxWidth: 640
+    readonly property int contentMaxWidth: 720
 
     signal finished()
     signal signInRequested()
-    // The last step's two ways on, for a library with nothing in it yet.
     signal createInstanceRequested()
     signal discoverRequested()
 
@@ -60,15 +61,13 @@ Rectangle {
         root.finished()
     }
 
-    // Leaves the flow for somewhere to start: New instance or Discover.
     function finishTo(request) {
         root.finish()
         request()
     }
 
-    // The saved language's row, centred: the list opens on it, not on the
-    // first language in the alphabet. TranslationsModel has no key lookup
-    // of its own, so the roles are read row by row.
+    // Opens the list on the saved language. TranslationsModel has no key
+    // lookup, so the rows are searched.
     function showChosenLanguage() {
         var model = languageList.model
         var saved = SettingsStore.string("Language")
@@ -88,7 +87,7 @@ Rectangle {
         case "java": return qsTr("Java & memory")
         case "account": return qsTr("Account")
         case "done": return qsTr("Ready")
-        default: return id
+        default: return ""
         }
     }
 
@@ -97,27 +96,22 @@ Rectangle {
     visible: active
     color: Theme.palette.canvas
 
-    // Swallow everything underneath while the flow is open.
     MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
 
     RowLayout {
         anchors.fill: parent
         spacing: 0
 
-        // Brand side: who we are and where we are in the flow, on a plain
-        // raised surface fading into the page's own. Neutral on purpose:
-        // the logo carries the violet, the backdrop doesn't tint toward it.
         Rectangle {
             id: sky
             Layout.fillHeight: true
-            Layout.preferredWidth: Math.min(380, root.width * 0.34)
+            Layout.preferredWidth: Math.min(root.skyMaxWidth, root.width * root.skyShare)
 
             gradient: Gradient {
                 GradientStop { position: 0.0; color: Theme.palette.surfaceRaised }
                 GradientStop { position: 1.0; color: Theme.palette.surface }
             }
 
-            // The edge against the step, as the shell's own hairlines.
             Rectangle {
                 anchors.right: parent.right
                 width: 1
@@ -128,30 +122,25 @@ Rectangle {
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: Theme.space.xxl
+                anchors.topMargin: root.contentTop
                 spacing: Theme.space.lg
 
                 BrandMark {
-                    size: 64
+                    size: root.brandSize
                     Layout.preferredWidth: size
                     Layout.preferredHeight: size
                 }
-                Text {
+                Copy {
                     Layout.fillWidth: true
                     text: qsTr("Welcome to Kite")
                     wrapMode: Text.Wrap
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.display.pixelSize
-                    font.weight: Font.Bold
-                    font.letterSpacing: -0.6
+                    role: "subheading"
                 }
-                Text {
+                Copy {
                     Layout.fillWidth: true
                     text: qsTr("A couple of choices and you're playing.")
                     wrapMode: Text.Wrap
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
+                    tone: "secondary"
                 }
 
                 Column {
@@ -160,6 +149,7 @@ Rectangle {
                     Repeater {
                         model: root.steps
                         delegate: Row {
+                            id: stepRow
                             required property string modelData
                             required property int index
                             readonly property bool current: index === root.index
@@ -167,35 +157,34 @@ Rectangle {
                             spacing: Theme.space.md
 
                             Rectangle {
-                                width: 28; height: 28; radius: 14
-                                color: parent.current ? Theme.palette.accent
-                                     : parent.doneStep ? Theme.palette.accentSubtle : "transparent"
-                                border.width: parent.current || parent.doneStep ? 0 : 1
+                                width: root.stepMarkSize
+                                height: root.stepMarkSize
+                                radius: root.stepMarkSize / 2
+                                color: stepRow.current ? Theme.palette.accent
+                                     : stepRow.doneStep ? Theme.palette.accentSubtle : "transparent"
+                                border.width: stepRow.current || stepRow.doneStep ? 0 : 1
                                 border.color: Theme.palette.borderStrong
-                                Text {
+                                Copy {
                                     anchors.centerIn: parent
-                                    visible: !parent.parent.doneStep
-                                    text: parent.parent.index + 1
-                                    color: parent.parent.current ? Theme.palette.textOnAccent : Theme.palette.textTertiary
-                                    font.family: Theme.font.family
-                                    font.pixelSize: Theme.type.label.pixelSize
+                                    visible: !stepRow.doneStep
+                                    text: stepRow.index + 1
+                                    role: "label"
+                                    tone: stepRow.current ? "onAccent" : "tertiary"
                                     font.weight: Font.Bold
                                 }
                                 MeshIcon {
                                     anchors.centerIn: parent
-                                    visible: parent.parent.doneStep
+                                    visible: stepRow.doneStep
                                     iconName: "check"
                                     size: Theme.icon.sm
                                     color: Theme.palette.accentText
                                 }
                             }
-                            Text {
+                            Copy {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: root.stepTitle(modelData)
-                                color: parent.current ? Theme.palette.textPrimary : Theme.palette.textTertiary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.body.pixelSize
-                                font.weight: parent.current ? Font.DemiBold : Font.Medium
+                                text: root.stepTitle(stepRow.modelData)
+                                tone: stepRow.current ? "primary" : "tertiary"
+                                font.weight: stepRow.current ? Font.DemiBold : Font.Medium
                             }
                         }
                     }
@@ -205,7 +194,6 @@ Rectangle {
             }
         }
 
-        // The step itself.
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -213,40 +201,36 @@ Rectangle {
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: Theme.space.xxl
-                anchors.topMargin: Theme.space.xxl + Theme.space.lg
+                anchors.topMargin: root.contentTop + Theme.space.lg
                 spacing: Theme.space.lg
 
-                Text {
+                Copy {
                     text: root.step === "language" ? qsTr("Choose your language")
-                        : root.step === "java" ? qsTr("Java and memory")
+                        : root.step === "java" ? root.stepTitle("java")
                         : root.step === "account" ? qsTr("Sign in to play online")
                         : qsTr("You're all set")
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.display.pixelSize
-                    font.weight: Font.Bold
+                    role: "display"
                 }
-                Text {
+                Copy {
                     Layout.fillWidth: true
-                    Layout.maximumWidth: 640
+                    Layout.maximumWidth: root.introMaxWidth
                     wrapMode: Text.Wrap
                     text: root.step === "language" ? qsTr("Kite switches as soon as you pick one. You can change it later in Settings.")
                         : root.step === "java" ? qsTr("Minecraft runs on Java. Pick an installed one, or let Kite download the right version for each game automatically.")
                         : root.step === "account" ? qsTr("Use the Microsoft account that owns Minecraft. You can also do this later from the account button at the bottom of the left sidebar.")
-                        : qsTr("Create an instance, or find a modpack in Discover.")
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
-                    lineHeight: 1.3
+                        : qsTr("Start a new instance, or find a modpack in Discover.")
+                    tone: "secondary"
+                    lineHeight: Theme.type.label.lineHeight
                 }
 
                 StackLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    Layout.maximumWidth: 720
+                    Layout.maximumWidth: root.contentMaxWidth
+                    // Every page counts toward a StackLayout's size; none may push the footer out of a short window.
+                    Layout.minimumHeight: 0
                     currentIndex: ["language", "java", "account", "done"].indexOf(root.step)
 
-                    // Language
                     ColumnLayout {
                         spacing: Theme.space.md
                         SearchBox {
@@ -254,13 +238,11 @@ Rectangle {
                             Layout.fillWidth: true
                             placeholderText: qsTr("Search languages")
                         }
-                        Rectangle {
+                        BoxSurface {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: Theme.radius.lg
-                            color: Theme.palette.surface
-                            border.width: 1
-                            border.color: Theme.palette.border
+                            Layout.minimumHeight: Theme.control.heightLg + Theme.space.xs * 2
+                            Layout.maximumHeight: Math.max(Layout.minimumHeight, languageList.contentHeight + Theme.space.xs * 2)
                             ListView {
                                 id: languageList
                                 anchors.fill: parent
@@ -284,31 +266,28 @@ Rectangle {
                                     visible: matches
                                     hoverEnabled: true
                                     onClicked: root.shell.selectLanguage(languageKey)
-                                    background: Rectangle {
+                                    background: StateFill {
+                                        hovered: languageRow.hovered
+                                        active: languageRow.chosen
                                         radius: Theme.radius.md
-                                        color: languageRow.chosen ? Theme.palette.accentSubtle
-                                             : languageRow.hovered ? Theme.palette.hoverOverlay : "transparent"
                                     }
                                     contentItem: RowLayout {
                                         spacing: Theme.space.md
-                                        Text {
+                                        Copy {
                                             Layout.leftMargin: Theme.space.md
                                             Layout.fillWidth: true
                                             text: languageRow.name
-                                            // One edge for every name, right-to-left scripts too.
+                                            // Left-aligned for right-to-left scripts too.
                                             horizontalAlignment: Text.AlignLeft
                                             elide: Text.ElideRight
-                                            color: languageRow.chosen ? Theme.palette.accentText : Theme.palette.textPrimary
-                                            font.family: Theme.font.family
-                                            font.pixelSize: Theme.type.body.pixelSize
+                                            tone: languageRow.chosen ? "accent" : "primary"
                                             font.weight: languageRow.chosen ? Font.DemiBold : Font.Normal
                                         }
-                                        Text {
+                                        Copy {
                                             visible: Number(languageRow.completeness) > 0 && Number(languageRow.completeness) < 1
                                             text: qsTr("%1% translated").arg(Math.round(Number(languageRow.completeness) * 100))
-                                            color: Theme.palette.textTertiary
-                                            font.family: Theme.font.family
-                                            font.pixelSize: Theme.type.caption.pixelSize
+                                            role: "caption"
+                                            tone: "tertiary"
                                         }
                                         MeshIcon {
                                             Layout.rightMargin: Theme.space.md
@@ -321,188 +300,158 @@ Rectangle {
                                 }
                             }
                         }
+                        Item { Layout.fillHeight: true }
                     }
 
-                    // Java and memory
-                    ColumnLayout {
-                        spacing: Theme.space.md
-                        SettingsGroup {
-                            Layout.fillWidth: true
-                            SettingSwitch {
-                                key: "JavaAutoDownload"
-                                label: qsTr("Download Java automatically")
-                                description: qsTr("Recommended. Each Minecraft version gets the Java it needs.")
-                            }
-                            MemorySetting {
-                                label: qsTr("Maximum memory")
-                                systemMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
+                    Item {
+                        // Scrolls when the window is too short for all of it, so the footer stays in view. It reaches
+                        // past the column by what the flat "Detect again" hangs out, so its hover and focus are not clipped.
+                        Flickable {
+                            id: javaFlick
+                            anchors.fill: parent
+                            anchors.rightMargin: -Theme.space.sm
+                            contentWidth: width
+                            contentHeight: javaColumn.height
+                            boundsBehavior: Flickable.StopAtBounds
+                            clip: true
+                            ScrollBar.vertical: ScrollBar {}
+
+                            ColumnLayout {
+                                id: javaColumn
+                                width: javaFlick.width - Theme.space.sm
+                                height: Math.max(javaFlick.height, implicitHeight)
+                                spacing: Theme.space.md
+                                SettingsGroup {
+                                    Layout.fillWidth: true
+                                    SettingSwitch {
+                                        key: "JavaAutoDownload"
+                                        label: qsTr("Download Java automatically")
+                                        description: qsTr("Recommended. Each Minecraft version gets the Java it needs.")
+                                    }
+                                    MemorySetting {
+                                        label: qsTr("Maximum memory")
+                                        systemMiB: root.shell && root.shell.systemMemoryMiB ? root.shell.systemMemoryMiB : 8192
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    GroupHeading {
+                                        Layout.fillWidth: true
+                                        title: qsTr("Java on this computer")
+                                    }
+                                    Button {
+                                        flat: true
+                                        // Its text ends on the column's edge; the padding hangs out.
+                                        rightPadding: Theme.space.sm
+                                        Layout.rightMargin: -rightPadding
+                                        text: qsTr("Detect again")
+                                        icon.source: Icons.url("refresh")
+                                        enabled: !!root.shell && !root.shell.javaDetecting
+                                        onClicked: root.shell.detectJava()
+                                    }
+                                }
+                                JavaInstallList {
+                                    id: javaList
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    // As tall as its rows.
+                                    Layout.minimumHeight: javaList.minHeight
+                                    Layout.maximumHeight: javaList.fitHeight
+                                    model: root.shell ? root.shell.javaInstalls : null
+                                    detecting: !!root.shell && !!root.shell.javaDetecting
+                                    currentPath: SettingsStore.string("JavaPath")
+                                    emptyText: SettingsStore.bool("JavaAutoDownload")
+                                               ? qsTr("No Java found on this computer. That's fine: Kite downloads the right one the first time you play.")
+                                               : qsTr("No Java found on this computer. Turn on automatic downloads above, or install Java and detect again.")
+                                    onPicked: (path) => root.shell.useJava(path)
+                                }
+                                Item { Layout.fillHeight: true }
                             }
                         }
+                    }
+
+                    ColumnLayout {
+                        spacing: 0
                         RowLayout {
-                            Layout.fillWidth: true
-                            Text {
-                                Layout.fillWidth: true
-                                text: qsTr("Java on this computer")
-                                color: Theme.palette.textPrimary
-                                font.family: Theme.font.heading
-                                font.pixelSize: Theme.type.title.pixelSize
-                                font.weight: Font.Bold
+                            Layout.topMargin: Theme.space.lg
+                            spacing: Theme.space.sm
+                            Button {
+                                highlighted: true
+                                text: qsTr("Sign in with Microsoft")
+                                onClicked: {
+                                    root.finish()
+                                    root.signInRequested()
+                                }
                             }
                             Button {
                                 flat: true
-                                text: qsTr("Detect again")
-                                icon.source: Icons.url("refresh")
-                                enabled: !!root.shell && !root.shell.javaDetecting
-                                onClicked: root.shell.detectJava()
-                            }
-                        }
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            radius: Theme.radius.lg
-                            color: Theme.palette.surface
-                            border.width: 1
-                            border.color: Theme.palette.border
-                            ListView {
-                                id: javaList
-                                anchors.fill: parent
-                                anchors.margins: Theme.space.xs
-                                clip: true
-                                model: root.shell ? root.shell.javaInstalls : null
-                                ScrollBar.vertical: ScrollBar {}
-                                delegate: AbstractButton {
-                                    id: javaRow
-                                    required property string path
-                                    required property var version
-                                    required property var architecture
-                                    required property bool recommended
-                                    readonly property bool chosen: SettingsStore.string("JavaPath") === path
-                                    width: javaList.width
-                                    height: 52
-                                    hoverEnabled: true
-                                    onClicked: root.shell.useJava(path)
-                                    background: Rectangle {
-                                        radius: Theme.radius.md
-                                        color: javaRow.chosen ? Theme.palette.accentSubtle
-                                             : javaRow.hovered ? Theme.palette.hoverOverlay : "transparent"
-                                    }
-                                    contentItem: RowLayout {
-                                        spacing: Theme.space.md
-                                        Column {
-                                            Layout.leftMargin: Theme.space.md
-                                            Layout.fillWidth: true
-                                            spacing: 2
-                                            Text {
-                                                text: qsTr("Java %1").arg(String(javaRow.version))
-                                                color: javaRow.chosen ? Theme.palette.accentText : Theme.palette.textPrimary
-                                                font.family: Theme.font.family
-                                                font.pixelSize: Theme.type.body.pixelSize
-                                                font.weight: Font.DemiBold
-                                            }
-                                            Text {
-                                                width: parent.width
-                                                text: javaRow.path
-                                                elide: Text.ElideMiddle
-                                                color: Theme.palette.textTertiary
-                                                font.family: Theme.font.mono
-                                                font.pixelSize: Theme.type.caption.pixelSize
-                                            }
-                                        }
-                                        Tag { text: String(javaRow.architecture) }
-                                        StatusBadge {
-                                            Layout.rightMargin: Theme.space.md
-                                            visible: javaRow.recommended
-                                            tone: "success"
-                                            text: qsTr("Recommended")
-                                        }
-                                    }
-                                }
-                                BusyIndicator {
-                                    anchors.centerIn: parent
-                                    running: !!root.shell && !!root.shell.javaDetecting
-                                    visible: running
-                                }
-                                Text {
-                                    anchors.centerIn: parent
-                                    width: parent.width - Theme.space.xxl * 2
-                                    visible: javaList.count === 0 && !!root.shell && !root.shell.javaDetecting
-                                    horizontalAlignment: Text.AlignHCenter
-                                    wrapMode: Text.Wrap
-                                    text: SettingsStore.bool("JavaAutoDownload")
-                                          ? qsTr("No Java found on this computer. That's fine: Kite downloads the right one the first time you play.")
-                                          : qsTr("No Java found on this computer. Turn on automatic downloads above, or install Java and detect again.")
-                                    color: Theme.palette.textTertiary
-                                    font.family: Theme.font.family
-                                    font.pixelSize: Theme.type.label.pixelSize
-                                    lineHeight: Theme.type.label.lineHeight
-                                }
-                            }
-                        }
-                    }
-
-                    // Account
-                    ColumnLayout {
-                        spacing: Theme.space.md
-                        Button {
-                            highlighted: true
-                            text: qsTr("Sign in with Microsoft")
-                            icon.source: Icons.url("user")
-                            onClicked: {
-                                root.finish()
-                                root.signInRequested()
+                                text: qsTr("Later")
+                                onClicked: root.next()
                             }
                         }
                         Item { Layout.fillHeight: true }
                     }
 
-                    // Done: the way on is in the footer.
-                    Item {}
+                    ColumnLayout {
+                        spacing: 0
+                        RowLayout {
+                            Layout.topMargin: Theme.space.lg
+                            spacing: Theme.space.sm
+                            Button {
+                                highlighted: true
+                                text: qsTr("New instance")
+                                icon.source: Icons.url("plus")
+                                onClicked: root.finishTo(root.createInstanceRequested)
+                            }
+                            Button {
+                                text: qsTr("Discover")
+                                icon.source: Icons.url("compass")
+                                onClicked: root.finishTo(root.discoverRequested)
+                            }
+                            Button {
+                                flat: true
+                                text: qsTr("Go to Home")
+                                onClicked: root.finish()
+                            }
+                        }
+                        Item { Layout.fillHeight: true }
+                    }
                 }
 
                 RowLayout {
                     Layout.fillWidth: true
-                    Layout.maximumWidth: 720
+                    Layout.maximumWidth: root.contentMaxWidth
+                    visible: root.step !== "done"
                     spacing: Theme.space.sm
                     Button {
+                        // Pulled left by its padding plus the chevron's side bearing, so the chevron's ink
+                        // starts on the column's edge (as in ModpackDetail's "Back to results").
+                        readonly property int chevronBearing: Math.round(Theme.icon.sm / 3)
                         flat: true
-                        visible: root.index > 0 && root.step !== "done"
+                        visible: root.index > 0
+                        leftPadding: Theme.space.sm
+                        Layout.leftMargin: -(leftPadding + chevronBearing)
                         text: qsTr("Back")
                         icon.source: Icons.url("chevron-left")
                         onClicked: root.index--
                     }
                     Item { Layout.fillWidth: true }
                     Button {
-                        flat: true
-                        visible: root.step === "done"
-                        text: qsTr("Go to Home")
-                        onClicked: root.finish()
-                    }
-                    Button {
-                        visible: root.step === "done"
-                        text: qsTr("Browse modpacks")
-                        icon.source: Icons.url("compass")
-                        onClicked: root.finishTo(root.discoverRequested)
-                    }
-                    Button {
-                        visible: root.step === "account"
-                        text: qsTr("Later")
-                        onClicked: root.next()
-                    }
-                    Button {
                         highlighted: true
-                        visible: root.step === "done"
-                        text: qsTr("Create an instance")
-                        icon.source: Icons.url("plus")
-                        onClicked: root.finishTo(root.createInstanceRequested)
-                    }
-                    Button {
-                        highlighted: true
-                        visible: root.step !== "account" && root.step !== "done"
+                        visible: root.step === "language" || root.step === "java"
                         text: qsTr("Continue")
                         onClicked: root.next()
                     }
                 }
             }
         }
+    }
+
+    WindowDragBand {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        height: root.topInset
+        enabled: root.topInset > 0
     }
 }

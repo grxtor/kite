@@ -20,14 +20,9 @@
 
 #include "Commandline.h"
 
-/**
- * @file libutil/src/cmdutils.cpp
- */
-
 namespace Commandline
 {
 
-	// commandline splitter
 	QStringList splitArgs(QString args)
 	{
 		QStringList argv;
@@ -37,11 +32,9 @@ namespace Commandline
 		for (int i = 0; i < args.length(); i++) {
 			QChar cchar = args.at(i);
 
-			// \ escaped
 			if (escape) {
 				current += cchar;
 				escape = false;
-				// in "quotes"
 			} else if (!inquotes.isNull()) {
 				if (cchar == '\\')
 					escape = true;
@@ -49,7 +42,6 @@ namespace Commandline
 					inquotes = QChar();
 				else
 					current += cchar;
-				// otherwise
 			} else {
 				if (cchar == ' ') {
 					if (!current.isEmpty()) {
@@ -73,7 +65,6 @@ namespace Commandline
 		m_argStyle = argStyle;
 	}
 
-	// styles setter/getter
 	void Parser::setArgumentStyle(ArgumentStyle::Enum style)
 	{
 		m_argStyle = style;
@@ -92,7 +83,6 @@ namespace Commandline
 		return m_flagStyle;
 	}
 
-	// setup methods
 	void Parser::addSwitch(QString name, bool def)
 	{
 		if (m_params.contains(name))
@@ -163,13 +153,11 @@ namespace Commandline
 		param->flag = flag;
 	}
 
-	// help methods
 	QString Parser::compileHelp(QString progName, int helpIndent, bool useFlags)
 	{
 		QStringList help;
 		help << compileUsage(progName, useFlags) << "\r\n";
 
-		// positionals
 		if (!m_positionals.isEmpty()) {
 			help << "\r\n";
 			help << "Positional arguments:\r\n";
@@ -183,7 +171,6 @@ namespace Commandline
 			}
 		}
 
-		// Options
 		if (!m_optionList.isEmpty()) {
 			help << "\r\n";
 			QString optPrefix, flagPrefix;
@@ -223,7 +210,6 @@ namespace Commandline
 		QString optPrefix, flagPrefix;
 		getPrefix(optPrefix, flagPrefix);
 
-		// options
 		QListIterator<OptionDef*> it(m_optionList);
 		while (it.hasNext()) {
 			OptionDef* option = it.next();
@@ -238,7 +224,6 @@ namespace Commandline
 			usage << "]";
 		}
 
-		// arguments
 		QListIterator<PositionalDef*> it2(m_positionals);
 		while (it2.hasNext()) {
 			PositionalDef* param = it2.next();
@@ -250,7 +235,6 @@ namespace Commandline
 		return usage.join("");
 	}
 
-	// parsing
 	QHash<QString, QVariant> Parser::parse(QStringList argv)
 	{
 		QHash<QString, QVariant> map;
@@ -269,15 +253,8 @@ namespace Commandline
 			QString arg = it.next();
 
 			if (!expecting.isEmpty())
-			// we were expecting an argument
 			{
 				QString name = expecting.first();
-				/*
-							if (map.contains(name))
-								throw ParsingError(
-									QString("Option %2%1 was given multiple
-				   times").arg(name, optionPrefix));
-				*/
 				map[name] = QVariant(arg);
 
 				expecting.removeFirst();
@@ -285,9 +262,7 @@ namespace Commandline
 			}
 
 			if (arg.startsWith(optionPrefix))
-			// we have an option
 			{
-				// qDebug("Found option %s", qPrintable(arg));
 
 				QString name = arg.mid(optionPrefix.length());
 				QString equals;
@@ -301,15 +276,10 @@ namespace Commandline
 				}
 
 				if (m_options.contains(name)) {
-					/*
-					if (map.contains(name))
-						throw ParsingError(QString("Option %2%1 was given
-					multiple times") .arg(name, optionPrefix));
-	*/
 					OptionDef* option = m_options[name];
 					if (option->type == otSwitch)
 						map[name] = true;
-					else // if (option->type == otOption)
+					else
 					{
 						if (m_argStyle == ArgumentStyle::Space)
 							expecting.append(name);
@@ -331,9 +301,7 @@ namespace Commandline
 			}
 
 			if (arg.startsWith(flagPrefix))
-			// we have (a) flag(s)
 			{
-				// qDebug("Found flags %s", qPrintable(arg));
 
 				QString flags = arg.mid(flagPrefix.length());
 				QString equals;
@@ -354,15 +322,9 @@ namespace Commandline
 							QString("Unknown flag %2%1").arg(flag, flagPrefix));
 
 					OptionDef* option = m_flags[flag];
-					/*
-									if (map.contains(option->name))
-										throw ParsingError(QString("Option %2%1
-					   was given multiple times") .arg(option->name,
-					   optionPrefix));
-					*/
 					if (option->type == otSwitch)
 						map[option->name] = true;
-					else // if (option->type == otOption)
+					else
 					{
 						if (m_argStyle == ArgumentStyle::Space)
 							expecting.append(option->name);
@@ -389,7 +351,6 @@ namespace Commandline
 				continue;
 			}
 
-			// must be a positional argument
 			if (!positionals.hasNext())
 				throw ParsingError(
 					QString("Don't know what to do with '%1'").arg(arg));
@@ -399,7 +360,6 @@ namespace Commandline
 			map[param->name] = arg;
 		}
 
-		// check if we're missing something
 		if (!expecting.isEmpty())
 			throw ParsingError(
 				QString("Was still expecting arguments for %2%1")
@@ -416,7 +376,6 @@ namespace Commandline
 				map[param->name] = param->def;
 		}
 
-		// fill out gaps
 		QListIterator<OptionDef*> iter(m_optionList);
 		while (iter.hasNext()) {
 			OptionDef* option = iter.next();
@@ -427,7 +386,6 @@ namespace Commandline
 		return map;
 	}
 
-	// clear defs
 	void Parser::clear()
 	{
 		m_flags.clear();
@@ -449,27 +407,23 @@ namespace Commandline
 		}
 	}
 
-	// Destructor
 	Parser::~Parser()
 	{
 		clear();
 	}
 
-	// getPrefix
 	void Parser::getPrefix(QString& opt, QString& flag)
 	{
 		if (m_flagStyle == FlagStyle::Windows)
 			opt = flag = "/";
 		else if (m_flagStyle == FlagStyle::Unix)
 			opt = flag = "-";
-		// else if (m_flagStyle == FlagStyle::GNU)
 		else {
 			opt = "--";
 			flag = "-";
 		}
 	}
 
-	// ParsingError
 	ParsingError::ParsingError(const QString& what)
 		: std::runtime_error(what.toStdString())
 	{

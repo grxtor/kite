@@ -7,19 +7,13 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The amount of memory as a typed value ("6 GB", "512 MB"), the one field
- * both memory rows use (MemorySetting's maximum, MemoryStartSetting's
- * starting amount) so the two read as the same kind of setting.
- *
- * `value` is in MiB. Typing accepts "6 GB", "6g", "6144" or "6144 MB"; a
- * bare number under `bareGigabytesBelow` is taken as GB (nobody means 8 MB).
- * Whatever is typed snaps to `step` and is clamped to [from, to] before
- * `committed` fires, and Up/Down step it. Text that is no amount at all
- * puts the old value back.
+ * The amount of memory as a typed value ("6 GB", "512 MB"), the one field both
+ * memory rows use. `value` is in MiB. Typing accepts "6 GB", "6g", "6144" or
+ * "6144 MB"; a bare number under `bareGigabytesBelow` is taken as GB. Input snaps
+ * to `step` and is clamped to [from, to] before `committed` fires; Up/Down step
+ * it. Text that is no amount puts the old value back.
  */
 TextField {
-    id: root
-
     // MiB. The owner binds this to what it stores and saves on `committed`.
     property int value: 0
     property int from: 512
@@ -31,7 +25,6 @@ TextField {
 
     signal committed(int mib)
 
-    // "512 MB" below a gigabyte, "6 GB" or "6.5 GB" above.
     function describe(mib) {
         if (mib < mibPerGib)
             return qsTr("%1 MB").arg(mib)

@@ -112,9 +112,9 @@ void PerformanceInstanceTask::createInstance()
 	creation->setTargetDir(LAUNCHER->instances()->primaryDir());
 	m_creation = Task::Ptr(LAUNCHER->instances()->wrapInstanceTask(creation));
 
-	/* The final id is settled when InstanceList commits the staged
-	 * instance, announced just before the task reports success - the same
-	 * capture NewInstanceController::create() does. */
+	// The final id is settled when InstanceList commits the staged instance and
+	// is announced just before success, as NewInstanceController::create()
+	// does.
 	m_idCapture = connect(
 		LAUNCHER->instances().get(), &InstanceList::instanceSelectRequest, this,
 		[this](const QString& id) {

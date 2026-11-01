@@ -53,16 +53,16 @@ namespace ModHealth
 	{
 		const QString MinecraftId = QStringLiteral("minecraft");
 
-		/* The runtime hands these out itself, with no file behind them. */
+		// The runtime hands these out itself, with no file behind them.
 		const QStringList RuntimeIds = {
 			QStringLiteral("java"),		 QStringLiteral("fml"),
 			QStringLiteral("javafml"),	 QStringLiteral("lowcodefml"),
 			QStringLiteral("mixinextras"),
 		};
 
-		/* The loaders' own ids. The caller lists them in builtIns with a
-		 * version; one it left out is still the loader's to provide, not a
-		 * missing mod ("forge" on NeoForge 1.20.1, for one). */
+		// The loaders' own ids. The caller lists them in builtIns with a
+		// version; one it left out is still the loader's to provide, not a
+		// missing mod ("forge" on NeoForge 1.20.1, for one).
 		const QStringList LoaderIds = {
 			QStringLiteral("forge"),
 			QStringLiteral("neoforge"),
@@ -70,11 +70,10 @@ namespace ModHealth
 			QStringLiteral("quilt_loader"),
 		};
 
-		/* The extra versions a built-in answers to, which FML's
-		 * VersionSupportMatrix (net.neoforged.fml.loading and
-		 * net.minecraftforge.fml.loading) adds for the game version it runs:
-		 * a mod built for NeoForge 1.21 may ask for [1.21,1.21.1) and still
-		 * load on 1.21.1; Forge 1.20.1 also counts as 47.1.79. */
+		// The extra versions a built-in answers to, which FML's
+		// VersionSupportMatrix adds for the game version it runs: a mod built
+		// for NeoForge 1.21 may ask for [1.21,1.21.1) and still load on 1.21.1;
+		// Forge 1.20.1 also counts as 47.1.79.
 		QStringList alsoAnswersTo(const QString& id, const QStringList& loaders,
 								  const QString& minecraft)
 		{

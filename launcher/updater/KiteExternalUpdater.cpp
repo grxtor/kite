@@ -36,8 +36,7 @@
 namespace
 {
 
-	// Config keys, in one place so the updater binary and the launcher cannot
-	// drift apart on their spelling.
+	// Config keys in one place so the updater binary and the launcher agree on spelling.
 	constexpr auto kConfigFileName = "kite_update.cfg";
 	constexpr auto kKeyAllowBeta = "allow_beta";
 	constexpr auto kKeyAutoCheck = "auto_check";
@@ -48,28 +47,19 @@ namespace
 	//! Once a day, when the config says nothing.
 	constexpr int kDefaultIntervalSeconds = 86400;
 
-	//! The check is a child process; give it a chance to start, then to finish.
 	constexpr int kStartTimeoutMs = 5000;
 	constexpr int kFinishTimeoutMs = 60000;
 
-	/*!
-	 * Exit codes of `kite-updater --check-only`.
-	 *
-	 * 100 is used for "yes" rather than 2 so that it cannot be confused with
-	 * a crash, a signal, or Qt's own failure paths.
-	 */
+	/*! Exit codes of `kite-updater --check-only`. 100 rather than 2 for "yes" so it cannot be
+	 * confused with a crash, a signal or Qt's failure paths. */
 	enum CheckExitCode {
 		NoUpdate = 0,
 		CheckError = 1,
 		UpdateAvailable = 100,
 	};
 
-	/*!
-	 * Folds raw child output into the message body.
-	 *
-	 * UiHost::message() has no "Show Details" affordance to tuck this
-	 * behind, so it goes in the body instead when there is any.
-	 */
+	/*! Folds raw child output into the message body: UiHost::message() has no "Show Details"
+	 * affordance. */
 	QString withDetails(const QString& text, const QString& details = QString())
 	{
 		if (details.isEmpty())
@@ -77,14 +67,9 @@ namespace
 		return text + QLatin1String("\n\n") + details;
 	}
 
-	/*!
-	 * Split off the first line of \a text, returning it and leaving the rest
-	 * in \a text.
-	 *
-	 * The check protocol is three header lines followed by release notes that
-	 * are themselves multi-line, so the parser consumes exactly three lines
-	 * and treats everything after them as the body.
-	 */
+	/*! Splits off the first line of \a text and returns it. The check protocol is three header lines
+	 * followed by multi-line release notes, so the parser takes exactly three lines and treats the
+	 * rest as the body. */
 	QString takeLine(QString& text)
 	{
 		const int newline = text.indexOf(QLatin1Char('\n'));
@@ -131,8 +116,8 @@ KiteExternalUpdater::KiteExternalUpdater(const QString& appDir,
 
 	m_allowBeta = m_settings->value(kKeyAllowBeta, false).toBool();
 
-	// First run against this config: adopt whatever the launcher's own
-	// setting used to say, then record it so this only happens once.
+	// First run against this config: adopt the launcher's own setting, then record it so this
+	// happens once.
 	if (!m_settings->contains(kKeyAutoCheck)) {
 		m_autoCheck = autoCheckDefault;
 		m_settings->setValue(kKeyAutoCheck, m_autoCheck);
@@ -145,8 +130,7 @@ KiteExternalUpdater::KiteExternalUpdater(const QString& appDir,
 		m_settings->value(kKeyUpdateInterval, kDefaultIntervalSeconds)
 			.toInt(&intervalOk);
 	if (!intervalOk) {
-		// A hand-edited config with garbage in it must not disable updates
-		// forever; fall back rather than treating it as "On Launch".
+		// A hand-edited config with garbage must not disable updates forever; fall back.
 		qWarning() << "Updater: unreadable" << kKeyUpdateInterval
 				   << "in the update config; using the default.";
 		m_updateInterval = kDefaultIntervalSeconds;
@@ -157,12 +141,15 @@ KiteExternalUpdater::KiteExternalUpdater(const QString& appDir,
 		m_lastCheck = QDateTime::fromString(stored.toString(), Qt::ISODate);
 	}
 
-	// Single-shot: every path out of a check re-arms the timer itself, so a
-	// repeating timer would only add the risk of a check storm if one of them
-	// ever failed to.
+	// Single-shot: every path out of a check re-arms the timer, so a repeating timer would only
+	// risk a check storm.
 	m_updateTimer.setSingleShot(true);
 	connect(&m_updateTimer, &QTimer::timeout, this,
 			&KiteExternalUpdater::autoCheckTimerFired);
+
+	m_checkTimeout.setSingleShot(true);
+	connect(&m_checkTimeout, &QTimer::timeout, this,
+			&KiteExternalUpdater::onCheckTimedOut);
 
 	resetAutoCheckTimer();
 
@@ -177,6 +164,7 @@ KiteExternalUpdater::~KiteExternalUpdater()
 	m_updateTimer.stop();
 	disconnect(&m_updateTimer, &QTimer::timeout, this,
 			   &KiteExternalUpdater::autoCheckTimerFired);
+	releaseCheckProcess();
 	m_settings->sync();
 }
 
@@ -187,10 +175,8 @@ QString KiteExternalUpdater::updaterExecutablePath() const
 
 QStringList KiteExternalUpdater::commonArguments() const
 {
-	// The updater resolves its own paths from the data directory, so it is
-	// told which one to use rather than guessing -- a portable install and a
-	// system-wide one disagree about that, and only the launcher knows which
-	// this is.
+	// The updater is told the data directory rather than guessing: portable and system-wide
+	// installs disagree, and only the launcher knows.
 	QStringList args = {QStringLiteral("--dir"), m_dataDir.absolutePath()};
 	if (m_allowBeta)
 		args.append(QStringLiteral("--pre-release"));
@@ -205,78 +191,130 @@ void KiteExternalUpdater::checkForUpdates()
 void KiteExternalUpdater::checkForUpdates(bool triggeredByUser)
 {
 	if (m_checking) {
-		qDebug() << "Updater: a check is already running; ignoring.";
+		// An automatic check is running and the user asked: let the running
+		// one report its result to them.
+		if (triggeredByUser && !m_checkByUser) {
+			m_checkByUser = true;
+			if (!m_busy)
+				m_busy = LAUNCHER->uiHost()->showBusy(
+					tr("Checking for updates..."));
+		}
+		qDebug() << "Updater: a check is already running; not starting another.";
 		return;
 	}
 
 	m_checking = true;
-	emit canCheckForUpdatesChanged(false);
+	m_checkByUser = triggeredByUser;
 
-	// The check blocks, so the busy indication exists to prove the launcher
-	// has not simply frozen. An automatic check gets none: nobody asked, and
-	// a window stealing focus during startup is worse than no feedback.
-	std::unique_ptr<UiHost::BusyIndicator> busy;
+	// A busy indication shows the launcher is not frozen. Automatic checks get none: a window
+	// stealing focus at startup is worse than no feedback.
 	if (triggeredByUser)
-		busy = LAUNCHER->uiHost()->showBusy(tr("Checking for updates..."));
-	QCoreApplication::processEvents();
+		m_busy = LAUNCHER->uiHost()->showBusy(tr("Checking for updates..."));
 
-	QProcess proc;
+	auto* proc = new QProcess(this);
+	m_checkProcess = proc;
 #if defined(Q_OS_WIN32)
 	// Keep Windows from deciding an executable called "*updater*" needs to be
 	// elevated; the check only reads.
 	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
 	env.insert(QStringLiteral("__COMPAT_LAYER"),
 			   QStringLiteral("RUNASINVOKER"));
-	proc.setProcessEnvironment(env);
+	proc->setProcessEnvironment(env);
 #endif
 
 	QStringList args = {QStringLiteral("--check-only")};
 	args.append(commonArguments());
 	args.append(QStringLiteral("--debug"));
 
+	connect(proc, &QProcess::started, this,
+			[this] { m_checkTimeout.start(kFinishTimeoutMs); });
+	connect(proc, &QProcess::errorOccurred, this,
+			[this, proc](QProcess::ProcessError error) {
+				if (error != QProcess::FailedToStart)
+					return;
+				const QString reason = proc->errorString();
+				qWarning() << "Updater: the check did not start:" << error
+						   << reason;
+				onCheckStartFailed(reason);
+			});
+	connect(proc, &QProcess::finished, this,
+			[this](int exitCode, QProcess::ExitStatus) {
+				onCheckFinished(exitCode);
+			});
+
 	const QString program = updaterExecutablePath();
 	qDebug() << "Updater: running check:" << program << args;
-	proc.start(program, args);
+	m_checkTimeout.start(kStartTimeoutMs);
+	proc->start(program, args);
+}
 
-	if (!proc.waitForStarted(kStartTimeoutMs)) {
-		qWarning() << "Updater: the check did not start within"
-				   << kStartTimeoutMs / 1000 << "seconds:" << proc.error()
-				   << proc.errorString();
-		busy.reset();
-		LAUNCHER->uiHost()->message(
-			tr("Update Check Failed"),
-			tr("Failed to start after 5 seconds\nReason: %1.")
-				.arg(proc.errorString()),
-			UiHost::Severity::Information);
-		noteCheckCompleted();
-		return;
+void KiteExternalUpdater::releaseCheckProcess()
+{
+	m_checkTimeout.stop();
+	m_busy.reset();
+	if (QProcess* proc = m_checkProcess.data()) {
+		proc->disconnect(this);
+		if (proc->state() != QProcess::NotRunning)
+			proc->kill();
+		proc->deleteLater();
 	}
-	QCoreApplication::processEvents();
+	m_checkProcess.clear();
+}
 
-	if (!proc.waitForFinished(kFinishTimeoutMs)) {
-		const QByteArray output = proc.readAll();
-		proc.kill();
-		proc.waitForFinished(1000);
-		qWarning() << "Updater: the check did not finish within"
-				   << kFinishTimeoutMs / 1000 << "seconds:" << proc.error()
-				   << proc.errorString();
-		busy.reset();
+void KiteExternalUpdater::onCheckStartFailed(const QString& reason)
+{
+	releaseCheckProcess();
+	LAUNCHER->uiHost()->message(
+		tr("Update Check Failed"),
+		tr("Failed to start the updater.\nReason: %1.").arg(reason),
+		UiHost::Severity::Information);
+	noteCheckCompleted();
+}
+
+void KiteExternalUpdater::onCheckTimedOut()
+{
+	QProcess* proc = m_checkProcess.data();
+	if (!proc)
+		return;
+	const bool started = proc->state() == QProcess::Running;
+	const QByteArray output = proc->readAll();
+	qWarning() << "Updater: the check did not"
+			   << (started ? "finish" : "start") << "within"
+			   << (started ? kFinishTimeoutMs : kStartTimeoutMs) / 1000
+			   << "seconds.";
+	releaseCheckProcess();
+	if (started) {
 		LAUNCHER->uiHost()->message(
 			tr("Update Check Failed"),
-			withDetails(tr("Updater failed to close 60 seconds\nReason: %1.")
-							.arg(proc.errorString()),
+			withDetails(tr("The updater did not finish within 60 seconds."),
 						QString::fromUtf8(output)),
 			UiHost::Severity::Information);
-		noteCheckCompleted();
-		return;
+	} else {
+		LAUNCHER->uiHost()->message(
+			tr("Update Check Failed"),
+			tr("The updater did not start within 5 seconds."),
+			UiHost::Severity::Information);
 	}
+	noteCheckCompleted();
+}
 
-	const int exitCode = proc.exitCode();
-	const QByteArray stdOutput = proc.readAllStandardOutput();
-	const QByteArray stdError = proc.readAllStandardError();
+void KiteExternalUpdater::onCheckFinished(int exitCode)
+{
+	QProcess* proc = m_checkProcess.data();
+	if (!proc)
+		return;
+	const QByteArray stdOutput = proc->readAllStandardOutput();
+	const QByteArray stdError = proc->readAllStandardError();
+	releaseCheckProcess();
+	handleCheckResult(exitCode, stdOutput, stdError);
+	noteCheckCompleted();
+}
 
-	busy.reset();
-	QCoreApplication::processEvents();
+void KiteExternalUpdater::handleCheckResult(int exitCode,
+											const QByteArray& stdOutput,
+											const QByteArray& stdError)
+{
+	const bool triggeredByUser = m_checkByUser;
 
 	switch (exitCode) {
 		case CheckExitCode::NoUpdate:
@@ -301,7 +339,6 @@ void KiteExternalUpdater::checkForUpdates(bool triggeredByUser)
 
 		case CheckExitCode::UpdateAvailable: {
 			// Three header lines, then the release notes verbatim:
-			//
 			//     Name: Kite 7.20.0
 			//     Version: v7.20.0
 			//     TimeStamp: 2026-09-06T12:00:00Z
@@ -316,8 +353,8 @@ void KiteExternalUpdater::checkForUpdates(bool triggeredByUser)
 					 << versionTag << timestamp;
 
 			if (versionTag.isEmpty()) {
-				// Without a tag there is nothing to install and nothing to
-				// remember as skipped, so this is an error, not an offer.
+				// Without a tag there is nothing to install or to remember as skipped: an error,
+				// not an offer.
 				qWarning() << "Updater: the check reported an update but no "
 							  "version tag.";
 				LAUNCHER->uiHost()->message(
@@ -350,8 +387,6 @@ void KiteExternalUpdater::checkForUpdates(bool triggeredByUser)
 							 QString::fromUtf8(stdError))),
 				UiHost::Severity::Information);
 	}
-
-	noteCheckCompleted();
 }
 
 void KiteExternalUpdater::noteCheckCompleted()
@@ -362,7 +397,6 @@ void KiteExternalUpdater::noteCheckCompleted()
 
 	m_checking = false;
 	resetAutoCheckTimer();
-	emit canCheckForUpdatesChanged(true);
 }
 
 void KiteExternalUpdater::offerUpdate(const QString& versionName,
@@ -374,9 +408,8 @@ void KiteExternalUpdater::offerUpdate(const QString& versionName,
 	const bool skipped = m_settings->value(versionTag, false).toBool();
 	m_settings->endGroup();
 
-	// A skip only silences the automatic checks. Asking explicitly overrides
-	// it -- otherwise "Check for Updates" would answer nothing at all and
-	// look broken.
+	// A skip silences only automatic checks; an explicit "Check for Updates" overrides it, else it
+	// would look broken.
 	if (skipped && !triggeredByUser) {
 		qDebug() << "Updater:" << versionTag
 				 << "was skipped by the user; staying quiet.";
@@ -394,8 +427,7 @@ void KiteExternalUpdater::offerUpdate(const QString& versionName,
 			break;
 
 		case UiHost::UpdateChoice::Install:
-			// Forget any earlier skip: the user just chose to install this
-			// very version.
+			// Forget any earlier skip: the user chose to install this version.
 			m_settings->remove(versionTag);
 			m_settings->endGroup();
 			m_settings->sync();
@@ -442,9 +474,7 @@ void KiteExternalUpdater::performUpdate(const QString& versionTag)
 		return;
 	}
 
-	// The updater has to replace the files this process is running from, so
-	// there is nothing left to do here but leave. It waits for us to be gone
-	// before it touches anything.
+	// The updater replaces the files this process runs from, so leave; it waits for us to be gone.
 	QCoreApplication::exit();
 }
 
@@ -489,8 +519,7 @@ void KiteExternalUpdater::setBetaAllowed(bool allowed)
 void KiteExternalUpdater::resetAutoCheckTimer()
 {
 	if (!m_autoCheck || m_updateInterval <= 0.0) {
-		// Disabled, or "On Launch" -- which is handled at startup and needs
-		// no timer at all.
+		// Disabled, or "On Launch" (handled at startup): no timer.
 		m_updateTimer.stop();
 		return;
 	}
@@ -502,9 +531,8 @@ void KiteExternalUpdater::resetAutoCheckTimer()
 			static_cast<qint64>(m_updateInterval) - elapsed, 0);
 		timeoutMs = remaining * 1000;
 	}
-	// No record of a previous check leaves timeoutMs at 0, i.e. check as soon
-	// as the event loop turns. That is intentional: a fresh install should
-	// find out it is out of date without waiting a day first.
+	// No record of a previous check leaves timeoutMs at 0: check as soon as the event loop turns,
+	// so a fresh install learns it is out of date without waiting a day.
 
 	timeoutMs = std::min<qint64>(timeoutMs, INT_MAX);
 

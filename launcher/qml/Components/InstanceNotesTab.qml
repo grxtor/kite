@@ -7,16 +7,13 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The user's own notes on an instance -- a seed, a server address, which
- * mods to update -- as Prism's Notes page keeps them: one plain text box the
- * size of the tab. Saved a moment after typing stops, and at once when the
- * tab is left or another instance opens, always into the instance the text
- * was typed for.
+ * The user's own notes on an instance: one plain text box the size of the tab.
+ * Saved a moment after typing stops, and at once when the tab is left or another
+ * instance opens, always into the instance the text was typed for.
  */
 Item {
     id: root
 
-    // InstanceDetails: its `notes` is read and written here.
     property var details: null
 
     // The instance the unsaved text belongs to: `details` may already be the
@@ -78,7 +75,6 @@ Item {
         Behavior on border.color { ColorAnimation { duration: Theme.motion.fast } }
 
         ScrollView {
-            id: scroll
             anchors.fill: parent
             anchors.margins: Theme.space.sm
 

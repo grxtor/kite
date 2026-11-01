@@ -6,9 +6,8 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Home with nothing in the library: one way in. "Create instance" is the
- * page's primary action, "Browse modpacks" (Discover) the second way to get
- * a first instance. Lucide icon and words only, no picture.
+ * Home with nothing in the library: "Create instance" is the primary action, "Browse modpacks" (Discover) the second
+ * way to a first instance.
  */
 Column {
     id: root
@@ -25,7 +24,7 @@ Column {
 
         MeshIcon {
             iconName: "cube"
-            size: Theme.icon.lg + Theme.space.md
+            size: Theme.icon.xl
             color: Theme.palette.textTertiary
         }
     }

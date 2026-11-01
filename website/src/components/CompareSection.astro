@@ -1,0 +1,147 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+//
+// Kite next to other launchers. Every cell comes from src/data/compare.ts,
+// which lists the source it was checked against.
+import SectionHead from './SectionHead.astro';
+import { COMPARE, COMPARE_SOURCES, LAUNCHERS } from '../data/compare';
+import { getDictionary, type Locale } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale);
+const table = COMPARE[locale];
+---
+
+<section class="section compare" id="compare" aria-labelledby="compare-title">
+  <div class="container">
+    <SectionHead id="compare-title" title={t.compare.title} lead={t.compare.lead} />
+    <div class="scroll panel" role="region" aria-labelledby="compare-title" tabindex="0">
+      <table>
+        <colgroup>
+          <col />
+          {LAUNCHERS.map((launcher) => <col class:list={[launcher.id === 'kite' && 'kite']} />)}
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col" class="corner">{t.compare.corner}</th>
+            {
+              LAUNCHERS.map((launcher) => (
+                <th scope="col" class:list={[launcher.id === 'kite' && 'kite']}>
+                  {launcher.name}
+                </th>
+              ))
+            }
+          </tr>
+        </thead>
+        <tbody>
+          {
+            table.rows.map((row) => (
+              <tr>
+                <th scope="row">{row.label}</th>
+                {LAUNCHERS.map((launcher) => (
+                  <td class:list={[launcher.id === 'kite' && 'kite']}>{row.cells[launcher.id]}</td>
+                ))}
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <details class="sources">
+      <summary>{t.compare.sourcesTitle}</summary>
+      <ul>
+        {
+          COMPARE_SOURCES.map((source) => (
+            <li>
+              <a href={source.url} rel="noopener">
+                {source.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </details>
+  </div>
+</section>
+
+<style>
+  .compare {
+    scroll-margin-top: var(--header-height);
+  }
+  .scroll {
+    overflow-x: auto;
+    border-radius: var(--radius-xl);
+  }
+  table {
+    width: 100%;
+    min-width: var(--compare-min-width);
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+    line-height: var(--leading-body);
+  }
+  th,
+  td {
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  tbody tr:last-child th,
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  thead th {
+    color: var(--text);
+    font-family: var(--font-heading);
+    font-size: var(--text-name);
+    font-weight: 600;
+    line-height: 1.1;
+    border-bottom-color: var(--border-strong);
+  }
+  thead .corner {
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+  tbody th {
+    width: var(--compare-label-width);
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  td {
+    color: var(--text-secondary);
+  }
+  /* Kite's column: brighter text under a sky wash that fades down the column. */
+  col.kite {
+    background: linear-gradient(180deg, rgb(118 87 247 / 20%), transparent);
+  }
+  th.kite,
+  td.kite {
+    color: var(--text);
+  }
+
+  .sources {
+    margin-top: var(--space-4);
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+  }
+  .sources summary {
+    cursor: pointer;
+    width: fit-content;
+  }
+  .sources ul {
+    display: grid;
+    gap: var(--space-1);
+    margin: var(--space-3) 0 0;
+    padding-left: var(--space-5);
+  }
+  .sources a {
+    color: var(--text-secondary);
+  }
+</style>

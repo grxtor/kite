@@ -6,8 +6,7 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
-// Same grammar as CheckBox: a calm grey dot off, the accent with a white
-// centre on.
+// As CheckBox: a grey dot off, the accent with a white centre on.
 T.RadioButton {
     id: control
 

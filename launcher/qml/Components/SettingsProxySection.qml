@@ -6,13 +6,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * How Kite itself reaches the internet -- the QML equivalent of the
- * classic ProxyPage. Every field saves as it is set, same as the rest of
- * this window, so there is no separate Apply button; instead, whenever one
- * of the five proxy settings changes, applyProxySettings() below pushes the
- * whole configuration to the network layer immediately, the same effect
- * ProxyPage::apply() had when the classic dialog's OK button was pressed.
- * The group's description only ever says "Applied." after a change.
+ * How Kite itself reaches the internet. Every field saves as it is set; when one
+ * of the five proxy settings changes, applyProxySettings() pushes the whole
+ * configuration to the network layer at once, so there is no Apply button.
  */
 SettingsScroll {
     id: root
@@ -23,8 +19,7 @@ SettingsScroll {
     readonly property string proxyType: SettingsStore.string("ProxyType")
     readonly property bool needsAddress: root.proxyType === "SOCKS5" || root.proxyType === "HTTP"
 
-    // A brief "Applied." confirmation after any push to the network layer,
-    // since there is no Apply button here for it to have been the result of.
+    // A brief "Applied." confirmation after any push to the network layer.
     property bool justApplied: false
     Timer {
         id: appliedTimer

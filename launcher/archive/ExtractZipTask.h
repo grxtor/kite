@@ -32,23 +32,11 @@
 
 namespace MMCZip
 {
-	/*
-	 * Unpacking an archive, off the UI thread, with a progress bar and a
-	 * way out.
+	/* Unpacks an archive off the UI thread, with progress and abort.
 	 *
-	 * The modpack importer used to hand MMCZip::extractSubDir() to
-	 * QtConcurrent::run() and watch the future: the work did happen in
-	 * the background, but nothing came back until it was over. A
-	 * multi-gigabyte pack looked like a frozen "Extracting modpack"
-	 * label with a bar that never moved, and pressing the dialog's abort
-	 * button did nothing at all, because there was nothing to press it
-	 * against.
-	 *
-	 * `subdirectory` is a prefix inside the archive; only entries under
-	 * it are written out, with the prefix removed. Empty means the whole
-	 * archive - which is what the formats that ship their files at the
-	 * root need.
-	 */
+	 * `subdirectory` is a prefix inside the archive; only entries under it
+	 * are written, with the prefix removed. Empty means the whole archive
+	 * (for formats that ship files at the root). */
 	class ExtractZipTask : public Task
 	{
 		Q_OBJECT
@@ -58,8 +46,7 @@ namespace MMCZip
 					   QObject* parent = nullptr);
 		~ExtractZipTask() override = default;
 
-		/* The absolute paths of everything that was written. Only
-		 * meaningful after the task succeeded. */
+		/* Absolute paths of everything written; only meaningful after success. */
 		QStringList extractedFiles() const
 		{
 			return m_extracted;
@@ -75,15 +62,12 @@ namespace MMCZip
 		void executeTask() override;
 
 	  private:
-		/* Empty on success, the reason on failure. */
 		using ZipResult = std::optional<QString>;
 
 		ZipResult extractZip();
 		void finish();
 
-		/* See ExportToZipTask: the unpacking runs on a worker thread,
-		 * and task state may only be touched on the thread the task
-		 * lives on. */
+		/* Task state may only be touched on the task's thread. */
 		void reportStatus(const QString& status);
 		void reportProgress(qint64 current, qint64 total);
 
@@ -92,8 +76,7 @@ namespace MMCZip
 		QString m_subdirectory;
 		QStringList m_extracted;
 
-		/* See ExportToZipTask: the future from QtConcurrent::run() cannot
-		 * be cancelled, so the flag has to be ours. */
+		/* The QtConcurrent future cannot be cancelled. */
 		std::atomic<bool> m_cancelled{false};
 
 		QFuture<ZipResult> m_future;

@@ -11,7 +11,6 @@ SettingRow {
     id: root
 
     property string key
-    // Where the value lives; the launcher-wide settings unless told otherwise.
     property var source: SettingsStore
     property bool invert: false
     // Shows the switch off whatever is stored, for a setting that cannot
@@ -21,11 +20,9 @@ SettingRow {
     // setting already does what it would).
     property bool forcedOn: false
     readonly property bool checked: root.forcedOn || (!root.forcedOff && root.invert !== root.source.bool(root.key))
-    // After the new value is stored; `on` is what the switch now shows.
     signal switched(bool on)
 
     Switch {
-        id: control
         checked: root.checked
         Accessible.name: root.label
         onToggled: {

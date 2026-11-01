@@ -44,8 +44,7 @@ ManagedPackController::providerFromString(const QString& provider)
 	if (normalised == QLatin1String("modrinth")) {
 		return Provider::Modrinth;
 	}
-	// "flame" is what the upstream launchers call CurseForge - see
-	// ManagedPackPage::providerFromString()'s own comment.
+	// "flame" is what upstream launchers call CurseForge.
 	if (normalised == QLatin1String("curseforge") ||
 		normalised == QLatin1String("flame")) {
 		return Provider::CurseForge;
@@ -104,11 +103,6 @@ QString ManagedPackController::packName() const
 	return m_instance->managedPackName();
 }
 
-QString ManagedPackController::packId() const
-{
-	return m_instance->managedPackId();
-}
-
 QString ManagedPackController::installedVersionName() const
 {
 	return m_instance->managedPackVersionName();
@@ -129,9 +123,7 @@ QString ManagedPackController::packUrl() const
 	const QString packId = m_instance->managedPackId();
 	switch (m_provider) {
 		case Provider::Modrinth: {
-			// Modrinth accepts either the slug or the id here; the slug is
-			// preferred (it is what the user would see in a browser) but
-			// not always recorded.
+			// Modrinth accepts the slug or the id; the slug is preferred but not always recorded.
 			const QString slug = m_instance->managedPackSlug();
 			return ModrinthApi::get()
 				.projectPageUrl(slug.isEmpty() ? packId : slug)
@@ -249,11 +241,9 @@ void ManagedPackController::applyVersions(quint64 generation,
 	}
 
 	if (m_provider == Provider::CurseForge) {
-		// CurseForge returns a null downloadUrl for a file whose project
-		// opted out of third-party distribution - the common case for
-		// modpacks, not the exception. The site's own download route
-		// serves those files (see ManagedPackPage::applyVersions()'s own
-		// comment), so fall back to it here too.
+		// CurseForge returns a null downloadUrl when the project opted out of
+		// third-party distribution (common for modpacks); the site's own download route
+		// serves those files.
 		const QString packId = m_instance->managedPackId();
 		for (auto& version : m_versions) {
 			if (version.downloadUrl.isEmpty()) {
@@ -283,15 +273,11 @@ void ManagedPackController::rebuildVariants()
 		QVariantMap row;
 		row[QStringLiteral("id")] = version.versionId;
 		row[QStringLiteral("label")] = version.label();
-		/* The same facts as `label`, apart, for a row that lays them out
-		 * itself: the name, the first Minecraft version it declares, and
-		 * the release type as a lower-case key ("" when unknown). */
 		const QString name = version.displayName.isEmpty()
 								 ? version.versionNumber
 								 : version.displayName;
 		row[QStringLiteral("name")] = name;
-		/* Left out when the name already says it, as label() does: many
-		 * packs name their versions "15.0.0 for 26.3". */
+		/* Left out when the name already says it ("15.0.0 for 26.3"). */
 		QString minecraft;
 		for (const QString& mcVersion : version.mcVersions) {
 			if (mcVersion.isEmpty()) {
@@ -310,9 +296,7 @@ void ManagedPackController::rebuildVariants()
 			ManagedPack::releaseTypeToString(version.releaseType).toLower();
 		row[QStringLiteral("current")] = isInstalled;
 		row[QStringLiteral("installable")] = version.isInstallable();
-		// Only ever non-empty for Modrinth (included in the version list
-		// reply) - CurseForge's changelog needs a second request per file,
-		// which this controller does not make; see the class comment.
+		// Only Modrinth includes it in the version list; CurseForge needs a request per file.
 		row[QStringLiteral("changelog")] = version.changelog;
 		m_versionsVariant.append(row);
 	}
@@ -333,9 +317,7 @@ QObject* ManagedPackController::updateToVersion(int index)
 	const QString versionName = version.versionNumber.isEmpty()
 									? version.displayName
 									: version.versionNumber;
-	// Straight out of the catalogue's own version list - the launcher
-	// chose this download, not the user, so it is trusted the same way
-	// ManagedPackPage::update() trusts a catalogue selection.
+	// The launcher chose this download from the catalogue, so it is trusted.
 	return startUpdate(QUrl(version.downloadUrl), true, version.versionId,
 					   versionName,
 					   versionName.isEmpty() ? packName() : versionName);
@@ -401,25 +383,16 @@ QObject* ManagedPackController::startUpdate(const QUrl& url, bool trusted,
 
 	task->setGroup(LAUNCHER->instances()->getInstanceGroup(m_instance->id()));
 	task->setIcon(m_instance->iconKey());
-	// Kept exactly as it is: ManagedPackPage offers to fold the new version
-	// into the name too, but only after asking (CustomMessageBox), which
-	// this bridge has no dialog to do. Leaving the name alone is the safe
-	// default the same comment there argues for either way.
+	// Kept as is: folding the new version into the name needs a confirmation dialog this bridge lacks.
 	task->setName(m_instance->name());
 
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(task);
 	auto* watcher = new TaskWatcher(Task::Ptr(wrapped), this);
 	watcher->setTitle(title);
 	watcher->setInstanceId(m_instance->id());
-	/* Deliberately not refreshed/reloaded from here on success: this
-	 * instance has just been replaced on disk (staged over its own id),
-	 * and m_instance is a bare pointer borrowed from the InstanceDetails
-	 * that owns this controller - continuing to read it, or asking it for
-	 * a new version list, risks doing so against a stale object. The
-	 * widget page dealt with the same fact by closing its own window; the
-	 * QML tab does the equivalent by navigating back to the library once
-	 * this watcher succeeds, rather than this controller trying to refresh
-	 * itself in place. */
+	/* Not refreshed after success: the instance was just replaced on disk and
+	 * m_instance is a bare pointer, so reading it again risks a stale object. The
+	 * QML tab navigates back to the library once this watcher succeeds. */
 	wrapped->start();
 	return watcher;
 }

@@ -7,10 +7,9 @@ import QtQuick.Controls.impl
 import QtQuick.Templates as T
 import Kite.Theme
 
-// A Modrinth-style tab: the active one is a soft pill (accentSubtle behind
-// an accentText label), the rest are plain text that gain a neutral hover
-// overlay -- the tab-strip grammar Theme.qml documents. The accent does one
-// quiet job here instead of underlining or filling a box.
+// The active tab is a soft pill (accentSubtle behind an accentText label), the
+// rest plain text with a neutral hover overlay: the tab-strip grammar Theme.qml
+// documents.
 T.TabButton {
     id: control
 

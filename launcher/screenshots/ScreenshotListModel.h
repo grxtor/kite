@@ -26,50 +26,15 @@
 #include <QString>
 #include <QTimer>
 
-/*
- * A QAbstractListModel over one directory's image files (png/jpg/jpeg,
- * not recursive), newest-modified first -- the widget-free
- * replacement for the QFileSystemModel + FilterModel pair
- * ui/pages/instance/ScreenshotsPage.cpp builds today. That page's
- * thumbnailing (ThumbnailRunnable, the RWStorage<QString, QIcon> cache) is
- * deliberately not ported here: it produces QIcon/QPixmap, which are
- * GUI-only types this widget-free model must not touch. A QML-facing
- * thumbnail provider (image:// scheme) is expected to sit on top of the
- * `path`/`modified` roles this model exposes instead.
+/* A QAbstractListModel over one directory's image files (png/jpg/jpeg, not
+ * recursive), newest-modified first. Thumbnails are left to a QML image
+ * provider using the `path`/`modified` roles.
  *
- * DIRECTORY. Sourced from one flat directory, set with `directory`. A
- * directory that does not exist (yet) is treated as empty rather than an
- * error -- e.g. an instance that has never had a screenshot taken has no
- * screenshots/ folder on disk at all. This does not create the folder
- * itself; whoever wires this to a real instance is expected to do that the
- * same way ScreenshotsPage::openedImpl() calls FS::ensureFolderPathExists()
- * today, if screenshots should be creatable from an empty state.
- *
- * WATCHING. A QFileSystemWatcher on `directory` drives refreshes, but the
- * watcher's directoryChanged() only restarts a short single-shot debounce
- * timer rather than refreshing immediately: several filesystem events in a
- * quick burst (e.g. importing a batch of screenshots) collapse into one
- * refresh instead of one reset per event. A refresh that finds nothing
- * actually changed (same set of files, same sizes, same modification
- * times) leaves the model untouched -- no reset, no signal -- so an
- * unrelated touch of the directory (e.g. another file being renamed away
- * from *.png) does not disturb a bound view.
- *
- * Only the directory itself is watched, not each file individually (unlike
- * ScreenshotsPage's FilterModel, whose per-file QFileSystemWatcher entries
- * are never pruned when a file goes away -- see the FIXME in
- * ScreenshotsPage.cpp). A file being watched for content changes has no
- * analogue here: this model only cares about which files exist and their
- * mtime/size, both of which directoryChanged() already correlates with.
- *
- * If `directory` does not exist yet when set (or when it disappears, e.g.
- * the instance folder being deleted out from under the launcher), it is
- * not watched at all, since QFileSystemWatcher::addPath() silently no-ops
- * on a path that is not there. Each refresh re-arms the watch once the
- * directory exists again, so the very next externally-triggered refresh
- * (a later setDirectory() call, for instance) picks it back up -- but nothing
- * polls in between purely to notice the directory's own re-creation.
- */
+ * A missing `directory` is empty and never created, nor watched
+ * (QFileSystemWatcher::addPath() no-ops); each refresh re-arms the watch
+ * once it exists. directoryChanged() restarts a single-shot timer, so a
+ * burst of events is one refresh, and a refresh that finds the same files,
+ * sizes and mtimes leaves the model untouched. */
 class ScreenshotListModel : public QAbstractListModel
 {
 	Q_OBJECT
@@ -106,38 +71,28 @@ class ScreenshotListModel : public QAbstractListModel
 		return m_entries.size();
 	}
 
-	/* Removes the file backing row `row` from disk: moved to the
-	 * platform's trash when one is available (FS::trash(), so the user can
-	 * put it back), or deleted outright otherwise -- either way logged, so
-	 * which of the two happened is at least discoverable from the log.
-	 * Returns false for an out-of-range row or if the filesystem operation
-	 * itself failed; the model row is only removed on success, matching
-	 * WorldList::deleteWorld()/ModFolderModel::deleteMods() -- a failed
-	 * delete must not leave the model claiming a file is gone when it is
-	 * still sitting on disk. */
+	/* Removes the file at `row`: to the platform trash when available, else
+	 * deleted outright; logged either way. False for a bad row or a
+	 * filesystem failure; the row is removed from the model only on success. */
 	Q_INVOKABLE bool remove(int row);
-	/* Absolute path of the file at `row`, or an empty string if `row` is
-	 * out of range. */
+	/* Absolute path of the file at `row`, or empty if out of range. */
 	Q_INVOKABLE QString pathAt(int row) const;
-	/* Renames the file at `row` to `newName` (see renamedFileName() for what
-	 * is accepted). False, with nothing changed, for an out-of-range row, a
-	 * name that is not usable, a name another file in the folder already
-	 * has, or a filesystem failure. The row keeps its place: a rename does
-	 * not touch the modification time the list is sorted by. */
+	/* Renames the file at `row` to `newName` (see renamedFileName()). False,
+	 * with nothing changed, for a bad row, an unusable or taken name, or a
+	 * filesystem failure. The row keeps its place: the sort key is the
+	 * modification time. */
 	Q_INVOKABLE bool rename(int row, const QString& newName);
-	/* Puts the picture at `row` on the system clipboard as an image, ready to
-	 * paste into a chat or an editor. False for an out-of-range row, a file
-	 * that is not a readable image, or when there is no clipboard (no GUI
-	 * application running). */
+	/* Puts the picture at `row` on the clipboard as an image. False for a
+	 * bad row, an unreadable image, or no clipboard (no GUI application). */
 	Q_INVOKABLE bool copyImage(int row) const;
-	/* The file name `input` asks for when the current name is `currentName`,
-	 * or an empty string if it cannot be used: empty after trimming, or
-	 * containing a path separator or another character no common filesystem
-	 * allows. An image extension (png/jpg/jpeg) typed by the user is kept;
-	 * otherwise the current extension is added back, so "holiday" stays a
-	 * picture. */
+	/* The file name `input` asks for given `currentName`, or empty if unusable
+	 * (empty after trimming, or containing a path separator or a character no
+	 * common filesystem allows). A typed png/jpg/jpeg extension is kept,
+	 * otherwise the current extension is added back. */
 	static QString renamedFileName(const QString& currentName,
 								   const QString& input);
+	/* Whether @p fileName has a png/jpg/jpeg extension (any case). */
+	static bool isImageFile(const QString& fileName);
 
   signals:
 	void directoryChanged();
@@ -162,7 +117,6 @@ class ScreenshotListModel : public QAbstractListModel
 	};
 
 	static QList<Entry> listEntries(const QString& directory);
-	static bool isImageFile(const QString& fileName);
 
 	// Coalesces a burst of directoryChanged() signals into one refresh.
 	static constexpr int kRefreshDebounceMs = 150;

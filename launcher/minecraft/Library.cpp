@@ -220,11 +220,6 @@ bool Library::isAlwaysStale() const
 	return m_hint == "always-stale";
 }
 
-void Library::setStoragePrefix(QString prefix)
-{
-	m_storagePrefix = prefix;
-}
-
 QString Library::defaultStoragePrefix()
 {
 	return "libraries/";
@@ -238,6 +233,16 @@ QString Library::storagePrefix() const
 	return m_storagePrefix;
 }
 
+GradleSpecifier Library::nativeSpecifier(const RuntimeContext& context) const
+{
+	GradleSpecifier nativeSpec = m_name;
+	const QString nativeClassifier =
+		context.nativeClassifier(m_nativeClassifiers);
+	nativeSpec.setClassifier(nativeClassifier.isNull() ? QString("INVALID")
+													   : nativeClassifier);
+	return nativeSpec;
+}
+
 QString Library::filename(const RuntimeContext& context) const
 {
 	if (!m_filename.isEmpty()) {
@@ -248,13 +253,7 @@ QString Library::filename(const RuntimeContext& context) const
 		return m_name.getFileName();
 	}
 
-	// otherwise native, override classifiers. Mojang HACK!
-	GradleSpecifier nativeSpec = m_name;
-	const QString nativeClassifier =
-		context.nativeClassifier(m_nativeClassifiers);
-	nativeSpec.setClassifier(nativeClassifier.isNull() ? QString("INVALID")
-													   : nativeClassifier);
-	return nativeSpec.getFileName();
+	return nativeSpecifier(context).getFileName();
 }
 
 QString Library::displayName(const RuntimeContext& context) const
@@ -271,11 +270,5 @@ QString Library::storageSuffix(const RuntimeContext& context) const
 		return m_name.toPath(m_filename);
 	}
 
-	// otherwise native, override classifiers. Mojang HACK!
-	GradleSpecifier nativeSpec = m_name;
-	const QString nativeClassifier =
-		context.nativeClassifier(m_nativeClassifiers);
-	nativeSpec.setClassifier(nativeClassifier.isNull() ? QString("INVALID")
-													   : nativeClassifier);
-	return nativeSpec.toPath(m_filename);
+	return nativeSpecifier(context).toPath(m_filename);
 }

@@ -8,14 +8,10 @@ import Kite.Theme
 
 /*
  * One skin in the skin editor's library (SkinCapeEditor.qml): its flat
- * front-and-back sprite, its name under it (and as a tooltip, for a name
- * too long to show whole), and a mark on the one the account wears. Used
- * for the user's own skins and for the game's default ones alike.
- *
- * Click selects it. `menuEnabled` tiles also open actions: right click, or
- * the ⋯ that shows on hover (over the sprite, so only while pointed at).
- * A tile whose texture has not downloaded yet (`ready` false) shows a
- * loading block instead of the sprite and cannot be picked.
+ * front-and-back sprite, its name under it and a mark on the one the account
+ * wears. Click selects it; `menuEnabled` tiles also open actions on right click
+ * or the ⋯ shown on hover. A tile whose texture has not downloaded (`ready`
+ * false) shows a loading block and cannot be picked.
  */
 AbstractButton {
     id: tile
@@ -41,13 +37,12 @@ AbstractButton {
     ToolTip.delay: 500
     ToolTip.text: tile.name
 
-    background: Rectangle {
+    background: StateFill {
         radius: Theme.radius.md
-        color: tile.selected ? Theme.palette.accentSubtle
-             : tile.hovered ? Theme.palette.hoverOverlay : "transparent"
+        hovered: tile.hovered
+        active: tile.selected
         border.width: 1
         border.color: tile.selected ? Theme.palette.accent : Theme.palette.border
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
     contentItem: Item {
         Image {
@@ -67,7 +62,7 @@ AbstractButton {
             anchors.fill: sprite
             visible: !tile.ready
         }
-        Text {
+        Copy {
             anchors.top: sprite.bottom
             anchors.topMargin: Theme.space.xs
             anchors.left: parent.left
@@ -75,10 +70,9 @@ AbstractButton {
             anchors.margins: Theme.space.xs
             horizontalAlignment: Text.AlignHCenter
             text: tile.name
+            role: "caption"
+            tone: tile.ready ? "primary" : "tertiary"
             elide: Text.ElideRight
-            color: tile.ready ? Theme.palette.textPrimary : Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
         }
         MeshIcon {
             anchors.top: parent.top

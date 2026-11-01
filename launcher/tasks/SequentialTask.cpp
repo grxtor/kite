@@ -27,8 +27,8 @@ SequentialTask::SequentialTask(QObject* parent, QString task_name)
 void SequentialTask::updateState()
 {
 	if (totalSize() <= 1) {
-		// One step is not a sequence worth counting out loud. Let the step
-		// speak for itself, the way a plain ConcurrentTask would.
+		// One step is not worth counting out loud; let it speak for itself
+		// like a plain ConcurrentTask.
 		ConcurrentTask::updateState();
 		return;
 	}
@@ -41,8 +41,7 @@ void SequentialTask::updateState()
 
 void SequentialTask::subTaskFailed(Task::Ptr task, const QString& reason)
 {
-	// Every step here builds on the one before it, so there is nothing left
-	// worth running.
+	// Every step builds on the one before, so nothing is left worth running.
 	dropQueued();
 	ConcurrentTask::subTaskFailed(task, reason);
 }

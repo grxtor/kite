@@ -26,33 +26,12 @@
 #include <QStringList>
 
 /*
- * QML replacement for the widget grid's proxy
- * (ui/instanceview/InstanceProxyModel.h). QML has no QItemSelectionModel and
- * cannot reach into the widget layer, so this is a second proxy rather than a
- * shared one -- but it reproduces that proxy's ordering exactly (grouped,
- * locale-sorted groups, natural-sort names within a group, with the same
- * "InstSortMode" last-launch override) so that switching between the widget
- * grid and the QML one never reorders anyone's instances. The Library
- * toolbar's own "Time played" sort is a QML-only third value
- * ("TotalTimePlayed") on that same setting -- the classic widget page never
- * writes it, but it re-sorts both UIs' proxies the same way "LastLaunch"
- * already does.
- *
- * QtCore/QtGui only, same rule as the rest of the core: no QtWidgets, nothing
- * from ui/. In particular this cannot resolve icons the way the old proxy did
- * (APPLICATION->icons()->getIcon() in its data() override) -- APPLICATION is
- * a QApplication and off limits here. iconKey is forwarded as the plain
- * string InstanceList already exposes it as; whatever turns that into a
- * picture is the QML delegate's problem, not this proxy's.
- *
- * The name, group, last-launch and total-time-played roles are looked up by
- * NAME from the source model's roleNames() rather than assumed to be
- * Qt::DisplayRole/GroupRole/LastLaunchRole, so this works against
- * InstanceList's real role numbers (see InstanceList.h -- GroupRole is
- * pinned to Qt::UserRole, the QML-only roles start at Qt::UserRole + 10) and
- * against any other model that merely exposes the same names (see
- * InstanceFilterModel_test.cpp, which deliberately numbers them
- * differently).
+ * The Library's proxy model: grouped, locale-sorted groups, natural-sort names
+ * within a group, and the "InstSortMode" last-launch override. "Time played" is
+ * a third value ("TotalTimePlayed") on that setting. QtCore/QtGui only: iconKey is forwarded as the plain string
+ * InstanceList exposes. The name, group, last-launch and total-time-played
+ * roles are looked up by name from the source's roleNames(), so any model
+ * exposing the same names works (see InstanceFilterModel_test.cpp).
  */
 class InstanceFilterModel : public QSortFilterProxyModel
 {
@@ -62,21 +41,11 @@ class InstanceFilterModel : public QSortFilterProxyModel
 				   filterTextChanged)
 	Q_PROPERTY(QString group READ group WRITE setGroup NOTIFY groupChanged)
 	Q_PROPERTY(int count READ count NOTIFY countChanged)
-	/* When set, `group` is matched exactly -- including the empty string,
-	 * which then means "ungrouped only" instead of "every group". This is
-	 * what a per-group section of the library needs. */
-	Q_PROPERTY(bool exactGroup READ exactGroup WRITE setExactGroup NOTIFY
-				   exactGroupChanged)
 	/// When non-empty, only the instance with this id passes the filter.
 	Q_PROPERTY(QString instanceId READ instanceId WRITE setInstanceId NOTIFY
 				   instanceIdChanged)
-	/* Most recently launched first, ignoring groups and the InstSortMode
-	 * setting, and instances that were never launched are left out. */
-	Q_PROPERTY(bool recentFirst READ recentFirst WRITE setRecentFirst NOTIFY
-				   recentFirstChanged)
-	/* Whether rows are ordered group by group (the default, as the widget
-	 * grid does). Off, the library is one list: the group plays no part in
-	 * the order, only the InstSortMode sort does. */
+	/* Whether rows are ordered group by group (default). Off, the library is one
+	 * list ordered only by InstSortMode. */
 	Q_PROPERTY(bool grouped READ grouped WRITE setGrouped NOTIFY
 				   groupedChanged)
 	/// Distinct groups of the rows that pass the filter, in row order.
@@ -93,16 +62,17 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	QString group() const;
 	void setGroup(const QString& group);
 
-	/// Row count after filtering -- what QML needs to decide an empty state.
 	int count() const;
 
-	bool exactGroup() const;
+	/* When set, `group` is matched exactly: the empty string then means "ungrouped
+	 * only" instead of "every group". */
 	void setExactGroup(bool exact);
 
 	QString instanceId() const;
 	void setInstanceId(const QString& id);
 
-	bool recentFirst() const;
+	/* Most recently launched first, ignoring groups and the InstSortMode
+	 * setting, and instances that were never launched are left out. */
 	void setRecentFirst(bool recentFirst);
 
 	bool grouped() const;
@@ -117,9 +87,7 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	void filterTextChanged();
 	void groupChanged();
 	void countChanged();
-	void exactGroupChanged();
 	void instanceIdChanged();
-	void recentFirstChanged();
 	void groupedChanged();
 	void groupsChanged();
 	void firstIdChanged();
@@ -130,11 +98,8 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	bool lessThan(const QModelIndex& left,
 				  const QModelIndex& right) const override;
 
-	/* The "InstSortMode" setting's current value ("Name", "LastLaunch" or
-	 * the QML library's own "TotalTimePlayed"), read from the live
-	 * LauncherContext. A seam purely for tests: subSortLessThan() cannot
-	 * otherwise be exercised without constructing a whole LauncherContext,
-	 * so a test subclass overrides this instead. */
+	/* The "InstSortMode" setting ("Name", "LastLaunch" or "TotalTimePlayed"), read
+	 * from the live LauncherContext; a seam so tests can override it. */
 	virtual QString sortModeSetting() const;
 
   private:
@@ -153,18 +118,13 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	QStringList m_groups;
 	QString m_firstId;
 
-	/* Resolved in setSourceModel(). The fallbacks are the roles Qt itself
-	 * gives the same meaning by convention, so a source model that never
-	 * names its roles still filters and sorts by something sane instead of
-	 * silently matching nothing. -1 for lastLaunch means "this source has no
-	 * such role", which makes the LastLaunch sort mode fall back to name
-	 * sorting instead of comparing garbage. */
+	/* Resolved in setSourceModel(). Fallbacks are Qt's conventional roles. -1 for
+	 * lastLaunch means the source has no such role, so LastLaunch sorting falls
+	 * back to name. */
 	int m_nameRole = Qt::DisplayRole;
 	int m_groupRole = Qt::UserRole;
 	int m_lastLaunchRole = -1;
 	int m_idRole = -1;
-	/// -1 when the source has no such role, same convention as
-	/// m_lastLaunchRole -- the "Time played" InstSortMode value then falls
-	/// back to name sorting instead of comparing garbage.
+	/// -1 when the source has no such role; "Time played" then falls back to name sorting.
 	int m_totalTimePlayedRole = -1;
 };

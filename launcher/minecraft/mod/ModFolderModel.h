@@ -40,10 +40,7 @@ class LegacyInstance;
 class BaseInstance;
 class QFileSystemWatcher;
 
-/**
- * A legacy mod list.
- * Backed by a folder.
- */
+/** A legacy mod list backed by a folder. */
 class ModFolderModel : public QAbstractListModel
 {
 	Q_OBJECT
@@ -55,8 +52,8 @@ class ModFolderModel : public QAbstractListModel
 		DateColumn,
 		NUM_COLUMNS
 	};
-	/* Named roles, so a QML ListView (which only ever sees column 0) can
-	 * still get at what the widget views show as columns 1..3. */
+	// Named roles, so a QML ListView (column 0 only) can reach what
+	// columns 1..3 hold.
 	enum ModelRoles {
 		NameRole = Qt::UserRole,
 		VersionRole,
@@ -74,13 +71,8 @@ class ModFolderModel : public QAbstractListModel
 	virtual bool setData(const QModelIndex& index, const QVariant& value,
 						 int role = Qt::EditRole) override;
 	QHash<int, QByteArray> roleNames() const override;
-	Qt::DropActions supportedDropActions() const override;
 
-	/// flags, mostly to support drag&drop
 	virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
-	QStringList mimeTypes() const override;
-	bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row,
-					  int column, const QModelIndex& parent) override;
 
 	virtual int rowCount(const QModelIndex&) const override
 	{
@@ -111,10 +103,7 @@ class ModFolderModel : public QAbstractListModel
 	/// Reloads the mod list and returns true if the list changed.
 	bool update();
 
-	/**
-	 * Adds the given mod to the list at the given index - if the list supports
-	 * custom ordering
-	 */
+	/** Adds the given mod at the given index (custom ordering only). */
 	bool installMod(const QString& filename);
 
 	/// Deletes all the selected mods
@@ -138,11 +127,9 @@ class ModFolderModel : public QAbstractListModel
 		return mods;
 	}
 
-	/* Access to the persistent install metadata for this folder.
-	 * Lifetime is bound to the model. May be null only before construction
-	 * completes; otherwise always non-null. Use this from install and
-	 * dependency-resolution code to skip already-installed projects and
-	 * to drive update checks. */
+	// The persistent install metadata for this folder; bound to the model's
+	// lifetime and non-null once constructed. For install and dependency code
+	// to skip installed projects and drive update checks.
 	std::shared_ptr<ModMetadataIndex> metadataIndex() const
 	{
 		return m_metadata;
@@ -162,25 +149,19 @@ class ModFolderModel : public QAbstractListModel
   private:
 	bool setModStatus(int index, ModStatusAction action);
 
-	/* Shared by the Qt::DisplayRole VersionColumn case and the named
-	 * VersionRole, so QML gets the same "Folder"/"File" placeholder the
-	 * Version column shows for those mod types. */
+	// Shared by the VersionColumn case and VersionRole: the "Folder"/"File"
+	// placeholder for those mod types.
 	QVariant versionData(int row) const;
 
   protected:
 	void resolveMod(Mod& m);
 
-	/* Gate for "Add" / drag-and-drop installs.
-	 *
-	 * The base model accepts anything Mod recognises, which is right for
-	 * mods and resource packs - both are identified by the folder they
-	 * live in rather than by their contents. Subclasses backing a folder
-	 * whose format has a mandatory on-disk layout (shader packs, data
-	 * packs) override this so a file that would silently do nothing
-	 * in-game is rejected up front instead of quietly sitting there.
-	 *
-	 * Called before the file is copied into the folder, so `file` still
-	 * points at the user's original path. */
+	// Gate for "Add" and drag-and-drop installs. The base model accepts
+	// anything Mod recognises (mods and resource packs are identified by their
+	// folder). Subclasses whose folder needs a mandatory on-disk layout (shader
+	// packs, data packs) override this to reject a file that would silently do
+	// nothing. Called before the copy, so `file` is still the user's original
+	// path.
 	virtual bool acceptsFile(const QFileInfo& file, Mod::ModType type) const
 	{
 		Q_UNUSED(file)

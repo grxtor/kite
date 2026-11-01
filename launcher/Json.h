@@ -29,6 +29,7 @@
 #include <QUuid>
 #include <QVariant>
 #include <memory>
+#include <optional>
 
 #include "Exception.h"
 
@@ -65,7 +66,17 @@ namespace Json
 	QJsonArray requireArray(const QJsonDocument& doc,
 							const QString& what = "Document");
 
-	/////////////////// WRITING ////////////////////
+	/// Parses @p data without throwing: nullopt on a parse error. A non-null
+	/// @p context logs "<context> <errorString>" as a warning; @p error, if
+	/// given, receives the error string (empty on success).
+	std::optional<QJsonDocument> tryParse(const QByteArray& data,
+										  const char* context = nullptr,
+										  QString* error = nullptr);
+	/// As tryParse(), but the warning reads
+	/// "<context> <offset> reason: <errorString>" (the "at" is the caller's).
+	std::optional<QJsonDocument> tryParseWithOffset(const QByteArray& data,
+													const char* context,
+													QString* error = nullptr);
 
 	void writeString(QJsonObject& to, const QString& key, const QString& value);
 	void writeStringList(QJsonObject& to, const QString& key,
@@ -81,17 +92,6 @@ namespace Json
 	template <> QJsonValue toJson<QDir>(const QDir& dir);
 	template <> QJsonValue toJson<QUuid>(const QUuid& uuid);
 	template <> QJsonValue toJson<QVariant>(const QVariant& variant);
-
-	template <typename T> QJsonArray toJsonArray(const QList<T>& container)
-	{
-		QJsonArray array;
-		for (const T item : container) {
-			array.append(toJson<T>(item));
-		}
-		return array;
-	}
-
-	////////////////// READING ////////////////////
 
 	/// @throw JsonException
 	template <typename T>
@@ -144,8 +144,6 @@ namespace Json
 	template <>
 	QUrl requireIsType<QUrl>(const QJsonValue& value, const QString& what);
 
-	// the following functions are higher level functions, that make use of the
-	// above functions for type conversion
 	template <typename T>
 	T ensureIsType(const QJsonValue& value, const T default_ = T(),
 				   const QString& what = "Value")
@@ -248,8 +246,6 @@ namespace Json
 		return ensureIsArrayOf<T>(parent.value(key), default_, localWhat);
 	}
 
-// this macro part could be replaced by variadic functions that just pass on
-// their arguments, but that wouldn't work well with IDE helpers
 #define JSON_HELPERFUNCTIONS(NAME, TYPE)                                       \
 	inline TYPE require##NAME(const QJsonValue& value,                         \
 							  const QString& what = "Value")                   \

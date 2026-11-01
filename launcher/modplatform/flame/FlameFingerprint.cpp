@@ -28,13 +28,12 @@ namespace
 	constexpr quint32 MULTIPLIER = 0x5bd1e995u;
 	constexpr int SHIFT = 24;
 
-	/* Read granularity. Large enough that the per-call overhead does not
-	 * show up next to the filtering loop, small enough that hashing a
-	 * resource pack does not hold the file in memory. */
+	/* Read granularity: keeps call overhead off the filtering loop without
+	 * holding a resource pack in memory. */
 	constexpr qint64 BLOCK_SIZE = 64 * 1024;
 
-	/* The four bytes CurseForge drops before hashing. See the header:
-	 * this is part of the identifier, not a cleanup step. */
+	/* The four bytes CurseForge drops before hashing; part of the identifier,
+	 * see the header. */
 	inline bool isStripped(char byte)
 	{
 		return byte == '\t' || byte == '\n' || byte == '\r' || byte == ' ';
@@ -51,19 +50,10 @@ namespace
 		return kept;
 	}
 
-	/*
-	 * MurmurHash2 fed one byte at a time.
-	 *
-	 * The reference implementation walks a contiguous buffer four bytes
-	 * at a time, which the filtered form of a file is not: the bytes that
-	 * survive are scattered through it, and the groups of four that get
-	 * mixed straddle whatever block boundaries the reads happened to
-	 * fall on. So the group being assembled is held here and the caller
-	 * may hand over as little as one byte at a time.
-	 *
-	 * The length has to be known before the first byte is mixed, because
-	 * it seeds the hash - which is why the file is read twice.
-	 */
+	/* MurmurHash2 fed one byte at a time. The filtered bytes are scattered,
+	 * and groups of four straddle read blocks, so the group being assembled
+	 * is held here. The length seeds the hash and must be known before the
+	 * first byte is mixed, hence the file is read twice. */
 	class Murmur2
 	{
 	  public:
@@ -85,10 +75,9 @@ namespace
 
 		quint32 finish()
 		{
-			/* The leftover bytes, folded in without the group mixing -
-			 * deliberately asymmetric in MurmurHash2, and load-bearing
-			 * here: getting it wrong produces a plausible number that
-			 * matches nothing on the server. */
+			/* The leftover bytes are folded in without group mixing: asymmetric in
+			 * MurmurHash2 and load-bearing, a mistake gives a plausible number that
+			 * matches nothing. */
 			switch (m_grouped) {
 				case 3:
 					m_hash ^= static_cast<quint32>(m_group[2]) << 16;
@@ -113,9 +102,8 @@ namespace
 	  private:
 		void mixGroup()
 		{
-			/* Little-endian, as the reference implementation reads it.
-			 * Assembled by hand rather than cast from the buffer so the
-			 * result does not depend on the host's byte order. */
+			/* Little-endian as in the reference, assembled by hand so the result
+			 * does not depend on the host's byte order. */
 			quint32 block = static_cast<quint32>(m_group[0]) |
 							(static_cast<quint32>(m_group[1]) << 8) |
 							(static_cast<quint32>(m_group[2]) << 16) |
@@ -155,8 +143,8 @@ std::optional<quint32> FlameFingerprint::ofFile(const QString& path)
 
 	QByteArray block;
 
-	/* First pass: how many bytes survive the filter. Only needed because
-	 * that count seeds the hash. */
+	/* First pass: how many bytes survive the filter; the count seeds the
+	 * hash. */
 	qint64 kept = 0;
 	while (!file.atEnd()) {
 		block = file.read(BLOCK_SIZE);

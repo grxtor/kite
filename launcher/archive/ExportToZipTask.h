@@ -35,31 +35,15 @@
 
 namespace MMCZip
 {
-	/*
-	 * Writing a list of files into a zip, off the UI thread.
+	/* Writes a list of files into a zip off the UI thread, as a task with
+	 * progress and abort. The caller decides the file list (see
+	 * MMCZip::collectFileListRecursively()); a pack export needs it for its
+	 * manifest too.
 	 *
-	 * The export dialogs used to call MMCZip::compressDir() straight
-	 * from the dialog's accept handler: the window froze for as long as
-	 * the instance took to compress - minutes for a modpack with a
-	 * world in it - with no progress and no way out. This is the same
-	 * job as a task, so the progress dialog can show which file is being
-	 * written and the user can change their mind.
-	 *
-	 * The file list is decided by the caller rather than walked here,
-	 * because the callers already know it: they built the tree the user
-	 * unchecked entries in, and a pack export additionally needs the
-	 * same list to write its manifest. See
-	 * MMCZip::collectFileListRecursively().
-	 *
-	 * `destinationPrefix` is prepended to every entry, which is how a
-	 * pack export puts an instance's files under `overrides/`.
-	 * `excludeFiles` names entries - relative to `dir` - to skip, which
-	 * is how it then leaves out the mods the manifest says to download
-	 * rather than shipping them twice. `extraFiles` are generated
-	 * entries (the manifest itself) and are written before anything from
-	 * disk, so a truncated archive still starts with something a reader
-	 * can identify.
-	 */
+	 * `destinationPrefix` is prepended to every entry (`overrides/` for packs).
+	 * `excludeFiles` names entries, relative to `dir`, to skip. `extraFiles`
+	 * are generated entries (the manifest), written first so a truncated
+	 * archive still has something identifiable. */
 	class ExportToZipTask : public Task
 	{
 		Q_OBJECT
@@ -98,21 +82,10 @@ namespace MMCZip
 		ZipResult exportZip();
 		void finish();
 
-		/*
-		 * setStatus() / setProgress(), as called from the worker thread.
-		 *
-		 * Those two write plain members - m_status is a QString - and
-		 * ProgressDialog reads them straight off the task when it
-		 * attaches to one that is already running, as does
-		 * ConcurrentTask when it folds a subtask into its step list.
-		 * Writing them from the thread doing the compressing while the
-		 * UI thread reads them is a race over a refcounted string, not
-		 * merely a stale number.
-		 *
-		 * So the report hops back to the thread this task lives on
-		 * first, and only touches task state there. Same reasoning, and
-		 * the same shape, as BackupTask::reportProgress().
-		 */
+		/* setStatus() / setProgress() from the worker thread: they write plain
+		 * members (m_status is a QString) read off the task, a race over a
+		 * refcounted string. The report hops to the task's thread first, as in
+		 * BackupTask::reportProgress(). */
 		void reportStatus(const QString& status);
 		void reportProgress(qint64 current, qint64 total);
 
@@ -124,10 +97,9 @@ namespace MMCZip
 		QStringList m_excludeFiles;
 		QHash<QString, QByteArray> m_extraFiles;
 
-		/* Cancellation is tracked here rather than through
-		 * QFuture::cancel(): the future QtConcurrent::run() hands back
-		 * does not support being cancelled, so isCanceled() on it stays
-		 * false forever and an abort would be silently ignored. */
+		/* Not QFuture::cancel(): the future QtConcurrent::run() returns does not
+		 * support cancelling, so isCanceled() stays false and abort would be
+		 * ignored. */
 		std::atomic<bool> m_cancelled{false};
 
 		QFuture<ZipResult> m_future;

@@ -6,31 +6,26 @@ import QtQuick
 import QtQuick.Controls
 
 /*
- * The macOS menu bar at the top of the screen for the QML shell -- the
- * useful part of the widget MacMenuBar: new instance and import, Settings
- * (which macOS files under the application menu by its name, as it does
- * "About"), the Help links, and "Check for updates" where this build can
- * update itself. Main.qml makes it the window's menuBar only on macOS with
- * the native menu bar setting on (MacNativeMenuBar, the widget bar's own
- * switch), where Qt shows it natively instead of inside the window.
- *
- * It starts nothing itself: every entry is a signal for Main.qml to act on.
+ * The macOS menu bar for the QML shell: new instance and import, Settings, the Help links and "Check for updates"
+ * where this build can update itself. Main.qml uses it as the window's menuBar only on macOS with the native menu
+ * bar setting on; every entry is a signal for Main.qml, which turns the bar off (`enabled`) while first-run setup
+ * is on screen.
  */
 MenuBar {
     id: root
 
-    // QmlShell.about (AboutInfo), for the Help links; or null.
+    // AboutInfo, for the Help links; or null.
     property var about: null
     property bool updaterAvailable: false
 
-    // mode: "create" or "import" -- Main.qml's openNewInstance().
+    // mode: "create" or "import".
     signal newInstanceRequested(string mode)
-    // A Main.qml navigate() path.
     signal navigateRequested(string target)
     signal checkForUpdatesRequested()
 
     Menu {
         title: qsTr("File")
+        enabled: root.enabled
         MenuItem {
             text: qsTr("New instance…")
             onTriggered: root.newInstanceRequested("create")
@@ -50,6 +45,7 @@ MenuBar {
     Menu {
         id: helpMenu
         title: qsTr("Help")
+        enabled: root.enabled
 
         Instantiator {
             model: root.about ? root.about.helpLinks : []
@@ -62,9 +58,8 @@ MenuBar {
             onObjectRemoved: (index, object) => helpMenu.removeItem(object)
         }
         MenuSeparator {}
-        MenuItem {
+        MenuEntry {
             visible: root.updaterAvailable
-            height: visible ? implicitHeight : 0
             text: qsTr("Check for updates…")
             onTriggered: root.checkForUpdatesRequested()
         }

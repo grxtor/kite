@@ -27,6 +27,9 @@
 #include <MMCZip.h>
 #include <settings/INISettingsObject.h>
 
+#include <QDirIterator>
+#include <QFileInfo>
+
 #include <memory>
 
 void Technic::TechnicPackProcessor::run(SettingsObjectPtr globalSettings,
@@ -69,7 +72,6 @@ void Technic::TechnicPackProcessor::run(SettingsObjectPtr globalSettings,
 				}
 				INIFile iniFile;
 				iniFile.loadFile(fmlVersionData);
-				// If not present, this evaluates to a null string
 				fmlMinecraftVersion = iniFile["fmlbuild.mcversion"].toString();
 			}
 			data = MMCZip::readFileFromZip(modpackJar, "version.json");
@@ -86,15 +88,12 @@ void Technic::TechnicPackProcessor::run(SettingsObjectPtr globalSettings,
 											true);
 			components->installJarMods({modpackJar});
 
-			// Forge for 1.4.7 and for 1.5.2 require extra libraries.
-			// Figure out the forge version and add it as a component
-			// (the code still comes from the jar mod installed above)
+			// Forge for 1.4.7 and 1.5.2 needs extra libraries: find the forge version
+			// and add it as a component (the code still comes from the jar mod).
 			if (MMCZip::entryExists(modpackJar, "forgeversion.properties")) {
 				QByteArray forgeVersionData = MMCZip::readFileFromZip(
 					modpackJar, "forgeversion.properties");
 				if (forgeVersionData.isEmpty()) {
-					// Really shouldn't happen, but error handling shall not be
-					// forgotten
 					emit failed(
 						tr("Unable to open \"forgeversion.properties\""));
 					return;
@@ -131,7 +130,7 @@ void Technic::TechnicPackProcessor::run(SettingsObjectPtr globalSettings,
 		data = file.readAll();
 		file.close();
 	} else {
-		// This is the "Vanilla" modpack, excluded by the search code
+		// The "Vanilla" modpack, excluded by the search code
 		emit failed(tr("Unable to find a \"version.json\"!"));
 		return;
 	}
@@ -167,9 +166,8 @@ void Technic::TechnicPackProcessor::run(SettingsObjectPtr globalSettings,
 					components->setComponentVersion(
 						"net.minecraftforge", libraryName.section('-', 1));
 				} else {
-					// 1.7.10 versions sometimes look
-					// like 1.7.10-10.13.4.1614-1.7.10, this filters out
-					// the 10.13.4.1614 part
+					// 1.7.10 versions can look like 1.7.10-10.13.4.1614-1.7.10; this keeps
+					// the 10.13.4.1614 part.
 					components->setComponentVersion(
 						"net.minecraftforge", libraryName.section('-', 1, 1));
 				}
@@ -197,4 +195,32 @@ void Technic::TechnicPackProcessor::run(SettingsObjectPtr globalSettings,
 
 	components->saveNow();
 	emit succeeded();
+}
+
+void Technic::TechnicPackProcessor::fixPermissions(
+	const QString& dir, const std::function<void(const QString&)>& onFailed)
+{
+	qDebug() << "Fixing permissions for extracted pack files...";
+	QDirIterator it(QDir(dir), QDirIterator::Subdirectories);
+	while (it.hasNext()) {
+		auto filepath = it.next();
+		QFileInfo file(filepath);
+		auto permissions = QFile::permissions(filepath);
+		auto origPermissions = permissions;
+		if (file.isDir()) {
+			permissions |= QFileDevice::Permission::ReadUser |
+						   QFileDevice::Permission::WriteUser |
+						   QFileDevice::Permission::ExeUser;
+		} else {
+			permissions |= QFileDevice::Permission::ReadUser |
+						   QFileDevice::Permission::WriteUser;
+		}
+		if (origPermissions != permissions) {
+			if (!QFile::setPermissions(filepath, permissions)) {
+				onFailed(filepath);
+			} else {
+				qDebug() << "Fixed" << filepath;
+			}
+		}
+	}
 }

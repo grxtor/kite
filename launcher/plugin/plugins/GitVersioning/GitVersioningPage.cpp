@@ -22,9 +22,8 @@ namespace
 		return QObject::tr("%1 GiB").arg(QString::number(v, 'f', 2));
 	}
 
-	/* Inverse of PluginUiRenderer's jsonQuoteString: unwraps a bare JSON
-	 * scalar (as delivered in MMCOUiEventCallback's value_json for
-	 * "select"/"activate" events) back into a plain QString. */
+	/* Inverse of PluginSurfaceModel::valueToJson / quoteJsonString: unwraps the bare JSON scalar in value_json of
+	 * "select"/"activate" events into a QString. */
 	QString jsonStringValue(const QString& valueJson)
 	{
 		if (valueJson.isEmpty())
@@ -38,11 +37,8 @@ namespace
 		return jd.array().first().toString();
 	}
 
-	/* Shared by the Snapshot-message and Tag-name prompts: a single
-	 * text_field plus an OK/Cancel button row, run through ui_modal_run.
-	 * Replaces the raw QInputDialog::getText calls the QWidget-era page
-	 * used to make directly — the page has no QWidget of its own to
-	 * parent a dialog to any more. */
+	/* Shared by the Snapshot-message and Tag-name prompts: one text_field plus an OK/Cancel row,
+	 * run through ui_modal_run. */
 	QByteArray buildTextPromptDoc(const QString& fieldId, const QString& label,
 								 const QString& defaultValue,
 								 const QString& okId, const QString& okLabel)
@@ -127,10 +123,7 @@ QString GitVersioningPageController::buildStatusText() const
 QJsonArray GitVersioningPageController::buildRows() const
 {
 	QJsonArray rows;
-	// Match the BackupSystem plugin's fixed timestamp format — sortable
-	// and unambiguous across locales. Qt6 removed
-	// Qt::DefaultLocaleShortDate so an explicit format string is the
-	// most portable choice anyway.
+	// Explicit timestamp format: sortable and unambiguous across locales.
 	for (const auto& c : m_commits) {
 		QString subject = c.subject;
 		if (c.isPreLaunch)
@@ -275,8 +268,7 @@ void GitVersioningPageController::reloadHistory()
 		m_repo.fillCommitStats(c);
 	pushRows();
 
-	/* The row set was just replaced wholesale, so — same as the old
-	 * QTreeWidget::clear() used to do — nothing is selected any more. */
+	/* The row set was replaced wholesale, so nothing is selected. */
 	m_selectedSha.clear();
 	setNodeEnabled(QStringLiteral("snapshot"), true);
 	setNodeEnabled(QStringLiteral("restore"), false);

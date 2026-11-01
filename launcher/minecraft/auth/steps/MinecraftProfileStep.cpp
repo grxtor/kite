@@ -25,6 +25,7 @@
 #include "Logging.h"
 
 #include "minecraft/auth/AuthRequest.h"
+#include "minecraft/auth/MinecraftServices.h"
 #include "minecraft/auth/Parsers.h"
 
 MinecraftProfileStep::MinecraftProfileStep(AccountData* data) : AuthStep(data)
@@ -40,7 +41,7 @@ QString MinecraftProfileStep::describe()
 
 void MinecraftProfileStep::perform()
 {
-	auto url = QUrl("https://api.minecraftservices.com/minecraft/profile");
+	auto url = QUrl(MinecraftServices::url("minecraft/profile"));
 	QNetworkRequest request = QNetworkRequest(url);
 	request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 	request.setRawHeader(

@@ -6,21 +6,16 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Play (or Stop, while the game runs) as a secondary button, for a page
- * whose one primary Play is elsewhere -- the Home page's "Continue
- * playing" rows, under the hero's. The Style Button's secondary look with a
- * bold label, the play triangle and label turning to the accent on hover,
- * so it still reads as the thing to press. Stop keeps the danger colour on
- * its glyph and label, so the two can never be confused at a glance. Its
- * top-right corner is cut tight, like every Play (KiteShape).
+ * Play (or Stop, while the game runs) as a button with no frame and no fill until hovered, for a page whose one
+ * primary Play is elsewhere (Home's "Continue playing" rows). The glyph and label
+ * turn to the accent on hover, where the surface fills in; Stop keeps the danger colour. Its top-right
+ * corner is cut tight, like every Play (KiteShape).
  */
 Button {
     id: control
 
     property bool running: false
 
-    // The glyph and label's colour: accent on hover (danger for Stop),
-    // the ordinary label colour at rest.
     readonly property color ink: !control.enabled ? Theme.palette.textDisabled
         : control.running ? Theme.palette.danger
         : control.hovered || control.down ? Theme.palette.accentText
@@ -30,17 +25,12 @@ Button {
     text: control.running ? qsTr("Stop") : qsTr("Play")
     Accessible.name: control.text
 
-    // The secondary Button's own background (Style/Button.qml) in the
-    // kite's cut: the raised fill and hairline, the hover/press overlay and
-    // the keyboard focus ring, which stands as far off as FocusRing's.
     background: KiteShape {
         id: plate
         implicitWidth: control.sizeHeight
         implicitHeight: control.sizeHeight
         radius: Theme.radius.md
-        color: control.restColor
-        borderWidth: 1
-        borderColor: control.hovered && control.enabled ? Theme.neutral.borderHover : Theme.palette.border
+        color: (control.hovered && control.enabled) || control.down ? control.restColor : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
         KiteShape {

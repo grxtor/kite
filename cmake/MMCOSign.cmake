@@ -2,49 +2,14 @@
 # SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 #
-# MMCOSign.cmake — attach a GPG signature trailer to a built .mmco
-# target during the build, via scripts/mmco_sign.py.
+# mmco_sign_plugin(<target> [KEY <fingerprint>] [HOMEDIR <dir>]) attaches a GPG
+# signature trailer to a built .mmco via launcher/scripts/mmco_sign.py. It does
+# nothing when no key is configured. With Kite_PLUGIN_SIGN_ALL=ON,
+# plugins/CMakeLists.txt signs every in-tree plugin.
 #
-# Usage:
-#
-#   include(MMCOSign)
-#   mmco_sign_plugin(MyPluginTarget
-#       KEY     "DEADBEEF..."         # explicit GPG fingerprint (optional)
-#       HOMEDIR "${CMAKE_SOURCE_DIR}/.gnupg"  # optional
-#   )
-#
-# The signing pipeline has TWO stages:
-#
-#   1. POST_BUILD custom command — signs the staged .mmco under
-#      ${KITE_PLUGIN_STAGING_DIR} so the in-tree run finds a signed
-#      plugin straight out of the build directory.
-#
-#   2. install(CODE …) hook — re-signs the *installed* copy after
-#      CMake has done its RPATH-rewriting / debug-stripping surgery.
-#      That surgery rewrites bytes inside the GPG-signed payload, so
-#      without this step the installed plugin would always fail
-#      verification with BadSignature.
-#
-# Both steps use the same key + GnuPG homedir. The function is a
-# no-op when no key is configured — unsigned developer builds keep
-# working, and the launcher will only enforce signatures on non-OSS
-# modules at runtime.
-#
-# Re-signing at install time can be suppressed with the environment
-# variable KITE_SKIP_INSTALL_RESIGN=1 — useful for distro packagers
-# who don't have the upstream signing key handy. The installed plugin
-# will then fail signature verification at runtime (which is the
-# correct fail-safe behaviour for a plugin without a valid trailer).
-#
-# Cache-driven workflow for CI / release builds:
-#
-#   cmake -DKite_PLUGIN_SIGNING_KEY=<fpr>             \
-#         -DKite_PLUGIN_SIGNING_HOMEDIR=<dir>         \
-#         -DKite_PLUGIN_SIGN_ALL=ON                   \
-#         ...
-#
-# When Kite_PLUGIN_SIGN_ALL is ON, plugins/CMakeLists.txt walks every
-# in-tree .mmco target and calls mmco_sign_plugin() on it automatically.
+# The plugin is signed after the build and again after install, because CMake's
+# RPATH rewriting and stripping change the signed bytes. KITE_SKIP_INSTALL_RESIGN=1
+# skips the second step; the installed plugin then fails verification.
 
 include_guard(GLOBAL)
 
@@ -72,8 +37,6 @@ function(mmco_sign_plugin target)
     endif()
 
     if(NOT _arg_KEY)
-        # No key configured → quietly skip. The launcher will only
-        # complain at runtime if the plugin's license is not OSS.
         return()
     endif()
 
@@ -97,11 +60,6 @@ function(mmco_sign_plugin target)
         return()
     endif()
 
-    # ─── 1. Build-tree signing (POST_BUILD) ─────────────────────────
-    #
-    # Sign the staged artefact under ${KITE_PLUGIN_STAGING_DIR} so
-    # the in-tree run (e.g. `./build/launcher/kite`) can discover
-    # signed plugins straight out of the build directory.
     set(_cmd
         "${Python3_EXECUTABLE}" "${_script}"
         --key "${_arg_KEY}"
@@ -118,50 +76,7 @@ function(mmco_sign_plugin target)
         VERBATIM
     )
 
-    # ─── 2. Install-tree re-signing ─────────────────────────────────
-    #
-    # When CMake installs a MODULE library it may:
-    #
-    #   • Rewrite RPATH / RUNPATH (chrpath / patchelf on Linux,
-    #     install_name_tool on macOS) so the installed copy resolves
-    #     dependencies relative to the install prefix instead of the
-    #     build tree, and
-    #   • Strip debug symbols (CMAKE_INSTALL_DO_STRIP=ON, cpack-driven
-    #     builds, distro packaging).
-    #
-    # Both operations rewrite bytes inside the very same payload that
-    # the POST_BUILD signature covers, so the trailer we attached at
-    # build time is no longer valid against the installed file. The
-    # detached GPG signature can't accommodate that — it's a hash of
-    # the exact payload bytes.
-    #
-    # The fix is to re-sign at install time, *after* CMake has done
-    # all its RPATH / strip surgery. We schedule a CODE block that
-    # locates the freshly-installed file (honouring DESTDIR + prefix)
-    # and invokes mmco_sign.py against it in place.
-    #
-    # Skipping the re-sign is supported via the environment variable
-    # KITE_SKIP_INSTALL_RESIGN=1 — useful when packagers don't have
-    # the signing key handy. The launcher will then reject the
-    # installed plugin as BadSignature at load time, which is the
-    # correct fail-safe.
-    #
-    # In-tree plugins all share the convention
-    #   LIBRARY DESTINATION "${MMCO_MODULES_DEST_DIR}"
-    # (defined alongside BINARY_DEST_DIR in the top-level CMakeLists)
-    # so we can predict the install path at configure time. If you
-    # break that convention in a custom plugin, override the
-    # destination with an explicit DESTINATION argument to
-    # mmco_sign_plugin (left as a TODO for now — drop us an issue
-    # if you need it).
-    #
-    # MMCO_MODULES_DEST_DIR is platform-aware:
-    #   Linux    -> bin/mmcmodules
-    #   Windows  -> ./mmcmodules
-    #   macOS    -> Kite.app/Contents/PlugIns/mmcmodules
-    # The macOS branch deliberately routes around Contents/MacOS to
-    # avoid colliding with Apple's `codesign --strict` subcomponent
-    # treatment of Mach-O files found there.
+    # Re-signs the installed copy; in-tree plugins install into MMCO_MODULES_DEST_DIR.
     if(NOT DEFINED MMCO_MODULES_DEST_DIR)
         message(FATAL_ERROR
             "mmco_sign_plugin(${target}): MMCO_MODULES_DEST_DIR is not set. "
@@ -170,8 +85,6 @@ function(mmco_sign_plugin target)
             "subdirectories are added.")
     endif()
 
-    # Escape backslashes so the CODE template survives generation
-    # on Windows paths.
     set(_resign_script      "${_script}")
     set(_resign_python      "${Python3_EXECUTABLE}")
     set(_resign_key         "${_arg_KEY}")

@@ -90,8 +90,8 @@ class ModIconProviderTest : public QObject
 		QSize size;
 		const QImage image = provider.requestImage(kKey, &size, QSize(8, 8));
 		QCOMPARE(size, QSize(8, 8));
-		// Nearest-neighbour by a whole factor: each source pixel is a
-		// clean 4x4 block, edges included.
+		// Nearest-neighbour by a whole factor: each source pixel is a clean
+		// 4x4 block.
 		QCOMPARE(image.pixelColor(0, 0), QColor(Qt::red));
 		QCOMPARE(image.pixelColor(3, 3), QColor(Qt::red));
 		QCOMPARE(image.pixelColor(4, 0), QColor(Qt::green));

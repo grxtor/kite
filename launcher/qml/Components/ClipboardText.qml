@@ -5,8 +5,7 @@
 import QtQuick
 
 /*
- * QML has no clipboard API of its own; an invisible text edit does. Put one
- * of these in a page and call copyText() on it.
+ * QML has no clipboard API of its own; an invisible text edit does. Put one in a page and call copyText() on it.
  */
 TextEdit {
     visible: false

@@ -25,20 +25,17 @@
 
 QString AuthSession::serializeUserProperties()
 {
-	/*
-	 * If a plugin filled user_properties through MMCO_HOOK_SESSION_FILL,
-	 * pass it through as-is — it is expected to already be a valid JSON
-	 * object literal. Otherwise emit the empty-object default, which is
-	 * what vanilla Mojang flows want.
-	 */
+	// A plugin may fill user_properties through MMCO_HOOK_SESSION_FILL; it is
+	// passed through as-is and must already be a valid JSON object literal.
+	// Otherwise emit the empty-object default vanilla Mojang flows want.
 	const QString trimmed = user_properties.trimmed();
 	if (!trimmed.isEmpty()) {
 		QJsonParseError err{};
 		auto doc = QJsonDocument::fromJson(trimmed.toUtf8(), &err);
 		if (err.error == QJsonParseError::NoError && doc.isObject())
 			return doc.toJson(QJsonDocument::Compact);
-		/* Malformed → fall through to the empty default so the launch
-		 * doesn't break. */
+		// Malformed: fall through to the empty default so the launch still
+		// works.
 	}
 	return QJsonDocument(QJsonObject{}).toJson(QJsonDocument::Compact);
 }

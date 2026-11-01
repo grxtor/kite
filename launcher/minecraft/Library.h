@@ -109,8 +109,6 @@ class Library
 		return m_nativeClassifiers.size() != 0;
 	}
 
-	void setStoragePrefix(QString prefix = QString());
-
 	/// Set the url base for downloads
 	void setRepositoryURL(const QString& base_url)
 	{
@@ -154,12 +152,6 @@ class Library
 		m_hint = hint;
 	}
 
-	/// Set the load rules
-	void setRules(QList<std::shared_ptr<Rule>> rules)
-	{
-		m_rules = rules;
-	}
-
 	/// Returns true if the library should be loaded (or extracted, in case of
 	/// natives) in @p context
 	bool isActive(const RuntimeContext& context) const;
@@ -170,9 +162,6 @@ class Library
 
 	/// Returns true if the library is to always be checked for updates
 	bool isAlwaysStale() const;
-
-	/// Return true if the library requires forge XZ hacks
-	bool isForge() const;
 
 	// Get a list of downloads for this library
 	QList<NetAction::Ptr> getDownloads(const RuntimeContext& context,
@@ -189,6 +178,10 @@ class Library
 
 	/// Get the relative file path where the library should be saved
 	QString storageSuffix(const RuntimeContext& context) const;
+
+	/// The gradle specifier of a native library with the classifier of
+	/// @p context (Mojang HACK: it overrides the one in the name)
+	GradleSpecifier nativeSpecifier(const RuntimeContext& context) const;
 
 	QString hint() const
 	{

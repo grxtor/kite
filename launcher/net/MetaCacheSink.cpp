@@ -35,7 +35,6 @@ namespace Net
 
 	MetaCacheSink::~MetaCacheSink()
 	{
-		// nil
 	}
 
 	JobStatus MetaCacheSink::initCache(QNetworkRequest& request)
@@ -43,7 +42,6 @@ namespace Net
 		if (!m_entry->isStale()) {
 			return Job_Finished;
 		}
-		// check if file exists, if it does, use its information for the request
 		QFile current(m_filename);
 		if (current.exists() && current.size() != 0) {
 			if (m_entry->getRemoteChangedTimestamp().size()) {

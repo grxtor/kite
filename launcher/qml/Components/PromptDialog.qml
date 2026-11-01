@@ -11,7 +11,7 @@ import Kite.Theme
  * cancels; `suggestions` become one-click chips under the field (existing
  * groups, say), so the common answers need no typing.
  */
-Dialog {
+AppDialog {
     id: root
 
     property string label
@@ -23,19 +23,11 @@ Dialog {
     property string error
     signal submitted(string text)
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(440, parent ? parent.width - Theme.space.xxl * 2 : 440)
-    modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
-    topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
-    bottomPadding: Theme.space.sm
-
-    header: DialogHeader {
-        title: root.title
-    }
+    size: "sm"
+    closeOnPrimary: false
+    primaryText: root.confirmText
+    primaryEnabled: root.allowEmpty || field.text.trim().length > 0
+    onPrimaryClicked: root.submit()
 
     onOpened: {
         field.text = root.value
@@ -54,14 +46,13 @@ Dialog {
     contentItem: Column {
         spacing: Theme.space.sm
 
-        Text {
+        Copy {
             visible: root.label.length > 0
             width: parent.width
             text: root.label
+            role: "label"
+            tone: "secondary"
             wrapMode: Text.Wrap
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
         }
 
         TextField {
@@ -85,52 +76,31 @@ Dialog {
                     implicitHeight: Theme.control.heightSm
                     implicitWidth: chipText.implicitWidth + Theme.space.md * 2
                     onClicked: field.text = modelData
-                    // A suggestion, not a filter: a control's corner, the
-                    // same as a Tag's, not a pill.
                     background: Rectangle {
                         radius: Theme.radius.sm
                         color: chip.hovered ? Theme.palette.surfaceOverlay : Theme.palette.surfaceRaised
                         border.width: 1
                         border.color: field.text === chip.modelData ? Theme.palette.accent : Theme.palette.border
                     }
-                    contentItem: Text {
+                    contentItem: Copy {
                         id: chipText
                         text: chip.modelData.length > 0 ? chip.modelData : qsTr("No group")
+                        role: "label"
+                        tone: "secondary"
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
-                        color: Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
                     }
                 }
             }
         }
 
-        Text {
+        Copy {
             visible: root.error.length > 0
             width: parent.width
             text: root.error
+            role: "caption"
+            tone: "danger"
             wrapMode: Text.Wrap
-            color: Theme.palette.danger
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
-        }
-    }
-
-    footer: Row {
-        layoutDirection: Qt.RightToLeft
-        spacing: Theme.space.sm
-        padding: Theme.space.xl
-        topPadding: 0
-        Button {
-            text: root.confirmText
-            highlighted: true
-            enabled: root.allowEmpty || field.text.trim().length > 0
-            onClicked: root.submit()
-        }
-        Button {
-            text: qsTr("Cancel")
-            onClicked: root.close()
         }
     }
 }

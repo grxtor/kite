@@ -29,7 +29,6 @@
 
 namespace
 {
-	// Mirrors OtherLogsPage::on_btnReload_clicked()'s own ceilings.
 	constexpr qint64 kTooBigToOpen = 1024ll * 1024ll * 12ll;
 	constexpr qint64 kTooBigToShow = 50000000ll;
 } // namespace
@@ -87,8 +86,7 @@ void OtherLogsModel::onFilesChanged()
 	beginResetModel();
 	endResetModel();
 
-	// The selected file may have just been deleted (or renamed) out from
-	// under us - same rule OtherLogsPage::populateSelectLogBox() applies.
+	// The selected file may have just been deleted or renamed.
 	if (!m_currentFile.isEmpty() &&
 		!QFile::exists(FS::PathCombine(m_path, m_currentFile))) {
 		selectFile(QString());
@@ -135,8 +133,16 @@ void OtherLogsModel::reload()
 	QString content;
 	if (file.fileName().endsWith(QStringLiteral(".gz"))) {
 		QByteArray uncompressed;
-		if (!GZip::unzip(file.readAll(), uncompressed)) {
-			setContent(tr("The file (%1) is not readable.").arg(file.fileName()));
+		bool exceededCap = false;
+		if (!GZip::unzip(file.readAll(), uncompressed, kTooBigToShow,
+						 &exceededCap)) {
+			setContent(exceededCap
+						   ? tr("The file (%1) is too big. You may want to "
+								"open it in a viewer optimized for large "
+								"files.")
+								 .arg(file.fileName())
+						   : tr("The file (%1) is not readable.")
+								 .arg(file.fileName()));
 			return;
 		}
 		content = QString::fromUtf8(uncompressed);
@@ -174,8 +180,6 @@ QStringList OtherLogsModel::deleteAll()
 			failed.append(name);
 		}
 	}
-	// Same immediate check onFilesChanged() does once the filesystem
-	// watcher notices - not worth waiting for that here too.
 	if (!m_currentFile.isEmpty() &&
 		!QFile::exists(FS::PathCombine(m_path, m_currentFile))) {
 		selectFile(QString());

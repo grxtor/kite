@@ -8,13 +8,11 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One node of a plugin's "mmco-ui/1" document, drawn with the launcher's
- * own components -- a plugin names what it needs (a toggle, a list), never
- * how it looks. Containers draw their children through this same file.
- *
- * Every user action goes back to the plugin as (surface, node, event,
- * value) through `sink.sendEvent`; the plugin answers by patching its
- * document, which arrives here as a new `node`.
+ * One node of a plugin's "mmco-ui/1" document, drawn with the launcher's own
+ * components. Containers draw their children through this same file. Every user
+ * action goes back to the plugin as (surface, node, event, value) through
+ * `sink.sendEvent`; the plugin answers by patching its document, which arrives
+ * here as a new `node`.
  */
 Item {
     id: root
@@ -33,7 +31,6 @@ Item {
             root.sink.sendEvent(root.surfaceId, root.node.id || "", event, value)
     }
 
-    // Children of a row keep their natural width; everything else fills.
     property bool stretch: true
 
     visible: props.visible !== false
@@ -113,26 +110,23 @@ Item {
         }
     }
 
-    // Leaves inside a section card get row padding, like setting rows.
     property bool inCard: false
     readonly property int pad: inCard ? Theme.space.lg : 0
 
     Component {
         id: headingNode
-        Text {
+        Copy {
             leftPadding: root.pad
             text: root.props.text || ""
             wrapMode: Text.Wrap
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.heading
-            font.pixelSize: Theme.type.title.pixelSize
+            role: "title"
             font.weight: Font.Bold
         }
     }
 
     Component {
         id: textNode
-        Text {
+        Copy {
             leftPadding: root.pad
             rightPadding: root.pad
             topPadding: root.inCard ? Theme.space.sm : 0
@@ -140,9 +134,7 @@ Item {
             text: root.props.text || ""
             textFormat: Text.PlainText
             wrapMode: Text.Wrap
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
+            tone: "secondary"
         }
     }
 
@@ -226,16 +218,13 @@ Item {
                 width: parent ? parent.width : 300
                 placeholderText: root.props.placeholder || ""
                 selectByMouse: true
-                // Follows the plugin's value while the user is not editing.
-                // Not only on completion: a child node's `node` arrives
-                // after it is created (see the containers' onLoaded), and
-                // this field can complete before `props` has caught up.
+                // Follows the plugin's value while the user is not editing. Not only on completion:
+                // a child's `node` arrives after it is created.
                 readonly property string pluginValue: root.props.value !== undefined && root.props.value !== null
                                                       ? String(root.props.value) : ""
                 onPluginValueChanged: if (!activeFocus) text = pluginValue
                 Component.onCompleted: text = pluginValue
-                // Same moment the widget renderer reports it: when editing
-                // finishes, so a plugin never sees half-typed values.
+                // When editing finishes, so a plugin never sees half-typed values.
                 onEditingFinished: root.send("change", text)
             }
         }
@@ -268,7 +257,6 @@ Item {
             label: root.props.label || ""
             enabled: root.props.enabled !== false
             ComboBox {
-                id: combo
                 width: 220
                 readonly property var options: (root.props.options || []).map(o => typeof o === "string" ? { id: o, label: o } : o)
                 model: options
@@ -292,21 +280,19 @@ Item {
             bottomPadding: root.inCard ? Theme.space.sm : 0
             property string selectedId: ""
 
-            // Column titles.
             Row {
                 x: root.pad + Theme.space.sm
                 visible: (root.props.columns || []).length > 1
                 spacing: Theme.space.md
                 Repeater {
                     model: root.props.columns || []
-                    delegate: Text {
+                    delegate: Copy {
                         required property string modelData
                         width: 120
                         text: modelData
                         elide: Text.ElideRight
-                        color: Theme.palette.textTertiary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.caption.pixelSize
+                        role: "caption"
+                        tone: "tertiary"
                         font.weight: Font.DemiBold
                     }
                 }
@@ -324,26 +310,26 @@ Item {
                     hoverEnabled: true
                     onClicked: { parent.selectedId = modelData.id; root.send("select", modelData.id) }
                     onDoubleClicked: root.send("activate", modelData.id)
-                    background: Rectangle {
+                    background: StateFill {
                         radius: Theme.radius.sm
-                        color: listRow.selected ? Theme.palette.surfaceHover
-                             : listRow.hovered ? Theme.palette.hoverOverlay : "transparent"
+                        hovered: listRow.hovered
+                        active: listRow.selected
+                        activeFill: Theme.palette.surfaceHover
                     }
                     contentItem: Row {
                         leftPadding: Theme.space.sm
                         spacing: Theme.space.md
                         Repeater {
                             model: listRow.modelData.cells || []
-                            delegate: Text {
+                            delegate: Copy {
                                 required property string modelData
                                 required property int index
                                 anchors.verticalCenter: parent ? parent.verticalCenter : undefined
                                 width: index === 0 && (listRow.modelData.cells || []).length === 1 ? listRow.width - Theme.space.md : 120
                                 text: modelData
                                 elide: Text.ElideRight
-                                color: index === 0 ? Theme.palette.textPrimary : Theme.palette.textSecondary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
+                                role: "label"
+                                tone: index === 0 ? "primary" : "secondary"
                             }
                         }
                     }
@@ -356,14 +342,12 @@ Item {
         id: linkNode
         Item {
             implicitHeight: linkText.implicitHeight + (root.inCard ? Theme.space.sm * 2 : 0)
-            Text {
+            Copy {
                 id: linkText
                 x: root.pad
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.props.text || root.props.href || ""
-                color: Theme.palette.accentText
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
+                tone: "accent"
                 font.underline: linkHover.hovered
                 HoverHandler { id: linkHover; cursorShape: Qt.PointingHandCursor }
                 TapHandler { onTapped: root.send("click", root.props.href || "") }

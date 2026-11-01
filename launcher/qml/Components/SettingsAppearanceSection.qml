@@ -18,8 +18,10 @@ SettingsScroll {
     property var languages: null
     property var selectLanguage: null
 
-    // The language box, as wide as the longest language name needs.
     readonly property int languageBoxWidth: 260
+
+    // Show a folder in the file manager; SettingsPage passes it up to Main.qml.
+    signal openPathRequested(string path)
 
     title: qsTr("Appearance")
     description: qsTr("The launcher's own language and colour scheme.")
@@ -30,14 +32,13 @@ SettingsScroll {
             label: qsTr("Display language")
             description: qsTr("Applied immediately.")
             ComboBox {
-                id: languageBox
                 width: root.languageBoxWidth
                 model: root.languages
                 textRole: "name"
                 valueRole: "languageKey"
                 enabled: !!root.languages && !!root.selectLanguage
-                // Follows the setting (changed here, in the old settings
-                // window or by a plugin), not only the first time.
+                // Follows the setting (it can change elsewhere, e.g. a plugin), not only the first
+                // time.
                 readonly property string stored: SettingsStore.string("Language")
                 function syncToSetting() {
                     currentIndex = indexOfValue(stored)
@@ -68,8 +69,7 @@ SettingsScroll {
                 }
             }
         }
-        // The palette and the mode are Klasik's own; the other looks bring
-        // theirs.
+        // The palette and the mode are Klasik's own; the other looks bring theirs.
         SettingRow {
             wide: true
             visible: Theme.look === "classic"
@@ -116,7 +116,6 @@ SettingsScroll {
             description: qsTr("Turns off decorative animation across the launcher.")
         }
     }
-    // The still cat pictures of the classic window.
     SettingsGroup {
         width: parent.width
         title: qsTr("Cat picture")
@@ -132,8 +131,28 @@ SettingsScroll {
             label: qsTr("Picture")
             description: qsTr("Add your own by putting a picture in the catpacks folder inside Kite's data folder.")
             visible: !!LauncherStore.catPacks
-            CatPackPicker {
+            Column {
                 width: parent.width
+                spacing: Theme.space.md
+
+                // A picture dropped into the folder shows once Kite is the front window again.
+                Connections {
+                    target: Qt.application
+                    function onStateChanged() {
+                        if (Qt.application.state === Qt.ApplicationActive && LauncherStore.catPacks)
+                            LauncherStore.catPacks.refresh()
+                    }
+                }
+                Component.onCompleted: { if (LauncherStore.catPacks) LauncherStore.catPacks.refresh() }
+
+                CatPackPicker {
+                    width: parent.width
+                }
+                Button {
+                    text: qsTr("Open folder")
+                    icon.source: Icons.url("folder")
+                    onClicked: root.openPathRequested(LauncherStore.catPacks.folder)
+                }
             }
         }
     }

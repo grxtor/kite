@@ -100,9 +100,8 @@ double LearningStore::scoreFor(const QString& ruleId,
 	if (it == m_outcomes.constEnd())
 		return 0.0;
 	double total = it->helped + it->didNotHelp + 0.001;
-	// Wilson-ish bounded confidence: helped fraction times log-scaled
-	// observation count. Caps out near +1 for "always helped, many
-	// observations".
+	// Wilson-ish bounded confidence: helped fraction times the log-scaled observation count; caps
+	// near +1.
 	double frac = double(it->helped) / total;
 	double obs = std::log10(double(it->seen + 1) + 1.0);
 	return (frac * 2.0 - 1.0) * std::min(obs, 1.5);
@@ -177,16 +176,6 @@ void LearningStore::recordNovel(const QString& signature,
 	}
 	++n.occurrences;
 	n.lastSeenSecs = QDateTime::currentSecsSinceEpoch();
-}
-
-QList<NovelFingerprint> LearningStore::novelFingerprints() const
-{
-	auto out = m_novel.values();
-	std::sort(out.begin(), out.end(),
-			  [](const NovelFingerprint& a, const NovelFingerprint& b) {
-				  return a.occurrences > b.occurrences;
-			  });
-	return out;
 }
 
 void LearningStore::forgetNovel(const QString& signature)

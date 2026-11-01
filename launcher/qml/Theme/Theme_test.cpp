@@ -32,15 +32,10 @@
 #include <memory>
 
 /*
- * Smoke test for Kite.Theme, the same job QmlModule_test.cpp does for the
- * Kite module: proves the module resolves at its resource prefix, the
- * singleton instantiates, and the tokens it hands out are the ones this
- * module declares -- not that any UI built on top of them looks right.
- *
- * The component is supplied via setData() rather than a loadFromModule()/qrc
- * URL, because it only needs to *use* the module, not live inside it; a
- * plain QUrl base is enough for relative resolution and needs no resource
- * entry of its own.
+ * Smoke test for Kite.Theme, as QmlModule_test.cpp is for Kite: the module
+ * resolves at its resource prefix, the singleton instantiates and its tokens
+ * are the declared ones. The component comes from setData() because it only
+ * needs to use the module, not live inside it.
  */
 class ThemeTest : public QObject
 {
@@ -70,10 +65,16 @@ class ThemeTest : public QObject
 							   "    property int controlHeightLg: Theme.control.heightLg\n"
 							   "    property color surfaceHover: Theme.palette.surfaceHover\n"
 							   "    property bool dark: Theme.dark\n"
+							   "    property int motionFast: Theme.motion.fast\n"
+							   "    property int motionPulse: Theme.motion.pulse\n"
+							   "    property bool motionReduced: Theme.motion.reduced\n"
+							   "    property color dangerInk: Theme.tone(\"danger\").ink\n"
+							   "    property color dangerSoft: Theme.tone(\"danger\").soft\n"
+							   "    property color unknownInk: Theme.tone(\"nonsense\").ink\n"
+							   "    property int iconMid: Theme.icon.mid\n"
+							   "    property int heroPixelSize: Theme.type.hero.pixelSize\n"
 							   "    property color canvasColor: Theme.palette.canvas\n"
-							   "    // Exposed so the test can reach the singletons from C++\n"
-							   "    // without QQmlEngine::singletonInstance(uri, typeName),\n"
-							   "    // which is Qt 6.5+ and this project's floor is 6.4.\n"
+							   "    // Reaches the singletons from C++; singletonInstance() needs Qt 6.5.\n"
 							   "    property QtObject themeRef: Theme\n"
 							   "    property QtObject serviceRef: ThemeService\n"
 							   "}\n"),
@@ -86,9 +87,8 @@ class ThemeTest : public QObject
 
 		// The plain constants: exactly the values Theme.qml declares.
 		QCOMPARE(root->property("spaceMd").toInt(), 12);
-		// The phase-3 Modrinth scale (designs/phase3-scale.md): body 15,
-		// subheading 20, heading 24, nothing a user reads under 13; radii sm 8 / md 12 /
-		// lg 16 / xl 20, controls sm 32 / md 40 / lg 48.
+		// Body 15, subheading 20, heading 24, nothing a user reads under 13;
+		// radii md 12 / lg 16; controls sm 32 / md 40 / lg 48.
 		QCOMPARE(root->property("bodyPixelSize").toInt(), 15);
 		QCOMPARE(root->property("headingPixelSize").toInt(), 24);
 		QCOMPARE(root->property("subheadingPixelSize").toInt(), 20);
@@ -99,21 +99,22 @@ class ThemeTest : public QObject
 		QCOMPARE(root->property("controlHeight").toInt(), 40);
 		QCOMPARE(root->property("controlHeightLg").toInt(), 48);
 
-		// The colour tokens: not merely "some colour", but the one
-		// ThemePalette hands out for whichever theme is active -- proving
-		// the token came from ThemePalette rather than a value made up here.
-		//
-		// The launcher starts dark whatever the OS prefers -- that is the
-		// documented default -- so this holds on a light test runner too.
-		// A fresh ThemeService also starts on the Amethyst scheme (see its
-		// own m_scheme default) -- named explicitly through forScheme()
-		// rather than meshDark(), so a future default-scheme change fails
-		// loudly here instead of this assertion silently checking the wrong
+		// Motion runs at its token durations until the Reduce motion setting
+		// (Theme.reduceMotion, set by SettingsStore) zeroes them all, live.
+		QCOMPARE(root->property("motionFast").toInt(), 120);
+		QCOMPARE(root->property("motionPulse").toInt(), 900);
+		QCOMPARE(root->property("motionReduced").toBool(), false);
+		QCOMPARE(root->property("iconMid").toInt(), 20);
+		QCOMPARE(root->property("heroPixelSize").toInt(), 48);
+
+		// The colour tokens come from ThemePalette for the active theme. The
+		// launcher starts dark whatever the OS prefers, so this holds on a
+		// light runner too. The scheme is named through forScheme() so a
+		// changed default fails here instead of silently checking the wrong
 		// palette.
 		QCOMPARE(root->property("dark").toBool(), true);
 		QCOMPARE(root->property("accent").value<QColor>(),
 				 ThemePalette::forScheme(ThemePalette::Scheme::Amethyst, true).accent);
-		// surfaceHover is the newest palette role; it reaches QML too.
 		QCOMPARE(root->property("surfaceHover").value<QColor>(),
 				 ThemePalette::forScheme(ThemePalette::Scheme::Amethyst, true).surfaceHover);
 
@@ -123,9 +124,20 @@ class ThemeTest : public QObject
 		QObject* themeRef = root->property("themeRef").value<QObject*>();
 		QVERIFY(themeRef != nullptr);
 
-		// Switching mode replaces the whole theme as one unit: `dark` and
-		// `palette` land on the new theme together, and `changed` fires
-		// exactly once per switch, never once per property.
+		const ThemePalette dark = ThemePalette::forScheme(ThemePalette::Scheme::Amethyst, true);
+		QCOMPARE(root->property("dangerInk").value<QColor>(), dark.danger);
+		QCOMPARE(root->property("dangerSoft").value<QColor>(), dark.dangerSubtle);
+		QCOMPARE(root->property("unknownInk").value<QColor>(), dark.textSecondary);
+
+		QVERIFY(themeRef->setProperty("reduceMotion", true));
+		QCOMPARE(root->property("motionFast").toInt(), 0);
+		QCOMPARE(root->property("motionPulse").toInt(), 0);
+		QCOMPARE(root->property("motionReduced").toBool(), true);
+		QVERIFY(themeRef->setProperty("reduceMotion", false));
+		QCOMPARE(root->property("motionFast").toInt(), 120);
+
+		// Switching mode replaces the whole theme as one unit: `changed` fires
+		// once per switch, not once per property.
 		QSignalSpy toLight(service, &ThemeService::changed);
 		themeRef->setProperty("mode", QStringLiteral("light"));
 		QCOMPARE(toLight.count(), 1);
@@ -140,8 +152,8 @@ class ThemeTest : public QObject
 		QCOMPARE(root->property("canvasColor").value<QColor>(),
 				 ThemePalette::forScheme(ThemePalette::Scheme::Amethyst, true).canvas);
 
-		// The colour scheme swaps independently of the mode, also as one
-		// announced unit; an unknown name changes nothing.
+		// The scheme swaps independently of the mode, also as one unit; an
+		// unknown name changes nothing.
 		QSignalSpy toEmber(service, &ThemeService::changed);
 		themeRef->setProperty("scheme", QStringLiteral("ember"));
 		QCOMPARE(toEmber.count(), 1);
@@ -181,11 +193,9 @@ class ThemeTest : public QObject
 
 int main(int argc, char* argv[])
 {
-	/* Qt Quick types need a QGuiApplication, and ThemeService itself reads
-	 * QGuiApplication::palette() -- QTEST_GUILESS_MAIN (QCoreApplication),
-	 * what most other tests in this tree use, is not an option here. Forcing
-	 * the offscreen platform keeps it runnable on a headless CI runner
-	 * without depending on the harness to set QT_QPA_PLATFORM for us. */
+	/* Qt Quick needs a QGuiApplication, and ThemeService reads
+	 * QGuiApplication::palette(), so QTEST_GUILESS_MAIN is not an option.
+	 * Offscreen keeps it runnable on a headless runner. */
 	qputenv("QT_QPA_PLATFORM", "offscreen");
 
 	QGuiApplication app(argc, argv);

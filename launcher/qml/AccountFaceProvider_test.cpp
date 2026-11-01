@@ -29,10 +29,8 @@
 
 namespace
 {
-// Same layout AccountFaceProvider.cpp composites from -- restated here
-// rather than included, so the test proves the coordinates against a fresh
-// reading of "what a real skin texture looks like", not against whatever the
-// implementation happens to believe them to be.
+// The layout AccountFaceProvider.cpp composites from, restated rather than
+// included so the test checks the coordinates independently.
 constexpr int kSkinExtent = 64;
 constexpr int kFaceX = 8;
 constexpr int kFaceY = 8;
@@ -40,10 +38,8 @@ constexpr int kHatX = 40;
 constexpr int kHatY = 8;
 constexpr int kFaceExtent = 8;
 
-// A synthetic skin texture: the face region filled with faceColor, and
-// (optionally) the hat region filled with hatColor. When hatOpaque is
-// false the hat region is left fully transparent, which is what
-// QImage::fill(Qt::transparent) already puts there.
+// A synthetic skin: the face region filled with faceColor and, if hatOpaque,
+// the hat region with hatColor; otherwise the hat stays transparent.
 QImage makeSkin(const QColor& faceColor, const QColor& hatColor,
 			   bool hatOpaque)
 {
@@ -67,20 +63,17 @@ QImage makeSkin(const QColor& faceColor, const QColor& hatColor,
 	return skin;
 }
 
-// Same front-view body layout AccountFaceProvider.cpp composites from,
-// restated here for the same reason kSkinExtent etc. above are.
+// The front-view body layout, restated like the constants above.
 constexpr int kLimbHeight = 12;
 constexpr int kTorsoWidth = 8;
 constexpr int kLegWidth = 4;
 constexpr int kClassicArmWidth = 4;
 constexpr int kSlimArmWidth = 3;
 
-// A synthetic full skin texture: head, torso, right arm and right leg each
-// filled with their own flat colour, so a region landing in the wrong place
-// in the composited body is obvious. @p height is 64 for the modern format
-// (which also gets a distinctly-coloured left arm/leg) or 32 for the legacy
-// one (which has neither, and relies on bodyFromSkin() mirroring the right
-// side instead).
+// A synthetic skin with the head, torso, right arm and right leg each in a
+// flat colour of their own, so a misplaced region is obvious. @p height is 64
+// for the modern format (with a distinct left arm/leg) or 32 for the legacy
+// one (mirrored by bodyFromSkin()).
 QImage makeBodySkin(int height)
 {
 	QImage skin(kSkinExtent, height, QImage::Format_ARGB32_Premultiplied);
@@ -109,15 +102,9 @@ QImage makeBodySkin(int height)
 } // namespace
 
 /*
- * Unit test for AccountFaceProvider::faceFromSkin(), the pure
- * face-compositing helper. Deliberately does not exercise
- * AccountFaceProvider::requestPixmap() itself: that needs a real
- * LauncherContext/AccountList/MinecraftAccount (network-backed, or at least
- * a real Application), which is neither cheap nor hermetic here. The helper
- * is where the interesting logic (and the interesting bug -- a hat pixel
- * clobbering the face where it should be transparent) actually lives.
- * skinTexture() is tested for the skin library's file ids only, which need
- * no account.
+ * Unit test for the pure helpers faceFromSkin() and bodyFromSkin(), and for
+ * skinTexture() with the skin library's file ids only. requestPixmap() needs a
+ * real LauncherContext and account, which is neither cheap nor hermetic.
  */
 class AccountFaceProviderTest : public QObject
 {
@@ -164,9 +151,7 @@ class AccountFaceProviderTest : public QObject
 		}
 	}
 
-	// Proves per-pixel alpha compositing, not an all-or-nothing overlay
-	// draw: only the one opaque hat pixel should show through, everything
-	// else stays the face colour.
+	// Per-pixel alpha compositing: only the one opaque hat pixel shows through.
 	void partiallyTransparentHatBlendsPerPixel()
 	{
 		const QColor faceColor(255, 0, 0, 255);
@@ -194,8 +179,6 @@ class AccountFaceProviderTest : public QObject
 		QVERIFY(AccountFaceProvider::faceFromSkin(QImage()).isNull());
 	}
 
-	// --- AccountFaceProvider::bodyFromSkin() ---
-
 	void bodyIsClassicAspectByDefault()
 	{
 		const QImage skin = makeBodySkin(64);
@@ -219,9 +202,8 @@ class AccountFaceProviderTest : public QObject
 		QCOMPARE(body.height(), kFaceExtent + kLimbHeight * 2);
 	}
 
-	// The character faces the viewer, so its right arm/leg -- the ones a
-	// skin texture always carries, legacy or modern -- render on the left
-	// of the composited image, and the torso sits right after them.
+	// The character faces the viewer, so its right arm/leg (the ones every
+	// skin carries) render on the left, with the torso right after them.
 	void rightArmAndLegLandLeftOfTorso()
 	{
 		const QImage skin = makeBodySkin(64);
@@ -248,10 +230,8 @@ class AccountFaceProviderTest : public QObject
 				 QColor(Qt::magenta));
 	}
 
-	// The legacy 64x32 format has no separate left arm/leg texture at all,
-	// so bodyFromSkin() must synthesise the left side by mirroring the
-	// right -- checked here with an asymmetric arm so a mirror and a plain
-	// copy cannot be confused for each other.
+	// The legacy 64x32 format has no left arm/leg texture, so the left side is
+	// mirrored; an asymmetric arm tells a mirror from a copy.
 	void legacySkinMirrorsRightArmAndLegForLeft()
 	{
 		QImage skin = makeBodySkin(32);
@@ -262,8 +242,7 @@ class AccountFaceProviderTest : public QObject
 
 		QVERIFY(!body.isNull());
 		const int leftArmX = kClassicArmWidth + kTorsoWidth;
-		// Mirrored: the arm's rightmost column becomes the leftmost here,
-		// and vice versa.
+		// Mirrored: the arm's rightmost column becomes the leftmost.
 		QCOMPARE(body.pixelColor(leftArmX, kFaceExtent), QColor(Qt::blue));
 		QCOMPARE(body.pixelColor(leftArmX + kClassicArmWidth - 1, kFaceExtent),
 				 QColor(Qt::red));
@@ -292,9 +271,8 @@ class AccountFaceProviderTest : public QObject
 		QVERIFY(AccountFaceProvider::bodyFromSkin(QImage(), false).isNull());
 	}
 
-	// The skin library's ids carry the whole path percent-encoded, so a
-	// folder with spaces or a '#' must come back out intact; a legacy
-	// 64x32 skin comes out as a 64x64 texture.
+	// Ids carry the whole path percent-encoded, so spaces or a '#' must
+	// survive; a legacy 64x32 skin comes out as 64x64.
 	void skinFileTextureSurvivesItsUrl()
 	{
 		QTemporaryDir dir;
@@ -312,8 +290,8 @@ class AccountFaceProviderTest : public QObject
 		QVERIFY(!AccountFaceProvider::skinTexture(QStringLiteral("skinthumb/") + encoded).isNull());
 	}
 
-	// The sprite's back right arm starts a pixel further in with slim arms
-	// (SkinEntry's renderThumbnail()), so its first column is empty.
+	// The sprite's back right arm starts a pixel further in with slim arms, so
+	// its first column is empty.
 	void slimThumbnailHasSlimArms()
 	{
 		QTemporaryDir dir;

@@ -4,10 +4,8 @@
 
 import QtQuick
 
-// Shared by ComboBox (dropdown indicator) and MenuItem (submenu arrow), which
-// otherwise wanted the same "v" glyph in two different rotations. Drawn on a
-// Canvas for the same reason as CheckMark: no bitmap asset to re-export per
-// theme/size, and it stays crisp at any of Theme.icon's sizes.
+// ComboBox's dropdown indicator and MenuItem's submenu arrow, drawn on a
+// Canvas like CheckMark so it stays crisp at any size and theme.
 Canvas {
     id: chevron
 

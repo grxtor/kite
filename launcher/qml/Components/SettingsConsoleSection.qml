@@ -19,29 +19,9 @@ SettingsScroll {
             label: qsTr("Show the console while playing")
         }
         SettingSwitch {
-            key: "AutoCloseConsole"
-            label: qsTr("Close the console when the game quits")
-        }
-        SettingSwitch {
             key: "ShowConsoleOnError"
             label: qsTr("Show the console when the game crashes")
         }
-    }
-    SettingsGroup {
-        width: parent.width
-        title: qsTr("Font")
-        ConsoleFontRow {
-            label: qsTr("Font")
-            description: qsTr("Used for the game's log. A monospaced font lines columns up best.")
-        }
-        SettingNumber {
-            key: "ConsoleFontSize"
-            label: qsTr("Font size")
-            from: 6
-            to: 48
-            suffix: qsTr("pt")
-        }
-        ConsolePreview {}
     }
     SettingsGroup {
         width: parent.width

@@ -20,123 +20,22 @@
 
 #pragma once
 
-#include <QHash>
-#include <QJsonArray>
-#include <QJsonObject>
-#include <QPointer>
 #include <QString>
-#include <QWidget>
 #include <functional>
-#include <memory>
 
-class QWidget;
 class QMenu;
 
-/*
- * PluginUiRenderer — turns an "mmco-ui/1" JSON document (the format
- * MMCOContext::ui_surface_create / ui_surface_update / ui_modal_run
- * take, see PluginAPI.h S33) into a live QWidget tree, Kite_logic
- * side (it builds real widgets, so it cannot live in the Qt-free SDK).
- *
- * Fourteen node types are understood:
- *   Containers (have "children"):        column, row, section
- *   Content leaves:                      heading, text, separator,
- *                                         progress
- *   Interactive leaves:                  button, toggle, text_field,
- *                                         number_field, choice, list,
- *                                         link
- *
- * Every node may carry a plugin-assigned "id" (used for events and for
- * PluginManager::api_ui_surface_set / _set_rows) and a flat "props"
- * object. No colour/font/geometry prop exists on any node — the host
- * owns all presentation.
- *
- * A RenderedSurface owns exactly one top-level QWidget (rootWidget()),
- * created once and never replaced — setDocument() rebuilds everything
- * *inside* it, so a caller that has parented rootWidget() somewhere
- * never has to reparent anything again. RenderedSurface does not
- * delete rootWidget() itself; whoever parents it into a page/dialog
- * owns it the normal Qt way (parent-child cascade on destruction).
- */
+/* Builds the system tray menu from a plugin's "mmco-tray-menu/1" document
+ * (MMCOContext::tray_set_menu). */
 class PluginUiRenderer
 {
   public:
-	/* nodeId, event ("click" / "change" / "select" / "activate"),
-	 * value_json (a JSON-encoded value, or "" when not applicable). */
+	/* nodeId, event ("click"), value_json (always empty for a menu item). */
 	using EventSink = std::function<void(
 		const QString& nodeId, const QString& event, const QString& valueJson)>;
 
-	class RenderedSurface
-	{
-	  public:
-		explicit RenderedSurface(EventSink sink);
-		~RenderedSurface();
-
-		RenderedSurface(const RenderedSurface&) = delete;
-		RenderedSurface& operator=(const RenderedSurface&) = delete;
-
-		/* The single stable top-level widget. Never null after
-		 * construction; never replaced by any of the calls below. */
-		QWidget* rootWidget() const
-		{
-			return m_root.data();
-		}
-
-		/* Parse and (re)build the whole tree from an "mmco-ui/1"
-		 * document. Returns false on malformed JSON / missing root,
-		 * in which case rootWidget() is left empty. */
-		bool setDocument(const QJsonObject& doc);
-
-		/* Patch one node's `props` in place (merged over the existing
-		 * props for that node). Returns false if node_id is unknown or
-		 * the node type doesn't understand one of the given keys. */
-		bool setNodeProps(const QString& nodeId, const QJsonObject& props);
-
-		/* Replace a `list` node's `rows` array in place, leaving its
-		 * `columns` untouched. Returns false if node_id doesn't name a
-		 * `list` node. */
-		bool setRows(const QString& nodeId, const QJsonArray& rows);
-
-		/* Look up the node type for `nodeId` ("button", "toggle", …),
-		 * or an empty string if unknown. Used by ui_modal_run to spot
-		 * which button fired. */
-		QString nodeType(const QString& nodeId) const;
-
-		/* Current value of every interactive node (toggle/text_field/
-		 * number_field/choice), keyed by node id — used to build
-		 * ui_modal_run's "fields" result object. */
-		QJsonObject collectValues() const;
-
-	  private:
-		struct NodeEntry {
-			QWidget* widget = nullptr; /* the interactive/leaf widget itself */
-			QString type;
-		};
-
-		QWidget* renderNode(const QJsonObject& node);
-		QWidget* wrapWithLabel(const QString& label, QWidget* control);
-		void clearRoot();
-
-		EventSink m_sink;
-		/* Stable identity; content rebuilt in place. A QPointer because
-		 * whatever it gets parented under may delete it first: when a
-		 * settings group box is torn down it deletes its child widgets,
-		 * this root among them, before the RendererOwner sibling that
-		 * owns this surface. */
-		QPointer<QWidget> m_root;
-		QHash<QString, NodeEntry> m_nodes;
-	};
-
-	/* Parse `jsonDoc` (an "mmco-ui/1" document) and build a live
-	 * surface. Never returns null — a malformed document renders as an
-	 * empty surface (setDocument()'s return value already logged the
-	 * problem via qWarning). */
-	static std::unique_ptr<RenderedSurface> build(const QString& jsonDoc,
-												  EventSink sink);
-
-	/* Parse a tray-menu document (small tree of button/separator/section
-	 * nodes — section = submenu) and populate `menu` with QActions wired
-	 * to `sink(nodeId, "click", "")`. Returns false on malformed JSON. */
+	/* Parses a tray-menu document (button/separator/section nodes; section = submenu) and populates
+	 * `menu` with QActions wired to sink(nodeId, "click", ""). False on malformed JSON. */
 	static bool buildTrayMenu(QMenu* menu, const QString& jsonDoc,
 							 EventSink sink);
 };

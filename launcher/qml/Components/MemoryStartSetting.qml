@@ -7,9 +7,8 @@ import Kite.Theme
 
 /*
  * Starting memory: the amount the game reserves at launch, as the same typed
- * value MemorySetting shows for the maximum (MemoryField), so the two memory
- * rows read as one kind of setting. Saved when edited, never above the
- * maximum, which is read from `maxKey` in the same source.
+ * value MemorySetting shows for the maximum. Saved when edited, never above the
+ * maximum read from `maxKey` in the same source.
  */
 SettingRow {
     id: root

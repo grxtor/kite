@@ -40,8 +40,8 @@ NewsChecker::NewsChecker(shared_qobject_ptr<QNetworkAccessManager> network,
 {
 	m_network = network;
 
-	// Feed 0 has to stay feed 0 whatever the caller passed, because the
-	// indices are handed out to the news dialog and to plugins.
+	// Feed 0 stays the primary feed: the indices are handed to the news
+	// dialog and to plugins.
 	for (const QString& url : feedUrls) {
 		const QString trimmed = url.trimmed();
 		if (trimmed.isEmpty())
@@ -75,8 +75,6 @@ QStringList NewsChecker::feedUrls() const
 
 void NewsChecker::reloadNews()
 {
-	// Start a netjob per feed and call rssDownloadFinished() as each one
-	// lands.
 	if (isLoadingNews()) {
 		qCDebug(newsLog)
 			<< "Ignored request to reload news. Currently reloading already.";
@@ -94,9 +92,8 @@ void NewsChecker::reloadNews()
 	m_primaryError.clear();
 	m_pendingFeeds = m_feeds.size();
 
-	// Every job is created before any of them starts: a job that fails
-	// synchronously would otherwise settle the load while later feeds
-	// have not even been counted in yet.
+	// All jobs are created before any starts: one failing synchronously
+	// would settle the load before later feeds are counted.
 	for (int i = 0; i < m_feeds.size(); i++) {
 		auto& feed = m_feeds[i];
 		feed.data.clear();
@@ -124,7 +121,6 @@ void NewsChecker::rssDownloadFinished(int feedIndex)
 
 	auto& feed = m_feeds[feedIndex];
 
-	// Parse the XML file and process the RSS feed entries.
 	qCDebug(newsLog) << "Finished loading RSS feed" << feed.url;
 
 	feed.job.reset();
@@ -132,12 +128,10 @@ void NewsChecker::rssDownloadFinished(int feedIndex)
 
 	QDomDocument doc;
 	{
-		// Stuff to store error info in.
 		QString errorMsg = "Unknown error.";
 		int errorLine = -1;
 		int errorCol = -1;
 
-		// Parse the XML.
 		if (!doc.setContent(feed.data, false, &errorMsg, &errorLine,
 							&errorCol)) {
 			QString fullErrorMsg =
@@ -152,7 +146,6 @@ void NewsChecker::rssDownloadFinished(int feedIndex)
 		feed.data.clear();
 	}
 
-	// If the parsing succeeded, read it.
 	QDomNodeList items = doc.elementsByTagName("item");
 	for (int i = 0; i < items.length(); i++) {
 		QDomElement element = items.at(i).toElement();
@@ -180,19 +173,16 @@ void NewsChecker::rssDownloadFailed(int feedIndex, QString reason)
 	auto& feed = m_feeds[feedIndex];
 	feed.job.reset();
 	feed.data.clear();
-	// Drop whatever this feed contributed last time: showing entries
-	// from a feed that just failed to load is worse than showing none.
+	// Drop last time's entries: a failed feed must not show stale ones.
 	feed.entries.clear();
 
 	const QString message =
 		tr("Failed to load news RSS feed:\n%1").arg(reason);
 
 	if (feedIndex == 0) {
-		// The primary feed is the one the news bar speaks for.
 		m_primaryError = message;
 	} else {
-		// An extra feed is additive. Losing it is not worth blanking
-		// the news bar over.
+		// An extra feed is additive; losing it does not blank the news bar.
 		qWarning() << "Failed to load extra news feed" << feed.url << ":"
 				   << reason;
 	}
@@ -221,10 +211,8 @@ QList<NewsEntryPtr> NewsChecker::getNewsEntries() const
 		merged.append(feed.entries);
 	}
 
-	// Newest first, so the news bar's "latest headline" really is the
-	// latest one across every feed rather than whichever feed happens
-	// to come first. Undated entries sink to the bottom instead of
-	// jumping to the top on an invalid QDateTime comparison.
+	// Newest first across all feeds. Undated entries sink instead of jumping
+	// to the top on an invalid QDateTime comparison.
 	std::stable_sort(merged.begin(), merged.end(),
 					 [](const NewsEntryPtr& a, const NewsEntryPtr& b) {
 						 if (a->pubDate.isValid() != b->pubDate.isValid())
@@ -265,5 +253,4 @@ void NewsChecker::fail(const QString& errorMsg)
 {
 	m_lastLoadError = errorMsg;
 	qCDebug(newsLog) << "Failed to load news:" << errorMsg;
-	emit newsLoadingFailed(errorMsg);
 }

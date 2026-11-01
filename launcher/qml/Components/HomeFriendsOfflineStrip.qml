@@ -6,17 +6,13 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Friends, but none of them around: the quiet kind of empty on Home's
- * friends panel. A line saying so and the first few offline friends as
- * faded heads -- who they are on hover or keyboard focus, and a click opens
- * the Friends page (`clicked()`), as the rows do when someone is around.
- * Each head is a button, so the keyboard and a screen reader reach the
- * names the tooltip carries.
+ * Friends, but none around: the quiet kind of empty on Home's friends panel. A line saying so and the first few
+ * offline friends as faded heads -- a tooltip names them on hover or keyboard focus, and a click opens the
+ * Friends page (`clicked()`). Each head is a button so a screen reader reaches the names.
  */
 Column {
     id: root
 
-    // Friend maps (FriendsController.friends) of the ones who are away.
     property var friends: []
 
     signal clicked()
@@ -51,13 +47,8 @@ Column {
                 ToolTip.delay: 500
                 ToolTip.text: head.modelData.name + " · " + head.modelData.statusText
 
-                background: Rectangle {
-                    // The ring stands clear of the head, as other focus rings do.
-                    anchors.margins: -Theme.focus.offset
-                    radius: Theme.radius.sm
-                    color: "transparent"
-                    border.width: head.visualFocus ? Theme.focus.width : 0
-                    border.color: Theme.palette.focusRing
+                background: Item {
+                    FocusFrame { around: 0; cornerRadius: Theme.radius.sm; visible: head.visualFocus }
                 }
                 contentItem: FriendHead {
                     size: root.headSize

@@ -20,6 +20,7 @@
 
 #include "FileSystem.h"
 
+#include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
 #include <QSaveFile>
@@ -161,7 +162,6 @@ namespace FS
 												QDir::NoDotAndDotDot |
 												QDir::Hidden | QDir::System)) {
 				auto inner_offset = PathCombine(offset, f);
-				// ignore and skip stuff that matches the blacklist.
 				if (m_blacklist && m_blacklist->matches(inner_offset)) {
 					continue;
 				}
@@ -179,18 +179,16 @@ namespace FS
 
 	bool canTrash()
 	{
-		/* Qt writes into the sandbox's own trash instead of asking the
-		 * host through the portal, so from the user's side the folder
-		 * would simply vanish with no way back. */
+		/* Qt writes into the sandbox's own trash instead of asking the host
+		 * through the portal, so the folder would vanish with no way back. */
 		if (DesktopServices::isFlatpak()) {
 			return false;
 		}
 
 #if defined(Q_OS_WIN)
-		/* A Server install has no recycle bin unless one was set up, and
-		 * the shell answers a recycle request on such a volume by
-		 * deleting outright -- the one thing a trash operation is
-		 * supposed to rule out. */
+		/* A Server install has no recycle bin unless one was set up, and the
+		 * shell answers a recycle request on such a volume by deleting
+		 * outright. */
 		if (IsWindowsServer()) {
 			return false;
 		}
@@ -234,40 +232,34 @@ namespace FS
 
 			if (entry.isDir() && !entry.isSymLink()) {
 				/* Recurse rather than move the directory wholesale: the
-				 * destination almost certainly has a directory of the
-				 * same name (every pack ships "mods", every instance
-				 * already has one) and moving onto an existing
-				 * directory fails. Merging is the entire point. */
+				 * destination almost certainly has a directory of the same
+				 * name (every pack ships "mods"), and moving onto an existing
+				 * directory fails. */
 				if (!overrideFolder(target, entry.absoluteFilePath())) {
 					return false;
 				}
 				continue;
 			}
 
-			/* QFile::rename refuses to clobber, so anything already
-			 * there has to go first. This is the case that makes an
-			 * update an update: the pack's own files are replaced. */
+			/* QFile::rename refuses to clobber, so anything already there goes
+			 * first: the pack's own files are replaced. */
 			if (QFileInfo::exists(target) && !deletePath(target)) {
 				qWarning() << "Cannot replace" << target;
 				return false;
 			}
 
 			if (!QFile::rename(entry.absoluteFilePath(), target)) {
-				/* Across filesystems rename fails and there is nothing
-				 * to be gained by pretending otherwise -- the staging
-				 * directory lives under the instance root precisely so
-				 * that this stays a rename. */
+				/* Across filesystems rename fails; the staging directory lives
+				 * under the instance root so that this stays a rename. */
 				qWarning() << "Cannot move" << entry.absoluteFilePath()
 						   << "to" << target;
 				return false;
 			}
 		}
 
-		/* Whatever is left is empty directories we have just drained. */
 		if (!deletePath(source)) {
-			/* Not fatal: the merge itself succeeded and the instance is
-			 * consistent. A leftover staging directory is litter, not
-			 * corruption, so say so and carry on. */
+			/* Not fatal: the merge succeeded and the instance is consistent; a
+			 * leftover staging directory is only litter. */
 			qWarning() << "Merged" << source << "but could not remove it";
 		}
 
@@ -299,7 +291,7 @@ namespace FS
 			auto wString = nativePath.toStdWString();
 			DWORD dwAttrs = GetFileAttributesW(wString.c_str());
 			// Windows: check for junctions, reparse points and other nasty
-			// things of that sort
+			// things of that sort.
 			if (dwAttrs & FILE_ATTRIBUTE_REPARSE_POINT) {
 				if (info.isFile()) {
 					OK &= QFile::remove(info.absoluteFilePath());
@@ -308,8 +300,8 @@ namespace FS
 				}
 			}
 #else
-			// We do not trust Qt with reparse points, but do trust it with unix
-			// symlinks.
+			// We do not trust Qt with reparse points, but do trust it with
+			// unix symlinks.
 			if (info.isSymLink()) {
 				OK &= QFile::remove(info.absoluteFilePath());
 			}
@@ -349,11 +341,6 @@ namespace FS
 		return PathCombine(PathCombine(path1, path2, path3), path4);
 	}
 
-	QString AbsolutePath(QString path)
-	{
-		return QFileInfo(path).absolutePath();
-	}
-
 	QString ResolveExecutable(QString path)
 	{
 		if (path.isEmpty()) {
@@ -369,12 +356,6 @@ namespace FS
 		return pathInfo.absoluteFilePath();
 	}
 
-	/**
-	 * Normalize path
-	 *
-	 * Any paths inside the current folder will be normalized to relative paths
-	 * (to current) Other paths will be made absolute
-	 */
 	QString NormalizePath(QString path)
 	{
 		QDir a = QDir::currentPath();
@@ -415,7 +396,6 @@ namespace FS
 				;
 			}
 
-			// If it's over 9000
 			if (num > 9000)
 				return "";
 			num++;
@@ -423,15 +403,13 @@ namespace FS
 		return dirName;
 	}
 
-	// Does the folder path contain any '!'? If yes, return true, otherwise
-	// false. (This is a problem for Java)
+	// Whether the path contains '!', which is a problem for Java.
 	bool checkProblemticPathJava(QDir folder)
 	{
 		QString pathfoldername = folder.absolutePath();
 		return pathfoldername.contains("!", Qt::CaseInsensitive);
 	}
 
-// Win32 crap
 #if defined Q_OS_WIN
 
 	bool called_coinit = false;
@@ -491,12 +469,10 @@ namespace FS
 
 	namespace
 	{
-		/* Joins arguments into one command line for a file that a shell or
-		 * the shell API will read back, wrapping each argument in @p wrap and
-		 * rewriting any wrapper character inside an argument as @p escaped.
-		 * With @p onlyIfNeeded an argument that cannot be misread is left
-		 * bare, which keeps a Windows link's argument string readable in its
-		 * properties dialog. */
+		/* Joins arguments into one command line for a file that a shell or the
+		 * shell API will read back, wrapping each argument in @p wrap and
+		 * rewriting any wrapper character inside it as @p escaped. With @p
+		 * onlyIfNeeded an argument that cannot be misread is left bare. */
 		QString quoteArgs(const QStringList& args, const QString& wrap,
 						  const QString& escaped, bool onlyIfNeeded = false)
 		{
@@ -560,11 +536,9 @@ namespace FS
 		{
 			QTextStream stream(&runner);
 			stream << "#!/bin/bash\n";
-			/* One list, one call: quoting the target and the arguments
-			 * separately and gluing them with a space left a trailing
-			 * space behind whenever there were no arguments. Harmless --
-			 * every parser drops it -- but it is written into a file a
-			 * user can open. */
+			/* One list, one call: quoting target and arguments separately and
+			 * gluing them with a space left a trailing space when there were
+			 * no arguments. */
 			QStringList command{target};
 			command += args;
 			stream << quoteArgs(command, QStringLiteral("\""),
@@ -620,10 +594,8 @@ namespace FS
 			stream << "[Desktop Entry]\n";
 			stream << "Type=Application\n";
 			stream << "Categories=Game;ActionGame;AdventureGame;Simulation\n";
-			/* One list, one call, so that an argument-less shortcut does
-			 * not get a trailing space after Exec=. With arguments the
-			 * line is byte-for-byte what it was: quoteArgs() joins with
-			 * the same single space. */
+			/* One list, one call, so an argument-less shortcut gets no
+			 * trailing space after Exec=. */
 			QStringList command{target};
 			command += args;
 			stream << "Exec="
@@ -656,9 +628,8 @@ namespace FS
 			destination += QLatin1String(".lnk");
 		}
 
-		/* Only balance CoUninitialize() against an initialise that actually
-		 * happened here: the GUI thread is usually already in an apartment,
-		 * and tearing that down underneath it would be rude. */
+		/* Only balance CoUninitialize() against an initialise that happened
+		 * here: the GUI thread is usually already in an apartment. */
 		const HRESULT init = CoInitialize(nullptr);
 		const bool weInitialised = SUCCEEDED(init);
 
@@ -719,5 +690,29 @@ namespace FS
 		qWarning() << "Shortcuts are not supported on this platform.";
 		return QString();
 #endif
+	}
+
+	QString sha1Hex(const QString& path)
+	{
+		QFile file(path);
+		if (!file.open(QIODevice::ReadOnly)) {
+			return {};
+		}
+		QCryptographicHash hash(QCryptographicHash::Sha1);
+		if (!hash.addData(&file)) {
+			return {};
+		}
+		return QString::fromLatin1(hash.result().toHex());
+	}
+
+	QString pathFromUrlOrPath(const QString& urlOrPath)
+	{
+		const QUrl url(urlOrPath);
+		return url.isLocalFile() ? url.toLocalFile() : urlOrPath;
+	}
+
+	QString pathFromUrl(const QUrl& url)
+	{
+		return url.isLocalFile() ? url.toLocalFile() : url.toString();
 	}
 } // namespace FS

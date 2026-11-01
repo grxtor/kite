@@ -25,13 +25,13 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonParseError>
 #include <QSet>
 #include <QtConcurrentRun>
 
 #include <memory>
 #include <utility>
 
+#include "Json.h"
 #include "archive/ExportToZipTask.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
@@ -42,9 +42,7 @@
 
 namespace
 {
-	/* What a CurseForge pack is able to name. See the class comment: the
-	 * manifest carries project references for mods and resource packs,
-	 * and nothing else in an instance has a project to refer to. */
+	/* What a CurseForge pack can name: mods and resource packs. */
 	enum class Candidate { Skip, Mod, ResourcePack };
 
 	const QStringList EXPORTABLE_EXTENSIONS = {QStringLiteral("jar"),
@@ -76,21 +74,16 @@ namespace
 		return Candidate::Skip;
 	}
 
-	/* This launcher's own name for a file that is present but switched
-	 * off. Nothing on the CurseForge side knows about it, so it only
-	 * decides whether the manifest calls the file required. */
+	/* This launcher's name for a switched-off file; only decides whether the
+	 * manifest calls it required. */
 	bool isEnabledName(const QString& relative)
 	{
 		return !relative.endsWith(QStringLiteral(".disabled"));
 	}
 
-	/* The loader id a CurseForge manifest names, and the order the
-	 * formats's single `primary` slot has to be filled in.
-	 *
-	 * Only one loader can be named, so the more specific one wins: an
-	 * instance carrying both Quilt and Fabric components is a Quilt
-	 * instance that can read Fabric mods, and calling it Fabric would
-	 * install the wrong loader. */
+	/* The loader id the manifest names. Only one can be named, so the more
+	 * specific wins: a Quilt instance with Fabric mods must not become
+	 * Fabric. */
 	QString modLoaderId(const std::shared_ptr<PackProfile>& profile,
 						const QString& minecraftVersion)
 	{
@@ -115,9 +108,8 @@ namespace
 		const QString neoForge =
 			profile->getComponentVersion(QStringLiteral("net.neoforged"));
 		if (!neoForge.isEmpty()) {
-			/* NeoForge's first release still carried the Minecraft
-			 * version in its own, and CurseForge kept the id it was
-			 * published under. Only that one version is special. */
+			/* NeoForge's first release kept the id it was published under, with the
+			 * Minecraft version in it. */
 			if (minecraftVersion == QStringLiteral("1.20.1")) {
 				return QStringLiteral("neoforge-1.20.1-") + neoForge;
 			}
@@ -153,8 +145,7 @@ bool FlamePackExportTask::abort()
 	}
 
 	if (m_request) {
-		/* Its aborted signal is what reports the verdict, so there is
-		 * exactly one however the request ended. */
+		/* Its aborted signal reports the single verdict. */
 		m_request->abort();
 		return true;
 	}
@@ -165,8 +156,7 @@ bool FlamePackExportTask::abort()
 	}
 
 	if (m_scanWatcher.isRunning()) {
-		/* Cannot be interrupted inside a file, but the flag is checked
-		 * between them and onScanFinished() emits. */
+		/* Checked between files; onScanFinished() emits. */
 		return true;
 	}
 
@@ -182,8 +172,7 @@ FlamePackExportTask::ScanResult FlamePackExportTask::scanFiles() const
 	if (!MMCZip::collectFileListRecursively(m_gameRoot.absolutePath(),
 										   QString(), &files,
 										   m_options.filter)) {
-		/* ok stays false: a partial list would quietly export an
-		 * instance with files missing from it. */
+		/* ok stays false: a partial list would export with files missing. */
 		return result;
 	}
 	result.files = files;
@@ -221,10 +210,8 @@ FlamePackExportTask::ScanResult FlamePackExportTask::scanFiles() const
 			const int addonId = entry.projectId.toInt(&addonOk);
 			const int fileId = entry.versionId.toInt(&fileOk);
 
-			/* Both ids are numeric on this platform. A sidecar that
-			 * carries something else came from somewhere that spells
-			 * them differently, and a zero in a manifest is a reference
-			 * to nothing. */
+			/* Both ids are numeric here; anything else came from elsewhere, and
+			 * zero refers to nothing. */
 			if (addonOk && fileOk && addonId > 0 && fileId > 0) {
 				ResolvedFile resolved;
 				resolved.addonId = addonId;
@@ -241,8 +228,7 @@ FlamePackExportTask::ScanResult FlamePackExportTask::scanFiles() const
 		const std::optional<quint32> fingerprint =
 			FlameFingerprint::ofFile(file.absoluteFilePath());
 		if (!fingerprint) {
-			/* Unreadable, so it cannot be named - but it is still the
-			 * user's file and still belongs in the pack. */
+			/* Unreadable, so it cannot be named, but it belongs in the pack. */
 			continue;
 		}
 
@@ -295,9 +281,8 @@ void FlamePackExportTask::matchFingerprints()
 			continue;
 		}
 		seen.insert(pending.fingerprint);
-		/* Widened on the way out: the fingerprint is unsigned and JSON
-		 * numbers here are signed, so anything above 2^31 would come
-		 * out negative and match nothing. */
+		/* Widened: the fingerprint is unsigned and JSON numbers are signed,
+		 * so values above 2^31 would turn negative. */
 		fingerprints << QJsonValue(static_cast<qint64>(pending.fingerprint));
 	}
 
@@ -309,8 +294,8 @@ void FlamePackExportTask::matchFingerprints()
 		FlameApi::matchFingerprintsUrl(),
 		QJsonDocument(body).toJson(QJsonDocument::Compact)));
 
-	/* An aborted request reports itself as a failure, so the failure
-	 * handler is also the abort handler. See onFingerprintMatchFailed. */
+	/* An aborted request reports as a failure, so that handler is also the
+	 * abort handler. */
 	connect(m_request.get(), &Task::succeeded, this,
 			&FlamePackExportTask::onFingerprintsMatched);
 	connect(m_request.get(), &Task::failed, this,
@@ -325,20 +310,18 @@ void FlamePackExportTask::onFingerprintsMatched()
 	m_request.reset();
 
 	if (m_aborted.load()) {
-		/* abort() handed the job of reporting to the request, and this
-		 * is where it lands. */
 		emitAborted();
 		return;
 	}
 
-	QJsonParseError parseError{};
-	const QJsonDocument doc = QJsonDocument::fromJson(response, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		onFingerprintMatchFailed(parseError.errorString());
+	QString parseError;
+	const auto doc = Json::tryParse(response, nullptr, &parseError);
+	if (!doc) {
+		onFingerprintMatchFailed(parseError);
 		return;
 	}
 
-	const QJsonArray matches = doc.object()
+	const QJsonArray matches = doc->object()
 								   .value("data")
 								   .toObject()
 								   .value("exactMatches")
@@ -350,10 +333,8 @@ void FlamePackExportTask::onFingerprintsMatched()
 			continue;
 		}
 
-		/* Not `isAvailable == false`: a file the platform will not serve
-		 * is one an installer cannot fetch, so naming it would produce a
-		 * pack that fails halfway through installing. It ships inside
-		 * `overrides/` instead. */
+		/* A file the platform will not serve cannot be fetched by an
+		 * installer; it ships in `overrides/` instead. */
 		if (!file.value("isAvailable").toBool()) {
 			continue;
 		}
@@ -367,10 +348,8 @@ void FlamePackExportTask::onFingerprintsMatched()
 		const quint32 fingerprint = static_cast<quint32>(
 			file.value("fileFingerprint").toVariant().toLongLong());
 
-		/* Every pending file with this fingerprint, not just the first:
-		 * the same jar sitting in two folders hashes the same, and
-		 * dropping one of them would leave it out of the manifest while
-		 * also having excluded nothing. */
+		/* Every pending file with this fingerprint: the same jar in two folders
+		 * hashes the same. */
 		for (const PendingFile& pending : m_pending) {
 			if (pending.fingerprint != fingerprint) {
 				continue;
@@ -393,8 +372,7 @@ void FlamePackExportTask::onFingerprintMatchFailed(const QString& reason)
 {
 	m_request.reset();
 	if (m_aborted.load()) {
-		/* Also the abort path: a request stopped on request reports
-		 * itself as failed. */
+		/* Also the abort path: a stopped request reports as failed. */
 		emitAborted();
 		return;
 	}
@@ -451,14 +429,14 @@ void FlamePackExportTask::onProjectsLookedUp()
 		return;
 	}
 
-	QJsonParseError parseError{};
-	const QJsonDocument doc = QJsonDocument::fromJson(response, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		onProjectLookupFailed(parseError.errorString());
+	QString parseError;
+	const auto doc = Json::tryParse(response, nullptr, &parseError);
+	if (!doc) {
+		onProjectLookupFailed(parseError);
 		return;
 	}
 
-	for (const QJsonValue& value : doc.object().value("data").toArray()) {
+	for (const QJsonValue& value : doc->object().value("data").toArray()) {
 		const QJsonObject project = value.toObject();
 		const int addonId = project.value("id").toInt();
 		if (addonId <= 0) {
@@ -476,10 +454,8 @@ void FlamePackExportTask::onProjectsLookedUp()
 			}
 		}
 
-		/* Written over whatever the sidecar said. The catalogue is the
-		 * authority on a project's own title, and a sidecar records the
-		 * name a mod had when it was installed - which is the stale one
-		 * after a rename. */
+		/* Overwrites the sidecar name: the catalogue is authoritative for the
+		 * project title, and the sidecar's goes stale after a rename. */
 		for (auto it = m_resolved.begin(); it != m_resolved.end(); it++) {
 			if (it.value().addonId != addonId) {
 				continue;
@@ -520,17 +496,15 @@ void FlamePackExportTask::buildZip()
 									QStringLiteral("overrides/"), true);
 	zip->addExtraFile(QStringLiteral("manifest.json"), generateManifest());
 	zip->addExtraFile(QStringLiteral("modlist.html"), generateModList());
-	/* Everything the manifest named is downloaded on install, so
-	 * carrying it as well would double the size of the pack. */
+	/* The manifest's files are downloaded on install; carrying them too
+	 * would double the pack. */
 	zip->setExcludeFiles(m_resolved.keys());
 
 	m_zipTask.reset(zip);
 
-	/* There is no separate "aborted" signal to listen for: a Task that
-	 * stops on request reports it as a failure whose reason says so. The
-	 * flag latched in abort() is what tells the two apart, and it has to
-	 * be consulted on both paths - the archive may well have succeeded
-	 * in the instant before the user's click arrived. */
+	/* A stopped Task reports a failure, so the flag latched in abort()
+	 * tells abort from failure. Consulted on both paths: the archive may
+	 * succeed just before the click. */
 	connect(zip, &Task::succeeded, this, [this] {
 		m_zipTask.reset();
 		if (m_aborted.load()) {
@@ -574,9 +548,7 @@ QByteArray FlamePackExportTask::generateManifest() const
 			minecraft["version"] = minecraftVersion;
 		}
 
-		/* Always present, even when empty: a reader that expects the key
-		 * should find an empty list rather than nothing, and a vanilla
-		 * instance genuinely has no loader. */
+		/* Always present, even empty: readers expect the key. */
 		QJsonArray loaders;
 		const QString loaderId = modLoaderId(profile, minecraftVersion);
 		if (!loaderId.isEmpty()) {
@@ -598,8 +570,7 @@ QByteArray FlamePackExportTask::generateManifest() const
 		QJsonObject file;
 		file["projectID"] = resolved.addonId;
 		file["fileID"] = resolved.fileId;
-		/* A disabled file is only offered rather than imposed when the
-		 * user asked for that; otherwise the pack ships as it runs. */
+		/* A disabled file is optional only when the user asked for that. */
 		file["required"] = resolved.enabled || !m_options.optionalFiles;
 		files << file;
 	}
@@ -616,16 +587,13 @@ QByteArray FlamePackExportTask::generateModList() const
 		const ResolvedFile& resolved = it.value();
 
 		if (!resolved.isMod) {
-			/* A list of mods. Resource packs are named in the manifest
-			 * but are not mods, and listing them here would credit a
-			 * texture artist as a mod author. */
+			/* Resource packs are in the manifest but are not mods; crediting them
+			 * here would credit a texture artist as a mod author. */
 			continue;
 		}
 
-		/* The catalogue's title, or failing that the file's own name.
-		 * The lookup that supplies the title is allowed to fail without
-		 * failing the export, and an entry rendered as an empty link is
-		 * worse than one that says `sodium-fabric-0.5.3`. */
+		/* The catalogue's title, else the file name; the title lookup may fail
+		 * without failing the export. */
 		QString name = resolved.name;
 		if (name.isEmpty()) {
 			name = QFileInfo(it.key()).completeBaseName();
@@ -636,9 +604,8 @@ QByteArray FlamePackExportTask::generateModList() const
 				.projectPageUrl(QString::number(resolved.addonId))
 				.toString();
 
-		/* Escaped, all of it. These strings come from a public
-		 * catalogue's project titles and author names, and this file
-		 * gets opened in a browser. */
+		/* Escaped: project titles and author names come from a public
+		 * catalogue and this file is opened in a browser. */
 		QString entry = QStringLiteral("<li><a href=\"%1\">%2")
 							.arg(url.toHtmlEscaped(), name.toHtmlEscaped());
 		if (!resolved.authors.isEmpty()) {

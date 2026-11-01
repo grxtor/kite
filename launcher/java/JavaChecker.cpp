@@ -181,7 +181,6 @@ void JavaChecker::error(QProcess::ProcessError err)
 
 void JavaChecker::timeout()
 {
-	// NO MERCY. NO ABUSE.
 	if (process) {
 		qCDebug(javaLog) << "Java checker has been killed by timeout.";
 		process->kill();

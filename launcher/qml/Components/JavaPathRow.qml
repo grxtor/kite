@@ -9,14 +9,11 @@ import QtQuick.Dialogs
 import Kite.Theme
 
 /*
- * Which Java runs the game, in one row: a path field, "Choose…" (the
- * installs Kite found), Browse, and Test, which runs the Java the way the
- * launcher does (with the JVM arguments and memory of `source`) and shows
- * what came back right under the field.
- *
- * Used for the launcher-wide setting and, inside an OverrideGroup, for one
- * instance (`source` is then that instance's settings). Without
- * JavaStore.controller (the C++ side not wired up) it is the plain field.
+ * Which Java runs the game, in one row: a path field, "Choose…" (the installs
+ * Kite found), Browse and Test, which runs the Java the way the launcher does
+ * (with the JVM arguments and memory of `source`) and shows the result under the
+ * field. Used for the launcher-wide setting and, inside an OverrideGroup, for one
+ * instance. Without JavaStore.controller it is the plain field.
  */
 SettingRow {
     id: root
@@ -25,8 +22,7 @@ SettingRow {
     property string argsKey: "JvmArgs"
     property var source: SettingsStore
     property string placeholder: qsTr("Automatic")
-    // Tells a test started here from one started by another page that
-    // shares the controller.
+    // Tells a test started here from one started by another page sharing the controller.
     property string token: "java-" + Math.random()
 
     readonly property var java: JavaStore.controller
@@ -34,9 +30,8 @@ SettingRow {
     // What Test last said: { ok, version, architecture, vendor, warnings,
     // error, requiresPermGen }, or null before a test / after the path changed.
     property var result: null
-    // Whether the chosen Java is old enough to want the PermGen setting:
-    // from the last pick or test of it, else from the version the launcher
-    // last saw run. -1 while neither says.
+    // Whether the chosen Java is old enough to want PermGen, from its last pick or test, else the
+    // version last seen run; -1 while neither says.
     property int legacyHint: -1
     readonly property bool legacy: legacyHint >= 0
                                    ? legacyHint === 1
@@ -129,12 +124,11 @@ SettingRow {
 
             Rectangle {
                 id: outcome
+                readonly property string tone: root.testing ? "info" : root.result && root.result.ok ? "success" : "danger"
                 width: parent.width
                 height: outcomeText.implicitHeight + Theme.space.md * 2
                 radius: Theme.radius.lg
-                color: root.testing ? Theme.palette.infoSubtle
-                     : root.result && root.result.ok ? Theme.palette.successSubtle
-                     : Theme.palette.dangerSubtle
+                color: Theme.tone(outcome.tone).soft
 
                 RowLayout {
                     anchors.fill: parent
@@ -151,16 +145,14 @@ SettingRow {
                         visible: !root.testing
                         iconName: root.result && root.result.ok ? "check" : "alert-triangle"
                         size: Theme.icon.md
-                        color: root.result && root.result.ok ? Theme.palette.success : Theme.palette.danger
+                        color: Theme.tone(outcome.tone).ink
                     }
-                    Text {
+                    Copy {
                         id: outcomeText
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
-                        lineHeight: Theme.type.label.lineHeight
+                        role: "label"
+                        lineHeight: spec.lineHeight
                         text: {
                             if (root.testing)
                                 return qsTr("Checking this Java…")

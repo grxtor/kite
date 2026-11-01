@@ -27,33 +27,13 @@
 #include <QRect>
 #include <QVarLengthArray>
 
-/* ---------------------------------------------------------------------------
- * Every coordinate in this file is transcribed from the Minecraft skin
- * format, not computed from a rule about it.
- *
- * An earlier version of this file expressed the layout as a formula -- "a box
- * unwrap is a cross, so face N of a w*h*d box sits at offset X" -- and then
- * generated the legacy limb copies and the thumbnail source rectangles from
- * it. That is the wrong shape for this problem. The formula was an
- * interpretation of the format, so any mistake in it was invisible: there was
- * nothing to hold the output up against, and a single wrong term silently
- * moved every limb at once.
- *
- * A format is data. It is written out as data, so that it can be read against
- * the format and checked a line at a time.
- * ------------------------------------------------------------------------ */
+// Every coordinate is transcribed from the skin format as data, so it can be
+// checked line by line.
 
 namespace
 {
-	/* Force a rectangle fully opaque, in place.
-	 *
-	 * Skins are authored with the base layer opaque, but plenty of editors
-	 * leave stray alpha there. Left alone it renders as a hole straight
-	 * through the model, so the base layer is made opaque unconditionally.
-	 *
-	 * NOTE: the whole rectangle is covered, its last row and column
-	 * included. Qt's QRect::right()/bottom() are inclusive, so the obvious
-	 * `x < rect.right()` loop quietly skips those. */
+	// Forces a rectangle fully opaque, in place. Includes the last row and
+	// column: QRect::right()/bottom() are inclusive.
 	void fillAlpha(QImage& image, const QRect& region, int alpha)
 	{
 		const QRect clipped =
@@ -68,28 +48,20 @@ namespace
 		}
 	}
 
-	/* The three rectangles of a 64x64 skin that belong to the base layer.
-	 * Everything else is either second layer -- which is *supposed* to have
-	 * transparency -- or unused padding. */
+	// The rectangles of a 64x64 skin that belong to the base layer.
 	const QRect kBaseLayerRegions[] = {
 		QRect(0, 0, 32, 16),   /* head */
 		QRect(0, 16, 64, 16),  /* torso, right arm, right leg */
 		QRect(16, 48, 32, 16), /* left arm, left leg */
 	};
 
-	/* The quadrant that a legacy 64x32 skin does not use, and that becomes
-	 * the head and arm second layer once the texture is widened. */
+	// The quadrant a legacy 64x32 skin leaves unused; it becomes the second
+	// layer once widened.
 	const QRect kLegacyUnusedQuadrant(32, 0, 32, 32);
 
-	/* Legacy 64x32 -> 64x64 limb copies.
-	 *
-	 * Legacy skins carry only the right arm and the right leg; the game drew
-	 * the left ones by mirroring at render time. Widening the texture has to
-	 * bake that mirror in.
-	 *
-	 * Each row: take the (x, y, w, h) rectangle, mirror it horizontally, and
-	 * draw it at (x + offsetX, y + offsetY). Twelve rows, because each limb
-	 * is six faces and the two side faces swap places when mirrored. */
+	// Left-limb copies for widening a legacy 64x32 skin, which only has the
+	// right arm and leg. Each row mirrors the (x, y, width, height) rectangle
+	// and draws it at (x + offsetX, y + offsetY).
 	struct LegacyLimbCopy {
 		int x;
 		int y;
@@ -123,16 +95,9 @@ namespace
 		}
 	}
 
-	/* Legacy skins predate the second layer, and the top-right quadrant of
-	 * the texture was simply unused -- but it was *not* required to be
-	 * transparent, and the classic tools left it full of opaque garbage. Once
-	 * such a skin is widened that quadrant becomes the head and arm second
-	 * layer, and the garbage renders as a solid shell around the player.
-	 *
-	 * There is no flag to tell the two cases apart, so use the same heuristic
-	 * the game does: a texture authored with a second layer will have *some*
-	 * transparency in it. If every pixel up there is opaque, the layer was
-	 * never meant to exist and is cleared. */
+	// A legacy skin's unused quadrant may hold opaque garbage that would render
+	// as a shell once widened. As the game does, keep it only if some pixel in
+	// it is transparent (an authored second layer); otherwise clear it.
 	void clearUnusedLegacyOverlay(QImage& skin)
 	{
 		for (int y = kLegacyUnusedQuadrant.top();
@@ -141,7 +106,7 @@ namespace
 			for (int x = kLegacyUnusedQuadrant.left();
 				 x <= kLegacyUnusedQuadrant.right(); ++x) {
 				if (qAlpha(line[x]) < 128) {
-					/* Deliberately authored second layer -- leave it. */
+					// Authored second layer: leave it.
 					return;
 				}
 			}
@@ -149,7 +114,6 @@ namespace
 		fillAlpha(skin, kLegacyUnusedQuadrant, 0);
 	}
 
-	/* Widen a legacy 64x32 texture into the modern 64x64 layout. */
 	QImage widenLegacyTexture(const QImage& legacy)
 	{
 		QImage widened(64, 64, legacy.format());
@@ -160,10 +124,8 @@ namespace
 			painter.drawImage(0, 0, legacy);
 		}
 
-		/* Read every copy out before writing any of them back. The source and
-		 * destination rectangles do not overlap, but taking a copy() of an
-		 * image that has a live QPainter on it is asking for trouble anyway:
-		 * the painter holds its own reference to the buffer. */
+		// Copy everything out before painting: copy() on an image with a live
+		// QPainter is unsafe.
 		struct PendingCopy {
 			QPoint target;
 			QImage pixels;
@@ -190,12 +152,8 @@ namespace
 		return widened;
 	}
 
-	/* Put a skin image into the one shape the rest of the code expects:
-	 * 64x64, ARGB32, base layer opaque.
-	 *
-	 * Anything that is not a skin is handed back untouched, so that
-	 * SkinEntry::isUsable() can reject it on its original dimensions rather
-	 * than on something this function invented. */
+	// Brings a skin to 64x64 ARGB32 with an opaque base layer. Non-skins are
+	// returned untouched so isUsable() sees their original size.
 	QImage normaliseTexture(QImage skin)
 	{
 		const int width = skin.width();
@@ -204,10 +162,8 @@ namespace
 			return skin;
 		}
 
-		/* Everything below walks scanlines as QRgb, and QPainter refuses to
-		 * paint onto a paletted image at all. Normalising the format up front
-		 * is what makes both safe -- including for premultiplied input, where
-		 * treating the bytes as plain ARGB would corrupt the colours. */
+		// The scanline code reads QRgb and QPainter cannot paint on paletted
+		// images.
 		if (skin.format() != QImage::Format_ARGB32) {
 			skin = skin.convertToFormat(QImage::Format_ARGB32);
 		}
@@ -224,14 +180,9 @@ namespace
 		return normaliseTexture(QImage(path));
 	}
 
-	/* Flat 36x36 sprite: the model seen from the front on the left half and
-	 * from the back on the right half, each drawn base layer first and second
-	 * layer over it.
-	 *
-	 * The draw order is part of the result -- arms come after the body so they
-	 * sit on top of the torso, which is what makes a slim arm read as slim at
-	 * this size -- so it is written out as a sequence of draws rather than
-	 * looped over a table that could reorder it. */
+	// Flat 36x36 sprite: front on the left half, back on the right, base layer
+	// then second layer. The draw order matters (arms over torso), so it is a
+	// sequence of draws.
 	QImage renderThumbnail(const QImage& texture, bool slim)
 	{
 		QImage sprite(36, 36, QImage::Format_ARGB32);
@@ -240,9 +191,7 @@ namespace
 			return sprite;
 		}
 
-		/* A slim arm is 3 pixels wide instead of 4, which both narrows the
-		 * source rectangle and shifts the outer arm a pixel inwards so it
-		 * still touches the shoulder. */
+		// A slim arm is 3 pixels wide and sits a pixel further in.
 		const int armWidth = slim ? 3 : 4;
 		const int armX = slim ? 1 : 0;
 
@@ -298,9 +247,7 @@ SkinEntry::SkinEntry(const QString& pngPath)
 	: m_path(pngPath), m_texture(loadNormalisedTexture(pngPath)),
 	  m_arms(Arms::Classic)
 {
-	/* Nothing on disk says which arm width a bare PNG was drawn for, so it
-	 * starts out Classic and the thumbnail is generated to match. Importing
-	 * from a profile overrides both afterwards. */
+	// Nothing on disk says which arm width a bare PNG uses: start Classic.
 	m_thumbnail = renderThumbnail(m_texture, false);
 }
 
@@ -313,8 +260,8 @@ SkinEntry::SkinEntry(const QDir& libraryDir, const QJsonObject& record)
 		QLatin1String("SLIM")) {
 		m_arms = Arms::Slim;
 	}
-	/* Indexes written before "wornModel" kept the worn skin's width in step
-	 * with the profile on every rescan, so its own width is what was worn. */
+	// Indexes from before "wornModel" kept the worn skin's width in step with
+	// the profile.
 	const QString wornModel =
 		record.value(QStringLiteral("wornModel")).toString();
 	m_wornArms = wornModel.isEmpty()
@@ -322,9 +269,8 @@ SkinEntry::SkinEntry(const QDir& libraryDir, const QJsonObject& record)
 					 : (wornModel == QLatin1String("SLIM") ? Arms::Slim
 														   : Arms::Classic);
 
-	/* The index stores the display name, not a path: the library directory is
-	 * relocatable and the ".png" is an implementation detail of how entries
-	 * are stored. */
+	// The index stores the display name, not a path: the library dir is
+	// relocatable.
 	const QString name = record.value(QStringLiteral("name")).toString();
 	m_path = libraryDir.absoluteFilePath(name + QStringLiteral(".png"));
 
@@ -356,9 +302,8 @@ bool SkinEntry::isUsable() const
 	if (m_texture.width() != 64) {
 		return false;
 	}
-	/* 64 is what a normalised texture always ends up as; 32 is accepted so
-	 * that a legacy file which somehow skipped widening is still treated as a
-	 * skin rather than silently vanishing from the library. */
+	// 64 after normalising; 32 is accepted so a legacy file that skipped
+	// widening still counts as a skin.
 	const int height = m_texture.height();
 	return height == 64 || height == 32;
 }
@@ -371,7 +316,7 @@ bool SkinEntry::renameTo(const QString& newName)
 			.absoluteFilePath(newName + QStringLiteral(".png"));
 
 	if (QFileInfo::exists(target)) {
-		/* Refusing beats overwriting: the other file is somebody's skin. */
+		// Never overwrite: the other file is somebody's skin.
 		return false;
 	}
 	if (!QFile::rename(current.absoluteFilePath(), target)) {

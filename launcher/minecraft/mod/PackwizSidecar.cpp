@@ -40,19 +40,16 @@ namespace {
 
 	QString nodeString(const ConstNode& node)
 	{
-		/* Deliberately not toml++'s value_or("") shorthand: that hands
-		 * back a pointer into the parsed document, which is only valid
-		 * while the table is alive. Copying out of the optional keeps
-		 * the lifetime question from ever coming up. */
+		// Not toml++'s value_or(""): it returns a pointer into the document,
+		// valid only while the table lives. Copy out of the optional instead.
 		if (const auto text = node.value<std::string>()) {
 			return QString::fromStdString(*text);
 		}
 		return QString();
 	}
 
-	/* Platform IDs are strings to us, but packwiz stores CurseForge's as
-	 * TOML integers. Accept either, so a hand-written or foreign sidecar
-	 * that quoted them still resolves. */
+	// Platform IDs are strings to us, but packwiz stores CurseForge's as TOML
+	// integers; accept either.
 	QString nodeId(const ConstNode& node)
 	{
 		if (const auto number = node.value<std::int64_t>()) {
@@ -66,9 +63,8 @@ namespace {
 		return platform.compare(name, Qt::CaseInsensitive) == 0;
 	}
 
-	/* Base name for a sidecar we have no slug for. `.disabled` and the
-	 * archive extension come off so that toggling a mod on and off does
-	 * not change which file its metadata lives in. */
+	// Base name for a sidecar without a slug. `.disabled` and the archive
+	// extension come off so toggling a mod keeps its metadata file.
 	QString baseNameOf(const QString& fileName)
 	{
 		QString name = ModMetadataIndex::canonicalFileName(fileName);
@@ -84,10 +80,9 @@ namespace {
 		return name;
 	}
 
-	/* Sidecar names are looked up case-insensitively by other tools, and
-	 * they end up in URLs and shell commands often enough that keeping
-	 * them to slug-shaped characters is worth the small loss of
-	 * fidelity. The slug itself passes through untouched. */
+	// Other tools look sidecar names up case-insensitively and use them in URLs
+	// and shell commands, so keep them to slug-shaped characters. The slug
+	// itself passes through untouched.
 	QString sanitizeBaseName(const QString& name)
 	{
 		QString out;
@@ -162,18 +157,16 @@ QByteArray Packwiz::serialize(const ModMetadataIndex::Entry& entry)
 	root.insert_or_assign("name", entry.name.toStdString());
 	root.insert_or_assign("filename", entry.fileName.toStdString());
 	if (!entry.side.isEmpty()) {
-		/* Left out when unknown rather than guessed: an absent `side`
-		 * already means "both" to every reader of this format, while a
-		 * wrong one would keep a mod out of a server install. */
+		// Left out when unknown: an absent `side` already means "both" to
+		// readers, while a wrong one would keep a mod out of a server install.
 		root.insert_or_assign("side", entry.side.toStdString());
 	}
 
 	toml::table download;
-	/* CurseForge asks third parties not to hand out its file URLs, so the
-	 * format has a mode that says "resolve this through the API instead".
-	 * Our own copy of the URL still goes in, under our own key, because
-	 * we do use it (see the blocked-download path in ModFolderPage) and
-	 * because a foreign reader in metadata mode ignores it. */
+	// CurseForge asks third parties not to hand out its file URLs, so the
+	// format has a mode that resolves through the API instead. Our copy of the
+	// URL goes in under our own key: the blocked-download path
+	// uses it and a foreign reader in metadata mode ignores it.
 	download.insert_or_assign(
 		"mode",
 		std::string(curseForge ? "metadata:curseforge" : "url"));
@@ -184,10 +177,9 @@ QByteArray Packwiz::serialize(const ModMetadataIndex::Entry& entry)
 	QString hashFormat = entry.hashFormat.toLower();
 	QString hash = entry.hash;
 	if (!entry.sha1.isEmpty()) {
-		/* Prefer the SHA-1 when we have one: it is the digest this
-		 * launcher verifies downloads against, and every reader of the
-		 * format takes whatever `hash-format` says. A SHA-512 carried in
-		 * from another tool is only kept when that is all we have. */
+		// Prefer the SHA-1: it is what this launcher verifies downloads
+		// against. A SHA-512 from another tool is kept only when it is all we
+		// have.
 		hashFormat = QStringLiteral("sha1");
 		hash = entry.sha1.toLower();
 	}
@@ -199,9 +191,8 @@ QByteArray Packwiz::serialize(const ModMetadataIndex::Entry& entry)
 
 	bool wroteUpdate = false;
 	if (curseForge) {
-		/* Both IDs are numbers in this format, and a zero would be read
-		 * back as a real project. Falling back to our own keys keeps the
-		 * provenance instead of dropping the file's history. */
+		// Both IDs are numbers in this format and a zero would read back as a
+		// real project; fall back to our own keys to keep the provenance.
 		const int projectId = entry.projectId.toInt();
 		const int fileId = entry.versionId.toInt();
 		if (projectId > 0 && fileId > 0) {
@@ -230,8 +221,7 @@ QByteArray Packwiz::serialize(const ModMetadataIndex::Entry& entry)
 		root.insert_or_assign("x-kite-slug", entry.slug.toStdString());
 	}
 	if (!wroteUpdate && !entry.platform.isEmpty()) {
-		/* Manually added files are recorded as "local", and they have no
-		 * update source to describe. */
+		// Manually added files are "local" and have no update source.
 		root.insert_or_assign("x-kite-platform",
 							  entry.platform.toStdString());
 		if (!entry.projectId.isEmpty()) {
@@ -243,10 +233,9 @@ QByteArray Packwiz::serialize(const ModMetadataIndex::Entry& entry)
 								  entry.versionId.toStdString());
 		}
 	}
-	/* Outside the block above on purpose: the version as a person reads
-	 * it is worth keeping whether or not the file has an update source,
-	 * and the format has nowhere else to put it - packwiz's own provider
-	 * tables take ids. */
+	// Outside the block above on purpose: the version number is worth keeping
+	// with or without an update source, and the format has no other place for
+	// it.
 	if (!entry.versionNumber.isEmpty()) {
 		root.insert_or_assign("x-kite-version-number",
 							  entry.versionNumber.toStdString());
@@ -291,10 +280,9 @@ ModMetadataIndex::Entry Packwiz::parse(const QByteArray& bytes,
 		return entry;
 	}
 
-	/* Read through a const reference on purpose: toml++ hands out
-	 * node_view<node> for a mutable table and node_view<const node> for a
-	 * const one, and the two are unrelated types with no conversion
-	 * between them. Everything below wants the const flavour. */
+	// Read through a const reference: toml++'s node_view<node> and
+	// node_view<const node> are unrelated types, and the code below wants
+	// const.
 	const toml::table& table = parsed;
 
 	entry.fileName = nodeString(table["filename"]);
@@ -335,8 +323,8 @@ ModMetadataIndex::Entry Packwiz::parse(const QByteArray& bytes,
 
 	entry.slug = nodeString(table["x-kite-slug"]);
 	if (entry.slug.isEmpty()) {
-		/* How every reader of this format gets the slug for a file it did
-		 * not write itself: it is the sidecar's own name. */
+		// Every reader of this format gets the slug from the sidecar's own
+		// name.
 		entry.slug = slugHint;
 	}
 	entry.isDependency =

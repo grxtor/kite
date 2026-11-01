@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <QHash>
 #include <QPointer>
 #include <QString>
 #include <QStringList>
@@ -35,23 +36,43 @@ class TaskWatcher;
 
 /*
  * Kite Performance for one instance: makes sure the Performance bundle's
- * default mods are installed. It runs before every Play of an instance
- * with the mode on (PreparePerformance), once on its own for "Speed up",
- * and as the last step of PerformanceInstanceTask.
+ * default mods are installed. It runs before every Play of an instance with
+ * the mode on (PreparePerformance), once for "Speed up", and as the last step
+ * of PerformanceInstanceTask.
  *
- * An instance without a mod loader is never changed - no loader is added
- * to it: the task ends at once, without the network, saying so.
+ * An instance without a mod loader is never changed: the task ends at once,
+ * without the network, saying so.
  *
- * What is wanted is the catalog's default performance mods for the
- * instance's loader, minus the ones the player unticked
- * (KitePerformanceExcluded), plus `extras` -- other catalog mods picked for
- * this one run, e.g. in New instance -- minus what is already there: mods the folder
- * recorded from Modrinth, and jars added by hand that Modrinth identifies
- * by hash - so a hand-added Sodium never gets a second one beside it.
- * Nothing wanted ends the task at once, without the network.
+ * Wanted: the catalog's default performance mods for the instance's loader,
+ * plus the extras the player ticked and keeps (KitePerformanceIncluded), minus
+ * those the player unticked (KitePerformanceExcluded), plus `extras` (other
+ * catalog mods picked for this run, e.g. in New instance), minus what is
+ * already there: mods the folder recorded from Modrinth and jars Modrinth
+ * identifies by hash (added by hand or from CurseForge), so a Sodium already
+ * in the folder gets no second copy. Nothing wanted ends the task at once,
+ * without the network.
  *
- * Playing never waits on this succeeding: every failure is logged and the
- * task still succeeds. Its status, once it is over, is summary().
+ * Catalog ids are Modrinth's, so CurseForge is never searched for them. A mod
+ * Modrinth has no build of for this version and loader is recorded
+ * (KitePerformanceMissing, with the match key and time) and left out for a
+ * day: one lookup a day, not one per Play. A Play that could not reach
+ * Modrinth records nothing.
+ *
+ * The mods are matched to one Minecraft version and loader
+ * (KitePerformanceFor). When the instance has moved to another, the catalog
+ * mods and the dependencies they pulled in are looked up again and replace
+ * their old files; a file that still fits costs nothing. The new version is
+ * remembered only once Modrinth has answered, so an offline Play tries again.
+ * The first setup takes what is there as matched. A mod with no build for the
+ * new version stays at its old file, which the game will likely refuse: those
+ * are stored (KitePerformanceUnmatched), logged and named at the end of
+ * summary(); QmlShell shows them on screen.
+ *
+ * One setup runs per instance at a time: a second one waits for it, then
+ * checks again from the start and finds what the other installed.
+ *
+ * Playing never waits on this succeeding: every failure is logged and the task
+ * still succeeds. Its final status is summary().
  */
 class PerformanceSetupTask : public Task
 {
@@ -87,14 +108,31 @@ class PerformanceSetupTask : public Task
 	void executeTask() override;
 
   private:
-	void identifyLooseJars();
+	/// Runs the check unless a setup of the same instance is going: then
+	/// waits for it and tries again.
+	void startWhenFree();
+	void check();
+	/// What to install: the defaults, included mods and extras not excluded,
+	/// installed or lately missing, and the mods to match to a new version.
+	void updateWanted();
+	/// The project ids of m_replacements, in order.
+	QStringList rematched() const;
+	void identifyJars();
 	void onJarsIdentified(const QByteArray& reply);
 	void resolveWanted();
 	void onResolved();
 	void install();
 	void onInstalled(bool ok);
-	/// Ends the task: a warning in the log if @p problem, the summary as
-	/// the final status, success.
+	/// Stores the version and loader the mods are matched to now.
+	void rememberMatch();
+	/// Once resolved: stores which wanted mods Modrinth has no build of
+	/// (KitePerformanceMissing) and which to match to a new version
+	/// (KitePerformanceUnmatched).
+	void rememberNotAvailable();
+	/// Lets a setup that waits for this instance go on.
+	void release();
+	/// Ends the task: logs a warning if @p problem, sets the summary as the
+	/// final status, succeeds.
 	void finish(const QString& summary, const QString& problem = QString());
 
 	std::shared_ptr<MinecraftInstance> m_instance;
@@ -104,12 +142,22 @@ class PerformanceSetupTask : public Task
 	QStringList m_defaults;
 	QStringList m_extras;
 	QStringList m_excluded;
+	QStringList m_included;
+	/// Catalog mods Modrinth had no build of lately, for this match key.
+	QStringList m_missing;
 	QStringList m_installed;
 	QStringList m_wanted;
+	/// Files to replace by their project id: what an earlier version or
+	/// loader left; empty when the mods are matched to the current one.
+	QHash<QString, QString> m_replacements;
+	QString m_matchKey;
+	/// Said at the end of the summary: the mods that follow no version.
+	QString m_unmatchedNote;
 	int m_toInstall = 0;
 	int m_added = 0;
 	QString m_summary;
 	bool m_aborted = false;
+	bool m_started = false;
 
 	shared_qobject_ptr<Net::JsonPost> m_lookup;
 	QPointer<ContentInstallReview> m_review;

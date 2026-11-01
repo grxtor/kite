@@ -32,24 +32,13 @@
 class JavaInstallList;
 
 /*
- * QML-facing Java management: the widget-free half of JavaPage and
- * JavaSettingsWidget. It owns the three jobs those pages share:
- *
- *  - detecting Java installs (the launcher's JavaInstallList, exposed as
- *    `installs` for a ListView);
- *  - testing one java binary the way JavaCommon::TestCheck does, off the GUI
- *    thread (JavaChecker spawns a process), reporting through
- *    testFinished();
- *  - listing and removing the runtimes Kite downloaded itself, which live
- *    under JavaUtils::managedJavaRoot() as <vendor>/<name-version>/.
- *
- * Downloading a runtime is JavaDownloadController's job. What a view writes
- * (JavaPath, JvmArgs, the vendor) goes through SettingsStore like any other
- * setting; nothing here touches settings.
- *
- * Several views (global Settings, one per instance) can share one
- * controller: a test is started with the caller's `token` and answered
- * with the same token, so each view only shows its own result.
+ * QML-facing Java management: detecting installs (`installs`), testing a java
+ * binary off the GUI thread (JavaChecker spawns a process; answered through
+ * testFinished()) and listing/removing the runtimes Kite downloaded under
+ * JavaUtils::managedJavaRoot(). Downloading is JavaDownloadController's job;
+ * settings are written through SettingsStore, not here. Several views can share
+ * one controller: a test is started with the caller's `token` and answered with
+ * the same token.
  */
 class JavaController : public QObject
 {
@@ -68,7 +57,6 @@ class JavaController : public QObject
 	Q_PROPERTY(QString testingToken READ testingToken NOTIFY testingChanged)
 	/// [{name, vendor, version, javaPath, root}] of downloaded runtimes.
 	Q_PROPERTY(QVariantList managed READ managed NOTIFY managedChanged)
-	/// Where downloaded runtimes live.
 	Q_PROPERTY(QString managedRoot READ managedRoot CONSTANT)
 
   public:
@@ -83,56 +71,40 @@ class JavaController : public QObject
 	QVariantList managed() const;
 	QString managedRoot() const;
 
-	/// Runs the launcher's Java detection again (a fresh scan every time).
 	Q_INVOKABLE void detect();
 
-	/*!
-	 * Checks the java binary at @p path, then, if that works, runs it again
-	 * with @p args and the given memory (MiB; @p permGen only matters for a
-	 * Java old enough to have PermGen). Answers with testFinished(). A test
-	 * already running makes this a no-op.
-	 */
+	/// Checks the java binary at @p path, then runs it again with @p args and the
+	/// given memory (MiB; @p permGen only for a Java old enough to have PermGen).
+	/// Answers with testFinished(); a no-op while a test runs.
 	Q_INVOKABLE void test(const QString& token, const QString& path,
 						  const QString& args, int minMem, int maxMem,
 						  int permGen);
 
-	/// Short, plain-English warning if @p args sets memory by hand, or an
-	/// empty string if they are fine. See JavaArgs::setsMemoryFlags().
+	/// Warning if @p args sets memory by hand, else empty. See JavaArgs::setsMemoryFlags().
 	Q_INVOKABLE QString argsWarning(const QString& args) const;
 
-	/// Whether a Java of @p version (e.g. "1.7.0_80", "17.0.2") still takes
-	/// the PermGen setting. An empty or unparseable version counts as no:
-	/// the row only shows once a version is known.
+	/// Whether a Java of @p version (e.g. "1.7.0_80", "17.0.2") takes the PermGen
+	/// setting; an empty or unparseable version counts as no.
 	Q_INVOKABLE bool requiresPermGen(const QString& version) const;
 
-	/// The local path of a file the user picked in a file dialog, cleaned
-	/// up, or an empty string if it is not an executable file.
+	/// Local path of a picked file, cleaned up, or empty if it is not an executable file.
 	Q_INVOKABLE QString pickedJava(const QUrl& url) const;
 
-	/// Rescans managedRoot().
 	Q_INVOKABLE void refreshManaged();
 
-	/*!
-	 * Deletes the downloaded runtime whose folder is @p root. Refuses (and
-	 * returns an explanation) for anything that is not exactly
-	 * <managedRoot>/<vendor>/<name>; returns an empty string on success.
-	 */
+	/// Refuses (with an explanation) anything that is not exactly
+	/// <managedRoot>/<vendor>/<name>; empty on success.
 	Q_INVOKABLE QString removeManaged(const QString& root);
 
-	/// Downloaded runtimes under @p rootDir, as refreshManaged() lists
-	/// them. Public so tests can point it at a temporary directory.
+	/// Public so tests can point it at a temporary directory.
 	static QVariantList scanManaged(const QString& rootDir);
 
-	/// removeManaged() against an arbitrary @p rootDir.
 	static QString removeManagedUnder(const QString& rootDir,
 									  const QString& root);
 
-	/// The vendor choices, as a static for JavaDownloadController.
 	static QVariantList vendorList();
 
-	/// Turns a finished check into the map testFinished() carries:
-	/// {ok, path, version, architecture, vendor, warnings, error,
-	/// requiresPermGen}.
+	/// {ok, path, version, architecture, vendor, warnings, error, requiresPermGen}.
 	static QVariantMap describeCheck(const JavaCheckResult& result);
 
   signals:

@@ -29,12 +29,9 @@
 
 namespace
 {
-	/* Stand-in for Meta::VersionList: exposes the same role NAMES (version-
-	 * Id, type, parentGameVersion, sort) but deliberately different role
-	 * NUMBERS. A test that passes against this only passes because the
-	 * proxies resolve roles by name, not because they happen to reuse
-	 * Meta::VersionList's own numbers - same reasoning as
-	 * InstanceFilterModel_test.cpp's FakeInstanceModel. */
+	/* Stand-in for Meta::VersionList: same role names (versionId, type,
+	 * parentGameVersion, sort) but different role numbers, so a pass proves the
+	 * proxies resolve roles by name. */
 	class FakeVersionList : public BaseVersionList
 	{
 	  public:
@@ -66,7 +63,6 @@ namespace
 			m_loadTask = task;
 		}
 
-		// BaseVersionList
 		Task::Ptr getLoadTask() override
 		{
 			return m_loadTask;
@@ -85,7 +81,6 @@ namespace
 		}
 		void sortVersions() override {}
 
-		// QAbstractListModel
 		QVariant data(const QModelIndex& index, int role) const override
 		{
 			if (!index.isValid() || index.row() < 0 ||
@@ -118,8 +113,7 @@ namespace
 		}
 
 	  protected:
-		// Overrides a slot, but adds none of its own - no Q_OBJECT needed
-		// here, same as FakeInstanceModel in InstanceFilterModel_test.cpp.
+		// Overrides a slot but adds none: no Q_OBJECT needed.
 		void updateListData(QList<BaseVersionPtr>) override {}
 
 	  private:
@@ -128,9 +122,7 @@ namespace
 		Task::Ptr m_loadTask;
 	};
 
-	/* A Task that does nothing on its own - executeTask() is a no-op - so
-	 * the test can drive success/failure by hand, same idiom as
-	 * tasks/TaskWatcher_test.cpp's ScriptedTask. */
+	/* A Task that does nothing on its own, so the test drives success/failure by hand. */
 	class ScriptedTask : public Task
 	{
 		Q_OBJECT
@@ -157,8 +149,7 @@ class NewInstanceControllerTest : public QObject
 
   private slots:
 
-	/// Release-only, newest first, is the default - same starting point as
-	/// VanillaPage's checkboxes (ui/pages/modplatform/VanillaPage.cpp).
+	/// Release-only, newest first, is the default.
 	void test_minecraftVersions_defaultsToReleaseOnly_newestFirst()
 	{
 		FakeVersionList list({
@@ -203,8 +194,7 @@ class NewInstanceControllerTest : public QObject
 		QCOMPARE(proxy.count(), 4);
 	}
 
-	/// A type neither toggle names (an "experiment" build, say) always stays
-	/// hidden - see the class comment in NewInstanceController.h.
+	/// A type neither toggle names (an "experiment" build) always stays hidden.
 	void test_minecraftVersions_hidesUnrecognizedType()
 	{
 		FakeVersionList list({
@@ -221,8 +211,7 @@ class NewInstanceControllerTest : public QObject
 		QCOMPARE(proxy.firstVersionId(), QString("1.20"));
 	}
 
-	/// loading() / error() mirror the load task exactly like TaskWatcher
-	/// mirrors the tasks it watches (tasks/TaskWatcher.h).
+	/// loading() / error() mirror the load task like TaskWatcher does.
 	void test_minecraftVersions_loading_tracksLoadTaskLifecycle()
 	{
 		FakeVersionList list({});
@@ -244,9 +233,8 @@ class NewInstanceControllerTest : public QObject
 				 QString("could not reach the metadata server"));
 	}
 
-	/// "Exact if present": a build naming no Minecraft version (Fabric,
-	/// Quilt) is always kept; one that does must match exactly - the same
-	/// rule LoaderVersionPage applies (ui/dialogs/InstallLoaderDialog.cpp).
+	/// "Exact if present": a build naming no Minecraft version (Fabric, Quilt) is
+	/// always kept; one that does must match exactly.
 	void test_loaderVersions_exactIfPresentFilter()
 	{
 		FakeVersionList list({
@@ -295,8 +283,7 @@ class NewInstanceControllerTest : public QObject
 		QCOMPARE(suggestedImportName(""), QString());
 		QCOMPARE(suggestedImportName("   "), QString());
 
-		// A bare local path - the common case for a FileDialog pick or a
-		// drag-drop.
+		// A bare local path (FileDialog pick or drag-drop).
 		QCOMPARE(suggestedImportName("/home/user/Downloads/Cool Modpack.mrpack"),
 				 QString("Cool Modpack"));
 		// A "file://" URL, percent-encoded, is just as local.
@@ -310,23 +297,19 @@ class NewInstanceControllerTest : public QObject
 					 "My-Pack-1.0.mrpack"),
 				 QString("My-Pack-1.0"));
 
-		// CurseForge's own "download" button links end this way; the real
-		// file name sits behind the same rewrite ImportPage::updateState()
-		// applies before reading it - see suggestedImportName()'s comment.
+		// CurseForge's download-button links end this way; the file name is behind the "?client=y" rewrite.
 		QCOMPARE(suggestedImportName("https://www.curseforge.com/api/v1/mods/1/"
 									 "files/2/download?client=y"),
 				 QString("file"));
 	}
 
-	/// The gate the QML Import button uses before it lets InstanceImportTask
-	/// even try - see importSourceLooksValid()'s comment.
+	/// The gate the QML Import button uses before InstanceImportTask tries.
 	void test_importSourceLooksValid()
 	{
 		QVERIFY(!importSourceLooksValid(""));
 		QVERIFY(!importSourceLooksValid("   "));
 
-		// A remote link can't be checked locally - only InstanceImportTask
-		// can tell whether it actually resolves to something importable.
+		// A remote link cannot be checked locally.
 		QVERIFY(importSourceLooksValid(
 			"https://cdn.modrinth.com/data/AAAA/versions/1.0/"
 			"My-Pack-1.0.mrpack"));

@@ -22,10 +22,6 @@
 
 #include <QString>
 
-/**
- * @brief the MessageLevel Enum
- * defines what level a log message is
- */
 namespace MessageLevel
 {
 	enum Enum {
@@ -42,6 +38,5 @@ namespace MessageLevel
 	};
 	MessageLevel::Enum getLevel(const QString& levelName);
 
-	/* Get message level from a line. Line is modified if it was successful. */
 	MessageLevel::Enum fromLine(QString& line);
 } // namespace MessageLevel

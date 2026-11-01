@@ -23,8 +23,11 @@
 class GZip
 {
   public:
+	/// Fails when the output would exceed @p maxOutput bytes (negative: no cap);
+	/// @p exceededCap, if given, tells that failure from corrupt data.
 	static bool unzip(const QByteArray& compressedBytes,
-					  QByteArray& uncompressedBytes);
+					  QByteArray& uncompressedBytes, qsizetype maxOutput = -1,
+					  bool* exceededCap = nullptr);
 	static bool zip(const QByteArray& uncompressedBytes,
 					QByteArray& compressedBytes);
 };

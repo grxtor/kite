@@ -12,8 +12,7 @@
 #
 #   1. Source-level grep over plugins/   — forbids re-introducing the
 #      back-doors that ABI 3 closed (APPLICATION->, Application::*,
-#      direct #include "Application.h" / "BaseInstance.h" / …, BasePage
-#      subclassing through the launcher tree, etc.).
+#      direct #include "Application.h" / "BaseInstance.h" / …, etc.).
 #
 #   2. Link-command grep over the build directory — confirms that the
 #      `.mmco` Ninja edges never reference kite.exe / kite.lib /
@@ -212,11 +211,7 @@ declare -a FORBIDDEN_PATTERNS=(
 	'#include "minecraft/'
 	'#include "settings/SettingsObject\.h"'
 	'#include "tasks/SequentialTask\.h"'
-	'#include "ui/dialogs/CustomMessageBox\.h"'
-	'#include "ui/dialogs/ProgressDialog\.h"'
-	'#include "ui/pages/instance/InstanceSettingsPage\.h"'
-	'#include "ui/pages/BasePage\.h"'
-	'#include "ui/pages/BasePageContainer\.h"'
+	'#include "ui/'
 	'#include "net/Mode\.h"'
 )
 

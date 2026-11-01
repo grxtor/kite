@@ -5,23 +5,21 @@
 import QtQuick
 import Kite.Theme
 
-// Every interactive control in this style draws its keyboard focus ring the
-// same way, so it lives here once instead of being re-typed in twenty control
-// files. Bind `visible` to `control.visualFocus` -- never `activeFocus` --
-// because visualFocus is false for a focus gained by mouse/touch press and
-// true only for keyboard/programmatic focus. That is what keeps the ring from
-// flashing on every click, which is the usual complaint about focus rings.
+// The keyboard focus ring every control in this style shares. Bind `visible`
+// to `control.visualFocus`, never `activeFocus`: visualFocus is false for
+// focus gained by a mouse or touch press, so the ring does not flash on every
+// click.
 //
-// Place it as a child of the control's background Rectangle: it follows
-// that shape on its own, standing Theme.focus.offset clear of it. A text
-// field sets `halo` instead and shows it on any focus: the same accent,
-// softened to Theme.focus.haloOpacity and hugging the field's own edge.
+// Place it as a child of the control's background Rectangle: it follows that
+// shape, standing Theme.focus.offset clear of it. A text field sets `halo`
+// instead and shows it on any focus: the same accent at
+// Theme.focus.haloOpacity, hugging the field's edge.
 Rectangle {
     id: ring
 
     property bool halo: false
-    // The corner of the shape this ring goes around; the parent's own when
-    // it has one.
+    // The corner of the shape this ring goes around; the parent's when it has
+    // one.
     property real baseRadius: parent && parent.radius !== undefined ? parent.radius : 0
     readonly property real reach: Theme.focus.width + (halo ? 0 : Theme.focus.offset)
 
@@ -35,8 +33,7 @@ Rectangle {
                        : Theme.palette.focusRing
     antialiasing: true
 
-    // The ring fades in/out with the rest of the style's state changes rather
-    // than snapping, so tabbing through a form does not feel jumpy.
+    // Fades with the style's other state changes instead of snapping.
     Behavior on opacity {
         NumberAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
     }

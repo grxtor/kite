@@ -31,6 +31,7 @@
 #include "FileSystem.h"
 #include "InstanceShortcuts.h"
 #include "NullInstance.h"
+#include "TestSettings.h"
 #include "core/LauncherContext.h"
 #include "icons/IconList.h"
 #include "models/InstanceShortcutController.h"
@@ -38,22 +39,6 @@
 
 namespace
 {
-	SettingsObjectPtr makeGlobalSettings(const QString& dir)
-	{
-		auto settings = std::make_shared<INISettingsObject>(
-			FS::PathCombine(dir, "global.ini"));
-		settings->registerSetting("PreLaunchCommand", "");
-		settings->registerSetting("WrapperCommand", "");
-		settings->registerSetting("PostExitCommand", "");
-		settings->registerSetting("ShowConsole", true);
-		settings->registerSetting("AutoCloseConsole", false);
-		settings->registerSetting("ShowConsoleOnError", true);
-		settings->registerSetting("LogPrePostOutput", true);
-		settings->registerSetting("ConsoleMaxLines", 100000);
-		settings->registerSetting("ConsoleOverflowStop", true);
-		return settings;
-	}
-
 	/* Just enough launcher for a shortcut: an icon list. Everything else
 	 * is null, which nothing on this path asks for. */
 	class IconsOnlyLauncher : public LauncherContext
@@ -104,10 +89,6 @@ namespace
 		shared_qobject_ptr<Meta::Index> metadataIndex() override
 		{
 			return {};
-		}
-		QIcon getThemedIcon(const QString&) override
-		{
-			return QIcon();
 		}
 		QString getJarsPath() override
 		{
@@ -237,8 +218,7 @@ class InstanceShortcutControllerTest : public QObject
 
 int main(int argc, char* argv[])
 {
-	// QIcon and QImage need a QGuiApplication; offscreen keeps this runnable
-	// on a headless runner, as in GameTextureIcons_test.cpp.
+	// QIcon and QImage need a QGuiApplication; offscreen keeps this runnable headless.
 	qputenv("QT_QPA_PLATFORM", "offscreen");
 
 	QGuiApplication app(argc, argv);

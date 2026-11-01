@@ -33,24 +33,21 @@
 #include "Version.h"
 #include "core/LauncherContext.h"
 #include "core/UiHost.h"
-#include "icons/IconList.h"
 #include "meta/Version.h"
 #include "models/AtlOptionalModsModel.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
 #include "net/Download.h"
-#include "net/HttpMetaCache.h"
 #include "tasks/TaskWatcher.h"
 
 namespace
 {
-	/* Loader versions offered when a pack leaves its loader open: the
-	 * host asks with one button per answer, so a handful, not hundreds. */
+	/* Loader versions offered when a pack leaves its loader open; the host
+	 * asks with one button per answer. */
 	constexpr int kMaxLoaderChoices = 5;
 
-	/* ATLauncher::UserInteractionSupport for one install: asks through
-	 * the model's optional-mods handler and the UiHost, or falls back to
-	 * the pack's own defaults when there is nobody to ask. Lives as long
-	 * as the install's watcher, which is its parent. */
+	/* ATLauncher::UserInteractionSupport for one install: asks through the
+	 * model's optional-mods handler and the UiHost, or uses the pack's
+	 * defaults when nobody can be asked. Parented to the install's watcher. */
 	class AtlInstallQuestions : public QObject,
 								public ATLauncher::UserInteractionSupport
 	{
@@ -72,7 +69,6 @@ namespace
 					return *picked;
 				}
 			}
-			/* Nobody to ask, or nothing changed: what the pack ticks. */
 			return choices.selectedNames();
 		}
 
@@ -118,7 +114,6 @@ namespace
 AtlModpackModel::AtlModpackModel(QObject* parent)
 	: QAbstractListModel(parent), m_detail(new ModrinthModpackDetail(this))
 {
-	/* The widget page's three sorts. */
 	const QList<QPair<QString, QString>> sorts = {
 		{QStringLiteral("popularity"), tr("Sort by Popularity")},
 		{QStringLiteral("gameVersion"), tr("Sort by Game Version")},
@@ -176,7 +171,6 @@ QVariant AtlModpackModel::data(const QModelIndex& index, int role) const
 		case DescriptionRole:
 			return pack.description;
 		case AuthorRole:
-			/* The catalogue names no author. */
 			return QString();
 		case LogoUrlRole:
 			return logoUrl(pack);
@@ -285,21 +279,18 @@ QList<ATLauncher::IndexedPack>
 AtlModpackModel::parseCatalogue(const QByteArray& bytes)
 {
 	QList<ATLauncher::IndexedPack> packs;
-	QJsonParseError parseError;
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error while parsing JSON response from ATLauncher at"
-				   << parseError.offset << "reason:" << parseError.errorString();
+	const auto doc = Json::tryParseWithOffset(
+		bytes, "Error while parsing JSON response from ATLauncher at");
+	if (!doc) {
 		return packs;
 	}
-	for (const auto& raw : doc.array()) {
+	for (const auto& raw : doc->array()) {
 		QJsonObject obj = raw.toObject();
 		ATLauncher::IndexedPack pack;
 		try {
 			ATLauncher::loadIndexedPack(pack, obj);
 		} catch (const JSONValidationError& e) {
-			/* One bad entry is skipped rather than losing the whole list,
-			 * which is what the widget list did. */
+			/* One bad entry is skipped, not the whole list. */
 			qWarning() << "Error while reading a pack from ATLauncher:"
 					   << e.cause();
 			continue;
@@ -345,11 +336,9 @@ QList<int> AtlModpackModel::filterAndSort(
 			return pa.name.compare(pb.name, Qt::CaseInsensitive) < 0;
 		}
 		if (sort == QStringLiteral("gameVersion")) {
-			/* Newest Minecraft first, by each pack's latest version. */
 			return Version(pa.versions.first().minecraft) >
 				   Version(pb.versions.first().minecraft);
 		}
-		/* ATLauncher's own order: a lower position is more popular. */
 		return pa.position < pb.position;
 	});
 	return rows;
@@ -369,7 +358,6 @@ QVariantList AtlModpackModel::versionEntries(const ATLauncher::IndexedPack& pack
 		entry[QStringLiteral("loaders")] = QVariant::fromValue(QStringList());
 		entry[QStringLiteral("datePublished")] = QString();
 		entry[QStringLiteral("downloadUrl")] = QString();
-		/* The catalogue lists the newest first. */
 		entry[QStringLiteral("featured")] = i == 0;
 		result.append(entry);
 	}
@@ -398,7 +386,6 @@ AtlModpackModel::versionChoices(const QVector<Meta::VersionPtr>& versions,
 		}
 		fits.append(version);
 	}
-	/* Recommended first, otherwise the list's own (newest-first) order. */
 	std::stable_sort(fits.begin(), fits.end(),
 					 [](const Meta::VersionPtr& a, const Meta::VersionPtr& b) {
 						 return a->isRecommended() && !b->isRecommended();
@@ -473,22 +460,6 @@ void AtlModpackModel::loadDetail(const QString& projectId)
 	m_detail->setLoading(false);
 }
 
-QString AtlModpackModel::resolveIconKey(const ATLauncher::IndexedPack& pack) const
-{
-	/* Where AtlPage's list keeps logos (AtlListModel::requestLogo()). A
-	 * disk-only lookup; never downloads. */
-	MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
-		QStringLiteral("ATLauncherPacks"),
-		QStringLiteral("logos/%1").arg(pack.safeName.section(QLatin1Char('.'), 0, 0)));
-	if (entry && !entry->isStale()) {
-		const QString key = QStringLiteral("atl_") + pack.safeName.toLower();
-		LAUNCHER->icons()->installIcon(entry->getFullPath(), key);
-		return key;
-	}
-	/* No built-in ATLauncher instance icon; the plain block. */
-	return QStringLiteral("grass");
-}
-
 QObject* AtlModpackModel::install(const QString& projectId,
 								  const QString& versionId,
 								  const QString& instanceName,
@@ -510,9 +481,7 @@ QObject* AtlModpackModel::install(const QString& projectId,
 		return nullptr;
 	}
 
-	/* What AtlPage::suggestCurrent() hands the New instance dialog, named
-	 * and placed the way NewInstanceDialog/MainWindow do. The questions
-	 * object outlives the task: both end with the watcher. */
+	/* The questions object outlives the task: both end with the watcher. */
 	const QString effectiveName =
 		instanceName.isEmpty() ? pack->name + QLatin1Char(' ') + versionId
 							   : instanceName;
@@ -522,7 +491,7 @@ QObject* AtlModpackModel::install(const QString& projectId,
 												 versionId);
 	task->setName(effectiveName);
 	task->setGroup(group);
-	task->setIcon(resolveIconKey(*pack));
+	task->setIcon(QStringLiteral("grass"));
 	task->setTargetDir(LAUNCHER->instances()->primaryDir());
 
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(task);

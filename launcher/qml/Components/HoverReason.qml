@@ -7,10 +7,9 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Says why a control is unavailable. A disabled control gets no hover of
- * its own, so its tooltip can never show; wrapped in this, hovering it
- * shows `reason` while that is non-empty. The wrapped control keeps its
- * own size, and this takes the same.
+ * Says why a control is unavailable. A disabled control gets no hover of its own, so its tooltip can never show;
+ * wrapped in this, hovering it shows `reason` while that is non-empty. The wrapped control keeps its own size, and
+ * this takes the same.
  */
 Item {
     id: root

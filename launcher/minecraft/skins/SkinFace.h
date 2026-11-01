@@ -21,16 +21,12 @@
 
 #include <QImage>
 
-/*
- * The one place a skin texture becomes a head. AccountFaceProvider (the
- * launcher's accounts) and FriendsFaces (a friend's cached head) both
- * draw it from here. A pure function of the image: no account, no network.
- */
+// The one place a skin texture becomes a head, for AccountFaceProvider and
+// FriendsFaces. A pure function of the image: no account, no network.
 namespace SkinFace
 {
-	/// The face (the 8x8 region at (8,8)) with the hat overlay (the 8x8
-	/// region at (40,8)) drawn over it, at native 8x8. Hat pixels with alpha
-	/// 0 leave the face beneath untouched. Null if @p skin is too small to
-	/// hold both regions.
+	/// The face (8x8 at (8,8)) with the hat overlay (8x8 at (40,8)) drawn over
+	/// it, at native size. Hat pixels with alpha 0 leave the face untouched.
+	/// Null if @p skin is too small to hold both regions.
 	QImage fromSkin(const QImage& skin);
 } // namespace SkinFace

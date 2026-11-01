@@ -24,8 +24,7 @@
 
 #include "minecraft/mod/ModFolderModel.h"
 #include "minecraft/mod/ModMetadataIndex.h"
-#include "modplatform/flame/FlameApi.h"
-#include "modplatform/modrinth/ModrinthApi.h"
+#include "modplatform/ContentApis.h"
 
 ContentFilterModel::ContentFilterModel(QObject* parent)
 	: QSortFilterProxyModel(parent)
@@ -33,8 +32,7 @@ ContentFilterModel::ContentFilterModel(QObject* parent)
 	setSortCaseSensitivity(Qt::CaseInsensitive);
 	setDynamicSortFilter(true);
 
-	/* `count` follows whatever changes the visible rows: a search, a file
-	 * appearing or going, or the source being swapped out. */
+	/* `count` follows whatever changes the visible rows. */
 	connect(this, &QAbstractItemModel::rowsInserted, this,
 			&ContentFilterModel::countChanged);
 	connect(this, &QAbstractItemModel::rowsRemoved, this,
@@ -157,10 +155,18 @@ QStringList ContentFilterModel::visibleKeys() const
 
 void ContentFilterModel::refreshRows(const QStringList& keys)
 {
-	for (int row = 0; row < rowCount(); ++row) {
-		const QModelIndex at = index(row, 0);
-		if (keys.contains(data(at, KeyRole).toString())) {
-			emit dataChanged(at, at);
+	const QSet<QString> wanted(keys.begin(), keys.end());
+	const int rows = rowCount();
+	int first = -1;
+	for (int row = 0; row <= rows; ++row) {
+		const bool hit =
+			row < rows &&
+			wanted.contains(data(index(row, 0), KeyRole).toString());
+		if (hit && first < 0) {
+			first = row;
+		} else if (!hit && first >= 0) {
+			emit dataChanged(index(first, 0), index(row - 1, 0));
+			first = -1;
 		}
 	}
 }
@@ -176,19 +182,13 @@ QString ContentFilterModel::homepageFor(const Mod& mod,
 	if (index) {
 		const ModMetadataIndex::Entry entry = index->get(keyFor(mod));
 		if (entry.hasPlatformOrigin()) {
-			/* Each provider owns the shape of its own addresses. */
-			if (entry.platform == ModrinthApi::get().id()) {
-				return ModrinthApi::get()
-					.projectPageUrl(entry.projectId)
-					.toString();
-			}
-			if (entry.platform == FlameApi::get().id()) {
-				return FlameApi::get().projectPageUrl(entry.projectId).toString();
+			const QString page =
+				ModPlatform::projectPageUrlById(entry.platform, entry.projectId);
+			if (!page.isEmpty()) {
+				return page;
 			}
 		}
 	}
-	/* What the archive says about itself, so a file added by hand still
-	 * has somewhere to go. */
 	return mod.homeurl();
 }
 
@@ -202,13 +202,7 @@ QString ContentFilterModel::sourceFor(const Mod& mod,
 	if (!entry.hasPlatformOrigin()) {
 		return QString();
 	}
-	if (entry.platform == ModrinthApi::get().id()) {
-		return ModrinthApi::get().displayName();
-	}
-	if (entry.platform == FlameApi::get().id()) {
-		return FlameApi::get().displayName();
-	}
-	return QString();
+	return ModPlatform::displayNameById(entry.platform);
 }
 
 bool ContentFilterModel::matches(const Mod& mod, const QString& text)
@@ -251,6 +245,5 @@ bool ContentFilterModel::lessThan(const QModelIndex& left,
 	if (byName != 0) {
 		return byName < 0;
 	}
-	/* Two copies of the same mod: keep them in a stable order. */
 	return keyFor(a).compare(keyFor(b), Qt::CaseInsensitive) < 0;
 }

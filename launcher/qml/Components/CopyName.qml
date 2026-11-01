@@ -6,24 +6,14 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Your Minecraft name where friends find it (the Friends page, Settings):
- * plain text that copies itself on a click, so it can be sent to someone.
- * The copy glyph shows while the pointer or the keyboard is on it, then a
- * check and "Copied" for a moment. Its room is always kept, so the name
- * does not move. With no name (`value` empty) it only says `emptyText`.
- *
- * `glyphFirst` puts the glyph before the name, so the name itself ends on
- * the edge it is aligned to (Settings' right-hand column).
- *
- * `chip` is the invitation form (the empty Friends tab): a bordered button
- * with the glyph always shown, which answers by saying "Copied" where the
- * name was, on a width that fits both so nothing moves.
+ * Your Minecraft name where friends find it: plain text that copies itself on a click (glyph on hover or focus,
+ * then "Copied"); its room is kept so the name does not move. An empty `value` shows `emptyText`. `glyphFirst`
+ * puts the glyph before the name. `chip` is the invitation form: a bordered button, glyph always shown.
  */
 AbstractButton {
     id: root
 
     property string value
-    // What it says, with nothing to copy, while there is no name yet.
     property string emptyText
     property int pixelSize: Theme.type.body.pixelSize
     property int weight: Font.Normal
@@ -32,7 +22,6 @@ AbstractButton {
     property bool chip: false
     property bool copied: false
 
-    // How long it says "Copied", and how long the pointer rests before the tip.
     readonly property int copiedMs: 1500
     readonly property int tipDelayMs: 500
     readonly property bool empty: root.value.length === 0
@@ -78,7 +67,6 @@ AbstractButton {
 
     HoverHandler { cursorShape: Qt.PointingHandCursor }
 
-    // The chip says it in its own words.
     ToolTip.visible: !root.chip && !root.empty && (root.hovered || root.visualFocus)
     ToolTip.delay: root.copied ? 0 : root.tipDelayMs
     ToolTip.text: root.copied ? qsTr("Copied") : qsTr("Copy your name")
@@ -112,7 +100,6 @@ AbstractButton {
             size: Theme.icon.sm
             color: root.copied ? Theme.palette.success
                  : root.chip && root.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
-            // The chip's glyph is what says it can be pressed.
             opacity: root.chip || root.lit ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         }

@@ -33,6 +33,7 @@
 #include "InstanceList.h"
 #include "ModBridge.h"
 #include "NullInstance.h"
+#include "TestSettings.h"
 #include "settings/INISettingsObject.h"
 
 using namespace ModBridgeProtocol;
@@ -56,22 +57,6 @@ namespace
 			return QStringLiteral("1.8.9");
 		}
 	};
-
-	SettingsObjectPtr makeGlobalSettings(QTemporaryDir& dir)
-	{
-		auto settings =
-			std::make_shared<INISettingsObject>(dir.filePath("global.ini"));
-		settings->registerSetting("PreLaunchCommand", "");
-		settings->registerSetting("WrapperCommand", "");
-		settings->registerSetting("PostExitCommand", "");
-		settings->registerSetting("ShowConsole", true);
-		settings->registerSetting("AutoCloseConsole", false);
-		settings->registerSetting("ShowConsoleOnError", true);
-		settings->registerSetting("LogPrePostOutput", true);
-		settings->registerSetting("ConsoleMaxLines", 100000);
-		settings->registerSetting("ConsoleOverflowStop", true);
-		return settings;
-	}
 
 	QVariantMap friendMap(const QString& uuid, const QString& name,
 						  const QString& state, const QString& host,

@@ -30,8 +30,7 @@ using namespace ModHealthModelIds;
 
 namespace
 {
-	/* What the other end of an issue is called: the installed file's name,
-	 * or for the game and its loaders what a person calls them. */
+	/* The other end of an issue: the installed file's name, or what a person calls the game or its loader. */
 	QString otherLabel(const ModHealth::Issue& issue)
 	{
 		if (!issue.otherKey.isEmpty()) {

@@ -6,8 +6,8 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
-// A row of Modrinth-style tabs (see TabButton.qml): no strip of its own and
-// no rule underneath -- the active tab's soft pill is the whole marker.
+// A row of tabs (TabButton.qml) with no strip or rule of its own; the active
+// tab's soft pill is the whole marker.
 T.TabBar {
     id: control
 

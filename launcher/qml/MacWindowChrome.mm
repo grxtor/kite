@@ -33,9 +33,8 @@ Geometry mergeTitleBar(QWindow* window)
 	Q_UNUSED(window);
 	return {};
 #else
-	/* Qt's own switches for the first half: the content view grows under
-	 * the title bar (Qt then maps the pointer for it) and the title bar
-	 * stops painting a background of its own. */
+	// The content view grows under the title bar (Qt maps the pointer for it)
+	// and the title bar paints no background.
 	window->setFlags(window->flags() | Qt::ExpandedClientAreaHint
 					 | Qt::NoTitleBarBackgroundHint);
 
@@ -44,13 +43,13 @@ Geometry mergeTitleBar(QWindow* window)
 	if (!nsWindow)
 		return {};
 
-	/* The title stays the window's name for the Dock, the Window menu and
-	 * Mission Control; only the title bar stops drawing it. */
+	// The title stays the window's name for the Dock, Window menu and Mission
+	// Control; only the title bar stops drawing it.
 	nsWindow.titleVisibility = NSWindowTitleHidden;
 	nsWindow.titlebarSeparatorStyle = NSTitlebarSeparatorStyleNone;
 
-	/* Empty: it is only there for the title bar's height. Clicks under it
-	 * still reach the content. */
+	// Empty: it only sets the title bar's height. Clicks under it reach the
+	// content.
 	NSToolbar* toolbar = [[NSToolbar alloc] initWithIdentifier:@"io.github.grxtor.Kite.TitleBar"];
 	nsWindow.toolbar = toolbar;
 	[toolbar release];

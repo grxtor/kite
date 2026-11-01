@@ -8,15 +8,8 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One group of the library: a collapsible header and a grid of cards.
- * Column count and card width come from the page so every section lines
- * up with every other one.
- *
- * A named group's header carries a ⋯ menu (also on right-click) to rename
- * or delete the group, and the whole section takes an instance dragged
- * from another one: the card stays put while a small chip with its icon
- * and name follows the pointer. What either means is the page's business;
- * this only says what was asked for.
+ * One group of the library: a collapsible header and a grid of cards. The
+ * page decides what rename, delete and drops mean; this only reports them.
  */
 Column {
     id: root
@@ -33,58 +26,44 @@ Column {
     property bool collapsed: false
     // "grid" (InstanceCard tiles) or "list" (dense InstanceListRow rows).
     property string viewMode: "grid"
-    // Where the cards end: whole-pixel card widths can stop a pixel or two
-    // short of the section's own width, and the header's divider ends with
-    // them rather than poking past the grid's right edge.
+    // Where the cards end: whole-pixel card widths can stop short of the section's width.
     readonly property int contentRight: viewMode === "list" ? width
         : Math.min(width, Math.round(columns * cardWidth + (columns - 1) * gutter))
 
     signal selectRequested(string id)
+    signal openRequested(string id)
     signal launchRequested(string id)
     signal stopRequested(string id)
     signal menuRequested(string id, bool running, string name, string iconKey, string group, Item anchor)
     signal toggleRequested()
 
-    // Rename/delete, offered only for a named group the page can manage.
     property bool manageable: false
-    // Whether instances can be dragged out of this section, onto another.
     property bool dragEnabled: false
     signal renameGroupRequested(string group)
     signal deleteGroupRequested(string group)
-    // An instance from another group, dropped here.
     signal instanceDropped(string id, string group)
-    // A drag of one of this section's instances began or ended, and where
-    // the pointer is (window y), so the page can hold its scrolling still
-    // under it and scroll near its edges.
+    // A drag of one of this section's instances began or ended.
     signal dragActiveChanged(bool active)
     signal dragMoved(real sceneY)
 
     readonly property string dragKey: "kite/instance"
 
-    // The group ⋯ menu, under its button.
     function openGroupMenu() {
         groupMenu.popup(groupMenuButton, groupMenuButton.width - groupMenu.width, groupMenuButton.height)
     }
-    // Under the page Flickable's own threshold, so a drag on a card is
-    // claimed as a drag before the page starts to scroll.
+    // Under the page Flickable's own threshold, so a drag on a card is claimed before the page scrolls.
     readonly property int dragThreshold: Theme.space.sm
 
-    // A card or row's drag: the handler over it, and the chip that follows
-    // the pointer, so the grid itself never moves.
     component InstanceDrag: Item {
         id: dragSource
-        // The InstanceSection it belongs to (an inline component does not
-        // see the file's ids).
+        // An inline component does not see the file's ids.
         required property Item section
         property string instanceId
         property string name
         property string iconKey
         anchors.fill: parent
-        // Under the card's own content. On top, it left the card's
-        // selection tap to take the ⋯ and Play buttons' clicks: ⋯ only
-        // selected the card and opened no menu. Its handler still sees a
-        // press that starts on them, so a drag can begin anywhere on the
-        // card.
+        // Under the card's content: on top, it took the ⋯ and Play clicks from the card's selection
+        // tap. Its handler still sees presses that start on them.
         z: -1
         enabled: dragSource.section.dragEnabled
 
@@ -92,8 +71,7 @@ Column {
             id: dragger
             target: null
             dragThreshold: dragSource.section.dragThreshold
-            // May take the pointer from the card's own taps, and does not
-            // hand it to the page's scrolling once the drag is on.
+            // Takes the pointer from the card's taps and keeps it from the page's scrolling.
             grabPermissions: PointerHandler.CanTakeOverFromItems | PointerHandler.CanTakeOverFromHandlersOfDifferentType
             onActiveChanged: {
                 if (active) {
@@ -108,8 +86,7 @@ Column {
             onCentroidChanged: if (active) dragSource.section.dragMoved(centroid.scenePosition.y)
         }
 
-        // Built only while a drag is on: the chip lives in the window's
-        // overlay, and one per card at rest would sit there for nothing.
+        // Built only while a drag is on; the chip lives in the window overlay.
         Loader {
             id: chipLoader
             active: false
@@ -117,7 +94,6 @@ Column {
                 Rectangle {
                     id: chip
                     parent: Overlay.overlay
-                    // What a drop reads off its source.
                     readonly property string instanceId: dragSource.instanceId
                     readonly property string group: dragSource.section.group
                     x: dragger.centroid.scenePosition.x - width / 2
@@ -146,12 +122,9 @@ Column {
                             smooth: true
                             mipmap: true
                         }
-                        Text {
+                        Copy {
                             anchors.verticalCenter: parent.verticalCenter
                             text: dragSource.name
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.body.pixelSize
                             font.weight: Font.Medium
                         }
                     }
@@ -160,18 +133,12 @@ Column {
         }
     }
 
-    // Modrinth App's group header height: a control's.
     readonly property int headerHeight: Theme.control.height
 
-    // No gap above the cards when there is no header to be apart from.
     spacing: root.showHeader ? Theme.space.md : 0
 
-    // Always there, zero-height without a header (the ungrouped instances,
-    // as in MultiMC and Prism): the section's DropArea lives in it, and an
-    // ungrouped section must still take an instance dragged out of a group.
-    // Modrinth App's group header: 40px, a fold chevron leading the name
-    // and its count, the group's ⋯ at the far right, and a hairline under
-    // the whole row.
+    // Zero-height without a header (ungrouped instances), but its DropArea must still take an
+    // instance dragged out of a group.
     Item {
         width: parent.width
         height: root.showHeader ? root.headerHeight : 0
@@ -194,8 +161,6 @@ Column {
                 onTapped: groupMenu.popup()
             }
 
-            // The chevron flush with the cards' left edge; the hover plate
-            // reaches a little past the row on both sides.
             contentItem: Row {
                 id: headerRow
                 spacing: Theme.space.sm
@@ -210,32 +175,31 @@ Column {
                     Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                 }
 
-                Text {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.title
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Theme.type.title.weight
+                    role: "title"
                 }
 
-                Tag {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: !!root.model
                     text: root.model ? String(root.model.count) : ""
+                    role: "caption"
+                    tone: "tertiary"
+                    font.weight: Font.Medium
                 }
             }
-            background: Rectangle {
+            background: StateFill {
                 x: -Theme.space.sm
                 y: Theme.space.xs
                 width: parent.width + Theme.space.sm * 2
                 height: parent.height - Theme.space.xs * 2
                 radius: Theme.radius.sm
-                color: header.down ? Theme.palette.pressedOverlay
-                     : header.hovered ? Theme.palette.hoverOverlay : "transparent"
-                border.width: header.visualFocus ? Theme.focus.width : 0
-                border.color: Theme.palette.focusRing
-                Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                hovered: header.hovered
+                down: header.down
+
+                FocusFrame { around: 0; visible: header.visualFocus }
             }
         }
 
@@ -250,7 +214,6 @@ Column {
             onClicked: root.openGroupMenu()
         }
 
-        // Under the whole row, ending where the cards end.
         Rectangle {
             id: divider
             visible: root.showHeader
@@ -260,13 +223,10 @@ Column {
             color: Theme.palette.divider
         }
 
-        // The whole section is the target, header and cards alike, and a
-        // folded group's header alone still is one. Lives in the header so
-        // the Column does not lay it out as a row of its own; drawn under
-        // the cards, around them.
+        // The whole section is the target, a folded group's header alone too. Lives in the header
+        // so the Column does not lay it out as a row.
         DropArea {
             id: dropArea
-            // Under the header's own title and button too.
             z: -1
             x: -Theme.space.sm
             y: -Theme.space.sm
@@ -281,7 +241,6 @@ Column {
                 drop.accept()
             }
 
-            // A neutral wash with an accent edge: no tinted fills.
             Rectangle {
                 anchors.fill: parent
                 visible: dropArea.wanted
@@ -307,24 +266,17 @@ Column {
         }
     }
 
-    // Clipped to an animated height rather than toggling `visible` outright,
-    // so a fold/unfold reflows the sections below it instead of jumping.
+    // Clipped to an animated height, not toggled by `visible`, so a fold reflows the sections below.
     Item {
         id: body
         readonly property real fullHeight: contentLoader.item ? contentLoader.item.implicitHeight : 0
         width: parent.width
         height: root.collapsed ? 0 : fullHeight
-        // Only while folded or folding: a permanent clip would also cut off
-        // a card's focus ring along the top row.
+        // Only while folding: a permanent clip would cut off a card's focus ring on the top row.
         clip: height < fullHeight - 0.5
 
-        // Off for the section's own initial layout -- height jumps straight
-        // from 0 to the grid/list's real height as soon as the Loader below
-        // first produces content, and animating that first jump (rather
-        // than a later, real fold/unfold click) is exactly the kind of
-        // startup work that made the app hang on Windows. Qt.callLater runs
-        // after that first layout pass has settled, so a genuine click a
-        // moment later still gets the fold animation.
+        // Off for the initial layout: height jumps from 0 to the real height when the Loader first
+        // produces content, and animating that jump hung the app at startup on Windows.
         property bool settled: false
         Component.onCompleted: Qt.callLater(function () { body.settled = true })
 
@@ -335,10 +287,7 @@ Column {
 
         Loader {
             id: contentLoader
-            // No explicit width: each Component below sizes its own root
-            // item (the grid packs to its own columns*cardWidth, the list
-            // binds to `body.width` itself), so the Loader is left free to
-            // just take whichever one it is showing rather than fight it.
+            // No explicit width: each Component sizes its own root item.
             sourceComponent: root.viewMode === "list" ? listComponent : gridComponent
         }
     }
@@ -354,8 +303,7 @@ Column {
                 model: root.model
                 delegate: InstanceCard {
                     id: card
-                    // The row itself, for the one role InstanceCard does
-                    // not require (packArt).
+                    // The row itself, for the one role (packArt) InstanceCard does not require.
                     required property var model
                     width: root.cardWidth
                     packArt: card.model.packArt || ""
@@ -367,6 +315,7 @@ Column {
                         iconKey: card.iconKey
                     }
                     onClicked: root.selectRequested(instanceId)
+                    onOpenRequested: root.openRequested(instanceId)
                     onPlayRequested: root.launchRequested(instanceId)
                     onStopRequested: root.stopRequested(instanceId)
                     onMenuRequested: (anchor) => {
@@ -388,8 +337,7 @@ Column {
                 model: root.model
                 delegate: InstanceListRow {
                     id: row
-                    // The row itself, for the one role InstanceListRow
-                    // does not require (packArt).
+                    // The row itself, for the one role (packArt) InstanceListRow does not require.
                     required property var model
                     width: body.width
                     packArt: row.model.packArt || ""
@@ -401,6 +349,7 @@ Column {
                         iconKey: row.iconKey
                     }
                     onClicked: root.selectRequested(instanceId)
+                    onOpenRequested: root.openRequested(instanceId)
                     onPlayRequested: root.launchRequested(instanceId)
                     onStopRequested: root.stopRequested(instanceId)
                     onMenuRequested: (anchor) => {

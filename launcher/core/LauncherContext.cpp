@@ -22,9 +22,8 @@
 
 namespace
 {
-	/* Deliberately a plain pointer and not an owning one: the implementation
-	 * is the Application object itself, which owns its own lifetime and
-	 * unregisters on the way out. */
+	/* A plain pointer, not an owning one: the implementation is the
+	 * Application, which owns its own lifetime and unregisters on the way out. */
 	LauncherContext* g_context = nullptr;
 }
 

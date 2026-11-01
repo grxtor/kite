@@ -6,10 +6,8 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * An icon-only button on a translucent white square: the hero's ▾ (more
- * ways to play) in the Sahne, Sade and Gece looks, where it sits on a photo
- * or the sky and the opaque Style button would be a block. The fill is the
- * host's; hover and press add the palette's overlays.
+ * An icon-only button on a translucent white square: the hero's ▾ in the Sahne, Sade and Gece looks, where it sits on
+ * a photo or the sky. The fill is the host's; hover and press add the palette's overlays.
  */
 AbstractButton {
     id: control
@@ -17,7 +15,7 @@ AbstractButton {
     property string iconName: "chevron-down"
     property string tip
     property int size: Theme.control.heightLg
-    property color fill: Qt.rgba(1, 1, 1, 0.12)
+    property color fill: Theme.media.glassStrong
 
     implicitWidth: size
     implicitHeight: size
@@ -34,16 +32,14 @@ AbstractButton {
     background: Rectangle {
         radius: Theme.radius.lg
         color: control.fill
-        border.width: control.visualFocus ? Theme.focus.width : 0
-        border.color: Theme.palette.focusRing
 
-        Rectangle {
+        StateFill {
             anchors.fill: parent
             radius: parent.radius
-            color: control.down ? Theme.palette.pressedOverlay
-                 : control.hovered ? Theme.palette.hoverOverlay : "transparent"
-            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+            hovered: control.hovered
+            down: control.down
         }
+        FocusFrame { around: 0; visible: control.visualFocus }
     }
 
     contentItem: Item {

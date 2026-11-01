@@ -23,17 +23,16 @@
 #include <QString>
 
 /*
- * What a launch runs on, as far as picking libraries goes: the OS, and the
- * architecture of the Java that runs the game -- natives have to match the
- * JVM, not the machine (an x86_64 Java on an Apple Silicon Mac runs under
- * Rosetta and loads x86_64 natives).
+ * What a launch runs on, as far as picking libraries goes: the OS and the
+ * architecture of the Java that runs the game (natives must match the JVM, not
+ * the machine: an x86_64 Java on Apple Silicon runs under Rosetta and loads
+ * x86_64 natives).
  *
- * The meta names platforms in rules and natives the way Mojang's files did
- * when x86 and x86_64 were all there was: "osx", "windows", "linux" alone
- * mean those. Every other architecture has a name of its own, such as
- * "osx-arm64", "windows-arm64" or "linux-arm32", and only that name applies
- * to it. So LWJGL 3.2.2 is allowed except on "osx-arm64", where a build of
- * 3.3.1 with arm64 natives is allowed instead, and an arm64 Java gets that.
+ * The meta names platforms as Mojang's files did when only x86 and x86_64
+ * existed: bare "osx", "windows", "linux" mean those. Every other architecture
+ * has its own name ("osx-arm64", "windows-arm64", "linux-arm32") and only that
+ * applies to it. So LWJGL 3.2.2 is allowed except on "osx-arm64", where a 3.3.1
+ * build with arm64 natives is allowed instead.
  */
 struct RuntimeContext
 {
@@ -48,8 +47,8 @@ struct RuntimeContext
 	/// "<system>-<architecture>", e.g. "osx-arm64".
 	QString classifier() const;
 	/// Whether a rule or natives entry for the platform @p name applies:
-	/// "<system>-<architecture>" always does, the bare system name only on
-	/// x86 and x86_64.
+	/// "<system>-<architecture>" always, the bare system name only on
+	/// x86/x86_64.
 	bool matches(const QString& name) const;
 	/// The classifier to use out of @p natives (platform name -> classifier):
 	/// the one for "<system>-<architecture>", else, on x86 and x86_64, the
@@ -66,15 +65,15 @@ struct RuntimeContext
 		return !(*this == other);
 	}
 
-	/// The meta's word for an architecture as Java's os.arch or Qt's
-	/// QSysInfo names it: "amd64" is "x86_64", "aarch64" is "arm64", "i686"
-	/// is "x86", "armhf" is "arm32"; anything else stays as it is.
+	/// The meta's word for an architecture as Java's os.arch or Qt's QSysInfo
+	/// name it: "amd64" is "x86_64", "aarch64" "arm64", "i686" "x86", "armhf"
+	/// "arm32".
 	static QString normalizeArchitecture(const QString& architecture);
 
 	/// The context of this OS and a Java that reported @p javaArchitecture
-	/// (os.arch) and @p bitness ("32"/"64"). An empty architecture -- no Java
-	/// checked yet -- stands for the one Kite was built for, which is also
-	/// what the Java Kite downloads is for.
+	/// (os.arch) and @p bitness ("32"/"64"). An empty architecture (no Java
+	/// checked yet) means the one Kite was built for, which the Java Kite
+	/// downloads is for too.
 	static RuntimeContext forJava(const QString& javaArchitecture,
 								  const QString& bitness);
 };

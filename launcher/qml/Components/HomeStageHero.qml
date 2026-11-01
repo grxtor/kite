@@ -5,16 +5,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The hero of the Sahne look: a full-bleed stage across the top of the
- * page, no card and no frame. Behind it the instance's newest screenshot,
- * softened to its colours, under a scrim that is dark on the words' side
- * and a fade into the page below; without a screenshot just the page with a
- * faint gradient -- never a stand-in picture. Bottom left, the words and
- * Play (HomeHeroLead); on the right a dark glass panel with the worlds
- * played last (HomeStageWorlds), when the stage is wide enough to hold both.
- *
- * Its bottom fade runs into the next section, which starts `overlap` px up
- * inside it. A view of the HomeHero it belongs to.
+ * The hero of the Sahne look: a full-bleed stage across the top of the page. The cover (a chosen screenshot or the
+ * version's title screen; else a wash of the icon's colour) sits under a scrim dark on the words' side and a fade into
+ * the page; the next section starts `overlap` px up inside that fade. A view of the HomeHero.
  */
 Item {
     id: root
@@ -23,18 +16,13 @@ Item {
 
     readonly property int stageHeight: 388
     readonly property int fadeHeight: 150
-    // The next section starts this far up into the fade.
     readonly property int overlap: 30
-    // Lead's distance from the stage's foot.
     readonly property int leadBottom: 78
     readonly property int worldsInset: 28
     readonly property int worldsWidth: 292
     // Below this width the worlds panel would crowd the name.
     readonly property int worldsMinWidth: 900
     readonly property bool showsWorlds: root.width >= root.worldsMinWidth && worlds.hasWorlds
-    // Softer than the hero card keeps: a stage this big would otherwise read
-    // what was written on the screenshot.
-    readonly property real softness: 0.012
     readonly property color canvas: Theme.palette.canvas
     readonly property color canvasClear: Qt.rgba(canvas.r, canvas.g, canvas.b, 0)
 
@@ -43,28 +31,25 @@ Item {
 
     implicitHeight: root.stageHeight
 
-    // The page with a faint lift at the top: all a stage without a picture
-    // shows.
     Rectangle {
         anchors.fill: parent
-        visible: !root.hero.hasBackdrop
+        visible: !root.hero.hasBackdrop && !root.hero.hasTint
         gradient: Gradient {
             GradientStop { position: 0.0; color: Theme.palette.surface }
             GradientStop { position: 1.0; color: root.canvas }
         }
     }
 
-    // The screenshot, dark on the left where the words are (CoverArt's
-    // horizontal scrim).
     CoverArt {
         anchors.fill: parent
-        visible: root.hero.hasBackdrop
+        visible: root.hero.hasBackdrop || root.hero.hasTint
         source: root.hero.coverImage
-        photoSoftness: root.softness
+        kind: root.hero.coverKind
+        tint: root.hero.iconColor
         glyph: ""
         showLogo: false
         radius: 0
-        scrim: "horizontal"
+        scrim: root.hero.hasBackdrop ? "horizontal" : "none"
         matte: root.canvas
     }
 
@@ -79,10 +64,9 @@ Item {
         }
     }
 
-    // Anywhere but its buttons: the instance page.
     TapHandler {
         gesturePolicy: TapHandler.ReleaseWithinBounds
-        onTapped: root.hero.openRequested(root.hero.instanceId)
+        onTapped: root.hero.tap()
     }
 
     HomeHeroLead {
@@ -91,7 +75,7 @@ Item {
         x: root.hero.columnX
         y: root.stageHeight - root.leadBottom - implicitHeight
         width: (root.showsWorlds ? worlds.x - root.worldsInset : root.width - root.hero.columnX) - x
-        nameSize: 48
+        nameSize: Theme.type.hero.pixelSize
         ink: root.hero.hasBackdrop ? Theme.media.text : Theme.palette.textPrimary
         inkSecondary: root.hero.hasBackdrop ? Theme.media.textSecondary : Theme.palette.textSecondary
         eyebrowInk: root.hero.hasBackdrop ? Theme.media.textSecondary : Theme.palette.textTertiary

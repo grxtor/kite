@@ -98,10 +98,13 @@ QString GameType::toLogString() const
 	return "Undefined";
 }
 
+// level.dat is a few KB; the cap stops a gzip bomb from filling memory.
+static constexpr qsizetype kMaxLevelDatBytes = 64 * 1024 * 1024;
+
 std::unique_ptr<nbt::tag_compound> parseLevelDat(QByteArray data)
 {
 	QByteArray output;
-	if (!GZip::unzip(data, output)) {
+	if (!GZip::unzip(data, output, kMaxLevelDatBytes)) {
 		return nullptr;
 	}
 	std::istringstream foo(std::string(output.constData(), output.size()));
@@ -131,15 +134,13 @@ QByteArray serializeLevelDat(nbt::tag_compound* levelInfo)
 
 namespace
 {
-	/* Newer Minecraft versions keep the world generation settings, and with
-	 * them the world seed, in a saved data file of their own instead of
-	 * level.dat. */
+	// Newer versions keep the world generation settings, and the seed, in a
+	// saved data file instead of level.dat.
 	const QLatin1String worldGenSettingsPath(
 		"data/minecraft/world_gen_settings.dat");
 
-	/* Minecraft 26.1 moved the daylight clock out of level.dat the same
-	 * way, into a saved data file holding one clock per dimension. The
-	 * Overworld's clock is the day number the player sees. */
+	// 26.1 moved the daylight clock out of level.dat the same way: one clock
+	// per dimension, and the Overworld's is the day number the player sees.
 	const QLatin1String worldClocksPath("data/minecraft/world_clocks.dat");
 	const char* const overworldClockKey = "minecraft:overworld";
 	const char* const clockTicksKey = "total_ticks";
@@ -231,7 +232,7 @@ bool World::resetIcon()
 	return false;
 }
 
-/* Defined further down, next to the other NBT reading helpers. */
+// Defined further down, with the other NBT reading helpers.
 static std::optional<int64_t> readWorldGenSettingsSeed(const QByteArray& data);
 static std::optional<int64_t> readWorldClocksDayCount(const QByteArray& data);
 
@@ -424,9 +425,8 @@ namespace
 		}
 	}
 
-	/* Tags have changed width between Minecraft versions before, and a
-	 * missing tag is a perfectly normal outcome here, so accept either
-	 * width and stay quiet about tags that simply are not there. */
+	// Tags have changed width between versions and a missing tag is normal:
+	// accept either width and stay quiet about absent tags.
 	std::optional<int64_t> read_long_or_int(nbt::value& parent,
 											const char* name)
 	{
@@ -452,31 +452,25 @@ namespace
 		return GameType(read_int(parent, name));
 	}
 
-	/* One Minecraft day is 24000 ticks in every version so far. */
+	// One Minecraft day is 24000 ticks in every version so far.
 	const int64_t ticksPerDay = 24000;
 
-	/* Clocks are signed and mods have been known to run them backwards,
-	 * so clamp instead of reporting a negative day. */
+	// Clocks are signed and mods can run them backwards: clamp, never report a
+	// negative day.
 	int64_t ticksToDays(int64_t ticks)
 	{
 		return (ticks > 0 ? ticks : 0) / ticksPerDay;
 	}
 
-	/* The day number the game shows is the daylight cycle, which level.dat
-	 * keeps in "DayTime": it counts past 24000 and is never reset. "Time"
-	 * is a different clock - the ticks the world has actually run, what
-	 * /time query gametime returns. The two drift apart every time someone
-	 * sleeps, because waking up jumps DayTime to morning while Time only
-	 * advances by the ticks really spent, so "Time" reports far fewer days
-	 * than the player ever saw in game.
-	 *
-	 * "DayTime" only exists from Minecraft 1.3 onwards. Older worlds have
-	 * no separate daylight clock - "Time" drove the sun directly - so
-	 * there it really is the day count. Those worlds also predate
-	 * "DataVersion" (added in 1.9), which is what tells them apart from
-	 * Minecraft 26.1 and newer, where the daylight clock moved out to
-	 * world_clocks.dat and "Time" would be the wrong answer all over
-	 * again - those are picked up from that file instead. */
+	// The day number the game shows is the daylight cycle, "DayTime" in
+	// level.dat: it counts past 24000 and is never reset. "Time" is the ticks
+	// the world has run (/time query gametime); sleeping jumps DayTime to
+	// morning but not Time, so Time reports far fewer days than the player saw.
+	//
+	// "DayTime" exists from 1.3 on. Older worlds have no separate daylight
+	// clock, so there Time is the day count; they also predate "DataVersion"
+	// (1.9), which tells them apart from 26.1+, where the clock moved to
+	// world_clocks.dat and Time would be wrong again.
 	std::optional<int64_t> read_day_count(nbt::value& parent)
 	{
 		auto ticks = read_long_or_int(parent, "DayTime");
@@ -500,7 +494,7 @@ static std::optional<int64_t> readWorldGenSettingsSeed(const QByteArray& data)
 
 	nbt::value* valPtr = nullptr;
 	try {
-		/* Saved data files wrap their payload in a "data" compound. */
+		// Saved data files wrap their payload in a "data" compound.
 		valPtr = &worldGenData->at("data");
 	} catch (const std::out_of_range&) {
 		qWarning() << "Unable to read the \"data\" compound from"
@@ -520,11 +514,9 @@ static std::optional<int64_t> readWorldGenSettingsSeed(const QByteArray& data)
 	return seed;
 }
 
-/* Minecraft 26.1 and newer keep the daylight clock here instead of in
- * level.dat's DayTime tag. Every dimension gets its own clock, keyed by
- * dimension id, and each one records the ticks it has run in total - the
- * same 24000-ticks-per-day scale DayTime used, still counting past a day
- * rather than wrapping. The Overworld clock is the day players quote. */
+// 26.1+ keeps the daylight clock here instead of level.dat's DayTime. Each
+// dimension has its own clock keyed by dimension id, recording its total ticks
+// at 24000 per day (no wrapping). The Overworld clock is the day players quote.
 static std::optional<int64_t> readWorldClocksDayCount(const QByteArray& data)
 {
 	auto clockData = parseLevelDat(data);
@@ -534,7 +526,7 @@ static std::optional<int64_t> readWorldClocksDayCount(const QByteArray& data)
 
 	nbt::value* valPtr = nullptr;
 	try {
-		/* Saved data files wrap their payload in a "data" compound. */
+		// Saved data files wrap their payload in a "data" compound.
 		valPtr = &clockData->at("data");
 	} catch (const std::out_of_range&) {
 		qWarning() << "Unable to read the \"data\" compound from"

@@ -69,7 +69,7 @@ PluginDependencyResolver::resolve(QVector<PluginMetadata>& modules)
 {
 	Result out;
 
-	// Build a name → index lookup. Lower-case for case-insensitive matching.
+	// Name -> index lookup, lower-cased for case-insensitive matching.
 	QHash<QString, int> byName;
 	byName.reserve(modules.size());
 	for (int i = 0; i < modules.size(); ++i) {
@@ -78,8 +78,7 @@ PluginDependencyResolver::resolve(QVector<PluginMetadata>& modules)
 
 	const int n = modules.size();
 
-	// adj[i] = indices of modules that depend on i (i.e. edges pointing
-	// at i's dependents). indegree[i] = number of unmet hard deps.
+	// adj[i]: modules that depend on i. indegree[i]: unmet hard dependencies.
 	QVector<QVector<int>> adj(n);
 	QVector<int> indegree(n, 0);
 
@@ -105,8 +104,7 @@ PluginDependencyResolver::resolve(QVector<PluginMetadata>& modules)
 			const int depIdx = *it;
 			const PluginMetadata& depMeta = modules[depIdx];
 
-			// If dep is already disabled (e.g. unsigned non-OSS), it's
-			// effectively missing for our purposes.
+			// A disabled dep (e.g. unsigned non-OSS) is effectively missing.
 			if (depMeta.disabled) {
 				if (!dep.optional) {
 					meta.disabled = true;
@@ -119,7 +117,6 @@ PluginDependencyResolver::resolve(QVector<PluginMetadata>& modules)
 				continue;
 			}
 
-			// Version check
 			if (!dep.minVersion.isEmpty() &&
 				compareVersions(depMeta.version, dep.minVersion) < 0) {
 				if (!dep.optional) {

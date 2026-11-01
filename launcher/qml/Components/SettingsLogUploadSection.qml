@@ -8,16 +8,10 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The paste.ee key used for uploaded logs -- the QML equivalent of the
- * classic PasteEEPage, which only ever has this one setting (PasteEEAPIKey:
- * either the literal string "kite", or a key of the account's own).
- *
- * `ownKey` is local UI state, not a live binding to the stored setting: it
- * only tracks which radio is selected, synced from the setting once at
- * startup and from then on changed only by picking a radio here. Deriving
- * it from the setting on every read instead would snap the "own key" radio
- * back to "Kite key" the moment it is picked but before a key has been
- * typed in, since the setting itself has not changed yet.
+ * The paste.ee key used for uploaded logs (PasteEEAPIKey: either the literal
+ * string "kite", or a key of the account's own). `ownKey` is local UI state, not
+ * a live binding: deriving it from the setting would snap the "own key" radio
+ * back to "Kite key" the moment it is picked, before a key is typed.
  */
 SettingsScroll {
     id: root

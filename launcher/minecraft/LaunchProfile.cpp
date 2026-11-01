@@ -208,11 +208,6 @@ const QList<PatchProblem> LaunchProfile::getProblems() const
 	return {};
 }
 
-QString LaunchProfile::getMinecraftVersion() const
-{
-	return m_minecraftVersion;
-}
-
 QString LaunchProfile::getAppletClass() const
 {
 	return m_appletClass;

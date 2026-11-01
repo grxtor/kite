@@ -82,12 +82,10 @@ namespace ProfileUtils
 		return true;
 	}
 
-	static VersionFilePtr
-	createErrorVersionFile(QString fileId, QString filepath, QString error)
+	static VersionFilePtr createErrorVersionFile(QString fileId, QString error)
 	{
 		auto outError = std::make_shared<VersionFile>();
 		outError->uid = outError->name = fileId;
-		// outError->filename = filepath;
 		outError->addProblem(ProblemSeverity::Error, error);
 		return outError;
 	}
@@ -101,7 +99,7 @@ namespace ProfileUtils
 			return OneSixVersionFormat::versionFileFromJson(doc, filepath,
 															requireOrder);
 		} catch (const Exception& e) {
-			return createErrorVersionFile(fileId, filepath, e.cause());
+			return createErrorVersionFile(fileId, e.cause());
 		}
 	}
 
@@ -114,7 +112,6 @@ namespace ProfileUtils
 				QObject::tr("Unable to open the version file %1: %2.")
 					.arg(fileInfo.fileName(), file.errorString());
 			return createErrorVersionFile(fileInfo.completeBaseName(),
-										  fileInfo.absoluteFilePath(),
 										  errorStr);
 		}
 		QJsonParseError error;
@@ -138,7 +135,6 @@ namespace ProfileUtils
 								.arg(line)
 								.arg(column);
 			return createErrorVersionFile(fileInfo.completeBaseName(),
-										  fileInfo.absoluteFilePath(),
 										  errorStr);
 		}
 		return guardedParseJson(doc, fileInfo.completeBaseName(),
@@ -160,29 +156,6 @@ namespace ProfileUtils
 			return false;
 		}
 		return true;
-	}
-
-	VersionFilePtr parseBinaryJsonFile(const QFileInfo& fileInfo)
-	{
-		QFile file(fileInfo.absoluteFilePath());
-		if (!file.open(QFile::ReadOnly)) {
-			auto errorStr =
-				QObject::tr("Unable to open the version file %1: %2.")
-					.arg(fileInfo.fileName(), file.errorString());
-			return createErrorVersionFile(fileInfo.completeBaseName(),
-										  fileInfo.absoluteFilePath(),
-										  errorStr);
-		}
-		QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-		file.close();
-		if (doc.isNull()) {
-			file.remove();
-			throw JSONValidationError(
-				QObject::tr("Unable to process the version file %1.")
-					.arg(fileInfo.fileName()));
-		}
-		return guardedParseJson(doc, fileInfo.completeBaseName(),
-								fileInfo.absoluteFilePath(), false);
 	}
 
 	void removeLwjglFromPatch(VersionFilePtr patch)

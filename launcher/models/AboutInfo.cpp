@@ -95,7 +95,6 @@ QVariantList AboutInfo::helpLinks() const
 
 QString AboutInfo::creditsHtml() const
 {
-	// Same placeholders AboutDialog fills in.
 	const QString html = readDocument(QStringLiteral(":/documents/credits.html"));
 	if (html.isEmpty()) {
 		return html;

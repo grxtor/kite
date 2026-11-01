@@ -24,16 +24,12 @@
 #include <functional>
 
 /*
- * The launcher's update settings for QML: whether it checks for updates by
- * itself, how often, and a "Check now". The updater (Sparkle, the built-in
- * one) lives in Application, which core code cannot reach, so Application
- * hands in a Backend of plain functions once the updater exists. Until then
- * (and in a build with no updater) available is false and everything here
- * does nothing, which is also how the Settings page knows to hide itself.
- *
- * The interval is exposed in whole hours, like the widget page; 0 means
- * "only when the launcher starts", which is what the updater means by 0
- * seconds too.
+ * The launcher's update settings for QML: automatic checks, their interval and
+ * "Check now". The updater lives in Application, which core code cannot reach,
+ * so Application hands in a Backend of plain functions once it exists. Until
+ * then (and in a build with no updater) available is false and everything does
+ * nothing, which is how the Settings page knows to hide itself. The interval is
+ * in whole hours; 0 means "only when the launcher starts".
  */
 class UpdateSettingsController : public QObject
 {
@@ -41,7 +37,6 @@ class UpdateSettingsController : public QObject
 
 	Q_PROPERTY(bool available READ available NOTIFY changed)
 	Q_PROPERTY(bool autoCheck READ autoCheck WRITE setAutoCheck NOTIFY changed)
-	/// 0 = only at startup.
 	Q_PROPERTY(int intervalHours READ intervalHours WRITE setIntervalHours
 				   NOTIFY changed)
 
@@ -58,7 +53,6 @@ class UpdateSettingsController : public QObject
 	explicit UpdateSettingsController(QObject* parent = nullptr);
 	~UpdateSettingsController() override;
 
-	/// Called by Application once the updater exists.
 	void setBackend(Backend backend);
 
 	bool available() const;
@@ -67,7 +61,6 @@ class UpdateSettingsController : public QObject
 	int intervalHours() const;
 	void setIntervalHours(int hours);
 
-	/// Runs an update check now and shows whatever the updater shows.
 	Q_INVOKABLE void checkNow();
 
 	static constexpr int secondsPerHour = 3600;

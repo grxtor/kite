@@ -33,7 +33,6 @@
 
 LoggedProcess::LoggedProcess(QObject* parent) : QProcess(parent)
 {
-	// QProcess has a strange interface... let's map a lot of those into a few.
 	connect(this, &QProcess::readyReadStandardOutput, this,
 			&LoggedProcess::on_stdOut);
 	connect(this, &QProcess::readyReadStandardError, this,
@@ -43,22 +42,12 @@ LoggedProcess::LoggedProcess(QObject* parent) : QProcess(parent)
 	connect(this, &QProcess::stateChanged, this,
 			&LoggedProcess::on_stateChange);
 
-#if defined(Q_OS_UNIX) && QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-	// Create a new process group so we can kill the entire tree.
-	// On Qt 5 this is done by overriding setupChildProcess() instead --
-	// see below.
+#if defined(Q_OS_UNIX)
+	// A new process group, so kill() can take down the entire tree. Runs in
+	// the forked child before exec(): only async-signal-safe calls belong here.
 	setChildProcessModifier([]() { setsid(); });
 #endif
 }
-
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0) && defined(Q_OS_UNIX)
-void LoggedProcess::setupChildProcess()
-{
-	// Runs in the forked child before exec(), same as the Qt 6 modifier
-	// above. setsid() is async-signal-safe, which is the constraint here.
-	setsid();
-}
-#endif
 
 LoggedProcess::~LoggedProcess()
 {
@@ -66,9 +55,9 @@ LoggedProcess::~LoggedProcess()
 		setProcessState(QProcess::NotRunning);
 	}
 #ifdef Q_OS_WIN
-	// Closing the job handle does not kill anything, because the job was
-	// created without JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE. That is deliberate:
-	// see assignToJobObject().
+	// Closing the job handle kills nothing: the job has no
+	// JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE, deliberately (see
+	// assignToJobObject()).
 	if (m_job) {
 		CloseHandle(static_cast<HANDLE>(m_job));
 		m_job = nullptr;
@@ -100,10 +89,8 @@ void LoggedProcess::on_stdOut()
 
 void LoggedProcess::on_exit(int exit_code, QProcess::ExitStatus status)
 {
-	// save the exit code
 	m_exit_code = exit_code;
 
-	// Flush console window
 	if (!m_err_leftover.isEmpty()) {
 		emit log({m_err_leftover}, MessageLevel::StdErr);
 		m_err_leftover.clear();
@@ -113,15 +100,12 @@ void LoggedProcess::on_exit(int exit_code, QProcess::ExitStatus status)
 		m_out_leftover.clear();
 	}
 
-	// based on state, send signals
 	if (!m_is_aborting) {
 		if (status == QProcess::NormalExit) {
-			//: Message displayed on instance exit
 			emit log({tr("Process exited with code %1.").arg(exit_code)},
 					 MessageLevel::Kite);
 			changeState(LoggedProcess::Finished);
 		} else {
-			//: Message displayed on instance crashed
 			if (exit_code == -1)
 				emit log({tr("Process crashed.")}, MessageLevel::Kite);
 			else
@@ -131,7 +115,6 @@ void LoggedProcess::on_exit(int exit_code, QProcess::ExitStatus status)
 			changeState(LoggedProcess::Crashed);
 		}
 	} else {
-		//: Message displayed after the instance exits due to kill request
 		emit log({tr("Process was killed by user.")}, MessageLevel::Error);
 		changeState(LoggedProcess::Aborted);
 	}
@@ -145,7 +128,6 @@ void LoggedProcess::on_error(QProcess::ProcessError error)
 			changeState(LoggedProcess::FailedToStart);
 			break;
 		}
-		// we'll just ignore those... never needed them
 		case QProcess::Crashed:
 		case QProcess::ReadError:
 		case QProcess::Timedout:
@@ -159,16 +141,16 @@ void LoggedProcess::kill()
 {
 	m_is_aborting = true;
 #ifdef Q_OS_UNIX
-	// Kill the entire process group to ensure all child processes
-	// (e.g. Java launched through a wrapper) are terminated
+	// Kill the whole process group so child processes (e.g. Java behind a
+	// wrapper) die too.
 	auto pid = processId();
 	if (pid > 0) {
 		::kill(-pid, SIGKILL);
 	}
 #elif defined(Q_OS_WIN)
-	// Terminating the job takes down every process in it, so a wrapper
-	// command and the java process behind it both die. QProcess::kill() is
-	// only the fallback: it reaches the direct child and nothing else.
+	// Terminating the job takes down every process in it (wrapper and java);
+	// QProcess::kill() is only the fallback and reaches the direct child
+	// alone.
 	if (m_job) {
 		if (TerminateJobObject(static_cast<HANDLE>(m_job), 1)) {
 			return;
@@ -191,8 +173,8 @@ void LoggedProcess::assignToJobObject()
 	}
 	auto pid = processId();
 	if (pid <= 0) {
-		// There is no pid before the process is actually running, which is
-		// why this is called from the Running state change and not earlier.
+		// No pid before the process is running, hence called from the Running
+		// state change.
 		return;
 	}
 
@@ -204,15 +186,13 @@ void LoggedProcess::assignToJobObject()
 		return;
 	}
 
-	// NOTE: the job deliberately has no limits set on it. In particular it
-	// must NOT get JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE: setDetachable(true)
-	// means the game is allowed to outlive the launcher, and that flag would
-	// shoot it the moment the handle is closed. A limitless job is still
-	// enough for TerminateJobObject().
+	// The job deliberately has no limits: JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+	// would kill the game when the handle closes, but setDetachable(true) lets
+	// it outlive the launcher. A limitless job is enough for
+	// TerminateJobObject().
 
-	// Reopening the child by pid is safe here: QProcess keeps a handle to it,
-	// and Windows does not recycle a pid while a handle to the process is
-	// open.
+	// Reopening by pid is safe: QProcess holds a handle, so Windows does not
+	// recycle the pid.
 	HANDLE process = OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, FALSE,
 								 static_cast<DWORD>(pid));
 	if (!process) {
@@ -231,10 +211,10 @@ void LoggedProcess::assignToJobObject()
 	CloseHandle(process);
 	m_job = job;
 
-	// Known, unavoidable race: a grandchild spawned between CreateProcess and
-	// the assignment above is not in the job. Closing that hole would need
-	// the child to start suspended, and QProcess does not hand out the
-	// PROCESS_INFORMATION required to resume its main thread.
+	// Known race: a grandchild spawned between CreateProcess and the
+	// assignment is not in the job. Closing it would need a suspended start,
+	// and QProcess does not expose the PROCESS_INFORMATION to resume the main
+	// thread.
 }
 #endif
 
@@ -260,7 +240,7 @@ void LoggedProcess::on_stateChange(QProcess::ProcessState state)
 {
 	switch (state) {
 		case QProcess::NotRunning:
-			break; // let's not - there are too many that handle this already.
+			break;
 		case QProcess::Starting: {
 			if (m_state != LoggedProcess::NotRunning) {
 				qWarning() << "Wrong state change for process from state"
@@ -275,8 +255,8 @@ void LoggedProcess::on_stateChange(QProcess::ProcessState state)
 						   << m_state << "to" << (int)LoggedProcess::Running;
 			}
 #ifdef Q_OS_WIN
-			// Before changeState(), so that anything reacting to Running -
-			// including an immediate kill() - already sees the job.
+			// Before changeState(), so anything reacting to Running, including
+			// an immediate kill(), sees the job.
 			assignToJobObject();
 #endif
 			changeState(LoggedProcess::Running);

@@ -35,13 +35,10 @@
 
 namespace
 {
-	/* A face is looked at again after this long. */
 	constexpr qint64 kFaceMaxAgeSeconds = 24 * 60 * 60;
-	/* Mojang is asked about this many friends at once. */
 	constexpr int kMaxParallel = 3;
 	constexpr int kRequestTimeoutMs = 15000;
-	/* A profile is a few hundred bytes plus a signed texture value; a skin
-	 * is about 1 KiB. Anything far beyond is not one. */
+	/* A profile is a few hundred bytes plus a signed texture value; a skin about 1 KiB. */
 	constexpr qint64 kMaxProfileBytes = 64 * 1024;
 	constexpr qint64 kMaxSkinBytes = 256 * 1024;
 	constexpr int kHttpOk = 200;
@@ -68,14 +65,6 @@ QUrl FriendsFaces::profileUrl(const QString& sessionBase, const QString& uuid)
 	return FriendsApi::url(sessionBase,
 						   QStringLiteral("/session/minecraft/profile/") +
 							   FriendsApi::undashed(uuid));
-}
-
-bool FriendsFaces::isLoopbackHost(const QString& host)
-{
-	const QString lower = host.toLower();
-	return lower == QLatin1String("localhost") ||
-		   lower == QLatin1String("127.0.0.1") ||
-		   lower == QLatin1String("::1");
 }
 
 std::optional<QUrl> FriendsFaces::skinUrlFromProfile(const QByteArray& profile,
@@ -107,11 +96,10 @@ std::optional<QUrl> FriendsFaces::skinUrlFromProfile(const QByteArray& profile,
 			return std::nullopt;
 		}
 		if (host == kTexturesHost && url.port() == -1) {
-			/* Mojang still words these as http. */
 			url.setScheme("https");
 			return url;
 		}
-		if (allowLoopback && isLoopbackHost(host)) {
+		if (allowLoopback && FriendsApi::isLoopbackHost(host)) {
 			return url;
 		}
 		return std::nullopt;
@@ -165,7 +153,8 @@ QString FriendsFaces::cachedFacePath(const QString& uuid) const
 void FriendsFaces::ensure(const QStringList& uuids, const QString& sessionBase)
 {
 	m_sessionBase = sessionBase;
-	m_allowLoopback = isLoopbackHost(QUrl(sessionBase).host());
+	m_allowLoopback =
+		FriendsApi::isLoopbackHost(QUrl(sessionBase).host().toLower());
 	const QDateTime now = QDateTime::currentDateTimeUtc();
 	for (const QString& uuid : uuids) {
 		if (!FriendsApi::isUuid(uuid) || m_queue.contains(uuid) ||
@@ -268,7 +257,6 @@ void FriendsFaces::get(const QUrl& url, qint64 maxBytes, Body done)
 void FriendsFaces::cancel()
 {
 	++m_epoch;
-	/* What was cut short did not fail: it may be asked again at once. */
 	for (const QString& uuid : m_running) {
 		m_tried.remove(uuid);
 	}

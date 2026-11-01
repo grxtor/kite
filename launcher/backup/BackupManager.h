@@ -24,34 +24,15 @@
 #include <QDateTime>
 #include <functional>
 
-/*
- * BackupManager — instance backup snapshots (create, restore, export,
- * import, delete).
- *
- * Backups are plain zip archives stored in `<instanceRoot>/.backups/`.
- * The file name carries the creation timestamp and an optional label:
- *
+/* Instance backup snapshots (create, restore, export, import, delete) as
+ * zip archives in `<instanceRoot>/.backups/`. The timestamp and optional
+ * label are in the file name, so a copied or hand-restored directory still
+ * lists correctly:
  *   2026-01-15_14-30-00.zip
  *   2026-01-15_14-30-00_pre-launch.zip
  *
- * Keeping the metadata in the file name (rather than a side-car index)
- * means a backup directory copied between installs — or restored by
- * hand from a file manager — still lists correctly.
- *
- * This code used to live in the out-of-tree BackupSystem .mmco plugin
- * and drove zipping through the MMCO C ABI, which has no skip-predicate
- * for compression. The plugin worked around that by mirroring the whole
- * instance into a temp directory first — which is why its progress
- * started with a "Copying instance files..." phase. In core we call
- * MMCZip::compressDir() directly with an exclude filter, so that phase
- * and the disk-space spike that came with it are gone; only compression
- * is left to report on.
- *
- * Everything here blocks the calling thread. Callers that must not
- * block the GUI go through BackupTask, which runs createBackup() on a
- * worker thread and republishes this progress callback as Task
- * progress.
- */
+ * Everything blocks the calling thread; BackupTask runs createBackup() on a
+ * worker thread. */
 
 struct BackupEntry {
 	QString name;		  /* human-readable label, may be empty */
@@ -69,33 +50,26 @@ struct BackupEntry {
 class BackupManager
 {
   public:
-	/* Reports how a long running backup is getting on:
-	 *   status  — line describing the phase, empty to leave it alone.
-	 *   details — second line, empty to leave it alone.
-	 *   current/total — file counts; total 0 means "no idea yet".
-	 * Called on whichever thread createBackup() runs on, so an
-	 * implementation that touches the UI has to marshal (BackupTask
-	 * does). Updates are already throttled to roughly one per percent —
-	 * a callback per file would be one queued call per file for no
-	 * visible gain. */
+	/* Progress of a long backup: status and details are text lines (empty
+	 * leaves it alone); current/total are file counts (total 0 = unknown).
+	 * Called on the thread createBackup() runs on, so a UI implementation must
+	 * marshal (BackupTask does). Throttled to about one call per percent. */
 	using ProgressFn =
 		std::function<void(const QString& status, const QString& details,
 						   qint64 current, qint64 total)>;
 
 	BackupManager(const QString& instanceId, const QString& instanceRoot);
 
-	/* Absolute path of the per-instance backup directory. */
 	QString backupDir() const;
 
-	/* Newest first. */
 	QList<BackupEntry> listBackups() const;
 
-	/* Returns an invalid entry (empty fullPath) on failure. */
+	/* An invalid entry (empty fullPath) on failure. */
 	BackupEntry createBackup(const QString& label = {},
 							 const ProgressFn& progress = nullptr);
 
-	/* Wipes the instance root (except .backups/) and unpacks `entry`
-	 * over it. Destructive and not undoable — callers must confirm. */
+	/* Wipes the instance root (except .backups/) and unpacks `entry` over it.
+	 * Destructive; callers must confirm. */
 	bool restoreBackup(const BackupEntry& entry);
 
 	bool exportBackup(const BackupEntry& entry, const QString& destPath);

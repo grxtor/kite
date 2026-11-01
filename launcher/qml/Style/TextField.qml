@@ -8,9 +8,9 @@ import QtQuick.Templates as T
 import Kite.Theme
 
 // The field look every input in this style shares (TextField, TextArea,
-// ComboBox, SpinBox): the surface fill, the hairline border, radius md;
-// under the pointer the border steps up, and focused it turns accent with a
-// soft 2 px accent halo around it (the phase-02 brief).
+// ComboBox, SpinBox): the surface fill, the hairline border, radius md; under
+// the pointer the border steps up, and focused it turns accent with a soft
+// 2 px halo.
 T.TextField {
     id: control
 
@@ -34,9 +34,8 @@ T.TextField {
     placeholderTextColor: Theme.palette.textTertiary
     verticalAlignment: TextInput.AlignVCenter
 
-    // A field that isn't being edited shows the start of its text: setting
-    // a long value leaves the cursor, and so the scroll, at its end ("…EVERSE
-    // - Pokemon Adventure" instead of the name's beginning).
+    // A field that is not being edited shows the start of its text: a long
+    // value would otherwise leave the cursor, and the scroll, at its end.
     onActiveFocusChanged: if (!activeFocus) cursorPosition = 0
     onTextChanged: if (!activeFocus) cursorPosition = 0
 
@@ -70,8 +69,8 @@ T.TextField {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
         }
 
-        // A field shows its halo however it got focus: typing is about to
-        // land here either way, so a click deserves the cue as much as Tab.
+        // The halo shows however the field got focus: typing lands here either
+        // way.
         FocusRing {
             halo: true
             visible: control.activeFocus && !control.readOnly

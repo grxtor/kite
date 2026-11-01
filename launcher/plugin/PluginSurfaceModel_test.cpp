@@ -28,12 +28,8 @@
 
 namespace
 {
-	/* Feeds a canned SurfaceInfo list instead of reading a real
-	 * PluginManager's — see PluginSurfaceModel.h's fetchSurfaces() doc
-	 * comment for why this is the model's test seam. Built with a null
-	 * manager: nothing here ever needs one, since fetchSurfaces() is
-	 * fully overridden and sendEvent()/deliverUiEvent() is exercised
-	 * separately as a safe no-op. */
+	/* Feeds a canned SurfaceInfo list (the fetchSurfaces() test seam); built with a null manager
+	 * since nothing here needs one. */
 	class TestSurfaceModel : public PluginSurfaceModel
 	{
 	  public:
@@ -104,8 +100,7 @@ void PluginSurfaceModelTest::rowsAndRoles()
 	QCOMPARE(model.data(idx, PluginSurfaceModel::AnchorContextRole).toString(),
 			QStringLiteral("inst-1"));
 
-	// The document comes back as a QVariantMap QML can walk straight into
-	// root/type/id/props/children without any JSON parsing of its own.
+	// The document comes back as a QVariantMap QML can walk without JSON parsing.
 	const QVariantMap doc =
 		model.data(idx, PluginSurfaceModel::DocumentRole).toMap();
 	QCOMPARE(doc.value(QStringLiteral("type")).toString(),
@@ -115,11 +110,9 @@ void PluginSurfaceModelTest::rowsAndRoles()
 			QStringLiteral("column"));
 	QCOMPARE(root.value(QStringLiteral("id")).toString(), QStringLiteral("root"));
 
-	// A brand new surface id starts at revision 1, not 0 -- "has a
-	// document" and "revision assigned" happen together.
+	// A new surface id starts at revision 1.
 	QCOMPARE(model.data(idx, PluginSurfaceModel::RevisionRole).toInt(), 1);
 
-	// roleNames() names every role a QML delegate would bind to by name.
 	const auto roles = model.roleNames();
 	QCOMPARE(roles.value(PluginSurfaceModel::SurfaceIdRole),
 			QByteArray("surfaceId"));
@@ -139,20 +132,16 @@ void PluginSurfaceModelTest::revisionTracksDocumentChanges()
 	QCOMPARE(model.data(model.index(0, 0), PluginSurfaceModel::RevisionRole).toInt(),
 			1);
 
-	// Re-reading the same document text (a surfacesChanged() fired by some
-	// unrelated surface, say) must not bump a revision nothing changed.
+	// Re-reading identical document text must not bump the revision.
 	model.setCanned({ makeInfo(QStringLiteral("sf-1"), docA) });
 	QCOMPARE(model.data(model.index(0, 0), PluginSurfaceModel::RevisionRole).toInt(),
 			1);
 
-	// An actual document change (ui_surface_update/_set/_set_rows) bumps it.
 	model.setCanned({ makeInfo(QStringLiteral("sf-1"), docB) });
 	QCOMPARE(model.data(model.index(0, 0), PluginSurfaceModel::RevisionRole).toInt(),
 			2);
 
-	// The surface disappearing (ui_surface_destroy) drops its bookkeeping;
-	// a later surface reusing the id (never happens in practice -- ids are
-	// sequential -- but nothing stops a test) starts fresh.
+	// A destroyed surface drops its bookkeeping, so a reused id starts fresh.
 	model.setCanned({});
 	QCOMPARE(model.rowCount(), 0);
 	model.setCanned({ makeInfo(QStringLiteral("sf-1"), docB) });
@@ -173,7 +162,6 @@ void PluginSurfaceModelTest::propertiesResetOnChange()
 	QCOMPARE(model.anchor(), 2);
 	QCOMPARE(anchorSpy.count(), 1);
 
-	// Setting the same value again is a no-op -- no redundant signal / reset.
 	model.setAnchor(2);
 	QCOMPARE(anchorSpy.count(), 1);
 
@@ -185,8 +173,7 @@ void PluginSurfaceModelTest::propertiesResetOnChange()
 void PluginSurfaceModelTest::sendEventWithoutManagerIsNoop()
 {
 	TestSurfaceModel model;
-	// Must not crash: sendEvent() guards on a null manager the same way
-	// PluginManager::deliverUiEvent() guards on an unknown surfaceId.
+	// Must not crash: sendEvent() guards on a null manager.
 	model.sendEvent(QStringLiteral("sf-1"), QStringLiteral("node"),
 					QStringLiteral("click"), QVariant());
 }

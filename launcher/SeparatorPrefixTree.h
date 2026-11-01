@@ -42,7 +42,6 @@ template <char Tseparator> class SeparatorPrefixTree
 		}
 	}
 
-	/// insert an exact path into the tree
 	SeparatorPrefixTree& insert(QString path)
 	{
 		auto sepIndex = path.indexOf(Tseparator);
@@ -58,19 +57,14 @@ template <char Tseparator> class SeparatorPrefixTree
 		}
 	}
 
-	/// is the path fully contained in the tree?
 	bool contains(QString path) const
 	{
 		auto node = find(path);
 		return node != nullptr;
 	}
 
-	/// does the tree cover a path? That means the prefix of the path is
-	/// contained in the tree
 	bool covers(QString path) const
 	{
-		// if we found some valid node, it's good enough. the tree covers the
-		// path
 		if (m_contained) {
 			return true;
 		}
@@ -91,11 +85,8 @@ template <char Tseparator> class SeparatorPrefixTree
 		}
 	}
 
-	/// return the contained path that covers the path specified
 	QString cover(QString path) const
 	{
-		// if we found some valid node, it's good enough. the tree covers the
-		// path
 		if (m_contained) {
 			return QString("");
 		}
@@ -128,8 +119,6 @@ template <char Tseparator> class SeparatorPrefixTree
 		}
 	}
 
-	/// Does the path-specified node exist in the tree? It does not have to be
-	/// contained.
 	bool exists(QString path) const
 	{
 		auto sepIndex = path.indexOf(Tseparator);
@@ -149,7 +138,6 @@ template <char Tseparator> class SeparatorPrefixTree
 		}
 	}
 
-	/// find a node in the tree by name
 	const SeparatorPrefixTree* find(QString path) const
 	{
 		auto sepIndex = path.indexOf(Tseparator);
@@ -169,25 +157,18 @@ template <char Tseparator> class SeparatorPrefixTree
 		}
 	}
 
-	/// is this a leaf node?
-	bool leaf() const
-	{
-		return children.isEmpty();
-	}
-
-	/// is this node actually contained in the tree, or is it purely structural?
+	/// Whether this node is actually contained in the tree, or purely
+	/// structural.
 	bool contained() const
 	{
 		return m_contained;
 	}
 
-	/// Remove a path from the tree
 	bool remove(QString path)
 	{
 		return removeInternal(path) != Failed;
 	}
 
-	/// Clear all children of this node tree node
 	void clear()
 	{
 		children.clear();
@@ -218,7 +199,6 @@ template <char Tseparator> class SeparatorPrefixTree
 	{
 		if (path.isEmpty()) {
 			if (!m_contained) {
-				// remove all children - we are removing a prefix
 				clear();
 				return Succeeded;
 			}

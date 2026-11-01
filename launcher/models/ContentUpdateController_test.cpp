@@ -30,12 +30,10 @@
 #include "models/ContentUpdateController.h"
 
 /*
- * What can be tested without a MinecraftInstance or the network: the
- * update list the review dialog shows, the key filter a selection-only
- * check goes through, which recorded files the dependency check asks
- * about, what the mod health check's install asks the review for, and
- * forgetting origins on a real folder. The checks, version lookups and
- * downloads themselves all ask a provider.
+ * What can be tested without a MinecraftInstance or the network: the update
+ * list, the key filter of a selection-only check, which recorded files the
+ * dependency check asks about, what the health check's install asks the review
+ * for, and forgetting origins on a real folder.
  */
 class ContentUpdateControllerTest : public QObject
 {
@@ -70,7 +68,6 @@ class ContentUpdateControllerTest : public QObject
 		QCOMPARE(counted.count(), 1);
 		QCOMPARE(list.count(), 2);
 		QCOMPARE(list.checkedCount(), 2);
-		/* By name. */
 		QCOMPARE(list.index(0).data(ContentUpdateList::NameRole).toString(),
 				 QStringLiteral("Lithium"));
 		const QModelIndex row = list.index(1);

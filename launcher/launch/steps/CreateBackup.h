@@ -23,18 +23,10 @@
 #include "launch/LaunchStep.h"
 
 /*
- * CreateBackup — takes a "pre-launch" snapshot of the instance before
- * the game starts.
- *
- * Only prepended by LaunchController when the BackupBeforeLaunch setting
- * is on, so the step itself never has to second-guess the setting.
- *
- * A step rather than an inline call in LaunchController: the archive is
- * written on a worker thread by BackupTask, and being a step is what
- * gets the progress in front of the user (instance window / progress
- * dialog) while the launch waits for it. That is the core equivalent of
- * the MMCO_HOOK_FLAG_BACKGROUND registration the BackupSystem plugin
- * used for the same job.
+ * Takes a "pre-launch" snapshot of the instance before the game starts. Only
+ * prepended by LaunchController when BackupBeforeLaunch is on. A step because
+ * BackupTask writes the archive on a worker thread and a step puts its progress
+ * in front of the user while the launch waits.
  */
 class CreateBackup : public LaunchStep
 {

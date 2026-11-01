@@ -9,18 +9,14 @@
 #include <QString>
 #include <QStringList>
 
-/* The built-in icons the launcher hands out to instances that still have the
- * generic icon (iconKey "default", drawn as a grass block, or a bare platform
- * logo; see isGeneric()): without them a library of new instances is one
- * grass block after another. Only the QML looks Sahne, Sade and Gece draw
- * them (QmlShell::autoIcons); the instance's own iconKey is never written,
- * so picking an icon always wins, and Klasik and the widget UI keep the
- * grass block.
+/* The built-in icons handed to instances that still have the generic icon
+ * (iconKey "default" or a bare platform logo; see isGeneric()). Only the
+ * QML looks Sahne, Sade and Gece draw them (QmlShell::autoIcons); the
+ * instance's iconKey is never written, so picking an icon always wins.
  *
- * Each instance keeps the icon it was given (the map is persisted by the
- * caller), and a new one gets one no other instance has while the pool
- * lasts, starting from a slot hashed from its id, so the same library hands
- * out the same icons on every machine. */
+ * The map is persisted by the caller. A new instance gets an icon no other
+ * has while the pool lasts, from a slot hashed from its id so every
+ * machine hands out the same icons. */
 namespace AutoIcons
 {
 	struct Instance
@@ -29,20 +25,19 @@ namespace AutoIcons
 		QString iconKey;
 	};
 
-	/* The block and mob icons of the built-in set: no platform or loader
-	 * logos, not the grass block itself, nothing that reads as a copy of
-	 * another (squarecreeper next to creeper, dirt next to grass), and not
-	 * magitech, a glossy badge among pixel blocks. */
+	/* Kite's own blocks (kite_*, drawn by branding/instance_cubes.py), each
+	 * wearing the KITE band. None of them is made from a game texture, so
+	 * the game-texture icons (GameTextureIcons) never stand in for them and
+	 * every machine shows the same set. */
 	QStringList pool();
 
-	/* Whether @p key is an icon nobody picked: the generic one, or the
-	 * platform logo an import sets when the pack has no logo of its own
-	 * ("flame" for CurseForge, "modrinth"), which every such pack shares. */
+	/* Whether @p key is an icon nobody picked: the generic one, or the platform
+	 * logo an import sets when the pack has none ("flame", "modrinth"). */
 	bool isGeneric(const QString& key);
 
 	/* Instance id -> icon key for every generic instance in @p instances.
 	 * Entries of @p previous are kept while their instance is still generic
-	 * and their icon is still in @p pool; the others are dropped. */
+	 * and the icon is still in @p pool. */
 	QHash<QString, QString> assign(const QList<Instance>& instances,
 								   const QHash<QString, QString>& previous,
 								   const QStringList& pool);

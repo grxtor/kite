@@ -23,39 +23,19 @@
 #include <QLatin1String>
 #include <QString>
 
-/*
- * ─── Plugins that graduated into core ─────────────────────────────────
- *
- * Every module listed here once shipped as an in-tree .mmco plugin and
- * has since been absorbed into the launcher binary. Their old .mmco
- * files may still be sitting in a user's mmcmodules/ directory (or in a
- * distro package that has not caught up yet), and loading one now would
- * double up on everything core already does: two "Backups" tabs in the
- * instance dialog, two pre-launch snapshots per launch, two news
- * dialogs fighting over the same toolbar button.
- *
- * So the loader refuses to initialise them and reports the reason in
- * the plugins dialog instead of silently ignoring the file.
- *
- * Matching is case-insensitive and checks both the module's declared
- * name (MMCO_DEFINE_MODULE) and its file name, because a renamed .mmco
- * would otherwise slip past.
- *
- * ── Adding an entry ──
- * When a plugin graduates, append it here in the same commit that adds
- * its core implementation. Keep the detail string short: it is shown
- * verbatim in the plugins dialog next to the module name.
- */
+/* Plugins that graduated into core. Their old .mmco files may still sit in a user's mmcmodules/ (or
+ * a lagging distro package), and loading one would double up on what core does: two Backups tabs,
+ * two pre-launch snapshots, two news dialogs. The loader refuses to initialise them and reports why
+ * in Settings. Matching is case-insensitive on the declared name and the file name, so a
+ * renamed .mmco cannot slip past. Add an entry in the same commit as the core implementation; keep
+ * the detail string short, it is shown verbatim next to the module name. */
 
 struct CoreSupersededPlugin {
 	QLatin1String moduleName;
 	QLatin1String detail;
 };
 
-/*
- * Returns the matching entry, or nullptr when `name` is not a module
- * that core has taken over.
- */
+/* Returns the matching entry, or nullptr when `name` is not a module core has taken over. */
 inline const CoreSupersededPlugin*
 findCoreSupersededPlugin(const QString& name)
 {

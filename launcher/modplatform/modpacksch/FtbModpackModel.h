@@ -31,34 +31,22 @@
 
 class ModrinthModpackDetail;
 
-/* Feed The Beast (modpacks.ch) modpacks for QML - the widget-free
- * replacement for ui/pages/modplatform/ftb/FtbListModel.h +
- * FtbFilterModel.h, which back FtbPage.
+/* Feed The Beast (modpacks.ch) modpacks for QML. Same shape as the other
+ * modpack models.
  *
- * The same shape as ModrinthModpackModel and FlameModpackModel (the same
- * properties, invokables and role names), so the Discover page shows any
- * of them through one set of bindings.
- *
- * modpacks.ch has no search endpoint worth the name: like the widget
- * page, this asks once for every public pack id and then for each pack,
- * a batch at a time so rows appear as they arrive; searching and sorting
- * then happen here, over what is loaded (by name, summary and tags; by
- * plays, installs, name or last update). `searching` is true while the
- * catalogue is still coming in. A pack's detail is part of what was
- * already fetched, so loadDetail() needs no request of its own.
- *
- * install() starts ModpacksCH::PackInstallTask, which fetches the chosen
- * version's manifest and files itself.
- */
+ * modpacks.ch has no real search endpoint: this fetches every public pack
+ * id, then the packs in batches so rows appear as they arrive, and
+ * searches and sorts locally. `searching` is true while the catalogue
+ * loads. A pack's detail is already fetched, so loadDetail() makes no
+ * request. install() starts ModpacksCH::PackInstallTask. */
 class FtbModpackModel : public QAbstractListModel
 {
 	Q_OBJECT
 	Q_PROPERTY(QString query READ query WRITE setQuery NOTIFY queryChanged)
 	Q_PROPERTY(QString sort READ sort WRITE setSort NOTIFY sortChanged)
 	Q_PROPERTY(QVariantList sortOptions READ sortOptions CONSTANT)
-	/* Kept for the shared bindings; modpacks.ch lists no Minecraft
-	 * version per pack without a request per version, so it is not used
-	 * to filter. */
+	/* Kept for the shared bindings; modpacks.ch lists no Minecraft version
+	 * per pack, so it does not filter. */
 	Q_PROPERTY(QString gameVersion READ gameVersion WRITE setGameVersion
 				   NOTIFY gameVersionChanged)
 	/* "" = any loader; otherwise matched against the pack's tags. */
@@ -71,13 +59,12 @@ class FtbModpackModel : public QAbstractListModel
 	Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 	Q_PROPERTY(QObject* detail READ detail CONSTANT)
 	Q_PROPERTY(QString providerName READ providerName CONSTANT)
-	/// "markdown": a pack's description is Markdown, as FtbPage read it.
+	/// "markdown": a pack's description is Markdown.
 	Q_PROPERTY(QString bodyFormat READ bodyFormat CONSTANT)
-	/// Always false; modpacks.ch needs no key. Here for the shared bindings.
+	/// Always false; modpacks.ch needs no key.
 	Q_PROPERTY(bool keyMissing READ keyMissing CONSTANT)
 
   public:
-	/* The same role names as ModrinthModpackModel. */
 	enum Roles {
 		ProjectIdRole = Qt::UserRole + 1,
 		SlugRole,
@@ -162,35 +149,28 @@ class FtbModpackModel : public QAbstractListModel
 		return false;
 	}
 
-	/// Loads the catalogue the first time; filters and sorts what is
-	/// loaded every time.
+	/// Loads the catalogue the first time; filters and sorts every time.
 	Q_INVOKABLE void search();
-	/// Nothing to page: the whole catalogue loads by itself.
 	Q_INVOKABLE void fetchMore() {}
-	/// Fills `detail` from the loaded pack; no request.
 	Q_INVOKABLE void loadDetail(const QString& projectId);
-	/* Starts ModpacksCH::PackInstallTask for version `versionId` (one of
-	 * the ids in `detail.versions`) of pack `projectId`, and returns a
-	 * TaskWatcher for it (parented to this model); nullptr when either
-	 * names nothing loaded. */
+	/* Starts ModpacksCH::PackInstallTask for version `versionId` (in
+	 * `detail.versions`) of pack `projectId` and returns a TaskWatcher for it
+	 * (parented to this model); nullptr when either names nothing loaded. */
 	Q_INVOKABLE QObject* install(const QString& projectId,
 								 const QString& versionId,
 								 const QString& instanceName,
 								 const QString& group);
 
-	/* The catalogue index reply -> pack ids. Static, for tests. */
 	static QList<int> parseIndex(const QByteArray& bytes);
 	/* One pack's reply -> `out`; false when it does not parse or has no
-	 * version (the widget list skipped those too). Static, for tests. */
+	 * version. Static, for tests. */
 	static bool parsePack(const QByteArray& bytes, ModpacksCH::Modpack& out);
-	/* Positions in @p packs that match @p query and @p loader, in @p sort
-	 * order ("plays", "installs", "name", "updated"). Static, for tests. */
+	/* Positions in @p packs matching @p query and @p loader, in @p sort order
+	 * ("plays", "installs", "name", "updated"). Static, for tests. */
 	static QList<int> filterAndSort(const QList<ModpacksCH::Modpack>& packs,
 									const QString& query, const QString& loader,
 									const QString& sort);
-	/* The `versions` of the detail, newest first, in the shared shape. */
 	static QVariantList versionEntries(const ModpacksCH::Modpack& pack);
-	/* The art of @p type ("square", "splash", ...), or "". */
 	static QString artUrl(const ModpacksCH::Modpack& pack, const QString& type);
 
   signals:
@@ -210,14 +190,10 @@ class FtbModpackModel : public QAbstractListModel
 	void loadNextBatch();
 	void refilter();
 	const ModpacksCH::Modpack* packFor(const QString& projectId) const;
-	QString resolveIconKey(const ModpacksCH::Modpack& pack) const;
 
   private:
-	/// Every pack loaded so far, in arrival order.
 	QList<ModpacksCH::Modpack> m_packs;
-	/// What the view shows: positions in m_packs.
 	QList<int> m_rows;
-	/// Pack ids still to fetch.
 	QList<int> m_pending;
 
 	QString m_query;

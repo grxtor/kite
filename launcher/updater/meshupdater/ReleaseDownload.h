@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <QCryptographicHash>
 #include <QString>
 #include <QUrl>
 
@@ -37,16 +38,18 @@ class ReleaseDownload : public Task
 					const QString& path, QObject* parent = nullptr);
 	~ReleaseDownload() override;
 
-	/*!
-	 * Size the release listing promised, in bytes. 0 means "unknown".
-	 *
-	 * Checked after the transfer: HTTPS protects the bytes in flight, but not
-	 * against a proxy or a CDN handing back a truncated body with a perfectly
-	 * good status code.
-	 */
+	/*! Size the release listing promised, in bytes; 0 means unknown. Checked after the transfer,
+	 * since a proxy or CDN can return a truncated body with a good status code. */
 	void setExpectedSize(qint64 bytes)
 	{
 		m_expectedSize = bytes;
+	}
+
+	/*! Lowercase hex SHA-256 the file must have; empty means unchecked. Compared after the
+	 * transfer, before the file takes its real name. */
+	void setExpectedSha256(const QString& hex)
+	{
+		m_expectedSha256 = hex.toLower();
 	}
 
 	bool canAbort() const override
@@ -86,6 +89,8 @@ class ReleaseDownload : public Task
 	QFile* m_file = nullptr;
 
 	qint64 m_expectedSize = 0;
+	QString m_expectedSha256;
+	QCryptographicHash m_hash{QCryptographicHash::Sha256};
 	qint64 m_received = 0;
 	bool m_aborted = false;
 };

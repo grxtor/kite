@@ -23,28 +23,11 @@
 #include <QLoggingCategory>
 #include <QString>
 
-/*
- * Logging categories for the launcher's own output.
- *
- * A category does two things for us: it tags the line in the log, so a reader
- * can tell our noise apart from Qt's, and it gives users a filter they can
- * aim, for example
- *
- *     QT_LOGGING_RULES="kite.net.debug=false"
- *
- * to silence one subsystem without losing its warnings.
- *
- * To add one: declare it here, define it in Logging.cpp with the matching
- * "kite.<subsystem>" string, then use qCDebug(<name>) instead of qDebug()
- * in that subsystem. Uncategorised qDebug() keeps working and keeps printing
- * exactly as it did - Qt reports its category as "default", which the log
- * layout treats as "no category" and omits.
- *
- * NOTE: only declare categories that are actually in use. An unused category
- * is a promise about where messages come from that nothing keeps.
- */
+/* Logging categories for the launcher's own output. A category tags the line
+ * and gives users a filter, e.g. QT_LOGGING_RULES="kite.net.debug=false". To
+ * add one: declare it here, define it in Logging.cpp as "kite.<subsystem>",
+ * and use qCDebug(<name>). Only declare categories in use. */
 
-/// Downloads, HTTP caching, network jobs. And more.
 Q_DECLARE_LOGGING_CATEGORY(netLog)
 Q_DECLARE_LOGGING_CATEGORY(mojangLog)
 Q_DECLARE_LOGGING_CATEGORY(metaLog)
@@ -61,41 +44,21 @@ Q_DECLARE_LOGGING_CATEGORY(minecraftlaunchLog)
 
 namespace Logging
 {
-	/**
-	 * @brief the launcher's log line layout, as a Qt message pattern
-	 *
-	 * Handed to qSetMessagePattern() so that Qt's own formatter does the
-	 * work; that is what makes %{category} and a readable %{function}
-	 * available at all.
-	 *
-	 * @param coloured whether to wrap the level letter in ANSI colour, which
-	 *                 is wanted for the console copy but not for the log file
-	 * @param withSourceLocation whether to append "(function:line)"
-	 *
-	 * withSourceLocation is a per-message decision, not a per-build one: Qt's
-	 * own libraries are built without QT_MESSAGELOGCONTEXT, so anything
-	 * raised inside Qt arrives with an empty context and must be rendered
-	 * without the suffix, or every such line ends in a useless "(unknown:0)".
-	 * The caller decides by looking at QMessageLogContext::line.
-	 */
+	/** The log line layout as a Qt message pattern for qSetMessagePattern().
+	 * @param coloured wrap the level letter in ANSI colour (console copy, not
+	 * the file). @param withSourceLocation append "(function:line)"; per
+	 * message, since Qt's own messages have no context and would end in
+	 * "(unknown:0)". */
 	QString messagePattern(bool coloured, bool withSourceLocation);
 
-	/**
-	 * @brief make the console able to render ANSI colour, and report whether
-	 *        it now can
-	 *
-	 * Call once, early, and after the console has been attached and the
-	 * standard streams reopened - the answer depends on what stderr actually
-	 * points at.
-	 *
-	 * This is not a formality on Windows: a console does not interpret escape
-	 * sequences until someone sets ENABLE_VIRTUAL_TERMINAL_PROCESSING on it,
-	 * and the classic console host starts with that bit clear. Printing
-	 * colour anyway is how a log line ends up reading "<ESC>[32mD:<ESC>[0m".
-	 */
+	/** Makes the console able to render ANSI colour; reports whether it now
+	 * can. Call once, early, after the console is attached and the standard
+	 * streams reopened (the answer depends on what stderr points at). A
+	 * Windows console does not interpret escapes until
+	 * ENABLE_VIRTUAL_TERMINAL_PROCESSING is set. */
 	bool prepareConsoleColour();
 
-	/// Whether the console copy of a log line may carry ANSI colour. False
-	/// until prepareConsoleColour() has said otherwise.
+	/// Whether the console copy of a log line may carry ANSI colour; false
+	/// until prepareConsoleColour() says otherwise.
 	bool consoleColourEnabled();
 } // namespace Logging

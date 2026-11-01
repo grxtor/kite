@@ -6,8 +6,8 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
-// An accent fill along a calm grey groove, with a white knob. Hovering the
-// slider wraps the knob in a soft accent halo; dragging it widens the halo.
+// An accent fill along a grey groove, with a white knob. Hovering wraps the
+// knob in a soft accent halo; dragging widens it.
 T.Slider {
     id: control
 
@@ -25,12 +25,12 @@ T.Slider {
         implicitWidth: Theme.icon.md - Theme.space.xxs
         implicitHeight: Theme.icon.md - Theme.space.xxs
         radius: width / 2
-        // White in both themes, like Switch's knob; a hairline keeps it
-        // from melting into light mode's pale groove and white cards. On a
-        // near-white accent it takes the accent's ink, as Switch's does.
+        // White in both themes, like Switch's knob; a hairline keeps it from
+        // melting into light mode's pale groove. On a near-white accent it takes
+        // the accent's ink.
         color: Theme.lightAccent ? Theme.palette.textOnAccent : Theme.media.text
         border.width: Theme.dark ? 0 : 1
-        border.color: Qt.rgba(0, 0, 0, 0.12)
+        border.color: Theme.neutral.knobEdge
         opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         // The hover/drag halo, under the knob.
@@ -64,8 +64,8 @@ T.Slider {
         width: control.horizontal ? control.availableWidth : implicitWidth
         height: control.horizontal ? implicitHeight : control.availableHeight
         radius: Theme.radius.pill
-        // The same calm grey as Switch's off track: translucent, so it reads
-        // on light mode's white cards as well as on dark surfaces.
+        // Switch's off-track grey: translucent, so it reads on light cards and
+        // dark surfaces alike.
         color: control.hovered && control.enabled ? Theme.neutral.trackHover : Theme.neutral.track
         scale: control.horizontal && control.mirrored ? -1 : 1
 

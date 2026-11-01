@@ -24,7 +24,6 @@
 #include "plugin/PluginMetadata.h"
 #include "plugin/PluginHooks.h"
 #include "plugin/PluginAPI.h"
-#include "plugin/PluginUiRenderer.h"
 
 #include "news/NewsEntry.h"
 
@@ -46,26 +45,15 @@
 #include <vector>
 #include <functional>
 
-class BasePage;
 class NewsChecker;
-class QAction;
 class QEvent;
 class QMenu;
 class QSystemTrayIcon;
-class QWidget;
 class QWindow;
 
-/*
- * PluginManager — owns the plugin lifecycle and provides the bridge
- * between loaded .mmco modules and Kite internals.
- *
- * Responsibilities:
- *   - Discover and load modules via PluginLoader
- *   - Build MMCOContext for each module (populating function pointers)
- *   - Call mmco_init() / mmco_unload()
- *   - Dispatch hooks to registered callbacks
- *   - Implement the API functions that back MMCOContext
- */
+/* PluginManager owns the plugin lifecycle and bridges loaded .mmco modules to Kite: discovery via
+ * PluginLoader, building each MMCOContext, mmco_init()/mmco_unload(), hook dispatch, and the API
+ * functions behind MMCOContext. */
 
 class Application;
 
@@ -77,63 +65,31 @@ class PluginManager : public QObject
 	explicit PluginManager(Application* app, QObject* parent = nullptr);
 	~PluginManager() override;
 
-	/*
-	 * Discover and initialise all modules. Called once during
-	 * Application startup, after subsystems are ready.
-	 */
+	/* Discovers and initialises all modules; called once at startup, after subsystems are ready. */
 	void initializeAll();
 
-	/*
-	 * Gracefully shut down all modules (calls mmco_unload() in
-	 * reverse load order, then dlclose).
-	 */
+	/* Calls mmco_unload() on all modules in reverse load order. */
 	void shutdownAll();
 
-	/*
-	 * Dispatch a hook to all registered listeners.
-	 * Returns true if any callback signalled cancellation (non-zero return).
-	 */
+	/* Dispatches a hook to all registered listeners. Returns true if any callback cancelled
+	 * (non-zero return). */
 	bool dispatchHook(uint32_t hook_id, void* payload = nullptr);
 
-	/*
-	 * Query loaded modules.
-	 */
 	const QVector<PluginMetadata>& modules() const
 	{
 		return m_modules;
 	}
-	int moduleCount() const
-	{
-		return m_modules.size();
-	}
 
-	/*
-	 * Disable / enable management.
-	 *
-	 * The disabled-set is persisted in the application settings under
-	 * the key "plugins.disabled" as a comma-separated list of module
-	 * names (case-insensitive). Toggling a module DOES NOT load or
-	 * unload anything at runtime — the change takes effect on the next
-	 * launcher start. PluginsDialog calls these to mutate the set; the
-	 * dialog warns the user that a restart is required.
-	 */
+	/* The disabled set is persisted in the application settings under "plugins.disabled"
+	 * (comma-separated module names, case-insensitive). Toggling loads or unloads nothing at
+	 * runtime; it takes effect on the next launcher start (the Installed plugins section says so). */
 	bool isModuleDisabled(const QString& moduleName) const;
 	void setModuleDisabled(const QString& moduleName, bool disabled);
 	QSet<QString> disabledModuleNames() const;
 
-	/*
-	 * ─── ABI 5 — Declarative UI surfaces ──────────────────────────────
-	 *
-	 * Every ui_surface_create() call is recorded here as a SurfaceInfo
-	 * — anchor, optional instance-id context, title/icon, and the
-	 * current "mmco-ui/1" JSON document — independent of whether the
-	 * widget renderer currently has anything on screen for it. This is
-	 * the seam a future QML-based shell renders from instead of the
-	 * QWidget tree PluginUiRenderer builds today: read the snapshot,
-	 * watch surfacesChanged() for updates, and call deliverUiEvent()
-	 * to report clicks/changes back to the owning plugin exactly the
-	 * way a rendered QWidget does internally.
-	 */
+	/* ABI 5 declarative UI surfaces. Each ui_surface_create() is recorded as a SurfaceInfo (anchor,
+	 * optional instance-id context, title/icon, current "mmco-ui/1" JSON). A renderer reads the
+	 * snapshot, watches surfacesChanged() and reports events through deliverUiEvent(). */
 	struct SurfaceInfo {
 		void* handle = nullptr; /* opaque; same value ui_surface_create returned */
 		QString surfaceId;
@@ -144,65 +100,21 @@ class PluginManager : public QObject
 		QString document; /* current "mmco-ui/1" JSON, as text */
 	};
 
-	/*
-	 * Snapshot of every live surface. `anchor` filters to one
-	 * MMCOUiAnchor value, or pass -1 for "any". `anchorContext`
-	 * filters to an exact instance id, or pass a default-constructed
-	 * (null) QString for "any context" — a real-but-empty QString("")
-	 * matches only GLOBAL_SETTINGS surfaces, which always have an
-	 * empty context.
-	 */
+	/* Snapshot of every live surface. `anchor` filters to one MMCOUiAnchor (-1 = any);
+	 * `anchorContext` to an exact instance id (a null QString = any; an empty non-null QString
+	 * matches only GLOBAL_SETTINGS surfaces). */
 	QList<SurfaceInfo> surfaces(int anchor = -1,
 							   const QString& anchorContext = QString()) const;
 
-	/*
-	 * Deliver a synthetic UI event to a surface's registered
-	 * MMCOUiEventCallback — what a future QML renderer calls instead
-	 * of relying on PluginUiRenderer's own Qt signal/slot wiring.
-	 * No-op if surfaceId names no live surface.
-	 */
+	/* Delivers a UI event to a surface's MMCOUiEventCallback, as a rendered view would. No-op if
+	 * surfaceId names no live surface. */
 	void deliverUiEvent(const QString& surfaceId, const QString& nodeId,
 						const QString& event, const QString& valueJson);
 
-	/*
-	 * Host-internal widget builders — used by InstancePageProvider,
-	 * Application's global-settings page provider, and the
-	 * INSTANCE_SETTINGS_PAGE_CREATED bridge below to turn the surfaces
-	 * above into the current widget UI. Each call renders fresh
-	 * QWidgets from the surface's current document; every returned
-	 * page/widget is caller-owned.
-	 */
-
-	/* One BasePage per MMCO_UI_ANCHOR_INSTANCE_PAGE surface anchored to
-	 * `instanceId` — these become their own tabs in the instance
-	 * window, alongside GitVersioningPage-style plugin pages. */
-	QList<BasePage*> createInstancePages(const QString& instanceId);
-
-	/* A single "Plugins" BasePage stacking every
-	 * MMCO_UI_ANCHOR_GLOBAL_SETTINGS surface as a titled section, or
-	 * nullptr if there are none — inserted into the global Settings
-	 * dialog's page list. */
-	BasePage* createGlobalSettingsPluginsPage();
-
-	/*
-	 * ScratchString — the per-module scratch buffer that backs every
-	 * `const char*` getter in the plugin API.
-	 *
-	 * The ABI contract is "the returned pointer stays valid until the
-	 * next API call by the same module". This used to be a plain
-	 * std::string member of ModuleRuntime, which is only correct while
-	 * every call happens on the GUI thread: as soon as a hook callback
-	 * runs on a worker thread, two threads write the same buffer and a
-	 * reader can be handed a pointer that the other thread has already
-	 * reallocated.
-	 *
-	 * The bytes therefore live in thread-local storage keyed by the
-	 * ScratchString instance, which turns the contract into "valid
-	 * until the next API call by the same module *on the same thread*"
-	 * — what callers actually rely on, and safe for background hooks.
-	 * Call sites are untouched: assignment, c_str(), data() and
-	 * assign() all forward to the calling thread's own copy.
-	 */
+	/* Per-module scratch buffer behind every `const char*` getter: the returned pointer stays valid
+	 * until the module's next API call *on the same thread*. The bytes live in thread-local storage
+	 * keyed by the instance, so background hook threads never share a buffer. assign(), c_str(),
+	 * data() and assignment forward to the calling thread's copy. */
 	class ScratchString
 	{
 	  public:
@@ -222,63 +134,45 @@ class PluginManager : public QObject
 		const char* data() const;
 	};
 
-	/*
-	 * ModuleRuntime — the opaque object behind module_handle.
-	 * Lets static API callbacks find their way back to the manager.
-	 * Public so helper functions in the .cpp can use it.
-	 */
+	/* The opaque object behind module_handle; lets static API callbacks find their way back to the
+	 * manager. Public so helpers in the .cpp can use it. */
 	struct ModuleRuntime {
 		PluginManager* manager;
 		int moduleIndex;
-		/* Written once during initializeAll(), read-only afterwards —
-		 * safe to hand out from any thread. */
+		/* Written once in initializeAll(); read-only afterwards, so safe from any thread. */
 		std::string dataDir;
 		ScratchString tempString;
 	};
 
 	Application* m_app;
 
-	/*
-	 * QObject event filter — installed on the main window when at least
-	 * one plugin has registered a close-event callback via
-	 * main_window_install_close_filter(). Intercepts QCloseEvent and
-	 * lets registered callbacks decide whether to accept or swallow it.
-	 */
+	/* Installed on the main window when a plugin registers a close callback via
+	 * main_window_install_close_filter(); lets the callbacks accept or swallow the QCloseEvent. */
 	bool eventFilter(QObject* watched, QEvent* event) override;
 
   signals:
-	void moduleLoaded(const QString& name);
-	void moduleUnloaded(const QString& name);
-	void moduleError(const QString& name, const QString& error);
-	/* Any surface was created/updated/destroyed — a future QML shell
-	 * (or anything else watching surfaces()) re-reads on this. */
+	/* Any surface was created, updated or destroyed; surfaces() readers re-read on this. */
 	void surfacesChanged();
 
   private:
-	/* Build an MMCOContext for a specific module */
 	MMCOContext buildContext(PluginMetadata& meta);
 
-	/* Ensure the plugin data directory exists */
 	void ensurePluginDataDir(PluginMetadata& meta);
 
-	/* ── API implementation (static callbacks wired into MMCOContext) ── */
-	/* These are static so they can be used as C function pointers.
-	 * They resolve the PluginManager instance via the module_handle,
-	 * which is actually a pointer to a ModuleRuntime struct.
-	 */
+	/* API implementation: static so they can be C function pointers; they resolve the PluginManager
+	 * through module_handle, a ModuleRuntime pointer. */
 
 	struct HookRegistration {
 		void* module_handle;
 		MMCOHookCallback callback;
 		void* user_data;
-		/* MMCO_HOOK_FLAG_* — 0 for anything registered through the
-		 * plain hook_register, which keeps the inline behaviour. */
+		/* MMCO_HOOK_FLAG_*; 0 for plain hook_register (inline). */
 		uint32_t flags;
 	};
 
-	/* Runs the background-flagged callbacks of one dispatch as a
-	 * SequentialTask behind a ProgressDialog, one row per module.
-	 * Returns true if one of them vetoed the operation. */
+	/* Runs the background-flagged callbacks of one dispatch as a SequentialTask behind a single
+	 * showBusy("Waiting for plugins...") indication; per-module progress is not shown. Returns true
+	 * if one vetoed. */
 	bool runBackgroundHooks(uint32_t hook_id, void* payload,
 							const QVector<HookRegistration>& regs);
 
@@ -600,11 +494,8 @@ class PluginManager : public QObject
 	static int api_main_window_hide(void* mh);
 	static int api_main_window_is_visible(void* mh);
 
-	/* S17 — News API.
-	 *
-	 * Read-only projection of MainWindow's NewsChecker, which owns and
-	 * parses every feed. Both helpers cope with there being no main
-	 * window yet (startup) or any more (shutdown). */
+	/* S17 News API: read-only projection of Application::newsChecker(), which owns and parses every
+	 * feed. */
 	NewsChecker* newsChecker() const;
 	QList<NewsEntryPtr> newsEntries() const;
 	static int api_news_get_entry_count(void* mh);
@@ -631,38 +522,21 @@ class PluginManager : public QObject
 	QMultiMap<uint32_t, HookRegistration> m_hooks;
 
   private:
-	/* NOTE: the instance toolbar actions a plugin could once register here
-	 * are gone along with the API that fed them (ui_register_instance_action
-	 * / _cb, deprecated no-ops in ABI 3-4, removed entirely in ABI 5). A
-	 * plugin's per-instance UI belongs on an instance-window page instead
-	 * — see ui_surface_create's MMCO_UI_ANCHOR_INSTANCE_PAGE in PluginAPI.h. */
-
-	/* Pending launch modifications (set by plugins during PRE_LAUNCH hooks).
-	 *
-	 * PRE_LAUNCH callbacks may run on a worker thread while
-	 * LaunchController reads the collected values on the GUI thread, so
-	 * every access goes through m_launchModMutex. The mutex is
-	 * recursive-free: no method below calls another one that locks. */
+	/* Pending launch modifications set by plugins during PRE_LAUNCH hooks. Those callbacks may run
+	 * on a worker thread while LaunchController reads the values on the GUI thread, so every access
+	 * takes m_launchModMutex (non-recursive: no method below calls another one that locks). */
 	mutable QMutex m_launchModMutex;
 	QMap<QString, QString> m_pendingLaunchEnv;
 	QString m_pendingLaunchWrapper;
 
-	/* S17 — News: no state. NewsChecker holds the feeds and the
-	 * entries; see newsChecker() above. */
-
-	/* S19 / S20 — system-tray and main-window helpers state.
-	 * All tray icons and close filters are tracked per owning module so
-	 * PluginManager can release them en masse when a module is
-	 * unloaded — preventing leaks and dangling Qt parents. */
+	/* S19 / S20 state. Tray icons and close filters are tracked per owning module so they can be
+	 * released together on unload. */
 	struct TrayRecord {
 		void* module_handle;
 		QSystemTrayIcon* icon;
 		QObject* guard; /* relay for activation signal */
-		/* ABI 5 — the one QMenu a tray's declarative menu doc is
-		 * rendered into by api_tray_set_menu(); rebuilt in place on
-		 * every call instead of the plugin creating/owning it via the
-		 * removed tray_menu_* family. nullptr until the first
-		 * tray_set_menu() call. */
+		/* The one QMenu api_tray_set_menu() renders the menu document into, rebuilt in place on
+		 * every call; nullptr until the first tray_set_menu(). */
 		QMenu* menu = nullptr;
 	};
 	struct CloseFilterRecord {
@@ -673,24 +547,13 @@ class PluginManager : public QObject
 	QVector<TrayRecord> m_trayIcons;
 	QVector<CloseFilterRecord> m_closeFilters;
 	bool m_closeFilterInstalled = false;
-	QPointer<QWidget> m_filteredMainWindow;
-	/* The QML shell's root QWindow, cached the same way
-	 * m_filteredMainWindow is -- see resolveShellWindow(). Only ever set
-	 * when there is no widget MainWindow (the QML shell is the active
-	 * UI); both can't be non-null at once. */
+	/* The QML shell's root QWindow, cached (see resolveShellWindow()). */
 	QPointer<QWindow> m_filteredShellWindow;
 
-	/* S23 (ABI 3+) — per-module per-instance running-state callbacks.
-	 *
-	 * Each record owns one QObject `guard` that anchors the Qt
-	 * QObject::connect to the resolved BaseInstance's
-	 * runningStatusChanged signal. mmco_unload() / module teardown
-	 * deletes the guard, which severs the connection automatically
-	 * — Qt's normal sender/receiver bookkeeping then guarantees the
-	 * plugin's callback can never fire into freed memory.
-	 *
-	 * A single module may have at most one record per (module_handle,
-	 * instance_id) pair; re-registering replaces the existing one. */
+	/* S23 (ABI 3+): per-module, per-instance running-state callbacks. Each record's `guard` QObject
+	 * anchors the connection to the instance's runningStatusChanged; deleting it on unload severs
+	 * the connection, so the callback never fires into freed memory. One record per (module_handle,
+	 * instance_id); re-registering replaces it. */
 	struct InstanceRunningRecord {
 		void* module_handle;
 		QString instanceId;
@@ -700,23 +563,8 @@ class PluginManager : public QObject
 	};
 	QVector<InstanceRunningRecord> m_instanceRunning;
 
-	/* ─── ABI 5 — Declarative UI surfaces ─────────────────────────────
-	 *
-	 * One record per ui_surface_create() call. `doc` is the canonical,
-	 * always-current parsed document — the single source of truth
-	 * every accessor (surfaces(), the widget builders below) reads
-	 * from. `mountedRoot`/`mountedRenderer` track whichever rendered
-	 * widget is *currently on screen* for this surface, if any: since
-	 * every page/dialog that displays a surface is rebuilt fresh each
-	 * time it is opened (same as the old per-plugin BasePage pattern),
-	 * ui_surface_update/_set/_set_rows always patch `doc` and — when a
-	 * view happens to be mounted right now — also patch that live
-	 * widget immediately, so e.g. GitVersioning's row-selection ->
-	 * button-enabled wiring stays instant while the instance page is
-	 * open. mountedRoot is a QPointer so it self-clears the moment
-	 * Qt tears down that view; mountedRenderer is only ever
-	 * dereferenced while mountedRoot is still non-null (they share the
-	 * same lifetime — see PluginManager.cpp's RendererOwner). */
+	/* One record per ui_surface_create(). `doc` is the canonical parsed document that surfaces()
+	 * reads; ui_surface_update/_set/_set_rows patch it. */
 	struct SurfaceRecord {
 		void* module_handle = nullptr;
 		QString surfaceId;
@@ -727,55 +575,25 @@ class PluginManager : public QObject
 		QJsonObject doc;
 		MMCOUiEventCallback cb = nullptr;
 		void* userData = nullptr;
-		QPointer<QWidget> mountedRoot;
-		PluginUiRenderer::RenderedSurface* mountedRenderer = nullptr;
 	};
 	std::vector<std::unique_ptr<SurfaceRecord>> m_surfaces;
 	int m_nextSurfaceSeq = 0;
 
-	/* Find the SurfaceRecord a `void* surface` handle refers to (the
-	 * handle is that record's own stable heap address), or nullptr. */
+	/* Finds the SurfaceRecord a `void* surface` handle refers to (its own stable heap address), or
+	 * nullptr. */
 	SurfaceRecord* findSurface(void* module_handle, void* surface);
-	/* Build the EventSink that forwards PluginUiRenderer callbacks into
-	 * a surface's MMCOUiEventCallback. */
-	static PluginUiRenderer::EventSink makeSurfaceSink(SurfaceRecord* rec);
-	/* Render every surface at (anchor, anchorContext) into one
-	 * QWidget stacking a titled QGroupBox per surface, or nullptr if
-	 * there are none. Shared by createGlobalSettingsPluginsPage() and
-	 * the INSTANCE_SETTINGS_PAGE_CREATED bridge in connectAppSignals(). */
-	QWidget* buildPluginsSectionWidget(int anchor, const QString& anchorContext);
-	/* Release every SurfaceRecord owned by `module_handle` — called
-	 * from releaseTrayResourcesForModule() so ABI 5 surfaces get the
-	 * same per-module teardown as tray icons/menus. */
+	/* Releases every SurfaceRecord owned by `module_handle`; called from
+	 * releaseTrayResourcesForModule(). */
 	void releaseSurfacesForModule(void* module_handle);
 
-	/* Resolve the launcher's main window (objectName == "MainWindow"),
-	 * cached for the lifetime of the QPointer. Returns nullptr if the
-	 * window has not been built yet, or when the QML shell is the
-	 * active UI instead (see resolveShellWindow()). */
-	QWidget* resolveMainWindow();
-	/* Resolve the QML shell's top-level QWindow via Application, cached
-	 * for the lifetime of the QPointer — the generalised counterpart to
-	 * resolveMainWindow() for main_window_show/hide/is_visible and the
-	 * close filter when the widget MainWindow does not exist. Returns
-	 * nullptr before the shell has been shown, or when the widget
-	 * MainWindow is the active UI instead. */
+	/* Resolves the QML shell's top-level QWindow via Application, cached; used by main_window_*
+	 * and the close filter. nullptr before the shell is shown. */
 	QWindow* resolveShellWindow();
-	/* Make sure our QObject::eventFilter is installed on whichever
-	 * top-level window is active (widget MainWindow or the QML shell's
-	 * window). Safe to call multiple times — installs at most once. */
+	/* Installs our eventFilter on the QML shell window, at most once. */
 	void ensureCloseFilterInstalled();
-	/* Release all S19/S20/S23 resources owned by the given module
-	 * handle.  Called from shutdownAll() right before mmco_unload(). */
+	/* Releases all S19/S20/S23 resources of a module; called from shutdownAll() before
+	 * mmco_unload(). */
 	void releaseTrayResourcesForModule(void* module_handle);
-
-	/* Wire the two Application Qt signals we re-publish as hooks:
-	 *   • globalSettingsAboutToOpen   ->
-	 * MMCO_HOOK_GLOBAL_SETTINGS_ABOUT_TO_OPEN • instanceSettingsPageCreated ->
-	 * MMCO_HOOK_INSTANCE_SETTINGS_PAGE_CREATED Called once from initializeAll()
-	 * after modules are up. The connections are owned by `this` (PluginManager
-	 * is a QObject) and severed automatically on destruction. */
-	void connectAppSignals();
 
 	bool m_shutdownDone = false;
 

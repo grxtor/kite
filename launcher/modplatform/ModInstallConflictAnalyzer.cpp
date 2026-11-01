@@ -21,23 +21,6 @@
 
 #include "minecraft/mod/ModMetadataIndex.h"
 
-const char* ModInstallConflictAnalyzer::statusLabel(Status s)
-{
-	switch (s) {
-		case Status::Fresh:
-			return "Fresh";
-		case Status::AlreadyInstalled:
-			return "Already installed";
-		case Status::UpdateAvailable:
-			return "Update available";
-		case Status::NameConflict:
-			return "Name conflict";
-		case Status::FileNameClash:
-			return "File name clash";
-	}
-	return "?";
-}
-
 QList<ModInstallConflictAnalyzer::Decision> ModInstallConflictAnalyzer::analyze(
 	const QList<ModPlatform::DownloadItem>& items,
 	std::shared_ptr<ModMetadataIndex> index)
@@ -55,8 +38,8 @@ QList<ModInstallConflictAnalyzer::Decision> ModInstallConflictAnalyzer::analyze(
 			continue;
 		}
 
-		// 1) Strongest signal: a sidecar with the same platform+projectId
-		//    pins this exact mod, regardless of file name churn.
+		// 1) A sidecar with the same platform+projectId pins this exact mod,
+		//    whatever happened to the file name.
 		ModMetadataIndex::Entry sameProject;
 		if (!item.platform.isEmpty() && !item.projectId.isEmpty()) {
 			sameProject =
@@ -80,11 +63,9 @@ QList<ModInstallConflictAnalyzer::Decision> ModInstallConflictAnalyzer::analyze(
 			continue;
 		}
 
-		// 2) Same normalized name but a different platform / project.
-		//    Could be the same mod via a different distribution channel
-		//    (e.g. user previously installed the Modrinth build, now the
-		//    CurseForge one is selected). Surface as a conflict so the
-		//    caller can decide.
+		// 2) Same normalized name from another platform/project, e.g. the
+		//    Modrinth build installed and the CurseForge one selected: a conflict
+		//    the caller decides.
 		const QString normalized = ModMetadataIndex::normalizeName(item.name);
 		ModMetadataIndex::Entry sameName;
 		if (!normalized.isEmpty()) {
@@ -98,17 +79,15 @@ QList<ModInstallConflictAnalyzer::Decision> ModInstallConflictAnalyzer::analyze(
 									? QStringLiteral("Local copy")
 									: sameName.platform,
 								sameName.fileName);
-			// Treat as a forced replace so the caller can opt in by
-			// keeping the item in the plan.
+			// A forced replace the caller can opt into by keeping the item.
 			d.item.replaceExisting = true;
 			d.item.replacesFileName = sameName.fileName;
 			out.append(d);
 			continue;
 		}
 
-		// 3) Same target file name, different origin. This is the case
-		//    where two unrelated mods share a filename — keep the planned
-		//    download but ask the downloader to overwrite.
+		// 3) Same target file name, different origin (two unrelated mods): keep
+		//    the download but have the downloader overwrite.
 		if (index->contains(item.fileName)) {
 			d.status = Status::FileNameClash;
 			d.reason = QStringLiteral("A different file named %1 is already "

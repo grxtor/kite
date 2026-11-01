@@ -132,21 +132,17 @@ void FriendsController::request(const QByteArray& verb, const QString& path,
 								bool retried, bool keepAnswer)
 {
 	const int epoch = m_epoch;
-	/* Another account is the default: what is held is the one before's, and
-	 * this request is for the new one. */
+	/* Another account is the default: what is held is the previous one's. */
 	dropDataOfOtherAccount(defaultProfileId());
-	/* It is held for the account asked for from here on, also before that
-	 * account has a session: another account becoming the default meanwhile
-	 * (while the sign-in waits for a token, say) must drop this request too,
-	 * and not let it go out as the new one. */
+	/* Held for the account asked for from here on, also before it has a session:
+	 * another account becoming default meanwhile must drop this request too. */
 	if (m_dataProfile.isEmpty()) {
 		m_dataProfile = FriendsApi::undashed(defaultProfileId());
 	}
 	const int accountGen = m_accountGen;
-	/* Asked for the account that is the default now: if another one takes
-	 * over before the answer (forgetAccountData()), it is about someone else
-	 * and must not land in the lists. Answered, not dropped, so whatever
-	 * waits for it (the poll, an action) ends. */
+	/* If another account takes over before the answer (forgetAccountData()), the
+	 * answer is about someone else and must not land in the lists. Answered, not
+	 * dropped, so whatever waits for it ends. */
 	auto accountChanged = [=]() {
 		FriendsApi::Reply failed;
 		failed.failureText = tr("Your Minecraft account changed; try again.");
@@ -197,7 +193,6 @@ void FriendsController::request(const QByteArray& verb, const QString& path,
 				}
 				noteRateLimit(reply);
 				if (reply.status == 401 && !retried) {
-					/* Expired or revoked: sign in again, once. */
 					clearSession();
 					emit changed();
 					request(verb, path, body, done, true, keepAnswer);
@@ -223,12 +218,10 @@ void FriendsController::tick()
 		return;
 	}
 	if (!sessionUsable() && stillRefused()) {
-		/* Mojang refused this account for good: nothing to ask. */
 		return;
 	}
 	if (m_signingIn) {
-		/* One is under way (it may be waiting for the account's renewal):
-		 * its end polls, and another waiter would only poll twice. */
+		/* One is under way (maybe waiting for a renewal): its end polls; another waiter would poll twice. */
 		return;
 	}
 	/* A retry of a failed sign-in leaves the error on screen until it
@@ -317,6 +310,10 @@ void FriendsController::fetchSettings(std::function<void(bool)> done)
 
 void FriendsController::sendStatus(std::function<void(bool)> done, bool force)
 {
+	if (m_quitting) {
+		done(true);
+		return;
+	}
 	if (!force && m_lastStatusSent.isValid() &&
 		m_lastStatusSent.elapsed() < kMinStatusGapMs) {
 		done(true);
@@ -331,7 +328,6 @@ void FriendsController::sendStatus(std::function<void(bool)> done, bool force)
 					softFail(reply);
 				} else if (const auto view =
 							   FriendsApi::parseStatusReply(reply.body)) {
-					/* What friends see of you, from the one who shows it. */
 					const auto before = myStatus();
 					m_myView = SelfView{presence, *view};
 					if (myStatus() != before) {
@@ -362,18 +358,26 @@ void FriendsController::fetchFriends(std::function<void(bool)> done)
 void FriendsController::applySnapshot(
 	const FriendsApi::FriendsSnapshot& snapshot)
 {
-	/* The status lines carry "5 min ago", so they are worded afresh each
-	 * time, and the view hears of it each time. */
+	/* Status lines carry "5 min ago", so they are worded afresh each time and the view hears of it. */
+	const bool wasLoaded = m_loaded;
 	m_loaded = true;
 	m_updatedAt = QDateTime::currentDateTimeUtc();
-	m_friends = FriendsDisplay::friendList(snapshot.friends,
-										   QDateTime::currentDateTimeUtc());
-	m_incoming = FriendsDisplay::personList(snapshot.incoming);
-	m_outgoing = FriendsDisplay::personList(snapshot.outgoing);
-	attachFaces(m_friends);
-	attachFaces(m_incoming);
-	attachFaces(m_outgoing);
-	emit changed();
+	QVariantList friends = FriendsDisplay::friendList(
+		snapshot.friends, QDateTime::currentDateTimeUtc());
+	QVariantList incoming = FriendsDisplay::personList(snapshot.incoming);
+	QVariantList outgoing = FriendsDisplay::personList(snapshot.outgoing);
+	attachFaces(friends);
+	attachFaces(incoming);
+	attachFaces(outgoing);
+	const bool same = wasLoaded && friends == m_friends &&
+					  incoming == m_incoming && outgoing == m_outgoing;
+	m_friends = std::move(friends);
+	m_incoming = std::move(incoming);
+	m_outgoing = std::move(outgoing);
+	emit updatedAtChanged();
+	if (!same) {
+		emit changed();
+	}
 	fetchFaces();
 }
 
@@ -384,12 +388,15 @@ void FriendsController::clearData()
 	m_outgoing.clear();
 	m_blocked.clear();
 	m_loaded = false;
+	const bool hadUpdate = m_updatedAt.isValid();
 	m_updatedAt = QDateTime();
 	m_myView.reset();
 	m_settings = FriendsDisplay::settingsMap({});
-	/* The defaults above are not the account's. */
 	m_settingsLoaded = false;
 	m_dataProfile.clear();
+	if (hadUpdate) {
+		emit updatedAtChanged();
+	}
 }
 
 void FriendsController::forgetAccountData()
@@ -414,7 +421,6 @@ void FriendsController::onPresenceChanged()
 {
 	followPlay();
 	if (m_enabled) {
-		/* Your own card says what friends see of you. */
 		emit changed();
 	}
 	if (!m_enabled || !sessionUsable() || m_pushTimer.isActive()) {

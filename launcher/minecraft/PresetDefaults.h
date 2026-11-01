@@ -23,15 +23,12 @@
 #include <QString>
 #include <QtGlobal>
 
-/*
- * What a recommended-instance preset sets besides its mods: how much memory
- * the game gets and the first options.txt. Plain functions, so they can be
- * tested without an instance.
- */
+// What a recommended-instance preset sets besides its mods: the game's memory
+// and the first options.txt. Plain functions, testable without an instance.
 namespace PresetDefaults
 {
 	/// The most memory (MiB) a preset gives the game on a machine with
-	/// @p systemRamMiB: Lunar Client's guidance, never more than half the RAM.
+	/// @p systemRamMiB: never more than half the RAM.
 	int maxMemoryMiB(quint64 systemRamMiB);
 
 	/// Whether @p mcVersion reads the pre-1.13 options.txt keys: any 1.x

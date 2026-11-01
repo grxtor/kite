@@ -28,17 +28,12 @@
 
 #include "net/NetJob.h"
 
-/*
- * The curated catalog of recommended mods: bundles (Performance, Comfort,
- * PvP) of Modrinth project ids, and the presets ("Kite Performance") that
- * pick bundles for a new instance.
- *
- * The catalog built into the launcher (:/kite/bundles.json) is what a
- * fresh install uses; refresh() replaces it with meta.kiteclient.com's
- * copy when there is one, so the lists can change without a release.
- * Strings in it are {"en": ..., "tr": ...}; they are resolved on every
- * call from the selected language, so nothing here caches a translation.
- */
+/* The curated catalog of recommended mods: bundles (Performance, Comfort,
+ * PvP) of Modrinth project ids, and presets ("Kite Performance") that pick
+ * bundles for a new instance. The built-in catalog (:/kite/bundles.json)
+ * is replaced by meta.kiteclient.com's copy via refresh(). Strings are
+ * {"en": ..., "tr": ...}, resolved on every call from the selected
+ * language. */
 class BundleCatalog : public QObject
 {
 	Q_OBJECT
@@ -58,35 +53,28 @@ class BundleCatalog : public QObject
 
 	QVariantList presets() const;
 
-	/// The mods of @p bundleIds, in catalog order, that exist for
-	/// @p loader (empty = vanilla, nothing): project, name, summary, bundle,
-	/// bundleName, category, categoryName, isDefault, serverSafe, icon (a URL,
-	/// "" when the catalog has none), requires (the catalog projects it does
-	/// not run without; empty when none). A project
-	/// in several bundles is listed once, under the first.
+	/// The mods of @p bundleIds, in catalog order, that exist for @p loader
+	/// (empty = vanilla, nothing): project, name, summary, bundle, bundleName,
+	/// category, categoryName, isDefault, serverSafe, icon (URL, "" if none),
+	/// requires (catalog projects it needs). A project in several bundles is
+	/// listed once, under the first.
 	Q_INVOKABLE QVariantList mods(const QStringList& bundleIds,
 								  const QString& loader) const;
 
 	/// A started ContentInstallReview of @p projectIds (and what they
 	/// need) for @p mcVersion and @p loader, not yet tied to an instance;
-	/// null when there is nothing to install. Give it to installInto().
+	/// null when there is nothing to install.
 	Q_INVOKABLE QObject* preview(const QStringList& projectIds,
 								 const QString& mcVersion,
 								 const QString& loader);
-	/// Points @p review at the mods folder of instance @p instanceId and
-	/// installs it: the download's TaskWatcher, or null.
-	Q_INVOKABLE QObject* installInto(QObject* review,
-									 const QString& instanceId);
-
 	/// Sets the preset's memory and, if the instance has none yet, its
 	/// options.txt, and turns Kite Performance on for a preset that has the
 	/// performance bundle. Whether anything was applied.
 	Q_INVOKABLE bool applyPresetDefaults(const QString& instanceId,
 										 const QString& presetId);
 
-	/// Replaces the catalog with the copy refresh() last downloaded, when
-	/// there is one and it is valid; no network. For code that wants the
-	/// current lists without showing them (the launch-time setup).
+	/// Replaces the catalog with the copy refresh() last downloaded, if valid;
+	/// no network.
 	bool loadCached();
 
 	/// Asks meta.kiteclient.com for a newer catalog; once per run, silent

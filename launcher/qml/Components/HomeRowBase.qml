@@ -5,28 +5,22 @@ import QtQuick
 import Kite.Theme
 
 /*
- * What every "Continue playing" row of the Sahne, Sade and Gece looks does
- * the same, so each look's row is only its drawing: hover, a click that
- * opens the instance page, a right-click for its menu, the keyboard (Return
- * opens, Space plays or stops, the menu key opens the menu) and a focus
- * ring. The row is one of HomeContinuePlaying's plain row objects; its
- * `host` is that list, whose signals carry the actions out. Children go in
- * as the row's content, over the tap handlers, so a Play inside one still
- * gets first refusal on a press.
+ * What every "Continue playing" row of the Sahne, Sade and Gece looks does the same: hover, clicks (the host tells one,
+ * two and three apart: select, open, launch), right-click the menu, keyboard (Space selects, Return opens, menu key
+ * opens the menu), focus ring. `host` is HomeContinuePlaying. Children go in over the tap handlers, so a Play inside
+ * one gets first refusal on a press.
  */
 Item {
     id: root
 
-    // One of HomeContinuePlaying's rows (instanceId, name, iconKey, ...).
     required property var row
-    // HomeContinuePlaying: openRequested, launchRequested, stopRequested and
-    // menuRequested(id, running, name, iconKey, anchor) are its signals.
+    // HomeContinuePlaying: tap(), selectRequested, openRequested, launchRequested, stopRequested and menuRequested
+    // are its; selectedId is the pick.
     required property Item host
-    // The focus ring's corner radius, around the row's own.
     property int cornerRadius: Theme.radius.lg
-    // Whether the pointer is over the row (or its keyboard focus is on it).
     readonly property bool hovered: hoverHandler.hovered
     readonly property bool running: root.row.isRunning
+    readonly property bool selected: root.host.selectedId === root.row.instanceId
     readonly property bool playable: root.row.isRunning || root.row.canLaunch
 
     function open() { root.host.openRequested(root.row.instanceId) }
@@ -36,42 +30,32 @@ Item {
         else
             root.host.launchRequested(root.row.instanceId)
     }
-    // @p anchor: the ⋯ button, or null for the pointer.
     function openMenu(anchor) {
         root.host.menuRequested(root.row.instanceId, root.row.isRunning, root.row.name, root.row.iconKey, anchor)
     }
 
     activeFocusOnTab: true
     Keys.onReturnPressed: root.open()
-    Keys.onSpacePressed: root.togglePlay()
+    Keys.onSpacePressed: root.host.selectRequested(root.row.instanceId)
     Keys.onMenuPressed: root.openMenu(null)
 
     Accessible.role: Accessible.ListItem
     Accessible.name: root.row.name
     Accessible.description: Format.versionLine(root.row.loader, root.row.gameVersion)
+    Accessible.selectable: true
+    Accessible.selected: root.selected
 
     HoverHandler { id: hoverHandler }
     TapHandler {
         acceptedButtons: Qt.LeftButton
         gesturePolicy: TapHandler.ReleaseWithinBounds
-        onTapped: { root.forceActiveFocus(); root.open() }
+        onTapped: root.host.tap(root.row.instanceId)
     }
     TapHandler {
         acceptedButtons: Qt.RightButton
         gesturePolicy: TapHandler.ReleaseWithinBounds
-        onTapped: { root.forceActiveFocus(); root.openMenu(null) }
+        onTapped: root.openMenu(null)
     }
 
-    // Keyboard focus ring, outset so it never competes with the row's own
-    // edge.
-    Rectangle {
-        anchors.fill: parent
-        anchors.margins: -Theme.space.xs
-        z: 1
-        radius: root.cornerRadius + Theme.space.xs
-        color: "transparent"
-        border.width: Theme.focus.width
-        border.color: Theme.palette.focusRing
-        visible: root.activeFocus
-    }
+    FocusFrame { cornerRadius: root.cornerRadius; z: 1; visible: root.activeFocus }
 }

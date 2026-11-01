@@ -8,42 +8,24 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Pick a Minecraft version for this instance - the QML replacement for the
- * plain VersionSelectDialog VersionPage's "Change version" opens for the
- * net.minecraft component. Snapshots and old versions are hidden by
- * default, the same starting point VanillaPage gives a new instance.
+ * Pick a Minecraft version for this instance. Snapshots and old versions are
+ * hidden by default.
  */
-Dialog {
+AppDialog {
     id: root
 
-    // InstanceDetails.
     property var details: null
-    // Not a binding to details.minecraftVersions: that getter builds the
-    // proxy and starts its download the first time anything reads it (see
-    // InstanceDetails::minecraftVersions()), and this dialog is
-    // instantiated eagerly with the rest of VersionTab.qml's children -
-    // reading it here would fetch the version list every time the
-    // instance page opens, whether or not this dialog ever does. Set from
-    // onOpened below instead, so opening the tab stays network-free -
-    // mirrors ContentBrowserView.qml's own visible-gated first search.
+    // Not a binding to details.minecraftVersions: the getter starts the version download, and this
+    // dialog is built eagerly. Set from onOpened.
     property var versions: null
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(560, parent ? parent.width - Theme.space.xxl * 2 : 560)
     height: Math.min(600, parent ? parent.height - Theme.space.xxl * 2 : 600)
-    modal: true
-    // The title row sets the inset; the gap under it is the dialog's own spacing.
-    topPadding: 0
-    // The actions row sets the bottom inset; this and the spacing over it
-    // leave one inset (xl) between the body and the actions.
-    bottomPadding: Theme.space.sm
+    closeOnOutsidePress: true
+    closeOnPrimary: false
     title: qsTr("Change Minecraft version")
-
-    header: DialogHeader {
-        title: root.title
-        icon: "cube"
-    }
+    primaryText: qsTr("Change")
+    primaryEnabled: list.currentIndex >= 0
+    onPrimaryClicked: root.doChange(list.currentItem ? list.currentItem.versionId : "")
 
     onOpened: {
         list.currentIndex = -1
@@ -72,13 +54,10 @@ Dialog {
             Item { Layout.fillWidth: true }
         }
 
-        Rectangle {
+        BoxSurface {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            radius: Theme.radius.lg
-            color: Theme.palette.surfaceSunken
-            border.width: 1
-            border.color: Theme.palette.border
+            sunken: true
 
             ListView {
                 id: list
@@ -105,12 +84,9 @@ Dialog {
 
                     contentItem: RowLayout {
                         spacing: Theme.space.sm
-                        Text {
+                        Copy {
                             Layout.fillWidth: true
                             text: cell.version
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.body.pixelSize
                         }
                         Tag { visible: cell.type !== "release"; text: cell.type }
                     }
@@ -130,25 +106,8 @@ Dialog {
                 body: root.versions && root.versions.error.length > 0
                       ? root.versions.error
                       : qsTr("Try turning on snapshots or old versions.")
-                MeshIcon { iconName: "cube"; size: 40; color: Theme.palette.textTertiary }
+                MeshIcon { iconName: "cube"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
             }
-        }
-    }
-
-    footer: Row {
-        layoutDirection: Qt.RightToLeft
-        spacing: Theme.space.sm
-        padding: Theme.space.xl
-        topPadding: 0
-
-        Button {
-            text: qsTr("Change")
-            enabled: list.currentIndex >= 0
-            onClicked: root.doChange(list.currentItem ? list.currentItem.versionId : "")
-        }
-        Button {
-            text: qsTr("Cancel")
-            onClicked: root.close()
         }
     }
 

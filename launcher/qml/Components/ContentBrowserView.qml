@@ -8,56 +8,32 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Find mods, resource packs, shaders and data packs for this instance on
- * Modrinth or CurseForge, and install them -- dependencies included --
- * without leaving the instance. Results start out matching the instance's
- * Minecraft version and loader; Filters (ContentFilterPopup) widens or
- * narrows that, and adds categories and environment. Things already
- * installed say so.
- *
- * Opened as a page of its own from the Content tab's "Add content" (see
- * InstancePage); its back button, or Escape, returns to the list. A title
- * and type chips on top, then where and what to search on one row; the
- * results take the full width as one table, and picking one
- * slides its versions in beside them (ContentProjectPanel), the newest
- * compatible one preselected. Install first works out what the
- * project needs; when that is anything at all, InstallReviewDialog lists
- * it to untick before downloading (DownloadSummaryDialog's job). Installs
- * run side by side: each project keeps its own progress, shown on its row,
- * so browsing on and installing something else never waits for the
- * previous download.
+ * Find mods, resource packs, shaders and data packs on Modrinth or CurseForge and install them, dependencies
+ * included. Results start out matching the instance's Minecraft version and loader. Installs run side by
+ * side: each project keeps its own progress.
  */
 Item {
     id: root
 
-    // ContentBrowser of the open instance.
     property var browser: null
-    // InstanceDetails, for its loaderInstaller (the "Install a loader"
-    // action). Optional: without it that notice just has no button.
+    // InstanceDetails, for its loaderInstaller; without it the "Install a loader" notice has no button.
     property var details: null
-    // Back to the Content tab's list.
     signal backRequested()
     property int selectedRow: -1
     property var selectedProject: null
     property int pickedVersion: -1
 
     readonly property var versions: browser && browser.versions ? browser.versions : []
-    // The provider and sort boxes around the search field, and the least
-    // the field itself keeps.
     readonly property int providerWidth: 150
     readonly property int sortWidth: 190
     readonly property int searchMinWidth: 160
-    // The project panel's share of the row, between its own bounds, so on a
-    // narrow window the results keep room for their names.
     readonly property real panelShare: 0.4
     readonly property int panelMinWidth: 300
     readonly property int panelMaxWidth: 440
-    // Room under the last result while more are being fetched.
     readonly property int busyFooterHeight: 64
 
-    // Every install started from here, by project key. A plain JS object
-    // does not notify, so `downloadsRevision` is bumped on every change and
-    // read by whatever looks a download up.
+    // Every install started here, by project key. A plain JS object does not notify, so downloadsRevision is bumped
+    // on every change.
     property var downloads: ({})
     property int downloadsRevision: 0
     readonly property int activeDownloads: {
@@ -85,14 +61,12 @@ Item {
     readonly property bool selectedChecking: selectedProject
                                              ? root.isChecking(projectKey(selectedProject.title, selectedProject.author)) : false
 
-    // Reviews still working out dependencies, by project key, under the
-    // same revision counter as `downloads`.
+    // Reviews still working out dependencies, by project key; same revision counter as `downloads`.
     property var checking: ({})
     function isChecking(key) {
         root.downloadsRevision
         return !!root.checking[key]
     }
-    // Why the install button is off, if it is.
     readonly property string blockedReason: !root.browser ? ""
         : !root.browser.changesAllowed ? qsTr("The game is running. Mods can be installed once it closes.")
         : !root.browser.installTargetAvailable ? qsTr("This instance's shared data pack folder is turned off.")
@@ -132,7 +106,6 @@ Item {
         root.downloadsRevision++
     }
 
-    // Reviews waiting for the dialog, oldest first.
     property var reviewQueue: []
     function queueReview(key, review) {
         root.reviewQueue = root.reviewQueue.concat([{ key: key, review: review }])
@@ -159,14 +132,10 @@ Item {
     ]
 
     property bool searched: false
-    // The Filters popup, open: for review snapshots (Main.qml's
-    // "browsefilters" dev route, through InstancePage).
     function openFilters() {
         filterPopup.open()
     }
-    // A state for review snapshots (Main.qml's "review=<name>" route,
-    // through InstancePage): "browsepick" picks the first result once the
-    // search has answered.
+    // Review snapshots: "browsepick" picks the first result once the search has answered.
     function review(name) {
         if (name === "browsepick")
             reviewPick.restart()
@@ -211,8 +180,7 @@ Item {
         root.selectedRow = -1
         root.selectedProject = null
     }
-    // Opens on @p kind (the kind the Content tab showed) when it is one
-    // that can be browsed; searched again once shown.
+    // Opens on @p kind when it can be browsed; searched again once shown.
     function showKind(kind) {
         if (!root.browser || !root.types.some((t) => t.value === kind) || root.browser.contentType === kind)
             return
@@ -239,18 +207,14 @@ Item {
         anchors.fill: parent
         spacing: Theme.space.md
 
-        // What this page is, and what kind of thing to look for.
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: Theme.control.height
             spacing: Theme.space.lg
 
-            Text {
+            Copy {
                 text: qsTr("Add content")
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.heading
-                font.pixelSize: Theme.type.heading.pixelSize
-                font.weight: Theme.type.heading.weight
+                role: "heading"
                 Accessible.role: Accessible.Heading
             }
             ChipGroup {
@@ -262,17 +226,12 @@ Item {
                 }
             }
             Item { Layout.fillWidth: true }
-            // Installs in flight, so a download started on another project
-            // is still visible after moving on.
-            Rectangle {
+            BoxSurface {
                 visible: root.activeDownloads > 0
                 implicitWidth: downloadsRow.implicitWidth + Theme.space.md * 2
                 implicitHeight: Theme.control.heightSm
-                // A status chip, not a toggle: control corners, not a pill.
                 radius: Theme.radius.sm
                 color: Theme.palette.surfaceRaised
-                border.width: 1
-                border.color: Theme.palette.border
                 Row {
                     id: downloadsRow
                     anchors.centerIn: parent
@@ -283,20 +242,16 @@ Item {
                         height: Theme.icon.sm
                         running: parent.visible
                     }
-                    Text {
+                    Copy {
                         anchors.verticalCenter: parent.verticalCenter
                         text: qsTr("%n installing", "", root.activeDownloads)
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
+                        role: "label"
                         font.weight: Font.DemiBold
                     }
                 }
             }
         }
 
-        // At most one: the game running, no loader for mods, or nowhere for
-        // data packs to go.
         NoticeBar {
             Layout.fillWidth: true
             visible: text.length > 0
@@ -309,8 +264,6 @@ Item {
             onActionTriggered: loaderDialog.open()
         }
 
-        // Where to search, what for, in which order, narrowed how: one row
-        // at every width.
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.space.md
@@ -346,11 +299,9 @@ Item {
                 Accessible.name: qsTr("Sort by")
                 onActivated: { root.browser.sortIndex = currentValue; root.runSearch() }
             }
-            Button {
+            FiltersButton {
                 id: filtersButton
-                readonly property int active: root.browser ? root.browser.activeFilterCount : 0
-                text: active > 0 ? qsTr("Filters (%1)").arg(active) : qsTr("Filters")
-                icon.source: Icons.url("filter")
+                count: root.browser ? root.browser.activeFilterCount : 0
                 onClicked: filterPopup.opened ? filterPopup.close() : filterPopup.open()
 
                 ContentFilterPopup {
@@ -368,25 +319,19 @@ Item {
             Layout.fillHeight: true
             spacing: Theme.space.lg
 
-            // The results: one table card, as tall as its rows up to the
-            // room there is.
             Item {
                 id: resultsArea
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.minimumWidth: 0
 
-                Rectangle {
+                BoxSurface {
                     id: resultsCard
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
                     height: Math.min(parent.height, results.contentHeight + results.topMargin + results.bottomMargin + border.width * 2)
                     visible: results.count > 0 || (!!root.browser && root.browser.searching)
-                    radius: Theme.radius.lg
-                    color: Theme.palette.surface
-                    border.width: 1
-                    border.color: Theme.palette.border
                     clip: true
 
                     ListView {
@@ -398,8 +343,6 @@ Item {
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
                         model: root.browser ? root.browser.results : null
-                        // Overlays the rows' right edge rather than reserving
-                        // a gutter beside them.
                         ScrollBar.vertical: ScrollBar {}
                         onAtYEndChanged: if (atYEnd && root.browser && root.browser.canFetchMore && !root.browser.searching)
                                              root.browser.fetchMore()
@@ -421,8 +364,7 @@ Item {
                         }
                     }
 
-                    // On the card, not the scrolling rows, so it stays on
-                    // the card's bottom edge.
+                    // On the card, not the scrolling rows, so it stays on the card's bottom edge.
                     ScrollFade {
                         anchors.left: parent.left
                         anchors.right: parent.right
@@ -430,8 +372,7 @@ Item {
                         anchors.margins: resultsCard.border.width
                         flickable: results
                         fadeTo: Theme.palette.surface
-                        // Rounded like the card, or its square foot would cover the
-                        // card's bottom corners.
+                        // Rounded like the card, or its square foot covers the card's bottom corners.
                         radius: Theme.radius.lg
                     }
                 }
@@ -443,12 +384,10 @@ Item {
                     title: root.browser && root.browser.error.length > 0 ? qsTr("Search failed") : qsTr("Nothing found")
                     body: root.browser && root.browser.error.length > 0 ? root.browser.error
                                                                          : qsTr("Try other words, fewer filters, or the other site.")
-                    MeshIcon { iconName: "search"; size: 40; color: Theme.palette.textTertiary }
+                    MeshIcon { iconName: "search"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
                 }
             }
 
-            // The picked project, sliding in from the right; nothing is
-            // there until something is picked.
             Item {
                 id: panelSlot
                 readonly property int fullWidth: Math.round(Math.min(root.panelMaxWidth,
@@ -461,8 +400,7 @@ Item {
                     NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing }
                 }
 
-                // At its full width throughout, pinned to the slot's right
-                // edge, so the slot's growth reveals it rather than
+                // Full width throughout, pinned to the slot's right edge: the slot's growth reveals it instead of
                 // squeezing its text.
                 ContentProjectPanel {
                     anchors.top: parent.top
@@ -477,7 +415,6 @@ Item {
         }
     }
 
-    // Escape closes the picked project first, then goes back.
     Shortcut {
         sequences: [StandardKey.Cancel]
         enabled: root.visible && !filterPopup.opened && !reviewDialog.visible && !searchField.activeFocus

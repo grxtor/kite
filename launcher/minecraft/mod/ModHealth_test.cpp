@@ -176,9 +176,8 @@ namespace
 						   { { QStringLiteral("minecraft"), minecraft } });
 	}
 
-	//! A jar with no metadata of its own that only carries mods
-	//! (kotlinforforge-all.jar, the Connector jar): it provides ids and is
-	//! nothing else.
+	//! A jar with no metadata that only carries mods (kotlinforforge-all.jar,
+	//! the Connector jar): it provides ids and nothing else.
 	Entry wrapperJar(const QString& key, const QList<ProvidedMod>& provides)
 	{
 		Entry entry;
@@ -212,13 +211,10 @@ namespace
 } // namespace
 
 /*!
- * The mod health check over made-up folders. Each test builds the few mods
- * it needs and compares the whole result, so an issue that appears where it
- * should not fails the test just as one that goes missing does.
- *
- * Half of these are "nothing is reported": the check names a mod as broken,
- * and every way of being unsure (a version that is free text, a file not
- * read yet, a mod that is switched off) has to end in silence.
+ * The mod health check over made-up folders. Each test builds the few mods it
+ * needs and compares the whole result, so a spurious issue fails as surely as
+ * a missing one. Many tests expect silence: every way of being unsure (free
+ * text version, unread file, switched-off mod) must report nothing.
  */
 class ModHealthTest : public QObject
 {
@@ -533,9 +529,8 @@ class ModHealthTest : public QObject
 
 	void aFileForAnotherLoaderStillCountsAsPresent()
 	{
-		// The jar is there, even if the loader will not open it, so the mod
-		// that needs it is not told it is "missing" on top of the loader
-		// report: that would be one problem named twice.
+		// The jar is there even if the loader will not open it, so the
+		// dependent mod is not also told "missing".
 		const QList<Entry> folder = {
 			mod("steam-trains", "1.0", FabricOnly, { need("create") }),
 			mod("create", "0.5.1", ForgeOnly),

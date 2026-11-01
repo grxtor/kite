@@ -24,10 +24,7 @@
 
 using namespace ContentListExport;
 
-/*
- * The Markdown list escapes only what changes meaning in place; dots,
- * dashes and parentheses in names and versions stay readable.
- */
+/* The Markdown list escapes only what changes meaning in place. */
 class ContentListExportTest : public QObject
 {
 	Q_OBJECT
@@ -69,7 +66,6 @@ class ContentListExportTest : public QObject
 		item.name = QStringLiteral("1. Intro");
 		QCOMPARE(markdownLine(item), QStringLiteral("- 1\\. Intro"));
 
-		// A version-like name is not a list marker.
 		item.name = QStringLiteral("1.20.1 Pack");
 		QCOMPARE(markdownLine(item), QStringLiteral("- 1.20.1 Pack"));
 	}

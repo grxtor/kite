@@ -17,17 +17,14 @@ T.ComboBox {
                              implicitContentHeight + topPadding + bottomPadding,
                              implicitIndicatorHeight + topPadding + bottomPadding)
 
-    // The same text inset as TextField, so a combo stacked above or below a
-    // text field starts its text on the same column.
+    // The same text inset as TextField, so stacked fields align.
     leftPadding: Theme.space.md + (!control.mirrored || !indicator || !indicator.visible ? 0 : indicator.width + spacing)
     rightPadding: Theme.space.md + (control.mirrored || !indicator || !indicator.visible ? 0 : indicator.width + spacing)
     spacing: Theme.space.xs
 
-    // This ComboBox uses our own ItemDelegate.qml (same directory, so no
-    // import needed) for popup rows instead of Basic's, otherwise every row
-    // would suddenly look unstyled next to a themed field. The rows read
-    // like Menu's: the chosen value carries the soft accent pill (the tab
-    // grammar), the row under the pointer or the keyboard a neutral overlay.
+    // Popup rows use this style's ItemDelegate.qml. They read like Menu's: the
+    // chosen value carries the soft accent pill, the row under the pointer or
+    // keyboard a neutral overlay.
     delegate: ItemDelegate {
         id: row
         required property var model
@@ -59,22 +56,16 @@ T.ComboBox {
     }
 
     indicator: Chevron {
-        // Theme.space.sm, not control.padding: leftPadding/rightPadding
-        // above are set explicitly (asymmetric, to leave room for this
-        // indicator), which leaves the generic `padding` itself at its
-        // unset default of 0 -- reading it here silently put the indicator
-        // flush against the control's own edge, right on top of its
-        // border, instead of inset by the margin rightPadding actually
-        // reserved for it.
+        // Theme.space.sm, not control.padding: leftPadding/rightPadding are set
+        // explicitly, leaving `padding` at 0, which put the indicator flush
+        // against the border.
         x: control.mirrored ? Theme.space.sm : control.width - width - Theme.space.sm
         y: control.topPadding + (control.availableHeight - height) / 2
         width: Theme.icon.sm
         height: Theme.icon.sm
         color: control.enabled ? Theme.palette.textSecondary : Theme.palette.textDisabled
         direction: 0
-        // A quiet nod to the popup's open/closed state instead of a second
-        // glyph: flipping the same chevron costs nothing and reads as "this
-        // is now showing its other side".
+        // Flipping the chevron marks the open state instead of a second glyph.
         rotation: control.popup.visible ? 180 : 0
         Behavior on rotation {
             NumberAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
@@ -107,8 +98,8 @@ T.ComboBox {
         background: Item {}
     }
 
-    // The field look (see TextField.qml). Open, it keeps the accent edge a
-    // focused field has, so the list visibly belongs to this box.
+    // The field look (TextField.qml). Open, it keeps the accent edge of a
+    // focused field, so the list visibly belongs to this box.
     background: Rectangle {
         implicitWidth: Theme.control.heightLg * 4
         implicitHeight: Theme.control.height
@@ -130,17 +121,16 @@ T.ComboBox {
             color: control.pressed ? Theme.palette.pressedOverlay : "transparent"
         }
 
-        // A typed-into (editable) combo is a text field and shows the halo
-        // on any focus; a plain one is a button, so keyboard focus only.
+        // An editable combo is a text field and shows the halo on any focus; a
+        // plain one is a button, so keyboard focus only.
         FocusRing {
             halo: true
             visible: control.visualFocus || (control.editable && control.activeFocus)
         }
     }
 
-    // How many rows the open list shows before it scrolls. A long list (a
-    // pack with sixty versions) used to grow to the full window height and
-    // cover the page; launchers keep a dropdown to a handful of rows.
+    // Rows the open list shows before it scrolls, so a long list (sixty
+    // versions) does not cover the page.
     property int maxVisibleRows: 8
 
     popup: T.Popup {
@@ -153,9 +143,8 @@ T.ComboBox {
         bottomMargin: Theme.space.sm
         padding: Theme.space.xs
 
-        // This popup is built inline rather than reused from Popup.qml (the
-        // ListView content needs control.delegateModel wired in), so it
-        // repeats that style's open/close fade instead of inheriting it.
+        // Built inline, not reused from Popup.qml (the ListView needs
+        // control.delegateModel), so it repeats that style's open/close fade.
         enter: Transition {
             NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
         }

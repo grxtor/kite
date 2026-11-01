@@ -35,22 +35,20 @@ class MinecraftInstance;
 
 /**
  * Brings an instance up to date: folders, metadata, libraries, FML libraries
- * and assets, in that order. Each of those shows up as its own line in the
- * progress dialog.
+ * and assets, in that order, each its own step.
  *
- * Its own status and progress speak for the step under way -- its stage
- * ("Downloading assets") and how far that step is -- rather than "Executing
- * task 4 out of 5" over a count of steps: a launch relays them as they are
- * (LaunchTask, InstanceList's launch progress) to the play bar.
+ * Its status and progress describe the step under way (its stage, e.g.
+ * "Downloading assets", and how far it is) rather than "Executing task 4 out
+ * of 5"; a launch relays them as they are (LaunchTask, InstanceList) to the
+ * play bar.
  */
 class MinecraftUpdate : public SequentialTask
 {
 	Q_OBJECT
   public:
-	/// What to bring up to date. A launch does it in two goes, the version
-	/// info first and the files after the Java is settled: which Java a
-	/// version needs is in its version info, and which natives to download
-	/// depends on that Java.
+	/// What to bring up to date. A launch does it in two goes: version info
+	/// first, then the files once the Java is settled (the version info says
+	/// which Java a version needs, which decides the natives).
 	enum class Part { Everything, VersionInfo, GameFiles };
 
 	explicit MinecraftUpdate(MinecraftInstance* inst,

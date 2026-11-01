@@ -6,13 +6,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The cat picture chosen in Settings > Appearance (the same packs the classic
- * window's background cat offers), sitting quietly in the bottom right
- * corner of the page area. A still picture: it never takes a click, never
- * moves and stays well back from the content.
- *
- * Loaded by Main.qml under the pages, only while the TheCat setting is on:
- * a page's own cards and lists cover it, so it shows in the empty space.
+ * The cat picture chosen in Settings > Appearance, sitting quietly in the bottom right corner of the page area: a
+ * still picture that never takes a click. Loaded by Main.qml under the pages only while the TheCat setting is on, so
+ * a page's own cards and lists cover it.
  */
 Item {
     id: root
@@ -20,11 +16,9 @@ Item {
 
     readonly property string source: LauncherStore.catPacks
                                      ? LauncherStore.catPacks.sourceFor(SettingsStore.string("BackgroundCat")) : ""
-    // The cat is a hint, not a feature of the page: small and faint.
     readonly property int pictureHeight: 150
     readonly property real quiet: 0.45
 
-    // Never in the way of what is underneath.
     enabled: false
 
     Image {

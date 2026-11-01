@@ -214,13 +214,11 @@ namespace mojang_files
 
 	namespace
 	{
-		// FIXME: Qt obscures symlink targets by making them absolute.
-		// This is the workaround - we do it ourselves
+		// Qt makes symlink targets absolute, so read the target ourselves.
 		bool actually_read_symlink_target(const QString& filepath, Path& out)
 		{
 			struct ::stat st;
-			// FIXME: here, we assume the native filesystem encoding. May the
-			// Gods have mercy upon our Souls.
+			// FIXME: assumes the native filesystem encoding is UTF-8.
 			QByteArray nativePath = filepath.toUtf8();
 			const char* filepath_cstr = nativePath.data();
 
@@ -230,8 +228,7 @@ namespace mojang_files
 
 			auto size = st.st_size ? st.st_size + 1 : PATH_MAX;
 			QByteArray temp(size, '\0');
-			// because we don't reliably know how long the link target is,
-			// we loop and expand. POSIX is naff
+			// The target length is not known reliably: loop and expand.
 			do {
 				auto link_length =
 					::readlink(filepath_cstr, temp.data(), temp.size());
@@ -250,9 +247,8 @@ namespace mojang_files
 	} // namespace
 #endif
 
-	// FIXME: Qt filesystem abstraction is bad, but ... let's hope it doesn't
-	// break too much?
-	// FIXME: The error handling is just DEFICIENT
+	// FIXME: the Qt filesystem abstraction is weak and the error handling is
+	// deficient.
 	Package Package::fromInspectedFolder(const QString& folderPath)
 	{
 		QDir root(folderPath);
@@ -267,13 +263,7 @@ namespace mojang_files
 
 			auto fileInfo = iterator.fileInfo();
 			auto relPath = root.relativeFilePath(fileInfo.filePath());
-			// FIXME: this is probably completely busted on Windows anyway, so
-			// just disable it. Qt makes shit up and doesn't understand the
-			// platform details
-			// TODO: Actually use a filesystem library that isn't terrible and
-			// has decen license.
-			//       I only know one, and I wrote it. Sadly, currently
-			//       proprietary. PAIN.
+			// Symlinks are not handled on Windows.
 #ifndef Q_OS_WIN32
 			if (fileInfo.isSymLink()) {
 				Path targetPath;
@@ -307,7 +297,6 @@ namespace mojang_files
 							 .constData();
 				out.addFile(relPath, f);
 			} else {
-				// Something else... oh my
 				qCritical() << "Folder inspection: Unknown filesystem object:"
 							<< fileInfo.absoluteFilePath();
 				out.valid = false;

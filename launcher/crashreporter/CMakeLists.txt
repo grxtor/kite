@@ -14,14 +14,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Network)
 
-# Optional: libqrencode for QR code generation. Without it the dialog simply
-# leaves the QR code out (see KITE_HAS_QRENCODE below).
-#
-# It is declared in the vcpkg manifest at the repo root, so under the presets
-# it is installed — but on MSVC there is no pkg-config to find it with, so the
-# headers and the library are looked up directly there. Everywhere else
-# pkg-config sees both the vcpkg copy and a system one and hands over the right
-# flags. Either way the result is one target name, or none.
+# Optional libqrencode; without it the dialog leaves the QR code out. MSVC has
+# no pkg-config, so the header and library are looked up directly there.
 set(KITE_QRENCODE_TARGET "")
 if(MSVC)
     find_path(QRENCODE_INCLUDE_DIR qrencode.h)
@@ -42,7 +36,7 @@ else()
     endif()
 endif()
 
-# On Windows: use Win32 subsystem so no console window appears.
+# Win32 subsystem: no console window.
 if(WIN32)
     set(CRASHREPORTER_WIN32_FLAG WIN32)
 else()
@@ -73,7 +67,6 @@ if(KITE_QRENCODE_TARGET)
     target_link_libraries(kite-crashreporter PRIVATE ${KITE_QRENCODE_TARGET})
 endif()
 
-# Install alongside the main binary.
 install(TARGETS kite-crashreporter
     RUNTIME DESTINATION "${BINARY_DEST_DIR}"
 )

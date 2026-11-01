@@ -7,30 +7,20 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The Content tab's update flows, kept out of ContentTab itself: check
- * for updates (UpdateReviewDialog), change one file's version
- * (ChangeVersionDialog), verify dependencies, install what the mod health
- * check found missing, install bundle mods (Add-ons, Kite Performance), and
- * reset metadata, each on top of
- * ContentUpdateController. Whatever needs reviewing goes through
- * InstallReviewDialog; whatever downloads is `activity` until it ends,
- * and how it went comes out of notify() for the tab's toast.
+ * The Content tab's update flows, kept out of ContentTab: check for updates, change a file's version, verify
+ * dependencies, install missing or bundle mods, reset metadata. Reviews go through InstallReviewDialog; what
+ * downloads is `activity` until it ends; notify() gives the tab's toast.
  */
 Item {
     id: root
 
-    // InstanceContentController, and what the tab is showing.
     property var content: null
     property string kind: "mods"
-    // Lower-case plural: "mods", "resource packs".
     property string noun: qsTr("mods")
 
     readonly property var updater: root.content ? root.content.updater : null
-    // The download in progress (TaskWatcher), or null.
     property var activity: null
-    // A review still working out what it needs, or null.
     property var resolving: null
-    // What the tab's progress notice says; empty when nothing is going on.
     readonly property string busyText: root.activity ? (root.activity.status.length > 0 ? root.activity.status : root.activity.title)
                                        : root.resolving ? qsTr("Checking what it needs…") : ""
     readonly property real busyProgress: root.activity ? root.activity.progress : -1
@@ -70,9 +60,8 @@ Item {
                     qsTr("Every dependency is installed."))
     }
 
-    // Installs the mods with @p ids for the files with @p keys that need
-    // them, replacing the file with key replaceKeys[i] for ids[i] when it is
-    // not empty (ModHealthModel's "install" rows).
+    // Installs mods @p ids for the files @p keys that need them, replacing file replaceKeys[i] for ids[i] when not
+    // empty.
     function installMissing(keys, ids, replaceKeys) {
         if (!root.updater)
             return
@@ -85,8 +74,6 @@ Item {
                     qsTr("Nothing compatible was found to install."), "neutral")
     }
 
-    // Installs the bundle mods with Modrinth project @p ids that the folder
-    // does not have yet, after a review of what they bring along.
     function installBundle(ids) {
         if (!root.updater)
             return
@@ -108,11 +95,8 @@ Item {
         resetConfirm.open()
     }
 
-    // Once @p review knows what it needs: straight to the download when
-    // there is nothing to ask about, else to InstallReviewDialog.
-    // @p nothingText, when set, is said instead of installing a review
-    // that found nothing (a dependency check that came back clean), in
-    // @p nothingTone ("success" unless given).
+    // Once @p review knows what it needs: straight to the download if nothing needs asking, else InstallReviewDialog.
+    // @p nothingText is said instead when a review found nothing, in @p nothingTone ("success" by default).
     function settle(review, doneText, nothingText, nothingTone) {
         root.resolving = review
         const go = function () {
@@ -133,8 +117,7 @@ Item {
         go()
     }
 
-    // @p doneText empty: the watcher's own status says how it went (Speed
-    // up's "added Fabric and 7 mods").
+    // With @p doneText empty the watcher's own status says how it went.
     function track(watcher, doneText) {
         if (!watcher)
             return

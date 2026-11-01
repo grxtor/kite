@@ -37,10 +37,10 @@ void MinecraftLoadAndCheck::executeTask()
 	m_task = components->getCurrentTask();
 
 	if (!m_task) {
-		/* No task left over does not mean all is well: when the metadata is
-		 * not in the cache (a new instance, a new data folder) the offline
-		 * resolve fails on the spot, before there is anything to hand back
-		 * here. Say so, rather than let the launch start without a game. */
+		// No task left over does not mean all is well: with no metadata in the
+		// cache (a new instance or data folder) the offline resolve fails at
+		// once, before anything is handed back. Say so instead of starting
+		// without a game.
 		const auto profile = components->getProfile();
 		if (!profileUsable(profile)) {
 			// The reason: what the resolve said, else what the profile lists.

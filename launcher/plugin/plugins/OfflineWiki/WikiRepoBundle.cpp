@@ -35,8 +35,7 @@ bool WikiRepoBundle::open(const QString& dir)
 		d.entryInfoList({QStringLiteral("*.md")}, QDir::Files, QDir::Name);
 	for (const auto& fi : files) {
 		const QString file = fi.fileName();
-		// Skip GitLab/GitHub wiki meta pages from the article list; the
-		// sidebar/footer are consumed separately, not shown as articles.
+		// Skip wiki meta pages: the sidebar and footer are consumed separately.
 		if (file.compare(QStringLiteral("_Sidebar.md"), Qt::CaseInsensitive) ==
 				0 ||
 			file.compare(QStringLiteral("_Footer.md"), Qt::CaseInsensitive) == 0)
@@ -85,9 +84,8 @@ QString WikiRepoBundle::rewriteLinks(const QString& markdown) const
 {
 	QString out = markdown;
 
-	// 1. [[Page Name]]  and  [[text|Page Name]]  ->  [text](wiki:Page-Name)
-	//    The wiki stores spaces as dashes in file names, so normalise the
-	//    target the same way.
+	// 1. [[Page Name]] and [[text|Page Name]] -> [text](wiki:Page-Name). File names use dashes for
+	// spaces, so the target is normalised.
 	static const QRegularExpression wikiLink(
 		QStringLiteral(R"(\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\])"));
 	{
@@ -112,12 +110,9 @@ QString WikiRepoBundle::rewriteLinks(const QString& markdown) const
 		out = rebuilt;
 	}
 
-	// 2. Markdown links to other wiki pages: [text](Target) where Target
-	//    is a bare relative page reference (no scheme, no "/", not an
-	//    anchor, not an image, doesn't point at an existing file such as
-	//    images/foo.png). Rewrite those to the wiki: scheme. Absolute
-	//    links (http:, https:, mailto:, #anchor) and real relative files
-	//    are left untouched.
+	// 2. Markdown links [text](Target) with a bare relative page reference (no scheme, no "/", not
+	// an anchor or image, not an existing file such as images/foo.png) become wiki: links; absolute
+	// links and real files stay.
 	static const QRegularExpression mdLink(
 		QStringLiteral(R"(\]\(([^)\s]+)\))"));
 	{
@@ -157,10 +152,8 @@ QString WikiRepoBundle::rewriteLinks(const QString& markdown) const
 
 QString WikiRepoBundle::rewriteImagePaths(const QString& markdown) const
 {
-	// Resolve relative Markdown image targets (![alt](images/foo.png))
-	// against the bundle root so the renderer can load bundled media
-	// without knowing the wiki's on-disk location. Absolute (http/https/
-	// data:) targets are left alone.
+	// Resolve relative image targets against the bundle root so bundled media loads without the
+	// renderer knowing the wiki's location; absolute (http/https/data:) targets stay.
 	const QString baseUrl =
 		QUrl::fromLocalFile(QDir(m_root).absolutePath() + QLatin1Char('/'))
 			.toString();

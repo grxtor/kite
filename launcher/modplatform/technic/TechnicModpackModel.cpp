@@ -28,26 +28,24 @@
 
 #include "BuildConfig.h"
 #include "InstanceList.h"
+#include "Json.h"
 #include "core/LauncherContext.h"
-#include "icons/IconList.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
 #include "modplatform/technic/SingleZipPackInstallTask.h"
 #include "modplatform/technic/SolderPackInstallTask.h"
 #include "net/Download.h"
-#include "net/HttpMetaCache.h"
 #include "tasks/TaskWatcher.h"
 
 namespace
 {
-	/* Technic answers a missing field with JSON null as often as by
-	 * leaving it out; either way it is "nothing". */
+	/* Technic answers a missing field with JSON null as often as by omitting
+	 * it; either way it is "nothing". */
 	QString stringOf(const QJsonObject& obj, const QString& key)
 	{
 		const QJsonValue value = obj.value(key);
 		return value.isString() ? value.toString() : QString();
 	}
 
-	/* The URL of an image object ({"url": ...}) or a bare string. */
 	QString imageOf(const QJsonObject& obj, const QString& key)
 	{
 		const QJsonValue value = obj.value(key);
@@ -80,7 +78,6 @@ QObject* TechnicModpackModel::detail() const
 
 QVariantList TechnicModpackModel::sortOptions() const
 {
-	/* Technic orders its own answers; there is nothing to choose. */
 	QVariantMap entry;
 	entry[QStringLiteral("id")] = QStringLiteral("relevance");
 	entry[QStringLiteral("label")] = tr("Sort by Relevance");
@@ -105,7 +102,6 @@ QVariant TechnicModpackModel::data(const QModelIndex& index, int role) const
 		case TitleRole:
 			return pack.name;
 		case DescriptionRole:
-			/* Search hits carry no summary; the detail fetch has one. */
 			return pack.description;
 		case AuthorRole:
 			return pack.author;
@@ -208,8 +204,7 @@ QUrl TechnicModpackModel::searchUrl(const QString& term)
 	QUrlQuery query;
 	query.addQueryItem(QStringLiteral("build"), BuildConfig.TECHNIC_API_BUILD);
 	if (!trimmed.isEmpty()) {
-		/* Through QUrlQuery, unlike the widget page's string pasting, so
-		 * an "&" in a search stays part of it. */
+		/* Through QUrlQuery, so an "&" in a search stays part of it. */
 		query.addQueryItem(QStringLiteral("q"), trimmed);
 	}
 	url.setQuery(query);
@@ -229,19 +224,16 @@ QList<TechnicModpackModel::Pack>
 TechnicModpackModel::parseSearch(const QByteArray& bytes)
 {
 	QList<Pack> packs;
-	QJsonParseError parseError;
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Couldn't parse Technic search results:"
-				   << parseError.errorString();
+	const auto doc =
+		Json::tryParse(bytes, "Couldn't parse Technic search results:");
+	if (!doc) {
 		return packs;
 	}
-	for (const auto& raw : doc.object().value(QStringLiteral("modpacks")).toArray()) {
+	for (const auto& raw : doc->object().value(QStringLiteral("modpacks")).toArray()) {
 		const QJsonObject obj = raw.toObject();
 		Pack pack;
 		pack.name = stringOf(obj, QStringLiteral("name"));
 		pack.slug = stringOf(obj, QStringLiteral("slug"));
-		/* The bare game, which the launcher installs on its own. */
 		if (pack.slug.isEmpty() || pack.name.isEmpty() ||
 			pack.slug == QStringLiteral("vanilla")) {
 			continue;
@@ -258,14 +250,12 @@ TechnicModpackModel::parseSearch(const QByteArray& bytes)
 
 bool TechnicModpackModel::parseMetadata(const QByteArray& bytes, Pack& pack)
 {
-	QJsonParseError parseError;
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
+	const auto doc = Json::tryParse(bytes);
+	if (!doc || !doc->isObject()) {
 		return false;
 	}
-	const QJsonObject obj = doc.object();
+	const QJsonObject obj = doc->object();
 
-	/* A zip to download, or else a Solder server - TechnicPage's order. */
 	const QString zip = stringOf(obj, QStringLiteral("url"));
 	const QString solder = stringOf(obj, QStringLiteral("solder"));
 	if (!zip.isEmpty()) {
@@ -305,7 +295,6 @@ QString TechnicModpackModel::solderPackUrl(const Pack& pack)
 QVariantList TechnicModpackModel::versionEntries(const Pack& pack)
 {
 	QVariantMap entry;
-	/* Solder serves its recommended build; a zip pack is what it is. */
 	entry[QStringLiteral("id")] = QStringLiteral("recommended");
 	entry[QStringLiteral("name")] =
 		pack.version.isEmpty() ? tr("Recommended build") : pack.version;
@@ -443,7 +432,6 @@ void TechnicModpackModel::loadDetail(const QString& projectId)
 			m_detail->setLoading(false);
 			return;
 		}
-		/* The card can show more now: author, summary, background. */
 		const int row = int(pack - m_packs.data());
 		emit dataChanged(index(row), index(row));
 		applyDetail(*pack);
@@ -459,24 +447,6 @@ void TechnicModpackModel::loadDetail(const QString& projectId)
 	job->start();
 }
 
-QString TechnicModpackModel::resolveIconKey(const Pack& pack) const
-{
-	/* Where TechnicPage's list keeps logos (TechnicModel::requestLogo()).
-	 * A disk-only lookup; never downloads. */
-	if (!pack.logoName.isEmpty()) {
-		MetaEntryPtr entry = LAUNCHER->metacache()->resolveEntry(
-			QStringLiteral("TechnicPacks"),
-			QStringLiteral("logos/%1").arg(pack.logoName));
-		if (entry && !entry->isStale()) {
-			const QString key = QStringLiteral("technic_") + pack.logoName;
-			LAUNCHER->icons()->installIcon(entry->getFullPath(), key);
-			return key;
-		}
-	}
-	/* No built-in Technic instance icon; the plain block. */
-	return QStringLiteral("grass");
-}
-
 QObject* TechnicModpackModel::install(const QString& projectId,
 									  const QString& versionId,
 									  const QString& instanceName,
@@ -490,8 +460,6 @@ QObject* TechnicModpackModel::install(const QString& projectId,
 		return nullptr;
 	}
 
-	/* What TechnicPage::metadataLoaded() hands the New instance dialog,
-	 * named and placed the way NewInstanceDialog/MainWindow do. */
 	InstanceTask* task = nullptr;
 	if (pack->isSolder) {
 		task = new Technic::SolderPackInstallTask(
@@ -503,7 +471,7 @@ QObject* TechnicModpackModel::install(const QString& projectId,
 	const QString effectiveName = instanceName.isEmpty() ? pack->name : instanceName;
 	task->setName(effectiveName);
 	task->setGroup(group);
-	task->setIcon(resolveIconKey(*pack));
+	task->setIcon(QStringLiteral("grass"));
 	task->setTargetDir(LAUNCHER->instances()->primaryDir());
 
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(task);

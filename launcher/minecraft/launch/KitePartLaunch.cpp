@@ -21,19 +21,16 @@
 
 #include "KitePartLaunch.h"
 
-#include <QStandardPaths>
 #include <QTimer>
 
 #include "launch/LaunchTask.h"
 #include "minecraft/MinecraftInstance.h"
 #include "FileSystem.h"
-#include "Commandline.h"
 #include "Logging.h"
 #include "core/LauncherContext.h"
 
-KitePartLaunch::KitePartLaunch(LaunchTask* parent) : LaunchStep(parent)
+KitePartLaunch::KitePartLaunch(LaunchTask* parent) : GameProcessStep(parent)
 {
-	connect(&m_process, &LoggedProcess::log, this, &KitePartLaunch::logLines);
 	connect(&m_process, &LoggedProcess::stateChanged, this,
 			&KitePartLaunch::on_state);
 }
@@ -122,59 +119,19 @@ void KitePartLaunch::executeTask()
 
 	qCDebug(minecraftlaunchLog) << args.join(' ');
 
-	QString wrapperCommandStr = m_parent->wrapperCommand();
-	if (!wrapperCommandStr.isEmpty()) {
-		auto wrapperArgs = Commandline::splitArgs(wrapperCommandStr);
-		auto wrapperCommand = wrapperArgs.takeFirst();
-		auto realWrapperCommand =
-			QStandardPaths::findExecutable(wrapperCommand);
-		if (realWrapperCommand.isEmpty()) {
-			const char* reason =
-				QT_TR_NOOP("The wrapper command \"%1\" couldn't be found.");
-			emit logLine(QString(reason).arg(wrapperCommand),
-						 MessageLevel::Fatal);
-			emitFailed(tr(reason).arg(wrapperCommand));
-			return;
-		}
-		emit logLine("Wrapper command is:\n" + wrapperCommandStr + "\n\n",
-					 MessageLevel::Kite);
-		args.prepend(javaPath);
-		m_process.start(wrapperCommand, wrapperArgs + args);
-	} else {
-		m_process.start(javaPath, args);
-	}
+	const char* wrapperMissing =
+		QT_TR_NOOP("The wrapper command \"%1\" couldn't be found.");
+	startProcess(javaPath, args, wrapperMissing, tr(wrapperMissing));
 }
 
 void KitePartLaunch::on_state(LoggedProcess::State state)
 {
+	//: Error message displayed if instace can't start
+	const char* reason = QT_TR_NOOP("Could not launch minecraft!");
+	if (handleProcessEnd(state, reason, tr(reason), tr("Game crashed."))) {
+		return;
+	}
 	switch (state) {
-		case LoggedProcess::FailedToStart: {
-			//: Error message displayed if instace can't start
-			const char* reason = QT_TR_NOOP("Could not launch minecraft!");
-			emit logLine(reason, MessageLevel::Fatal);
-			emitFailed(tr(reason));
-			return;
-		}
-		case LoggedProcess::Aborted:
-		case LoggedProcess::Crashed: {
-			m_parent->setPid(-1);
-			emitFailed(tr("Game crashed."));
-			return;
-		}
-		case LoggedProcess::Finished: {
-			m_parent->setPid(-1);
-			// if the exit code wasn't 0, report this as a crash
-			auto exitCode = m_process.exitCode();
-			if (exitCode != 0) {
-				emitFailed(tr("Game crashed."));
-				return;
-			}
-			// FIXME: make this work again
-			//  m_postlaunchprocess.processEnvironment().insert("INST_EXITCODE",
-			//  QString(exitCode)); run post-exit
-			emitSucceeded();
-			break;
-		}
 		case LoggedProcess::Running:
 			emit logLine(QString("Minecraft process ID: %1\n\n")
 							 .arg(m_process.processId()),
@@ -192,11 +149,6 @@ void KitePartLaunch::on_state(LoggedProcess::State state)
 	}
 }
 
-void KitePartLaunch::setWorkingDirectory(const QString& wd)
-{
-	m_process.setWorkingDirectory(wd);
-}
-
 void KitePartLaunch::proceed()
 {
 	if (mayProceed) {
@@ -206,9 +158,9 @@ void KitePartLaunch::proceed()
 	}
 }
 
-// How long the helper gets to act on "abort" before we stop being polite.
-// Long enough for a healthy helper to shut the game down by itself, short
-// enough that the user does not conclude that Kill did nothing.
+// How long the helper gets to act on "abort" before we stop being polite: long
+// enough for a healthy helper to shut the game down, short enough that Kill
+// does not look broken.
 static constexpr int ABORT_GRACE_MS = 3000;
 
 bool KitePartLaunch::abort()
@@ -217,10 +169,10 @@ bool KitePartLaunch::abort()
 		mayProceed = false;
 		QString launchString("abort\n");
 		m_process.write(launchString.toUtf8());
-		// Writing "abort" only *asks* the helper to quit. A helper that is
-		// itself wedged never reads it, and since the launch task is marked
-		// as aborted either way, the game would be left running with nothing
-		// left for the user to press Kill on. Escalate if it is still there.
+		// Writing "abort" only asks the helper to quit. A wedged helper never
+		// reads it, and the task is marked aborted either way, which would
+		// leave the game running with nothing to Kill. Escalate if it is still
+		// there.
 		QTimer::singleShot(ABORT_GRACE_MS, this, [this]() {
 			auto state = m_process.state();
 			if (state != LoggedProcess::Running &&

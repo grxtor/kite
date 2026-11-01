@@ -19,9 +19,11 @@
 
 #pragma once
 
+#include <QColor>
 #include <QHash>
 #include <QObject>
 #include <QPointer>
+#include <QSet>
 #include <QStringList>
 #include <QVariantMap>
 
@@ -48,7 +50,6 @@ class JavaController;
 class JavaDownloadController;
 class FolderSettingsController;
 class UpdateSettingsController;
-class PlayTimeSummary;
 class LibraryController;
 class LauncherLogs;
 class BundleCatalog;
@@ -66,51 +67,28 @@ class QQuickWindow;
 class QWindow;
 class QEvent;
 
-/* Same trim rule the widget's inline rename editor applies before
- * committing (see ui/instanceview/InstanceDelegate.cpp's setModelData()):
- * embedded newlines become spaces, then the whole string is trimmed. An
- * empty result means "no usable name".
- *
- * Free-standing rather than a QmlShell member so it can be unit-tested
- * without a LauncherContext, the way NewInstanceController.h's
- * composeSuggestedInstanceName() is. */
+/* Newlines become spaces, then the string is trimmed; empty means no usable
+ * name. */
 QString sanitizedInstanceName(const QString& name);
 
-/* What Friends' Join knows of an instance when it picks the ones that can
- * follow a friend into a server. Free-standing, like the helpers above, so
- * the order can be tested without a LauncherContext. */
 struct JoinChoice
 {
 	QString version;
 	qint64 lastLaunch = 0;
 	QString name;
 };
-/* The indexes into @p choices of those on exactly @p version, the most
- * recently played first, then by name in the user's language. Empty for an
- * empty version. */
+/* Indexes into @p choices of those on exactly @p version, most recently played
+ * first, then by name. Empty for an empty version. */
 QList<int> joinMatches(const QList<JoinChoice>& choices, const QString& version);
-/* The indexes of the others (a known version that is not @p version): those
- * on its release line (1.21.x for 1.21.4) first, each group ordered as
- * above. */
+/* Indexes of the other known versions: the release line of @p version (1.21.x
+ * for 1.21.4) first, each group ordered as above. */
 QList<int> joinOthers(const QList<JoinChoice>& choices, const QString& version);
 
-/* The onboarding rules Application::createSetupWizard() used to gate the
- * widget SetupWizard's pages (LanguageWizardPage/JavaWizardPage) -- now
- * used by QmlShell::recomputeSetupSteps() instead, since the QML shell runs
- * its own onboarding rather than showing that widget on top of itself (see
- * the class comment below). Free-standing for the same reason as
- * sanitizedInstanceName() above: testable without a LauncherContext. */
+/* The onboarding rules, free-standing so they can be tested without a
+ * LauncherContext. */
 bool languageSetupStepNeeded(const QString& language);
-/* @p hostnameChanged: the machine's hostname no longer matches the
- * "LastHostname" setting recorded on a previous run -- same trigger the
- * widget wizard used (a new machine, or a rename, may mean Java moved or
- * vanished). @p javaPathResolves: FS::ResolveExecutable() on the "JavaPath"
- * setting found something. @p autoDownload: the "JavaAutoDownload" setting.
- * With it on, no Java path is a choice the step itself offers ("let Kite
- * download the right version for each game"), so a missing path alone does
- * not bring the step back. Callers compute all three against live state;
- * this function only combines them, so it needs neither Qt network calls
- * (QHostInfo) nor filesystem access to test. */
+/* The callers compute the three flags from live state. With @p autoDownload on,
+ * a missing Java path alone does not bring the step back. */
 bool javaSetupStepNeeded(bool hostnameChanged, bool javaPathResolves,
 						 bool autoDownload);
 
@@ -118,11 +96,8 @@ bool javaSetupStepNeeded(bool hostnameChanged, bool javaPathResolves,
  * The QML user interface: owns the engine, hands the core's models to it and
  * loads the root window.
  *
- * Everything the QML side sees is passed in as a required property of the
- * root window rather than set as a context property. That keeps each object's
- * type visible to the QML tooling, makes a missing one a load error instead of
- * a silent undefined, and leaves exactly one place -- expose() -- where
- * ownership is decided.
+ * Everything QML sees is a required property of the root window, not a
+ * context property, so expose() is the one place ownership is decided.
  */
 class QmlShell : public QObject
 {
@@ -133,108 +108,63 @@ class QmlShell : public QObject
 	/// Image url of the default account's skin face; empty without one.
 	Q_PROPERTY(QString accountFace READ accountFace NOTIFY accountChanged)
 	Q_PROPERTY(int accountCount READ accountCount NOTIFY accountChanged)
-	/// The launcher's settings, as a SettingsAdapter.
 	Q_PROPERTY(QObject* settings READ settings CONSTANT)
-	/* The core's UiHost, when it is this shell's QmlUiHost -- see
-	 * Application::uiHost(), which prefers this over the widget host for
-	 * as long as it is non-null. QML binds to `current`/`busy`/`busyText`
-	 * on it (see QmlUiHost's class comment). Null until load() has run. */
+	/// Null until load() has run.
 	Q_PROPERTY(QObject* uiHost READ uiHost CONSTANT)
 	/// Installed memory in MiB: the ceiling for the memory settings.
 	Q_PROPERTY(int systemMemoryMiB READ systemMemoryMiB CONSTANT)
-	/// Modrinth modpack search for the Discover page.
 	Q_PROPERTY(QObject* modpackModel READ modpackModel CONSTANT)
-	/// CurseForge modpack search for the Discover page's provider switch.
 	Q_PROPERTY(QObject* curseForgeModpackModel READ curseForgeModpackModel CONSTANT)
-	/// FTB (modpacks.ch), ATLauncher and Technic modpack search for Discover.
 	Q_PROPERTY(QObject* ftbModpackModel READ ftbModpackModel CONSTANT)
 	Q_PROPERTY(QObject* atlModpackModel READ atlModpackModel CONSTANT)
 	Q_PROPERTY(QObject* technicModpackModel READ technicModpackModel CONSTANT)
-	/// Every instance, most recently played first; never-played ones left out.
+	/// Played instances, most recently played first.
 	Q_PROPERTY(QObject* recentModel READ recentModel CONSTANT)
 	/// At most one row: the instance whose id QML writes into instanceId.
 	Q_PROPERTY(QObject* heroModel READ heroModel CONSTANT)
-	/// Same, for the instance page -- separate, since the library's hero
-	/// keeps following its own choice underneath.
+	/// Like heroModel, independent of the library's hero.
 	Q_PROPERTY(QObject* instancePageModel READ instancePageModel CONSTANT)
-	/// The Home page's "Recent worlds" row -- most recently played worlds
-	/// across every instance (see RecentWorldsModel's class comment).
 	Q_PROPERTY(QObject* recentWorlds READ recentWorlds CONSTANT)
-	/// Accounts page: the AccountList model plus add/remove/default/login.
 	Q_PROPERTY(QObject* accountsController READ accountsController CONSTANT)
-	/// The QML "New instance" flow: picks a Minecraft version and loader.
 	Q_PROPERTY(QObject* newInstance READ newInstance CONSTANT)
-	/// Java detection, tests and downloaded runtimes (see models/JavaController.h).
 	Q_PROPERTY(QObject* javaController READ javaController CONSTANT)
-	/// The "Download Java" flow (see models/JavaDownloadController.h).
 	Q_PROPERTY(QObject* javaDownload READ javaDownload CONSTANT)
-	/// Settings' folder rows (see models/FolderSettingsController.h).
 	Q_PROPERTY(QObject* folderSettings READ folderSettings CONSTANT)
-	/// Settings' Updates section (see models/UpdateSettingsController.h).
 	Q_PROPERTY(QObject* updateSettings READ updateSettings CONSTANT)
-	/// Play time across every instance (see models/PlayTimeSummary.h).
-	Q_PROPERTY(QObject* playTime READ playTime CONSTANT)
-	/// The library's housekeeping: groups, undo delete, duplicate with
-	/// options, an instance's folders. See models/LibraryController.h.
 	Q_PROPERTY(QObject* library READ library CONSTANT)
-	/// Settings' Launcher logs section: the launcher's own log files and
-	/// their uploader (see models/LauncherLogs.h).
 	Q_PROPERTY(QObject* launcherLogs READ launcherLogs CONSTANT)
-	/// The cat pictures for Settings > Appearance and the still cat
-	/// (see models/CatPackList.h).
 	Q_PROPERTY(QObject* catPacks READ catPacks CONSTANT)
-	/// Recommended mods and instance presets (see modplatform/BundleCatalog.h).
 	Q_PROPERTY(QObject* bundles READ bundles CONSTANT)
-	/// Who is online and where, from Kite's friends server (see
-	/// friends/FriendsController.h). On by default; contacts nothing once
-	/// the user turns it off in Settings. Null in a build without a friends
-	/// server.
+	/// Null in a build without a friends server; contacts nothing while
+	/// FriendsEnabled is off.
 	Q_PROPERTY(QObject* friends READ friends CONSTANT)
-	/* Distinct groups currently in use, for a "move to group" picker's
-	 * suggestions -- the same list InstanceFilterModel derives for the
-	 * library's own section headers (see m_instances), so a group picker
-	 * never suggests something the library itself would not show. */
+	/// Distinct groups in use, derived like the library's section headers.
 	Q_PROPERTY(QStringList groups READ groups NOTIFY groupsChanged)
-	/// The icon grid model for an icon picker; roles are `key`, `name`,
-	/// `isBuiltin` (see IconList::roleNames()).
+	/// Icon grid model; roles `key`, `name`, `isBuiltin`.
 	Q_PROPERTY(QObject* iconsModel READ iconsModel CONSTANT)
-	/// Where installed icons live, for a picker's "open folder" action.
 	Q_PROPERTY(QString iconsDir READ iconsDir CONSTANT)
-	/* Bumps whenever any icon's pixels may have changed (IconList's
-	 * iconUpdated: a game texture arrived, an icon file was replaced).
-	 * QML caches image://instanceicon/<key> by URL, so Icons.instanceIcon()
-	 * appends this as `?rev=`; see InstanceIconProvider.h. */
+	/* Bumps whenever any icon's pixels may have changed. QML caches
+	 * image://instanceicon/<key> by URL, so Icons.instanceIcon() appends this
+	 * as `?rev=`. */
 	Q_PROPERTY(int iconRevision READ iconRevision NOTIFY iconRevisionChanged)
-	/* Instance id -> the built-in icon that instance was given while its
-	 * own is the generic one (icons/AutoIcons.h), kept in the UiAutoIcons
-	 * setting so nobody's icon moves; QML's Icons.displayKey() reads it. */
+	/// Bumps when an icon colour asked for with iconColor() arrived or changed.
+	Q_PROPERTY(int iconColorRevision READ iconColorRevision NOTIFY iconColorRevisionChanged)
+	/// Instance id -> built-in icon given while its own is the generic one
+	/// (the UiAutoIcons setting).
 	Q_PROPERTY(QVariantMap autoIcons READ autoIcons NOTIFY autoIconsChanged)
 
-	/* Onboarding: the widget SetupWizard (LanguageWizardPage/JavaWizardPage)
-	 * used to run before the main window -- including under the QML shell,
-	 * which this replaces. See recomputeSetupSteps() for the rules, unchanged
-	 * from Application::createSetupWizard(). */
-	/// Ids of the wizard steps still needed, in the widget wizard's own
-	/// order: "language", then "java". Empty once nothing is needed.
+	/// Ids of the onboarding steps still needed, in order: "language", "java".
 	Q_PROPERTY(QStringList setupSteps READ setupSteps NOTIFY setupStepsChanged)
-	/// The language picker's model; roles are `languageKey`, `name` (native
-	/// name), `completeness` (see TranslationsModel::roleNames()).
+	/// Roles `languageKey`, `name` (native name), `completeness`.
 	Q_PROPERTY(QObject* languages READ languages CONSTANT)
-	/// Detected Java installs; roles include `path`, `version`,
-	/// `architecture`, `recommended` (see BaseVersionList::roleNames(), which
-	/// JavaInstallList inherits).
+	/// Roles include `path`, `version`, `architecture`, `recommended`.
 	Q_PROPERTY(QObject* javaInstalls READ javaInstalls CONSTANT)
-	/// Whether detectJava()'s task is still running.
 	Q_PROPERTY(bool javaDetecting READ javaDetecting NOTIFY javaDetectingChanged)
 
-	/// Settings' About section: version, build, credits, licences, help
-	/// links (see AboutInfo). Created in load().
 	Q_PROPERTY(QObject* about READ about CONSTANT)
-	/* The launcher's news, newest first (see NewsModel), following the
-	 * application's NewsChecker; null without one. Created in load(). */
+	/// Null without an application NewsChecker.
 	Q_PROPERTY(QObject* news READ news CONSTANT)
-	/* Whether this build can update itself, so "Check for updates" has
-	 * something to do -- set by Application, which owns the updater. */
+	/// Set by Application, which owns the updater.
 	Q_PROPERTY(bool updaterAvailable READ updaterAvailable NOTIFY
 				   updaterAvailableChanged)
 
@@ -242,104 +172,63 @@ class QmlShell : public QObject
 	explicit QmlShell(QObject* parent = nullptr);
 	~QmlShell() override;
 
-	/* Builds the models and loads the root window without showing it --
-	 * a launch straight from the command line (`kite --launch`) keeps the
-	 * window hidden until it has something to show (see
-	 * Application::ensureQmlShell()). Does nothing once loaded. Returns
-	 * false if the QML failed to load, in which case the reasons have
-	 * already been logged. */
+	/* Builds the models and loads the root window without showing it. Does
+	 * nothing once loaded. False if the QML failed to load (already logged). */
 	bool load();
 
-	/* Loads the root window if needed and shows it on first call; raises
-	 * it on later ones. Returns false if the QML failed to load, as load()
-	 * does. */
+	/* Loads if needed, shows the window on the first call and raises it on
+	 * later ones. False if the QML failed to load. */
 	bool show(bool minimized = false);
 
-	/* The root window load() created, or nullptr before it has
-	 * succeeded. PluginManager (Kite_logic, which links Kite_qml --
-	 * see setPluginSurfaceFactory()'s comment) uses this through
-	 * Application::qmlShellWindow() to generalise main-window handling
-	 * (show/hide/close-filter) to the QML shell the same way it already
-	 * does for the widget MainWindow. */
+	/// The root window, or nullptr before load() has succeeded.
 	QWindow* window() const;
 
-	/* Hands a C++-owned object to QML. The engine takes ownership of any
-	 * QObject without a parent that crosses into JavaScript, and would delete
-	 * core models out from under the rest of the launcher; this pins them. */
+	/* The engine takes ownership of any parentless QObject that crosses into
+	 * JavaScript and would delete core models; this pins them. */
 	static QObject* expose(QObject* object);
 
-	/*
-	 * QmlShell sits in Kite_qml, which links Kite_core only -- it
-	 * cannot see PluginManager or PluginSurfaceModel, both of which live in
-	 * Kite_logic (the plugin host), a target that links Kite_qml and
-	 * not the other way around. Application installs the real factory once
-	 * at startup (see Application::showMainWindow()), the same indirection
-	 * launchInstance()/killInstance()/etc. use via *Requested() signals --
-	 * except pluginSurfaces() needs to *return* a model built from a
-	 * PluginManager, where a signal handing back a value has no natural
-	 * fit, hence a factory instead. Returns a C++-owned QObject* (a
-	 * PluginSurfaceModel) for the given (anchor, anchorContext), or nullptr
-	 * if no factory has been installed (e.g. a test/tool binary that never
-	 * wires one up).
-	 */
+	/* Installed by Application: PluginManager and PluginSurfaceModel live in
+	 * Kite_logic, which links Kite_qml and not the other way around. Returns a
+	 * C++-owned model for (anchor, anchorContext), or nullptr without a
+	 * factory. */
 	using PluginSurfaceFactory =
 		std::function<QObject*(int anchor, const QString& anchorContext)>;
 	static void setPluginSurfaceFactory(PluginSurfaceFactory factory);
 
-	/* The launcher's profilers (Application::profilers()), which QmlShell
-	 * cannot see from Kite_qml either: one {key, name, ready} map per
-	 * profiler, `ready` meaning its own check() passes (the program is set
-	 * up under Settings, External tools). Asked fresh by launchOptions()
-	 * every time, since that check reads settings the user can change.
-	 * Application installs it right after creating the shell. */
+	/* Installed by Application (the profilers live outside Kite_qml). One
+	 * {key, name, ready} map per profiler, `ready` meaning its check() passes.
+	 * Asked fresh by every launchOptions(), since the settings can change. */
 	using ProfilersProvider = std::function<QVariantList()>;
 	void setProfilersProvider(ProfilersProvider provider);
 
-	/* Builds the "Installed plugins" list (a PluginListModel, which lives
-	 * next to PluginManager in Kite_logic) -- same indirection as
-	 * setPluginSurfaceFactory(). Application installs it; it returns null
-	 * in a build without the plugin host. */
+	/* Installed by Application (PluginListModel lives in Kite_logic). Returns
+	 * null in a build without the plugin host. */
 	using PluginListFactory = std::function<QObject*()>;
 	void setPluginListFactory(PluginListFactory factory);
-	/* The plugin list, made by that factory on first use and kept; null
-	 * without one, which Settings takes as "no plugins section". */
+	/* Made by that factory on first use and kept; null without one, which
+	 * Settings takes as "no plugins section". */
 	Q_INVOKABLE QObject* pluginList();
 
-	/* One C++-owned model per (anchor, anchorContext) pair asked for,
-	 * reused across calls the same way sectionModel() reuses one
-	 * InstanceFilterModel per group. `anchor` is an MMCOUiAnchor value, or
-	 * -1 for "every anchor"; `anchorContext` is an instance id, or empty
-	 * for GLOBAL_SETTINGS / "every context" (see
-	 * PluginManager::surfaces()). */
+	/* One C++-owned model per (anchor, anchorContext), reused across calls.
+	 * `anchor` is an MMCOUiAnchor value, or -1 for every anchor;
+	 * `anchorContext` is an instance id, or empty for GLOBAL_SETTINGS / every
+	 * context. */
 	Q_INVOKABLE QObject* pluginSurfaces(int anchor,
 										const QString& anchorContext = QString());
 
-	/* Sidebar account summary, read from LAUNCHER->accounts() - QmlShell has
-	 * no reason to go through Application for this, and reaching it via the
-	 * core keeps QmlShell usable without one. */
 	QString accountName() const;
-	/// "Microsoft", "Offline", or empty when there is no default account.
+	/// "Microsoft", "Offline", or empty without a default account.
 	QString accountKind() const;
 	int accountCount() const;
 	QString accountFace() const;
 
 	QObject* settings() const;
-	/* Applies the ProxyType/ProxyAddr/ProxyPort/ProxyUser/ProxyPass
-	 * settings immediately, the way the widget ProxyPage's apply button
-	 * does. The QML settings page (once it has a proxy page of its own)
-	 * writes those five settings through `settings` above like any other
-	 * setting, then calls this so the change takes effect without a
-	 * restart -- QmlShell cannot reach QNetworkProxy/Application itself,
-	 * so this goes through LauncherContext::updateProxySettings(). */
+	/* Applies the Proxy* settings now, without a restart. QML writes them
+	 * through `settings` first. */
 	Q_INVOKABLE void applyProxySettings();
-	/// Bound to `shell.uiHost` in QML -- see the Q_PROPERTY comment above.
 	QObject* uiHost() const;
-	/* The same object as uiHost() above, typed for Application's own use
-	 * (Application::uiHost() prefers this over the widget UiHost while
-	 * this is non-null) instead of QML's property binding. Null until
-	 * load() has run *and* QmlUiHost::presenterReady() is true -- see
-	 * QmlUiHost's class comment's PRESENTER READINESS section for why a
-	 * call must not reach this object before some QML item can answer it. */
+	/* Same object as uiHost(). Null until load() has run and
+	 * QmlUiHost::presenterReady() is true. */
 	UiHost* uiHostInterface() const;
 	int systemMemoryMiB() const;
 	QObject* modpackModel() const;
@@ -347,9 +236,8 @@ class QmlShell : public QObject
 	QObject* ftbModpackModel() const;
 	QObject* atlModpackModel() const;
 	QObject* technicModpackModel() const;
-	/* Starts installing a Modrinth modpack version as a new instance and
-	 * returns its TaskWatcher, owned by C++: the install must outlive the
-	 * page that started it, whatever QML does with the reference. */
+	/* Returns a C++-owned TaskWatcher: the install must outlive the page that
+	 * started it. */
 	Q_INVOKABLE QObject* installModpack(const QString& projectId,
 										const QString& versionId,
 										const QString& instanceName,
@@ -358,254 +246,176 @@ class QmlShell : public QObject
 	QObject* heroModel() const;
 	QObject* instancePageModel() const;
 	QObject* recentWorlds() const;
-	/* The instances of one group (empty = ungrouped) that pass the search,
-	 * for one section of the library. Created on first use and kept, so
-	 * QML asking again from a rebuilt delegate gets the same model back. */
+	/* The instances of one group (empty = ungrouped) that pass the search.
+	 * Created on first use and kept, so a rebuilt delegate gets the same
+	 * model back. */
 	Q_INVOKABLE QObject* sectionModel(const QString& group);
-	/* IconList::fillsTile(): whether icon @p key is drawn across its whole
-	 * tile (Icons.fillsTile() in QML). */
 	Q_INVOKABLE bool iconFillsTile(const QString& key) const;
-	/* The InstanceDetails bridge for one instance's detail page. At most
-	 * one is kept at a time: asking for a different id replaces (and
-	 * destroys) whichever one was open before; asking again for the same
-	 * id returns the one already open. Null if @p id names no instance. */
+	/* At most one is kept: another id replaces (and destroys) the open one,
+	 * the same id returns it. Null if @p id names no instance. */
 	Q_INVOKABLE QObject* instanceDetails(const QString& id);
-	/* The Export dialog's controller for instance @p id. At most one is
-	 * kept, like instanceDetails(): asking for another id replaces it,
-	 * asking again for the same id returns the one already open. Null if
-	 * @p id names no instance. */
+	/// Kept like instanceDetails().
 	Q_INVOKABLE QObject* exportController(const QString& id);
-	/* The Create shortcut dialog's controller for instance @p id; the same
-	 * keeping rule. */
 	Q_INVOKABLE QObject* shortcutController(const QString& id);
-	/// The Accounts page's model+actions object. Created in load(), like
-	/// the other CONSTANT properties above.
 	QObject* accountsController() const;
-	/// The "New instance" flow's controller. Created in load(), like the
-	/// other CONSTANT properties above.
 	QObject* newInstance() const;
-	/// Made on first use, like newInstance().
 	QObject* javaController() const;
 	QObject* javaDownload() const;
-	/// Made on first use, like javaController().
 	QObject* folderSettings() const;
 	QObject* updateSettings() const;
-	QObject* playTime() const;
-	/* The same object as updateSettings(), typed for Application, which
-	 * hands it the updater (UpdateSettingsController::setBackend()). */
+	/// Typed for Application, which hands it the updater.
 	UpdateSettingsController* updateSettingsController() const;
-	/// Made on first use, like newInstance().
 	QObject* library() const;
-	/// Made on first use: nothing watches the log folder before then.
 	QObject* launcherLogs() const;
-	/// Made on first use, like javaController().
 	QObject* catPacks() const;
-	/// Made on first use, like catPacks().
 	QObject* bundles() const;
-	/// Made on first use; contacts nothing while FriendsEnabled is off (it
-	/// is on unless the user turned it off). Null where the build has no
-	/// friends server (FriendsController::available()).
 	QObject* friends() const;
 
-	/* Everything below just emits the matching *Requested() signal: QmlShell
-	 * sits in Kite_qml, which cannot see the widget code that actually
-	 * launches an instance, opens a dialog or shows a folder. Application
-	 * connects these to the real actions. */
+	/* The actions below emit the matching *Requested() signal; Application
+	 * connects the real work, which Kite_qml cannot see. */
 	Q_INVOKABLE void launchInstance(const QString& id);
-	/* Play in a given way: @p mode is "offline" (no sign-in, the account
-	 * cache as it is), "demo" (the demo, signed in like any launch; refused by
-	 * Application where launchOptions() says supportsDemo is false) or
-	 * anything else for a normal launch -- the widget launch menu's Launch,
-	 * Launch Offline and Launch Demo. */
+	/* @p mode: "offline" (no sign-in, the account cache as it is), "demo"
+	 * (refused by Application where launchOptions() says supportsDemo is
+	 * false) or anything else for a normal launch. */
 	Q_INVOKABLE void launchInstanceMode(const QString& id, const QString& mode);
-	/* Play with account @p accountId (an `accounts` id from
-	 * launchOptions()) instead of the default one, without making it the
-	 * default. */
+	/* Launches with account @p accountId (an `accounts` id from
+	 * launchOptions()) without making it the default. */
 	Q_INVOKABLE void launchInstanceAs(const QString& id,
 									  const QString& accountId);
-	/* What a "Play options" menu needs for instance @p id, read fresh each
-	 * time it opens:
+	/* Read fresh on each call; empty for an unknown id.
 	 *   supportsDemo  whether the game version has a demo (1.3.1 and newer)
 	 *   profiler      the instance's profiler key ("" for none)
-	 *   profilers     [{key, name, ready}] -- see setProfilersProvider()
+	 *   profilers     [{key, name, ready}], see setProfilersProvider()
 	 *   accounts      [{id, name, kind, isDefault}] for "Play as"
 	 *   performance   whether Kite Performance is on for the instance
-	 *   performanceAvailable  whether it can be: the instance has a mod
-	 *                 loader and a game version the mods exist for
-	 * Empty for an unknown id. */
+	 *   performanceAvailable  the instance has a mod loader and a game
+	 *                 version the mods exist for */
 	Q_INVOKABLE QVariantMap launchOptions(const QString& id) const;
-	/* Sets instance @p id's profiler ("" for none), the setting every way
-	 * into the game reads -- the widget launch menu's profiler entries.
-	 * Starts nothing by itself. */
+	/// Sets the profiler key ("" for none); starts nothing.
 	Q_INVOKABLE void setInstanceProfiler(const QString& id,
 										 const QString& profilerKey);
-	/* Kite Performance, a mode of one instance: while it is on, every Play
-	 * first makes sure the Performance bundle's default mods are installed,
-	 * minus the projects in performanceExcluded() (Modrinth project ids the
-	 * player unticked). It never touches an instance without a mod loader:
-	 * a vanilla instance is left as it is, and "Speed up" makes a separate
-	 * one for it (createPerformanceInstance()).
-	 * The setters do nothing for an unknown or non-Minecraft id and tell
-	 * QML through performanceChanged(). */
+	/* Kite Performance, a mode of one instance: while on, every Play first
+	 * installs the Performance bundle's default mods, minus the Modrinth
+	 * project ids in performanceExcluded(), plus those in performanceIncluded()
+	 * (extras the player ticked). An instance without a mod loader is left as
+	 * it is (see createPerformanceInstance()). The setters do nothing for an
+	 * unknown or non-Minecraft id and emit performanceChanged(). */
 	Q_INVOKABLE bool performanceEnabled(const QString& id) const;
 	Q_INVOKABLE void setPerformanceEnabled(const QString& id, bool on);
 	Q_INVOKABLE QStringList performanceExcluded(const QString& id) const;
 	Q_INVOKABLE void setPerformanceExcluded(const QString& id,
 											const QStringList& projects);
-	/* Whether the performance mods exist for Minecraft @p mcVersion: a
-	 * release from 1.16 on or a numbered one (26.1.2); not "1.12.2",
-	 * "1.8.9", snapshots or betas. */
+	Q_INVOKABLE QStringList performanceIncluded(const QString& id) const;
+	Q_INVOKABLE void setPerformanceIncluded(const QString& id,
+											const QStringList& projects);
+	/* Names of the mods the last Minecraft version or loader change found no
+	 * build for (left at their old files, which the game will likely refuse)
+	 * that are still in the mods folder: the name each was installed under,
+	 * else its file name. Empty for an unknown id or when all matched.
+	 * Announced by performanceUnmatchedFound() once launching or speeding up
+	 * the instance has begun. */
+	Q_INVOKABLE QStringList performanceUnmatched(const QString& id) const;
+	/* Releases from 1.16 on and numbered versions (26.1.2); not 1.12.2,
+	 * 1.8.9, snapshots or betas. */
 	Q_INVOKABLE bool performanceSupported(const QString& mcVersion) const;
-	/* The game's own Graphics API setting (26.2 and later) for instance
-	 * @p id, read from its options.txt: "default" (Automatic), "vulkan" or
-	 * "opengl"; "" when the id is not a Minecraft instance or its version
-	 * has no such setting. */
+	/* The Graphics API setting of 26.2+ in the instance's options.txt:
+	 * "default" (Automatic), "vulkan" or "opengl"; "" for a non-Minecraft
+	 * instance or a version without it. */
 	Q_INVOKABLE QString graphicsBackend(const QString& id) const;
-	/* Writes it back to the instance's options.txt, every other line kept.
-	 * False -- nothing changed -- for an unknown id, a version without the
-	 * setting, a running game (it rewrites options.txt when it quits), an
-	 * unknown @p backend or a failed write. */
+	/* Writes it back, other lines kept. False, nothing changed, for an
+	 * unknown id or @p backend, a version without the setting, a running game
+	 * (it rewrites options.txt on exit) or a failed write. */
 	Q_INVOKABLE bool setGraphicsBackend(const QString& id,
 										const QString& backend);
-	/* "Speed up" on a modded instance: turns the mode on and does the
-	 * setup now. The TaskWatcher of that setup, or null (and nothing
-	 * changed) when the instance is running, is not a Minecraft instance,
-	 * or has no mod loader (a vanilla instance is never changed: see
-	 * createPerformanceInstance()). The setup never fails; once
-	 * the watcher has finished, its `status` is a sentence saying what
-	 * was done, for a toast.
-	 * One setup per instance: while one is still running, this returns
-	 * that one's watcher instead of starting a second task over the same
-	 * mods folder.
-	 * @p extras are other catalog projects to install in the same run
-	 * (New instance's mod picker); only this run installs them. */
+	/* "Speed up" on a modded instance: turns the mode on and does the setup
+	 * now. Returns its TaskWatcher, or null (nothing changed) for a running,
+	 * non-Minecraft or loaderless instance. The setup never fails; the
+	 * finished watcher's `status` is a sentence for a toast. While one setup
+	 * runs on the instance, returns its watcher instead of starting another.
+	 * @p extras are other catalog projects for this run only. */
 	Q_INVOKABLE QObject* speedUp(const QString& id, const QStringList& extras = {});
-	/* The TaskWatcher of the speedUp() setup still running on instance
-	 * @p id, or null when there is none. For a page that opens after the
-	 * setup began (the new-instance dialog starts it and closes) and
-	 * wants to show its progress. */
+	/// The watcher of the speedUp() setup still running on @p id, or null.
 	Q_INVOKABLE QObject* performanceSetup(const QString& id) const;
-	/* "Speed up" on a vanilla instance, which is never changed: makes a
-	 * NEW, empty instance (no worlds, nothing copied) on the source's
-	 * Minecraft version with the newest Fabric loader, named
-	 * "<source> · Kite Performance", in the source's group, with the
+	/* "Speed up" on a vanilla instance, which is never changed: makes a new
+	 * empty instance "<source> · Kite Performance" on the source's Minecraft
+	 * version with the newest Fabric, in the source's group, with the
 	 * Performance preset's memory and options.txt and the mode on, then
-	 * installs the performance mods into it.
-	 * One TaskWatcher covers the whole chain: its `instanceId` is the new
-	 * instance's by the time finished(true) fires, and its final `status`
-	 * is a sentence ("Created X with 4 performance mods"). finished(false)
-	 * with `error` if the instance could not be created (the mods are best
-	 * effort). Null when @p sourceId is not a Minecraft instance or its
-	 * version is not performanceSupported(). */
+	 * installs the mods into it.
+	 * One TaskWatcher covers the chain: its `instanceId` is the new
+	 * instance's by the time finished(true) fires and its final `status` is a
+	 * toast sentence. finished(false) with `error` if the instance could not
+	 * be created (the mods are best effort). Null unless @p sourceId is a
+	 * Minecraft instance whose version is performanceSupported(). */
 	Q_INVOKABLE QObject* createPerformanceInstance(const QString& sourceId);
 	Q_INVOKABLE void killInstance(const QString& id);
 	Q_INVOKABLE void openInstanceFolder(const QString& id);
-	/* Launches instance @p id straight into server @p address (host[:port]),
-	 * the QML-facing replacement for ServersPage's "Join" action
-	 * (ServersPage::on_actionJoin_triggered()). Returns whether the instance
-	 * can start: a running or broken one only gets its Log or edit page
-	 * (Application::launch()), and nothing joins. */
+	/* Launches straight into server @p address (host[:port]). False if the
+	 * instance cannot start: a running or broken one only gets its Log or
+	 * edit page (Application::launch()). */
 	Q_INVOKABLE bool joinServer(const QString& id, const QString& address);
-	/* The Minecraft instances whose game version is exactly @p mcVersion
-	 * (their net.minecraft component), the most recently played first:
-	 * [{id, name, iconKey, version, loader, lastLaunch, running,
-	 * canLaunch}]. Friends' Join uses it to pick which instance enters a
-	 * friend's server. Empty for an empty version. */
+	/* The Minecraft instances on exactly @p mcVersion, most recently played
+	 * first: [{id, name, iconKey, version, loader, lastLaunch, running,
+	 * canLaunch}]. Empty for an empty version. */
 	Q_INVOKABLE QVariantList instancesForVersion(const QString& mcVersion) const;
-	/* The other Minecraft instances, same maps: those on the same release
-	 * line as @p mcVersion (1.21.x for 1.21.4) first, then the rest, each
-	 * most recently played first. What Join offers when no instance is on
-	 * the friend's exact version. */
+	/* The other Minecraft instances, same maps: the release line of
+	 * @p mcVersion (1.21.x for 1.21.4) first, each group most recently played
+	 * first. */
 	Q_INVOKABLE QVariantList otherInstances(const QString& mcVersion) const;
-	/// Opens a folder in the file manager; relative paths are resolved
-	/// against the data folder, which is the working directory.
+	/// Relative paths resolve against the data folder (the working directory).
 	Q_INVOKABLE void openPath(const QString& path);
 
-	/* Called by Application for an import that comes from outside the
-	 * window -- `kite --import <zip|url>`, or a second launcher process
-	 * passing its file on (the IPC "import" message) -- where the widget
-	 * UI used MainWindow::droppedURLs(). Relays @p source (a local path or
-	 * a URL) into QML as importRequested() below, which opens the New
-	 * instance dialog in import mode with it filled in. Before load() has
-	 * loaded the root window nothing in QML could answer that signal yet,
-	 * so the source is kept and delivered as soon as load() succeeds. */
+	/* For an import that comes from outside the window (`kite --import`, the
+	 * IPC "import" message). Relays @p source (a local path or URL) as
+	 * importRequested(); kept until load() succeeds if QML cannot answer
+	 * yet. */
 	void requestImport(const QString& source);
 
-	/* Called by Application to send the user somewhere in the QML shell
-	 * from outside it -- a launch that needs an account opens the Accounts
-	 * page. @p target is a Main.qml navigate() path ("accounts",
-	 * "settings/java", ...); relayed as navigateRequested() below. */
+	/* Relays @p target, a Main.qml navigate() path ("accounts",
+	 * "settings/java"), as navigateRequested(). */
 	void requestNavigate(const QString& target);
 
-	/* Called by Application (see Application::showInstanceLog()) instead
-	 * of raising a widget InstanceWindow when the QML shell is the active
-	 * UI: a launch that would have opened the console -- ShowConsole, or a
-	 * crash with ShowConsoleOnError -- relays the request into QML as
-	 * openInstanceLog() below, which opens instance @p id's page on its
-	 * Log tab. */
+	/// Relays as openInstanceLog(): instance @p id's page on its Log tab.
 	void showInstanceLogRequested(const QString& id);
 
-	/* Everything below replicates the core part of a MainWindow instance
-	 * action directly against LAUNCHER->instances()/icons() -- no widget
-	 * code, no dialogs (QML supplies its own and asks for confirmation
-	 * itself where the widget would have). */
-
-	/// False (no change) for a name that trims to nothing, same rule the
-	/// widget's inline rename editor applies.
+	/// False (no change) for a name that trims to nothing.
 	Q_INVOKABLE bool renameInstance(const QString& id, const QString& name);
-	/// "" ungroups; the same InstanceList API both the widget's
-	/// drag-to-group and its "Change group" dialog call.
+	/// "" ungroups.
 	Q_INVOKABLE void setInstanceGroup(const QString& id,
 									  const QString& group);
 	Q_INVOKABLE void setInstanceIcon(const QString& id,
 									 const QString& iconKey);
-	/* Installs a local image as a new icon, the way IconPickerDialog's
-	 * "Add icon" button does (IconList::installIcons()). Returns whether
-	 * the file looked installable (readable, a regular file); like the
-	 * widget's own button, a same-key collision or a rejected extension is
-	 * not detected here. On success, iconImported() follows once the icon
-	 * list actually picks the new file up. */
-	Q_INVOKABLE bool importIcon(const QString& fileUrlOrPath);
-	/* Starts the same InstanceCopyTask CopyInstanceDialog starts, with the
-	 * same defaults its checkboxes start with (copy saves and keep
-	 * playtime, both on) and the source instance's own icon. Returns a
-	 * C++-owned TaskWatcher for the running copy, or null if @p id names no
-	 * instance or @p newName trims to nothing. */
+	// Copies a screenshot (path or file URL) into the instance as its cover; false for an unknown instance.
+	Q_INVOKABLE bool setInstanceCover(const QString& instanceId,
+									  const QString& pathOrFileUrl);
+	// Drops the picked cover and deletes its copy.
+	Q_INVOKABLE void clearInstanceCover(const QString& instanceId);
+	// The screenshot the cover was copied from got a new name (path or name).
+	Q_INVOKABLE void renameInstanceCoverSource(const QString& instanceId,
+											   const QString& fileName);
+	/* The average colour of instance icon @p key for the cover-less gradient;
+	 * invalid until it is averaged (iconColorRevision then bumps). */
+	Q_INVOKABLE QColor iconColor(const QString& key) const;
+	/* Copies saves and keeps playtime, with the source's icon. Returns a
+	 * C++-owned TaskWatcher, or null if @p id names no instance or @p newName
+	 * trims to nothing. */
 	Q_INVOKABLE QObject* duplicateInstance(const QString& id,
 										   const QString& newName,
 										   const QString& group);
-	/* The same deletion MainWindow performs once its confirmation dialog
-	 * is accepted -- QML asks for confirmation itself before calling this.
-	 * Refuses (false) while the instance is running, like the widget does. */
+	/* QML confirms first. Refuses (false) while the instance is running. */
 	Q_INVOKABLE bool deleteInstance(const QString& id);
-	Q_INVOKABLE bool isInstanceRunning(const QString& id) const;
-	/* Preview/dev-only: sets the same runtime flag LaunchTask sets around a
-	 * real game process's exit (BaseInstance::setCrashed()), so a
-	 * KITE_QML_ROUTE devRoute step (Main.qml's applyDevRoute(), "crashed=
-	 * <id>") can exercise the Home page's "Crashed last time" chip. Unlike
-	 * every other instance property, hasCrashed is never written to
-	 * instance.cfg, so gen_preview.py's static preview data cannot fake it
-	 * on disk -- this reaches the exact same in-memory flag production
-	 * does instead of inventing a parallel on-disk one. No-op for an
-	 * unknown id. */
+	/* Dev only: sets BaseInstance::setCrashed()'s runtime flag, which is never
+	 * written to instance.cfg, for KITE_QML_ROUTE snapshots ("crashed=<id>").
+	 * No-op for an unknown id. */
 	Q_INVOKABLE void debugMarkInstanceCrashed(const QString& id);
-	/* Preview/dev-only: a real mouse click at window point "x,y" for
-	 * review snapshots (Main.qml's applyDevRoute(), "click=x,y[,right
-	 * [,delayMs]]"): the pointer moves there first, so hover-only controls
-	 * show up, then presses and releases through the window's normal
-	 * event delivery -- what a snapshot of "click the card's ⋯" needs to
-	 * catch a handler stealing the press. Starts after delayMs (default
-	 * 1000), once the page has laid out. "x,y,left,delayMs,dx,dy" drags by
-	 * (dx, dy) before letting go instead. */
+	/* Dev only: a real mouse click at window point "x,y" for review snapshots
+	 * ("click=x,y[,right[,delayMs]]"). The pointer moves there first so
+	 * hover-only controls show; delayMs defaults to 1000.
+	 * "x,y,left,delayMs,dx,dy" drags by (dx, dy) before letting go. */
 	Q_INVOKABLE void debugClick(const QString& spec);
-	/* Preview/dev-only, for review snapshots of questions only a real
-	 * launch would otherwise ask (Main.qml's applyDevRoute(), "ask=<kind>"):
-	 * "pickAccount" asks the launch account picker over the real account
-	 * list; "busySkip" shows the account-refresh wait with its "Play
-	 * offline" button, which ends it; "modal" shows a sample plugin prompt
-	 * (UiHost::runPluginModal()); "optionalMods" a sample ATLauncher
-	 * optional-mods question (UiHost::chooseOptionalMods()). Through the same QmlUiHost calls the
-	 * real code makes. No-op for any other kind. */
+	/* Dev only, for snapshots ("ask=<kind>"): "pickAccount" asks the launch
+	 * account picker; "busySkip" shows the account-refresh wait with its "Play
+	 * offline" button; "modal" a sample plugin prompt; "optionalMods" a sample
+	 * ATLauncher optional-mods question. No-op for any other kind. */
 	Q_INVOKABLE void debugShowRequest(const QString& kind);
 
 	QStringList groups() const;
@@ -614,106 +424,67 @@ class QmlShell : public QObject
 
 	QStringList setupSteps() const;
 	int iconRevision() const { return m_iconRevision; }
+	int iconColorRevision() const { return m_iconColorRevision; }
 	QVariantMap autoIcons() const { return m_autoIcons; }
-	/* Recomputes setupSteps() from live settings, exactly like
-	 * Application::createSetupWizard() did once at startup for the widget
-	 * wizard -- called once from the constructor, and again whenever QML
-	 * says a step is done (finishSetupStep()), since finishing one step
-	 * (e.g. picking a language) does not change whether another (Java) is
-	 * still needed, but the shell has no other way to notice that a step it
-	 * already reported is now satisfied. */
+	/// Recomputes setupSteps() from live settings once QML finishes a step.
 	Q_INVOKABLE void finishSetupStep(const QString& id);
 	QObject* languages() const;
-	/* Applies @p key live the way LanguageSelectionWidget's row-changed
-	 * handler does (TranslationsModel::selectLanguage() +
-	 * updateLanguage()), retranslates the running QML engine so qsTr()
-	 * strings update immediately, and persists it as LanguageWizardPage's
-	 * validatePage() does. */
+	/// Applies @p key live, retranslates the QML engine and persists it.
 	Q_INVOKABLE void selectLanguage(const QString& key);
 	QObject* javaInstalls() const;
 	bool javaDetecting() const;
-	/* Starts the same JavaInstallList detection task the widget wizard's
-	 * refresh button runs (JavaSettingsWidget::refresh() ->
-	 * VersionSelectWidget::loadList()) -- always a fresh run, not only when
-	 * nothing has been detected yet. */
+	/// Starts a detection run unless one is already in progress.
 	Q_INVOKABLE void detectJava();
-	/* Writes JavaPath the way JavaWizardPage::validatePage() does for a
-	 * good result -- @p path is expected to already be a checked candidate
-	 * (one of javaInstalls()'s rows), so this does not re-run JavaChecker.
-	 * The wizard page never writes JavaVersion/JavaArchitecture itself
-	 * (CheckJava, the launch step, does that later), so neither does this. */
+	/* Writes JavaPath. @p path should be one of javaInstalls()'s rows; it is
+	 * not re-checked. JavaVersion/JavaArchitecture are left to CheckJava. */
 	Q_INVOKABLE void useJava(const QString& path);
 
 	QObject* about() const;
 	QObject* news() const;
 	bool updaterAvailable() const;
-	/// Called by Application, which knows whether the updater exists.
 	void setUpdaterAvailable(bool available);
-	/// Asks Application to check for updates now (checkForUpdatesRequested()).
 	Q_INVOKABLE void checkForUpdates();
 
   signals:
-	/* Emitted when the root window really closes -- not merely when it
-	 * is hidden (see eventFilter()): a plugin's main_window_hide(), or a
-	 * plugin close-filter vetoing the close (main_window_install_close_filter()),
-	 * both hide the window without this firing, the same way neither
-	 * triggers MainWindow::isClosing() on the widget path. */
+	/// The root window really closed, not merely hidden (a plugin's hide or
+	/// close-filter veto does not fire it).
 	void closed();
 
-	/// accountName()/accountKind()/accountCount() moved.
 	void accountChanged();
 
 	void launchRequested(const QString& id);
-	/// launchInstanceMode() and launchInstanceAs() -- see there.
 	void launchModeRequested(const QString& id, const QString& mode);
 	void launchAsRequested(const QString& id, const QString& accountId);
 	void killRequested(const QString& id);
-	/// setPerformanceEnabled(), setPerformanceExcluded() or speedUp()
-	/// changed instance @p id's Kite Performance settings.
 	void performanceChanged(const QString& id);
+	/// Instance @p id's Kite Performance setup found no version of the mods
+	/// @p names (performanceUnmatched()) for its new Minecraft version or
+	/// loader. Only for an instance this shell has launched or sped up.
+	void performanceUnmatchedFound(const QString& id, const QStringList& names);
 	void folderRequested(const QString& id);
 	void joinServerRequested(const QString& id, const QString& address);
 
-	/// Emitted by requestImport() -- asks QML to open the New instance
-	/// dialog in import mode with @p source filled in.
 	void importRequested(const QString& source);
-
-	/// Emitted by requestNavigate() -- Main.qml passes @p target to its
-	/// navigate().
 	void navigateRequested(const QString& target);
-
-	/// Emitted by showInstanceLogRequested() above -- asks QML to open
-	/// instance @p id's page on its Log tab.
 	void openInstanceLog(const QString& id);
 
-	/// groups() moved.
 	void groupsChanged();
-	/// importIcon() succeeded and the icon list now has @p key.
-	void iconImported(const QString& key);
-	/// iconRevision() moved.
 	void iconRevisionChanged();
-	/// autoIcons() moved.
+	void iconColorRevisionChanged();
 	void autoIconsChanged();
 
-	/// setupSteps() moved.
 	void setupStepsChanged();
-	/// javaDetecting() moved.
 	void javaDetectingChanged();
 
 	void updaterAvailableChanged();
-	/// checkForUpdates() -- Application runs the updater's check.
 	void checkForUpdatesRequested();
 
   private:
 	QVariantMap rootProperties();
 	void scheduleSnapshotIfRequested();
-	/* The actual rule-running: see setupSteps()'s Q_PROPERTY comment and
-	 * finishSetupStep(). */
 	void recomputeSetupSteps();
 
-	/* Installed on m_window by load(). Watches for the window's own
-	 * QEvent::Close to emit closed() -- see the signal's doc comment
-	 * above and the longer comment on the definition. */
+	/* Installed on m_window by load(); emits closed() on QEvent::Close. */
 	bool eventFilter(QObject* watched, QEvent* event) override;
 
 	/* Declared before the engine so they are destroyed after it: QML holds
@@ -727,15 +498,12 @@ class QmlShell : public QObject
 	std::map<QString, std::unique_ptr<InstanceFilterModel>> m_sections;
 	std::unique_ptr<IdSelectionModel> m_selection;
 	std::unique_ptr<SettingsAdapter> m_settings;
-	/* Created in load(), like m_settings above -- see uiHost()'s Q_PROPERTY
-	 * comment for how Application reaches this. */
 	std::unique_ptr<QmlUiHost> m_uiHost;
 	std::unique_ptr<ModrinthModpackModel> m_modpacks;
 	std::unique_ptr<FlameModpackModel> m_curseForgeModpacks;
 	std::unique_ptr<FtbModpackModel> m_ftbModpacks;
 	std::unique_ptr<AtlModpackModel> m_atlModpacks;
 	std::unique_ptr<TechnicModpackModel> m_technicModpacks;
-	/* The one open instance detail page, if any - see instanceDetails(). */
 	std::unique_ptr<InstanceDetails> m_instanceDetails;
 	std::unique_ptr<InstanceExportController> m_exportController;
 	std::unique_ptr<InstanceShortcutController> m_shortcutController;
@@ -745,55 +513,54 @@ class QmlShell : public QObject
 	mutable std::unique_ptr<JavaDownloadController> m_javaDownload;
 	mutable std::unique_ptr<FolderSettingsController> m_folderSettings;
 	mutable std::unique_ptr<UpdateSettingsController> m_updateSettings;
-	mutable std::unique_ptr<PlayTimeSummary> m_playTime;
 	mutable std::unique_ptr<LibraryController> m_library;
 	mutable std::unique_ptr<LauncherLogs> m_launcherLogs;
 	mutable std::unique_ptr<CatPackList> m_catPacks;
 	mutable std::unique_ptr<BundleCatalog> m_bundles;
 	mutable std::unique_ptr<FriendsController> m_friends;
-	/* Keyed by (anchor, anchorContext) -- see pluginSurfaces(). Declared
-	 * alongside the other cached models, for the same reason: destroyed
-	 * before the engine is torn down. */
+	/* Keyed by (anchor, anchorContext). Declared with the other cached models
+	 * so they are destroyed before the engine. */
 	std::map<std::pair<int, QString>, std::unique_ptr<QObject>>
 		m_pluginSurfaceModels;
-
-	std::unique_ptr<QQmlApplicationEngine> m_engine;
-	QQuickWindow* m_window = nullptr;
-	int m_accountRevision = 0;
-	/* The speedUp() setups that are running, by instance id. Entries
-	 * are dropped when their watcher finishes. */
-	QHash<QString, QPointer<TaskWatcher>> m_performanceSetups;
-
-	/* Onboarding -- see setupSteps()'s Q_PROPERTY comment. Not exposed as
-	 * shared_ptr members the way m_instances etc. are: TranslationsModel and
-	 * JavaInstallList are LauncherContext-owned singletons (LAUNCHER->
-	 * translations()/javalist()), shared with the rest of the launcher and
-	 * outliving any one QmlShell, so there is nothing here to own. */
-	QStringList m_setupSteps;
-
-	/* iconRevision(). Bumped once per event-loop turn however many
-	 * iconUpdated signals arrived (loadGameTextures() emits one per
-	 * changed icon), so every bound Image reloads once. */
-	int m_iconRevision = 0;
-	bool m_iconRevisionPending = false;
-	/* autoIcons(). Recomputed once per event-loop turn after the instance
-	 * list gains or loses rows or an icon key changes. */
-	void refreshAutoIcons();
-	QVariantMap m_autoIcons;
-	bool m_autoIconsPending = false;
-	bool m_javaDetecting = false;
-
-	/* requestImport() sources that arrived before load() loaded the root
-	 * window; emitted, in order, once it has. */
-	QStringList m_pendingImports;
-
 	ProfilersProvider m_profilersProvider;
 	PluginListFactory m_pluginListFactory;
 	std::unique_ptr<QObject> m_pluginList;
 	std::unique_ptr<AboutInfo> m_about;
 	std::unique_ptr<NewsModel> m_news;
+
+	std::unique_ptr<QQmlApplicationEngine> m_engine;
+	QQuickWindow* m_window = nullptr;
+	int m_accountRevision = 0;
+	/* Running speedUp() setups by instance id; dropped when their watcher
+	 * finishes. */
+	QHash<QString, QPointer<TaskWatcher>> m_performanceSetups;
+	/* Starts announcing instance @p id's unmatched Kite Performance mods
+	 * (performanceUnmatchedFound()) once per instance; called wherever the
+	 * shell launches or speeds one up, since the setup runs inside that. */
+	void watchPerformance(const QString& id);
+	QSet<QString> m_watchedPerformance;
+
+	QStringList m_setupSteps;
+	/* Set when the hostname differs from the recorded one; keeps the "java"
+	 * step until finishSetupStep("java"). */
+	bool m_hostnameChanged = false;
+
+	/* Bumped once per event-loop turn however many iconUpdated signals
+	 * arrived, so every bound Image reloads once. */
+	int m_iconRevision = 0;
+	bool m_iconRevisionPending = false;
+	int m_iconColorRevision = 0;
+	/* Recomputed once per event-loop turn after the instance list gains or
+	 * loses rows or an icon key changes. */
+	void refreshAutoIcons();
+	QVariantMap m_autoIcons;
+	bool m_autoIconsPending = false;
+	bool m_javaDetecting = false;
+
+	/* requestImport() sources that arrived before load(); emitted in order
+	 * once it has loaded the root window. */
+	QStringList m_pendingImports;
+
 	bool m_updaterAvailable = false;
-	/* Whether show() has shown m_window yet: the first call shows it,
-	 * later ones only raise it. */
 	bool m_shown = false;
 };

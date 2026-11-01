@@ -7,25 +7,17 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Log lines in a scrolling list, shared by the live log, an instance's
- * other logs and the launcher's own logs.
- *
- * `model` is either a LogModel (roles `line` and `level`, coloured by level)
- * or a plain array of strings (one per line, all in the default colour).
- * Find results come in as `matches`, the ascending row numbers that contain
- * the search text: those rows get a soft highlight, and the one `current`
- * points at a stronger one. Setting `current` also scrolls to it.
- *
- * Wrap off keeps every line on one row and scrolls sideways instead, which is
- * what you want for a stack trace; the width it scrolls to is the widest line
- * seen so far.
+ * Log lines in a scrolling list, shared by the live log, an instance's other
+ * logs and the launcher's own. `model` is a LogModel (roles `line`, `level`) or a
+ * plain array of strings. `matches` are the ascending row numbers containing the
+ * search text; `current` points into it and scrolls to that row. With wrap off,
+ * lines scroll sideways to the widest line seen so far.
  */
 Item {
     id: root
 
     property var model: null
     property bool wrap: true
-    // Keep the newest line in view as lines arrive (the live log only).
     property bool follow: false
     // Ascending row numbers of the lines that contain the search text.
     property var matches: []
@@ -51,11 +43,6 @@ Item {
         }
     }
 
-    function positionAtEnd() {
-        view.positionViewAtEnd()
-    }
-
-    // The rows in `matches`, as a lookup for the delegates.
     readonly property var matchSet: {
         var set = {}
         for (var i = 0; i < matches.length; ++i)
@@ -66,11 +53,8 @@ Item {
 
     onCurrentRowChanged: if (currentRow >= 0) view.positionViewAtIndex(currentRow, ListView.Contain)
 
-    // How much of the warning colour the match being looked at gets, over
-    // the soft highlight every match has.
     readonly property real currentMatchAlpha: 0.45
 
-    // The widest line seen, for the sideways scroll range when not wrapping.
     property real widest: 0
     onModelChanged: widest = 0
 

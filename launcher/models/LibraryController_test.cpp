@@ -28,29 +28,11 @@
 
 #include "InstanceList.h"
 #include "models/LibraryController.h"
-#include "settings/INISettingsObject.h"
+#include "TestSettings.h"
 #include "tasks/TaskWatcher.h"
 
 namespace
 {
-	/* The global settings every BaseInstance constructor overrides or
-	 * passes through - the same set InstanceList_test.cpp registers. */
-	SettingsObjectPtr makeGlobalSettings(const QString& dir)
-	{
-		auto settings = std::make_shared<INISettingsObject>(
-			QDir(dir).filePath("global.ini"));
-		settings->registerSetting("PreLaunchCommand", "");
-		settings->registerSetting("WrapperCommand", "");
-		settings->registerSetting("PostExitCommand", "");
-		settings->registerSetting("ShowConsole", true);
-		settings->registerSetting("AutoCloseConsole", false);
-		settings->registerSetting("ShowConsoleOnError", true);
-		settings->registerSetting("LogPrePostOutput", true);
-		settings->registerSetting("ConsoleMaxLines", 100000);
-		settings->registerSetting("ConsoleOverflowStop", true);
-		return settings;
-	}
-
 	/* An instance folder InstanceList loads as a NullInstance: an
 	 * InstanceType it does not know. */
 	bool makeInstance(const QString& instancesDir, const QString& id,
@@ -83,11 +65,10 @@ namespace
 } // namespace
 
 /*
- * LibraryController over a real InstanceList of NullInstances in a
- * temporary folder. The group file (instgroups.json) is written to the
- * current directory, so each test runs from its own temporary one.
- * Undoing a delete is only exercised for the "nothing to undo" case:
- * trashing for real would put test folders in the user's trash.
+ * LibraryController over a real InstanceList of NullInstances in a temporary
+ * folder. The group file (instgroups.json) goes to the current directory, so
+ * each test runs from its own temporary one. Undo is only exercised for
+ * "nothing to undo": trashing for real would put test folders in the user's trash.
  */
 class LibraryControllerTest : public QObject
 {

@@ -26,20 +26,10 @@
 class LogUploader;
 class OtherLogsModel;
 
-/*
- * The launcher's own log files (Kite-0.log ... Kite-4.log in its data
- * folder) for the Settings "Launcher logs" section - the widget-free
- * replacement for KiteLogsDialog. A game's logs live on each instance's
- * Log tab; these are the launcher's.
- *
- * Reuses OtherLogsModel (list, view, delete one, delete all, gzip-aware
- * loading) pointed at the data folder, but flat: the data folder also holds
- * every instance, which must not be scanned and watched for log files.
- * LogUploader is the upload for the selected file.
- *
- * Kite-0.log is the current run's. It grows while the launcher runs;
- * OtherLogsModel::reload() picks that up.
- */
+/* The launcher's own log files (Kite-0.log ... Kite-4.log in the data folder)
+ * for Settings "Launcher logs". Reuses OtherLogsModel pointed flat at the data
+ * folder, which also holds every instance and must not be scanned. Kite-0.log
+ * is the current run's and grows; OtherLogsModel::reload() picks that up. */
 class LauncherLogs : public QObject
 {
 	Q_OBJECT
@@ -47,7 +37,6 @@ class LauncherLogs : public QObject
 	/// OtherLogsModel over the launcher's log files, newest (0) first.
 	Q_PROPERTY(QObject* logs READ logs CONSTANT)
 	Q_PROPERTY(QObject* uploader READ uploader CONSTANT)
-	/// The folder the logs are in, for an "Open folder" action.
 	Q_PROPERTY(QString folder READ folder CONSTANT)
 
   public:

@@ -35,22 +35,17 @@
 
 namespace
 {
-	/* The uids are what the metadata server publishes and what the pack
-	 * importers write, so they are not ours to pick. Note that NeoForge
-	 * is "net.neoforged", not the longer "net.neoforged.neoforge": the
-	 * long form matches nothing here and had already caused the download
-	 * dialog to search with no loader filter at all.
-	 *
-	 * Forge, NeoForge, Fabric and Quilt each patch the game in ways the
-	 * others do not expect, so any two of them together is a broken
-	 * instance. Quilt is listed against Fabric even though Quilt runs
-	 * Fabric mods, because the clash is between two loader components
-	 * both claiming to be the entry point, not between the mods.
-	 *
-	 * LiteLoader conflicts with nothing. It predates the rest and was
-	 * built to sit alongside Forge, a pairing people still legitimately
-	 * run on 1.12 and earlier; refusing it would break working setups to
-	 * enforce a rule that does not apply to it. */
+	// The uids are what the metadata server publishes and the pack importers
+	// write. NeoForge is "net.neoforged", not "net.neoforged.neoforge": the
+	// long form matches nothing here.
+	//
+	// Forge, NeoForge, Fabric and Quilt each patch the game in ways the others
+	// do not expect, so any two together break an instance. Quilt is listed
+	// against Fabric although it runs Fabric mods: the clash is between two
+	// loader components both claiming to be the entry point.
+	//
+	// LiteLoader conflicts with nothing: it was built to sit alongside Forge,
+	// and people still run that pairing on 1.12 and earlier.
 	const QList<ModLoaderInfo>& loaderTable()
 	{
 		static const QList<ModLoaderInfo> table = {
@@ -137,11 +132,6 @@ Component::Component(PackProfile* parent, const QString& uid,
 	m_cachedVersion = m_file->version;
 	m_cachedName = m_file->name;
 	m_loaded = true;
-}
-
-std::shared_ptr<Meta::Version> Component::getMeta()
-{
-	return m_metaVersion;
 }
 
 void Component::applyTo(LaunchProfile* profile, const RuntimeContext& context)
@@ -282,17 +272,6 @@ bool Component::isMoveable()
 	// HACK, FIXME: this was too dumb and wouldn't follow dependency constraints
 	// anyway. For now hardcoded to 'true'.
 	return true;
-}
-bool Component::isVersionChangeable()
-{
-	auto list = getVersionList();
-	if (list) {
-		if (!list->isLoaded()) {
-			list->load(Net::Mode::Online);
-		}
-		return list->count() != 0;
-	}
-	return false;
 }
 
 void Component::setImportant(bool state)

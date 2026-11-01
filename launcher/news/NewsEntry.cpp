@@ -46,9 +46,6 @@ NewsEntry::NewsEntry(const QString& title, const QString& content,
 	this->pubDate = pubDate;
 }
 
-/*!
- * Gets the text content of the given child element as a QVariant.
- */
 inline QString childValue(const QDomElement& element, const QString& childName,
 						  QString defaultVal = "")
 {
@@ -71,13 +68,10 @@ bool NewsEntry::fromXmlElement(const QDomElement& element, NewsEntry* entry,
 	QString author = childValue(element, "dc:creator", tr("Unknown Author"));
 	QString pubDateStr = childValue(element, "pubDate");
 
-	/* RSS dates are RFC 2822 ("Wed, 25 Mar 2026 00:00:00 GMT"). The old
-	 * zone-less format below never matched a date that names its zone, so
-	 * every entry of such a feed came out with an invalid date. Qt's own
-	 * RFC 2822 parser takes a numeric zone but not the obsolete names
-	 * RFC 2822 still allows, so "GMT"/"UTC"/"UT"/"Z" become "+0000" first.
-	 * The old format stays as a fallback for a feed that leaves the zone
-	 * off. */
+	/* RSS dates are RFC 2822 ("Wed, 25 Mar 2026 00:00:00 GMT"). Qt's parser
+	 * takes a numeric zone but not the obsolete names, so "GMT"/"UTC"/"UT"/
+	 * "Z" become "+0000" first. The zone-less format below stays as a
+	 * fallback for feeds that leave the zone off. */
 	QString dateText = pubDateStr.trimmed();
 	static const QRegularExpression utcName(
 		QStringLiteral("\\s+(GMT|UTC|UT|Z)$"),

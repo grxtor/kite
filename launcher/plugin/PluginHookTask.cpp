@@ -26,13 +26,9 @@
 
 namespace
 {
-	/* The background callback running on this thread, if any.
-	 *
-	 * MMCOContext::progress_report only receives the module handle, not
-	 * a per-call progress handle — the hook callback signature is fixed
-	 * by the ABI and cannot carry one. The thread the callback runs on
-	 * identifies it just as well: exactly one PluginHookTask is on the
-	 * stack of any given worker thread at a time. */
+	/* The background callback running on this thread, if any. progress_report receives only the
+	 * module handle and the hook callback signature cannot carry a progress handle, but exactly one
+	 * PluginHookTask is on the stack of a worker thread at a time, so the thread identifies it. */
 	thread_local PluginHookTask* t_currentHookTask = nullptr;
 
 	struct CurrentHookTaskGuard {
@@ -59,16 +55,14 @@ PluginHookTask::PluginHookTask(QString module_name, void* module_handle,
 {
 	setObjectName(m_moduleName);
 	setStatus(tr("Running %1...").arg(m_moduleName));
-	// Nothing has told us how long this takes, and most callbacks never
-	// will. Sweep until the plugin says otherwise.
+	// Duration unknown: sweep until the plugin says otherwise.
 	setProgress(0, 0);
 }
 
 PluginHookTask::~PluginHookTask()
 {
-	// The worker holds a bare pointer to us, so it must not outlive us.
-	// This only ever blocks if someone tears the task down while its
-	// callback is still running, which the normal flow never does.
+	// The worker holds a bare pointer to us, so it must not outlive us. This blocks only if the
+	// task is torn down while its callback runs, which the normal flow never does.
 	disconnect(&m_watcher, nullptr, this, nullptr);
 	if (m_future.isRunning()) {
 		qWarning() << "PluginHookTask" << m_moduleName
@@ -105,8 +99,8 @@ void PluginHookTask::reportProgress(const QString& status,
 									const QString& details, qint64 current,
 									qint64 total)
 {
-	// Called from the worker thread: hop back to the thread we live on
-	// before touching anything the UI is connected to.
+	// Called from the worker thread: hop to the task's thread before touching anything the UI is
+	// connected to.
 	QMetaObject::invokeMethod(
 		this,
 		[this, status, details, current, total] {
@@ -127,9 +121,8 @@ void PluginHookTask::callbackFinished()
 	m_cancelRequested = rc != 0;
 
 	if (m_cancelRequested) {
-		// Non-zero is the ABI's veto, not a crash. Failing the task is
-		// what stops the rest of the sequence, which is exactly what an
-		// inline callback returning non-zero does to the hook chain.
+		// Non-zero is the ABI's veto, not a crash. Failing the task stops the rest of the sequence,
+		// as an inline veto stops the hook chain.
 		emitFailed(tr("%1 called off the operation.").arg(m_moduleName));
 		return;
 	}

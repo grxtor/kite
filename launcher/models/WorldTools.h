@@ -22,28 +22,22 @@
 
 #include <QString>
 
-/*
- * Installing a world from a .zip (or folder) and opening one in an external
- * editor: the widget-free halves of WorldListPage (drop / "Add" and
- * on_actionMCEdit_triggered()), which also ask the safety question and show
- * errors in message boxes - the QML Worlds tab does both itself.
- *
- * The MCEdit lookup mirrors MCEditTool::getProgramPath() for a given
- * MCEditPath; it is kept separate because MCEditTool registers the
- * MCEditPath setting on construction and the application already owns the
- * one instance of that.
- */
+/* Installing a world from a .zip (or folder) and opening one in an external
+ * editor. Application registers the MCEditPath setting. */
 namespace WorldTools
 {
 	/// Whether @p source - a .zip or a folder - holds a Minecraft world (a
 	/// level.dat). Reads only the archive's table of contents and level.dat.
 	bool isWorld(const QString& source);
 
-	/// Installs the world at @p source into @p worldsDir under a folder
-	/// named after the world, the way WorldList::installWorld() does, but
-	/// reporting the result. False if @p source is not a world or could not
-	/// be unpacked. Blocking: run it off the GUI thread for a big world.
+	/// Installs the world at @p source under a folder named after it, as
+	/// WorldList::installWorld() does but reporting the result. False if @p source
+	/// is not a world or could not be unpacked. Blocking.
 	bool installWorld(const QString& source, const QString& worldsDir);
+
+	/// Whether @p toolPath looks like an MCEdit folder; if not, @p error says
+	/// why (for the settings page).
+	bool checkMCEditFolder(const QString& toolPath, QString& error);
 
 	/// The executable to start for an MCEdit installed at @p mceditPath (the
 	/// MCEditPath setting), or an empty string if there is none there.

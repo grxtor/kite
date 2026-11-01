@@ -19,8 +19,6 @@
 
 #include "ModIconProvider.h"
 
-#include <QMutexLocker>
-
 #include <algorithm>
 #include <utility>
 
@@ -59,19 +57,15 @@ ModIconProvider::ModIconProvider(QString cacheDir)
 
 QImage ModIconProvider::load(const QString& key)
 {
-	QMutexLocker lock(&m_mutex);
-	if (const QImage* hit = m_cache.object(key)) {
-		return *hit;
-	}
-	lock.unlock();
-
-	QImage image(ModIconCache::pathFor(m_cacheDir, key));
-	if (image.isNull()) {
+	QImage image;
+	if (m_cache.get(key, image)) {
 		return image;
 	}
 
-	lock.relock();
-	m_cache.insert(key, new QImage(image));
+	image = QImage(ModIconCache::pathFor(m_cacheDir, key));
+	if (!image.isNull()) {
+		m_cache.insert(key, image);
+	}
 	return image;
 }
 

@@ -30,7 +30,6 @@ int Strings::naturalCompare(const QString& s1, const QString& s2,
 							Qt::CaseSensitivity cs)
 {
 	for (int l1 = 0, l2 = 0; l1 <= s1.count() && l2 <= s2.count(); ++l1, ++l2) {
-		// skip spaces, tabs and 0's
 		QChar c1 = getNextChar(s1, l1);
 		while (c1.isSpace())
 			c1 = getNextChar(s1, ++l1);
@@ -47,8 +46,6 @@ int Strings::naturalCompare(const QString& s1, const QString& s2,
 			int lookAheadLocation1 = l1;
 			int lookAheadLocation2 = l2;
 			int currentReturnValue = 0;
-			// find the last digit, setting currentReturnValue as we go if it
-			// isn't equal
 			for (QChar lookAhead1 = c1, lookAhead2 = c2;
 				 (lookAheadLocation1 <= s1.length() &&
 				  lookAheadLocation2 <= s2.length());
@@ -85,7 +82,6 @@ int Strings::naturalCompare(const QString& s1, const QString& s2,
 		if (r > 0)
 			return 1;
 	}
-	// The two strings are the same (02 == 2) so fall back to the normal sort
 	return QString::compare(s1, s2, cs);
 }
 

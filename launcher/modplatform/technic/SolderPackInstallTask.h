@@ -43,7 +43,6 @@ namespace Technic
 		bool abort() override;
 
 	  protected:
-		//! Entry point for tasks.
 		virtual void executeTask() override;
 
 	  private slots:

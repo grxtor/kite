@@ -6,31 +6,23 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Kite's news on Home's side panel, under "Set up Kite": the latest few
- * posts as cards, newest first, each opening its post in the browser. A
- * card shows the post's own picture only when the post has one (an `image`
- * role -- NewsModel has none yet, so today no card does); never a stand-in.
- *
- * Only news that is still news counts: a release post for the version
- * already running (or an older one) is skipped, and so is anything older
- * than `maxAgeDays`. With nothing left the whole section hides.
+ * Kite's news on Home's side panel: the latest few posts as cards, newest first, each opening its post in the
+ * browser. A card shows a picture only when the post has an `image` role. Release posts for the running version or
+ * older, and posts older than `maxAgeDays`, are skipped; with nothing left the section hides.
  */
 Column {
     id: root
 
-    // QmlShell.news (NewsModel): Kite's news, newest first, or null.
+    // NewsModel, or null.
     property var news: null
-    // Cards with no fill or hairline at rest, for a host that is already a
-    // panel (Sade's and Gece's side panels); hover still lifts one.
+    // No fill or hairline at rest, for a host that is already a panel; hover still lifts a card.
     property bool flat: false
 
     readonly property int maxEntries: 3
-    // Older than this, a post is history rather than news.
     readonly property int maxAgeDays: 90
     readonly property real dayMs: 24 * 60 * 60 * 1000
     readonly property bool hasNews: root.entries.length > 0
 
-    // What NewsModel holds, as plain objects, newest first.
     property var allEntries: []
     function readNews() {
         var entries = []
@@ -49,21 +41,18 @@ Column {
             readonly property string title: model.title || ""
             readonly property string link: model.link || ""
             readonly property var date: model.date
-            // A picture of the post's own, once the model has one.
             readonly property string image: model.image || ""
         }
         onObjectAdded: Qt.callLater(root.readNews)
         onObjectRemoved: Qt.callLater(root.readNews)
     }
 
-    // [major, minor, patch] from the first "1.2" or "1.2.3" in @p text, or
-    // null.
+    // [major, minor, patch] from the first "1.2" or "1.2.3" in @p text, or null.
     function versionOf(text) {
         var match = /(\d+)\.(\d+)(?:\.(\d+))?/.exec(text || "")
         return match ? [parseInt(match[1]), parseInt(match[2]), parseInt(match[3] || "0")] : null
     }
-    // A release post ("Kite Release 9.1.0, now available") for the
-    // version running now or an older one: nothing new to the reader.
+    // A release post ("Kite Release 9.1.0, now available") for the running version or an older one.
     function isOutdatedRelease(title) {
         if (!/releas|available|update/i.test(title))
             return false
@@ -77,7 +66,6 @@ Column {
         }
         return true
     }
-    // The entries still worth showing, newest first, at most maxEntries.
     readonly property var entries: {
         var now = Date.now()
         var shown = []
@@ -104,72 +92,68 @@ Column {
     Repeater {
         model: root.entries
         delegate: AbstractButton {
-            id: card
+            id: post
             required property var modelData
-            readonly property bool hasImage: card.modelData.image.length > 0 && picture.status !== Image.Error
+            readonly property bool hasImage: post.modelData.image.length > 0 && picture.status !== Image.Error
             readonly property real imageAspect: 16 / 9
 
             width: root.width
             hoverEnabled: true
             padding: Theme.space.md
-            Accessible.name: card.modelData.title
-            onClicked: if (card.modelData.link) Qt.openUrlExternally(card.modelData.link)
+            Accessible.name: post.modelData.title
+            onClicked: if (post.modelData.link) Qt.openUrlExternally(post.modelData.link)
 
-            background: Rectangle {
+            background: StateFill {
                 id: cardFill
+                card: true
+                hovered: post.hovered
+                active: post.down
+                activeFill: Theme.palette.surfaceRaised
+                rest: root.flat ? "transparent" : Theme.palette.surface
                 radius: Theme.radius.lg
-                color: card.down ? Theme.palette.surfaceRaised
-                     : card.hovered ? Theme.palette.surfaceHover
-                     : root.flat ? "transparent" : Theme.palette.surface
-                border.width: card.visualFocus ? Theme.focus.width : root.flat ? 0 : 1
-                border.color: card.visualFocus ? Theme.palette.focusRing
-                            : card.hovered ? Theme.neutral.borderHover : Theme.palette.border
-                Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                border.width: post.visualFocus ? Theme.focus.width : root.flat ? 0 : 1
+                border.color: post.visualFocus ? Theme.palette.focusRing
+                            : post.hovered ? Theme.neutral.borderHover : Theme.palette.border
             }
 
             contentItem: Column {
                 spacing: Theme.space.sm
 
                 Item {
-                    visible: card.hasImage
+                    visible: post.hasImage
                     width: parent.width
-                    height: visible ? Math.round(width / card.imageAspect) : 0
+                    height: visible ? Math.round(width / post.imageAspect) : 0
 
                     Image {
                         id: picture
                         anchors.fill: parent
-                        source: card.modelData.image
+                        source: post.modelData.image
                         sourceSize: Qt.size(width * 2, height * 2)
                         fillMode: Image.PreserveAspectCrop
                         smooth: true
                         mipmap: true
                         asynchronous: true
                     }
-                    // Rounds the picture's corners in the card's own colour.
                     CornerMatte {
                         cornerRadius: Theme.radius.md
                         matte: cardFill.color
                     }
                 }
 
-                Text {
+                Copy {
                     width: parent.width
-                    text: card.modelData.title
+                    text: post.modelData.title
+                    role: "bodyStrong"
                     wrapMode: Text.Wrap
                     maximumLineCount: 3
                     elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.bodyStrong.pixelSize
-                    font.weight: Theme.type.bodyStrong.weight
                 }
-                Text {
+                Copy {
                     width: parent.width
-                    visible: !!card.modelData.date
-                    text: card.modelData.date ? Format.calendarDate(new Date(card.modelData.date)) : ""
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    visible: !!post.modelData.date
+                    text: post.modelData.date ? Format.calendarDate(new Date(post.modelData.date)) : ""
+                    role: "label"
+                    tone: "tertiary"
                 }
             }
         }

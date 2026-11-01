@@ -32,8 +32,8 @@ ConcurrentTask::ConcurrentTask(QObject* parent, QString task_name,
 
 ConcurrentTask::~ConcurrentTask()
 {
-	// Children outlive us when someone else holds a reference to them. Make
-	// sure none of them calls back into a half destroyed object.
+	// Children outlive us when someone else holds a reference; make sure none
+	// calls back into a half destroyed object.
 	for (auto& task : m_doing) {
 		disconnect(task.get(), nullptr, this, nullptr);
 	}
@@ -57,9 +57,9 @@ void ConcurrentTask::addTask(Task::Ptr task)
 	m_queue.enqueue(task);
 
 	if (isRunning()) {
-		// Through the event loop, because tasks are usually queued up in a
-		// batch from executeTask(). Reacting to each one right away would let
-		// us decide we are finished halfway through building the list.
+		// Through the event loop: tasks are usually queued in a batch from
+		// executeTask(), and reacting to each at once could conclude we are
+		// finished halfway through building the list.
 		QMetaObject::invokeMethod(this, &ConcurrentTask::startNext,
 								  Qt::QueuedConnection);
 	}
@@ -73,8 +73,8 @@ void ConcurrentTask::executeTask()
 void ConcurrentTask::startNext()
 {
 	if (!isRunning()) {
-		// Tasks can be queued up long before anyone starts us, and children
-		// can settle after we already reached an end state.
+		// Tasks can be queued long before anyone starts us, and children can
+		// settle after we reached an end state.
 		return;
 	}
 
@@ -86,8 +86,8 @@ void ConcurrentTask::startNext()
 		auto task = m_queue.dequeue();
 
 		if (task->isFinished()) {
-			// Somebody else already ran this one. Take the result as it is
-			// instead of starting it a second time.
+			// Somebody else already ran this one; take the result instead of
+			// starting it twice.
 			if (task->wasSuccessful()) {
 				m_succeeded++;
 			} else {
@@ -131,14 +131,14 @@ void ConcurrentTask::startSubTask(Task::Ptr task)
 			[this, task](qint64 current, qint64 total) {
 				subTaskProgress(task, current, total);
 			});
-	// Steps of a child that is itself a multi step task belong in the same
-	// list, so hand them straight to our own listeners.
+	// Steps of a child that is itself multi step belong in the same list, so
+	// pass them straight to our listeners.
 	connect(task.get(), &Task::stepProgress, this,
 			&ConcurrentTask::propagateStepProgress);
 
 	if (!task->isRunning()) {
-		// Start it from the event loop so that a task finishing right away
-		// does not unwind back into the middle of startNext().
+		// Start from the event loop so a task that finishes right away does
+		// not unwind into the middle of startNext().
 		QMetaObject::invokeMethod(task.get(), &Task::start,
 								  Qt::QueuedConnection);
 	}
@@ -188,8 +188,8 @@ void ConcurrentTask::updateState()
 		return;
 	}
 
-	// A lone task gets no list of its own to be seen in, so we step aside and
-	// let it speak through us instead. See subTaskStatus and friends.
+	// A lone task gets no list of its own, so we step aside and let it speak
+	// through us (see subTaskStatus and friends).
 	if (!m_queue.isEmpty()) {
 		setStatus(tr("Waiting for a task to start..."));
 	} else if (!m_doing.isEmpty()) {
@@ -204,7 +204,6 @@ void ConcurrentTask::updateState()
 void ConcurrentTask::finishTask()
 {
 	if (!isRunning()) {
-		// Already succeeded, failed or aborted. Do not do it twice.
 		return;
 	}
 
@@ -244,8 +243,7 @@ void ConcurrentTask::subTaskStatus(Task::Ptr task, const QString& status)
 	step->state = TaskStepState::Running;
 	emit stepProgress(*step);
 
-	// With nothing but one task there is no list on screen, so its status is
-	// the only one worth showing and it becomes ours.
+	// With one task there is no list on screen, so its status becomes ours.
 	if (totalSize() == 1) {
 		setStatus(status);
 	}
@@ -276,7 +274,6 @@ void ConcurrentTask::subTaskProgress(Task::Ptr task, qint64 current,
 	step->update(current, total);
 	emit stepProgress(*step);
 
-	// Likewise, with one task the overall bar has nothing better to track.
 	if (totalSize() == 1) {
 		setProgress(current, total);
 	}
@@ -284,8 +281,8 @@ void ConcurrentTask::subTaskProgress(Task::Ptr task, qint64 current,
 
 bool ConcurrentTask::canAbort() const
 {
-	// Anything still queued can simply be dropped, so only the tasks that are
-	// already on their way have a say in this.
+	// Anything still queued can simply be dropped, so only tasks already on
+	// their way have a say.
 	for (auto& task : m_doing) {
 		if (!task->canAbort()) {
 			return false;
@@ -300,8 +297,8 @@ bool ConcurrentTask::abort()
 	dropQueued();
 
 	bool fully_aborted = true;
-	// Copy, because aborting a child can finish it right away and change the
-	// container under us.
+	// Copy: aborting a child can finish it right away and change the container
+	// under us.
 	const auto running = m_doing.values();
 	for (auto& task : running) {
 		if (task->canAbort()) {
@@ -312,7 +309,6 @@ bool ConcurrentTask::abort()
 	}
 
 	if (m_doing.isEmpty()) {
-		// Nothing left to wait for, so nobody else is going to wrap us up.
 		finishTask();
 	}
 

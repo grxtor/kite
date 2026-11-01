@@ -40,24 +40,20 @@
 
 namespace
 {
-	/* The poll: a status and the friends, once a minute. */
 	constexpr int kPollIntervalMs = 60 * 1000;
-	/* While the account plays, every ten seconds instead: the game's own
-	 * mod tells of a friend joining a server, and a minute late is too late
-	 * to join them. Six polls a minute stay well inside the server's limit
-	 * per account (120). */
+	constexpr int kFacesCoalesceMs = 150;
+	/* While the account plays, every ten seconds: a friend joining a server is told
+	 * by the game's mod, and a minute late is too late. Six polls a minute stay
+	 * inside the server's limit (120 per account). */
 	constexpr int kPlayingPollIntervalMs = 10 * 1000;
-	/* Telling the server we left, as the launcher quits, may take this long
-	 * and no longer. */
+	/* The most time telling the server we left may take as the launcher quits. */
 	constexpr int kQuitGoOfflineMs = 1500;
-	/* A change in the accounts does not start a new sign-in sooner than
-	 * this after the last one. */
+	/* A change in the accounts starts no new sign-in sooner than this after the last. */
 	constexpr int kMinSignInGapMs = 5000;
-	/* A sign-in parked for the account's renewal waits this long for it, and
-	 * then goes on with the token it has. */
+	/* A sign-in parked for the account's renewal waits this long, then goes on
+	 * with the token it has. */
 	constexpr int kRenewalWaitMs = 90 * 1000;
 	const QString kSessionFile = QStringLiteral("friends.json");
-	/* The friends' heads, under the data folder. */
 	const QString kFacesDir = QStringLiteral("cache/friendfaces");
 } // namespace
 
@@ -67,7 +63,15 @@ FriendsController::FriendsController(const QString& dataDir, QObject* parent)
 	  m_http(new FriendsHttp(this)),
 	  m_faces(new FriendsFaces(QDir(dataDir).filePath(kFacesDir), this))
 {
-	connect(m_faces, &FriendsFaces::changed, this,
+	/* Faces arrive one by one; the lists are rebuilt once for a burst. */
+	m_facesTimer.setSingleShot(true);
+	m_facesTimer.setInterval(kFacesCoalesceMs);
+	connect(m_faces, &FriendsFaces::changed, this, [this]() {
+		if (!m_facesTimer.isActive()) {
+			m_facesTimer.start();
+		}
+	});
+	connect(&m_facesTimer, &QTimer::timeout, this,
 			&FriendsController::onFacesChanged);
 	m_settings = FriendsDisplay::settingsMap({});
 	m_pollTimer.setInterval(kPollIntervalMs);
@@ -134,7 +138,6 @@ void FriendsController::setEnabled(bool enabled)
 		start();
 	} else {
 		stop(true);
-		/* Their heads are their data too. */
 		m_faces->clearCache();
 	}
 }
@@ -218,8 +221,7 @@ QVariantMap FriendsController::settings() const
 
 FriendsApi::Presence FriendsController::gamePresence() const
 {
-	/* The game of the account Friends signs in as: one played offline, as a
-	 * demo or as another account is not told to its friends. */
+	/* Only the account Friends signs in as; offline, demo or other-account play is not reported. */
 	return m_watcher ? m_watcher->presence(defaultProfileId())
 					 : FriendsApi::Presence();
 }
@@ -227,7 +229,6 @@ FriendsApi::Presence FriendsController::gamePresence() const
 QVariantMap FriendsController::myStatus() const
 {
 	const auto presence = gamePresence();
-	/* The server's own answer, while it is about what the game does now. */
 	if (m_myView && m_myView->sent == presence) {
 		return FriendsDisplay::selfStatusFromView(presence, m_myView->status);
 	}
@@ -268,21 +269,19 @@ void FriendsController::start()
 {
 	++m_epoch;
 	if (m_deletingOff) {
-		/* Turned on while the delete with Friends off was still signing in or
-		 * waiting for its answer: the new epoch drops that answer, so say so
-		 * instead of leaving the delete unanswered. */
+		/* Turned on while the delete with Friends off was still pending: the new epoch
+		 * drops its answer, so say so instead of leaving it unanswered. */
 		m_deletingOff = false;
 		finishAction("deleteAccount", false,
 					 tr("Friends was turned on before the delete finished; "
 						"delete again if you still want it"));
 	}
-	/* Only that delete can have a sign-in under way with Friends off; its
-	 * answers are dropped now, so nothing else would end it. */
+	/* Only that delete can have a sign-in under way with Friends off; its answers
+	 * are dropped, so nothing else would end it. */
 	finishSignIn(false);
 	m_enabled = true;
 	m_settingsLoaded = false;
 	m_signInFailures = 0;
-	/* Turning on, or the launcher starting, is a reason to ask Mojang once. */
 	m_refusedProfile.clear();
 	m_session = FriendsSessionStore::load(storePath());
 	m_dataProfile = FriendsApi::undashed(m_session.uuid);
@@ -315,19 +314,15 @@ void FriendsController::stop(bool tellServer)
 	m_faces->cancel();
 	m_watcher.reset();
 	m_polling = false;
-	/* The server drops the status with the DELETE below (or its lifetime
-	 * does): turned on again within the gap, the first report is not "too
-	 * soon after the last" and skipped, which would leave you offline until
-	 * the next tick. */
+	/* The DELETE below (or the status lifetime) drops the status: turned on again
+	 * within the gap, the first report must not be skipped as "too soon". */
 	m_lastStatusSent.invalidate();
 	const QString token = m_session.token;
 	if (tellServer && !token.isEmpty()) {
-		/* Off first, then out: the token is gone once it is signed out. Not
-		 * while a status report is still on its way, which could land after
-		 * this and put the status back. */
+		/* Off first, then out: the token is gone once signed out. Not while a report is
+		 * on its way, which could land after this and put the status back. */
 		afterStatusReports([this, token]() {
 			if (m_enabled) {
-				/* Turned on again meanwhile: its own reports speak for it. */
 				signOutQuietly(token);
 				return;
 			}
@@ -350,9 +345,8 @@ void FriendsController::setSession(const FriendsApi::Session& session)
 {
 	m_session = session;
 	m_dataProfile = FriendsApi::undashed(session.uuid);
-	/* A delete with Friends off signs in for that request alone: nothing of
-	 * it goes to disk, where a quit before the answer would leave a valid
-	 * token behind with nobody to load or forget it. */
+	/* A delete with Friends off signs in for that request alone: nothing goes to
+	 * disk, where a quit before the answer would leave a valid token behind. */
 	if (!m_deletingOff) {
 		FriendsSessionStore::save(storePath(), session);
 	}
@@ -429,7 +423,6 @@ void FriendsController::onAccountsChanged()
 		return;
 	}
 	if (!m_refusedProfile.isEmpty() && !stillRefused()) {
-		/* Another account is the default now: it has not been refused. */
 		m_refusedProfile.clear();
 		emit changed();
 	}
@@ -443,9 +436,8 @@ void FriendsController::onAccountsChanged()
 		m_lastSignInAttempt.elapsed() < kMinSignInGapMs) {
 		return;
 	}
-	/* The list changes whenever a game starts or stops and an account
-	 * renews itself: only a change to what the sign-in failed with (another
-	 * account, a new name or token) is a reason to try at once. */
+	/* The list changes whenever a game starts or stops and an account renews
+	 * itself: only a change to what the sign-in failed with is a reason to try at once. */
 	if (!FriendsApi::accountChangeRetriesSignIn(
 			m_signInFailures, m_failedIdentity, accountIdentity(),
 			m_refusedProfile, defaultProfileId())) {
@@ -464,13 +456,12 @@ void FriendsController::onDefaultAccountChanged()
 	if (!working()) {
 		return;
 	}
-	/* The lists and settings on screen are the account before's, whenever
-	 * the new one gets signed in (or fails to). Nor does the gap after the
-	 * last sign-in apply: that one was the other account's. */
+	/* The lists and settings on screen are the previous account's; nor does the
+	 * gap after the last sign-in apply, that one was the other account's. */
 	dropDataOfOtherAccount(defaultProfileId());
 	m_lastSignInAttempt.invalidate();
-	/* A renewal asked for, or given up on, was the other account's: the new
-	 * default gets its own, and a full wait for it. */
+	/* A renewal asked for, or given up on, was the other account's: the new default
+	 * gets its own full wait. */
 	m_renewalAsked = false;
 	m_renewalTimedOut = false;
 	if (m_awaitingRenewal) {
@@ -481,10 +472,9 @@ void FriendsController::onDefaultAccountChanged()
 
 void FriendsController::onAccountActivity()
 {
-	/* A renewal that failed offline changes nothing in the list, only
-	 * its activity. The list ends its count of what is active after this
-	 * signal (AccountList::accountActivityChanged), so decide once that is
-	 * done: now the renewal would still look to be under way. */
+	/* A renewal that failed offline changes only the activity, and the list ends
+	 * its count after this signal (AccountList::accountActivityChanged), so decide
+	 * once that is done. */
 	if (working() && m_awaitingRenewal) {
 		QTimer::singleShot(0, this, [this]() {
 			if (working() && m_awaitingRenewal) {
@@ -499,8 +489,12 @@ void FriendsController::onAboutToQuit()
 	if (!m_enabled || m_session.token.isEmpty()) {
 		return;
 	}
-	/* A status report on its way is answered first (see stop()); both within
-	 * the one budget. */
+	/* The waits below spin the event loop: a timer firing there must not put a
+	 * new status on the wire behind the go-offline DELETE. */
+	m_quitting = true;
+	m_pollTimer.stop();
+	m_pushTimer.stop();
+	/* A status report on its way is answered first; both within one budget. */
 	QElapsedTimer budget;
 	budget.start();
 	waitForStatusReports(kQuitGoOfflineMs);

@@ -50,34 +50,12 @@ QStringList PluginLoader::defaultSearchPaths()
 	QString appDir = QCoreApplication::applicationDirPath();
 
 #ifdef Q_OS_MAC
-	// Inside a .app bundle applicationDirPath() returns
-	//   <bundle>/Contents/MacOS
-	//
-	// We install .mmco loadable bundles into
-	//   <bundle>/Contents/Resources/mmcmodules
-	//
-	// Two earlier macOS layouts failed:
-	//   * Contents/MacOS/mmcmodules — codesign treats every
-	//     non-main-executable Mach-O under Contents/MacOS as a
-	//     subcomponent and demands its own signature.
-	//   * Contents/PlugIns/mmcmodules — codesign --strict walks
-	//     PlugIns/ recursively and verifies each Mach-O's Apple
-	//     signature covers the entire file. Our custom RSA trailer
-	//     (scripts/mmco_sign.py) appended past __LINKEDIT trips
-	//     that check with
-	//       "main executable failed strict validation
-	//        In subcomponent: .../mmcmodules/Foo.mmco"
-	//
-	// Contents/Resources/ is the only directory codesign treats as
-	// opaque data: files there are hashed into CodeResources but
-	// never parsed as code. dlopen() against them is fully
-	// supported by the dyld loader — Apple's loader doesn't care
-	// which bundle subdirectory a library lives in at runtime.
-	//
-	// The legacy Contents/PlugIns/mmcmodules and Contents/MacOS/
-	// mmcmodules locations are probed as fallbacks so installs
-	// that predate this commit keep working until the user
-	// reinstalls.
+	// Inside a .app bundle applicationDirPath() is <bundle>/Contents/MacOS. Modules install into
+	// <bundle>/Contents/Resources/mmcmodules, the only place codesign treats as opaque data: under
+	// Contents/MacOS it demands a signature per Mach-O, and under Contents/PlugIns `codesign
+	// --strict` rejects the custom signature trailer (scripts/mmco_sign.py) appended past
+	// __LINKEDIT. dlopen() does not care where in the bundle a library lives. The PlugIns and MacOS
+	// locations are legacy fallbacks for older installs.
 	QDir bundleDir(appDir);
 	if (bundleDir.cdUp()) { // MacOS -> Contents
 		paths << bundleDir.filePath("Resources/mmcmodules");
@@ -99,7 +77,7 @@ QStringList PluginLoader::defaultSearchPaths()
 		paths << QDir(localData).filePath("mmcmodules");
 #else
 	// TODO: Edit this so that the system and user levels differentiate between
-	// them in the about dialog.
+	// them in Settings.
 	// ~/.local/lib/mmcmodules
 	QString home = QDir::homePath();
 	paths << home + "/.local/lib/mmcmodules";
@@ -117,15 +95,7 @@ QStringList PluginLoader::defaultSearchPaths()
 
 QStringList PluginLoader::searchPaths() const
 {
-	QStringList paths = m_extraPaths;
-	paths.append(defaultSearchPaths());
-	return paths;
-}
-
-void PluginLoader::addSearchPath(const QString& path)
-{
-	if (!path.isEmpty() && !m_extraPaths.contains(path))
-		m_extraPaths.prepend(path);
+	return defaultSearchPaths();
 }
 
 QVector<PluginMetadata>
@@ -173,10 +143,8 @@ PluginLoader::scanDirectory(const QString& dir,
 		if (!meta.loaded)
 			continue;
 
-		// Refuse modules whose job core has taken over. This outranks
-		// the user disable list below: re-enabling such a module in the
-		// dialog cannot make it safe to load, so we never let it look
-		// like a user choice.
+		// Refuse modules whose job core has taken over. This outranks the user disable list:
+		// re-enabling one cannot make it safe to load.
 		const CoreSupersededPlugin* superseded =
 			findCoreSupersededPlugin(meta.name);
 		if (!superseded)
@@ -190,16 +158,14 @@ PluginLoader::scanDirectory(const QString& dir,
 				<< "[PluginLoader] Not loading" << meta.name << "from"
 				<< meta.filePath << "-" << meta.disableDetail;
 		}
-		// Apply user disable list. We keep the library loaded so that
-		// the plugins dialog can still display the module's metadata
-		// (name, version, signature state, etc.) — but flag it so the
-		// manager refuses to call mmco_init() on it.
+		// User disable list: the library stays loaded so Settings can show its metadata,
+		// but the manager must not call mmco_init().
 		else if (disabledNames.contains(meta.name.toLower()) ||
 				 disabledNames.contains(meta.moduleId().toLower())) {
 			meta.disabled = true;
 			meta.disableReason = PluginDisableReason::UserDisabled;
 			meta.disableDetail =
-				QStringLiteral("Disabled by user in the plugins dialog");
+				QStringLiteral("Turned off in Settings > Installed plugins");
 		}
 
 		result.append(std::move(meta));
@@ -215,16 +181,9 @@ PluginMetadata PluginLoader::loadModule(const QString& path) const
 
 	qCDebug(pluginsLog) << "Loading module:" << path;
 
-	// Open the shared library.
-	//
-	// RTLD_NODELETE prevents the C runtime from running the module's
-	// static destructors during exit().  Plugin .mmco files statically
-	// link Kite_logic which contains the global `const Config
-	// BuildConfig` — a non-trivially-destructible object.  Without
-	// RTLD_NODELETE the duplicate BuildConfig inside each .mmco would
-	// be destroyed at exit(), corrupting the heap because the main
-	// binary's copy was already torn down ("corrupted double-linked
-	// list").
+	// RTLD_NODELETE keeps the module's static destructors from running at exit(): plugins
+	// statically link Kite_logic, whose global `const Config BuildConfig` would be destroyed twice
+	// and corrupt the heap.
 #ifdef Q_OS_WIN
 	HMODULE handle = LoadLibraryW(reinterpret_cast<LPCWSTR>(path.utf16()));
 	if (!handle) {
@@ -244,7 +203,6 @@ PluginMetadata PluginLoader::loadModule(const QString& path) const
 	meta.libraryHandle = handle;
 #endif
 
-	// Resolve mmco_module_info
 #ifdef Q_OS_WIN
 	auto* info = reinterpret_cast<MMCOModuleInfo*>(GetProcAddress(
 		static_cast<HMODULE>(meta.libraryHandle), "mmco_module_info"));
@@ -260,7 +218,6 @@ PluginMetadata PluginLoader::loadModule(const QString& path) const
 		return meta;
 	}
 
-	// Validate magic
 	if (info->magic != MMCO_MAGIC) {
 		qWarning() << "[PluginLoader]" << path << "bad magic:" << Qt::hex
 				   << info->magic << "(expected" << Qt::hex << MMCO_MAGIC
@@ -269,25 +226,15 @@ PluginMetadata PluginLoader::loadModule(const QString& path) const
 		return meta;
 	}
 
-	// Capture identity fields before the ABI gate below. `name` and
-	// `version` sit in MMCOModuleInfo ahead of the "ABI 2 fields" block
-	// (see MMCOFormat.h) and have kept the same offsets since the
-	// format's first revision, so reading them here does not trust
-	// anything beyond what the magic check above already trusts. A
-	// module we are about to refuse for its ABI still deserves a name
-	// and version in the plugins dialog instead of just vanishing.
+	// Capture identity before the ABI gate: name and version sit ahead of the "ABI 2 fields" block
+	// and have never moved, so reading them trusts nothing beyond the magic check. A module refused
+	// for its ABI still deserves a name and version in Settings.
 	meta.name = QString::fromUtf8(info->name ? info->name : "");
 	meta.version = QString::fromUtf8(info->version ? info->version : "");
 
-	// Validate ABI version.
-	//
-	// Range-accept: any ABI from MMCO_ABI_VERSION_MIN through the
-	// current MMCO_ABI_VERSION is loadable. Plugins built against an
-	// older-but-still-supported ABI simply never use the
-	// fields/hooks/entries the launcher added in a later revision —
-	// those slots are appended to MMCOContext (never reordered), so a
-	// stale plugin reads the slots it knows about and ignores the
-	// rest. Reject anything newer than the launcher knows.
+	// Any ABI from MMCO_ABI_VERSION_MIN through the current one loads: slots are only appended to
+	// MMCOContext, never reordered, so an older plugin ignores what it does not know. Anything
+	// newer is rejected.
 	constexpr uint32_t MMCO_ABI_VERSION_MIN = 5;
 	if (info->abi_version < MMCO_ABI_VERSION_MIN ||
 		info->abi_version > MMCO_ABI_VERSION) {
@@ -296,12 +243,9 @@ PluginMetadata PluginLoader::loadModule(const QString& path) const
 				   << "(host supports" << MMCO_ABI_VERSION_MIN << ".."
 				   << MMCO_ABI_VERSION << ")";
 
-		// Unlike the magic/missing-symbol failures above, this file IS a
-		// real MMCO module — just one built for an ABI this launcher
-		// cannot safely initialise. Keep it "loaded" (the library handle
-		// stays open, same as the signature-policy disables further
-		// down) so the plugins dialog still shows its name/version and
-		// why it was refused, instead of the file silently disappearing.
+		// A real MMCO module built for an ABI this launcher cannot initialise: keep it "loaded"
+		// (handle open, as for the signature-policy disables) so the dialog shows its name, version
+		// and why it was refused.
 		meta.loaded = true;
 		meta.disabled = true;
 		meta.disableReason =
@@ -338,7 +282,6 @@ PluginMetadata PluginLoader::loadModule(const QString& path) const
 		}
 	}
 
-	// Resolve mmco_init
 #ifdef Q_OS_WIN
 	meta.initFunc = reinterpret_cast<PluginMetadata::InitFunc>(
 		GetProcAddress(static_cast<HMODULE>(meta.libraryHandle), "mmco_init"));
@@ -425,18 +368,16 @@ void PluginLoader::verifySignatureAndPolicy(PluginMetadata& meta)
 			break;
 		case PluginSignatureState::BadSignature:
 		case PluginSignatureState::Malformed:
-			// Hard fail regardless of license — the trailer is corrupt
-			// or forged. An attacker could ship a non-OSS module wrapped
-			// in a tampered signature; refuse to load it.
+			// Hard fail regardless of license: the trailer is corrupt or forged, e.g. a non-OSS
+			// module wrapped in a tampered signature.
 			markDisabled(PluginDisableReason::SignatureInvalid,
 						 detail.isEmpty()
 							 ? QStringLiteral("Invalid module signature")
 							 : detail);
 			break;
 		case PluginSignatureState::Error:
-			// GPG backend errors are treated as untrusted for non-OSS modules
-			// but allowed for OSS so a missing keyring doesn't break the
-			// whole plugin system.
+			// GPG backend errors count as untrusted for non-OSS modules but are allowed for OSS, so
+			// a missing keyring does not break the plugin system.
 			if (!isOss) {
 				markDisabled(PluginDisableReason::SignatureRequired,
 							 QStringLiteral(
@@ -446,8 +387,7 @@ void PluginLoader::verifySignatureAndPolicy(PluginMetadata& meta)
 			}
 			break;
 		case PluginSignatureState::NotChecked:
-			// Should be unreachable — verifyFile() always sets one of the
-			// terminal states.
+			// Unreachable: verifyFile() always sets a terminal state.
 			break;
 	}
 }
@@ -460,9 +400,7 @@ PluginLoader::classifyAbiMismatch(const QString& moduleName,
 {
 	const QString label = moduleName.isEmpty() ? fallbackLabel : moduleName;
 
-	// QCoreApplication::translate() rather than tr(): PluginLoader is not
-	// a QObject, so it has no tr() of its own, but the message is still
-	// user-facing and needs to go through Qt's translation machinery.
+	// translate() rather than tr(): PluginLoader is not a QObject, but the message is user-facing.
 	outDetail = QCoreApplication::translate(
 					"PluginLoader",
 					"“%1” was built for plugin ABI %2; this Kite "

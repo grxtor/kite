@@ -8,17 +8,10 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The instance's screenshots as a grid of thumbnails, newest first.
- * Hovering one raises a scrim with its actions (copy the picture, and a ⋯
- * menu with Open, Rename, Upload and Delete -- also on right-click);
- * clicking the image itself opens it in the system viewer. Thumbnails are
- * decoded off the UI thread by the "screenshot" image provider.
- *
- * Ticking the box that shows on a hovered tile selects it; once anything is
- * selected, clicking a tile toggles it instead of opening it, and the bar
- * above offers Upload and Delete for the whole selection. Upload goes to
- * Imgur (one picture: a link to it; several: an album) and puts the link on
- * the clipboard. It is left out of builds that have no Imgur client id.
+ * The instance's screenshots as a grid of thumbnails, newest first. Ticking a
+ * hovered tile selects it; once anything is selected, clicking a tile toggles
+ * it. Upload goes to Imgur (a link, or an album for several) and is left out
+ * of builds without an Imgur client id.
  */
 Item {
     id: root
@@ -27,22 +20,24 @@ Item {
     // rename(), copyImage(), pathAt().
     property var model: null
     property string directory
-    // InstanceDetails, for the Imgur uploader.
     property var details: null
     readonly property var uploader: details ? details.screenshotUploader : null
     readonly property bool canUpload: !!uploader && uploader.available
+    // File name of the screenshot the instance's own cover was copied from, "" when it has none.
+    property string coverSource: ""
+    // False once that screenshot is gone from the folder: the cover stays, so the toolbar offers to remove it.
+    property bool coverListed: false
     signal openFolderRequested(string path)
+    signal coverRequested(string path)
+    signal coverCleared()
+    signal coverRenamed(string path)
 
-    // The narrowest a thumbnail gets before the grid drops a column.
     readonly property int minTileWidth: 240
     readonly property int gap: Theme.space.md
-    // Under each thumbnail: one caption line.
     readonly property int captionHeight: Theme.space.xs + Math.ceil(captionMetrics.height)
 
-    // What a screenshot is called under its thumbnail. The game names them
-    // after the moment they were taken ("2026-09-22_18.00.12.png"), which
-    // reads as a date and time; a screenshot renamed to anything else keeps
-    // its name. Never the file extension.
+    // The game names screenshots after the moment they were taken ("2026-09-22_18.00.12.png"),
+    // shown as a date and time; a renamed one keeps its name. Never the extension.
     function captionOf(name) {
         var bare = root.baseName(name)
         var m = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})\.(\d{2})\.(\d{2})$/.exec(bare)
@@ -52,15 +47,13 @@ Item {
         return qsTr("%1, %2").arg(Format.calendarDate(taken)).arg(taken.toLocaleTimeString(Qt.locale(), Locale.ShortFormat))
     }
 
-    // The selected screenshots, by path: {path: true}. Paths rather than rows
-    // because rows move when a file is added, renamed or deleted.
+    // Selected screenshots by path, {path: true}; paths, not rows, because rows move when files change.
     property var selected: ({})
     property int selectedCount: 0
     // Set by the Upload actions, so only this tab reacts to the result.
-    property bool uploading: false
+    property alias uploading: linkToast.pending
 
-    // For review snapshots (Main.qml's "review=<name>" dev route, through
-    // InstancePage): everything selected, or the first picture's rename.
+    // For the "review=<name>" dev route: everything selected, or the first picture's rename.
     function review(name) {
         if (name === "shotselect") {
             root.selectAll()
@@ -110,8 +103,8 @@ Item {
         return -1
     }
 
-    // The selected paths, or just @p path when nothing is selected (or the
-    // path is outside the selection, as with a right-click on another tile).
+    // The selected paths, or just @p path when nothing is selected or the path is outside the
+    // selection.
     function targets(path) {
         if (root.isSelected(path))
             return Object.keys(root.selected)
@@ -125,8 +118,7 @@ Item {
         root.uploader.upload(paths)
     }
 
-    // Moves @p paths to the trash, last row first so the earlier rows keep
-    // their numbers while it goes.
+    // Moves @p paths to the trash, last row first so earlier rows keep their numbers.
     function removeAll(paths) {
         var rows = []
         for (var i = 0; i < paths.length; ++i) {
@@ -145,30 +137,44 @@ Item {
             toast.show(qsTr("Some screenshots could not be deleted."), "danger")
     }
 
-    // A file name without its extension, for the rename box.
+    function copyImage(row) {
+        if (root.model.copyImage(row))
+            toast.show(qsTr("Image copied."), "success")
+        else
+            toast.show(qsTr("The image could not be copied."), "danger")
+    }
+
+    function isCover(path) {
+        return root.coverSource.length > 0 && path.slice(path.lastIndexOf("/") + 1) === root.coverSource
+    }
+
+    function refreshCoverListed() {
+        var listed = false
+        for (var i = 0; root.coverSource.length > 0 && root.model && i < root.model.count && !listed; ++i)
+            listed = root.isCover(root.model.pathAt(i))
+        root.coverListed = listed
+    }
+    onCoverSourceChanged: root.refreshCoverListed()
+    onModelChanged: root.refreshCoverListed()
+    Connections {
+        target: root.model
+        ignoreUnknownSignals: true
+        function onRowsInserted() { root.refreshCoverListed() }
+        function onRowsRemoved() { root.refreshCoverListed() }
+        function onModelReset() { root.refreshCoverListed() }
+    }
+
     function baseName(name) {
         var dot = name.lastIndexOf(".")
         return dot > 0 ? name.slice(0, dot) : name
     }
 
-    Connections {
-        target: root.uploader
-        ignoreUnknownSignals: true
-        function onUploaded(url, count) {
-            if (!root.uploading)
-                return
-            root.uploading = false
-            clipboard.copyText(url)
-            toast.show(count > 1 ? qsTr("Album link copied to your clipboard.")
-                                 : qsTr("Link copied to your clipboard."),
-                       "success", qsTr("Open"), () => Qt.openUrlExternally(url))
-        }
-        function onFailed(message) {
-            if (!root.uploading)
-                return
-            root.uploading = false
-            toast.show(message, "danger")
-        }
+    UploadLinkToast {
+        id: linkToast
+        uploader: root.uploader
+        clipboardItem: clipboard
+        toastItem: toast
+        manyText: qsTr("Album link copied to your clipboard.")
     }
 
     FontMetrics {
@@ -184,12 +190,11 @@ Item {
         TabToolbar {
             Layout.fillWidth: true
 
-            leading: Text {
+            leading: Copy {
                 visible: root.selectedCount > 0
                 text: qsTr("%1 selected").arg(root.selectedCount)
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
+                role: "label"
+                tone: "secondary"
             }
 
             Button {
@@ -224,6 +229,12 @@ Item {
                 }
             }
             Button {
+                visible: root.selectedCount === 0 && root.coverSource.length > 0 && !root.coverListed
+                text: qsTr("Remove cover")
+                flat: true
+                onClicked: root.coverCleared()
+            }
+            Button {
                 text: qsTr("Open folder")
                 icon.source: Icons.url("folder")
                 onClicked: root.openFolderRequested(root.directory)
@@ -234,10 +245,8 @@ Item {
             id: grid
             Layout.fillWidth: true
             Layout.fillHeight: true
-            // Each cell carries one gap on its right; the grid is a gap
-            // wider than the page (so `width` below includes it) and the
-            // last column's gap falls outside the content edge, so the
-            // thumbnails run flush with the toolbar's edges.
+            // Each cell carries a gap on its right; the grid is a gap wider than the page so the
+            // last column's gap falls outside and the thumbnails run flush with the toolbar.
             Layout.rightMargin: -root.gap
             clip: true
             boundsBehavior: Flickable.StopAtBounds
@@ -246,9 +255,7 @@ Item {
             readonly property int tileWidth: Math.floor(width / columns) - root.gap
             readonly property int tileHeight: Math.round(tileWidth * 9 / 16)
             cellWidth: tileWidth + root.gap
-            // The caption, then the same gap as between columns.
             cellHeight: tileHeight + root.captionHeight + root.gap
-            // Overlays the thumbnails rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
             delegate: Item {
@@ -263,6 +270,7 @@ Item {
                 height: grid.cellHeight
 
                 readonly property bool picked: root.isSelected(cell.path)
+                readonly property bool isCover: root.isCover(cell.path)
 
                 HoverHandler { id: hover }
                 TapHandler {
@@ -279,7 +287,6 @@ Item {
                     clip: true
 
                     Image {
-                        id: thumb
                         anchors.fill: parent
                         source: "image://screenshot/" + encodeURIComponent(cell.path)
                         sourceSize: Qt.size(512, 512)
@@ -287,9 +294,7 @@ Item {
                         asynchronous: true
                     }
 
-                    // A scrim over the foot of the thumbnail, dark regardless
-                    // of theme (like Tag's onMedia mode), so the actions on
-                    // top of it stay readable over any screenshot.
+                    // Dark regardless of theme, so the actions stay readable over any screenshot.
                     Rectangle {
                         anchors.left: parent.left
                         anchors.right: parent.right
@@ -313,12 +318,7 @@ Item {
                                 flat: false
                                 iconName: "copy"
                                 tip: qsTr("Copy image")
-                                onClicked: {
-                                    if (root.model.copyImage(cell.index))
-                                        toast.show(qsTr("Image copied."), "success")
-                                    else
-                                        toast.show(qsTr("The image could not be copied."), "danger")
-                                }
+                                onClicked: root.copyImage(cell.index)
                             }
                             IconButton {
                                 id: moreButton
@@ -331,9 +331,6 @@ Item {
                         }
                     }
 
-                    // Taking the click, so it opens the picture (or, once
-                    // something is selected, ticks it) instead of the tile's
-                    // controls above doing so.
                     TapHandler {
                         onTapped: {
                             if (root.selectedCount > 0)
@@ -343,8 +340,6 @@ Item {
                         }
                     }
 
-                    // The tick that selects a tile; shown on hover, and on
-                    // every tile once a selection exists.
                     Rectangle {
                         anchors.left: parent.left
                         anchors.top: parent.top
@@ -362,8 +357,7 @@ Item {
                             checked: cell.picked
                             onToggled: {
                                 root.toggleSelected(cell.path)
-                                // toggled() replaced the binding with the
-                                // user's value; put it back.
+                                // toggled() replaced the binding with the user's value; put it back.
                                 checked = Qt.binding(() => cell.picked)
                             }
                             Accessible.name: qsTr("Select %1").arg(cell.name)
@@ -387,12 +381,7 @@ Item {
                     MenuItem {
                         text: qsTr("Copy image")
                         icon.source: Icons.url("copy")
-                        onTriggered: {
-                            if (root.model.copyImage(cell.index))
-                                toast.show(qsTr("Image copied."), "success")
-                            else
-                                toast.show(qsTr("The image could not be copied."), "danger")
-                        }
+                        onTriggered: root.copyImage(cell.index)
                     }
                     MenuItem {
                         text: qsTr("Rename…")
@@ -405,8 +394,14 @@ Item {
                         }
                     }
                     MenuItem {
+                        // The Gece look shows no covers.
+                        visible: Theme.look !== "night"
+                        text: cell.isCover ? qsTr("Remove cover") : qsTr("Set as cover")
+                        icon.source: Icons.url("image")
+                        onTriggered: cell.isCover ? root.coverCleared() : root.coverRequested(cell.path)
+                    }
+                    MenuEntry {
                         visible: root.canUpload
-                        height: visible ? implicitHeight : 0
                         enabled: !!root.uploader && !root.uploader.busy
                         text: root.selectedCount > 1 && cell.picked ? qsTr("Upload selected to Imgur")
                                                                     : qsTr("Upload to Imgur")
@@ -430,23 +425,44 @@ Item {
                     }
                 }
 
-                Text {
+                Copy {
                     anchors.top: frame.bottom
                     anchors.topMargin: Theme.space.xs
                     x: frame.x
-                    width: frame.width
+                    width: frame.width - (coverMark.visible ? coverMark.width + Theme.space.sm : 0)
                     text: root.captionOf(cell.name)
                     elide: Text.ElideMiddle
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
+                    role: "caption"
+                    tone: "secondary"
                     font.weight: Font.Medium
+                }
+
+                Row {
+                    id: coverMark
+                    visible: cell.isCover
+                    anchors.top: frame.bottom
+                    anchors.topMargin: Theme.space.xs
+                    anchors.right: frame.right
+                    spacing: Theme.space.xxs
+
+                    MeshIcon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        iconName: "check"
+                        size: Theme.icon.xxs
+                        color: Theme.palette.accentText
+                    }
+                    Copy {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Cover")
+                        role: "caption"
+                        tone: "accent"
+                        font.weight: Font.Medium
+                    }
                 }
             }
         }
     }
 
-    // Rows fade out at the fold instead of being sliced by the play bar.
     ScrollFade {
         anchors.left: parent.left
         anchors.right: parent.right
@@ -469,8 +485,10 @@ Item {
         confirmText: qsTr("Rename")
         onSubmitted: (text) => {
             var row = root.rowOf(path)
+            var wasCover = root.isCover(path)
             if (row >= 0 && root.model.rename(row, text)) {
-                // The selection is by path, which just changed.
+                if (wasCover)
+                    root.coverRenamed(root.model.pathAt(row))
                 root.clearSelection()
                 close()
             } else {
@@ -485,11 +503,10 @@ Item {
 
     EmptyState {
         anchors.centerIn: parent
-        // Up where the list would start, as on every other tab.
         upperThird: true
         visible: !root.model || root.model.count === 0
         title: qsTr("No screenshots yet")
         body: qsTr("Press F2 in game; they will show up here.")
-        MeshIcon { iconName: "image"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "image"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 }

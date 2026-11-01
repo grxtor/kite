@@ -30,32 +30,19 @@
 
 class QNetworkReply;
 
-/*
- * The game's two default skins, Steve (classic arms) and Alex (slim arms),
- * for a player who has no skin of their own: offline accounts, and a
- * Microsoft account before its profile texture has been fetched. The game
- * shows such a player in one of these rather than as a blank figure, and so
- * does the launcher (AccountFaceProvider draws faces, bodies and the 3D
- * preview's texture from them).
- *
- * The textures are Mojang's and are not shipped with Kite: they are
- * fetched from the same textures.minecraft.net addresses the profile parser
- * already substitutes for a player without a skin (Parsers.cpp), and kept
- * in the data folder's cache (cache/skins/default-classic.png and
- * default-slim.png) so they are there offline from then on; the cache is
- * read first. Until they are here -- no cache yet and no network --
- * texture() is null and callers keep their own fallback; loaded() says
- * when to look again.
- *
- * Separately, the gallery: the nine default skins the game ships since
- * 1.19.3 (Steve, Alex, Ari, Efe, Kai, Makena, Noor, Sunny, Zuri), each drawn
- * for both arm widths, which the skin editor offers next to the user's own
- * skins as the official launcher does. Also Mojang's, also not shipped:
- * fetched on demand from textures.minecraft.net (fetchGallery()) into
- * cache/skins/default/<texture hash>.png and read from there on.
- *
- * Core: QtCore/QtGui/QtNetwork only, no QtWidgets, no ui/.
- */
+// The game's default skins: Steve (classic arms) and Alex (slim) for a player
+// with no skin of their own (offline accounts, or a Microsoft account before
+// its profile texture arrives). Mojang's textures are not shipped: they are
+// fetched from the textures.minecraft.net addresses the profile parser
+// substitutes (Parsers.cpp) and cached in cache/skins/default-classic.png and
+// default-slim.png, read first. Until one is here texture() is null and callers
+// keep their own fallback; loaded() says when to look again.
+//
+// Also the gallery: the nine default skins since 1.19.3 (Steve, Alex, Ari, Efe,
+// Kai, Makena, Noor, Sunny, Zuri), each for both arm widths, fetched on demand
+// (fetchGallery()) into cache/skins/default/<texture hash>.png.
+//
+// Core: QtCore/QtGui/QtNetwork only, no QtWidgets, no ui/.
 class DefaultSkins : public QObject
 {
 	Q_OBJECT
@@ -65,38 +52,34 @@ class DefaultSkins : public QObject
 	static DefaultSkins* instance();
 
 	/*!
-	 * Whether the game gives @p uuid the slim (Alex) default rather than the
-	 * classic (Steve) one: the parity of the Java hashCode() of the UUID --
-	 * odd is slim -- the same rule Parsers::parseMojangSessionProfile()
+	 * Whether the game gives @p uuid the slim (Alex) default: odd parity of the
+	 * Java hashCode() of the UUID, as Parsers::parseMojangSessionProfile()
 	 * applies. Dashes are optional; anything that is not a UUID gets the
-	 * classic model, as it does in the game.
+	 * classic model.
 	 */
 	static bool isSlimFor(const QString& uuid);
 
 	/*!
-	 * Whether @p account is drawn with slim arms: what its profile says
-	 * when it says anything, otherwise the default the game gives the UUID
-	 * it launches with (isSlimFor() of MinecraftAccount::gameUuid()) -- for
-	 * an offline account the name-based one, so the preview shows what the
-	 * game will, even when that puts an offline "Steve" in Alex's skin.
+	 * Whether @p account is drawn with slim arms: what its profile says,
+	 * otherwise the game's default for the UUID it launches with (isSlimFor()
+	 * of MinecraftAccount::gameUuid()).
 	 */
 	static bool isSlim(const MinecraftAccountPtr& account);
 
-	/// The 64x64 default texture with slim (Alex) or classic (Steve) arms;
-	/// null until it has been downloaded (see ensureLoaded()).
+	/// The 64x64 default texture with slim (Alex) or classic (Steve) arms; null
+	/// until downloaded (see ensureLoaded()).
 	QImage texture(bool slim) const;
 
-	/// Reads whichever textures are still missing from the cache, and starts
-	/// fetching any the cache does not have; a no-op while a fetch is
-	/// running, once both are here, or without a LauncherContext (tests).
+	/// Reads the missing textures from the cache and fetches those it lacks. A
+	/// no-op while a fetch runs, once both are here, or without a
+	/// LauncherContext (tests).
 	void ensureLoaded();
 
 	/// For tests: puts @p image in place as if it had been downloaded.
 	void setTexture(bool slim, const QImage& image);
 
-	/// The textures.minecraft.net address of the Steve (classic) or Alex
-	/// (slim) default above -- the MHF_Steve/MHF_Alex skins, which the
-	/// profile parser also hands out for a player without a skin.
+	/// The textures.minecraft.net address of the Steve (classic) or Alex (slim)
+	/// default (MHF_Steve/MHF_Alex).
 	static QString fallbackUrl(bool slim);
 
 	/// One of the gallery's nine characters.
@@ -107,15 +90,15 @@ class DefaultSkins : public QObject
 	};
 	/// The nine, in the order the game lists them.
 	static QList<Character> characters();
-	/// The textures.minecraft.net address of @p name drawn with slim or
-	/// classic arms; empty for a name that is not one of characters().
+	/// The textures.minecraft.net address of @p name with slim or classic arms;
+	/// empty for a name not in characters().
 	static QString galleryUrl(const QString& name, bool slim);
-	/// Where that texture is kept once downloaded (it exists from then on),
-	/// under the data folder, named by its hash; empty for an unknown name.
+	/// Where that texture is kept once downloaded, named by its hash; empty for
+	/// an unknown name.
 	static QString galleryPath(const QString& name, bool slim);
-	/// Starts downloading whichever gallery textures the cache does not have
-	/// yet; galleryChanged() as each one lands or fails. A no-op for those
-	/// already on their way, and without a LauncherContext (tests).
+	/// Downloads the gallery textures the cache lacks; galleryChanged() as each
+	/// lands or fails. A no-op for those already on their way, and without a
+	/// LauncherContext (tests).
 	void fetchGallery();
 	/// Whether any gallery download is still running.
 	bool galleryLoading() const;

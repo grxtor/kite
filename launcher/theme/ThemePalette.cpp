@@ -64,9 +64,8 @@ bool ThemePalette::operator!=(const ThemePalette& other) const
 
 namespace
 {
-	/* What differs between schemes. Everything else -- status colours,
-	 * overlays, scrims -- is shared per mode, so switching scheme never
-	 * changes what "danger" or "success" looks like. */
+	/* What differs between schemes; status colours, overlays and scrims are
+	 * shared per mode. */
 	struct SchemeColors
 	{
 		QColor canvas, surface, surfaceRaised, surfaceOverlay, surfaceSunken;
@@ -105,18 +104,14 @@ namespace
 		p.accentSubtle = withAlpha(c.accent, dark ? 41 : 31); // ~16% / ~12%
 		p.accentText = c.accentText;
 
-		// Hairlines are translucent so they read the same over every
-		// surface; see the header comment for why they sit under 3:1.
-		// ~11%: the phase-02 "soft" look wants the faintest edge that still
-		// reads as one. 20 (~8%) measured ~1.19-1.24:1 composited over a
-		// panel -- barely there -- and ThemePalette_test.cpp's "border
-		// visible over surface" check holds 1.28; 28/29 is the lowest step
-		// that clears it over every scheme's canvas and surface.
+		// Translucent, so hairlines read the same over every surface. ~11%: the
+		// lowest step (28/29) that clears ThemePalette_test.cpp's "border visible
+		// over surface" check (1.28) over every scheme.
 		p.border = dark ? QColor(0xFF, 0xFF, 0xFF, 28) : QColor(0x00, 0x00, 0x00, 29);
 		p.borderStrong = c.borderStrong;
 		p.divider = p.border;
-		// A light theme's bright accent (Ember's orange) can sit under the
-		// 3:1 a focus indicator needs; its darker text shade never does.
+		// A light theme's bright accent can fall under the 3:1 a focus ring
+		// needs; its darker text shade does not.
 		p.focusRing = dark ? c.accent : c.accentText;
 
 		if (dark) {
@@ -144,28 +139,21 @@ namespace
 		p.scrim = QColor(0x00, 0x00, 0x00, dark ? 140 : 115);
 		p.shadow = QColor(0x00, 0x00, 0x00, dark ? 102 : 51);
 		p.tooltipBackground = c.tooltipBackground;
-		// A light scheme's tooltip is either a dark chip (light text) or,
-		// like Amethyst's, a raised white card (its own primary text);
-		// whichever of the two reads on the background it actually has.
+		// A light scheme's tooltip is a dark chip (light text) or a raised
+		// white card (its own primary text).
 		const bool lightTooltip = c.tooltipBackground.lightnessF() >= 0.5;
 		p.tooltipText = dark || lightTooltip ? c.textPrimary : QColor(0xF6, 0xF6, 0xF9);
 
 		return p;
 	}
 
-	/* Kite's own scheme: black-grey neutrals under one electric violet,
-	 * the logo's. The neutrals carry no violet at all -- tinted panels read
-	 * as "purple everything" in the dark theme; the accent alone is the
-	 * colour (primary actions, selection, switches). The filled
-	 * accent is deep enough for white labels; the lighter accentText is
-	 * what reads as text on the dark surfaces. Values follow the phase-02
-	 * redesign brief (designs/redesign-brief.md), with two deliberate
-	 * departures that ThemePalette_test.cpp requires: surfaceRaised sits
-	 * one step above the brief's #1E1A2A, so the raised layer clears the
-	 * test's luminance step over canvas, and the hairline border is ~11%
-	 * instead of 7-8% (see build()). Dark surfaceOverlay -- menus and
-	 * dialogs -- sits between surface and surfaceRaised, so a raised
-	 * control inside a popup still reads lighter than the popup itself. */
+	/* Kite's scheme: black-grey neutrals with no violet cast (tinted panels
+	 * read as purple everything) under one electric violet. The filled accent
+	 * takes white labels; accentText reads as text on dark surfaces.
+	 * surfaceRaised and the ~11% border sit above the original brief so
+	 * ThemePalette_test.cpp's steps pass. Dark surfaceOverlay lies between
+	 * surface and surfaceRaised so a raised control inside a popup still
+	 * reads lighter. */
 	SchemeColors amethyst(bool dark)
 	{
 		if (dark)
@@ -187,15 +175,11 @@ namespace
 				QColor(0xFF, 0xFF, 0xFF), QColor(0xF0, 0xF0, 0xF2)};
 	}
 
-	/* Warm, but only just: neutrals with a trace of warmth so the orange
-	 * belongs, without drifting into brown. Dark text on the orange --
-	 * white on a lava orange cannot reach 4.5:1. */
+	/* Neutrals with a trace of warmth, not brown. Dark text on the orange:
+	 * white cannot reach 4.5:1. */
 	SchemeColors ember(bool dark)
 	{
 		if (dark)
-			// Same widening methodology as Amethyst (design-plan.md §3,
-			// Wave 0b), scaled to this ramp's own warmer, tighter per-channel
-			// shape rather than copying Amethyst's deltas verbatim.
 			return {QColor(0x10, 0x0E, 0x0D), QColor(0x1B, 0x18, 0x17), QColor(0x28, 0x23, 0x21),
 					QColor(0x36, 0x30, 0x28), QColor(0x0A, 0x09, 0x08),
 					QColor(0xF7, 0xF3, 0xF0), QColor(0xC6, 0xBC, 0xB5), QColor(0x96, 0x8B, 0x85),
@@ -214,14 +198,11 @@ namespace
 				QColor(0x1A, 0x15, 0x12), QColor(0xF2, 0xEE, 0xEB)};
 	}
 
-	/* Cool navy with a bright diamond blue; like Ember, the bright filled
-	 * surface takes dark text in the dark variant. */
+	/* Cool navy with a bright diamond blue; the bright fill takes dark text
+	 * in the dark variant. */
 	SchemeColors diamond(bool dark)
 	{
 		if (dark)
-			// Same widening methodology as Amethyst (design-plan.md §3,
-			// Wave 0b), scaled to this ramp's own looser, uneven navy shape
-			// rather than copying Amethyst's deltas verbatim.
 			return {QColor(0x0A, 0x0D, 0x14), QColor(0x12, 0x18, 0x23), QColor(0x1C, 0x25, 0x34),
 					QColor(0x29, 0x34, 0x48), QColor(0x06, 0x09, 0x0F),
 					QColor(0xEE, 0xF3, 0xFF), QColor(0xAF, 0xBA, 0xCF), QColor(0x80, 0x8C, 0xA4),
@@ -239,27 +220,14 @@ namespace
 				QColor(0x67, 0x71, 0x84), QColor(0xDA, 0xE8, 0xFF), QColor(0x0B, 0x33, 0x75),
 				QColor(0x0F, 0x15, 0x22), QColor(0xED, 0xF1, 0xF7)};
 	}
-	/* Hue-less graphite neutrals -- literally so (R == G == B at every
-	 * step), not merely low-saturation like the other three schemes' own
-	 * "neutrals" (Amethyst's carry a cool violet cast, Ember's a warm one,
-	 * Diamond's a cool navy one). The user rejected an earlier attempt at
-	 * this scheme for tinting its *surfaces* green -- a wash of "faded
-	 * greenish tints" over every panel read as sickly, not Minecraft-like.
-	 * Green here lives only in the accent family (accent/Hover/Pressed/
-	 * Subtle/Text) and the selection tint, the same place every other
-	 * scheme keeps its own hue -- never in canvas/surface/surfaceRaised/
-	 * surfaceOverlay/surfaceSunken. Values re-derived and contrast-checked
-	 * directly against Contrast::ratio()/relativeLuminance() (not
-	 * hand-typed) before landing here; see ThemePalette_test.cpp. */
+	/* Hue-less graphite (R == G == B), unlike the other schemes' tinted
+	 * neutrals. Green lives only in the accent family and the selection
+	 * tint, never in the surfaces. */
 	SchemeColors grass(bool dark)
 	{
 		if (dark)
-			// A Minecraft-grass green deep enough for a WHITE label to clear
-			// 4.5:1 (measured 4.91:1). Near-black on the brighter grass green
-			// read as a disabled button next to every other launcher's
-			// white-on-green Play, so the fill moved darker instead of the
-			// label (hover 3.99:1 is a transient state). Still 3.96:1 against
-			// the canvas, over the 3:1 a control's own shape needs.
+			// A green deep enough for a white label to clear 4.5:1 (4.91:1; hover
+			// 3.99:1), and 3.96:1 against the canvas.
 			return {QColor(0x0D, 0x0D, 0x0D), QColor(0x19, 0x19, 0x19), QColor(0x23, 0x23, 0x23),
 					QColor(0x2E, 0x2E, 0x2E), QColor(0x08, 0x08, 0x08),
 					QColor(0xF4, 0xF4, 0xF4), QColor(0xB9, 0xB9, 0xB9), QColor(0x8B, 0x8B, 0x8B),
@@ -268,27 +236,21 @@ namespace
 					QColor(0x7E, 0xD9, 0x57), QColor(0xFF, 0xFF, 0xFF),
 					QColor(0x70, 0x70, 0x70), QColor(0x1E, 0x2E, 0x17), QColor(0xF4, 0xF4, 0xF4),
 					QColor(0x24, 0x24, 0x24), QColor(0x23, 0x23, 0x23)};
-		// A deep enough forest green that white text clears 4.5:1 (measured
-		// 6.49:1) -- the light variant's own fill needs a darker green than
-		// the dark variant's, the same shape Amethyst/Diamond's light
-		// variants already use with white-on-accent.
+		// A forest green that clears 4.5:1 with white text (6.49:1).
 		return {QColor(0xF3, 0xF3, 0xF3), QColor(0xFA, 0xFA, 0xFA), QColor(0xFF, 0xFF, 0xFF),
 				QColor(0xFF, 0xFF, 0xFF), QColor(0xE8, 0xE8, 0xE8),
 				QColor(0x13, 0x13, 0x13), QColor(0x48, 0x48, 0x48), QColor(0x60, 0x60, 0x60),
 				QColor(0xA0, 0xA0, 0xA0),
-				// accentText a distinct, darker shade of accent rather than a
-				// verbatim copy -- the margin pattern Amethyst/Ember/Diamond's
-				// own light variants each use for their own accentText, even
-				// though accent alone already clears 4.5:1 as text (~6.5:1).
+				// accentText is a darker shade than accent, as in the other light
+				// variants, though accent alone already clears 4.5:1 as text.
 				QColor(0x2E, 0x6B, 0x1B), QColor(0x25, 0x58, 0x16), QColor(0x1D, 0x47, 0x11),
 				QColor(0x24, 0x57, 0x14), QColor(0xFF, 0xFF, 0xFF),
 				QColor(0x60, 0x60, 0x60), QColor(0xDC, 0xED, 0xCB), QColor(0x17, 0x31, 0x10),
 				QColor(0x13, 0x13, 0x13), QColor(0xEF, 0xEF, 0xEF)};
 	}
 
-	/* Sahne: Lunar's stage. Hue-less near-black neutrals and a white Play
-	 * with a black label -- no violet anywhere but the logo. The accent
-	 * being white makes selection, switches and links white too. */
+	/* Sahne: hue-less near-black neutrals and a white Play with a black
+	 * label. The white accent makes selection, switches and links white. */
 	SchemeColors stage()
 	{
 		return {QColor(0x0E, 0x0E, 0x11), QColor(0x14, 0x14, 0x17), QColor(0x24, 0x24, 0x29),
@@ -301,8 +263,7 @@ namespace
 				QColor(0x2A, 0x2A, 0x2F), QColor(0x1E, 0x1E, 0x23)};
 	}
 
-	/* Sade: ink-blue neutrals and a fresh green Play with a dark label,
-	 * the calm list look. */
+	/* Sade: ink-blue neutrals and a fresh green Play with a dark label. */
 	SchemeColors calm()
 	{
 		return {QColor(0x10, 0x12, 0x17), QColor(0x16, 0x19, 0x20), QColor(0x22, 0x26, 0x2F),
@@ -315,10 +276,9 @@ namespace
 				QColor(0x26, 0x2B, 0x35), QColor(0x1C, 0x20, 0x28)};
 	}
 
-	/* Gece: kiteclient.com's night sky (tokens.css: zenith #150E36, high
-	 * #2B1C76), lavender text, a white Play with the sky's ink on it. The
-	 * sky itself is drawn behind the shell (SkyBackdrop); these opaque
-	 * surfaces are for what floats over it -- menus, dialogs, fields. */
+	/* Gece: kiteclient.com's night sky, lavender text, a white Play with the
+	 * sky's ink on it. The sky is drawn behind the shell (SkyBackdrop); these
+	 * opaque surfaces are for what floats over it. */
 	SchemeColors night()
 	{
 		return {QColor(0x15, 0x0E, 0x36), QColor(0x1C, 0x14, 0x46), QColor(0x2A, 0x20, 0x60),

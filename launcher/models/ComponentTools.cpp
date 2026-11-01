@@ -199,8 +199,7 @@ bool ComponentTools::editComponentJson(int row)
 		return false;
 	}
 	setError(QString());
-	// The editor chosen in Settings > External tools, else whatever the
-	// system opens .json files with - the same rule Application uses.
+	// The editor chosen in Settings > External tools, else the system's .json handler.
 	const QString absolute = QDir::current().absoluteFilePath(file);
 	const QString editor = LAUNCHER && LAUNCHER->settings()
 							   ? LAUNCHER->settings()->get("JsonEditor").toString()

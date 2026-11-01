@@ -18,10 +18,8 @@
  * limitations under the License.
  */
 
-/*
- * Intentionally empty. What matters is not what this program does but whether
- * it links: see Kite_core_link_check in launcher/CMakeLists.txt.
- */
+/* Intentionally empty: what matters is whether it links (see
+ * Kite_core_link_check in launcher/CMakeLists.txt). */
 int main()
 {
 	return 0;

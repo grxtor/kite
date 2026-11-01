@@ -23,7 +23,6 @@
 #include <QFutureWatcher>
 #include <QSortFilterProxyModel>
 #include <QThreadPool>
-#include <QUrl>
 #include <QtConcurrentRun>
 #include <functional>
 
@@ -49,6 +48,7 @@
 #include "models/LogUploader.h"
 #include "models/LoaderInstaller.h"
 #include "models/ManagedPackController.h"
+#include "models/ModFolderWatch.h"
 #include "models/NewInstanceController.h"
 #include "models/OtherLogsModel.h"
 #include "models/ScreenshotUploader.h"
@@ -65,9 +65,6 @@
 
 namespace
 {
-	/* Wraps @p source in the same by-name sorted proxy the mods list has
-	 * always used: the folder model lists files in whatever order the
-	 * directory gives them, but people look for content by name. */
 	std::unique_ptr<QSortFilterProxyModel> sortedByName(ModFolderModel* source)
 	{
 		auto proxy = std::make_unique<QSortFilterProxyModel>();
@@ -79,29 +76,9 @@ namespace
 		return proxy;
 	}
 
-	/* Mirrors ModFolderPage::openedImpl(): startWatching() runs an
-	 * update() itself the first time it actually starts watching, but a
-	 * subsequent call (this bridge replacing a previous one, or a widget
-	 * page already showing the same folder) only re-arms the
-	 * QFileSystemWatcher. Force an update so @p model never hands QML
-	 * stale data. */
-	void startWatchingFresh(ModFolderModel* model)
-	{
-		const bool wasValid = model->isValid() && model->dir().exists();
-		model->startWatching();
-		if (wasValid) {
-			model->update();
-		}
-	}
 } // namespace
 
-/* Runs one World::install() copy off the GUI thread, the same
- * QtConcurrent::run()+QFutureWatcher shape BackupController's BackupJobTask
- * uses for its own long-running, plain succeeded/failed operations: a
- * world's region files can run into gigabytes, and copyWorld() must not
- * block the GUI thread doing that copy synchronously. Kept local rather
- * than shared with BackupController.cpp for the same reason BackupJobTask
- * itself is local there - nothing here needs progress reporting. */
+/* Runs World::install() off the GUI thread (world files can run into gigabytes). */
 class WorldCopyTask : public Task
 {
 	Q_OBJECT
@@ -120,7 +97,11 @@ class WorldCopyTask : public Task
 	{
 		disconnect(&m_watcher, nullptr, this, nullptr);
 		if (m_future.isRunning()) {
-			m_future.waitForFinished();
+			// The worker only owns copies of what it needs; let it finish unwatched.
+			auto* holder = new QFutureWatcher<bool>();
+			connect(holder, &QFutureWatcher<bool>::finished, holder,
+					&QObject::deleteLater);
+			holder->setFuture(m_future);
 		}
 	}
 
@@ -153,9 +134,7 @@ InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 		return;
 	}
 
-	// Coarse, like InstanceList::propertiesChanged: name is not the only
-	// thing propertiesChanged can mean, but re-reading it on every one of
-	// these is cheap and never misses a rename.
+	// Coarse: propertiesChanged can mean more than a rename; re-reading name is cheap.
 	connect(m_instance.get(), &BaseInstance::propertiesChanged, this,
 			[this](BaseInstance*) { emit nameChanged(); });
 	connect(m_instance.get(), &BaseInstance::runningStatusChanged, this,
@@ -170,42 +149,29 @@ InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 		startWatchingFresh(m_mods.get());
 
 		m_resourcePacks = m_mc->resourcePackList();
-		m_sortedResourcePacks = sortedByName(m_resourcePacks.get());
 		startWatchingFresh(m_resourcePacks.get());
 
 		m_shaderPacks = m_mc->shaderPackList();
-		m_sortedShaderPacks = sortedByName(m_shaderPacks.get());
 		startWatchingFresh(m_shaderPacks.get());
 
-		// Legacy-only: see the texturePacks Q_PROPERTY comment.
 		if (m_mc->traits().contains("texturepacks")) {
 			m_texturePacks = m_mc->texturePackList();
-			m_sortedTexturePacks = sortedByName(m_texturePacks.get());
 			startWatchingFresh(m_texturePacks.get());
 		}
 
 		m_worlds = m_mc->worldList();
-		// Mirrors WorldListPage::openedImpl().
 		m_worlds->startWatching();
 
-		// Borrowed from the instance, like m_mods/m_worlds above - see the
-		// gameOptions Q_PROPERTY comment.
 		m_gameOptions = m_mc->gameOptionsModel();
 		m_gameOptionsFilter = new KeyValueFilterModel(this);
 		m_gameOptionsFilter->setSourceModel(m_gameOptions.get());
 
-		// Mirrors ServersPage's own ServersModel lifetime: watched for as
-		// long as the page (here, this bridge) is open, locked exactly
-		// while the instance is running.
 		m_servers = std::make_unique<ServersListModel>(m_instance->gameRoot());
 		m_servers->setLocked(m_instance->isRunning());
 		m_servers->startWatching();
 	}
 
-	/* An old-format (Legacy) instance is not Minecraft-backed here, but the
-	 * widget version still listed its worlds (LegacyUpgradePage's neighbour
-	 * WorldListPage), so keep that: the Worlds tab is one of the few that
-	 * stay for it. */
+	// A legacy instance is not Minecraft-backed but still lists its worlds.
 	if (!m_mc) {
 		if (auto legacy =
 				std::dynamic_pointer_cast<LegacyInstance>(m_instance)) {
@@ -214,36 +180,27 @@ InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 		}
 	}
 
-	// Every instance can be backed up, Minecraft-backed or not.
 	m_backups = new BackupController(m_instance, this);
 
-	/* An instance that never took a screenshot has no folder yet; the
-	 * model then simply lists nothing until the page is opened again. */
+	// The folder may not exist yet; the model lists nothing until the page is reopened.
 	m_screenshots = std::make_unique<ScreenshotListModel>();
 	m_screenshots->setDirectory(screenshotsDir());
 
 	m_log = new InstanceLogBridge(m_instance, this);
 
-	/* Unlike contentBrowser()/loaderInstaller(), this touches only the
-	 * filesystem (a QFileSystemWatcher on the instance's log root), not
-	 * the network, so there is no reason to delay creating it - mirrors
-	 * m_mods/m_worlds above. Pure-virtual on BaseInstance, but not every
-	 * instance type necessarily has a filter to offer. */
+	// Touches only the filesystem, so it is created eagerly. Not every instance has a filter.
 	if (auto matcher = m_instance->getLogFileMatcher()) {
 		m_otherLogs =
 			new OtherLogsModel(m_instance->getLogFileRoot(), matcher, this);
 	}
 
-	// Neither touches the network until asked to upload.
 	m_logUploader = new LogUploader(this);
 	m_screenshotUploader = new ScreenshotUploader(this);
 }
 
 InstanceDetails::~InstanceDetails()
 {
-	// Mirrors ModFolderPage::~ModFolderPage() / WorldListPage::~WorldListPage():
-	// the models are owned by the instance, not by this bridge, but nothing
-	// else stops watching them once this detail page closes.
+	// The models belong to the instance; stop watching them when the page closes.
 	if (m_mods) {
 		m_mods->stopWatching();
 	}
@@ -296,8 +253,7 @@ QString InstanceDetails::notes() const
 
 void InstanceDetails::setNotes(const QString& notes)
 {
-	// BaseInstance::setNotes() does not itself emit anything (unlike most
-	// of its other setters) - notify explicitly, and only on a real change.
+	// BaseInstance::setNotes() emits nothing; notify here, only on a real change.
 	if (!m_instance || m_instance->notes() == notes) {
 		return;
 	}
@@ -315,144 +271,14 @@ QString InstanceDetails::modsDir() const
 	return m_mods ? m_mods->dir().absolutePath() : QString();
 }
 
-void InstanceDetails::setModEnabled(int row, bool enabled)
-{
-	setEnabled(QStringLiteral("mods"), row, enabled);
-}
-
-void InstanceDetails::deleteMod(int row)
-{
-	remove(QStringLiteral("mods"), row);
-}
-
-bool InstanceDetails::installMod(const QString& fileUrlOrPath)
-{
-	return install(QStringLiteral("mods"), fileUrlOrPath);
-}
-
-QObject* InstanceDetails::resourcePacks() const
-{
-	return m_sortedResourcePacks.get();
-}
-
-QString InstanceDetails::resourcePacksDir() const
-{
-	return m_resourcePacks ? m_resourcePacks->dir().absolutePath() : QString();
-}
-
-QObject* InstanceDetails::shaderPacks() const
-{
-	return m_sortedShaderPacks.get();
-}
-
-QString InstanceDetails::shaderPacksDir() const
-{
-	return m_shaderPacks ? m_shaderPacks->dir().absolutePath() : QString();
-}
-
-QObject* InstanceDetails::texturePacks() const
-{
-	return m_sortedTexturePacks.get();
-}
-
-QString InstanceDetails::texturePacksDir() const
-{
-	return m_texturePacks ? m_texturePacks->dir().absolutePath() : QString();
-}
-
-ModFolderModel* InstanceDetails::folderModel(const QString& kind) const
-{
-	if (kind == QStringLiteral("mods")) {
-		return m_mods.get();
-	}
-	if (kind == QStringLiteral("resourcepacks")) {
-		return m_resourcePacks.get();
-	}
-	if (kind == QStringLiteral("shaderpacks")) {
-		return m_shaderPacks.get();
-	}
-	if (kind == QStringLiteral("texturepacks")) {
-		return m_texturePacks.get();
-	}
-	return nullptr;
-}
-
-QSortFilterProxyModel* InstanceDetails::sortedFolderModel(const QString& kind) const
-{
-	if (kind == QStringLiteral("mods")) {
-		return m_sortedMods.get();
-	}
-	if (kind == QStringLiteral("resourcepacks")) {
-		return m_sortedResourcePacks.get();
-	}
-	if (kind == QStringLiteral("shaderpacks")) {
-		return m_sortedShaderPacks.get();
-	}
-	if (kind == QStringLiteral("texturepacks")) {
-		return m_sortedTexturePacks.get();
-	}
-	return nullptr;
-}
-
-QModelIndex InstanceDetails::sourceIndexFor(const QString& kind, int row) const
-{
-	auto* sorted = sortedFolderModel(kind);
-	if (!sorted || row < 0 || row >= sorted->rowCount()) {
-		return {};
-	}
-	return sorted->mapToSource(sorted->index(row, 0));
-}
-
-void InstanceDetails::setEnabled(const QString& kind, int row, bool enabled)
-{
-	auto* model = folderModel(kind);
-	const QModelIndex index = sourceIndexFor(kind, row);
-	if (!model || !index.isValid()) {
-		return;
-	}
-	model->setModStatus({ index },
-						enabled ? ModFolderModel::Enable
-								: ModFolderModel::Disable);
-}
-
-void InstanceDetails::remove(const QString& kind, int row)
-{
-	auto* model = folderModel(kind);
-	const QModelIndex index = sourceIndexFor(kind, row);
-	if (!model || !index.isValid()) {
-		return;
-	}
-	model->deleteMods({ index });
-}
-
-bool InstanceDetails::install(const QString& kind, const QString& fileUrlOrPath)
-{
-	auto* model = folderModel(kind);
-	if (!model) {
-		return false;
-	}
-	// Same conversion ModFolderModel's own drop handling uses
-	// (dropMimeData(): url.toLocalFile()) - a QML FileDialog hands out
-	// file:// URLs, but accept a plain path too.
-	const QUrl url(fileUrlOrPath);
-	const QString path = url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
-	return model->installMod(path);
-}
-
 bool InstanceDetails::contentChangesAllowed() const
 {
-	// Mirrors ModFolderPage::contentChangesAllowed() specialized to mods:
-	// allowsChangesWhileRunning() is always false for ModPlatform::ContentType::Mod,
-	// so that page's rule reduces to exactly this.
 	return m_instance && !m_instance->isRunning();
 }
 
 QObject* InstanceDetails::contentBrowser() const
 {
-	// Lazy on purpose: instantiated the first time anything reads this
-	// property, not in the constructor above - opening this page must not
-	// start the network activity a search or an install would. Null for a
-	// non-Minecraft instance, matching mods()/components() etc. above.
+	// Lazy: opening the page must not start network activity.
 	if (!m_contentBrowser && m_mc) {
 		m_contentBrowser =
 			std::make_unique<ContentBrowser>(m_mc, const_cast<InstanceDetails*>(this));
@@ -490,8 +316,6 @@ void InstanceDetails::deleteWorld(int row)
 
 bool InstanceDetails::renameWorld(int row, const QString& name)
 {
-	// Same trim rule sanitizedInstanceName() applies - a world name with
-	// only whitespace is not a usable name.
 	const QString trimmed = name.trimmed();
 	if (!m_worlds || trimmed.isEmpty() || row < 0 ||
 		static_cast<size_t>(row) >= m_worlds->size()) {
@@ -508,9 +332,7 @@ QObject* InstanceDetails::copyWorld(int row, const QString& name)
 		return nullptr;
 	}
 
-	// World is a plain value type (no pointers, no QObject) - safe to copy
-	// and install() from a worker thread the same way BackupController
-	// captures its BackupManager by value.
+	// World is a plain value type, safe to copy into a worker thread.
 	World world = (*m_worlds)[static_cast<size_t>(row)];
 	const QString to = m_worlds->dir().absolutePath();
 
@@ -585,10 +407,7 @@ QObject* InstanceDetails::components() const
 
 QObject* InstanceDetails::minecraftVersions() const
 {
-	// Lazy for the same reason as contentBrowser()/loaderInstaller() -
-	// nothing here downloads anything until QML actually reads this
-	// property (see VersionListLoadingProxy::startLoadIfNeeded(), run by
-	// setSourceModel() below).
+	// Lazy: nothing downloads until QML reads the property.
 	if (!m_minecraftVersions && m_mc) {
 		m_minecraftVersions = std::make_unique<MinecraftVersionListProxy>(
 			const_cast<InstanceDetails*>(this));
@@ -601,9 +420,6 @@ QObject* InstanceDetails::minecraftVersions() const
 
 QObject* InstanceDetails::loaderInstaller() const
 {
-	// Lazy for the same reason as contentBrowser() above: nothing here
-	// downloads anything until a loader is actually selected, but there is
-	// no reason to build the object at all for a non-Minecraft instance.
 	if (!m_loaderInstaller && m_mc) {
 		m_loaderInstaller = std::make_unique<LoaderInstaller>(
 			m_mc->getPackProfile().get(), const_cast<InstanceDetails*>(this));
@@ -655,9 +471,7 @@ QObject* InstanceDetails::installWorld(const QString& fileUrlOrPath)
 	if (!m_worlds) {
 		return nullptr;
 	}
-	// Same file:// handling install() above does for dropped content.
-	const QUrl url(fileUrlOrPath);
-	const QString source = url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
+	const QString source = FS::pathFromUrlOrPath(fileUrlOrPath);
 	if (!WorldTools::isWorld(source)) {
 		return nullptr;
 	}
@@ -707,7 +521,6 @@ QObject* InstanceDetails::upgradeLegacy()
 	if (!task) {
 		return nullptr;
 	}
-	// Staged and committed into the library like every other new instance.
 	Task* wrapped = instances->wrapInstanceTask(task);
 	auto* watcher = new TaskWatcher(Task::Ptr(wrapped), this);
 	watcher->setTitle(LegacyUpgrade::upgradedName(m_instance->name()));
@@ -754,14 +567,11 @@ void InstanceDetails::onRunningStatusChanged(bool running)
 	if (m_servers) {
 		m_servers->setLocked(running);
 	}
-	// The game rewrites options.txt as it quits; show what it saved, not
-	// what was there when this page opened.
+	// The game rewrites options.txt as it quits; show what it saved.
 	if (!running && m_gameOptions) {
 		m_gameOptions->reload();
 	}
 }
-
-// ---------------------------------------------------------------------------
 
 InstanceLogBridge::InstanceLogBridge(InstancePtr instance, QObject* parent)
 	: QObject(parent), m_instance(std::move(instance))
@@ -770,8 +580,6 @@ InstanceLogBridge::InstanceLogBridge(InstancePtr instance, QObject* parent)
 		return;
 	}
 
-	// Mirrors LogPage::LogPage(): pick up whatever launch is already in
-	// flight, then follow every launch after that.
 	m_task = m_instance->getLaunchTask();
 	if (m_task) {
 		m_model = m_task->getLogModel();

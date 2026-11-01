@@ -46,7 +46,7 @@ class Update : public LaunchStep
 	void proceed() override;
 
 	// We are a stand-in for the update task, so answer for it. Without this
-	// a progress dialog opened partway through has no steps to catch up on.
+	// a watcher that joins partway through has no steps to catch up on.
 	bool isMultiStep() const override
 	{
 		return m_updateTask && m_updateTask->isMultiStep();

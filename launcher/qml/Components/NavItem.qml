@@ -7,17 +7,10 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One destination in the sidebar. The selected fill itself is a single
- * shared shape SidebarNav slides between items (NavSelectionIndicator) --
- * this control only ever draws its own transient hover/press state, so the
- * shape shows through untouched wherever it sits. Selected, its icon and
- * label take accentText over that neutral shape, whose nose is lit in the
- * accent.
- *
- * A destination can carry a count (`badge`, hidden at 0): a pill at the
- * icon's bottom-right corner on the rail, at the row's right end in the
- * labelled sidebar. `badgeTone` says what the number is: "accent" for
- * something that wants an answer, "success" for good news.
+ * One destination in the sidebar. It only draws its own hover/press state: the
+ * selected fill is a shape SidebarNav slides between items
+ * (NavSelectionIndicator). `badge` (hidden at 0) is a count pill; `badgeTone`
+ * is "accent" for something that wants an answer, "success" for good news.
  */
 AbstractButton {
     id: control
@@ -25,32 +18,22 @@ AbstractButton {
     property string iconName
     property string label
     property bool selected: false
-    // Icon rail mode: drops the label, which shows as a tooltip to the
-    // right instead (Modrinth's rail). The icon itself never moves: it sits
-    // on the same axis in both modes (iconAxis), and the collapsed rail is
-    // exactly twice that wide (SidebarNav.railWidth), so it is centred there
-    // without re-anchoring anything -- swapping anchors at runtime left the
-    // icon behind.
+    // Icon rail mode: no label (a tooltip instead). The icon sits on the same axis in both modes
+    // and the rail is exactly twice that wide, so nothing is re-anchored; swapping anchors at
+    // runtime left the icon behind.
     property bool collapsed: false
-    // The icon's centre, from the row's left edge. SidebarNav sets its own
-    // (half its rail square); Settings' section list keeps this default.
+    // The icon's centre from the row's left edge; SidebarNav sets its own, Settings' list keeps
+    // this default.
     property int iconAxis: Theme.space.md + Theme.icon.md / 2
-    // Where the label starts, from the row's left edge: right after the
-    // icon by default; SidebarNav lines it up with its recent instances'
-    // names instead, whose picture is wider than a glyph.
+    // Where the label starts from the row's left edge; SidebarNav lines it up with its recent
+    // instances' names.
     property int labelX: control.iconAxis + Theme.icon.md / 2 + Theme.space.md
-    // Collapsed: a compact square centred on the icon rather than the
-    // whole stretched row -- the same square SidebarNav's selection
-    // indicator draws for the selected item (NavSelectionIndicator), so
-    // hover and selection read as the same shape in the rail.
+    // Collapsed: a compact square centred on the icon, the same square NavSelectionIndicator draws.
     property int railSquare: Theme.control.height
     property int cornerRadius: Theme.radius.md
     property int badge: 0
     property string badgeTone: "accent"
-    // The most a pill shows; past it, "99+".
-    readonly property int badgeCap: 99
-    // What the rail is drawn on (SidebarNav.surround), so the pill's ring can
-    // cut it clear of the icon it overlaps.
+    // What the rail is drawn on, so the pill's ring can cut it clear of the icon it overlaps.
     property color surround: "transparent"
 
     implicitHeight: Theme.control.height
@@ -62,8 +45,7 @@ AbstractButton {
     Accessible.name: label
     Accessible.description: control.badge > 0 ? String(control.badge) : ""
 
-    // Beside the rail rather than over it: above, it would cover the item
-    // the pointer is moving to next.
+    // Beside the rail: above it would cover the item the pointer moves to next.
     ToolTip {
         visible: control.collapsed && control.hovered && control.label.length > 0
         delay: 400
@@ -72,25 +54,16 @@ AbstractButton {
         y: Math.round((control.height - implicitHeight) / 2)
     }
 
-    background: Rectangle {
+    background: StateFill {
         width: control.collapsed ? control.railSquare : control.width
         height: control.collapsed ? control.railSquare : control.height
         x: control.collapsed ? control.iconAxis - width / 2 : 0
         y: control.collapsed ? (control.height - height) / 2 : 0
         radius: control.cornerRadius
-        color: control.down ? Theme.palette.pressedOverlay
-             : control.hovered ? Theme.palette.hoverOverlay : "transparent"
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        hovered: control.hovered
+        down: control.down
 
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: -Theme.space.xxs
-            radius: parent.radius + Theme.space.xxs
-            color: "transparent"
-            border.width: 2
-            border.color: Theme.palette.focusRing
-            visible: control.visualFocus
-        }
+        FocusFrame { around: Theme.space.xxs; visible: control.visualFocus }
     }
 
     readonly property color ink: control.selected ? Theme.palette.accentText
@@ -105,7 +78,7 @@ AbstractButton {
             color: control.ink
         }
 
-        Text {
+        Copy {
             x: control.labelX - control.leftPadding
             width: Math.max(0, parent.width - x - (pill.visible && !control.collapsed ? pill.width + Theme.space.md + Theme.space.sm : 0))
             anchors.verticalCenter: parent.verticalCenter
@@ -113,42 +86,21 @@ AbstractButton {
             text: control.label
             elide: Text.ElideRight
             color: control.ink
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
             font.weight: control.selected ? Font.DemiBold : Font.Medium
         }
     }
 
-    // The count. Drawn over the background and the contentItem, so it sits
-    // on the icon's corner without taking part in either's layout. Filled
-    // like a Button: textOnAccent on the accent, and the canvas on the
-    // success green (white would not read on the dark theme's light green).
-    Rectangle {
+    // The count, over the background and contentItem so it sits on the icon's corner outside their layout.
+    CountPill {
         id: pill
-        visible: control.badge > 0
-        width: Math.max(height, pillText.implicitWidth + Theme.space.sm + Theme.focus.width * 2)
-        height: Math.ceil(Theme.type.caption.lineHeightPx) + Theme.focus.width * 2
-        radius: Theme.radius.pill
-        border.width: Theme.focus.width
-        // A selected item sits on the selection's own fill.
-        border.color: control.selected ? Theme.palette.surfaceRaised : control.surround
-        color: control.badgeTone === "success" ? Theme.palette.success : Theme.palette.accent
-        // Rail: on the icon's bottom-right corner, a little out of it, so it
-        // covers neither a glyph's top (the second head of "users") nor the
-        // kite's nose at the selection's top-right. Labelled: the row's end.
+        count: control.badge
+        tone: control.badgeTone
+        ringColor: control.selected ? Theme.palette.surfaceRaised : control.surround
+        // Rail: on the icon's bottom-right corner, out far enough to cover neither a glyph's top
+        // nor the kite's nose at the selection's top-right. Labelled: the row's end.
         x: control.collapsed ? control.iconAxis + Theme.icon.md / 2 + Theme.space.xs - width / 2
                              : control.width - width - Theme.space.md
         y: control.collapsed ? (control.height + Theme.icon.md) / 2 + Theme.space.xs - height / 2
                              : (control.height - height) / 2
-
-        Text {
-            id: pillText
-            anchors.centerIn: parent
-            text: control.badge > control.badgeCap ? control.badgeCap + "+" : String(control.badge)
-            color: control.badgeTone === "success" ? Theme.palette.canvas : Theme.palette.textOnAccent
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
-            font.weight: Font.DemiBold
-        }
     }
 }

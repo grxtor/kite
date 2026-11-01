@@ -8,50 +8,22 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One modpack, opened from Discover, laid out like a Modrinth project page:
- * a header with the pack's logo, name, pitch, its numbers and its tags,
- * and Install; under it the gallery and the description on the left, and on
- * the right the Install card (which version, what to call the instance, and
- * the install's progress), what the pack runs on, and its details. On a
- * narrow page the side cards move above the description.
- *
- * `pack` is the row that was opened (title, author, logo, galleryUrl,
- * accentColor...); `detail` is the model's lazily loaded body, gallery and
- * version list. Provider-neutral: Modrinth's and CurseForge's models give
- * the same roles and the same `detail` shape; only the raw body's format
- * differs (`bodyFormat`), and the page reads `bodyHtml`, the same text every
- * model already rewrote into one plain HTML article.
- *
- * Only the pack's own pictures appear here: its logo, and its gallery once
- * the detail has loaded. No picture, no picture slot -- the header never
- * stands an empty banner in for one.
+ * One modpack, opened from Discover, laid out like a project page. `pack` is
+ * the opened row; `detail` is the model's lazily loaded body, gallery and
+ * version list.
  */
 Item {
     id: root
 
-    /*
-     * A heading on the page under the header: a side card's, "Gallery",
-     * "Description" -- Theme's subheading, one level under the pack's name.
-     */
-    component Subheading: Text {
-        color: Theme.palette.textPrimary
-        font.family: Theme.font.heading
-        font.pixelSize: Theme.type.subheading.pixelSize
-        font.weight: Theme.type.subheading.weight
+    component Subheading: Copy {
+        role: "subheading"
     }
 
-    /*
-     * A card in the side column: a title over its own content.
-     */
-    component SideCard: Rectangle {
+    component SideCard: BoxSurface {
         id: sideCard
         property string title
         default property alias content: sideBody.data
         implicitHeight: sideColumn.implicitHeight + Theme.space.lg * 2
-        radius: Theme.radius.lg
-        color: Theme.palette.surface
-        border.width: 1
-        border.color: Theme.palette.border
 
         Column {
             id: sideColumn
@@ -71,53 +43,42 @@ Item {
         }
     }
 
-    /*
-     * One fact in a side card: a quiet label over its value.
-     */
     component Fact: Column {
         property string label
         property string value
         visible: value.length > 0
         width: parent ? parent.width : 0
         spacing: Theme.space.xxs
-        Text {
+        Copy {
             text: parent.label
-            color: Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
+            role: "caption"
+            tone: "tertiary"
             font.weight: Font.Medium
         }
-        Text {
+        Copy {
             width: parent.width
             text: parent.value
             wrapMode: Text.Wrap
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            role: "label"
         }
     }
 
     property var pack: ({})
     property var detail: null
     property var model: null
-    // (projectId, versionId, name, group) -> TaskWatcher, owned by C++ so
-    // the install survives leaving this page.
+    // (projectId, versionId, name, group) -> TaskWatcher; owned by C++ so installs survive leaving
+    // the page.
     property var installer: null
-    // "markdown" (Modrinth) or "html" (CurseForge): how `detail.body` reads.
-    // The page itself shows `detail.bodyHtml`, which is HTML either way.
+    // How `detail.body` reads: "markdown" (Modrinth) or "html" (CurseForge); the page shows
+    // `detail.bodyHtml` either way.
     property string bodyFormat: "markdown"
-    // TaskWatcher of the install started from here, if any.
     property var watcher: null
     // DiscoverPage's page frame, so the page lines up with its toolbar.
     property int contentX: Theme.space.xl + Theme.space.xs
     property int contentWidth: width - contentX * 2
-    // The description's own measure: lines of a comfortable length, and
-    // the width its pictures scale down to.
     readonly property int textMeasure: 720
     readonly property int sideWidth: 300
     readonly property int columnGap: Theme.space.xl
-    // Room for the description beside the side column; below it, one
-    // column with the side cards first.
     readonly property bool twoColumns: root.contentWidth >= 820
     readonly property int logoSize: 96
     readonly property int maxCompatVersions: 6
@@ -130,22 +91,15 @@ Item {
     readonly property bool installing: !!watcher && watcher.running
     readonly property bool installed: !!watcher && watcher.succeeded
 
-    // The provider's ISO last-modified date as Format.lastPlayed() words it,
-    // or "" when there is none.
-    readonly property string updatedText: {
-        var ms = Date.parse(root.pack.updated || "")
-        return ms > 0 ? Format.lastPlayed(ms) : ""
-    }
+    // The provider's ISO last-modified date as an age, worded like the card's ("5 days ago"), or "" when there is none.
+    readonly property string updatedText: Format.ageText(root.pack.updated || "")
 
-    // Loader ids as the projects spell their own names.
     readonly property var loaderNames: ({ neoforge: "NeoForge", forge: "Forge", fabric: "Fabric",
                                           quilt: "Quilt", liteloader: "LiteLoader" })
     function loaderName(id) {
-        return root.loaderNames[id] || (id.length > 0 ? id.charAt(0).toUpperCase() + id.slice(1) : id)
+        return root.loaderNames[id] || Format.titleCase(id)
     }
 
-    // What the versions run on, newest first and each named once: the
-    // Minecraft versions and the loaders, for the Compatibility card.
     function distinct(field) {
         var seen = []
         for (var i = 0; i < root.versions.length; ++i) {
@@ -166,9 +120,7 @@ Item {
             parts.push(v.gameVersions[0])
         if (v.loaders && v.loaders.length > 0)
             parts.push(v.loaders.map(l => root.loaderName(l)).join(", "))
-        // Many packs number their versions with the pack's own name in front
-        // ("All the Mods 10-8.3"); repeating it on every row of the list only
-        // pushes the part that differs to the end. Show "8.3" instead.
+        // Many packs prefix versions with the pack's name ("All the Mods 10-8.3"); show "8.3" instead.
         var label = String(v.versionNumber || v.name || "")
         var title = root.pack && root.pack.title ? String(root.pack.title) : ""
         if (title.length > 0 && label.toLowerCase().startsWith(title.toLowerCase())) {
@@ -185,10 +137,6 @@ Item {
         var v = root.versions[versionBox.currentIndex]
         root.watcher = root.installer(root.pack.projectId, v.id,
                                       nameField.text.length > 0 ? nameField.text : root.pack.title, "")
-    }
-
-    function titleCase(word) {
-        return word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word
     }
 
     onPackChanged: {
@@ -209,18 +157,14 @@ Item {
         Column {
             id: column
             x: root.contentX
-            // The shell's panel adds no padding; the page pads itself.
             y: Theme.space.xl
             width: root.contentWidth
             spacing: Theme.space.xl
 
-            // Pulled left by its own padding plus the chevron's side
-            // bearing, so the chevron's ink -- not the button's hover
-            // plate, nor the empty left third of the glyph's box -- starts
-            // exactly on the page's left edge, like the header below it.
+            // Pulled left by its padding plus the chevron's side bearing, so the chevron's ink
+            // starts on the page's left edge.
             Button {
-                // The chevron-left glyph's stroke starts 8 of its 24 units
-                // in; rounded so the label stays on whole pixels.
+                // The chevron's stroke starts 8 of its 24 units in; rounded to whole pixels.
                 readonly property int chevronBearing: Math.round(Theme.icon.sm / 3)
                 x: -(leftPadding + chevronBearing)
                 flat: true
@@ -230,7 +174,6 @@ Item {
                 onClicked: root.backRequested()
             }
 
-            // -- Header: logo, name, pitch, numbers, tags, Install ----------
             RowLayout {
                 width: parent.width
                 spacing: Theme.space.xl
@@ -240,7 +183,6 @@ Item {
                     Layout.preferredHeight: root.logoSize
                     Layout.alignment: Qt.AlignTop
 
-                    // No tile of its own behind the logo: it sits on the page.
                     Image {
                         id: logoImg
                         anchors.fill: parent
@@ -272,30 +214,23 @@ Item {
                     Layout.alignment: Qt.AlignTop
                     spacing: Theme.space.sm
 
-                    Text {
+                    Copy {
                         Layout.fillWidth: true
                         text: root.pack.title || ""
                         elide: Text.ElideRight
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.heading
-                        font.pixelSize: Theme.type.display.pixelSize
-                        font.weight: Theme.type.display.weight
+                        role: "display"
                     }
-                    Text {
+                    Copy {
                         Layout.fillWidth: true
                         visible: text.length > 0
                         text: root.pack.description || ""
                         wrapMode: Text.Wrap
                         maximumLineCount: 2
                         elide: Text.ElideRight
-                        color: Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.body.pixelSize
+                        tone: "secondary"
                         lineHeight: Theme.type.body.lineHeight
                     }
 
-                    // Who made it, how many have it, when it last changed --
-                    // quiet icon-and-text facts, as on Modrinth's header.
                     Flow {
                         Layout.fillWidth: true
                         Layout.topMargin: Theme.space.xxs
@@ -319,12 +254,11 @@ Item {
                                     size: Theme.icon.sm
                                     color: Theme.palette.textTertiary
                                 }
-                                Text {
+                                Copy {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: modelData.text
-                                    color: Theme.palette.textSecondary
-                                    font.family: Theme.font.family
-                                    font.pixelSize: Theme.type.label.pixelSize
+                                    role: "label"
+                                    tone: "secondary"
                                     font.weight: Font.Medium
                                 }
                             }
@@ -339,15 +273,12 @@ Item {
                             model: root.pack.categories || []
                             delegate: Tag {
                                 required property var modelData
-                                text: root.titleCase(String(modelData))
+                                text: Format.titleCase(String(modelData))
                             }
                         }
                     }
                 }
 
-                // The page's one primary action. Installs the version and
-                // name chosen in the Install card -- the featured version
-                // and the pack's own name until changed.
                 Button {
                     Layout.alignment: Qt.AlignTop
                     visible: !root.installed
@@ -369,8 +300,6 @@ Item {
                 }
             }
 
-            // A failed install says so right under the button that started
-            // it; Install can be pressed again.
             NoticeBar {
                 width: parent.width
                 visible: !!root.watcher && root.watcher.failed
@@ -385,15 +314,12 @@ Item {
                 color: Theme.palette.divider
             }
 
-            // -- Body: description on the left, side cards on the right ------
             GridLayout {
                 width: parent.width
                 columns: root.twoColumns ? 2 : 1
                 columnSpacing: root.columnGap
                 rowSpacing: Theme.space.xl
 
-                // The side column: first on a narrow page, so Install stays
-                // near the top.
                 ColumnLayout {
                     Layout.row: 0
                     Layout.column: root.twoColumns ? 1 : 0
@@ -419,9 +345,8 @@ Item {
                                              ? qsTr("Loading versions…")
                                              : root.versions.length === 0 ? qsTr("No versions found") : currentText
                                 Accessible.name: qsTr("Version")
-                                // Newest first from either provider, alphas
-                                // included: start on the version the author
-                                // features, if there is one.
+                                // Newest first from either provider, alphas included: start on the
+                                // version the author features.
                                 onModelChanged: {
                                     var featured = root.versions.findIndex(v => v.featured)
                                     currentIndex = featured >= 0 ? featured : 0
@@ -442,24 +367,19 @@ Item {
                             }
                         }
 
-                        // Only once an install has started: progress, then
-                        // the outcome. Before that the header's button says
-                        // it all.
                         Column {
                             width: parent.width
                             visible: !!root.watcher
                             spacing: Theme.space.xs
 
-                            Text {
+                            Copy {
                                 width: parent.width
                                 text: root.installed ? qsTr("Installed")
                                     : root.installing ? (root.watcher.status || qsTr("Installing…"))
                                     : root.watcher && root.watcher.failed ? qsTr("Install failed")
                                     : ""
                                 wrapMode: Text.Wrap
-                                color: Theme.palette.textPrimary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
+                                role: "label"
                                 font.weight: Font.Medium
                             }
                             LaunchProgressBar {
@@ -467,15 +387,14 @@ Item {
                                 visible: root.installing
                                 progress: root.watcher ? root.watcher.progress : -1
                             }
-                            Text {
+                            Copy {
                                 width: parent.width
                                 visible: text.length > 0
                                 text: root.watcher && root.watcher.failed ? root.watcher.error
                                     : root.installed ? qsTr("“%1” is in your library.").arg(nameField.text) : ""
                                 wrapMode: Text.Wrap
-                                color: Theme.palette.textSecondary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.caption.pixelSize
+                                role: "caption"
+                                tone: "secondary"
                             }
                         }
                     }
@@ -551,7 +470,6 @@ Item {
                     }
                 }
 
-                // The main column: gallery, then the pack's own page.
                 ColumnLayout {
                     Layout.row: root.twoColumns ? 0 : 1
                     Layout.column: 0
@@ -560,8 +478,6 @@ Item {
                     Layout.alignment: Qt.AlignTop
                     spacing: Theme.space.xl
 
-                    // Gallery strip -- only once the detail fetch actually
-                    // has one.
                     ColumnLayout {
                         Layout.fillWidth: true
                         visible: root.gallery.length > 0
@@ -572,7 +488,6 @@ Item {
                         }
 
                         Flickable {
-                            id: galleryFlick
                             Layout.fillWidth: true
                             Layout.preferredHeight: galleryRow.height
                             contentWidth: galleryRow.width
@@ -616,8 +531,6 @@ Item {
                         }
                     }
 
-                    // About: the pack's own page, as RichBody rewrote it
-                    // (see RemoteRichText's `article`).
                     ColumnLayout {
                         Layout.fillWidth: true
                         visible: !!root.detail && ((root.detail.body || "").length > 0 || root.detail.loading)
@@ -632,9 +545,7 @@ Item {
                             running: visible
                         }
 
-                        // Not a Text: the body links images from anywhere,
-                        // and a failed one could crash Text (see
-                        // RemoteRichText).
+                        // Not a Text: a failed remote image could crash it (see RemoteRichText).
                         RemoteRichText {
                             Layout.fillWidth: true
                             Layout.maximumWidth: root.textMeasure

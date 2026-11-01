@@ -59,10 +59,11 @@ void ReleaseDownload::executeTask()
 		return;
 	}
 
-	// A leftover part file from an aborted attempt is not resumed: the range
-	// request would have to be validated against an ETag we did not keep, and
-	// silently appending to a stale prefix produces a corrupt archive.
+	// A leftover part file is not resumed: appending to a stale prefix without a kept ETag would
+	// produce a corrupt archive.
 	QFile::remove(m_partPath);
+
+	m_hash.reset();
 
 	m_file = new QFile(m_partPath, this);
 	if (!m_file->open(QIODevice::WriteOnly | QIODevice::Truncate)) {
@@ -75,8 +76,7 @@ void ReleaseDownload::executeTask()
 	QNetworkRequest request(m_url);
 	request.setHeader(QNetworkRequest::UserAgentHeader,
 					  BuildConfig.USER_AGENT_UNCACHED);
-	// Release assets live behind a redirect to the object store, so following
-	// redirects is not optional here.
+	// Release assets sit behind a redirect to the object store; following it is mandatory.
 	request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
 						 QNetworkRequest::NoLessSafeRedirectPolicy);
 
@@ -89,8 +89,6 @@ void ReleaseDownload::executeTask()
 			&ReleaseDownload::onDownloadProgress);
 	connect(m_reply, &QNetworkReply::finished, this,
 			&ReleaseDownload::onFinished);
-
-	reportAbortStatus();
 }
 
 void ReleaseDownload::onReadyRead()
@@ -103,13 +101,16 @@ void ReleaseDownload::onReadyRead()
 		return;
 
 	if (m_file->write(chunk) != chunk.size()) {
-		// Out of disk, most likely. Stop now: continuing would produce an
-		// archive that unpacks into a broken installation.
+		// Out of disk, most likely. Stop: continuing would produce an archive that unpacks into a
+		// broken installation.
 		const QString reason = m_file->errorString();
 		m_reply->abort();
 		failWith(tr("Could not write %1: %2")
 					 .arg(QDir::toNativeSeparators(m_partPath), reason));
+		return;
 	}
+
+	m_hash.addData(chunk);
 }
 
 void ReleaseDownload::onDownloadProgress(qint64 received, qint64 total)
@@ -155,16 +156,28 @@ void ReleaseDownload::onFinished()
 	m_file->close();
 
 	if (m_expectedSize > 0 && downloadedSize != m_expectedSize) {
-		// The listing said how big this file is; a mismatch means we did not
-		// get the file, whatever the status code claimed.
+		// The listing gave the size; a mismatch means we did not get the file, whatever the status
+		// code said.
 		failWith(tr("The download is %1, but %2 was expected.")
 					 .arg(QLocale().formattedDataSize(downloadedSize),
 						  QLocale().formattedDataSize(m_expectedSize)));
 		return;
 	}
 
-	// Only now does the file get its real name, so a half-finished download
-	// can never be picked up as a complete artifact.
+	if (!m_expectedSha256.isEmpty()) {
+		const QString actual = QString::fromLatin1(m_hash.result().toHex());
+		if (actual != m_expectedSha256) {
+			qWarning() << "SHA-256 mismatch for" << m_url.fileName()
+					   << "expected" << m_expectedSha256 << "got" << actual;
+			failWith(tr("The download does not match its published SHA-256 "
+						"checksum."));
+			return;
+		}
+		qDebug() << "SHA-256 verified for" << m_url.fileName();
+	}
+
+	// The real name only now, so a half-finished download is never mistaken for a complete
+	// artifact.
 	QFile::remove(m_path);
 	if (!QFile::rename(m_partPath, m_path)) {
 		failWith(tr("Could not move the download into place at %1.")
@@ -207,8 +220,7 @@ void ReleaseDownload::cleanUp()
 void ReleaseDownload::failWith(const QString& reason)
 {
 	cleanUp();
-	// The part file is the only trace of a failed attempt, and keeping it
-	// around would just confuse the next one.
+	// The part file is the only trace of a failed attempt; keeping it would confuse the next one.
 	QFile::remove(m_partPath);
 	emitFailed(reason);
 }

@@ -2,55 +2,30 @@
  * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
- *  SystemTray  —  Kite MMCO plugin
+ *  SystemTray: Kite MMCO plugin
  *
- *  Adds a persistent QSystemTrayIcon for the launcher with:
- *    • Show / Hide / Quit actions
- *    • A dynamically rebuilt "Launch instance…" submenu
- *      (up to MAX_INSTANCE_ENTRIES recent instances)
- *    • Optional "minimize to tray" close-event filter
+ *  Adds a persistent QSystemTrayIcon with Show / Hide / Quit actions, a "Launch instance" submenu
+ *  (up to MAX_INSTANCE_ENTRIES instances) and an optional minimize-to-tray close filter.
  *
- *  Everything is funnelled through the S19/S20/S33 API surfaces exposed
- *  by PluginManager, so this plugin compiles cleanly against the public
- *  SDK and does not poke at MainWindow internals.
- *
- *  Settings (all booleans, stored under the plugin's namespace):
- *    enabled           — master switch                          (default 1)
- *    minimize_to_tray  — swallow window close, hide instead     (default 0)
- *    show_notifications — show a transient hint on first hide   (default 1)
+ *  Settings (booleans, in the plugin's namespace):
+ *    enabled             master switch                              (default 1)
+ *    minimize_to_tray    swallow window close, hide instead         (default 1)
+ *    show_notifications  show a transient hint on first hide        (default 1)
  */
 
 #include "plugin/sdk/mmco_cxx_sdk.hpp"
 
-/* qApp (used below to invoke "quit" on the application object) is
- * defined by whichever Q*Application header is included; the SDK
- * header no longer pulls in <QApplication> (ABI 5 dropped Qt::Widgets
- * from Kite::SDK), so this plugin includes the QtCore-only
- * QCoreApplication header itself — QMetaObject::invokeMethod only
- * needs a QObject*, which qApp still resolves to either way. */
+/* qApp comes from whichever Q*Application header is included; the SDK does not pull in
+ * <QApplication>, so this includes QCoreApplication (QMetaObject::invokeMethod needs only a
+ * QObject*). */
 #include <QCoreApplication>
 
 #include <cstring>
 
-/* ── dependencies ─────────────────────────────────────────────────── *
- *
- * SystemTray depends on DesktopNotifier ≥ 1.0.0.
- *
- * Rationale: SystemTray itself only provides the persistent tray icon
- * and its right-click menu — the actual desktop-notification dispatch
- * (instance launched, news updated, …) lives in DesktopNotifier. By
- * declaring a hard dependency we guarantee:
- *
- *   1. DesktopNotifier is loaded *before* SystemTray (the resolver
- *      runs a Kahn topological sort over the dep graph).
- *   2. If the user removes / disables DesktopNotifier, SystemTray
- *      refuses to load with a clear "Required dependency missing"
- *      reason instead of silently dropping notifications.
- *
- * The dependency is "hard" (optional=0). To make it soft, flip
- * optional to 1 — the resolver will then load SystemTray even when
- * DesktopNotifier is absent, but the load order guarantee still holds
- * whenever both are present. */
+/* Depends on DesktopNotifier >= 1.0.0: SystemTray only provides the tray icon and menu,
+ * desktop-notification dispatch lives in DesktopNotifier. A hard dependency (optional=0) loads
+ * DesktopNotifier first and makes SystemTray refuse to load if it is missing or disabled;
+ * optional=1 keeps only the load order. */
 static const MMCODependency k_systemTrayDeps[] = {
 	{"DesktopNotifier", "1.0.0", 0},
 };
@@ -72,13 +47,9 @@ static void* g_tray = nullptr;			  /* QSystemTrayIcon*           */
 static void* g_settingsSurface = nullptr; /* ABI 5 GLOBAL_SETTINGS surface */
 static QObject* g_guard = nullptr; /* anchor for our Qt connections */
 
-/* The launcher-wide setting key we mirror our "enabled" plugin-local
- * setting onto. Lives in APPLICATION->settings() so it's visible in
- * Settings → Kite and can be toggled by the user without poking at
- * raw config files. The plugin still treats its own plugin-namespaced
- * "enabled" setting as the runtime source of truth — the global key
- * just drives the checkbox and is mirrored back into the plugin
- * namespace whenever the user flips it. */
+/* The launcher-wide setting that mirrors our plugin-local "enabled" (visible in Settings → Kite).
+ * The plugin-namespaced "enabled" stays the runtime source of truth; the global key drives the
+ * checkbox and is mirrored back whenever the user flips it. */
 static constexpr const char SETTING_GLOBAL_ENABLED[] =
 	"plugin.system_tray.Enabled";
 
@@ -111,19 +82,10 @@ static void settingSetBool(const char* key, bool value)
 	g_ctx->setting_set(g_ctx->module_handle, key, value ? "1" : "0");
 }
 
-/* ── tray menu: build the declarative "mmco-tray-menu/1" doc ─────── *
- *
- * ABI 5 replaces the imperative tray_menu_create/add_action/
- * add_submenu family with one JSON document per tray_set_menu() call.
- * The whole menu — including the "Launch instance" submenu contents —
- * is rebuilt from scratch here and handed to tray_set_menu() again on
- * every INSTANCE_CREATED/REMOVED, exactly like the old
- * rebuild_launch_submenu() did with the imperative API.
- *
- * Each per-instance entry's node id is "launch:<instance_id>", so the
- * single event callback below can recover the instance id directly
- * from node_id — no more separate LaunchUserData/g_launchEntries
- * bookkeeping to keep in sync with the menu's contents. */
+/* Tray menu: the declarative "mmco-tray-menu/1" doc. The whole menu, including the "Launch
+ * instance" submenu, is rebuilt and handed to tray_set_menu() again on every
+ * INSTANCE_CREATED/REMOVED. Per-instance node ids are "launch:<instance_id>", so the event callback
+ * recovers the instance id from node_id. */
 
 static QByteArray build_tray_menu_json()
 {
@@ -195,10 +157,8 @@ static void on_tray_menu_event(void* /*ud*/, const char* /*surface_id*/,
 	} else if (id == QLatin1String("hide")) {
 		g_ctx->main_window_hide(g_ctx->module_handle);
 	} else if (id == QLatin1String("quit")) {
-		/* QCoreApplication::quit() is the cleanest path — it tears down
-		 * the event loop which in turn unwinds Kite's Application
-		 * shutdown, giving PluginManager a chance to mmco_unload() us
-		 * properly. */
+		/* quit() unwinds the event loop and Application shutdown, so PluginManager can
+		 * mmco_unload() us. */
 		QMetaObject::invokeMethod(qApp, "quit", Qt::QueuedConnection);
 	} else if (id.startsWith(QLatin1String("launch:"))) {
 		const QByteArray instId = id.mid(7).toUtf8();
@@ -221,19 +181,9 @@ static void rebuild_tray_menu()
 
 static void on_tray_activated(void* /*ud*/, int reason)
 {
-	/* QSystemTrayIcon::ActivationReason values (per Qt 6 docs):
-	 *   0 = Unknown
-	 *   1 = Context      (right-click / context-menu requested)
-	 *   2 = DoubleClick
-	 *   3 = Trigger      (single click — left click)
-	 *   4 = MiddleClick
-	 *
-	 * NOTE: these are NOT in numeric "Trigger=1" order — the enum is
-	 * { Unknown, Context, DoubleClick, Trigger, MiddleClick }. An earlier
-	 * version assumed Trigger==1, so a right-click (Context==1) was
-	 * toggling the window. We must only toggle on Trigger (3); the
-	 * right-click (Context==1) raises the menu and must never toggle the
-	 * window. */
+	/* QSystemTrayIcon::ActivationReason is { Unknown, Context=1 (right click), DoubleClick=2,
+	 * Trigger=3 (left click), MiddleClick=4 }, not in "Trigger==1" order. Context raises the menu
+	 * and must never toggle the window. */
 	constexpr int kContext = 1;
 	constexpr int kDoubleClick = 2;
 	constexpr int kTrigger = 3;
@@ -268,8 +218,7 @@ static int on_main_window_close(void* /*ud*/)
 		return 0;
 	if (!settingBool("minimize_to_tray", false))
 		return 0;
-	/* Show a one-time hint so the user knows the launcher is still
-	 * running in the tray. */
+	/* One-time hint so the user knows the launcher is still running in the tray. */
 	if (!g_hintShown && settingBool("show_notifications", true)) {
 		g_hintShown = true;
 		g_ctx->tray_show_message(g_ctx->module_handle, g_tray,
@@ -281,16 +230,8 @@ static int on_main_window_close(void* /*ud*/)
 	return 1; /* swallow → host will hide() the main window */
 }
 
-/* ── Settings UI: one ABI 5 GLOBAL_SETTINGS surface ───────────────── *
- *
- * Replaces injectCheckboxIntoKitePage()'s allWidgets()/findChild walk
- * against KitePage's "verticalLayout_9": the host now renders this
- * document as a titled section inside its own "Plugins" page every
- * time the global Settings dialog opens, from whatever document is
- * currently stored for this surface — so, unlike the old pattern,
- * this only needs to be created ONCE (here, from mmco_init()), not
- * re-injected via MMCO_HOOK_GLOBAL_SETTINGS_ABOUT_TO_OPEN on every
- * open. */
+/* Settings UI: one ABI 5 GLOBAL_SETTINGS surface. The host renders the stored document as a titled
+ * section in its "Plugins" page each time Settings opens, so it is created once, from mmco_init(). */
 
 static void on_settings_surface_event(void* /*ud*/, const char* /*surface_id*/,
 									  const char* node_id, const char* event,
@@ -344,14 +285,12 @@ static int on_ui_main_ready(void* /*mh*/, uint32_t /*hook_id*/,
 	if (!g_ctx)
 		return 0;
 
-	/* Install the close-event filter unconditionally — the callback
-	 * itself short-circuits when the setting is off. This way the
-	 * setting can be toggled at runtime without re-registering. */
+	/* Installed unconditionally; the callback short-circuits when the setting is off, so toggling
+	 * needs no re-registration. */
 	g_ctx->main_window_install_close_filter(g_ctx->module_handle,
 											on_main_window_close, nullptr);
 
-	/* Refresh the tray menu now that the UI is up — instance list is
-	 * ready. */
+	/* Refresh the tray menu now that the instance list is ready. */
 	rebuild_tray_menu();
 	return 0;
 }
@@ -385,19 +324,15 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 		return 0;
 	}
 
-	/* Lifetime anchor for our Qt connections. We intentionally never
-	 * delete this; Qt may still have queued events targeting it at
-	 * shutdown. */
+	/* Lifetime anchor for our Qt connections; never deleted, Qt may still have events queued for it
+	 * at shutdown. */
 	g_guard = new QObject();
 
-	/* Mirror the plugin-local "enabled" key onto a launcher-wide
-	 * setting so the user can toggle it from Settings → Kite. The
-	 * global setting wins on conflict — every plugin-local read
-	 * delegates here first. */
+	/* Mirror the plugin-local "enabled" onto a launcher-wide setting so the user can toggle it in
+	 * Settings → Kite. The global setting wins: every plugin-local read delegates here first. */
 	if (!ctx->app_setting_contains(ctx->module_handle,
 								   SETTING_GLOBAL_ENABLED)) {
-		/* First run — seed from the plugin-local value (if any), otherwise
-		 * default ON. */
+		/* First run: seed from the plugin-local value, else default ON. */
 		ctx->app_setting_register(ctx->module_handle, SETTING_GLOBAL_ENABLED,
 								  settingBool("enabled", true) ? "1" : "0");
 	}
@@ -412,13 +347,10 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 				s == QLatin1String("yes") || s == QLatin1String("on");
 		}
 	}
-	/* Re-sync the plugin-local copy so existing call-sites see the
-	 * canonical answer. */
+	/* Re-sync the plugin-local copy so existing call sites see the canonical answer. */
 	settingSetBool("enabled", globalEnabled);
 
-	/* The settings checkbox is offered regardless of whether the tray
-	 * itself is currently enabled — it is the only way for the user to
-	 * flip it back on. */
+	/* Offered even while the tray is disabled: it is the only way to turn it back on. */
 	create_settings_surface(globalEnabled);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_APP_INITIALIZED,
 					   on_app_initialized, nullptr);
@@ -434,23 +366,18 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 		return 0;
 	}
 
-	/* Default setting values (only set when missing — so we don't overwrite
-	 * a user choice on re-init). */
+	/* Defaults, set only when missing so a user choice survives re-init. */
 	if (!ctx->setting_get(ctx->module_handle, "enabled"))
 		settingSetBool("enabled", true);
-	/* If the user installs SystemTray they almost always want the
-	 * close-to-tray behaviour — otherwise the plugin is just a quit
-	 * button.  Default to ON; users who want vanilla "close == quit"
-	 * can flip the setting in the config file. */
+	/* Default ON: users who install SystemTray almost always want close-to-tray, else the plugin is
+	 * just a quit button. Switch it off in the config file for a plain close == quit. */
 	if (!ctx->setting_get(ctx->module_handle, "minimize_to_tray"))
 		settingSetBool("minimize_to_tray", true);
 	if (!ctx->setting_get(ctx->module_handle, "show_notifications"))
 		settingSetBool("show_notifications", true);
 
-	/* Resolve the launcher's own logo through the SDK — the icon is
-	 * baked into Kite's resource bundle at ":/io.github.grxtor.Kite.svg"
-	 * and is loaded directly. We try a few fallbacks so the tray still
-	 * gets a sensible icon on stripped/older builds. */
+	/* Resolve the launcher logo from Kite's resource bundle, with fallbacks for stripped or older
+	 * builds. */
 	const char* iconCandidates[] = {
 		":/io.github.grxtor.Kite.svg",			 /* primary — Kite logo  */
 		":/multimc/scalable/instances/logo.svg", /* instance default */
@@ -468,27 +395,14 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 		return 0;
 	}
 
-	/*
-	 * Menu layout (top → bottom, the way most launchers do it):
-	 *   Open Kite               ← primary action, picks Show or Hide
-	 *   Hide window
-	 *   ─────────────────────
-	 *   Launch instance ▸
-	 *       <Instance 1>
-	 *       <Instance 2>
-	 *       …
-	 *   ─────────────────────
-	 *   Quit Kite
-	 *
-	 * Built once as a JSON doc (build_tray_menu_json()) and re-issued
-	 * via tray_set_menu() on every INSTANCE_CREATED/REMOVED so the
-	 * "Launch instance" submenu never goes stale. */
+	/* Menu layout: Open Kite (Show or Hide), Hide window, separator, Launch instance submenu,
+	 * separator, Quit Kite. Built as a JSON doc and re-issued via tray_set_menu() on
+	 * INSTANCE_CREATED/REMOVED so the submenu never goes stale. */
 	rebuild_tray_menu();
 	ctx->tray_set_activation_cb(ctx->module_handle, g_tray, on_tray_activated,
 								nullptr);
 	ctx->tray_set_visible(ctx->module_handle, g_tray, 1);
 
-	/* Hooks. */
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_UI_MAIN_READY,
 					   on_ui_main_ready, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_INSTANCE_CREATED,
@@ -505,10 +419,8 @@ MMCO_EXPORT void mmco_unload()
 	if (g_ctx)
 		MMCO_LOG(g_ctx, "SystemTray unloading.");
 
-	/* PluginManager will sweep up the tray/menu/surface/close-filter on
-	 * its own — see releaseTrayResourcesForModule() /
-	 * releaseSurfacesForModule(). We just drop our raw handles so we
-	 * never touch them again. */
+	/* PluginManager releases the tray, menu, surface and close filter itself
+	 * (releaseTrayResourcesForModule()); just drop the raw handles. */
 	g_tray = nullptr;
 	g_settingsSurface = nullptr;
 	g_ctx = nullptr;

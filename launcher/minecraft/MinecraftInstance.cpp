@@ -33,7 +33,6 @@
 #include "pathmatcher/MultiMatcher.h"
 #include "FileSystem.h"
 #include "java/JavaVersion.h"
-#include "MMCTime.h"
 
 #include "launch/LaunchTask.h"
 #include "launch/steps/LookupServerAddress.h"
@@ -194,18 +193,23 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 	m_settings->registerSetting("JoinServerOnLaunch", false);
 	m_settings->registerSetting("JoinServerOnLaunchAddress", "");
 
-	/* Kite Performance: while on, Play makes sure the performance mods are
-	 * installed (PerformanceSetupTask). The excluded projects are the ones
-	 * the player unticked, as a comma-joined list of Modrinth project ids:
-	 * the config file stores strings, not lists. */
+	/* Kite Performance (PerformanceSetupTask). Excluded and Included are
+	 * comma-joined Modrinth project ids, as the config stores strings: defaults
+	 * the player unticked, extras they ticked. For is the version and loader
+	 * the mods were last matched to ("1.21.5 fabric"), empty before the first
+	 * setup. Missing records catalog mods Modrinth had no build of, and when
+	 * (PerformanceSetup::missingRecord()); Unmatched lists the mods the last
+	 * re-match found no build of. */
 	m_settings->registerSetting("KitePerformance", false);
 	m_settings->registerSetting("KitePerformanceExcluded", "");
+	m_settings->registerSetting("KitePerformanceIncluded", "");
+	m_settings->registerSetting("KitePerformanceFor", "");
+	m_settings->registerSetting("KitePerformanceMissing", "");
+	m_settings->registerSetting("KitePerformanceUnmatched", "");
 
-	/* Kite mod: Kite's own Fabric mod (the in-game menu and HUD), loaded
-	 * for this instance through -Dfabric.addMods, so it never lands in the
-	 * mods folder. On by default; it only applies to a Fabric instance. */
+	// Kite's mod is injected with -Dfabric.addMods; Fabric instances only.
 	m_settings->registerSetting("KiteMod", true);
-	/* The game is over: so is its session on the mod bridge. */
+	// The mod bridge session ends with the game.
 	connect(this, &BaseInstance::runningStatusChanged, this,
 			[this](bool running) {
 				if (!running) {
@@ -213,39 +217,19 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 				}
 			});
 
-	/* Vanilla only ever reads data packs from saves/<world>/datapacks, so
-	 * an instance-wide folder is meaningless unless a loader such as Paxi
-	 * or OpenLoader is installed to sweep it into every world. Off by
-	 * default; the per-world manager in WorldListPage is the normal way
-	 * to get at data packs. */
+	// Only a loader such as Paxi or OpenLoader reads an instance-wide folder.
 	auto dataPacksEnabled =
 		m_settings->registerSetting("GlobalDataPacksEnabled", false);
 	auto dataPacksPath = m_settings->registerSetting("GlobalDataPacksPath", "");
 
-	// Both settings pick the folder the model watches, so the cached model
-	// has to go when either of them moves.
+	// Either setting changes the watched folder, so drop the cached model.
 	connect(dataPacksEnabled.get(), &Setting::SettingChanged, this,
 			[this] { m_data_pack_list.reset(); });
 	connect(dataPacksPath.get(), &Setting::SettingChanged, this,
 			[this] { m_data_pack_list.reset(); });
 
-	/* What the pack export dialogs were last told about this instance.
-	 *
-	 * Remembered per instance rather than per launcher: exporting a pack
-	 * is something people do repeatedly to the same instance as they
-	 * publish new versions of it, and retyping the name, the summary and
-	 * the author every time - only to have one typo ship in the manifest
-	 * - is the whole reason these are stored at all.
-	 *
-	 * `ExportName` is empty by default, which the dialog reads as "use
-	 * the instance's own name": storing a copy of it up front would
-	 * silently freeze the old name into every future export after a
-	 * rename.
-	 *
-	 * `ExportRecommendedRAM` is 0 for "do not say", which is not the
-	 * same as any allocation the user might pick, so the CurseForge
-	 * manifest can leave the field out entirely rather than assert a
-	 * requirement nobody asked for. */
+	// Export dialog defaults. ExportName empty = the instance name;
+	// ExportRecommendedRAM 0 = not specified.
 	m_settings->registerSetting("ExportName", "");
 	m_settings->registerSetting("ExportVersion", "1.0.0");
 	m_settings->registerSetting("ExportSummary", "");
@@ -263,7 +247,6 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 	m_components.reset(new PackProfile(this));
 	m_components->setOldConfigVersion(
 		"net.minecraft", m_settings->get("IntendedVersion").toString());
-	auto setting = m_settings->getSetting("LWJGLVersion");
 	m_components->setOldConfigVersion(
 		"org.lwjgl", m_settings->get("LWJGLVersion").toString());
 	m_components->setOldConfigVersion(
@@ -272,11 +255,8 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 		"com.mumfrey.liteloader",
 		m_settings->get("LiteloaderVersion").toString());
 
-	/* Refreshes anything reading gameVersion()/modLoaderName() - the QML
-	 * instance list, in particular - when the profile changes underneath
-	 * it. minecraftChanged() already exists for this (VersionPage listens
-	 * to the same signal to refresh itself); propertiesChanged() is what
-	 * InstanceList already listens to for every instance. */
+	// Refreshes readers of gameVersion()/modLoaderName() when the profile
+	// changes.
 	connect(m_components.get(), &PackProfile::minecraftChanged, this,
 			[this] { emit propertiesChanged(this); });
 }
@@ -321,11 +301,8 @@ QString MinecraftInstance::minecraftVersion() const
 		return version;
 	}
 
-	/* Nothing has read the profile from disk yet. It is only loaded when a
-	 * launch, an update or the version page needs it, so anything asking
-	 * earlier - a menu being built, the status bar - sees every component
-	 * version as empty. Load it here, offline: filling in a menu entry must
-	 * never wait on the network. */
+	// Profile not read yet: load it offline so a menu never waits on the
+	// network.
 	components->reload(Net::Mode::Offline);
 	return components->getComponentVersion("net.minecraft");
 }
@@ -337,10 +314,7 @@ QString MinecraftInstance::modLoaderName() const
 		return QString();
 	}
 
-	/* Piggybacks on minecraftVersion()'s lazy load instead of reloading a
-	 * second time: once it has run, the profile is either loaded or the
-	 * load failed, and either way there is nothing more a second attempt
-	 * here would achieve. */
+	// Relies on minecraftVersion()'s lazy load.
 	minecraftVersion();
 
 	const int rows = components->rowCount();
@@ -360,16 +334,10 @@ bool MinecraftInstance::supportsDemo() const
 {
 	const QString version = minecraftVersion();
 	if (version.isEmpty()) {
-		/* The version could not be determined at all - a broken or
-		 * not-yet-written profile. Offer demo anyway and let the launch be
-		 * the thing that fails: every Minecraft release since 1.3.1 supports
-		 * it, so refusing on an unknown version hides the feature from
-		 * practically everyone it works for. */
+		// Unknown version (broken profile): offer demo and let the launch fail.
 		return true;
 	}
-	/* Snapshot and pre-release names are only handled as far as Version's
-	 * section comparison takes them; the pre-1.0 alpha/beta naming schemes
-	 * are not recognised at all. */
+	// Pre-1.0 alpha/beta names are not recognised.
 	return Version(version) >= Version("1.3.1");
 }
 
@@ -412,11 +380,6 @@ QString MinecraftInstance::modsRoot() const
 	return FS::PathCombine(gameRoot(), "mods");
 }
 
-QString MinecraftInstance::modsCacheLocation() const
-{
-	return FS::PathCombine(instanceRoot(), "mods.cache");
-}
-
 QString MinecraftInstance::coreModsDir() const
 {
 	return FS::PathCombine(gameRoot(), "coremods");
@@ -439,8 +402,7 @@ QString MinecraftInstance::shaderPacksDir() const
 
 QString MinecraftInstance::dataPacksDir() const
 {
-	// Global data pack loaders don't agree on a folder name, so let the
-	// user point us at whichever one their loader watches.
+	// Data pack loaders disagree on the folder name, so the user picks it.
 	QString relativePath = settings()->get("GlobalDataPacksPath").toString();
 	if (relativePath.isEmpty()) {
 		relativePath = QStringLiteral("datapacks");
@@ -468,19 +430,9 @@ QString MinecraftInstance::resourcesDir() const
 	return FS::PathCombine(gameRoot(), "resources");
 }
 
-QDir MinecraftInstance::librariesPath() const
-{
-	return QDir::current().absoluteFilePath("libraries");
-}
-
 QDir MinecraftInstance::jarmodsPath() const
 {
 	return QDir(jarModsDir());
-}
-
-QDir MinecraftInstance::versionsPath() const
-{
-	return QDir::current().absoluteFilePath("versions");
 }
 
 QStringList MinecraftInstance::getClassPath() const
@@ -534,8 +486,7 @@ bool MinecraftInstance::kiteModApplies() const
 	if (!components) {
 		return false;
 	}
-	/* The loader version is read first: like minecraftVersion(), it loads
-	 * the profile when nothing has yet. */
+	// Loads the profile if nothing has yet.
 	minecraftVersion();
 	return KiteMod::appliesTo(m_settings->get("KiteMod").toBool(),
 							  components->primaryModLoader(),
@@ -548,16 +499,13 @@ KiteMod::Support MinecraftInstance::kiteModSupport() const
 	if (!context) {
 		return KiteMod::Support::Unknown;
 	}
-	/* The loader version is read first, as in kiteModApplies(). */
 	const QString loaderVersion = kiteModLoaderVersion();
 	return KiteMod::cachedSupport(context->metacache()->getBasePath("general"),
 								  minecraftVersion(), loaderVersion);
 }
 
-/* The jar of Kite's mod to inject, or nothing. Cheap and free of side
- * effects, as it never fetches: PrepareKiteMod does that at launch.
- * KITE_MOD_JAR names a jar to use in place of a downloaded one, for
- * working on the mod itself. */
+// The jar of Kite's mod to inject, or empty. Never fetches (PrepareKiteMod
+// does); KITE_MOD_JAR overrides it for mod development.
 QString MinecraftInstance::kiteModJar() const
 {
 	const QFileInfo devJar(qEnvironmentVariable("KITE_MOD_JAR"));
@@ -589,15 +537,13 @@ QStringList MinecraftInstance::kiteModArguments() const
 	}
 	QStringList arguments{KiteMod::addModsArgument(extraArguments(), jar)};
 	if (m_bridgeGrant.valid()) {
-		/* The port only: the token travels in the environment, as argv is
-		 * logged and shows in `ps`. */
+		// Port only: the token travels in the environment, as argv is logged.
 		arguments << QStringLiteral("-D%1=%2")
 						 .arg(QString::fromLatin1(
 								  ModBridgeProtocol::kPortProperty),
 							  QString::number(m_bridgeGrant.port));
 	}
-	/* A Kite Performance instance opens on the server list by default; the
-	 * mod reads this as the default of its own setting. */
+	// Performance instances open on the server list by default.
 	if (m_settings->get("KitePerformance").toBool()) {
 		arguments << QStringLiteral("-Dkite.performance=true");
 	}
@@ -738,7 +684,6 @@ QStringList MinecraftInstance::processMinecraftArgs(
 	QMap<QString, QString> token_mapping;
 	// yggdrasil!
 	if (session) {
-		// token_mapping["auth_username"] = session->username;
 		token_mapping["auth_session"] = session->session;
 		token_mapping["auth_access_token"] = session->access_token;
 		token_mapping["auth_player_name"] = session->player_name;
@@ -795,9 +740,7 @@ MinecraftInstance::createLaunchScript(AuthSessionPtr session,
 	}
 
 	if (serverToJoin && !serverToJoin->address.isEmpty()) {
-		/* ModernLauncher joins "serverAddress:serverPort" with quick play, as
-		 * processMinecraftArgs() does for DirectJava: the brackets of an IPv6
-		 * address have to be there for it too. */
+		// Quick play joins "host:port"; an IPv6 address needs its brackets.
 		const bool quickPlay =
 			profile->hasTrait("feature:is_quick_play_multiplayer");
 		launchScript += "serverAddress " +
@@ -856,13 +799,8 @@ MinecraftInstance::createLaunchScript(AuthSessionPtr session,
 		launchScript += "traits " + trait + "\n";
 	}
 
-	// Decide between legacy (in-process, applet-based) and modern (subprocess)
-	// launch. Instances with the "legacyLaunch" or "alphaLaunch" trait use the
-	// classic OneSix applet launcher path which runs everything in-process. All
-	// other instances use the ModernKite which spawns the game as a child
-	// process with the configured Java binary, allowing Minecraft versions that
-	// require Java 21, 25 or newer to run even when Kite library JVM is an
-	// older version.
+	// Legacy (applet) instances run in-process via the OneSix launcher; the
+	// rest spawn the game as a child process, so newer Java versions work.
 	auto profileTraits = profile->getTraits();
 	bool isLegacyApplet = profileTraits.contains("legacyLaunch") ||
 						  profileTraits.contains("alphaLaunch");
@@ -870,14 +808,11 @@ MinecraftInstance::createLaunchScript(AuthSessionPtr session,
 	if (isLegacyApplet) {
 		launchScript += "launcher onesix\n";
 	} else {
-		// Pass the configured Java binary path so ModernKite can spawn the
-		// game process with the correct JVM.
+		// The child process gets the configured Java and the same JVM
+		// arguments.
 		launchScript +=
 			"javaPath " + settings()->get("JavaPath").toString() + "\n";
 
-		// Forward all JVM arguments (memory settings, platform flags, extra
-		// args, …) so the child process inherits the same tuning as the current
-		// process.
 		for (auto arg : javaArguments()) {
 			launchScript += "jvmArg " + arg + "\n";
 		}
@@ -889,7 +824,6 @@ MinecraftInstance::createLaunchScript(AuthSessionPtr session,
 		launchScript += "launcher modern\n";
 	}
 
-	// qDebug() << "Generated launch script:" << launchScript;
 	return launchScript;
 }
 
@@ -912,7 +846,6 @@ MinecraftInstance::verboseDescription(AuthSessionPtr session,
 		out << "";
 	}
 
-	// Said once the arguments are known: this is what the game gets.
 	const auto kiteModArgs = kiteModArguments();
 	if (!kiteModArgs.isEmpty()) {
 		out << tr("Kite mod: %1").arg(QFileInfo(kiteModJar()).fileName())
@@ -1109,37 +1042,6 @@ QString MinecraftInstance::getLogFileRoot()
 	return gameRoot();
 }
 
-QString MinecraftInstance::getStatusbarDescription()
-{
-	QStringList traits;
-	if (hasVersionBroken()) {
-		traits.append(tr("broken"));
-	}
-
-	QString description;
-	/* Through the accessor, so that a profile nobody has read yet gets loaded
-	 * instead of putting an empty version in the status bar. */
-	description.append(
-		tr("Minecraft %1 (%2)").arg(minecraftVersion()).arg(typeName()));
-	if (m_settings->get("ShowGameTime").toBool()) {
-		if (lastTimePlayed() > 0) {
-			description.append(
-				tr(", last played for %1")
-					.arg(Time::prettifyDuration(lastTimePlayed())));
-		}
-
-		if (totalTimePlayed() > 0) {
-			description.append(
-				tr(", total played for %1")
-					.arg(Time::prettifyDuration(totalTimePlayed())));
-		}
-	}
-	if (hasCrashed()) {
-		description.append(tr(", has crashed."));
-	}
-	return description;
-}
-
 Task::Ptr MinecraftInstance::createUpdateTask(Net::Mode mode)
 {
 	switch (mode) {
@@ -1216,12 +1118,8 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 		process->appendStep(step);
 	}
 
-	/* The game's files come from the network unless this is an offline
-	 * launch. An offline *account* is not that: it has no sign-in to claim,
-	 * but a new instance still has to be downloaded once, so
-	 * AuthSession::fetch_game_files keeps the update online for it. A
-	 * signed-in account in offline mode (status PlayableOffline without it)
-	 * stays strictly offline. */
+	// Offline accounts still download a new instance once (fetch_game_files); a
+	// signed-in account in offline mode stays strictly offline.
 	const bool updateOnline = session->status != AuthSession::PlayableOffline ||
 							  session->fetch_game_files;
 	if (updateOnline) {
@@ -1229,8 +1127,7 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 		if (!session->demo && session->status != AuthSession::PlayableOffline) {
 			process->appendStep(new ClaimAccount(pptr, session));
 		}
-		// The performance mods land before the update, which then
-		// resolves the loader and downloads its libraries.
+		// Performance mods go in before the update resolves the loader.
 		if (m_settings->get("KitePerformance").toBool()) {
 			process->appendStep(new PreparePerformance(pptr));
 		}
@@ -1246,10 +1143,8 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 		process->appendStep(new Update(pptr, Net::Mode::Offline));
 	}
 
-	// Make sure the Java this version needs is set up -- picking an installed
-	// one or downloading it -- once the version info says which one that is,
-	// and before anything that depends on the Java's architecture (which
-	// libraries and natives to download and use) or version (JVM arguments).
+	// Set up the Java this version needs once the version info names it, before
+	// anything depends on its architecture or version.
 	{
 		process->appendStep(new VerifyJavaInstall(pptr));
 	}
@@ -1317,10 +1212,7 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 	}
 	if (session) {
 		process->setCensorFilter(createCensorFilterFromSession(session));
-		/* Whose game this is, for the friends feature (FriendsGameWatcher):
-		 * only an online launch of an account says whose it is. Offline, a
-		 * demo or another account's game is never reported under the account
-		 * Friends is signed in as. */
+		// Only an online launch names the player, for FriendsGameWatcher.
 		if (session->status == AuthSession::PlayableOnline && !session->demo) {
 			process->setPlayerProfile(session->uuid);
 		}
@@ -1406,8 +1298,6 @@ std::shared_ptr<ModFolderModel> MinecraftInstance::dataPackList() const
 	if (!m_data_pack_list &&
 		settings()->get("GlobalDataPacksEnabled").toBool()) {
 		m_data_pack_list.reset(new DataPackFolderModel(dataPacksDir()));
-		// Data packs are re-read by /reload, so they can be added while
-		// Minecraft is running
 	}
 	return m_data_pack_list;
 }
@@ -1437,8 +1327,6 @@ QList<Mod> MinecraftInstance::getJarMods() const
 		QStringList jar, temp1, temp2, temp3;
 		jarmod->getApplicableFiles(runtimeContext(), jar, temp1, temp2, temp3,
 								   jarmodsPath().absolutePath());
-		// QString filePath =
-		// jarmodsPath().absoluteFilePath(jarmod->filename(currentSystem));
 		mods.push_back(Mod(QFileInfo(jar[0])));
 	}
 	return mods;

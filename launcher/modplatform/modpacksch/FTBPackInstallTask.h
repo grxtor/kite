@@ -34,21 +34,19 @@
 
 namespace ModpacksCH
 {
-	/* Sorts the URLs a pack's download job could not fetch: a file FTB
-	 * serves from CurseForge's CDN (it has CurseForge ids) can be fetched
-	 * by hand, so it becomes a BlockedMod for the restricted-files
-	 * question, aimed at @p targets' path for it; anything else is named
-	 * in @p unrecoverable. @p files and @p targets are keyed by the
-	 * download URL as the job reports it. */
+	/* Sorts the URLs a pack's download job could not fetch: a file served
+	 * from CurseForge's CDN (it has CurseForge ids) becomes a BlockedMod for
+	 * the restricted-files question, aimed at @p targets' path for it;
+	 * anything else is named in @p unrecoverable. @p files and @p targets are
+	 * keyed by the download URL as the job reports it. */
 	void classifyFailedDownloads(const QStringList& failedUrls,
 								 const QHash<QString, VersionFile>& files,
 								 const QHash<QString, QString>& targets,
 								 QList<BlockedMod>& blocked,
 								 QStringList& unrecoverable);
 
-	/* The failure message for files nothing can be done about: the first
-	 * few by name and a count of the rest, since a dropped connection
-	 * fails hundreds of them at once. */
+	/* The failure message for files nothing can be done about: the first few
+	 * by name and a count of the rest. */
 	QString undownloadableMessage(const QStringList& names);
 
 
@@ -62,11 +60,9 @@ namespace ModpacksCH
 
 		bool canAbort() const override
 		{
-			/* Two abortable stretches, with a gap between them: the
-			 * pack's own downloads while `abortable` is set, and the
-			 * optional game-file download the base class runs once the
-			 * instance is built. Answering "always" would light up a
-			 * button that abort() then refuses to act on. */
+			/* Two abortable stretches with a gap: the pack's own downloads while
+			 * `abortable` is set, and the base class's optional game-file download.
+			 * Always answering true would light up a button abort() refuses. */
 			return abortable || InstanceTask::canAbort();
 		}
 		bool abort() override;
@@ -79,8 +75,8 @@ namespace ModpacksCH
 		void onDownloadFailed(QString reason);
 
 	  private:
-		/* Some files failed: hand the ones CurseForge restricts to the
-		 * user, as CurseForge packs do, or fail naming the rest. */
+		/* Some files failed: hand the CurseForge-restricted ones to the user, as
+		 * CurseForge packs do, or fail naming the rest. */
 		void onModsDownloadFailed(const QString& reason);
 		void downloadPack();
 		void install();
@@ -96,8 +92,7 @@ namespace ModpacksCH
 		Version m_version;
 
 		QMap<QString, QString> filesToCopy;
-		/* By download URL (as the job reports it): the file, and where it
-		 * goes in the staging folder. */
+		/* By download URL as the job reports it: the file and its staging path. */
 		QHash<QString, VersionFile> m_filesByUrl;
 		QHash<QString, QString> m_targetByUrl;
 	};

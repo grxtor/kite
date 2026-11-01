@@ -34,7 +34,6 @@
 namespace
 {
 
-	/* CurseForge's releaseType, as used by the version box. */
 	QString releaseTypeName(int releaseType)
 	{
 		switch (releaseType) {
@@ -49,13 +48,9 @@ namespace
 		}
 	}
 
-	/* One CurseForge mod object into one result.
-	 *
-	 * Shared by the search and the single-project lookup on purpose:
-	 * /mods/search and /mods/{id} hand out the same object, and when
-	 * these were two copies of the same twenty lines only one of them
-	 * learned about the "links" wrapper. Returns false when the object
-	 * is missing something a row cannot do without. */
+	/* One CurseForge mod object into one result, shared by search and
+	 * single-project lookup: /mods/search and /mods/{id} return the same
+	 * object. False when it lacks something a row needs. */
 	bool parseProjectObject(const QJsonObject& obj,
 							ModPlatform::IndexedProject& project)
 	{
@@ -106,30 +101,23 @@ FlameContentModel::FlameContentModel(ModPlatform::ContentType contentType,
 {
 }
 
-QString FlameContentModel::iconCacheName() const
-{
-	return QStringLiteral("FlameModIcons");
-}
-
 QList<ModPlatform::Category>
 FlameContentModel::parseCategoriesResponse(const QByteArray& bytes) const
 {
 	QList<ModPlatform::Category> categories;
 
-	QJsonParseError parseError{};
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error parsing CurseForge category response:"
-				   << parseError.errorString();
+	const auto doc =
+		Json::tryParse(bytes, "Error parsing CurseForge category response:");
+	if (!doc) {
 		return categories;
 	}
 
-	const QJsonArray entries = doc.object().value("data").toArray();
+	const QJsonArray entries = doc->object().value("data").toArray();
 	for (const auto& entryRaw : entries) {
 		const auto obj = entryRaw.toObject();
 		try {
-			/* Numeric here, and the search wants it back as a bare
-			 * number, so it is kept as the string form of the id. */
+			/* Numeric here, and the search wants a bare number, so keep the id as a
+			 * string. */
 			categories.append(
 				{Json::requireString(obj, "name"),
 				 QString::number(Json::requireInteger(obj, "id"))});
@@ -148,19 +136,17 @@ FlameContentModel::parseSearchResponse(const QByteArray& bytes,
 {
 	QList<ModPlatform::IndexedProject> results;
 
-	QJsonParseError parseError{};
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error parsing CurseForge search response:"
-				   << parseError.errorString();
+	const auto doc =
+		Json::tryParse(bytes, "Error parsing CurseForge search response:");
+	if (!doc) {
 		return results;
 	}
 
 	QJsonArray entries;
-	if (doc.isObject() && doc.object().contains("data")) {
-		entries = doc.object().value("data").toArray();
+	if (doc->isObject() && doc->object().contains("data")) {
+		entries = doc->object().value("data").toArray();
 	} else {
-		entries = doc.array();
+		entries = doc->array();
 	}
 
 	for (const auto& entryRaw : entries) {
@@ -170,7 +156,7 @@ FlameContentModel::parseSearchResponse(const QByteArray& bytes,
 		}
 	}
 
-	const auto pagination = doc.object().value("pagination").toObject();
+	const auto pagination = doc->object().value("pagination").toObject();
 	totalHits = Json::ensureInteger(pagination, "totalCount", -1);
 
 	return results;
@@ -181,17 +167,15 @@ FlameContentModel::parseProjectResponse(const QByteArray& bytes) const
 {
 	ModPlatform::IndexedProject project;
 
-	QJsonParseError parseError{};
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error parsing CurseForge project response:"
-				   << parseError.errorString();
+	const auto doc =
+		Json::tryParse(bytes, "Error parsing CurseForge project response:");
+	if (!doc) {
 		return project;
 	}
 
-	/* /mods/{id} wraps the mod in "data"; take a bare object too, since
-	 * that is what a cached or proxied reply sometimes is. */
-	const auto root = doc.object();
+	/* /mods/{id} wraps the mod in "data"; a bare object is accepted too
+	 * (cached or proxied replies). */
+	const auto root = doc->object();
 	const QJsonObject modObj = root.value("data").isObject()
 								   ? root.value("data").toObject()
 								   : root;
@@ -230,9 +214,8 @@ QList<ModPlatform::ContentVersion> FlameContentModel::parseVersionsResponse(
 			releaseTypeName(Json::ensureInteger(fileObj, "releaseType", 0));
 		version.datePublished = Json::ensureString(fileObj, "fileDate", "");
 
-		/* CurseForge mixes Minecraft versions and loader names into one
-		 * "gameVersions" array - see ModPlatform::newestCurseForgeFile(),
-		 * which has to untangle the same thing for the same reason. */
+		/* CurseForge mixes Minecraft versions and loader names in "gameVersions"
+		 * (see ModPlatform::newestCurseForgeFile()). */
 		for (const auto& tagRaw : Json::ensureArray(fileObj, "gameVersions")) {
 			const QString tag = tagRaw.toString();
 			if (ModPlatform::isKnownLoaderName(tag)) {
@@ -242,9 +225,8 @@ QList<ModPlatform::ContentVersion> FlameContentModel::parseVersionsResponse(
 			}
 		}
 
-		/* Authors can forbid third-party downloads, in which case the
-		 * API hands out no URL at all. The site still serves the file,
-		 * so point at that instead of dropping the version. */
+		/* The author forbids third-party downloads, so the API gives no URL; the
+		 * site still serves the file, so point there instead of dropping it. */
 		if (version.downloadUrl.isEmpty() && !version.versionId.isEmpty() &&
 			!version.fileName.isEmpty()) {
 			version.downloadUrl = FlameApi::browserDownloadUrl(
@@ -264,7 +246,6 @@ QList<ModPlatform::ContentVersion> FlameContentModel::parseVersionsResponse(
 
 QString FlameContentModel::parseBodyResponse(const QByteArray& bytes) const
 {
-	/* CurseForge serves the description as ready-made HTML. */
 	const QJsonDocument doc = QJsonDocument::fromJson(bytes);
 	if (!doc.isObject()) {
 		return QString();

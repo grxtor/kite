@@ -2,20 +2,12 @@
 # SPDX-FileContributor: grxtor
 # SPDX-License-Identifier: Apache-2.0
 
-######## Kite.Theme: the design-token QML module ########
+# Kite.Theme, the design-token QML module. Its own directory, so that
+# qt_add_qml_module keeps the alias a bare Theme.qml.
 
-# Its own directory, one level below launcher/qml/, for the same reason
-# Kite itself sits in launcher/qml/ rather than launcher/: qt_add_qml_module
-# places files at ${RESOURCE_PREFIX}/${URI as path}/..., so declaring the
-# module from the directory that mirrors "Kite/Theme" keeps the alias a bare
-# Theme.qml instead of the source tree leaking into the import path. Not added
-# to the parent CMakeLists here -- the integrator wires in add_subdirectory().
-
-# Has to run before qt_add_qml_module: QT_QML_SINGLETON_TYPE is read while the
-# module is generated, and setting it after would leave Theme.qml registered
-# as an ordinary (re-instantiable) type, silently handing every "import
-# Kite.Theme" its own private Theme instead of the one every component is
-# meant to share.
+# Must run before qt_add_qml_module: QT_QML_SINGLETON_TYPE is read while the
+# module is generated, and setting it later would register Theme.qml as an
+# ordinary type, giving every "import Kite.Theme" its own private Theme.
 set_source_files_properties(Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt_add_library(Kite_qml_theme STATIC)
@@ -26,66 +18,49 @@ qt_add_qml_module(Kite_qml_theme
     RESOURCE_PREFIX "/qt/qml"
     QML_FILES
         Theme.qml
-        # The soft drop shadow Theme.elevation describes, here rather than
-        # in Kite.Style so Kite.Components' cards can lift with it too.
+        # Here rather than in Kite.Style so Kite.Components can use them too.
         Shadow.qml
-        # The glass surface (Theme.glass) for the sidebar, play bar and
-        # popups, for the same reason.
         GlassSurface.qml
-        # The cut-corner shape everything launchable wears (an instance's
-        # tile, Play), for the same reason.
         KiteShape.qml
+        WindowDragZone.qml
     SOURCES
         ThemeService.h
         ThemeService.cpp
-    # Inter 4.1 static TTFs (+ their OFL.txt), bundled here rather than as a
-    # loose file on disk: Theme.qml's own FontLoader instances load them by
-    # qrc path so Theme.font.family is real on every machine, not only one
-    # that happens to already have Inter installed system-wide. Living next
-    # to Theme.qml keeps the module and the asset it needs to function in one
-    # place -- see the comment on Theme.qml's font.family.
+    # Inter 4.1 static TTFs (+ OFL.txt), loaded by Theme.qml's FontLoaders by
+    # qrc path so Theme.font.family is real on every machine.
     RESOURCES
         fonts/inter/Inter-Regular.ttf
         fonts/inter/Inter-Medium.ttf
         fonts/inter/Inter-SemiBold.ttf
         fonts/inter/Inter-Bold.ttf
         fonts/inter/OFL.txt
-        # Montserrat 9.000 static TTFs, the brand face for headings
-        # (Theme.font.heading).
+        # Montserrat 9.000 static TTFs, the heading face.
         fonts/montserrat/Montserrat-Regular.ttf
         fonts/montserrat/Montserrat-SemiBold.ttf
         fonts/montserrat/Montserrat-Bold.ttf
         fonts/montserrat/OFL.txt
 )
 
-# ThemeService only reads ThemePalette (theme/ThemePalette.h, part of the
-# core); it must not see QtWidgets or launcher/ui/, so this links Kite_core
-# alone, never Kite_logic.
+# ThemeService only reads ThemePalette (part of the core) and must not see
+# QtWidgets or launcher/ui/, so this links Kite_core alone, never Kite_logic.
 target_link_libraries(Kite_qml_theme PUBLIC
     Kite_core
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::Gui
 )
 
-######## Unit test ########
-
-# Same shape as qml/QmlModule_test.cpp: proves the module resolves and its
-# tokens read back the values declared above -- a shifted resource prefix, a
-# qmlcachegen failure or the singleton registering as a plain type would all
-# otherwise pass a green build silently.
+# Proves the module resolves and its tokens read back: a shifted resource
+# prefix, a qmlcachegen failure or the singleton registering as a plain type
+# would otherwise pass a green build.
 add_unit_test(Theme
     SOURCES Theme_test.cpp
-    # Kite_qml_theme explicitly: the test counts ThemeService::changed from
-    # C++, and qt_import_qml_plugins only brings in what QML itself reaches.
+    # Kite_qml_theme explicitly: the test counts ThemeService::changed from C++,
+    # and qt_import_qml_plugins only brings in what QML itself reaches.
     LIBS Kite_qml_theme Kite_qml_themeplugin Kite_core Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
     )
 
-# qt_add_qml_module builds the module as a static library plus a separate QML
-# plugin, and the engine refuses the module without it; add_unit_test uses a
-# plain add_executable, which -- unlike qt_add_executable -- never imports it
-# on its own. Same reasoning as QmlModule_test in launcher/CMakeLists.txt.
-#
-# The plugin target is also listed in LIBS above, explicitly: this test's QML
-# is inline (QQmlComponent::setData), so qmlimportscanner never sees the
-# `import Kite.Theme` and cannot work out on its own that it is needed.
+# The engine refuses the module without its QML plugin, and add_unit_test uses
+# a plain add_executable, which never imports it. The plugin is also in LIBS
+# above because this test's QML is inline, so qmlimportscanner never sees
+# `import Kite.Theme`.
 qt_import_qml_plugins(Theme_test)

@@ -109,7 +109,6 @@ namespace Meta
 	  private:
 		bool m_providesRecommendations = false;
 		bool m_recommended = false;
-		QString m_name;
 		QString m_uid;
 		QString m_version;
 		QString m_type;

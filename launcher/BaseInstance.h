@@ -45,63 +45,43 @@ class Task;
 class LaunchTask;
 class BaseInstance;
 
-// pointer for lazy people
 typedef std::shared_ptr<BaseInstance> InstancePtr;
 
-/// Where a shortcut to an instance was asked to be written.
 enum class ShortcutTarget : quint8 { Desktop, Applications, Other };
 
-/// One shortcut an instance knows it is responsible for, so that
-/// deleting the instance can take its shortcuts with it.
+/// One shortcut an instance is responsible for, so deleting the instance takes
+/// it along.
 struct ShortcutData {
-	/// What the shortcut is called, for log messages.
 	QString name;
-	/// The file (or, on macOS, the .app bundle) that was written.
 	QString filePath;
-	/// Which folder it was written into.
 	ShortcutTarget target = ShortcutTarget::Other;
 };
 
-/*!
- * \brief Base class for instances.
- * This class implements many functions that are common between instances and
- * provides a standard interface for all instances.
- *
- * To create a new instance type, create a new class inheriting from this class
- * and implement the pure virtual functions.
- */
+/* Base class for instances: common functions and a standard interface. A new
+ * instance type inherits it and implements the pure virtual functions. */
 class BaseInstance : public QObject,
 					 public std::enable_shared_from_this<BaseInstance>
 {
 	Q_OBJECT
   protected:
-	/// no-touchy!
 	BaseInstance(SettingsObjectPtr globalSettings, SettingsObjectPtr settings,
 				 const QString& rootDir);
 
-  public: /* types */
+  public:
 	enum class Status {
 		Present,
 		Gone // either nuked or invalidated
 	};
 
   public:
-	/// virtual destructor to make sure the destruction is COMPLETE
 	virtual ~BaseInstance() {};
 
 	virtual void saveNow() = 0;
 
-	/***
-	 * the instance has been invalidated - it is no longer tracked by Kite for
-	 * some reason, but it has not necessarily been deleted.
-	 *
-	 * Happens when the instance folder changes to some other location, or the
-	 * instance is removed by external means.
-	 */
+	/** The instance is no longer tracked by Kite (folder moved, or removed by
+	 * external means) but has not necessarily been deleted. */
 	void invalidate();
 
-	/// The instance's ID. The ID SHALL be determined by KITE internally. The
-	/// ID IS guaranteed to be unique.
 	virtual QString id() const;
 
 	void setRunning(bool running);
@@ -110,138 +90,100 @@ class BaseInstance : public QObject,
 	int64_t lastTimePlayed() const;
 	void resetTimePlayed();
 
-	/// get the type of this instance
 	QString instanceType() const;
 
-	/// Path to the instance's root directory.
 	QString instanceRoot() const;
 
-	/// Path to the instance's game root directory.
 	virtual QString gameRoot() const
 	{
 		return instanceRoot();
 	}
 
-	/// Path to the instance's mods directory.
 	virtual QString modsRoot() const = 0;
 
 	QString name() const;
 	void setName(QString val);
 
-	/// Value used for instance window titles
 	QString windowTitle() const;
 
 	QString iconKey() const;
 	void setIconKey(QString val);
 
+	// File in the instance folder holding the screenshot picked as cover, or empty; the reader checks it exists.
+	QString coverImage() const;
+	// The screenshot that copy was made from, only for marking it in the list.
+	QString coverSource() const;
+	void setCustomCover(const QString& fileName, const QString& sourceName);
+
+	// The modpack's own art (file in the instance folder) and when a lookup last found none (epoch seconds, 0 = never).
+	QString platformCover() const;
+	qint64 platformCoverCheckedAt() const;
+	void setPlatformCover(const QString& fileName, qint64 checkedAt = 0);
+
+	// Pack facts other launchers write (ManagedPackType/-ID/-Name), apart from Kite's own managedPack*().
+	QString legacyPackProvider() const;
+	QString legacyPackId() const;
+	QString legacyPackName() const;
+
 	QString notes() const;
 	void setNotes(QString val);
 
-	/* ---- Managed pack provenance ------------------------------------
-	 *
-	 * An instance is "managed" when it came from a Modrinth or
-	 * CurseForge modpack and we still know *which* pack, and which
-	 * version of it, is currently on disk. That is exactly enough to
-	 * ask the catalogue what other versions exist and to replace the
-	 * instance with one of them in place - which is what
-	 * ManagedPackPage does.
-	 *
-	 * These read the pack-source keys registered in the constructor.
-	 * Deliberately thin wrappers rather than a cached struct:
-	 * isManagedPack() is asked on every repaint of a page that shows
-	 * an instance, and a settings lookup is already a hash probe.
-	 *
-	 * Every field is allowed to be empty. An older Kite recorded
-	 * fewer of them, and a pack imported by drag-and-drop never had a
-	 * catalogue entry to record in the first place, so the page has to
-	 * cope with partial records rather than assume all-or-nothing.
-	 */
+	/* Managed pack provenance: an instance is "managed" when it came from a
+	 * Modrinth or CurseForge modpack and the pack and version on disk are
+	 * known. Thin wrappers
+	 * over the pack-source keys registered in the constructor; every field may
+	 * be empty. */
 
-	/* "modrinth" or "curseforge", matching ContentApi::id(). Empty
-	 * means this instance is not tied to a catalogue. */
+	/* "modrinth" or "curseforge", matching ContentApi::id(). Empty means the
+	 * instance is not tied to a catalogue. */
 	QString managedPackProvider() const;
-	/* Modrinth project id / CurseForge numeric project id as a
-	 * string. */
 	QString managedPackId() const;
-	/* Modrinth slug; empty on CurseForge, which has no equivalent. */
 	QString managedPackSlug() const;
-	/* Pack title as the catalogue spells it, which is not necessarily
-	 * the instance name - the user is free to rename the instance.
-	 * Falls back to the slug, then to the instance name, so that
-	 * instances imported before this field was recorded still show
-	 * something meaningful. */
+	/* Pack title as the catalogue spells it, not necessarily the instance
+	 * name. Falls back to the slug, then the instance name, for instances
+	 * imported before this was recorded. */
 	QString managedPackName() const;
-	/* Modrinth version id / CurseForge file id, as a string. */
 	QString managedPackVersionId() const;
-	/* Human-readable version, e.g. "1.2.3". */
 	QString managedPackVersionName() const;
-	/* Canonical pack page recorded at import time, if any. */
 	QString managedPackSourceUrl() const;
 
-	/* True when this instance came from a catalogue at all, i.e. a
-	 * provider is recorded.
-	 *
-	 * Deliberately does *not* require a pack id. An instance can have a
-	 * provider and no id - that is what an import from a local .mrpack
-	 * or a pack imported by an older Kite looks like - and such an
-	 * instance is still worth showing the pack page for, because it can
-	 * be updated from a file or from a URL the user supplies. Requiring
-	 * the id here would hide the page in exactly the case where it is
-	 * the only way to update. */
+	/* True when this instance came from a catalogue at all, i.e. a provider is
+	 * recorded. Deliberately does not require a pack id: an import from a
+	 * local .mrpack or by an older Kite has a provider and no id, and such an
+	 * instance can still be updated from a file or URL, so hiding its page
+	 * would hide the only way to update. */
 	bool isManagedPack() const;
 
-	/* True when there is enough recorded to *ask the catalogue*: a
-	 * provider and a pack id. Everything that issues an API request
-	 * has to check this, because every endpoint is keyed by the id. */
+	/* True when enough is recorded to ask the catalogue: a provider and a pack
+	 * id. Everything that issues an API request must check this. */
 	bool hasManagedPackId() const;
 
-	/* URL the user typed for a pack we have no catalogue entry for.
-	 * Lets a hand-made or drag-dropped instance still be updated from
-	 * a file or a link the user vouches for. */
-	QString managedPackUpdateUrl() const;
-	void setManagedPackUpdateUrl(const QString& url);
-
-	/* Move the recorded version forward. Called after an update has
-	 * actually landed on disk, so that the page and the catalogue
-	 * agree about what is installed. */
+	/* Moves the recorded version forward after an update has landed on disk,
+	 * so the page and the catalogue agree. */
 	void setManagedPackVersion(const QString& versionId,
 							   const QString& versionName);
 
-	/**
-	 * Shortcuts written for this instance that are still where they were
-	 * written.
-	 *
-	 * An entry whose file has since been moved or deleted is dropped on
-	 * the way out, which is what keeps the launcher from deleting
-	 * something at a path it no longer owns.
-	 */
+	/** Shortcuts written for this instance that are still where they were
+	 * written. An entry whose file was moved or deleted is dropped, so the
+	 * launcher never deletes something at a path it no longer owns. */
 	QList<ShortcutData> shortcuts() const;
 
-	/// Take responsibility for one more shortcut.
 	void registerShortcut(const ShortcutData& shortcut);
 
-	/// Replace the whole list.
 	void setShortcuts(const QList<ShortcutData>& shortcuts);
 
-	/**
-	 * Key of the profiler this instance launches under, empty for none.
-	 *
-	 * The key is whatever Application::profilers() is indexed by. It is
-	 * kept verbatim even when no such profiler is registered in this
-	 * build, so that an instance shared between machines does not
-	 * quietly lose the setting.
-	 */
+	/** Key of the profiler this instance launches under, empty for none:
+	 * whatever the launcher's profiler list is indexed by. Kept verbatim even if
+	 * this build has no such profiler, so an instance shared between machines
+	 * does not lose the setting. */
 	QString profilerKey() const;
 
-	/// Set (or, with an empty key, clear) the profiler. Emits
-	/// profilerChanged() only when the value actually moves.
 	void setProfilerKey(const QString& key);
 
 	QString getPreLaunchCommand();
 	QString getPostExitCommand();
 	QString getWrapperCommand();
 
-	/// guess log level from a line of game log
 	virtual MessageLevel::Enum guessLevel(const QString&,
 										  MessageLevel::Enum level)
 	{
@@ -250,38 +192,21 @@ class BaseInstance : public QObject,
 
 	virtual QStringList extraArguments() const;
 
-	/// Traits. Normally inside the version, depends on instance implementation.
 	virtual QSet<QString> traits() const = 0;
 
-	/**
-	 * Gets the time that the instance was last launched.
-	 * Stored in milliseconds since epoch.
-	 */
 	qint64 lastLaunch() const;
-	/// Sets the last launched time to 'val' milliseconds since epoch
 	void setLastLaunch(qint64 val = QDateTime::currentMSecsSinceEpoch());
 
-	/*!
-	 * \brief Gets this instance's settings object.
-	 * This settings object stores instance-specific settings.
-	 * \return A pointer to this instance's settings object.
-	 */
 	virtual SettingsObjectPtr settings() const;
 
-	/// returns a valid update task
 	virtual Task::Ptr createUpdateTask(Net::Mode mode) = 0;
 
-	/// returns a valid launcher (task container)
 	virtual shared_qobject_ptr<LaunchTask>
 	createLaunchTask(AuthSessionPtr account,
 					 MinecraftServerTargetPtr serverToJoin) = 0;
 
-	/// returns the current launch task (if any)
 	shared_qobject_ptr<LaunchTask> getLaunchTask();
 
-	/*!
-	 * Create envrironment variables for running the instance
-	 */
 	virtual QProcessEnvironment createEnvironment() = 0;
 
 	/*!
@@ -290,42 +215,26 @@ class BaseInstance : public QObject,
 	 */
 	virtual IPathMatcher::Ptr getLogFileMatcher() = 0;
 
-	/*!
-	 * Returns the root folder to use for looking up log files
-	 */
 	virtual QString getLogFileRoot() = 0;
-
-	virtual QString getStatusbarDescription() = 0;
 
 	/// FIXME: this really should be elsewhere...
 	virtual QString instanceConfigFolder() const = 0;
 
-	/// get variables this instance exports
 	virtual QMap<QString, QString> getVariables() const = 0;
 
 	virtual QString typeName() const = 0;
 
-	/**
-	 * The Minecraft version this instance runs, e.g. "1.21.4".
-	 *
-	 * Empty for an instance type that has no such concept, which is the
-	 * default here. MinecraftInstance overrides this; kept on the base
-	 * class so generic code (the QML instance list) can ask any instance
-	 * without a dynamic_cast.
-	 */
+	/** The Minecraft version this instance runs, e.g. "1.21.4"; empty for an
+	 * instance type without one. On the base class so generic code (the QML
+	 * instance list) can ask any instance without a dynamic_cast. */
 	virtual QString gameVersion() const
 	{
 		return {};
 	}
 
-	/**
-	 * Human name of the mod loader this instance uses ("Fabric", "Forge",
-	 * ...), or empty when none is installed or this instance type has no
-	 * such concept.
-	 *
-	 * Overridden by MinecraftInstance, for the same reason as
-	 * gameVersion().
-	 */
+	/** Human name of the mod loader ("Fabric", "Forge", ...), or empty when
+	 * none is installed or the type has none. Overridden by MinecraftInstance,
+	 * like gameVersion(). */
 	virtual QString modLoaderName() const
 	{
 		return {};
@@ -373,9 +282,6 @@ class BaseInstance : public QObject,
 
 	bool reloadSettings();
 
-	/**
-	 * 'print' a verbose description of the instance into a QStringList
-	 */
 	virtual QStringList
 	verboseDescription(AuthSessionPtr session,
 					   MinecraftServerTargetPtr serverToJoin) = 0;
@@ -389,33 +295,25 @@ class BaseInstance : public QObject,
 	void changeStatus(Status newStatus);
 
   signals:
-	/*!
-	 * \brief Signal emitted when properties relevant to the instance view
-	 * change
-	 */
 	void propertiesChanged(BaseInstance* inst);
 
 	void launchTaskChanged(shared_qobject_ptr<LaunchTask>);
 
 	void runningStatusChanged(bool running);
 
-	/// The profiler this instance launches under was changed.
-	void profilerChanged();
-
 	void statusChanged(Status from, Status to);
 
   protected slots:
 	void iconUpdated(QString key);
 
-  protected: /* data */
+  protected:
 	QString m_rootDir;
 	SettingsObjectPtr m_settings;
-	// InstanceFlags m_flags;
 	bool m_isRunning = false;
 	shared_qobject_ptr<LaunchTask> m_launchProcess;
 	QDateTime m_timeStarted;
 
-  private: /* data */
+  private:
 	Status m_status = Status::Present;
 	bool m_crashed = false;
 	bool m_hasUpdate = false;
@@ -423,5 +321,3 @@ class BaseInstance : public QObject,
 };
 
 Q_DECLARE_METATYPE(shared_qobject_ptr<BaseInstance>)
-// Q_DECLARE_METATYPE(BaseInstance::InstanceFlag)
-// Q_DECLARE_OPERATORS_FOR_FLAGS(BaseInstance::InstanceFlags)

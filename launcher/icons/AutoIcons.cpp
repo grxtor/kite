@@ -13,7 +13,7 @@
 namespace
 {
 	/* FNV-1a over the id's UTF-8: unlike qHash it is not seeded per run, so
-	 * an instance's first slot is the same on every start and machine. */
+	 * the first slot is stable across starts and machines. */
 	quint32 stableHash(const QString& text)
 	{
 		const quint32 offsetBasis = 2166136261u;
@@ -29,12 +29,15 @@ namespace
 
 QStringList AutoIcons::pool()
 {
-	return {QStringLiteral("bee"), QStringLiteral("brick"), QStringLiteral("chicken"),
-			QStringLiteral("creeper"), QStringLiteral("diamond"), QStringLiteral("enderman"),
-			QStringLiteral("enderpearl"), QStringLiteral("fox"), QStringLiteral("gold"),
-			QStringLiteral("herobrine"), QStringLiteral("iron"), QStringLiteral("meat"),
-			QStringLiteral("netherstar"), QStringLiteral("planks"), QStringLiteral("skeleton"),
-			QStringLiteral("steve"), QStringLiteral("stone"), QStringLiteral("tnt")};
+	return {QStringLiteral("kite_amethyst"), QStringLiteral("kite_brick"),
+			QStringLiteral("kite_cobblestone"), QStringLiteral("kite_copper"),
+			QStringLiteral("kite_cyan_ore"), QStringLiteral("kite_emerald_ore"),
+			QStringLiteral("kite_glass"), QStringLiteral("kite_gold_ore"),
+			QStringLiteral("kite_ice"), QStringLiteral("kite_lantern"),
+			QStringLiteral("kite_log"), QStringLiteral("kite_magma"),
+			QStringLiteral("kite_moss"), QStringLiteral("kite_obsidian"),
+			QStringLiteral("kite_planks"), QStringLiteral("kite_ruby_ore"),
+			QStringLiteral("kite_sand"), QStringLiteral("kite_snow")};
 }
 
 bool AutoIcons::isGeneric(const QString& key)
@@ -51,8 +54,7 @@ QHash<QString, QString> AutoIcons::assign(const QList<Instance>& instances,
 	if (pool.isEmpty())
 		return result;
 
-	// In id order, so who wins a contested slot never depends on how the
-	// list happened to be sorted.
+	// In id order, so a contested slot never depends on list order.
 	QList<Instance> generic;
 	for (const Instance& instance : instances) {
 		if (isGeneric(instance.iconKey))
@@ -81,8 +83,8 @@ QHash<QString, QString> AutoIcons::assign(const QList<Instance>& instances,
 				break;
 			}
 		}
-		// A library with more generic instances than the pool has icons
-		// shares them from here on, each keeping its hashed slot.
+		// More generic instances than icons share them, each keeping its hashed
+		// slot.
 		result.insert(instance.id, chosen);
 		used.insert(chosen);
 	}

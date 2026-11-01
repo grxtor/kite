@@ -27,6 +27,7 @@
 #include <QSet>
 #include <QUrl>
 
+#include "FileSystem.h"
 #include "core/LauncherContext.h"
 #include "minecraft/auth/AccountTask.h"
 #include "minecraft/services/CapeChange.h"
@@ -42,19 +43,8 @@
 
 namespace
 {
-	/* A QML FileDialog hands out a "file://" url; validateSkinFile()/
-	 * changeSkin() also accept a plain path, so either can be passed
-	 * straight through from QML without the caller converting it first.
-	 * Same conversion InstanceDetails::install() uses for the same reason. */
-	QString toLocalPath(const QString& fileUrlOrPath)
-	{
-		const QUrl url(fileUrlOrPath);
-		return url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
-	}
-
-	/* The launcher's skins folder (the SkinsDir setting), absolute.
-	 * Relative to the data folder, which is the working directory, like
-	 * every other folder setting; "skins" where there are no settings. */
+	/* The SkinsDir setting, absolute (relative to the data folder, the working
+	 * directory); "skins" where there are no settings. */
 	QString skinsDirectory()
 	{
 		auto* context = LauncherContext::instance();
@@ -66,10 +56,8 @@ namespace
 			.absolutePath();
 	}
 
-	/* The demo's capes: textures from "capes/" in the skins folder, where
-	 * the widget skin dialog kept its cape cache (qml-preview-tools puts
-	 * two there). A missing file leaves the cape without a picture, as a
-	 * real cape whose texture has not loaded. */
+	/* Demo capes: textures from "capes/" in the skins folder. A missing file
+	 * leaves the cape without a picture. */
 	QVariantMap demoCape(const QString& id, const QString& alias)
 	{
 		const QString file =
@@ -88,16 +76,13 @@ AccountsController::AccountsController(shared_qobject_ptr<AccountList> accounts,
 										QObject* parent)
 	: QObject(parent), m_accounts(std::move(accounts))
 {
-	/* Either one moving the default account or the list itself (a
-	 * refreshed account's profileName can change what defaultName()
-	 * reports) is reason enough to re-read both properties - same
-	 * reasoning as QmlShell's own accountChanged() bump. */
+	/* Either the default account moving or the list itself changing re-reads
+	 * the default. */
 	connect(m_accounts.get(), &AccountList::listChanged, this,
 			&AccountsController::defaultChanged);
 	connect(m_accounts.get(), &AccountList::defaultAccountChanged, this,
 			&AccountsController::defaultChanged);
-	/* A skinless account is drawn in the game's default skin once that
-	 * arrives (see accountSkinInfo()); the page refetches on this. */
+	// A skinless account is drawn in the default skin once it arrives; the page refetches.
 	connect(DefaultSkins::instance(), &DefaultSkins::loaded, this, [this] {
 		++m_defaultSkinsRevision;
 		emit defaultSkinsRevisionChanged();
@@ -109,26 +94,13 @@ QObject* AccountsController::accounts() const
 	return m_accounts.get();
 }
 
-bool AccountsController::hasDefault() const
-{
-	return m_accounts->defaultAccount().get() != nullptr;
-}
-
-QString AccountsController::defaultName() const
-{
-	auto account = m_accounts->defaultAccount();
-	return account ? account->profileName() : QString();
-}
-
 QString AccountsController::defaultAccountId() const
 {
-	/* The same value AccountList's AccountIdRole hands each row. */
 	auto account = m_accounts->defaultAccount();
 	if (!account) {
 		return QString();
 	}
-	return account->profileId().isEmpty() ? account->internalId()
-										  : account->profileId();
+	return account->accountId();
 }
 
 int AccountsController::defaultSkinsRevision() const
@@ -171,11 +143,7 @@ void AccountsController::refresh(int row)
 
 bool AccountsController::addOffline(const QString& username)
 {
-	// Same rule as AccountListPage::on_actionAddOffline_triggered(): an
-	// offline account is only allowed once a Microsoft account that owns
-	// Minecraft is signed in, since offline mode exists for testing/LAN play
-	// alongside a purchased game rather than as a Minecraft account
-	// replacement.
+	// An offline account needs a Microsoft account that owns Minecraft first.
 	if (!m_accounts->anyMicrosoftAccountOwnsMinecraft()) {
 		return false;
 	}
@@ -185,9 +153,7 @@ bool AccountsController::addOffline(const QString& username)
 		return false;
 	}
 
-	// AccountList::addAccount() already guards against this internally,
-	// but checking here lets the caller distinguish "rejected" from
-	// "added" instead of silently doing nothing.
+	// AccountList::addAccount() guards this too; checking here lets the caller tell "rejected" from "added".
 	if (m_accounts->findOfflineAccountByUsername(trimmed) != -1) {
 		return false;
 	}
@@ -198,13 +164,13 @@ bool AccountsController::addOffline(const QString& username)
 
 QObject* AccountsController::loginMicrosoft()
 {
-	// Parented to this, not left parentless: QML calls this directly on
-	// the accountsController property rather than through QmlShell, so
-	// there is no expose() call sitting between here and QML to pin an
-	// otherwise-parentless return value with CppOwnership. A real parent
-	// sidesteps the question entirely - see ModrinthModpackModel::install(),
-	// which parents its returned TaskWatcher to itself for the same reason.
-	return new MicrosoftLoginController(m_accounts, this);
+	// Parented to this: QML calls this directly, with no expose() to pin a parentless return value.
+	if (m_login) {
+		m_login->cancel();
+		m_login->deleteLater();
+	}
+	m_login = new MicrosoftLoginController(m_accounts, this);
+	return m_login;
 }
 
 bool AccountsController::skinDemoRequested() const
@@ -231,22 +197,15 @@ QVariantMap AccountsController::accountSkinInfo(int row) const
 	QVariantMap info;
 	info[QStringLiteral("valid")] = false;
 	info[QStringLiteral("slim")] = false;
-	/* Whether there is a skin to draw at all -- offline accounts, and any
-	 * account before its profile has been fetched, have none, and a
-	 * preview then shows the neutral figure instead. */
+	/* False for offline accounts and before the profile is fetched. */
 	info[QStringLiteral("hasSkin")] = false;
 	info[QStringLiteral("defaultSkin")] = false;
 	info[QStringLiteral("currentCapeId")] = QString();
 	info[QStringLiteral("currentCapeUrl")] = QString();
 	info[QStringLiteral("capes")] = QVariantList();
 
-	/* Row -1 is the qml-preview-tools demo sentinel (see
-	 * skinDemoRequested()/AccountsPage.qml): the preview's account file
-	 * only ever has offline accounts, so no real row's isMSA role would
-	 * let the page reach this editor otherwise. Canned data, not a faked
-	 * account file, and only handed back when actually asked for -- a
-	 * plain out-of-range -1 (what every other row here already gets)
-	 * still reads as invalid the rest of the time. */
+	/* Row -1 is the qml-preview-tools demo sentinel: canned data, only when
+	 * skinDemoRequested(). */
 	if (row == -1 && skinDemoRequested()) {
 		info[QStringLiteral("valid")] = true;
 		const QVariantMap ember =
@@ -267,9 +226,7 @@ QVariantMap AccountsController::accountSkinInfo(int row) const
 		return info;
 	}
 
-	/* What the player looks like, for every account: its own skin, or the
-	 * game's default for it -- the same choice AccountFaceProvider makes
-	 * when it draws the skin. */
+	/* Its own skin, or the game's default for it (as AccountFaceProvider draws). */
 	const MinecraftProfile& profile = account->accountData()->minecraftProfile;
 	const bool slim = DefaultSkins::isSlim(account);
 	info[QStringLiteral("slim")] = slim;
@@ -288,9 +245,8 @@ QVariantMap AccountsController::accountSkinInfo(int row) const
 	info[QStringLiteral("valid")] = true;
 	info[QStringLiteral("currentCapeId")] = profile.currentCape;
 
-	/* Once per id: account files saved before Parsers::
-	 * parseMinecraftProfile() cleared its list kept every refresh's capes,
-	 * so one cape could be stored many times over. */
+	/* Once per id: older account files kept every refresh's capes, so one cape
+	 * could be stored many times. */
 	QVariantList capes;
 	QSet<QString> seen;
 	for (const Cape& cape : profile.capes) {
@@ -313,7 +269,7 @@ QVariantMap AccountsController::accountSkinInfo(int row) const
 
 QString AccountsController::validateSkinFile(const QString& path) const
 {
-	SkinEntry entry(toLocalPath(path));
+	SkinEntry entry(FS::pathFromUrlOrPath(path));
 	if (!entry.isUsable()) {
 		return tr("Skin images must be 64x64 or 64x32 pixel PNG files.");
 	}
@@ -330,17 +286,13 @@ QObject* AccountsController::changeSkin(int row, const QString& path, bool slim)
 		return nullptr;
 	}
 
-	QFile file(toLocalPath(path));
+	QFile file(FS::pathFromUrlOrPath(path));
 	if (!file.open(QIODevice::ReadOnly)) {
 		return nullptr;
 	}
 	const QByteArray texture = file.readAll();
 	file.close();
 
-	/* Same SkinUpload + refresh sequence SkinManageDialog::accept() runs,
-	 * minus the cape change: this uploads a picked file directly rather
-	 * than editing a local skin-library entry that already carries a cape
-	 * choice, so there is nothing here to carry over. */
 	auto* job = new SequentialTask(nullptr, tr("Change skin"));
 	job->addTask(Task::Ptr(new SkinUpload(
 		nullptr, account->accessToken(), texture,
@@ -396,8 +348,7 @@ QObject* AccountsController::changeCape(int row, const QString& capeId)
 
 QObject* AccountsController::skins(int row)
 {
-	/* The qml-preview-tools demo row (see skinDemoRequested()): the
-	 * library on its own, with no account to say which skin is worn. */
+	/* The qml-preview-tools demo row: the library alone, no account. */
 	const bool demo = row == -1 && skinDemoRequested();
 	if (!demo && (row < 0 || row >= m_accounts->count())) {
 		return nullptr;
@@ -415,9 +366,7 @@ QObject* AccountsController::skins(int row)
 		m_skins = new SkinsController(account, skinsDirectory(), this);
 		m_skinsAccountId = accountId;
 	}
-	/* The game's default skins, for the editor's own section: whichever
-	 * are not in the cache yet, tried again on every open (say, once the
-	 * network is back). */
+	/* Fetch the default skins not cached yet; tried again on every open. */
 	DefaultSkins::instance()->fetchGallery();
 	return m_skins;
 }
@@ -427,13 +376,7 @@ MicrosoftLoginController::MicrosoftLoginController(
 	: QObject(parent), m_accountList(std::move(accounts))
 {
 	if (LAUNCHER->msaClientId().isEmpty()) {
-		// Mirrors AccountListPage's ui->actionAddMicrosoft->setVisible()
-		// guard, which hid the button entirely rather than let it fail;
-		// this controller has no visibility to hide, so it starts
-		// already failed instead. (The widget page's separate osx64
-		// warning dialog is not reproduced here: BUILD_PLATFORM is never
-		// actually set to that value by this fork's build, so it never
-		// fires today.)
+		// Without a client id the sign-in cannot work; start already failed.
 		m_error = tr(
 			"Microsoft login is not available: no client id is configured "
 			"for this build.");
@@ -466,10 +409,7 @@ void MicrosoftLoginController::cancel()
 	if (!m_running) {
 		return;
 	}
-	// No supported way to actually abort an in-flight OAuth2 request (see
-	// the header comment) - dropping our references is what the widget
-	// dialog effectively did when closed mid-flow, since nothing else
-	// keeps m_account/m_task alive once this does not.
+	// An in-flight OAuth2 request cannot be aborted; drop the references instead.
 	if (m_task) {
 		m_task->disconnect(this);
 	}
@@ -505,9 +445,7 @@ void MicrosoftLoginController::onAuthorizeWithBrowser(const QUrl& url)
 
 void MicrosoftLoginController::onSucceeded()
 {
-	// Exactly what AccountListPage::on_actionAddMicrosoft_triggered() did
-	// with the widget dialog's result: file the new account in, and make
-	// it the default if it's the first one in the list.
+	// File the account in; the first one becomes the default.
 	m_accountList->addAccount(m_account);
 	if (m_accountList->count() == 1) {
 		m_accountList->setDefaultAccount(m_account);

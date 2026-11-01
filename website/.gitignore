@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.astro/
+.DS_Store
+
+# The repository root ignores *.ts; the website's TypeScript must be tracked.
+!*.ts

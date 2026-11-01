@@ -9,45 +9,33 @@ import QtQuick.Dialogs
 import Kite.Theme
 
 /*
- * The instance's single-player worlds, most useful facts first: name,
- * game mode, when it was last played. Every row's actions sit behind its
- * ⋯ menu (also on right-click). Deleting one asks first -- a world is hours
- * of someone's play and there is no undo.
- *
- * "Add world" unpacks a .zip (picked, or dropped onto the tab) into the
- * worlds folder. Changing a world while the game is running can corrupt it,
- * so every action that changes one asks "Continue anyway?" first instead of
- * being unavailable -- the same warning the widget version gave.
+ * The instance's single-player worlds. "Add world" unpacks a .zip (picked or
+ * dropped) into the worlds folder. Changing a world while the game runs can
+ * corrupt it, so each such action asks "Continue anyway?" instead of being
+ * unavailable.
  */
 Item {
     id: root
 
-    // InstanceDetails: worlds (WorldList: folder, seed, name, gameMode,
-    // lastPlayed, iconFile, dayCount), worldsDir, deleteWorld, renameWorld,
-    // copyWorld, resetWorldIcon.
+    // InstanceDetails: worlds (WorldList), worldsDir, deleteWorld, renameWorld, copyWorld,
+    // resetWorldIcon.
     property var details: null
     readonly property bool unlocked: !!details && details.contentChangesAllowed
     readonly property int count: list.count
     signal openFolderRequested(string path)
-    // Asks the instance page to switch to the Data packs tab pointed at
-    // world `row` - see InstancePage.qml.
+    // Asks the instance page to switch to the Data packs tab at world `row`.
     signal dataPacksRequested(int row)
 
-    // The TaskWatcher of a copy or an install in progress, if any - both run
-    // off the GUI thread (a world can run into gigabytes), see InstanceDetails.
+    // The TaskWatcher of a copy or install in progress; both run off the GUI thread.
     property var watcher: null
     readonly property bool busy: !!root.watcher && root.watcher.running
-    // What the watcher is doing, for the progress line and the toasts.
     property string busyText: qsTr("Copying world…")
     property string failText: qsTr("The world could not be copied.")
     property string doneText: qsTr("World copied.")
-    // Whether the MCEdit setting points at a usable MCEdit; checked each time
-    // a row menu opens, since it is a launcher setting that can change.
+    // Whether the MCEdit setting points at a usable MCEdit; rechecked when a row menu opens.
     property bool mceditReady: false
-    // The action waiting on the "game is running" question.
     property var pendingAction: null
 
-    // Runs @p action now, or after "Continue anyway?" while the game runs.
     function guarded(action) {
         if (root.unlocked) {
             action()
@@ -57,10 +45,8 @@ Item {
         runningConfirm.open()
     }
 
-    // Starts installing the first of @p fileUrls (an array of file:// URLs)
-    // that is a Minecraft world. Only one install runs at a time -- they
-    // would fight over the one progress line -- so a drop of several adds
-    // the first and says so.
+    // Installs the first Minecraft world of @p fileUrls (file:// URLs). Only one install runs at a
+    // time (one progress line), so a drop of several adds the first and says so.
     function addWorlds(fileUrls) {
         if (!root.details || root.busy)
             return
@@ -78,14 +64,11 @@ Item {
         toast.show(qsTr("That is not a Minecraft world. Pick a .zip with a world in it."), "danger")
     }
 
-    // The game modes worth naming. WorldList reports a level.dat without one
-    // as "Undefined" (or "Unknown (n)"), which says nothing to a player, so
-    // anything else is simply left out.
+    // WorldList reports a level.dat without a mode as "Undefined" or "Unknown (n)"; only real modes
+    // are shown.
     readonly property var knownModes: [qsTranslate("GameType", "Survival"), qsTranslate("GameType", "Creative"),
                                        qsTranslate("GameType", "Adventure"), qsTranslate("GameType", "Spectator")]
 
-    // A different instance's details: whatever this tab was doing belonged
-    // to the previous one.
     onDetailsChanged: root.watcher = null
 
     ColumnLayout {
@@ -106,7 +89,6 @@ Item {
                 icon.source: Icons.url("folder")
                 onClicked: root.openFolderRequested(root.details ? root.details.worldsDir : "")
             }
-            // Secondary: the play bar's Play is this page's primary action.
             Button {
                 enabled: !!root.details && !root.busy
                 text: qsTr("Add world")
@@ -120,16 +102,15 @@ Item {
             visible: root.busy || (!!root.watcher && root.watcher.failed)
             spacing: Theme.space.md
 
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: root.watcher
                       ? (root.watcher.failed ? (root.watcher.error || root.failText)
                                              : (root.watcher.status || root.busyText))
                       : ""
-                color: root.watcher && root.watcher.failed ? Theme.palette.danger : Theme.palette.textSecondary
+                role: "label"
+                tone: root.watcher && root.watcher.failed ? "danger" : "secondary"
                 elide: Text.ElideRight
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
             LaunchProgressBar {
                 Layout.preferredWidth: 160
@@ -146,7 +127,6 @@ Item {
             spacing: Theme.space.sm
             boundsBehavior: Flickable.StopAtBounds
             model: root.details ? root.details.worlds : null
-            // Overlays the rows' right edge rather than reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
             delegate: TabListRow {
@@ -161,22 +141,17 @@ Item {
                 required property var seed
 
                 readonly property string displayName: cell.name.length > 0 ? cell.name : cell.folderName
-                // The folder's own name, the title of a world without a
-                // level name. `folder` is the full path.
                 readonly property string folderName: String(cell.folder).split(/[\\/]/).pop()
                 readonly property string mode: String(cell.gameMode || "")
 
                 width: list.width
                 title: cell.displayName
-                // "Survival  •  Day 12  •  Yesterday", as Home's rows read.
                 meta: [root.knownModes.indexOf(cell.mode) >= 0 ? cell.mode : "",
                        cell.dayCount !== undefined && cell.dayCount !== null ? qsTr("Day %1").arg(cell.dayCount) : "",
                        Format.lastPlayed(cell.lastPlayed ? Number(cell.lastPlayed) : 0)]
                       .filter((part) => part.length > 0).join("  •  ")
-                // The world's own icon.png, kept crisp like the pixel picture
-                // it is. Without one, a neutral globe: a landscape there
-                // would pass for a real view of the world, and two worlds
-                // would share one.
+                // A neutral globe stands in for a missing icon: a landscape would pass for a real
+                // view of the world.
                 thumb.source: Format.fileUrl(cell.iconFile)
                 thumb.glyph: "globe"
                 thumb.fill: true
@@ -193,10 +168,8 @@ Item {
                     Menu {
                         id: rowMenu
                         onAboutToShow: root.mceditReady = !!root.details && root.details.mceditConfigured()
-                        MenuItem {
-                            // An old-format instance has no Data packs tab.
+                        MenuEntry {
                             visible: !!root.details && root.details.isMinecraft
-                            height: visible ? implicitHeight : 0
                             text: qsTr("Data packs")
                             icon.source: Icons.url("package")
                             onTriggered: root.dataPacksRequested(cell.index)
@@ -209,9 +182,8 @@ Item {
                                 toast.show(qsTr("Seed copied."), "success")
                             }
                         }
-                        MenuItem {
+                        MenuEntry {
                             visible: root.mceditReady
-                            height: visible ? implicitHeight : 0
                             text: qsTr("Open in MCEdit")
                             icon.source: Icons.url("external-link")
                             onTriggered: root.guarded(() => {
@@ -261,7 +233,6 @@ Item {
         }
     }
 
-    // Rows fade out at the fold instead of being sliced by the play bar.
     ScrollFade {
         anchors.left: parent.left
         anchors.right: parent.right
@@ -329,16 +300,13 @@ Item {
         onAccepted: root.addWorlds([selectedFile])
     }
 
-    // Worlds dropped from the file manager. Only the first is added; the
-    // rest would fight over the one progress line.
     DropArea {
         id: drop
         anchors.fill: parent
         keys: ["text/uri-list"]
         onDropped: (event) => {
             if (event.hasUrls) {
-                // The event is gone once this handler returns, but the
-                // question may still be open.
+                // The event is gone once this handler returns, but the question may still be open.
                 var urls = event.urls
                 root.guarded(() => root.addWorlds(urls))
             }
@@ -352,13 +320,11 @@ Item {
             border.width: 1
             border.color: Theme.palette.accent
 
-            Text {
+            Copy {
                 anchors.centerIn: parent
                 text: qsTr("Drop a world here to add it")
-                color: Theme.palette.accentText
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.bodyStrong.pixelSize
-                font.weight: Theme.type.bodyStrong.weight
+                role: "bodyStrong"
+                tone: "accent"
             }
         }
     }
@@ -382,6 +348,6 @@ Item {
         visible: list.count === 0
         title: qsTr("No worlds yet")
         body: qsTr("Worlds you create in single player show up here. You can also add one from a .zip.")
-        MeshIcon { iconName: "globe"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "globe"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 }

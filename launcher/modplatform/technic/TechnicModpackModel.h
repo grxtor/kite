@@ -30,23 +30,12 @@
 
 class ModrinthModpackDetail;
 
-/* Technic modpacks for QML - the widget-free replacement for
- * ui/pages/modplatform/technic/TechnicModel.h (Technic::ListModel) and the
- * metadata fetch TechnicPage does on selection.
- *
- * The same shape as the other modpack models (properties, invokables,
- * role names), so the Discover page shows any of them through one set of
- * bindings. Technic searches on its own end (trending when nothing is
- * typed) and sends one page; it has no sorts, loaders or versions to
- * filter by, so those properties are kept only for the shared bindings.
- *
- * A pack's download comes from its metadata, fetched when it is opened
- * (loadDetail()): either a Solder server, whose recommended build
- * SolderPackInstallTask installs, or a single zip for
- * SingleZipPackInstallTask - the same choice TechnicPage::metadataLoaded()
- * makes. Technic offers one build per pack here, so the detail's version
- * list has one entry.
- */
+/* Technic modpacks for QML. Same shape as the other modpack models.
+ * Technic searches on its own end (trending when nothing is typed) and
+ * sends one page; sorts, loaders and versions exist only for the shared
+ * bindings. A pack's download comes from its metadata on loadDetail():
+ * a Solder server (SolderPackInstallTask installs its recommended build)
+ * or a single zip (SingleZipPackInstallTask). The detail has one version. */
 class TechnicModpackModel : public QAbstractListModel
 {
 	Q_OBJECT
@@ -64,8 +53,7 @@ class TechnicModpackModel : public QAbstractListModel
 	Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 	Q_PROPERTY(QObject* detail READ detail CONSTANT)
 	Q_PROPERTY(QString providerName READ providerName CONSTANT)
-	/// "html": Technic descriptions are HTML (or plain text, which reads
-	/// the same).
+	/// "html": descriptions are HTML (or plain text).
 	Q_PROPERTY(QString bodyFormat READ bodyFormat CONSTANT)
 	Q_PROPERTY(bool keyMissing READ keyMissing CONSTANT)
 
@@ -88,15 +76,12 @@ class TechnicModpackModel : public QAbstractListModel
 	};
 	Q_ENUM(Roles)
 
-	/* One search hit, plus what its metadata adds once fetched. */
 	struct Pack {
 		QString slug;
 		QString name;
 		QString logoUrl;
-		/* The logo's file name, the widget page's cache key. */
 		QString logoName;
 		bool metadataLoaded = false;
-		/* The download: a Solder server or a zip (see isSolder). */
 		QString url;
 		bool isSolder = false;
 		QString minecraftVersion;
@@ -172,28 +157,24 @@ class TechnicModpackModel : public QAbstractListModel
 		return false;
 	}
 
-	/// Asks Technic for `query` (trending when empty).
 	Q_INVOKABLE void search();
 	Q_INVOKABLE void fetchMore() {}
-	/// Fetches the pack's metadata - its download, author, description.
 	Q_INVOKABLE void loadDetail(const QString& projectId);
-	/* Starts the Solder or single-zip install for pack `projectId` (its
-	 * slug), once loadDetail() has its metadata; returns a TaskWatcher
-	 * (parented to this model), or nullptr when that is missing.
-	 * `versionId` is the one entry of `detail.versions`. */
+	/* Starts the Solder or single-zip install for pack `projectId` (its slug)
+	 * once loadDetail() has its metadata; returns a TaskWatcher (parented to
+	 * this model), or nullptr when that is missing. `versionId` is the one
+	 * entry of `detail.versions`. */
 	Q_INVOKABLE QObject* install(const QString& projectId,
 								 const QString& versionId,
 								 const QString& instanceName,
 								 const QString& group);
 
-	/* Static halves, for tests without the network. */
 	static QUrl searchUrl(const QString& term);
 	static QUrl metadataUrl(const QString& slug);
 	static QList<Pack> parseSearch(const QByteArray& bytes);
-	/* Fills @p pack's metadata from its modpack reply; false when the
-	 * reply names neither a zip nor a Solder server to install from. */
+	/* Fills @p pack's metadata from its reply; false when it names neither a
+	 * zip nor a Solder server. */
 	static bool parseMetadata(const QByteArray& bytes, Pack& pack);
-	/* The Solder modpack address SolderPackInstallTask takes. */
 	static QString solderPackUrl(const Pack& pack);
 	static QVariantList versionEntries(const Pack& pack);
 
@@ -213,7 +194,6 @@ class TechnicModpackModel : public QAbstractListModel
 	void startSearch();
 	Pack* packFor(const QString& slug);
 	void applyDetail(const Pack& pack);
-	QString resolveIconKey(const Pack& pack) const;
 
   private:
 	QList<Pack> m_packs;

@@ -33,13 +33,17 @@
 #include "minecraft/Component.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
+#include "minecraft/PerformanceSetupRules.h"
 #include "minecraft/VersionFilterData.h"
 #include "minecraft/mod/ModFolderModel.h"
 #include "minecraft/mod/ModHealth.h"
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "models/ContentFilterModel.h"
 #include "models/ContentUpdateController.h"
+#include "models/ModFolderWatch.h"
 #include "models/ModHealthModel.h"
+#include "modplatform/BundleCatalog.h"
+#include "modplatform/modrinth/ModrinthApi.h"
 #include "settings/Setting.h"
 
 namespace
@@ -54,20 +58,50 @@ namespace
 	const QString kDataPacksEnabled = QStringLiteral("GlobalDataPacksEnabled");
 	const QString kDataPacksPath = QStringLiteral("GlobalDataPacksPath");
 
-	/* How long the mods folder and the loader have to stay quiet before
-	 * the health check runs: the files are read one by one, each reporting
-	 * a change of its own. */
+	const QString kPerformanceBundle = QStringLiteral("performance");
+	const QString kPerformanceOn = QStringLiteral("KitePerformance");
+	const QString kPerformanceExcluded =
+		QStringLiteral("KitePerformanceExcluded");
+	const QString kPerformanceIncluded =
+		QStringLiteral("KitePerformanceIncluded");
+
+	/* The mods folder and loader must stay quiet this long before the health check
+	 * runs: files are read one by one, each reporting a change. */
 	constexpr int kHealthDelayMs = 150;
 
-	/* Mirrors InstanceDetails' startWatchingFresh(): a model somebody else
-	 * already watches only re-arms its watcher, so ask for a fresh read. */
-	void watch(const std::shared_ptr<ModFolderModel>& model)
+	// The Modrinth project of a file in @p folder, or "" if not recorded from Modrinth.
+	QString modrinthProjectOf(const ModFolderModel& folder,
+							  const QString& fileName)
 	{
-		const bool wasValid = model->isValid();
-		model->startWatching();
-		if (wasValid) {
-			model->update();
-		}
+		const ModMetadataIndex::Entry entry =
+			folder.metadataIndex()->get(fileName);
+		return entry.platform == ModrinthApi::get().id() ? entry.projectId
+														 : QString();
+	}
+
+	/* A performance mod the player deleted is not Kite Performance's to bring
+	 * back: the defaults among @p removed are left out from now on, and the
+	 * extras the player ticked are no longer kept. */
+	void forgetRemovedMods(MinecraftInstance& instance,
+						   const QStringList& removed)
+	{
+		BundleCatalog catalog;
+		catalog.loadCached();
+		const QStringList defaults = PerformanceSetup::defaultProjects(
+			catalog.mods({kPerformanceBundle},
+						 instance.getPackProfile()->primaryModLoader()));
+		auto settings = instance.settings();
+		const QStringList excluded = PerformanceSetup::parseProjects(
+			settings->get(kPerformanceExcluded).toString());
+		settings->set(kPerformanceExcluded,
+					  PerformanceSetup::joinProjects(
+						  PerformanceSetup::withRemoved(excluded, removed,
+														defaults)));
+		const QStringList included = PerformanceSetup::parseProjects(
+			settings->get(kPerformanceIncluded).toString());
+		settings->set(kPerformanceIncluded,
+					  PerformanceSetup::joinProjects(
+						  PerformanceSetup::withoutRemoved(included, removed)));
 	}
 } // namespace
 
@@ -89,7 +123,6 @@ InstanceContentController::InstanceContentController(
 	m_healthTimer->setInterval(kHealthDelayMs);
 	connect(m_healthTimer, &QTimer::timeout, this,
 			&InstanceContentController::runHealthCheck);
-	/* Files turn up, are read, switched and removed through these. */
 	auto mods = m_instance->loaderModList();
 	connect(mods.get(), &ModFolderModel::updateFinished, this,
 			&InstanceContentController::scheduleHealthCheck);
@@ -103,8 +136,6 @@ InstanceContentController::InstanceContentController(
 			&InstanceContentController::scheduleHealthCheck);
 
 	if (auto profile = m_instance->getPackProfile()) {
-		/* A component list is a model like any other: a loader appearing
-		 * or going shows up as one of these. */
 		auto* p = profile.get();
 		connect(p, &QAbstractItemModel::rowsInserted, this,
 				&InstanceContentController::refreshHasModLoader);
@@ -114,8 +145,6 @@ InstanceContentController::InstanceContentController(
 				&InstanceContentController::refreshHasModLoader);
 		connect(p, &QAbstractItemModel::dataChanged, this,
 				&InstanceContentController::refreshHasModLoader);
-		/* ...and the loader and Minecraft version the mods are checked
-		 * against change with them. */
 		connect(p, &QAbstractItemModel::rowsInserted, this,
 				&InstanceContentController::scheduleHealthCheck);
 		connect(p, &QAbstractItemModel::rowsRemoved, this,
@@ -128,9 +157,8 @@ InstanceContentController::InstanceContentController(
 	refreshHasModLoader();
 	scheduleHealthCheck();
 
-	/* The instance rebuilds its data pack model when either setting moves
-	 * (MinecraftInstance's own connections, made in its constructor and
-	 * so run before these), so follow along. */
+	/* The instance rebuilds its data pack model when either setting moves (its
+	 * constructor connects first), so follow along. */
 	auto settings = m_instance->settings();
 	for (const QString& id : {kDataPacksEnabled, kDataPacksPath}) {
 		if (auto setting = settings ? settings->getSetting(id) : nullptr) {
@@ -197,8 +225,7 @@ QString InstanceContentController::configsDir() const
 
 bool InstanceContentController::showsCoreMods() const
 {
-	/* Something already in the folder is shown whatever the instance is
-	 * now, so it can at least be seen and removed. */
+	/* Something already in the folder is shown so it can be seen and removed. */
 	const QDir dir(m_instance->coreModsDir());
 	if (dir.exists() &&
 		!dir.entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot)
@@ -206,8 +233,7 @@ bool InstanceContentController::showsCoreMods() const
 		return true;
 	}
 
-	/* CoreModFolderPage::shouldDisplay(): legacy Forge only, and an
-	 * unloaded Minecraft component is a "not yet" rather than a "yes". */
+	/* Legacy Forge only; an unloaded Minecraft component is a "not yet", not a "yes". */
 	auto profile = m_instance->getPackProfile();
 	if (!profile || !profile->getComponent(QStringLiteral("net.minecraftforge"))) {
 		return false;
@@ -271,10 +297,9 @@ QObject* InstanceContentController::model(const QString& kind)
 		return nullptr;
 	}
 
-	/* InstanceDetails already watches the four folders it exposes itself;
-	 * the other two are this controller's to watch. */
+	/* InstanceDetails watches the other four folders. */
 	if (kind == kCoreMods || kind == kDataPacks) {
-		watch(folder);
+		startWatchingFresh(folder.get());
 		m_watched.append(folder);
 	}
 
@@ -314,10 +339,9 @@ QString InstanceContentController::dir(const QString& kind) const
 bool InstanceContentController::kindAllowsChangesWhileRunning(
 	const QString& kind)
 {
-	/* ModFolderPage::allowsChangesWhileRunning(): the game holds mods open
-	 * while it runs; packs are picked up again on reload. Texture packs
-	 * are a pack, but their folder model refuses changes while running
-	 * (MinecraftInstance::texturePackList()), so they count as locked. */
+	/* The game holds mods open while it runs; packs are picked up on reload.
+	 * Texture packs' folder model refuses changes while running, so they count as
+	 * locked. */
 	return kind == kResourcePacks || kind == kShaderPacks || kind == kDataPacks;
 }
 
@@ -362,19 +386,31 @@ int InstanceContentController::remove(const QString& kind,
 		return 0;
 	}
 	const QModelIndexList indexes = proxy->sourceIndexesForKeys(keys);
+	/* Read before the files go: deleteMods() takes their records with them. */
+	const bool keepsPerformance =
+		kind == kMods && m_instance->settings()->get(kPerformanceOn).toBool();
 	QStringList paths;
+	QStringList projects;
 	for (const QModelIndex& index : indexes) {
-		paths.append(folder->at(size_t(index.row())).filename().absoluteFilePath());
+		const Mod& mod = folder->at(size_t(index.row()));
+		paths.append(mod.filename().absoluteFilePath());
+		projects.append(keepsPerformance
+							? modrinthProjectOf(*folder, mod.filename().fileName())
+							: QString());
 	}
 	if (indexes.isEmpty() || !folder->deleteMods(indexes)) {
 		return 0;
 	}
-	/* deleteMods() does not say which files actually went. */
 	int removed = 0;
-	for (const QString& path : paths) {
-		if (!QFileInfo::exists(path)) {
+	QStringList removedProjects;
+	for (int i = 0; i < paths.size(); ++i) {
+		if (!QFileInfo::exists(paths.at(i))) {
 			++removed;
+			removedProjects.append(projects.at(i));
 		}
+	}
+	if (keepsPerformance && removed > 0) {
+		forgetRemovedMods(*m_instance, removedProjects);
 	}
 	folder->update();
 	return removed;
@@ -382,9 +418,7 @@ int InstanceContentController::remove(const QString& kind,
 
 QString InstanceContentController::localPath(const QString& fileUrlOrPath)
 {
-	/* Same conversion ModFolderModel's own drop handling uses. */
-	const QUrl url(fileUrlOrPath);
-	return url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
+	return FS::pathFromUrlOrPath(fileUrlOrPath);
 }
 
 bool InstanceContentController::install(const QString& kind,
@@ -397,8 +431,7 @@ bool InstanceContentController::install(const QString& kind,
 	if (!folder) {
 		return false;
 	}
-	/* installMod() creates nothing for a folder that does not exist yet,
-	 * but the coremods folder is only made on demand. */
+	/* The coremods folder is only made on demand. */
 	FS::ensureFolderPathExists(folder->dir().absolutePath());
 	return folder->installMod(localPath(fileUrlOrPath));
 }
@@ -414,10 +447,8 @@ InstanceContentController::exportItemFor(const Mod& mod,
 	item.url = ContentFilterModel::homepageFor(mod, index);
 	item.authors = mod.authors();
 
-	/* What the archive says about itself first, since that is the version
-	 * a person recognises; then the number recorded at install time. The
-	 * version id is a platform's own handle and reads like nothing at
-	 * all, so it is the last resort. */
+	/* The archive's own version first (what a person recognises), then the one
+	 * recorded at install; the platform version id reads like nothing, so last. */
 	item.version = mod.version();
 	if (item.version.isEmpty() && index) {
 		const auto entry = index->get(ContentFilterModel::keyFor(mod));
@@ -490,9 +521,8 @@ QString InstanceContentController::exportText(const QString& kind,
 	if (!folder) {
 		return QString();
 	}
-	/* Nothing selected means all of it, searched or not - the rule
-	 * ModFolderPage::rowsForBulkAction() uses. A selected row the current
-	 * search hides still belongs in the list. */
+	/* Nothing selected means all of it, searched or not; a selected row the search
+	 * hides still belongs. */
 	const auto index = folder->metadataIndex();
 	QList<ContentListExport::Item> items;
 	if (keys.isEmpty()) {
@@ -505,7 +535,6 @@ QString InstanceContentController::exportText(const QString& kind,
 									   index.get()));
 		}
 	}
-	/* In the order the list shows them. */
 	std::sort(items.begin(), items.end(),
 			  [](const ContentListExport::Item& a,
 				 const ContentListExport::Item& b) {
@@ -576,7 +605,6 @@ void InstanceContentController::refreshHasModLoader()
 	}
 	m_hasModLoader = has;
 	emit hasModLoaderChanged();
-	/* Forge appearing or going can change whether coremods are shown. */
 	emit kindsChanged();
 }
 
@@ -619,7 +647,7 @@ void InstanceContentController::onGlobalDataPacksChanged()
 		}
 		auto folder = m_instance->dataPackList();
 		if (folder) {
-			watch(folder);
+			startWatchingFresh(folder.get());
 			m_watched.append(folder);
 		}
 		proxy->setFolderModel(folder);

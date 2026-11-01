@@ -19,43 +19,33 @@
 
 #pragma once
 
-#include <QCache>
 #include <QImage>
-#include <QMutex>
 #include <QQuickImageProvider>
 #include <QSize>
 #include <QString>
 
+#include "qml/ImageLruCache.h"
+
 /*
- * Serves the logos of installed mods and packs to QML. A delegate writes
+ * Serves the logos of installed mods and packs to QML:
  *
- *     Image { source: model.iconUrl }
+ *     Image { source: model.iconUrl }    // "image://modicon/<key>", or ""
  *
- * where iconUrl is ModFolderModel's role of that name:
- * "image://modicon/<key>", or "" for a file with no logo. The key is a
- * ModIconCache key (see minecraft/mod/ModIconCache.h) -- by the time a row
- * has one, LocalModParseTask has already pulled the logo out of the jar on
- * its worker thread and written it to the on-disk cache, so all this
- * provider ever does is read a small PNG back. Because the key changes
- * whenever the file does, a replaced jar is a new URL and QML re-fetches it
- * on its own; there is nothing to cache-bust.
+ * The key is a ModIconCache key; LocalModParseTask has already written the
+ * logo to the on-disk cache, so this only reads a small PNG back. The key
+ * changes whenever the file does, so there is nothing to cache-bust.
  *
- * Only keys are accepted, never paths: anything that is not a well-formed
- * key (ModIconCache::isValidKey()) comes back as a null image, so a URL can
- * not be made to read a file outside the cache directory. A key whose file
- * is gone (cache cleared) is a null image as well -- QML sees
- * Image.status == Image.Error and the delegate keeps its fallback glyph.
+ * Only keys are accepted, never paths: anything that is not a valid key comes
+ * back as a null image, so a URL cannot read outside the cache directory. A
+ * key whose file is gone is a null image too, and QML keeps its fallback glyph.
  *
- * THREADING. An Image-type provider with ForceAsynchronousImageLoading, so
- * requestImage() always runs on Qt Quick's image loader thread rather than
- * blocking the GUI thread on disk reads; it only touches QImage, which is
- * safe there. The in-memory cache (decoded logos at their cached size) is
- * behind a mutex because several loader requests can be in flight at once.
+ * Image provider with ForceAsynchronousImageLoading: requestImage() runs on
+ * Qt Quick's image loader thread and touches only QImage. The in-memory cache
+ * is behind a mutex because several requests can be in flight.
  *
- * SIZE. requestedSize is in device pixels. Logos larger than it are scaled
- * down smoothly; smaller ones -- most mod logos are 16-64 px pixel art --
- * are scaled up nearest-neighbour by the largest whole factor that fits,
- * so they stay crisp, and only the remaining fraction is smoothed. An
+ * requestedSize is in device pixels. Larger logos are scaled down smoothly;
+ * smaller ones (mostly 16-64 px pixel art) are scaled up nearest-neighbour by
+ * the largest whole factor that fits, and only the remainder is smoothed. An
  * empty requestedSize returns the logo at its cached size.
  */
 class ModIconProvider : public QQuickImageProvider
@@ -72,6 +62,5 @@ class ModIconProvider : public QQuickImageProvider
 	static constexpr int kMaxCachedIcons = 256;
 
 	QString m_cacheDir;
-	QMutex m_mutex;
-	QCache<QString, QImage> m_cache{kMaxCachedIcons};
+	ImageLruCache m_cache{kMaxCachedIcons};
 };

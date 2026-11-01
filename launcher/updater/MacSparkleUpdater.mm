@@ -23,64 +23,7 @@
 #include <Cocoa/Cocoa.h>
 #include <Sparkle/Sparkle.h>
 
-/*!
- * Reports Sparkle's `canCheckForUpdates` to whoever is interested.
- *
- * Sparkle publishes it as a KVO-observable property; Qt wants a signal. This
- * object is the whole of the translation: it observes, and calls a block.
- */
-@interface KiteUpdaterObserver : NSObject
-
-@property(nonatomic, readonly) SPUUpdater* updater;
-@property(nonatomic, copy) void (^onCanCheckChanged)(bool);
-
-- (instancetype)initWithUpdater:(SPUUpdater*)updater;
-- (void)stopObserving;
-
-@end
-
-@implementation KiteUpdaterObserver {
-	BOOL _observing;
-}
-
-- (instancetype)initWithUpdater:(SPUUpdater*)updater
-{
-	self = [super init];
-	if (self) {
-		_updater = updater;
-		[self addObserver:self
-			   forKeyPath:@"updater.canCheckForUpdates"
-				  options:NSKeyValueObservingOptionNew
-				  context:nil];
-		_observing = YES;
-	}
-	return self;
-}
-
-- (void)stopObserving
-{
-	if (_observing) {
-		[self removeObserver:self forKeyPath:@"updater.canCheckForUpdates"];
-		_observing = NO;
-	}
-}
-
-- (void)observeValueForKeyPath:(NSString*)keyPath
-					  ofObject:(id)object
-						change:(NSDictionary<NSKeyValueChangeKey, id>*)change
-					   context:(void*)context
-{
-	if (![keyPath isEqualToString:@"updater.canCheckForUpdates"])
-		return;
-	if (self.onCanCheckChanged)
-		self.onCanCheckChanged([change[NSKeyValueChangeNewKey] boolValue]);
-}
-
-@end
-
-/*!
- * Answers Sparkle's questions about which appcast channels we accept.
- */
+/*! Answers Sparkle's questions about which appcast channels we accept. */
 @interface KiteUpdaterDelegate : NSObject <SPUUpdaterDelegate>
 
 @property(nonatomic, copy) NSSet<NSString*>* allowedChannels;
@@ -100,44 +43,29 @@ class MacSparkleUpdater::Private
 {
   public:
 	SPUStandardUpdaterController* controller = nil;
-	KiteUpdaterObserver* observer = nil;
 	KiteUpdaterDelegate* delegate = nil;
 	NSAutoreleasePool* pool = nil;
 };
 
 MacSparkleUpdater::MacSparkleUpdater() : priv(new MacSparkleUpdater::Private())
 {
-	// Qt does not set Cocoa up for us in every configuration, and Sparkle
-	// needs a running AppKit and an autorelease pool.
+	// Qt does not set Cocoa up in every configuration; Sparkle needs a running AppKit and an
+	// autorelease pool.
 	NSApplicationLoad();
 	priv->pool = [[NSAutoreleasePool alloc] init];
 
 	priv->delegate = [[KiteUpdaterDelegate alloc] init];
 
-	// startingUpdater:true is what arms Sparkle's own schedule, so no timer
-	// of ours is involved on macOS.
+	// startingUpdater:true arms Sparkle's own schedule, so no timer of ours is involved.
 	priv->controller = [[SPUStandardUpdaterController alloc]
 		initWithStartingUpdater:true
 				updaterDelegate:priv->delegate
 			 userDriverDelegate:nil];
-
-	priv->observer = [[KiteUpdaterObserver alloc]
-		initWithUpdater:priv->controller.updater];
-
-	// Explicit capture: the block outlives this constructor and must not be
-	// mistaken for capturing anything else.
-	MacSparkleUpdater* self_ = this;
-	priv->observer.onCanCheckChanged = ^(bool canCheck) {
-	  emit self_->canCheckForUpdatesChanged(canCheck);
-	};
 }
 
 MacSparkleUpdater::~MacSparkleUpdater()
 {
-	[priv->observer stopObserving];
-
 	[priv->controller release];
-	[priv->observer release];
 	[priv->delegate release];
 	[priv->pool release];
 
@@ -146,8 +74,8 @@ MacSparkleUpdater::~MacSparkleUpdater()
 
 void MacSparkleUpdater::checkForUpdates()
 {
-	// Sparkle's own interactive path: it shows the progress and the "you are
-	// up to date" alert itself, which is why this class has no dialogs.
+	// Sparkle's own interactive path shows the progress and "up to date" alert itself, so this
+	// class has no dialogs.
 	[priv->controller checkForUpdates:nil];
 }
 

@@ -65,10 +65,8 @@ namespace MMCZip
 	{
 		if (m_future.isRunning()) {
 			m_cancelled.store(true);
-			/* No emitAborted() here: the worker is between files and has
-			 * to be allowed to finish the one it is on and close the
-			 * archive. finish() reports the abort when it really is
-			 * one. */
+			/* No emitAborted(): the worker finishes the file it is on and closes the
+			 * archive; finish() reports the abort. */
 			return true;
 		}
 		return false;
@@ -102,9 +100,8 @@ namespace MMCZip
 		qint64 done = 0;
 		const qint64 total = m_files.length() + m_extraFiles.size();
 
-		/* The generated entries first, so that a reader handed a
-		 * truncated archive still finds the manifest that says what it
-		 * was meant to be. */
+		/* Generated entries first, so a truncated archive still has the
+		 * manifest. */
 		for (auto it = m_extraFiles.constBegin(); it != m_extraFiles.constEnd();
 			 ++it) {
 			if (m_cancelled.load())
@@ -131,9 +128,8 @@ namespace MMCZip
 			reportStatus(tr("Compressing: %1").arg(relative));
 
 			if (m_followSymlinks) {
-				/* An instance's mods folder is frequently a tree of
-				 * links into a shared download folder; storing the link
-				 * would export an archive full of dangling paths. */
+				/* A mods folder is often a tree of links into a shared folder; storing
+				 * a link would export dangling paths. */
 				if (file.isSymLink()) {
 					absolute = file.symLinkTarget();
 				} else {
@@ -160,8 +156,7 @@ namespace MMCZip
 
 	void ExportToZipTask::finish()
 	{
-		/* Nothing half-written is left behind for the user to find and
-		 * mistake for a finished export - in either failure case. */
+		/* Nothing half-written is left to be mistaken for a finished export. */
 		if (m_cancelled.load()) {
 			FS::deletePath(m_outputPath);
 			emitAborted();

@@ -5,46 +5,33 @@ import QtQuick
 import Kite.Theme
 
 /*
- * A side panel's inner edge, to be taken hold of: a few pixels wide, with
- * the horizontal resize cursor and a line that shows while the pointer is on
- * it or dragging. It sits at the panel's left edge or its right (`side`),
- * inside the panel. It only says where the pointer wants the edge to be
- * (`dragged`, in the coordinates of `space`); the panel (FriendsSidePanel on
- * the right of the window, SidebarNav on the left) decides what width that
- * makes and where it snaps. A double click asks for the other mode.
- *
- * A press that does not move is not a drag: a click on the edge, or the
- * first half of a double click, leaves the width alone.
+ * A side panel's inner edge, to be dragged: a few pixels wide, with the resize
+ * cursor and a line shown on hover or drag. It only reports where the pointer
+ * wants the edge (`dragged`, in `space` coordinates); the panel decides the
+ * width and where it snaps. A double click asks for the other mode. A press
+ * that does not move is not a drag.
  */
 MouseArea {
     id: root
 
-    // The item the pointer is measured in: the one the panel is laid out in,
-    // which does not move as the panel's width changes (the handle does).
+    // The item the pointer is measured in: the one the panel is laid out in, which does not move as
+    // the panel's width changes.
     property Item space: null
 
-    // Which edge of the panel this stands on: Qt.LeftEdge for a panel on the
-    // window's right, Qt.RightEdge for one on its left. It decides which side
-    // of the handle the line is drawn on, and what `dragged` reports.
+    // Qt.LeftEdge for a panel on the window's right, Qt.RightEdge for one on its left; decides
+    // where the line is drawn and what `dragged` reports.
     property int side: Qt.LeftEdge
 
-    // The few pixels that take hold; the line drawn in them is thinner.
     readonly property int grip: Theme.space.sm - Theme.space.xxs
-    // How far the pointer goes before a press becomes a drag.
     readonly property int slop: Theme.space.xs
 
-    // Where the pointer is on the handle, as a distance from the edge, when
-    // the press began: the edge follows the pointer, not jumps to it.
     property real _grabOffset: 0
     property real _pressedAt: 0
     property bool _dragging: false
 
     signal dragStarted()
-    // The panel's edge that this stands on (`side`) should be at @p edge, in
-    // `space`.
     signal dragged(real edge)
     signal dragFinished()
-    // Fold or unfold: the other mode.
     signal toggleRequested()
 
     width: root.grip
@@ -53,8 +40,6 @@ MouseArea {
     preventStealing: true
     Accessible.ignored: true
 
-    // The handle's outer side, which is the panel's edge: its left side for a
-    // panel's left edge, its right side for the right one.
     function _edgeAt(mouse) {
         return root._pointerIn(mouse) - root._grabOffset + (root.side === Qt.RightEdge ? root.width : 0)
     }
@@ -86,9 +71,8 @@ MouseArea {
     }
 
     onReleased: root._finish()
-    // The grab was taken away mid-drag (the window lost the focus, say) and
-    // there will be no release to end it: the drag ends where it got to, or
-    // the panel would go on following a pointer that is no longer dragging it.
+    // The grab was taken mid-drag (e.g. the window lost focus) and no release will follow: end the
+    // drag here.
     onCanceled: root._finish()
     onDoubleClicked: root.toggleRequested()
 

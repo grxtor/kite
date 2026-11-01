@@ -1,8 +1,5 @@
-# Kite standalone plugin build bootstrap.
-# When this plugin is built from Kite's main tree, the parent project
-# already provides Qt, Kite::SDK, output directories, and signing helpers.
-# When this directory is configured as its own repository, provide those
-# pieces here so the plugin can be built with only an installed Kite SDK.
+# Standalone build bootstrap: when this directory is its own project, provide what the Kite tree
+# normally gives a plugin (Qt, Kite::SDK, output directories, signing helpers).
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     cmake_minimum_required(VERSION 3.21)
     project(LinuxPerf LANGUAGES CXX)
@@ -33,7 +30,6 @@ endif()
 #
 # Vendor headers:
 #   vendor/gamemode_client.h  — from FeralInteractive/gamemode (BSD-3-Clause)
-#   vendor/mangohud_detect.h  — authored for this plugin (MIT)
 
 set(LINUXPERF_SOURCES
     LinuxPerfPlugin.cpp

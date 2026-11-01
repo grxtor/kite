@@ -32,6 +32,7 @@ namespace
 {
 	const QString kBuiltinKeySetting = QStringLiteral("kite");
 	const QString kPublicKey = QStringLiteral("public");
+	constexpr qint64 kMaxLogBytes = 50ll * 1024ll * 1024ll;
 } // namespace
 
 LogUploader::LogUploader(QObject* parent) : QObject(parent) {}
@@ -74,14 +75,25 @@ QString LogUploader::readLogFile(const QString& path, QString* error)
 		}
 		return QString();
 	}
+	if (file.size() > kMaxLogBytes) {
+		if (error) {
+			*error = tr("This log is too big to upload. Open the folder and "
+						"share the file by hand.");
+		}
+		return QString();
+	}
 	const QByteArray raw = file.readAll();
 	if (!path.endsWith(QStringLiteral(".gz"))) {
 		return QString::fromUtf8(raw);
 	}
 	QByteArray plain;
-	if (!GZip::unzip(raw, plain)) {
+	bool exceededCap = false;
+	if (!GZip::unzip(raw, plain, kMaxLogBytes, &exceededCap)) {
 		if (error) {
-			*error = tr("The log file could not be read.");
+			*error = exceededCap
+						 ? tr("This log is too big to upload. Open the folder "
+							  "and share the file by hand.")
+						 : tr("The log file could not be read.");
 		}
 		return QString();
 	}

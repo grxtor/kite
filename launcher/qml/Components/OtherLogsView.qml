@@ -8,17 +8,11 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * Log files on disk: pick one, read it, search it, copy it, upload it,
- * delete it. Used for an instance's other logs (logs/*.log*, crash reports)
- * on the Log tab and for the launcher's own logs in Settings -- both are an
- * OtherLogsModel, so both look and work the same.
- *
- * The toolbar is one row, like the live log's: file, find, then the
- * actions, with the rarer ones (wrap lines, reload, delete) behind ⋯.
- *
- * Reading goes through LogLines like the live log does, so Find and Wrap
- * work the same on both. Selecting text with the mouse does not (it is a
- * list of lines, not one text); "Copy" takes the whole file.
+ * Log files on disk: pick one, read, search, copy, upload, delete. Used for an
+ * instance's other logs (logs/*.log*, crash reports) and the launcher's own
+ * logs; both are an OtherLogsModel. Reading goes through LogLines like the
+ * live log, so Find and Wrap work the same; selecting text with the mouse
+ * does not.
  */
 Item {
     id: root
@@ -31,32 +25,26 @@ Item {
     // Picks the first (newest) file when nothing is picked yet.
     property bool selectFirst: false
 
-    // Anything added inside this view's tag goes at the start of its toolbar
-    // (the Log tab puts its log picker there, with `ownPicker` off so the
-    // file picker below is not shown twice).
+    // Items added inside this view's tag go at the start of the toolbar (the Log tab puts its log
+    // picker there with `ownPicker` off).
     default property alias leading: leadingRow.data
     property bool ownPicker: true
 
     signal openFolderRequested(string path)
 
-    // The file picker shrinks before the buttons beside it get squeezed out
-    // of a narrow column (the Settings page keeps it under 760 wide).
+    // The file picker shrinks before the buttons beside it get squeezed out of a narrow column.
     readonly property int comboWidth: 220
     readonly property int comboMinWidth: 120
-    // Below this width the Copy, Upload and Open folder buttons keep only
-    // their icons (their label becomes the tooltip), so Find keeps a field
-    // worth typing in: spelled out, they and the file picker take about
-    // 700 of the row. Settings' column is always narrower; the Log tab of
-    // a normal window is wider.
+    // Below this width Copy, Upload and Open folder keep only their icons, so Find keeps a field
+    // worth typing in.
     readonly property int compactBelow: 960
     readonly property bool compact: root.width < root.compactBelow
 
     readonly property bool hasFile: !!logs && logs.currentFile.length > 0
-    // Set by this view's own Upload button, so a second log view sharing the
-    // uploader does not also copy and announce the link.
-    property bool uploading: false
+    // Set by this view's own Upload button, so another log view sharing the uploader does not also
+    // copy and announce the link.
+    property alias uploading: linkToast.pending
 
-    // The file's text, one entry per line.
     readonly property var lines: {
         if (!logs || !logs.content)
             return []
@@ -64,29 +52,6 @@ Item {
         if (all.length > 0 && all[all.length - 1] === "")
             all.pop()
         return all
-    }
-
-    property var matches: []
-    property int current: -1
-
-    function recomputeMatches() {
-        var needle = findBar.text.toLowerCase()
-        var found = []
-        if (needle.length > 0) {
-            var all = root.lines
-            for (var i = 0; i < all.length; ++i) {
-                if (all[i].toLowerCase().indexOf(needle) >= 0)
-                    found.push(i)
-            }
-        }
-        root.matches = found
-        root.current = found.length > 0 ? 0 : -1
-    }
-
-    function step(delta) {
-        if (root.matches.length === 0)
-            return
-        root.current = (root.current + delta + root.matches.length) % root.matches.length
     }
 
     function pickFirst() {
@@ -97,38 +62,35 @@ Item {
     Component.onCompleted: pickFirst()
     onLogsChanged: pickFirst()
 
-    onLinesChanged: findDelay.restart()
+    onLinesChanged: finder.schedule()
 
-    Timer {
-        id: findDelay
-        interval: 150
-        onTriggered: root.recomputeMatches()
+    LogMatches {
+        id: finder
+        onSearch: {
+            var needle = findBar.text.toLowerCase()
+            var found = []
+            if (needle.length > 0) {
+                var all = root.lines
+                for (var i = 0; i < all.length; ++i) {
+                    if (all[i].toLowerCase().indexOf(needle) >= 0)
+                        found.push(i)
+                }
+            }
+            setMatches(found)
+        }
     }
 
     Connections {
         target: root.logs
         ignoreUnknownSignals: true
-        // The list of files was rebuilt (a file appeared or went away).
         function onModelReset() { root.pickFirst() }
     }
 
-    Connections {
-        target: root.uploader
-        ignoreUnknownSignals: true
-        function onUploaded(url) {
-            if (!root.uploading)
-                return
-            root.uploading = false
-            clipboard.copyText(url)
-            toast.show(qsTr("Link copied to your clipboard."), "success", qsTr("Open"),
-                       () => Qt.openUrlExternally(url))
-        }
-        function onFailed(message) {
-            if (!root.uploading)
-                return
-            root.uploading = false
-            toast.show(message, "danger")
-        }
+    UploadLinkToast {
+        id: linkToast
+        uploader: root.uploader
+        clipboardItem: clipboard
+        toastItem: toast
     }
 
     ColumnLayout {
@@ -152,10 +114,8 @@ Item {
                 Layout.minimumWidth: root.comboMinWidth
                 model: root.logs
                 textRole: "name"
-                // Keeps its selection in sync with logs.currentFile rather
-                // than owning the selection itself -- a deleted file, or the
-                // model refreshing after one appears, should not silently
-                // pick something else.
+                // Follows logs.currentFile instead of owning the selection: a deleted file or a
+                // model refresh must not silently pick something else.
                 currentIndex: {
                     if (!root.logs) return -1
                     for (var i = 0; i < count; i++) {
@@ -164,8 +124,6 @@ Item {
                     return -1
                 }
                 onActivated: (index) => root.logs.selectFile(textAt(index))
-                // Says what it is for before a file is picked, rather than
-                // sitting there empty.
                 displayText: currentIndex < 0 && count > 0 ? qsTr("Choose a log file") : currentText
             }
 
@@ -173,11 +131,11 @@ Item {
                 id: findBar
                 Layout.fillWidth: true
                 visible: root.hasFile
-                matchCount: root.matches.length
-                current: root.current
-                onTextChanged: findDelay.restart()
-                onNext: root.step(1)
-                onPrevious: root.step(-1)
+                matchCount: finder.matches.length
+                current: finder.current
+                onTextChanged: finder.schedule()
+                onNext: finder.step(1)
+                onPrevious: finder.step(-1)
             }
 
             Item {
@@ -185,38 +143,32 @@ Item {
                 visible: !root.hasFile
             }
 
-            Button {
+            CompactButton {
+                compact: root.compact
                 enabled: root.hasFile
                 text: qsTr("Copy")
                 icon.source: Icons.url("copy")
-                display: root.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-                ToolTip.visible: root.compact && hovered
-                ToolTip.text: text
                 onClicked: {
                     clipboard.copyText(root.logs.content)
                     toast.show(qsTr("Log copied."), "success")
                 }
             }
-            Button {
+            CompactButton {
+                compact: root.compact
                 visible: !!root.uploader
                 enabled: root.hasFile && !!root.uploader && !root.uploader.busy
                 text: root.uploading ? qsTr("Uploading…") : qsTr("Upload")
                 icon.source: Icons.url("arrow-up")
-                display: root.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-                ToolTip.visible: root.compact && hovered
-                ToolTip.text: text
                 onClicked: {
                     root.uploading = true
                     root.uploader.uploadFile(root.logs.path + "/" + root.logs.currentFile)
                 }
             }
-            Button {
+            CompactButton {
+                compact: root.compact
                 enabled: !!root.logs
                 text: qsTr("Open folder")
                 icon.source: Icons.url("folder")
-                display: root.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-                ToolTip.visible: root.compact && hovered
-                ToolTip.text: text
                 onClicked: root.openFolderRequested(root.logs.path)
             }
             IconButton {
@@ -265,13 +217,10 @@ Item {
             }
         }
 
-        Rectangle {
+        BoxSurface {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            radius: Theme.radius.lg
-            color: Theme.palette.surfaceSunken
-            border.width: 1
-            border.color: Theme.palette.border
+            sunken: true
 
             LogLines {
                 anchors.fill: parent
@@ -279,8 +228,8 @@ Item {
                 visible: root.hasFile
                 model: root.lines
                 wrap: findBar.wrap
-                matches: root.matches
-                current: root.current
+                matches: finder.matches
+                current: finder.current
             }
 
             EmptyState {
@@ -291,7 +240,7 @@ Item {
                 body: fileCombo.count > 0
                       ? qsTr("Pick a file above to view it.")
                       : qsTr("There are no log files here yet.")
-                MeshIcon { iconName: "terminal"; size: 40; color: Theme.palette.textTertiary }
+                MeshIcon { iconName: "terminal"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
             }
         }
     }

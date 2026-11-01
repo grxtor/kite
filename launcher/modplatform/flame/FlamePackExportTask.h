@@ -41,9 +41,8 @@ namespace Net
 	class JsonPost;
 }
 
-/* What the export dialog collected. Passed as one struct because these
- * are the dialog's fields, and a seven-argument constructor is a place
- * for two of them to be swapped without the compiler noticing. */
+/* What the export dialog collected, as one struct so fields cannot be
+ * swapped in a long constructor. */
 struct FlamePackExportOptions {
 	QString name;
 	QString version;
@@ -52,38 +51,17 @@ struct FlamePackExportOptions {
 	MinecraftInstance* instance = nullptr;
 	QString output;
 	MMCZip::FilterFileFunction filter;
-	/* MiB, or 0 for "do not state a requirement". */
+	/* MiB; 0 = no requirement stated. */
 	int recommendedRAM = 0;
 };
 
-/*
- * Writing an instance out as a CurseForge pack.
- *
- * The shape is the same as the Modrinth exporter's - a manifest plus an
- * `overrides/` folder, where anything the manifest can name is left out
- * of the archive and fetched on install - but the way a file gets named
- * is not, and that difference drives the whole task.
- *
- * Modrinth indexes files by digest, so a mod can be identified with the
- * SHA-1 we already have. CurseForge indexes them by FlameFingerprint and
- * by nothing else, and it answers questions about fingerprints only in
- * bulk, over POST. So this task hashes candidates on a worker thread,
- * asks about all of the unknown ones at once, and then has to ask a
- * second question - `/v1/mods` - because a fingerprint match names a
- * project by number and `modlist.html` has to print its title, its slug
- * and its authors.
- *
- * The second question is asked for every named file rather than only for
- * the ones the sidecars could not describe: this launcher's sidecars
- * record a project id and a slug but never an author list, so treating a
- * locally resolved file as fully known would produce a mod list where
- * some entries say who wrote them and others do not, decided by which
- * mods happened to be installed through the launcher.
- *
- * Only `mods/` and `resourcepacks/` are named. Those are the folders a
- * CurseForge pack carries as project references; everything else in an
- * instance travels in `overrides/`, which is always correct if larger.
- */
+/* Writes an instance out as a CurseForge pack: a manifest plus
+ * `overrides/`, with whatever the manifest can name left out. CurseForge
+ * only knows files by FlameFingerprint and answers in bulk over POST, so
+ * this hashes candidates on a worker thread, asks about the unknown ones
+ * at once, then asks `/v1/mods` for the title, slug and authors that
+ * `modlist.html` prints (sidecars hold no author list). Only `mods/` and
+ * `resourcepacks/` are named; everything else goes in `overrides/`. */
 class FlamePackExportTask : public Task
 {
 	Q_OBJECT
@@ -103,18 +81,14 @@ class FlamePackExportTask : public Task
 	void executeTask() override;
 
   private:
-	/* A file the manifest can name. `addonId` / `fileId` are what
-	 * CurseForge calls the project and the file; the rest is only for
-	 * the mod list. */
+	/* A file the manifest can name. `addonId` / `fileId` are CurseForge's
+	 * project and file ids; the rest is for the mod list. */
 	struct ResolvedFile {
 		int addonId = 0;
 		int fileId = 0;
-		/* Whether the file is switched on, which decides `required`. A
-		 * disabled mod in an optional-files export is offered rather
-		 * than imposed. */
+		/* Whether the file is switched on, which decides `required`. */
 		bool enabled = true;
-		/* Resource packs are named in the manifest like everything else
-		 * but are left out of the mod list, which is a list of mods. */
+		/* Resource packs are named in the manifest but left out of the mod list. */
 		bool isMod = true;
 
 		QString name;
@@ -122,7 +96,6 @@ class FlamePackExportTask : public Task
 		QString authors;
 	};
 
-	/* A file we have fingerprinted but cannot name yet. */
 	struct PendingFile {
 		QString path; /* relative to the game directory */
 		quint32 fingerprint = 0;
@@ -137,17 +110,15 @@ class FlamePackExportTask : public Task
 		QList<PendingFile> pending;
 	};
 
-	/* Runs on a worker thread: walks the game directory, fingerprints
-	 * the candidates and reads their sidecars. */
+	/* Runs on a worker thread: walks the game directory, fingerprints the
+	 * candidates and reads their sidecars. */
 	ScanResult scanFiles() const;
 	void onScanFinished();
 
-	/* The bulk fingerprint question. Skipped when the sidecars already
-	 * accounted for everything. */
+	/* The bulk fingerprint question; skipped when sidecars covered everything. */
 	void matchFingerprints();
 	void onFingerprintsMatched();
 
-	/* Titles, slugs and authors for everything that ended up named. */
 	void lookUpProjects();
 	void onProjectsLookedUp();
 
@@ -155,14 +126,8 @@ class FlamePackExportTask : public Task
 	QByteArray generateManifest() const;
 	QByteArray generateModList() const;
 
-	/* Neither question is worth failing an export over, so a failure
-	 * carries on to the next step instead of stopping.
-	 *
-	 * A fingerprint service that is down means files ship inside the
-	 * pack rather than being referenced by it; a missing project title
-	 * means a mod list entry falls back to what the sidecar knew. Both
-	 * produce a worse pack, and both are better than no pack. Two
-	 * handlers because they resume in different places. */
+	/* Neither question is worth failing an export over: a failure carries on
+	 * (files ship in the pack, or a mod list entry uses the sidecar). */
 	void onFingerprintMatchFailed(const QString& reason);
 	void onProjectLookupFailed(const QString& reason);
 
@@ -179,8 +144,7 @@ class FlamePackExportTask : public Task
 	QFuture<ScanResult> m_scanFuture;
 	QFutureWatcher<ScanResult> m_scanWatcher;
 
-	/* Latched by abort(). Read by the scan between files, and by every
-	 * handler that might otherwise report a second verdict after the
-	 * aborted one. */
+	/* Latched by abort(); read by the scan between files and by handlers
+	 * that could report a second verdict. */
 	std::atomic<bool> m_aborted{false};
 };

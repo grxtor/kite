@@ -2,28 +2,18 @@
  * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: MS-PL
  *
- *  DiscordRPC  —  Kite MMCO plugin
+ *  DiscordRPC: Kite MMCO plugin
  *
- *  Publishes a Discord Rich Presence activity reflecting what the user
- *  is doing in Kite:
+ *  Publishes a Discord Rich Presence activity: "Browsing instances" in the launcher, "Playing <Instance>"
+ *  while a game runs; cleared on instance exit and app shutdown. Talks to the local IPC socket through
+ *  the vendored discord_ipc client (no outbound network traffic) and retries silently if Discord is not
+ *  running.
  *
- *    In launcher                 → "Browsing instances"
- *    Instance launching          → "Playing <Instance>"
- *    Activity is cleared on instance exit / app shutdown.
- *
- *  Communication uses the local IPC socket through the vendored
- *  discord_ipc client (vendor/discord_ipc/). No outbound network
- *  traffic; if Discord is not running, the plugin retries silently.
- *
- *  The Discord application ID is hard-coded — change DISCORD_APP_ID
- *  if you fork this plugin for your own community.
- *
- *  Settings (all booleans / strings, stored under the plugin's
- *  namespace):
- *    enabled            — master switch                (default 1)
- *    show_instance_name — include the instance name    (default 1)
- *    show_mc_version    — include the MC version       (default 1)
- *    custom_details     — override the "details" line  (default "")
+ *  Settings (stored under the plugin's namespace):
+ *    enabled             master switch                 (default 1)
+ *    show_instance_name  include the instance name     (default 1)
+ *    show_mc_version     include the MC version        (default 1)
+ *    custom_details      override the "details" line   (default "")
  */
 
 #include "plugin/sdk/mmco_cxx_sdk.hpp"
@@ -39,9 +29,9 @@ MMCO_DEFINE_MODULE("DiscordRPC", "1.0.0", "Project Tick",
 				   "Kite instance in your Discord status",
 				   "MS-PL");
 
-/* TODO(fork): our own application from the Discord Developer Portal.
- * Empty keeps the plugin idle. */
-static constexpr const char* DISCORD_APP_ID = "";
+/* Kite's application in the Discord Developer Portal. Its name is the
+ * "Playing …" line; the "kite" art asset is uploaded there. */
+static constexpr const char* DISCORD_APP_ID = "1566189846161260634";
 static constexpr const char* LARGE_IMAGE_KEY = "kite";
 
 /* ── module state ─────────────────────────────────────────────────── */
@@ -53,14 +43,6 @@ static qint64 g_idleEpoch = 0; /* unix sec;          (launcher session start) */
 static QString g_activeInstance;
 static QString g_activeMcVersion;
 static QString g_activeInstanceId; /* stable id used to disconnect later  */
-
-/*
- * Running-state callback registrations are now owned by PluginManager
- * via the S23 instance_running_register API.  PluginManager severs
- * every registration automatically on mmco_unload() so the plugin's
- * callback can never fire into freed memory — no per-plugin guard
- * QObject is required for this side any more.
- */
 
 /* ── settings ─────────────────────────────────────────────────────── */
 
@@ -97,9 +79,8 @@ static void publish_idle_presence()
 {
 	if (!g_ipc)
 		return;
-	/* Set the launcher-session timestamp exactly once so Discord's
-	 * "elapsed" counter doesn't reset every time we bounce back to
-	 * idle after a game ends. */
+	/* Set the launcher-session timestamp once so Discord's elapsed counter does not reset each time
+	 * we return to idle. */
 	if (g_idleEpoch == 0)
 		g_idleEpoch = QDateTime::currentSecsSinceEpoch();
 	DiscordActivity a;
@@ -150,33 +131,14 @@ static int on_app_initialized(void* /*mh*/, uint32_t /*hook_id*/,
 	return 0;
 }
 
-/*
- * NOTE ON MMCO HOOK SEMANTICS (ABI 2)
- *
- *   MMCO_HOOK_INSTANCE_PRE_LAUNCH   — fires *before* LaunchTask::start(),
- *                                     i.e. just before the game spawns.
- *
- *   MMCO_HOOK_INSTANCE_POST_LAUNCH  — fires from LaunchController::onSucceeded
- *                                     which is wired to LaunchTask::succeeded,
- *                                     which is emitted by LaunchTask::
- *                                     emitSucceeded() *after* the JVM exits
- *                                     and m_instance->setRunning(false) has
- *                                     been called. In other words:
- *                                       POST_LAUNCH == GAME EXITED.
- *                                     The name is unfortunate; do not be
- *                                     fooled by it.
- *
- * So our presence flow is:
- *
- *   PRE_LAUNCH  → "Playing X (MC Y.Z)" + connect runningStatusChanged
- *   POST_LAUNCH → "In launcher / Browsing instances"   ← back to idle
- *   running=true/false signal is a defensive fallback for both edges.
- */
+/* Hook semantics (ABI 2): INSTANCE_PRE_LAUNCH fires just before the game spawns.
+ * INSTANCE_POST_LAUNCH fires after the JVM exited (LaunchTask::succeeded), so despite its name it
+ * means the game EXITED. Flow: PRE_LAUNCH shows "Playing X (MC Y.Z)" and registers the
+ * running-state callback; POST_LAUNCH returns to "In launcher"; the running true/false callback is
+ * a fallback for both edges. */
 
-/* C-ABI callback installed via instance_running_register.  Mirrors the
- * old QObject::connect(&BaseInstance::runningStatusChanged) handler:
- * if the running edge fires for the instance we currently track in
- * Discord, refresh or clear the presence accordingly. */
+/* Delivered through instance_running_register: if the running edge is for the instance tracked in
+ * Discord, refresh or clear the presence. */
 static void on_instance_running(void* /*ud*/, const char* instance_id,
 								int running)
 {
@@ -184,9 +146,8 @@ static void on_instance_running(void* /*ud*/, const char* instance_id,
 		return;
 	const QString id = QString::fromUtf8(instance_id);
 	if (running) {
-		/* Game actually started — refresh the playing presence in
-		 * case the MC version wasn't known yet at PRE_LAUNCH time
-		 * (it might have been late-resolved by the launcher). */
+		/* Game started: refresh the playing presence in case the MC version was not resolved yet at
+		 * PRE_LAUNCH. */
 		if (id == g_activeInstanceId) {
 			if (g_ctx) {
 				const char* mc = g_ctx->instance_get_mc_version(
@@ -197,8 +158,7 @@ static void on_instance_running(void* /*ud*/, const char* instance_id,
 			publish_playing_presence();
 		}
 	} else {
-		/* Game exited — fall back to idle, but only if it was *this*
-		 * instance we were tracking. */
+		/* Game exited: go idle, but only if it was this instance we were tracking. */
 		if (id == g_activeInstanceId) {
 			g_activeInstance.clear();
 			g_activeMcVersion.clear();
@@ -209,20 +169,14 @@ static void on_instance_running(void* /*ud*/, const char* instance_id,
 	}
 }
 
-/* Replaces the old hook_instance_running_signal() / direct
- * APPLICATION->instances() + BaseInstance signal connection.  Asks
- * PluginManager (S23) to deliver runningStatusChanged transitions for
- * the named instance to on_instance_running.  Re-registration replaces
- * any prior callback for the same id, matching the old QObject::
- * disconnect() before connect() dedupe behaviour. */
+/* Asks PluginManager (S23) to deliver runningStatusChanged transitions for the instance to
+ * on_instance_running; re-registering replaces the previous callback. */
 static void hook_instance_running_signal(const QString& instanceId)
 {
 	if (!g_ctx)
 		return;
 
-	/* Capture the MC version from the C-ABI — the value is the same
-	 * one MinecraftInstance::getPackProfile()->getComponentVersion(
-	 * "net.minecraft") used to return. */
+	/* Capture the MC version (the net.minecraft component version). */
 	const char* mc = g_ctx->instance_get_mc_version(
 		g_ctx->module_handle, instanceId.toUtf8().constData());
 	if (mc && *mc)
@@ -233,10 +187,7 @@ static void hook_instance_running_signal(const QString& instanceId)
 									 &on_instance_running, nullptr);
 }
 
-/*
- * PRE_LAUNCH  ==  game is about to start.
- * This is where we *start* showing "Playing X" in Discord.
- */
+/* PRE_LAUNCH: the game is about to start; begin showing "Playing X". */
 static int on_instance_pre_launch(void* /*mh*/, uint32_t /*hook_id*/,
 								  void* payload, void* /*ud*/)
 {
@@ -261,14 +212,8 @@ static int on_instance_pre_launch(void* /*mh*/, uint32_t /*hook_id*/,
 	return 0;
 }
 
-/*
- * POST_LAUNCH  ==  game has exited (see comment above).
- * Reset the presence to the idle "In launcher" line. The
- * runningStatusChanged(false) handler installed in PRE_LAUNCH does
- * essentially the same thing, but POST_LAUNCH gives us a guaranteed
- * deterministic moment to clear state without waiting for Qt's
- * signal queue.
- */
+/* POST_LAUNCH: the game has exited. Reset to the idle line; the running=false callback does much
+ * the same, but this is a deterministic moment that does not wait for Qt's signal queue. */
 static int on_instance_post_launch(void* /*mh*/, uint32_t /*hook_id*/,
 								   void* payload, void* /*ud*/)
 {
@@ -276,9 +221,8 @@ static int on_instance_post_launch(void* /*mh*/, uint32_t /*hook_id*/,
 	const QString exitedId = (info && info->instance_id)
 								 ? QString::fromUtf8(info->instance_id)
 								 : QString();
-	/* If a *different* instance was launched in the meantime (e.g. the
-	 * user launched B while A was still shutting down), don't clobber
-	 * B's presence. */
+	/* A different instance launched in the meantime (B while A was shutting down) keeps its
+	 * presence. */
 	if (!exitedId.isEmpty() && exitedId != g_activeInstanceId)
 		return 0;
 
@@ -327,8 +271,8 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 	g_ipc = new DiscordIpc();
 	g_ipc->setClientId(QString::fromLatin1(DISCORD_APP_ID));
 
-	/* Track the previous state so we only log meaningful transitions
-	 * (Ready→Disconnected) rather than every retry-cycle bounce. */
+	/* Track the previous state so only meaningful transitions (Ready to Disconnected) are logged,
+	 * not retry bounces. */
 	static DiscordIpc::State s_lastState = DiscordIpc::State::Disconnected;
 	QObject::connect(g_ipc.data(), &DiscordIpc::stateChanged, g_ipc.data(),
 					 [](DiscordIpc::State s) {
@@ -342,9 +286,8 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 								 publish_idle_presence();
 						 } else if (s == DiscordIpc::State::Disconnected &&
 									s_lastState == DiscordIpc::State::Ready) {
-							 /* Only log the moment we *lose* an established
-							  * connection, not the silent retry-loop bounces
-							  * while Discord is offline. */
+							 /* Log only the moment an established connection is lost, not the
+							  * retry-loop bounces while Discord is offline. */
 							 MMCO_DBG(g_ctx,
 									  "DiscordRPC: disconnected; will retry.");
 						 }
@@ -384,10 +327,8 @@ MMCO_EXPORT void mmco_unload()
 		g_ipc->deleteLater();
 		g_ipc.clear();
 	}
-	/* The S23 instance_running_register callbacks are owned by
-	 * PluginManager — it severs every registration for this module
-	 * automatically during the unload sweep, so there is nothing for
-	 * us to do here. */
+	/* instance_running_register callbacks are severed by PluginManager's unload sweep; nothing to
+	 * do here. */
 	g_activeInstance.clear();
 	g_activeMcVersion.clear();
 	g_activeInstanceId.clear();

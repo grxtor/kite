@@ -1,0 +1,87 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+//
+// Minecraft's clouds: flat slabs on a grid, a white top face over a lavender
+// underside, drifting slowly. Purely decorative.
+
+import { CLOUD_SHAPES, type CloudRow, type CloudSpot } from '../lib/clouds';
+
+/** How far the underside shows below each row, in cells. */
+const UNDERSIDE = 1;
+
+interface Props {
+  spots: readonly CloudSpot[];
+}
+
+const { spots } = Astro.props;
+
+function size(rows: readonly CloudRow[]): { w: number; h: number } {
+  return {
+    w: Math.max(...rows.map(([x, , w]) => x + w)),
+    h: Math.max(...rows.map(([, y, , h]) => y + h)) + UNDERSIDE,
+  };
+}
+---
+
+<div class="clouds" aria-hidden="true">
+  {
+    spots.map((spot) => {
+      const rows = CLOUD_SHAPES[spot.shape];
+      const { w, h } = size(rows);
+      return (
+        <svg
+          class:list={['cloud', spot.wideOnly && 'wide-only']}
+          viewBox={`0 0 ${w} ${h}`}
+          style={`left: ${spot.left}; top: ${spot.top}; width: ${spot.width}; opacity: ${spot.opacity}; --drift: ${spot.drift}s;`}
+        >
+          <g class="under">
+            {rows.map(([x, y, rw, rh]) => (
+              <rect x={x} y={y + UNDERSIDE} width={rw} height={rh} />
+            ))}
+          </g>
+          <g class="top">
+            {rows.map(([x, y, rw, rh]) => (
+              <rect x={x} y={y} width={rw} height={rh} />
+            ))}
+          </g>
+        </svg>
+      );
+    })
+  }
+</div>
+
+<style>
+  .clouds {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .cloud {
+    position: absolute;
+    height: auto;
+    shape-rendering: crispEdges;
+  }
+  .under {
+    fill: var(--cloud-under);
+  }
+  .top {
+    fill: var(--cloud-top);
+  }
+  @media (max-width: 719px) {
+    .wide-only {
+      display: none;
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .cloud {
+      animation: drift var(--drift) ease-in-out infinite alternate;
+    }
+  }
+  @keyframes drift {
+    to {
+      translate: -6vw 0;
+    }
+  }
+</style>

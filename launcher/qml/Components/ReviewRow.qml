@@ -8,21 +8,18 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One line of a "here is what will be downloaded" list -- InstallReviewDialog
- * (a project and what it needs) and UpdateReviewDialog (updates found):
- * a checkbox, what it is, one line about it, small tags, and an optional
- * link at its end. A row that cannot be left out (`checkable: false`, the
- * project being installed) shows a download mark where the checkbox goes,
- * so the columns stay lined up.
+ * One line of a "here is what will be downloaded" list (InstallReviewDialog,
+ * UpdateReviewDialog): a checkbox, what it is, one line about it, small tags and
+ * an optional link. A row that cannot be left out (`checkable: false`) shows a
+ * download mark where the checkbox goes, so the columns stay lined up.
  */
-Rectangle {
+BoxSurface {
     id: root
 
     property bool checkable: true
     property bool checked: false
     property string title: ""
     property string subtitle: ""
-    // The subtitle is a caution ("Another version is already installed").
     property bool subtitleWarning: false
     property var tags: []
     property string linkText: ""
@@ -30,10 +27,8 @@ Rectangle {
     signal toggled(bool checked)
 
     implicitHeight: Theme.control.heightLg + Theme.space.sm
+    sunken: true
     radius: Theme.radius.sm
-    color: Theme.palette.surfaceSunken
-    border.width: 1
-    border.color: Theme.palette.border
 
     RowLayout {
         anchors.fill: parent
@@ -67,23 +62,19 @@ Rectangle {
             Layout.fillWidth: true
             Layout.minimumWidth: 0
             spacing: 1
-            Text {
+            Copy {
                 width: parent.width
                 text: root.title
                 elide: Text.ElideRight
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
                 font.weight: Font.Medium
             }
-            Text {
+            Copy {
                 width: parent.width
                 visible: text.length > 0
                 text: root.subtitle
+                role: "caption"
+                tone: root.subtitleWarning ? "warning" : "tertiary"
                 elide: Text.ElideRight
-                color: root.subtitleWarning ? Theme.palette.warning : Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
             }
         }
 

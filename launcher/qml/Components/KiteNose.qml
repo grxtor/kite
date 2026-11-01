@@ -5,16 +5,13 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The kite's nose: a small accent triangle filling the cut corner of a
- * KiteShape -- a square turned 45 degrees and clipped to the corner. The
- * host places it at the shape's top-right corner (x: shape.width - leg, y: 0).
- * One file, so the nav selection (NavSelectionIndicator) and a selected
- * instance tile (InstanceTile) light the very same mark.
+ * The kite's nose: a small accent triangle filling the cut corner of a KiteShape,
+ * placed by the host at the shape's top-right (x: shape.width - leg, y: 0). One
+ * file, so the nav selection and a selected instance tile light the same mark.
  */
 Item {
     id: nose
 
-    // Length of each leg of the triangle.
     property int leg: 10
 
     width: leg

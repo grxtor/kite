@@ -31,18 +31,11 @@ class IconList;
 class InstanceList;
 
 /*
- * The library's housekeeping, for the QML pages: what the widget library
- * did through MainWindow and InstanceView, over the same InstanceList.
- *
- *  - Groups: rename, delete (its instances become ungrouped), fold, and
- *    move an instance into one (a drag onto a group's header).
- *  - Undo the last delete, when it went to the trash.
- *  - Duplicate with the copy dialog's choices: worlds, play time, icon.
- *  - An instance's folders, for the "Open … folder" menu entries.
- *
- * Folded groups are kept where the widget library keeps them, in the
- * group file (instgroups.json), so both UIs agree. That file has no entry
- * for "no group", so folding the ungrouped section lasts for the session.
+ * The library's housekeeping for the QML pages, over the same InstanceList:
+ * group rename/delete (its instances become ungrouped)/fold/move, undo of the
+ * last delete when it went to the trash, duplicate (worlds, play time, icon)
+ * and an instance's folders. Folded groups live in instgroups.json; that file has no entry for "no group", so folding the
+ * ungrouped section lasts for the session.
  */
 class LibraryController : public QObject
 {
@@ -50,13 +43,10 @@ class LibraryController : public QObject
 	/// Names of the folded groups; "" is the ungrouped section.
 	Q_PROPERTY(QStringList collapsedGroups READ collapsedGroups NOTIFY
 				   collapsedGroupsChanged)
-	/// Whether undoDelete() has something to put back, and what it is
-	/// called.
 	Q_PROPERTY(bool canUndoDelete READ canUndoDelete NOTIFY trashChanged)
 	Q_PROPERTY(QString lastDeletedName READ lastDeletedName NOTIFY trashChanged)
 	/// IconList, for the duplicate dialog's icon picker. Null without one.
 	Q_PROPERTY(QObject* iconsModel READ iconsModel CONSTANT)
-	/// Where custom icons live, for the picker's "Open folder".
 	Q_PROPERTY(QString iconsDir READ iconsDir CONSTANT)
 
   public:
@@ -74,31 +64,24 @@ class LibraryController : public QObject
 	/// Renaming onto an existing group merges the two; see
 	/// InstanceList::renameGroup(). Surrounding spaces are dropped.
 	Q_INVOKABLE void renameGroup(const QString& from, const QString& to);
-	/// The group's instances stay, ungrouped.
 	Q_INVOKABLE void deleteGroup(const QString& group);
 	/// "" moves it out of every group.
 	Q_INVOKABLE void moveToGroup(const QString& id, const QString& group);
 
-	/// Puts the last instance deleted to the trash back, in its group.
-	/// False when there was nothing to put back or it could not all be
-	/// restored (the instance may then still be in the trash).
+	/// False when there was nothing to put back or not all of it could be restored.
 	Q_INVOKABLE bool undoDelete();
 
-	/// {name, group, iconKey} of instance @p id, for an action that starts
-	/// from nothing but an id. Empty for an unknown id.
+	/// {name, group, iconKey}; empty for an unknown id.
 	Q_INVOKABLE QVariantMap describe(const QString& id) const;
 
-	/// The instance's folders: {instance, game, mods}. `mods` is empty for
-	/// an instance that is not Minecraft. Empty for an unknown id.
+	/// {instance, game, mods}; `mods` is empty for a non-Minecraft instance. Empty for an unknown id.
 	Q_INVOKABLE QVariantMap folders(const QString& id) const;
-	/// Opens @p path in the file manager, creating it first if needed (a
-	/// mods folder an instance has never used).
+	/// Creates the folder first if needed.
 	Q_INVOKABLE void openFolder(const QString& path) const;
 
-	/// Copies instance @p id as @p name into @p group: with its worlds
-	/// when @p copySaves, its play time when @p keepPlaytime, wearing
-	/// @p iconKey (empty: the original's). Returns a TaskWatcher, or null
-	/// for an unknown id or an empty name.
+	/// Copies instance @p id as @p name into @p group; @p copySaves keeps worlds,
+	/// @p keepPlaytime play time, @p iconKey the icon (empty: the original's).
+	/// TaskWatcher, or null for an unknown id or empty name.
 	Q_INVOKABLE QObject* duplicate(const QString& id, const QString& name,
 								   const QString& group, bool copySaves,
 								   bool keepPlaytime, const QString& iconKey);

@@ -8,19 +8,10 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One "Continue playing" row on the Home page, under the hero: a compact
- * 64px row with the instance's icon square (the library card's, smaller),
- * its name -- and
- * a "New" chip until it has been played -- one line of what it runs and
- * when it was last played, how long it has been played, Play and ⋯. Play is
- * a secondary one (QuietPlayButton): the play bar's is the page's one
- * primary button. Used through a wrapper against the shell's recentModel,
- * with the same named roles InstanceCard reads.
- *
- * Clicking the row opens the instance page; Play plays it (Stop while it
- * runs); ⋯ or a right-click asks the page for the instance menu. After a
- * crash the sub-line says "Crashed last time" in place of when -- a calm
- * reminder, not an alarm.
+ * One "Continue playing" row on Home: icon square, name with a plain "New" tag until first played, what it runs and
+ * when it was last played, play time, Play and ⋯. Used through a wrapper against recentModel, with the roles
+ * InstanceCard reads. A click is `tapped` (the host tells one, two and three apart: select, open, launch); Space selects
+ * and Return opens. After a crash the sub-line says "Crashed last time" in place of when.
  */
 Item {
     id: root
@@ -35,29 +26,24 @@ Item {
     required property string gameVersion
     required property string loader
     required property color iconTint
-    // Newest screenshot url (InstanceList's coverImage role), or "". Not
-    // shown in the row (HomePage puts the played-last one in its header);
-    // kept so the row takes the same roles as the library's card.
+    // The cover's url, or "". Not shown in the row; kept so the row takes the same roles as the library card.
     required property string coverImage
-    // A platform pack's own logo (InstanceList's packArt role), or "": shown
-    // across the icon square, as on the library card.
     property string packArt: ""
-    // Set by LaunchTask around the game process exit.
     required property bool hasCrashed
 
-    signal clicked()
+    property bool selected: false
+
+    signal tapped()
+    signal selectRequested()
+    signal openRequested()
     signal playRequested()
     signal stopRequested()
-    // @p anchor: the ⋯ button when that asked, so the menu opens under it;
-    // null for a right-click, which opens it at the pointer.
+    // @p anchor: the ⋯ button, or null for a right-click (the menu then opens at the pointer).
     signal menuRequested(Item anchor)
 
     readonly property bool hovered: hoverHandler.hovered
     readonly property bool showsPackArt: root.packArt.length > 0 && packLogo.status === Image.Ready
-    // Never launched: the row says so with a "New" chip.
     readonly property bool isNew: !(Number(root.lastLaunch) > 0)
-    // Compact, a step below the hero: a 64px row, a 40px icon square the
-    // icon all but fills, as the library card's does.
     readonly property int rowHeight: Theme.control.heightLg + Theme.space.lg
     readonly property int squareSize: Theme.control.height
     readonly property real iconShare: 0.84
@@ -67,49 +53,52 @@ Item {
     readonly property string playTimeText: SettingsStore.bool("ShowGameTime") && !root.isNew
                                            ? Format.playTime(root.totalTimePlayed) : ""
     readonly property string versionText: Format.versionLine(root.loader, root.gameVersion)
-    // Play time is the part that gives way on a narrow row.
     readonly property int playTimeMinWidth: 520
 
     implicitWidth: 640
     implicitHeight: root.rowHeight
 
     activeFocusOnTab: true
-    Keys.onReturnPressed: root.clicked()
-    Keys.onSpacePressed: root.isRunning ? root.stopRequested() : root.playRequested()
+    Keys.onReturnPressed: root.openRequested()
+    Keys.onSpacePressed: root.selectRequested()
     Keys.onMenuPressed: root.menuRequested(null)
 
     Accessible.role: Accessible.ListItem
     Accessible.name: root.name
     Accessible.description: root.versionText
+    Accessible.selectable: true
+    Accessible.selected: root.selected
 
     HoverHandler { id: hoverHandler }
 
-    Rectangle {
-        id: card
+    StateFill {
+        id: plate
         anchors.fill: parent
+        card: true
+        hovered: root.hovered
+        active: root.selected
         radius: Theme.radius.lg
-        color: root.hovered ? Theme.palette.surfaceHover : Theme.palette.surface
-
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        border.width: 1
+        border.color: root.hovered || root.selected ? Theme.neutral.borderHover : Theme.palette.border
+        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
         Shadow {
-            radius: card.radius
+            radius: plate.radius
             level: Theme.elevation.sm
             opacity: root.hovered ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
         }
 
-        // Declared before the content, so Play (a real control further
-        // down) still gets first refusal on a press inside its own bounds.
+        // Declared before the content so Play still gets first refusal on a press inside its bounds.
         TapHandler {
             acceptedButtons: Qt.LeftButton
             gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: { root.forceActiveFocus(); root.clicked() }
+            onTapped: root.tapped()
         }
         TapHandler {
             acceptedButtons: Qt.RightButton
             gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: { root.forceActiveFocus(); root.menuRequested(null) }
+            onTapped: root.menuRequested(null)
         }
 
         RowLayout {
@@ -122,8 +111,7 @@ Item {
                 Layout.preferredWidth: root.squareSize
                 Layout.preferredHeight: root.squareSize
                 radius: Theme.radius.md
-                // Rounds the logo's corners in the row's own colour.
-                matte: root.showsPackArt || root.iconFills ? card.color : "transparent"
+                matte: root.showsPackArt || root.iconFills ? plate.color : "transparent"
                 lifted: root.hovered
 
                 Image {
@@ -155,86 +143,62 @@ Item {
                 Layout.minimumWidth: 0
                 spacing: Theme.space.xxs
 
-                // The name, and "New" beside it until the first launch.
-                // Placed by hand: a layout sizing the name from its own
-                // width loops.
+                // Placed by hand: a layout sizing the name from its own width loops.
                 Item {
                     Layout.fillWidth: true
                     implicitHeight: Theme.type.title.lineHeightPx
 
-                    Text {
+                    Copy {
                         id: nameText
-                        width: Math.min(implicitWidth, parent.width - (newChip.visible ? newChip.width + Theme.space.sm : 0))
+                        width: Math.min(implicitWidth, parent.width - (newLabel.visible ? newLabel.width + Theme.space.sm : 0))
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.name
+                        role: "title"
                         elide: Text.ElideRight
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.heading
-                        font.pixelSize: Theme.type.title.pixelSize
-                        font.weight: Theme.type.title.weight
                     }
-                    // The accent as an outline and its text colour: no
-                    // tinted fill.
-                    Rectangle {
-                        id: newChip
+                    Copy {
+                        id: newLabel
                         visible: root.isNew
                         x: nameText.width + Theme.space.sm
                         anchors.verticalCenter: parent.verticalCenter
-                        width: Math.ceil(newLabel.implicitWidth) + Theme.space.sm * 2
-                        height: Math.ceil(Theme.type.caption.lineHeightPx) + Theme.space.xxs * 2
-                        radius: Theme.radius.indicator
-                        color: "transparent"
-                        border.width: 1
-                        border.color: Theme.palette.accent
-
-                        Text {
-                            id: newLabel
-                            anchors.centerIn: parent
-                            text: qsTr("New")
-                            color: Theme.palette.accentText
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
-                            font.weight: Font.DemiBold
-                        }
+                        text: qsTr("New")
+                        role: "caption"
+                        tone: "accent"
+                        font.weight: Font.DemiBold
                     }
                 }
 
-                // "Fabric 1.21.4 • 3 days ago", or the crash in place of
-                // when.
                 Row {
                     Layout.fillWidth: true
                     spacing: Theme.space.xs
 
-                    Text {
+                    Copy {
                         anchors.verticalCenter: parent.verticalCenter
                         width: Math.min(implicitWidth, parent.width)
                         text: root.hasCrashed ? root.versionText
                                               : [root.versionText, Format.lastPlayed(root.lastLaunch)]
                                                 .filter((part) => part.length > 0).join("  •  ")
+                        role: "label"
+                        tone: "secondary"
                         elide: Text.ElideRight
-                        color: Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
                     }
                     MeshIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: root.hasCrashed
                         iconName: "alert-triangle"
-                        size: Theme.icon.sm - 2
+                        size: Theme.icon.xs
                         color: Theme.palette.warning
                     }
-                    Text {
+                    Copy {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: root.hasCrashed
                         text: qsTr("Crashed last time")
-                        color: Theme.palette.warning
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
+                        role: "label"
+                        tone: "warning"
                     }
                 }
             }
 
-            // How long it has been played: a quiet fact before Play.
             Row {
                 visible: root.playTimeText.length > 0 && root.width >= root.playTimeMinWidth
                 spacing: Theme.space.xs
@@ -245,17 +209,15 @@ Item {
                     size: Theme.icon.sm
                     color: Theme.palette.textTertiary
                 }
-                Text {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.playTimeText
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "tertiary"
                     font.features: ({ "tnum": 1 })
                 }
             }
 
-            // Secondary: on Home the play bar's Play is the one primary.
             QuietPlayButton {
                 Layout.leftMargin: Theme.space.sm
                 running: root.isRunning
@@ -276,26 +238,5 @@ Item {
         }
     }
 
-    // The hairline, over everything so the logo's corner matte never
-    // paints across it.
-    Rectangle {
-        anchors.fill: card
-        radius: card.radius
-        color: "transparent"
-        border.width: 1
-        border.color: root.hovered ? Theme.neutral.borderHover : Theme.palette.border
-        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-    }
-
-    Rectangle {
-        // Keyboard focus ring, outset so it never competes with the
-        // row's own border -- the same idiom InstanceCard uses.
-        anchors.fill: card
-        anchors.margins: -Theme.space.xs
-        radius: card.radius + Theme.space.xs
-        color: "transparent"
-        border.width: Theme.focus.width
-        border.color: Theme.palette.focusRing
-        visible: root.activeFocus
-    }
+    FocusFrame { target: plate; visible: root.activeFocus }
 }

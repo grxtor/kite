@@ -23,33 +23,14 @@
 #include <QLocale>
 
 #include "core/LauncherContext.h"
+#include "models/RoleByName.h"
 #include "settings/SettingsObject.h"
 
 namespace
 {
-	/* First role in @p model's roleNames() named @p name, or @p fallback if
-	 * @p model is null or names no role that way. */
-	int roleByName(const QAbstractItemModel* model, const QByteArray& name,
-					int fallback)
-	{
-		if (!model) {
-			return fallback;
-		}
-		const auto roles = model->roleNames();
-		for (auto it = roles.constBegin(); it != roles.constEnd(); ++it) {
-			if (it.value() == name) {
-				return it.key();
-			}
-		}
-		return fallback;
-	}
-
-	/* Natural order that does not depend on QCollator::setNumericMode(),
-	 * which some backends silently ignore (Qt without ICU on Linux sorted
-	 * "Pack 10" before "Pack 2"). Runs of digits compare by value -- first
-	 * by length once leading zeros are dropped, then digit by digit, so any
-	 * length works -- and everything between them goes through @p collator.
-	 */
+	/* Natural order that does not rely on QCollator::setNumericMode(), which some
+	 * backends ignore (Qt without ICU sorted "Pack 10" before "Pack 2"). Digit runs
+	 * compare by value; everything between them goes through @p collator. */
 	int naturalCompare(const QCollator& collator, const QString& a,
 					   const QString& b)
 	{
@@ -101,12 +82,9 @@ InstanceFilterModel::InstanceFilterModel(QObject* parent)
 	// backends that honour it, so a tie between runs orders the same way.
 	m_naturalSort.setNumericMode(true);
 	m_naturalSort.setCaseSensitivity(Qt::CaseInsensitive);
-	// FIXME: same as the widget proxy -- use loaded translation as source of
-	// locale instead, hook this up to translation changes.
+	// FIXME: use loaded translation as source of locale instead, hook this up to translation changes.
 	m_naturalSort.setLocale(QLocale::system());
 
-	// rowCount() changes on all four of these; simplest to treat them all as
-	// "the filtered count might have moved" rather than track it by hand.
 	connect(this, &QAbstractItemModel::rowsInserted, this,
 			&InstanceFilterModel::countChanged);
 	connect(this, &QAbstractItemModel::rowsRemoved, this,
@@ -116,8 +94,6 @@ InstanceFilterModel::InstanceFilterModel(QObject* parent)
 	connect(this, &QAbstractItemModel::layoutChanged, this,
 			&InstanceFilterModel::countChanged);
 
-	// groups and firstId follow the same row changes, plus plain data
-	// changes: renaming or regrouping an instance moves neither row count.
 	connect(this, &QAbstractItemModel::rowsInserted, this,
 			&InstanceFilterModel::refreshDerived);
 	connect(this, &QAbstractItemModel::rowsRemoved, this,
@@ -126,8 +102,16 @@ InstanceFilterModel::InstanceFilterModel(QObject* parent)
 			&InstanceFilterModel::refreshDerived);
 	connect(this, &QAbstractItemModel::layoutChanged, this,
 			&InstanceFilterModel::refreshDerived);
+	/* Only the group and the id feed refreshDerived(); launch progress and the
+	 * like arrive here often. An empty role list means "everything". */
 	connect(this, &QAbstractItemModel::dataChanged, this,
-			&InstanceFilterModel::refreshDerived);
+			[this](const QModelIndex&, const QModelIndex&,
+				   const QList<int>& roles) {
+				if (roles.isEmpty() || roles.contains(m_groupRole) ||
+					roles.contains(m_idRole)) {
+					refreshDerived();
+				}
+			});
 }
 
 QString InstanceFilterModel::filterText() const
@@ -165,18 +149,12 @@ int InstanceFilterModel::count() const
 	return rowCount();
 }
 
-bool InstanceFilterModel::exactGroup() const
-{
-	return m_exactGroup;
-}
-
 void InstanceFilterModel::setExactGroup(bool exact)
 {
 	if (m_exactGroup == exact) {
 		return;
 	}
 	m_exactGroup = exact;
-	Q_EMIT exactGroupChanged();
 	invalidateFilter();
 }
 
@@ -195,19 +173,12 @@ void InstanceFilterModel::setInstanceId(const QString& id)
 	invalidateFilter();
 }
 
-bool InstanceFilterModel::recentFirst() const
-{
-	return m_recentFirst;
-}
-
 void InstanceFilterModel::setRecentFirst(bool recentFirst)
 {
 	if (m_recentFirst == recentFirst) {
 		return;
 	}
 	m_recentFirst = recentFirst;
-	Q_EMIT recentFirstChanged();
-	// Both the ordering and the "never launched" filter depend on it.
 	invalidate();
 }
 
@@ -262,10 +233,8 @@ void InstanceFilterModel::refreshDerived()
 
 void InstanceFilterModel::setSourceModel(QAbstractItemModel* sourceModel)
 {
-	/* Roles first: the base class filters every source row as soon as it
-	 * has the model, and a filter set before this call (recentFirst,
-	 * instanceId) would otherwise judge those rows with unresolved roles
-	 * and drop all of them. */
+	/* Roles first: a filter set before this call would judge rows with unresolved
+	 * roles and drop all of them. */
 	m_nameRole = roleByName(sourceModel, "name", Qt::DisplayRole);
 	m_groupRole = roleByName(sourceModel, "group", Qt::UserRole);
 	m_lastLaunchRole = roleByName(sourceModel, "lastLaunch", -1);
@@ -273,10 +242,8 @@ void InstanceFilterModel::setSourceModel(QAbstractItemModel* sourceModel)
 	m_totalTimePlayedRole = roleByName(sourceModel, "totalTimePlayed", -1);
 	QSortFilterProxyModel::setSourceModel(sourceModel);
 
-	/* A QSortFilterProxyModel does not sort until something asks it to, and a
-	 * caller that forgets sort(0) shows instances in discovery order. Asked
-	 * for here, after the roles above are resolved, so the very first
-	 * ordering already uses them rather than the defaults. */
+	/* A QSortFilterProxyModel does not sort until asked; done after the roles are
+	 * resolved so the first ordering uses them. */
 	sort(0);
 	refreshDerived();
 }
@@ -325,10 +292,7 @@ bool InstanceFilterModel::lessThan(const QModelIndex& left,
 	if (leftGroup == rightGroup) {
 		return subSortLessThan(left, right);
 	} else {
-		// FIXME: ported as-is from the widget proxy -- real group ordering
-		// happens in InstanceView::updateGeometries() on that side, not
-		// here. Carrying the same gap over to both UIs beats fixing it in
-		// only one of them.
+		// Groups sort by locale-aware name.
 		auto result = leftGroup.localeAwareCompare(rightGroup);
 		if (result == 0) {
 			return subSortLessThan(left, right);
@@ -352,9 +316,8 @@ bool InstanceFilterModel::subSortLessThan(const QModelIndex& left,
 		return left.data(m_lastLaunchRole).toLongLong() >
 			   right.data(m_lastLaunchRole).toLongLong();
 	}
-	// "Time played" is a QML-library-only addition to InstSortMode (the
-	// classic widget page only ever writes "Name"/"LastLaunch"), so it
-	// falls back to name sorting the same way an unresolved role does.
+	// "Time played" is the Library's third sort value; it
+	// falls back to name sorting like an unresolved role.
 	if (m_totalTimePlayedRole >= 0 && sortMode == "TotalTimePlayed") {
 		return left.data(m_totalTimePlayedRole).toLongLong() >
 			   right.data(m_totalTimePlayedRole).toLongLong();
