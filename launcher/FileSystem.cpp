@@ -20,6 +20,7 @@
 
 #include "FileSystem.h"
 
+#include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
 #include <QSaveFile>
@@ -338,11 +339,6 @@ namespace FS
 						const QString& path3, const QString& path4)
 	{
 		return PathCombine(PathCombine(path1, path2, path3), path4);
-	}
-
-	QString AbsolutePath(QString path)
-	{
-		return QFileInfo(path).absolutePath();
 	}
 
 	QString ResolveExecutable(QString path)
@@ -694,5 +690,29 @@ namespace FS
 		qWarning() << "Shortcuts are not supported on this platform.";
 		return QString();
 #endif
+	}
+
+	QString sha1Hex(const QString& path)
+	{
+		QFile file(path);
+		if (!file.open(QIODevice::ReadOnly)) {
+			return {};
+		}
+		QCryptographicHash hash(QCryptographicHash::Sha1);
+		if (!hash.addData(&file)) {
+			return {};
+		}
+		return QString::fromLatin1(hash.result().toHex());
+	}
+
+	QString pathFromUrlOrPath(const QString& urlOrPath)
+	{
+		const QUrl url(urlOrPath);
+		return url.isLocalFile() ? url.toLocalFile() : urlOrPath;
+	}
+
+	QString pathFromUrl(const QUrl& url)
+	{
+		return url.isLocalFile() ? url.toLocalFile() : url.toString();
 	}
 } // namespace FS

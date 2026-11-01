@@ -7,7 +7,8 @@
  *
  */
 
-#include "mmco_sdk.h"
+#include "mmco_cxx_sdk.hpp"
+#include <cstdio>
 #include <cstring>
 
 MMCO_DEFINE_MODULE(

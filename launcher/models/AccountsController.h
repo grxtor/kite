@@ -44,8 +44,6 @@ class AccountsController : public QObject
 	Q_OBJECT
 
 	Q_PROPERTY(QObject* accounts READ accounts CONSTANT)
-	Q_PROPERTY(bool hasDefault READ hasDefault NOTIFY defaultChanged)
-	Q_PROPERTY(QString defaultName READ defaultName NOTIFY defaultChanged)
 	/// accountId role of the default account (what rows compare against), or empty.
 	Q_PROPERTY(
 		QString defaultAccountId READ defaultAccountId NOTIFY defaultChanged)
@@ -60,8 +58,6 @@ class AccountsController : public QObject
 								QObject* parent = nullptr);
 
 	QObject* accounts() const;
-	bool hasDefault() const;
-	QString defaultName() const;
 	QString defaultAccountId() const;
 	int defaultSkinsRevision() const;
 

@@ -20,13 +20,9 @@
 
 #pragma once
 
-#include <launch/LaunchStep.h>
-#include <LoggedProcess.h>
-#include <minecraft/auth/AuthSession.h>
+#include "GameProcessStep.h"
 
-#include "MinecraftServerTarget.h"
-
-class DirectJavaLaunch : public LaunchStep
+class DirectJavaLaunch : public GameProcessStep
 {
 	Q_OBJECT
   public:
@@ -36,27 +32,7 @@ class DirectJavaLaunch : public LaunchStep
 	virtual void executeTask();
 	virtual bool abort();
 	virtual void proceed();
-	virtual bool canAbort() const
-	{
-		return true;
-	}
-	void setWorkingDirectory(const QString& wd);
-	void setAuthSession(AuthSessionPtr session)
-	{
-		m_session = session;
-	}
-
-	void setServerToJoin(MinecraftServerTargetPtr serverToJoin)
-	{
-		m_serverToJoin = std::move(serverToJoin);
-	}
 
   private slots:
 	void on_state(LoggedProcess::State state);
-
-  private:
-	LoggedProcess m_process;
-	QString m_command;
-	AuthSessionPtr m_session;
-	MinecraftServerTargetPtr m_serverToJoin;
 };

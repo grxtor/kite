@@ -147,6 +147,54 @@ class FileSystemTest : public QObject
 										  QStandardPaths::DesktopLocation));
 	}
 
+	void test_sha1Hex()
+	{
+		QTemporaryDir dir;
+		QVERIFY(dir.isValid());
+		const QString path = dir.filePath("abc.txt");
+		FS::write(path, "abc");
+		QCOMPARE(FS::sha1Hex(path),
+				 QStringLiteral("a9993e364706816aba3e25717850c26c9cd0d89d"));
+
+		FS::write(path, "");
+		QCOMPARE(FS::sha1Hex(path),
+				 QStringLiteral("da39a3ee5e6b4b0d3255bfef95601890afd80709"));
+	}
+
+	void test_sha1Hex_unreadable()
+	{
+		QTemporaryDir dir;
+		QVERIFY(dir.isValid());
+		QVERIFY(FS::sha1Hex(dir.filePath("missing.txt")).isEmpty());
+	}
+
+	void test_pathFromUrlOrPath_data()
+	{
+		QTest::addColumn<QString>("input");
+		QTest::addColumn<QString>("expected");
+
+		QTest::newRow("file url") << "file:///tmp/a%20b.zip" << "/tmp/a b.zip";
+		QTest::newRow("plain path") << "/tmp/a b.zip" << "/tmp/a b.zip";
+		QTest::newRow("remote url")
+			<< "https://example.com/a.zip" << "https://example.com/a.zip";
+		QTest::newRow("empty") << "" << "";
+	}
+
+	void test_pathFromUrlOrPath()
+	{
+		QFETCH(QString, input);
+		QFETCH(QString, expected);
+		QCOMPARE(FS::pathFromUrlOrPath(input), expected);
+	}
+
+	void test_pathFromUrl()
+	{
+		QCOMPARE(FS::pathFromUrl(QUrl("file:///tmp/a%20b.zip")),
+				 QStringLiteral("/tmp/a b.zip"));
+		QCOMPARE(FS::pathFromUrl(QUrl("https://example.com/a.zip")),
+				 QStringLiteral("https://example.com/a.zip"));
+	}
+
 // this is only valid on linux
 // FIXME: implement on windows, OSX, then test.
 #if defined(Q_OS_LINUX)

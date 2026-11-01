@@ -96,7 +96,6 @@ class Component : public QObject, public ProblemProvider
 	QString getID();
 	QString getName();
 	QString getVersion();
-	std::shared_ptr<Meta::Version> getMeta();
 	QDateTime getReleaseDateTime();
 
 	QString getFilename();

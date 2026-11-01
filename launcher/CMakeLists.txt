@@ -85,8 +85,6 @@ set(CORE_SOURCES
     models/FolderSettingsController.cpp
     models/UpdateSettingsController.h
     models/UpdateSettingsController.cpp
-    models/PlayTimeSummary.h
-    models/PlayTimeSummary.cpp
     models/ComponentTools.h
     models/ComponentTools.cpp
     models/CatPackList.h
@@ -108,8 +106,6 @@ set(CORE_SOURCES
     models/RichBody.cpp
     modplatform/BlockedMod.h
 
-    BaseInstaller.h
-    BaseInstaller.cpp
     BaseVersionList.h
     BaseVersionList.cpp
     InstanceList.h
@@ -182,6 +178,10 @@ set(CORE_SOURCES
 
 )
 
+add_unit_test(Json
+    SOURCES Json_test.cpp
+    LIBS Kite_logic
+    )
 add_unit_test(FileSystem
     SOURCES FileSystem_test.cpp
     LIBS Kite_logic
@@ -362,6 +362,7 @@ set(MINECRAFT_SOURCES
     minecraft/auth/MinecraftAccount.h
     minecraft/auth/Parsers.cpp
     minecraft/auth/Parsers.h
+    minecraft/auth/MinecraftServices.h
     minecraft/auth/flows/AuthFlow.cpp
     minecraft/auth/flows/AuthFlow.h
     minecraft/auth/flows/MSA.cpp
@@ -399,6 +400,8 @@ set(MINECRAFT_SOURCES
     minecraft/launch/CreateGameFolders.h
     minecraft/launch/ModMinecraftJar.cpp
     minecraft/launch/ModMinecraftJar.h
+    minecraft/launch/GameProcessStep.cpp
+    minecraft/launch/GameProcessStep.h
     minecraft/launch/DirectJavaLaunch.cpp
     minecraft/launch/DirectJavaLaunch.h
     minecraft/launch/ExtractNatives.cpp
@@ -805,6 +808,7 @@ set(MODRINTH_SOURCES
 
 set(CONTENT_DOWNLOAD_SOURCES
     modplatform/ContentApi.h
+    modplatform/ContentApis.h
     modplatform/ManagedPackVersions.h
     modplatform/ManagedPackVersions.cpp
     modplatform/PackContents.h
@@ -1130,10 +1134,6 @@ add_unit_test(FolderSettingsController
     )
 add_unit_test(UpdateSettingsController
     SOURCES models/UpdateSettingsController_test.cpp
-    LIBS Kite_core
-    )
-add_unit_test(PlayTimeSummary
-    SOURCES models/PlayTimeSummary_test.cpp
     LIBS Kite_core
     )
 add_unit_test(ComponentTools

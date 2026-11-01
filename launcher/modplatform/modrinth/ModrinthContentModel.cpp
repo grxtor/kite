@@ -55,9 +55,7 @@ namespace
 				project.slug.isEmpty() ? project.projectId : project.slug;
 
 			if (!project.slug.isEmpty()) {
-				project.websiteUrl =
-					QStringLiteral("https://modrinth.com/project/") +
-					project.slug;
+				project.websiteUrl = ModrinthApi::siteProjectUrl(project.slug);
 			}
 		} catch (const JSONValidationError& e) {
 			qWarning() << "Error loading Modrinth project:" << e.cause();
@@ -81,11 +79,9 @@ ModrinthContentModel::parseCategoriesResponse(const QByteArray& bytes) const
 {
 	QList<ModPlatform::Category> categories;
 
-	QJsonParseError parseError{};
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error parsing Modrinth category response:"
-				   << parseError.errorString();
+	const auto doc =
+		Json::tryParse(bytes, "Error parsing Modrinth category response:");
+	if (!doc) {
 		return categories;
 	}
 
@@ -93,7 +89,7 @@ ModrinthContentModel::parseCategoriesResponse(const QByteArray& bytes) const
 	const QString wanted =
 		ModPlatform::contentTypeToModrinthFacet(contentType());
 
-	const QJsonArray entries = doc.array();
+	const QJsonArray entries = doc->array();
 	for (const auto& entryRaw : entries) {
 		const auto obj = entryRaw.toObject();
 		if (Json::ensureString(obj, "project_type", "") != wanted) {
@@ -116,15 +112,13 @@ ModrinthContentModel::parseSearchResponse(const QByteArray& bytes,
 {
 	QList<ModPlatform::IndexedProject> results;
 
-	QJsonParseError parseError{};
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error parsing Modrinth search response:"
-				   << parseError.errorString();
+	const auto doc =
+		Json::tryParse(bytes, "Error parsing Modrinth search response:");
+	if (!doc) {
 		return results;
 	}
 
-	const auto root = doc.object();
+	const auto root = doc->object();
 	for (const auto& hitRaw : Json::ensureArray(root, "hits")) {
 		ModPlatform::IndexedProject project;
 		if (parseProjectObject(hitRaw.toObject(), project)) {
@@ -142,18 +136,16 @@ ModrinthContentModel::parseProjectResponse(const QByteArray& bytes) const
 {
 	ModPlatform::IndexedProject project;
 
-	QJsonParseError parseError{};
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error parsing Modrinth project response:"
-				   << parseError.errorString();
+	const auto doc =
+		Json::tryParse(bytes, "Error parsing Modrinth project response:");
+	if (!doc) {
 		return project;
 	}
-	if (!doc.isObject()) {
+	if (!doc->isObject()) {
 		return project;
 	}
 
-	if (!parseProjectObject(doc.object(), project)) {
+	if (!parseProjectObject(doc->object(), project)) {
 		return ModPlatform::IndexedProject();
 	}
 	return project;

@@ -102,7 +102,6 @@ static QJsonObject componentToJsonV1(ComponentPtr component)
 }
 
 static ComponentPtr componentFromJsonV1(PackProfile* parent,
-										const QString& componentJsonPattern,
 										const QJsonObject& obj)
 {
 	// critical
@@ -158,7 +157,6 @@ static bool savePackProfile(const QString& filename,
 
 // Read the given file into component containers
 static bool loadPackProfile(PackProfile* parent, const QString& filename,
-							const QString& componentJsonPattern,
 							ComponentContainer& container)
 {
 	QFile componentsFile(filename);
@@ -199,8 +197,7 @@ static bool loadPackProfile(PackProfile* parent, const QString& filename,
 		for (auto item : orderArray) {
 			auto obj =
 				Json::requireObject(item, "Component must be an object.");
-			container.append(
-				componentFromJsonV1(parent, componentJsonPattern, obj));
+			container.append(componentFromJsonV1(parent, obj));
 		}
 	} catch (const JSONValidationError& err) {
 		qCritical() << "Couldn't parse" << componentsFile.fileName()
@@ -292,7 +289,7 @@ bool PackProfile::load()
 
 	// load the new component list and swap it with the current one...
 	ComponentContainer newComponents;
-	if (!loadPackProfile(this, filename, patchesPattern(), newComponents)) {
+	if (!loadPackProfile(this, filename, newComponents)) {
 		qCritical() << "Failed to load the component config for instance"
 					<< d->m_instance->name();
 		return false;

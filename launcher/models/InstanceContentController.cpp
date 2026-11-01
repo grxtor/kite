@@ -39,6 +39,7 @@
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "models/ContentFilterModel.h"
 #include "models/ContentUpdateController.h"
+#include "models/ModFolderWatch.h"
 #include "models/ModHealthModel.h"
 #include "settings/Setting.h"
 
@@ -57,16 +58,6 @@ namespace
 	/* The mods folder and loader must stay quiet this long before the health check
 	 * runs: files are read one by one, each reporting a change. */
 	constexpr int kHealthDelayMs = 150;
-
-	/* A model somebody else watches only re-arms its watcher; ask for a fresh read. */
-	void watch(const std::shared_ptr<ModFolderModel>& model)
-	{
-		const bool wasValid = model->isValid();
-		model->startWatching();
-		if (wasValid) {
-			model->update();
-		}
-	}
 } // namespace
 
 InstanceContentController::InstanceContentController(
@@ -263,7 +254,7 @@ QObject* InstanceContentController::model(const QString& kind)
 
 	/* InstanceDetails watches the other four folders. */
 	if (kind == kCoreMods || kind == kDataPacks) {
-		watch(folder);
+		startWatchingFresh(folder.get());
 		m_watched.append(folder);
 	}
 
@@ -369,8 +360,7 @@ int InstanceContentController::remove(const QString& kind,
 
 QString InstanceContentController::localPath(const QString& fileUrlOrPath)
 {
-	const QUrl url(fileUrlOrPath);
-	return url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
+	return FS::pathFromUrlOrPath(fileUrlOrPath);
 }
 
 bool InstanceContentController::install(const QString& kind,
@@ -599,7 +589,7 @@ void InstanceContentController::onGlobalDataPacksChanged()
 		}
 		auto folder = m_instance->dataPackList();
 		if (folder) {
-			watch(folder);
+			startWatchingFresh(folder.get());
 			m_watched.append(folder);
 		}
 		proxy->setFolderModel(folder);

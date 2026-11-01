@@ -28,7 +28,6 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonParseError>
 #include <QPair>
 #include <QUrl>
 #include <QtConcurrentRun>
@@ -36,6 +35,7 @@
 #include <memory>
 #include <utility>
 
+#include "Json.h"
 #include "archive/ExportToZipTask.h"
 #include "core/LauncherContext.h"
 #include "minecraft/MinecraftInstance.h"
@@ -346,15 +346,15 @@ void ModrinthPackExportTask::lookUpPendingFiles()
 void ModrinthPackExportTask::recordLookupResult(const PendingFile& pending,
 												const QByteArray& bytes)
 {
-	QJsonParseError parseError{};
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
+	QString parseError;
+	const auto doc = Json::tryParse(bytes, nullptr, &parseError);
+	if (!doc) {
 		qWarning() << "Could not parse the Modrinth version for"
-				   << pending.path << ":" << parseError.errorString();
+				   << pending.path << ":" << parseError;
 		return;
 	}
 
-	const QJsonArray files = doc.object().value("files").toArray();
+	const QJsonArray files = doc->object().value("files").toArray();
 	for (const QJsonValue& value : files) {
 		const QJsonObject file = value.toObject();
 		const QJsonObject hashes = file.value("hashes").toObject();

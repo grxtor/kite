@@ -151,9 +151,6 @@ class PluginManager : public QObject
 	bool eventFilter(QObject* watched, QEvent* event) override;
 
   signals:
-	void moduleLoaded(const QString& name);
-	void moduleUnloaded(const QString& name);
-	void moduleError(const QString& name, const QString& error);
 	/* Any surface was created, updated or destroyed; surfaces() readers re-read on this. */
 	void surfacesChanged();
 

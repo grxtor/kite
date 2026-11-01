@@ -318,8 +318,7 @@ QObject* InstanceExportController::exportTo(const QString& urlOrPath)
 		return nullptr;
 	}
 
-	const QUrl url(urlOrPath);
-	QString output = url.isLocalFile() ? url.toLocalFile() : urlOrPath;
+	QString output = FS::pathFromUrlOrPath(urlOrPath);
 	if (output.isEmpty()) {
 		setError(tr("Choose where to save the export."));
 		return nullptr;

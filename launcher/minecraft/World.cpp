@@ -98,10 +98,13 @@ QString GameType::toLogString() const
 	return "Undefined";
 }
 
+// level.dat is a few KB; the cap stops a gzip bomb from filling memory.
+static constexpr qsizetype kMaxLevelDatBytes = 64 * 1024 * 1024;
+
 std::unique_ptr<nbt::tag_compound> parseLevelDat(QByteArray data)
 {
 	QByteArray output;
-	if (!GZip::unzip(data, output)) {
+	if (!GZip::unzip(data, output, kMaxLevelDatBytes)) {
 		return nullptr;
 	}
 	std::istringstream foo(std::string(output.constData(), output.size()));

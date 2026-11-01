@@ -25,8 +25,7 @@
 #include "modplatform/ContentDownloadTask.h"
 #include "modplatform/DependencyResolver.h"
 #include "modplatform/ModInstallConflictAnalyzer.h"
-#include "modplatform/flame/FlameApi.h"
-#include "modplatform/modrinth/ModrinthApi.h"
+#include "modplatform/ContentApis.h"
 #include "tasks/TaskWatcher.h"
 
 ContentInstallReview::ContentInstallReview(
@@ -82,13 +81,7 @@ ContentInstallReview::~ContentInstallReview()
 
 QString ContentInstallReview::providerName(const QString& platform)
 {
-	if (platform == ModrinthApi::get().id()) {
-		return ModrinthApi::get().displayName();
-	}
-	if (platform == FlameApi::get().id()) {
-		return FlameApi::get().displayName();
-	}
-	return platform;
+	return ModPlatform::displayNameById(platform, platform);
 }
 
 bool ContentInstallReview::needsReview() const
@@ -197,11 +190,6 @@ void ContentInstallReview::setReplacements(
 	const QHash<QString, QString>& fileByWantedId)
 {
 	m_replacements = fileByWantedId;
-}
-
-void ContentInstallReview::setFolder(std::shared_ptr<ModFolderModel> folder)
-{
-	m_folder = std::move(folder);
 }
 
 void ContentInstallReview::start()

@@ -30,7 +30,6 @@ endif()
 #
 # Vendor headers:
 #   vendor/gamemode_client.h  — from FeralInteractive/gamemode (BSD-3-Clause)
-#   vendor/mangohud_detect.h  — authored for this plugin (MIT)
 
 set(LINUXPERF_SOURCES
     LinuxPerfPlugin.cpp

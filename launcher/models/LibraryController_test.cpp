@@ -28,27 +28,11 @@
 
 #include "InstanceList.h"
 #include "models/LibraryController.h"
-#include "settings/INISettingsObject.h"
+#include "TestSettings.h"
 #include "tasks/TaskWatcher.h"
 
 namespace
 {
-	/* The global settings every BaseInstance constructor needs (as in InstanceList_test.cpp). */
-	SettingsObjectPtr makeGlobalSettings(const QString& dir)
-	{
-		auto settings = std::make_shared<INISettingsObject>(
-			QDir(dir).filePath("global.ini"));
-		settings->registerSetting("PreLaunchCommand", "");
-		settings->registerSetting("WrapperCommand", "");
-		settings->registerSetting("PostExitCommand", "");
-		settings->registerSetting("ShowConsole", true);
-		settings->registerSetting("ShowConsoleOnError", true);
-		settings->registerSetting("LogPrePostOutput", true);
-		settings->registerSetting("ConsoleMaxLines", 100000);
-		settings->registerSetting("ConsoleOverflowStop", true);
-		return settings;
-	}
-
 	/* An instance folder InstanceList loads as a NullInstance: an
 	 * InstanceType it does not know. */
 	bool makeInstance(const QString& instancesDir, const QString& id,

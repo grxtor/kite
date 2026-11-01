@@ -46,7 +46,6 @@ class LaunchProfile : public ProblemProvider
 	void clear();
 
   public: /* getters for profile variables */
-	QString getMinecraftVersion() const;
 	QString getMainClass() const;
 	QString getAppletClass() const;
 	QString getMinecraftVersionType() const;

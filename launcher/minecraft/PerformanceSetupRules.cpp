@@ -19,13 +19,12 @@
 
 #include "PerformanceSetupRules.h"
 
-#include <QCryptographicHash>
-#include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
 
+#include "FileSystem.h"
 #include "minecraft/mod/ModMetadataIndex.h"
 
 namespace
@@ -36,17 +35,6 @@ namespace
 	 * no longer 1. */
 	constexpr int kFirstNumberedMajor = 2;
 	const QString kExcludedSeparator = QStringLiteral(",");
-
-	QString sha1Of(const QString& path)
-	{
-		QFile file(path);
-		if (!file.open(QIODevice::ReadOnly)) {
-			return QString();
-		}
-		QCryptographicHash hash(QCryptographicHash::Sha1);
-		hash.addData(&file);
-		return QString::fromLatin1(hash.result().toHex());
-	}
 } // namespace
 
 namespace PerformanceSetup
@@ -103,7 +91,7 @@ namespace PerformanceSetup
 	{
 		QStringList hashes;
 		for (const QString& file : files) {
-			const QString hash = sha1Of(folder.absoluteFilePath(file));
+			const QString hash = FS::sha1Hex(folder.absoluteFilePath(file));
 			if (!hash.isEmpty()) {
 				hashes.append(hash);
 			}

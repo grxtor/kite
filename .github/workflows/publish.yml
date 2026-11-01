@@ -24,7 +24,7 @@ jobs:
           # winget takes one installer per architecture. The "-Qt6-" part is
           # required: without it the pattern matches nothing and winget gets no
           # installers.
-          installers-regex: 'Kite-Windows-MSVC-Qt6(?:-arm64|-Legacy)?-Setup-.+\.exe$'
+          installers-regex: 'Kite-Windows-MSVC-Qt6(?:-arm64)?-Setup-.+\.exe$'
           token: ${{ secrets.WINGET_TOKEN }}
 
   # PACKAGES_TOKEN needs write access to grxtor/scoop-bucket and grxtor/homebrew-tap.

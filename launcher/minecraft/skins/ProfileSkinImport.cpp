@@ -28,14 +28,13 @@
 
 #include "core/LauncherContext.h"
 #include "minecraft/auth/AccountData.h"
+#include "minecraft/auth/MinecraftServices.h"
 #include "minecraft/auth/Parsers.h"
 #include "net/Download.h"
 #include "net/NetJob.h"
 
 namespace
 {
-	const char* const kNameLookupEndpoint =
-		"https://api.minecraftservices.com/minecraft/profile/lookup/name/";
 	const char* const kSessionProfileEndpoint =
 		"https://sessionserver.mojang.com/session/minecraft/profile/";
 } // namespace
@@ -69,9 +68,9 @@ void ProfileSkinImport::lookUpUuid()
 	m_job = new NetJob(tr("Look up user"), LAUNCHER->network());
 	// Percent-encoded: Mojang names are word characters today, but this string
 	// comes straight from a text field.
-	const QString endpoint =
-		QString::fromLatin1(kNameLookupEndpoint) +
-		QString::fromUtf8(QUrl::toPercentEncoding(m_username));
+	const QString endpoint = MinecraftServices::url(
+		"minecraft/profile/lookup/name/" +
+		QString::fromUtf8(QUrl::toPercentEncoding(m_username)));
 	m_job->addNetAction(
 		Net::Download::makeByteArray(QUrl(endpoint), &m_response));
 

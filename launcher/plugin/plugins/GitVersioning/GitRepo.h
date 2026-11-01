@@ -50,14 +50,6 @@ class GitRepo
 	static QString gitVersion();
 
 	bool isInitialized() const;
-	QString repoDir() const
-	{
-		return m_repoDir;
-	}
-	QString workTree() const
-	{
-		return m_instanceRoot;
-	}
 
 	/* Idempotent: creates .history/ (a non-bare git-dir), writes a .gitignore for the work tree and
 	 * pins the local author identity. False on failure. */
@@ -80,9 +72,6 @@ class GitRepo
 	/* Restores the whole work tree to `sha` (`git checkout <sha> -- .` then `git reset --mixed
 	 * HEAD`). HEAD does not move, so a restore is reversible by restoring a later commit. */
 	bool restore(const QString& sha, QString* errorMsg = nullptr);
-
-	/* Resolves a branch, tag or shorthand sha to a full sha; empty if unknown. */
-	QString resolveRef(const QString& name) const;
 
 	/* Reads one file at a revision; an empty QByteArray and ok=false on failure. */
 	QByteArray showFile(const QString& sha, const QString& path,

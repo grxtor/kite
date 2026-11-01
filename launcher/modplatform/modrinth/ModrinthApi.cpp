@@ -25,15 +25,6 @@
 namespace
 {
 
-	QString sortValueAt(const QList<ModPlatform::SortingMethod>& sorts,
-						int sortIndex)
-	{
-		if (sortIndex >= 0 && sortIndex < sorts.size()) {
-			return sorts.at(sortIndex).apiValue;
-		}
-		return sorts.first().apiValue;
-	}
-
 	/* Facets are an array of arrays: the outer is ANDed, each inner ORed. Two
 	 * ticked loaders make one group, not two. */
 	QString facetGroups(const QList<QStringList>& groups)
@@ -228,7 +219,8 @@ QUrl ModrinthApi::searchUrl(const ModPlatform::SearchQuery& query) const
 						  "limit=%5")
 					  .arg(apiBase(),
 						   ModPlatform::encodeSearchTerm(query.term),
-						   sortValueAt(sortingMethods(), query.sortIndex),
+						   ModPlatform::sortValueAt(
+						       sortingMethods(), query.sortIndex),
 						   QString::number(query.offset),
 						   QString::number(searchPageSize()));
 	url += QStringLiteral("&facets=") + facetGroups(facets);
@@ -258,6 +250,23 @@ QUrl ModrinthApi::projectPageUrl(const QString& projectId) const
 {
 	/* `/mod/` redirects to the right section for every project type. */
 	return QUrl(QStringLiteral("https://modrinth.com/mod/") + projectId);
+}
+
+QString ModrinthApi::siteProjectUrl(const QString& slug)
+{
+	return QStringLiteral("https://modrinth.com/project/") + slug;
+}
+
+QString ModrinthApi::siteModpackUrl(const QString& slug)
+{
+	return QStringLiteral("https://modrinth.com/modpack/") + slug;
+}
+
+QString ModrinthApi::siteVersionUrl(const QString& projectId,
+									const QString& versionId)
+{
+	return QStringLiteral("https://modrinth.com/mod/%1/version/%2")
+		.arg(projectId, versionId);
 }
 
 QUrl ModrinthApi::projectVersionsUrl(
@@ -356,7 +365,8 @@ QUrl ModrinthApi::modpackSearchUrl(const QString& term, int sortIndex,
 						"limit=%6")
 					.arg(apiBase(), ModPlatform::encodeSearchTerm(term),
 						 facetGroups(facets),
-						 sortValueAt(get().sortingMethods(), sortIndex),
+						 ModPlatform::sortValueAt(
+						     get().sortingMethods(), sortIndex),
 						 QString::number(offset),
 						 QString::number(get().searchPageSize())));
 }

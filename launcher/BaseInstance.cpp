@@ -74,7 +74,6 @@ BaseInstance::BaseInstance(SettingsObjectPtr globalSettings,
 	m_settings->registerSetting("PackIconUrl", "");
 	m_settings->registerSetting("PackSourceUrl", "");
 	m_settings->registerSetting("PackInstalledAt", "");
-	m_settings->registerSetting("PackManifestSha512", "");
 
 	/* The pack's own title as the catalogue spells it, separate from "name"
 	 * since the user may rename the instance. Empty for instances imported
@@ -259,15 +258,17 @@ qint64 BaseInstance::lastLaunch() const
 
 void BaseInstance::setLastLaunch(qint64 val)
 {
-	// FIXME: if no change, do not set. setting involves saving a file.
-	m_settings->set("lastLaunchTime", val);
+	if (lastLaunch() != val) {
+		m_settings->set("lastLaunchTime", val);
+	}
 	emit propertiesChanged(this);
 }
 
 void BaseInstance::setNotes(QString val)
 {
-	// FIXME: if no change, do not set. setting involves saving a file.
-	m_settings->set("notes", val);
+	if (notes() != val) {
+		m_settings->set("notes", val);
+	}
 }
 
 QString BaseInstance::notes() const
@@ -436,8 +437,9 @@ void BaseInstance::setProfilerKey(const QString& key)
 
 void BaseInstance::setIconKey(QString val)
 {
-	// FIXME: if no change, do not set. setting involves saving a file.
-	m_settings->set("iconKey", val);
+	if (iconKey() != val) {
+		m_settings->set("iconKey", val);
+	}
 	emit propertiesChanged(this);
 }
 
@@ -448,8 +450,9 @@ QString BaseInstance::iconKey() const
 
 void BaseInstance::setName(QString val)
 {
-	// FIXME: if no change, do not set. setting involves saving a file.
-	m_settings->set("name", val);
+	if (name() != val) {
+		m_settings->set("name", val);
+	}
 	emit propertiesChanged(this);
 }
 

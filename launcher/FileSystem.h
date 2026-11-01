@@ -25,6 +25,7 @@
 
 #include <QDir>
 #include <QFlags>
+#include <QUrl>
 
 namespace FS
 {
@@ -110,8 +111,6 @@ namespace FS
 	QString PathCombine(const QString& path1, const QString& path2,
 						const QString& path3, const QString& path4);
 
-	QString AbsolutePath(QString path);
-
 	/** Resolve an executable: a single name, a relative path or an absolute
 	 * path. @return absolute path, or a null string. */
 	QString ResolveExecutable(QString path);
@@ -126,6 +125,16 @@ namespace FS
 
 	/// Checks if the a given Path contains "!"
 	bool checkProblemticPathJava(QDir folder);
+
+	/** Lower-case hex SHA-1 of the file's contents, streamed. Empty if the file
+	 * cannot be opened or read. */
+	QString sha1Hex(const QString& path);
+
+	/** The local path of a file URL, else @p urlOrPath unchanged: QML hands
+	 * file dialogs back as "file:///..." but a typed path as plain text. */
+	QString pathFromUrlOrPath(const QString& urlOrPath);
+	/** As above for a QUrl: the local path, else url.toString(). */
+	QString pathFromUrl(const QUrl& url);
 
 	QString getDesktopDir();
 

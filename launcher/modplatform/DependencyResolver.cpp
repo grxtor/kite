@@ -55,6 +55,38 @@ namespace
 		}
 	}
 
+	/* The Modrinth version's primary file (or its only one) as an entry. The
+	 * caller checks downloadUrl and sets what is specific to it. */
+	ModPlatform::DependencyInfo
+	modrinthDependencyInfo(const QJsonObject& vObj, const QString& projectId,
+						   const QStringList& requiredBy)
+	{
+		ModPlatform::DependencyInfo dep;
+		dep.projectId = projectId;
+		dep.versionId = Json::ensureString(vObj, "id", "");
+		dep.name = Json::ensureString(vObj, "name", projectId);
+		dep.platform = "modrinth";
+		dep.isRequired = true;
+		dep.requiredBy = requiredBy;
+		dep.versionType = Json::ensureString(vObj, "version_type", "");
+
+		auto files = Json::ensureArray(vObj, "files");
+		for (auto fileRaw : files) {
+			auto fileObj = fileRaw.toObject();
+			bool primary = Json::ensureBoolean(
+				fileObj, QStringLiteral("primary"), false);
+			if (primary || files.size() == 1) {
+				dep.downloadUrl = Json::ensureString(fileObj, "url", "");
+				dep.fileName = Json::ensureString(fileObj, "filename", "");
+				dep.fileSize = Json::ensureInteger(fileObj, "size", 0);
+				auto hashes = Json::ensureObject(fileObj, "hashes");
+				dep.sha1 = Json::ensureString(hashes, "sha1", "");
+				break;
+			}
+		}
+		return dep;
+	}
+
 	/* Adds a requester's names to the entry, and the wanted id as slug if
 	 * it has none. */
 	void mergeNote(ModPlatform::DependencyInfo& dep,
@@ -107,7 +139,7 @@ DependencyResolver::DependencyResolver(
 	// Mods already selected need no dependency fetch.
 	for (const auto& mod : m_selectedMods) {
 		m_resolvedProjectIds.insert(mod.platform + ":" + mod.projectId);
-		m_resolvedNames.insert(normalizeName(mod.name));
+		m_resolvedNames.insert(ModMetadataIndex::normalizeName(mod.name));
 	}
 }
 
@@ -144,7 +176,7 @@ bool DependencyResolver::isProjectInstalled(const QString& platform,
 		return true;
 	}
 	/* By name too: catches the same library from the other site. */
-	const QString normalized = normalizeName(name);
+	const QString normalized = ModMetadataIndex::normalizeName(name);
 	return !normalized.isEmpty() &&
 		   m_installed->findByNormalizedName(normalized).isValid();
 }
@@ -167,7 +199,7 @@ void DependencyResolver::acceptDependency(ModPlatform::DependencyInfo dep)
 	dep.maybeInstalled =
 		isProjectInstalled(dep.platform, dep.projectId, dep.name);
 
-	m_resolvedNames.insert(normalizeName(dep.name));
+	m_resolvedNames.insert(ModMetadataIndex::normalizeName(dep.name));
 	/* Requesters that arrived while it was in flight. */
 	const auto late = m_lateNotes.take(dep.platform + ":" + dep.projectId);
 	mergeNote(dep, late.requiredBy, late.slug);
@@ -190,12 +222,6 @@ void DependencyResolver::noteAlsoRequiredBy(const QString& platform,
 	}
 	/* Its lookup is still out: keep this for acceptDependency(). */
 	mergeNote(m_lateNotes[platform + ":" + projectId], requiredBy, slug);
-}
-
-QString DependencyResolver::normalizeName(const QString& name)
-{
-	/* The index owns the rule, so resolver and index agree on "same". */
-	return ModMetadataIndex::normalizeName(name);
 }
 
 void DependencyResolver::addWantedProjects(const QList<WantedProject>& wanted)
@@ -453,16 +479,15 @@ void DependencyResolver::resolveModrinthDependencies(
 void DependencyResolver::onCurseForgeVersionResolved(
 	const ModPlatform::SelectedMod& mod, const QByteArray& data)
 {
-	QJsonParseError parseError;
-	QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-	if (parseError.error != QJsonParseError::NoError)
+	const auto doc = Json::tryParse(data);
+	if (!doc)
 		return;
 
 	QJsonObject fileObj;
-	if (doc.isObject() && doc.object().contains("data")) {
-		fileObj = doc.object().value("data").toObject();
+	if (doc->isObject() && doc->object().contains("data")) {
+		fileObj = doc->object().value("data").toObject();
 	} else {
-		fileObj = doc.object();
+		fileObj = doc->object();
 	}
 
 	processCFFileDeps(fileObj, {mod.name});
@@ -471,28 +496,26 @@ void DependencyResolver::onCurseForgeVersionResolved(
 void DependencyResolver::onModrinthVersionResolved(
 	const ModPlatform::SelectedMod& mod, const QByteArray& data)
 {
-	QJsonParseError parseError;
-	QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-	if (parseError.error != QJsonParseError::NoError)
+	const auto doc = Json::tryParse(data);
+	if (!doc)
 		return;
 
-	processMRVersionDeps(doc.object(), {mod.name});
+	processMRVersionDeps(doc->object(), {mod.name});
 }
 
 void DependencyResolver::onDependencyProjectResolved(
 	const QString& platform, const QString& projectId, const QByteArray& data,
 	const QStringList& requiredBy, const QString& wantedId)
 {
-	QJsonParseError parseError;
-	QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-	if (parseError.error != QJsonParseError::NoError)
+	const auto doc = Json::tryParse(data);
+	if (!doc)
 		return;
 
 	if (platform == "curseforge") {
 		// /v1/mods/{id}/files response
 		QJsonArray filesArr;
-		if (doc.isObject() && doc.object().contains("data")) {
-			auto dataVal = doc.object().value("data");
+		if (doc->isObject() && doc->object().contains("data")) {
+			auto dataVal = doc->object().value("data");
 			if (dataVal.isArray()) {
 				filesArr = dataVal.toArray();
 			} else if (dataVal.isObject()) {
@@ -559,8 +582,8 @@ void DependencyResolver::onDependencyProjectResolved(
 		processCFFileDeps(fileObj, {depName});
 	} else if (platform == "modrinth") {
 		QJsonArray arr;
-		if (doc.isArray()) {
-			arr = doc.array();
+		if (doc->isArray()) {
+			arr = doc->array();
 		} else {
 			return;
 		}
@@ -582,29 +605,9 @@ void DependencyResolver::onDependencyProjectResolved(
 			return;
 		}
 
-		ModPlatform::DependencyInfo dep;
-		dep.projectId = projectId;
-		dep.versionId = Json::ensureString(vObj, "id", "");
-		dep.name = Json::ensureString(vObj, "name", projectId);
-		dep.platform = "modrinth";
-		dep.isRequired = true;
-		dep.requiredBy = requiredBy;
+		ModPlatform::DependencyInfo dep =
+			modrinthDependencyInfo(vObj, projectId, requiredBy);
 		dep.slug = wantedId;
-		dep.versionType = Json::ensureString(vObj, "version_type", "");
-
-		auto files = Json::ensureArray(vObj, "files");
-		for (auto fileRaw : files) {
-			auto fileObj = fileRaw.toObject();
-			bool primary = Json::ensureBoolean(fileObj, QStringLiteral("primary"), false);
-			if (primary || files.size() == 1) {
-				dep.downloadUrl = Json::ensureString(fileObj, "url", "");
-				dep.fileName = Json::ensureString(fileObj, "filename", "");
-				dep.fileSize = Json::ensureInteger(fileObj, "size", 0);
-				auto hashes = Json::ensureObject(fileObj, "hashes");
-				dep.sha1 = Json::ensureString(hashes, "sha1", "");
-				break;
-			}
-		}
 
 		if (dep.downloadUrl.isEmpty()) {
 			qWarning() << "Modrinth dependency" << projectId
@@ -758,33 +761,8 @@ void DependencyResolver::processMRVersionDeps(const QJsonObject& versionObj,
 						return;
 					}
 
-					ModPlatform::DependencyInfo dep;
-					dep.projectId = depProjectId;
-					dep.versionId = Json::ensureString(vObj, "id", "");
-					dep.name = Json::ensureString(vObj, "name", depProjectId);
-					dep.platform = "modrinth";
-					dep.isRequired = true;
-					dep.requiredBy = requiredBy;
-					dep.versionType =
-						Json::ensureString(vObj, "version_type", "");
-
-					auto files = Json::ensureArray(vObj, "files");
-					for (auto fileRaw : files) {
-						auto fileObj = fileRaw.toObject();
-						bool primary =
-							Json::ensureBoolean(fileObj, QStringLiteral("primary"), false);
-						if (primary || files.size() == 1) {
-							dep.downloadUrl =
-								Json::ensureString(fileObj, "url", "");
-							dep.fileName =
-								Json::ensureString(fileObj, "filename", "");
-							dep.fileSize =
-								Json::ensureInteger(fileObj, "size", 0);
-							auto hashes = Json::ensureObject(fileObj, "hashes");
-							dep.sha1 = Json::ensureString(hashes, "sha1", "");
-							break;
-						}
-					}
+					ModPlatform::DependencyInfo dep =
+						modrinthDependencyInfo(vObj, depProjectId, requiredBy);
 
 					if (dep.downloadUrl.isEmpty()) {
 						qWarning() << "Modrinth dep version" << depVersionId
@@ -880,7 +858,7 @@ void DependencyResolver::executeCrossResolve(const QString& targetPlatform,
 											 const QString& wantedId)
 {
 	// Cross-platform dedup by name.
-	QString normalized = normalizeName(projectName);
+	QString normalized = ModMetadataIndex::normalizeName(projectName);
 	if (m_resolvedNames.contains(normalized)) {
 		qDebug() << "Cross resolve skipped - already resolved by name:"
 				 << projectName;
@@ -932,8 +910,8 @@ void DependencyResolver::executeCrossResolve(const QString& targetPlatform,
 							hitName = candidateName;
 							break;
 						}
-						if (normalizeName(candidateName) ==
-							normalizeName(projectName)) {
+						if (ModMetadataIndex::normalizeName(candidateName) ==
+							ModMetadataIndex::normalizeName(projectName)) {
 							hitId = candidateId;
 							hitSlug = candidateSlug;
 							hitName = candidateName;
@@ -967,8 +945,8 @@ void DependencyResolver::executeCrossResolve(const QString& targetPlatform,
 							hitName = candidateName;
 							break;
 						}
-						if (normalizeName(candidateName) ==
-							normalizeName(projectName)) {
+						if (ModMetadataIndex::normalizeName(candidateName) ==
+							ModMetadataIndex::normalizeName(projectName)) {
 							hitId = candidateId;
 							hitSlug = candidateSlug;
 							hitName = candidateName;
@@ -996,7 +974,8 @@ void DependencyResolver::executeCrossResolve(const QString& targetPlatform,
 				QString key = targetPlatform + ":" + hitId;
 				if (!m_resolvedProjectIds.contains(key)) {
 					m_resolvedProjectIds.insert(key);
-					m_resolvedNames.insert(normalizeName(projectName));
+					m_resolvedNames.insert(
+						ModMetadataIndex::normalizeName(projectName));
 					qDebug() << "Cross resolved to" << targetPlatform
 							 << "project" << hitId << "slug:" << hitSlug
 							 << "(source slug:" << sourceSlug << ")";
@@ -1091,7 +1070,7 @@ void DependencyResolver::checkCompletion()
 				nameToIndex; // normalized name -> index in deduped list
 			QList<ModPlatform::DependencyInfo> deduped;
 			for (const auto& dep : m_dependencies) {
-				QString normalized = normalizeName(dep.name);
+				QString normalized = ModMetadataIndex::normalizeName(dep.name);
 				if (normalized.isEmpty()) {
 					deduped.append(dep);
 					continue;
@@ -1145,7 +1124,7 @@ void DependencyResolver::checkCompletion()
 		{
 			QList<ModPlatform::DependencyInfo> deduped;
 			for (const auto& dep : m_dependencies) {
-				QString normalized = normalizeName(dep.name);
+				QString normalized = ModMetadataIndex::normalizeName(dep.name);
 				bool isDuplicate = false;
 				for (const auto& selected : m_selectedMods) {
 					const bool sameProject =
@@ -1154,7 +1133,8 @@ void DependencyResolver::checkCompletion()
 						selected.projectId == dep.projectId;
 					const bool sameName =
 						!normalized.isEmpty() &&
-						normalizeName(selected.name) == normalized;
+						ModMetadataIndex::normalizeName(selected.name) ==
+						normalized;
 					if (sameProject || sameName) {
 						qDebug() << "Removing dep that duplicates selected mod:"
 								 << dep.name << "(" << dep.platform
@@ -1182,7 +1162,8 @@ void DependencyResolver::checkCompletion()
 			for (const auto& dep : m_dependencies) {
 				if (dep.name == unresolved.name ||
 					dep.projectId == unresolved.projectId ||
-					normalizeName(dep.name) == normalizeName(unresolved.name)) {
+					ModMetadataIndex::normalizeName(dep.name) ==
+						ModMetadataIndex::normalizeName(unresolved.name)) {
 					wasResolved = true;
 					break;
 				}

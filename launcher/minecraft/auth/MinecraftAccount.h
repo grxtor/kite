@@ -43,13 +43,6 @@ class MinecraftAccount;
 typedef shared_qobject_ptr<MinecraftAccount> MinecraftAccountPtr;
 Q_DECLARE_METATYPE(MinecraftAccountPtr)
 
-/** A profile within a Mojang account. */
-struct AccountProfile {
-	QString id;
-	QString name;
-	bool legacy;
-};
-
 /** Stores information about a certain Mojang account. */
 class MinecraftAccount : public QObject, public Usable
 {
@@ -102,6 +95,21 @@ class MinecraftAccount : public QObject, public Usable
 	QString profileName() const
 	{
 		return data.profileName();
+	}
+
+	//! The id UI lists hand out for this account: profileId(), or internalId()
+	//! for an offline account, which has no profile id.
+	QString accountId() const
+	{
+		return data.profileId().isEmpty() ? data.internalId
+										  : data.profileId();
+	}
+
+	//! "Microsoft" or "Offline", as the QML account lists name the kind.
+	QString kindLabel() const
+	{
+		return isMSA() ? QStringLiteral("Microsoft")
+					   : QStringLiteral("Offline");
 	}
 
 	/*!

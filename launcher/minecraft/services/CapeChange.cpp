@@ -24,6 +24,7 @@
 #include <QHttpMultiPart>
 
 #include "core/LauncherContext.h"
+#include "minecraft/auth/MinecraftServices.h"
 
 CapeChange::CapeChange(QObject* parent, QString token, QString cape)
 	: Task(parent), m_capeId(cape), m_token(token)
@@ -32,8 +33,8 @@ CapeChange::CapeChange(QObject* parent, QString token, QString cape)
 
 void CapeChange::setCape(QString& cape)
 {
-	QNetworkRequest request(QUrl(
-		"https://api.minecraftservices.com/minecraft/profile/capes/active"));
+	QNetworkRequest request(
+		QUrl(MinecraftServices::url("minecraft/profile/capes/active")));
 	auto requestString = QString("{\"capeId\":\"%1\"}").arg(m_capeId);
 	request.setRawHeader("Authorization",
 						 QString("Bearer %1").arg(m_token).toLocal8Bit());
@@ -51,8 +52,8 @@ void CapeChange::setCape(QString& cape)
 
 void CapeChange::clearCape()
 {
-	QNetworkRequest request(QUrl(
-		"https://api.minecraftservices.com/minecraft/profile/capes/active"));
+	QNetworkRequest request(
+		QUrl(MinecraftServices::url("minecraft/profile/capes/active")));
 	auto requestString = QString("{\"capeId\":\"%1\"}").arg(m_capeId);
 	request.setRawHeader("Authorization",
 						 QString("Bearer %1").arg(m_token).toLocal8Bit());

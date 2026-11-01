@@ -23,7 +23,6 @@
 #include <QFutureWatcher>
 #include <QSortFilterProxyModel>
 #include <QThreadPool>
-#include <QUrl>
 #include <QtConcurrentRun>
 #include <functional>
 
@@ -49,6 +48,7 @@
 #include "models/LogUploader.h"
 #include "models/LoaderInstaller.h"
 #include "models/ManagedPackController.h"
+#include "models/ModFolderWatch.h"
 #include "models/NewInstanceController.h"
 #include "models/OtherLogsModel.h"
 #include "models/ScreenshotUploader.h"
@@ -76,16 +76,6 @@ namespace
 		return proxy;
 	}
 
-	/* startWatching() only re-arms the watcher on a repeat call; force an update
-	 * so QML never sees stale data. */
-	void startWatchingFresh(ModFolderModel* model)
-	{
-		const bool wasValid = model->isValid() && model->dir().exists();
-		model->startWatching();
-		if (wasValid) {
-			model->update();
-		}
-	}
 } // namespace
 
 /* Runs World::install() off the GUI thread (world files can run into gigabytes). */
@@ -159,16 +149,13 @@ InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 		startWatchingFresh(m_mods.get());
 
 		m_resourcePacks = m_mc->resourcePackList();
-		m_sortedResourcePacks = sortedByName(m_resourcePacks.get());
 		startWatchingFresh(m_resourcePacks.get());
 
 		m_shaderPacks = m_mc->shaderPackList();
-		m_sortedShaderPacks = sortedByName(m_shaderPacks.get());
 		startWatchingFresh(m_shaderPacks.get());
 
 		if (m_mc->traits().contains("texturepacks")) {
 			m_texturePacks = m_mc->texturePackList();
-			m_sortedTexturePacks = sortedByName(m_texturePacks.get());
 			startWatchingFresh(m_texturePacks.get());
 		}
 
@@ -282,36 +269,6 @@ QObject* InstanceDetails::mods() const
 QString InstanceDetails::modsDir() const
 {
 	return m_mods ? m_mods->dir().absolutePath() : QString();
-}
-
-QObject* InstanceDetails::resourcePacks() const
-{
-	return m_sortedResourcePacks.get();
-}
-
-QString InstanceDetails::resourcePacksDir() const
-{
-	return m_resourcePacks ? m_resourcePacks->dir().absolutePath() : QString();
-}
-
-QObject* InstanceDetails::shaderPacks() const
-{
-	return m_sortedShaderPacks.get();
-}
-
-QString InstanceDetails::shaderPacksDir() const
-{
-	return m_shaderPacks ? m_shaderPacks->dir().absolutePath() : QString();
-}
-
-QObject* InstanceDetails::texturePacks() const
-{
-	return m_sortedTexturePacks.get();
-}
-
-QString InstanceDetails::texturePacksDir() const
-{
-	return m_texturePacks ? m_texturePacks->dir().absolutePath() : QString();
 }
 
 bool InstanceDetails::contentChangesAllowed() const
@@ -514,8 +471,7 @@ QObject* InstanceDetails::installWorld(const QString& fileUrlOrPath)
 	if (!m_worlds) {
 		return nullptr;
 	}
-	const QUrl url(fileUrlOrPath);
-	const QString source = url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
+	const QString source = FS::pathFromUrlOrPath(fileUrlOrPath);
 	if (!WorldTools::isWorld(source)) {
 		return nullptr;
 	}

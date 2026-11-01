@@ -50,7 +50,6 @@ class LearningStore
 
 	void recordNovel(const QString& signature, const QString& sampleLine,
 					 const QString& instanceId);
-	QList<NovelFingerprint> novelFingerprints() const;
 
 	/* Forgets a signature, typically after the user promotes it to a rule. */
 	void forgetNovel(const QString& signature);

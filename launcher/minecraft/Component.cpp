@@ -134,11 +134,6 @@ Component::Component(PackProfile* parent, const QString& uid,
 	m_loaded = true;
 }
 
-std::shared_ptr<Meta::Version> Component::getMeta()
-{
-	return m_metaVersion;
-}
-
 void Component::applyTo(LaunchProfile* profile, const RuntimeContext& context)
 {
 	// do not apply disabled components

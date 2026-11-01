@@ -596,6 +596,32 @@ class WorldTest : public QObject
 		QVERIFY(world.isValid());
 		QVERIFY(!world.dayCount().has_value());
 	}
+
+	// A level.dat that inflates past the cap is refused, not read into memory;
+	// the same file under the cap loads
+	void test_OversizedLevelDatIsRefused()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+
+		LevelDatSpec spec;
+		spec.worldGenSettingsSeed = true;
+		spec.worldGenSettingsSeedValue = 42;
+		const QByteArray valid = makeLevelDat(spec);
+
+		// Trailing zeros are ignored by the NBT reader, so only the cap
+		// tells the two files apart
+		const auto smallPath = QDir(tempDir.path()).absoluteFilePath("small");
+		QVERIFY(writeWorld(smallPath, valid + QByteArray(1024 * 1024, '\0')));
+		World small{QFileInfo(smallPath)};
+		QCOMPARE(small.seed(), Q_INT64_C(42));
+
+		const auto hugePath = QDir(tempDir.path()).absoluteFilePath("huge");
+		QVERIFY(writeWorld(hugePath,
+						   valid + QByteArray(65 * 1024 * 1024, '\0')));
+		World huge{QFileInfo(hugePath)};
+		QCOMPARE(huge.seed(), Q_INT64_C(0));
+	}
 };
 
 QTEST_GUILESS_MAIN(WorldTest)

@@ -33,28 +33,12 @@
 #include "meta/Index.h"
 #include "meta/VersionList.h"
 #include "minecraft/Component.h"
+#include "models/RoleByName.h"
 #include "tasks/Task.h"
 #include "tasks/TaskWatcher.h"
 
 namespace
 {
-	/* First role named @p name in @p model's roleNames(), or @p fallback (also if
-	 * @p model is null). */
-	int roleByName(const QAbstractItemModel* model, const QByteArray& name,
-					int fallback)
-	{
-		if (!model) {
-			return fallback;
-		}
-		const auto roles = model->roleNames();
-		for (auto it = roles.constBegin(); it != roles.constEnd(); ++it) {
-			if (it.value() == name) {
-				return it.key();
-			}
-		}
-		return fallback;
-	}
-
 	/// The uid for @p loader in knownModLoaders(), or empty for "" or an unknown name.
 	QString loaderComponentUid(const QString& loader)
 	{

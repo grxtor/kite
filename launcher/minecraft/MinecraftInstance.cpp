@@ -370,11 +370,6 @@ QString MinecraftInstance::modsRoot() const
 	return FS::PathCombine(gameRoot(), "mods");
 }
 
-QString MinecraftInstance::modsCacheLocation() const
-{
-	return FS::PathCombine(instanceRoot(), "mods.cache");
-}
-
 QString MinecraftInstance::coreModsDir() const
 {
 	return FS::PathCombine(gameRoot(), "coremods");
@@ -425,19 +420,9 @@ QString MinecraftInstance::resourcesDir() const
 	return FS::PathCombine(gameRoot(), "resources");
 }
 
-QDir MinecraftInstance::librariesPath() const
-{
-	return QDir::current().absoluteFilePath("libraries");
-}
-
 QDir MinecraftInstance::jarmodsPath() const
 {
 	return QDir(jarModsDir());
-}
-
-QDir MinecraftInstance::versionsPath() const
-{
-	return QDir::current().absoluteFilePath("versions");
 }
 
 QStringList MinecraftInstance::getClassPath() const

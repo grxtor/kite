@@ -44,7 +44,6 @@ class ManagedPackController : public QObject
 	Q_PROPERTY(QString providerLabel READ providerLabel CONSTANT)
 	Q_PROPERTY(QString packName READ packName CONSTANT)
 	Q_PROPERTY(QString packUrl READ packUrl CONSTANT)
-	Q_PROPERTY(QString packId READ packId CONSTANT)
 	Q_PROPERTY(QString installedVersionName READ installedVersionName CONSTANT)
 	Q_PROPERTY(QString installedVersionId READ installedVersionId CONSTANT)
 	/// False for a pack with a known provider but no catalogue id (an old import);
@@ -79,7 +78,6 @@ class ManagedPackController : public QObject
 	bool running() const;
 	QString packName() const;
 	QString packUrl() const;
-	QString packId() const;
 	QString installedVersionName() const;
 	QString installedVersionId() const;
 	bool hasPackId() const;

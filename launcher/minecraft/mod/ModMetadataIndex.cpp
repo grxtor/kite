@@ -29,6 +29,7 @@
 #include <QSaveFile>
 
 #include "FileSystem.h"
+#include "Json.h"
 #include "PackwizSidecar.h"
 
 ModMetadataIndex::ModMetadataIndex(const QDir& folder)
@@ -110,12 +111,11 @@ bool ModMetadataIndex::dropSidecarOwnedBy(const QString& sidecarName,
 ModMetadataIndex::Entry ModMetadataIndex::parseJson(const QByteArray& bytes)
 {
 	Entry e;
-	QJsonParseError perr{};
-	QJsonDocument doc = QJsonDocument::fromJson(bytes, &perr);
-	if (perr.error != QJsonParseError::NoError || !doc.isObject()) {
+	const auto doc = Json::tryParse(bytes);
+	if (!doc || !doc->isObject()) {
 		return e;
 	}
-	const QJsonObject o = doc.object();
+	const QJsonObject o = doc->object();
 	e.fileName = o.value(QStringLiteral("fileName")).toString();
 	e.platform = o.value(QStringLiteral("platform")).toString();
 	e.projectId = o.value(QStringLiteral("projectId")).toString();
@@ -286,22 +286,6 @@ ModMetadataIndex::findByNormalizedName(const QString& normalizedName) const
 	for (auto it = m_entries.constBegin(); it != m_entries.constEnd(); ++it) {
 		const Entry& e = it.value();
 		if (normalizeName(e.name) == normalizedName) {
-			return e;
-		}
-	}
-	return {};
-}
-
-ModMetadataIndex::Entry ModMetadataIndex::findBySha1(const QString& sha1) const
-{
-	if (sha1.isEmpty()) {
-		return {};
-	}
-	const QString needle = sha1.toLower();
-	QMutexLocker lock(&m_mutex);
-	for (auto it = m_entries.constBegin(); it != m_entries.constEnd(); ++it) {
-		const Entry& e = it.value();
-		if (e.sha1 == needle) {
 			return e;
 		}
 	}

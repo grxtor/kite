@@ -63,15 +63,10 @@ class BundleCatalog : public QObject
 
 	/// A started ContentInstallReview of @p projectIds (and what they
 	/// need) for @p mcVersion and @p loader, not yet tied to an instance;
-	/// null when there is nothing to install. Give it to installInto().
+	/// null when there is nothing to install.
 	Q_INVOKABLE QObject* preview(const QStringList& projectIds,
 								 const QString& mcVersion,
 								 const QString& loader);
-	/// Points @p review at the mods folder of instance @p instanceId and
-	/// installs it: the download's TaskWatcher, or null.
-	Q_INVOKABLE QObject* installInto(QObject* review,
-									 const QString& instanceId);
-
 	/// Sets the preset's memory and, if the instance has none yet, its
 	/// options.txt, and turns Kite Performance on for a preset that has the
 	/// performance bundle. Whether anything was applied.

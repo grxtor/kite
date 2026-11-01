@@ -2,8 +2,6 @@ find_package(Qt${QT_VERSION_MAJOR}Test REQUIRED)
 
 set(TEST_RESOURCE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
-message(${TEST_RESOURCE_PATH})
-
 function(add_unit_test name)
     set(options "")
     set(oneValueArgs DATA)

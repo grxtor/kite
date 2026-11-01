@@ -28,7 +28,7 @@
 
 #include "InstanceList.h"
 #include "NullInstance.h"
-#include "settings/INISettingsObject.h"
+#include "TestSettings.h"
 
 namespace
 {
@@ -51,24 +51,6 @@ bool writeFile(const QString& path, const QByteArray& contents,
 		file.setFileTime(modified, QFileDevice::FileModificationTime);
 	file.close();
 	return timeSet;
-}
-
-/* The global settings BaseInstance's constructor overrides or passes through
- * (as InstanceDetails_test registers); without one, registration hands back a
- * null Setting. */
-SettingsObjectPtr makeGlobalSettings(QTemporaryDir& dir)
-{
-	auto settings =
-		std::make_shared<INISettingsObject>(dir.filePath("global.ini"));
-	settings->registerSetting("PreLaunchCommand", "");
-	settings->registerSetting("WrapperCommand", "");
-	settings->registerSetting("PostExitCommand", "");
-	settings->registerSetting("ShowConsole", true);
-	settings->registerSetting("ShowConsoleOnError", true);
-	settings->registerSetting("LogPrePostOutput", true);
-	settings->registerSetting("ConsoleMaxLines", 100000);
-	settings->registerSetting("ConsoleOverflowStop", true);
-	return settings;
 }
 } // namespace
 

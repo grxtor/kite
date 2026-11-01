@@ -35,9 +35,6 @@ namespace ProfileUtils
 	/// Save a JSON file (in any format)
 	bool saveJsonFile(const QJsonDocument doc, const QString& filename);
 
-	/// Parse a version file in binary JSON format
-	VersionFilePtr parseBinaryJsonFile(const QFileInfo& fileInfo);
-
 	/// Remove LWJGL from a patch file. This is applied to all Mojang-like
 	/// profile files.
 	void removeLwjglFromPatch(VersionFilePtr patch);

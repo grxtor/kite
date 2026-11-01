@@ -28,6 +28,7 @@
 
 #include "BuildConfig.h"
 #include "InstanceList.h"
+#include "Json.h"
 #include "core/LauncherContext.h"
 #include "modplatform/modrinth/ModrinthModpackModel.h"
 #include "modplatform/technic/SingleZipPackInstallTask.h"
@@ -223,14 +224,12 @@ QList<TechnicModpackModel::Pack>
 TechnicModpackModel::parseSearch(const QByteArray& bytes)
 {
 	QList<Pack> packs;
-	QJsonParseError parseError;
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Couldn't parse Technic search results:"
-				   << parseError.errorString();
+	const auto doc =
+		Json::tryParse(bytes, "Couldn't parse Technic search results:");
+	if (!doc) {
 		return packs;
 	}
-	for (const auto& raw : doc.object().value(QStringLiteral("modpacks")).toArray()) {
+	for (const auto& raw : doc->object().value(QStringLiteral("modpacks")).toArray()) {
 		const QJsonObject obj = raw.toObject();
 		Pack pack;
 		pack.name = stringOf(obj, QStringLiteral("name"));
@@ -251,12 +250,11 @@ TechnicModpackModel::parseSearch(const QByteArray& bytes)
 
 bool TechnicModpackModel::parseMetadata(const QByteArray& bytes, Pack& pack)
 {
-	QJsonParseError parseError;
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
+	const auto doc = Json::tryParse(bytes);
+	if (!doc || !doc->isObject()) {
 		return false;
 	}
-	const QJsonObject obj = doc.object();
+	const QJsonObject obj = doc->object();
 
 	const QString zip = stringOf(obj, QStringLiteral("url"));
 	const QString solder = stringOf(obj, QStringLiteral("solder"));

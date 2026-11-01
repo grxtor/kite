@@ -18,8 +18,6 @@ QtObject {
     // UpdateSettingsController: automatic checks, interval, "Check now".
     // `available` says whether this build has an updater at all.
     property var updates: null
-    // PlayTimeSummary: total play time across every instance, in seconds.
-    property var playTime: null
     // CatPackList: the cat pictures (packs, sourceFor(id)).
     property var catPacks: null
     // QmlShell::iconRevision: bumps when any instance icon's pixels may have

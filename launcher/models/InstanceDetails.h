@@ -70,13 +70,6 @@ class InstanceDetails : public QObject
 	/// Null if this instance is not Minecraft-backed.
 	Q_PROPERTY(QObject* mods READ mods CONSTANT)
 	Q_PROPERTY(QString modsDir READ modsDir CONSTANT)
-	Q_PROPERTY(QObject* resourcePacks READ resourcePacks CONSTANT)
-	Q_PROPERTY(QString resourcePacksDir READ resourcePacksDir CONSTANT)
-	Q_PROPERTY(QObject* shaderPacks READ shaderPacks CONSTANT)
-	Q_PROPERTY(QString shaderPacksDir READ shaderPacksDir CONSTANT)
-	/// Null unless the instance uses texture packs (legacy Minecraft).
-	Q_PROPERTY(QObject* texturePacks READ texturePacks CONSTANT)
-	Q_PROPERTY(QString texturePacksDir READ texturePacksDir CONSTANT)
 	/// False while the instance is running.
 	Q_PROPERTY(bool contentChangesAllowed READ contentChangesAllowed NOTIFY
 				   contentChangesAllowedChanged)
@@ -134,13 +127,6 @@ class InstanceDetails : public QObject
 
 	QObject* mods() const;
 	QString modsDir() const;
-
-	QObject* resourcePacks() const;
-	QString resourcePacksDir() const;
-	QObject* shaderPacks() const;
-	QString shaderPacksDir() const;
-	QObject* texturePacks() const;
-	QString texturePacksDir() const;
 
 	bool contentChangesAllowed() const;
 	QObject* contentBrowser() const;
@@ -207,12 +193,10 @@ class InstanceDetails : public QObject
 	/// Borrowed from the instance.
 	std::shared_ptr<ModFolderModel> m_mods;
 	std::unique_ptr<QSortFilterProxyModel> m_sortedMods;
+	/* Only watched here, for InstanceContentController, which serves them. */
 	std::shared_ptr<ModFolderModel> m_resourcePacks;
-	std::unique_ptr<QSortFilterProxyModel> m_sortedResourcePacks;
 	std::shared_ptr<ModFolderModel> m_shaderPacks;
-	std::unique_ptr<QSortFilterProxyModel> m_sortedShaderPacks;
 	std::shared_ptr<ModFolderModel> m_texturePacks;
-	std::unique_ptr<QSortFilterProxyModel> m_sortedTexturePacks;
 	std::shared_ptr<WorldList> m_worlds;
 	mutable std::unique_ptr<WorldDataPacksController> m_worldDataPacks;
 	/// Created on first access.

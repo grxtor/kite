@@ -80,26 +80,10 @@ QPixmap transparentPixmap(const QSize& size)
 	return QPixmap::fromImage(image);
 }
 
-// AccountList has no internal-id finder and offline accounts have no profile
-// id, so a key that misses as a profile id is scanned as an internalId().
 MinecraftAccountPtr findAccount(AccountList* accounts, const QString& key)
 {
-	if (!accounts || key.isEmpty()) {
-		return MinecraftAccountPtr();
-	}
-
-	const int byProfileId = accounts->findAccountByProfileId(key);
-	if (byProfileId != -1) {
-		return accounts->at(byProfileId);
-	}
-
-	for (int i = 0; i < accounts->count(); ++i) {
-		MinecraftAccountPtr account = accounts->at(i);
-		if (account && account->internalId() == key) {
-			return account;
-		}
-	}
-	return MinecraftAccountPtr();
+	return accounts ? accounts->findAccountByProfileOrInternalId(key)
+					: MinecraftAccountPtr();
 }
 
 // The account's own skin, else the default Steve or Alex. Null only while

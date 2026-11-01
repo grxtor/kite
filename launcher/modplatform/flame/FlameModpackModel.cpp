@@ -364,15 +364,13 @@ FlameModpackModel::parseSearchResults(const QByteArray& bytes, int& totalCount)
 	QList<Pack> results;
 	totalCount = -1;
 
-	QJsonParseError parseError;
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error while parsing JSON response from CurseForge at"
-				   << parseError.offset << "reason:" << parseError.errorString();
+	const auto doc = Json::tryParseWithOffset(
+		bytes, "Error while parsing JSON response from CurseForge at");
+	if (!doc) {
 		return results;
 	}
 
-	for (const QJsonValue& raw : dataOf(doc).toArray()) {
+	for (const QJsonValue& raw : dataOf(*doc).toArray()) {
 		QJsonObject obj = raw.toObject();
 		Pack pack;
 		try {
@@ -414,9 +412,9 @@ FlameModpackModel::parseSearchResults(const QByteArray& bytes, int& totalCount)
 		results.append(pack);
 	}
 
-	if (doc.isObject()) {
+	if (doc->isObject()) {
 		const QJsonObject pagination =
-			doc.object().value(QStringLiteral("pagination")).toObject();
+			doc->object().value(QStringLiteral("pagination")).toObject();
 		if (pagination.contains(QStringLiteral("totalCount"))) {
 			totalCount = pagination.value(QStringLiteral("totalCount")).toInt(-1);
 		}
@@ -429,11 +427,9 @@ QVariantList FlameModpackModel::parseVersionsJson(const QByteArray& bytes,
 												  int mainFileId)
 {
 	QVariantList result;
-	QJsonParseError parseError;
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error while parsing JSON response from CurseForge at"
-				   << parseError.offset << "reason:" << parseError.errorString();
+	const auto doc = Json::tryParseWithOffset(
+		bytes, "Error while parsing JSON response from CurseForge at");
+	if (!doc) {
 		return result;
 	}
 
@@ -443,7 +439,7 @@ QVariantList FlameModpackModel::parseVersionsJson(const QByteArray& bytes,
 		QVariantMap entry;
 	};
 	QList<File> files;
-	for (const QJsonValue& raw : dataOf(doc).toArray()) {
+	for (const QJsonValue& raw : dataOf(*doc).toArray()) {
 		const QJsonObject obj = raw.toObject();
 		File file;
 		file.id = Json::ensureInteger(obj, "id", 0);

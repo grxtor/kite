@@ -133,32 +133,10 @@ void Technic::SingleZipPackInstallTask::extractFinished()
 					  "download it afresh."));
 		return;
 	}
-	QDir extractDir(m_stagingPath);
-
-	qDebug() << "Fixing permissions for extracted pack files...";
-	QDirIterator it(extractDir, QDirIterator::Subdirectories);
-	while (it.hasNext()) {
-		auto filepath = it.next();
-		QFileInfo file(filepath);
-		auto permissions = QFile::permissions(filepath);
-		auto origPermissions = permissions;
-		if (file.isDir()) {
-			permissions |= QFileDevice::Permission::ReadUser |
-						   QFileDevice::Permission::WriteUser |
-						   QFileDevice::Permission::ExeUser;
-		} else {
-			permissions |= QFileDevice::Permission::ReadUser |
-						   QFileDevice::Permission::WriteUser;
-		}
-		if (origPermissions != permissions) {
-			if (!QFile::setPermissions(filepath, permissions)) {
-				logWarning(
-					tr("Could not fix permissions for %1").arg(filepath));
-			} else {
-				qDebug() << "Fixed" << filepath;
-			}
-		}
-	}
+	Technic::TechnicPackProcessor::fixPermissions(
+		m_stagingPath, [this](const QString& path) {
+			logWarning(tr("Could not fix permissions for %1").arg(path));
+		});
 
 	shared_qobject_ptr<Technic::TechnicPackProcessor> packProcessor =
 		new Technic::TechnicPackProcessor();

@@ -88,6 +88,10 @@ class AccountList : public QAbstractListModel
 	void addAccount(const MinecraftAccountPtr account);
 	void removeAccount(QModelIndex index);
 	int findAccountByProfileId(const QString& profileId) const;
+	//! The account whose profileId() is @p key, else the one whose
+	//! internalId() is; null for an empty or unknown key.
+	MinecraftAccountPtr
+	findAccountByProfileOrInternalId(const QString& key) const;
 	/*!
 	 * Returns the index of the first **offline** account whose offlineUsername
 	 * matches \a username case-insensitively, or -1. MSA accounts are skipped.

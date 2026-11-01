@@ -786,16 +786,7 @@ InstanceList::InstListError InstanceList::loadList()
 	if (newList.size()) {
 		add(newList);
 	}
-	updateTotalPlayTime();
 	return NoError;
-}
-
-void InstanceList::updateTotalPlayTime()
-{
-	totalPlayTime = 0;
-	for (auto const& itr : m_instances) {
-		totalPlayTime += itr.get()->totalTimePlayed();
-	}
 }
 
 void InstanceList::saveNow()
@@ -1046,7 +1037,6 @@ void InstanceList::propertiesChanged(BaseInstance* inst)
 	int i = getInstIndex(inst);
 	if (i != -1) {
 		emit dataChanged(index(i), index(i));
-		updateTotalPlayTime();
 	}
 }
 
@@ -1587,12 +1577,6 @@ bool InstanceList::commitStagedInstance(const QString& path,
 bool InstanceList::destroyStagingPath(const QString& keyPath)
 {
 	return FS::deletePath(keyPath);
-}
-
-int InstanceList::getTotalPlayTime()
-{
-	updateTotalPlayTime();
-	return totalPlayTime;
 }
 
 #include "InstanceList.moc"

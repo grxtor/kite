@@ -46,8 +46,6 @@ class AuthFlow : public AccountTask
 
 	void executeTask() override;
 
-  signals:
-
   private slots:
 	void stepFinished(AccountTaskState resultingState, QString message);
 

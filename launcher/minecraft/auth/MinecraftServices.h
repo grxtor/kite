@@ -1,5 +1,4 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
- * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -20,29 +19,22 @@
 
 #pragma once
 
-#include <QObject>
+#include <QString>
 
-/* Total play time across every instance, for the Library's "Total play time"
- * line (ShowGlobalGameTime). Recounts on any change to the instance list or an
- * instance's data. */
-class PlayTimeSummary : public QObject
+/* api.minecraftservices.com, the host every profile, skin, cape and
+ * entitlement call goes to. */
+namespace MinecraftServices
 {
-	Q_OBJECT
 
-	/// Seconds; 0 when nothing has been played or there is no library yet.
-	Q_PROPERTY(qint64 totalSeconds READ totalSeconds NOTIFY totalChanged)
+	inline QString baseUrl()
+	{
+		return QStringLiteral("https://api.minecraftservices.com");
+	}
 
-  public:
-	explicit PlayTimeSummary(QObject* parent = nullptr);
-	~PlayTimeSummary() override;
+	/* @p path has no leading slash, e.g. "minecraft/profile". */
+	inline QString url(const QString& path)
+	{
+		return baseUrl() + QLatin1Char('/') + path;
+	}
 
-	qint64 totalSeconds() const;
-
-	Q_INVOKABLE void refresh();
-
-  signals:
-	void totalChanged();
-
-  private:
-	qint64 m_total = 0;
-};
+} // namespace MinecraftServices

@@ -27,7 +27,7 @@
 #include "InstanceList.h"
 #include "NullInstance.h"
 #include "launch/LaunchTask.h"
-#include "settings/INISettingsObject.h"
+#include "TestSettings.h"
 
 using FriendsApi::World;
 
@@ -36,21 +36,6 @@ namespace
 	/* The profile Friends is signed in as, and another account's. */
 	const QString kMe = QStringLiteral("11111111-2222-3333-4444-555555555555");
 	const QString kOther = QStringLiteral("99999999-8888-7777-6666-555555555555");
-
-	SettingsObjectPtr makeGlobalSettings(QTemporaryDir& dir)
-	{
-		auto settings =
-			std::make_shared<INISettingsObject>(dir.filePath("global.ini"));
-		settings->registerSetting("PreLaunchCommand", "");
-		settings->registerSetting("WrapperCommand", "");
-		settings->registerSetting("PostExitCommand", "");
-		settings->registerSetting("ShowConsole", true);
-		settings->registerSetting("ShowConsoleOnError", true);
-		settings->registerSetting("LogPrePostOutput", true);
-		settings->registerSetting("ConsoleMaxLines", 100000);
-		settings->registerSetting("ConsoleOverflowStop", true);
-		return settings;
-	}
 
 	void makeInstance(const QString& root, const QString& id,
 					  const QString& name)

@@ -20,6 +20,7 @@
 
 #include "Json.h"
 
+#include <QDebug>
 #include <QFile>
 
 #include "FileSystem.h"
@@ -63,6 +64,44 @@ namespace Json
 		Q_UNUSED(data);
 		return false;
 	}
+	static std::optional<QJsonDocument> parseOrNull(const QByteArray& data,
+													QJsonParseError& parseError,
+													QString* error)
+	{
+		const QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
+		if (error) {
+			*error = parseError.error == QJsonParseError::NoError
+						 ? QString()
+						 : parseError.errorString();
+		}
+		if (parseError.error != QJsonParseError::NoError) {
+			return std::nullopt;
+		}
+		return doc;
+	}
+	std::optional<QJsonDocument> tryParse(const QByteArray& data,
+										  const char* context, QString* error)
+	{
+		QJsonParseError parseError{};
+		auto doc = parseOrNull(data, parseError, error);
+		if (!doc && context) {
+			qWarning() << context << parseError.errorString();
+		}
+		return doc;
+	}
+	std::optional<QJsonDocument> tryParseWithOffset(const QByteArray& data,
+													const char* context,
+													QString* error)
+	{
+		QJsonParseError parseError{};
+		auto doc = parseOrNull(data, parseError, error);
+		if (!doc) {
+			qWarning() << context << parseError.offset
+					   << "reason:" << parseError.errorString();
+		}
+		return doc;
+	}
+
 	QJsonDocument requireDocument(const QByteArray& data, const QString& what)
 	{
 		if (isBinaryJson(data)) {

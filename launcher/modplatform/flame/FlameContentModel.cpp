@@ -106,15 +106,13 @@ FlameContentModel::parseCategoriesResponse(const QByteArray& bytes) const
 {
 	QList<ModPlatform::Category> categories;
 
-	QJsonParseError parseError{};
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error parsing CurseForge category response:"
-				   << parseError.errorString();
+	const auto doc =
+		Json::tryParse(bytes, "Error parsing CurseForge category response:");
+	if (!doc) {
 		return categories;
 	}
 
-	const QJsonArray entries = doc.object().value("data").toArray();
+	const QJsonArray entries = doc->object().value("data").toArray();
 	for (const auto& entryRaw : entries) {
 		const auto obj = entryRaw.toObject();
 		try {
@@ -138,19 +136,17 @@ FlameContentModel::parseSearchResponse(const QByteArray& bytes,
 {
 	QList<ModPlatform::IndexedProject> results;
 
-	QJsonParseError parseError{};
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error parsing CurseForge search response:"
-				   << parseError.errorString();
+	const auto doc =
+		Json::tryParse(bytes, "Error parsing CurseForge search response:");
+	if (!doc) {
 		return results;
 	}
 
 	QJsonArray entries;
-	if (doc.isObject() && doc.object().contains("data")) {
-		entries = doc.object().value("data").toArray();
+	if (doc->isObject() && doc->object().contains("data")) {
+		entries = doc->object().value("data").toArray();
 	} else {
-		entries = doc.array();
+		entries = doc->array();
 	}
 
 	for (const auto& entryRaw : entries) {
@@ -160,7 +156,7 @@ FlameContentModel::parseSearchResponse(const QByteArray& bytes,
 		}
 	}
 
-	const auto pagination = doc.object().value("pagination").toObject();
+	const auto pagination = doc->object().value("pagination").toObject();
 	totalHits = Json::ensureInteger(pagination, "totalCount", -1);
 
 	return results;
@@ -171,17 +167,15 @@ FlameContentModel::parseProjectResponse(const QByteArray& bytes) const
 {
 	ModPlatform::IndexedProject project;
 
-	QJsonParseError parseError{};
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error parsing CurseForge project response:"
-				   << parseError.errorString();
+	const auto doc =
+		Json::tryParse(bytes, "Error parsing CurseForge project response:");
+	if (!doc) {
 		return project;
 	}
 
 	/* /mods/{id} wraps the mod in "data"; a bare object is accepted too
 	 * (cached or proxied replies). */
-	const auto root = doc.object();
+	const auto root = doc->object();
 	const QJsonObject modObj = root.value("data").isObject()
 								   ? root.value("data").toObject()
 								   : root;

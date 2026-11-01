@@ -86,11 +86,6 @@ QString LegacyInstance::customBaseJar() const
 	return value;
 }
 
-bool LegacyInstance::shouldUseCustomBaseJar() const
-{
-	return m_settings->get("UseCustomBaseJar").toBool();
-}
-
 Task::Ptr LegacyInstance::createUpdateTask(Net::Mode)
 {
 	return nullptr;
@@ -147,10 +142,6 @@ QString LegacyInstance::coreModsDir() const
 	return FS::PathCombine(gameRoot(), "coremods");
 }
 
-QString LegacyInstance::resourceDir() const
-{
-	return FS::PathCombine(gameRoot(), "resources");
-}
 QString LegacyInstance::texturePacksDir() const
 {
 	return FS::PathCombine(gameRoot(), "texturepacks");
@@ -171,11 +162,6 @@ QString LegacyInstance::instanceConfigFolder() const
 	return FS::PathCombine(gameRoot(), "config");
 }
 
-bool LegacyInstance::shouldRebuild() const
-{
-	return m_settings->get("NeedsRebuild").toBool();
-}
-
 QString LegacyInstance::currentVersionId() const
 {
 	return m_settings->get("JarVersion").toString();
@@ -184,15 +170,6 @@ QString LegacyInstance::currentVersionId() const
 QString LegacyInstance::intendedVersionId() const
 {
 	return m_settings->get("IntendedJarVersion").toString();
-}
-
-bool LegacyInstance::shouldUpdate() const
-{
-	QVariant var = settings()->get("ShouldUpdate");
-	if (!var.isValid() || var.toBool() == false) {
-		return intendedVersionId() != currentVersionId();
-	}
-	return true;
 }
 
 QString LegacyInstance::defaultBaseJar() const

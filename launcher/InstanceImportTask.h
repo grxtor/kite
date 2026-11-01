@@ -31,6 +31,7 @@
 #include "settings/SettingsObject.h"
 #include "QObjectPtr.h"
 
+#include <functional>
 #include <memory>
 
 namespace Flame
@@ -135,6 +136,7 @@ class InstanceImportTask : public InstanceTask
 	void configureFlameInstance(Flame::Manifest& pack);
 	void onFlameFileResolutionSucceeded();
 	void processModrinth();
+	void startModDownload(const std::function<void()>& writeSidecars);
 	void processTechnic();
 
   private slots:

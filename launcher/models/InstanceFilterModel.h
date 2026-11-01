@@ -41,17 +41,9 @@ class InstanceFilterModel : public QSortFilterProxyModel
 				   filterTextChanged)
 	Q_PROPERTY(QString group READ group WRITE setGroup NOTIFY groupChanged)
 	Q_PROPERTY(int count READ count NOTIFY countChanged)
-	/* When set, `group` is matched exactly: the empty string then means "ungrouped
-	 * only" instead of "every group". */
-	Q_PROPERTY(bool exactGroup READ exactGroup WRITE setExactGroup NOTIFY
-				   exactGroupChanged)
 	/// When non-empty, only the instance with this id passes the filter.
 	Q_PROPERTY(QString instanceId READ instanceId WRITE setInstanceId NOTIFY
 				   instanceIdChanged)
-	/* Most recently launched first, ignoring groups and the InstSortMode
-	 * setting, and instances that were never launched are left out. */
-	Q_PROPERTY(bool recentFirst READ recentFirst WRITE setRecentFirst NOTIFY
-				   recentFirstChanged)
 	/* Whether rows are ordered group by group (default). Off, the library is one
 	 * list ordered only by InstSortMode. */
 	Q_PROPERTY(bool grouped READ grouped WRITE setGrouped NOTIFY
@@ -72,13 +64,15 @@ class InstanceFilterModel : public QSortFilterProxyModel
 
 	int count() const;
 
-	bool exactGroup() const;
+	/* When set, `group` is matched exactly: the empty string then means "ungrouped
+	 * only" instead of "every group". */
 	void setExactGroup(bool exact);
 
 	QString instanceId() const;
 	void setInstanceId(const QString& id);
 
-	bool recentFirst() const;
+	/* Most recently launched first, ignoring groups and the InstSortMode
+	 * setting, and instances that were never launched are left out. */
 	void setRecentFirst(bool recentFirst);
 
 	bool grouped() const;
@@ -93,9 +87,7 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	void filterTextChanged();
 	void groupChanged();
 	void countChanged();
-	void exactGroupChanged();
 	void instanceIdChanged();
-	void recentFirstChanged();
 	void groupedChanged();
 	void groupsChanged();
 	void firstIdChanged();

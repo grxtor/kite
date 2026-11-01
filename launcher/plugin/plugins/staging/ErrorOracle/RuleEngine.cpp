@@ -147,11 +147,3 @@ QList<Match> RuleEngine::analyse(const QString& text) const
 	});
 	return out;
 }
-
-int RuleEngine::findRuleIndex(const QString& id) const
-{
-	for (int i = 0; i < m_rules.size(); ++i)
-		if (m_rules[i].id == id)
-			return i;
-	return -1;
-}

@@ -374,6 +374,7 @@ void FriendsController::applySnapshot(
 	m_friends = std::move(friends);
 	m_incoming = std::move(incoming);
 	m_outgoing = std::move(outgoing);
+	emit updatedAtChanged();
 	if (!same) {
 		emit changed();
 	}
@@ -387,11 +388,15 @@ void FriendsController::clearData()
 	m_outgoing.clear();
 	m_blocked.clear();
 	m_loaded = false;
+	const bool hadUpdate = m_updatedAt.isValid();
 	m_updatedAt = QDateTime();
 	m_myView.reset();
 	m_settings = FriendsDisplay::settingsMap({});
 	m_settingsLoaded = false;
 	m_dataProfile.clear();
+	if (hadUpdate) {
+		emit updatedAtChanged();
+	}
 }
 
 void FriendsController::forgetAccountData()

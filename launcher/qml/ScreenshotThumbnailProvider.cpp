@@ -19,11 +19,8 @@
 
 #include "ScreenshotThumbnailProvider.h"
 
-#include <QCache>
 #include <QFileInfo>
 #include <QImage>
-#include <QMutex>
-#include <QMutexLocker>
 #include <QPointer>
 #include <QQuickTextureFactory>
 #include <QRunnable>
@@ -32,10 +29,13 @@
 #include <atomic>
 #include <utility>
 
+#include "qml/ImageLruCache.h"
+
 namespace
 {
 // Fallback for an invalid or empty requestedSize.
 constexpr int kDefaultThumbnailExtent = 256;
+constexpr int kMaxCachedThumbnails = 200;
 
 QSize normalizedBox(const QSize& requestedSize)
 {
@@ -52,37 +52,7 @@ QString cacheKeyFor(const QString& path, qint64 mtimeMs, const QSize& box)
 		.arg(box.width())
 		.arg(box.height());
 }
-} // namespace
 
-/* QCache keeps no locking of its own, and the pool's workers look up and
- * insert concurrently. Capacity is an entry count, not a byte budget. */
-class ScreenshotThumbnailCache
-{
-  public:
-	bool get(const QString& key, QImage& out)
-	{
-		QMutexLocker lock(&m_mutex);
-		if (const QImage* hit = m_cache.object(key)) {
-			out = *hit;
-			return true;
-		}
-		return false;
-	}
-
-	void insert(const QString& key, const QImage& image)
-	{
-		QMutexLocker lock(&m_mutex);
-		m_cache.insert(key, new QImage(image));
-	}
-
-  private:
-	static constexpr int kMaxEntries = 200;
-	QMutex m_mutex;
-	QCache<QString, QImage> m_cache{kMaxEntries};
-};
-
-namespace
-{
 /* Runs on a QThreadPool worker: stats the file, checks the cache, decodes
  * and scales on a miss. Touches only QImage, never QPixmap/QIcon. */
 class ScreenshotThumbnailRunnable : public QObject, public QRunnable
@@ -91,7 +61,7 @@ class ScreenshotThumbnailRunnable : public QObject, public QRunnable
   public:
 	ScreenshotThumbnailRunnable(
 		QString path, QSize requestedSize,
-		std::shared_ptr<ScreenshotThumbnailCache> cache)
+		std::shared_ptr<ImageLruCache> cache)
 		: m_path(std::move(path)), m_requestedSize(requestedSize),
 		  m_cache(std::move(cache))
 	{
@@ -160,7 +130,7 @@ class ScreenshotThumbnailRunnable : public QObject, public QRunnable
 
 	QString m_path;
 	QSize m_requestedSize;
-	std::shared_ptr<ScreenshotThumbnailCache> m_cache;
+	std::shared_ptr<ImageLruCache> m_cache;
 	std::atomic_bool m_cancelled{ false };
 };
 
@@ -169,7 +139,7 @@ class ScreenshotImageResponse : public QQuickImageResponse
 	Q_OBJECT
   public:
 	ScreenshotImageResponse(const QString& path, const QSize& requestedSize,
-							std::shared_ptr<ScreenshotThumbnailCache> cache,
+							std::shared_ptr<ImageLruCache> cache,
 							QThreadPool* pool)
 	{
 		auto* runnable = new ScreenshotThumbnailRunnable(
@@ -242,7 +212,7 @@ class ScreenshotImageResponse : public QQuickImageResponse
 } // namespace
 
 ScreenshotThumbnailProvider::ScreenshotThumbnailProvider()
-	: m_cache(std::make_shared<ScreenshotThumbnailCache>())
+	: m_cache(std::make_shared<ImageLruCache>(kMaxCachedThumbnails))
 {
 	// A private pool avoids contending with the global one other subsystems
 	// share.

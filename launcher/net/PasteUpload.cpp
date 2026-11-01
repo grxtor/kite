@@ -20,6 +20,7 @@
 
 #include "PasteUpload.h"
 #include "BuildConfig.h"
+#include "Json.h"
 #include "core/LauncherContext.h"
 #include "Logging.h"
 
@@ -155,13 +156,13 @@ void PasteUpload::downloadFinished()
 	QByteArray data = m_reply->readAll();
 	if (m_reply->error() == QNetworkReply::NetworkError::NoError) {
 		m_reply.reset();
-		QJsonParseError jsonError;
-		QJsonDocument doc = QJsonDocument::fromJson(data, &jsonError);
-		if (jsonError.error != QJsonParseError::NoError) {
-			emitFailed(jsonError.errorString());
+		QString jsonError;
+		const auto doc = Json::tryParse(data, nullptr, &jsonError);
+		if (!doc) {
+			emitFailed(jsonError);
 			return;
 		}
-		if (!parseResult(doc)) {
+		if (!parseResult(*doc)) {
 			emitFailed(tr("paste.ee returned an error. Please consult the logs "
 						  "for more information"));
 			return;
@@ -185,7 +186,6 @@ bool PasteUpload::parseResult(QJsonDocument doc)
 		return false;
 	}
 	m_pasteLink = object.value("link").toString();
-	m_pasteID = object.value("id").toString();
 	qCDebug(netLog) << m_pasteLink;
 	return true;
 }

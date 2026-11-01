@@ -102,6 +102,7 @@ class ServersListModelTest : public QObject
 	void ignoresFaviconThatIsNotPng();
 	void editsKeepTagsItDoesNotEdit();
 	void cleanModelNeverRewritesFile();
+	void unlockingReloadsWhatTheGameWrote();
 };
 
 void ServersListModelTest::addEditMoveRemove()
@@ -395,6 +396,30 @@ void ServersListModelTest::cleanModelNeverRewritesFile()
 	server = readFirstServer(path);
 	QVERIFY(server);
 	QCOMPARE(std::string((*server)["icon"]), std::string("third"));
+}
+
+void ServersListModelTest::unlockingReloadsWhatTheGameWrote()
+{
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+	const QString path = dir.filePath("servers.dat");
+	writeServersDat(path, "");
+
+	ServersListModel model(dir.path());
+	model.startWatching();
+	QVERIFY(model.data(model.index(0), ServersListModel::IconUrlRole)
+				.toString()
+				.isEmpty());
+
+	model.setLocked(true);
+	writeServersDat(path, pngBytes().toBase64().toStdString());
+	QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
+	model.setLocked(false);
+
+	QCOMPARE(resetSpy.count(), 1);
+	QVERIFY(model.data(model.index(0), ServersListModel::IconUrlRole)
+				.toString()
+				.startsWith(QStringLiteral("data:image/png;base64,")));
 }
 
 QTEST_GUILESS_MAIN(ServersListModelTest)

@@ -50,15 +50,6 @@
 extern char** environ;
 #endif
 
-// #define BREAK_INFINITE_LOOP
-// #define BREAK_EXCEPTION
-// #define BREAK_RETURN
-
-#ifdef BREAK_INFINITE_LOOP
-#include <thread>
-#include <chrono>
-#endif
-
 namespace
 {
 	/* Async-signal-safe crash reporter launch: the handler may run on any
@@ -269,18 +260,6 @@ static void crashSignalHandler(int sig)
 
 int main(int argc, char* argv[])
 {
-#ifdef BREAK_INFINITE_LOOP
-	while (true) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(250));
-	}
-#endif
-#ifdef BREAK_EXCEPTION
-	throw 42;
-#endif
-#ifdef BREAK_RETURN
-	return 42;
-#endif
-
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 8, 0))
 	QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 	QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);

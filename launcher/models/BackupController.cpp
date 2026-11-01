@@ -26,10 +26,10 @@
 #include <QMutex>
 #include <QMutexLocker>
 #include <QThreadPool>
-#include <QUrl>
 #include <QtConcurrentRun>
 #include <functional>
 
+#include "FileSystem.h"
 #include "tasks/Task.h"
 #include "tasks/TaskWatcher.h"
 
@@ -358,8 +358,7 @@ QObject* BackupController::exportBackup(int row, const QString& destUrlOrPath)
 		return nullptr;
 	}
 	const BackupEntry entry = m_entries.at(row);
-	const QUrl url(destUrlOrPath);
-	const QString dest = url.isLocalFile() ? url.toLocalFile() : destUrlOrPath;
+	const QString dest = FS::pathFromUrlOrPath(destUrlOrPath);
 	BackupManager manager = m_manager;
 
 	auto* task = new BackupJobTask(m_instance->id(), false, tr("Exporting backup…"), [manager, entry, dest]() mutable {
@@ -378,8 +377,7 @@ QObject* BackupController::importBackup(const QString& fileUrlOrPath,
 	if (jobRunning()) {
 		return nullptr;
 	}
-	const QUrl url(fileUrlOrPath);
-	const QString src = url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
+	const QString src = FS::pathFromUrlOrPath(fileUrlOrPath);
 	BackupManager manager = m_manager;
 	const QString labelCopy = label;
 

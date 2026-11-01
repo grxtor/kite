@@ -115,19 +115,6 @@ bool WorldList::deleteWorld(int index)
 	return false;
 }
 
-bool WorldList::deleteWorlds(int first, int last)
-{
-	for (int i = first; i <= last; i++) {
-		World& m = worlds[i];
-		m.destroy();
-	}
-	beginRemoveRows(QModelIndex(), first, last);
-	worlds.erase(worlds.begin() + first, worlds.begin() + last + 1);
-	endRemoveRows();
-	emit changed();
-	return true;
-}
-
 bool WorldList::resetIcon(int row)
 {
 	if (row >= worlds.size() || row < 0)

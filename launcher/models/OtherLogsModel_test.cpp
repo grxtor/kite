@@ -110,6 +110,37 @@ class OtherLogsModelTest : public QObject
 		QCOMPARE(model.content(), QString::fromUtf8(original));
 	}
 
+	// Files over 12 MB are not read, and a .gz may not unpack past 50 MB.
+	void selectFileRefusesAFileOverTheOpenCap()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		QFile big(QDir(tempDir.path()).filePath("big.log"));
+		QVERIFY(big.open(QIODevice::WriteOnly));
+		QVERIFY(big.resize(12ll * 1024 * 1024 + 1));
+		big.close();
+
+		OtherLogsModel model(tempDir.path(), logFilter());
+		model.selectFile(QStringLiteral("big.log"));
+
+		QVERIFY(model.content().contains(QStringLiteral("is too big")));
+	}
+
+	void selectFileRefusesAGzipThatUnpacksOverTheShowCap()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		QByteArray compressed;
+		QVERIFY(GZip::zip(QByteArray(50000001, 'a'), compressed));
+		QVERIFY(writeFile(QDir(tempDir.path()).filePath("bomb.log.gz"),
+						  compressed));
+
+		OtherLogsModel model(tempDir.path(), logFilter());
+		model.selectFile(QStringLiteral("bomb.log.gz"));
+
+		QVERIFY(model.content().contains(QStringLiteral("is too big")));
+	}
+
 	void selectingEmptyNameClearsContent()
 	{
 		QTemporaryDir tempDir;

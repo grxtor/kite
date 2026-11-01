@@ -65,7 +65,6 @@
 #include "models/JavaDownloadController.h"
 #include "models/FolderSettingsController.h"
 #include "models/UpdateSettingsController.h"
-#include "models/PlayTimeSummary.h"
 #include "models/LibraryController.h"
 #include "models/LauncherLogs.h"
 #include "models/CatPackList.h"
@@ -200,11 +199,8 @@ QString QmlShell::accountFace() const
 	if (!account) {
 		return QString();
 	}
-	// Offline accounts have no profile id; the provider accepts either.
-	const QString id = account->profileId().isEmpty() ? account->internalId()
-													   : account->profileId();
 	return QStringLiteral("image://accountface/%1?rev=%2")
-		.arg(id)
+		.arg(account->accountId())
 		.arg(m_accountRevision);
 }
 
@@ -214,8 +210,7 @@ QString QmlShell::accountKind() const
 	if (!account) {
 		return QString();
 	}
-	return account->isMSA() ? QStringLiteral("Microsoft")
-							: QStringLiteral("Offline");
+	return account->kindLabel();
 }
 
 int QmlShell::accountCount() const
@@ -285,14 +280,9 @@ QVariantMap QmlShell::launchOptions(const QString& id) const
 			continue;
 		}
 		accounts.append(QVariantMap{
-			// Offline accounts have no profile id.
-			{ QStringLiteral("id"), account->profileId().isEmpty()
-										? account->internalId()
-										: account->profileId() },
+			{ QStringLiteral("id"), account->accountId() },
 			{ QStringLiteral("name"), account->profileName() },
-			{ QStringLiteral("kind"), account->isMSA()
-										  ? QStringLiteral("Microsoft")
-										  : QStringLiteral("Offline") },
+			{ QStringLiteral("kind"), account->kindLabel() },
 			{ QStringLiteral("isDefault"), account == defaultAccount },
 		});
 	}
@@ -1163,15 +1153,6 @@ QObject* QmlShell::updateSettings() const
 	return expose(updateSettingsController());
 }
 
-QObject* QmlShell::playTime() const
-{
-	// First read once the root window loads, when the instance list exists.
-	if (!m_playTime) {
-		m_playTime = std::make_unique<PlayTimeSummary>();
-	}
-	return expose(m_playTime.get());
-}
-
 QObject* QmlShell::library() const
 {
 	if (!m_library && m_engine) {
@@ -1291,9 +1272,6 @@ QObject* QmlShell::instanceDetails(const QString& id)
 	// Every QObject* the bridge hands to QML needs pinning.
 	expose(m_instanceDetails->settings());
 	expose(m_instanceDetails->mods());
-	expose(m_instanceDetails->resourcePacks());
-	expose(m_instanceDetails->shaderPacks());
-	expose(m_instanceDetails->texturePacks());
 	expose(m_instanceDetails->worlds());
 	expose(m_instanceDetails->log());
 	expose(m_instanceDetails->otherLogs());

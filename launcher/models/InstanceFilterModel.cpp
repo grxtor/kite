@@ -23,26 +23,11 @@
 #include <QLocale>
 
 #include "core/LauncherContext.h"
+#include "models/RoleByName.h"
 #include "settings/SettingsObject.h"
 
 namespace
 {
-	/* First role named @p name in @p model's roleNames(), or @p fallback. */
-	int roleByName(const QAbstractItemModel* model, const QByteArray& name,
-					int fallback)
-	{
-		if (!model) {
-			return fallback;
-		}
-		const auto roles = model->roleNames();
-		for (auto it = roles.constBegin(); it != roles.constEnd(); ++it) {
-			if (it.value() == name) {
-				return it.key();
-			}
-		}
-		return fallback;
-	}
-
 	/* Natural order that does not rely on QCollator::setNumericMode(), which some
 	 * backends ignore (Qt without ICU sorted "Pack 10" before "Pack 2"). Digit runs
 	 * compare by value; everything between them goes through @p collator. */
@@ -164,18 +149,12 @@ int InstanceFilterModel::count() const
 	return rowCount();
 }
 
-bool InstanceFilterModel::exactGroup() const
-{
-	return m_exactGroup;
-}
-
 void InstanceFilterModel::setExactGroup(bool exact)
 {
 	if (m_exactGroup == exact) {
 		return;
 	}
 	m_exactGroup = exact;
-	Q_EMIT exactGroupChanged();
 	invalidateFilter();
 }
 
@@ -194,18 +173,12 @@ void InstanceFilterModel::setInstanceId(const QString& id)
 	invalidateFilter();
 }
 
-bool InstanceFilterModel::recentFirst() const
-{
-	return m_recentFirst;
-}
-
 void InstanceFilterModel::setRecentFirst(bool recentFirst)
 {
 	if (m_recentFirst == recentFirst) {
 		return;
 	}
 	m_recentFirst = recentFirst;
-	Q_EMIT recentFirstChanged();
 	invalidate();
 }
 

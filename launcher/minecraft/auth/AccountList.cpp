@@ -67,6 +67,25 @@ int AccountList::findAccountByProfileId(const QString& profileId) const
 	return -1;
 }
 
+MinecraftAccountPtr
+AccountList::findAccountByProfileOrInternalId(const QString& key) const
+{
+	if (key.isEmpty()) {
+		return MinecraftAccountPtr();
+	}
+	const int byProfileId = findAccountByProfileId(key);
+	if (byProfileId != -1) {
+		return at(byProfileId);
+	}
+	for (int i = 0; i < count(); ++i) {
+		MinecraftAccountPtr account = at(i);
+		if (account && account->internalId() == key) {
+			return account;
+		}
+	}
+	return MinecraftAccountPtr();
+}
+
 int AccountList::findOfflineAccountByUsername(const QString& username) const
 {
 	if (username.isEmpty())
@@ -414,8 +433,7 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
 		case StateKeyRole:
 			return accountStateKey(account->accountState());
 		case AccountIdRole:
-			return account->profileId().isEmpty() ? account->internalId()
-												   : account->profileId();
+			return account->accountId();
 
 		default:
 			return QVariant();

@@ -262,18 +262,6 @@ QObject* BundleCatalog::preview(const QStringList& projectIds,
 	return review;
 }
 
-QObject* BundleCatalog::installInto(QObject* review, const QString& instanceId)
-{
-	auto* installReview = qobject_cast<ContentInstallReview*>(review);
-	auto instance = minecraftInstance(instanceId);
-	auto folder = instance ? instance->loaderModList() : nullptr;
-	if (!installReview || !folder) {
-		return nullptr;
-	}
-	installReview->setFolder(folder);
-	return installReview->install();
-}
-
 bool BundleCatalog::applyPresetDefaults(const QString& instanceId,
 										const QString& presetId)
 {

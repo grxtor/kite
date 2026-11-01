@@ -80,9 +80,6 @@ class Config
 
 	QString GIT_REFSPEC;
 
-	/// The exact git tag of this build, if any.
-	QString GIT_TAG;
-
 	QString VERSION_STR;
 
 	QString NEWS_RSS_URL;

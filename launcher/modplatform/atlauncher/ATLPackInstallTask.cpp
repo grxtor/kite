@@ -91,17 +91,14 @@ namespace ATLauncher
 				 << QThread::currentThreadId();
 		jobPtr.reset();
 
-		QJsonParseError parse_error;
-		QJsonDocument doc = QJsonDocument::fromJson(response, &parse_error);
-		if (parse_error.error != QJsonParseError::NoError) {
-			qWarning() << "Error while parsing JSON response from FTB at "
-					   << parse_error.offset
-					   << " reason: " << parse_error.errorString();
+		const auto doc = Json::tryParseWithOffset(
+			response, "Error while parsing JSON response from ATLauncher at");
+		if (!doc) {
 			qWarning() << response;
 			return;
 		}
 
-		auto obj = doc.object();
+		auto obj = doc->object();
 
 		ATLauncher::PackVersion version;
 		try {

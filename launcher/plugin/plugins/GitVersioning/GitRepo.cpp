@@ -369,16 +369,6 @@ bool GitRepo::restore(const QString& sha, QString* errorMsg)
 	return true;
 }
 
-QString GitRepo::resolveRef(const QString& name) const
-{
-	if (!isInitialized() || name.isEmpty())
-		return {};
-	auto res = runGit({"rev-parse", "--verify", name});
-	if (res.exitCode != 0)
-		return {};
-	return QString::fromUtf8(res.stdoutBytes).trimmed();
-}
-
 QByteArray GitRepo::showFile(const QString& sha, const QString& path,
 							 bool* ok) const
 {

@@ -103,11 +103,6 @@ QString ManagedPackController::packName() const
 	return m_instance->managedPackName();
 }
 
-QString ManagedPackController::packId() const
-{
-	return m_instance->managedPackId();
-}
-
 QString ManagedPackController::installedVersionName() const
 {
 	return m_instance->managedPackVersionName();

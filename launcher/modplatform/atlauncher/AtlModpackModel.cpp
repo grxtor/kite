@@ -279,14 +279,12 @@ QList<ATLauncher::IndexedPack>
 AtlModpackModel::parseCatalogue(const QByteArray& bytes)
 {
 	QList<ATLauncher::IndexedPack> packs;
-	QJsonParseError parseError;
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error while parsing JSON response from ATLauncher at"
-				   << parseError.offset << "reason:" << parseError.errorString();
+	const auto doc = Json::tryParseWithOffset(
+		bytes, "Error while parsing JSON response from ATLauncher at");
+	if (!doc) {
 		return packs;
 	}
-	for (const auto& raw : doc.array()) {
+	for (const auto& raw : doc->array()) {
 		QJsonObject obj = raw.toObject();
 		ATLauncher::IndexedPack pack;
 		try {

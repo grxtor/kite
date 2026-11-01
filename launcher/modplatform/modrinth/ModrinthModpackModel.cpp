@@ -402,16 +402,13 @@ ModrinthModpackModel::parseSearchResults(const QByteArray& bytes,
 	QList<Modrinth::IndexedPack> results;
 	totalHits = -1;
 
-	QJsonParseError parseError;
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error while parsing JSON response from Modrinth at"
-				   << parseError.offset
-				   << "reason:" << parseError.errorString();
+	const auto doc = Json::tryParseWithOffset(
+		bytes, "Error while parsing JSON response from Modrinth at");
+	if (!doc) {
 		return results;
 	}
 
-	const QJsonObject obj = doc.object();
+	const QJsonObject obj = doc->object();
 	const QJsonArray hits = Json::ensureArray(obj, "hits");
 	for (const QJsonValue& hitRaw : hits) {
 		QJsonObject hitObj = hitRaw.toObject();
@@ -591,16 +588,13 @@ ModrinthModpackModel::parseVersionsJson(const QByteArray& bytes,
 {
 	QVariantList result;
 
-	QJsonParseError parseError;
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		qWarning() << "Error while parsing JSON response from Modrinth at"
-				   << parseError.offset
-				   << "reason:" << parseError.errorString();
+	const auto doc = Json::tryParseWithOffset(
+		bytes, "Error while parsing JSON response from Modrinth at");
+	if (!doc) {
 		return result;
 	}
 
-	QJsonArray arr = doc.array();
+	QJsonArray arr = doc->array();
 	Modrinth::IndexedPack tempPack;
 	tempPack.projectId = projectId;
 	try {
@@ -688,8 +682,7 @@ QObject* ModrinthModpackModel::install(const QString& projectId,
 	hint.versionLabel = versionLabel;
 	hint.iconUrl = iconUrl;
 	if (!packSlug.isEmpty()) {
-		hint.sourceUrl =
-			QStringLiteral("https://modrinth.com/modpack/%1").arg(packSlug);
+		hint.sourceUrl = ModrinthApi::siteModpackUrl(packSlug);
 	}
 	importTask->setPackSourceHint(hint);
 

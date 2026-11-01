@@ -43,15 +43,6 @@ namespace MMCZip
 	 * every file twice. */
 	using FilterFileFunction = std::function<bool(const QFileInfo&)>;
 
-	/**
-	 * Merge two zip files, using a filter function.
-	 * Reads entries from 'from' and writes them into the zip at 'intoPath'.
-	 * 'contained' tracks already-added filenames to avoid duplicates.
-	 */
-	bool mergeZipFiles(const QString& intoPath, QFileInfo from,
-					   QSet<QString>& contained,
-					   const FilterFunction filter = nullptr);
-
 	bool createModdedJar(QString sourceJarPath, QString targetJarPath,
 						 const QList<Mod>& mods);
 

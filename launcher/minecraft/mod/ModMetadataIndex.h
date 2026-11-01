@@ -107,7 +107,6 @@ class ModMetadataIndex
 	Entry findByPlatformProject(const QString& platform,
 								const QString& projectId) const;
 	Entry findByNormalizedName(const QString& normalizedName) const;
-	Entry findBySha1(const QString& sha1) const;
 
 	// Writes (or overwrites) the sidecar for `entry.fileName` and the cache.
 	// Returns true on success.

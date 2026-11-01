@@ -69,7 +69,6 @@ ApplicationWindow {
             JavaStore.download = root.shell.javaDownload
             LauncherStore.folders = root.shell.folderSettings
             LauncherStore.updates = root.shell.updateSettings
-            LauncherStore.playTime = root.shell.playTime
             LauncherStore.catPacks = root.shell.catPacks
             LauncherStore.icons = root.shell
             var mode = SettingsStore.string("UiThemeMode")

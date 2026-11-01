@@ -48,7 +48,6 @@
 #include "modplatform/flame/FlameApi.h"
 #include "modplatform/modrinth/ModrinthApi.h"
 
-#include <QCryptographicHash>
 #include <QDirIterator>
 #include <QHash>
 
@@ -479,16 +478,23 @@ namespace
 			return false;
 		}
 
-		QFile file(path);
-		if (!file.open(QIODevice::ReadOnly)) {
-			return false;
+		const QString got = FS::sha1Hex(path);
+		return !got.isEmpty() && got.compare(sha1, Qt::CaseInsensitive) == 0;
+	}
+
+	/* The first of @p candidates (game-relative) whose file under @p gameDir
+	 * matches the digest, to be kept as installed; empty if none does. */
+	QString firstInstalledMatch(const QDir& gameDir,
+								const QStringList& candidates,
+								const QString& sha1, qint64 expectedSize)
+	{
+		for (const QString& candidate : candidates) {
+			if (fileMatchesHash(gameDir.absoluteFilePath(candidate), sha1,
+								expectedSize)) {
+				return candidate;
+			}
 		}
-		QCryptographicHash hash(QCryptographicHash::Sha1);
-		if (!hash.addData(&file)) {
-			return false;
-		}
-		return QString::fromLatin1(hash.result().toHex())
-				   .compare(sha1, Qt::CaseInsensitive) == 0;
+		return {};
 	}
 
 	QStringList listFilesRelative(const QString& dir)
@@ -802,15 +808,9 @@ void InstanceImportTask::onFlameFileResolutionSucceeded()
 							? gameRelPath + QLatin1String(".disabled")
 							: FS::PathCombine(result.targetFolder,
 											  result.fileName);
-					QString keep;
-					for (const QString& candidate : {gameRelPath, otherRel}) {
-						if (fileMatchesHash(
-								installedGameDir.absoluteFilePath(candidate),
-								result.sha1, result.fileSize)) {
-							keep = candidate;
-							break;
-						}
-					}
+					const QString keep = firstInstalledMatch(
+						installedGameDir, {gameRelPath, otherRel}, result.sha1,
+						result.fileSize);
 					if (!keep.isEmpty()) {
 						/* Recorded under its on-disk name. */
 						contentPaths.append(keep);
@@ -895,24 +895,32 @@ void InstanceImportTask::onFlameFileResolutionSucceeded()
 
 	/* Stash file metadata for the sidecars, as in the Modrinth path; without
 	 * them the update check skips CurseForge-installed mods. */
-	const QString sidecarMcPath = FS::PathCombine(m_stagingPath, gameDirName());
-	const QVector<Flame::File> sidecarFiles = results.files;
+	startModDownload([sidecarMcPath =
+						  FS::PathCombine(m_stagingPath, gameDirName()),
+					  sidecarFiles = results.files]() {
+		writeFlameModSidecars(sidecarMcPath, sidecarFiles);
+	});
+}
 
+void InstanceImportTask::startModDownload(
+	const std::function<void()>& writeSidecars)
+{
 	connect(m_filesNetJob.get(), &NetJob::succeeded, this,
-			[this, sidecarMcPath, sidecarFiles]() {
-				writeFlameModSidecars(sidecarMcPath, sidecarFiles);
+			[this, writeSidecars]() {
+				writeSidecars();
 				m_filesNetJob.reset();
 				/* Only the optional head start on the game's own files is
 				 * left; it finishes the task either way. */
 				downloadFiles(openStagedInstance());
-				return;
 			});
-	connect(m_filesNetJob.get(), &NetJob::failed, [&](QString reason) {
+	connect(m_filesNetJob.get(), &NetJob::failed, [this](QString reason) {
 		emitFailed(reason);
 		m_filesNetJob.reset();
 	});
 	connect(m_filesNetJob.get(), &NetJob::progress,
-			[&](qint64 current, qint64 total) { setProgress(current, total); });
+			[this](qint64 current, qint64 total) {
+				setProgress(current, total);
+			});
 	propagateStepsFrom(m_filesNetJob.get());
 	setStatus(tr("Downloading mods..."));
 	m_filesNetJob->start();
@@ -1138,16 +1146,10 @@ void InstanceImportTask::processModrinth()
 			continue;
 		}
 		if (canReuseInstalled) {
-			const QString installedPath =
-				installedGameDir.absoluteFilePath(file.path);
-			QString keep;
-			if (fileMatchesHash(installedPath, file.sha1, file.fileSize)) {
-				keep = file.path;
-			} else if (fileMatchesHash(installedPath +
-										   QLatin1String(".disabled"),
-									   file.sha1, file.fileSize)) {
-				keep = file.path + QLatin1String(".disabled");
-			}
+			const QString keep = firstInstalledMatch(
+				installedGameDir,
+				{file.path, file.path + QLatin1String(".disabled")}, file.sha1,
+				file.fileSize);
 			if (!keep.isEmpty()) {
 				/* Recorded under its on-disk name. */
 				contentPaths.append(keep);
@@ -1177,25 +1179,10 @@ void InstanceImportTask::processModrinth()
 	/* Copy of the pack files and the staged .minecraft path, so the
 	 * post-download lambda can write sidecars without a stale stack frame;
 	 * without sidecars update detection does nothing. */
-	const QString sidecarMcPath = minecraftDir;
-	const QVector<Modrinth::File> sidecarFiles = pack.files;
-
-	connect(m_filesNetJob.get(), &NetJob::succeeded, this,
-			[this, sidecarMcPath, sidecarFiles]() {
-				writeModrinthModSidecars(sidecarMcPath, sidecarFiles);
-				m_filesNetJob.reset();
-				downloadFiles(openStagedInstance());
-			});
-	connect(m_filesNetJob.get(), &NetJob::failed, [&](QString reason) {
-		emitFailed(reason);
-		m_filesNetJob.reset();
+	startModDownload([sidecarMcPath = minecraftDir,
+					  sidecarFiles = pack.files]() {
+		writeModrinthModSidecars(sidecarMcPath, sidecarFiles);
 	});
-	connect(m_filesNetJob.get(), &NetJob::progress,
-			[&](qint64 current, qint64 total) { setProgress(current, total); });
-	propagateStepsFrom(m_filesNetJob.get());
-
-	setStatus(tr("Downloading mods..."));
-	m_filesNetJob->start();
 }
 
 void InstanceImportTask::processTechnic()

@@ -26,7 +26,7 @@
 
 #include <memory>
 
-class ScreenshotThumbnailCache;
+class ImageLruCache;
 
 /*
  * Decodes and scales screenshot thumbnails for QML, off the GUI thread:
@@ -66,5 +66,5 @@ class ScreenshotThumbnailProvider : public QQuickAsyncImageProvider
 
   private:
 	QThreadPool m_pool;
-	std::shared_ptr<ScreenshotThumbnailCache> m_cache;
+	std::shared_ptr<ImageLruCache> m_cache;
 };

@@ -435,93 +435,21 @@ bool MMCZip::ZipWriter::addFile(const QString& sourcePath,
 	return true;
 }
 
-bool MMCZip::mergeZipFiles(const QString& intoPath, QFileInfo from,
-						   QSet<QString>& contained,
-						   const FilterFunction filter)
+static QByteArray readEntryData(struct archive* ar, struct archive_entry* entry)
 {
-	auto ar = openZipForReading(from.filePath());
-	if (!ar)
-		return false;
-
-	struct EntryData {
-		QString name;
-		QByteArray data;
-	};
-	QList<EntryData> newEntries;
-
-	struct archive_entry* entry;
-	while (archive_read_next_header(ar.get(), &entry) == ARCHIVE_OK) {
-		QString filename = entryPathName(entry);
-		if (filter && !filter(filename)) {
-			qDebug() << "Skipping file " << filename << " from "
-					 << from.fileName() << " - filtered";
-			archive_read_data_skip(ar.get());
-			continue;
-		}
-		if (contained.contains(filename)) {
-			qDebug() << "Skipping already contained file " << filename
-					 << " from " << from.fileName();
-			archive_read_data_skip(ar.get());
-			continue;
-		}
-		contained.insert(filename);
-
-		la_int64_t entrySize = archive_entry_size(entry);
-		QByteArray data;
-		if (entrySize > 0) {
-			data.resize(entrySize);
-			la_ssize_t bytesRead =
-				archive_read_data(ar.get(), data.data(), entrySize);
-			if (bytesRead < 0) {
-				qCritical() << "Failed to read " << filename << " from "
-							<< from.fileName();
-				return false;
-			}
-			data.resize(bytesRead);
-		}
-		newEntries.append({filename, data});
+	la_int64_t sz = archive_entry_size(entry);
+	if (sz <= 0) {
+		// Size may be unknown; read in chunks
+		QByteArray result;
+		char buf[8192];
+		la_ssize_t r;
+		while ((r = archive_read_data(ar, buf, sizeof(buf))) > 0)
+			result.append(buf, r);
+		return result;
 	}
-
-	// libarchive cannot append: read the existing entries and write them all
-	// again.
-	QList<EntryData> existingEntries;
-	if (QFile::exists(intoPath)) {
-		auto existingAr = openZipForReading(intoPath);
-		if (existingAr) {
-			while (archive_read_next_header(existingAr.get(), &entry) ==
-				   ARCHIVE_OK) {
-				QString name = entryPathName(entry);
-				la_int64_t sz = archive_entry_size(entry);
-				QByteArray data;
-				if (sz > 0) {
-					data.resize(sz);
-					archive_read_data(existingAr.get(), data.data(), sz);
-				}
-				existingEntries.append({name, data});
-			}
-		}
-	}
-
-	auto aw = createZipForWriting(intoPath);
-	if (!aw)
-		return false;
-
-	for (const auto& e : existingEntries) {
-		if (!writeFileToArchive(aw.get(), e.name, e.data)) {
-			qCritical() << "Failed to write existing entry " << e.name;
-			return false;
-		}
-	}
-
-	for (const auto& e : newEntries) {
-		if (!writeFileToArchive(aw.get(), e.name, e.data)) {
-			qCritical() << "Failed to write " << e.name << " into the jar";
-			return false;
-		}
-	}
-
-	archive_write_close(aw.get());
-	return true;
+	QByteArray data(sz, Qt::Uninitialized);
+	archive_read_data(ar, data.data(), sz);
+	return data;
 }
 
 bool MMCZip::createModdedJar(QString sourceJarPath, QString targetJarPath,
@@ -558,13 +486,7 @@ bool MMCZip::createModdedJar(QString sourceJarPath, QString targetJarPath,
 					continue;
 				}
 				addedFiles.insert(filename);
-				la_int64_t sz = archive_entry_size(entry);
-				QByteArray data;
-				if (sz > 0) {
-					data.resize(sz);
-					archive_read_data(ar.get(), data.data(), sz);
-				}
-				allEntries.append({filename, data});
+				allEntries.append({filename, readEntryData(ar.get(), entry)});
 			}
 		} else if (mod.type() == Mod::MOD_SINGLEFILE) {
 			auto filename = mod.filename();
@@ -625,13 +547,7 @@ bool MMCZip::createModdedJar(QString sourceJarPath, QString targetJarPath,
 			archive_read_data_skip(ar.get());
 			continue;
 		}
-		la_int64_t sz = archive_entry_size(entry);
-		QByteArray data;
-		if (sz > 0) {
-			data.resize(sz);
-			archive_read_data(ar.get(), data.data(), sz);
-		}
-		allEntries.append({filename, data});
+		allEntries.append({filename, readEntryData(ar.get(), entry)});
 	}
 
 	auto aw = createZipForWriting(targetJarPath);
@@ -844,23 +760,6 @@ bool MMCZip::extractFile(QString fileCompressed, QString file, QString target)
 		return true;
 	}
 	return MMCZip::extractRelFile(fileCompressed, file, target);
-}
-
-static QByteArray readEntryData(struct archive* ar, struct archive_entry* entry)
-{
-	la_int64_t sz = archive_entry_size(entry);
-	if (sz <= 0) {
-		// Size may be unknown; read in chunks
-		QByteArray result;
-		char buf[8192];
-		la_ssize_t r;
-		while ((r = archive_read_data(ar, buf, sizeof(buf))) > 0)
-			result.append(buf, r);
-		return result;
-	}
-	QByteArray data(sz, Qt::Uninitialized);
-	archive_read_data(ar, data.data(), sz);
-	return data;
 }
 
 // One pass, stopping once every wanted entry has been read. The first entry of

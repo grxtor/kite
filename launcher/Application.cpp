@@ -863,7 +863,6 @@ void Application::initSettings()
 {
 	m_settings.reset(
 		new INISettingsObject(BuildConfig.KITE_CONFIGFILE, this));
-	m_settings->registerSetting("UpdateChannel", BuildConfig.VERSION_CHANNEL);
 	m_settings->registerSetting("AutoUpdate", true);
 
 	m_settings->registerSetting("UiThemeMode", QString("dark"));
@@ -981,7 +980,6 @@ void Application::initSettings()
 	m_settings->registerSetting("UseNativeGLFW", false);
 
 	m_settings->registerSetting("ShowGameTime", true);
-	m_settings->registerSetting("ShowGlobalGameTime", true);
 	m_settings->registerSetting("RecordGameTime", true);
 
 	m_settings->registerSetting("MCLaunchMethod", "KitePart");
@@ -1416,8 +1414,7 @@ void Application::importFromUrl(const QUrl& url)
 	if (!m_qmlWindowShown && !showMainWindow()) {
 		return;
 	}
-	m_qmlShell->requestImport(url.isLocalFile() ? url.toLocalFile()
-												: url.toString());
+	m_qmlShell->requestImport(FS::pathFromUrl(url));
 }
 
 void Application::showFatalErrorMessage(const QString& title,
@@ -1929,11 +1926,7 @@ bool Application::ensureQmlShell()
 				MinecraftAccountPtr account;
 				for (int i = 0; i < m_accounts->count(); ++i) {
 					const auto candidate = m_accounts->at(i);
-					const QString candidateId =
-						candidate->profileId().isEmpty()
-							? candidate->internalId()
-							: candidate->profileId();
-					if (candidateId == accountId) {
+					if (candidate->accountId() == accountId) {
 						account = candidate;
 						break;
 					}

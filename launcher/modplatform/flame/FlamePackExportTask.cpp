@@ -25,13 +25,13 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonParseError>
 #include <QSet>
 #include <QtConcurrentRun>
 
 #include <memory>
 #include <utility>
 
+#include "Json.h"
 #include "archive/ExportToZipTask.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
@@ -314,14 +314,14 @@ void FlamePackExportTask::onFingerprintsMatched()
 		return;
 	}
 
-	QJsonParseError parseError{};
-	const QJsonDocument doc = QJsonDocument::fromJson(response, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		onFingerprintMatchFailed(parseError.errorString());
+	QString parseError;
+	const auto doc = Json::tryParse(response, nullptr, &parseError);
+	if (!doc) {
+		onFingerprintMatchFailed(parseError);
 		return;
 	}
 
-	const QJsonArray matches = doc.object()
+	const QJsonArray matches = doc->object()
 								   .value("data")
 								   .toObject()
 								   .value("exactMatches")
@@ -429,14 +429,14 @@ void FlamePackExportTask::onProjectsLookedUp()
 		return;
 	}
 
-	QJsonParseError parseError{};
-	const QJsonDocument doc = QJsonDocument::fromJson(response, &parseError);
-	if (parseError.error != QJsonParseError::NoError) {
-		onProjectLookupFailed(parseError.errorString());
+	QString parseError;
+	const auto doc = Json::tryParse(response, nullptr, &parseError);
+	if (!doc) {
+		onProjectLookupFailed(parseError);
 		return;
 	}
 
-	for (const QJsonValue& value : doc.object().value("data").toArray()) {
+	for (const QJsonValue& value : doc->object().value("data").toArray()) {
 		const QJsonObject project = value.toObject();
 		const int addonId = project.value("id").toInt();
 		if (addonId <= 0) {

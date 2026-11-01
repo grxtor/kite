@@ -20,10 +20,11 @@
 
 #include "plugin/PluginSurfaceModel.h"
 
+#include "Json.h"
+
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonParseError>
 #include <QMetaType>
 #include <QSet>
 
@@ -167,11 +168,9 @@ void PluginSurfaceModel::refresh()
 		row.anchorContext = info.anchorContext;
 		row.revision = revision;
 
-		QJsonParseError err{};
-		const QJsonDocument doc =
-			QJsonDocument::fromJson(info.document.toUtf8(), &err);
-		if (err.error == QJsonParseError::NoError && doc.isObject())
-			row.document = doc.object().toVariantMap();
+		const auto doc = Json::tryParse(info.document.toUtf8());
+		if (doc && doc->isObject())
+			row.document = doc->object().toVariantMap();
 
 		m_rows.append(row);
 	}

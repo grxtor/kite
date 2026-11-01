@@ -76,8 +76,8 @@ QString
 ContentUpdateList::changelogUrl(const ModUpdateCheckTask::UpdateInfo& update)
 {
 	if (update.platform == ModrinthApi::get().id()) {
-		return QStringLiteral("https://modrinth.com/mod/%1/version/%2")
-			.arg(update.item.projectId, update.newVersionId);
+		return ModrinthApi::siteVersionUrl(update.item.projectId,
+										   update.newVersionId);
 	}
 	if (update.platform == FlameApi::get().id()) {
 		return FlameApi::get().projectPageUrl(update.item.projectId).toString();

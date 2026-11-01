@@ -24,6 +24,7 @@
 #include <QJsonArray>
 #include <QDebug>
 
+#include "Json.h"
 #include "Logging.h"
 #include "minecraft/skins/DefaultSkins.h"
 
@@ -63,15 +64,6 @@ namespace Parsers
 			return false;
 		}
 		out = (int64_t)value.toDouble();
-		return true;
-	}
-
-	bool getBool(QJsonValue value, bool& out)
-	{
-		if (!value.isBool()) {
-			return false;
-		}
-		out = value.toBool();
 		return true;
 	}
 
@@ -158,16 +150,14 @@ namespace Parsers
 #ifndef NDEBUG
 		qCDebug(minecraftauthLog) << redactTokens(data);
 #endif
-		QJsonParseError jsonError;
-		QJsonDocument doc = QJsonDocument::fromJson(data, &jsonError);
-		if (jsonError.error) {
-			qWarning() << "Failed to parse response from "
-						  "user.auth.xboxlive.com as JSON: "
-					   << jsonError.errorString();
+		const auto doc = Json::tryParse(
+			data,
+			"Failed to parse response from user.auth.xboxlive.com as JSON:");
+		if (!doc) {
 			return false;
 		}
 
-		auto obj = doc.object();
+		auto obj = doc->object();
 		if (!getDateTime(obj.value("IssueInstant"), output.issueInstant)) {
 			qWarning() << "User IssueInstant is not a timestamp";
 			return false;
@@ -226,16 +216,14 @@ namespace Parsers
 		qCDebug(minecraftauthLog) << redactTokens(data);
 #endif
 
-		QJsonParseError jsonError;
-		QJsonDocument doc = QJsonDocument::fromJson(data, &jsonError);
-		if (jsonError.error) {
-			qWarning() << "Failed to parse response from "
-						  "user.auth.xboxlive.com as JSON: "
-					   << jsonError.errorString();
+		const auto doc = Json::tryParse(
+			data,
+			"Failed to parse response from user.auth.xboxlive.com as JSON:");
+		if (!doc) {
 			return false;
 		}
 
-		auto obj = doc.object();
+		auto obj = doc->object();
 		if (!getString(obj.value("id"), output.id)) {
 			qWarning() << "Minecraft profile id is not a string";
 			return false;
@@ -316,16 +304,14 @@ namespace Parsers
 		qCDebug(minecraftauthLog) << redactTokens(data);
 #endif
 
-		QJsonParseError jsonError;
-		QJsonDocument doc = QJsonDocument::fromJson(data, &jsonError);
-		if (jsonError.error) {
-			qWarning() << "Failed to parse response from "
-						  "user.auth.xboxlive.com as JSON: "
-					   << jsonError.errorString();
+		const auto doc = Json::tryParse(
+			data,
+			"Failed to parse response from user.auth.xboxlive.com as JSON:");
+		if (!doc) {
 			return false;
 		}
 
-		auto obj = doc.object();
+		auto obj = doc->object();
 		output.canPlayMinecraft = false;
 		output.ownsMinecraft = false;
 
@@ -347,58 +333,21 @@ namespace Parsers
 		return true;
 	}
 
-	bool parseRolloutResponse(QByteArray& data, bool& result)
-	{
-		qCDebug(minecraftauthLog) << "Parsing Rollout response...";
-#ifndef NDEBUG
-		qCDebug(minecraftauthLog) << redactTokens(data);
-#endif
-
-		QJsonParseError jsonError;
-		QJsonDocument doc = QJsonDocument::fromJson(data, &jsonError);
-		if (jsonError.error) {
-			qWarning() << "Failed to parse response from "
-						  "https://api.minecraftservices.com/rollout/v1/"
-						  "msamigration as JSON: "
-					   << jsonError.errorString();
-			return false;
-		}
-
-		auto obj = doc.object();
-		QString feature;
-		if (!getString(obj.value("feature"), feature)) {
-			qWarning() << "Rollout feature is not a string";
-			return false;
-		}
-		if (feature != "msamigration") {
-			qWarning() << "Rollout feature is not what we expected "
-						  "(msamigration), but is instead \""
-					   << feature << "\"";
-			return false;
-		}
-		if (!getBool(obj.value("rollout"), result)) {
-			qWarning() << "Rollout feature is not a string";
-			return false;
-		}
-		return true;
-	}
-
 	bool parseMojangResponse(QByteArray& data, Katabasis::Token& output)
 	{
-		QJsonParseError jsonError;
 		qCDebug(minecraftauthLog) << "Parsing Mojang response...";
 #ifndef NDEBUG
 		qCDebug(minecraftauthLog) << redactTokens(data);
 #endif
-		QJsonDocument doc = QJsonDocument::fromJson(data, &jsonError);
-		if (jsonError.error) {
-			qWarning() << "Failed to parse response from "
-						  "api.minecraftservices.com/launcher/login as JSON: "
-					   << jsonError.errorString();
+		const auto doc = Json::tryParse(
+			data,
+			"Failed to parse response from "
+			"api.minecraftservices.com/launcher/login as JSON:");
+		if (!doc) {
 			return false;
 		}
 
-		auto obj = doc.object();
+		auto obj = doc->object();
 		double expires_in = 0;
 		if (!getNumber(obj.value("expires_in"), expires_in)) {
 			qWarning() << "expires_in is not a valid number";
@@ -491,16 +440,14 @@ namespace Parsers
 		// It has no entitlements or cape ids, only texture URLs in a base64 blob.
 		qCDebug(minecraftauthLog) << "Parsing Mojang session profile...";
 
-		QJsonParseError jsonError;
-		QJsonDocument doc = QJsonDocument::fromJson(data, &jsonError);
-		if (jsonError.error) {
-			qWarning() << "Failed to parse response from sessionserver as "
-						  "JSON:"
-					   << jsonError.errorString();
+		const auto doc = Json::tryParse(
+			data,
+			"Failed to parse response from sessionserver as JSON:");
+		if (!doc) {
 			return false;
 		}
 
-		QJsonObject obj = doc.object();
+		QJsonObject obj = doc->object();
 		if (!getString(obj.value("id"), output.id)) {
 			qWarning() << "Session profile id is not a string";
 			return false;
@@ -517,15 +464,14 @@ namespace Parsers
 			return false;
 		}
 
-		doc = QJsonDocument::fromJson(texturePayload, &jsonError);
-		if (jsonError.error) {
-			qWarning() << "Failed to parse the session texture payload as "
-						  "JSON:"
-					   << jsonError.errorString();
+		const auto textureDoc = Json::tryParse(
+			texturePayload,
+			"Failed to parse the session texture payload as JSON:");
+		if (!textureDoc) {
 			return false;
 		}
 
-		const QJsonValue textures = doc.object().value("textures");
+		const QJsonValue textures = textureDoc->object().value("textures");
 		if (!textures.isObject()) {
 			qWarning() << "Session texture payload has no textures object";
 			return false;

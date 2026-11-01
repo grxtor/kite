@@ -142,19 +142,16 @@ namespace ModpacksCH
 
 	void PackInstallTask::onDownloadSucceeded()
 	{
-		QJsonParseError parse_error;
-		QJsonDocument doc = QJsonDocument::fromJson(response, &parse_error);
-		if (parse_error.error != QJsonParseError::NoError) {
-			qWarning() << "Error while parsing JSON response from FTB at "
-					   << parse_error.offset
-					   << " reason: " << parse_error.errorString();
+		const auto doc = Json::tryParseWithOffset(
+			response, "Error while parsing JSON response from FTB at");
+		if (!doc) {
 			qWarning() << response;
 			jobPtr.reset();
 			emitFailed(tr("FTB sent back a pack version that could not be read."));
 			return;
 		}
 
-		auto obj = doc.object();
+		auto obj = doc->object();
 
 		ModpacksCH::Version version;
 		try {

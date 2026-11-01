@@ -178,16 +178,6 @@ void LearningStore::recordNovel(const QString& signature,
 	n.lastSeenSecs = QDateTime::currentSecsSinceEpoch();
 }
 
-QList<NovelFingerprint> LearningStore::novelFingerprints() const
-{
-	auto out = m_novel.values();
-	std::sort(out.begin(), out.end(),
-			  [](const NovelFingerprint& a, const NovelFingerprint& b) {
-				  return a.occurrences > b.occurrences;
-			  });
-	return out;
-}
-
 void LearningStore::forgetNovel(const QString& signature)
 {
 	m_novel.remove(signature);

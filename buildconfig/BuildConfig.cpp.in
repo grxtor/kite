@@ -57,7 +57,6 @@ Config::Config()
 
 	GIT_COMMIT = "@Kite_GIT_COMMIT@";
 	GIT_REFSPEC = "@Kite_GIT_REFSPEC@";
-	GIT_TAG = "@Kite_GIT_TAG@";
 
 	UPDATER_ENABLED =
 		!UPDATER_GITHUB_REPO.isEmpty() && !BUILD_ARTIFACT.isEmpty();

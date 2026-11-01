@@ -24,8 +24,7 @@
 
 #include "minecraft/mod/ModFolderModel.h"
 #include "minecraft/mod/ModMetadataIndex.h"
-#include "modplatform/flame/FlameApi.h"
-#include "modplatform/modrinth/ModrinthApi.h"
+#include "modplatform/ContentApis.h"
 
 ContentFilterModel::ContentFilterModel(QObject* parent)
 	: QSortFilterProxyModel(parent)
@@ -183,13 +182,10 @@ QString ContentFilterModel::homepageFor(const Mod& mod,
 	if (index) {
 		const ModMetadataIndex::Entry entry = index->get(keyFor(mod));
 		if (entry.hasPlatformOrigin()) {
-			if (entry.platform == ModrinthApi::get().id()) {
-				return ModrinthApi::get()
-					.projectPageUrl(entry.projectId)
-					.toString();
-			}
-			if (entry.platform == FlameApi::get().id()) {
-				return FlameApi::get().projectPageUrl(entry.projectId).toString();
+			const QString page =
+				ModPlatform::projectPageUrlById(entry.platform, entry.projectId);
+			if (!page.isEmpty()) {
+				return page;
 			}
 		}
 	}
@@ -206,13 +202,7 @@ QString ContentFilterModel::sourceFor(const Mod& mod,
 	if (!entry.hasPlatformOrigin()) {
 		return QString();
 	}
-	if (entry.platform == ModrinthApi::get().id()) {
-		return ModrinthApi::get().displayName();
-	}
-	if (entry.platform == FlameApi::get().id()) {
-		return FlameApi::get().displayName();
-	}
-	return QString();
+	return ModPlatform::displayNameById(entry.platform);
 }
 
 bool ContentFilterModel::matches(const Mod& mod, const QString& text)

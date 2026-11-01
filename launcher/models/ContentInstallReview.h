@@ -132,8 +132,6 @@ class ContentInstallReview : public QAbstractListModel
 	/// under K, which it replaces. Such a row starts ticked even though a version
 	/// is on disk. Before start() or applyResolution().
 	void setReplacements(const QHash<QString, QString>& fileByWantedId);
-	/// For a review made before its instance exists. Before install().
-	void setFolder(std::shared_ptr<ModFolderModel> folder);
 	/// Resolves dependencies, or settles at once when there are none.
 	void start();
 	/// Lists @p dependencies under the picked project and marks the review ready;

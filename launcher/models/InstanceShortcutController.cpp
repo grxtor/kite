@@ -151,8 +151,7 @@ bool InstanceShortcutController::create(const QString& name,
 							 : ShortcutTarget::Applications;
 		result = InstanceShortcuts::createInFolder(request);
 	} else {
-		const QUrl url(location);
-		const QString path = url.isLocalFile() ? url.toLocalFile() : location;
+		const QString path = FS::pathFromUrlOrPath(location);
 		if (path.isEmpty() || location == QLatin1String("other")) {
 			setError(tr("Choose where to put the shortcut."));
 			return false;

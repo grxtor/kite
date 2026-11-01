@@ -20,6 +20,7 @@
 
 #include "plugin/PluginSignature.h"
 #include "plugin/MMCOFormat.h"
+#include "Json.h"
 #include "Logging.h"
 #include <QByteArray>
 #include <QDateTime>
@@ -179,11 +180,10 @@ namespace PluginSignature
 			QFile f(g_cachePath);
 			if (!f.open(QIODevice::ReadOnly))
 				return;
-			QJsonParseError jerr;
-			auto doc = QJsonDocument::fromJson(f.readAll(), &jerr);
-			if (jerr.error != QJsonParseError::NoError || !doc.isObject())
+			const auto doc = Json::tryParse(f.readAll());
+			if (!doc || !doc->isObject())
 				return;
-			auto root = doc.object();
+			auto root = doc->object();
 			if (root.value("schema").toInt(0) != 1)
 				return;
 			for (auto v : root.value("entries").toArray()) {

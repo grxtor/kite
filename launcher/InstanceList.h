@@ -241,7 +241,6 @@ class InstanceList : public QAbstractListModel
 
 	bool destroyStagingPath(const QString& keyPath);
 
-	int getTotalPlayTime();
 
 	/* Newest-modified png/jpg/jpeg directly inside @p screenshotsDir as a
 	 * file:// URL, or empty. Pure (no InstanceList or QObject access), so it
@@ -265,7 +264,6 @@ class InstanceList : public QAbstractListModel
 
   private:
 	int getInstIndex(BaseInstance* inst) const;
-	void updateTotalPlayTime();
 	void add(const QList<InstancePtr>& list);
 	void loadGroupList();
 	void saveGroupList();
@@ -308,7 +306,6 @@ class InstanceList : public QAbstractListModel
 								const QString& screenshotsDir);
 
   private:
-	int totalPlayTime = 0;
 	QList<InstancePtr> m_instances;
 	QSet<QString> m_groupNameCache;
 

@@ -4,7 +4,7 @@
 <context>
     <name>ATLauncher::PackInstallTask</name>
     <message>
-        <location filename="../launcher/modplatform/atlauncher/ATLPackInstallTask.cpp" line="+110"/>
+        <location filename="../launcher/modplatform/atlauncher/ATLPackInstallTask.cpp" line="+107"/>
         <source>Could not understand pack manifest:
 </source>
         <translation>Paket bildirimi anlaşılamadı:
@@ -148,7 +148,7 @@
 <context>
     <name>AccountList</name>
     <message>
-        <location filename="../launcher/minecraft/auth/AccountList.cpp" line="+298"/>
+        <location filename="../launcher/minecraft/auth/AccountList.cpp" line="+317"/>
         <source>Unchecked</source>
         <comment>Account status</comment>
         <translation>Denetlenmedi</translation>
@@ -190,7 +190,7 @@
         <translation>Kayıp</translation>
     </message>
     <message>
-        <location line="+128"/>
+        <location line="+127"/>
         <source>Account</source>
         <translation>Hesap</translation>
     </message>
@@ -243,12 +243,12 @@
         <translation>Çevrimdışı</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+16"/>
         <source>Use this account</source>
         <translation>Bu hesabı kullan</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+6"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
@@ -314,7 +314,7 @@
 <context>
     <name>AccountsController</name>
     <message>
-        <location filename="../launcher/models/AccountsController.cpp" line="+292"/>
+        <location filename="../launcher/models/AccountsController.cpp" line="+274"/>
         <source>Skin images must be 64x64 or 64x32 pixel PNG files.</source>
         <translation>Skin görselleri 64x64 veya 64x32 piksellik PNG dosyaları olmalı.</translation>
     </message>
@@ -368,17 +368,22 @@
         <translation>Çevrimdışı hesap ekle</translation>
     </message>
     <message>
-        <location line="-208"/>
+        <location line="-206"/>
         <source>Default account</source>
         <translation>Varsayılan hesap</translation>
     </message>
     <message>
-        <location line="+0"/>
+        <location line="-1"/>
+        <source>%1  ·  %2</source>
+        <translation>%1  ·  %2</translation>
+    </message>
+    <message>
+        <location line="+1"/>
         <source>Suggested default</source>
         <translation>Önerilen varsayılan</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+1"/>
         <source>Microsoft</source>
         <translation>Microsoft</translation>
     </message>
@@ -388,7 +393,7 @@
         <translation>Çevrimdışı</translation>
     </message>
     <message>
-        <location line="+13"/>
+        <location line="+15"/>
         <source>Offline only: online-mode servers and custom skins need a Microsoft account.</source>
         <translation>Yalnızca çevrimdışı: çevrimiçi modlu sunucular ve özel skinler için Microsoft hesabı gerekir.</translation>
     </message>
@@ -403,7 +408,7 @@
         <translation>Skin ve pelerin</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+7"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
@@ -584,14 +589,14 @@
 <context>
     <name>Application</name>
     <message>
-        <location filename="../launcher/Application.cpp" line="+1550"/>
+        <location filename="../launcher/Application.cpp" line="+1547"/>
         <source>Backup Restoring</source>
-        <translation type="unfinished"></translation>
+        <translation>Yedek geri yükleniyor</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>A backup is being restored into this instance. Launch it once the restore is done.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bu kuruluma bir yedek geri yükleniyor. Geri yükleme bitince kurulumu başlat.</translation>
     </message>
     <message>
         <location line="+161"/>
@@ -677,9 +682,9 @@ Ayrıntılar şu güncelleme günlüğünde:
         <translation>Güncelleme tamamlandı</translation>
     </message>
     <message>
-        <location line="+197"/>
+        <location line="+193"/>
         <source>Kite could not start</source>
-        <translation type="unfinished"></translation>
+        <translation>Kite başlatılamadı</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -687,7 +692,10 @@ Ayrıntılar şu güncelleme günlüğünde:
 
 The log file has the details:
 %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Arayüz yüklenemedi.
+
+Ayrıntılar günlük dosyasında:
+%1</translation>
     </message>
     <message>
         <location line="+159"/>
@@ -765,7 +773,7 @@ The log file has the details:
         <translation>Ada göre sırala</translation>
     </message>
     <message>
-        <location line="+298"/>
+        <location line="+296"/>
         <source>ATLauncher sent back no modpacks.</source>
         <translation>ATLauncher hiç mod paketi göndermedi.</translation>
     </message>
@@ -826,7 +834,7 @@ The log file has the details:
         <translation>Sil</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+19"/>
         <source>Exporting backup…</source>
         <translation>Yedek dışa aktarılıyor…</translation>
     </message>
@@ -836,7 +844,7 @@ The log file has the details:
         <translation>Dışa aktar</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+15"/>
         <source>Importing backup…</source>
         <translation>Yedek içe aktarılıyor…</translation>
     </message>
@@ -849,7 +857,7 @@ The log file has the details:
 <context>
     <name>BackupJobTask</name>
     <message>
-        <location line="-169"/>
+        <location line="-167"/>
         <source>The operation failed. See the launcher log for details.</source>
         <translation>İşlem başarısız oldu. Ayrıntılar için başlatıcı günlüğüne bak.</translation>
     </message>
@@ -877,7 +885,7 @@ The log file has the details:
     <message>
         <location filename="../launcher/qml/Components/BackupsTab.qml" line="+31"/>
         <source>Another backup action on this instance is still running.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bu kurulumda başka bir yedek işlemi hâlâ sürüyor.</translation>
     </message>
     <message>
         <location line="+28"/>
@@ -1023,7 +1031,7 @@ The log file has the details:
     <name>BundleCatalog</name>
     <message>
         <location filename="../launcher/modplatform/BundleCatalog.cpp" line="+259"/>
-        <location line="+85"/>
+        <location line="+73"/>
         <source>Recommended mods</source>
         <translation>Önerilen modlar</translation>
     </message>
@@ -1131,7 +1139,7 @@ The log file has the details:
 <context>
     <name>CapeChange</name>
     <message>
-        <location filename="../launcher/minecraft/services/CapeChange.cpp" line="+43"/>
+        <location filename="../launcher/minecraft/services/CapeChange.cpp" line="+44"/>
         <source>Equipping cape</source>
         <translation>Pelerin takılıyor</translation>
     </message>
@@ -2495,7 +2503,7 @@ The log file has the details:
 <context>
     <name>DependencyResolver</name>
     <message>
-        <location filename="../launcher/modplatform/DependencyResolver.cpp" line="+212"/>
+        <location filename="../launcher/modplatform/DependencyResolver.cpp" line="+238"/>
         <source>Resolving dependencies...</source>
         <translation>Bağımlılıklar çözümleniyor...</translation>
     </message>
@@ -2503,24 +2511,23 @@ The log file has the details:
 <context>
     <name>DirectJavaLaunch</name>
     <message>
-        <location filename="../launcher/minecraft/launch/DirectJavaLaunch.cpp" line="+38"/>
+        <location filename="../launcher/minecraft/launch/DirectJavaLaunch.cpp" line="+36"/>
         <source>Starting Minecraft</source>
         <translation>Minecraft başlatılıyor</translation>
     </message>
     <message>
-        <location line="+46"/>
+        <location line="+39"/>
         <source>The wrapper command &quot;%1&quot; couldn&apos;t be found.</source>
         <translation>&quot;%1&quot; sarmalayıcı komutu bulunamadı.</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+7"/>
         <source>Could not launch minecraft!</source>
         <extracomment>Error message displayed if instance can&apos;t start</extracomment>
         <translation>Minecraft başlatılamadı</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <location line="+8"/>
+        <location line="+1"/>
         <source>Game crashed.</source>
         <translation>Oyun çöktü.</translation>
     </message>
@@ -2640,12 +2647,12 @@ The log file has the details:
 <context>
     <name>EntitlementsStep</name>
     <message>
-        <location filename="../launcher/minecraft/auth/steps/EntitlementsStep.cpp" line="+37"/>
+        <location filename="../launcher/minecraft/auth/steps/EntitlementsStep.cpp" line="+38"/>
         <source>Determining game ownership.</source>
         <translation>Oyun sahipliği belirleniyor.</translation>
     </message>
     <message>
-        <location line="+43"/>
+        <location line="+42"/>
         <source>Got entitlements</source>
         <translation>Hak bilgileri alındı</translation>
     </message>
@@ -3118,7 +3125,7 @@ Lütfen tekrar dene.</translation>
         <translation>Bu sürümde CurseForge API anahtarı yok, bu yüzden CurseForge&apos;da arama yapılamıyor.</translation>
     </message>
     <message>
-        <location line="+307"/>
+        <location line="+303"/>
         <source>This build has no CurseForge API key.</source>
         <translation>Bu sürümde CurseForge API anahtarı yok.</translation>
     </message>
@@ -4323,7 +4330,7 @@ Lütfen tekrar dene.</translation>
         <translation>Ada göre sırala</translation>
     </message>
     <message>
-        <location line="+306"/>
+        <location line="+305"/>
         <source>FTB sent back no modpacks.</source>
         <translation>FTB hiç mod paketi göndermedi.</translation>
     </message>
@@ -4861,7 +4868,7 @@ Lütfen tekrar dene.</translation>
         <translation>Geçen sefer çöktü</translation>
     </message>
     <message>
-        <location line="+40"/>
+        <location line="+39"/>
         <source>%1  •  %2%</source>
         <translation>%1  •  %2%</translation>
     </message>
@@ -4869,12 +4876,12 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeJumpCard</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeJumpCard.qml" line="+163"/>
+        <location filename="../launcher/qml/Components/HomeJumpCard.qml" line="+156"/>
         <source>New</source>
         <translation>Yeni</translation>
     </message>
     <message>
-        <location line="+32"/>
+        <location line="+31"/>
         <source>Crashed last time</source>
         <translation>Geçen sefer çöktü</translation>
     </message>
@@ -4988,12 +4995,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeStageCard</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeStageCard.qml" line="+22"/>
-        <source>Vanilla</source>
-        <translation>Vanilla</translation>
-    </message>
-    <message>
-        <location line="+83"/>
+        <location filename="../launcher/qml/Components/HomeStageCard.qml" line="+104"/>
         <source>Crashed last time</source>
         <translation>Geçen sefer çöktü</translation>
     </message>
@@ -5124,22 +5126,28 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceCard</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceCard.qml" line="+142"/>
-        <source>Starting…</source>
-        <translation>Başlıyor…</translation>
-    </message>
-    <message>
-        <location line="+0"/>
+        <location filename="../launcher/qml/Components/InstanceCard.qml" line="+68"/>
+        <location line="+80"/>
         <source>Running</source>
         <translation>Çalışıyor</translation>
     </message>
     <message>
-        <location line="+80"/>
+        <location line="+33"/>
+        <source>Stop</source>
+        <translation>Durdur</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Play</source>
+        <translation>Oyna</translation>
+    </message>
+    <message>
+        <location line="+16"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="-14"/>
+        <location line="-39"/>
         <source>%1%</source>
         <translation>%1%</translation>
     </message>
@@ -5147,7 +5155,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceContentController</name>
     <message>
-        <location filename="../launcher/models/InstanceContentController.cpp" line="+527"/>
+        <location filename="../launcher/models/InstanceContentController.cpp" line="+517"/>
         <source>No file was chosen.</source>
         <translation>Hiç dosya seçilmedi.</translation>
     </message>
@@ -5186,7 +5194,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceDetails</name>
     <message>
-        <location filename="../launcher/models/InstanceDetails.cpp" line="+383"/>
+        <location filename="../launcher/models/InstanceDetails.cpp" line="+340"/>
         <source>Copying world…</source>
         <translation>Dünya kopyalanıyor…</translation>
     </message>
@@ -5196,7 +5204,7 @@ Lütfen tekrar dene.</translation>
         <translation>Dünyayı kopyala</translation>
     </message>
     <message>
-        <location line="+137"/>
+        <location line="+136"/>
         <source>Adding world…</source>
         <translation>Dünya ekleniyor…</translation>
     </message>
@@ -5224,7 +5232,7 @@ Lütfen tekrar dene.</translation>
         <translation>Modrinth paketi için bir sürüm gerekli.</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+6"/>
         <source>Choose where to save the export.</source>
         <translation>Dışa aktarmanın nereye kaydedileceğini seç.</translation>
     </message>
@@ -5271,7 +5279,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceImportTask</name>
     <message>
-        <location filename="../launcher/InstanceImportTask.cpp" line="+71"/>
+        <location filename="../launcher/InstanceImportTask.cpp" line="+70"/>
         <source>Downloading modpack:
 %1</source>
         <translation>Mod paketi indiriliyor:
@@ -5321,15 +5329,15 @@ Lütfen tekrar dene.</translation>
         <translation>%1 için izinler düzeltilemedi</translation>
     </message>
     <message>
-        <location line="+187"/>
-        <location line="+441"/>
-        <location line="+278"/>
+        <location line="+194"/>
+        <location line="+443"/>
+        <location line="+257"/>
         <location line="+47"/>
         <source>Installation cancelled.</source>
         <translation>Yükleme iptal edildi.</translation>
     </message>
     <message>
-        <location line="-754"/>
+        <location line="-735"/>
         <source>Could not understand pack manifest:
 </source>
         <translation>Paket bildirimi anlaşılamadı:
@@ -5371,23 +5379,23 @@ Lütfen tekrar dene.</translation>
     </message>
     <message>
         <location line="+76"/>
-        <location line="+280"/>
+        <location line="+282"/>
         <source>Installation cancelled: the modpack&apos;s untrusted content was not accepted.</source>
         <translation>Yükleme iptal edildi: mod paketinin güvenilmeyen içeriği kabul edilmedi.</translation>
     </message>
     <message>
-        <location line="-274"/>
+        <location line="-276"/>
         <source>Mod download</source>
         <translation>Mod indirme</translation>
     </message>
     <message>
         <location line="+21"/>
-        <location line="+351"/>
+        <location line="+353"/>
         <source>Checking files already installed...</source>
         <translation>Zaten yüklü dosyalar denetleniyor...</translation>
     </message>
     <message>
-        <location line="-332"/>
+        <location line="-334"/>
         <source>This &apos;Folder&apos; may need extracting: %1</source>
         <translation>Bu &apos;Folder&apos; çıkarılmayı gerektirebilir: %1</translation>
     </message>
@@ -5397,7 +5405,7 @@ Lütfen tekrar dene.</translation>
         <translation>%1 modu (proje %2) atlanıyor - indirme adresi ve dosya adı yok</translation>
     </message>
     <message>
-        <location line="+42"/>
+        <location line="+36"/>
         <source>Nesting modpacks in modpacks is not implemented, nothing was downloaded: %1</source>
         <translation>Mod paketlerinin içinde mod paketi kullanımı desteklenmiyor, hiçbir şey indirilmedi: %1</translation>
     </message>
@@ -5432,18 +5440,17 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     </message>
     <message>
         <location line="+10"/>
-        <location line="+281"/>
+        <location line="+283"/>
         <source>Update cancelled.</source>
         <translation>Güncelleme iptal edildi.</translation>
     </message>
     <message>
-        <location line="-256"/>
-        <location line="+280"/>
+        <location line="-250"/>
         <source>Downloading mods...</source>
         <translation>Modlar indiriliyor...</translation>
     </message>
     <message>
-        <location line="-228"/>
+        <location line="+52"/>
         <source>Could not understand Modrinth modpack manifest:
 </source>
         <translation>Modrinth mod paketi bildirimi anlaşılamadı:
@@ -5460,7 +5467,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>İndirme adresi olmayan dosya atlanıyor: %1</translation>
     </message>
     <message>
-        <location line="+88"/>
+        <location line="+67"/>
         <source>The Technic pack could not be processed.</source>
         <translation>Technic paketi işlenemedi.</translation>
     </message>
@@ -5625,7 +5632,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstanceListRow</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceListRow.qml" line="+143"/>
+        <location filename="../launcher/qml/Components/InstanceListRow.qml" line="+63"/>
+        <source>Running</source>
+        <translation>Çalışıyor</translation>
+    </message>
+    <message>
+        <location line="+84"/>
         <source>%1%</source>
         <translation>%1%</translation>
     </message>
@@ -5868,7 +5880,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Genişletildi</translation>
     </message>
     <message>
-        <location line="+55"/>
+        <location line="+58"/>
         <source>Group options</source>
         <translation>Grup seçenekleri</translation>
     </message>
@@ -6095,7 +6107,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>sunucu</translation>
     </message>
     <message>
-        <location line="+19"/>
+        <location line="+18"/>
         <source>Choose where to put the shortcut.</source>
         <translation>Kısayolun nereye konacağını seç.</translation>
     </message>
@@ -6230,7 +6242,7 @@ Kurulumu başlattığında indirilecekler.</translation>
     <message>
         <location line="+26"/>
         <source>This Java build cannot be installed.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bu Java derlemesi yüklenemiyor.</translation>
     </message>
     <message>
         <location line="+7"/>
@@ -6383,7 +6395,7 @@ Kurulumu başlattığında indirilecekler.</translation>
         <location line="+24"/>
         <location line="+74"/>
         <source>The Java manifest is not safe to install.</source>
-        <translation type="unfinished"></translation>
+        <translation>Java bildirimini yüklemek güvenli değil.</translation>
     </message>
     <message>
         <location line="-60"/>
@@ -6404,7 +6416,7 @@ Kurulumu başlattığında indirilecekler.</translation>
 <context>
     <name>JavaInstallList</name>
     <message>
-        <location filename="../launcher/qml/Components/JavaInstallList.qml" line="+44"/>
+        <location filename="../launcher/qml/Components/JavaInstallList.qml" line="+45"/>
         <source>Java %1</source>
         <translation>Java %1</translation>
     </message>
@@ -6412,17 +6424,17 @@ Kurulumu başlattığında indirilecekler.</translation>
 <context>
     <name>JavaInstallRow</name>
     <message>
-        <location filename="../launcher/qml/Components/JavaInstallRow.qml" line="+87"/>
+        <location filename="../launcher/qml/Components/JavaInstallRow.qml" line="+29"/>
         <source>32-bit</source>
-        <translation type="unfinished"></translation>
+        <translation>32 bit</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+73"/>
         <source>Recommended</source>
         <translation>Önerilen</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+0"/>
         <source>In use</source>
         <translation>Kullanımda</translation>
     </message>
@@ -6525,17 +6537,18 @@ Kurulumu başlattığında indirilecekler.</translation>
         <location line="-25"/>
         <source>Failed to start the updater.
 Reason: %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>Güncelleyici başlatılamadı.
+Sebep: %1.</translation>
     </message>
     <message>
         <location line="+20"/>
         <source>The updater did not finish within 60 seconds.</source>
-        <translation type="unfinished"></translation>
+        <translation>Güncelleyici 60 saniye içinde bitmedi.</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>The updater did not start within 5 seconds.</source>
-        <translation type="unfinished"></translation>
+        <translation>Güncelleyici 5 saniye içinde başlamadı.</translation>
     </message>
     <message>
         <location line="+28"/>
@@ -6595,7 +6608,7 @@ Neden: %1.</translation>
 <context>
     <name>KiteLoginStep</name>
     <message>
-        <location filename="../launcher/minecraft/auth/steps/KiteLoginStep.cpp" line="+37"/>
+        <location filename="../launcher/minecraft/auth/steps/KiteLoginStep.cpp" line="+38"/>
         <source>Accessing Mojang services.</source>
         <translation>Mojang hizmetlerine erişiliyor.</translation>
     </message>
@@ -6618,29 +6631,28 @@ Neden: %1.</translation>
 <context>
     <name>KitePartLaunch</name>
     <message>
-        <location filename="../launcher/minecraft/launch/KitePartLaunch.cpp" line="+70"/>
+        <location filename="../launcher/minecraft/launch/KitePartLaunch.cpp" line="+67"/>
         <source>Starting Minecraft</source>
         <translation>Minecraft başlatılıyor</translation>
     </message>
     <message>
-        <location line="+63"/>
+        <location line="+56"/>
         <source>The wrapper command &quot;%1&quot; couldn&apos;t be found.</source>
         <translation>&quot;%1&quot; sarmalayıcı komutu bulunamadı.</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+7"/>
         <source>Could not launch minecraft!</source>
         <extracomment>Error message displayed if instace can&apos;t start</extracomment>
         <translation>Minecraft başlatılamadı</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <location line="+8"/>
+        <location line="+1"/>
         <source>Game crashed.</source>
         <translation>Oyun çöktü.</translation>
     </message>
     <message>
-        <location line="+59"/>
+        <location line="+51"/>
         <source>The game did not react to the abort request. Killing it.</source>
         <translation>Oyun durdurma isteğine yanıt vermedi. Zorla kapatılıyor.</translation>
     </message>
@@ -6650,27 +6662,27 @@ Neden: %1.</translation>
     <message>
         <location filename="../launcher/ui/LaunchController.cpp" line="+48"/>
         <source>No instance specified!</source>
-        <translation type="unfinished"></translation>
+        <translation>Kurulum belirtilmedi!</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>JVM arguments warning</source>
-        <translation type="unfinished"></translation>
+        <translation>JVM bağımsız değişkenleri uyarısı</translation>
     </message>
     <message>
         <location line="+21"/>
         <source>No Accounts</source>
-        <translation type="unfinished"></translation>
+        <translation>Hesap yok</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>In order to play Minecraft, you must have at least one Microsoft account logged in. Would you like to open the account manager to add an account now?</source>
-        <translation type="unfinished"></translation>
+        <translation>Minecraft oynamak için en az bir Microsoft hesabıyla giriş yapmış olman gerekir. Hesap eklemek için hesap yöneticisini şimdi açalım mı?</translation>
     </message>
     <message>
         <location line="+191"/>
         <source>Play Demo</source>
-        <translation type="unfinished"></translation>
+        <translation>Demo oyna</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -6690,7 +6702,7 @@ Neden: %1.</translation>
     <message>
         <location line="+18"/>
         <source>No account selected for launch.</source>
-        <translation type="unfinished"></translation>
+        <translation>Başlatmak için seçili hesap yok.</translation>
     </message>
     <message>
         <location line="+8"/>
@@ -6700,27 +6712,27 @@ Neden: %1.</translation>
     <message>
         <location line="+11"/>
         <source>Your account is currently not logged in. Please enter your password to log in again. &lt;br /&gt; &lt;br /&gt; This could be caused by a password change.</source>
-        <translation type="unfinished"></translation>
+        <translation>Hesabın şu anda giriş yapmış durumda değil. Yeniden giriş yapmak için parolanı gir. &lt;br /&gt; &lt;br /&gt; Bunun sebebi bir parola değişikliği olabilir.</translation>
     </message>
     <message>
         <location line="+72"/>
         <source>Player name</source>
-        <translation type="unfinished"></translation>
+        <translation>Oyuncu adı</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Choose your offline mode player name.</source>
-        <translation type="unfinished"></translation>
+        <translation>Çevrimdışı mod oyuncu adını seç.</translation>
     </message>
     <message>
         <location line="+25"/>
         <source>Received undetermined session status during login.</source>
-        <translation type="unfinished"></translation>
+        <translation>Girişte belirsiz bir oturum durumu alındı.</translation>
     </message>
     <message>
         <location line="+19"/>
         <source>Play demo?</source>
-        <translation type="unfinished"></translation>
+        <translation>Demo oynansın mı?</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -6728,12 +6740,15 @@ Neden: %1.</translation>
 You need to purchase the game first to play it.
 
 Do you want to play the demo?</source>
-        <translation type="unfinished"></translation>
+        <translation>Bu hesap Minecraft&apos;a sahip değil.
+Oynamak için önce oyunu satın alman gerekir.
+
+Demoyu oynamak ister misin?</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Launch cancelled - account does not own Minecraft.</source>
-        <translation type="unfinished"></translation>
+        <translation>Başlatma iptal edildi - hesap Minecraft&apos;a sahip değil.</translation>
     </message>
     <message>
         <location line="+26"/>
@@ -6748,101 +6763,103 @@ Do you want to play the demo?</source>
     <message>
         <location line="+26"/>
         <source>The account has expired and needs to be logged into manually again.</source>
-        <translation type="unfinished"></translation>
+        <translation>Hesabın süresi dolmuş, elle yeniden giriş yapılması gerekiyor.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Account refresh failed</source>
-        <translation type="unfinished"></translation>
+        <translation>Hesap yenilenemedi</translation>
     </message>
     <message>
         <location line="+8"/>
         <source>The account no longer exists on the servers. It may have been migrated, in which case please add the new account you migrated this one to.</source>
-        <translation type="unfinished"></translation>
+        <translation>Hesap artık sunucularda yok. Başka bir hesaba taşınmış olabilir; öyleyse taşıdığın yeni hesabı ekle.</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Account gone</source>
-        <translation type="unfinished"></translation>
+        <translation>Hesap kayıp</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>Failed to launch.</source>
-        <translation type="unfinished"></translation>
+        <translation>Başlatılamadı.</translation>
     </message>
     <message>
         <location line="+9"/>
         <location line="+145"/>
         <source>Error!</source>
-        <translation type="unfinished"></translation>
+        <translation>Hata!</translation>
     </message>
     <message>
         <location line="-144"/>
         <location line="+2"/>
         <source>Couldn&apos;t load the instance profile.</source>
-        <translation type="unfinished"></translation>
+        <translation>Kurulum profili yüklenemedi.</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>Couldn&apos;t instantiate a launcher.</source>
-        <translation type="unfinished"></translation>
+        <translation>Başlatıcı oluşturulamadı.</translation>
     </message>
     <message>
         <location line="+137"/>
         <source>Couldn&apos;t start profiler: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Profil oluşturucu başlatılamadı: %1</translation>
     </message>
     <message>
         <location line="+11"/>
         <source>Waiting.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bekleniyor.</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>The game launch is delayed until you press the button. This is the right time to setup the profiler, as the profiler server is running now.
 
 %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Oyunun başlatılması, düğmeye basana kadar bekletiliyor. Profil oluşturucu sunucusu şu an çalıştığı için profil oluşturucuyu kurmanın tam zamanı.
+
+%1</translation>
     </message>
     <message>
         <location line="+11"/>
         <source>Error</source>
-        <translation type="unfinished">Hata</translation>
+        <translation>Hata</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Couldn&apos;t start the profiler: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Profil oluşturucu başlatılamadı: %1</translation>
     </message>
     <message>
         <location line="+57"/>
         <source>Already stopping</source>
-        <translation type="unfinished"></translation>
+        <translation>Zaten durduruluyor</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Kite is already shutting this instance down. Give it a few seconds - if the game does not react, it gets killed automatically.</source>
-        <translation type="unfinished"></translation>
+        <translation>Kite bu kurulumu zaten kapatıyor. Birkaç saniye bekle; oyun yanıt vermezse otomatik olarak zorla kapatılır.</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>Can&apos;t kill Minecraft</source>
-        <translation type="unfinished"></translation>
+        <translation>Minecraft zorla kapatılamıyor</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>This instance is at a point in the launch process that can&apos;t be interrupted. Please try again in a moment.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bu kurulum, başlatma sürecinin kesilemeyen bir noktasında. Lütfen biraz sonra tekrar dene.</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>Kill Minecraft?</source>
-        <translation type="unfinished"></translation>
+        <translation>Minecraft zorla kapatılsın mı?</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>This can cause the instance to get corrupted and should only be used if Minecraft is frozen for some reason</source>
-        <translation type="unfinished"></translation>
+        <translation>Bu, kurulumun bozulmasına yol açabilir; yalnızca Minecraft herhangi bir sebeple donduysa kullan.</translation>
     </message>
 </context>
 <context>
@@ -6911,7 +6928,7 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
 <context>
     <name>LegacyInstance</name>
     <message>
-        <location filename="../launcher/minecraft/legacy/LegacyInstance.cpp" line="+219"/>
+        <location filename="../launcher/minecraft/legacy/LegacyInstance.cpp" line="+196"/>
         <source>Legacy</source>
         <translation>Eski</translation>
     </message>
@@ -7365,7 +7382,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+312"/>
+        <location filename="../launcher/qml/Main.qml" line="+311"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -7559,7 +7576,7 @@ Neden:
 <context>
     <name>ManagedPackController</name>
     <message>
-        <location filename="../launcher/models/ManagedPackController.cpp" line="+182"/>
+        <location filename="../launcher/models/ManagedPackController.cpp" line="+177"/>
         <source>Unknown pack provider.</source>
         <translation>Bilinmeyen paket sağlayıcısı.</translation>
     </message>
@@ -8453,7 +8470,7 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
 <context>
     <name>MinecraftInstance</name>
     <message>
-        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+856"/>
+        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+841"/>
         <source>Kite mod: %1</source>
         <translation>Kite modu: %1</translation>
     </message>
@@ -8489,7 +8506,7 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
 <context>
     <name>MinecraftProfileStep</name>
     <message>
-        <location filename="../launcher/minecraft/auth/steps/MinecraftProfileStep.cpp" line="+38"/>
+        <location filename="../launcher/minecraft/auth/steps/MinecraftProfileStep.cpp" line="+39"/>
         <source>Fetching the Minecraft profile.</source>
         <translation>Minecraft profili alınıyor.</translation>
     </message>
@@ -8578,7 +8595,7 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
 <context>
     <name>ModFolderModel</name>
     <message>
-        <location filename="../launcher/minecraft/mod/ModFolderModel.cpp" line="+436"/>
+        <location filename="../launcher/minecraft/mod/ModFolderModel.cpp" line="+419"/>
         <source>Folder</source>
         <translation>Klasör</translation>
     </message>
@@ -8858,7 +8875,7 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
 <context>
     <name>ModPickerSheet</name>
     <message>
-        <location filename="../launcher/qml/Components/ModPickerSheet.qml" line="+41"/>
+        <location filename="../launcher/qml/Components/ModPickerSheet.qml" line="+40"/>
         <source>All</source>
         <translation>Tümü</translation>
     </message>
@@ -8893,22 +8910,12 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
         <translation>Bitti</translation>
     </message>
     <message>
-        <location line="+132"/>
-        <source>On</source>
-        <translation>Açık</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>Off</source>
-        <translation>Kapalı</translation>
-    </message>
-    <message>
-        <location line="+25"/>
+        <location line="+79"/>
         <source>Default</source>
         <translation>Varsayılan</translation>
     </message>
     <message>
-        <location line="+21"/>
+        <location line="+1"/>
         <source>Needs %1</source>
         <translation>%1 gerekir</translation>
     </message>
@@ -9114,7 +9121,7 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
         <translation>%1 paket sürümü bulunamadı</translation>
     </message>
     <message>
-        <location line="+31"/>
+        <location line="+28"/>
         <source>FTB sent back a pack version that could not be read.</source>
         <translation>FTB okunamayan bir paket sürümü gönderdi.</translation>
     </message>
@@ -9385,18 +9392,18 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     <message>
         <location line="-361"/>
         <source>Pick a Minecraft version.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bir Minecraft sürümü seç.</translation>
     </message>
     <message>
         <location line="+1"/>
         <location line="+3"/>
         <source>Give the instance a name.</source>
-        <translation type="unfinished"></translation>
+        <translation>Kuruluma bir ad ver.</translation>
     </message>
     <message>
         <location line="-1"/>
         <source>Choose a modpack file or paste a link.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bir mod paketi dosyası seç ya da bağlantı yapıştır.</translation>
     </message>
     <message>
         <location line="+359"/>
@@ -9558,7 +9565,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Kite&apos;a hoş geldin</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+6"/>
         <source>A couple of choices and you&apos;re playing.</source>
         <translation>Birkaç seçim ve oynuyorsun.</translation>
     </message>
@@ -9568,17 +9575,17 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Dilini seç</translation>
     </message>
     <message>
-        <location line="+196"/>
+        <location line="+199"/>
         <source>Discover</source>
         <translation>Keşfet</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="-5"/>
         <source>New instance</source>
         <translation>Yeni kurulum</translation>
     </message>
     <message>
-        <location line="-201"/>
+        <location line="-192"/>
         <source>Sign in to play online</source>
         <translation>Çevrimiçi oynamak için giriş yap</translation>
     </message>
@@ -9613,7 +9620,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>%1% çevrildi</translation>
     </message>
     <message>
-        <location line="+36"/>
+        <location line="+40"/>
         <source>Download Java automatically</source>
         <translation>Java&apos;yı otomatik indir</translation>
     </message>
@@ -9633,7 +9640,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Bu bilgisayardaki Java</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+7"/>
         <source>Detect again</source>
         <translation>Yeniden tara</translation>
     </message>
@@ -9648,32 +9655,32 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Bu bilgisayarda Java bulunamadı. Yukarıdaki otomatik indirmeyi aç ya da Java&apos;yı yükleyip yeniden tara.</translation>
     </message>
     <message>
-        <location line="+32"/>
+        <location line="+15"/>
         <source>Sign in with Microsoft</source>
         <translation>Microsoft ile giriş yap</translation>
     </message>
     <message>
-        <location line="-13"/>
+        <location line="+54"/>
         <source>Back</source>
         <translation>Geri</translation>
     </message>
     <message>
-        <location line="-156"/>
+        <location line="-213"/>
         <source>Start a new instance, or find a modpack in Discover.</source>
-        <translation type="unfinished"></translation>
+        <translation>Yeni bir kurulum başlat ya da Keşfet&apos;te bir mod paketi bul.</translation>
     </message>
     <message>
-        <location line="+178"/>
+        <location line="+192"/>
         <source>Go to Home</source>
         <translation>Ana sayfaya git</translation>
     </message>
     <message>
-        <location line="-15"/>
+        <location line="-25"/>
         <source>Later</source>
         <translation>Sonra</translation>
     </message>
     <message>
-        <location line="+34"/>
+        <location line="+54"/>
         <source>Continue</source>
         <translation>Devam</translation>
     </message>
@@ -9891,7 +9898,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>PackProfile</name>
     <message>
-        <location filename="../launcher/minecraft/PackProfile.cpp" line="+362"/>
+        <location filename="../launcher/minecraft/PackProfile.cpp" line="+359"/>
         <source>Updating %1</source>
         <translation>%1 güncelleniyor</translation>
     </message>
@@ -10131,7 +10138,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>PasteUpload</name>
     <message>
-        <location filename="../launcher/net/PasteUpload.cpp" line="+139"/>
+        <location filename="../launcher/net/PasteUpload.cpp" line="+140"/>
         <source>Uploading to paste.ee</source>
         <translation>paste.ee&apos;ye yükleniyor</translation>
     </message>
@@ -10401,7 +10408,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>PluginLoader</name>
     <message>
-        <location filename="../launcher/plugin/PluginLoader.cpp" line="+412"/>
+        <location filename="../launcher/plugin/PluginLoader.cpp" line="+404"/>
         <source>“%1” was built for plugin ABI %2; this Kite supports %3–%4. It needs to be updated by its author.</source>
         <translation>“%1” eklenti ABI %2 için derlenmiş; bu Kite %3–%4 sürümlerini destekliyor. Yazarının güncellemesi gerekiyor.</translation>
     </message>
@@ -10409,12 +10416,12 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>PluginManager</name>
     <message>
-        <location filename="../launcher/plugin/PluginManager.cpp" line="+337"/>
+        <location filename="../launcher/plugin/PluginManager.cpp" line="+335"/>
         <source>Waiting for plugins…</source>
         <translation>Eklentiler bekleniyor…</translation>
     </message>
     <message>
-        <location line="+3235"/>
+        <location line="+3236"/>
         <source>Uploading skin…</source>
         <translation>Skin yükleniyor…</translation>
     </message>
@@ -10572,7 +10579,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Çevrimdışı hesap</translation>
     </message>
     <message>
-        <location line="+58"/>
+        <location line="+60"/>
         <source>Skin and cape</source>
         <translation>Skin ve pelerin</translation>
     </message>
@@ -10602,7 +10609,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>ProfileSkinImport</name>
     <message>
-        <location filename="../launcher/minecraft/skins/ProfileSkinImport.cpp" line="+66"/>
+        <location filename="../launcher/minecraft/skins/ProfileSkinImport.cpp" line="+65"/>
         <source>Looking up %1</source>
         <translation>%1 aranıyor</translation>
     </message>
@@ -10673,7 +10680,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     <message>
         <location line="+23"/>
         <source>Task Status...</source>
-        <translation type="unfinished"></translation>
+        <translation>Görev durumu...</translation>
     </message>
 </context>
 <context>
@@ -10793,7 +10800,7 @@ Bunları JVM bağımsız değişkenlerinden kaldırana kadar bu mesaj gösterile
         <translation>%1 için varlıklar</translation>
     </message>
     <message>
-        <location filename="../launcher/minecraft/Component.cpp" line="+305"/>
+        <location filename="../launcher/minecraft/Component.cpp" line="+300"/>
         <source>Patch is not loaded yet.</source>
         <translation>Yama henüz yüklenmedi.</translation>
     </message>
@@ -10848,7 +10855,7 @@ Bunları JVM bağımsız değişkenlerinden kaldırana kadar bu mesaj gösterile
         <translation>Sürüm dosyasında desteklenmeyen &apos;+minecraftArguments&apos; öğesi var</translation>
     </message>
     <message>
-        <location filename="../launcher/minecraft/PackProfile.cpp" line="-1161"/>
+        <location filename="../launcher/minecraft/PackProfile.cpp" line="-1160"/>
         <source>Invalid component file version, expected %1</source>
         <translation>Geçersiz bileşen dosyası sürümü, beklenen: %1</translation>
     </message>
@@ -10858,20 +10865,14 @@ Bunları JVM bağımsız değişkenlerinden kaldırana kadar bu mesaj gösterile
         <translation>Geçersiz sıra dosyası sürümü, beklenen: %1</translation>
     </message>
     <message>
-        <location line="+45"/>
-        <location line="+56"/>
+        <location line="+44"/>
         <source>Unable to open the version file %1: %2.</source>
         <translation>%1 sürüm dosyası açılamadı: %2.</translation>
     </message>
     <message>
-        <location line="-35"/>
+        <location line="+20"/>
         <source>Unable to process the version file %1: %2 at line %3 column %4.</source>
         <translation>%1 sürüm dosyası işlenemedi: %2, satır %3 sütun %4.</translation>
-    </message>
-    <message>
-        <location line="+46"/>
-        <source>Unable to process the version file %1.</source>
-        <translation>%1 sürüm dosyası işlenemedi.</translation>
     </message>
     <message>
         <location filename="../launcher/minecraft/auth/AccountData.cpp" line="+356"/>
@@ -10899,7 +10900,7 @@ Bunları JVM bağımsız değişkenlerinden kaldırana kadar bu mesaj gösterile
         <translation>MCEdit başlatılamadı. Yeniden yüklenmesi gerekebilir.</translation>
     </message>
     <message>
-        <location filename="../launcher/modplatform/atlauncher/AtlModpackModel.cpp" line="-362"/>
+        <location filename="../launcher/modplatform/atlauncher/AtlModpackModel.cpp" line="-360"/>
         <source>%1 (recommended)</source>
         <translation>%1 (önerilen)</translation>
     </message>
@@ -10914,7 +10915,7 @@ Bunları JVM bağımsız değişkenlerinden kaldırana kadar bu mesaj gösterile
         <translation>%1 yükleyicisinin birden fazla sürümünde çalışabilir. Devam etmek için birini seç.</translation>
     </message>
     <message>
-        <location filename="../launcher/modplatform/flame/FlameApi.cpp" line="+96"/>
+        <location filename="../launcher/modplatform/flame/FlameApi.cpp" line="+87"/>
         <source>Sort by Featured</source>
         <translation>Öne çıkanlara göre sırala</translation>
     </message>
@@ -10925,7 +10926,7 @@ Bunları JVM bağımsız değişkenlerinden kaldırana kadar bu mesaj gösterile
     </message>
     <message>
         <location line="+1"/>
-        <location filename="../launcher/modplatform/modrinth/ModrinthApi.cpp" line="+173"/>
+        <location filename="../launcher/modplatform/modrinth/ModrinthApi.cpp" line="+164"/>
         <source>Sort by Last Updated</source>
         <translation>Son güncellemeye göre sırala</translation>
     </message>
@@ -11395,28 +11396,28 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
     <message>
         <location filename="../launcher/ui/themes/CatPack.cpp" line="+194"/>
         <source>Background Cat (from MultiMC)</source>
-        <translation type="unfinished"></translation>
+        <translation>Arka Plan Kedisi (MultiMC&apos;den)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Rory ID 11 (drawn by Ashtaka)</source>
-        <translation type="unfinished"></translation>
+        <translation>Rory ID 11 (çizen: Ashtaka)</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Rory ID 11 (flat edition, drawn by Ashtaka)</source>
-        <translation type="unfinished"></translation>
+        <translation>Rory ID 11 (düz sürüm, çizen: Ashtaka)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Teawie (drawn by SympathyTea)</source>
-        <translation type="unfinished"></translation>
+        <translation>Teawie (çizen: SympathyTea)</translation>
     </message>
 </context>
 <context>
     <name>QmlShell</name>
     <message>
-        <location filename="../launcher/qml/QmlShell.cpp" line="+414"/>
+        <location filename="../launcher/qml/QmlShell.cpp" line="+404"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>
@@ -11449,7 +11450,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
 <context>
     <name>QmlUiHost</name>
     <message>
-        <location filename="../launcher/qml/QmlUiHost.cpp" line="+604"/>
+        <location filename="../launcher/qml/QmlUiHost.cpp" line="+601"/>
         <source>Optional mods for %1</source>
         <translation>%1 için isteğe bağlı modlar</translation>
     </message>
@@ -11536,7 +11537,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
 <context>
     <name>QmlUiRequest</name>
     <message>
-        <location line="-462"/>
+        <location line="-455"/>
         <source>Name must be 3-16 characters long: letters, numbers and underscores only.</source>
         <translation>Ad 3-16 karakter uzunluğunda olmalı: yalnızca harf, rakam ve alt çizgi.</translation>
     </message>
@@ -11604,7 +11605,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
     <message>
         <location line="+11"/>
         <source>The download does not match its published SHA-256 checksum.</source>
-        <translation type="unfinished"></translation>
+        <translation>İndirilen dosya, yayımlanan SHA-256 sağlama toplamıyla eşleşmiyor.</translation>
     </message>
     <message>
         <location line="+11"/>
@@ -13501,7 +13502,7 @@ Currently installed version: %1</source>
     <message>
         <location line="+0"/>
         <source>Delete… (in use)</source>
-        <translation type="unfinished"></translation>
+        <translation>Sil… (kullanımda)</translation>
     </message>
     <message>
         <location line="+13"/>
@@ -13592,7 +13593,7 @@ Currently installed version: %1</source>
 <context>
     <name>SkinDelete</name>
     <message>
-        <location filename="../launcher/minecraft/services/SkinDelete.cpp" line="+42"/>
+        <location filename="../launcher/minecraft/services/SkinDelete.cpp" line="+43"/>
         <source>Deleting skin</source>
         <translation>Skin siliniyor</translation>
     </message>
@@ -13646,7 +13647,7 @@ Currently installed version: %1</source>
 <context>
     <name>SkinUpload</name>
     <message>
-        <location filename="../launcher/minecraft/services/SkinUpload.cpp" line="+72"/>
+        <location filename="../launcher/minecraft/services/SkinUpload.cpp" line="+73"/>
         <source>Uploading skin</source>
         <translation>Skin yükleniyor</translation>
     </message>
@@ -13654,7 +13655,7 @@ Currently installed version: %1</source>
 <context>
     <name>SkinsController</name>
     <message>
-        <location filename="../launcher/models/SkinsController.cpp" line="+111"/>
+        <location filename="../launcher/models/SkinsController.cpp" line="+112"/>
         <source>Download skin</source>
         <translation>Skini indir</translation>
     </message>
@@ -13690,7 +13691,7 @@ Currently installed version: %1</source>
         <translation>Bu oyuncunun skini okunamadı.</translation>
     </message>
     <message>
-        <location line="+157"/>
+        <location line="+151"/>
         <source>Skins are 64x64 or 64x32 PNG files.</source>
         <translation>Skinler 64x64 veya 64x32 PNG dosyalarıdır.</translation>
     </message>
@@ -13801,12 +13802,12 @@ Currently installed version: %1</source>
         <translation>Mod paketi çıkarılamadı. İndirilen arşiv bozuk; silindi, bu yüzden tekrar denersen yeniden indirilecek.</translation>
     </message>
     <message>
-        <location line="+25"/>
+        <location line="+7"/>
         <source>Could not fix permissions for %1</source>
         <translation>%1 için izinler düzeltilemedi</translation>
     </message>
     <message>
-        <location line="+19"/>
+        <location line="+15"/>
         <source>Instance import has been aborted.</source>
         <translation>Kurulum içe aktarma durduruldu.</translation>
     </message>
@@ -13858,12 +13859,12 @@ Currently installed version: %1</source>
         <translation>Mod paketi çıkarılamadı</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location line="+5"/>
         <source>Could not fix permissions for %1</source>
         <translation>%1 için izinler düzeltilemedi</translation>
     </message>
     <message>
-        <location line="+19"/>
+        <location line="+15"/>
         <source>Instance import has been aborted.</source>
         <translation>Kurulum içe aktarma durduruldu.</translation>
     </message>
@@ -13871,7 +13872,7 @@ Currently installed version: %1</source>
 <context>
     <name>Technic::TechnicPackProcessor</name>
     <message>
-        <location filename="../launcher/modplatform/technic/TechnicPackProcessor.cpp" line="+67"/>
+        <location filename="../launcher/modplatform/technic/TechnicPackProcessor.cpp" line="+70"/>
         <source>Unable to open &quot;fmlversion.properties&quot;!</source>
         <translation>&quot;fmlversion.properties&quot; açılamadı</translation>
     </message>
@@ -13919,12 +13920,12 @@ inheritsFrom eksik</translation>
 <context>
     <name>TechnicModpackModel</name>
     <message>
-        <location filename="../launcher/modplatform/technic/TechnicModpackModel.cpp" line="+82"/>
+        <location filename="../launcher/modplatform/technic/TechnicModpackModel.cpp" line="+83"/>
         <source>Sort by Relevance</source>
         <translation>Alakaya göre sırala</translation>
     </message>
     <message>
-        <location line="+220"/>
+        <location line="+217"/>
         <source>Recommended build</source>
         <translation>Önerilen derleme</translation>
     </message>
@@ -14001,40 +14002,40 @@ inheritsFrom eksik</translation>
     <message>
         <location filename="../launcher/qml/Components/UiRequestDialog.qml" line="+68"/>
         <source>Continue turns on once every file has been downloaded.</source>
-        <translation type="unfinished"></translation>
+        <translation>Tüm dosyalar indirilince Devam açılır.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Take a moment to read the list.</source>
-        <translation type="unfinished"></translation>
+        <translation>Listeyi okumak için bir dakikanı ayır.</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Tick “I trust these files” to continue.</source>
-        <translation type="unfinished"></translation>
+        <translation>Devam etmek için “Bu dosyalara güveniyorum” kutusunu işaretle.</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Type the username you want to use.</source>
-        <translation type="unfinished"></translation>
+        <translation>Kullanmak istediğin kullanıcı adını yaz.</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Checking that the username is free…</source>
-        <translation type="unfinished"></translation>
+        <translation>Kullanıcı adının boş olup olmadığı denetleniyor…</translation>
     </message>
     <message>
-        <location line="+102"/>
+        <location line="+109"/>
         <source>Download</source>
         <translation>İndir</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+9"/>
         <source>Check again</source>
         <translation>Yeniden denetle</translation>
     </message>
     <message>
-        <location line="+34"/>
+        <location line="+46"/>
         <source>I trust these files</source>
         <translation>Bu dosyalara güveniyorum</translation>
     </message>
@@ -14049,7 +14050,7 @@ inheritsFrom eksik</translation>
         <translation>Uygun</translation>
     </message>
     <message>
-        <location line="+77"/>
+        <location line="+75"/>
         <source>Microsoft</source>
         <translation>Microsoft</translation>
     </message>
@@ -14059,12 +14060,12 @@ inheritsFrom eksik</translation>
         <translation>Çevrimdışı</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+18"/>
         <source>Make this the default account</source>
         <translation>Bunu varsayılan hesap yap</translation>
     </message>
     <message>
-        <location line="+81"/>
+        <location line="+83"/>
         <source>Recommended</source>
         <translation>Önerilen</translation>
     </message>
@@ -14074,7 +14075,7 @@ inheritsFrom eksik</translation>
         <translation>Yok</translation>
     </message>
     <message>
-        <location line="+76"/>
+        <location line="+80"/>
         <source>Install update</source>
         <translation>Güncellemeyi yükle</translation>
     </message>
@@ -14609,7 +14610,7 @@ inheritsFrom eksik</translation>
 <context>
     <name>WorldCopyTask</name>
     <message>
-        <location filename="../launcher/models/InstanceDetails.cpp" line="-470"/>
+        <location filename="../launcher/models/InstanceDetails.cpp" line="-436"/>
         <source>The operation failed. See the launcher log for details.</source>
         <translation>İşlem başarısız oldu. Ayrıntılar için başlatıcı günlüğüne bak.</translation>
     </message>
@@ -14617,7 +14618,7 @@ inheritsFrom eksik</translation>
 <context>
     <name>WorldList</name>
     <message>
-        <location filename="../launcher/minecraft/WorldList.cpp" line="+254"/>
+        <location filename="../launcher/minecraft/WorldList.cpp" line="+241"/>
         <source>Name</source>
         <translation>Ad</translation>
     </message>
@@ -14879,7 +14880,7 @@ inheritsFrom eksik</translation>
         <translation>%1 hizmetlerine erişim yetkisi alındı</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+14"/>
         <source>Cannot parse %1 authorization error response as JSON: %2</source>
         <translation>%1 yetkilendirme hata yanıtı JSON olarak ayrıştırılamıyor: %2</translation>
     </message>

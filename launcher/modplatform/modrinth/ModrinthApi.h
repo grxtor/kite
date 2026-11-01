@@ -67,6 +67,12 @@ class ModrinthApi final : public ModPlatform::ContentApi
 	QUrl categoriesUrl(ModPlatform::ContentType contentType) const override;
 	QUrl projectPageUrl(const QString& projectId) const override;
 
+	/* Website pages (not API endpoints), for a browser or a stored link. */
+	static QString siteProjectUrl(const QString& slug);
+	static QString siteModpackUrl(const QString& slug);
+	static QString siteVersionUrl(const QString& projectId,
+								  const QString& versionId);
+
 	/* A version by its own id; ids are globally unique, so no project id. */
 	static QUrl versionUrl(const QString& versionId);
 

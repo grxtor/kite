@@ -21,7 +21,6 @@
 
 #include "ModFolderModel.h"
 #include <FileSystem.h>
-#include <QCryptographicHash>
 #include <QDateTime>
 #include <QFile>
 #include <QFileSystemWatcher>
@@ -34,22 +33,6 @@
 #include <algorithm>
 #include "LocalModParseTask.h"
 #include "ModIconCache.h"
-
-namespace
-{
-	QString sha1OfFile(const QString& path)
-	{
-		QFile f(path);
-		if (!f.open(QIODevice::ReadOnly)) {
-			return {};
-		}
-		QCryptographicHash hash(QCryptographicHash::Sha1);
-		if (!hash.addData(&f)) {
-			return {};
-		}
-		return QString::fromLatin1(hash.result().toHex());
-	}
-} // namespace
 
 ModFolderModel::ModFolderModel(const QString& dir)
 	: QAbstractListModel(), m_dir(dir),
@@ -344,7 +327,7 @@ bool ModFolderModel::installMod(const QString& filename)
 			e.fileName = QFileInfo(newpath).fileName();
 			e.platform = QStringLiteral("local");
 			e.name = installedMod.name();
-			e.sha1 = sha1OfFile(newpath);
+			e.sha1 = FS::sha1Hex(newpath);
 			e.fileSize = QFileInfo(newpath).size();
 			e.isDependency = false;
 			e.installedAt = QDateTime::currentDateTimeUtc();

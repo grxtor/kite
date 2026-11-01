@@ -29,6 +29,7 @@
 #include <QVariantMap>
 
 #include "DesktopServices.h"
+#include "FileSystem.h"
 #include "core/LauncherContext.h"
 #include "minecraft/skins/DefaultSkins.h"
 #include "minecraft/skins/ProfileSkinImport.h"
@@ -337,15 +338,9 @@ QString SkinsController::directory() const
 	return m_library->directory();
 }
 
-QString SkinsController::localPath(const QString& fileUrlOrPath)
-{
-	const QUrl url(fileUrlOrPath);
-	return url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
-}
-
 QString SkinsController::importFile(const QString& fileUrlOrPath)
 {
-	const QString path = localPath(fileUrlOrPath);
+	const QString path = FS::pathFromUrlOrPath(fileUrlOrPath);
 	// importFile() trusts a ".png" name; a skin is checked here either way,
 	// so a wrong-sized PNG is refused now instead of listed and never used.
 	if (!SkinEntry(path).isUsable()) {

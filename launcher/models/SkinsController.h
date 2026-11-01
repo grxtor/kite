@@ -86,9 +86,6 @@ class SkinsController : public QObject
 	 * library recognises it by texture url (SkinLibrary::indexOfAccountSkin()). */
 	Q_INVOKABLE void markWorn(const QString& name);
 
-	/// Turns a path or file url into a local path; the input otherwise.
-	static QString localPath(const QString& fileUrlOrPath);
-
   signals:
 	void skinsChanged();
 	void defaultSkinsChanged();

@@ -27,6 +27,9 @@
 #include <MMCZip.h>
 #include <settings/INISettingsObject.h>
 
+#include <QDirIterator>
+#include <QFileInfo>
+
 #include <memory>
 
 void Technic::TechnicPackProcessor::run(SettingsObjectPtr globalSettings,
@@ -192,4 +195,32 @@ void Technic::TechnicPackProcessor::run(SettingsObjectPtr globalSettings,
 
 	components->saveNow();
 	emit succeeded();
+}
+
+void Technic::TechnicPackProcessor::fixPermissions(
+	const QString& dir, const std::function<void(const QString&)>& onFailed)
+{
+	qDebug() << "Fixing permissions for extracted pack files...";
+	QDirIterator it(QDir(dir), QDirIterator::Subdirectories);
+	while (it.hasNext()) {
+		auto filepath = it.next();
+		QFileInfo file(filepath);
+		auto permissions = QFile::permissions(filepath);
+		auto origPermissions = permissions;
+		if (file.isDir()) {
+			permissions |= QFileDevice::Permission::ReadUser |
+						   QFileDevice::Permission::WriteUser |
+						   QFileDevice::Permission::ExeUser;
+		} else {
+			permissions |= QFileDevice::Permission::ReadUser |
+						   QFileDevice::Permission::WriteUser;
+		}
+		if (origPermissions != permissions) {
+			if (!QFile::setPermissions(filepath, permissions)) {
+				onFailed(filepath);
+			} else {
+				qDebug() << "Fixed" << filepath;
+			}
+		}
+	}
 }

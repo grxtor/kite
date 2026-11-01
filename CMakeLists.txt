@@ -291,17 +291,12 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include(GetGitRevisionDescription)
 get_git_head_revision(Kite_GIT_REFSPEC Kite_GIT_COMMIT ALLOW_LOOKING_ABOVE_CMAKE_SOURCE_DIR)
-git_get_exact_tag(Kite_GIT_TAG)
 
 message(STATUS "Git commit: ${Kite_GIT_COMMIT}")
 message(STATUS "Git refspec: ${Kite_GIT_REFSPEC}")
-message(STATUS "Git tag: ${Kite_GIT_TAG}")
 
 string(TIMESTAMP TODAY "%Y-%m-%d")
 set(Kite_BUILD_TIMESTAMP "${TODAY}")
-
-add_custom_target(version echo "Version: ${Kite_RELEASE_VERSION_NAME}")
-add_custom_target(tcversion echo "\\#\\#teamcity[setParameter name=\\'env.KITE_VERSION\\' value=\\'${Kite_RELEASE_VERSION_NAME}\\']")
 
 ######## Version numbers ########
 set(Kite_VERSION_MAJOR    1)
@@ -313,12 +308,13 @@ set(Kite_RELEASE_TWO_NAME "${Kite_VERSION_MAJOR}.${Kite_VERSION_MINOR}")
 set(Kite_VERSION_NAME4 "${Kite_VERSION_MAJOR}.${Kite_VERSION_MINOR}.${Kite_VERSION_HOTFIX}.0")
 set(Kite_VERSION_NAME4_COMMA "${Kite_VERSION_MAJOR},${Kite_VERSION_MINOR},${Kite_VERSION_HOTFIX},0")
 
+add_custom_target(version echo "Version: ${Kite_RELEASE_VERSION_NAME}")
+add_custom_target(tcversion echo "\\#\\#teamcity[setParameter name=\\'env.KITE_VERSION\\' value=\\'${Kite_RELEASE_VERSION_NAME}\\']")
+
 ######## URLs and API keys ########
 
 set(Kite_NEWS_RSS_URL "" CACHE STRING "URL to fetch Kite's news RSS feed from.")
 set(Kite_NEWS_EXTRA_FEEDS "" CACHE STRING "Semicolon-separated list of extra RSS feed URLs shown alongside the launcher's own news feed.")
-
-set(Kite_VERSION_BUILD -1 CACHE STRING "Build number. -1 for no build number.")
 
 set(Kite_BUILD_ARTIFACT "" CACHE STRING "Name of the CI build this is, matched against release asset names.")
 
@@ -368,10 +364,6 @@ set(Kite_DISCORD_URL "" CACHE STRING "URL for the Discord guild.")
 
 set(Kite_SUBREDDIT_URL "" CACHE STRING "URL for the subreddit.")
 
-set(Kite_UNLEASH_URL "" CACHE STRING "GitLab Unleash-compatible feature flags endpoint.")
-set(Kite_UNLEASH_INSTANCE_ID "" CACHE STRING "Unleash instance id. Set this to enable runtime feature flags.")
-set(Kite_UNLEASH_APP_NAME "" CACHE STRING "Unleash application name / environment (UNLEASH-APPNAME). Must match the flag's environment spec, e.g. 'production'.")
-
 ######## Kite attributes ########
 
 set(Kite_CommonName "Kite")
@@ -398,8 +390,6 @@ set(Kite_Authors "Based on MeshMC by Project Tick and MultiMC by the MultiMC Con
 set(Kite_SVGFileName "${Kite_AppID}.svg")
 set(Kite_Branding_ICNS "branding/${Kite_AppID}.icns")
 set(Kite_Branding_ICO "${Kite_AppID}.ico")
-set(Kite_Branding_WindowsRC "branding/${Kite_AppBinaryName}.rc")
-set(Kite_Branding_LogoQRC "branding/${Kite_AppBinaryName}.qrc")
 
 configure_file(branding/${Kite_AppID}.desktop.in ${Kite_AppID}.desktop)
 configure_file(branding/${Kite_AppID}.metainfo.xml.in ${Kite_AppID}.metainfo.xml)

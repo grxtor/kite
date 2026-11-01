@@ -37,7 +37,9 @@
 
 #include "BuildConfig.h"
 #include "DesktopServices.h"
+#include "FileSystem.h"
 #include "minecraft/auth/AuthRequest.h"
+#include "minecraft/auth/MinecraftServices.h"
 #include "modplatform/flame/FlameApi.h"
 #include "models/AtlOptionalModsModel.h"
 
@@ -343,6 +345,8 @@ namespace
 
 void QmlUiRequest::checkProfileName(const QString& name)
 {
+	// Also for an invalid name, so a reply still in flight for the old one is dropped.
+	++m_checkSequence;
 	// Checked locally so a name that can never be valid costs no round trip.
 	if (!isPermittedProfileName(name)) {
 		setProfileNameStatus(
@@ -353,7 +357,6 @@ void QmlUiRequest::checkProfileName(const QString& name)
 	}
 	setProfileNameStatus(QStringLiteral("pending"), QString());
 	m_lastCheckedName = name;
-	++m_checkSequence;
 	emit checkNameRequested(name);
 }
 
@@ -522,16 +525,10 @@ QmlUiHost::pickAccount(const QString& title, const QString& text,
 			options.append(QVariantMap{});
 			continue;
 		}
-		// Offline accounts have no profile id.
-		const QString faceId = account->profileId().isEmpty()
-								   ? account->internalId()
-								   : account->profileId();
 		options.append(QVariantMap{
 			{ QStringLiteral("name"), account->profileName() },
-			{ QStringLiteral("kind"), account->isMSA()
-										  ? QStringLiteral("Microsoft")
-										  : QStringLiteral("Offline") },
-			{ QStringLiteral("faceId"), faceId },
+			{ QStringLiteral("kind"), account->kindLabel() },
+			{ QStringLiteral("faceId"), account->accountId() },
 		});
 	}
 
@@ -769,9 +766,9 @@ bool QmlUiHost::setupProfile(MinecraftAccountPtr account)
 						}
 					});
 				QNetworkRequest netReq{ QUrl(
-					QStringLiteral("https://api.minecraftservices.com/"
-								  "minecraft/profile/name/%1/available")
-						.arg(name)) };
+					MinecraftServices::url(
+						QStringLiteral("minecraft/profile/name/%1/available")
+							.arg(name))) };
 				netReq.setHeader(QNetworkRequest::ContentTypeHeader,
 								 "application/json");
 				netReq.setRawHeader("Accept", "application/json");
@@ -812,8 +809,8 @@ bool QmlUiHost::setupProfile(MinecraftAccountPtr account)
 								? tr("Failed to create the profile.")
 								: message);
 					});
-			QNetworkRequest netReq{ QUrl(QStringLiteral(
-				"https://api.minecraftservices.com/minecraft/profile")) };
+			QNetworkRequest netReq{ QUrl(MinecraftServices::url(
+				QStringLiteral("minecraft/profile"))) };
 			netReq.setHeader(QNetworkRequest::ContentTypeHeader,
 							 "application/json");
 			netReq.setRawHeader("Accept", "application/json");
@@ -844,6 +841,5 @@ std::optional<QString> QmlUiHost::pickFile(FilePickerMode mode,
 		return std::nullopt;
 	}
 	// A QML FileDialog's selectedFile is a file:// URL string.
-	const QUrl url(request.answeredText());
-	return url.isLocalFile() ? url.toLocalFile() : request.answeredText();
+	return FS::pathFromUrlOrPath(request.answeredText());
 }

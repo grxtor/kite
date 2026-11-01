@@ -25,6 +25,7 @@
 #include "core/UiHost.h"
 #include "BuildConfig.h"
 #include "InstanceList.h"
+#include "Json.h"
 #include "BaseInstance.h"
 #include "MMCZip.h"
 #include "minecraft/MinecraftInstance.h"
@@ -161,8 +162,6 @@ void PluginManager::initializeAll()
 		if (rc != 0) {
 			qCWarning(pluginsLog) << "Module" << meta.name
 					   << "mmco_init() returned" << rc << "- skipping";
-			emit moduleError(meta.name,
-							 QString("mmco_init returned %1").arg(rc));
 			PluginLoader::unloadModule(meta);
 			continue;
 		}
@@ -170,7 +169,6 @@ void PluginManager::initializeAll()
 		meta.initialized = true;
 		qCDebug(pluginsLog) << "Module" << meta.name
 				 << "initialized successfully";
-		emit moduleLoaded(meta.name);
 	}
 
 	for (const auto& meta : m_modules) {
@@ -1298,6 +1296,14 @@ int PluginManager::api_fs_exists(void* mh, const char* rel)
 	return QFile::exists(path) ? 1 : 0;
 }
 
+namespace
+{
+	bool isHttpUrl(const QString& url)
+	{
+		return url.startsWith("http://") || url.startsWith("https://");
+	}
+} // namespace
+
 int PluginManager::api_http_get(void* mh, const char* url, MMCOHttpCallback cb,
 								void* ud)
 {
@@ -1308,7 +1314,7 @@ int PluginManager::api_http_get(void* mh, const char* url, MMCOHttpCallback cb,
 		return -1;
 
 	QString qurl = QString::fromUtf8(url);
-	if (!qurl.startsWith("http://") && !qurl.startsWith("https://"))
+	if (!isHttpUrl(qurl))
 		return -1;
 
 	auto nam = app->network();
@@ -1345,7 +1351,7 @@ int PluginManager::api_http_get_with_headers(void* mh, const char* url,
 		return -1;
 
 	QString qurl = QString::fromUtf8(url);
-	if (!qurl.startsWith("http://") && !qurl.startsWith("https://"))
+	if (!isHttpUrl(qurl))
 		return -1;
 
 	auto nam = app->network();
@@ -1397,7 +1403,7 @@ int PluginManager::api_http_post(void* mh, const char* url, const void* body,
 		return -1;
 
 	QString qurl = QString::fromUtf8(url);
-	if (!qurl.startsWith("http://") && !qurl.startsWith("https://"))
+	if (!isHttpUrl(qurl))
 		return -1;
 
 	auto nam = app->network();
@@ -2208,13 +2214,11 @@ int PluginManager::api_ui_surface_update(void* mh, void* surface,
 	if (!rec)
 		return -1;
 
-	QJsonParseError err{};
-	const QJsonDocument jd =
-		QJsonDocument::fromJson(QByteArray(json_doc ? json_doc : ""), &err);
-	if (err.error != QJsonParseError::NoError || !jd.isObject())
+	const auto jd = Json::tryParse(QByteArray(json_doc ? json_doc : ""));
+	if (!jd || !jd->isObject())
 		return -1;
 
-	rec->doc = jd.object();
+	rec->doc = jd->object();
 	emit r->manager->surfacesChanged();
 	return 0;
 }
@@ -2229,14 +2233,12 @@ int PluginManager::api_ui_surface_set(void* mh, void* surface, const char* node_
 	if (!rec)
 		return -1;
 
-	QJsonParseError err{};
-	const QJsonDocument jd =
-		QJsonDocument::fromJson(QByteArray(json_props ? json_props : "{}"), &err);
-	if (err.error != QJsonParseError::NoError || !jd.isObject())
+	const auto jd = Json::tryParse(QByteArray(json_props ? json_props : "{}"));
+	if (!jd || !jd->isObject())
 		return -1;
 
 	const QString nodeId = QString::fromUtf8(node_id);
-	const QJsonObject props = jd.object();
+	const QJsonObject props = jd->object();
 	const bool foundInDoc = patchDocumentNodeProps(rec->doc, nodeId, props);
 	// surfacesChanged() tells readers of `doc` (PluginSurfaceModel).
 	if (foundInDoc)
@@ -2255,14 +2257,12 @@ int PluginManager::api_ui_surface_set_rows(void* mh, void* surface,
 	if (!rec)
 		return -1;
 
-	QJsonParseError err{};
-	const QJsonDocument jd =
-		QJsonDocument::fromJson(QByteArray(json_rows ? json_rows : "[]"), &err);
-	if (err.error != QJsonParseError::NoError || !jd.isArray())
+	const auto jd = Json::tryParse(QByteArray(json_rows ? json_rows : "[]"));
+	if (!jd || !jd->isArray())
 		return -1;
 
 	const QString nodeId = QString::fromUtf8(node_id);
-	const QJsonArray rows = jd.array();
+	const QJsonArray rows = jd->array();
 	QJsonObject rowsPatch;
 	rowsPatch[QStringLiteral("rows")] = rows;
 	const bool foundInDoc = patchDocumentNodeProps(rec->doc, nodeId, rowsPatch);
@@ -2299,16 +2299,15 @@ int PluginManager::api_ui_modal_run(void* mh, const char* title,
 	if (!app)
 		return -1;
 
-	QJsonParseError err{};
-	const QJsonDocument jd = QJsonDocument::fromJson(QByteArray(json_doc), &err);
-	if (err.error != QJsonParseError::NoError || !jd.isObject())
+	const auto jd = Json::tryParse(QByteArray(json_doc));
+	if (!jd || !jd->isObject())
 		return -1;
 
 	// Drawn through UiHost with PluginNode.qml.
 	if (qmlPresenterMissing(app, "ui_modal_run"))
 		return -1;
 	const auto result = app->uiHost()->runPluginModal(
-		title ? QString::fromUtf8(title) : QString(), jd.object());
+		title ? QString::fromUtf8(title) : QString(), jd->object());
 	if (!result)
 		return -1;
 

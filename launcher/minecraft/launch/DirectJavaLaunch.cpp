@@ -23,12 +23,10 @@
 #include <launch/LaunchTask.h>
 #include <minecraft/MinecraftInstance.h>
 #include <FileSystem.h>
-#include <Commandline.h>
-#include <QStandardPaths>
 
-DirectJavaLaunch::DirectJavaLaunch(LaunchTask* parent) : LaunchStep(parent)
+DirectJavaLaunch::DirectJavaLaunch(LaunchTask* parent)
+	: GameProcessStep(parent)
 {
-	connect(&m_process, &LoggedProcess::log, this, &DirectJavaLaunch::logLines);
 	connect(&m_process, &LoggedProcess::stateChanged, this,
 			&DirectJavaLaunch::on_state);
 }
@@ -73,57 +71,19 @@ void DirectJavaLaunch::executeTask()
 		minecraftInstance->processMinecraftArgs(m_session, m_serverToJoin);
 	args.append(mcArgs);
 
-	QString wrapperCommandStr = m_parent->wrapperCommand();
-	if (!wrapperCommandStr.isEmpty()) {
-		auto wrapperArgs = Commandline::splitArgs(wrapperCommandStr);
-		auto wrapperCommand = wrapperArgs.takeFirst();
-		auto realWrapperCommand =
-			QStandardPaths::findExecutable(wrapperCommand);
-		if (realWrapperCommand.isEmpty()) {
-			const char* reason =
-				QT_TR_NOOP("The wrapper command \"%1\" couldn't be found.");
-			emit logLine(QString(reason).arg(wrapperCommand),
-						 MessageLevel::Fatal);
-			emitFailed(tr(reason).arg(wrapperCommand));
-			return;
-		}
-		emit logLine("Wrapper command is:\n" + wrapperCommandStr + "\n\n",
-					 MessageLevel::Kite);
-		args.prepend(javaPath);
-		m_process.start(wrapperCommand, wrapperArgs + args);
-	} else {
-		m_process.start(javaPath, args);
-	}
+	const char* wrapperMissing =
+		QT_TR_NOOP("The wrapper command \"%1\" couldn't be found.");
+	startProcess(javaPath, args, wrapperMissing, tr(wrapperMissing));
 }
 
 void DirectJavaLaunch::on_state(LoggedProcess::State state)
 {
+	//: Error message displayed if instance can't start
+	const char* reason = QT_TR_NOOP("Could not launch minecraft!");
+	if (handleProcessEnd(state, reason, tr(reason), tr("Game crashed."))) {
+		return;
+	}
 	switch (state) {
-		case LoggedProcess::FailedToStart: {
-			//: Error message displayed if instance can't start
-			const char* reason = QT_TR_NOOP("Could not launch minecraft!");
-			emit logLine(reason, MessageLevel::Fatal);
-			emitFailed(tr(reason));
-			return;
-		}
-		case LoggedProcess::Aborted:
-		case LoggedProcess::Crashed: {
-			m_parent->setPid(-1);
-			emitFailed(tr("Game crashed."));
-			return;
-		}
-		case LoggedProcess::Finished: {
-			m_parent->setPid(-1);
-			// if the exit code wasn't 0, report this as a crash
-			auto exitCode = m_process.exitCode();
-			if (exitCode != 0) {
-				emitFailed(tr("Game crashed."));
-				return;
-			}
-			// FIXME: INST_EXITCODE is not passed to the post-exit command.
-			emitSucceeded();
-			break;
-		}
 		case LoggedProcess::Running:
 			emit logLine(QString("Minecraft process ID: %1\n\n")
 							 .arg(m_process.processId()),
@@ -136,11 +96,6 @@ void DirectJavaLaunch::on_state(LoggedProcess::State state)
 		default:
 			break;
 	}
-}
-
-void DirectJavaLaunch::setWorkingDirectory(const QString& wd)
-{
-	m_process.setWorkingDirectory(wd);
 }
 
 void DirectJavaLaunch::proceed()

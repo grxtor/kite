@@ -95,15 +95,7 @@ QStringList PluginLoader::defaultSearchPaths()
 
 QStringList PluginLoader::searchPaths() const
 {
-	QStringList paths = m_extraPaths;
-	paths.append(defaultSearchPaths());
-	return paths;
-}
-
-void PluginLoader::addSearchPath(const QString& path)
-{
-	if (!path.isEmpty() && !m_extraPaths.contains(path))
-		m_extraPaths.prepend(path);
+	return defaultSearchPaths();
 }
 
 QVector<PluginMetadata>

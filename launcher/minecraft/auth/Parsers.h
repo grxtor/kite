@@ -28,7 +28,6 @@ namespace Parsers
 	bool getString(QJsonValue value, QString& out);
 	bool getNumber(QJsonValue value, double& out);
 	bool getNumber(QJsonValue value, int64_t& out);
-	bool getBool(QJsonValue value, bool& out);
 
 	bool parseXTokenResponse(QByteArray& data, Katabasis::Token& output,
 							 QString name);
@@ -46,7 +45,6 @@ namespace Parsers
 
 	bool parseMinecraftEntitlements(QByteArray& data,
 									MinecraftEntitlement& output);
-	bool parseRolloutResponse(QByteArray& data, bool& result);
 
 	// @p data, a sign-in service's reply, made fit for the log: every token
 	// field (Token, access_token, refresh_token, id_token, identityToken, at

@@ -129,11 +129,6 @@ namespace ModpacksCH
 		QVector<VersionFile> files;
 	};
 
-	struct VersionChangelog {
-		QString content;
-		int64_t updated;
-	};
-
 	void loadModpack(Modpack& m, QJsonObject& obj);
 
 	void loadVersion(Version& m, QJsonObject& obj);

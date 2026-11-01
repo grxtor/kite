@@ -30,7 +30,7 @@
 #include "GZip.h"
 #include "InstanceList.h"
 #include "NullInstance.h"
-#include "settings/INISettingsObject.h"
+#include "TestSettings.h"
 
 /* Exercises RecentWorldsModel::scan() directly against a temporary directory (a
  * real InstanceList of MinecraftInstances would need a full instance setup).
@@ -122,23 +122,6 @@ namespace
 		source.instanceIconKey = "default";
 		source.worldsDir = worldsDir;
 		return source;
-	}
-
-	/* The global settings InstanceList_test.cpp's makeGlobalSettings() registers;
-	 * BaseInstance's constructor needs them or registration returns a null Setting. */
-	SettingsObjectPtr makeGlobalSettings(QTemporaryDir& dir)
-	{
-		auto settings =
-			std::make_shared<INISettingsObject>(dir.filePath("global.ini"));
-		settings->registerSetting("PreLaunchCommand", "");
-		settings->registerSetting("WrapperCommand", "");
-		settings->registerSetting("PostExitCommand", "");
-		settings->registerSetting("ShowConsole", true);
-		settings->registerSetting("ShowConsoleOnError", true);
-		settings->registerSetting("LogPrePostOutput", true);
-		settings->registerSetting("ConsoleMaxLines", 100000);
-		settings->registerSetting("ConsoleOverflowStop", true);
-		return settings;
 	}
 
 	/// Writes an instance.cfg with an unknown InstanceType, so loadInstance() falls
@@ -413,6 +396,31 @@ class RecentWorldsModelTest : public QObject
 
 		inst->setRunning(false);
 		QVERIFY(resetSpy.wait());
+	}
+
+	void rescanOfAnUnchangedListDoesNotResetTheModel()
+	{
+		QTemporaryDir globalDir;
+		QVERIFY(globalDir.isValid());
+		QTemporaryDir instsDir;
+		QVERIFY(instsDir.isValid());
+		SettingsObjectPtr globalSettings = makeGlobalSettings(globalDir);
+
+		const QString instRoot = QDir(instsDir.path()).filePath("testinst");
+		QVERIFY(writeNullInstanceCfg(instRoot));
+		InstanceList list(globalSettings, {instsDir.path()});
+		QCOMPARE(list.loadList(), InstanceList::NoError);
+
+		RecentWorldsModel model(&list);
+		QSignalSpy scanSpy(&model, &RecentWorldsModel::scanFinished);
+		QVERIFY(scanSpy.wait());
+		scanSpy.clear();
+
+		// Nothing changed on disk: a view's scroll position must survive the rescan.
+		QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
+		model.refresh();
+		QVERIFY(scanSpy.wait());
+		QCOMPARE(resetSpy.count(), 0);
 	}
 
 	void unrelatedPropertyChangeDoesNotTriggerRescan()

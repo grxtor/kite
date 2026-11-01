@@ -25,8 +25,6 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-slim
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -60,12 +58,10 @@ jobs:
           # NAME rebuilds the published names from the artifact names.
           for d in Kite-Windows-MSVC*; do
             cd "${d}" || continue
-            LEGACY="$(echo -n ${d} | grep -o Legacy || true)"
             ARM64="$(echo -n ${d} | grep -o arm64 || true)"
             INST="$(echo -n ${d} | grep -o Setup || true)"
             PORT="$(echo -n ${d} | grep -o Portable || true)"
             NAME="Kite-Windows-MSVC-Qt6"
-            test -z "${LEGACY}" || NAME="${NAME}-Legacy"
             test -z "${ARM64}" || NAME="${NAME}-arm64"
             test -z "${PORT}" || NAME="${NAME}-Portable"
             test -z "${INST}" || mv Kite-*.exe ../${NAME}-Setup-${{ env.VERSION }}.exe
@@ -85,7 +81,6 @@ jobs:
           done
 
       - name: Create release
-        id: create_release
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

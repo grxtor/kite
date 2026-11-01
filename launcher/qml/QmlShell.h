@@ -48,7 +48,6 @@ class JavaController;
 class JavaDownloadController;
 class FolderSettingsController;
 class UpdateSettingsController;
-class PlayTimeSummary;
 class LibraryController;
 class LauncherLogs;
 class BundleCatalog;
@@ -130,7 +129,6 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* javaDownload READ javaDownload CONSTANT)
 	Q_PROPERTY(QObject* folderSettings READ folderSettings CONSTANT)
 	Q_PROPERTY(QObject* updateSettings READ updateSettings CONSTANT)
-	Q_PROPERTY(QObject* playTime READ playTime CONSTANT)
 	Q_PROPERTY(QObject* library READ library CONSTANT)
 	Q_PROPERTY(QObject* launcherLogs READ launcherLogs CONSTANT)
 	Q_PROPERTY(QObject* catPacks READ catPacks CONSTANT)
@@ -261,7 +259,6 @@ class QmlShell : public QObject
 	QObject* javaDownload() const;
 	QObject* folderSettings() const;
 	QObject* updateSettings() const;
-	QObject* playTime() const;
 	/// Typed for Application, which hands it the updater.
 	UpdateSettingsController* updateSettingsController() const;
 	QObject* library() const;
@@ -485,7 +482,6 @@ class QmlShell : public QObject
 	mutable std::unique_ptr<JavaDownloadController> m_javaDownload;
 	mutable std::unique_ptr<FolderSettingsController> m_folderSettings;
 	mutable std::unique_ptr<UpdateSettingsController> m_updateSettings;
-	mutable std::unique_ptr<PlayTimeSummary> m_playTime;
 	mutable std::unique_ptr<LibraryController> m_library;
 	mutable std::unique_ptr<LauncherLogs> m_launcherLogs;
 	mutable std::unique_ptr<CatPackList> m_catPacks;

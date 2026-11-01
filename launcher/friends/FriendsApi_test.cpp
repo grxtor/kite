@@ -130,6 +130,8 @@ class FriendsApiTest : public QObject
 		QVERIFY(!isMinecraftName(""));
 		QVERIFY(!isMinecraftName("seventeen_chars_xx"));
 		QVERIFY(!isMinecraftName("has space"));
+		QVERIFY(!isUuid("069a79f4-44e9-4726-a5be-fca90e38aaf5\n"));
+		QVERIFY(!isMinecraftName("jeb_\n"));
 		QCOMPARE(undashed("069A79F4-44e9-4726-a5be-fca90e38aaf5"),
 				 QString("069a79f444e94726a5befca90e38aaf5"));
 	}

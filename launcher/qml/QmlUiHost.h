@@ -230,8 +230,8 @@ class QmlUiRequest : public QObject
 	/// Called from QmlUiHost's checkNameRequested/submitNameRequested handlers.
 	void setProfileNameStatus(QString status, QString error);
 	void setProfileSubmitting(bool submitting);
-	/* Bumped by checkProfileName() each time it starts a network check, before
-	 * it emits checkNameRequested(). The connection is direct, so
+	/* Bumped by checkProfileName() on every call, before it emits
+	 * checkNameRequested() for a valid name. The connection is direct, so
 	 * QmlUiHost::setupProfile()'s slot reads it inside the same call stack and
 	 * keeps it as that check's identity; a result that returns after a newer
 	 * check has started is discarded by comparing against it again. */

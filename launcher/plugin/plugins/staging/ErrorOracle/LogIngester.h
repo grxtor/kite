@@ -19,7 +19,4 @@ class LogIngester
 	};
 
 	Bundle ingestForInstance(const QString& instancePath) const;
-
-	/* For testing — pull from an arbitrary path or directory. */
-	Bundle ingestFromPath(const QString& path) const;
 };

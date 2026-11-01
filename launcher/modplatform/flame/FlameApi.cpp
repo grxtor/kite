@@ -24,15 +24,6 @@
 namespace
 {
 
-	QString sortValueAt(const QList<ModPlatform::SortingMethod>& sorts,
-						int sortIndex)
-	{
-		if (sortIndex >= 0 && sortIndex < sorts.size()) {
-			return sorts.at(sortIndex).apiValue;
-		}
-		return sorts.first().apiValue;
-	}
-
 	void appendParam(QString& url, const QString& param)
 	{
 		url += (url.contains(QLatin1Char('?')) ? QLatin1Char('&')
@@ -123,7 +114,8 @@ QUrl FlameApi::searchUrl(const ModPlatform::SearchQuery& query) const
 						   QString::number(query.offset),
 						   QString::number(searchPageSize()),
 						   ModPlatform::encodeSearchTerm(query.term),
-						   sortValueAt(sortingMethods(), query.sortIndex));
+						   ModPlatform::sortValueAt(
+						       sortingMethods(), query.sortIndex));
 
 	if (!query.filters.mcVersions.isEmpty()) {
 		/* CurseForge's search takes one game version, so a multi-version filter
@@ -252,7 +244,8 @@ QUrl FlameApi::modpackSearchUrl(const QString& term, int sortIndex, int offset)
 						 QString::number(offset),
 						 QString::number(get().searchPageSize()),
 						 ModPlatform::encodeSearchTerm(term),
-						 sortValueAt(get().sortingMethods(), sortIndex)));
+						 ModPlatform::sortValueAt(
+						     get().sortingMethods(), sortIndex)));
 }
 
 QUrl FlameApi::nameSearchUrl(const QString& encodedTerm, int limit)

@@ -31,28 +31,13 @@
 #include "FileSystem.h"
 #include "MMCZip.h"
 #include "NullInstance.h"
+#include "TestSettings.h"
 #include "models/InstanceExportController.h"
 #include "settings/INISettingsObject.h"
 #include "tasks/TaskWatcher.h"
 
 namespace
 {
-	/* The global settings BaseInstance's constructor needs (as in InstanceList_test.cpp). */
-	SettingsObjectPtr makeGlobalSettings(const QString& dir)
-	{
-		auto settings = std::make_shared<INISettingsObject>(
-			FS::PathCombine(dir, "global.ini"));
-		settings->registerSetting("PreLaunchCommand", "");
-		settings->registerSetting("WrapperCommand", "");
-		settings->registerSetting("PostExitCommand", "");
-		settings->registerSetting("ShowConsole", true);
-		settings->registerSetting("ShowConsoleOnError", true);
-		settings->registerSetting("LogPrePostOutput", true);
-		settings->registerSetting("ConsoleMaxLines", 100000);
-		settings->registerSetting("ConsoleOverflowStop", true);
-		return settings;
-	}
-
 	bool writeFile(const QString& path, const QByteArray& data = "data")
 	{
 		if (!QDir().mkpath(QFileInfo(path).absolutePath())) {

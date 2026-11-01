@@ -248,12 +248,11 @@ QList<int> FtbModpackModel::parseIndex(const QByteArray& bytes)
 bool FtbModpackModel::parsePack(const QByteArray& bytes,
 								ModpacksCH::Modpack& out)
 {
-	QJsonParseError parseError;
-	const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parseError);
-	if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
+	const auto doc = Json::tryParse(bytes);
+	if (!doc || !doc->isObject()) {
 		return false;
 	}
-	QJsonObject obj = doc.object();
+	QJsonObject obj = doc->object();
 	try {
 		ModpacksCH::loadModpack(out, obj);
 	} catch (const JSONValidationError& e) {

@@ -40,6 +40,15 @@ namespace ModPlatform
 		QString readableName;
 	};
 
+	/* The API value of the sort at @p sortIndex; the first when out of range. */
+	inline QString sortValueAt(const QList<SortingMethod>& sorts, int sortIndex)
+	{
+		if (sortIndex >= 0 && sortIndex < sorts.size()) {
+			return sorts.at(sortIndex).apiValue;
+		}
+		return sorts.first().apiValue;
+	}
+
 	/* Which side of the game a project has to work on. Only Modrinth
 	 * indexes this; CurseForge ignores it. */
 	enum class SideFilter { Any, Client, Server, Universal };

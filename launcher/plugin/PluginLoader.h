@@ -66,12 +66,7 @@ class PluginLoader
 
 	QStringList searchPaths() const;
 
-	/* Prepends an extra search path (e.g. from settings). */
-	void addSearchPath(const QString& path);
-
   private:
-	QStringList m_extraPaths;
-
 	static QStringList defaultSearchPaths();
 	QVector<PluginMetadata>
 	scanDirectory(const QString& dir, const QSet<QString>& disabledNames) const;

@@ -73,6 +73,7 @@ class JavaDownloadControllerTest : public QObject
 	void keepsOnlyBuildsForThisComputer();
 	void rejectsBrokenRuntimeDetails();
 	void installsUnderTheVendorFolder();
+	void refusesAVendorOrNameThatEscapesItsFolder();
 	void startsIdle();
 	void downloadWithoutAPickDoesNothing();
 };
@@ -158,6 +159,34 @@ void JavaDownloadControllerTest::installsUnderTheVendorFolder()
 	QVERIFY(!builds.isEmpty());
 	QCOMPARE(JavaDownloadController::targetDirFor(builds.first()),
 			 JavaUtils::managedJavaRoot() + "/adoptium/jdk-21.0.1+12");
+}
+
+void JavaDownloadControllerTest::refusesAVendorOrNameThatEscapesItsFolder()
+{
+	QString error;
+	const auto builds = JavaDownloadController::runtimesFromJson(
+		kRuntimes, "mac-os-arm64", &error);
+	QVERIFY(!builds.isEmpty());
+
+	for (const QString& unsafe :
+		 {QString(), QStringLiteral(".."), QStringLiteral("../evil"),
+		  QStringLiteral("a/b"), QStringLiteral("a\\b"),
+		  QStringLiteral("c:")}) {
+		auto badVendor = builds.first();
+		badVendor.vendor = unsafe;
+		QVERIFY2(JavaDownloadController::targetDirFor(badVendor).isEmpty(),
+				 qPrintable(unsafe));
+
+		// The folder is "<name>-<version>", so only a separator in the name can escape.
+		auto badName = builds.first();
+		badName.name = unsafe;
+		if (unsafe.contains(QLatin1Char('/')) ||
+			unsafe.contains(QLatin1Char('\\')) ||
+			unsafe.contains(QLatin1Char(':'))) {
+			QVERIFY2(JavaDownloadController::targetDirFor(badName).isEmpty(),
+					 qPrintable(unsafe));
+		}
+	}
 }
 
 void JavaDownloadControllerTest::startsIdle()

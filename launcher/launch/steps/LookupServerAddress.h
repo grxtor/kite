@@ -48,6 +48,8 @@ class LookupServerAddress : public LaunchStep
 
   private:
 	void resolve(const QString& address, quint16 port);
+	/// No SRV record: keep the address as typed, on the default port.
+	void resolveUnchanged();
 
 	QDnsLookup* m_dnsLookup;
 	QString m_lookupAddress;

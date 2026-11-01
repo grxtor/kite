@@ -158,8 +158,6 @@ class DependencyResolver : public Task
 	bool isProjectInstalled(const QString& platform, const QString& projectId,
 							const QString& name) const;
 
-	static QString normalizeName(const QString& name);
-
   private:
 	QList<ModPlatform::SelectedMod> m_selectedMods;
 	QList<WantedProject> m_wanted;

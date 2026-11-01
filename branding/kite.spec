@@ -140,7 +140,6 @@ cd "%{_builddir}/Kite-%{version}"
     -D Kite_QT_VERSION_MAJOR="%{qt_version}" \
     -D Kite_BUILD_PLATFORM="%{build_platform}" \
     -D Kite_PLUGINS=ON \
-    -D Kite_UNLEASH_APP_NAME="Linux Native" \
     -D Kite_STAGING_PLUGINS=ON \
     -W no-dev \
     -D CMAKE_BUILD_TYPE=RelWithDebInfo \

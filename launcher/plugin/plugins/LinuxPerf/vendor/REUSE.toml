@@ -1,6 +1,6 @@
 version = 1
 
 [[annonations]]
-path = ["gamemode_client.h", "mangohud_detect.h"]
+path = ["gamemode_client.h"]
 SPDX-License-Identifier = "MIT"
 SPDX-FileCopyrightText = "Feral Interactive & Project Tick"

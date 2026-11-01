@@ -65,7 +65,7 @@ class FriendsController : public QObject
 	/// False while `settings` are still the defaults (server unreachable, sign-in under way).
 	Q_PROPERTY(bool settingsLoaded READ settingsLoaded NOTIFY changed)
 	/// Milliseconds since the epoch of the last read; 0 if never.
-	Q_PROPERTY(qint64 updatedAtMs READ updatedAtMs NOTIFY changed)
+	Q_PROPERTY(qint64 updatedAtMs READ updatedAtMs NOTIFY updatedAtChanged)
 	Q_PROPERTY(QString myName READ myName NOTIFY changed)
 	/// uuid, name, since, state, lastSeenAt, instance, version, worldType, host,
 	/// port, joinable, statusText, face. face (here and in the lists below) is the
@@ -138,6 +138,8 @@ class FriendsController : public QObject
 
   signals:
 	void changed();
+	/// Every fresh snapshot, even one that left the lists as they were.
+	void updatedAtChanged();
 	void actionFinished(QString action, bool ok, QString message);
 
   private:

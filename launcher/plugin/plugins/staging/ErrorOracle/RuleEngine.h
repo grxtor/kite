@@ -66,8 +66,6 @@ class RuleEngine
 	 * descending severity, then descending learning score. */
 	QList<Match> analyse(const QString& text) const;
 
-	int findRuleIndex(const QString& id) const;
-
   private:
 	QList<Rule> m_rules;
 };

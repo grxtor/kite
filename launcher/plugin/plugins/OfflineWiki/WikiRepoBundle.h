@@ -50,10 +50,6 @@ class WikiRepoBundle
 	{
 		return !m_root.isEmpty();
 	}
-	int articleCount() const
-	{
-		return m_order.size();
-	}
 
 	/* Navigation list: Home first (if present), then alphabetical. */
 	QList<Entry> nav() const;

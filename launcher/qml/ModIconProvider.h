@@ -19,12 +19,12 @@
 
 #pragma once
 
-#include <QCache>
 #include <QImage>
-#include <QMutex>
 #include <QQuickImageProvider>
 #include <QSize>
 #include <QString>
+
+#include "qml/ImageLruCache.h"
 
 /*
  * Serves the logos of installed mods and packs to QML:
@@ -62,6 +62,5 @@ class ModIconProvider : public QQuickImageProvider
 	static constexpr int kMaxCachedIcons = 256;
 
 	QString m_cacheDir;
-	QMutex m_mutex;
-	QCache<QString, QImage> m_cache{kMaxCachedIcons};
+	ImageLruCache m_cache{kMaxCachedIcons};
 };

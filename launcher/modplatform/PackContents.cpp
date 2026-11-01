@@ -29,6 +29,7 @@
 #include <QSet>
 
 #include "FileSystem.h"
+#include "Json.h"
 
 namespace PackContents
 {
@@ -175,14 +176,13 @@ namespace PackContents
 		const QByteArray bytes = file.readAll();
 		file.close();
 
-		QJsonParseError error{};
-		const QJsonDocument doc = QJsonDocument::fromJson(bytes, &error);
-		if (error.error != QJsonParseError::NoError || !doc.isObject()) {
+		const auto doc = Json::tryParse(bytes);
+		if (!doc || !doc->isObject()) {
 			qWarning() << "PackContents: malformed list at" << path;
 			return false;
 		}
 
-		const QJsonObject root = doc.object();
+		const QJsonObject root = doc->object();
 		const int version =
 			root.value(QLatin1String(keyFormatVersion)).toInt(0);
 		if (version != currentFormatVersion) {

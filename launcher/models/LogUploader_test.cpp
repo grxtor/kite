@@ -99,6 +99,34 @@ class LogUploaderTest : public QObject
 		QCOMPARE(LogUploader::readLogFile(path, &error), QString("zipped log\n"));
 	}
 
+	// The 50 MB cap, on the file itself and on what a .gz unpacks to.
+	void readLogFileRefusesAFileOverTheCap()
+	{
+		QTemporaryDir dir;
+		QVERIFY(dir.isValid());
+		const QString path = dir.filePath("huge.log");
+		QFile file(path);
+		QVERIFY(file.open(QIODevice::WriteOnly));
+		QVERIFY(file.resize(50ll * 1024 * 1024 + 1));
+		file.close();
+		QString error;
+		QVERIFY(LogUploader::readLogFile(path, &error).isNull());
+		QVERIFY(error.contains(QStringLiteral("too big")));
+	}
+
+	void readLogFileRefusesAGzOverTheCapOnceUnpacked()
+	{
+		QTemporaryDir dir;
+		QVERIFY(dir.isValid());
+		QByteArray packed;
+		QVERIFY(GZip::zip(QByteArray(50 * 1024 * 1024 + 1, 'a'), packed));
+		const QString path = dir.filePath("huge.log.gz");
+		QVERIFY(writeFile(path, packed));
+		QString error;
+		QVERIFY(LogUploader::readLogFile(path, &error).isNull());
+		QVERIFY(error.contains(QStringLiteral("too big")));
+	}
+
 	void readLogFileReportsAMissingFile()
 	{
 		QString error;

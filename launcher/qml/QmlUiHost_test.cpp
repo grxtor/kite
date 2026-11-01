@@ -275,6 +275,18 @@ class QmlUiHostTest : public QObject
 		QCOMPARE(checkSpy.count(), 0);
 	}
 
+	void checkProfileNameInvalidatesTheCheckInFlightEvenForAnInvalidName()
+	{
+		QmlUiRequest request(QmlUiRequest::Kind::ProfileSetup,
+							 QStringLiteral("Title"), QStringLiteral("Text"));
+		request.checkProfileName(QStringLiteral("Steve"));
+		const int inFlight = request.checkSequence();
+
+		request.checkProfileName(QStringLiteral("ab"));
+
+		QVERIFY(request.checkSequence() != inFlight);
+	}
+
 	void setupProfileReturnsFalseWhenQmlRejects()
 	{
 		QmlUiHost host;

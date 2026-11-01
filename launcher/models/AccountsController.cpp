@@ -27,6 +27,7 @@
 #include <QSet>
 #include <QUrl>
 
+#include "FileSystem.h"
 #include "core/LauncherContext.h"
 #include "minecraft/auth/AccountTask.h"
 #include "minecraft/services/CapeChange.h"
@@ -42,13 +43,6 @@
 
 namespace
 {
-	/* A QML FileDialog hands out "file://" urls; a plain path is accepted too. */
-	QString toLocalPath(const QString& fileUrlOrPath)
-	{
-		const QUrl url(fileUrlOrPath);
-		return url.isLocalFile() ? url.toLocalFile() : fileUrlOrPath;
-	}
-
 	/* The SkinsDir setting, absolute (relative to the data folder, the working
 	 * directory); "skins" where there are no settings. */
 	QString skinsDirectory()
@@ -82,8 +76,8 @@ AccountsController::AccountsController(shared_qobject_ptr<AccountList> accounts,
 										QObject* parent)
 	: QObject(parent), m_accounts(std::move(accounts))
 {
-	/* Either the default account moving or the list itself (a refreshed
-	 * profileName) changes what defaultName() reports. */
+	/* Either the default account moving or the list itself changing re-reads
+	 * the default. */
 	connect(m_accounts.get(), &AccountList::listChanged, this,
 			&AccountsController::defaultChanged);
 	connect(m_accounts.get(), &AccountList::defaultAccountChanged, this,
@@ -100,25 +94,13 @@ QObject* AccountsController::accounts() const
 	return m_accounts.get();
 }
 
-bool AccountsController::hasDefault() const
-{
-	return m_accounts->defaultAccount().get() != nullptr;
-}
-
-QString AccountsController::defaultName() const
-{
-	auto account = m_accounts->defaultAccount();
-	return account ? account->profileName() : QString();
-}
-
 QString AccountsController::defaultAccountId() const
 {
 	auto account = m_accounts->defaultAccount();
 	if (!account) {
 		return QString();
 	}
-	return account->profileId().isEmpty() ? account->internalId()
-										  : account->profileId();
+	return account->accountId();
 }
 
 int AccountsController::defaultSkinsRevision() const
@@ -287,7 +269,7 @@ QVariantMap AccountsController::accountSkinInfo(int row) const
 
 QString AccountsController::validateSkinFile(const QString& path) const
 {
-	SkinEntry entry(toLocalPath(path));
+	SkinEntry entry(FS::pathFromUrlOrPath(path));
 	if (!entry.isUsable()) {
 		return tr("Skin images must be 64x64 or 64x32 pixel PNG files.");
 	}
@@ -304,7 +286,7 @@ QObject* AccountsController::changeSkin(int row, const QString& path, bool slim)
 		return nullptr;
 	}
 
-	QFile file(toLocalPath(path));
+	QFile file(FS::pathFromUrlOrPath(path));
 	if (!file.open(QIODevice::ReadOnly)) {
 		return nullptr;
 	}

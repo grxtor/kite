@@ -25,6 +25,7 @@
 #include "models/InstanceDetails.h"
 
 #include "NullInstance.h"
+#include "TestSettings.h"
 #include "launch/LaunchTask.h"
 #include "launch/LogModel.h"
 #include "settings/INISettingsObject.h"
@@ -34,24 +35,6 @@
  * NullInstance and LaunchTask::create() are enough here. */
 namespace
 {
-	/* BaseInstance's constructor registers overrides/passthroughs against these
-	 * global setting ids; each must exist in the SettingsObject passed as
-	 * globalSettings, or registration hands back a null Setting. */
-	SettingsObjectPtr makeGlobalSettings(QTemporaryDir& dir)
-	{
-		auto settings = std::make_shared<INISettingsObject>(
-			dir.filePath("global.ini"));
-		settings->registerSetting("PreLaunchCommand", "");
-		settings->registerSetting("WrapperCommand", "");
-		settings->registerSetting("PostExitCommand", "");
-		settings->registerSetting("ShowConsole", true);
-		settings->registerSetting("ShowConsoleOnError", true);
-		settings->registerSetting("LogPrePostOutput", true);
-		settings->registerSetting("ConsoleMaxLines", 100000);
-		settings->registerSetting("ConsoleOverflowStop", true);
-		return settings;
-	}
-
 	/* Every Setting keeps a raw back-pointer to its SettingsObject
 	 * (Setting::m_storage), including those an instance only passes through or
 	 * overrides, so the global SettingsObject must outlive the instance. Bundling

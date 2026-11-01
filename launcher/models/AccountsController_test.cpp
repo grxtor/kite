@@ -106,21 +106,19 @@ class AccountsControllerTest : public QObject
 		QVERIFY(list.data(idx, AccountList::IsDefaultRole).toBool());
 	}
 
-	void test_hasDefault_and_defaultName_followTheList()
+	void test_defaultAccountId_followsTheList()
 	{
 		auto list = shared_qobject_ptr<AccountList>(new AccountList());
 		AccountsController controller(list);
 		QSignalSpy spy(&controller, &AccountsController::defaultChanged);
 
-		QVERIFY(!controller.hasDefault());
-		QVERIFY(controller.defaultName().isEmpty());
+		QVERIFY(controller.defaultAccountId().isEmpty());
 
 		auto account = MinecraftAccount::createOffline("Alex");
 		list->addAccount(account);
 		list->setDefaultAccount(account);
 
-		QVERIFY(controller.hasDefault());
-		QCOMPARE(controller.defaultName(), QStringLiteral("Alex"));
+		QCOMPARE(controller.defaultAccountId(), account->accountId());
 		QVERIFY(spy.count() > 0);
 	}
 
@@ -133,10 +131,10 @@ class AccountsControllerTest : public QObject
 		list->addAccount(MinecraftAccount::createOffline("Bob"));
 
 		controller.setDefault(1);
-		QCOMPARE(controller.defaultName(), QStringLiteral("Bob"));
+		QCOMPARE(controller.defaultAccountId(), list->at(1)->accountId());
 
 		controller.clearDefault();
-		QVERIFY(!controller.hasDefault());
+		QVERIFY(controller.defaultAccountId().isEmpty());
 	}
 
 	void test_setDefault_outOfRange_isNoOp()
@@ -148,7 +146,7 @@ class AccountsControllerTest : public QObject
 		controller.setDefault(5);
 		controller.setDefault(-1);
 
-		QVERIFY(!controller.hasDefault());
+		QVERIFY(controller.defaultAccountId().isEmpty());
 	}
 
 	void test_remove_dropsTheRow()
