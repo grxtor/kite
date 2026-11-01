@@ -1,0 +1,88 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+//
+// The home page's last band and the hero's bookend: night rises into the
+// violet the footer starts with, low clouds along the bottom and a small
+// glass kite above them.
+import Clouds from './Clouds.astro';
+import GlassKite from './GlassKite.astro';
+import PlatformCards from './PlatformCards.astro';
+import SectionHead from './SectionHead.astro';
+import type { CloudSpot } from '../lib/clouds';
+import { getDictionary, type Locale } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale);
+
+// Tops are measured up from the band's bottom edge, so the clouds sit in the
+// padding under the cards and never reach the footer.
+const CLOUDS: readonly CloudSpot[] = [
+  { shape: 'wide', left: '-5%', top: 'calc(100% - 7rem)', width: 'clamp(12rem, 26vw, 24rem)', opacity: 0.8, drift: 100 },
+  { shape: 'short', left: '44%', top: 'calc(100% - 5rem)', width: 'clamp(8rem, 14vw, 13rem)', opacity: 0.7, drift: 80, wideOnly: true },
+  { shape: 'bank', left: '66%', top: 'calc(100% - 7.5rem)', width: 'clamp(14rem, 32vw, 30rem)', opacity: 0.85, drift: 115 },
+];
+---
+
+<section class="band" aria-labelledby="band-title">
+  <Clouds spots={CLOUDS} />
+  <div class="container stage">
+    <div class="flight" aria-hidden="true">
+      <GlassKite size={96} />
+    </div>
+    <SectionHead
+      id="band-title"
+      title={t.platformsBand.title}
+      lead={t.platformsBand.lead}
+      tone="sky"
+      stacked
+    />
+    <PlatformCards locale={locale} heading="h3" anchors={false} tone="sky" />
+  </div>
+</section>
+
+<style>
+  .band {
+    position: relative;
+    isolation: isolate;
+    /* Room above for the night to rise, and below for the clouds. */
+    padding-block: var(--space-section) calc(var(--space-7) + 6rem);
+    background: var(--sky-dawn);
+    color: var(--on-sky);
+  }
+  .stage {
+    position: relative;
+    z-index: 1;
+  }
+  .flight {
+    position: absolute;
+    top: calc(-1 * var(--space-6));
+    right: var(--gutter);
+    width: var(--kite-size);
+    opacity: 0.9;
+  }
+  .band {
+    --kite-size: clamp(3.5rem, 7vw, 6rem);
+  }
+  @media (max-width: 899px) {
+    .flight {
+      top: calc(-1 * var(--space-7));
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .flight {
+      animation: hover 8s ease-in-out infinite;
+    }
+  }
+  @keyframes hover {
+    50% {
+      translate: 0 -8px;
+      rotate: 2deg;
+    }
+  }
+</style>

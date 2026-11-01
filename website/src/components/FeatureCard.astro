@@ -1,0 +1,73 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+//
+// One bento card: a short title and text above an enlarged region of a real
+// screenshot, which fades out into the card's bottom edge.
+import Screenshot from './Screenshot.astro';
+import type { Locale } from '../i18n';
+import type { ScreenId } from '../i18n/types';
+import type { Focus } from '../lib/imaging';
+
+interface Props {
+  locale: Locale;
+  screen: ScreenId;
+  focus: Focus;
+  title: string;
+  text: string;
+  alt: string;
+  /** Takes the wider column of its row on large screens. */
+  wide?: boolean;
+}
+
+const { locale, screen, focus, title, text, alt, wide = false } = Astro.props;
+---
+
+<article class:list={['card', 'panel', wide && 'wide']}>
+  <div class="copy">
+    <h3>{title}</h3>
+    <p>{text}</p>
+  </div>
+  <div class="media">
+    <Screenshot locale={locale} screen={screen} alt={alt} focus={focus} />
+  </div>
+</article>
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    padding: var(--space-6) var(--space-6) 0;
+    border-radius: var(--radius-xl);
+    /* The panel's whisper of white over a violet horizon at the foot. */
+    background: var(--panel-fill), var(--panel-glow);
+    overflow: hidden;
+  }
+  .copy {
+    display: grid;
+    gap: var(--space-2);
+    max-width: 46ch;
+  }
+  .copy p {
+    color: var(--text-secondary);
+  }
+  .media {
+    margin-top: auto;
+  }
+  /* The picture runs into the card's bottom edge. */
+  .media :global(.shot) {
+    border-bottom: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  /* Twelve columns from the bento grid: a wide card takes seven, a narrow five. */
+  @media (min-width: 900px) {
+    .card {
+      grid-column: span 5;
+    }
+    .wide {
+      grid-column: span 7;
+    }
+  }
+</style>

@@ -1,0 +1,45 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+import { Image } from 'astro:assets';
+import logo from '../assets/logo.png';
+import { LOGO_SIZE_PX } from '../lib/imaging';
+
+interface Props {
+  /** Height of the mark in CSS pixels. */
+  size?: number;
+}
+
+const { size = LOGO_SIZE_PX } = Astro.props;
+---
+
+<span class="logo">
+  <Image
+    src={logo}
+    width={size}
+    height={size}
+    densities={[1, 2]}
+    alt=""
+    loading="eager"
+    decoding="async"
+  />
+  <span class="word">Kite</span>
+</span>
+
+<style>
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--text);
+  }
+  .logo :global(img) {
+    display: block;
+  }
+  .word {
+    font-family: var(--font-brand);
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: var(--tracking-h3);
+  }
+</style>

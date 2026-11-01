@@ -1,0 +1,153 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+interface Props {
+  href?: string | null;
+  /** `light` and `sky` are for buttons that sit on the sky. */
+  variant?: 'primary' | 'secondary' | 'ghost' | 'light' | 'sky';
+  size?: 'sm' | 'md' | 'lg';
+  /** Also stretches the button to the full width of its container. */
+  block?: boolean;
+  /** Renders a non-interactive element instead of a link. */
+  disabled?: boolean;
+  /** Fully rounded, for a button inside a capsule such as the header bar. */
+  pill?: boolean;
+  label?: string;
+}
+
+const {
+  href,
+  variant = 'primary',
+  size = 'md',
+  block = false,
+  disabled = false,
+  pill = false,
+  label,
+} = Astro.props;
+const classes = ['btn', `btn-${variant}`, `btn-${size}`, block && 'btn-block', pill && 'btn-pill'];
+---
+
+{
+  disabled || !href ? (
+    <span class:list={classes} aria-disabled="true" aria-label={label}>
+      <slot />
+    </span>
+  ) : (
+    <a class:list={classes} href={href} aria-label={label}>
+      <slot />
+    </a>
+  )
+}
+
+<style>
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    height: var(--control-height);
+    padding-inline: var(--space-4);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color var(--duration-fast) var(--ease),
+      border-color var(--duration-fast) var(--ease),
+      color var(--duration-fast) var(--ease);
+  }
+  .btn-sm {
+    height: var(--control-height-sm);
+    padding-inline: var(--space-3);
+    font-size: var(--text-sm);
+  }
+  .btn-lg {
+    height: var(--control-height-lg);
+    padding-inline: var(--space-5);
+  }
+  /* Concentric with a capsule around it, so the kite's cut gives way here. */
+  .btn-pill,
+  .btn-pill.btn-primary,
+  .btn-pill.btn-light {
+    border-radius: var(--radius-pill);
+  }
+  .btn-block {
+    display: flex;
+    width: 100%;
+  }
+
+  /* Download is Kite's "launch": it wears the kite's cut, like Play in the app. */
+  .btn-primary {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-top-right-radius: var(--radius-cut);
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    color: var(--on-accent);
+  }
+  .btn-primary:active {
+    background: var(--accent-pressed);
+  }
+
+  /* On the sky, the launch button turns white and keeps the kite's cut. */
+  .btn-light {
+    background: var(--light);
+    color: var(--on-light);
+    border-top-right-radius: var(--radius-cut);
+  }
+  .btn-light:hover {
+    background: var(--light-hover);
+    color: var(--on-light);
+  }
+
+  .btn-sky {
+    background: transparent;
+    border-color: var(--on-sky-border);
+    color: var(--on-sky);
+  }
+  .btn-sky:hover {
+    background: rgb(255 255 255 / 10%);
+    color: var(--on-sky);
+  }
+
+  .btn-secondary {
+    background: var(--raised);
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .btn-secondary:hover {
+    background: var(--hover);
+    border-color: var(--border-strong);
+    color: var(--text);
+  }
+  .btn-secondary:active {
+    background: var(--surface);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+  }
+  .btn-ghost:hover {
+    background: var(--hover);
+    color: var(--text);
+  }
+  .btn-ghost:active {
+    background: var(--surface);
+  }
+
+  /* Not yet available: an empty slot, dashed. A card on the sky sets the
+     colours it needs through --btn-off-*. */
+  .btn[aria-disabled='true'] {
+    background: transparent;
+    border: 1px dashed var(--btn-off-border, var(--border-strong));
+    color: var(--btn-off-color, var(--text-muted));
+    cursor: not-allowed;
+  }
+</style>

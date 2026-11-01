@@ -1,0 +1,187 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+import Clouds from '../components/Clouds.astro';
+import Icon from '../components/Icon.astro';
+import PlatformCards from '../components/PlatformCards.astro';
+import type { CloudSpot } from '../lib/clouds';
+import { PLATFORMS } from '../data/content';
+import { release } from '../data/release';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getDictionary, type Locale } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale);
+// Two clouds low in the sky, either side of the copy's end.
+const CLOUDS: readonly CloudSpot[] = [
+  { shape: 'long', left: '62%', top: '34%', width: 'clamp(9rem, 22vw, 20rem)', opacity: 0.5, drift: 90, wideOnly: true },
+  { shape: 'wide', left: '-4%', top: 'calc(100% - 6rem)', width: 'clamp(12rem, 26vw, 24rem)', opacity: 0.8, drift: 100 },
+  { shape: 'bank', left: '70%', top: 'calc(100% - 6.5rem)', width: 'clamp(12rem, 28vw, 26rem)', opacity: 0.85, drift: 115 },
+];
+const released = PLATFORMS.some((platform) => release.downloads[platform.key] !== null);
+---
+
+<BaseLayout
+  locale={locale}
+  route="/download"
+  title={t.meta.download.title}
+  description={t.meta.download.description}
+>
+  <section class="sky" aria-labelledby="download-title">
+    <Clouds spots={CLOUDS} />
+    <div class="container">
+      <div class="head">
+        <h1 id="download-title">{t.download.title}</h1>
+        <p class="lead">{t.download.lead}</p>
+        {
+          !released && (
+            <p class="notice" role="note">
+              <Icon name="info" size={18} />
+              <span>{t.download.notReleased}</span>
+            </p>
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  <div class="container page">
+    <div class="cards">
+      <PlatformCards locale={locale} />
+    </div>
+
+    <section class="needs" aria-labelledby="needs-title">
+      <h2 id="needs-title">{t.download.requirementsTitle}</h2>
+      <ul class="list">
+        {
+          t.download.requirements.map((item) => (
+            <li>
+              <Icon name="check" size={18} />
+              <span>{item}</span>
+            </li>
+          ))
+        }
+      </ul>
+      {
+        released && (
+          <>
+            <h2 class="sub">{t.download.firstRunTitle}</h2>
+            <p class="first-run-lead">{t.download.firstRunLead}</p>
+            <ul class="list">
+              {t.download.firstRun.map((item) => (
+                <li>
+                  <Icon name="info" size={18} />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )
+      }
+      {
+        release.repoUrl && (
+          <p class="source">
+            <a href={release.repoUrl}>
+              {t.download.sourceLink}
+              <Icon name="external-link" size={16} />
+            </a>
+          </p>
+        )
+      }
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    padding-block: var(--space-6) var(--space-section);
+  }
+  /* A short dusk: the hero's sky, running up behind the floating header. */
+  .sky {
+    position: relative;
+    isolation: isolate;
+    margin-top: calc(-1 * var(--header-height));
+    padding-block: calc(var(--header-height) + var(--space-7)) calc(var(--space-9) + var(--space-7));
+    /* The horizon settles into the night instead of fading to a grey. */
+    background: linear-gradient(180deg, transparent 60%, var(--canvas)), var(--sky-dusk);
+    color: var(--on-sky);
+  }
+  .sky .container {
+    position: relative;
+    z-index: 1;
+  }
+  .head {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-4);
+    max-width: 44rem;
+  }
+  h1 {
+    color: var(--on-sky);
+    font-size: var(--text-h1);
+    letter-spacing: var(--tracking-h1);
+  }
+  .lead {
+    color: var(--on-sky-secondary);
+  }
+  .notice {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+    padding: var(--space-4);
+    background: var(--sky-glass-fill);
+    border: 1px solid var(--sky-glass-border);
+    border-radius: var(--radius-lg);
+    color: var(--on-sky);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+  }
+  .notice :global(svg) {
+    flex: none;
+    margin-top: 0.2em;
+  }
+  .needs {
+    margin-top: var(--space-9);
+    max-width: 44rem;
+  }
+  .needs h2 {
+    font-size: var(--text-h3);
+    letter-spacing: var(--tracking-h3);
+  }
+  .needs .sub {
+    margin-top: var(--space-8);
+  }
+  .first-run-lead {
+    margin-top: var(--space-3);
+    color: var(--text-secondary);
+  }
+  .list {
+    display: grid;
+    gap: var(--space-3);
+    margin-top: var(--space-5);
+  }
+  .list li {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+    color: var(--text-secondary);
+  }
+  .list :global(svg) {
+    flex: none;
+    margin-top: 0.25em;
+    color: var(--accent-text);
+  }
+  .source {
+    margin-top: var(--space-5);
+  }
+  .source a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+</style>

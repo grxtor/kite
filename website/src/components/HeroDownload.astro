@@ -1,0 +1,119 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+//
+// The hero's download button. Without script it says "Download Kite" and
+// goes to the download page; a few lines below name the visitor's system
+// and point at its main build (or its card on the download page while there
+// is no release). A Mac always gets its card: a browser does not say whether
+// it runs on Apple silicon or Intel, and each needs its own build. It sits on
+// the hero's sky; anything in the slot goes next to the button.
+import Button from './Button.astro';
+import { PLATFORMS } from '../data/content';
+import { release } from '../data/release';
+import { getDictionary, localePath, type Locale } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale);
+const downloadPath = localePath(locale, '/download');
+const released = PLATFORMS.some((platform) => release.downloads[platform.key] !== null);
+const targets = Object.fromEntries(
+  PLATFORMS.map((platform) => {
+    const main = platform.key === 'macos' ? undefined : release.downloads[platform.key]?.[0];
+    return [
+      platform.key,
+      {
+        label: t.hero.ctaFor[platform.key],
+        minimum: t.hero.minimum[platform.key],
+        href: main?.url ?? `${downloadPath}#${platform.key}`,
+      },
+    ];
+  }),
+);
+---
+
+<div class="download" data-os-download data-targets={JSON.stringify(targets)}>
+  <div class="buttons">
+    <Button href={downloadPath} size="lg" variant="light">
+      <span data-label>{t.hero.cta}</span>
+    </Button>
+    <slot />
+  </div>
+  <p class="meta">
+    {!released && <span>{t.hero.status}</span>}
+    <span data-minimum hidden></span>
+    <a href={downloadPath}>{t.hero.otherSystems}</a>
+  </p>
+</div>
+
+<script is:inline>
+  (() => {
+    const ua = navigator.userAgent;
+    const os = /iPhone|iPad|Android/.test(ua)
+      ? null
+      : /Mac/.test(ua)
+        ? 'macos'
+        : /Win/.test(ua)
+          ? 'windows'
+          : /Linux|X11/.test(ua)
+            ? 'linux'
+            : null;
+    if (!os) return;
+    for (const box of document.querySelectorAll('[data-os-download]')) {
+      const target = JSON.parse(box.dataset.targets || '{}')[os];
+      if (!target) continue;
+      box.querySelector('a').href = target.href;
+      box.querySelector('[data-label]').textContent = target.label;
+      const minimum = box.querySelector('[data-minimum]');
+      minimum.textContent = target.minimum;
+      minimum.hidden = false;
+    }
+  })();
+</script>
+
+<style>
+  .download {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-4);
+  }
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    color: var(--on-sky-muted);
+    font-size: var(--text-sm);
+  }
+  /* A dot between the parts that are shown. */
+  .meta > :not([hidden]) ~ :not([hidden])::before {
+    content: '·';
+    display: inline-block;
+    margin-right: var(--space-3);
+    color: var(--on-sky-muted);
+    text-decoration: none;
+  }
+  /* On a phone the parts stack, so no line starts with a dot. */
+  @media (max-width: 479px) {
+    .meta {
+      flex-direction: column;
+    }
+    .meta > :not([hidden]) ~ :not([hidden])::before {
+      content: none;
+    }
+  }
+  .meta a {
+    color: var(--on-sky-secondary);
+  }
+  .meta a:hover {
+    color: var(--on-sky);
+  }
+</style>

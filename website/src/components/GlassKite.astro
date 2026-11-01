@@ -1,0 +1,57 @@
+---
+// SPDX-FileCopyrightText: 2026 grxtor
+// SPDX-License-Identifier: Apache-2.0
+//
+// The glass kite from the app icon, lifted off its backdrop by
+// scripts/kite-glass.py: white light with alpha, so it floats on any sky.
+// Optionally its line runs down from the kite's lower corner.
+import { Image } from 'astro:assets';
+import kiteGlass from '../assets/kite-glass.png';
+
+interface Props {
+  /** Widest the kite is drawn, in CSS pixels; picks the image sizes. */
+  size: number;
+  /** Draw the line, as long as the parent's --kite-line. */
+  line?: boolean;
+}
+
+const { size, line = false } = Astro.props;
+---
+
+<div class="kite" aria-hidden="true">
+  <Image src={kiteGlass} alt="" width={size} densities={[1, 2]} format="webp" loading="eager" />
+  {
+    line && (
+      <svg class="line" viewBox="0 0 120 1000" preserveAspectRatio="none">
+        <path d="M0 0 C 10 260, 110 520, 40 1000" vector-effect="non-scaling-stroke" />
+      </svg>
+    )
+  }
+</div>
+
+<style>
+  .kite {
+    position: relative;
+    /* Where the kite's lower corner sits in kite-glass.png. */
+    --anchor-x: 42.2%;
+    --anchor-y: 74.5%;
+  }
+  .kite :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .line {
+    position: absolute;
+    left: var(--anchor-x);
+    top: var(--anchor-y);
+    width: var(--space-8);
+    height: var(--kite-line);
+    overflow: visible;
+  }
+  .line path {
+    fill: none;
+    stroke: rgb(255 255 255 / 55%);
+    stroke-width: 1.25;
+  }
+</style>
